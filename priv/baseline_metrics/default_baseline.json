@@ -1,0 +1,33 @@
+{
+  "render_performance": {
+    "simple_component_time_μs": 50.0,
+    "medium_component_time_μs": 200.0,
+    "complex_component_time_μs": 1000.0,
+    "full_screen_render_time_ms": 16.67,
+    "components_per_frame": 300,
+    "renders_per_second": 60
+  },
+  "event_latency": {
+    "keyboard_event_latency_μs": 30.0,
+    "mouse_event_latency_μs": 30.0,
+    "window_event_latency_μs": 50.0,
+    "custom_event_latency_μs": 40.0,
+    "burst_events_latency_μs": 50.0,
+    "events_per_second": 20000
+  },
+  "memory_usage": {
+    "base_memory_usage_kb": 5000.0,
+    "simple_component_memory_bytes": 500.0,
+    "medium_component_memory_bytes": 2000.0,
+    "complex_component_memory_bytes": 10000.0,
+    "rendering_memory_growth_kb": 1000.0,
+    "memory_efficiency_score": 85.0
+  },
+  "animation_fps": {
+    "maximum_fps": 60,
+    "frame_time_consistency_ms": 2.0,
+    "dropped_frames_percent": 2.0,
+    "cpu_usage_percent": 30.0,
+    "animation_smoothness_score": 90.0
+  }
+} 

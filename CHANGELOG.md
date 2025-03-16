@@ -6,75 +6,34 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-### Changed
-
-
-## [0.5.1] - 2020-03-24
-
-### Changed
-* Updated build dependencies.
-
-
-## [0.5.0] - 2019-04-28
-
-### Fixed
-* Possible rendering error with multi-byte UTF-8 characters.
-
 ### Added
-* New `viewport` element for offsetting the render origin of child
-  content (e.g., to implement scrolling)
-* New `canvas` and `canvas_cell` elements for drawing arbitrary shapes
-  (see snake example).
-* Support for rendering multi-line content (with automatic line
-  wrapping) given to the `label` element.
-* Support for styling tree node content.
-* Support for styling panel title content (thanks to @iboard) and
-  configuring panel's padding.
-* Support for passing colors and text attributes directly as
-  atoms, so the integer constants no longer need to be looked up.
-* Improved documentation of element hierarchy restrictions (thanks to
-  @trescenzi)
-
-
-## [0.4.2] - 2019-03-03
-
-### Fixed
-* Possible crash in the termbox NIFs when polling for events (updates ex_termbox
-  to 1.0.0).
-
-
-## [0.4.1] - 2019-02-23
-
-### Fixed
-* Errors in panel box calculation with certain layouts.
-
-### Added
-* Documentation of element attributes is now generated based on element specs.
-
-
-## [0.4.0] - 2019-02-22
-
-### Added
-* Applications based on the Elm Architecture.
-  * App behaviour
-  * Runtime
-  * Runtime Supervisor
-  * Components & Subscriptions
-  * New examples
+- Initial project structure
+- Basic documentation framework
+- Development roadmap
+- Architecture documentation
+- Comprehensive component system
+- Styling system
+- Focus management
+- Accessibility features
 
 ### Changed
-* Views support labels as direct children.
+- Restructured for modular architecture
+- Updated documentation style
+
+### Deprecated
+- None
 
 ### Removed
-* Removed the experimental component support in favor of the new TEA-based apps.
+- None
 
+### Fixed
+- None
 
-## [0.3.0] - 2019-01-25
+### Security
+- None
 
-### Changed
+## [0.1.0] - YYYY-MM-DD
 
-* Element attributes are now validated based on the element's spec. Some
-  attributes are optional, while others are required. It's not allowed to pass
-  attributes that are not defined in the spec.
-* The View DSL was extracted to `Ratatouille.View`. Imports like
-  `import Ratatouille.Renderer.View` should be updated to `import Ratatouille.View`.
+### Added
+- Initial release of Raxol
+

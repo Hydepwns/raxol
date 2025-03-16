@@ -1,26 +1,25 @@
-# This is a simple terminal application to show how Ratatouille works.
-# For real apps, it's recommended to use the application runtime.
+# This is a simple terminal application to show how Raxol works.
 #
-# To run this file:
+# This application will display "Hello, World!" and quit when the 'q' key is
+# pressed.
 #
-#    mix run examples/no-runtime/hello_world.exs
+# Run this example with: mix run examples/without-runtime/hello_world.exs
 
-alias Ratatouille.{EventManager, Window}
+alias Raxol.{EventManager, Window}
 
-import Ratatouille.View
+import Raxol.View
 
-# This initializes the application, drawing a blank canvas over the
-# terminal.
+# First, we initialize the terminal window.
 {:ok, _pid} = Window.start_link()
 
-# In order to react to keyboard, click or resize events, we need to start
-# the event manager and subscribe the current process to any events.
+# Next, we start the event manager, which will translate terminal events into
+# Elixir messages for our process.
 {:ok, _pid} = EventManager.start_link()
+
+# Let's subscribe `self()` to receive events from the event manager.
 :ok = EventManager.subscribe(self())
 
-# Next, we define a view. Similar to HTML, views are defined as a tree of
-# nodes. Nodes have attributes (e.g., text: bold) and children (nested
-# content). Every view must start with a root `view` element.
+# Now we define the view.
 hello_world_view =
   view do
     panel title: "Hello, World!", height: :fill do
@@ -28,14 +27,12 @@ hello_world_view =
     end
   end
 
-# Defining a view only does just that. To render it to the screen, we need to
-# call the `Window.update/1` function, passing our view as the argument.
+# Update the window with our view.
 :ok = Window.update(hello_world_view)
 
-# When a key is pressed, it'll be sent to us by the event manager. Once we
-# receive a 'q' key press, we'll close the application.
+# We'll loop until a 'q' key is pressed. When the key is detected, we'll close
+# the window and the application will exit.
 receive do
   {:event, %{ch: ?q}} ->
-    :ok = EventManager.stop()
     :ok = Window.close()
 end

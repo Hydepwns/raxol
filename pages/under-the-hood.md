@@ -1,6 +1,6 @@
 # Under the Hood
 
-Ratatouille's runtime wraps up most of the logic concerning the application
+Raxol's runtime wraps up most of the logic concerning the application
 loop, update the terminal window, and subscribing to and delegating events.
 It's convenient to let the runtime worry about these details, and it allows us
 to write apps more declaratively by defining them in terms of
@@ -18,14 +18,14 @@ the "q" key is pressed. First we'll look at the entire example, then we'll go
 through it line by line to see what each line does. You can also find this
 example [in the repo][hello_world_example] and run it with `mix run`.
 
-[hello_world_example]: https://github.com/ndreynolds/ratatouille/blob/master/examples/without-runtime/hello_world.exs
+[hello_world_example]: https://github.com/hydepwns/raxol/blob/master/examples/without-runtime/hello_world.exs
 
 ```elixir
 # examples/hello_world.exs
 
-alias Ratatouille.{EventManager, Window}
+alias Raxol.{EventManager, Window}
 
-import Ratatouille.View
+import Raxol.View
 
 {:ok, _pid} = Window.start_link()
 {:ok, _pid} = EventManager.start_link()
@@ -49,20 +49,20 @@ end
 First, some aliases for the modules we'll use:
 
 ```elixir
-alias Ratatouille.{EventManager, Window}
+alias Raxol.{EventManager, Window}
 ```
 
 Next, we import the View DSL from
-[`Ratatouille.View`](https://hexdocs.pm/ratatouille/Ratatouille.View):
+[`Raxol.View`](https://hexdocs.pm/raxol/Raxol.View):
 
 ```elixir
-import Ratatouille.View
+import Raxol.View
 ```
 
 The View DSL provides element builder functions like `view`, `row`, `table`,
 `label` that you can use to define views. Think of them like HTML tags.
 
-Now we'll initialize the application using `Ratatouille.Window`. This is a
+Now we'll initialize the application using `Raxol.Window`. This is a
 gen_server that manages our terminal window and exposes a basic API for
 accessing information about or updating the terminal window. On init, it draws a
 blank canvas over the terminal:
@@ -76,7 +76,7 @@ supervision tree, but here we'll keep it as simple as possible and start our
 processes manually.
 
 In order to react to keyboard, click or resize events, we'll use
-`Ratatouille.EventManager`. The event manager allows processes to subscribe to
+`Raxol.EventManager`. The event manager allows processes to subscribe to
 events and then send its subscribers a message whenever an event is triggered.
 We need to start the event manager and subscribe the current process to any
 events:
@@ -147,9 +147,9 @@ need to kill the process (for example, by closing your terminal window).
 
 ```elixir
 defmodule Clock do
-  alias Ratatouille.Window
+  alias Raxol.Window
 
-  import Ratatouille.View
+  import Raxol.View
 
   def start do
     {:ok, _pid} = Window.start_link()
@@ -200,9 +200,9 @@ handle events---and therefore, no way to quit the application. Let's fix that:
 
 ```elixir
 defmodule Clock do
-  alias Ratatouille.{EventManager, Window}
+  alias Raxol.{EventManager, Window}
 
-  import Ratatouille.View
+  import Raxol.View
 
   def start do
     {:ok, _pid} = Window.start_link()

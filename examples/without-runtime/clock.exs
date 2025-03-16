@@ -1,9 +1,9 @@
 # An example of how to create application loops.
 
 defmodule Clock do
-  alias Ratatouille.{EventManager, Window}
+  alias Raxol.{EventManager, Window}
 
-  import Ratatouille.View
+  import Raxol.View
 
   def start do
     {:ok, _pid} = Window.start_link()
@@ -18,7 +18,6 @@ defmodule Clock do
 
     receive do
       {:event, %{ch: ?q}} ->
-        :ok = EventManager.stop()
         :ok = Window.close()
     after
       1_000 ->

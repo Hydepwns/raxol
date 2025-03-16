@@ -1,0 +1,126 @@
+{
+  "name": "raxol-vscode",
+  "displayName": "Raxol Framework",
+  "description": "VS Code support for the Raxol framework",
+  "version": "0.1.0",
+  "engines": {
+    "vscode": "^1.60.0"
+  },
+  "categories": [
+    "Programming Languages",
+    "Snippets",
+    "Linters",
+    "Formatters",
+    "Other"
+  ],
+  "activationEvents": [
+    "onLanguage:javascript",
+    "onLanguage:typescript",
+    "onLanguage:elixir",
+    "onCommand:raxol.newComponent",
+    "onCommand:raxol.analyze",
+    "onCommand:raxol.previewComponent",
+    "onCommand:raxol.previewComponentFromExplorer",
+    "onCommand:raxol.openStateInspector",
+    "onView:raxolExplorer"
+  ],
+  "main": "./dist/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "raxol.newComponent",
+        "title": "Raxol: Create New Component"
+      },
+      {
+        "command": "raxol.analyze",
+        "title": "Raxol: Analyze Performance"
+      },
+      {
+        "command": "raxol.optimize",
+        "title": "Raxol: Optimize Component"
+      },
+      {
+        "command": "raxol.previewComponent",
+        "title": "Raxol: Preview Component"
+      },
+      {
+        "command": "raxol.previewComponentFromExplorer",
+        "title": "Raxol: Preview Component"
+      },
+      {
+        "command": "raxol.openStateInspector",
+        "title": "Raxol: Open State Inspector"
+      }
+    ],
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "raxol-explorer",
+          "title": "Raxol",
+          "icon": "resources/raxol-icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "raxol-explorer": [
+        {
+          "id": "raxolComponents",
+          "name": "Components"
+        },
+        {
+          "id": "raxolPerformance",
+          "name": "Performance"
+        }
+      ]
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "when": "resourceFilename =~ /.*Component.*\\.(ts|tsx|js|jsx)$/",
+          "command": "raxol.previewComponent",
+          "group": "raxol"
+        }
+      ],
+      "explorer/context": [
+        {
+          "when": "resourceFilename =~ /.*Component.*\\.(ts|tsx|js|jsx)$/",
+          "command": "raxol.previewComponentFromExplorer",
+          "group": "raxol"
+        }
+      ],
+      "view/title": [
+        {
+          "command": "raxol.openStateInspector",
+          "when": "view == raxolComponents",
+          "group": "navigation"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "raxol.previewComponentFromExplorer",
+          "when": "false"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^7.1.3",
+    "@types/mocha": "^8.2.2",
+    "@types/node": "^14.17.0",
+    "@types/vscode": "^1.60.0",
+    "@typescript-eslint/eslint-plugin": "^4.26.0",
+    "@typescript-eslint/parser": "^4.26.0",
+    "eslint": "^7.27.0",
+    "glob": "^7.1.7",
+    "mocha": "^8.4.0",
+    "typescript": "^4.3.2",
+    "vscode-test": "^1.5.2"
+  }
+}

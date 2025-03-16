@@ -1,0 +1,124 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*'
+
+jobs:
+  build:
+    name: Build Raxol Release
+    runs-on: ${{ matrix.os }}
+    strategy:
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+        include:
+          - os: ubuntu-latest
+            platform: linux
+          - os: macos-latest
+            platform: macos
+          - os: windows-latest
+            platform: windows
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+        with:
+          fetch-depth: 0
+
+      - name: Setup Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: '1.14.x'
+          otp-version: '25.x'
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "::set-output name=VERSION::${GITHUB_REF#refs/tags/v}"
+        shell: bash
+
+      - name: Cache deps
+        uses: actions/cache@v2
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      - name: Install dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          mix deps.compile
+
+      - name: Build Release
+        run: mix run scripts/release.exs --env prod --platform ${{ matrix.platform }}
+        env:
+          MIX_ENV: prod
+
+      - name: Prepare artifacts
+        id: prepare_artifacts
+        run: |
+          PLATFORM="${{ matrix.platform }}"
+          VERSION="${{ steps.get_version.outputs.VERSION }}"
+          
+          if [ "$PLATFORM" = "linux" ]; then
+            ARTIFACT_NAME="raxol-${VERSION}-linux"
+            ARTIFACT_PATH="burrito_out/prod"
+            tar -czf ${ARTIFACT_NAME}.tar.gz -C ${ARTIFACT_PATH} .
+            echo "::set-output name=artifact_name::${ARTIFACT_NAME}.tar.gz"
+          elif [ "$PLATFORM" = "macos" ]; then
+            ARTIFACT_NAME="raxol-${VERSION}-macos"
+            ARTIFACT_PATH="burrito_out/prod"
+            tar -czf ${ARTIFACT_NAME}.tar.gz -C ${ARTIFACT_PATH} .
+            echo "::set-output name=artifact_name::${ARTIFACT_NAME}.tar.gz"
+          else
+            ARTIFACT_NAME="raxol-${VERSION}-windows"
+            ARTIFACT_PATH="burrito_out/prod"
+            7z a -tzip ${ARTIFACT_NAME}.zip ${ARTIFACT_PATH}/*
+            echo "::set-output name=artifact_name::${ARTIFACT_NAME}.zip"
+          fi
+        shell: bash
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v2
+        with:
+          name: ${{ matrix.platform }}-build
+          path: ${{ steps.prepare_artifacts.outputs.artifact_name }}
+
+  release:
+    needs: build
+    name: Create GitHub Release
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v2
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@v2
+        with:
+          path: artifacts
+
+      - name: Get version from tag
+        id: get_version
+        run: echo "::set-output name=VERSION::${GITHUB_REF#refs/tags/v}"
+        shell: bash
+
+      - name: Create Release
+        id: create_release
+        uses: softprops/action-gh-release@v1
+        with:
+          name: Raxol v${{ steps.get_version.outputs.VERSION }}
+          draft: false
+          prerelease: false
+          generate_release_notes: true
+          files: |
+            artifacts/linux-build/*.tar.gz
+            artifacts/macos-build/*.tar.gz
+            artifacts/windows-build/*.zip
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }} 
