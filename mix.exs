@@ -1,74 +1,65 @@
-defmodule Ratatouille.Mixfile do
+defmodule Raxol.MixProject do
   use Mix.Project
 
-  @source_url "https://github.com/ndreynolds/ratatouille"
-  @version "0.5.1"
+  @version "0.0.1"
+  @source_url "https://github.com/hydepwns/raxol"
 
   def project do
     [
-      app: :ratatouille,
-      name: "Ratatouille",
+      app: :raxol,
       version: @version,
-      elixir: "~> 1.5",
+      elixir: "~> 1.12",
       start_permanent: Mix.env() == :prod,
-      elixirc_paths: elixirc_paths(Mix.env()),
       deps: deps(),
+      description: description(),
       package: package(),
-      aliases: aliases(),
-      docs: docs()
+      docs: docs(),
+      name: "Raxol",
+      source_url: @source_url
     ]
   end
 
-  # Run "mix help compile.app" to learn about applications.
   def application do
-    [extra_applications: [:logger]]
+    [
+      extra_applications: [:logger],
+      mod: {Raxol.Application, []}
+    ]
   end
 
-  # Run "mix help deps" to learn about dependencies.
   defp deps do
     [
-      {:ex_termbox, "~> 1.0"},
-      {:asciichart, "~> 1.0"},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
-      {:dialyze, "~> 0.2.0", only: :dev},
-      {:credo, "~> 1.3.0", only: [:dev, :test], runtime: false}
+      # Core dependencies
+      {:ex_termbox, "~> 1.0"}, # Terminal rendering library
+      
+      # Optional dependencies for specific features
+      {:jason, "~> 1.2", optional: true}, # JSON parsing for data visualization
+      
+      # Development dependencies
+      {:ex_doc, "~> 0.24", only: :dev, runtime: false},
+      {:credo, "~> 1.5", only: [:dev, :test], runtime: false},
+      {:dialyxir, "~> 1.1", only: [:dev, :test], runtime: false}
     ]
+  end
+
+  defp description do
+    """
+    Raxol - A comprehensive terminal UI framework for Elixir.
+    """
   end
 
   defp package do
     [
-      description: "A declarative terminal UI kit for Elixir",
-      files: ~w(lib pages mix.exs README.md CHANGELOG.md LICENSE),
-      maintainers: ["Nick Reynolds"],
+      maintainers: ["Your Name"],
       licenses: ["MIT"],
-      links: %{
-        "Changelog" => "https://hexdocs.pm/ratatouille/changelog.html",
-        "GitHub" => @source_url
-      }
-    ]
-  end
-
-  defp aliases do
-    [
-      test: "test --exclude integration"
+      links: %{"GitHub" => @source_url}
     ]
   end
 
   defp docs do
     [
-      extras: [
-        "CHANGELOG.md": [],
-        "LICENSE.md": [title: "License"],
-        "README.md": [title: "Overview"],
-        "pages/under-the-hood.md": []
-      ],
       main: "readme",
-      assets: "assets",
       source_url: @source_url,
-      formatters: ["html"]
+      extras: ["README.md"]
     ]
   end
-
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
-  defp elixirc_paths(_), do: ["lib"]
 end

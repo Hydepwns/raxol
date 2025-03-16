@@ -1,11 +1,21 @@
-# A sample application that shows debug information about terminal events.
-# These can be click, resize or key press events.
+# This example demonstrates handling and displaying of events.
+#
+# Run this with: mix run examples/without-runtime/event_viewer.exs
+
+alias Raxol.{EventManager, Window}
+
+import Raxol.View
+import Raxol.Constants
+
+# Start the window and subscribe to events
+{:ok, _pid} = Window.start_link()
+{:ok, _pid} = EventManager.start_link()
+:ok = EventManager.subscribe(self())
 
 defmodule EventViewer do
-  alias Ratatouille.{EventManager, Window}
+  import Raxol.View
 
-  import Ratatouille.View
-  import Ratatouille.Constants
+  @line_count 30
 
   @title "Event Viewer (click, resize, or press a key - 'q' to quit)"
   @input_mode input_mode(:esc_with_mouse)
@@ -112,4 +122,28 @@ defmodule EventViewer do
   end
 end
 
-EventViewer.start()
+# Initial state: empty event log
+state = EventViewer.new()
+
+# Render the initial view
+:ok = Window.update(EventViewer.render(state))
+
+# Main loop
+loop = fn loop, state ->
+  receive do
+    # When an event is received, add it to the list of entries
+    {:event, %{} = e} = event ->
+      # If we receive 'q', quit the application
+      if e[:ch] == ?q do
+        :ok = Window.close()
+      else
+        # Otherwise, add the event to the top of the events list and re-render
+        new_state = EventViewer.add_event(state, event)
+        :ok = Window.update(EventViewer.render(new_state))
+        loop.(loop, new_state)
+      end
+  end
+end
+
+# Start the loop
+loop.(loop, state)
