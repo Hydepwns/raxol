@@ -1,0 +1,23 @@
+<div class="mx-auto max-w-sm">
+  <.header class="text-center">
+    Sign in to account
+    <:subtitle>
+      Don't have an account?
+      <.link navigate={~p"/register"} class="font-semibold text-brand hover:underline">
+        Sign up
+      </.link>
+      for an account now.
+    </:subtitle>
+  </.header>
+
+  <.simple_form for={%{}} action={~p"/login"} phx-update="ignore">
+    <.input field={%{}} type="email" label="Email" name="user[email]" required />
+    <.input field={%{}} type="password" label="Password" name="user[password]" required />
+
+    <:actions>
+      <.button phx-disable-with="Signing in..." class="w-full">
+        Sign in
+      </.button>
+    </:actions>
+  </.simple_form>
+</div> 
