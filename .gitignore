@@ -19,8 +19,52 @@ erl_crash.dump
 # Also ignore archive artifacts (built via "mix archive.build").
 *.ez
 
+# Ignore package tarball (built via "mix hex.build").
+raxol-*.tar
+
 # Temporary files, for example, from tests.
 /tmp/
 
-# Ignore shared object files created by Makefile
-/priv/*.so*
+# Environment files
+.env
+.env.*
+
+# Database files
+*.sqlite3
+*.sqlite3-journal
+
+# Node.js dependencies
+/node_modules/
+npm-debug.log
+yarn-debug.log
+yarn-error.log
+
+# Generated files
+/priv/static/
+/assets/node_modules/
+
+# Phoenix
+/priv/static/assets/
+/priv/static/cache_manifest.json
+
+# Elixir
+/priv/static/assets/
+/priv/static/cache_manifest.json
+
+# Misc
+.DS_Store
+*.swp
+*.swo
+*~
+*.log
+*.pid
+*.beam
+*.dump
+*.ez
+*.lock
+*.iml
+*.idea/
+.vscode/
+*.elixir_ls/
+*.elixir_ls/*
+!.elixir_ls/.gitkeep
