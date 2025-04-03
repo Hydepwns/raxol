@@ -64,7 +64,7 @@ defmodule Raxol.MixProject do
       
       # Testing
       {:mox, "~> 1.0", only: :test},
-      {:meck, "~> 0.9.2", only: :test},
+      {:meck, "~> 1.0.0", only: :test},
       {:wallaby, "~> 0.30.0", only: :test, runtime: false},
       {:floki, ">= 0.30.0", only: :test},
       
