@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html lang="en" data-theme={@theme || "light"} data-high-contrast={@high_contrast || "false"} data-reduced-motion={@reduced_motion || "false"} data-font-size={@font_size || "normal"}>
+  <head>
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <meta name="csrf-token" content={get_csrf_token()}/>
+    <.live_title suffix=" · Raxol">
+      <%= assigns[:page_title] || "Raxol" %>
+    </.live_title>
+    <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")}/>
+    <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/assets/app.js")}></script>
+  </head>
+  <body class="app-container">
+    <header class="app-header">
+      <div class="flex items-center gap-md">
+        <h1 class="text-xl font-bold">Raxol</h1>
+      </div>
+      <div class="flex items-center gap-md">
+        <.live_component module={RaxolWeb.ThemeToggleComponent} id="theme-toggle" />
+      </div>
+    </header>
+    <main class="app-main">
+      <%= @inner_content %>
+    </main>
+    <footer class="app-footer">
+      <p class="text-sm">© <%= DateTime.utc_now().year %> Raxol. All rights reserved.</p>
+    </footer>
+    <.live_component module={RaxolWeb.AccessibilityComponent} id="accessibility-menu" />
+    <nav class="nav-menu">
+      <%= if @current_user do %>
+        <.link navigate={~p"/settings"} class="nav-link">
+          Settings
+        </.link>
+      <% end %>
+    </nav>
+  </body>
+</html> 

@@ -1,0 +1,64 @@
+/* Typography Utilities */
+.text-xs {
+  font-size: var(--font-size-sm);
+}
+
+.text-sm {
+  font-size: var(--font-size-base);
+}
+
+.text-lg {
+  font-size: var(--font-size-lg);
+}
+
+.text-xl {
+  font-size: calc(var(--font-size-lg) * 1.25);
+}
+
+.text-2xl {
+  font-size: calc(var(--font-size-lg) * 1.5);
+}
+
+.text-3xl {
+  font-size: calc(var(--font-size-lg) * 2);
+}
+
+.font-light {
+  font-weight: 300;
+}
+
+.font-normal {
+  font-weight: 400;
+}
+
+.font-medium {
+  font-weight: 500;
+}
+
+.font-bold {
+  font-weight: 700;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.text-right {
+  text-align: right;
+}
+
+.text-left {
+  text-align: left;
+}
+
+.leading-tight {
+  line-height: 1.25;
+}
+
+.leading-normal {
+  line-height: var(--line-height);
+}
+
+.leading-loose {
+  line-height: 2;
+} 
