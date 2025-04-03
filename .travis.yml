@@ -1,17 +1,47 @@
 language: elixir
+
+elixir:
+  - 1.14.0
+  - 1.13.0
+
+otp_release:
+  - 25.0
+  - 24.0
+
+env:
+  - MIX_ENV=test
+
 matrix:
-  include:
-    - os: linux
-      otp_release: 21.0
-      elixir: 1.7
-    - os: osx
-      language: generic
+  exclude:
+    - elixir: 1.14.0
+      otp_release: 24.0
+    - elixir: 1.13.0
+      otp_release: 25.0
+
+services:
+  - postgresql
+
 before_script:
-  - if [[ "$TRAVIS_OS_NAME" == "osx" ]]; then brew update && brew install elixir; fi
-script:
-  - mix local.rebar --force
+  - psql -c 'create database raxol_test;' -U postgres
   - mix local.hex --force
+  - mix local.rebar --force
   - mix deps.get
+  - mix compile
+
+script:
   - mix test
-  - mix test --only integration
-  - mix hex.audit
+  - mix credo
+  - mix dialyzer
+
+after_script:
+  - mix coveralls.travis
+
+cache:
+  directories:
+    - _build
+    - deps
+    - priv/static
+    - assets/node_modules
+
+notifications:
+  email: false
