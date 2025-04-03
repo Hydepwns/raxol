@@ -80,7 +80,7 @@ jobs:
           ./raxol --test-mode --verify-features
 
       - name: Upload test results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v4
         with:
           name: test-results-${{ matrix.platform }}
           path: _build/test/results 
