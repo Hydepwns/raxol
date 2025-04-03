@@ -60,7 +60,7 @@ jobs:
           mix dialyzer
 
       - name: Upload Test Coverage
-        uses: codecov/codecov-action@v2
+        uses: codecov/codecov-action@v5
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           file: ./cover/excoveralls.json
