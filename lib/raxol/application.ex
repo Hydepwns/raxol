@@ -1,4 +1,6 @@
 defmodule Raxol.Application do
+  # See https://hexdocs.pm/elixir/Application.html
+  # for more information on OTP Applications
   @moduledoc false
   
   use Application
@@ -6,14 +8,31 @@ defmodule Raxol.Application do
   @impl true
   def start(_type, _args) do
     children = [
-      # Add supervised processes here
-      {Registry, keys: :unique, name: Raxol.Registry},
-      {DynamicSupervisor, name: Raxol.DynamicSupervisor, strategy: :one_for_one}
+      # Start the Telemetry supervisor
+      RaxolWeb.Telemetry,
+      # Start the PubSub system
+      {Phoenix.PubSub, name: Raxol.PubSub},
+      # Start the Endpoint (http/https)
+      RaxolWeb.Endpoint,
+      # Start the Terminal Supervisor
+      Raxol.Terminal.Supervisor,
+      # Start the Web Interface Supervisor
+      Raxol.Web.Supervisor,
+      # Start the Ecto repository
+      Raxol.Repo
     ]
     
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Raxol.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  # Tell Phoenix to update the endpoint configuration
+  # whenever the application is updated.
+  @impl true
+  def config_change(changed, _new, removed) do
+    RaxolWeb.Endpoint.config_change(changed, removed)
+    :ok
   end
 end

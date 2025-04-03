@@ -1,0 +1,106 @@
+name: CI
+
+on:
+  push:
+    branches: [ master ]
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  test:
+    name: Test
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:13
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd pg_isready
+          --health-interval 10s
+          --health-timeout 5s
+          --health-retries 5
+
+    strategy:
+      matrix:
+        elixir: [1.14.0, 1.13.0]
+        otp: [25.0, 24.0]
+        exclude:
+          - elixir: 1.14.0
+            otp: 24.0
+          - elixir: 1.13.0
+            otp: 25.0
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
+
+      - name: Install Dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+
+      - name: Run Tests
+        env:
+          MIX_ENV: test
+          DATABASE_URL: postgres://postgres:postgres@localhost:5432/raxol_test
+        run: |
+          mix test
+          mix credo
+          mix dialyzer
+
+      - name: Upload Test Coverage
+        uses: codecov/codecov-action@v2
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          file: ./cover/excoveralls.json
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+
+  format:
+    name: Format
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: 1.14.0
+          otp-version: 25.0
+
+      - name: Check Formatting
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix format --check-formatted
+
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          elixir-version: 1.14.0
+          otp-version: 25.0
+
+      - name: Generate Documentation
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          mix docs 
