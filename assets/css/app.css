@@ -1,0 +1,38 @@
+/* Import base theme */
+@import 'themes/base.css';
+
+/* Import components */
+@import 'components/theme-toggle.css';
+
+/* Import utilities */
+@import 'utils/typography.css';
+@import 'utils/spacing.css';
+@import 'utils/flexbox.css';
+@import 'utils/grid.css';
+
+/* App-specific styles */
+.app-container {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.app-header {
+  padding: var(--spacing-md);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.app-main {
+  flex: 1;
+  padding: var(--spacing-md);
+}
+
+.app-footer {
+  padding: var(--spacing-md);
+  border-top: 1px solid var(--border-color);
+  text-align: center;
+  color: var(--text-secondary);
+} 

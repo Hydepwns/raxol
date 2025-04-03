@@ -1,0 +1,101 @@
+<div class="settings-container">
+  <div class="settings-box">
+    <h1 class="settings-title">User Settings</h1>
+
+    <%= if @error do %>
+      <div class="error-message">
+        <%= @error %>
+      </div>
+    <% end %>
+
+    <%= if @success do %>
+      <div class="success-message">
+        <%= @success %>
+      </div>
+    <% end %>
+
+    <div class="settings-section">
+      <h2 class="settings-section-title">Profile Information</h2>
+      <.form
+        for={@changeset}
+        id="profile-form"
+        phx-submit="update_profile"
+        phx-change="validate"
+        class="settings-form"
+      >
+        <.input
+          field={@changeset[:email]}
+          type="email"
+          label="Email"
+          required
+        />
+        <.input
+          field={@changeset[:username]}
+          type="text"
+          label="Username"
+          required
+        />
+
+        <:actions>
+          <.button type="submit" class="settings-button">
+            Update Profile
+          </.button>
+        </:actions>
+      </.form>
+    </div>
+
+    <div class="settings-section">
+      <h2 class="settings-section-title">Change Password</h2>
+      <.form
+        for={@changeset}
+        id="password-form"
+        phx-submit="update_password"
+        phx-change="validate"
+        class="settings-form"
+      >
+        <.input
+          field={@changeset[:current_password]}
+          type="password"
+          label="Current Password"
+          required
+        />
+        <.input
+          field={@changeset[:password]}
+          type="password"
+          label="New Password"
+          required
+        />
+        <.input
+          field={@changeset[:password_confirmation]}
+          type="password"
+          label="Confirm New Password"
+          required
+        />
+
+        <:actions>
+          <.button type="submit" class="settings-button">
+            Update Password
+          </.button>
+        </:actions>
+      </.form>
+    </div>
+
+    <div class="settings-section">
+      <h2 class="settings-section-title">Account Preferences</h2>
+      <div class="preferences-form">
+        <div class="preference-item">
+          <label class="preference-label">
+            <input type="checkbox" name="notifications" />
+            Enable Email Notifications
+          </label>
+        </div>
+        <div class="preference-item">
+          <label class="preference-label">
+            <input type="checkbox" name="dark_mode" />
+            Dark Mode
+          </label>
+        </div>
+      </div>
+    </div>
+  </div>
+</div> 

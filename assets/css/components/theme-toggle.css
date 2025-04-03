@@ -1,0 +1,47 @@
+.theme-toggle {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: var(--background-color);
+  border: 1px solid var(--border-color);
+  cursor: pointer;
+  transition: all var(--transition-normal) ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.theme-toggle:hover {
+  transform: scale(1.05);
+  box-shadow: var(--shadow-sm);
+}
+
+.theme-toggle svg {
+  width: 20px;
+  height: 20px;
+  fill: var(--text-color);
+  transition: all var(--transition-normal) ease;
+}
+
+.theme-toggle[data-theme="dark"] svg {
+  transform: rotate(180deg);
+}
+
+/* Animation for theme switch */
+@keyframes themeSwitch {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(0.8);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+.theme-toggle.animating {
+  animation: themeSwitch var(--transition-normal) ease;
+} 
