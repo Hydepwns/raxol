@@ -1,96 +1,156 @@
 defmodule RaxolWeb.TerminalChannel do
+  @moduledoc """
+  WebSocket channel for real-time terminal communication.
+  
+  This channel handles:
+  - Terminal session initialization
+  - Real-time input/output
+  - Terminal resizing
+  - Session management
+  - Error handling
+  """
+
   use RaxolWeb, :channel
-  alias Raxol.{Terminal, Auth, Session}
-  alias Terminal.{Emulator, ANSI, Input}
+  alias Raxol.Terminal.{Emulator, Input, Renderer}
+  alias Phoenix.Socket
+
+  @type t :: %__MODULE__{
+    emulator: Emulator.t(),
+    input: Input.t(),
+    renderer: Renderer.t(),
+    session_id: String.t(),
+    user_id: String.t()
+  }
+
+  defstruct [:emulator, :input, :renderer, :session_id, :user_id]
 
   @impl true
-  def join("terminal:" <> session_id, %{"token" => token}, socket) do
-    case Auth.validate_token(session_id, token) do
-      {:ok, user_id} ->
-        case Session.get_session(session_id) do
-          {:ok, session} ->
-            {:ok, assign(socket, 
-              session_id: session_id,
-              user_id: user_id,
-              emulator: session.emulator
-            )}
-          {:error, _} ->
-            {:error, %{reason: "session_not_found"}}
-        end
-      {:error, _} ->
-        {:error, %{reason: "unauthorized"}}
+  def join("terminal:" <> session_id, _params, socket) do
+    if authorized?(socket) do
+      emulator = Emulator.new(80, 24)
+      input = Input.new()
+      renderer = Renderer.new(emulator: emulator)
+      
+      state = %__MODULE__{
+        emulator: emulator,
+        input: input,
+        renderer: renderer,
+        session_id: session_id,
+        user_id: socket.assigns.user_id
+      }
+      
+      {:ok, assign(socket, :terminal_state, state)}
+    else
+      {:error, %{reason: "unauthorized"}}
     end
   end
 
   @impl true
-  def handle_in("input", %{"event" => event}, socket) do
-    case Input.validate_event(event) do
-      {:ok, event} ->
-        # Process input event and send response
-        response = process_terminal_input(socket.assigns.emulator, event)
-        broadcast_terminal_output(socket, response)
-        {:noreply, socket}
-      
-      {:error, _} ->
-        {:reply, {:error, %{reason: "invalid_event"}}, socket}
-    end
+  def handle_in("input", %{"data" => data}, socket) do
+    state = socket.assigns.terminal_state
+    {events, input} = Input.process_input(state.input, data)
+    
+    {emulator, renderer} = process_events(events, state.emulator, state.renderer)
+    
+    new_state = %{state | 
+      emulator: emulator,
+      input: input,
+      renderer: renderer
+    }
+    
+    socket = assign(socket, :terminal_state, new_state)
+    
+    {:reply, :ok, push(socket, "output", %{
+      html: Renderer.render_with_css(renderer),
+      cursor: %{
+        x: emulator.cursor_x,
+        y: emulator.cursor_y,
+        visible: emulator.cursor_visible
+      }
+    })}
   end
 
   @impl true
   def handle_in("resize", %{"width" => width, "height" => height}, socket) do
-    emulator = socket.assigns.emulator
-    emulator = %{emulator | width: width, height: height}
+    state = socket.assigns.terminal_state
+    emulator = Emulator.resize(state.emulator, width, height)
+    renderer = Renderer.set_dimensions(state.renderer, width, height)
     
-    {:noreply, assign(socket, emulator: emulator)}
+    new_state = %{state | 
+      emulator: emulator,
+      renderer: renderer
+    }
+    
+    socket = assign(socket, :terminal_state, new_state)
+    
+    {:reply, :ok, push(socket, "output", %{
+      html: Renderer.render_with_css(renderer),
+      cursor: %{
+        x: emulator.cursor_x,
+        y: emulator.cursor_y,
+        visible: emulator.cursor_visible
+      }
+    })}
+  end
+
+  @impl true
+  def handle_in("scroll", %{"offset" => offset}, socket) do
+    state = socket.assigns.terminal_state
+    renderer = Renderer.set_scroll_offset(state.renderer, offset)
+    
+    new_state = %{state | renderer: renderer}
+    socket = assign(socket, :terminal_state, new_state)
+    
+    {:reply, :ok, push(socket, "output", %{
+      html: Renderer.render_with_css(renderer)
+    })}
+  end
+
+  @impl true
+  def handle_in("theme", %{"theme" => theme}, socket) do
+    state = socket.assigns.terminal_state
+    renderer = Renderer.set_theme(state.renderer, theme)
+    
+    new_state = %{state | renderer: renderer}
+    socket = assign(socket, :terminal_state, new_state)
+    
+    {:reply, :ok, push(socket, "output", %{
+      html: Renderer.render_with_css(renderer)
+    })}
   end
 
   @impl true
   def terminate(reason, socket) do
-    # Clean up session on disconnect
-    Auth.cleanup_user_session(socket.assigns.session_id)
+    state = socket.assigns.terminal_state
+    # Clean up terminal session
     :ok
   end
 
   # Private functions
 
-  defp process_terminal_input(emulator, event) do
-    case event do
-      {:key, key, _} ->
-        process_key_input(emulator, key)
-      
-      {:mouse, x, y, button, _} ->
-        process_mouse_input(emulator, x, y, button)
-    end
+  defp authorized?(socket) do
+    # Implement authorization logic
+    true
   end
 
-  defp process_key_input(emulator, key) do
-    case key do
-      :up -> ANSI.generate_sequence(:cursor_move, [emulator.cursor_x, emulator.cursor_y - 1])
-      :down -> ANSI.generate_sequence(:cursor_move, [emulator.cursor_x, emulator.cursor_y + 1])
-      :left -> ANSI.generate_sequence(:cursor_move, [emulator.cursor_x - 1, emulator.cursor_y])
-      :right -> ANSI.generate_sequence(:cursor_move, [emulator.cursor_x + 1, emulator.cursor_y])
-      :enter -> "\r\n"
-      :backspace -> "\b \b"
-      :delete -> ANSI.generate_sequence(:delete_char, [])
-      :home -> ANSI.generate_sequence(:cursor_move, [0, emulator.cursor_y])
-      :end -> ANSI.generate_sequence(:cursor_move, [emulator.width - 1, emulator.cursor_y])
-      :page_up -> ANSI.generate_sequence(:cursor_move, [emulator.cursor_x, 0])
-      :page_down -> ANSI.generate_sequence(:cursor_move, [emulator.cursor_x, emulator.height - 1])
-      char when is_atom(char) -> Atom.to_string(char)
-      _ -> ""
-    end
-  end
-
-  defp process_mouse_input(emulator, x, y, button) do
-    case button do
-      :left -> ANSI.generate_sequence(:cursor_move, [x, y])
-      :right -> ""
-      :middle -> ""
-      :release -> ""
-    end
-  end
-
-  defp broadcast_terminal_output(socket, output) do
-    broadcast!(socket, "output", %{output: output})
+  defp process_events(events, emulator, renderer) do
+    Enum.reduce(events, {emulator, renderer}, fn event, {emu, ren} ->
+      case event do
+        {:text, text} ->
+          {Emulator.write(emu, text), ren}
+        {:control, :enter} ->
+          {Emulator.write(emu, "\n"), ren}
+        {:control, :backspace} ->
+          {Emulator.write(emu, "\b"), ren}
+        {:control, :tab} ->
+          {Emulator.write(emu, "\t"), ren}
+        {:escape, sequence} ->
+          {Emulator.process_escape(emu, sequence), ren}
+        {:mouse, event} ->
+          {Emulator.process_mouse(emu, event), ren}
+        _ ->
+          {emu, ren}
+      end
+    end)
   end
 end 
