@@ -2,6 +2,156 @@ defmodule Raxol.Terminal.InputTest do
   use ExUnit.Case
   alias Raxol.Terminal.Input
 
+  describe "new/1" do
+    test "creates a new input processor with default options" do
+      processor = Input.new()
+      assert processor.mode == :normal
+      assert processor.buffer == ""
+      assert processor.mouse_enabled == false
+      assert processor.bracketed_paste == false
+    end
+
+    test "creates a new input processor with custom options" do
+      processor = Input.new(mode: :app, mouse_enabled: true)
+      assert processor.mode == :app
+      assert processor.mouse_enabled == true
+    end
+  end
+
+  describe "process_input/2" do
+    test "processes normal text input" do
+      processor = Input.new()
+      {events, processor} = Input.process_input("Hello", processor)
+      
+      assert length(events) == 5
+      assert Enum.all?(events, fn {:key, char} -> char in 'Hello' end)
+    end
+
+    test "processes escape sequences" do
+      processor = Input.new()
+      {events, processor} = Input.process_input("\e[10;5H", processor)
+      
+      assert length(events) == 1
+      assert hd(events) == {:cursor_move, 10, 5}
+    end
+
+    test "processes mouse events" do
+      processor = Input.new(mode: :mouse)
+      {events, processor} = Input.process_input("\e[M aaa", processor)
+      
+      assert length(events) == 1
+      assert hd(events) == {:mouse_event, 0, 0, 0}
+    end
+
+    test "processes bracketed paste" do
+      processor = Input.new(mode: :paste)
+      {events, processor} = Input.process_input("\e[200~Hello\e[201~", processor)
+      
+      assert length(events) == 3
+      assert Enum.at(events, 0) == {:paste_start}
+      assert Enum.at(events, 1) == {:key, ?H}
+      assert Enum.at(events, 2) == {:paste_end}
+    end
+
+    test "buffers incomplete sequences" do
+      processor = Input.new()
+      {events, processor} = Input.process_input("\e[", processor)
+      
+      assert length(events) == 0
+      assert processor.buffer == "\e["
+    end
+
+    test "flushes buffer after timeout" do
+      processor = %{Input.new() | last_event: 0}
+      {events, processor} = Input.process_input("Hello", processor)
+      
+      assert length(events) == 5
+      assert processor.buffer == ""
+    end
+  end
+
+  describe "mode management" do
+    test "sets input mode" do
+      processor = Input.new()
+      processor = Input.set_mode(processor, :app)
+      assert processor.mode == :app
+    end
+
+    test "sets mouse enabled state" do
+      processor = Input.new()
+      processor = Input.set_mouse_enabled(processor, true)
+      assert processor.mouse_enabled == true
+    end
+
+    test "sets bracketed paste mode" do
+      processor = Input.new()
+      processor = Input.set_bracketed_paste(processor, true)
+      assert processor.bracketed_paste == true
+    end
+  end
+
+  describe "event filtering" do
+    test "filters events using custom filter" do
+      processor = Input.new(filter: fn {:key, char} -> char != ?l end)
+      {events, _processor} = Input.process_input("Hello", processor)
+      
+      assert length(events) == 4
+      assert Enum.all?(events, fn {:key, char} -> char != ?l end)
+    end
+
+    test "uses default filter when none specified" do
+      processor = Input.new()
+      {events, _processor} = Input.process_input("Hello", processor)
+      
+      assert length(events) == 5
+    end
+  end
+
+  describe "special sequences" do
+    test "processes cursor movement sequences" do
+      processor = Input.new()
+      {events, _processor} = Input.process_input("\e[10;5H\e[3A\e[2B\e[4C\e[1D", processor)
+      
+      assert length(events) == 5
+      assert Enum.at(events, 0) == {:cursor_move, 10, 5}
+      assert Enum.at(events, 1) == {:cursor_up, 3}
+      assert Enum.at(events, 2) == {:cursor_down, 2}
+      assert Enum.at(events, 3) == {:cursor_forward, 4}
+      assert Enum.at(events, 4) == {:cursor_backward, 1}
+    end
+
+    test "processes text attribute sequences" do
+      processor = Input.new()
+      {events, _processor} = Input.process_input("\e[1;4;5;7m\e[31;42m", processor)
+      
+      assert length(events) == 6
+      assert {:set_attribute, :bold} in events
+      assert {:set_attribute, :underline} in events
+      assert {:set_attribute, :blink} in events
+      assert {:set_attribute, :reverse} in events
+      assert {:set_foreground, :red} in events
+      assert {:set_background, :green} in events
+    end
+
+    test "processes cursor visibility sequences" do
+      processor = Input.new()
+      {events, _processor} = Input.process_input("\e[?25l\e[?25h", processor)
+      
+      assert length(events) == 2
+      assert Enum.at(events, 0) == {:hide_cursor}
+      assert Enum.at(events, 1) == {:show_cursor}
+    end
+
+    test "processes cursor save/restore sequences" do
+      processor = Input.new()
+      {events, _processor} = Input.process_input("\e[s\e[u", processor)
+      
+      assert length(events) == 2
+      assert Enum.at(events, 0) == {:save_cursor}
+      assert Enum.at(events, 1) == {:restore_cursor}
+    end
+  end
+
   describe "process_input/1" do
     test "processes regular characters" do
       events = Input.process_input("a")
