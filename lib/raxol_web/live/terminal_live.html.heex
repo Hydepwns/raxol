@@ -1,26 +1,45 @@
-<div class="terminal-container" phx-window-keydown="keydown">
+<div class="terminal-container" 
+  phx-window-keydown="keydown"
+  role="application"
+  aria-label="Terminal"
+  aria-live="polite"
+  tabindex="0">
   <div class="terminal-header">
-    <div class="terminal-title">Raxol Terminal</div>
+    <div class="terminal-title" role="banner">Raxol Terminal</div>
     <div class="terminal-controls">
-      <button class="terminal-button" phx-click="minimize">_</button>
-      <button class="terminal-button" phx-click="maximize">□</button>
-      <button class="terminal-button" phx-click="close">×</button>
+      <button class="terminal-button" 
+        phx-click="minimize" 
+        aria-label="Minimize terminal">_</button>
+      <button class="terminal-button" 
+        phx-click="maximize" 
+        aria-label="Maximize terminal">□</button>
+      <button class="terminal-button" 
+        phx-click="close" 
+        aria-label="Close terminal">×</button>
     </div>
   </div>
   
-  <div class="terminal-body">
-    <pre class="terminal-output" phx-hook="TerminalOutput">
+  <div class="terminal-body" role="log">
+    <pre class="terminal-output" 
+      phx-hook="TerminalOutput"
+      aria-label="Terminal output"
+      tabindex="0">
       <%= @output_buffer %>
     </pre>
-    <div class="terminal-cursor" style="left: <%= @emulator.cursor_x * 8 %>px; top: <%= @emulator.cursor_y * 16 %>px;"></div>
+    <div class="terminal-cursor" 
+      style="left: <%= @emulator.cursor_x * 8 %>px; top: <%= @emulator.cursor_y * 16 %>px;"
+      role="textbox"
+      aria-label="Terminal cursor"
+      aria-live="polite">
+    </div>
   </div>
   
   <div class="terminal-footer">
-    <div class="terminal-status">
+    <div class="terminal-status" role="status">
       <%= if @connected do %>
-        <span class="status-connected">Connected</span>
+        <span class="status-connected" aria-label="Connected">Connected</span>
       <% else %>
-        <span class="status-disconnected">Disconnected</span>
+        <span class="status-disconnected" aria-label="Disconnected">Disconnected</span>
       <% end %>
     </div>
     <div class="terminal-input">
@@ -34,6 +53,9 @@
         autocorrect="off"
         autocapitalize="off"
         spellcheck="false"
+        aria-label="Terminal input"
+        role="textbox"
+        aria-multiline="true"
       />
     </div>
   </div>
@@ -47,9 +69,50 @@
     height: 100%;
     background-color: #1e1e1e;
     color: #f0f0f0;
-    font-family: monospace;
+    font-family: "JetBrains Mono", "SF Mono", monospace;
     font-size: 14px;
     line-height: 1.2;
+    outline: none;
+  }
+
+  .terminal-container:focus {
+    outline: 2px solid #4caf50;
+    outline-offset: 2px;
+  }
+
+  /* High contrast mode support */
+  @media (prefers-contrast: high) {
+    .terminal-container {
+      background-color: #000000;
+      color: #ffffff;
+    }
+
+    .terminal-header {
+      background-color: #000000;
+      border-bottom: 2px solid #ffffff;
+    }
+
+    .terminal-footer {
+      background-color: #000000;
+      border-top: 2px solid #ffffff;
+    }
+
+    .terminal-button {
+      border: 1px solid #ffffff;
+    }
+
+    .terminal-button:hover {
+      background-color: #ffffff;
+      color: #000000;
+    }
+  }
+
+  /* Reduced motion support */
+  @media (prefers-reduced-motion: reduce) {
+    .terminal-cursor {
+      animation: none;
+      opacity: 1;
+    }
   }
 
   .terminal-header {
