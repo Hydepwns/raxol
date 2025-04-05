@@ -7,7 +7,7 @@ defmodule Raxol.Style.Colors.HotReload do
   themes, with configurable polling intervals and change detection strategies.
   """
   
-  alias Raxol.Style.Colors.{Theme, Persistence}
+  alias Raxol.Style.Colors.Persistence
   
   use GenServer
   

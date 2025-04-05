@@ -59,8 +59,8 @@ defmodule Raxol.Components.Base do
     {Map.put(state, :focused, false), []}
   end
 
-  def handle_common_events(%Event{type: :key} = event, state) do
-    case event.key do
+  def handle_common_events(%Event{type: :key, data: %{key: key}} = _event, state) do
+    case key do
       :tab -> {state, [{:focus_next, state.focus_key}]}
       {:shift, :tab} -> {state, [{:focus_previous, state.focus_key}]}
       _ -> {state, []}

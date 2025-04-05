@@ -31,28 +31,8 @@ defmodule Raxol.Style.Colors.Adaptive do
   
   alias Raxol.Style.Colors.{Color, Palette, Theme, Utilities}
   
-  # Environment variables to check for color support
-  @colorterm_vars ["COLORTERM"]
-  @term_vars ["TERM", "TERM_PROGRAM", "TERM_PROGRAM_VERSION"]
-  
   # Cache for capabilities to avoid repeated detection
   @capabilities_cache_name :raxol_terminal_capabilities
-  
-  # Known terminals with true color support
-  @true_color_terminals [
-    "xterm-kitty",
-    "wezterm",
-    "alacritty",
-    "iterm2",
-    "konsole",
-    "gnome-terminal",
-    "vte",
-    "foot",
-    "st",
-    "terminator",
-    "xterm-256color",
-    "rxvt-unicode-256color"
-  ]
   
   # Known terminals with 256 color support
   @ansi_256_terminals [
@@ -248,215 +228,104 @@ defmodule Raxol.Style.Colors.Adaptive do
     # Adapt the palette
     adapted_palette = adapt_palette(theme.palette)
     
-    # Check if we should switch to a dark or light variant
-    current_is_dark = theme.dark_mode
-    terminal_is_dark = is_dark_terminal?()
-    
-    adapted_theme = %Theme{
+    # Create a new theme with adapted palette
+    %Theme{
       theme |
       name: "#{theme.name} (Adapted)",
       palette: adapted_palette
     }
-    
-    # If the terminal background conflicts with the theme, switch the theme variant
-    cond do
-      current_is_dark && not terminal_is_dark ->
-        # Current theme is dark but terminal is light, switch to light variant
-        Theme.light_variant(adapted_theme)
-      not current_is_dark && terminal_is_dark ->
-        # Current theme is light but terminal is dark, switch to dark variant
-        Theme.dark_variant(adapted_theme)
-      true ->
-        # Theme matches terminal, no need to switch
-        adapted_theme
-    end
   end
   
   @doc """
   Gets the optimal color format for the current terminal.
   
   Returns one of:
-  - `:true_color` - Use 24-bit color format
-  - `:ansi_256` - Use 256-color format
-  - `:ansi_16` - Use 16-color format
-  - `:no_color` - No colors (monochrome)
+  - `:true_color` - 24-bit color (16 million colors)
+  - `:ansi_256` - 256 colors
+  - `:ansi_16` - 16 colors
+  - `:no_color` - No color support
   
   ## Examples
   
-      iex> Raxol.Style.Colors.Adaptive.get_optimal_format()
+      iex> Raxol.Style.Colors.Adaptive.optimal_format()
       :true_color  # Depends on your terminal
   """
-  def get_optimal_format do
+  def optimal_format do
     detect_color_support()
   end
   
-  @doc """
-  Initialize the terminal capabilities cache.
-  This should be called when the application starts.
-  """
-  def init do
-    # Create or reset the ETS table for terminal capabilities
-    if :ets.whereis(@capabilities_cache_name) != :undefined do
-      :ets.delete(@capabilities_cache_name)
-    end
-    
-    :ets.new(@capabilities_cache_name, [:named_table, :set, :public])
-    :ok
-  end
+  # Private Helpers
   
-  @doc """
-  Forces a re-detection of terminal capabilities by clearing the cache.
-  
-  ## Examples
-  
-      iex> Raxol.Style.Colors.Adaptive.reset_detection()
-      :ok
-  """
-  def reset_detection do
-    if :ets.whereis(@capabilities_cache_name) != :undefined do
-      :ets.delete_all_objects(@capabilities_cache_name)
-    else
-      init()
-    end
-    
-    :ok
-  end
-  
-  # Private implementation
-  
-  # Implementation of the color support detection
   defp detect_color_support_impl do
-    # Check for NO_COLOR environment variable (https://no-color.org/)
-    if System.get_env("NO_COLOR") do
-      :no_color
-    else
-      # Check for true color support
-      colorterm = get_env_value(@colorterm_vars)
-      term = get_env_value(@term_vars)
-      term_program = System.get_env("TERM_PROGRAM")
-      term_program_version = System.get_env("TERM_PROGRAM_VERSION")
-      
-      cond do
-        # Check for explicit true color support
-        colorterm in ["truecolor", "24bit"] ->
-          :true_color
-          
-        # Check for terminals known to support true color
-        term in @true_color_terminals ->
-          :true_color
-          
-        # Check for specific terminal programs with true color support
-        term_program in ["iTerm.app", "WezTerm", "vscode"] ->
-          :true_color
-          
-        # Check for terminals that might support true color
-        String.contains?(to_string(term || ""), "256color") ->
-          check_if_true_color_supported(term, term_program, term_program_version) || :ansi_256
-          
-        # Check for basic color support
-        term in @ansi_16_terminals or String.contains?(to_string(term || ""), "color") ->
-          :ansi_16
-          
-        # Default to no color
-        true ->
-          :no_color
-      end
-    end
-  end
-  
-  # More specific checks for true color support
-  defp check_if_true_color_supported(term, term_program, term_program_version) do
     cond do
-      # Check for specific terminal that we know supports true color
-      term in ["xterm-256color"] and term_program in ["iTerm.app", "WezTerm", "vscode"] ->
+      # Check for true color support
+      check_if_true_color_supported() ->
         :true_color
-        
-      # Check for specific version requirements
-      term_program == "iTerm.app" and term_program_version != nil ->
-        # iTerm2 3.0+ supports true color
-        case Version.parse(term_program_version) do
-          {:ok, version} -> version.major >= 3
-          _ -> false
-        end
-        
-      # Check for specific terminal capabilities
-      term in ["xterm-256color"] and System.get_env("COLORTERM") == "truecolor" ->
-        :true_color
-        
+      
+      # Check for 256 color support
+      check_if_256_colors_supported() ->
+        :ansi_256
+      
+      # Check for basic color support
+      check_if_16_colors_supported() ->
+        :ansi_16
+      
+      # No color support
       true ->
-        nil
+        :no_color
     end
   end
   
-  # Check if an environment variable is set to a specific value
-  defp is_env_set(var, values) do
-    env_value = System.get_env(var)
-    env_value != nil and env_value in values
+  defp check_if_true_color_supported do
+    # Check COLORTERM environment variable
+    case System.get_env("COLORTERM") do
+      "truecolor" -> true
+      "24bit" -> true
+      _ -> false
+    end
   end
   
-  # Get the first non-nil environment variable from a list
-  defp get_env_value(vars) do
-    Enum.find_value(vars, fn var -> System.get_env(var) end)
+  defp check_if_256_colors_supported do
+    # Check TERM environment variable
+    case System.get_env("TERM") do
+      term when term in @ansi_256_terminals -> true
+      _ -> false
+    end
   end
   
-  # Implementation of terminal background detection
+  defp check_if_16_colors_supported do
+    # Check TERM environment variable
+    case System.get_env("TERM") do
+      term when term in @ansi_16_terminals -> true
+      _ -> false
+    end
+  end
+  
   defp detect_terminal_background_impl do
-    # Try to detect background color from environment
+    # Try to detect background color using ANSI escape sequences
     case System.get_env("COLORFGBG") do
       nil ->
-        # Try to detect from terminal capabilities
-        case detect_color_support() do
-          :no_color -> :unknown
-          _ -> detect_background_from_capabilities()
-        end
-      colorfgbg ->
-        # Parse COLORFGBG value (format: "15;0" where 15 is foreground and 0 is background)
-        case String.split(colorfgbg, ";") do
-          [_, bg] when bg in ["0", "8"] -> :dark
-          [_, bg] when bg in ["7", "15"] -> :light
-          _ -> :unknown
-        end
-    end
-  end
-  
-  defp detect_background_from_capabilities do
-    # Create test colors
-    black = Color.from_hex("#000000")
-    white = Color.from_hex("#FFFFFF")
-    
-    # Try to detect by testing contrast with black and white
-    case {adapt_color(black), adapt_color(white)} do
-      {%Color{} = adapted_black, %Color{} = adapted_white} ->
-        # If adapted colors are different, terminal is likely dark
-        if Utilities.contrast_ratio(adapted_black, adapted_white) > 10 do
-          :dark
-        else
-          :light
-        end
-      _ ->
         :unknown
+      value ->
+        case String.split(value, ";") do
+          [_, bg] when bg in ["0", "1", "2", "3", "4", "5", "6", "7"] ->
+            :dark
+          [_, bg] when bg in ["8", "9", "10", "11", "12", "13", "14", "15"] ->
+            :light
+          _ ->
+            :unknown
+        end
     end
   end
   
-  # Cache a capability value
-  defp cache_capability(key, value) do
-    if :ets.whereis(@capabilities_cache_name) == :undefined do
-      init()
-    end
-    
-    :ets.insert(@capabilities_cache_name, {key, value})
-  end
-  
-  # Get a cached capability value
   defp get_cached_capability(key) do
-    if :ets.whereis(@capabilities_cache_name) == :undefined do
-      init()
-      nil
-    else
-      case :ets.lookup(@capabilities_cache_name, key) do
-        [{^key, value}] -> value
-        [] -> nil
-      end
+    case :ets.lookup(@capabilities_cache_name, key) do
+      [{^key, value}] -> value
+      [] -> nil
     end
+  end
+  
+  defp cache_capability(key, value) do
+    :ets.insert(@capabilities_cache_name, {key, value})
   end
 end 

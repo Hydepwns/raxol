@@ -1,7 +1,7 @@
 defmodule Raxol.Components.FocusRing do
   use Raxol.Component
-  import Raxol.View.Components
-  import Raxol.View.Layout
+  alias Raxol.View.Layout
+  alias Raxol.Core.Events.Manager, as: EventManager
   
   @moduledoc """
   A component that provides visual indication of the currently focused element.
@@ -32,10 +32,6 @@ defmodule Raxol.Components.FocusRing do
   # The focus ring will be automatically applied to the focused element
   ```
   """
-  
-  import Raxol.View
-  alias Raxol.Core.FocusManager
-  alias Raxol.Core.Events.Manager, as: EventManager
   
   @doc """
   Configure the appearance of the focus ring.
@@ -185,7 +181,7 @@ defmodule Raxol.Components.FocusRing do
   @doc """
   Handle focus change events.
   """
-  def handle_focus_change(state, {old_focus, new_focus}) do
+  def handle_focus_change(_state, {old_focus, new_focus}) do
     # TODO: Implement focus change handling
     {old_focus, new_focus}
   end
@@ -250,82 +246,22 @@ defmodule Raxol.Components.FocusRing do
     height = height + (offset * 2)
     
     # Border attributes based on the style
-    border_type = 
-      case model.style do
-        :solid -> :light
-        :dotted -> :dotted
-        :dashed -> :dashed
-        :double -> :double
-      end
-    
-    color = if model.high_contrast, do: :white, else: model.color
-    
-    # Animation attributes
-    animation_attrs = get_animation_attributes(model, color)
-    
-    # Render the focus ring as a transparent panel with only a border
-    panel(
-      [
-        x: x,
-        y: y,
-        width: width,
-        height: height,
-        background: :transparent,
-        border: [
-          type: border_type,
-          color: color,
-          thickness: model.thickness
-        ],
-        z_index: 1000 # Make sure focus ring appears above other elements
-      ] ++ animation_attrs
-    )
-  end
-  
-  defp get_animation_attributes(model, color) do
-    case model.animation do
-      :none -> []
-      :pulse -> [
-        animate: [
-          from: [border: [color: color, intensity: 0.5]],
-          to: [border: [color: color, intensity: 1.0]],
-          duration: model.animation_duration,
-          easing: :ease_in_out,
-          repeat: true,
-          alternate: true
-        ]
-      ]
-      :glow -> [
-        animate: [
-          from: [border: [color: color]],
-          to: [border: [color: {:lighten, color, 0.3}]],
-          duration: model.animation_duration,
-          easing: :ease_in_out,
-          repeat: true,
-          alternate: true
-        ]
-      ]
-      :rotate -> [
-        animate: [
-          keyframes: [
-            [border: [type: :dash_dot]],
-            [border: [type: :dot_dash]],
-            [border: [type: :dash_dot]]
-          ],
-          duration: model.animation_duration,
-          repeat: true
-        ]
-      ]
-      :blink -> [
-        animate: [
-          from: [opacity: 1.0],
-          to: [opacity: 0.3],
-          duration: div(model.animation_duration, 2),
-          easing: :ease_in_out,
-          repeat: true,
-          alternate: true
-        ]
-      ]
+    border_type = case model.style do
+      :solid -> :single
+      :dotted -> :dotted
+      :dashed -> :dashed
+      :double -> :double
     end
+    
+    Layout.panel(
+      x: x,
+      y: y,
+      width: width,
+      height: height,
+      border: border_type,
+      color: model.color,
+      high_contrast: model.high_contrast
+    )
   end
   
   defp render_transition_effect(model) do

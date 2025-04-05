@@ -1,7 +1,8 @@
 defmodule Raxol.Components.HintDisplay do
   use Raxol.Component
-  import Raxol.View.Components
-  import Raxol.View.Layout
+  alias Raxol.View.Components
+  alias Raxol.View.Layout
+  alias Raxol.Core.UXRefinement
   
   @moduledoc """
   A component for displaying hints and tooltips.
@@ -34,9 +35,6 @@ defmodule Raxol.Components.HintDisplay do
   end
   ```
   """
-  
-  alias Raxol.Core.UXRefinement
-  import Raxol.View
   
   @doc """
   Render a hint display for the currently focused component.
@@ -174,7 +172,7 @@ defmodule Raxol.Components.HintDisplay do
         # Render shortcuts if available
         if style != :minimal && length(shortcuts) > 0 do
           Layout.row(padding_top: 1) do
-            render_shortcuts(shortcuts)
+            render_shortcuts()
           end
         end
       end
@@ -197,28 +195,26 @@ defmodule Raxol.Components.HintDisplay do
     end
   end
   
-  defp render_shortcuts(shortcuts) do
-    column do
-      # Header
-      Components.text("Keyboard Shortcuts:", bold: true)
+  defp render_shortcuts() do
+    Layout.column do
+      Layout.row do
+        Components.text("Keyboard Shortcuts:", style: [bold: true])
+      end
       
-      # Show shortcuts in a grid-like layout
-      row do
-        column(width: "50%") do
-          Enum.with_index(shortcuts)
-          |> Enum.filter(fn {_, i} -> rem(i, 2) == 0 end) # Even indices
-          |> Enum.map(fn {{key, desc}, _} -> 
-            Components.text([{:bold, key}, ": " <> desc]) 
-          end)
-        end
-        
-        column(width: "50%") do
-          Enum.with_index(shortcuts)
-          |> Enum.filter(fn {_, i} -> rem(i, 2) == 1 end) # Odd indices
-          |> Enum.map(fn {{key, desc}, _} -> 
-            Components.text([{:bold, key}, ": " <> desc]) 
-          end)
-        end
+      Layout.row do
+        Components.text("Tab: Next field")
+      end
+      
+      Layout.row do
+        Components.text("Shift+Tab: Previous field")
+      end
+      
+      Layout.row do
+        Components.text("Enter: Submit")
+      end
+      
+      Layout.row do
+        Components.text("Esc: Cancel")
       end
     end
   end

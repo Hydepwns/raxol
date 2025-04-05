@@ -51,7 +51,7 @@ defmodule Raxol.Cloud.Core do
     Monitoring.start()
     
     # Start edge computing
-    EdgeComputing.start()
+    EdgeComputing.init([])
     
     # Record start event
     record_metric("cloud.start", 1, tags: ["service:all"])
@@ -67,7 +67,7 @@ defmodule Raxol.Cloud.Core do
     record_metric("cloud.stop", 1, tags: ["service:all"])
     
     # Stop edge computing
-    EdgeComputing.stop()
+    EdgeComputing.cleanup()
     
     # Stop monitoring (last, so we can record the stop event)
     Monitoring.stop()

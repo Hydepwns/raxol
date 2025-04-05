@@ -687,19 +687,7 @@ defmodule Raxol.Cloud.EdgeComputing.Queue do
         end
         
       :sync ->
-        # Attempt to sync
-        try do
-          # Delegate to sync manager
-          SyncManager.sync(operation.data)
-          :ok
-        rescue
-          _ ->
-            if operation.attempts >= 3 do
-              :failed
-            else
-              :retry
-            end
-        end
+        Raxol.Cloud.EdgeComputing.SyncManager.sync(operation.data)
         
       _ ->
         :failed

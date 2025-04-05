@@ -154,9 +154,9 @@ defmodule Raxol.Core.Renderer.Buffer do
     for y <- 0..(new_h - 1) do
       for x <- 0..(new_w - 1) do
         if x < old_w and y < new_h do
-          get_in(cells, [y, x]) || Cell.new()
+          get_in(cells, [y, x]) || Raxol.Terminal.Cell.new()
         else
-          Cell.new()
+          Raxol.Terminal.Cell.new()
         end
       end
     end
