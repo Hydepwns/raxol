@@ -36,6 +36,9 @@ defmodule Raxol.Style.Colors.System do
   ```
   """
   
+  alias Raxol.Style.Colors.Utilities
+  alias Raxol.Core.Events.Manager, as: EventManager
+  
   defstruct [
     # ... existing code ...
   ]
@@ -296,35 +299,17 @@ defmodule Raxol.Style.Colors.System do
     end
   end
   
-  defp generate_variant_color(base_color, :hover) do
-    # Make color slightly lighter
-    Utilities.lighten(base_color, 0.1)
-  end
-  
-  defp generate_variant_color(base_color, :active) do
-    # Make color slightly darker
-    Utilities.darken(base_color, 0.1)
-  end
-  
-  defp generate_variant_color(base_color, :focus) do
-    # Make color slightly more saturated
-    Utilities.saturate(base_color, 0.1)
-  end
-  
-  defp generate_variant_color(base_color, :disabled) do
-    # Make color desaturated and lighter
-    base_color
-    |> Utilities.desaturate(0.3)
-    |> Utilities.lighten(0.2)
-  end
-  
-  defp generate_variant_color(base_color, _) do
-    # Default to base color for unknown variants
-    base_color
+  defp generate_variant_color(base_color, variant) do
+    case variant do
+      :hover -> Utilities.lighten(base_color, 0.1)
+      :active -> Utilities.darken(base_color, 0.1)
+      :focus -> Utilities.saturate(base_color, 0.1)
+      :disabled -> Utilities.desaturate(base_color, 0.3)
+      _ -> base_color
+    end
   end
   
   defp generate_high_contrast_variant(base_color, variant) do
-    # For high contrast, we want more extreme differences between states
     case variant do
       :hover -> Utilities.lighten(base_color, 0.2)
       :active -> Utilities.darken(base_color, 0.2)
@@ -343,14 +328,10 @@ defmodule Raxol.Style.Colors.System do
   end
   
   defp make_high_contrast(color) do
-    # Determine if color is dark or light
     is_dark = Utilities.is_dark?(color)
-    
     if is_dark do
-      # If color is dark, make it much lighter for high contrast
       Utilities.lighten(color, 0.5)
     else
-      # If color is light, make it much darker for high contrast
       Utilities.darken(color, 0.5)
     end
   end

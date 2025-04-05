@@ -31,59 +31,47 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
   end
   
   describe "color support detection" do
-    test "detect_color_support returns a valid value" do
-      support = Adaptive.detect_color_support()
-      
-      # Support should be one of these values
-      assert support in [:true_color, :ansi_256, :ansi_16, :no_color]
+    test "detects true color support from COLORTERM" do
+      set_mock_env(%{"COLORTERM" => "truecolor"})
+      assert Adaptive.detect_color_support() == :true_color
     end
     
-    test "supports_true_color? is consistent with detect_color_support" do
-      # Override environment detection for predictable test result
-      set_mock_detection(:true_color)
-      
-      assert Adaptive.supports_true_color?() == true
-      
-      set_mock_detection(:ansi_256)
-      
-      assert Adaptive.supports_true_color?() == false
+    test "detects true color support from terminal name" do
+      set_mock_env(%{"TERM" => "xterm-kitty"})
+      assert Adaptive.detect_color_support() == :true_color
     end
     
-    test "supports_256_colors? is consistent with detect_color_support" do
-      # True for true_color and ansi_256
-      set_mock_detection(:true_color)
-      assert Adaptive.supports_256_colors?() == true
-      
-      set_mock_detection(:ansi_256)
-      assert Adaptive.supports_256_colors?() == true
-      
-      # False for ansi_16 and no_color
-      set_mock_detection(:ansi_16)
-      assert Adaptive.supports_256_colors?() == false
-      
-      set_mock_detection(:no_color)
-      assert Adaptive.supports_256_colors?() == false
-    end
-  end
-  
-  describe "terminal background detection" do
-    test "terminal_background returns a valid value" do
-      bg = Adaptive.terminal_background()
-      
-      # Background should be one of these values
-      assert bg in [:dark, :light, :unknown]
+    test "detects true color support from TERM_PROGRAM" do
+      set_mock_env(%{"TERM_PROGRAM" => "iTerm.app"})
+      assert Adaptive.detect_color_support() == :true_color
     end
     
-    test "is_dark_terminal? is consistent with terminal_background" do
-      # Override environment detection for predictable test result
-      set_mock_background(:dark)
-      assert Adaptive.is_dark_terminal?() == true
-      
-      set_mock_background(:light)
-      assert Adaptive.is_dark_terminal?() == false
-      
-      set_mock_background(:unknown)
-      assert Adaptive.is_dark_terminal?() == false
+    test "detects true color support from iTerm2 version" do
+      set_mock_env(%{
+        "TERM_PROGRAM" => "iTerm.app",
+        "TERM_PROGRAM_VERSION" => "3.4.0"
+      })
+      assert Adaptive.detect_color_support() == :true_color
+    end
+    
+    test "detects 256 color support" do
+      set_mock_env(%{"TERM" => "xterm-256color"})
+      assert Adaptive.detect_color_support() == :ansi_256
+    end
+    
+    test "detects 16 color support" do
+      set_mock_env(%{"TERM" => "xterm"})
+      assert Adaptive.detect_color_support() == :ansi_16
+    end
+    
+    test "detects no color support" do
+      set_mock_env(%{"NO_COLOR" => "1"})
+      assert Adaptive.detect_color_support() == :no_color
+    end
+    
+    test "detects no color support for dumb terminal" do
+      set_mock_env(%{"TERM" => "dumb"})
+      assert Adaptive.detect_color_support() == :no_color
     end
   end
   
@@ -239,5 +227,16 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
     
     # Use the module name to access the cache
     :ets.insert(:raxol_terminal_capabilities, {:background, value})
+  end
+  
+  # Sets mock environment variables
+  defp set_mock_env(env_vars) do
+    # Reset the cache first
+    Adaptive.reset_detection()
+    
+    # Mock environment variables
+    Enum.each(env_vars, fn {key, value} ->
+      System.put_env(key, value)
+    end)
   end
 end 

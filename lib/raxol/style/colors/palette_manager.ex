@@ -33,6 +33,8 @@ defmodule Raxol.Style.Colors.PaletteManager do
   ```
   """
   
+  alias Raxol.Style.Colors.Utilities
+  
   defstruct [
     palettes: %{},
     scales: %{},
@@ -387,5 +389,21 @@ defmodule Raxol.Style.Colors.PaletteManager do
       error: "#DC3545",
       info: "#17A2B8"
     }, description: "Semantic status colors", category: :system, accessible: true)
+  end
+  
+  defp ensure_contrast(color, background, min_ratio \\ 4.5) do
+    ratio = Utilities.contrast_ratio(color, background)
+    
+    if ratio >= min_ratio do
+      color
+    else
+      bg_luminance = Utilities.relative_luminance(background)
+      
+      if bg_luminance > 0.5 do
+        Utilities.darken_until_contrast(color, background, min_ratio)
+      else
+        Utilities.lighten_until_contrast(color, background, min_ratio)
+      end
+    end
   end
 end 
