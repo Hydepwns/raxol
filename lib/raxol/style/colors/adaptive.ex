@@ -29,14 +29,50 @@ defmodule Raxol.Style.Colors.Adaptive do
   ```
   """
   
-  alias Raxol.Style.Colors.{Color, Palette, Theme}
+  alias Raxol.Style.Colors.{Color, Palette, Theme, Utilities}
   
   # Environment variables to check for color support
   @colorterm_vars ["COLORTERM"]
-  @term_vars ["TERM", "TERM_PROGRAM"]
+  @term_vars ["TERM", "TERM_PROGRAM", "TERM_PROGRAM_VERSION"]
   
   # Cache for capabilities to avoid repeated detection
   @capabilities_cache_name :raxol_terminal_capabilities
+  
+  # Known terminals with true color support
+  @true_color_terminals [
+    "xterm-kitty",
+    "wezterm",
+    "alacritty",
+    "iterm2",
+    "konsole",
+    "gnome-terminal",
+    "vte",
+    "foot",
+    "st",
+    "terminator",
+    "xterm-256color",
+    "rxvt-unicode-256color"
+  ]
+  
+  # Known terminals with 256 color support
+  @ansi_256_terminals [
+    "xterm-256color",
+    "rxvt-256color",
+    "screen-256color",
+    "tmux-256color",
+    "putty-256color"
+  ]
+  
+  # Known terminals with basic color support
+  @ansi_16_terminals [
+    "xterm",
+    "rxvt",
+    "screen",
+    "tmux",
+    "putty",
+    "linux",
+    "cygwin"
+  ]
   
   @doc """
   Detects the color support level of the current terminal.
@@ -159,10 +195,9 @@ defmodule Raxol.Style.Colors.Adaptive do
         ansi_code = Color.to_ansi_16(color)
         Color.from_ansi(ansi_code)
       :no_color ->
-        # No color support, return greyscale value
-        {r, g, b} = {color.r, color.g, color.b}
-        # Convert to grayscale using luminance formula
-        grey_value = round(0.2126 * r + 0.7152 * g + 0.0722 * b)
+        # No color support, return greyscale value using luminance
+        luminance = Utilities.luminance(color)
+        grey_value = round(luminance * 255)
         Color.from_rgb(grey_value, grey_value, grey_value)
     end
   end
@@ -298,6 +333,8 @@ defmodule Raxol.Style.Colors.Adaptive do
       # Check for true color support
       colorterm = get_env_value(@colorterm_vars)
       term = get_env_value(@term_vars)
+      term_program = System.get_env("TERM_PROGRAM")
+      term_program_version = System.get_env("TERM_PROGRAM_VERSION")
       
       cond do
         # Check for explicit true color support
@@ -305,15 +342,19 @@ defmodule Raxol.Style.Colors.Adaptive do
           :true_color
           
         # Check for terminals known to support true color
-        term in ["xterm-kitty", "wezterm", "alacritty", "iterm2"] ->
+        term in @true_color_terminals ->
+          :true_color
+          
+        # Check for specific terminal programs with true color support
+        term_program in ["iTerm.app", "WezTerm", "vscode"] ->
           :true_color
           
         # Check for terminals that might support true color
         String.contains?(to_string(term || ""), "256color") ->
-          check_if_true_color_supported(term) || :ansi_256
+          check_if_true_color_supported(term, term_program, term_program_version) || :ansi_256
           
         # Check for basic color support
-        term != nil and not String.contains?(term, "dumb") ->
+        term in @ansi_16_terminals or String.contains?(to_string(term || ""), "color") ->
           :ansi_16
           
         # Default to no color
@@ -324,12 +365,26 @@ defmodule Raxol.Style.Colors.Adaptive do
   end
   
   # More specific checks for true color support
-  defp check_if_true_color_supported(term) do
-    # Check for specific terminal that we know supports true color
-    if term in ["xterm-256color"] and is_env_set("TERM_PROGRAM", ["iTerm.app", "WezTerm", "vscode"]) do
-      :true_color
-    else
-      nil
+  defp check_if_true_color_supported(term, term_program, term_program_version) do
+    cond do
+      # Check for specific terminal that we know supports true color
+      term in ["xterm-256color"] and term_program in ["iTerm.app", "WezTerm", "vscode"] ->
+        :true_color
+        
+      # Check for specific version requirements
+      term_program == "iTerm.app" and term_program_version != nil ->
+        # iTerm2 3.0+ supports true color
+        case Version.parse(term_program_version) do
+          {:ok, version} -> version.major >= 3
+          _ -> false
+        end
+        
+      # Check for specific terminal capabilities
+      term in ["xterm-256color"] and System.get_env("COLORTERM") == "truecolor" ->
+        :true_color
+        
+      true ->
+        nil
     end
   end
   
@@ -346,23 +401,40 @@ defmodule Raxol.Style.Colors.Adaptive do
   
   # Implementation of terminal background detection
   defp detect_terminal_background_impl do
-    # Check for environment variables that might indicate background color
-    term_bg = System.get_env("COLORFGBG")
-    
-    cond do
-      # COLORFGBG format is "foreground;background"
-      term_bg != nil and String.contains?(term_bg, ";") ->
-        [_fg, bg] = String.split(term_bg, ";")
-        # Dark backgrounds typically have values 0-6
-        case Integer.parse(bg) do
-          {bg_val, _} when bg_val < 7 -> :dark
-          {_, _} -> :light
-          :error -> :unknown
+    # Try to detect background color from environment
+    case System.get_env("COLORFGBG") do
+      nil ->
+        # Try to detect from terminal capabilities
+        case detect_color_support() do
+          :no_color -> :unknown
+          _ -> detect_background_from_capabilities()
         end
-        
-      # Default to dark as it's more common in terminals
-      true ->
-        :dark
+      colorfgbg ->
+        # Parse COLORFGBG value (format: "15;0" where 15 is foreground and 0 is background)
+        case String.split(colorfgbg, ";") do
+          [_, bg] when bg in ["0", "8"] -> :dark
+          [_, bg] when bg in ["7", "15"] -> :light
+          _ -> :unknown
+        end
+    end
+  end
+  
+  defp detect_background_from_capabilities do
+    # Create test colors
+    black = Color.from_hex("#000000")
+    white = Color.from_hex("#FFFFFF")
+    
+    # Try to detect by testing contrast with black and white
+    case {adapt_color(black), adapt_color(white)} do
+      {%Color{} = adapted_black, %Color{} = adapted_white} ->
+        # If adapted colors are different, terminal is likely dark
+        if Utilities.contrast_ratio(adapted_black, adapted_white) > 10 do
+          :dark
+        else
+          :light
+        end
+      _ ->
+        :unknown
     end
   end
   

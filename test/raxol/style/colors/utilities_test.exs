@@ -232,4 +232,174 @@ defmodule Raxol.Style.Colors.UtilitiesTest do
       assert third.b > third.r and third.b > third.g
     end
   end
+
+  describe "relative luminance" do
+    test "relative_luminance returns 0 for black" do
+      assert Utilities.relative_luminance("#000000") == 0.0
+    end
+
+    test "relative_luminance returns 1 for white" do
+      assert Utilities.relative_luminance("#FFFFFF") == 1.0
+    end
+
+    test "relative_luminance returns correct value for gray" do
+      assert Utilities.relative_luminance("#808080") == 0.21586050011389962
+    end
+
+    test "relative_luminance works with Color struct" do
+      color = Color.from_hex("#FF0000")
+      assert Utilities.relative_luminance(color) == 0.2126
+    end
+  end
+
+  describe "contrast ratio" do
+    test "contrast_ratio returns 21 for black on white" do
+      assert Utilities.contrast_ratio("#000000", "#FFFFFF") == 21.0
+    end
+
+    test "contrast_ratio returns 1 for same color" do
+      assert Utilities.contrast_ratio("#FF0000", "#FF0000") == 1.0
+    end
+
+    test "contrast_ratio works with Color structs" do
+      black = Color.from_hex("#000000")
+      white = Color.from_hex("#FFFFFF")
+      assert Utilities.contrast_ratio(black, white) == 21.0
+    end
+
+    test "contrast_ratio works with mixed input types" do
+      black = Color.from_hex("#000000")
+      assert Utilities.contrast_ratio(black, "#FFFFFF") == 21.0
+      assert Utilities.contrast_ratio("#000000", black) == 21.0
+    end
+  end
+
+  describe "color darkness" do
+    test "is_dark_color? returns true for dark colors" do
+      assert Utilities.is_dark_color?("#000000")
+      assert Utilities.is_dark_color?("#333333")
+    end
+
+    test "is_dark_color? returns false for light colors" do
+      refute Utilities.is_dark_color?("#FFFFFF")
+      refute Utilities.is_dark_color?("#CCCCCC")
+    end
+
+    test "is_dark_color? works with Color struct" do
+      color = Color.from_hex("#000000")
+      assert Utilities.is_dark_color?(color)
+    end
+  end
+
+  describe "color darkening" do
+    test "darken_until_contrast returns original color if already sufficient" do
+      color = "#000000"
+      assert ^color = Utilities.darken_until_contrast(color, "#FFFFFF", 4.5)
+    end
+
+    test "darken_until_contrast darkens color until contrast is sufficient" do
+      original = "#777777"
+      result = Utilities.darken_until_contrast(original, "#FFFFFF", 4.5)
+      assert result != original
+      assert {:ok, _} = Accessibility.check_contrast(result, "#FFFFFF")
+    end
+
+    test "darken_until_contrast works with Color structs" do
+      color = Color.from_hex("#777777")
+      background = Color.from_hex("#FFFFFF")
+      result = Utilities.darken_until_contrast(color, background, 4.5)
+      assert result != Color.to_hex(color)
+      assert {:ok, _} = Accessibility.check_contrast(result, "#FFFFFF")
+    end
+  end
+
+  describe "color lightening" do
+    test "lighten_until_contrast returns original color if already sufficient" do
+      color = "#FFFFFF"
+      assert ^color = Utilities.lighten_until_contrast(color, "#000000", 4.5)
+    end
+
+    test "lighten_until_contrast lightens color until contrast is sufficient" do
+      original = "#777777"
+      result = Utilities.lighten_until_contrast(original, "#000000", 4.5)
+      assert result != original
+      assert {:ok, _} = Accessibility.check_contrast(result, "#000000")
+    end
+
+    test "lighten_until_contrast works with Color structs" do
+      color = Color.from_hex("#777777")
+      background = Color.from_hex("#000000")
+      result = Utilities.lighten_until_contrast(color, background, 4.5)
+      assert result != Color.to_hex(color)
+      assert {:ok, _} = Accessibility.check_contrast(result, "#000000")
+    end
+  end
+
+  describe "hue rotation" do
+    test "rotate_hue rotates red to green" do
+      assert Utilities.rotate_hue("#FF0000", 120) == "#00FF00"
+    end
+
+    test "rotate_hue rotates green to blue" do
+      assert Utilities.rotate_hue("#00FF00", 120) == "#0000FF"
+    end
+
+    test "rotate_hue rotates blue to red" do
+      assert Utilities.rotate_hue("#0000FF", 120) == "#FF0000"
+    end
+
+    test "rotate_hue works with Color struct" do
+      color = Color.from_hex("#FF0000")
+      assert Utilities.rotate_hue(color, 120) == "#00FF00"
+    end
+
+    test "rotate_hue handles 360 degree rotation" do
+      color = "#FF0000"
+      assert Utilities.rotate_hue(color, 360) == color
+    end
+  end
+
+  describe "color space conversions" do
+    test "rgb_to_hsl converts red correctly" do
+      {h, s, l} = Utilities.rgb_to_hsl(255, 0, 0)
+      assert h == 0
+      assert s == 1.0
+      assert l == 0.5
+    end
+
+    test "rgb_to_hsl converts green correctly" do
+      {h, s, l} = Utilities.rgb_to_hsl(0, 255, 0)
+      assert h == 120
+      assert s == 1.0
+      assert l == 0.5
+    end
+
+    test "rgb_to_hsl converts blue correctly" do
+      {h, s, l} = Utilities.rgb_to_hsl(0, 0, 255)
+      assert h == 240
+      assert s == 1.0
+      assert l == 0.5
+    end
+
+    test "hsl_to_rgb converts red correctly" do
+      {r, g, b} = Utilities.hsl_to_rgb(0, 1.0, 0.5)
+      assert r == 255
+      assert g == 0
+      assert b == 0
+    end
+
+    test "hsl_to_rgb converts green correctly" do
+      {r, g, b} = Utilities.hsl_to_rgb(120, 1.0, 0.5)
+      assert r == 0
+      assert g == 255
+      assert b == 0
+    end
+
+    test "hsl_to_rgb converts blue correctly" do
+      {r, g, b} = Utilities.hsl_to_rgb(240, 1.0, 0.5)
+      assert r == 0
+      assert g == 0
+      assert b == 255
+    end
+  end
 end 

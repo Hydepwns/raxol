@@ -25,7 +25,6 @@ defmodule Raxol.Style.Colors.Utilities do
   red = Color.from_hex("#FF0000")
   analogous = Utilities.analogous_colors(red)  # Returns colors adjacent to red
   complementary = Utilities.complementary_colors(red)  # Returns red and its opposite
-  ```
   """
   
   alias Raxol.Style.Colors.Color
@@ -37,32 +36,281 @@ defmodule Raxol.Style.Colors.Utilities do
   @contrast_aaa_large 4.5  # AAA level for large text
   
   @doc """
-  Calculates the contrast ratio between two colors according to WCAG guidelines.
-  
-  The ratio ranges from 1:1 (no contrast) to 21:1 (black on white).
+  Calculates the relative luminance of a color according to WCAG guidelines.
   
   ## Parameters
   
-  - `color1` - First color
-  - `color2` - Second color
+  - `color` - The color to calculate luminance for (hex string or Color struct)
+  
+  ## Returns
+  
+  - A float between 0 and 1 representing the relative luminance
   
   ## Examples
   
-      iex> black = Raxol.Style.Colors.Color.from_hex("#000000")
-      iex> white = Raxol.Style.Colors.Color.from_hex("#FFFFFF")
-      iex> Raxol.Style.Colors.Utilities.contrast_ratio(black, white)
-      21.0
+      iex> Utilities.relative_luminance("#000000")
+      0.0
+      
+      iex> Utilities.relative_luminance("#FFFFFF")
+      1.0
   """
-  def contrast_ratio(%Color{} = color1, %Color{} = color2) do
-    # Calculate relative luminance for both colors
+  def relative_luminance(color) when is_binary(color) do
+    color = Color.from_hex(color)
+    relative_luminance(color)
+  end
+  
+  def relative_luminance(%Color{r: r, g: g, b: b}) do
+    # Convert RGB values to relative luminance
+    r = if r <= 10, do: r / 255 / 12.92, else: :math.pow((r / 255 + 0.055) / 1.055, 2.4)
+    g = if g <= 10, do: g / 255 / 12.92, else: :math.pow((g / 255 + 0.055) / 1.055, 2.4)
+    b = if b <= 10, do: b / 255 / 12.92, else: :math.pow((b / 255 + 0.055) / 1.055, 2.4)
+    
+    0.2126 * r + 0.7152 * g + 0.0722 * b
+  end
+  
+  @doc """
+  Calculates the contrast ratio between two colors according to WCAG guidelines.
+  
+  ## Parameters
+  
+  - `color1` - The first color (hex string or Color struct)
+  - `color2` - The second color (hex string or Color struct)
+  
+  ## Returns
+  
+  - A float representing the contrast ratio (1:1 to 21:1)
+  
+  ## Examples
+  
+      iex> Utilities.contrast_ratio("#000000", "#FFFFFF")
+      21.0
+      
+      iex> Utilities.contrast_ratio("#777777", "#999999")
+      1.3
+  """
+  def contrast_ratio(color1, color2) when is_binary(color1) or is_binary(color2) do
+    color1 = if is_binary(color1), do: Color.from_hex(color1), else: color1
+    color2 = if is_binary(color2), do: Color.from_hex(color2), else: color2
+    contrast_ratio(color1, color2)
+  end
+  
+  def contrast_ratio(color1, color2) do
     l1 = relative_luminance(color1)
     l2 = relative_luminance(color2)
     
-    # Determine lighter and darker luminance
-    {lighter, darker} = if l1 > l2, do: {l1, l2}, else: {l2, l1}
+    lighter = max(l1, l2)
+    darker = min(l1, l2)
     
-    # Calculate contrast ratio
     (lighter + 0.05) / (darker + 0.05)
+  end
+  
+  @doc """
+  Checks if a color is considered dark.
+  
+  ## Parameters
+  
+  - `color` - The color to check (hex string or Color struct)
+  
+  ## Returns
+  
+  - `true` if the color is dark, `false` otherwise
+  
+  ## Examples
+  
+      iex> Utilities.is_dark_color?("#000000")
+      true
+      
+      iex> Utilities.is_dark_color?("#FFFFFF")
+      false
+  """
+  def is_dark_color?(color) when is_binary(color) do
+    color = Color.from_hex(color)
+    is_dark_color?(color)
+  end
+  
+  def is_dark_color?(%Color{} = color) do
+    relative_luminance(color) < 0.5
+  end
+  
+  @doc """
+  Darkens a color until it meets the specified contrast ratio with a background color.
+  
+  ## Parameters
+  
+  - `color` - The color to darken (hex string or Color struct)
+  - `background` - The background color (hex string or Color struct)
+  - `target_ratio` - The target contrast ratio to achieve
+  
+  ## Returns
+  
+  - A hex string representing the darkened color
+  
+  ## Examples
+  
+      iex> Utilities.darken_until_contrast("#777777", "#FFFFFF", 4.5)
+      "#595959"
+  """
+  def darken_until_contrast(color, background, target_ratio) when is_binary(color) or is_binary(background) do
+    color = if is_binary(color), do: Color.from_hex(color), else: color
+    background = if is_binary(background), do: Color.from_hex(background), else: background
+    darken_until_contrast(color, background, target_ratio)
+  end
+  
+  def darken_until_contrast(%Color{} = color, %Color{} = background, target_ratio) do
+    # Start with the original color
+    current = color
+    
+    # Keep darkening until we meet the target ratio or can't darken anymore
+    Stream.iterate(current, &darken_color/1)
+    |> Stream.take_while(&(&1.r > 0 or &1.g > 0 or &1.b > 0))
+    |> Enum.find(fn c ->
+      ratio = contrast_ratio(c, background)
+      ratio >= target_ratio
+    end)
+    |> case do
+      nil -> color  # If we couldn't find a suitable color, return the original
+      result -> Color.to_hex(result)
+    end
+  end
+  
+  @doc """
+  Lightens a color until it meets the specified contrast ratio with a background color.
+  
+  ## Parameters
+  
+  - `color` - The color to lighten (hex string or Color struct)
+  - `background` - The background color (hex string or Color struct)
+  - `target_ratio` - The target contrast ratio to achieve
+  
+  ## Returns
+  
+  - A hex string representing the lightened color
+  
+  ## Examples
+  
+      iex> Utilities.lighten_until_contrast("#777777", "#000000", 4.5)
+      "#CCCCCC"
+  """
+  def lighten_until_contrast(color, background, target_ratio) when is_binary(color) or is_binary(background) do
+    color = if is_binary(color), do: Color.from_hex(color), else: color
+    background = if is_binary(background), do: Color.from_hex(background), else: background
+    lighten_until_contrast(color, background, target_ratio)
+  end
+  
+  def lighten_until_contrast(%Color{} = color, %Color{} = background, target_ratio) do
+    # Start with the original color
+    current = color
+    
+    # Keep lightening until we meet the target ratio or can't lighten anymore
+    Stream.iterate(current, &lighten_color/1)
+    |> Stream.take_while(&(&1.r < 255 or &1.g < 255 or &1.b < 255))
+    |> Enum.find(fn c ->
+      ratio = contrast_ratio(c, background)
+      ratio >= target_ratio
+    end)
+    |> case do
+      nil -> color  # If we couldn't find a suitable color, return the original
+      result -> Color.to_hex(result)
+    end
+  end
+  
+  @doc """
+  Rotates the hue of a color by a specified number of degrees.
+  
+  ## Parameters
+  
+  - `color` - The color to rotate (hex string or Color struct)
+  - `degrees` - The number of degrees to rotate (0-360)
+  
+  ## Returns
+  
+  - A hex string representing the rotated color
+  
+  ## Examples
+  
+      iex> Utilities.rotate_hue("#FF0000", 120)
+      "#00FF00"
+  """
+  def rotate_hue(color, degrees) when is_binary(color) do
+    color = Color.from_hex(color)
+    rotate_hue(color, degrees)
+  end
+  
+  def rotate_hue(%Color{} = color, degrees) do
+    # Convert RGB to HSL
+    {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
+    
+    # Rotate hue
+    new_h = rem(round(h + degrees), 360)
+    
+    # Convert back to RGB
+    {r, g, b} = hsl_to_rgb(new_h, s, l)
+    
+    # Create new color and convert to hex
+    %Color{r: r, g: g, b: b}
+    |> Color.to_hex()
+  end
+  
+  # Private helper functions
+  
+  defp darken_color(%Color{r: r, g: g, b: b}) do
+    %Color{
+      r: max(0, r - 10),
+      g: max(0, g - 10),
+      b: max(0, b - 10)
+    }
+  end
+  
+  defp lighten_color(%Color{r: r, g: g, b: b}) do
+    %Color{
+      r: min(255, r + 10),
+      g: min(255, g + 10),
+      b: min(255, b + 10)
+    }
+  end
+  
+  defp rgb_to_hsl(r, g, b) do
+    r = r / 255
+    g = g / 255
+    b = b / 255
+    
+    max = Enum.max([r, g, b])
+    min = Enum.min([r, g, b])
+    delta = max - min
+    
+    h = cond do
+      delta == 0 -> 0
+      max == r -> 60 * rem(round((g - b) / delta), 6)
+      max == g -> 60 * ((b - r) / delta + 2)
+      true -> 60 * ((r - g) / delta + 4)
+    end
+    
+    l = (max + min) / 2
+    
+    s = if delta == 0, do: 0, else: delta / (1 - abs(2 * l - 1))
+    
+    {h, s, l}
+  end
+  
+  defp hsl_to_rgb(h, s, l) do
+    c = (1 - abs(2 * l - 1)) * s
+    x = c * (1 - abs(rem(h / 60, 2) - 1))
+    m = l - c / 2
+    
+    {r, g, b} = cond do
+      h < 60 -> {c, x, 0}
+      h < 120 -> {x, c, 0}
+      h < 180 -> {0, c, x}
+      h < 240 -> {0, x, c}
+      h < 300 -> {x, 0, c}
+      true -> {c, 0, x}
+    end
+    
+    {
+      round((r + m) * 255),
+      round((g + m) * 255),
+      round((b + m) * 255)
+    }
   end
   
   @doc """
@@ -332,93 +580,5 @@ defmodule Raxol.Style.Colors.Utilities do
       {r, g, b} = hsl_to_rgb(new_h, s, l)
       Color.from_rgb(r, g, b)
     end)
-  end
-  
-  # Private functions
-  
-  # Calculate relative luminance according to WCAG
-  defp relative_luminance(%Color{r: r, g: g, b: b}) do
-    # Normalize RGB values to 0-1
-    r_srgb = r / 255
-    g_srgb = g / 255
-    b_srgb = b / 255
-    
-    # Convert to linear RGB
-    r_linear = if r_srgb <= 0.03928, do: r_srgb / 12.92, else: :math.pow((r_srgb + 0.055) / 1.055, 2.4)
-    g_linear = if g_srgb <= 0.03928, do: g_srgb / 12.92, else: :math.pow((g_srgb + 0.055) / 1.055, 2.4)
-    b_linear = if b_srgb <= 0.03928, do: b_srgb / 12.92, else: :math.pow((b_srgb + 0.055) / 1.055, 2.4)
-    
-    # Calculate luminance
-    0.2126 * r_linear + 0.7152 * g_linear + 0.0722 * b_linear
-  end
-  
-  # Convert RGB to HSL
-  defp rgb_to_hsl(r, g, b) do
-    # Normalize RGB values to 0-1
-    r_norm = r / 255
-    g_norm = g / 255
-    b_norm = b / 255
-    
-    # Find max and min values
-    c_max = max(r_norm, max(g_norm, b_norm))
-    c_min = min(r_norm, min(g_norm, b_norm))
-    delta = c_max - c_min
-    
-    # Calculate hue
-    h = cond do
-      delta == 0 -> 0
-      c_max == r_norm -> 60 * (rem(((g_norm - b_norm) / delta), 6))
-      c_max == g_norm -> 60 * (((b_norm - r_norm) / delta) + 2)
-      c_max == b_norm -> 60 * (((r_norm - g_norm) / delta) + 4)
-    end
-    
-    # Ensure h is positive
-    h = if h < 0, do: h + 360, else: h
-    
-    # Calculate lightness
-    l = (c_max + c_min) / 2
-    
-    # Calculate saturation
-    s = if delta == 0, do: 0, else: delta / (1 - abs(2 * l - 1))
-    
-    {round(h), s, l}
-  end
-  
-  # Convert HSL to RGB
-  defp hsl_to_rgb(h, s, l) do
-    # Helper function
-    hue_to_rgb = fn p, q, t ->
-      t = if t < 0, do: t + 1, else: t
-      t = if t > 1, do: t - 1, else: t
-      
-      cond do
-        t < 1/6 -> p + (q - p) * 6 * t
-        t < 1/2 -> q
-        t < 2/3 -> p + (q - p) * (2/3 - t) * 6
-        true -> p
-      end
-    end
-    
-    # Edge case for grayscale
-    if s == 0 do
-      # Achromatic (gray)
-      gray = round(l * 255)
-      {gray, gray, gray}
-    else
-      # Calculate temporary values
-      q = if l < 0.5, do: l * (1 + s), else: l + s - l * s
-      p = 2 * l - q
-      
-      # Normalize hue to 0-1
-      h_norm = h / 360
-      
-      # Convert to RGB
-      r = hue_to_rgb.(p, q, h_norm + 1/3)
-      g = hue_to_rgb.(p, q, h_norm)
-      b = hue_to_rgb.(p, q, h_norm - 1/3)
-      
-      # Convert to 0-255 range
-      {round(r * 255), round(g * 255), round(b * 255)}
-    end
   end
 end 
