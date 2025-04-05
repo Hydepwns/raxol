@@ -14,9 +14,9 @@ defmodule Raxol.Examples.UXRefinementDemo do
   ```
   """
   
-  import Raxol.View
-  import Raxol.View.Components
-  import Raxol.View.Layout
+  import Raxol.View, except: [row: 2, column: 1, button: 1, text_input: 1, label: 2, space: 1]
+  import Raxol.View.Components, only: [button: 1, text_input: 1, label: 2, space: 1]
+  import Raxol.View.Layout, only: [row: 2, column: 1]
   alias Raxol.Core.UXRefinement
   alias Raxol.Core.FocusManager
   alias Raxol.Core.KeyboardNavigator

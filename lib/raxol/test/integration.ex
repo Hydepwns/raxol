@@ -30,8 +30,7 @@ defmodule Raxol.Test.Integration do
   """
 
   import ExUnit.Assertions
-  alias Raxol.Core.Events.{Event, Manager, Subscription}
-  alias Raxol.Core.Runtime.EventLoop
+  alias Raxol.Core.Events.{Event, Subscription}
   alias Raxol.Test.TestHelper
 
   defmacro __using__(_opts) do
@@ -88,7 +87,7 @@ defmodule Raxol.Test.Integration do
 
   Returns the initialized parent and child components with proper event routing.
   """
-  def setup_component_hierarchy(parent_module, child_module, opts \\ []) do
+  def setup_component_hierarchy(parent_module, child_module, _opts \\ []) do
     # Initialize parent and child
     {:ok, parent} = setup_component(parent_module)
     {:ok, child} = setup_component(child_module)
@@ -98,7 +97,7 @@ defmodule Raxol.Test.Integration do
     child = put_in(child.parent, parent)
 
     # Set up event routing
-    setup_hierarchy_routing(parent, child)
+    {parent, child} = setup_hierarchy_routing(parent, child)
 
     {:ok, parent, child}
   end
@@ -248,63 +247,73 @@ defmodule Raxol.Test.Integration do
     updated_component = %{component | state: new_state}
     
     # Process commands and route to other components
-    process_commands(commands, updated_component, components)
-    
-    {updated_component, commands}
+    process_commands(updated_component, commands, components)
   end
 
   defp handle_parent_event(parent, child, event) do
-    # Handle event in parent
-    {new_parent_state, commands} = parent.module.handle_event(event, parent.state)
-    updated_parent = %{parent | state: new_parent_state}
+    # Handle parent event
+    {new_state, commands} = parent.module.handle_event(event, parent.state)
     
-    # Propagate relevant events to child
-    case should_propagate_to_child?(event) do
-      true ->
-        {new_child_state, child_commands} = child.module.handle_event(event, child.state)
-        updated_child = %{child | state: new_child_state}
-        {updated_parent, updated_child, commands ++ child_commands}
-      false ->
-        {updated_parent, child, commands}
-    end
+    # Update parent state
+    updated_parent = %{parent | state: new_state}
+    
+    # Process commands and propagate to child
+    process_commands(updated_parent, commands, %{child: child})
   end
 
   defp handle_child_event(parent, child, event) do
-    # Handle event in child
-    {new_child_state, commands} = child.module.handle_event(event, child.state)
-    updated_child = %{child | state: new_child_state}
+    # Handle child event
+    {new_state, commands} = child.module.handle_event(event, child.state)
     
-    # Bubble relevant events to parent
-    case should_bubble_to_parent?(event) do
-      true ->
-        {new_parent_state, parent_commands} = parent.module.handle_event(event, parent.state)
-        updated_parent = %{parent | state: new_parent_state}
-        {updated_parent, updated_child, commands ++ parent_commands}
-      false ->
-        {parent, updated_child, commands}
-    end
+    # Update child state
+    updated_child = %{child | state: new_state}
+    
+    # Process commands and bubble to parent
+    process_commands(updated_child, commands, %{parent: parent})
   end
 
-  defp process_commands(commands, component, components) do
-    Enum.each(commands, fn command ->
+  defp process_commands(component, commands, components) do
+    Enum.reduce(commands, {component, []}, fn command, {acc_component, acc_commands} ->
       case command do
-        {:send_to, target, msg} ->
-          if target_component = components[target] do
-            send(self(), {:command_sent, component.module, target, msg})
+        {:propagate, event} ->
+          target_component = find_target_component(event, components)
+          if target_component do
+            {_updated_target, target_commands} = propagate_to_children(target_component, event, [])
+            {acc_component, acc_commands ++ target_commands}
+          else
+            {acc_component, acc_commands}
+          end
+        {:bubble, event} ->
+          if component.parent do
+            {_updated_parent, parent_commands} = bubble_to_parent(component.parent, event, [])
+            {acc_component, acc_commands ++ parent_commands}
+          else
+            {acc_component, acc_commands}
           end
         _ ->
-          send(self(), {:command_executed, component.module, command})
+          {acc_component, acc_commands ++ [command]}
       end
     end)
   end
 
-  defp should_propagate_to_child?(event) do
-    # Add logic for determining event propagation
-    true
+  defp find_target_component(event, components) do
+    case event do
+      %{target: target} when is_atom(target) ->
+        Map.get(components, target)
+      _ ->
+        nil
+    end
   end
 
-  defp should_bubble_to_parent?(event) do
-    # Add logic for determining event bubbling
-    true
+  defp propagate_to_children(component, event, acc) do
+    Enum.reduce(component.children, {component, acc}, fn child, {acc_component, acc_commands} ->
+      {_updated_child, child_commands} = dispatch_event(child, event)
+      {acc_component, acc_commands ++ child_commands}
+    end)
   end
-end 
+
+  defp bubble_to_parent(component, event, acc) do
+    {updated_component, commands} = dispatch_event(component, event)
+    {updated_component, acc ++ commands}
+  end
+end

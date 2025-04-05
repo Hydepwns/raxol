@@ -7,7 +7,7 @@ defmodule Raxol.Style.Colors.Persistence do
   and database storage options.
   """
   
-  alias Raxol.Style.Colors.{Theme, Palette, PaletteManager}
+  alias Raxol.Style.Colors.{Theme, Palette}
   
   @doc """
   Saves a theme to a file.

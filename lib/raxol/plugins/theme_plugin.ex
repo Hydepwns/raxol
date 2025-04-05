@@ -173,6 +173,26 @@ defmodule Raxol.Plugins.ThemePlugin do
     %{plugin | enabled: false}
   end
 
+  @impl true
+  def cleanup(_plugin) do
+    :ok
+  end
+
+  @impl true
+  def get_api_version do
+    "1.0.0"
+  end
+
+  @impl true
+  def get_dependencies do
+    []
+  end
+
+  @impl true
+  def handle_resize(_plugin, _width, _height) do
+    :ok
+  end
+
   @doc """
   Changes the current theme to the specified theme name.
   """

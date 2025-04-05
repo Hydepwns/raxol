@@ -25,8 +25,7 @@ defmodule Raxol.Test.Unit do
   """
 
   import ExUnit.Assertions
-  alias Raxol.Core.Events.{Event, Manager, Subscription}
-  alias Raxol.Core.Runtime.EventLoop
+  alias Raxol.Core.Events.Event
 
   defmacro __using__(_opts) do
     quote do
@@ -101,32 +100,32 @@ defmodule Raxol.Test.Unit do
   Creates a keyboard event for testing.
   """
   def keyboard_event(key) when is_atom(key) do
-    Event.key(key)
+    Event.key_event(key, :pressed)
   end
 
   def keyboard_event(char) when is_integer(char) do
-    Event.key({:char, char})
+    Event.key_event({:char, char}, :pressed)
   end
 
   @doc """
   Creates a mouse event for testing.
   """
   def mouse_event(button, position, opts \\ []) do
-    Event.mouse(button, position, opts)
+    Event.mouse_event(button, :pressed, position, opts)
   end
 
   @doc """
   Creates a window event for testing.
   """
   def window_event(width, height, action) do
-    Event.window(width, height, action)
+    Event.window_event(action, width, height)
   end
 
   @doc """
   Creates a custom event for testing.
   """
   def custom_event(data) do
-    Event.custom(data)
+    Event.custom_event(:test, data)
   end
 
   @doc """

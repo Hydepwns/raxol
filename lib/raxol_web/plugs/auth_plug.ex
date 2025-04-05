@@ -1,7 +1,6 @@
 defmodule RaxolWeb.AuthPlug do
   import Plug.Conn
   import Phoenix.Controller
-  import Phoenix.LiveView.Controller
 
   def init(opts), do: opts
 
@@ -14,7 +13,7 @@ defmodule RaxolWeb.AuthPlug do
         |> halt()
 
       token ->
-        case Raxol.Auth.validate_token(token) do
+        case Raxol.Auth.validate_token(token, conn) do
           {:ok, _user} -> conn
           _ ->
             conn
