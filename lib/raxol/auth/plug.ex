@@ -14,7 +14,7 @@ defmodule Raxol.Auth.Plug do
     user_id = get_session(conn, :user_id)
 
     cond do
-      user = conn.assigns[:current_user] ->
+      _user = conn.assigns[:current_user] ->
         conn
 
       user = user_id && Auth.get_user(user_id) ->

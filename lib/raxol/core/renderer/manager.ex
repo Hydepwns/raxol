@@ -21,7 +21,7 @@ defmodule Raxol.Core.Renderer.Manager do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
-  def init(opts \\ []) do
+  def initialize(opts \\ []) do
     GenServer.call(__MODULE__, {:init, opts})
   end
 

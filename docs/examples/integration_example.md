@@ -1,3 +1,12 @@
+---
+title: Integration Example
+description: Example demonstrating integration features in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: examples
+tags: [examples, integration, documentation]
+---
+
 # Raxol UX Integration Example
 
 This document provides a comprehensive example of integrating all UX refinement features in a Raxol terminal UI application.

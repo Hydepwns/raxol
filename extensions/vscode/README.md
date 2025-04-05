@@ -74,4 +74,4 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## License
 
-This extension is licensed under the [MIT License](LICENSE.md). 
+For licensing information, see the [License](../../LICENSE.md). 

@@ -1,3 +1,12 @@
+---
+title: Accessibility Color Integration
+description: Guidelines for integrating color accessibility features in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: accessibility
+tags: [accessibility, color, integration]
+---
+
 # Accessibility and Color System Integration
 
 This document explains how the Raxol framework integrates accessibility features with the color system to create inclusive terminal UI applications.

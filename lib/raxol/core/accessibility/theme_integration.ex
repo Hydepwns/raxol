@@ -24,7 +24,6 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Components.FocusRing
-  alias Raxol.Core.Accessibility
   
   @doc """
   Initialize the theme integration.

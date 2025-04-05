@@ -16,7 +16,8 @@
       <h3 class="metric-title">CPU Usage</h3>
       <div class="metric-value"><%= @metrics.cpu_usage %>%</div>
       <div class="metric-gauge">
-        <div class="gauge-fill" style="width: <%= @metrics.cpu_usage %>%"></div>
+        <div class="gauge-fill" style={"width: #{@metrics.cpu_usage}%"}>
+        </div>
       </div>
     </div>
 
@@ -24,16 +25,26 @@
       <h3 class="metric-title">Memory Usage</h3>
       <div class="metric-value"><%= @metrics.memory_usage %>%</div>
       <div class="metric-gauge">
-        <div class="gauge-fill" style="width: <%= @metrics.memory_usage %>%"></div>
+        <div class="gauge-fill" style={"width: #{@metrics.memory_usage}%"}>
+        </div>
       </div>
     </div>
 
     <div class="metric-card">
       <h3 class="metric-title">Active Sessions</h3>
       <div class="metric-value"><%= @metrics.active_sessions %></div>
-      <div class="metric-trend">
-        <span class="trend-indicator">↑</span>
-        <span class="trend-value">+5%</span>
+      <div class="metric-gauge">
+        <div class="gauge-fill" style={"width: #{@metrics.active_sessions * 10}%"}>
+        </div>
+      </div>
+    </div>
+
+    <div class="metric-card">
+      <h3 class="metric-title">Network Traffic</h3>
+      <div class="metric-value"><%= @metrics.network_traffic %> MB/s</div>
+      <div class="metric-gauge">
+        <div class="gauge-fill" style={"width: #{@metrics.network_traffic * 5}%"}>
+        </div>
       </div>
     </div>
 

@@ -1,3 +1,12 @@
+---
+title: Accessibility Guide
+description: Comprehensive guide for implementing accessibility features in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: accessibility
+tags: [accessibility, guide, documentation]
+---
+
 # Raxol Accessibility Guide
 
 This guide provides information on implementing accessible terminal UI applications using the Raxol framework's accessibility features.

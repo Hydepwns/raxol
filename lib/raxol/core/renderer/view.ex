@@ -233,7 +233,7 @@ defmodule Raxol.Core.Renderer.View do
     {top, right, bottom, left}
   end
 
-  defp layout_flex(view, {width, height} = size) do
+  defp layout_flex(view, {_width, _height} = size) do
     direction = view.direction || :row
     justify = view.justify || :start
     align = view.align || :start
@@ -261,9 +261,9 @@ defmodule Raxol.Core.Renderer.View do
     |> Enum.map(fn {child, pos} -> %{child | position: pos} end)
   end
 
-  defp layout_grid(view, {width, height} = size) do
+  defp layout_grid(view, {width, height} = _size) do
+    _rows = view.rows || :auto
     columns = view.columns || 1
-    rows = view.rows || :auto
     gap = view.gap || {0, 0, 0, 0}
 
     # Calculate cell size
@@ -339,7 +339,7 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  defp layout_shadow(view, {width, height} = size) do
+  defp layout_shadow(view, {width, height} = _size) do
     child = List.first(view.children)
     {offset_x, offset_y} = view.offset || {1, 1}
     shadow_color = view.color || :bright_black
@@ -382,8 +382,6 @@ defmodule Raxol.Core.Renderer.View do
     child.size || parent_size
   end
 
-  defp calculate_flex_position(current_pos, child_size, direction, wrap, container_size)
-
   defp calculate_flex_position({x, y}, {w, h}, :row, true, {container_w, _}) do
     if x + w > container_w do
       {0, y + h}  # Wrap to next line
@@ -392,7 +390,7 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  defp calculate_flex_position({x, y}, {w, h}, :row, false, _) do
+  defp calculate_flex_position({x, y}, {_w, _h}, :row, false, _) do
     {x, y}
   end
 
@@ -404,19 +402,19 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  defp calculate_flex_position({x, y}, {w, h}, :column, false, _) do
+  defp calculate_flex_position({x, y}, {_w, _h}, :column, false, _) do
     {x, y}
   end
 
-  defp advance_position({x, y}, {w, h}, :row) do
-    {x + w, y}
+  defp advance_position({x, y}, {_w, _h}, :row) do
+    {x + 1, y}
   end
 
-  defp advance_position({x, y}, {w, h}, :column) do
-    {x, y + h}
+  defp advance_position({x, y}, {_w, _h}, :column) do
+    {x, y + 1}
   end
 
-  defp adjust_flex_positions(positions, direction, justify, align, container_size) do
+  defp adjust_flex_positions(positions, _direction, _justify, _align, _container_size) do
     # Implement justification and alignment adjustments
     positions
   end
@@ -442,10 +440,12 @@ defmodule Raxol.Core.Renderer.View do
   defp apply_absolute_position(view, viewport_size) do
     case view.position do
       nil -> view
-      {x, y} -> %{view | position: {x, y}}
-      {:right, x} -> %{view | position: {elem(viewport_size, 0) - x, elem(view.position, 1)}}
-      {:bottom, y} -> %{view | position: {elem(view.position, 0), elem(viewport_size, 1) - y}}
-      {:center, _} -> center_view(view, viewport_size)
+      {x, y} when is_number(x) and is_number(y) -> %{view | position: {x, y}}
+      {:center, direction} when is_atom(direction) and direction in [:horizontal, :vertical, :both] -> 
+        center_view(view, viewport_size)
+      {:right, x} when is_number(x) -> %{view | position: {elem(viewport_size, 0) - x, elem(view.position, 1)}}
+      {:bottom, y} when is_number(y) -> %{view | position: {elem(view.position, 0), elem(viewport_size, 1) - y}}
+      _ -> view  # Catch any other position format
     end
   end
 
@@ -460,8 +460,7 @@ defmodule Raxol.Core.Renderer.View do
         x = div(width - view_width, 2)
         y = div(height - view_height, 2)
         %{view | position: {x, y}}
-      _ ->
-        view
+      _ -> view
     end
   end
 end 

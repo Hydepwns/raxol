@@ -326,7 +326,7 @@ defmodule Raxol.Core.UserPreferences do
   @doc """
   Handle preference change events.
   """
-  def handle_preference_changed({:user_preference_changed, key, value}) do
+  def handle_preference_changed({:user_preference_changed, _key, _value}) do
     # This handler could be used to log changes or trigger additional actions
     # beyond what apply_preference does
     :ok
@@ -365,6 +365,8 @@ defmodule Raxol.Core.UserPreferences do
   end
   
   defp apply_preference(:theme, value) do
+    # Get current theme
+    _current_theme = get(:theme)
     # Apply theme
     ColorSystem.apply_theme(value)
   end
@@ -384,7 +386,7 @@ defmodule Raxol.Core.UserPreferences do
     set(:custom_colors, updated_custom_colors)
     
     # Apply custom colors to current theme
-    # Implementation would depend on ColorSystem API
+    ColorSystem.apply_theme(Map.put(current_theme, :accent_color, value))
   end
   
   defp apply_preference(:focus_highlight_style, value) do

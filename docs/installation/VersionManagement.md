@@ -1,3 +1,12 @@
+---
+title: Version Management
+description: Guide for managing versions in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: installation
+tags: [installation, version, management]
+---
+
 # Raxol Version Management
 
 This guide details how to manage Raxol versions, perform updates, and configure the update system.

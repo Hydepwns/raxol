@@ -158,32 +158,23 @@ defmodule Raxol.Components do
     
     # Get type-specific style
     type_style = case type do
-      :info -> %{fg: :white, bg: :blue}
-      :success -> %{fg: :white, bg: :green}
-      :warning -> %{fg: :black, bg: :yellow}
-      :error -> %{fg: :white, bg: :red}
-      _ -> %{fg: :white, bg: :blue}
+      :success -> %{backgroundColor: "#4caf50", color: "white"}
+      :error -> %{backgroundColor: "#f44336", color: "white"}
+      :warning -> %{backgroundColor: "#ff9800", color: "white"}
+      :info -> %{backgroundColor: "#2196f3", color: "white"}
+      _ -> %{backgroundColor: "#757575", color: "white"}
     end
     
     # Combine styles
-    combined_style = Map.merge(type_style, style)
+    final_style = Map.merge(style, type_style)
     
-    # Position style
-    position_style = case position do
-      :top -> %{align: {:center, :top}}
-      :bottom -> %{align: {:center, :bottom}}
-      _ -> %{align: {:center, :bottom}}
-    end
-    
-    # Create toast element
-    View.panel(
-      [
-        id: "toast_#{System.monotonic_time(:millisecond)}",
-        style: Map.merge(combined_style, position_style)
-      ],
-      fn ->
-        View.text(message)
-      end
+    # Create toast component
+    View.toast(
+      message,
+      Map.merge(final_style, %{
+        position: position,
+        duration: duration
+      })
     )
   end
 end 

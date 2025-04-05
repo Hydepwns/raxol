@@ -1,6 +1,6 @@
 defmodule Raxol.Style.Colors.System do
   @moduledoc """
-  A comprehensive color system for Raxol that integrates with accessibility features.
+  Core color system for the Raxol terminal emulator.
   
   This module provides a robust color system that:
   - Manages color palettes with semantic naming
@@ -36,13 +36,9 @@ defmodule Raxol.Style.Colors.System do
   ```
   """
   
-  alias Raxol.Style.Colors.Color
-  alias Raxol.Style.Colors.Palette
-  alias Raxol.Style.Colors.Theme
-  alias Raxol.Style.Colors.Utilities
-  alias Raxol.Style.Colors.Adaptive
-  alias Raxol.Core.Accessibility
-  alias Raxol.Core.Events.Manager, as: EventManager
+  defstruct [
+    # ... existing code ...
+  ]
   
   @default_theme :standard
   

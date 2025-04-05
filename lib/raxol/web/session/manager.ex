@@ -59,15 +59,18 @@ defmodule Raxol.Web.Session.Manager do
     # Initialize session monitoring
     :ok = Monitor.init()
     
-    # Start cleanup timer
-    schedule_cleanup()
-    
-    {:ok, %{
+    # Create initial state
+    state = %{
       sessions: %{},
       cleanup_interval: :timer.minutes(5),
       max_sessions: 1000,
       session_timeout: :timer.hours(1)
-    }}
+    }
+    
+    # Start cleanup timer
+    schedule_cleanup(state)
+    
+    {:ok, state}
   end
 
   @impl true
@@ -167,7 +170,7 @@ defmodule Raxol.Web.Session.Manager do
   @impl true
   def handle_info(:cleanup, state) do
     # Schedule next cleanup
-    schedule_cleanup()
+    schedule_cleanup(state)
     
     # Perform cleanup
     {:ok, new_state} = handle_call(:cleanup_sessions, nil, state)
@@ -182,7 +185,7 @@ defmodule Raxol.Web.Session.Manager do
     |> Base.encode16(case: :lower)
   end
 
-  defp schedule_cleanup do
+  defp schedule_cleanup(state) do
     Process.send_after(self(), :cleanup, state.cleanup_interval)
   end
 end 

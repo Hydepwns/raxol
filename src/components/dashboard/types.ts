@@ -294,6 +294,11 @@ export interface DashboardConfig {
    * Dashboard description
    */
   description?: string;
+  
+  /**
+   * Dashboard thumbnail
+   */
+  thumbnail?: string;
 }
 
 /**

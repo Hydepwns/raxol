@@ -1,3 +1,12 @@
+---
+title: Visualization Components
+description: Documentation for visualization components in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: components
+tags: [components, visualization, documentation]
+---
+
 # Visualization Components
 
 The Raxol framework includes powerful visualization components for data representation and analysis. These components are designed with accessibility, performance, and flexibility in mind.

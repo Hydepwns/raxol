@@ -74,33 +74,29 @@ defmodule Raxol.Style.Colors.Color do
       iex> Raxol.Style.Colors.Color.from_hex("00FF00")
       %Raxol.Style.Colors.Color{r: 0, g: 255, b: 0, hex: "#00FF00"}
   """
-  def from_hex(hex_string) when is_binary(hex_string) do
-    # Remove the leading # if present
-    hex_string = if String.starts_with?(hex_string, "#"), do: String.slice(hex_string, 1..-1), else: hex_string
-    
-    {r, g, b} = case String.length(hex_string) do
+  def from_hex(hex) when is_binary(hex) do
+    hex = String.trim_leading(hex, "#")
+    case String.length(hex) do
+      6 ->
+        {r, g, b} = String.split_at(hex, 2)
+                    |> then(fn {r, rest} -> {r, String.split_at(rest, 2)} end)
+                    |> then(fn {r, {g, b}} -> {r, g, b} end)
+                    |> then(fn {r, g, b} -> {
+                      String.to_integer(r, 16),
+                      String.to_integer(g, 16),
+                      String.to_integer(b, 16)
+                    } end)
+        from_rgb(r, g, b)
       3 ->
-        # Convert shorthand hex format (#RGB) to full format (#RRGGBB)
-        [r, g, b] = String.graphemes(hex_string)
-        {
+        [r, g, b] = String.graphemes(hex)
+        from_rgb(
           String.to_integer(r <> r, 16),
           String.to_integer(g <> g, 16),
           String.to_integer(b <> b, 16)
-        }
-      6 ->
-        {
-          String.to_integer(String.slice(hex_string, 0..1), 16),
-          String.to_integer(String.slice(hex_string, 2..3), 16),
-          String.to_integer(String.slice(hex_string, 4..5), 16)
-        }
+        )
       _ ->
-        raise ArgumentError, "Invalid hex color format: #{hex_string}. Expected #RGB or #RRGGBB"
+        {:error, :invalid_hex}
     end
-    
-    hex = "#" <> String.upcase(hex_string)
-    ansi_code = find_closest_ansi_code(r, g, b)
-    
-    %__MODULE__{r: r, g: g, b: b, hex: hex, ansi_code: ansi_code}
   end
   
   @doc """
@@ -113,11 +109,10 @@ defmodule Raxol.Style.Colors.Color do
       "#FF0000"
   """
   def to_hex(%__MODULE__{r: r, g: g, b: b}) do
-    "#" <> String.upcase(
-      Integer.to_string(r, 16) |> String.pad_leading(2, "0") <>
-      Integer.to_string(g, 16) |> String.pad_leading(2, "0") <>
-      Integer.to_string(b, 16) |> String.pad_leading(2, "0")
-    )
+    r_hex = Integer.to_string(r, 16) |> String.pad_leading(2, "0")
+    g_hex = Integer.to_string(g, 16) |> String.pad_leading(2, "0")
+    b_hex = Integer.to_string(b, 16) |> String.pad_leading(2, "0")
+    "#" <> String.upcase(r_hex <> g_hex <> b_hex)
   end
   
   @doc """
@@ -129,15 +124,10 @@ defmodule Raxol.Style.Colors.Color do
       %Raxol.Style.Colors.Color{r: 255, g: 0, b: 0, hex: "#FF0000"}
   """
   def from_rgb(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
-    hex = "#" <> (
-      Integer.to_string(r, 16) |> String.pad_leading(2, "0") <>
-      Integer.to_string(g, 16) |> String.pad_leading(2, "0") <>
-      Integer.to_string(b, 16) |> String.pad_leading(2, "0")
-    ) |> String.upcase()
-    
-    ansi_code = find_closest_ansi_code(r, g, b)
-    
-    %__MODULE__{r: r, g: g, b: b, hex: hex, ansi_code: ansi_code}
+    r_hex = Integer.to_string(r, 16) |> String.pad_leading(2, "0")
+    g_hex = Integer.to_string(g, 16) |> String.pad_leading(2, "0")
+    b_hex = Integer.to_string(b, 16) |> String.pad_leading(2, "0")
+    "#" <> r_hex <> g_hex <> b_hex
   end
   
   @doc """
@@ -151,11 +141,10 @@ defmodule Raxol.Style.Colors.Color do
   def from_ansi(code) when code in 0..15 do
     {r, g, b} = Map.get(@ansi_16_colors, code)
     
-    hex = "#" <> (
-      Integer.to_string(r, 16) |> String.pad_leading(2, "0") <>
-      Integer.to_string(g, 16) |> String.pad_leading(2, "0") <>
-      Integer.to_string(b, 16) |> String.pad_leading(2, "0")
-    ) |> String.upcase()
+    r_hex = Integer.to_string(r, 16) |> String.pad_leading(2, "0")
+    g_hex = Integer.to_string(g, 16) |> String.pad_leading(2, "0")
+    b_hex = Integer.to_string(b, 16) |> String.pad_leading(2, "0")
+    hex = "#" <> r_hex <> g_hex <> b_hex |> String.upcase()
     
     %__MODULE__{r: r, g: g, b: b, hex: hex, ansi_code: code}
   end
@@ -198,7 +187,7 @@ defmodule Raxol.Style.Colors.Color do
       iex> {lightened.r, lightened.g, lightened.b}
       {177, 177, 177}
   """
-  def lighten(%__MODULE__{r: r, g: g, b: b} = color, amount) when amount >= 0 and amount <= 1 do
+  def lighten(%__MODULE__{r: r, g: g, b: b} = _color, amount) when amount >= 0 and amount <= 1 do
     new_r = min(round(r + (255 - r) * amount), 255)
     new_g = min(round(g + (255 - g) * amount), 255)
     new_b = min(round(b + (255 - b) * amount), 255)
@@ -216,7 +205,7 @@ defmodule Raxol.Style.Colors.Color do
       iex> {darkened.r, darkened.g, darkened.b}
       {100, 100, 100}
   """
-  def darken(%__MODULE__{r: r, g: g, b: b} = color, amount) when amount >= 0 and amount <= 1 do
+  def darken(%__MODULE__{r: r, g: g, b: b} = _color, amount) when amount >= 0 and amount <= 1 do
     new_r = max(round(r * (1 - amount)), 0)
     new_g = max(round(g * (1 - amount)), 0)
     new_b = max(round(b * (1 - amount)), 0)
@@ -277,11 +266,6 @@ defmodule Raxol.Style.Colors.Color do
   end
   
   # Private functions
-  
-  defp find_closest_ansi_code(r, g, b) do
-    # For simplicity, we'll just use the 16-color ANSI codes for now
-    find_closest_ansi_16(r, g, b)
-  end
   
   defp find_closest_ansi_16(r, g, b) do
     # Find the closest ANSI 16-color based on Euclidean distance in RGB space

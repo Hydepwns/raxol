@@ -26,14 +26,12 @@ defmodule Raxol.Components.Dropdown do
     fn selected_user -> {:select_user, selected_user} end,
     id: "user_dropdown",
     label: "Assign to:",
-    option_display: fn user -> "#{user.name} (#{user.role})" end,
-    option_value: fn user -> user.id end
+    option_display: fn item -> "\#{item.name} (\#{item.email})" end,
+    option_value: fn item -> item.id end
   )
-  ```
   """
   
   alias Raxol.View
-  alias Raxol.Event
   
   @doc """
   Renders a dropdown component.
@@ -213,16 +211,15 @@ defmodule Raxol.Components.Dropdown do
     model.users,
     model.selected_user,
     model.filter_text,
-    fn user -> {:select_user, user} end,
+    fn selected_user -> {:select_user, selected_user} end,
     fn text -> {:filter_changed, text} end,
     id: "user_selector",
-    option_display: fn user -> "#{user.name} (#{user.email})" end,
-    filter_fn: fn user, filter ->
-      String.contains?(String.downcase(user.name), String.downcase(filter)) ||
-      String.contains?(String.downcase(user.email), String.downcase(filter))
+    option_display: fn item -> "\#{item.name} (\#{item.email})" end,
+    filter_fn: fn item, filter ->
+      String.contains?(String.downcase(item.name), String.downcase(filter)) ||
+      String.contains?(String.downcase(item.email), String.downcase(filter))
     end
   )
-  ```
   """
   def filterable(options, selected, filter_text, on_change, on_filter_change, opts \\ []) do
     # Extract additional options with defaults

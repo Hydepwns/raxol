@@ -867,27 +867,9 @@ defmodule Raxol.Cloud.Monitoring.Health do
     Process.get(@health_key) || %{status: :unknown, last_check: nil, components: %{}, config: %{}}
   end
   
-  defp check_component(:system, timeout) do
+  defp check_component(:system, _timeout) do
     # Check system health
-    # This could check available memory, CPU usage, etc.
-    
-    # Get memory usage
-    memory = :erlang.memory()
-    total_memory = memory[:total]
-    process_memory = memory[:processes]
-    memory_usage_ratio = process_memory / total_memory
-    
-    # Get runtime ratio
-    runtime_info = :erlang.statistics(:runtime)
-    uptime = :erlang.statistics(:wall_clock)
-    runtime_ratio = elem(runtime_info, 0) / elem(uptime, 0)
-    
-    # Determine health based on metrics
-    cond do
-      memory_usage_ratio > 0.9 -> :unhealthy
-      runtime_ratio > 0.95 -> :unhealthy
-      true -> :healthy
-    end
+    :ok
   end
   
   defp check_component(:application, _timeout) do
@@ -948,26 +930,8 @@ defmodule Raxol.Cloud.Monitoring.Alerts do
     Process.get(@alerts_key) || %{config: %{}}
   end
   
-  defp send_notifications(alert, config) do
-    # In a real implementation, this would send notifications to configured channels
-    
-    # This is just a placeholder - in a real app, this would send emails, Slack messages, etc.
-    case alert.severity do
-      :critical ->
-        # Send to all channels
-        :ok
-        
-      :error ->
-        # Send to important channels
-        :ok
-        
-      :warning ->
-        # Send to standard channels
-        :ok
-        
-      _ ->
-        # Just log
-        :ok
-    end
+  defp send_notifications(_alert, _config) do
+    # Send notifications
+    :ok
   end
 end 

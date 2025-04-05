@@ -1,163 +1,191 @@
 defmodule Raxol.Terminal.Session do
   @moduledoc """
-  Manages persistent terminal sessions.
+  Terminal session module.
   
-  This module provides:
-  - Session creation and retrieval
-  - Session state persistence
-  - Session cleanup
-  - Session authentication
-  - Session metadata management
+  This module manages terminal sessions, including:
+  - Session lifecycle
+  - Input/output handling
+  - State management
+  - Configuration
   """
 
   use GenServer
-  require Logger
-  alias Raxol.Terminal.{Emulator, Input, Renderer}
 
-  # Client API
+  alias Raxol.Terminal.{Cell, ScreenBuffer, Input, Emulator, Renderer}
 
+  @type t :: %__MODULE__{
+    id: String.t(),
+    emulator: Emulator.t(),
+    renderer: Renderer.t(),
+    width: non_neg_integer(),
+    height: non_neg_integer(),
+    title: String.t(),
+    theme: map()
+  }
+
+  defstruct [
+    :id,
+    :emulator,
+    :renderer,
+    :width,
+    :height,
+    :title,
+    :theme
+  ]
+
+  @doc """
+  Starts a new terminal session.
+  
+  ## Examples
+  
+      iex> {:ok, pid} = Session.start_link(%{width: 80, height: 24})
+      iex> Process.alive?(pid)
+      true
+  """
   def start_link(opts \\ []) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
+    id = Keyword.get(opts, :id, UUID.uuid4())
+    width = Keyword.get(opts, :width, 80)
+    height = Keyword.get(opts, :height, 24)
+    title = Keyword.get(opts, :title, "Terminal")
+    theme = Keyword.get(opts, :theme, %{})
+
+    GenServer.start_link(__MODULE__, {id, width, height, title, theme})
   end
 
-  def create_session(user_id, opts \\ []) do
-    GenServer.call(__MODULE__, {:create_session, user_id, opts})
+  @doc """
+  Stops a terminal session.
+  
+  ## Examples
+  
+      iex> {:ok, pid} = Session.start_link()
+      iex> :ok = Session.stop(pid)
+      iex> Process.alive?(pid)
+      false
+  """
+  def stop(pid) do
+    GenServer.stop(pid)
   end
 
-  def get_session(session_id) do
-    GenServer.call(__MODULE__, {:get_session, session_id})
+  @doc """
+  Sends input to a terminal session.
+  
+  ## Examples
+  
+      iex> {:ok, pid} = Session.start_link()
+      iex> :ok = Session.send_input(pid, "test")
+      iex> state = Session.get_state(pid)
+      iex> state.input.buffer
+      "test"
+  """
+  def send_input(pid, input) do
+    GenServer.cast(pid, {:input, input})
   end
 
-  def update_session(session_id, state) do
-    GenServer.call(__MODULE__, {:update_session, session_id, state})
+  @doc """
+  Gets the current state of a terminal session.
+  
+  ## Examples
+  
+      iex> {:ok, pid} = Session.start_link()
+      iex> state = Session.get_state(pid)
+      iex> state.width
+      80
+  """
+  def get_state(pid) do
+    GenServer.call(pid, :get_state)
   end
 
-  def delete_session(session_id) do
-    GenServer.call(__MODULE__, {:delete_session, session_id})
+  @doc """
+  Updates the configuration of a terminal session.
+  
+  ## Examples
+  
+      iex> {:ok, pid} = Session.start_link()
+      iex> :ok = Session.update_config(pid, %{width: 100, height: 30})
+      iex> state = Session.get_state(pid)
+      iex> state.width
+      100
+  """
+  def update_config(pid, config) do
+    GenServer.call(pid, {:update_config, config})
   end
 
-  def list_sessions(user_id) do
-    GenServer.call(__MODULE__, {:list_sessions, user_id})
+  @doc """
+  Counts the number of active terminal sessions.
+  
+  ## Examples
+  
+      iex> {:ok, pid1} = Session.start_link()
+      iex> {:ok, pid2} = Session.start_link()
+      iex> Session.count_active_sessions()
+      2
+  """
+  def count_active_sessions do
+    Registry.select(Raxol.Terminal.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
+    |> length()
   end
 
-  def cleanup_old_sessions(max_age \\ 24 * 60 * 60) do
-    GenServer.call(__MODULE__, {:cleanup_old_sessions, max_age})
-  end
-
-  # Server Callbacks
+  # Callbacks
 
   @impl true
-  def init(_opts) do
-    # Initialize ETS table for session storage
-    :ets.new(:terminal_sessions, [:named_table, :set, :public])
-    
-    # Schedule periodic cleanup
-    schedule_cleanup()
-    
-    {:ok, %{}}
-  end
+  def init({id, width, height, title, theme}) do
+    emulator = Emulator.new(width, height)
+    renderer = Renderer.new(emulator.screen_buffer, theme)
 
-  @impl true
-  def handle_call({:create_session, user_id, opts}, _from, state) do
-    session_id = generate_session_id()
-    emulator = Emulator.new(
-      Keyword.get(opts, :width, 80),
-      Keyword.get(opts, :height, 24)
-    )
-    input = Input.new()
-    renderer = Renderer.new(emulator: emulator)
-    
-    session = %{
-      id: session_id,
-      user_id: user_id,
+    state = %__MODULE__{
+      id: id,
       emulator: emulator,
-      input: input,
       renderer: renderer,
-      created_at: DateTime.utc_now(),
-      updated_at: DateTime.utc_now(),
-      metadata: Keyword.get(opts, :metadata, %{})
+      width: width,
+      height: height,
+      title: title,
+      theme: theme
     }
-    
-    :ets.insert(:terminal_sessions, {session_id, session})
-    
-    {:reply, {:ok, session}, state}
+
+    Registry.register(Raxol.Terminal.Registry, id, state)
+
+    {:ok, state}
   end
 
   @impl true
-  def handle_call({:get_session, session_id}, _from, state) do
-    case :ets.lookup(:terminal_sessions, session_id) do
-      [{^session_id, session}] ->
-        # Update last accessed time
-        updated_session = %{session | updated_at: DateTime.utc_now()}
-        :ets.insert(:terminal_sessions, {session_id, updated_session})
-        {:reply, {:ok, updated_session}, state}
-      [] ->
-        {:reply, {:error, :not_found}, state}
-    end
+  def handle_cast({:input, input}, state) do
+    new_emulator = Emulator.process_input(state.emulator, input)
+    new_renderer = %{state.renderer | screen_buffer: new_emulator.screen_buffer}
+
+    {:noreply, %{state | emulator: new_emulator, renderer: new_renderer}}
   end
 
   @impl true
-  def handle_call({:update_session, session_id, new_state}, _from, state) do
-    case :ets.lookup(:terminal_sessions, session_id) do
-      [{^session_id, session}] ->
-        updated_session = %{session | 
-          emulator: new_state.emulator,
-          input: new_state.input,
-          renderer: new_state.renderer,
-          updated_at: DateTime.utc_now()
-        }
-        :ets.insert(:terminal_sessions, {session_id, updated_session})
-        {:reply, {:ok, updated_session}, state}
-      [] ->
-        {:reply, {:error, :not_found}, state}
-    end
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
   end
 
   @impl true
-  def handle_call({:delete_session, session_id}, _from, state) do
-    :ets.delete(:terminal_sessions, session_id)
-    {:reply, :ok, state}
-  end
+  def handle_call({:update_config, config}, _from, state) do
+    new_state = update_state_from_config(state, config)
+    Registry.register(Raxol.Terminal.Registry, state.id, new_state)
 
-  @impl true
-  def handle_call({:list_sessions, user_id}, _from, state) do
-    sessions = :ets.match_object(:terminal_sessions, {:_, %{user_id: user_id}})
-    {:reply, sessions, state}
-  end
-
-  @impl true
-  def handle_call({:cleanup_old_sessions, max_age}, _from, state) do
-    now = DateTime.utc_now()
-    count = cleanup_sessions_before(now, max_age)
-    {:reply, count, state}
-  end
-
-  @impl true
-  def handle_info(:cleanup, state) do
-    # Run cleanup every hour
-    schedule_cleanup()
-    cleanup_sessions_before(DateTime.utc_now(), 24 * 60 * 60)
-    {:noreply, state}
+    {:reply, :ok, new_state}
   end
 
   # Private functions
 
-  defp generate_session_id do
-    :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
-  end
+  defp update_state_from_config(state, config) do
+    width = Map.get(config, :width, state.width)
+    height = Map.get(config, :height, state.height)
+    title = Map.get(config, :title, state.title)
+    theme = Map.get(config, :theme, state.theme)
 
-  defp schedule_cleanup do
-    # Schedule cleanup every hour
-    Process.send_after(self(), :cleanup, 60 * 60 * 1000)
-  end
+    emulator = Emulator.new(width, height)
+    renderer = Renderer.new(emulator.screen_buffer, theme)
 
-  defp cleanup_sessions_before(now, max_age) do
-    cutoff = DateTime.add(now, -max_age, :second)
-    
-    :ets.select_delete(:terminal_sessions, [
-      {{:_, %{updated_at: :"$1"}}, 
-       [{:<, :"$1", cutoff}], 
-       [true]}
-    ])
+    %{state |
+      emulator: emulator,
+      renderer: renderer,
+      width: width,
+      height: height,
+      title: title,
+      theme: theme
+    }
   end
 end 

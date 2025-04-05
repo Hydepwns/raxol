@@ -106,7 +106,9 @@ defmodule Raxol.Components.Modal do
     View.overlay([id: "#{id}_overlay"], fn ->
       # Optional backdrop
       if show_backdrop do
-        View.panel([id: "#{id}_backdrop", style: backdrop_style], fn -> end)
+        View.panel([id: "#{id}_backdrop", style: backdrop_style], fn ->
+          View.text("")  # Empty text to satisfy the function body requirement
+        end)
       end
       
       # Modal container with optional centering

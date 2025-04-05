@@ -167,43 +167,19 @@ defmodule Raxol.AI.ContentGeneration do
     {:error, "Unsupported generation type"}
   end
   
-  defp do_suggest_text(input, options) do
-    # This would connect to an AI service for real suggestions
-    # Placeholder implementation
-    suggestions = [
-      "#{input}option1",
-      "#{input}option2",
-      "#{input}option3"
-    ]
-    
-    {:ok, suggestions}
+  defp do_suggest_text(input, _options) do
+    # TODO: Implement text suggestion logic
+    {:ok, "Suggested text for: #{input}"}
   end
   
-  defp do_generate_help(context, options) do
-    # Generate contextual help based on application state
-    # Placeholder implementation
-    help = %{
-      title: "Help for #{context[:current_view] || "unknown"} view",
-      content: "This is a help document for the current context."
-    }
-    
-    {:ok, help}
+  defp do_generate_help(context, _options) do
+    # TODO: Implement help generation logic
+    {:ok, "Help content for: #{context}"}
   end
   
-  defp do_generate_tutorial(feature, options) do
-    # Generate an interactive tutorial for the feature
-    # Placeholder implementation
-    tutorial = %{
-      title: "Tutorial: #{feature}",
-      steps: [
-        %{title: "Step 1", content: "Introduction to #{feature}"},
-        %{title: "Step 2", content: "Basic usage of #{feature}"},
-        %{title: "Step 3", content: "Advanced techniques for #{feature}"}
-      ],
-      interactive: true
-    }
-    
-    {:ok, tutorial}
+  defp do_generate_tutorial(feature, _options) do
+    # TODO: Implement tutorial generation logic
+    {:ok, "Tutorial for: #{feature}"}
   end
   
   defp normalize_options(options) do

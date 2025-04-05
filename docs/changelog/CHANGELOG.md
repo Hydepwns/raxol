@@ -1,3 +1,12 @@
+---
+title: Changelog
+description: Complete history of changes in Raxol Terminal Emulator releases
+date: 2023-04-04
+author: Raxol Team
+section: changelog
+tags: [changelog, releases, history]
+---
+
 # Changelog
 
 All notable changes to Raxol will be documented in this file.

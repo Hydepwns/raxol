@@ -1,3 +1,12 @@
+---
+title: Raxol Documentation
+description: Comprehensive documentation for the Raxol terminal emulator framework
+date: 2023-04-04
+author: Raxol Team
+section: guides
+tags: [documentation, guides, overview]
+---
+
 # Raxol Documentation
 
 This directory contains comprehensive documentation for the Raxol framework, a terminal UI toolkit for Elixir applications.

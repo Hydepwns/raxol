@@ -13,7 +13,6 @@ defmodule Raxol.Core.Runtime.EventLoop do
 
   alias Raxol.Core.Events.{Event, Manager}
   alias ExTermbox.Event, as: TermboxEvent
-  alias ExTermbox.Constants
 
   require Logger
 

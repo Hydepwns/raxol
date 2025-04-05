@@ -60,6 +60,54 @@ defmodule Raxol.View do
       }
     end
   end
+
+  @doc """
+  Creates a panel component.
+  """
+  def panel(_opts \\ [], fun) when is_function(fun, 0) do
+    # TODO: Implement actual panel rendering
+    fun.()
+  end
+
+  @doc """
+  Creates a column component.
+  """
+  def column(_opts \\ [], fun) when is_function(fun, 0) do
+    # TODO: Implement actual column rendering
+    fun.()
+  end
+
+  @doc """
+  Creates a row component.
+  """
+  def row(_opts \\ [], fun) when is_function(fun, 0) do
+    # TODO: Implement actual row rendering
+    fun.()
+  end
+
+  @doc """
+  Creates a text component.
+  """
+  def text(content, _opts \\ []) when is_binary(content) do
+    # TODO: Implement actual text rendering
+    content
+  end
+
+  @doc """
+  Creates a button component.
+  """
+  def button(_opts \\ [], label) when is_binary(label) do
+    # TODO: Implement actual button rendering
+    label
+  end
+
+  @doc """
+  Creates a toast notification.
+  """
+  def toast(message, _opts \\ []) when is_binary(message) do
+    # TODO: Implement actual toast rendering
+    message
+  end
 end
 
 defmodule Raxol.View.Elements do

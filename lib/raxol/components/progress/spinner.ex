@@ -17,6 +17,8 @@ defmodule Raxol.Components.Progress.Spinner do
   """
 
   use Raxol.Component
+  alias Raxol.View.Components
+  alias Raxol.View.Layout
   alias Raxol.Core.Style.Color
 
   @default_speed 80
@@ -98,17 +100,17 @@ defmodule Raxol.Components.Progress.Spinner do
     current_frame = Enum.at(state.frames, state.frame_index)
     current_color = Enum.at(state.colors, state.color_index)
 
-    spinner = text(content: current_frame, color: current_color)
+    spinner = Components.text(content: current_frame, color: current_color)
     text_element = if state.text do
-      text(content: state.text)
+      Components.text(content: state.text)
     end
 
-    box do
-      row do
+    Layout.box do
+      Layout.row do
         if state.text_position == :left and text_element do
-          [text_element, text(content: " "), spinner]
+          [text_element, Components.text(content: " "), spinner]
         else
-          [spinner, text_element && text(content: " "), text_element]
+          [spinner, text_element && Components.text(content: " "), text_element]
         end
       end
     end

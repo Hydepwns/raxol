@@ -125,12 +125,10 @@ defmodule Raxol.Core.Renderer.Color do
     # 6x6x6 color cube
     if r == g and g == b do
       # Grayscale ramp
-      if r < 4 do
-        16
-      else if r > 251 do
-        231
-      else
-        232 + div(r - 4, 10)
+      cond do
+        r < 4 -> 16
+        r > 251 -> 231
+        true -> 232 + div(r - 4, 10)
       end
     else
       # Color cube

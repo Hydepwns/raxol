@@ -51,11 +51,11 @@ defmodule Raxol.Components.Base do
   @doc """
   Handles common events like focus, blur, and keyboard navigation.
   """
-  def handle_common_events(%Event{type: :focus} = event, state) do
+  def handle_common_events(%Event{type: :focus} = _event, state) do
     {Map.put(state, :focused, true), []}
   end
 
-  def handle_common_events(%Event{type: :blur} = event, state) do
+  def handle_common_events(%Event{type: :blur} = _event, state) do
     {Map.put(state, :focused, false), []}
   end
 
@@ -95,6 +95,6 @@ defmodule Raxol.Components.Base do
   defp validate_type(value, :boolean) when is_boolean(value), do: :ok
   defp validate_type(value, :integer) when is_integer(value), do: :ok
   defp validate_type(value, :atom) when is_atom(value), do: :ok
-  defp validate_type(value, {:one_of, options}) when value in options, do: :ok
+  defp validate_type(value, {:one_of, options}), do: if(value in options, do: :ok, else: {:error, "expected one of #{inspect(options)}, got #{inspect(value)}"})
   defp validate_type(value, type), do: {:error, "expected #{inspect(type)}, got #{inspect(value)}"}
 end 

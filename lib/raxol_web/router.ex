@@ -17,7 +17,7 @@ defmodule RaxolWeb.Router do
     plug :accepts, ["json"]
   end
 
-  pipeline :require_authenticated_user do
+  pipeline :auth do
     plug :require_authenticated_user
   end
 
@@ -33,8 +33,7 @@ defmodule RaxolWeb.Router do
     post "/login", UserSessionController, :create
     delete "/logout", UserSessionController, :delete
 
-    pipe_through [:browser, :require_authenticated_user]
-
+    # Protected routes
     live "/settings", SettingsLive, :index
     live "/monitoring", MonitoringLive, :index
   end

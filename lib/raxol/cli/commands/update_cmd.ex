@@ -125,7 +125,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   
   defp perform_update(version, opts) do
     # Extract options with defaults
-    force = Keyword.get(opts, :force, false)
+    _force = Keyword.get(opts, :force, false)
     use_delta = Keyword.get(opts, :use_delta, true)
     
     # First check if an update is available

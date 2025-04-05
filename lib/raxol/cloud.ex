@@ -1,7 +1,7 @@
 defmodule Raxol.Cloud do
   @moduledoc "Cloud integration system for Raxol applications."
   
-  alias Raxol.Cloud.{Core, Config, StateManager}
+  alias Raxol.Cloud.{Core, Config}
   
   # Lifecycle functions
   def init(opts \\ []), do: Core.init(opts)

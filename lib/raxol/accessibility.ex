@@ -8,7 +8,7 @@ defmodule Raxol.Accessibility do
   
   ## Usage
   
-  ```elixir
+  @example_code """
   # Initialize accessibility support in your application
   def init(_) do
     %{
@@ -26,11 +26,10 @@ defmodule Raxol.Accessibility do
       count: new_count,
       accessibility: Raxol.Accessibility.announce(
         model.accessibility, 
-        "Count incremented to #{new_count}"
+        "Count incremented to \#{new_count}"
       )
     }
   end
-  ```
   """
   
   @type t :: map()

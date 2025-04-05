@@ -1,3 +1,12 @@
+---
+title: Development Timeline
+description: Timeline for development phases in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: roadmap
+tags: [roadmap, timeline, development]
+---
+
 # Raxol Project Timeline
 
 This document provides a consolidated view of the Raxol project timeline across all phases.

@@ -1,3 +1,12 @@
+---
+title: Event System Examples
+description: Examples demonstrating the event system in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: architecture
+tags: [architecture, events, examples, documentation]
+---
+
 # Event System Examples
 
 This document provides comprehensive examples of using the Raxol event system in components. These patterns demonstrate best practices for event handling, subscription management, and component lifecycle integration.

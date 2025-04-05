@@ -172,7 +172,7 @@ defmodule Raxol.Core.Runtime.Subscription do
   end
 
   defp start_event_subscription(event_types, context) do
-    subscription_id = Raxol.Core.Events.Manager.subscribe(event_types)
+    subscription_id = Raxol.Core.Events.Manager.subscribe(event_types, context.pid)
     {:ok, {:events, subscription_id}}
   end
 

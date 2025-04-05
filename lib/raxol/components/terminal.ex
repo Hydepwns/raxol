@@ -13,6 +13,8 @@ defmodule Raxol.Components.Terminal do
   use Raxol.Component
   alias Raxol.Components.Base
   alias Raxol.Components.Terminal.ANSI
+  import Raxol.View.Components
+  import Raxol.View.Layout
 
   @type terminal_state :: %{
     buffer: [String.t()],
@@ -118,15 +120,49 @@ defmodule Raxol.Components.Terminal do
 
   # Private functions
 
-  defp handle_normal_mode(%Event{key: :i}, state) do
-    %{state | mode: :insert}
+  defp handle_normal_mode(%Event{type: :key, data: %{key: :i}}, state) do
+    {%{state | mode: :insert}, []}
   end
 
-  defp handle_normal_mode(%Event{key: :colon}, state) do
-    %{state | mode: :command}
+  defp handle_normal_mode(%Event{type: :key, data: %{key: :colon}}, state) do
+    {%{state | mode: :command, command_buffer: ":"}, []}
   end
 
-  defp handle_normal_mode(%Event{key: :up}, state) do
+  defp handle_normal_mode(%Event{type: :key, data: %{key: :up}}, state) do
+    {update(:move_cursor_up, state), []}
+  end
+
+  defp handle_normal_mode(%Event{type: :key, data: %{key: :down}}, state) do
+    {update(:move_cursor_down, state), []}
+  end
+
+  defp handle_normal_mode(_event, state), do: state
+
+  defp handle_insert_mode(%Event{type: :key, data: %{key: key}}, state) when is_binary(key) do
+    {update(:insert_char, state, key), []}
+  end
+
+  defp handle_insert_mode(%Event{type: :key, data: %{key: :escape}}, state) do
+    {%{state | mode: :normal}, []}
+  end
+
+  defp handle_insert_mode(_event, state), do: state
+
+  defp handle_command_mode(%Event{type: :key, data: %{key: :enter}}, state) do
+    {update(:execute_command, state), []}
+  end
+
+  defp handle_command_mode(%Event{type: :key, data: %{key: :escape}}, state) do
+    {%{state | mode: :normal, command_buffer: ""}, []}
+  end
+
+  defp handle_command_mode(_event, state), do: state
+
+  defp update(:insert_char, state, char) do
+    %{state | buffer: state.buffer <> char}
+  end
+
+  defp update(:move_cursor_up, state) do
     if state.history_index < length(state.history) do
       %{state | history_index: state.history_index + 1}
     else
@@ -134,7 +170,7 @@ defmodule Raxol.Components.Terminal do
     end
   end
 
-  defp handle_normal_mode(%Event{key: :down}, state) do
+  defp update(:move_cursor_down, state) do
     if state.history_index > 0 do
       %{state | history_index: state.history_index - 1}
     else
@@ -142,34 +178,8 @@ defmodule Raxol.Components.Terminal do
     end
   end
 
-  defp handle_normal_mode(_event, state), do: state
-
-  defp handle_insert_mode(%Event{key: key}, state) when is_binary(key) do
-    # Process the input through ANSI to handle any escape sequences
-    new_ansi_state = ANSI.process(key, state.ansi_state)
-    
-    %{state |
-      buffer: new_ansi_state.buffer,
-      cursor: new_ansi_state.cursor,
-      style: Map.merge(state.style, new_ansi_state.style),
-      ansi_state: new_ansi_state
-    }
-  end
-
-  defp handle_insert_mode(%Event{key: :escape}, state) do
-    %{state | mode: :normal}
-  end
-
-  defp handle_insert_mode(_event, state), do: state
-
-  defp handle_command_mode(%Event{key: :enter}, state) do
+  defp update(:execute_command, state) do
     # Execute command and reset mode
     %{state | mode: :normal}
   end
-
-  defp handle_command_mode(%Event{key: :escape}, state) do
-    %{state | mode: :normal}
-  end
-
-  defp handle_command_mode(_event, state), do: state
 end 

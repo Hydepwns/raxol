@@ -15,8 +15,6 @@ defmodule Raxol.Docs.ComponentCatalog do
   * Search functionality
   """
   
-  alias Raxol.Core.UXRefinement
-  
   # Component category
   defmodule Category do
     @moduledoc false

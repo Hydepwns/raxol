@@ -9,8 +9,6 @@ defmodule Raxol.Core.Renderer.Buffer do
   * Managing frame timing
   """
 
-  alias Raxol.Core.Runtime.EventLoop
-
   @type position :: {non_neg_integer(), non_neg_integer()}
   @type size :: {non_neg_integer(), non_neg_integer()}
   @type cell :: %{
@@ -151,17 +149,16 @@ defmodule Raxol.Core.Renderer.Buffer do
 
   # Private Helpers
 
-  defp copy_cells(cells, {old_w, old_h}, {new_w, new_h}) do
-    # Find cells that need to be copied or marked as damaged
-    Enum.reduce(cells, {%{}, MapSet.new()}, fn {{x, y}, cell}, {new_cells, damage} ->
-      cond do
-        x < new_w and y < new_h ->
-          # Cell is still in bounds, copy it
-          {Map.put(new_cells, {x, y}, cell), MapSet.put(damage, {x, y})}
-        true ->
-          # Cell is out of bounds, mark as damaged
-          {new_cells, MapSet.put(damage, {x, y})}
+  defp copy_cells(cells, {old_w, _old_h}, {new_w, new_h}) do
+    # Copy cells from old dimensions to new dimensions
+    for y <- 0..(new_h - 1) do
+      for x <- 0..(new_w - 1) do
+        if x < old_w and y < new_h do
+          get_in(cells, [y, x]) || Cell.new()
+        else
+          Cell.new()
+        end
       end
-    end)
+    end
   end
 end 

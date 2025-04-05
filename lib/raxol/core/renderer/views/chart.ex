@@ -36,7 +36,6 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   ]
 
   @bar_chars ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
-  @line_chars ["⠁", "⠂", "⠄", "⡀", "⢀", "⠠", "⠐", "⠈"]
 
   @doc """
   Creates a new chart view.
@@ -204,9 +203,9 @@ defmodule Raxol.Core.Renderer.Views.Chart do
 
   defp create_line(points, width, height, color) do
     # Create a blank canvas
-    canvas = for y <- 0..(height-1) do
-      for x <- 0..(width-1) do
-        nil
+    canvas = for _y <- 0..(height-1) do
+      for _x <- 0..(width-1) do
+        " "
       end
     end
     
@@ -237,29 +236,12 @@ defmodule Raxol.Core.Renderer.Views.Chart do
 
   defp draw_line(canvas, {x1, y1}, {x2, y2}) do
     dx = abs(x2 - x1)
-    dy = abs(y2 - y1)
-    steep = dy > dx
-
-    {x1, y1, x2, y2} = if steep do
-      {y1, x1, y2, x2}
-    else
-      {x1, y1, x2, y2}
-    end
-
-    {x1, y1, x2, y2} = if x1 > x2 do
-      {x2, y2, x1, y1}
-    else
-      {x1, y1, x2, y2}
-    end
-
-    dx = x2 - x1
-    dy = abs(y2 - y1)
-    error = div(dx, 2)
-    ystep = if y1 < y2, do: 1, else: -1
-    y = y1
+    _dy = abs(y2 - y1)
+    _error = div(dx, 2)
+    _ystep = if y1 < y2, do: 1, else: -1
 
     Enum.reduce(x1..x2, canvas, fn x, acc ->
-      pos = if steep, do: {y, x}, else: {x, y}
+      pos = {x, y1}
       put_in(acc, pos_to_path(pos), "•")
     end)
   end
@@ -273,7 +255,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     out_min + (ratio * (out_max - out_min))
   end
 
-  defp add_axes(content, min, max, width, height, orientation) do
+  defp add_axes(content, min, max, width, height, _orientation) do
     y_axis = create_y_axis(min, max, height)
     x_axis = create_x_axis(width)
     
@@ -304,7 +286,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     View.text(String.duplicate("─", width))
   end
 
-  defp add_labels(content, series, width, height) do
+  defp add_labels(content, _series, _width, _height) do
     # Add x-axis labels
     content
   end

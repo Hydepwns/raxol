@@ -55,6 +55,7 @@ defmodule Raxol.Core.KeyboardNavigator do
   * `:vim_keys` - Enable vim-style navigation with h,j,k,l (default: `false`)
   * `:group_navigation` - Enable group-based navigation (default: `true`)
   * `:spatial_navigation` - Enable spatial navigation for grid layouts (default: `false`)
+  * `:tab_navigation` - Enable tab-based navigation (default: `true`)
   
   ## Examples
   
@@ -148,39 +149,61 @@ defmodule Raxol.Core.KeyboardNavigator do
     config = get_config()
     
     case event do
-      # Tab navigation
-      {:key, key, modifiers} when key == config[:next_key] and modifiers == [] ->
-        FocusManager.focus_next()
-        :handled
-        
-      {:key, key, modifiers} when key == config[:previous_key] and modifiers == [:shift] ->
-        FocusManager.focus_previous()
-        :handled
-        
-      # Activation keys (Enter/Space)
-      {:key, key, []} when key in config[:activate_keys] ->
-        handle_activation()
-        :handled
-        
-      # Dismiss/back key (Escape)
-      {:key, key, []} when key == config[:dismiss_key] ->
-        handle_dismiss()
-        :handled
-        
-      # Arrow key navigation
-      {:key, key, []} when key in [:up, :down, :left, :right] and config[:arrow_navigation] ->
-        handle_arrow_navigation(key)
-        :handled
-        
-      # Vim key navigation
-      {:key, key, []} when key in [:h, :j, :k, :l] and config[:vim_keys] ->
-        handle_vim_navigation(key)
-        :handled
-        
-      # Function key shortcuts (F1-F12)
-      {:key, key, []} when key in [:f1, :f2, :f3, :f4, :f5, :f6, :f7, :f8, :f9, :f10, :f11, :f12] ->
-        handle_function_key(key)
-        :handled
+      {:key, key, modifiers} ->
+        next_key = Access.get(config, :next_key)
+        prev_key = Access.get(config, :previous_key)
+        activate_keys = Access.get(config, :activate_keys)
+        dismiss_key = Access.get(config, :dismiss_key)
+        cond do
+          key == next_key and modifiers == [] ->
+            navigate_in_group(:right)
+            :handled
+          key == prev_key and modifiers == [:shift] ->
+            navigate_in_group(:left)
+            :handled
+          key in activate_keys and modifiers == [] ->
+            handle_activation()
+            :handled
+          key == dismiss_key and modifiers == [] ->
+            handle_dismiss()
+            :handled
+          key == :escape and modifiers == [] ->
+            handle_dismiss()
+            :handled
+          key in [:left, :right, :up, :down] and modifiers == [] ->
+            if config[:group_navigation] do
+              navigate_in_group(key)
+              :handled
+            else
+              :unhandled
+            end
+          key in [:h, :j, :k, :l] and modifiers == [] ->
+            if config[:vim_keys] do
+              handle_vim_navigation(key)
+              :handled
+            else
+              :unhandled
+            end
+          key in [:f1, :f2, :f3, :f4, :f5, :f6, :f7, :f8, :f9, :f10, :f11, :f12] and modifiers == [] ->
+            handle_function_key(key)
+            :handled
+          key == :tab and modifiers == [] ->
+            if config[:tab_navigation] do
+              navigate_in_group(:right)
+              :handled
+            else
+              :unhandled
+            end
+          key == :tab and modifiers == [:shift] ->
+            if config[:tab_navigation] do
+              navigate_in_group(:left)
+              :handled
+            else
+              :unhandled
+            end
+          true ->
+            :unhandled
+        end
         
       # Unhandled keyboard event
       _ ->
@@ -230,7 +253,8 @@ defmodule Raxol.Core.KeyboardNavigator do
       vim_keys: false,
       group_navigation: true,
       spatial_navigation: false,
-      wrap_navigation: true
+      wrap_navigation: true,
+      tab_navigation: true
     ]
   end
   
@@ -307,7 +331,7 @@ defmodule Raxol.Core.KeyboardNavigator do
   
   defp try_explicit_navigation(direction) do
     current_focus = FocusManager.get_focused_element()
-    return false unless current_focus
+    if !current_focus, do: false
     
     nav_paths = Process.get(:keyboard_navigator_paths) || %{}
     from_paths = Map.get(nav_paths, current_focus, %{})
@@ -322,11 +346,11 @@ defmodule Raxol.Core.KeyboardNavigator do
   
   defp try_spatial_navigation(direction) do
     current_focus = FocusManager.get_focused_element()
-    return false unless current_focus
+    if !current_focus, do: false
     
     spatial_map = get_spatial_map()
     current_pos = Map.get(spatial_map, current_focus)
-    return false unless current_pos
+    if !current_pos, do: false
     
     # Find the closest component in the specified direction
     target_id = find_closest_in_direction(current_pos, direction, spatial_map)
@@ -371,13 +395,13 @@ defmodule Raxol.Core.KeyboardNavigator do
   defp distance_in_direction(from, to, direction) do
     # Calculate a weighted distance that prioritizes alignment
     case direction do
-      :up, :down ->
+      dir when dir in [:up, :down] ->
         # Vertical direction: x-alignment is more important
         vertical_dist = abs(to.center_y - from.center_y)
         horizontal_penalty = abs(to.center_x - from.center_x) * 2
         vertical_dist + horizontal_penalty
         
-      :left, :right ->
+      dir when dir in [:left, :right] ->
         # Horizontal direction: y-alignment is more important
         horizontal_dist = abs(to.center_x - from.center_x)
         vertical_penalty = abs(to.center_y - from.center_y) * 2

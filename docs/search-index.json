@@ -1,0 +1,189 @@
+{
+  "index": [
+    {
+      "file": "README.md",
+      "title": "README.md",
+      "description": "",
+      "date": "",
+      "author": "",
+      "section": "uncategorized",
+      "headings": [
+        {
+          "level": 1,
+          "text": "Raxol Documentation"
+        },
+        {
+          "level": 2,
+          "text": "Directory Structure"
+        },
+        {
+          "level": 2,
+          "text": "Getting Started"
+        },
+        {
+          "level": 2,
+          "text": "Contributing to Documentation"
+        },
+        {
+          "level": 2,
+          "text": "License"
+        }
+      ],
+      "codeBlocks": [],
+      "tags": [],
+      "searchText": " raxol documentation\n\nthis directory contains comprehensive documentation for the raxol framework, a terminal ui toolkit for elixir applications.\n\n directory structure\n\n- accessibility/ - guides and documentation for implementing accessible terminal uis\n- api/ - api reference and documentation\n- architecture/ - system architecture and design documentation\n- changelog/ - version history and release notes\n- comparison/ - comparisons with other terminal ui frameworks\n- components/ - documentation for built-in ui components\n- examples/ - example applications and code snippets\n- guides/ - user guides and tutorials\n- implementation/ - implementation details and technical specifications\n- installation/ - installation and setup instructions\n- performance/ - performance optimization guides\n- planning/ - development roadmap and planning documents\n- roadmap/ - future development plans and feature proposals\n- testing/ - testing guidelines and tools\n- visualization/ - documentation for data visualization components\n\n getting started\n\nfor new users, we recommend starting with:\n\n1. installation guide\n2. quick start tutorial\n3. basic components overview\n\n contributing to documentation\n\nif you'd like to contribute to the documentation, please see our documentation contribution guide.\n\n license\n\nthis documentation is licensed under the same license as the raxol project. see the license file in the root directory for details.\n"
+    },
+    {
+      "file": "ai-integration-summary.md",
+      "title": "ai-integration-summary.md",
+      "description": "",
+      "date": "",
+      "author": "",
+      "section": "uncategorized",
+      "headings": [
+        {
+          "level": 1,
+          "text": "AI Integration Summary"
+        },
+        {
+          "level": 2,
+          "text": "Overview"
+        },
+        {
+          "level": 2,
+          "text": "Completed Features"
+        },
+        {
+          "level": 3,
+          "text": "Core Infrastructure"
+        },
+        {
+          "level": 3,
+          "text": "Intelligent Development Assistance"
+        },
+        {
+          "level": 3,
+          "text": "Documentation and Examples"
+        },
+        {
+          "level": 2,
+          "text": "Implementation Details"
+        },
+        {
+          "level": 2,
+          "text": "Success Metrics"
+        },
+        {
+          "level": 2,
+          "text": "Future Work"
+        },
+        {
+          "level": 3,
+          "text": "Content and UI Generation"
+        },
+        {
+          "level": 3,
+          "text": "AI Runtime Features"
+        },
+        {
+          "level": 2,
+          "text": "Getting Started"
+        }
+      ],
+      "codeBlocks": [
+        "src/core/ai/\n├── index.ts                  # Main exports and AIManager implementation\n├── README.md                 # Documentation\n├── demo.ts                   # Usage examples\n├── __tests__/                # Unit tests\n│   └── ai-integration.test.ts\n└── assistant/                # Assistant implementations\n    ├── CodeCompletion.ts\n    ├── RefactoringAssistant.ts\n    ├── PerformanceAdvisor.ts\n    └── AccessibilityChecker.ts"
+      ],
+      "tags": [],
+      "searchText": " ai integration summary\n\n overview\n\nthe ai integration module for raxol has been successfully implemented, providing developers with intelligent assistance features that enhance productivity and code quality. this document summarizes the completed work, current capabilities, and future plans.\n\n completed features\n\n core infrastructure\n\n- ✅ ai manager system for configuration and service management\n- ✅ flexible api design supporting multiple ai providers\n- ✅ privacy-focused implementation with configurable data sharing options\n- ✅ local model support for offline development\n\n intelligent development assistance\n\n- ✅ code completion - context-aware code suggestions\n- ✅ refactoring assistant - smart code refactoring proposals\n- ✅ performance advisor - performance optimization recommendations\n- ✅ accessibility checker - accessibility compliance suggestions and fixes\n\n documentation and examples\n\n- ✅ comprehensive readme with usage examples\n- ✅ demo file showcasing all implemented features\n- ✅ unit tests for all ai integration components\n\n implementation details\n\nthe ai integration module is structured as follows:\n\n\n\n success metrics\n\nthe ai integration has achieved the following success metrics:\n\n- ✅ reduced development time by 30% through intelligent assistance\n- ✅ achieved 90% accuracy in performance optimization recommendations\n- ✅ generated accessibility-compliant components with minimal developer input\n\n future work\n\nthe following features are planned for future releases:\n\n content and ui generation\n\n- smart component generation\n- layout suggestions\n- content creation assistance\n- design pattern recommendations\n\n ai runtime features\n\n- adaptive performance optimization\n- user pattern learning\n- personalized experiences\n- intelligent data handling\n\n getting started\n\nto use the ai integration features in your raxol application, refer to the ai integration readme for detailed instructions and examples.\n"
+    },
+    {
+      "file": "progress-summary.md",
+      "title": "progress-summary.md",
+      "description": "",
+      "date": "",
+      "author": "",
+      "section": "uncategorized",
+      "headings": [
+        {
+          "level": 1,
+          "text": "Raxol Project Progress Summary"
+        },
+        {
+          "level": 2,
+          "text": "Completed Features"
+        },
+        {
+          "level": 3,
+          "text": "Screen Buffer System"
+        },
+        {
+          "level": 3,
+          "text": "Cursor Management System"
+        },
+        {
+          "level": 3,
+          "text": "Integration Layer"
+        },
+        {
+          "level": 2,
+          "text": "Documentation"
+        },
+        {
+          "level": 2,
+          "text": "Next Steps"
+        },
+        {
+          "level": 3,
+          "text": "ANSI Processing"
+        },
+        {
+          "level": 3,
+          "text": "Input Processing"
+        },
+        {
+          "level": 3,
+          "text": "Performance Optimization"
+        },
+        {
+          "level": 2,
+          "text": "Conclusion"
+        }
+      ],
+      "codeBlocks": [],
+      "tags": [],
+      "searchText": " raxol project progress summary\n\n completed features\n\n screen buffer system\nwe have successfully implemented a comprehensive screen buffer management system with the following features:\n\n1. double buffering\n   - implemented in raxol.terminal.buffer.manager\n   - reduces screen flicker during updates\n   - optimizes rendering performance\n   - minimizes memory allocations\n\n2. damage tracking\n   - tracks changed regions of the screen\n   - only updates necessary parts of the display\n   - improves rendering efficiency\n   - reduces unnecessary redraws\n\n3. virtual scrolling\n   - implemented in raxol.terminal.buffer.scroll\n   - configurable history size\n   - memory-efficient storage\n   - smart viewport management\n   - scroll position tracking\n\n4. memory management\n   - automatic cleanup of unused buffers\n   - compression of historical content\n   - configurable memory limits\n   - memory usage monitoring\n\n cursor management system\nwe have implemented an advanced cursor management system with the following features:\n\n1. multiple cursor styles\n   - block, underline, and bar styles\n   - custom style support\n   - style transitions\n   - visibility control\n\n2. state persistence\n   - save and restore cursor position\n   - cursor state tracking\n   - position bounds checking\n   - style persistence\n\n3. animation system\n   - blinking cursor support\n   - configurable blink rates\n   - animation state tracking\n   - visibility transitions\n\n integration layer\nwe have created a comprehensive integration layer that connects all terminal components:\n\n1. component coordination\n   - initializes and manages all terminal components\n   - synchronizes buffer and cursor states\n   - handles terminal operations\n   - manages memory and performance optimizations\n\n2. terminal operations\n   - text writing with buffer and cursor management\n   - cursor movement with bounds checking\n   - screen clearing with damage tracking\n   - scrolling with history management\n\n3. memory management\n   - tracks memory usage across all components\n   - enforces memory limits\n   - performs automatic cleanup when needed\n   - compresses buffer content when memory usage is high\n\n documentation\nwe have created comprehensive documentation for all components:\n\n1. component documentation\n   - detailed module documentation\n   - function documentation with examples\n   - type specifications\n   - usage examples\n\n2. readme files\n   - buffer system readme\n   - cursor system readme\n   - terminal system readme\n   - integration layer documentation\n\n3. test coverage\n   - unit tests for each component\n   - integration tests for component interaction\n   - performance tests for memory usage\n   - stress tests for large content handling\n\n next steps\n\n ansi processing\nthe next focus will be on enhancing the ansi processing capabilities:\n\n1. extended color support\n   - 16-color mode\n   - 256-color mode\n   - true color (24-bit)\n   - color blending\n   - custom palettes\n\n2. text attributes\n   - bold, italic, underline\n   - strikethrough\n   - blink modes\n   - reverse video\n   - conceal\n\n3. character sets\n   - ascii\n   - unicode\n   - special symbols\n   - custom glyphs\n\n4. terminal modes\n   - insert/replace\n   - visual/command\n   - bracketed paste\n   - mouse reporting\n   - screen modes\n\n input processing\nwe will also focus on improving input handling:\n\n1. keyboard handling\n   - special keys\n   - key combinations\n   - key repeat\n   - input macros\n   - input recording\n   - input prediction\n\n2. mouse support\n   - multiple buttons\n   - mouse wheel\n   - selection\n   - reporting modes\n   - event filtering\n\n performance optimization\nwe will continue to optimize performance:\n\n1. memory management\n   - further buffer compression\n   - improved garbage collection\n   - cache optimization\n   - memory profiling\n\n2. rendering optimization\n   - hardware acceleration\n   - frame rate control\n   - batch rendering\n   - render caching\n\n conclusion\nthe implementation of the screen buffer and cursor management systems has significantly enhanced the raxol terminal framework. these components provide a solid foundation for advanced terminal features and ensure efficient performance even with large amounts of content. the integration layer seamlessly connects all components, making it easy to use the terminal system as a cohesive unit.\n\nthe next phase of development will focus on ansi processing and input handling, which will further enhance the terminal's capabilities and user experience. with the solid foundation we've built, we're well-positioned to implement these features efficiently and effectively. "
+    }
+  ],
+  "suggestions": [
+    "ai integration summary",
+    "ai runtime features",
+    "ai-integration-summary.md",
+    "ansi processing",
+    "completed features",
+    "conclusion",
+    "content and ui generation",
+    "contributing to documentation",
+    "core infrastructure",
+    "cursor management system",
+    "directory structure",
+    "documentation",
+    "documentation and examples",
+    "future work",
+    "getting started",
+    "implementation details",
+    "input processing",
+    "integration layer",
+    "intelligent development assistance",
+    "license",
+    "next steps",
+    "overview",
+    "performance optimization",
+    "progress-summary.md",
+    "raxol documentation",
+    "raxol project progress summary",
+    "readme.md",
+    "screen buffer system",
+    "success metrics"
+  ],
+  "lastUpdated": "2025-04-04T13:46:02.285Z"
+}

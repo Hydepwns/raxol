@@ -1,3 +1,12 @@
+---
+title: Testing Infrastructure
+description: Documentation for the testing infrastructure in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: architecture
+tags: [architecture, testing, infrastructure, quality]
+---
+
 # Testing Infrastructure
 
 This document outlines the comprehensive testing strategy for Raxol, covering all aspects from unit testing to end-to-end integration testing.

@@ -1,3 +1,12 @@
+---
+title: Integrated Accessibility Demo
+description: Demonstration of integrated accessibility features in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: accessibility
+tags: [accessibility, demo, demonstration]
+---
+
 # Integrated Accessibility Demo
 
 This document explains how to run and interact with the Raxol integrated accessibility demo, which showcases how the various accessibility features work together across different systems.

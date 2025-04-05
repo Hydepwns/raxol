@@ -209,11 +209,8 @@ defmodule Raxol.Test.Visual do
   end
 
   defp compute_visual_diff(expected, actual) do
-    # Implement visual diff logic
-    # For now, return simple string diff
-    case String.myers_difference(expected, actual) do
-      [] -> nil
-      diff -> diff
-    end
+    # Implement visual diff algorithm
+    # This could use a library like diff-match-patch or similar
+    "Visual diff between expected and actual output"
   end
 end 

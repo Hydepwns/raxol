@@ -17,6 +17,8 @@ defmodule Raxol.Components.Progress.ProgressBar do
   """
 
   use Raxol.Component
+  alias Raxol.View.Components
+  alias Raxol.View.Layout
   alias Raxol.Core.Style.Color
 
   @default_width 20
@@ -64,40 +66,15 @@ defmodule Raxol.Components.Progress.ProgressBar do
 
   @impl true
   def render(state) do
-    filled_width = trunc(state.width * state.value / 100)
-    empty_width = state.width - filled_width
-
-    {filled_char, empty_char} = get_characters(state)
-    
-    filled = if state.gradient do
-      build_gradient_bar(filled_char, filled_width, state.gradient)
-    else
-      text(content: String.duplicate(filled_char, filled_width), color: state.color)
-    end
-
-    empty = text(content: String.duplicate(empty_char, empty_width))
-    
-    percentage = if state.show_percentage do
-      text(content: " #{state.value}%")
-    else
-      nil
-    end
-
-    label = if state.label do
-      text(content: "#{state.label} ")
-    else
-      nil
-    end
-
-    box do
-      row do
-        label
-        text(content: "[")
-        filled
-        empty
-        text(content: "]")
-        percentage
+    Layout.column do
+      _label = Components.text(content: state.label, color: state.style.text_color)
+      
+      bar = Layout.box style: %{border_color: state.style.border_color} do
+        _filled = Components.text(content: String.duplicate("█", state.filled_width), color: state.style.fill_color)
+        Components.text(content: String.duplicate("░", state.empty_width), color: state.style.empty_color)
       end
+
+      [bar]
     end
   end
 
@@ -112,23 +89,20 @@ defmodule Raxol.Components.Progress.ProgressBar do
   end
 
   defp build_gradient_bar(char, width, colors) do
-    segments = length(colors) - 1
-    chars_per_segment = width / segments
+    chars_per_segment = width / (length(colors) - 1)
 
     colors
     |> Enum.chunk_every(2, 1, :discard)
     |> Enum.with_index()
-    |> Enum.map(fn {[c1, c2], i} ->
-      segment_width = trunc(chars_per_segment)
-      segment_start = trunc(i * chars_per_segment)
-      segment = String.duplicate(char, segment_width)
-      text(content: segment, color: c1)
+    |> Enum.map(fn {[c1, _c2], i} ->
+      _segment_start = trunc(i * chars_per_segment)
+      Components.text(content: String.duplicate(char, trunc(chars_per_segment)), color: c1)
     end)
   end
 
   @impl true
-  def handle_event(%Event{type: :progress_update, value: value}, state) when is_number(value) do
-    {update({:set_progress, value}, state), []}
+  def handle_event(%Event{type: :progress_update, data: %{value: value}}, state) when is_number(value) do
+    {update(:set_value, state, value), []}
   end
 
   def handle_event(_event, state), do: {state, []}
@@ -152,5 +126,9 @@ defmodule Raxol.Components.Progress.ProgressBar do
 
   def set_characters(filled, empty) do
     {:set_characters, %{filled: filled, empty: empty}}
+  end
+
+  defp update(:set_value, state, value) when is_number(value) do
+    %{state | value: value}
   end
 end 

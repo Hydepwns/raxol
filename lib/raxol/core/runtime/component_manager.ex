@@ -12,7 +12,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   use GenServer
 
-  alias Raxol.Core.Events.{Event, Manager, Subscription}
   alias Raxol.Core.Runtime.EventLoop
 
   # Client API

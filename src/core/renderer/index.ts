@@ -1,11 +1,10 @@
 /**
- * Core renderer module
- * 
- * Exports the renderer components and provides
- * a centralized rendering system with performance optimizations.
+ * Core renderer module for Raxol.
+ * Handles rendering of UI elements and managing the render loop.
  */
 
 import { UpdateBatcher } from './UpdateBatcher';
+import { View } from './view';
 
 // Create singleton instance for application-wide use
 export const globalUpdateBatcher = new UpdateBatcher({
@@ -32,4 +31,8 @@ export const getPendingUpdateCount = (): number => {
 // Clear all pending updates
 export const clearPendingUpdates = (): void => {
   globalUpdateBatcher.clearPendingUpdates();
+};
+
+export {
+  View
 }; 

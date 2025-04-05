@@ -1,3 +1,12 @@
+---
+title: Jank Detection
+description: Documentation for detecting and analyzing jank in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: performance
+tags: [performance, jank, detection]
+---
+
 # Jank Detection Tools
 
 The Raxol framework includes powerful tools for detecting, analyzing, and visualizing UI jank (frame drops and stutters). These tools help developers identify and fix performance issues that affect user experience.
@@ -139,4 +148,4 @@ For advanced use cases, the JankDetector and JankVisualizer classes support addi
 
 ---
 
-For more information, see the [Performance Optimization Guide](./PerformanceOptimization.md) and [Animation Performance](./AnimationPerformance.md) documentation. 
+For more information, see the [Performance Optimization Guide](./PerformanceOptimization.md) and [Animation Performance Guide](../guides/animation_performance.md). 

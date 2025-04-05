@@ -1,3 +1,12 @@
+---
+title: Advanced Debugging Guide
+description: Guide for advanced debugging techniques in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: guides
+tags: [guides, debugging, advanced]
+---
+
 # Advanced Debugging Guide
 
 This guide provides in-depth techniques for debugging complex issues in Raxol applications. It covers event system debugging, performance troubleshooting, and memory leak detection.

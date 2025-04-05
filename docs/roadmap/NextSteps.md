@@ -1,3 +1,12 @@
+---
+title: Next Steps
+description: Documentation of next steps in Raxol Terminal Emulator development
+date: 2023-04-04
+author: Raxol Team
+section: roadmap
+tags: [roadmap, next steps, planning]
+---
+
 # Next Steps for Raxol Framework Development
 
 This document outlines the current status of the Raxol framework and provides clear direction for immediate next steps in development.

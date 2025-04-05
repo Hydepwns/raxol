@@ -9,47 +9,48 @@ defmodule Raxol.Terminal.Cell do
   - Cell state
   """
 
+  alias Raxol.Terminal.ANSI.TextFormatting
+
   @type t :: %__MODULE__{
     char: String.t(),
-    attributes: map()
+    style: TextFormatting.text_style()
   }
 
   defstruct [
     :char,
-    :attributes
+    :style
   ]
 
   @doc """
-  Creates a new empty cell.
+  Creates a new cell with optional character and style.
   
   ## Examples
   
       iex> cell = Cell.new()
       iex> Cell.is_empty?(cell)
       true
-  """
-  def new(attributes \\ %{}) do
-    %__MODULE__{
-      char: "",
-      attributes: attributes
-    }
-  end
-
-  @doc """
-  Creates a new cell with the given character and attributes.
-  
-  ## Examples
-  
+      
+      iex> cell = Cell.new("A")
+      iex> Cell.get_char(cell)
+      "A"
+      
       iex> cell = Cell.new("A", %{foreground: :red})
       iex> Cell.get_char(cell)
       "A"
-      iex> Cell.get_attribute(cell, :foreground)
-      :red
+      iex> Cell.get_style(cell)
+      %{foreground: :red}
   """
-  def new(char, attributes) do
+  def new(style \\ TextFormatting.new()) do
+    %__MODULE__{
+      char: "",
+      style: style
+    }
+  end
+
+  def new(char, style) when is_binary(char) do
     %__MODULE__{
       char: char,
-      attributes: attributes
+      style: style
     }
   end
 
@@ -62,9 +63,18 @@ defmodule Raxol.Terminal.Cell do
       iex> Cell.get_char(cell)
       "A"
   """
-  def get_char(%__MODULE__{} = cell) do
-    cell.char
-  end
+  def get_char(%__MODULE__{char: char}), do: char
+
+  @doc """
+  Gets the text style of the cell.
+  
+  ## Examples
+  
+      iex> cell = Cell.new("A", %{foreground: :red})
+      iex> Cell.get_style(cell)
+      %{foreground: :red}
+  """
+  def get_style(%__MODULE__{style: style}), do: style
 
   @doc """
   Sets the character content of a cell.
@@ -81,45 +91,81 @@ defmodule Raxol.Terminal.Cell do
   end
 
   @doc """
-  Gets an attribute value from a cell.
-  
-  ## Examples
-  
-      iex> cell = Cell.new("A", %{foreground: :red})
-      iex> Cell.get_attribute(cell, :foreground)
-      :red
-  """
-  def get_attribute(%__MODULE__{} = cell, key) do
-    Map.get(cell.attributes, key)
-  end
-
-  @doc """
-  Sets an attribute value in a cell.
+  Sets the text style of the cell.
   
   ## Examples
   
       iex> cell = Cell.new("A")
-      iex> cell = Cell.set_attribute(cell, :foreground, :red)
-      iex> Cell.get_attribute(cell, :foreground)
-      :red
+      iex> cell = Cell.set_style(cell, %{foreground: :red})
+      iex> Cell.get_style(cell)
+      %{foreground: :red}
   """
-  def set_attribute(%__MODULE__{} = cell, key, value) do
-    %{cell | attributes: Map.put(cell.attributes, key, value)}
+  def set_style(%__MODULE__{} = cell, style) do
+    %{cell | style: style}
   end
 
   @doc """
-  Removes an attribute from a cell.
+  Merges the cell's style with another style.
+  
+  ## Examples
+  
+      iex> cell1 = Cell.new("A", %{foreground: :red})
+      iex> cell2 = Cell.new("B", %{background: :blue})
+      iex> cell = Cell.merge_style(cell1, cell2)
+      iex> Cell.get_style(cell)
+      %{foreground: :red, background: :blue}
+  """
+  def merge_style(%__MODULE__{} = cell, style) do
+    %{cell | style: TextFormatting.merge(cell.style, style)}
+  end
+
+  @doc """
+  Checks if the cell has a specific attribute.
   
   ## Examples
   
       iex> cell = Cell.new("A", %{foreground: :red})
-      iex> cell = Cell.remove_attribute(cell, :foreground)
-      iex> Cell.get_attribute(cell, :foreground)
-      nil
+      iex> Cell.has_attribute?(cell, :foreground)
+      true
   """
-  def remove_attribute(%__MODULE__{} = cell, key) do
-    %{cell | attributes: Map.delete(cell.attributes, key)}
+  def has_attribute?(%__MODULE__{style: style}, attribute) do
+    MapSet.member?(style.attributes, attribute)
   end
+
+  @doc """
+  Checks if the cell has a specific decoration.
+  
+  ## Examples
+  
+      iex> cell = Cell.new("A", %{foreground: :red})
+      iex> Cell.has_decoration?(cell, :bold)
+      false
+  """
+  def has_decoration?(%__MODULE__{style: style}, decoration) do
+    MapSet.member?(style.decorations, decoration)
+  end
+
+  @doc """
+  Checks if the cell is in double-width mode.
+  
+  ## Examples
+  
+      iex> cell = Cell.new("A", %{foreground: :red})
+      iex> Cell.double_width?(cell)
+      false
+  """
+  def double_width?(%__MODULE__{style: style}), do: style.double_width
+
+  @doc """
+  Checks if the cell is in double-height mode.
+  
+  ## Examples
+  
+      iex> cell = Cell.new("A", %{foreground: :red})
+      iex> Cell.double_height?(cell)
+      false
+  """
+  def double_height?(%__MODULE__{style: style}), do: style.double_height
 
   @doc """
   Checks if a cell is empty (has no character content).
@@ -138,23 +184,6 @@ defmodule Raxol.Terminal.Cell do
   end
 
   @doc """
-  Merges attributes from another cell into this cell.
-  
-  ## Examples
-  
-      iex> cell1 = Cell.new("A", %{foreground: :red})
-      iex> cell2 = Cell.new("B", %{background: :blue})
-      iex> cell = Cell.merge_attributes(cell1, cell2)
-      iex> Cell.get_attribute(cell, :foreground)
-      :red
-      iex> Cell.get_attribute(cell, :background)
-      :blue
-  """
-  def merge_attributes(%__MODULE__{} = cell1, %__MODULE__{} = cell2) do
-    %{cell1 | attributes: Map.merge(cell1.attributes, cell2.attributes)}
-  end
-
-  @doc """
   Creates a copy of a cell with new attributes.
   
   ## Examples
@@ -163,13 +192,11 @@ defmodule Raxol.Terminal.Cell do
       iex> new_cell = Cell.with_attributes(cell, %{background: :blue})
       iex> Cell.get_char(new_cell)
       "A"
-      iex> Cell.get_attribute(new_cell, :foreground)
-      :red
-      iex> Cell.get_attribute(new_cell, :background)
-      :blue
+      iex> Cell.get_style(new_cell)
+      %{foreground: :red, background: :blue}
   """
   def with_attributes(%__MODULE__{} = cell, attributes) do
-    %{cell | attributes: Map.merge(cell.attributes, attributes)}
+    %{cell | style: TextFormatting.merge(cell.style, attributes)}
   end
 
   @doc """
@@ -181,8 +208,8 @@ defmodule Raxol.Terminal.Cell do
       iex> new_cell = Cell.with_char(cell, "B")
       iex> Cell.get_char(new_cell)
       "B"
-      iex> Cell.get_attribute(new_cell, :foreground)
-      :red
+      iex> Cell.get_style(new_cell)
+      %{foreground: :red}
   """
   def with_char(%__MODULE__{} = cell, char) do
     %{cell | char: char}
@@ -197,13 +224,13 @@ defmodule Raxol.Terminal.Cell do
       iex> copy = Cell.copy(cell)
       iex> Cell.get_char(copy)
       "A"
-      iex> Cell.get_attribute(copy, :foreground)
-      :red
+      iex> Cell.get_style(copy)
+      %{foreground: :red}
   """
   def copy(%__MODULE__{} = cell) do
     %__MODULE__{
       char: cell.char,
-      attributes: Map.new(cell.attributes)
+      style: TextFormatting.copy(cell.style)
     }
   end
 
@@ -222,6 +249,6 @@ defmodule Raxol.Terminal.Cell do
   """
   def equals?(%__MODULE__{} = cell1, %__MODULE__{} = cell2) do
     cell1.char == cell2.char and
-    Map.equal?(cell1.attributes, cell2.attributes)
+    TextFormatting.equals?(cell1.style, cell2.style)
   end
 end 

@@ -1,3 +1,12 @@
+---
+title: Color System Implementation
+description: Documentation for the color system implementation in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: implementation
+tags: [implementation, color, system]
+---
+
 # Advanced Color System Implementation Plan
 
 This document outlines the detailed implementation approach for Raxol's enhanced color management system, with inspiration from Prompt's color support and Charm.sh's Lip Gloss.

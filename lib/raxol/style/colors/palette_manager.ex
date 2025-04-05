@@ -1,6 +1,6 @@
 defmodule Raxol.Style.Colors.PaletteManager do
   @moduledoc """
-  Manages color palettes for the Raxol UI framework.
+  Manages color palettes for the Raxol terminal emulator.
   
   This module provides functionality to create, store, and retrieve color palettes.
   It works with the ColorSystem to provide a comprehensive color management solution
@@ -33,10 +33,11 @@ defmodule Raxol.Style.Colors.PaletteManager do
   ```
   """
   
-  alias Raxol.Style.Colors.Color
-  alias Raxol.Style.Colors.Utilities
-  alias Raxol.Style.Colors.System, as: ColorSystem
-  alias Raxol.Core.Accessibility
+  defstruct [
+    palettes: %{},
+    scales: %{},
+    user_preferences: %{}
+  ]
   
   @doc """
   Initialize the palette manager.
