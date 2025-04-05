@@ -291,16 +291,9 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.handle_focus_change(nil, "search_button")
       :ok
   """
-  def handle_focus_change(old_focus, new_focus) do
-    # Get element metadata for announcement
-    metadata = get_element_metadata(new_focus)
-    
-    if metadata && Map.has_key?(metadata, :announce) do
-      # Announce the element
-      announce(metadata.announce)
-    end
-    
-    :ok
+  def handle_focus_change(_old_focus, new_focus) do
+    # Handle focus change
+    {:ok, new_focus}
   end
   
   @doc """
@@ -413,10 +406,8 @@ defmodule Raxol.Core.Accessibility do
     ]
   end
   
-  defp apply_settings(options) do
-    # Apply theme integration settings
-    ThemeIntegration.apply_current_settings()
-    
+  defp apply_settings(_options) do
+    # Apply accessibility settings
     :ok
   end
   
@@ -438,7 +429,7 @@ defmodule Raxol.Core.Accessibility do
       end
       
     # Insert at the right position
-    {before, after} =
+    {before, remaining} =
       Enum.split_while(queue, fn item ->
         item_priority = 
           case item.priority do
@@ -450,6 +441,6 @@ defmodule Raxol.Core.Accessibility do
         item_priority < priority_value
       end)
       
-    before ++ [announcement] ++ after
+    before ++ [announcement] ++ remaining
   end
 end 

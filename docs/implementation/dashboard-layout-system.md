@@ -1,3 +1,12 @@
+---
+title: Dashboard Layout System
+description: Documentation for the dashboard layout system in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: implementation
+tags: [implementation, dashboard, layout]
+---
+
 # Dashboard Layout System Implementation
 
 This document outlines the implementation plan for the Raxol dashboard layout system, which is a key component of Phase 4 development.

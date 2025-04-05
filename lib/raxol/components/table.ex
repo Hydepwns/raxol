@@ -146,8 +146,16 @@ defmodule Raxol.Components.Table do
       data
     end
     
+    # Apply border style
+    table_style = case border_style do
+      :simple -> Map.put(style, :border, "1px solid #ddd")
+      :none -> style
+      :thick -> Map.put(style, :border, "2px solid #333")
+      _ -> Map.put(style, :border, "1px solid #ddd")
+    end
+    
     # Render the table
-    View.panel([id: id, style: style], fn ->
+    View.panel([id: id, style: table_style], fn ->
       View.column([], fn ->
         # Render table header
         render_header(normalized_columns, header_style, sort_by, sort_dir, on_sort)
@@ -280,14 +288,16 @@ defmodule Raxol.Components.Table do
           if page_size && total_items do
             start_item = (page - 1) * page_size + 1
             end_item = min(page * page_size, total_items)
-            info_text = "#{info_text} (#{start_item}-#{end_item} of #{total_items})"
+            ^info_text = "#{info_text} (#{start_item}-#{end_item} of #{total_items})"
           end
           
-          View.text(info_text)
+          View.text(info_text, style: %{marginRight: "1rem"})
         end
         
         # Spacer
-        View.panel([style: %{width: :flex}], fn -> end)
+        View.panel([style: %{width: :flex}], fn ->
+          View.text("")  # Empty text to satisfy the function body requirement
+        end)
         
         # Pagination buttons
         View.row([style: %{gap: 1}], fn ->

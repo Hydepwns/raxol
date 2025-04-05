@@ -1,4 +1,8 @@
 defmodule Raxol.Components.FocusRing do
+  use Raxol.Component
+  import Raxol.View.Components
+  import Raxol.View.Layout
+  
   @moduledoc """
   A component that provides visual indication of the currently focused element.
   
@@ -147,7 +151,7 @@ defmodule Raxol.Components.FocusRing do
       iex> FocusRing.render(model)
       # Renders a focus ring around the currently focused element
   """
-  def render(model, opts \\ []) do
+  def render(model, _opts \\ []) do
     if model.visible && model.focused_element && model.position do
       # Render transition effect if applicable
       if model.transition_effect != :none && model.prev_position != nil && model.prev_position != model.position do
@@ -181,10 +185,9 @@ defmodule Raxol.Components.FocusRing do
   @doc """
   Handle focus change events.
   """
-  def handle_focus_change(_old_focus, new_focus) do
-    # This function is called by the EventManager when focus changes
-    # Dispatch an update message to the focus ring component
-    {:focus_change, _old_focus, new_focus}
+  def handle_focus_change(state, {old_focus, new_focus}) do
+    # TODO: Implement focus change handling
+    {old_focus, new_focus}
   end
   
   @doc """

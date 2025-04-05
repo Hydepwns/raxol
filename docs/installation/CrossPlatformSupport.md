@@ -1,3 +1,12 @@
+---
+title: Cross-Platform Support
+description: Documentation for cross-platform support in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: installation
+tags: [installation, cross-platform, support]
+---
+
 # Cross-Platform Support
 
 Raxol is designed to work seamlessly across multiple platforms including macOS, Linux, and Windows. This document outlines platform-specific considerations and optimizations.

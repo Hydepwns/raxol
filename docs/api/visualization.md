@@ -1,3 +1,12 @@
+---
+title: API Visualization
+description: Documentation for visualizing API data in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: api
+tags: [api, visualization, documentation]
+---
+
 # Visualization API Reference
 
 ## Chart Component API

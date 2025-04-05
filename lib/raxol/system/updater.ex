@@ -9,8 +9,6 @@ defmodule Raxol.System.Updater do
   - Managing update settings and configurations
   """
   
-  alias Raxol.Style.Colors.Adaptive
-  alias Raxol.Style.Colors.Color
   alias Raxol.System.DeltaUpdater
   
   @github_repo "username/raxol"
@@ -130,20 +128,16 @@ defmodule Raxol.System.Updater do
   """
   def notify_if_update_available do
     case check_for_updates() do
-      {:update_available, version} ->
-        fg = Color.new(:orange_red)
-        bg = Color.new(:black)
+      {:ok, %{version: version, url: url}} ->
+        # Use bright green on black for the update notification
+        fg = {:rgb, 0, 255, 0}
+        bg = {:rgb, 0, 0, 0}
         
-        message = """
+        Raxol.Core.Renderer.Color.colorize("Update Available!", fg, bg)
+        |> IO.puts()
         
-        #{"Update Available!".color(fg, bg)} 
-        A new version of Raxol is available: v#{version} (current: v#{@version})
-        Run #{"raxol update".color(fg, bg)} to update
-        """
-        
-        IO.puts(Adaptive.adapt_color(message))
-        :update_available
-        
+        IO.puts("Version #{version} is available at #{url}")
+        :ok
       _ ->
         :ok
     end
@@ -228,14 +222,20 @@ defmodule Raxol.System.Updater do
   defp fetch_latest_version do
     url = "https://api.github.com/repos/#{@github_repo}/releases/latest"
     
-    case :httpc.request(:get, {String.to_charlist(url), [{'User-Agent', 'Raxol-Updater'}]}, [], []) do
-      {:ok, {{_, 200, _}, _headers, body}} ->
+    case :httpc.request(:get, {String.to_charlist(url), [
+      {~c"User-Agent", ~c"Raxol-Updater"}
+    ]}, [], []) do
+      {:ok, {{_, 200, _}, _, body}} ->
         body_str = List.to_string(body)
-        case Jason.decode(body_str) do
-          {:ok, %{"tag_name" => "v" <> version}} -> {:ok, version}
-          {:ok, %{"tag_name" => version}} -> {:ok, String.trim_leading(version, "v")}
-          _ -> {:error, "Failed to parse GitHub API response"}
+        
+        with {:ok, release_data} <- Jason.decode(body_str),
+             version = release_data["tag_name"],
+             url = release_data["html_url"] do
+          {:ok, %{version: version, url: url}}
+        else
+          _ -> {:error, :invalid_response}
         end
+        
       {:ok, {{_, status, _}, _, _}} ->
         {:error, "GitHub API returned status #{status}"}
       {:error, reason} ->

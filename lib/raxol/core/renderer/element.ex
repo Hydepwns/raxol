@@ -13,13 +13,17 @@ defmodule Raxol.Core.Renderer.Element do
     tag: atom(),
     attributes: [{atom(), term()}],
     children: [t()],
-    ref: reference() | nil
+    ref: reference() | nil,
+    content: term(),
+    style: map()
   }
 
   defstruct tag: nil,
             attributes: [],
             children: [],
-            ref: nil
+            ref: nil,
+            content: nil,
+            style: %{}
 
   @doc """
   Creates a new element with the given tag and attributes.

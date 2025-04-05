@@ -1,6 +1,10 @@
 defmodule Raxol.Components.HintDisplay do
+  use Raxol.Component
+  import Raxol.View.Components
+  import Raxol.View.Layout
+  
   @moduledoc """
-  A component for displaying contextual hints and help information to users.
+  A component for displaying hints and tooltips.
   
   This component works with the `Raxol.Core.UXRefinement` module to display
   registered hints for components in the UI.
@@ -162,28 +166,14 @@ defmodule Raxol.Components.HintDisplay do
         :float -> Keyword.merge(container_attrs, [center: true])
       end
       
-    prefix = 
-      case style do
-        :minimal -> ""
-        :standard -> "💡 "
-        :detailed -> "💡 Hint: "
-      end
-    
-    suffix = 
-      if style == :detailed do
-        " (Press ? for more help)"
-      else
-        ""
-      end
-    
-    panel(container_attrs) do
-      column do
+    Layout.panel(container_attrs) do
+      Layout.column do
         # Main hint text
-        text(prefix <> processed_content <> suffix)
+        Components.text(processed_content)
         
         # Render shortcuts if available
-        if shortcuts && length(shortcuts) > 0 && style != :minimal do
-          row(padding_top: 1) do
+        if style != :minimal && length(shortcuts) > 0 do
+          Layout.row(padding_top: 1) do
             render_shortcuts(shortcuts)
           end
         end
@@ -210,7 +200,7 @@ defmodule Raxol.Components.HintDisplay do
   defp render_shortcuts(shortcuts) do
     column do
       # Header
-      text("Keyboard Shortcuts:", bold: true)
+      Components.text("Keyboard Shortcuts:", bold: true)
       
       # Show shortcuts in a grid-like layout
       row do
@@ -218,7 +208,7 @@ defmodule Raxol.Components.HintDisplay do
           Enum.with_index(shortcuts)
           |> Enum.filter(fn {_, i} -> rem(i, 2) == 0 end) # Even indices
           |> Enum.map(fn {{key, desc}, _} -> 
-            text([{:bold, key}, ": " <> desc]) 
+            Components.text([{:bold, key}, ": " <> desc]) 
           end)
         end
         
@@ -226,7 +216,7 @@ defmodule Raxol.Components.HintDisplay do
           Enum.with_index(shortcuts)
           |> Enum.filter(fn {_, i} -> rem(i, 2) == 1 end) # Odd indices
           |> Enum.map(fn {{key, desc}, _} -> 
-            text([{:bold, key}, ": " <> desc]) 
+            Components.text([{:bold, key}, ": " <> desc]) 
           end)
         end
       end

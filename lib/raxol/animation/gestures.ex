@@ -236,7 +236,7 @@ defmodule Raxol.Animation.Gestures do
   def get_animation_objects do
     with_state(fn state ->
       objects = Enum.flat_map(state.active_animations, fn anim ->
-        Enum.map(anim.world.objects, fn {id, object} ->
+        Enum.map(anim.world.objects, fn {_id, object} ->
           Map.put(object, :animation_id, anim.id)
         end)
       end)

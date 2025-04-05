@@ -219,23 +219,21 @@ defmodule Raxol.AI.PerformanceOptimization do
             idle: 250      # 4fps
           }
           
-          # Determine activity level based on recent usage
-          activity_level = cond do
-            usage == nil -> :medium
-            usage.count > 10 and System.monotonic_time() - usage.last_used < 5_000_000_000 -> :high
-            usage.count > 5 and System.monotonic_time() - usage.last_used < 10_000_000_000 -> :medium
-            usage.count > 0 and System.monotonic_time() - usage.last_used < 30_000_000_000 -> :low
-            true -> :idle
+          # Calculate refresh rate based on metrics and usage
+          refresh_rate = cond do
+            metrics == nil or metrics.count < 5 ->
+              default_rates.high
+            usage == :idle ->
+              default_rates.idle
+            usage == :low ->
+              default_rates.low
+            usage == :medium ->
+              default_rates.medium
+            true ->
+              default_rates.high
           end
           
-          # Apply optimization level adjustments
-          adjusted_rate = case state.optimization_level do
-            :aggressive -> round(default_rates[activity_level] * 1.5)
-            :minimal -> round(default_rates[activity_level] * 0.7)
-            _ -> default_rates[activity_level]
-          end
-          
-          {state, adjusted_rate}
+          {state, refresh_rate}
         end
       end)
     end

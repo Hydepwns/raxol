@@ -29,6 +29,7 @@ defmodule Raxol.Test.Integration do
       end
   """
 
+  import ExUnit.Assertions
   alias Raxol.Core.Events.{Event, Manager, Subscription}
   alias Raxol.Core.Runtime.EventLoop
   alias Raxol.Test.TestHelper

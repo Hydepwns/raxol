@@ -9,7 +9,7 @@ defmodule Raxol.Core.Events.Subscription do
   * Manage multiple subscriptions
   """
 
-  alias Raxol.Core.Events.{Event, Manager}
+  alias Raxol.Core.Events.{Manager}
 
   @type subscription_ref :: reference()
   @type subscription_opts :: keyword()
@@ -27,7 +27,7 @@ defmodule Raxol.Core.Events.Subscription do
   """
   def subscribe_keyboard(opts \\ []) do
     keys = Keyword.get(opts, :keys)
-    exclude_keys = Keyword.get(opts, :exclude_keys, [])
+    _exclude_keys = Keyword.get(opts, :exclude_keys, [])
 
     filter_opts =
       if keys do

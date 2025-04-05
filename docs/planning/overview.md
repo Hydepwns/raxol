@@ -1,3 +1,12 @@
+---
+title: Planning Overview
+description: Overview of planning and development for Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: planning
+tags: [planning, overview, development]
+---
+
 # Raxol: A Comprehensive Improvement Plan for Extending Ratatouille with Charm.sh Capabilities
 
 This improvement plan outlines the strategic approach to transform Ratatouille, an Elixir-based TUI framework, into "Raxol" - a comprehensive terminal application ecosystem inspired by Charm.sh, with integrated distribution capabilities via Burrito.

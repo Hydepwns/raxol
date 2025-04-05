@@ -17,7 +17,14 @@ defmodule Raxol.MixProject do
       package: package(),
       docs: docs(),
       name: "Raxol",
-      source_url: @source_url
+      source_url: @source_url,
+      test_coverage: [tool: ExCoveralls],
+      preferred_cli_env: [
+        coveralls: :test,
+        "coveralls.detail": :test,
+        "coveralls.post": :test,
+        "coveralls.html": :test
+      ]
     ]
   end
 
@@ -37,7 +44,8 @@ defmodule Raxol.MixProject do
       {:ex_termbox, "~> 1.0"}, # Terminal rendering library
       {:phoenix, "~> 1.7.20"},
       {:phoenix_live_view, "~> 1.0.0"},
-      {:jason, "~> 1.2"},
+      {:phoenix_live_dashboard, "~> 0.8.0"},
+      {:jason, "~> 1.4"},
       
       # Database and persistence
       {:ecto_sql, "~> 3.10"},
@@ -59,8 +67,8 @@ defmodule Raxol.MixProject do
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:dart_sass, "~> 0.7", runtime: Mix.env() == :dev},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.1", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.24", only: :dev, runtime: false},
+      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
+      {:ex_doc, "~> 0.31", only: :dev, runtime: false},
       
       # Testing
       {:mox, "~> 1.0", only: :test},
@@ -75,7 +83,8 @@ defmodule Raxol.MixProject do
       {:telemetry_poller, "~> 1.0"},
       {:gettext, "~> 0.26"},
       {:dns_cluster, "~> 0.1.1"},
-      {:bandit, "~> 1.5"}
+      {:bandit, "~> 1.5"},
+      {:excoveralls, "~> 0.18", only: :test}
     ]
   end
 
@@ -104,16 +113,20 @@ defmodule Raxol.MixProject do
   defp package do
     [
       maintainers: ["Your Name"],
-      licenses: ["MIT"],
-      links: %{"GitHub" => @source_url}
+      licenses: ["Apache-2.0"],
+      links: %{
+        "GitHub" => "https://github.com/yourusername/raxol"
+      }
     ]
   end
 
   defp docs do
     [
       main: "readme",
-      source_url: @source_url,
-      extras: ["README.md"]
+      extras: ["README.md", "CHANGELOG.md", "docs/development.md"],
+      source_url: "https://github.com/yourusername/raxol",
+      source_ref: "v#{@version}",
+      formatters: ["html"]
     ]
   end
 end

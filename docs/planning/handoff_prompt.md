@@ -1,3 +1,12 @@
+---
+title: Handoff Prompt
+description: Documentation for handoff prompts in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: planning
+tags: [planning, handoff, prompts]
+---
+
 # Development Handoff: Raxol UX Refinement & Accessibility
 
 I've been working on enhancing the Raxol framework with comprehensive UX refinement and accessibility features. Here's what I've accomplished so far and what I'd like you to help me with next.

@@ -1,0 +1,57 @@
+{
+  "name": "raxol",
+  "version": "0.1.0",
+  "description": "A terminal emulator framework for Elixir",
+  "main": "index.js",
+  "scripts": {
+    "test": "jest",
+    "test:coverage": "jest --coverage",
+    "test:performance": "jest --testMatch '**/test/js/components/**/*_perf_test.js'",
+    "test:e2e": "jest --config test/js/e2e/e2e.config.js 'test/js/e2e'",
+    "test:a11y": "jest --testMatch '**/test/js/components/**/*_a11y_test.js'",
+    "lint": "eslint .",
+    "precommit": "elixir scripts/pre_commit_check.exs",
+    "check:coverage": "node scripts/check_coverage.js",
+    "check:links": "node scripts/docs/check_links.js"
+  },
+  "dependencies": {
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.22.0",
+    "@babel/preset-env": "^7.22.0",
+    "@babel/preset-react": "^7.22.0",
+    "@babel/preset-typescript": "^7.22.0",
+    "@babel/plugin-syntax-jsx": "^7.22.0",
+    "@eslint/js": "^8.42.0",
+    "@testing-library/jest-dom": "^5.16.5",
+    "@testing-library/react": "^14.0.0",
+    "@types/jest": "^29.5.0",
+    "@types/react": "^18.2.0",
+    "@types/react-dom": "^18.2.0",
+    "@typescript-eslint/eslint-plugin": "^5.59.0",
+    "@typescript-eslint/parser": "^5.59.0",
+    "eslint": "^9.0.0",
+    "eslint-plugin-react": "^7.32.2",
+    "eslint-plugin-react-hooks": "^4.6.0",
+    "globals": "^13.20.0",
+    "jest": "^29.5.0",
+    "jest-environment-jsdom": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.4"
+  },
+  "jest": {
+    "testEnvironment": "jsdom",
+    "transform": {
+      "^.+\\.(ts|tsx)$": "ts-jest",
+      "^.+\\.(js|jsx)$": "babel-jest"
+    },
+    "moduleNameMapper": {
+      "\\.(css|less|scss|sass)$": "identity-obj-proxy"
+    },
+    "setupFilesAfterEnv": [
+      "@testing-library/jest-dom/extend-expect"
+    ]
+  }
+}

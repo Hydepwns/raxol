@@ -24,6 +24,7 @@ defmodule Raxol.Test.Unit do
       end
   """
 
+  import ExUnit.Assertions
   alias Raxol.Core.Events.{Event, Manager, Subscription}
   alias Raxol.Core.Runtime.EventLoop
 

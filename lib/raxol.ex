@@ -56,7 +56,7 @@ defmodule Raxol do
       View.view do
         View.panel [title: "Counter Example", border: true], fn ->
           View.column [padding: 1], fn ->
-            View.text("Count: #{model.count}")
+            View.text("Count: \#{model.count}")
             
             View.row [gap: 1], fn ->
               C.button([on_click: fn -> :decrement end], "-")
@@ -85,7 +85,7 @@ defmodule Raxol do
   
   ## Components
   
-  Raxol provides a rich set of built-in components in the `Raxol.Components` 
+  Raxol provides a rich set of built-in components in the Raxol.Components 
   module. Common components include:
   
   * Buttons

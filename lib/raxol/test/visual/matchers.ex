@@ -83,16 +83,16 @@ defmodule Raxol.Test.Visual.Matchers do
   ## Example
 
       output
-      |> matches_layout(:centered, width: 80)
+      |> matches_layout(:centered)
       |> matches_layout(:padded, padding: 2)
   """
-  def matches_layout(output, :centered, opts \\ []) when is_binary(output) do
-    width = Keyword.get(opts, :width, 80)
+  def matches_layout(output, layout, opts \\ [])
+  def matches_layout(output, :centered, _opts) when is_binary(output) do
     lines = String.split(output, "\n")
+    max_length = Enum.map(lines, &String.length/1) |> Enum.max()
     
     centered? = Enum.all?(lines, fn line ->
-      line = String.trim(line)
-      padding = div(width - String.length(line), 2)
+      padding = div(max_length - String.length(line), 2)
       String.starts_with?(line, String.duplicate(" ", padding))
     end)
     
@@ -103,7 +103,7 @@ defmodule Raxol.Test.Visual.Matchers do
     end
   end
 
-  def matches_layout(output, :padded, opts \\ []) when is_binary(output) do
+  def matches_layout(output, :padded, opts) when is_binary(output) do
     padding = Keyword.get(opts, :padding, 1)
     lines = String.split(output, "\n")
     
@@ -128,6 +128,7 @@ defmodule Raxol.Test.Visual.Matchers do
       |> matches_component(:button, "Click me")
       |> matches_component(:input, placeholder: "Enter text")
   """
+  def matches_component(output, type, opts \\ [])
   def matches_component(output, :button, label) when is_binary(output) do
     pattern = ~r/\[#{Regex.escape(label)}\]/
     
@@ -138,7 +139,7 @@ defmodule Raxol.Test.Visual.Matchers do
     end
   end
 
-  def matches_component(output, :input, opts \\ []) when is_binary(output) do
+  def matches_component(output, :input, opts) when is_binary(output) do
     placeholder = Keyword.get(opts, :placeholder, "")
     pattern = ~r/\[#{Regex.escape(placeholder)}_+\]/
     

@@ -4,7 +4,7 @@ defmodule Raxol.Metrics.Visualizer do
   Uses Contex to generate charts and graphs for various performance indicators.
   """
 
-  alias Contex.{Plot, BarChart, Dataset, Point, PointPlot}
+  alias Contex.{Plot, BarChart, Dataset, PointPlot}
 
   @doc """
   Creates a bar chart visualization for event processing times.

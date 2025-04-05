@@ -1,3 +1,12 @@
+---
+title: Performance Case Studies
+description: Collection of performance case studies for Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: performance
+tags: [performance, case studies, analysis]
+---
+
 # Performance Optimization Case Studies
 
 This document presents real-world case studies demonstrating how to optimize Raxol applications for performance. Each case study follows a systematic approach to identifying, analyzing, and resolving performance bottlenecks.

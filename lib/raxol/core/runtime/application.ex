@@ -19,30 +19,30 @@ defmodule Raxol.Core.Runtime.Application do
           %{count: 0}
         end
 
-        def update(msg, state) do
+        def update(msg, model) do
           case msg do
             :increment -> 
-              {%{state | count: state.count + 1}, []}
+              {%{model | count: model.count + 1}, []}
             :decrement -> 
-              {%{state | count: state.count - 1}, []}
+              {%{model | count: model.count - 1}, []}
             _ -> 
-              {state, []}
+              {model, []}
           end
         end
 
-        def view(state) do
+        def view(model) do
           view do
             panel title: "Counter" do
               row do
                 button(label: "-", on_click: :decrement)
-                text(content: "Count: #{state.count}")
+                text(content: "Count: \#{model.count}")
                 button(label: "+", on_click: :increment)
               end
             end
           end
         end
 
-        def subscribe(state) do
+        def subscribe(_model) do
           # Optional subscriptions to time-based or external events
           []
         end
@@ -143,7 +143,7 @@ defmodule Raxol.Core.Runtime.Application do
       # Default implementations
       def init(_), do: %{}
       def update(_, state), do: {state, []}
-      def view(_), do: view(do: nil)
+      def view(_), do: view(do: text(content: "Default view"))
       def subscribe(_), do: []
 
       # Allow overriding

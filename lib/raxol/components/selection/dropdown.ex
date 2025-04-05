@@ -20,6 +20,8 @@ defmodule Raxol.Components.Selection.Dropdown do
   """
 
   use Raxol.Component
+  alias Raxol.View.Components
+  alias Raxol.View.Layout
   alias Raxol.Core.Style.Color
   alias Raxol.Components.Selection.List
 
@@ -101,12 +103,10 @@ defmodule Raxol.Components.Selection.Dropdown do
 
   @impl true
   def render(state) do
-    box do
-      column do
-        render_trigger(state)
-        if state.is_open do
-          render_list(state)
-        end
+    Layout.column do
+      render_trigger(state)
+      if state.is_open do
+        render_list(state)
       end
     end
   end
@@ -115,19 +115,19 @@ defmodule Raxol.Components.Selection.Dropdown do
     display_text = if state.selected_item do
       state.render_item.(state.selected_item)
     else
-      text(content: state.placeholder, color: state.style.placeholder_color)
+      Components.text(content: state.placeholder, color: state.style.placeholder_color)
     end
 
-    box style: %{border_color: state.style.border_color} do
-      row do
-        text(content: display_text, color: state.style.text_color)
-        text(content: " ▼", color: state.style.text_color) # Dropdown arrow
+    Components.box style: %{border_color: state.style.border_color} do
+      Components.row do
+        Components.text(content: display_text, color: state.style.text_color)
+        Components.text(content: " ▼", color: state.style.text_color) # Dropdown arrow
       end
     end
   end
 
   defp render_list(state) do
-    box style: %{border_color: state.style.border_color} do
+    Components.box style: %{border_color: state.style.border_color} do
       List.render(%{state.list_state |
         focused: state.focused,
         on_select: fn item -> update({:select_item, item}, state) end,

@@ -3,7 +3,13 @@ defmodule Raxol.Runtime do
   The Runtime module manages application lifecycle and event processing.
   
   This module provides the core functionality for running Raxol applications,
-  handling the event loop, and managing application state.
+  handling the event loop, and managing application state. It is responsible for:
+  
+  - Starting and stopping applications
+  - Managing the event loop
+  - Handling user input
+  - Coordinating rendering
+  - Managing application state
   """
   
   use GenServer
@@ -17,33 +23,54 @@ defmodule Raxol.Runtime do
   
   @doc """
   Starts a Raxol application with the given module and options.
+  
+  ## Options
+    * `:title` - The window title (default: "Raxol Application")
+    * `:fps` - Frames per second (default: 60)
+    * `:quit_keys` - List of keys that will quit the application (default: [:ctrl_c])
+    * `:debug` - Enable debug mode (default: false)
   """
   def run(app_module, options \\ []) do
     app_name = get_app_name(app_module)
     
-    DynamicSupervisor.start_child(
+    case DynamicSupervisor.start_child(
       Raxol.DynamicSupervisor,
       {__MODULE__, {app_module, app_name, options}}
-    )
+    ) do
+      {:ok, pid} -> {:ok, pid}
+      {:error, reason} -> {:error, reason}
+    end
   end
   
   @doc """
   Sends a message to the running application.
+  
+  Returns `:ok` if the message was sent successfully,
+  `{:error, :app_not_running}` if the application is not running.
   """
   def send_msg(msg, app_name \\ :default) do
     case lookup_app(app_name) do
-      {:ok, pid} -> GenServer.cast(pid, {:msg, msg})
-      :error -> {:error, :app_not_running}
+      {:ok, pid} -> 
+        GenServer.cast(pid, {:msg, msg})
+        :ok
+      :error -> 
+        {:error, :app_not_running}
     end
   end
   
   @doc """
   Stops the running application.
+  
+  Returns `:ok` if the application was stopped successfully,
+  `{:error, :app_not_running}` if the application is not running.
   """
   def stop(app_name \\ :default) do
     case lookup_app(app_name) do
-      {:ok, pid} -> GenServer.cast(pid, :stop)
-      :error -> {:error, :app_not_running}
+      {:ok, pid} -> 
+        GenServer.cast(pid, :stop)
+        :ok
+      :error -> 
+        {:error, :app_not_running}
     end
   end
   
@@ -62,37 +89,46 @@ defmodule Raxol.Runtime do
     debug = Keyword.get(options, :debug, false)
     
     # Initialize termbox
-    {:ok, tb_pid} = :ex_termbox.start_link(
+    case :ex_termbox.start_link(
       input_mode: :esc,
       output_mode: :normal,
       window_title: title
-    )
-    
-    # Initialize the app's model
-    initial_model = 
-      if Code.ensure_loaded?(app_module) and function_exported?(app_module, :init, 1) do
-        app_module.init(options)
-      else
-        %{}
-      end
-    
-    # Setup the renderer
-    {:ok, renderer_pid} = Renderer.start_link(%{fps: fps, debug: debug})
-    
-    # Schedule the first render
-    schedule_render()
-    
-    state = %{
-      app_module: app_module,
-      model: initial_model,
-      tb_pid: tb_pid,
-      renderer_pid: renderer_pid,
-      quit_keys: quit_keys,
-      fps: fps,
-      debug: debug
-    }
-    
-    {:ok, state}
+    ) do
+      {:ok, tb_pid} ->
+        # Initialize the app's model
+        initial_model = 
+          if Code.ensure_loaded?(app_module) and function_exported?(app_module, :init, 1) do
+            app_module.init(options)
+          else
+            %{}
+          end
+        
+        # Setup the renderer
+        case Renderer.start_link(%{fps: fps, debug: debug}) do
+          {:ok, renderer_pid} ->
+            # Schedule the first render
+            schedule_render()
+            
+            state = %{
+              app_module: app_module,
+              model: initial_model,
+              tb_pid: tb_pid,
+              renderer_pid: renderer_pid,
+              quit_keys: quit_keys,
+              fps: fps,
+              debug: debug
+            }
+            
+            {:ok, state}
+            
+          {:error, reason} ->
+            cleanup(%{tb_pid: tb_pid})
+            {:stop, reason}
+        end
+        
+      {:error, reason} ->
+        {:stop, reason}
+    end
   end
   
   @impl true

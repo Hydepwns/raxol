@@ -1,3 +1,12 @@
+---
+title: Performance Validation Guide
+description: Guide for validating performance in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: testing
+tags: [testing, performance, validation]
+---
+
 # Performance Validation
 
 This document outlines Raxol's performance validation framework, including benchmark methodology, performance metrics, and validation criteria.

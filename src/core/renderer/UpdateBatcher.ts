@@ -5,6 +5,8 @@
  * by grouping UI updates together and applying them in efficient batches.
  */
 
+import { ViewPerformance } from '../performance/ViewPerformance';
+
 interface PendingUpdate {
   id: string;
   component: string; // Component identifier
@@ -19,6 +21,7 @@ export class UpdateBatcher {
   private batchSize: number = 50;
   private adaptiveThreshold: number = 10; // ms for processing threshold
   private lastBatchTime: number = 0;
+  private performance: ViewPerformance;
   
   constructor(options?: {
     batchSize?: number;
@@ -31,6 +34,8 @@ export class UpdateBatcher {
     if (options?.adaptiveThreshold) {
       this.adaptiveThreshold = options.adaptiveThreshold;
     }
+    
+    this.performance = ViewPerformance.getInstance();
   }
   
   /**
@@ -128,6 +133,9 @@ export class UpdateBatcher {
       
       // Record how long this batch took
       this.lastBatchTime = performance.now() - startTime;
+      
+      // Record performance metrics
+      this.recordPerformanceMetrics(totalUpdates, this.lastBatchTime);
     } finally {
       this.isApplyingUpdates = false;
       
@@ -150,6 +158,9 @@ export class UpdateBatcher {
     updates.forEach(update => {
       // Here we would apply the update to the actual UI
       console.log(`Applied update to component: ${update.component}`, update.properties);
+      
+      // Record component update metrics
+      this.performance.recordComponentUpdate(update.component, performance.now() - update.timestamp);
     });
   }
   
@@ -188,6 +199,14 @@ export class UpdateBatcher {
     
     // Otherwise keep the same batch size
     return this.batchSize;
+  }
+  
+  /**
+   * Record performance metrics for the batch
+   */
+  private recordPerformanceMetrics(updateCount: number, processingTime: number): void {
+    // Record overall rendering performance
+    this.performance.recordComponentRender('batch', processingTime, updateCount);
   }
   
   /**

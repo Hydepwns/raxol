@@ -19,6 +19,8 @@ defmodule Raxol.Components.Selection.List do
   """
 
   use Raxol.Component
+  alias Raxol.View.Components
+  alias Raxol.View.Layout
   alias Raxol.Core.Style.Color
 
   @default_height 10
@@ -105,28 +107,25 @@ defmodule Raxol.Components.Selection.List do
   def render(state) do
     visible_items = Enum.slice(state.filtered_items, state.scroll_offset, state.height)
     
-    box do
-      column do
-        for {item, index} <- Enum.with_index(visible_items) do
-          actual_index = index + state.scroll_offset
-          render_item(item, actual_index == state.selected_index, state)
-        end
+    Layout.column do
+      for {item, index} <- Enum.with_index(visible_items) do
+        actual_index = index + state.scroll_offset
+        render_item(item, actual_index == state.selected_index, state)
       end
     end
   end
 
   defp render_item(item, selected?, state) do
-    text = state.render_item.(item)
-    padded_text = String.pad_trailing(text, state.width)
+    padded_text = String.pad_trailing(item, state.width)
 
     if selected? do
-      text(
+      Components.text(
         content: padded_text,
         color: state.style.selected_text_color,
         background: state.style.selected_color
       )
     else
-      text(content: padded_text, color: state.style.text_color)
+      Components.text(content: padded_text, color: state.style.text_color)
     end
   end
 
@@ -183,11 +182,11 @@ defmodule Raxol.Components.Selection.List do
     {update(:blur, state), []}
   end
 
-  def handle_event(%Event{type: :scroll, direction: :up}, state) do
+  def handle_event(%Event{type: :scroll, data: %{direction: :up}}, state) do
     {update(:scroll_up, state), []}
   end
 
-  def handle_event(%Event{type: :scroll, direction: :down}, state) do
+  def handle_event(%Event{type: :scroll, data: %{direction: :down}}, state) do
     {update(:scroll_down, state), []}
   end
 

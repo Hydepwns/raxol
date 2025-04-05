@@ -1,3 +1,12 @@
+---
+title: Phase 1 Development
+description: Documentation for Phase 1 development of Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: roadmap
+tags: [roadmap, phase 1, development]
+---
+
 # Phase 1: Foundation (3-4 months)
 
 ## Core Architecture Refactoring

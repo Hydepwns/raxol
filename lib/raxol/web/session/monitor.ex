@@ -43,7 +43,7 @@ defmodule Raxol.Web.Session.Monitor do
     }
     
     # Start monitoring timer
-    schedule_monitoring()
+    schedule_monitoring(state)
     
     {:ok, state}
   end
@@ -61,7 +61,7 @@ defmodule Raxol.Web.Session.Monitor do
   @impl true
   def handle_info(:monitor, state) do
     # Schedule next monitoring
-    schedule_monitoring()
+    schedule_monitoring(state)
     
     # Get current sessions
     sessions = Storage.get_active_sessions()
@@ -124,7 +124,7 @@ defmodule Raxol.Web.Session.Monitor do
     Monitoring.record_metric("sessions.peak_concurrent", stats.peak_concurrent)
   end
 
-  defp schedule_monitoring do
+  defp schedule_monitoring(state) do
     Process.send_after(self(), :monitor, state.monitoring_interval)
   end
 end 

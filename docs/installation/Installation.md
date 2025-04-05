@@ -1,3 +1,12 @@
+---
+title: Installation Guide
+description: Comprehensive guide for installing Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: installation
+tags: [installation, guide, setup]
+---
+
 # Raxol Installation Guide
 
 This guide provides detailed instructions for installing, configuring, and troubleshooting Raxol, a terminal UI framework for Elixir.

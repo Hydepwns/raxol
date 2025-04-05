@@ -1,5 +1,6 @@
 defmodule RaxolWeb.AuthPlug do
   import Plug.Conn
+  import Phoenix.Controller
   import Phoenix.LiveView.Controller
 
   def init(opts), do: opts

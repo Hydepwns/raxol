@@ -43,9 +43,10 @@ defmodule Raxol.Examples.Form do
   end
 
   def render(state) do
+    content = render_content(state)
     %Element{
       tag: :form,
-      content: render_content(state),
+      content: content,
       style: %{
         fg: :white,
         bg: :black
@@ -87,8 +88,10 @@ defmodule Raxol.Examples.Form do
 
   defp render_child(child) do
     case child.module.render(child.state) do
+      %Element{content: content} when not is_nil(content) ->
+        "  " <> content
       %Element{} = element ->
-        "  " <> element.content
+        "  " <> (element |> Map.get(:content, ""))
       _ ->
         ""
     end

@@ -15,6 +15,8 @@ defmodule Raxol.Examples.UXRefinementDemo do
   """
   
   import Raxol.View
+  import Raxol.View.Components
+  import Raxol.View.Layout
   alias Raxol.Core.UXRefinement
   alias Raxol.Core.FocusManager
   alias Raxol.Core.KeyboardNavigator
@@ -100,9 +102,9 @@ defmodule Raxol.Examples.UXRefinementDemo do
   def render(model, _opts) do
     focused = FocusManager.get_focused_element()
     
-    panel(background: :default, height: "100%", width: "100%") do
-      panel(title: "Login Form Example", height: 20, width: 50, center: true, border: true) do
-        column(padding: 1) do
+    Layout.panel(background: :default, height: "100%", width: "100%") do
+      Layout.panel(title: "Login Form Example", height: 20, width: 50, center: true, border: true) do
+        Layout.column(padding: 1) do
           if model.show_help do
             render_help_dialog()
           else
@@ -215,8 +217,8 @@ defmodule Raxol.Examples.UXRefinementDemo do
   # Private functions
   
   defp render_help_dialog do
-    panel(title: "Help", padding: 1, height: 12, width: 40, center: true, border: true) do
-      column do
+    Layout.panel(title: "Help", padding: 1, height: 12, width: 40, center: true, border: true) do
+      Layout.column do
         text("This is a demo of the UX Refinement features in Raxol.")
         text("Use Tab and Shift+Tab to navigate between form fields.")
         text("The focus ring indicates which element is focused.")

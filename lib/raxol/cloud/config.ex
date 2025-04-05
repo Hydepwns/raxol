@@ -329,11 +329,11 @@ defmodule Raxol.Cloud.Config do
     
     # Basic type validation for common fields
     if is_map(config[:edge]) and not is_atom(config[:edge][:mode]) do
-      errors = [{:invalid_type, [:edge, :mode], :atom, config[:edge][:mode]} | errors]
+      _errors = [{:invalid_type, [:edge, :mode], :atom, config[:edge][:mode]} | errors]
     end
     
     if is_map(config[:monitoring]) and not is_boolean(config[:monitoring][:active]) do
-      errors = [{:invalid_type, [:monitoring, :active], :boolean, config[:monitoring][:active]} | errors]
+      _errors = [{:invalid_type, [:monitoring, :active], :boolean, config[:monitoring][:active]} | errors]
     end
     
     {Enum.empty?(errors), errors}

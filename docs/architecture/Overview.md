@@ -1,3 +1,12 @@
+---
+title: Architecture Overview
+description: High-level overview of the Raxol Terminal Emulator architecture
+date: 2023-04-04
+author: Raxol Team
+section: architecture
+tags: [architecture, overview, design]
+---
+
 # Raxol Architecture Overview
 
 ## System Architecture

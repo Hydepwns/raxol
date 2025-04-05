@@ -14,7 +14,7 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
   to user interactions in a physically plausible way.
   """
   
-  alias Raxol.Animation.Physics.{Vector, ForceField, Particle}
+  alias Raxol.Animation.Physics.{Vector, ForceField}
   
   @type physics_object :: %{
     id: String.t(),
@@ -308,7 +308,7 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
     }
   end
   
-  defp handle_collisions(objects, world) do
+  defp handle_collisions(objects, _world) do
     # This is a simplified collision detection algorithm
     # For a real implementation, you'd use a more efficient spatial partitioning
     

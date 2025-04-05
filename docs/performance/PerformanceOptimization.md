@@ -1,3 +1,12 @@
+---
+title: Performance Optimization
+description: Guide for optimizing performance in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: performance
+tags: [performance, optimization, guide]
+---
+
 # Performance Optimization Guide
 
 This guide provides strategies and techniques for optimizing performance in Raxol applications. It covers key aspects of performance, including event handling, memory management, rendering optimization, and jank detection.
@@ -124,6 +133,68 @@ console.log(`Calculation took ${duration}ms`);
 // Get summary statistics
 const summary = getMetricSummary('render');
 console.log(`Average render time: ${summary.average}ms`);
+```
+
+### Type-Safe Performance Monitoring
+
+The performance monitoring system has been enhanced with proper TypeScript type definitions:
+
+```typescript
+import { 
+  ViewPerformance,
+  ExtendedPerformance,
+  PerformanceTiming,
+  PerformanceMemory,
+  ComponentMetrics
+} from 'raxol/performance';
+
+// Get performance metrics with proper typing
+const performance = ViewPerformance.getInstance();
+const metrics = performance.getMetrics();
+
+// Access memory metrics with proper typing
+if (metrics.memory) {
+  console.log(`Memory usage: ${metrics.memory.usedJSHeapSize} bytes`);
+}
+
+// Access timing metrics with proper typing
+console.log(`DOM loading time: ${metrics.timing.domLoading}ms`);
+
+// Access component-specific metrics with proper typing
+const componentMetrics = performance.getComponentMetrics('datatable');
+if (componentMetrics) {
+  console.log(`Component render time: ${componentMetrics.renderTime}ms`);
+}
+```
+
+### Browser Performance API Fallbacks
+
+The performance monitoring system includes fallbacks for browsers that don't support the Performance API:
+
+```typescript
+import { 
+  isPerformanceAPIAvailable,
+  isPerformanceMemoryAPIAvailable,
+  createPerformanceFallback
+} from 'raxol/performance';
+
+// Check if Performance API is available
+if (isPerformanceAPIAvailable()) {
+  console.log('Performance API is available');
+} else {
+  console.log('Using performance fallback');
+}
+
+// Check if Performance Memory API is available
+if (isPerformanceMemoryAPIAvailable()) {
+  console.log('Performance Memory API is available');
+} else {
+  console.log('Memory metrics will not be available');
+}
+
+// Create a performance fallback
+const performanceFallback = createPerformanceFallback();
+console.log(`Current time: ${performanceFallback.now()}ms`);
 ```
 
 ## Jank Detection
@@ -270,7 +341,7 @@ Raxol recommends these performance budgets:
 
 ## Additional Resources
 
-- [Memory Management Guide](./MemoryManagement.md)
+- [Memory Management Guide](../guides/memory_management.md)
 - [Jank Detection Documentation](./JankDetection.md)
-- [Load Testing Guide](./LoadTesting.md)
+- [Load Testing Guide](../guides/load_testing.md)
 - [Web Performance Fundamentals](https://web.dev/metrics/) 

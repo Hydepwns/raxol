@@ -16,6 +16,8 @@ defmodule Raxol.Components.Input.SingleLineInput do
   """
 
   use Raxol.Component
+  alias Raxol.View.Components
+  alias Raxol.View.Layout
   alias Raxol.Core.Style.Color
   alias Raxol.Core.Events.{Event, Clipboard}
 
@@ -82,23 +84,8 @@ defmodule Raxol.Components.Input.SingleLineInput do
 
   @impl true
   def render(state) do
-    text_to_render = if state.value == "" and not state.focused do
-      text(content: state.placeholder, color: state.style.placeholder_color)
-    else
-      render_text_with_selection(state)
-    end
-
-    cursor = if state.focused do
-      text(content: "│", color: state.style.cursor_color)
-    else
-      nil
-    end
-
-    box do
-      row do
-        text_to_render
-        cursor
-      end
+    Layout.column do
+      Components.text(content: state.value, color: state.style.text_color)
     end
   end
 
@@ -108,13 +95,13 @@ defmodule Raxol.Components.Input.SingleLineInput do
         # Render text with selection
         {before_selection, selected, after_selection} = split_text_for_selection(state)
         [
-          text(content: before_selection, color: state.style.text_color),
-          text(content: selected, color: state.style.text_color, background: state.style.selection_color),
-          text(content: after_selection, color: state.style.text_color)
+          Components.text(content: before_selection, color: state.style.text_color),
+          Components.text(content: selected, color: state.style.text_color, background: state.style.selection_color),
+          Components.text(content: after_selection, color: state.style.text_color)
         ]
       true ->
         # Render text without selection
-        text(content: state.value, color: state.style.text_color)
+        Components.text(content: state.value, color: state.style.text_color)
     end
   end
 

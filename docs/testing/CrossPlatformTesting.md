@@ -1,3 +1,12 @@
+---
+title: Cross-Platform Testing Guide
+description: Guide for cross-platform testing in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: testing
+tags: [testing, cross-platform, guide]
+---
+
 # Cross-Platform Testing
 
 This document outlines the cross-platform testing strategy for Raxol, providing instructions on how to run tests, interpret results, and troubleshoot platform-specific issues.

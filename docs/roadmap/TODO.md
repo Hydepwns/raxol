@@ -1,3 +1,12 @@
+---
+title: TODO List
+description: List of pending tasks and improvements for Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: roadmap
+tags: [roadmap, todo, tasks]
+---
+
 # Raxol Project Roadmap
 
 ## Completed Features ✅

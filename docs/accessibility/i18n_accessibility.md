@@ -1,3 +1,12 @@
+---
+title: Internationalization and Accessibility
+description: Guidelines for implementing internationalization with accessibility considerations in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: accessibility
+tags: [accessibility, i18n, internationalization]
+---
+
 # Internationalization and Accessibility Integration
 
 This document explains how the Raxol internationalization (i18n) system integrates with accessibility features to create inclusive terminal UI applications.
@@ -177,5 +186,5 @@ For languages with extensive use of diacritical marks:
 
 - [W3C Internationalization and Accessibility](https://www.w3.org/WAI/about/translating/)
 - [RTL UI Best Practices](https://material.io/design/usability/bidirectionality.html)
-- [Raxol Internationalization Guide](./i18n_guide.md)
+- [Raxol Internationalization Guide](../guides/i18n_guide.md)
 - [Raxol Accessibility Guide](./accessibility_guide.md) 

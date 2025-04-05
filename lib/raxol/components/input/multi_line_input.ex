@@ -22,6 +22,8 @@ defmodule Raxol.Components.Input.MultiLineInput do
   """
 
   use Raxol.Component
+  alias Raxol.View.Components
+  alias Raxol.View.Layout
   alias Raxol.Core.Style.Color
   alias Raxol.Core.Events.{Event, Clipboard}
 
@@ -57,7 +59,7 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
   @impl true
   def update({:set_value, value}, state) do
-    lines = split_into_lines(value, state.width, state.wrap)
+    _lines = split_into_lines(value, state.width, state.wrap)
     %{state |
       value: value,
       cursor_row: 0,
@@ -132,9 +134,7 @@ defmodule Raxol.Components.Input.MultiLineInput do
   end
 
   defp render_placeholder(state) do
-    box do
-      text(content: state.placeholder, color: state.style.placeholder_color)
-    end
+    Components.text(content: state.placeholder, color: state.style.placeholder_color)
   end
 
   defp render_content(state) do
@@ -147,21 +147,19 @@ defmodule Raxol.Components.Input.MultiLineInput do
       0
     end
 
-    box do
-      column do
-        for {line, index} <- Enum.with_index(visible_lines) do
-          row_index = index + state.scroll_offset
-          row do
-            if state.style.line_numbers do
-              text(
-                content: String.pad_leading(Integer.to_string(row_index + 1), line_number_width),
-                color: state.style.line_number_color
-              )
-              text(content: " ")
-            end
-            
-            render_line(line, row_index, state)
+    Layout.column do
+      for {line, index} <- Enum.with_index(visible_lines) do
+        row_index = index + state.scroll_offset
+        row do
+          if state.style.line_numbers do
+            Components.text(
+              content: String.pad_leading(Integer.to_string(row_index + 1), line_number_width),
+              color: state.style.line_number_color
+            )
+            Components.text(content: " ")
           end
+          
+          render_line(line, row_index, state)
         end
       end
     end
@@ -174,7 +172,7 @@ defmodule Raxol.Components.Input.MultiLineInput do
       row_index == state.cursor_row and state.focused ->
         render_line_with_cursor(line, state)
       true ->
-        text(content: line, color: state.style.text_color)
+        Components.text(content: line, color: state.style.text_color)
     end
   end
 
@@ -183,9 +181,9 @@ defmodule Raxol.Components.Input.MultiLineInput do
     after_cursor = String.slice(line, state.cursor_col, String.length(line))
     
     [
-      text(content: before_cursor, color: state.style.text_color),
-      text(content: "│", color: state.style.cursor_color),
-      text(content: after_cursor, color: state.style.text_color)
+      Components.text(content: before_cursor, color: state.style.text_color),
+      Components.text(content: "│", color: state.style.cursor_color),
+      Components.text(content: after_cursor, color: state.style.text_color)
     ]
   end
 
@@ -201,9 +199,9 @@ defmodule Raxol.Components.Input.MultiLineInput do
         after_selection = String.slice(line, end_col, String.length(line))
         
         [
-          text(content: before_selection, color: state.style.text_color),
-          text(content: selected, color: state.style.text_color, background: state.style.selection_color),
-          text(content: after_selection, color: state.style.text_color)
+          Components.text(content: before_selection, color: state.style.text_color),
+          Components.text(content: selected, color: state.style.text_color, background: state.style.selection_color),
+          Components.text(content: after_selection, color: state.style.text_color)
         ]
         
       row_index == start_row ->
@@ -212,8 +210,8 @@ defmodule Raxol.Components.Input.MultiLineInput do
         selected = String.slice(line, start_col, String.length(line))
         
         [
-          text(content: before_selection, color: state.style.text_color),
-          text(content: selected, color: state.style.text_color, background: state.style.selection_color)
+          Components.text(content: before_selection, color: state.style.text_color),
+          Components.text(content: selected, color: state.style.text_color, background: state.style.selection_color)
         ]
         
       row_index == end_row ->
@@ -222,13 +220,13 @@ defmodule Raxol.Components.Input.MultiLineInput do
         after_selection = String.slice(line, end_col, String.length(line))
         
         [
-          text(content: selected, color: state.style.text_color, background: state.style.selection_color),
-          text(content: after_selection, color: state.style.text_color)
+          Components.text(content: selected, color: state.style.text_color, background: state.style.selection_color),
+          Components.text(content: after_selection, color: state.style.text_color)
         ]
         
       true ->
         # Middle line of selection
-        text(content: line, color: state.style.text_color, background: state.style.selection_color)
+        Components.text(content: line, color: state.style.text_color, background: state.style.selection_color)
     end
   end
 
@@ -327,11 +325,11 @@ defmodule Raxol.Components.Input.MultiLineInput do
     {update(:blur, state), []}
   end
 
-  def handle_event(%Event{type: :scroll, direction: :up}, state) do
+  def handle_event(%Event{type: :scroll, data: %{direction: :up}}, state) do
     {update(:scroll_up, state), []}
   end
 
-  def handle_event(%Event{type: :scroll, direction: :down}, state) do
+  def handle_event(%Event{type: :scroll, data: %{direction: :down}}, state) do
     {update(:scroll_down, state), []}
   end
 

@@ -759,7 +759,7 @@ defmodule Raxol.Benchmarks.Performance do
         frame_start = System.monotonic_time(:millisecond)
         component = generate_test_component(:medium)
         render_component(component)
-        render_time = System.monotonic_time(:millisecond) - frame_start
+        _render_time = System.monotonic_time(:millisecond) - frame_start
         
         # Sleep if time remains
         remaining = max(0, target_time + frame_duration - System.monotonic_time(:millisecond))
@@ -912,7 +912,7 @@ defmodule Raxol.Benchmarks.Performance do
     |> Enum.into(%{})
   end
   
-  defp print_summary(results, detailed \\ false) do
+  defp print_summary(results, detailed) do
     IO.puts("\n=== Performance Benchmark Summary ===\n")
     IO.puts("Platform: #{results.platform.name} #{results.platform.version}")
     IO.puts("Architecture: #{results.platform.architecture}")
@@ -962,7 +962,7 @@ defmodule Raxol.Benchmarks.Performance do
       IO.puts("\n#{category_name}:")
       
       if map_size(category_results) > 0 do
-        Enum.each(category_results, fn {metric, {status, message}} ->
+        Enum.each(category_results, fn {_metric, {status, message}} ->
           status_icon = case status do
             :pass -> "✓"
             :fail -> "✗"

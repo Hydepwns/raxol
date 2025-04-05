@@ -29,7 +29,7 @@ defmodule Raxol.Component do
         end
 
         def render(state) do
-          View.text(content: "Count: #{state.count}")
+          View.text(content: "Count: \#{state.count}")
         end
 
         def handle_event(%Event{type: :click}, state) do

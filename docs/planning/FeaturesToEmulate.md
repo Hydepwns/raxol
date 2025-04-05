@@ -1,3 +1,12 @@
+---
+title: Features to Emulate
+description: Documentation of features to emulate in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: planning
+tags: [planning, features, emulation]
+---
+
 # Features to Emulate from Inspirational Libraries
 
 This document outlines key features from various inspirational libraries that we should consider implementing in Raxol.

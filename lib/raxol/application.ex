@@ -1,7 +1,17 @@
 defmodule Raxol.Application do
-  # See https://hexdocs.pm/elixir/Application.html
-  # for more information on OTP Applications
-  @moduledoc false
+  @moduledoc """
+  The main application module for Raxol.
+  
+  This module is responsible for starting and supervising all the core components
+  of the Raxol application, including:
+  - Telemetry system
+  - PubSub system
+  - Web endpoint
+  - Terminal supervisor
+  - Web interface supervisor
+  - Database repository
+  - Metrics system
+  """
   
   use Application
   
@@ -10,14 +20,25 @@ defmodule Raxol.Application do
     children = [
       # Start the Telemetry supervisor
       RaxolWeb.Telemetry,
+      
       # Start the PubSub system
       {Phoenix.PubSub, name: Raxol.PubSub},
+      
       # Start the Endpoint (http/https)
       RaxolWeb.Endpoint,
+      
       # Start the Terminal Supervisor
       Raxol.Terminal.Supervisor,
+      
       # Start the Web Interface Supervisor
       Raxol.Web.Supervisor,
+      
+      # Start the Metrics system
+      Raxol.Metrics,
+      
+      # Start the Runtime supervisor
+      Raxol.Runtime.Supervisor,
+      
       # Start the Ecto repository
       Raxol.Repo
     ]

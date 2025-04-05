@@ -143,10 +143,12 @@ defmodule Raxol.Test.Performance.Assertions do
 
   defp analyze_trend(measurements, value_fn) do
     values = Enum.map(measurements, value_fn)
+    mean = Enum.sum(values) / length(values)
+    stddev = calculate_stddev(values, mean)
     
     %{
-      mean: mean = Enum.sum(values) / length(values),
-      stddev: stddev = calculate_stddev(values, mean),
+      mean: mean,
+      stddev: stddev,
       stable?: stddev / mean <= 0.1 # Consider stable if stddev is within 10% of mean
     }
   end

@@ -9,6 +9,7 @@ defmodule Raxol.Test.TestHelper do
   - Cleanup utilities
   """
 
+  import ExUnit.Callbacks
   alias Raxol.Core.Events.{Event, Manager, Subscription}
   alias Raxol.Core.Runtime.EventLoop
 

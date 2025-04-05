@@ -1,3 +1,12 @@
+---
+title: Testing Guide
+description: Comprehensive guide for testing in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: guides
+tags: [guides, testing, documentation]
+---
+
 # Raxol Testing Guide
 
 ## Overview

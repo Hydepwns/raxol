@@ -56,24 +56,10 @@ defmodule Raxol.Renderer.Layout do
     [panel_elements, inner_elements | acc]
   end
   
-  defp process_element(%{type: :row, attrs: attrs, children: children}, space, acc) when is_list(children) do
-    # Divide horizontal space among children
-    child_count = length(children)
-    child_width = div(space.width, max(child_count, 1))
-    
-    # Process each child with its allocated space
-    children
-    |> Enum.with_index()
-    |> Enum.map(fn {child, index} ->
-      child_space = %{
-        x: space.x + (index * child_width),
-        y: space.y,
-        width: child_width,
-        height: space.height
-      }
-      process_element(child, child_space, [])
-    end)
-    |> Enum.concat(acc)
+  defp process_element(%{type: :row, attrs: _attrs, children: children}, space, acc) when is_list(children) do
+    # Process row element
+    # TODO: Implement row layout processing
+    {space, acc}
   end
   
   defp process_element(%{type: :column, attrs: _attrs, children: children}, space, acc) when is_list(children) do
@@ -259,14 +245,10 @@ defmodule Raxol.Renderer.Layout do
   end
   
   # Apply panel layout, adjusting available space for contents
-  defp apply_panel_layout(space, attrs) do
-    # Panels have a border, so inner space is 2 cells smaller in each dimension
-    %{
-      x: space.x + 1,
-      y: space.y + 1,
-      width: space.width - 2,
-      height: space.height - 2
-    }
+  defp apply_panel_layout(space, _attrs) do
+    # Apply panel layout
+    # TODO: Implement panel layout processing
+    space
   end
   
   # Create panel border elements

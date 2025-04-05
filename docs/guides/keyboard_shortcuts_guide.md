@@ -1,3 +1,12 @@
+---
+title: Keyboard Shortcuts Guide
+description: Guide for keyboard shortcuts in Raxol Terminal Emulator
+date: 2023-04-04
+author: Raxol Team
+section: guides
+tags: [guides, keyboard, shortcuts]
+---
+
 # Raxol Keyboard Shortcuts Guide
 
 This guide provides information on implementing and using keyboard shortcuts in Raxol terminal UI applications.

@@ -257,8 +257,26 @@ defmodule Raxol.Style.Colors.Theme do
       :ok
   """
   def register_theme(%__MODULE__{name: name} = theme) do
-    :ets.insert(@themes_registry_name, {name, theme})
-    :ok
+    # Validate required UI elements
+    case validate_required_elements(theme) do
+      :ok ->
+        Registry.register(@themes_registry_name, name, theme)
+        :ok
+      {:error, missing} ->
+        {:error, "Theme missing required elements: #{Enum.join(missing, ", ")}"}
+    end
+  end
+  
+  defp validate_required_elements(theme) do
+    missing = Enum.filter(@default_ui_elements, fn element ->
+      not Map.has_key?(theme.colors, element)
+    end)
+
+    if Enum.empty?(missing) do
+      :ok
+    else
+      {:error, missing}
+    end
   end
   
   @doc """
@@ -538,19 +556,15 @@ defmodule Raxol.Style.Colors.Theme do
   end
   
   # Gets a lighter or darker color reference from the palette
-  defp get_lighter_or_darker(%Palette{colors: colors} = palette, color_ref, amount, is_dark) do
-    color = Palette.get_color(palette, color_ref)
+  defp get_lighter_or_darker(%Palette{colors: _colors} = palette, color_ref, amount, is_dark) do
+    # Get the base color from the palette
+    base_color = Palette.get_color(palette, color_ref)
     
+    # Apply lightening or darkening based on is_dark flag
     if is_dark do
-      # For dark themes, lighten the color
-      lighter = Color.lighten(color, amount)
-      # Find the closest color in the palette
-      find_closest_color_in_palette(palette, lighter) || color_ref
+      Color.darken(base_color, amount)
     else
-      # For light themes, darken the color
-      darker = Color.darken(color, amount)
-      # Find the closest color in the palette
-      find_closest_color_in_palette(palette, darker) || color_ref
+      Color.lighten(base_color, amount)
     end
   end
   

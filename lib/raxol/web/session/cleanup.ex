@@ -6,6 +6,7 @@ defmodule Raxol.Web.Session.Cleanup do
   ensuring efficient resource usage and data hygiene.
   """
 
+  import Ecto.Query
   alias Raxol.Web.Session.{Storage, Session}
   alias Raxol.Repo
 
@@ -26,11 +27,10 @@ defmodule Raxol.Web.Session.Cleanup do
     now = DateTime.utc_now()
     
     # Get all sessions from database
-    expired_sessions = Repo.all(
-      from s in Session,
+    query = from s in Session,
       where: s.status == :active and
-             fragment("? < ?", s.last_active, datetime_add(^now, -3600, "second"))
-    )
+             s.last_active < datetime_add(^now, -3600, "second")
+    expired_sessions = Repo.all(query)
     
     # Mark sessions as expired
     for session <- expired_sessions do
@@ -54,11 +54,10 @@ defmodule Raxol.Web.Session.Cleanup do
     cutoff = DateTime.add(DateTime.utc_now(), -days * 24 * 60 * 60, :second)
     
     # Delete old sessions from database
-    Repo.delete_all(
-      from s in Session,
+    query = from s in Session,
       where: s.status in [:ended, :expired] and
              s.ended_at < ^cutoff
-    )
+    Repo.delete_all(query)
   end
 
   @doc """
