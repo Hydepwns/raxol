@@ -63,6 +63,13 @@ defmodule Raxol.Core.Events.Event do
     })
   end
 
+  @doc """
+  Creates a simple key event with pressed state and no modifiers.
+  """
+  def key(key) do
+    key_event(key, :pressed, [])
+  end
+
   # Mouse Events
 
   @type mouse_button :: :left | :right | :middle
@@ -80,83 +87,113 @@ defmodule Raxol.Core.Events.Event do
   Creates a mouse event.
 
   ## Parameters
-    * `button` - The button that was pressed/released
-    * `state` - The state of the button
-    * `position` - The {x, y} position of the mouse
-    * `modifiers` - List of active modifiers
+    * `button` - The mouse button (:left, :right, :middle)
+    * `position` - The mouse position as {x, y}
+    * `state` - The button state (:pressed, :released, :double_click)
+    * `modifiers` - List of active modifiers (e.g. [:shift, :ctrl])
   """
-  def mouse_event(button \\ nil, state \\ nil, position, modifiers \\ [])
-      when (is_nil(button) or button in [:left, :right, :middle]) and
-           (is_nil(state) or state in [:pressed, :released, :double_click]) and
-           is_tuple(position) and tuple_size(position) == 2 and
+  def mouse_event(button, position, state \\ :pressed, modifiers \\ [])
+      when button in [:left, :right, :middle] and
+           state in [:pressed, :released, :double_click] and
+           is_tuple(position) and
            is_list(modifiers) do
     new(:mouse, %{
       button: button,
-      state: state,
       position: position,
+      state: state,
       modifiers: modifiers
+    })
+  end
+
+  @doc """
+  Creates a simple mouse event with pressed state and no modifiers.
+  """
+  def mouse(button, position) when button in [:left, :right, :middle] do
+    mouse_event(button, position)
+  end
+
+  @doc """
+  Creates a mouse event with drag state.
+  """
+  def mouse(button, position, drag: true) when button in [:left, :right, :middle] do
+    new(:mouse, %{
+      button: button,
+      position: position,
+      state: :pressed,
+      drag: true,
+      modifiers: []
     })
   end
 
   # Window Events
 
-  @type window_action :: :resize | :focus | :blur
-
   @type window_event :: %{
-    action: window_action(),
-    width: non_neg_integer() | nil,
-    height: non_neg_integer() | nil
+    width: non_neg_integer(),
+    height: non_neg_integer(),
+    action: :resize | :focus | :blur
   }
 
   @doc """
   Creates a window event.
 
   ## Parameters
-    * `action` - The window action that occurred
-    * `width` - The new width (for resize events)
-    * `height` - The new height (for resize events)
+    * `width` - The window width
+    * `height` - The window height
+    * `action` - The window action (:resize, :focus, :blur)
   """
-  def window_event(action, width \\ nil, height \\ nil)
-      when action in [:resize, :focus, :blur] and
-           (is_nil(width) or is_integer(width)) and
-           (is_nil(height) or is_integer(height)) do
+  def window_event(width, height, action)
+      when is_integer(width) and is_integer(height) and
+           action in [:resize, :focus, :blur] do
     new(:window, %{
-      action: action,
       width: width,
-      height: height
+      height: height,
+      action: action
     })
   end
 
-  # System Events
+  @doc """
+  Creates a simple window event.
+  """
+  def window(width, height, action) when action in [:resize, :focus, :blur] do
+    window_event(width, height, action)
+  end
 
-  @type system_action :: :shutdown | :suspend | :resume
-
-  @type system_event :: %{
-    action: system_action()
-  }
+  # Timer Events
 
   @doc """
-  Creates a system event.
+  Creates a timer event.
 
   ## Parameters
-    * `action` - The system action that occurred
+    * `data` - Timer-specific data
   """
-  def system_event(action) when action in [:shutdown, :suspend, :resume] do
-    new(:system, %{action: action})
+  def timer_event(data) do
+    new(:timer, data)
+  end
+
+  @doc """
+  Creates a simple timer event.
+  """
+  def timer(data) do
+    timer_event(data)
   end
 
   # Custom Events
 
   @doc """
-  Creates a custom event with the given type and data.
-  Custom event types should be namespaced to avoid conflicts.
+  Creates a custom event.
 
-  ## Example
-
-      Event.custom_event(:"myapp.user.login", %{user_id: 123})
+  ## Parameters
+    * `data` - Custom event data
   """
-  def custom_event(type, data) when is_atom(type) do
-    new(type, data)
+  def custom_event(data) do
+    new(:custom, data)
+  end
+
+  @doc """
+  Creates a simple custom event.
+  """
+  def custom(data) do
+    custom_event(data)
   end
 
   # Terminal UI Events
@@ -273,4 +310,4 @@ defmodule Raxol.Core.Events.Event do
       position: position
     })
   end
-end 
+end

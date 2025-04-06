@@ -44,7 +44,7 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslationsTest do
     end
 
     test "translates Latin-1 specific characters" do
-      assert CharacterTranslations.translate_char(0xA0, :latin1) == ?\u00A0
+      assert CharacterTranslations.translate_char(0xA0, :latin1) == ?\  # Non-breaking space
       assert CharacterTranslations.translate_char(0xA1, :latin1) == ?¡
       assert CharacterTranslations.translate_char(0xA2, :latin1) == ?¢
       assert CharacterTranslations.translate_char(0xA3, :latin1) == ?£
@@ -76,4 +76,4 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslationsTest do
       assert CharacterTranslations.translate_string("café", :latin1) == "café"
     end
   end
-end 
+end

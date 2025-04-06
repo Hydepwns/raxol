@@ -46,11 +46,11 @@ defmodule Raxol.MixProject do
       {:phoenix_live_view, "~> 1.0.0"},
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:jason, "~> 1.4"},
-      
+
       # Database and persistence
       {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.0.0"},
-      
+
       # Web interface
       {:phoenix_html, "~> 4.1"},
       {:phoenix_html_helpers, "~> 1.0"},
@@ -61,21 +61,21 @@ defmodule Raxol.MixProject do
        app: false,
        compile: false,
        depth: 1},
-      
+
       # Development tools
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:dart_sass, "~> 0.7", runtime: Mix.env() == :dev},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
       {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.31", only: :dev, runtime: false},
-      
+      {:ex_doc, "~> 0.31", only: [:dev, :test], runtime: false},
+
       # Testing
       {:mox, "~> 1.0", only: :test},
       {:meck, "~> 0.9.2", only: :test},
       {:wallaby, "~> 0.30.0", only: :test, runtime: false},
       {:floki, ">= 0.30.0", only: :test},
-      
+
       # Utilities
       {:uuid, "~> 1.1"},
       {:inflex, "~> 2.0"},

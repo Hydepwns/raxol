@@ -958,7 +958,19 @@ export class View {
   }
 
   static infiniteScroll(options: InfiniteScrollOptions): ViewElement {
-    const { style = {}, children = [], content, events, className, props, items, itemHeight, containerHeight, overscan = 3, onScroll, onLoadMore, loadingThreshold = 100, loadingIndicator } = options;
+    const {
+      items,
+      itemHeight,
+      containerHeight,
+      overscan = 3,
+      onScroll,
+      onLoadMore,
+      loadingThreshold = 100,
+      loadingIndicator,
+      style = {},
+      ...rest
+    } = options;
+
     const totalHeight = items.length * itemHeight;
     const visibleItems = Math.ceil(containerHeight / itemHeight);
     const startIndex = Math.max(0, Math.floor(window.scrollY / itemHeight) - overscan);
@@ -1000,16 +1012,19 @@ export class View {
       textAlign: 'center' as const
     };
 
-    const contentElement = {
+    const contentElement: ViewElement = {
       type: 'div' as ComponentType,
       style: contentStyle
     };
 
-    const loadingElement = loadingIndicator ? {
+    const loadingElement: ViewElement | undefined = loadingIndicator ? {
       type: 'div' as ComponentType,
       style: loadingStyle,
       children: [loadingIndicator]
     } : undefined;
+
+    // Create a new object without the content property to avoid type errors
+    const { content, ...restWithoutContent } = rest;
 
     return {
       type: 'div' as ComponentType,
@@ -1020,7 +1035,7 @@ export class View {
         ...(loadingElement ? [loadingElement] : [])
       ],
       events: {
-        ...events,
+        ...restWithoutContent.events,
         onScroll: (e: Event) => {
           const target = e.target as HTMLElement;
           const scrollTop = target.scrollTop;
@@ -1030,70 +1045,147 @@ export class View {
           }
         }
       },
-      className,
-      props
+      ...restWithoutContent
     };
   }
 
   static lazyLoad(options: LazyLoadOptions): ViewElement {
-    const { style = {}, src, placeholder, threshold = 0.1, onLoad, onError } = options;
-    
+    const {
+      src,
+      placeholder,
+      threshold = 0.1,
+      onLoad,
+      onError,
+      style = {},
+      ...rest
+    } = options;
+
+    // Create a new object without the content property to avoid type errors
+    const { content, ...restWithoutContent } = rest;
+
+    const containerStyle: ViewStyle = {
+      ...style,
+      position: 'relative' as PositionType,
+      overflow: 'hidden' as const
+    };
+
+    const imageStyle: ViewStyle = {
+      width: '100%',
+      height: 'auto',
+      opacity: 0,
+      transition: 'opacity 0.3s ease-in-out'
+    };
+
+    const placeholderElement = placeholder || {
+      type: 'div' as ComponentType,
+      style: {
+        width: '100%',
+        height: '100%',
+        backgroundColor: '#f0f0f0',
+        display: 'flex',
+        justifyContent: 'center',
+        alignItems: 'center'
+      },
+      content: 'Loading...'
+    };
+
     return {
       type: 'div' as ComponentType,
-      style,
+      style: containerStyle,
       children: [
         {
-          type: 'div' as ComponentType,
-          style: { 
-            width: '100%', 
-            height: 'auto',
-            backgroundImage: `url(${src})`,
-            backgroundSize: 'cover',
-            backgroundPosition: 'center'
+          type: 'img' as ComponentType,
+          style: imageStyle,
+          props: {
+            src,
+            alt: '',
+            loading: 'lazy'
           },
           events: {
             onCustomEvent: (e: CustomEvent) => {
               if (e.type === 'load') {
+                // Show the image when it's loaded
+                const imgElement = document.querySelector(`img[src="${src}"]`) as HTMLImageElement;
+                if (imgElement) {
+                  imgElement.style.opacity = '1';
+                }
                 onLoad?.();
               } else if (e.type === 'error') {
                 onError?.(e.detail as Error);
               }
             }
           }
-        }
-      ]
+        },
+        placeholderElement
+      ],
+      ...restWithoutContent
     };
   }
 
   static dragAndDrop(options: DragAndDropOptions): ViewElement {
-    const { style = {}, items, onDragStart, onDragOver, onDrop, onDragEnd, draggableItemStyle, dropTargetStyle } = options;
-    
+    const {
+      items,
+      onDragStart,
+      onDragOver,
+      onDrop,
+      onDragEnd,
+      draggableItemStyle,
+      dropTargetStyle,
+      style = {},
+      ...rest
+    } = options;
+
+    // Create a new object without the content property to avoid type errors
+    const { content, ...restWithoutContent } = rest;
+
+    const containerStyle: ViewStyle = {
+      ...style,
+      display: 'flex',
+      flexDirection: 'column',
+      gap: '0.5rem'
+    };
+
+    const defaultDraggableStyle: ViewStyle = {
+      padding: '1rem',
+      border: '1px solid #ddd',
+      borderRadius: '0.25rem',
+      backgroundColor: '#fff',
+      cursor: 'move',
+      transition: 'background-color 0.2s ease, transform 0.2s ease',
+      ...draggableItemStyle
+    };
+
+    const defaultDropTargetStyle: ViewStyle = {
+      border: 'dashed' as BorderStyle,
+      borderWidth: '2px',
+      borderColor: '#007bff',
+      backgroundColor: 'rgba(0, 123, 255, 0.05)',
+      ...dropTargetStyle
+    };
+
     return {
       type: 'div' as ComponentType,
-      style,
+      style: containerStyle,
       children: items.map((item, index) => ({
         type: 'div' as ComponentType,
-        style: {
-          ...(draggableItemStyle || {}),
-          cursor: 'move',
-          padding: '0.5em',
-          margin: '0.25em 0',
-          backgroundColor: 'white',
-          border: '1px solid #ddd' as BorderStyle,
-          borderRadius: '4px'
-        },
+        style: defaultDraggableStyle,
         props: {
-          draggable: true
+          draggable: true,
+          'data-index': index
         },
         events: {
           onDragStart: (e: DragEvent) => {
             if (e.dataTransfer) {
               e.dataTransfer.setData('text/plain', index.toString());
+              e.dataTransfer.effectAllowed = 'move';
             }
             onDragStart?.(item, index);
           },
           onDragOver: (e: DragEvent) => {
             e.preventDefault();
+            if (e.dataTransfer) {
+              e.dataTransfer.dropEffect = 'move';
+            }
             onDragOver?.(item, index);
           },
           onDrop: (e: DragEvent) => {
@@ -1101,10 +1193,13 @@ export class View {
             const sourceIndex = parseInt(e.dataTransfer?.getData('text/plain') || '0', 10);
             onDrop?.(item, sourceIndex, index);
           },
-          onDragEnd: () => onDragEnd?.(item, index)
+          onDragEnd: () => {
+            onDragEnd?.(item, index);
+          }
         },
         children: [item]
-      }))
+      })),
+      ...restWithoutContent
     };
   }
 

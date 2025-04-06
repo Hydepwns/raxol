@@ -4,7 +4,7 @@ defmodule Raxol.Repo.Migrations.CreateSessions do
   def change do
     create table(:sessions, primary_key: false) do
       add :id, :string, primary_key: true
-      add :user_id, :string, null: false
+      add :user_id, references(:users, type: :bigint), null: false
       add :status, :string, null: false
       add :created_at, :utc_datetime, null: false
       add :last_active, :utc_datetime, null: false
@@ -19,4 +19,4 @@ defmodule Raxol.Repo.Migrations.CreateSessions do
     create index(:sessions, [:created_at])
     create index(:sessions, [:last_active])
   end
-end 
+end

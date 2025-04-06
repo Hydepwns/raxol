@@ -28,6 +28,7 @@ raxol-*.tar
 # Environment files
 .env
 .env.*
+.secrets
 
 # Database files
 *.sqlite3

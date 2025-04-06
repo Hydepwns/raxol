@@ -55,7 +55,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       assert view.type == :border
       [header | rows] = get_in(view, [:children, Access.at(0)])
-      
+
       # Verify structure
       assert length(rows) == 3
       assert length(header.children) == 4
@@ -70,8 +70,8 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       status_cells = Enum.map(rows, fn row ->
         Enum.at(row.children, 3)
       end)
-      assert Enum.any?(status_cells, & &1.fg == :green)
-      assert Enum.any?(status_cells, & &1.red == :red)
+      assert Enum.any?(status_cells, &(&1.fg == :green))
+      assert Enum.any?(status_cells, &(&1.fg == :red))
     end
 
     test "creates side-by-side charts" do
@@ -96,7 +96,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
           %{
             name: product.name,
             data: product.sales,
-            color: if product.trend == :up, do: :green, else: :red
+            color: (if product.trend == :up, do: :green, else: :red)
           }
         end),
         width: 40,
@@ -135,8 +135,8 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
         ],
         data: [
           %{metric: "Total Products", value: length(@sample_data)},
-          %{metric: "Growing", value: Enum.count(@sample_data, & &1.trend == :up)},
-          %{metric: "Declining", value: Enum.count(@sample_data, & &1.trend == :down)}
+          %{metric: "Growing", value: Enum.count(@sample_data, &(&1.trend == :up))},
+          %{metric: "Declining", value: Enum.count(@sample_data, &(&1.trend == :down))}
         ],
         border: :single
       )
@@ -177,12 +177,12 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       assert view.type == :box
       assert length(view.children) == 2  # Header and content flex
-      
+
       [header, content] = view.children
       assert header.border == :single
       assert content.type == :flex
       assert length(content.children) == 2  # Summary and chart
-      
+
       # Verify layout structure
       [summary, chart] = content.children
       assert summary.size == {25, :auto}
@@ -231,11 +231,11 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       assert view.type == :flex
       assert length(view.children) == 2
-      
+
       [table_box, chart_box] = view.children
       assert table_box.size == {30, :auto}
       assert chart_box.size == {40, :auto}
-      
+
       # Verify table selection
       table_view = List.first(table_box.children)
       [_header | rows] = get_in(table_view, [:children, Access.at(0)])
@@ -249,7 +249,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
         %{id: :table, label: "Table View"},
         %{id: :chart, label: "Chart View"}
       ]
-      
+
       tab_headers = View.flex(
         direction: :row,
         children: Enum.map(tabs, fn tab ->
@@ -291,11 +291,11 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       assert view.type == :box
       assert length(view.children) == 2
-      
+
       [headers, content] = view.children
       assert headers.type == :flex
       assert length(headers.children) == 2
-      
+
       # Verify tab styling
       [active_tab, inactive_tab] = headers.children
       assert active_tab.style == [bg: :blue, fg: :white]
@@ -326,10 +326,10 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       assert view.border == :double
       assert view.padding == {1, 1, 1, 1}
-      
+
       inner_border = List.first(view.children)
       assert inner_border.border == :single
-      
+
       table = List.first(inner_border.children)
       assert table.type == :border
     end
@@ -358,7 +358,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       assert view.type == :grid
       assert length(view.children) == 3  # Three charts
-      
+
       # Verify chart sizes
       Enum.each(view.children, fn chart ->
         assert chart.width == 30
@@ -366,4 +366,4 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       end)
     end
   end
-end 
+end
