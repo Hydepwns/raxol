@@ -1,11 +1,11 @@
 defmodule Raxol.Docs.ComponentCatalog do
   @moduledoc """
   Visual component catalog for Raxol documentation.
-  
+
   This module provides a comprehensive catalog of all UI components
   available in Raxol, with visual examples, code snippets, and interactive
   customization capabilities.
-  
+
   Features:
   * Categorized components listing
   * Live examples with code snippets
@@ -14,7 +14,7 @@ defmodule Raxol.Docs.ComponentCatalog do
   * Related components suggestions
   * Search functionality
   """
-  
+
   # Component category
   defmodule Category do
     @moduledoc false
@@ -25,7 +25,7 @@ defmodule Raxol.Docs.ComponentCatalog do
       :components
     ]
   end
-  
+
   # Component entry
   defmodule Component do
     @moduledoc false
@@ -42,7 +42,7 @@ defmodule Raxol.Docs.ComponentCatalog do
       :metadata
     ]
   end
-  
+
   # Component example
   defmodule Example do
     @moduledoc false
@@ -55,7 +55,7 @@ defmodule Raxol.Docs.ComponentCatalog do
       :customizable_props
     ]
   end
-  
+
   # Property definition
   defmodule Property do
     @moduledoc false
@@ -69,10 +69,10 @@ defmodule Raxol.Docs.ComponentCatalog do
       :examples
     ]
   end
-  
+
   # Process dictionary key for catalog state
   @catalog_key :raxol_component_catalog
-  
+
   @doc """
   Initializes the component catalog.
   """
@@ -81,7 +81,7 @@ defmodule Raxol.Docs.ComponentCatalog do
     Process.put(@catalog_key, catalog)
     :ok
   end
-  
+
   @doc """
   Lists all component categories.
   """
@@ -89,7 +89,7 @@ defmodule Raxol.Docs.ComponentCatalog do
     catalog = get_catalog()
     Map.values(catalog)
   end
-  
+
   @doc """
   Gets a specific category by ID.
   """
@@ -97,39 +97,39 @@ defmodule Raxol.Docs.ComponentCatalog do
     catalog = get_catalog()
     Map.get(catalog, category_id)
   end
-  
+
   @doc """
   Lists all components in a specific category.
   """
   def list_components(category_id) do
     catalog = get_catalog()
-    
+
     case Map.get(catalog, category_id) do
       nil -> []
       category -> category.components
     end
   end
-  
+
   @doc """
   Gets a specific component by ID.
   """
   def get_component(component_id) do
     catalog = get_catalog()
-    
+
     Enum.find_value(catalog, fn {_, category} ->
       Enum.find(category.components, fn component ->
         component.id == component_id
       end)
     end)
   end
-  
+
   @doc """
   Searches for components based on a query.
   """
   def search(query) do
     catalog = get_catalog()
     query_downcase = String.downcase(query)
-    
+
     # Search in all categories and components
     Enum.flat_map(catalog, fn {_, category} ->
       Enum.filter(category.components, fn component ->
@@ -142,18 +142,18 @@ defmodule Raxol.Docs.ComponentCatalog do
       end)
     end)
   end
-  
+
   @doc """
   Renders a component example.
   """
   def render_example(component_id, example_id, custom_props \\ %{}) do
     component = get_component(component_id)
-    
+
     if component do
       example = Enum.find(component.examples, fn example ->
         example.id == example_id
       end)
-      
+
       if example do
         # Call the preview function with custom props
         example.preview_fn.(custom_props)
@@ -164,7 +164,7 @@ defmodule Raxol.Docs.ComponentCatalog do
       {:error, "Component not found"}
     end
   end
-  
+
   @doc """
   Gets usage statistics for components.
   """
@@ -194,21 +194,21 @@ defmodule Raxol.Docs.ComponentCatalog do
       ]
     }
   end
-  
+
   @doc """
   Generates code snippets for a component with the given properties.
   """
   def generate_code_snippet(component_id, props \\ %{}) do
     component = get_component(component_id)
-    
+
     if component do
       module_name = component.module |> to_string() |> String.replace("Elixir.", "")
-      
+
       # Generate props string
       props_str = props
                   |> Enum.map(fn {k, v} -> "#{k}: #{inspect(v)}" end)
                   |> Enum.join(", ")
-      
+
       # Basic snippet for simple components
       """
       #{module_name}.#{component.id}(#{if props_str != "", do: props_str})
@@ -217,30 +217,30 @@ defmodule Raxol.Docs.ComponentCatalog do
       {:error, "Component not found"}
     end
   end
-  
+
   @doc """
   Gets accessibility information for a component.
   """
   def get_accessibility_info(component_id) do
     component = get_component(component_id)
-    
+
     if component do
       component.accessibility
     else
       {:error, "Component not found"}
     end
   end
-  
+
   @doc """
   Suggests related components.
   """
   def suggest_related_components(component_id) do
     component = get_component(component_id)
-    
+
     if component do
       # Get the related component IDs
       related_ids = component.related_components
-      
+
       # Fetch the actual components
       related_ids
       |> Enum.map(&get_component/1)
@@ -249,13 +249,13 @@ defmodule Raxol.Docs.ComponentCatalog do
       []
     end
   end
-  
+
   # Private helpers
-  
+
   defp get_catalog do
     Process.get(@catalog_key) || build_catalog()
   end
-  
+
   defp build_catalog do
     # Basic components
     basic_components = [
@@ -271,7 +271,7 @@ defmodule Raxol.Docs.ComponentCatalog do
             description: "A simple button with default styling.",
             code: "Components.button(\"Click me\")",
             preview_fn: fn props ->
-              Raxol.Components.Button.button(props[:label] || "Click me", Map.drop(props, [:label]))
+              Raxol.Components.Button.new(props[:label] || "Click me", Map.drop(props, [:label]))
             end,
             customizable_props: [
               %Property{name: :label, type: :string, description: "Button text", default_value: "Click me"},
@@ -286,7 +286,7 @@ defmodule Raxol.Docs.ComponentCatalog do
             description: "A button with an icon.",
             code: "Components.button(\"Save\", icon: :save)",
             preview_fn: fn props ->
-              Raxol.Components.Button.button(props[:label] || "Save", Map.merge(%{icon: props[:icon] || :save}, Map.drop(props, [:label, :icon])))
+              Raxol.Components.Button.new(props[:label] || "Save", Map.merge(%{icon: props[:icon] || :save}, Map.drop(props, [:label, :icon])))
             end,
             customizable_props: [
               %Property{name: :label, type: :string, description: "Button text", default_value: "Save"},
@@ -336,7 +336,10 @@ defmodule Raxol.Docs.ComponentCatalog do
             description: "A simple text input with default styling.",
             code: "Components.text_input(placeholder: \"Enter your name\")",
             preview_fn: fn props ->
-              Raxol.Components.TextInput.text_input(props)
+              # Assuming ExampleComponent.TextInput.render exists and handles props
+              # Placeholder: Render the props map for now
+              # ExampleComponent.TextInput.render(props, do: [IO.inspect(props, label: "TextInput Props")])
+              Raxol.Components.TextInput.new(props) # Use new/1 instead of text_input/1
             end,
             customizable_props: [
               %Property{name: :value, type: :string, description: "Current input value", default_value: ""},
@@ -376,7 +379,7 @@ defmodule Raxol.Docs.ComponentCatalog do
         }
       }
     ]
-    
+
     # Layout components
     layout_components = [
       %Component{
@@ -396,14 +399,15 @@ defmodule Raxol.Docs.ComponentCatalog do
             end
             """,
             preview_fn: fn props ->
-              Raxol.Components.Panel.panel(props, do: [
-                Raxol.Components.Title.title(props[:title] || "Panel Title"),
-                Raxol.Components.Text.text(props[:content] || "Panel content goes here.")
-              ])
+              # Raxol.Components.Panel.panel(props, do: [
+              #   Raxol.Components.Title.title(props[:title] || "Panel Title"),
+              #   Raxol.Components.Text.text(props[:content] || "Panel content goes here.")
+              # ])
+              # Placeholder until components are confirmed available
+              IO.inspect(props, label: "Panel Props")
             end,
             customizable_props: [
               %Property{name: :title, type: :string, description: "Panel title", default_value: "Panel Title"},
-              %Property{name: :content, type: :string, description: "Panel content", default_value: "Panel content goes here."},
               %Property{name: :style, type: :atom, description: "Panel style", default_value: :default, options: [:default, :primary, :secondary, :bordered, :none]}
             ]
           }
@@ -436,7 +440,7 @@ defmodule Raxol.Docs.ComponentCatalog do
         }
       }
     ]
-    
+
     # Build the complete catalog
     %{
       "basic" => %Category{
@@ -454,4 +458,4 @@ defmodule Raxol.Docs.ComponentCatalog do
       # More categories would be defined here
     }
   end
-end 
+end
