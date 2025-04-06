@@ -1,45 +1,45 @@
 defmodule Raxol.Core.Performance.Analyzer do
   @moduledoc """
   Analyzes performance metrics and generates insights for AI analysis.
-  
+
   This module:
   - Processes performance metrics
   - Identifies performance patterns
   - Generates optimization suggestions
   - Formats data for AI analysis
-  
+
   ## Usage
-  
+
   ```elixir
   # Get metrics from monitor
   metrics = Monitor.get_metrics(monitor)
-  
+
   # Analyze metrics
   analysis = Analyzer.analyze(metrics)
-  
+
   # Get AI-ready data
   ai_data = Analyzer.prepare_ai_data(analysis)
   ```
   """
-  
+
   @doc """
   Analyzes performance metrics and generates insights.
-  
+
   ## Parameters
-  
+
   * `metrics` - Map of performance metrics from Monitor
-  
+
   ## Returns
-  
+
   Map containing analysis results:
   * `:performance_score` - Overall performance score (0-100)
   * `:issues` - List of identified performance issues
   * `:suggestions` - List of optimization suggestions
   * `:patterns` - Identified performance patterns
   * `:trends` - Performance trends over time
-  
+
   ## Examples
-  
+
       iex> metrics = %{
         fps: 60,
         avg_frame_time: 16.5,
@@ -65,24 +65,24 @@ defmodule Raxol.Core.Performance.Analyzer do
       trends: analyze_trends(metrics)
     }
   end
-  
+
   @doc """
   Prepares performance data for AI analysis.
-  
+
   ## Parameters
-  
+
   * `analysis` - Analysis results from analyze/1
-  
+
   ## Returns
-  
+
   Map containing AI-ready data:
   * `:metrics` - Raw performance metrics
   * `:analysis` - Analysis results
   * `:context` - Additional context for AI
   * `:format` - Data format specification
-  
+
   ## Examples
-  
+
       iex> metrics = %{fps: 60, ...}
       iex> analysis = Analyzer.analyze(metrics)
       iex> ai_data = Analyzer.prepare_ai_data(analysis)
@@ -102,80 +102,80 @@ defmodule Raxol.Core.Performance.Analyzer do
       version: "1.0"
     }
   end
-  
+
   # Private Helpers
-  
+
   defp calculate_performance_score(metrics) do
     # Base score starts at 100
     base_score = 100
-    
+
     # Deduct points for issues
     deductions = [
       # FPS deductions
       (if metrics.fps < 30, do: 20, else: 0),
       (if metrics.fps < 45, do: 10, else: 0),
-      
+
       # Jank deductions
       (if metrics.jank_count > 0, do: metrics.jank_count * 5, else: 0),
-      
+
       # Memory usage deductions
       (if metrics.memory_usage > 1_000_000_000, do: 15, else: 0),  # 1GB
       (if metrics.memory_usage > 500_000_000, do: 10, else: 0),   # 500MB
-      
+
       # GC pressure deductions
       (if Map.get(metrics.gc_stats, :number_of_gcs, 0) > 100, do: 10, else: 0)
     ]
-    
+
     # Calculate final score
     max(0, base_score - Enum.sum(deductions))
   end
-  
+
   defp identify_issues(metrics) do
     issues = []
-    
+
     # Check FPS
     issues = if metrics.fps < 30, do: ["Critical: Low FPS (< 30)" | issues], else: issues
     issues = if metrics.fps < 45, do: ["Warning: Suboptimal FPS (< 45)" | issues], else: issues
-    
+
     # Check UI jank
-    issues = 
+    issues =
       if metrics.jank_count > 0 do
         ["Warning: UI jank detected (#{metrics.jank_count} frames)" | issues]
       else
         issues
       end
-    
+
     # Check memory usage
-    issues = 
+    issues =
       if metrics.memory_usage > 1_000_000_000 do
         ["Critical: High memory usage (> 1GB)" | issues]
       else
         issues
       end
-      
-    issues = 
+
+    issues =
       if metrics.memory_usage > 500_000_000 do
         ["Warning: Elevated memory usage (> 500MB)" | issues]
       else
         issues
       end
-      
+
     # Check garbage collection
-    issues = 
+    issues =
       if Map.get(metrics.gc_stats, :number_of_gcs, 0) > 100 do
         ["Warning: Frequent garbage collection" | issues]
       else
         issues
       end
-      
+
     issues
   end
-  
+
   defp generate_suggestions(metrics) do
     suggestions = []
-    
+
     # FPS suggestions
-    suggestions = 
+    suggestions =
       if metrics.fps < 30 do
         [
           "Consider using virtual scrolling for large lists",
@@ -185,9 +185,9 @@ defmodule Raxol.Core.Performance.Analyzer do
       else
         suggestions
       end
-      
-    # Memory suggestions  
-    suggestions = 
+
+    # Memory suggestions
+    suggestions =
       if metrics.memory_usage > 500_000_000 do
         [
           "Review memory usage patterns",
@@ -197,9 +197,9 @@ defmodule Raxol.Core.Performance.Analyzer do
       else
         suggestions
       end
-      
+
     # GC suggestions
-    suggestions = 
+    suggestions =
       if Map.get(metrics.gc_stats, :number_of_gcs, 0) > 100 do
         [
           "Review object lifecycle management",
@@ -209,10 +209,10 @@ defmodule Raxol.Core.Performance.Analyzer do
       else
         suggestions
       end
-      
+
     suggestions
   end
-  
+
   defp identify_patterns(metrics) do
     %{
       fps_stability: analyze_fps_stability(metrics),
@@ -221,7 +221,7 @@ defmodule Raxol.Core.Performance.Analyzer do
       jank_patterns: analyze_jank_patterns(metrics)
     }
   end
-  
+
   defp analyze_trends(metrics) do
     %{
       fps_trend: calculate_trend(metrics.fps, 60),
@@ -229,7 +229,7 @@ defmodule Raxol.Core.Performance.Analyzer do
       jank_trend: calculate_trend(metrics.jank_count, 0)
     }
   end
-  
+
   defp analyze_fps_stability(metrics) do
     cond do
       metrics.fps >= 55 -> "stable"
@@ -238,7 +238,7 @@ defmodule Raxol.Core.Performance.Analyzer do
       true -> "critical"
     end
   end
-  
+
   defp analyze_memory_growth(metrics) do
     case metrics.memory_usage do
       usage when usage > 1_000_000_000 -> "exponential"
@@ -246,17 +246,17 @@ defmodule Raxol.Core.Performance.Analyzer do
       _ -> "stable"
     end
   end
-  
+
   defp analyze_gc_patterns(metrics) do
     gc_count = Map.get(metrics.gc_stats, :number_of_gcs, 0)
-    
+
     cond do
       gc_count > 100 -> "frequent"
       gc_count > 50 -> "moderate"
       true -> "stable"
     end
   end
-  
+
   defp analyze_jank_patterns(metrics) do
     cond do
       metrics.jank_count > 10 -> "severe"
@@ -265,7 +265,7 @@ defmodule Raxol.Core.Performance.Analyzer do
       true -> "none"
     end
   end
-  
+
   defp calculate_trend(current, target) do
     cond do
       current > target * 1.1 -> "increasing"
@@ -273,16 +273,16 @@ defmodule Raxol.Core.Performance.Analyzer do
       true -> "stable"
     end
   end
-  
+
   defp get_environment_info do
     %{
-      node: Node.node(),
+      node: :erlang.node(),
       system: :os.type(),
       version: System.version(),
       architecture: :erlang.system_info(:system_architecture)
     }
   end
-  
+
   defp get_system_info do
     %{
       memory_total: :erlang.memory(:total),
@@ -291,4 +291,4 @@ defmodule Raxol.Core.Performance.Analyzer do
       port_count: :erlang.system_info(:port_count)
     }
   end
-end 
+end

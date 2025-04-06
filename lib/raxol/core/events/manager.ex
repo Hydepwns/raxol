@@ -252,6 +252,15 @@ defmodule Raxol.Core.Events.Manager do
     :ok
   end
 
+  @doc """
+  Cleans up the event manager state.
+  """
+  def cleanup() do
+    Process.delete(:event_handlers)
+    Process.delete(:subscriptions)
+    :ok
+  end
+
   # Private functions
 
   defp extract_event_type(event) when is_atom(event), do: event

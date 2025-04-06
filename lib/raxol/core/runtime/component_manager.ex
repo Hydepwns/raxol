@@ -12,7 +12,9 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   use GenServer
 
-  alias Raxol.Core.Runtime.EventLoop
+  # alias Raxol.Core.Events.EventManager # Unused
+  # alias Raxol.Core.Renderer.Manager, as: RendererManager # Unused
+  alias Raxol.Core.Runtime.Subscription
 
   # Client API
 
@@ -36,6 +38,14 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     GenServer.cast(__MODULE__, {:dispatch_event, event})
   end
 
+  @doc """
+  Retrieves the current render queue and clears it.
+  """
+  @spec get_render_queue() :: list(String.t())
+  def get_render_queue() do
+    GenServer.call(__MODULE__, :get_and_clear_render_queue)
+  end
+
   # Server Callbacks
 
   @impl true
@@ -50,26 +60,26 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   @impl true
   def handle_call({:mount, component_module, props}, _from, state) do
     component_id = inspect(component_module)
-    
+
     # Initialize component
     initial_state = component_module.init(props)
-    
+
     # Mount the component
     {mounted_state, commands} = component_module.mount(initial_state)
-    
+
     # Store component state
     new_state = put_in(state.components[component_id], %{
       module: component_module,
       state: mounted_state,
       props: props
     })
-    
+
     # Process any commands from mounting
     process_commands(commands, component_id, new_state)
-    
+
     # Queue initial render
     new_state = update_in(new_state.render_queue, &[component_id | &1])
-    
+
     {:reply, {:ok, component_id}, new_state}
   end
 
@@ -78,17 +88,17 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
-        
+
       component ->
         # Call unmount callback
         final_state = component.module.unmount(component.state)
-        
+
         # Cleanup subscriptions
         state = cleanup_subscriptions(component_id, state)
-        
+
         # Remove component
         state = update_in(state.components, &Map.delete(&1, component_id))
-        
+
         {:reply, {:ok, final_state}, state}
     end
   end
@@ -98,19 +108,27 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     case Map.get(state.components, component_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
-        
+
       component ->
         # Update component state
         new_state = component.module.update(message, component.state)
-        
+
         # Store updated state
         state = put_in(state.components[component_id].state, new_state)
-        
+
         # Queue re-render
         state = update_in(state.render_queue, &[component_id | &1])
-        
+
         {:reply, {:ok, new_state}, state}
     end
+  end
+
+  @impl true
+  def handle_call(:get_and_clear_render_queue, _from, state) do
+    # Get unique component IDs from the queue
+    render_list = Enum.uniq(state.render_queue)
+    # Reply with the list and clear the queue in the state
+    {:reply, render_list, %{state | render_queue: []}}
   end
 
   @impl true
@@ -118,13 +136,13 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     # Dispatch event to all components
     state = Enum.reduce(state.components, state, fn {component_id, component}, acc ->
       {new_state, commands} = component.module.handle_event(event, component.state)
-      
+
       # Update component state
       acc = put_in(acc.components[component_id].state, new_state)
-      
+
       # Process any commands from event handling
       process_commands(commands, component_id, acc)
-      
+
       # Queue re-render if state changed
       if new_state != component.state do
         update_in(acc.render_queue, &[component_id | &1])
@@ -132,7 +150,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         acc
       end
     end)
-    
+
     {:noreply, state}
   end
 
@@ -144,21 +162,19 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         {:command, cmd} ->
           # Handle component-specific commands
           handle_component_command(cmd, component_id, acc)
-          
+
         {:schedule, msg, delay} ->
-          # Schedule delayed message
-          EventLoop.schedule_once(delay, fn ->
-            update(component_id, msg)
-          end)
+          # Schedule delayed message using Process.send_after
+          Process.send_after(self(), {:update, component_id, msg}, delay)
           acc
-          
+
         {:broadcast, msg} ->
           # Broadcast message to all components
           Enum.each(acc.components, fn {id, _} ->
             update(id, msg)
           end)
           acc
-          
+
         _ ->
           acc
       end
@@ -168,15 +184,15 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   defp handle_component_command(command, component_id, state) do
     case command do
       {:subscribe, events} when is_list(events) ->
-        # Set up event subscription
-        {:ok, sub_id} = Subscription.events(events)
+        # Set up event subscription using aliased Subscription module
+        {:ok, sub_id} = Subscription.start(%Subscription{type: :events, data: events}, %{pid: self()}) # Assuming start/2 is the correct function
         put_in(state.subscriptions[sub_id], component_id)
-        
+
       {:unsubscribe, sub_id} ->
-        # Remove subscription
-        Subscription.unsubscribe(sub_id)
+        # Remove subscription using aliased Subscription module
+        Subscription.stop(sub_id)
         update_in(state.subscriptions, &Map.delete(&1, sub_id))
-        
+
       _ ->
         state
     end
@@ -187,13 +203,13 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     {to_remove, remaining} = Enum.split_with(state.subscriptions, fn {_, cid} ->
       cid == component_id
     end)
-    
-    # Unsubscribe from each
+
+    # Unsubscribe from each using aliased Subscription module
     Enum.each(to_remove, fn {sub_id, _} ->
-      Subscription.unsubscribe(sub_id)
+      Subscription.stop(sub_id)
     end)
-    
+
     # Update state
     %{state | subscriptions: Map.new(remaining)}
   end
-end 
+end

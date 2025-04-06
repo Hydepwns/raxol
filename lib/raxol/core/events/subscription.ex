@@ -148,8 +148,55 @@ defmodule Raxol.Core.Events.Subscription do
     Enum.each(refs, &unsubscribe/1)
   end
 
+  @doc """
+  Subscribes to a list of event types.
+
+  ## Parameters
+
+  - `event_types` - A list of event type atoms (e.g., `[:key, :mouse, :window]`).
+                     Can also include tuples like `{:key, opts}` or `{:mouse, opts}`
+                     to pass specific options to the individual subscription functions.
+
+  ## Returns
+
+  - `{:ok, list(subscription_ref())}` on success, containing a list of references for each subscription.
+  - `{:error, reason}` if any subscription fails. Successfully created subscriptions before the failure will be automatically unsubscribed.
+  """
+  def events(event_types) when is_list(event_types) do
+    do_subscribe_events(event_types, [])
+  end
+
+  # Helper function to recursively subscribe and handle cleanup on error
+  defp do_subscribe_events([], successful_refs) do
+    {:ok, Enum.reverse(successful_refs)}
+  end
+
+  defp do_subscribe_events([event_spec | rest], successful_refs) do
+    case subscribe_single_event(event_spec) do
+      {:ok, ref} ->
+        do_subscribe_events(rest, [ref | successful_refs])
+      {:error, _reason} = error ->
+        # Unsubscribe already successful subscriptions
+        unsubscribe_all(successful_refs)
+        error
+    end
+  end
+
+  # Helper to call the correct specific subscribe function
+  defp subscribe_single_event(:key), do: subscribe_keyboard()
+  defp subscribe_single_event({:key, opts}), do: subscribe_keyboard(opts)
+  defp subscribe_single_event(:mouse), do: subscribe_mouse()
+  defp subscribe_single_event({:mouse, opts}), do: subscribe_mouse(opts)
+  defp subscribe_single_event(:window), do: subscribe_window()
+  defp subscribe_single_event({:window, opts}), do: subscribe_window(opts)
+  defp subscribe_single_event(:timer), do: subscribe_timer()
+  defp subscribe_single_event({:timer, opts}), do: subscribe_timer(opts)
+  defp subscribe_single_event(:custom), do: subscribe_custom()
+  defp subscribe_single_event({:custom, opts}), do: subscribe_custom(opts)
+  defp subscribe_single_event(other), do: {:error, {:invalid_event_type, other}}
+
   # Private Helpers
 
   defp add_filter(opts, _key, nil), do: opts
   defp add_filter(opts, key, value), do: Keyword.put(opts, key, value)
-end 
+end
