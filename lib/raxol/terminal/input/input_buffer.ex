@@ -7,13 +7,17 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @type t :: %__MODULE__{
     contents: String.t(),
     max_size: non_neg_integer(),
-    overflow_mode: :truncate | :error | :wrap
+    overflow_mode: :truncate | :error | :wrap,
+    escape_sequence: String.t(),
+    escape_sequence_mode: boolean()
   }
 
   defstruct [
     :contents,
     :max_size,
-    :overflow_mode
+    :overflow_mode,
+    :escape_sequence,
+    :escape_sequence_mode
   ]
 
   @doc """
@@ -23,26 +27,24 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     %__MODULE__{
       contents: "",
       max_size: max_size,
-      overflow_mode: overflow_mode
+      overflow_mode: overflow_mode,
+      escape_sequence: "",
+      escape_sequence_mode: false
     }
   end
 
   @doc """
-  Appends data to the buffer.
+  Appends data to the buffer, handling escape sequences appropriately.
   """
   def append(%__MODULE__{} = buffer, data) when is_binary(data) do
-    new_contents = buffer.contents <> data
-    
-    if String.length(new_contents) <= buffer.max_size do
-      %{buffer | contents: new_contents}
+    if buffer.escape_sequence_mode do
+      handle_escape_sequence(buffer, data)
     else
-      case buffer.overflow_mode do
-        :truncate -> 
-          %{buffer | contents: String.slice(new_contents, 0, buffer.max_size)}
-        :error -> 
-          buffer
-        :wrap -> 
-          %{buffer | contents: String.slice(new_contents, -buffer.max_size..-1)}
+      case data do
+        "\e" ->
+          %{buffer | escape_sequence_mode: true, escape_sequence: "\e"}
+        _ ->
+          append_to_contents(buffer, data)
       end
     end
   end
@@ -52,16 +54,16 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   """
   def prepend(%__MODULE__{} = buffer, data) when is_binary(data) do
     new_contents = data <> buffer.contents
-    
+
     if String.length(new_contents) <= buffer.max_size do
       %{buffer | contents: new_contents}
     else
       case buffer.overflow_mode do
-        :truncate -> 
+        :truncate ->
           %{buffer | contents: String.slice(new_contents, 0, buffer.max_size)}
-        :error -> 
+        :error ->
           buffer
-        :wrap -> 
+        :wrap ->
           %{buffer | contents: String.slice(new_contents, -buffer.max_size..-1)}
       end
     end
@@ -75,11 +77,11 @@ defmodule Raxol.Terminal.Input.InputBuffer do
       %{buffer | contents: contents}
     else
       case buffer.overflow_mode do
-        :truncate -> 
+        :truncate ->
           %{buffer | contents: String.slice(contents, 0, buffer.max_size)}
-        :error -> 
+        :error ->
           buffer
-        :wrap -> 
+        :wrap ->
           %{buffer | contents: String.slice(contents, -buffer.max_size..-1)}
       end
     end
@@ -168,11 +170,11 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   """
   def insert_at(%__MODULE__{} = buffer, position, char) when is_binary(char) do
     if String.length(char) == 1 and position <= String.length(buffer.contents) do
-      new_contents = 
-        String.slice(buffer.contents, 0, position) <> 
-        char <> 
+      new_contents =
+        String.slice(buffer.contents, 0, position) <>
+        char <>
         String.slice(buffer.contents, position..-1)
-      
+
       %{buffer | contents: new_contents}
     else
       buffer
@@ -184,14 +186,54 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   """
   def replace_at(%__MODULE__{} = buffer, position, char) when is_binary(char) do
     if String.length(char) == 1 and position <= String.length(buffer.contents) do
-      new_contents = 
-        String.slice(buffer.contents, 0, position) <> 
-        char <> 
+      new_contents =
+        String.slice(buffer.contents, 0, position) <>
+        char <>
         String.slice(buffer.contents, position + 1..-1)
-      
+
       %{buffer | contents: new_contents}
     else
       buffer
     end
   end
-end 
+
+  @doc """
+  Handles escape sequence processing.
+  """
+  def handle_escape_sequence(%__MODULE__{} = buffer, data) do
+    new_sequence = buffer.escape_sequence <> data
+
+    case data do
+      # End of escape sequence
+      <<c>> when c >= ?@ and c <= ?~ ->
+        %{buffer |
+          contents: buffer.contents <> new_sequence,
+          escape_sequence: "",
+          escape_sequence_mode: false
+        }
+      # More escape sequence data
+      _ ->
+        %{buffer | escape_sequence: new_sequence}
+    end
+  end
+
+  @doc """
+  Appends data to the buffer contents, handling overflow.
+  """
+  defp append_to_contents(%__MODULE__{} = buffer, data) do
+    new_contents = buffer.contents <> data
+
+    if String.length(new_contents) <= buffer.max_size do
+      %{buffer | contents: new_contents}
+    else
+      case buffer.overflow_mode do
+        :truncate ->
+          %{buffer | contents: String.slice(new_contents, 0, buffer.max_size)}
+        :error ->
+          buffer
+        :wrap ->
+          %{buffer | contents: String.slice(new_contents, -buffer.max_size..-1)}
+      end
+    end
+  end
+end

@@ -1,26 +1,33 @@
 defmodule Raxol.Terminal.Emulator do
   @moduledoc """
-  Terminal emulator module that handles screen buffer management, cursor positioning,
-  input handling, character set management, screen modes, and terminal state management.
+  The Raxol Terminal Emulator module provides a terminal emulation layer that
+  handles screen buffer management, cursor positioning, input handling, and
+  terminal state management.
+
+  Note: When running in certain environments, stdin may be excluded from Credo analysis
+  due to how it's processed. This is expected behavior and doesn't affect functionality.
   """
 
   alias Raxol.Terminal.{Cell, ScreenBuffer, Input}
   alias Raxol.Terminal.ANSI.{CharacterSets, ScreenModes, TerminalState, TextFormatting}
+  alias Raxol.Terminal.Cursor.{Manager, Movement, Style}
+  alias Raxol.Terminal.Modes
+  alias Raxol.Terminal.EscapeSequence
   alias Raxol.Plugins.PluginManager
 
   @type t :: %__MODULE__{
     width: non_neg_integer(),
     height: non_neg_integer(),
-    screen_buffer: list(list(String.t())),
-    cursor: {non_neg_integer(), non_neg_integer()},
-    saved_cursor: {non_neg_integer(), non_neg_integer()} | nil,
+    screen_buffer: ScreenBuffer.t(),
+    cursor: Manager.t(),
     scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
     text_style: TextFormatting.text_style(),
     memory_limit: non_neg_integer(),
     charset_state: CharacterSets.charset_state(),
-    mode_state: ScreenModes.mode_state(),
+    mode_state: Modes.mode_state(),
     state_stack: TerminalState.state_stack(),
-    plugin_manager: PluginManager.t()
+    plugin_manager: PluginManager.t(),
+    options: map()
   }
 
   defstruct [
@@ -28,52 +35,130 @@ defmodule Raxol.Terminal.Emulator do
     :height,
     :screen_buffer,
     :cursor,
-    :saved_cursor,
     :scroll_region,
     :text_style,
     :memory_limit,
     :charset_state,
     :mode_state,
     :state_stack,
-    :plugin_manager
+    :plugin_manager,
+    :options
   ]
 
   @doc """
-  Creates a new terminal emulator with the specified dimensions.
+  Creates a new terminal emulator instance with the specified dimensions and options.
+
+  ## Examples
+
+      iex> emulator = Raxol.Terminal.Emulator.new(80, 24, %{})
+      iex> emulator.width
+      80
+      iex> emulator.height
+      24
+      iex> emulator.cursor.position
+      {0, 0}
+
   """
-  def new(width \\ 80, height \\ 24, memory_limit \\ 1000) do
+  @spec new(non_neg_integer(), non_neg_integer(), map()) :: t()
+  def new(width, height, options \\ %{}) do
     %__MODULE__{
       width: width,
       height: height,
-      screen_buffer: List.duplicate(List.duplicate(" ", width), height),
-      cursor: {0, 0},
-      saved_cursor: nil,
+      screen_buffer: ScreenBuffer.new(width, height),
+      cursor: Manager.new(),
       scroll_region: nil,
       text_style: TextFormatting.new(),
-      memory_limit: memory_limit,
+      memory_limit: 1000,
       charset_state: CharacterSets.new(),
-      mode_state: ScreenModes.new(),
+      mode_state: Modes.new(),
       state_stack: TerminalState.new(),
-      plugin_manager: PluginManager.new()
+      plugin_manager: PluginManager.new(),
+      options: options
     }
   end
 
   @doc """
-  Processes input for the terminal emulator.
-  
+  Processes input from the user, handling both regular characters and escape sequences.
+
   ## Examples
-  
-      iex> emulator = Emulator.new(80, 24)
-      iex> emulator = Emulator.process_input(emulator, "a")
-      iex> emulator.input.buffer
-      "a"
+
+      iex> emulator = Raxol.Terminal.Emulator.new(80, 24, %{})
+      iex> {emulator, _} = Raxol.Terminal.Emulator.process_input(emulator, "a")
+      iex> emulator.cursor.position
+      {1, 0}
+
   """
-  def process_input(%__MODULE__{} = emulator, input) do
-    # Process input through plugins first
-    case PluginManager.process_input(emulator.plugin_manager, input) do
-      {:ok, updated_manager} ->
+  @spec process_input(t(), String.t()) :: {t(), String.t()}
+  def process_input(emulator, input) do
+    case input do
+      "\e" <> rest ->
+        process_escape_sequence(emulator, "\e" <> rest)
+      char when is_binary(char) and byte_size(char) == 1 ->
+        process_character(emulator, char)
+      _ ->
+        {emulator, ""}
+    end
+  end
+
+  @doc """
+  Processes an escape sequence, updating the terminal state accordingly.
+
+  ## Examples
+
+      iex> emulator = Raxol.Terminal.Emulator.new(80, 24, %{})
+      iex> {emulator, _} = Raxol.Terminal.Emulator.process_escape_sequence(emulator, "\e[10;5H")
+      iex> emulator.cursor.position
+      {4, 9}
+
+  """
+  @spec process_escape_sequence(t(), String.t()) :: {t(), String.t()}
+  def process_escape_sequence(%__MODULE__{} = emulator, sequence) do
+    {cursor, mode_state, message} = EscapeSequence.process_sequence(
+      emulator.cursor,
+      emulator.mode_state,
+      sequence
+    )
+
+    # Update cursor visibility based on terminal mode
+    cursor = if Map.get(mode_state, :cursor_visible, true) do
+      Style.show(cursor)
+    else
+      Style.hide(cursor)
+    end
+
+    # Update cursor style based on terminal mode
+    cursor = if Map.get(mode_state, :block_cursor, false) do
+      Style.set_block(cursor)
+    else
+      Style.set_underline(cursor)
+    end
+
+    %{emulator |
+      cursor: cursor,
+      mode_state: mode_state
+    }
+  end
+
+  @doc """
+  Processes a regular character, updating the screen buffer and cursor position.
+
+  ## Examples
+
+      iex> emulator = Raxol.Terminal.Emulator.new(80, 24, %{})
+      iex> {emulator, _} = Raxol.Terminal.Emulator.process_character(emulator, "a")
+      iex> emulator.cursor.position
+      {1, 0}
+
+  """
+  @spec process_character(t(), String.t()) :: {t(), String.t()}
+  def process_character(emulator, char) do
+    translated_char = CharacterSets.translate_char(emulator.charset_state, char)
+
+    # Process output through plugins
+    case PluginManager.process_output(emulator.plugin_manager, translated_char) do
+      {:ok, updated_manager, transformed_output} ->
         emulator = %{emulator | plugin_manager: updated_manager}
-        %{emulator | input: Input.process_keyboard(emulator.input, input)}
+        process_transformed_output(emulator, transformed_output)
       {:error, reason} ->
         {:error, reason}
     end
@@ -81,9 +166,9 @@ defmodule Raxol.Terminal.Emulator do
 
   @doc """
   Processes mouse input for the terminal emulator.
-  
+
   ## Examples
-  
+
       iex> emulator = Emulator.new(80, 24)
       iex> emulator = Emulator.process_mouse(emulator, {:click, 1, 2, 1})
       iex> emulator.input.buffer
@@ -101,124 +186,113 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   @doc """
-  Writes a character at the current cursor position.
-  The character is translated according to the current character set.
-  
-  ## Examples
-  
-      iex> emulator = Emulator.new(80, 24)
-      iex> emulator = Emulator.write_char(emulator, "a")
-      iex> cell = ScreenBuffer.get_cell(emulator.screen_buffer, 0, 0)
-      iex> Cell.get_char(cell)
-      "a"
-  """
-  def write_char(%__MODULE__{} = emulator, char) do
-    translated_char = CharacterSets.translate_char(emulator.charset_state, char)
-    
-    # Process output through plugins
-    case PluginManager.process_output(emulator.plugin_manager, translated_char) do
-      {:ok, updated_manager, transformed_output} ->
-        emulator = %{emulator | plugin_manager: updated_manager}
-        cell = Cell.new(transformed_output, emulator.text_style)
-        new_screen_buffer = ScreenBuffer.set_cell(emulator.screen_buffer, emulator.cursor[0], emulator.cursor[1], cell)
-        new_cursor = move_cursor_right(emulator.cursor, emulator.width)
-        
-        %{emulator |
-          screen_buffer: new_screen_buffer,
-          cursor: new_cursor
-        }
-      {:ok, updated_manager} ->
-        emulator = %{emulator | plugin_manager: updated_manager}
-        cell = Cell.new(translated_char, emulator.text_style)
-        new_screen_buffer = ScreenBuffer.set_cell(emulator.screen_buffer, emulator.cursor[0], emulator.cursor[1], cell)
-        new_cursor = move_cursor_right(emulator.cursor, emulator.width)
-        
-        %{emulator |
-          screen_buffer: new_screen_buffer,
-          cursor: new_cursor
-        }
-      {:error, reason} ->
-        {:error, reason}
-    end
-  end
-
-  @doc """
-  Writes a string to the terminal at the current cursor position.
-  Each character is processed individually.
-  
-  ## Examples
-  
-      iex> emulator = Emulator.new(80, 24)
-      iex> emulator = Emulator.write_string(emulator, "Hello")
-      iex> emulator.cursor
-      {5, 0}
-  """
-  def write_string(%__MODULE__{} = emulator, string) when is_binary(string) do
-    Enum.reduce(String.graphemes(string), emulator, fn char, acc ->
-      case write_char(acc, char) do
-        {:error, reason} -> {:error, reason}
-        updated_emulator -> updated_emulator
-      end
-    end)
-  end
-
-  @doc """
   Moves the cursor to the specified position.
-  
+
   ## Examples
-  
+
       iex> emulator = Emulator.new(80, 24)
       iex> emulator = Emulator.move_cursor(emulator, 10, 5)
-      iex> emulator.cursor
+      iex> emulator.cursor.position
       {10, 5}
   """
   def move_cursor(%__MODULE__{} = emulator, x, y) do
+    # Ensure cursor stays within bounds
     x = max(0, min(x, emulator.width - 1))
     y = max(0, min(y, emulator.height - 1))
-    
-    %{emulator | cursor: {x, y}}
+
+    %{emulator | cursor: Movement.move_to_position(emulator.cursor, x, y)}
   end
 
   @doc """
-  Saves the current cursor position.
-  
+  Moves the cursor up by the specified number of lines.
+
   ## Examples
-  
+
       iex> emulator = Emulator.new(80, 24)
-      iex> emulator = Emulator.move_cursor(emulator, 10, 5)
-      iex> emulator = Emulator.save_cursor(emulator)
-      iex> emulator.saved_cursor
-      {10, 5}
+      iex> emulator = Emulator.move_cursor_up(emulator, 2)
+      iex> emulator.cursor.position
+      {0, 0}  # Already at top, no change
   """
-  def save_cursor(%__MODULE__{} = emulator) do
-    %{emulator | saved_cursor: emulator.cursor}
+  def move_cursor_up(%__MODULE__{} = emulator, n \\ 1) do
+    %{emulator | cursor: Movement.move_up(emulator.cursor, n)}
   end
 
   @doc """
-  Restores the saved cursor position.
-  
+  Moves the cursor down by the specified number of lines.
+
   ## Examples
-  
+
       iex> emulator = Emulator.new(80, 24)
-      iex> emulator = Emulator.move_cursor(emulator, 10, 5)
-      iex> emulator = Emulator.save_cursor(emulator)
-      iex> emulator = Emulator.move_cursor(emulator, 0, 0)
-      iex> emulator = Emulator.restore_cursor(emulator)
-      iex> emulator.cursor
-      {10, 5}
+      iex> emulator = Emulator.move_cursor_down(emulator, 2)
+      iex> emulator.cursor.position
+      {0, 2}
   """
-  def restore_cursor(%__MODULE__{} = emulator) do
-    case emulator.saved_cursor do
-      nil -> emulator
-      {x, y} -> move_cursor(emulator, x, y)
-    end
+  def move_cursor_down(%__MODULE__{} = emulator, n \\ 1) do
+    %{emulator | cursor: Movement.move_down(emulator.cursor, n)}
+  end
+
+  @doc """
+  Moves the cursor left by the specified number of columns.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.move_cursor(emulator, 5, 0)
+      iex> emulator = Emulator.move_cursor_left(emulator, 2)
+      iex> emulator.cursor.position
+      {3, 0}
+  """
+  def move_cursor_left(%__MODULE__{} = emulator, n \\ 1) do
+    %{emulator | cursor: Movement.move_left(emulator.cursor, n)}
+  end
+
+  @doc """
+  Moves the cursor right by the specified number of columns.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.move_cursor_right(emulator, 5)
+      iex> emulator.cursor.position
+      {5, 0}
+  """
+  def move_cursor_right(%__MODULE__{} = emulator, n \\ 1) do
+    %{emulator | cursor: Movement.move_right(emulator.cursor, n)}
+  end
+
+  @doc """
+  Sets the cursor style.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.set_cursor_style(emulator, :block)
+      iex> emulator.cursor.style
+      :block
+  """
+  def set_cursor_style(%__MODULE__{} = emulator, style) do
+    %{emulator | cursor: Style.set_style(emulator.cursor, style)}
+  end
+
+  @doc """
+  Shows or hides the cursor.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.set_cursor_visible(emulator, false)
+      iex> emulator.cursor.visible
+      false
+  """
+  def set_cursor_visible(%__MODULE__{} = emulator, visible) do
+    %{emulator | cursor: Style.set_visible(emulator.cursor, visible)}
   end
 
   @doc """
   Sets the scroll region.
-  
+
   ## Examples
-  
+
       iex> emulator = Emulator.new(80, 24)
       iex> emulator = Emulator.set_scroll_region(emulator, 5, 15)
       iex> emulator.scroll_region
@@ -230,9 +304,9 @@ defmodule Raxol.Terminal.Emulator do
 
   @doc """
   Clears the scroll region.
-  
+
   ## Examples
-  
+
       iex> emulator = Emulator.new(80, 24)
       iex> emulator = Emulator.set_scroll_region(emulator, 5, 15)
       iex> emulator = Emulator.clear_scroll_region(emulator)
@@ -244,346 +318,495 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   @doc """
-  Sets a text attribute in the current style.
-  """
-  def set_attribute(%__MODULE__{} = emulator, attribute) when is_atom(attribute) do
-    %{emulator | text_style: TextFormatting.set_attribute(emulator.text_style, attribute)}
-  end
+  Sets the text style.
 
-  @doc """
-  Removes a text attribute from the current style.
-  """
-  def remove_attribute(%__MODULE__{} = emulator, attribute) when is_atom(attribute) do
-    %{emulator | text_style: TextFormatting.remove_attribute(emulator.text_style, attribute)}
-  end
-
-  @doc """
-  Sets a text decoration in the current style.
-  """
-  def set_decoration(%__MODULE__{} = emulator, decoration) when is_atom(decoration) do
-    %{emulator | text_style: TextFormatting.set_decoration(emulator.text_style, decoration)}
-  end
-
-  @doc """
-  Removes a text decoration from the current style.
-  """
-  def remove_decoration(%__MODULE__{} = emulator, decoration) when is_atom(decoration) do
-    %{emulator | text_style: TextFormatting.remove_decoration(emulator.text_style, decoration)}
-  end
-
-  @doc """
-  Sets the foreground color.
-  """
-  def set_foreground(%__MODULE__{} = emulator, color) when is_tuple(color) or is_atom(color) do
-    %{emulator | text_style: TextFormatting.set_foreground(emulator.text_style, color)}
-  end
-
-  @doc """
-  Sets the background color.
-  """
-  def set_background(%__MODULE__{} = emulator, color) when is_tuple(color) or is_atom(color) do
-    %{emulator | text_style: TextFormatting.set_background(emulator.text_style, color)}
-  end
-
-  @doc """
-  Sets double-width mode.
-  """
-  def set_double_width(%__MODULE__{} = emulator, enabled) when is_boolean(enabled) do
-    %{emulator | text_style: TextFormatting.set_double_width(emulator.text_style, enabled)}
-  end
-
-  @doc """
-  Sets double-height mode.
-  """
-  def set_double_height(%__MODULE__{} = emulator, enabled) when is_boolean(enabled) do
-    %{emulator | text_style: TextFormatting.set_double_height(emulator.text_style, enabled)}
-  end
-
-  @doc """
-  Resets all text formatting to default values.
-  """
-  def reset_text_formatting(%__MODULE__{} = emulator) do
-    %{emulator | text_style: TextFormatting.reset(emulator.text_style)}
-  end
-
-  @doc """
-  Switches the specified character set to the given charset.
-  
   ## Examples
-  
+
       iex> emulator = Emulator.new(80, 24)
-      iex> emulator = Emulator.switch_charset(emulator, :g0, :latin1)
-      iex> emulator.charset_state.g0
-      :latin1
+      iex> emulator = Emulator.set_text_style(emulator, %{bold: true, foreground: :red})
+      iex> emulator.text_style.bold
+      true
+      iex> emulator.text_style.foreground
+      :red
   """
-  def switch_charset(%__MODULE__{} = emulator, set, charset) do
-    charset_state = CharacterSets.switch_charset(emulator.charset_state, set, charset)
-    %{emulator | charset_state: charset_state}
+  def set_text_style(%__MODULE__{} = emulator, style) do
+    %{emulator | text_style: TextFormatting.merge(emulator.text_style, style)}
   end
 
   @doc """
-  Sets the GL (left) character set.
-  
+  Resets the text style to default.
+
   ## Examples
-  
+
       iex> emulator = Emulator.new(80, 24)
-      iex> emulator = Emulator.set_gl_charset(emulator, :g2)
-      iex> emulator.charset_state.gl
-      :g2
+      iex> emulator = Emulator.set_text_style(emulator, %{bold: true})
+      iex> emulator = Emulator.reset_text_style(emulator)
+      iex> emulator.text_style.bold
+      false
   """
-  def set_gl_charset(%__MODULE__{} = emulator, set) do
-    charset_state = CharacterSets.set_gl(emulator.charset_state, set)
-    %{emulator | charset_state: charset_state}
+  def reset_text_style(%__MODULE__{} = emulator) do
+    %{emulator | text_style: TextFormatting.new()}
   end
 
   @doc """
-  Sets the GR (right) character set.
-  
+  Pushes the current terminal state onto the stack.
+
   ## Examples
-  
+
       iex> emulator = Emulator.new(80, 24)
-      iex> emulator = Emulator.set_gr_charset(emulator, :g3)
-      iex> emulator.charset_state.gr
-      :g3
+      iex> emulator = Emulator.push_state(emulator)
+      iex> length(emulator.state_stack.states)
+      1
   """
-  def set_gr_charset(%__MODULE__{} = emulator, set) do
-    charset_state = CharacterSets.set_gr(emulator.charset_state, set)
-    %{emulator | charset_state: charset_state}
+  def push_state(%__MODULE__{} = emulator) do
+    %{emulator | state_stack: TerminalState.push(emulator.state_stack)}
   end
 
   @doc """
-  Sets the single shift character set.
-  
+  Pops the terminal state from the stack.
+
   ## Examples
-  
+
       iex> emulator = Emulator.new(80, 24)
-      iex> emulator = Emulator.set_single_shift(emulator, :g2)
-      iex> emulator.charset_state.single_shift
-      :g2
+      iex> emulator = Emulator.push_state(emulator)
+      iex> emulator = Emulator.pop_state(emulator)
+      iex> length(emulator.state_stack.states)
+      0
   """
-  def set_single_shift(%__MODULE__{} = emulator, set) do
-    charset_state = CharacterSets.set_single_shift(emulator.charset_state, set)
-    %{emulator | charset_state: charset_state}
-  end
-
-  @doc """
-  Switches between normal and alternate screen buffer modes.
-  """
-  @spec switch_screen_mode(t(), ScreenModes.screen_mode()) :: t()
-  def switch_screen_mode(%__MODULE__{} = emulator, mode) do
-    current_state = %{
-      cells: emulator.screen_buffer,
-      cursor: emulator.cursor,
-      attributes: emulator.text_style,
-      scroll_region: emulator.scroll_region
-    }
-
-    {new_mode_state, new_buffer_state} = ScreenModes.switch_mode(emulator.mode_state, mode, current_state)
-
-    %{emulator |
-      mode_state: new_mode_state,
-      screen_buffer: new_buffer_state.cells,
-      cursor: new_buffer_state.cursor,
-      text_style: new_buffer_state.attributes,
-      scroll_region: new_buffer_state.scroll_region
-    }
-  end
-
-  @doc """
-  Sets a specific screen mode.
-  """
-  @spec set_screen_mode(t(), atom()) :: t()
-  def set_screen_mode(%__MODULE__{} = emulator, mode) do
-    %{emulator | mode_state: ScreenModes.set_mode(emulator.mode_state, mode)}
-  end
-
-  @doc """
-  Resets a specific screen mode.
-  """
-  @spec reset_screen_mode(t(), atom()) :: t()
-  def reset_screen_mode(%__MODULE__{} = emulator, mode) do
-    %{emulator | mode_state: ScreenModes.reset_mode(emulator.mode_state, mode)}
-  end
-
-  @doc """
-  Gets the current screen mode.
-  """
-  @spec get_screen_mode(t()) :: ScreenModes.screen_mode()
-  def get_screen_mode(%__MODULE__{} = emulator) do
-    ScreenModes.get_mode(emulator.mode_state)
-  end
-
-  @doc """
-  Checks if a specific screen mode is enabled.
-  """
-  @spec screen_mode_enabled?(t(), atom()) :: boolean()
-  def screen_mode_enabled?(%__MODULE__{} = emulator, mode) do
-    ScreenModes.mode_enabled?(emulator.mode_state, mode)
-  end
-
-  @doc """
-  Processes an ANSI escape sequence.
-  """
-  @spec process_escape(t(), ANSI.escape_sequence()) :: t()
-  def process_escape(emulator, escape) do
-    case escape do
-      {:charset_switch, set, charset} ->
-        %{emulator | charset_state: CharacterSets.switch_charset(emulator.charset_state, set, charset)}
-      {:charset_gl, set} ->
-        %{emulator | charset_state: CharacterSets.set_gl(emulator.charset_state, set)}
-      {:charset_gr, set} ->
-        %{emulator | charset_state: CharacterSets.set_gr(emulator.charset_state, set)}
-      {:single_shift, set} ->
-        %{emulator | charset_state: CharacterSets.set_single_shift(emulator.charset_state, set)}
-      {:lock_shift, set} ->
-        %{emulator | charset_state: CharacterSets.set_gl(emulator.charset_state, set) |> Map.put(:locked_shift, true)}
-      {:unlock_shift} ->
-        %{emulator | charset_state: Map.put(emulator.charset_state, :locked_shift, false)}
-      {:screen_mode, mode} ->
-        switch_screen_mode(emulator, mode)
-      {:set_mode, mode} ->
-        set_screen_mode(emulator, mode)
-      {:reset_mode, mode} ->
-        reset_screen_mode(emulator, mode)
-      _ ->
+  def pop_state(%__MODULE__{} = emulator) do
+    case TerminalState.pop(emulator.state_stack) do
+      {:ok, state_stack} ->
+        %{emulator | state_stack: state_stack}
+      :error ->
         emulator
     end
   end
 
   @doc """
-  Saves the current terminal state to the state stack.
+  Gets the current terminal state.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> state = Emulator.get_state(emulator)
+      iex> state.cursor_visible
+      true
   """
-  def save_state(emulator) do
-    state = %{
-      cursor: emulator.cursor,
-      attributes: emulator.text_style,
-      charset_state: emulator.charset_state,
-      mode_state: emulator.mode_state,
-      scroll_region: emulator.scroll_region
+  def get_state(%__MODULE__{} = emulator) do
+    TerminalState.current(emulator.state_stack)
+  end
+
+  @doc """
+  Sets the terminal state.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.set_state(emulator, %{cursor_visible: false})
+      iex> emulator.cursor.visible
+      false
+  """
+  def set_state(%__MODULE__{} = emulator, state) do
+    %{emulator | state_stack: TerminalState.set_current(emulator.state_stack, state)}
+  end
+
+  @doc """
+  Gets the current screen buffer contents.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.process_input(emulator, "Hello")
+      iex> buffer = Emulator.get_buffer(emulator)
+      iex> String.length(buffer)
+      5
+  """
+  def get_buffer(%__MODULE__{} = emulator) do
+    ScreenBuffer.get_contents(emulator.screen_buffer)
+  end
+
+  @doc """
+  Clears the screen buffer.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.process_input(emulator, "Hello")
+      iex> emulator = Emulator.clear_buffer(emulator)
+      iex> Emulator.get_buffer(emulator)
+      ""
+  """
+  def clear_buffer(%__MODULE__{} = emulator) do
+    %{emulator | screen_buffer: ScreenBuffer.clear(emulator.screen_buffer)}
+  end
+
+  @doc """
+  Gets the current cursor position.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.move_cursor(emulator, 10, 5)
+      iex> Emulator.get_cursor_position(emulator)
+      {10, 5}
+  """
+  def get_cursor_position(%__MODULE__{} = emulator) do
+    emulator.cursor.position
+  end
+
+  @doc """
+  Gets the current cursor style.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.set_cursor_style(emulator, :block)
+      iex> Emulator.get_cursor_style(emulator)
+      :block
+  """
+  def get_cursor_style(%__MODULE__{} = emulator) do
+    emulator.cursor.style
+  end
+
+  @doc """
+  Gets the current cursor visibility.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.set_cursor_visible(emulator, false)
+      iex> Emulator.get_cursor_visible(emulator)
+      false
+  """
+  def get_cursor_visible(%__MODULE__{} = emulator) do
+    emulator.cursor.visible
+  end
+
+  @doc """
+  Gets the current text style.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.set_text_style(emulator, %{bold: true})
+      iex> Emulator.get_text_style(emulator).bold
+      true
+  """
+  def get_text_style(%__MODULE__{} = emulator) do
+    emulator.text_style
+  end
+
+  @doc """
+  Gets the current terminal mode state.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> Emulator.get_mode_state(emulator).insert_mode
+      false
+  """
+  def get_mode_state(%__MODULE__{} = emulator) do
+    emulator.mode_state
+  end
+
+  @doc """
+  Gets the current charset state.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> Emulator.get_charset_state(emulator).current_charset
+      :ascii
+  """
+  def get_charset_state(%__MODULE__{} = emulator) do
+    emulator.charset_state
+  end
+
+  @doc """
+  Gets the current scroll region.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.set_scroll_region(emulator, 5, 15)
+      iex> Emulator.get_scroll_region(emulator)
+      {5, 15}
+  """
+  def get_scroll_region(%__MODULE__{} = emulator) do
+    emulator.scroll_region
+  end
+
+  @doc """
+  Gets the terminal dimensions.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> Emulator.get_dimensions(emulator)
+      {80, 24}
+  """
+  def get_dimensions(%__MODULE__{} = emulator) do
+    {emulator.width, emulator.height}
+  end
+
+  @doc """
+  Resizes the terminal to the specified dimensions.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.resize(emulator, 100, 30)
+      iex> Emulator.get_dimensions(emulator)
+      {100, 30}
+  """
+  def resize(%__MODULE__{} = emulator, width, height) do
+    %{emulator |
+      width: width,
+      height: height,
+      screen_buffer: ScreenBuffer.resize(emulator.screen_buffer, width, height)
     }
-
-    %{emulator | state_stack: TerminalState.save_state(emulator.state_stack, state)}
   end
 
   @doc """
-  Restores the most recently saved terminal state from the state stack.
-  Returns {emulator, nil} if the stack is empty.
-  """
-  def restore_state(emulator) do
-    {new_stack, state} = TerminalState.restore_state(emulator.state_stack)
+  Gets the terminal options.
 
-    if state do
-      emulator = %{emulator |
-        state_stack: new_stack,
-        cursor: state.cursor,
-        text_style: state.attributes,
-        charset_state: state.charset_state,
-        mode_state: state.mode_state,
-        scroll_region: state.scroll_region
-      }
-      {emulator, state}
-    else
-      {emulator, nil}
-    end
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24, %{option1: true})
+      iex> Emulator.get_options(emulator)
+      %{option1: true}
+  """
+  def get_options(%__MODULE__{} = emulator) do
+    emulator.options
   end
 
   @doc """
-  Clears the terminal state stack.
+  Sets the terminal options.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.set_options(emulator, %{option1: true})
+      iex> Emulator.get_options(emulator)
+      %{option1: true}
   """
-  def clear_state_stack(emulator) do
-    %{emulator | state_stack: TerminalState.clear_state(emulator.state_stack)}
+  def set_options(%__MODULE__{} = emulator, options) do
+    %{emulator | options: options}
   end
 
   @doc """
-  Returns the current terminal state stack.
+  Gets the plugin manager.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> Emulator.get_plugin_manager(emulator)
+      %Raxol.Plugins.PluginManager{}
   """
-  def get_state_stack(emulator) do
-    TerminalState.get_state_stack(emulator.state_stack)
+  def get_plugin_manager(%__MODULE__{} = emulator) do
+    emulator.plugin_manager
   end
 
   @doc """
-  Checks if the terminal state stack is empty.
+  Sets the plugin manager.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> manager = Raxol.Plugins.PluginManager.new()
+      iex> emulator = Emulator.set_plugin_manager(emulator, manager)
+      iex> Emulator.get_plugin_manager(emulator) == manager
+      true
   """
-  def state_stack_empty?(emulator) do
-    TerminalState.empty?(emulator.state_stack)
+  def set_plugin_manager(%__MODULE__{} = emulator, manager) do
+    %{emulator | plugin_manager: manager}
   end
 
   @doc """
-  Returns the number of saved states in the terminal state stack.
+  Gets the memory limit.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> Emulator.get_memory_limit(emulator)
+      1000
   """
-  def state_stack_count(emulator) do
-    TerminalState.count(emulator.state_stack)
+  def get_memory_limit(%__MODULE__{} = emulator) do
+    emulator.memory_limit
   end
 
   @doc """
-  Loads a plugin into the terminal emulator.
+  Sets the memory limit.
+
+  ## Examples
+
+      iex> emulator = Emulator.new(80, 24)
+      iex> emulator = Emulator.set_memory_limit(emulator, 2000)
+      iex> Emulator.get_memory_limit(emulator)
+      2000
   """
-  def load_plugin(%__MODULE__{} = emulator, module, config \\ %{}) when is_atom(module) do
-    case PluginManager.load_plugin(emulator.plugin_manager, module, config) do
-      {:ok, updated_manager} ->
-        %{emulator | plugin_manager: updated_manager}
-      {:error, reason} ->
-        {:error, reason}
-    end
+  def set_memory_limit(%__MODULE__{} = emulator, limit) do
+    %{emulator | memory_limit: limit}
   end
 
   @doc """
-  Unloads a plugin from the terminal emulator.
+  Writes text to the terminal emulator at the current cursor position.
+  (Placeholder implementation)
   """
-  def unload_plugin(%__MODULE__{} = emulator, name) when is_binary(name) do
-    case PluginManager.unload_plugin(emulator.plugin_manager, name) do
-      {:ok, updated_manager} ->
-        %{emulator | plugin_manager: updated_manager}
-      {:error, reason} ->
-        {:error, reason}
-    end
+  @spec write(t(), String.t()) :: t()
+  def write(%__MODULE__{} = emulator, text) do
+    {x, y} = emulator.cursor.position
+
+    # Use write_string/4 which exists in ScreenBuffer
+    new_screen_buffer = ScreenBuffer.write_string(
+      emulator.screen_buffer,
+      x, y,
+      text
+      # text_style and charset_state are not used by write_string
+    )
+
+    # Calculate new cursor position (simplified: assumes fixed width, basic wrap)
+    # TODO: Use CharacterHandling.calculate_string_width for accuracy
+    text_length = String.length(text) # Simple length for now
+    new_x = x + text_length
+    new_y = y + div(new_x, emulator.width)
+    final_x = rem(new_x, emulator.width)
+
+    # Clamp y position to height
+    final_y = min(new_y, emulator.height - 1)
+
+    new_cursor = Movement.move_to_position(emulator.cursor, final_x, final_y)
+
+    %{emulator |
+      screen_buffer: new_screen_buffer,
+      cursor: new_cursor
+    }
   end
 
   @doc """
-  Enables a plugin in the terminal emulator.
+  Clears the terminal screen.
+  (Placeholder implementation)
   """
-  def enable_plugin(%__MODULE__{} = emulator, name) when is_binary(name) do
-    case PluginManager.enable_plugin(emulator.plugin_manager, name) do
-      {:ok, updated_manager} ->
-        %{emulator | plugin_manager: updated_manager}
-      {:error, reason} ->
-        {:error, reason}
-    end
+  @spec clear_screen(t()) :: t()
+  def clear_screen(%__MODULE__{} = emulator) do
+    # TODO: Implement screen clearing, potentially calling ScreenBuffer.clear
+    emulator
   end
 
   @doc """
-  Disables a plugin in the terminal emulator.
+  Scrolls the terminal buffer by the specified number of lines.
+  (Placeholder implementation)
   """
-  def disable_plugin(%__MODULE__{} = emulator, name) when is_binary(name) do
-    case PluginManager.disable_plugin(emulator.plugin_manager, name) do
-      {:ok, updated_manager} ->
-        %{emulator | plugin_manager: updated_manager}
-      {:error, reason} ->
-        {:error, reason}
-    end
+  @spec scroll(t(), integer()) :: t()
+  def scroll(%__MODULE__{} = emulator, _lines) do
+    # TODO: Implement scrolling logic, updating screen_buffer.
+    emulator
   end
 
   @doc """
-  Gets a list of all loaded plugins.
+  Gets the visible content of the terminal buffer.
+  (Placeholder implementation)
   """
-  def list_plugins(%__MODULE__{} = emulator) do
-    PluginManager.list_plugins(emulator.plugin_manager)
+  @spec get_visible_content(t()) :: String.t()
+  def get_visible_content(%__MODULE__{} = _emulator) do
+    # TODO: Implement logic to retrieve visible content from screen_buffer.
+    "" # Placeholder return
   end
 
   @doc """
-  Gets a plugin by name.
+  Sets the character set for a specific designation (G0-G3).
+  (Placeholder implementation)
   """
-  def get_plugin(%__MODULE__{} = emulator, name) when is_binary(name) do
-    PluginManager.get_plugin(emulator.plugin_manager, name)
+  @spec set_character_set(t(), atom() | String.t(), atom() | String.t()) :: t()
+  def set_character_set(%__MODULE__{} = emulator, _gset, _charset) do
+    # TODO: Implement character set logic, updating charset_state.
+    emulator
+  end
+
+  @doc """
+  Invokes a character set (designates it as active GL or GR).
+  (Placeholder implementation)
+  """
+  @spec invoke_character_set(t(), atom() | String.t()) :: t()
+  def invoke_character_set(%__MODULE__{} = emulator, _gset) do
+    # TODO: Implement character set invocation logic, updating charset_state.
+    emulator
+  end
+
+  @doc """
+  Enables a specific screen mode.
+  (Placeholder implementation)
+  """
+  @spec set_screen_mode(t(), atom() | String.t()) :: t()
+  def set_screen_mode(%__MODULE__{} = emulator, _mode) do
+    # TODO: Implement screen mode setting logic, updating mode_state.
+    emulator
+  end
+
+  @doc """
+  Disables (resets) a specific screen mode.
+  (Placeholder implementation)
+  """
+  @spec reset_screen_mode(t(), atom() | String.t()) :: t()
+  def reset_screen_mode(%__MODULE__{} = emulator, _mode) do
+    # TODO: Implement screen mode resetting logic, updating mode_state.
+    emulator
+  end
+
+  @doc """
+  Checks if a specific screen mode is enabled.
+  (Placeholder implementation)
+  """
+  @spec screen_mode_enabled?(t(), atom() | String.t()) :: boolean()
+  def screen_mode_enabled?(%__MODULE__{} = _emulator, _mode) do
+    # TODO: Implement screen mode checking logic, reading mode_state.
+    false # Placeholder return
+  end
+
+  @doc """
+  Switches to the alternate screen buffer.
+  (Placeholder implementation)
+  """
+  @spec switch_to_alternate_buffer(t()) :: t()
+  def switch_to_alternate_buffer(%__MODULE__{} = emulator) do
+    # TODO: Implement alternate buffer switching logic (DECSCUSR/DECSCA).
+    emulator
+  end
+
+  @doc """
+  Switches back to the main screen buffer.
+  (Placeholder implementation)
+  """
+  @spec switch_to_main_buffer(t()) :: t()
+  def switch_to_main_buffer(%__MODULE__{} = emulator) do
+    # TODO: Implement main buffer switching logic.
+    emulator
+  end
+
+  @doc """
+  Handles a device status query, returning the appropriate response string.
+  (Placeholder implementation)
+  """
+  @spec handle_device_status_query(t(), String.t()) :: {t(), String.t()}
+  def handle_device_status_query(%__MODULE__{} = emulator, _query) do
+    # TODO: Implement device status query handling (e.g., cursor position report).
+    {emulator, ""} # Placeholder return
   end
 
   # Private functions
 
-  defp move_cursor_right({x, y}, width) do
-    if x + 1 >= width do
-      {0, y + 1}
-    else
-      {x + 1, y}
+  defp process_transformed_output(emulator, output) do
+    # Process the transformed output
+    case output do
+      "" ->
+        {emulator, ""}
+      _ ->
+        # Update the screen buffer with the output
+        {cursor_x, cursor_y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+        screen_buffer = ScreenBuffer.write_string(emulator.screen_buffer, cursor_x, cursor_y, output)
+        # Move the cursor
+        cursor = Movement.move_right(emulator.cursor, String.length(output))
+        {%{emulator | screen_buffer: screen_buffer, cursor: cursor}, ""}
     end
   end
-end 
+end

@@ -2,8 +2,13 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @moduledoc """
   Handles advanced text formatting features for the terminal emulator.
   This includes double-width and double-height characters, as well as
-  other advanced text attributes.
+  other advanced text attributes and colors.
   """
+
+  @type color :: :black | :red | :green | :yellow | :blue | :magenta | :cyan | :white |
+                 {:rgb, non_neg_integer(), non_neg_integer(), non_neg_integer()} |
+                 {:index, non_neg_integer()} |
+                 nil
 
   @type text_style :: %{
     double_width: boolean(),
@@ -16,7 +21,9 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     conceal: boolean(),
     strikethrough: boolean(),
     fraktur: boolean(),
-    double_underline: boolean()
+    double_underline: boolean(),
+    foreground: color(),
+    background: color()
   }
 
   @doc """
@@ -35,8 +42,42 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       conceal: false,
       strikethrough: false,
       fraktur: false,
-      double_underline: false
+      double_underline: false,
+      foreground: nil,
+      background: nil
     }
+  end
+
+  @doc """
+  Sets the foreground color.
+  """
+  @spec set_foreground(text_style(), color()) :: text_style()
+  def set_foreground(style, color) do
+    %{style | foreground: color}
+  end
+
+  @doc """
+  Sets the background color.
+  """
+  @spec set_background(text_style(), color()) :: text_style()
+  def set_background(style, color) do
+    %{style | background: color}
+  end
+
+  @doc """
+  Gets the foreground color.
+  """
+  @spec get_foreground(text_style()) :: color()
+  def get_foreground(style) do
+    style.foreground
+  end
+
+  @doc """
+  Gets the background color.
+  """
+  @spec get_background(text_style()) :: color()
+  def get_background(style) do
+    style.background
   end
 
   @doc """
@@ -100,6 +141,36 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       :no_reverse -> %{style | reverse: false}
       :reveal -> %{style | conceal: false}
       :no_strikethrough -> %{style | strikethrough: false}
+      :black -> %{style | foreground: :black}
+      :red -> %{style | foreground: :red}
+      :green -> %{style | foreground: :green}
+      :yellow -> %{style | foreground: :yellow}
+      :blue -> %{style | foreground: :blue}
+      :magenta -> %{style | foreground: :magenta}
+      :cyan -> %{style | foreground: :cyan}
+      :white -> %{style | foreground: :white}
+      :bg_black -> %{style | background: :black}
+      :bg_red -> %{style | background: :red}
+      :bg_green -> %{style | background: :green}
+      :bg_yellow -> %{style | background: :yellow}
+      :bg_blue -> %{style | background: :blue}
+      :bg_magenta -> %{style | background: :magenta}
+      :bg_cyan -> %{style | background: :cyan}
+      :bg_white -> %{style | background: :white}
+      :default_fg -> %{style | foreground: nil}
+      :default_bg -> %{style | background: nil}
+      _ -> style
+    end
+  end
+
+  @doc """
+  Applies a color attribute to the style map.
+  """
+  @spec apply_color(text_style(), :foreground | :background, color()) :: text_style()
+  def apply_color(style, type, color) do
+    case type do
+      :foreground -> set_foreground(style, color)
+      :background -> set_background(style, color)
       _ -> style
     end
   end
@@ -135,4 +206,4 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       :none -> nil
     end
   end
-end 
+end
