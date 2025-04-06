@@ -5,20 +5,40 @@ defmodule Raxol.Plugins.ImagePlugin do
   """
 
   @behaviour Raxol.Plugins.Plugin
+  alias Raxol.Plugins.Plugin
 
-  defstruct [:name, :enabled, :config]
+  # Define the struct type matching the Plugin behaviour
+  @type t :: %Plugin{
+    name: String.t(),
+    version: String.t(),
+    description: String.t(),
+    enabled: boolean(),
+    config: map(),
+    dependencies: list(map()),
+    api_version: String.t()
+    # Add plugin-specific fields here if needed
+  }
+
+  # Update defstruct to match the Plugin behaviour fields
+  defstruct [
+    name: "image",
+    version: "0.1.0",
+    description: "Displays images in the terminal using iTerm2 protocol.",
+    enabled: true,
+    config: %{},
+    dependencies: [],
+    api_version: "1.0.0"
+  ]
 
   @impl true
   def init(config \\ %{}) do
-    {:ok, %__MODULE__{
-      name: "image",
-      enabled: true,
-      config: config
-    }}
+    # Initialize the plugin struct, merging provided config
+    plugin_state = struct(__MODULE__, config)
+    {:ok, plugin_state}
   end
 
   @impl true
-  def handle_output(plugin, output) when is_binary(output) do
+  def handle_output(%__MODULE__{} = plugin, output) when is_binary(output) do
     # Check if the output contains an image marker
     if String.contains?(output, "<<IMAGE:") do
       # Extract image data and parameters
@@ -26,6 +46,7 @@ defmodule Raxol.Plugins.ImagePlugin do
         {:ok, image_data, params} ->
           # Generate iTerm2 image escape sequence
           escape_sequence = generate_image_escape_sequence(image_data, params)
+          # Return updated plugin state and the escape sequence as output
           {:ok, plugin, escape_sequence}
         {:error, reason} ->
           {:error, "Failed to process image: #{reason}"}
@@ -36,12 +57,15 @@ defmodule Raxol.Plugins.ImagePlugin do
   end
 
   @impl true
-  def handle_input(plugin, input) do
+  def handle_input(%__MODULE__{} = plugin, input) do
     # Process input for image-related commands
     case input do
       "img " <> path ->
         case process_image(path) do
-          {:ok, _} -> {:ok, plugin}
+          # If image processing is successful, potentially return output to display it
+          # For now, just return {:ok, plugin}
+          # TODO: Determine how to trigger output from handle_input if needed
+          {:ok, _base64_data} -> {:ok, plugin}
           {:error, reason} -> {:error, reason}
         end
       _ -> {:ok, plugin}
@@ -49,7 +73,7 @@ defmodule Raxol.Plugins.ImagePlugin do
   end
 
   @impl true
-  def handle_mouse(plugin, event) do
+  def handle_mouse(%__MODULE__{} = plugin, event) do
     # Handle mouse events for image interaction
     case event do
       {:click, x, y} ->
@@ -63,23 +87,26 @@ defmodule Raxol.Plugins.ImagePlugin do
   end
 
   @impl true
-  def get_name(plugin) do
-    plugin.name
+  def handle_resize(%__MODULE__{} = plugin, _width, _height) do
+    # TODO: Potentially adjust image display based on new dimensions
+    {:ok, plugin}
   end
 
   @impl true
-  def is_enabled?(plugin) do
-    plugin.enabled
+  def cleanup(%__MODULE__{} = _plugin) do
+    # No cleanup needed for this plugin
+    :ok
   end
 
   @impl true
-  def enable(plugin) do
-    %{plugin | enabled: true}
+  def get_dependencies do
+    # This plugin has no dependencies
+    []
   end
 
   @impl true
-  def disable(plugin) do
-    %{plugin | enabled: false}
+  def get_api_version do
+    "1.0.0"
   end
 
   # Private functions
@@ -101,10 +128,10 @@ defmodule Raxol.Plugins.ImagePlugin do
   defp generate_image_escape_sequence(base64_data, params) do
     # iTerm2 image escape sequence format:
     # \e]1337;File=inline=1;width=auto;height=auto;preserveAspectRatio=1;size=12345;name=image.png;base64,<base64_data>\a
-    
+
     width = if params.preserve_aspect, do: "auto", else: params.width
     height = if params.preserve_aspect, do: "auto", else: params.height
-    
+
     "\e]1337;File=inline=1;width=#{width};height=#{height};preserveAspectRatio=#{if params.preserve_aspect, do: "1", else: "0"};size=#{byte_size(Base.decode64!(base64_data))};name=image.png;base64,#{base64_data}\a"
   end
 
@@ -125,9 +152,9 @@ defmodule Raxol.Plugins.ImagePlugin do
     nil
   end
 
-  defp handle_image_click(plugin, _image, _x, _y) do
+  defp handle_image_click(%__MODULE__{} = plugin, _image, _x, _y) do
     # TODO: Implement image click handling
     # For now, just return the plugin unchanged
     {:ok, plugin}
   end
-end 
+end

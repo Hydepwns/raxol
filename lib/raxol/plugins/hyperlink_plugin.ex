@@ -4,22 +4,42 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   """
 
   @behaviour Raxol.Plugins.Plugin
+  alias Raxol.Plugins.Plugin
 
   @url_pattern ~r/https?:\/\/[^\s<>"]+|www\.[^\s<>"]+/i
 
-  defstruct [:name, :enabled, :config]
+  # Define the struct type matching the Plugin behaviour
+  @type t :: %Plugin{
+    name: String.t(),
+    version: String.t(),
+    description: String.t(),
+    enabled: boolean(),
+    config: map(),
+    dependencies: list(map()),
+    api_version: String.t()
+    # Add plugin-specific fields here if needed
+  }
+
+  # Update defstruct to match the Plugin behaviour fields
+  defstruct [
+    name: "hyperlink",
+    version: "0.1.0",
+    description: "Detects URLs in terminal output and makes them clickable.",
+    enabled: true,
+    config: %{},
+    dependencies: [],
+    api_version: "1.0.0"
+  ]
 
   @impl true
   def init(config \\ %{}) do
-    {:ok, %__MODULE__{
-      name: "hyperlink",
-      enabled: true,
-      config: config
-    }}
+    # Initialize the plugin struct, merging provided config
+    plugin_state = struct(__MODULE__, config)
+    {:ok, plugin_state}
   end
 
   @impl true
-  def handle_output(plugin, output) when is_binary(output) do
+  def handle_output(%__MODULE__{} = plugin, output) when is_binary(output) do
     case Regex.scan(@url_pattern, output) do
       [] ->
         {:ok, plugin}
@@ -32,7 +52,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl true
-  def handle_input(plugin, input) do
+  def handle_input(%__MODULE__{} = plugin, input) do
     # Process input for hyperlink-related commands
     case input do
       "link " <> url ->
@@ -44,7 +64,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl true
-  def handle_mouse(plugin, event) do
+  def handle_mouse(%__MODULE__{} = plugin, event) do
     # Handle mouse events for hyperlink interaction
     case event do
       {:click, x, y} ->
@@ -57,24 +77,28 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     end
   end
 
+  # Add missing behaviour callbacks
   @impl true
-  def get_name(plugin) do
-    plugin.name
+  def handle_resize(%__MODULE__{} = plugin, _width, _height) do
+    # This plugin doesn't need to react to resize
+    {:ok, plugin}
   end
 
   @impl true
-  def is_enabled?(plugin) do
-    plugin.enabled
+  def cleanup(%__MODULE__{} = _plugin) do
+    # No cleanup needed for this plugin
+    :ok
   end
 
   @impl true
-  def enable(plugin) do
-    %{plugin | enabled: true}
+  def get_dependencies do
+    # This plugin has no dependencies
+    []
   end
 
   @impl true
-  def disable(plugin) do
-    %{plugin | enabled: false}
+  def get_api_version do
+    "1.0.0"
   end
 
   # Private functions
@@ -91,9 +115,9 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     nil
   end
 
-  defp handle_hyperlink_click(plugin, _hyperlink, _x, _y) do
-    # TODO: Implement hyperlink click handling
+  defp handle_hyperlink_click(%__MODULE__{} = plugin, _hyperlink, _x, _y) do
+    # TODO: Implement hyperlink click handling (e.g., open in browser)
     # For now, just return the plugin unchanged
     {:ok, plugin}
   end
-end 
+end

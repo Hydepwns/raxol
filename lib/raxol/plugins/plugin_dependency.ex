@@ -10,7 +10,7 @@ defmodule Raxol.Plugins.PluginDependency do
   def resolve_dependencies(plugins) when is_list(plugins) do
     # Create a dependency graph
     graph = build_dependency_graph(plugins)
-    
+
     # Check for circular dependencies
     case detect_cycles(graph) do
       {:ok, _} ->
@@ -31,12 +31,12 @@ defmodule Raxol.Plugins.PluginDependency do
   """
   def check_dependencies(plugin, loaded_plugins) when is_map(plugin) and is_list(loaded_plugins) do
     dependencies = plugin.dependencies || []
-    
+
     Enum.reduce_while(dependencies, {:ok, []}, fn dependency, {:ok, missing} ->
       plugin_name = dependency["name"]
       version_constraint = dependency["version"] || ">= 0.0.0"
       optional = dependency["optional"] || false
-      
+
       case find_plugin(loaded_plugins, plugin_name) do
         nil ->
           if optional do
@@ -66,7 +66,7 @@ defmodule Raxol.Plugins.PluginDependency do
     # For now, we just check if the major version matches
     plugin_major = String.split(plugin_api_version, ".") |> List.first() |> String.to_integer()
     manager_major = String.split(manager_api_version, ".") |> List.first() |> String.to_integer()
-    
+
     if plugin_major == manager_major do
       :ok
     else
@@ -80,15 +80,15 @@ defmodule Raxol.Plugins.PluginDependency do
     Enum.reduce(plugins, %{}, fn plugin, graph ->
       dependencies = plugin.dependencies || []
       plugin_name = plugin.name
-      
+
       # Add plugin to graph if not already present
       graph = Map.put_new(graph, plugin_name, [])
-      
+
       # Add dependencies to graph
       Enum.reduce(dependencies, graph, fn dependency, acc_graph ->
         dep_name = dependency["name"]
         acc_graph = Map.put_new(acc_graph, dep_name, [])
-        Map.update!(acc_graph, dep_name, [], &[plugin_name | &1])
+        Map.update!(acc_graph, dep_name, &[plugin_name | &1])
       end)
     end)
   end
@@ -97,7 +97,7 @@ defmodule Raxol.Plugins.PluginDependency do
     # Use depth-first search to detect cycles
     visited = MapSet.new()
     recursion_stack = MapSet.new()
-    
+
     case Enum.find(Map.keys(graph), fn node ->
       not MapSet.member?(visited, node) and has_cycle?(graph, node, visited, recursion_stack)
     end) do
@@ -115,7 +115,7 @@ defmodule Raxol.Plugins.PluginDependency do
       else
         visited = MapSet.put(visited, node)
         recursion_stack = MapSet.put(recursion_stack, node)
-        
+
         neighbors = Map.get(graph, node, [])
         Enum.any?(neighbors, fn neighbor ->
           has_cycle?(graph, neighbor, visited, recursion_stack)
@@ -142,7 +142,7 @@ defmodule Raxol.Plugins.PluginDependency do
     in_degree = calculate_in_degree(graph)
     queue = Enum.filter(Map.keys(graph), fn node -> Map.get(in_degree, node, 0) == 0 end)
     result = []
-    
+
     case topological_sort_helper(graph, in_degree, queue, result) do
       {:ok, sorted} -> {:ok, sorted}
       {:error, _} = error -> error
@@ -160,7 +160,7 @@ defmodule Raxol.Plugins.PluginDependency do
       [node | rest_queue] = queue
       new_in_degree = decrease_in_degree(graph, node, in_degree)
       new_queue = update_queue(graph, node, new_in_degree, rest_queue)
-      
+
       topological_sort_helper(graph, new_in_degree, new_queue, [node | result])
     end
   end
@@ -168,7 +168,7 @@ defmodule Raxol.Plugins.PluginDependency do
   defp calculate_in_degree(graph) do
     Enum.reduce(graph, %{}, fn {node, neighbors}, in_degree ->
       in_degree = Map.put(in_degree, node, 0)
-      
+
       Enum.reduce(neighbors, in_degree, fn neighbor, acc ->
         Map.update(acc, neighbor, 1, &(&1 + 1))
       end)
@@ -177,7 +177,7 @@ defmodule Raxol.Plugins.PluginDependency do
 
   defp decrease_in_degree(graph, node, in_degree) do
     neighbors = Map.get(graph, node, [])
-    
+
     Enum.reduce(neighbors, in_degree, fn neighbor, acc ->
       Map.update(acc, neighbor, 0, &max(0, &1 - 1))
     end)
@@ -185,7 +185,7 @@ defmodule Raxol.Plugins.PluginDependency do
 
   defp update_queue(graph, node, in_degree, queue) do
     neighbors = Map.get(graph, node, [])
-    
+
     Enum.reduce(neighbors, queue, fn neighbor, acc ->
       if Map.get(in_degree, neighbor, 0) == 0 do
         [neighbor | acc]
@@ -218,7 +218,7 @@ defmodule Raxol.Plugins.PluginDependency do
   defp compare_versions(v1, v2) do
     v1_parts = String.split(v1, ".") |> Enum.map(&String.to_integer/1)
     v2_parts = String.split(v2, ".") |> Enum.map(&String.to_integer/1)
-    
+
     compare_version_parts(v1_parts, v2_parts)
   end
 
@@ -228,4 +228,4 @@ defmodule Raxol.Plugins.PluginDependency do
   defp compare_version_parts([], []), do: :eq
   defp compare_version_parts([], _), do: :lt
   defp compare_version_parts(_, []), do: :gt
-end 
+end
