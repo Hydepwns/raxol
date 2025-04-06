@@ -1,14 +1,14 @@
 defmodule Raxol.Web.Session.Monitor do
   @moduledoc """
   Handles session monitoring for Raxol applications.
-  
+
   This module provides functionality to monitor active sessions, track usage
   patterns, and detect potential issues.
   """
 
   use GenServer
 
-  alias Raxol.Web.Session.{Storage, Session}
+  alias Raxol.Web.Session.Storage
   alias Raxol.Cloud.Monitoring
 
   # Client API
@@ -41,10 +41,10 @@ defmodule Raxol.Web.Session.Monitor do
       active_users: %{},
       monitoring_interval: :timer.minutes(1)
     }
-    
+
     # Start monitoring timer
     schedule_monitoring(state)
-    
+
     {:ok, state}
   end
 
@@ -62,19 +62,19 @@ defmodule Raxol.Web.Session.Monitor do
   def handle_info(:monitor, state) do
     # Schedule next monitoring
     schedule_monitoring(state)
-    
+
     # Get current sessions
     sessions = Storage.get_active_sessions()
-    
+
     # Update stats
     stats = update_stats(state.stats, sessions)
-    
+
     # Update active users
     active_users = update_active_users(sessions)
-    
+
     # Report metrics
     report_metrics(stats)
-    
+
     {:noreply, %{state | stats: stats, active_users: active_users}}
   end
 
@@ -85,7 +85,7 @@ defmodule Raxol.Web.Session.Monitor do
     durations = Enum.map(sessions, fn session ->
       DateTime.diff(DateTime.utc_now(), session.created_at)
     end)
-    
+
     # Update stats
     %{
       total_sessions: stats.total_sessions + length(sessions),
@@ -127,4 +127,4 @@ defmodule Raxol.Web.Session.Monitor do
   defp schedule_monitoring(state) do
     Process.send_after(self(), :monitor, state.monitoring_interval)
   end
-end 
+end
