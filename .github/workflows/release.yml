@@ -10,7 +10,25 @@ jobs:
     name: Release
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
+
+      - name: Cache Mix dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
 
       - name: Set up Elixir
         uses: erlef/setup-beam@v1
@@ -18,19 +36,36 @@ jobs:
           elixir-version: 1.14.0
           otp-version: 25.0
 
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '20'
+          cache: 'npm'
+
       - name: Install Dependencies
         run: |
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
+          mix deps.compile
+          npm ci
 
       - name: Run Tests
         env:
           MIX_ENV: test
         run: |
-          mix test
+          mix test --cover
           mix credo
           mix dialyzer
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./cover/excoveralls.json
+          flags: release
+          name: codecov-release
+          fail_ci_if_error: true
 
       - name: Create Release
         env:
@@ -39,7 +74,7 @@ jobs:
           mix release
 
       - name: Upload Release Assets
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         with:
           files: |
             _build/prod/rel/raxol/releases/*/raxol.tar.gz
@@ -51,4 +86,4 @@ jobs:
         env:
           HEX_API_KEY: ${{ secrets.HEX_API_KEY }}
         run: |
-          mix hex.publish 
+          mix hex.publish
