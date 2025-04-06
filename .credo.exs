@@ -66,9 +66,9 @@
         #
         {Credo.Check.Design.AliasUsage, false},
         # If you don't want the `setup` and `test` macro calls in ExUnit tests
-        # or the `schema` macro in Ecto schemas to trigger DuplicateCode, just
+        # or the `schema` macro in Ecto schemas to trigger DuplicatedCode, just
         # set the `excluded_macros` parameter to `[:schema, :setup, :test]`.
-        {Credo.Check.Design.DuplicateCode, excluded_macros: []},
+        {Credo.Check.Design.DuplicatedCode, excluded_macros: []},
         # You can also customize the exit_status of each check.
         # If you don't want TODO comments to cause `mix credo` to fail, just
         # set this value to 0 (zero).
@@ -135,7 +135,6 @@
         # Controversial and experimental checks (opt-in, just replace `false` with `[]`)
         #
         {Credo.Check.Consistency.MultiAliasImportRequireUse, false},
-        {Credo.Check.Design.DuplicatedCode, false},
         {Credo.Check.Readability.Specs, false},
         {Credo.Check.Refactor.MapInto, false},
         {Credo.Check.Refactor.VariableRebinding, false},
