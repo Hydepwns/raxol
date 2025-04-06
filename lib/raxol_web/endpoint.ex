@@ -27,7 +27,10 @@ defmodule RaxolWeb.Endpoint do
     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
-    plug Phoenix.Ecto.CheckRepoStatus, otp_app: :raxol
+    # TODO: Commenting out CheckRepoStatus as DB is not configured/running reliably
+    # if Mix.env() == :dev do
+    #   plug Phoenix.Ecto.CheckRepoStatus, otp_app: :raxol
+    # end
   end
 
   plug Phoenix.LiveDashboard.RequestLogger,
@@ -51,4 +54,4 @@ defmodule RaxolWeb.Endpoint do
   plug Plug.Session, @session_options
 
   plug RaxolWeb.Router
-end 
+end

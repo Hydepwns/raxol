@@ -1,7 +1,7 @@
 defmodule RaxolWeb.TerminalLive do
   @moduledoc """
   LiveView component for the terminal interface.
-  
+
   This component provides:
   - Terminal rendering
   - Input handling
@@ -12,7 +12,11 @@ defmodule RaxolWeb.TerminalLive do
   """
 
   use RaxolWeb, :live_view
-  alias Raxol.Terminal.Renderer
+  # alias Phoenix.PubSub # Unused
+  # alias Phoenix.LiveView.JS # Unused
+  # alias Raxol.Core.KeyboardShortcuts # Unused
+  # alias Raxol.Terminal.PTY           # Unused
+  # alias Raxol.Terminal.Renderer
 
   @impl true
   def mount(_params, _session, socket) do
@@ -26,7 +30,7 @@ defmodule RaxolWeb.TerminalLive do
         |> assign(:scroll_offset, 0)
         |> assign(:theme, default_theme())
         |> assign(:connected, false)
-      
+
       {:ok, socket, temporary_assigns: [terminal_html: ""]}
     else
       {:ok, assign(socket, :connected, false)}
@@ -42,7 +46,7 @@ defmodule RaxolWeb.TerminalLive do
         attr: "data-session-id",
         val: socket.assigns.session_id
       })
-    
+
     {:noreply, socket}
   end
 
@@ -86,13 +90,13 @@ defmodule RaxolWeb.TerminalLive do
           <button phx-click="theme" phx-value-theme="light">Light Theme</button>
         </div>
       </div>
-      
+
       <div class="terminal-wrapper" id="terminal-wrapper">
         <div class="terminal" id="terminal" phx-hook="Terminal" data-session-id={@session_id}>
           <%= raw @terminal_html %>
         </div>
       </div>
-      
+
       <div class="terminal-footer">
         <div class="terminal-status">
           <%= if @connected do %>
@@ -139,4 +143,4 @@ defmodule RaxolWeb.TerminalLive do
       bright_white: "#ffffff"
     }
   end
-end 
+end
