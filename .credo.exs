@@ -22,7 +22,7 @@
         # In the latter case `**/*.{ex,exs}` will be used.
         #
         included: ["lib/", "src/", "test/", "web/", "apps/"],
-        excluded: [~r"/_build/", ~r"/deps/", ~r"/node_modules/"]
+        excluded: [~r"/_build/", ~r"/deps/", ~r"/node_modules/", ~r"stdin"]
       },
       #
       # If you create your own checks, you must specify the source files for
@@ -130,6 +130,7 @@
         {Credo.Check.Warning.UnusedStringOperation},
         {Credo.Check.Warning.UnusedTupleOperation},
         {Credo.Check.Warning.RaiseInsideRescue},
+        {Credo.Check.Warning.WrongTestFileExtension, false},
 
         #
         # Controversial and experimental checks (opt-in, just replace `false` with `[]`)

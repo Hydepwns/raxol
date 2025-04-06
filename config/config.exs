@@ -34,15 +34,18 @@ config :raxol, ecto_repos: [Raxol.Repo]
 #
 #     import_config "#{Mix.env}.exs"
 
-# Configure your database
+# Configure the database
 config :raxol, Raxol.Repo,
-  username: "postgres",
-  password: "postgres",
-  hostname: "localhost",
   database: "raxol_dev",
-  stacktrace: true,
-  show_sensitive_data_on_connection_error: true,
-  pool_size: 10
+  hostname: "localhost",
+  enabled: true
+
+# Configure the application
+config :raxol,
+  database_enabled: true
+
+# Import environment specific config
+import_config "#{config_env()}.exs"
 
 # For development, we disable any cache and enable
 # debugging and code reloading.
@@ -59,8 +62,18 @@ config :raxol, RaxolWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "your-secret-key-base",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
-    sass: {DartSass, :install_and_run, [:default, ~w(--watch)]}
+    # Configure esbuild version
+    esbuild: {
+      Esbuild,
+      :install_and_run,
+      [:default, ~w(--sourcemap=inline --watch), version: "0.17"]
+    },
+    # Configure dart_sass version
+    sass: {
+      DartSass,
+      :install_and_run,
+      [:default, ~w(--watch), version: "1.58"]
+    }
   ]
 
 # Watch static and templates for browser reloading.

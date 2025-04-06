@@ -31,7 +31,7 @@ defmodule Raxol.MixProject do
   def application do
     [
       mod: {Raxol.Application, []},
-      extra_applications: [:logger, :runtime_tools]
+      extra_applications: [:logger, :runtime_tools, :ex_termbox]
     ]
   end
 
@@ -50,6 +50,10 @@ defmodule Raxol.MixProject do
       # Database and persistence
       {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.0.0"},
+      {:bcrypt_elixir, "~> 3.0"}, # For password hashing
+
+      # Visualization
+      {:contex, "~> 0.5.0"}, # For charts and plots
 
       # Web interface
       {:phoenix_html, "~> 4.1"},
@@ -93,14 +97,15 @@ defmodule Raxol.MixProject do
       setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["ecto.create --quiet", "ecto.migrate --quiet", "test"],
+      test: ["test"],
       "assets.setup": ["esbuild.install --if-missing", "sass.install --if-missing"],
       "assets.build": ["esbuild raxol", "sass default"],
       "assets.deploy": [
         "esbuild raxol --minify",
         "sass default --no-source-map --style=compressed",
         "phx.digest"
-      ]
+      ],
+      "explain.credo": ["run scripts/explain_credo_warning.exs"]
     ]
   end
 
