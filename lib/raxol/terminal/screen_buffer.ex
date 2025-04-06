@@ -1,352 +1,370 @@
 defmodule Raxol.Terminal.ScreenBuffer do
   @moduledoc """
-  Terminal screen buffer module.
-  
-  This module manages the terminal screen buffer, including:
-  - Buffer initialization and resizing
-  - Character cell operations
-  - Selection handling
-  - Scrolling
+  Manages the terminal's screen buffer, including operations for resizing, scrolling, and selection handling.
   """
 
   alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.CharacterHandling
+
+  defstruct [:cells, :scrollback, :scrollback_limit, :selection, :scroll_region, :width, :height]
 
   @type t :: %__MODULE__{
-    width: non_neg_integer(),
-    height: non_neg_integer(),
     cells: list(list(Cell.t())),
     scrollback: list(list(Cell.t())),
     scrollback_limit: non_neg_integer(),
-    selection: {integer(), integer()} | nil
+    selection: {integer(), integer(), integer(), integer()} | nil,
+    scroll_region: {integer(), integer()} | nil,
+    width: non_neg_integer(),
+    height: non_neg_integer()
   }
 
-  defstruct [
-    :width,
-    :height,
-    :cells,
-    :scrollback,
-    :scrollback_limit,
-    :selection
-  ]
-
   @doc """
-  Creates a new screen buffer with the given dimensions.
-  
-  ## Examples
-  
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> ScreenBuffer.width(buffer)
-      80
-      iex> ScreenBuffer.height(buffer)
-      24
+  Creates a new screen buffer with the specified dimensions.
   """
+  @spec new(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: t()
   def new(width, height, scrollback_limit \\ 1000) do
     %__MODULE__{
-      width: width,
-      height: height,
-      cells: initialize_cells(width, height),
+      cells: List.duplicate(List.duplicate(Cell.new(), width), height),
       scrollback: [],
       scrollback_limit: scrollback_limit,
-      selection: nil
+      selection: nil,
+      scroll_region: nil,
+      width: width,
+      height: height
     }
   end
 
   @doc """
-  Gets the width of the screen buffer.
-  
-  ## Examples
-  
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> ScreenBuffer.width(buffer)
-      80
+  Writes a character to the buffer at the specified position.
+  Handles wide characters by taking up two cells when necessary.
   """
-  def width(%__MODULE__{} = buffer) do
-    buffer.width
-  end
-
-  @doc """
-  Gets the height of the screen buffer.
-  
-  ## Examples
-  
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> ScreenBuffer.height(buffer)
-      24
-  """
-  def height(%__MODULE__{} = buffer) do
-    buffer.height
-  end
-
-  @doc """
-  Resizes the screen buffer to the given dimensions.
-  
-  ## Examples
-  
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> buffer = ScreenBuffer.resize(buffer, 100, 30)
-      iex> ScreenBuffer.width(buffer)
-      100
-      iex> ScreenBuffer.height(buffer)
-      30
-  """
-  def resize(%__MODULE__{} = buffer, width, height) do
-    new_cells = initialize_cells(width, height)
-    
-    # Copy existing content
-    new_cells = Enum.with_index(new_cells)
-    |> Enum.map(fn {row, y} ->
-      Enum.with_index(row)
-      |> Enum.map(fn {cell, x} ->
-        if y < buffer.height and x < buffer.width do
-          get_cell(buffer, x, y)
+  @spec write_char(t(), non_neg_integer(), non_neg_integer(), char()) :: t()
+  def write_char(%__MODULE__{} = buffer, x, y, char) when x >= 0 and y >= 0 do
+    if y < buffer.height and x < buffer.width do
+      width = CharacterHandling.get_char_width(char)
+      cells = List.update_at(buffer.cells, y, fn row ->
+        if width == 2 and x + 1 < buffer.width do
+          # For wide characters, we need to ensure the next cell is empty
+          row
+          |> List.update_at(x, fn _ -> Cell.new(char) end)
+          |> List.update_at(x + 1, fn _ -> Cell.new(" ") end)
         else
-          cell
+          List.update_at(row, x, fn _ -> Cell.new(char) end)
         end
       end)
-    end)
 
-    %{buffer | 
-      width: width,
-      height: height,
-      cells: new_cells
-    }
-  end
-
-  @doc """
-  Gets a cell at the given coordinates.
-  
-  ## Examples
-  
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> cell = ScreenBuffer.get_cell(buffer, 0, 0)
-      iex> Cell.is_empty?(cell)
-      true
-  """
-  def get_cell(%__MODULE__{} = buffer, x, y) when x >= 0 and y >= 0 do
-    if y < buffer.height and x < buffer.width do
-      Enum.at(buffer.cells, y)
-      |> Enum.at(x)
+      %{buffer | cells: cells}
     else
-      Cell.new()
+      buffer
     end
   end
 
   @doc """
-  Sets a cell at the given coordinates.
-  
-  ## Examples
-  
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> cell = Cell.new("A", %{foreground: :red})
-      iex> buffer = ScreenBuffer.set_cell(buffer, 0, 0, cell)
-      iex> cell = ScreenBuffer.get_cell(buffer, 0, 0)
-      iex> Cell.get_char(cell)
-      "A"
+  Writes a string to the buffer at the specified position.
+  Handles wide characters and bidirectional text.
   """
-  def set_cell(%__MODULE__{} = buffer, x, y, cell) when x >= 0 and y >= 0 do
-    if y < buffer.height and x < buffer.width do
-      new_cells = Enum.with_index(buffer.cells)
-      |> Enum.map(fn {row, row_y} ->
-        if row_y == y do
-          Enum.with_index(row)
-          |> Enum.map(fn {_, col_x} ->
-            if col_x == x do
-              cell
-            else
-              Enum.at(row, col_x)
-            end
-          end)
-        else
-          row
-        end
-      end)
+  @spec write_string(t(), non_neg_integer(), non_neg_integer(), String.t()) :: t()
+  def write_string(%__MODULE__{} = buffer, x, y, string) when x >= 0 and y >= 0 do
+    segments = CharacterHandling.process_bidi_text(string)
+    Enum.reduce(segments, {buffer, x}, fn {_type, segment}, {acc_buffer, acc_x} ->
+      {new_buffer, new_x} = write_segment(acc_buffer, acc_x, y, segment)
+      {new_buffer, new_x}
+    end)
+    |> elem(0)
+  end
 
+  defp write_segment(buffer, x, y, segment) do
+    Enum.reduce(String.graphemes(segment), {buffer, x}, fn char, {acc_buffer, acc_x} ->
+      width = CharacterHandling.get_char_width(char)
+      if acc_x + width <= acc_buffer.width do
+        {write_char(acc_buffer, acc_x, y, char), acc_x + width}
+      else
+        {acc_buffer, acc_x}
+      end
+    end)
+  end
+
+  @doc """
+  Scrolls the buffer up by the specified number of lines.
+  """
+  @spec scroll_up(t(), non_neg_integer()) :: t()
+  def scroll_up(%__MODULE__{} = buffer, lines) when lines > 0 do
+    {scroll_start, scroll_end} = get_scroll_region_boundaries(buffer)
+    visible_lines = scroll_end - scroll_start + 1
+
+    if lines >= visible_lines do
+      # If scrolling more than the visible region, clear it
+      new_cells = List.update_slice(buffer.cells, scroll_start, visible_lines,
+        List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines))
       %{buffer | cells: new_cells}
     else
-      buffer
+      # Get the lines within the scroll region
+      scroll_region_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
+      # Split into scrolled and remaining lines
+      {scrolled_lines, remaining_lines} = Enum.split(scroll_region_lines, lines)
+
+      # Add scrolled lines to scrollback buffer
+      new_scrollback = (scrolled_lines ++ buffer.scrollback)
+        |> Enum.take(buffer.scrollback_limit)
+
+      # Create new empty lines for the bottom
+      empty_lines = List.duplicate(List.duplicate(Cell.new(), buffer.width), lines)
+
+      # Construct the new cells array by replacing the scroll region
+      new_cells = List.update_slice(buffer.cells, scroll_start, visible_lines,
+        remaining_lines ++ empty_lines)
+
+      %{buffer | cells: new_cells, scrollback: new_scrollback}
     end
   end
 
   @doc """
-  Clears the screen buffer.
-  
-  ## Examples
-  
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> buffer = ScreenBuffer.clear(buffer)
-      iex> Enum.all?(buffer.cells, fn row ->
-      ...>   Enum.all?(row, &Cell.is_empty?/1)
-      ...> end)
-      true
+  Scrolls the buffer down by the specified number of lines.
   """
-  def clear(%__MODULE__{} = buffer) do
-    %{buffer | cells: initialize_cells(buffer.width, buffer.height)}
-  end
-
-  @doc """
-  Scrolls the screen buffer up by the given number of lines.
-  
-  ## Examples
-  
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> buffer = ScreenBuffer.scroll_up(buffer, 5)
-      iex> length(buffer.scrollback)
-      5
-  """
-  def scroll_up(%__MODULE__{} = buffer, lines) when lines > 0 do
-    {scrollback, cells} = Enum.split(buffer.cells, lines)
-    
-    new_scrollback = scrollback ++ buffer.scrollback
-    |> Enum.take(buffer.scrollback_limit)
-    
-    new_cells = cells ++ List.duplicate(
-      List.duplicate(Cell.new(), buffer.width),
-      lines
-    )
-
-    %{buffer |
-      cells: new_cells,
-      scrollback: new_scrollback
-    }
-  end
-
-  @doc """
-  Scrolls the screen buffer down by the given number of lines.
-  
-  ## Examples
-  
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> buffer = ScreenBuffer.scroll_down(buffer, 5)
-      iex> length(buffer.scrollback)
-      0
-  """
+  @spec scroll_down(t(), non_neg_integer()) :: t()
   def scroll_down(%__MODULE__{} = buffer, lines) when lines > 0 do
-    if length(buffer.scrollback) >= lines do
-      {new_scrollback, scroll_lines} = Enum.split(buffer.scrollback, lines)
-      
-      new_cells = Enum.reverse(scroll_lines) ++ buffer.cells
-      |> Enum.take(buffer.height)
+    {scroll_start, scroll_end} = get_scroll_region_boundaries(buffer)
+    visible_lines = scroll_end - scroll_start + 1
 
-      %{buffer |
-        cells: new_cells,
-        scrollback: new_scrollback
-      }
+    if lines >= visible_lines do
+      # If scrolling more than the visible region, clear it
+      new_cells = List.update_slice(buffer.cells, scroll_start, visible_lines,
+        List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines))
+      %{buffer | cells: new_cells}
     else
-      buffer
+      if length(buffer.scrollback) >= lines do
+        # Get lines from scrollback
+        {scroll_lines, new_scrollback} = Enum.split(buffer.scrollback, lines)
+
+        # Get the lines within the scroll region
+        scroll_region_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
+        # Drop lines from the bottom
+        shifted_lines = Enum.drop(scroll_region_lines, -lines)
+
+        # Construct the new cells array by replacing the scroll region
+        new_cells = List.update_slice(buffer.cells, scroll_start, visible_lines,
+          scroll_lines ++ shifted_lines)
+
+        %{buffer | cells: new_cells, scrollback: new_scrollback}
+      else
+        buffer
+      end
     end
   end
 
   @doc """
-  Sets the selection range.
-  
-  ## Examples
-  
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> buffer = ScreenBuffer.set_selection(buffer, {0, 0}, {10, 5})
-      iex> buffer.selection
-      {{0, 0}, {10, 5}}
+  Sets a scroll region in the buffer.
   """
-  def set_selection(%__MODULE__{} = buffer, start_pos, end_pos) do
-    %{buffer | selection: {start_pos, end_pos}}
+  @spec set_scroll_region(t(), non_neg_integer(), non_neg_integer()) :: t()
+  def set_scroll_region(%__MODULE__{} = buffer, start_line, end_line)
+      when start_line >= 0 and end_line >= start_line do
+    %{buffer | scroll_region: {start_line, end_line}}
   end
 
   @doc """
-  Clears the selection.
-  
-  ## Examples
-  
-      iex> buffer = ScreenBuffer.new(80, 24)
-      iex> buffer = ScreenBuffer.set_selection(buffer, {0, 0}, {10, 5})
-      iex> buffer = ScreenBuffer.clear_selection(buffer)
-      iex> buffer.selection
-      nil
+  Clears the scroll region.
   """
-  def clear_selection(%__MODULE__{} = buffer) do
-    %{buffer | selection: nil}
+  @spec clear_scroll_region(t()) :: t()
+  def clear_scroll_region(%__MODULE__{} = buffer) do
+    %{buffer | scroll_region: nil}
   end
 
-  # Private functions
-
-  defp initialize_cells(width, height) do
-    List.duplicate(
-      List.duplicate(Cell.new(), width),
-      height
-    )
+  @doc """
+  Gets the current scroll position.
+  """
+  @spec get_scroll_position(t()) :: non_neg_integer()
+  def get_scroll_position(%__MODULE__{} = buffer) do
+    length(buffer.scrollback)
   end
 
-  defp initialize_cells(width, height) do
-    List.duplicate(
-      List.duplicate(Cell.new(), width),
-      height
-    )
+  @doc """
+  Gets the boundaries of the current scroll region.
+  """
+  @spec get_scroll_region_boundaries(t()) :: {non_neg_integer(), non_neg_integer()}
+  def get_scroll_region_boundaries(%__MODULE__{} = buffer) do
+    case buffer.scroll_region do
+      {start, ending} -> {start, ending}
+      nil -> {0, buffer.height - 1}
+    end
   end
 
-  defp create_empty_buffer(width, height) do
-    List.duplicate(
-      List.duplicate(Cell.new(), width),
-      height
-    )
+  @doc """
+  Starts a selection at the specified coordinates.
+  """
+  @spec start_selection(t(), non_neg_integer(), non_neg_integer()) :: t()
+  def start_selection(%__MODULE__{} = buffer, x, y) when x >= 0 and y >= 0 do
+    %{buffer | selection: {x, y, x, y}}
   end
 
-  defp clear_row_from_cursor(row, x) do
-    Enum.with_index(row)
-    |> Enum.map(fn {cell, i} ->
-      if i >= x do
-        Cell.new()
-      else
-        cell
-      end
-    end)
+  @doc """
+  Updates the endpoint of the current selection.
+  """
+  @spec update_selection(t(), non_neg_integer(), non_neg_integer()) :: t()
+  def update_selection(%__MODULE__{} = buffer, x, y) when x >= 0 and y >= 0 do
+    case buffer.selection do
+      {start_x, start_y, _end_x, _end_y} ->
+        %{buffer | selection: {start_x, start_y, x, y}}
+      nil ->
+        buffer
+    end
   end
 
-  defp clear_row_to_cursor(row, x) do
-    Enum.with_index(row)
-    |> Enum.map(fn {cell, i} ->
-      if i <= x do
-        Cell.new()
-      else
-        cell
-      end
-    end)
+  @doc """
+  Gets the text within the current selection.
+  """
+  @spec get_selection(t()) :: String.t()
+  def get_selection(%__MODULE__{} = buffer) do
+    case buffer.selection do
+      {start_x, start_y, end_x, end_y} ->
+        get_text_in_region(buffer, start_x, start_y, end_x, end_y)
+      nil ->
+        ""
+    end
   end
 
-  defp get_text_in_region(buffer, start_x, start_y, end_x, end_y) do
-    buffer.buffer
-    |> Enum.with_index()
-    |> Enum.filter(fn {_, y} -> y >= start_y and y <= end_y end)
-    |> Enum.map(fn {row, y} ->
+  @doc """
+  Checks if a position is within the current selection.
+  """
+  @spec is_in_selection?(t(), non_neg_integer(), non_neg_integer()) :: boolean()
+  def is_in_selection?(%__MODULE__{} = buffer, x, y) do
+    case buffer.selection do
+      {start_x, start_y, end_x, end_y} ->
+        min_x = min(start_x, end_x)
+        max_x = max(start_x, end_x)
+        min_y = min(start_y, end_y)
+        max_y = max(start_y, end_y)
+        x >= min_x and x <= max_x and y >= min_y and y <= max_y
+      nil ->
+        false
+    end
+  end
+
+  @doc """
+  Gets the boundaries of the current selection.
+  """
+  @spec get_selection_boundaries(t()) :: {non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()} | nil
+  def get_selection_boundaries(%__MODULE__{} = buffer) do
+    buffer.selection
+  end
+
+  @doc """
+  Gets the text within a specified region of the buffer.
+  """
+  @spec get_text_in_region(t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: String.t()
+  def get_text_in_region(%__MODULE__{} = buffer, start_x, start_y, end_x, end_y) do
+    min_x = min(start_x, end_x)
+    max_x = max(start_x, end_x)
+    min_y = min(start_y, end_y)
+    max_y = max(start_y, end_y)
+
+    buffer.cells
+    |> Enum.slice(min_y..max_y)
+    |> Enum.map(fn row ->
       row
-      |> Enum.with_index()
-      |> Enum.filter(fn {_, x} ->
-        cond do
-          y == start_y and y == end_y -> x >= start_x and x <= end_x
-          y == start_y -> x >= start_x
-          y == end_y -> x <= end_x
-          true -> true
-        end
-      end)
-      |> Enum.map(fn {cell, _} -> Cell.get_char(cell) end)
+      |> Enum.slice(min_x..max_x)
+      |> Enum.map(&Cell.get_char/1)
       |> Enum.join("")
     end)
     |> Enum.join("\n")
   end
 
-  defp cell_attributes(cell) do
-    cell.attributes
+  @doc """
+  Resizes the screen buffer to the specified dimensions.
+  Handles content preservation and truncation based on the new size.
+  """
+  @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
+  def resize(%__MODULE__{} = buffer, new_width, new_height) when new_width > 0 and new_height > 0 do
+    # Create a new buffer with the new dimensions
+    new_buffer = %{buffer |
+      width: new_width,
+      height: new_height,
+      cells: List.duplicate(List.duplicate(Cell.new(), new_width), new_height)
+    }
+
+    # Copy content from the old buffer to the new buffer
+    # Handle both expansion and shrinking
+    old_cells = buffer.cells
+    new_cells = Enum.with_index(new_buffer.cells)
+      |> Enum.map(fn {row, y} ->
+        if y < length(old_cells) do
+          # Copy content from the old row
+          old_row = Enum.at(old_cells, y)
+          Enum.with_index(row)
+            |> Enum.map(fn {cell, x} ->
+              if x < length(old_row) do
+                # Copy the cell from the old buffer
+                Enum.at(old_row, x)
+              else
+                # Create a new empty cell for expanded width
+                Cell.new()
+              end
+            end)
+        else
+          # Create a new empty row for expanded height
+          row
+        end
+      end)
+
+    # Update the buffer with the new cells
+    %{new_buffer | cells: new_cells}
   end
 
-  defp calculate_buffer_size(buffer) do
-    # Rough estimation of memory usage based on buffer size and content
-    total_cells = buffer
-    |> Enum.map(&length/1)
-    |> Enum.sum()
-    
-    cell_size = 100  # Estimated bytes per cell
-    total_cells * cell_size
+  @doc """
+  Gets the current width of the screen buffer.
+  """
+  @spec get_width(t()) :: non_neg_integer()
+  def get_width(%__MODULE__{} = buffer) do
+    buffer.width
   end
 
-  defp minimize_cell_attributes(cell) do
-    # Keep only essential attributes
-    %{cell | attributes: Map.take(cell.attributes, [:foreground, :background])}
+  @doc """
+  Gets the current height of the screen buffer.
+  """
+  @spec get_height(t()) :: non_neg_integer()
+  def get_height(%__MODULE__{} = buffer) do
+    buffer.height
   end
-end 
+
+  @doc """
+  Gets the dimensions of the screen buffer.
+  """
+  @spec get_dimensions(t()) :: {non_neg_integer(), non_neg_integer()}
+  def get_dimensions(%__MODULE__{} = buffer) do
+    {buffer.width, buffer.height}
+  end
+
+  @doc """
+  Gets the width of the screen buffer.
+  """
+  @spec width(t()) :: non_neg_integer()
+  def width(%__MODULE__{width: width}), do: width
+
+  @doc """
+  Gets the height of the screen buffer.
+  """
+  @spec height(t()) :: non_neg_integer()
+  def height(%__MODULE__{height: height}), do: height
+
+  @doc """
+  Clears a rectangular region of the buffer.
+  """
+  @spec clear_region(t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: t()
+  def clear_region(%__MODULE__{} = buffer, start_x, start_y, end_x, end_y) do
+    Enum.reduce(start_y..end_y, buffer, fn y, acc_buffer ->
+      if y >= 0 and y < acc_buffer.height do
+        row = Enum.at(acc_buffer.cells, y)
+        new_row = Enum.reduce(start_x..end_x, row, fn x, acc_row ->
+          if x >= 0 and x < acc_buffer.width do
+            List.replace_at(acc_row, x, Cell.new())
+          else
+            acc_row
+          end
+        end)
+
+        %{acc_buffer | cells: List.update_at(acc_buffer.cells, y, fn _ -> new_row end)}
+      else
+        acc_buffer
+      end
+    end)
+  end
+end

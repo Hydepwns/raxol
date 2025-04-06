@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Session do
   @moduledoc """
   Terminal session module.
-  
+
   This module manages terminal sessions, including:
   - Session lifecycle
   - Input/output handling
@@ -11,7 +11,11 @@ defmodule Raxol.Terminal.Session do
 
   use GenServer
 
-  alias Raxol.Terminal.{Cell, ScreenBuffer, Input, Emulator, Renderer}
+  # alias Raxol.Core.Events.Event # Unused
+  # alias Raxol.Core.Runtime.EventLoop # Unused
+  # alias Raxol.Core.I18n # Unused
+  # alias Raxol.Terminal.{Cell, ScreenBuffer, Input, Emulator, Renderer} # Simplify aliases
+  alias Raxol.Terminal.{Emulator, Renderer}
 
   @type t :: %__MODULE__{
     id: String.t(),
@@ -35,9 +39,9 @@ defmodule Raxol.Terminal.Session do
 
   @doc """
   Starts a new terminal session.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Session.start_link(%{width: 80, height: 24})
       iex> Process.alive?(pid)
       true
@@ -54,9 +58,9 @@ defmodule Raxol.Terminal.Session do
 
   @doc """
   Stops a terminal session.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Session.start_link()
       iex> :ok = Session.stop(pid)
       iex> Process.alive?(pid)
@@ -68,9 +72,9 @@ defmodule Raxol.Terminal.Session do
 
   @doc """
   Sends input to a terminal session.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Session.start_link()
       iex> :ok = Session.send_input(pid, "test")
       iex> state = Session.get_state(pid)
@@ -83,9 +87,9 @@ defmodule Raxol.Terminal.Session do
 
   @doc """
   Gets the current state of a terminal session.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Session.start_link()
       iex> state = Session.get_state(pid)
       iex> state.width
@@ -97,9 +101,9 @@ defmodule Raxol.Terminal.Session do
 
   @doc """
   Updates the configuration of a terminal session.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Session.start_link()
       iex> :ok = Session.update_config(pid, %{width: 100, height: 30})
       iex> state = Session.get_state(pid)
@@ -112,9 +116,9 @@ defmodule Raxol.Terminal.Session do
 
   @doc """
   Counts the number of active terminal sessions.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid1} = Session.start_link()
       iex> {:ok, pid2} = Session.start_link()
       iex> Session.count_active_sessions()
@@ -188,4 +192,4 @@ defmodule Raxol.Terminal.Session do
       theme: theme
     }
   end
-end 
+end
