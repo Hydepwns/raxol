@@ -117,18 +117,18 @@ defmodule Raxol.Style.Colors.Utilities do
 
   ## Examples
 
-      iex> Utilities.is_dark_color?("#000000")
+      iex> Utilities.dark_color?("#000000")
       true
 
-      iex> Utilities.is_dark_color?("#FFFFFF")
+      iex> Utilities.dark_color?("#FFFFFF")
       false
   """
-  def is_dark_color?(color) when is_binary(color) do
+  def dark_color?(color) when is_binary(color) do
     color = Color.from_hex(color)
-    is_dark_color?(color)
+    dark_color?(color)
   end
 
-  def is_dark_color?(%Color{} = color) do
+  def dark_color?(%Color{} = color) do
     relative_luminance(color) < 0.5
   end
 
@@ -269,48 +269,75 @@ defmodule Raxol.Style.Colors.Utilities do
     }
   end
 
-  defp rgb_to_hsl(r, g, b) do
-    r = r / 255
-    g = g / 255
-    b = b / 255
+  @doc """
+  Converts RGB values to HSL.
 
-    max = Enum.max([r, g, b])
-    min = Enum.min([r, g, b])
+  ## Parameters
+  - `r`, `g`, `b` - Red, Green, Blue values (0-255)
+
+  ## Returns
+  - `{h, s, l}` tuple: Hue (0-360), Saturation (0.0-1.0), Lightness (0.0-1.0)
+  """
+  @spec rgb_to_hsl(integer(), integer(), integer()) :: {float(), float(), float()}
+  def rgb_to_hsl(r, g, b) do
+    r_norm = r / 255
+    g_norm = g / 255
+    b_norm = b / 255
+
+    max = Enum.max([r_norm, g_norm, b_norm])
+    min = Enum.min([r_norm, g_norm, b_norm])
     delta = max - min
 
-    h = cond do
-      delta == 0 -> 0
-      max == r -> 60 * rem(round((g - b) / delta), 6)
-      max == g -> 60 * ((b - r) / delta + 2)
-      true -> 60 * ((r - g) / delta + 4)
-    end
-
+    h = _calculate_hue(r_norm, g_norm, b_norm, max, delta)
     l = (max + min) / 2
-
     s = if delta == 0, do: 0, else: delta / (1 - abs(2 * l - 1))
 
     {h, s, l}
   end
 
-  defp hsl_to_rgb(h, s, l) do
+  defp _calculate_hue(r, g, b, max, delta) do
+    cond do
+      delta == 0 -> 0
+      max == r -> 60 * rem(round((g - b) / delta), 6)
+      max == g -> 60 * ((b - r) / delta + 2)
+      true -> 60 * ((r - g) / delta + 4) # max == b
+    end
+  end
+
+  @doc """
+  Converts HSL values to RGB.
+
+  ## Parameters
+  - `h`, `s`, `l` - Hue (0-360), Saturation (0.0-1.0), Lightness (0.0-1.0)
+
+  ## Returns
+  - `{r, g, b}` tuple: Red, Green, Blue values (0-255)
+  """
+  @spec hsl_to_rgb(number(), float(), float()) :: {integer(), integer(), integer()}
+  def hsl_to_rgb(h, s, l) when is_number(h) and is_float(s) and is_float(l) do
     c = (1 - abs(2 * l - 1)) * s
-    x = c * (1 - abs(rem(h / 60, 2) - 1))
+    x = c * (1 - abs(Float.rem(h / 60, 2.0) - 1))
     m = l - c / 2
 
-    {r, g, b} = cond do
-      h < 60 -> {c, x, 0}
-      h < 120 -> {x, c, 0}
-      h < 180 -> {0, c, x}
-      h < 240 -> {0, x, c}
-      h < 300 -> {x, 0, c}
-      true -> {c, 0, x}
-    end
+    {r_prime, g_prime, b_prime} = _calculate_rgb_segment(h, c, x)
 
     {
-      round((r + m) * 255),
-      round((g + m) * 255),
-      round((b + m) * 255)
+      round((r_prime + m) * 255),
+      round((g_prime + m) * 255),
+      round((b_prime + m) * 255)
     }
+  end
+
+  @spec _calculate_rgb_segment(number(), float(), float()) :: {float(), float(), float()}
+  defp _calculate_rgb_segment(h, c, x) do
+     cond do
+      h < 60 -> {c, x, 0.0}
+      h < 120 -> {x, c, 0.0}
+      h < 180 -> {0.0, c, x}
+      h < 240 -> {0.0, x, c}
+      h < 300 -> {x, 0.0, c}
+      true -> {c, 0.0, x} # h < 360
+    end
   end
 
   @doc """
@@ -326,15 +353,16 @@ defmodule Raxol.Style.Colors.Utilities do
 
       iex> bg = Raxol.Style.Colors.Color.from_hex("#333333")
       iex> fg = Raxol.Style.Colors.Color.from_hex("#FFFFFF")
-      iex> Raxol.Style.Colors.Utilities.is_readable?(bg, fg)
+      iex> Raxol.Style.Colors.Utilities.readable?(bg, fg)
       true
 
       iex> bg = Raxol.Style.Colors.Color.from_hex("#CCCCCC")
       iex> fg = Raxol.Style.Colors.Color.from_hex("#999999")
-      iex> Raxol.Style.Colors.Utilities.is_readable?(bg, fg, :aaa)
+      iex> Raxol.Style.Colors.Utilities.readable?(bg, fg, :aaa)
       false
   """
-  def is_readable?(%Color{} = background, %Color{} = foreground, level \\ :aa) do
+  @spec readable?(Color.t(), Color.t(), :aa | :aaa | :aa_large | :aaa_large) :: boolean()
+  def readable?(%Color{} = background, %Color{} = foreground, level \\ :aa) do
     ratio = contrast_ratio(background, foreground)
 
     threshold = case level do
@@ -471,7 +499,7 @@ defmodule Raxol.Style.Colors.Utilities do
 
       iex> color = Raxol.Style.Colors.Color.from_hex("#3366CC")
       iex> {bg, fg} = Raxol.Style.Colors.Utilities.accessible_color_pair(color)
-      iex> Raxol.Style.Colors.Utilities.is_readable?(bg, fg)
+      iex> Raxol.Style.Colors.Utilities.readable?(bg, fg)
       true
   """
   def accessible_color_pair(%Color{} = base_color, level \\ :aa) do
@@ -480,10 +508,10 @@ defmodule Raxol.Style.Colors.Utilities do
     white = Color.from_hex("#FFFFFF")
 
     cond do
-      is_readable?(base_color, black, level) ->
+      readable?(base_color, black, level) ->
         {base_color, black}
 
-      is_readable?(base_color, white, level) ->
+      readable?(base_color, white, level) ->
         {base_color, white}
 
       # If neither works well, adjust the base color darker or lighter
@@ -650,7 +678,7 @@ defmodule Raxol.Style.Colors.Utilities do
   def saturate(%Color{} = color, amount) do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_s = min(s + amount, 1.0)
-    {r, g, b} = hsl_to_rgb(h, s, new_s)
+    {r, g, b} = hsl_to_rgb(h, new_s, l)
     Color.to_hex(%Color{r: r, g: g, b: b})
   end
 
@@ -674,27 +702,32 @@ defmodule Raxol.Style.Colors.Utilities do
   def desaturate(%Color{} = color, amount) do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_s = max(s - amount, 0.0)
-    {r, g, b} = hsl_to_rgb(h, s, new_s)
+    {r, g, b} = hsl_to_rgb(h, new_s, l)
     Color.to_hex(%Color{r: r, g: g, b: b})
   end
 
   @doc """
-  Checks if a color is dark.
+  Checks if a hex string is a valid hex color.
 
   ## Parameters
 
-  - `color` - The color to check (hex string or Color struct)
+  - `hex_string` - The hex string to check
 
   ## Returns
 
-  - `true` if the color is dark, `false` otherwise
-  """
-  def is_dark?(color) when is_binary(color) do
-    color = Color.from_hex(color)
-    is_dark?(color)
-  end
+  - `true` if the hex string is a valid hex color, `false` otherwise
 
-  def is_dark?(%Color{} = color) do
-    relative_luminance(color) < 0.5
+  ## Examples
+
+      iex> Raxol.Style.Colors.Utilities.hex_color?("#FF00AA")
+      true
+      iex> Raxol.Style.Colors.Utilities.hex_color?("blue")
+      false
+  """
+  @spec hex_color?(String.t()) :: boolean()
+  def hex_color?(hex_string) when is_binary(hex_string) do
+    # Regex for #RGB, #RGBA, #RRGGBB, #RRGGBBAA
+    ~r/^#([0-9a-fA-F]{3}|[0-9a-fA-F]{4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/
+    |> Regex.match?(hex_string)
   end
 end
