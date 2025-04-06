@@ -61,7 +61,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
 
     test "handles dynamic updates efficiently" do
       {:ok, manager} = Manager.start_link([])
-      
+
       # Create initial view
       view = Table.new(
         columns: [
@@ -114,7 +114,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
       # Create a grid of charts
       charts = for i <- 1..16 do  # 4x4 grid
         Chart.new(
-          type: if rem(i, 2) == 0, do: :bar, else: :line,
+          type: (if rem(i, 2) == 0, do: :bar, else: :line),
           series: [%{
             name: "Series #{i}",
             data: Enum.take_random(@large_data, 50) |> Enum.map(& List.first(&1.sales)),
@@ -141,11 +141,11 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
 
     test "handles dynamic resizing efficiently" do
       {:ok, manager} = Manager.start_link([])
-      
+
       # Create a complex layout
       view = create_complex_layout()
       Manager.set_root_view(manager, view)
-      
+
       # Measure initial render
       {_, initial_time} = measure(fn ->
         Manager.render_frame(manager)
@@ -190,7 +190,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
 
       # Create a large complex layout
       view = create_large_complex_layout()
-      
+
       after_creation = :erlang.memory(:total)
       memory_increase = after_creation - before
 
@@ -202,7 +202,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
   describe "animation performance" do
     test "handles smooth progress bar animation" do
       {:ok, manager} = Manager.start_link([])
-      
+
       # Create animated progress bar
       frames = for i <- 0..100 do
         View.box(
@@ -268,7 +268,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
 
     test "handles chart animation smoothly" do
       {:ok, manager} = Manager.start_link([])
-      
+
       # Create animated chart frames
       data_points = 30
       frames = for frame <- 1..60 do
@@ -310,7 +310,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
   describe "scrolling performance" do
     test "handles smooth vertical scrolling" do
       {:ok, manager} = Manager.start_link([])
-      
+
       # Create large content
       content = Table.new(
         columns: [
@@ -353,7 +353,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
 
     test "handles horizontal scrolling efficiently" do
       {:ok, manager} = Manager.start_link([])
-      
+
       # Create wide content with many columns
       columns = for i <- 1..20 do
         %{
@@ -401,7 +401,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
   describe "dynamic content performance" do
     test "handles real-time data updates efficiently" do
       {:ok, manager} = Manager.start_link([])
-      
+
       # Simulate real-time data updates
       update_times = for i <- 1..100 do
         # Update random data point
@@ -433,7 +433,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
       # Measure performance of incrementally loading content
       load_times = for chunk_start <- 0..950//chunk_size do
         current_data = Enum.slice(@large_data, 0..chunk_start+chunk_size)
-        
+
         {_, time} = measure(fn ->
           view = Table.new(
             columns: [
@@ -504,7 +504,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
               columns: 2,
               children: for i <- 1..4 do
                 Chart.new(
-                  type: if rem(i, 2) == 0, do: :bar, else: :line,
+                  type: (if rem(i, 2) == 0, do: :bar, else: :line),
                   series: [%{
                     name: "Series #{i}",
                     data: Enum.take_random(@large_data, 20) |> Enum.map(& List.first(&1.sales)),
@@ -584,4 +584,4 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
       ]
     )
   end
-end 
+end

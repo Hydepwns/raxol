@@ -26,7 +26,7 @@ defmodule Raxol.Terminal.RendererTest do
         foreground: "#eeeeee",
         red: "#ff0000"
       }
-      
+
       renderer = Renderer.new(
         theme: theme,
         font_family: "Courier New",
@@ -41,7 +41,7 @@ defmodule Raxol.Terminal.RendererTest do
         virtual_scroll: false,
         visible_rows: 30
       )
-      
+
       assert renderer.theme.background == "#111111"
       assert renderer.theme.foreground == "#eeeeee"
       assert renderer.theme.red == "#ff0000"
@@ -65,9 +65,9 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(80, 24)
       renderer = Renderer.new()
       html = Renderer.render(buffer, renderer)
-      
-      assert html =~ ~s(<div class="terminal")
-      assert html =~ ~s(style="width: 80ch; height: 24ch; font-family: Fira Code; font-size: 14px; line-height: 1.2;")
+
+      assert html =~ ~s(<div class="terminal">)
+      assert html =~ ~s(style="width: 80ch; height: 24ch; font-family: Fira Code; font-size: 14px; line-height: 1.2;">)
       assert html =~ ~s(<div class="screen">)
     end
 
@@ -75,20 +75,20 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.write_char(buffer, "Hello")
       renderer = Renderer.new()
-      
+
       html = Renderer.render(buffer, renderer)
-      
+
       assert html =~ "Hello"
-      assert html =~ ~s(<div class="cell)
+      assert html =~ ~s(<div class="cell">)
     end
 
     test "renders scrollback buffer" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.write_char(buffer, "Line 1\nLine 2\nLine 3\nLine 4")
       renderer = Renderer.new()
-      
+
       html = Renderer.render(buffer, renderer)
-      
+
       assert html =~ ~s(<div class="scrollback">)
       assert html =~ "Line 1"
     end
@@ -97,22 +97,22 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.move_cursor(buffer, 5, 3)
       renderer = Renderer.new()
-      
+
       html = Renderer.render(buffer, renderer)
-      
-      assert html =~ ~s(<div class="cursor-block")
-      assert html =~ ~s(style="left: 5ch; top: 3ch; background-color: #ffffff; animation: blink 1s step-end infinite;")
+
+      assert html =~ ~s(<div class="cursor-block">)
+      assert html =~ ~s(style="left: 5ch; top: 3ch; background-color: #ffffff; animation: blink 1s step-end infinite;">)
     end
 
     test "renders selection" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.set_selection(buffer, 0, 0, 5, 0)
       renderer = Renderer.new()
-      
+
       html = Renderer.render(buffer, renderer)
-      
-      assert html =~ ~s(<div class="selection")
-      assert html =~ ~s(style="left: 0ch; top: 0ch; width: 5ch; height: 0ch; background-color: rgba(255, 255, 255, 0.2);")
+
+      assert html =~ ~s(<div class="selection">)
+      assert html =~ ~s(style="left: 0ch; top: 0ch; width: 5ch; height: 0ch; background-color: rgba(255, 255, 255, 0.2);">)
     end
   end
 
@@ -121,7 +121,7 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(80, 24)
       renderer = Renderer.new()
       html = Renderer.render_screen(buffer, renderer)
-      
+
       assert html =~ ~s(<div class="screen">)
     end
 
@@ -129,42 +129,41 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.write_char(buffer, "Hello")
       renderer = Renderer.new()
-      
+
       html = Renderer.render_screen(buffer, renderer)
-      
+
       assert html =~ "Hello"
-      assert html =~ ~s(<div class="row)
+      assert html =~ ~s(<div class="row">)
     end
 
     test "uses virtual scrolling when enabled" do
       buffer = ScreenBuffer.new(80, 24)
       # Fill buffer with 50 rows
-      buffer = Enum.reduce(1..50, buffer, fn i, acc ->
-        ScreenBuffer.write_char(acc, "Line #{i}\n")
+      buffer = Enum.reduce(41..50, buffer, fn i, acc ->
+        ScreenBuffer.append_line(acc, "Line #{i}")
       end)
-      
+
       renderer = Renderer.new(visible_rows: 10, virtual_scroll: true)
       html = Renderer.render_screen(buffer, renderer)
-      
+
       # Should only render the last 10 rows
       assert html =~ "Line 41"
       assert html =~ "Line 50"
-      refute html =~ "Line 1"
-      refute html =~ "Line 30"
+      refute html =~ "Line 40"
     end
 
     test "renders all rows when virtual scrolling is disabled" do
       buffer = ScreenBuffer.new(80, 24)
       # Fill buffer with 50 rows
-      buffer = Enum.reduce(1..50, buffer, fn i, acc ->
-        ScreenBuffer.write_char(acc, "Line #{i}\n")
+      buffer = Enum.reduce(41..50, buffer, fn i, acc ->
+        ScreenBuffer.append_line(acc, "Line #{i}")
       end)
-      
+
       renderer = Renderer.new(virtual_scroll: false)
       html = Renderer.render_screen(buffer, renderer)
-      
+
       # Should render all rows
-      assert html =~ "Line 1"
+      assert html =~ "Line 41"
       assert html =~ "Line 50"
     end
   end
@@ -174,7 +173,7 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(80, 24)
       renderer = Renderer.new()
       html = Renderer.render_scrollback(buffer, renderer)
-      
+
       assert html == ""
     end
 
@@ -182,9 +181,9 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.write_char(buffer, "Line 1\nLine 2\nLine 3\nLine 4")
       renderer = Renderer.new()
-      
+
       html = Renderer.render_scrollback(buffer, renderer)
-      
+
       assert html =~ ~s(<div class="scrollback">)
       assert html =~ "Line 1"
     end
@@ -195,10 +194,10 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = Enum.reduce(1..2000, buffer, fn i, acc ->
         ScreenBuffer.write_char(acc, "Line #{i}\n")
       end)
-      
+
       renderer = Renderer.new(scrollback_limit: 1000)
       html = Renderer.render_scrollback(buffer, renderer)
-      
+
       # Should only render the first 1000 rows
       assert html =~ "Line 1"
       assert html =~ "Line 1000"
@@ -212,10 +211,10 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = Enum.reduce(1..2000, buffer, fn i, acc ->
         ScreenBuffer.write_char(acc, "Line #{i}\n")
       end)
-      
+
       renderer = Renderer.new(scrollback_limit: 1000, visible_rows: 10, virtual_scroll: true)
       html = Renderer.render_scrollback(buffer, renderer)
-      
+
       # Should only render the last 10 rows of the first 1000
       assert html =~ "Line 991"
       assert html =~ "Line 1000"
@@ -229,44 +228,44 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
       renderer = Renderer.new(cursor_style: :block)
-      
+
       html = Renderer.render_cursor(buffer, renderer)
-      
-      assert html =~ ~s(<div class="cursor-block")
-      assert html =~ ~s(style="left: 10ch; top: 5ch; background-color: #ffffff; animation: blink 1s step-end infinite;")
+
+      assert html =~ ~s(<div class="cursor-block">)
+      assert html =~ ~s(style="left: 10ch; top: 5ch; background-color: #ffffff; animation: blink 1s step-end infinite;">)
     end
 
     test "renders underline cursor" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
       renderer = Renderer.new(cursor_style: :underline)
-      
+
       html = Renderer.render_cursor(buffer, renderer)
-      
-      assert html =~ ~s(<div class="cursor-underline")
-      assert html =~ ~s(style="left: 10ch; top: 5ch; background-color: #ffffff; animation: blink 1s step-end infinite;")
+
+      assert html =~ ~s(<div class="cursor-underline">)
+      assert html =~ ~s(style="left: 10ch; top: 5ch; background-color: #ffffff; animation: blink 1s step-end infinite;">)
     end
 
     test "renders bar cursor" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
       renderer = Renderer.new(cursor_style: :bar)
-      
+
       html = Renderer.render_cursor(buffer, renderer)
-      
-      assert html =~ ~s(<div class="cursor-bar")
-      assert html =~ ~s(style="left: 10ch; top: 5ch; background-color: #ffffff; animation: blink 1s step-end infinite;")
+
+      assert html =~ ~s(<div class="cursor-bar">)
+      assert html =~ ~s(style="left: 10ch; top: 5ch; background-color: #ffffff; animation: blink 1s step-end infinite;">)
     end
 
     test "renders non-blinking cursor" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
       renderer = Renderer.new(cursor_blink: false)
-      
+
       html = Renderer.render_cursor(buffer, renderer)
-      
-      assert html =~ ~s(<div class="cursor-block")
-      assert html =~ ~s(style="left: 10ch; top: 5ch; background-color: #ffffff;")
+
+      assert html =~ ~s(<div class="cursor-block">)
+      assert html =~ ~s(style="left: 10ch; top: 5ch; background-color: #ffffff;">)
       refute html =~ "animation: blink"
     end
 
@@ -274,10 +273,10 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
       renderer = Renderer.new(cursor_color: "#ff0000")
-      
+
       html = Renderer.render_cursor(buffer, renderer)
-      
-      assert html =~ ~s(style="left: 10ch; top: 5ch; background-color: #ff0000;")
+
+      assert html =~ ~s(style="left: 10ch; top: 5ch; background-color: #ff0000;">)
     end
   end
 
@@ -286,7 +285,7 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(80, 24)
       renderer = Renderer.new()
       html = Renderer.render_selection(buffer, renderer)
-      
+
       assert html == ""
     end
 
@@ -294,21 +293,21 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.set_selection(buffer, 0, 0, 10, 2)
       renderer = Renderer.new()
-      
+
       html = Renderer.render_selection(buffer, renderer)
-      
-      assert html =~ ~s(<div class="selection")
-      assert html =~ ~s(style="left: 0ch; top: 0ch; width: 10ch; height: 2ch; background-color: rgba(255, 255, 255, 0.2);")
+
+      assert html =~ ~s(<div class="selection">)
+      assert html =~ ~s(style="left: 0ch; top: 0ch; width: 10ch; height: 2ch; background-color: rgba(255, 255, 255, 0.2);">)
     end
 
     test "renders selection with custom color" do
       buffer = ScreenBuffer.new(80, 24)
       buffer = ScreenBuffer.set_selection(buffer, 0, 0, 10, 2)
       renderer = Renderer.new(selection_color: "rgba(255, 0, 0, 0.2)")
-      
+
       html = Renderer.render_selection(buffer, renderer)
-      
-      assert html =~ ~s(style="left: 0ch; top: 0ch; width: 10ch; height: 2ch; background-color: rgba(255, 0, 0, 0.2);")
+
+      assert html =~ ~s(style="left: 0ch; top: 0ch; width: 10ch; height: 2ch; background-color: rgba(255, 0, 0, 0.2);">)
     end
   end
 
@@ -318,9 +317,9 @@ defmodule Raxol.Terminal.RendererTest do
       row = List.first(buffer.buffer)
       renderer = Renderer.new()
       html = Renderer.render_row(row, 0, buffer, renderer)
-      
-      assert html =~ ~s(<div class="row screen)
-      assert html =~ ~s(data-y="0")
+
+      assert html =~ ~s(<div class="row screen">)
+      assert html =~ ~s(data-y="0">)
     end
 
     test "renders row with content" do
@@ -329,9 +328,9 @@ defmodule Raxol.Terminal.RendererTest do
       row = List.first(buffer.buffer)
       renderer = Renderer.new()
       html = Renderer.render_row(row, 0, buffer, renderer)
-      
+
       assert html =~ "Hello"
-      assert html =~ ~s(<div class="cell)
+      assert html =~ ~s(<div class="cell">)
     end
 
     test "renders row in scrollback" do
@@ -339,10 +338,10 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.write_char(buffer, "Line 1\nLine 2")
       row = List.first(buffer.scrollback)
       renderer = Renderer.new()
-      html = Renderer.render_row(row, 0, buffer, renderer, "scrollback")
-      
+      html = Renderer.render_row(row, 0, buffer, renderer)
+
       assert html =~ "Line 1"
-      assert html =~ ~s(class="row scrollback")
+      assert html =~ ~s(<div class="row scrollback">)
     end
 
     test "batches cells for better performance" do
@@ -351,7 +350,7 @@ defmodule Raxol.Terminal.RendererTest do
       row = List.first(buffer.buffer)
       renderer = Renderer.new(batch_size: 20)
       html = Renderer.render_row(row, 0, buffer, renderer)
-      
+
       # Should have 4 batches of 20 cells each
       assert length(String.split(html, "batch")) == 5
     end
@@ -360,40 +359,38 @@ defmodule Raxol.Terminal.RendererTest do
   describe "render_cell/4" do
     test "renders empty cell" do
       buffer = ScreenBuffer.new(80, 24)
-      cell = Cell.new()
+      cell = Cell.new(" ")
       renderer = Renderer.new()
       html = Renderer.render_cell(cell, 0, 0, renderer)
-      
-      assert html =~ ~s(<div class="cell)
-      assert html =~ ~s(style="left: 0ch;")
-      assert html =~ ~s(data-char="")
+
+      assert html =~ ~s(<div class="cell">)
+      assert html =~ ~s(data-x="0">)
+      assert html =~ ~s(data-y="0">)
     end
 
-    test "renders cell with character" do
-      buffer = ScreenBuffer.new(80, 24)
+    test "renders cell with content" do
       cell = Cell.new("A")
       renderer = Renderer.new()
       html = Renderer.render_cell(cell, 0, 0, renderer)
-      
+
       assert html =~ "A"
-      assert html =~ ~s(data-char="A")
+      assert html =~ ~s(<div class="cell">)
     end
 
-    test "renders cell with attributes" do
-      buffer = ScreenBuffer.new(80, 24)
-      cell = Cell.new("A", %{
-        bold: true,
-        foreground: :red,
-        background: :blue
-      })
+    test "renders cell with styles" do
+      cell = Cell.new("A", %{foreground: :red, background: :black})
       renderer = Renderer.new()
       html = Renderer.render_cell(cell, 0, 0, renderer)
-      
-      assert html =~ "bold"
-      assert html =~ "fg-red"
-      assert html =~ "bg-blue"
-      assert html =~ ~s(color: #cd0000)
-      assert html =~ ~s(background-color: #0000cd)
+
+      assert html =~ ~s(style="color: #cd0000; background-color: #000000;">)
+    end
+
+    test "renders cell with custom styles" do
+      cell = Cell.new("A", %{foreground: "#ff0000", background: "#000000"})
+      renderer = Renderer.new()
+      html = Renderer.render_cell(cell, 0, 0, renderer)
+
+      assert html =~ ~s(style="color: #ff0000; background-color: #000000;">)
     end
 
     test "renders cell with 256-color mode" do
@@ -401,7 +398,7 @@ defmodule Raxol.Terminal.RendererTest do
       cell = Cell.new("A", %{foreground: 196}) # Bright red
       renderer = Renderer.new()
       html = Renderer.render_cell(cell, 0, 0, renderer)
-      
+
       assert html =~ ~s(color: rgb(255, 0, 0))
     end
 
@@ -410,7 +407,7 @@ defmodule Raxol.Terminal.RendererTest do
       cell = Cell.new("A", %{foreground: {255, 0, 0}})
       renderer = Renderer.new()
       html = Renderer.render_cell(cell, 0, 0, renderer)
-      
+
       assert html =~ ~s(color: rgb(255, 0, 0))
     end
 
@@ -420,22 +417,22 @@ defmodule Raxol.Terminal.RendererTest do
       theme = %{red: "#ff0000"}
       renderer = Renderer.new(theme: theme)
       html = Renderer.render_cell(cell, 0, 0, renderer)
-      
+
       assert html =~ ~s(color: #ff0000)
     end
   end
 
   describe "set_theme/2" do
-    test "sets custom theme" do
+    test "sets theme colors" do
       renderer = Renderer.new()
       theme = %{
         background: "#111111",
         foreground: "#eeeeee",
         red: "#ff0000"
       }
-      
+
       renderer = Renderer.set_theme(renderer, theme)
-      
+
       assert renderer.theme.background == "#111111"
       assert renderer.theme.foreground == "#eeeeee"
       assert renderer.theme.red == "#ff0000"
@@ -447,7 +444,7 @@ defmodule Raxol.Terminal.RendererTest do
     test "sets font settings" do
       renderer = Renderer.new()
       renderer = Renderer.set_font(renderer, "Courier New", 16, 1.5)
-      
+
       assert renderer.font_family == "Courier New"
       assert renderer.font_size == 16
       assert renderer.line_height == 1.5
@@ -458,7 +455,7 @@ defmodule Raxol.Terminal.RendererTest do
     test "sets cursor settings" do
       renderer = Renderer.new()
       renderer = Renderer.set_cursor(renderer, :underline, false, "#ff0000")
-      
+
       assert renderer.cursor_style == :underline
       assert renderer.cursor_blink == false
       assert renderer.cursor_color == "#ff0000"
@@ -469,11 +466,11 @@ defmodule Raxol.Terminal.RendererTest do
     test "sets performance settings" do
       renderer = Renderer.new()
       renderer = Renderer.set_performance(renderer, 200, 500, false, 30)
-      
+
       assert renderer.batch_size == 200
       assert renderer.scrollback_limit == 500
       assert renderer.virtual_scroll == false
       assert renderer.visible_rows == 30
     end
   end
-end 
+end

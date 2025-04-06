@@ -10,6 +10,9 @@ import Config
 
 config :logger, level: :debug
 
+# Configure Ecto repositories
+config :raxol, ecto_repos: [Raxol.Repo]
+
 # You can configure your application as:
 #
 #     config :ratatouille, key: :value
@@ -93,6 +96,6 @@ config :raxol, :terminal,
 
 # Configure web interface settings
 config :raxol, :web,
-  default_theme: "light",
+  default_theme: "dark",
   enable_websockets: true,
   session_timeout: 3600
