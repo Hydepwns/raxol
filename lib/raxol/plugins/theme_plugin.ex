@@ -103,7 +103,7 @@ defmodule Raxol.Plugins.ThemePlugin do
   def init(config \\ %{}) do
     theme_name = Map.get(config, :theme, "default")
     theme = Map.get(@default_themes, theme_name, Map.get(@default_themes, "default"))
-    
+
     {:ok, %__MODULE__{
       name: "theme",
       enabled: true,
@@ -153,22 +153,18 @@ defmodule Raxol.Plugins.ThemePlugin do
     end
   end
 
-  @impl true
   def get_name(plugin) do
     plugin.name
   end
 
-  @impl true
   def is_enabled?(plugin) do
     plugin.enabled
   end
 
-  @impl true
   def enable(plugin) do
     %{plugin | enabled: true}
   end
 
-  @impl true
   def disable(plugin) do
     %{plugin | enabled: false}
   end
@@ -198,7 +194,7 @@ defmodule Raxol.Plugins.ThemePlugin do
   """
   def change_theme(plugin, theme_name) do
     theme = Map.get(@default_themes, theme_name)
-    
+
     if theme do
       {:ok, %{plugin | current_theme: theme}}
     else
@@ -231,13 +227,13 @@ defmodule Raxol.Plugins.ThemePlugin do
       :bright_black, :bright_red, :bright_green, :bright_yellow,
       :bright_blue, :bright_magenta, :bright_cyan, :bright_white
     ]
-    
+
     missing_colors = Enum.filter(required_colors, fn color -> !Map.has_key?(colors, color) end)
-    
+
     if Enum.empty?(missing_colors) do
       # Add the custom theme to the available themes
       updated_themes = Map.put(@default_themes, name, colors)
-      
+
       # Update the plugin with the new themes
       {:ok, %{plugin | config: Map.put(plugin.config, :themes, updated_themes)}}
     else
@@ -253,4 +249,4 @@ defmodule Raxol.Plugins.ThemePlugin do
       theme -> {:ok, theme}
     end
   end
-end 
+end

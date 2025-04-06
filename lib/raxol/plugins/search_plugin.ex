@@ -4,23 +4,46 @@ defmodule Raxol.Plugins.SearchPlugin do
   """
 
   @behaviour Raxol.Plugins.Plugin
+  alias Raxol.Plugins.Plugin
+
+  @type t :: %__MODULE__{
+    # Plugin behaviour fields
+    name: String.t(),
+    version: String.t(),
+    description: String.t(),
+    enabled: boolean(),
+    config: map(),
+    dependencies: list(map()),
+    api_version: String.t(),
+    # Plugin specific state
+    search_term: String.t() | nil,
+    search_results: list(any()), # TODO: Define a proper result type
+    current_result_index: integer()
+  }
 
   defstruct [
+    # Plugin behaviour fields
+    name: "search",
+    version: "0.1.0",
+    description: "Provides text search functionality within the terminal.",
+    enabled: true,
+    config: %{},
+    dependencies: [],
+    api_version: "1.0.0",
+    # Plugin specific state
     search_term: nil,
     search_results: [],
     current_result_index: 0
   ]
 
-  def init do
-    %{
-      search_term: nil,
-      search_results: [],
-      current_result_index: 0
-    }
+  @impl true
+  def init(config \\ %{}) do
+    plugin_state = struct(__MODULE__, config) # Merges config with defaults in struct
+    {:ok, plugin_state}
   end
 
   @impl true
-  def handle_input(plugin, input) do
+  def handle_input(%__MODULE__{} = plugin, input) do
     case input do
       "/" <> search_term ->
         start_search(plugin, search_term)
@@ -30,53 +53,45 @@ defmodule Raxol.Plugins.SearchPlugin do
         prev_result(plugin)
       "\e" ->  # Escape key
         clear_search(plugin)
-      _ -> {:ok, plugin}
+      _ -> {:ok, plugin} # Return the full plugin state
     end
   end
 
   @impl true
-  def handle_mouse(_plugin, _event) do
+  def handle_mouse(%__MODULE__{} = plugin, _event) do
+    {:ok, plugin} # Return the full plugin state
+  end
+
+  @impl true
+  def handle_output(%__MODULE__{} = plugin, _output) do
+    {:ok, plugin} # Return the full plugin state
+  end
+
+  @impl true
+  def handle_resize(%__MODULE__{} = plugin, _width, _height) do
+    {:ok, plugin} # Return the full plugin state
+  end
+
+  @impl true
+  def cleanup(%__MODULE__{} = _plugin) do
     :ok
   end
 
   @impl true
-  def handle_output(plugin, _output) do
-    {:ok, plugin}
+  def get_dependencies do
+    # Define any dependencies this plugin has
+    []
   end
 
   @impl true
-  def handle_resize(plugin, _width, _height) do
-    {:ok, plugin}
-  end
-
-  @impl true
-  def cleanup(_plugin) do
-    :ok
-  end
-
-  @impl true
-  def get_name(plugin) do
-    plugin.name
-  end
-
-  @impl true
-  def is_enabled?(plugin) do
-    plugin.enabled
-  end
-
-  @impl true
-  def enable(plugin) do
-    %{plugin | enabled: true}
-  end
-
-  @impl true
-  def disable(plugin) do
-    %{plugin | enabled: false}
+  def get_api_version do
+    # Specify the API version this plugin targets
+    "1.0.0"
   end
 
   # Private functions
 
-  defp start_search(plugin, search_term) do
+  defp start_search(%__MODULE__{} = plugin, search_term) do
     if search_term == "" do
       {:ok, %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
     else
@@ -85,7 +100,7 @@ defmodule Raxol.Plugins.SearchPlugin do
     end
   end
 
-  defp next_result(plugin) do
+  defp next_result(%__MODULE__{} = plugin) do
     if plugin.search_term && length(plugin.search_results) > 0 do
       new_index = rem(plugin.current_result_index + 1, length(plugin.search_results))
       {:ok, %{plugin | current_result_index: new_index}}
@@ -94,7 +109,7 @@ defmodule Raxol.Plugins.SearchPlugin do
     end
   end
 
-  defp prev_result(plugin) do
+  defp prev_result(%__MODULE__{} = plugin) do
     if plugin.search_term && length(plugin.search_results) > 0 do
       new_index = if plugin.current_result_index == 0 do
         length(plugin.search_results) - 1
@@ -107,7 +122,7 @@ defmodule Raxol.Plugins.SearchPlugin do
     end
   end
 
-  defp clear_search(plugin) do
+  defp clear_search(%__MODULE__{} = plugin) do
     {:ok, %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
   end
 
