@@ -1,185 +1,202 @@
 defmodule Raxol.Style.Colors.HotReload do
   @moduledoc """
-  Provides hot-reloading functionality for color themes.
-  
-  This module monitors theme files for changes and automatically reloads them
-  when modifications are detected. It supports both file-based and database-backed
-  themes, with configurable polling intervals and change detection strategies.
+  Provides hot-reloading capabilities for color themes.
+
+  This module watches for changes to theme files and automatically
+  reloads them when they change. It also provides a way to subscribe
+  to theme change events.
   """
-  
-  alias Raxol.Style.Colors.Persistence
-  
+
   use GenServer
-  
-  @default_poll_interval 1000  # 1 second
-  
+
+  alias Raxol.Style.Colors.{System, Persistence}
+  # alias Raxol.Style.Colors.Theme # Unused
+  # alias Raxol.Core.Events.Manager, as: EventManager # Unused
+
+  @check_interval 1000  # Check for changes every second
+
   defstruct [
-    :theme_path,
+    :watched_paths,
     :last_modified,
-    :poll_interval,
     :subscribers
   ]
-  
-  @doc """
-  Starts the hot-reload server.
-  
-  ## Parameters
-  
-  - `opts` - Configuration options
-  
-  ## Options
-  
-  - `:theme_path` - Path to the theme file to monitor (default: from Persistence)
-  - `:poll_interval` - How often to check for changes (default: 1000ms)
-  
-  ## Examples
-  
-      iex> HotReload.start_link(theme_path: "/path/to/theme.json")
-      {:ok, #PID<0.123.0>}
-  """
+
+  # Client API
+
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
-  
+
   @doc """
-  Stops the hot-reload server.
-  
+  Subscribe to theme change events.
+
   ## Examples
-  
-      iex> HotReload.stop()
-      :ok
-  """
-  def stop do
-    GenServer.stop(__MODULE__)
-  end
-  
-  @doc """
-  Subscribes to theme change notifications.
-  
-  ## Examples
-  
+
       iex> HotReload.subscribe()
       :ok
   """
   def subscribe do
     GenServer.call(__MODULE__, :subscribe)
   end
-  
+
   @doc """
-  Unsubscribes from theme change notifications.
-  
+  Unsubscribe from theme change events.
+
   ## Examples
-  
+
       iex> HotReload.unsubscribe()
       :ok
   """
   def unsubscribe do
     GenServer.call(__MODULE__, :unsubscribe)
   end
-  
+
   @doc """
-  Forces a theme reload.
-  
+  Add a path to watch for theme changes.
+
+  ## Parameters
+
+  - `path` - The path to watch
+
   ## Examples
-  
-      iex> HotReload.reload()
+
+      iex> HotReload.watch_path("/path/to/themes")
       :ok
   """
-  def reload do
-    GenServer.cast(__MODULE__, :reload)
+  def watch_path(path) do
+    GenServer.call(__MODULE__, {:watch_path, path})
   end
-  
-  # Server callbacks
-  
+
+  # Server Callbacks
+
   @impl true
-  def init(opts) do
-    theme_path = Keyword.get(opts, :theme_path, Persistence.default_theme_path())
-    poll_interval = Keyword.get(opts, :poll_interval, @default_poll_interval)
-    
-    # Get initial modification time
-    last_modified = get_last_modified(theme_path)
-    
+  def init(_opts) do
+    # Get theme paths from config
+    theme_paths = get_theme_paths()
+
+    # Initialize state
     state = %__MODULE__{
-      theme_path: theme_path,
-      last_modified: last_modified,
-      poll_interval: poll_interval,
+      watched_paths: theme_paths,
+      last_modified: %{},
       subscribers: []
     }
-    
-    # Start polling
-    schedule_poll(poll_interval)
-    
+
+    # Start watching paths
+    Enum.each(theme_paths, &init_path_watch(&1, state))
+
     {:ok, state}
   end
-  
+
   @impl true
   def handle_call(:subscribe, _from, state) do
     {:reply, :ok, %{state | subscribers: [self() | state.subscribers]}}
   end
-  
+
   @impl true
   def handle_call(:unsubscribe, _from, state) do
     {:reply, :ok, %{state | subscribers: List.delete(state.subscribers, self())}}
   end
-  
+
   @impl true
-  def handle_cast(:reload, state) do
-    case load_and_notify(state) do
-      {:ok, new_state} -> {:noreply, new_state}
-      {:error, _reason} -> {:noreply, state}
-    end
+  def handle_call({:watch_path, path}, _from, state) do
+    new_state = init_path_watch(path, state)
+    {:reply, :ok, new_state}
   end
-  
+
   @impl true
-  def handle_info(:poll, state) do
-    # Schedule next poll
-    schedule_poll(state.poll_interval)
-    
-    # Check for changes
-    case check_for_changes(state) do
-      {:changed, new_state} -> {:noreply, new_state}
-      {:unchanged, state} -> {:noreply, state}
-    end
+  def handle_info(:check_changes, state) do
+    new_state = check_for_changes(state)
+    schedule_check()
+    {:noreply, new_state}
   end
-  
-  # Private functions
-  
-  defp schedule_poll(interval) do
-    Process.send_after(self(), :poll, interval)
-  end
-  
-  defp check_for_changes(state) do
-    current_modified = get_last_modified(state.theme_path)
-    
-    if current_modified != state.last_modified do
-      case load_and_notify(%{state | last_modified: current_modified}) do
-        {:ok, new_state} -> {:changed, new_state}
-        {:error, _reason} -> {:unchanged, state}
-      end
+
+  # Private Functions
+
+  defp get_theme_paths do
+    # Get paths from config or use defaults
+    config_paths = Application.get_env(:raxol, :theme_paths, [])
+
+    if Enum.empty?(config_paths) do
+      # Use default paths
+      [
+        Path.expand("~/.config/raxol/themes"),
+        Path.join(:code.priv_dir(:raxol), "themes")
+      ]
     else
-      {:unchanged, state}
+      config_paths
     end
   end
-  
-  defp load_and_notify(state) do
-    case Persistence.load_theme(state.theme_path) do
-      {:ok, theme} ->
-        # Notify all subscribers
-        Enum.each(state.subscribers, fn pid ->
-          send(pid, {:theme_changed, theme})
+
+  defp init_path_watch(path, state) do
+    # Create directory if it doesn't exist
+    File.mkdir_p!(path)
+
+    # Get initial modification times
+    last_modified = get_path_modification_times(path)
+
+    # Update state
+    %{state | last_modified: Map.merge(state.last_modified, last_modified)}
+  end
+
+  defp get_path_modification_times(path) do
+    case File.ls(path) do
+      {:ok, files} ->
+        files
+        |> Enum.filter(&String.ends_with?(&1, ".json"))
+        |> Enum.map(fn file ->
+          full_path = Path.join(path, file)
+          case File.stat(full_path) do
+            {:ok, %{mtime: mtime}} -> {full_path, mtime}
+            _ -> nil
+          end
         end)
-        
-        {:ok, state}
-        
-      {:error, reason} ->
-        {:error, reason}
+        |> Enum.reject(&is_nil/1)
+        |> Map.new()
+
+      _ ->
+        %{}
     end
   end
-  
-  defp get_last_modified(path) do
-    case File.stat(path) do
-      {:ok, %{mtime: mtime}} -> mtime
-      {:error, _} -> nil
-    end
+
+  defp check_for_changes(state) do
+    # Get current modification times
+    current_times = Enum.reduce(state.watched_paths, %{}, fn path, acc ->
+      Map.merge(acc, get_path_modification_times(path))
+    end)
+
+    # Check for changes
+    changed_files = Enum.filter(current_times, fn {path, mtime} ->
+      case Map.get(state.last_modified, path) do
+        nil -> true
+        old_time -> old_time != mtime
+      end
+    end)
+
+    # Handle changes
+    Enum.each(changed_files, fn {path, _mtime} ->
+      # Extract theme name from path (e.g., /path/to/MyTheme.json -> MyTheme)
+      theme_name = Path.basename(path, ".json") |> String.to_atom()
+      # Load theme using Persistence module
+      case Persistence.load_theme(theme_name) do
+        {:ok, theme} ->
+          # Apply theme using System module
+          System.apply_theme(theme)
+
+          # Notify subscribers
+          Enum.each(state.subscribers, fn pid ->
+            send(pid, {:theme_reloaded, theme})
+          end)
+
+        _ ->
+          :ok
+      end
+    end)
+
+    # Update state
+    %{state | last_modified: current_times}
   end
-end 
+
+  defp schedule_check do
+    Process.send_after(self(), :check_changes, @check_interval)
+  end
+end

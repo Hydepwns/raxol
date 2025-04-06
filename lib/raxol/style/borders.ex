@@ -30,4 +30,11 @@ defmodule Raxol.Style.Borders do
   def new(attrs) when is_map(attrs) do
     struct(__MODULE__, attrs)
   end
-end 
+
+  @doc """
+  Merges two border structs, with the second overriding the first.
+  """
+  def merge(base, override) when is_map(base) and is_map(override) do
+    Map.merge(base, override)
+  end
+end
