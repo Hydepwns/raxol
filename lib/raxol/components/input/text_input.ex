@@ -11,9 +11,8 @@ defmodule Raxol.Components.Input.TextInput do
   """
 
   use Raxol.Component
-
+  # alias Raxol.Style # Unused
   alias Raxol.Core.Events.Event
-  alias Raxol.View
 
   @type state :: %{
     value: String.t(),
@@ -24,6 +23,11 @@ defmodule Raxol.Components.Input.TextInput do
     password: boolean()
   }
 
+  # @default_width 40 # Unused
+
+  # @behaviour Raxol.Component # Redundant: already included by `use Raxol.Component`
+
+  @doc false
   @impl true
   def init(props) do
     %{
@@ -64,22 +68,31 @@ defmodule Raxol.Components.Input.TextInput do
 
   @impl true
   def render(state) do
-    View.input(
-      value: display_value(state),
-      cursor: state.cursor,
-      focused: state.focused,
-      placeholder: state.placeholder
+    # TODO: Raxol.View.input is undefined. TextInput needs refactoring to use
+    # Raxol.Core.Renderer.View or a dedicated input rendering mechanism.
+    # Commenting out for now to allow compilation.
+    # View.input(
+    #   value: display_value(state),
+    #   cursor: state.cursor,
+    #   focused: state.focused,
+    #   placeholder: state.placeholder
+    # )
+
+    # Placeholder return until refactoring
+    Raxol.Core.Renderer.View.text(
+      "[Input: #{display_value(state)}] (render broken)",
+      [style: if(state.focused, do: [:bold], else: [])]
     )
   end
 
   @impl true
-  def handle_event(%Event{type: :key} = event, state) do
+  def handle_event(%Event{type: :key, data: key_data} = _event, state) do
     msg =
-      case event do
-        %{key: {:char, c}} -> {:input, c}
-        %{key: :backspace} -> {:backspace}
-        %{key: :left} -> {:cursor, :left}
-        %{key: :right} -> {:cursor, :right}
+      case key_data do
+        {:char, c} -> {:input, c}
+        :backspace -> {:backspace}
+        :left -> {:cursor, :left}
+        :right -> {:cursor, :right}
         _ -> nil
       end
 
@@ -128,4 +141,4 @@ defmodule Raxol.Components.Input.TextInput do
   defp display_value(%{value: value}) do
     value
   end
-end 
+end

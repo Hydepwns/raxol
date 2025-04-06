@@ -1,15 +1,15 @@
 defmodule Raxol.Components.TextInput do
   @moduledoc """
   A text input component with editing capabilities.
-  
+
   This module provides a text input field that allows users to enter
   and edit text with cursor positioning, selection, and validation.
-  
+
   ## Example
-  
+
   ```elixir
   alias Raxol.Components.TextInput
-  
+
   TextInput.new(
     value: model.name,
     placeholder: "Enter your name",
@@ -17,16 +17,16 @@ defmodule Raxol.Components.TextInput do
   )
   ```
   """
-  
+
   alias Raxol.Style
-  
+
   @type t :: map()
-  
+
   @doc """
   Creates a new text input with the given options.
-  
+
   ## Options
-  
+
   * `:value` - Current input value
   * `:placeholder` - Placeholder text when empty
   * `:on_change` - Function to call when value changes
@@ -36,13 +36,13 @@ defmodule Raxol.Components.TextInput do
   * `:disabled` - Whether the input is disabled
   * `:validation` - Validation function
   * `:invalid_message` - Message to show when validation fails
-  
+
   ## Returns
-  
+
   A text input component that can be used in a Raxol view.
-  
+
   ## Example
-  
+
   ```elixir
   TextInput.new(
     value: model.email,
@@ -63,10 +63,10 @@ defmodule Raxol.Components.TextInput do
     disabled = Keyword.get(opts, :disabled, false)
     validation = Keyword.get(opts, :validation)
     invalid_message = Keyword.get(opts, :invalid_message, "Invalid input")
-    
+
     # Validate if needed
     valid = if validation, do: validation.(value), else: true
-    
+
     # Create the input with merged styles
     %{
       type: :component,
@@ -86,46 +86,33 @@ defmodule Raxol.Components.TextInput do
       focus_key: Keyword.get(opts, :focus_key, generate_focus_key())
     }
   end
-  
+
   @doc """
   Renders the text input as a basic element.
-  
+
   This is typically called by the renderer, not directly by users.
   """
   def render(input) do
-    display_text = get_display_text(input)
-    
-    Style.render(input.style, %{
-      type: :text_input,
-      attrs: %{
-        value: input.value,
-        display_text: display_text,
-        placeholder: input.placeholder,
-        password: input.password,
-        cursor_pos: input.cursor_pos,
-        selection: input.selection,
-        disabled: input.disabled,
-        valid: input.valid,
-        invalid_message: if(!input.valid, do: input.invalid_message, else: nil),
-        focus_key: input.focus_key
-      }
-    })
+    # The style is pre-calculated in new/1
+    # display_text = get_display_text(input)
+    # Style.render(input.style, %{\n    #   type: :text_input,\n    #   attrs: %{\n    #     value: input.value,\n    #     display_text: display_text,\n    #     placeholder: input.placeholder,\n    #     password: input.password,\n    #     cursor_pos: input.cursor_pos,\n    #     selection: input.selection,\n    #     disabled: input.disabled,\n    #     valid: input.valid,\n    #     invalid_message: if(!input.valid, do: input.invalid_message, else: nil),\n    #     focus_key: input.focus_key\n    #   }\n    # })
+    input.style
   end
-  
+
   @doc """
   Updates the text input based on keyboard input.
-  
+
   ## Parameters
-  
+
   * `input` - The text input component
   * `key_event` - Keyboard event as `{meta, key}`
-  
+
   ## Returns
-  
+
   Updated text input component.
-  
+
   ## Example
-  
+
   ```elixir
   updated_input = TextInput.handle_key_event(input, {:none, ?a})
   ```
@@ -137,7 +124,7 @@ defmodule Raxol.Components.TextInput do
     else
       # Get the character being typed
       char = <<key::utf8>>
-      
+
       # Check max length
       if input.max_length && String.length(input.value) >= input.max_length do
         input
@@ -146,17 +133,17 @@ defmodule Raxol.Components.TextInput do
         {before_cursor, after_cursor} = String.split_at(input.value, input.cursor_pos)
         new_value = before_cursor <> char <> after_cursor
         new_cursor_pos = input.cursor_pos + 1
-        
+
         # Update with new value and cursor position
-        updated_input = %{input | 
+        updated_input = %{input |
           value: new_value,
           cursor_pos: new_cursor_pos,
           selection: nil
         }
-        
+
         # Validate if needed
         updated_input = validate_input(updated_input)
-        
+
         # Trigger on_change callback if present
         if input.on_change do
           # Return updated input but don't actually call the callback
@@ -168,7 +155,7 @@ defmodule Raxol.Components.TextInput do
       end
     end
   end
-  
+
   def handle_key_event(input, {:none, :backspace}) do
     # Only process if not disabled and there's something to delete
     if input.disabled || input.value == "" || input.cursor_pos == 0 do
@@ -179,17 +166,17 @@ defmodule Raxol.Components.TextInput do
       {_, before_cursor} = String.split_at(before_cursor, -1)
       new_value = before_cursor <> after_cursor
       new_cursor_pos = input.cursor_pos - 1
-      
+
       # Update with new value and cursor position
-      updated_input = %{input | 
+      updated_input = %{input |
         value: new_value,
         cursor_pos: new_cursor_pos,
         selection: nil
       }
-      
+
       # Validate if needed
       updated_input = validate_input(updated_input)
-      
+
       # Trigger on_change callback if present
       if input.on_change do
         # Return updated input but don't actually call the callback
@@ -200,7 +187,7 @@ defmodule Raxol.Components.TextInput do
       end
     end
   end
-  
+
   def handle_key_event(input, {:none, :delete}) do
     # Only process if not disabled and there's something to delete
     if input.disabled || input.value == "" || input.cursor_pos >= String.length(input.value) do
@@ -210,16 +197,16 @@ defmodule Raxol.Components.TextInput do
       {before_cursor, after_cursor} = String.split_at(input.value, input.cursor_pos)
       {_, after_cursor} = String.split_at(after_cursor, 1)
       new_value = before_cursor <> after_cursor
-      
+
       # Update with new value (cursor position stays the same)
-      updated_input = %{input | 
+      updated_input = %{input |
         value: new_value,
         selection: nil
       }
-      
+
       # Validate if needed
       updated_input = validate_input(updated_input)
-      
+
       # Trigger on_change callback if present
       if input.on_change do
         # Return updated input but don't actually call the callback
@@ -230,7 +217,7 @@ defmodule Raxol.Components.TextInput do
       end
     end
   end
-  
+
   def handle_key_event(input, {:none, :arrow_left}) do
     # Move cursor left if possible
     if input.disabled || input.cursor_pos == 0 do
@@ -239,7 +226,7 @@ defmodule Raxol.Components.TextInput do
       %{input | cursor_pos: input.cursor_pos - 1, selection: nil}
     end
   end
-  
+
   def handle_key_event(input, {:none, :arrow_right}) do
     # Move cursor right if possible
     if input.disabled || input.cursor_pos >= String.length(input.value) do
@@ -248,7 +235,7 @@ defmodule Raxol.Components.TextInput do
       %{input | cursor_pos: input.cursor_pos + 1, selection: nil}
     end
   end
-  
+
   def handle_key_event(input, {:none, :home}) do
     # Move cursor to beginning
     if input.disabled do
@@ -257,7 +244,7 @@ defmodule Raxol.Components.TextInput do
       %{input | cursor_pos: 0, selection: nil}
     end
   end
-  
+
   def handle_key_event(input, {:none, :end}) do
     # Move cursor to end
     if input.disabled do
@@ -266,104 +253,110 @@ defmodule Raxol.Components.TextInput do
       %{input | cursor_pos: String.length(input.value), selection: nil}
     end
   end
-  
+
   def handle_key_event(input, {:shift, :arrow_left}) do
     # Extend selection left
     if input.disabled || input.cursor_pos == 0 do
       input
     else
       new_cursor_pos = input.cursor_pos - 1
-      new_selection = 
+      new_selection =
         case input.selection do
           nil -> {new_cursor_pos, input.cursor_pos}
           {anchor, _} -> {anchor, new_cursor_pos}
         end
-      
+
       %{input | cursor_pos: new_cursor_pos, selection: new_selection}
     end
   end
-  
+
   def handle_key_event(input, {:shift, :arrow_right}) do
     # Extend selection right
     if input.disabled || input.cursor_pos >= String.length(input.value) do
       input
     else
       new_cursor_pos = input.cursor_pos + 1
-      new_selection = 
+      new_selection =
         case input.selection do
           nil -> {input.cursor_pos, new_cursor_pos}
           {anchor, _} -> {anchor, new_cursor_pos}
         end
-      
+
       %{input | cursor_pos: new_cursor_pos, selection: new_selection}
     end
   end
-  
+
   def handle_key_event(input, _key_event) do
     # Ignore other key events
     input
   end
-  
+
   # Private functions
-  
+
   defp get_display_text(%{value: "", placeholder: placeholder}) do
     placeholder
   end
-  
+
   defp get_display_text(%{value: value, password: true}) do
     String.duplicate("*", String.length(value))
   end
-  
+
   defp get_display_text(%{value: value}) do
     value
   end
-  
-  defp get_input_style(style_type, disabled, valid) when is_atom(style_type) do
-    base_style = Style.style([
+
+  defp get_input_style(style_atom, disabled, valid) when is_atom(style_atom) do
+    base_style = Style.new([
       padding: [0, 1],
-      border: :normal,
-      width: :auto
+      width: :fill,
+      border: :single
     ])
-    
-    color_style = 
+
+    # Define state-based styles
+    state_style =
       cond do
-        disabled -> Style.style(color: :gray, background: :light_black)
-        !valid -> Style.style(color: :white, background: :red)
-        true -> Style.style(color: :white, background: :black)
+        disabled -> Style.new(%{color: :gray, border_color: :dark_gray}) # Example disabled style
+        !valid -> Style.new(%{border_color: :red}) # Invalid style
+        true -> Style.new(%{border_color: :gray}) # Default valid style
       end
-    
-    # Combine styles
-    Style.combine([base_style, color_style])
+
+    # Merge base and state styles
+    Style.merge(base_style, state_style)
   end
-  
+
   defp get_input_style(custom_style, disabled, valid) when is_map(custom_style) do
-    base_style = Style.style([
+    # Define a base style if needed, or assume custom_style provides all defaults
+    base_style = Style.new([
       padding: [0, 1],
-      border: :normal,
-      width: :auto
+      width: :fill,
+      border: :single
     ])
-    
-    # Combine with custom style
-    combined_style = Style.merge(base_style, custom_style)
-    
-    # Apply state-based overrides
-    cond do
-      disabled -> Style.merge(combined_style, Style.style(color: :gray, background: :light_black))
-      !valid -> Style.merge(combined_style, Style.style(color: :white, background: :red))
-      true -> combined_style
-    end
+
+    # Merge base with the custom style provided
+    merged_base = Style.merge(base_style, custom_style)
+
+    # Define state-based overrides
+    state_override_style =
+      cond do
+        disabled -> Style.new(%{color: :gray, border_color: :dark_gray}) # Example disabled style
+        !valid -> Style.new(%{border_color: :red}) # Invalid style override
+        true -> Style.new(%{}) # No override needed for valid state if custom_style handles it
+      end
+
+    # Merge the combined base/custom style with state overrides
+    Style.merge(merged_base, state_override_style)
   end
-  
+
   defp validate_input(%{validation: nil} = input) do
     %{input | valid: true}
   end
-  
+
   defp validate_input(%{validation: validation, value: value} = input) do
     valid = validation.(value)
     %{input | valid: valid}
   end
-  
+
   defp generate_focus_key do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
   end
-end 
+end

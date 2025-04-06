@@ -3,23 +3,23 @@ defmodule Raxol.Components.HintDisplay do
   alias Raxol.View.Components
   alias Raxol.View.Layout
   alias Raxol.Core.UXRefinement
-  
+
   @moduledoc """
   A component for displaying hints and tooltips.
-  
+
   This component works with the `Raxol.Core.UXRefinement` module to display
   registered hints for components in the UI.
-  
+
   ## Features
-  
+
   * Multiple hint styles (minimal, standard, detailed)
   * Keyboard shortcut highlighting
   * Multi-level hints (basic, detailed, examples)
   * Automatic transitioning between hint levels
   * Support for HTML-like markup in hints
-  
+
   ## Usage
-  
+
   ```elixir
   # In your view
   def render(model, _opts) do
@@ -28,31 +28,31 @@ defmodule Raxol.Components.HintDisplay do
       row do
         text_input(id: "search_input", placeholder: "Search...")
       end
-      
+
       # Place the hint display at the bottom of the UI
       HintDisplay.render(model.focused_component)
     end
   end
   ```
   """
-  
+
   @doc """
   Render a hint display for the currently focused component.
-  
+
   ## Options
-  
+
   * `:style` - Style of the hint display (`:minimal`, `:standard`, `:detailed`) (default: `:standard`)
   * `:position` - Position of the hint display (`:bottom`, `:top`, `:float`) (default: `:bottom`)
   * `:always_show` - Always show the hint display, even when no hints are available (default: `false`)
   * `:max_width` - Maximum width of the hint display (default: `nil` - full width)
   * `:help_level` - Level of detail to show (`:basic`, `:detailed`, `:examples`) (default: `:basic`)
   * `:highlight_shortcuts` - Highlight keyboard shortcuts in the hint text (default: `true`)
-  
+
   ## Examples
-  
+
       iex> HintDisplay.render("search_input")
       # Renders a hint display for the search_input component
-      
+
       iex> HintDisplay.render(model.focused_component, style: :minimal, position: :float)
       # Renders a minimal floating hint display
   """
@@ -63,9 +63,9 @@ defmodule Raxol.Components.HintDisplay do
     max_width = Keyword.get(opts, :max_width, nil)
     help_level = Keyword.get(opts, :help_level, :basic)
     highlight_shortcuts = Keyword.get(opts, :highlight_shortcuts, true)
-    
+
     hint_info = UXRefinement.get_component_hint(focused_component, help_level)
-    
+
     if hint_info || always_show do
       render_hint_display(hint_info, style, position, max_width, highlight_shortcuts)
     else
@@ -73,19 +73,19 @@ defmodule Raxol.Components.HintDisplay do
       nil
     end
   end
-  
+
   @doc """
   Register a keyboard shortcut for display in hints.
-  
+
   This allows highlighting keyboard shortcuts in the hint display.
-  
+
   ## Parameters
-  
+
   * `shortcut_text` - Text representation of the shortcut (e.g., "Ctrl+F")
   * `description` - Brief description of what the shortcut does
-  
+
   ## Examples
-  
+
       iex> HintDisplay.register_shortcut("Ctrl+F", "Search")
       :ok
   """
@@ -95,60 +95,71 @@ defmodule Raxol.Components.HintDisplay do
     Process.put(:hint_display_shortcuts, updated_shortcuts)
     :ok
   end
-  
+
   @doc """
   Cycle through help levels for the current component.
-  
+
   This allows users to see more detailed help when needed.
-  
+
   ## Examples
-  
+
       iex> HintDisplay.cycle_help_level()
       :ok
   """
   def cycle_help_level do
     current_level = Process.get(:hint_display_help_level) || :basic
-    
-    next_level = 
+
+    next_level =
       case current_level do
         :basic -> :detailed
         :detailed -> :examples
         :examples -> :basic
       end
-    
+
     Process.put(:hint_display_help_level, next_level)
-    
+
     # Dispatch event to update hint display
     # In a real system, this would trigger an update to the UI
     :ok
   end
-  
+
+  @doc """
+  Cleans up resources used by the HintDisplay.
+  (Placeholder implementation)
+  """
+  def cleanup() do
+    # TODO: Implement cleanup logic if needed (e.g., clearing process dict)
+    Process.delete(:hint_display_shortcuts)
+    Process.delete(:hint_display_help_level)
+    :ok
+  end
+
   # Private functions
-  
+
   defp render_hint_display(hint_info, style, position, max_width, highlight_shortcuts) do
-    content = 
+    content =
       case hint_info do
         nil -> "No hints available for this component"
         %{text: text} -> text
         text when is_binary(text) -> text
       end
-    
+
     # Process shortcuts in content if highlighting is enabled
-    processed_content = 
+    processed_content =
       if highlight_shortcuts do
         highlight_shortcuts_in_text(content)
       else
         content
       end
-    
+
     # Get keyboard shortcuts if available in hint info
-    shortcuts = 
+    shortcuts =
       if hint_info && Map.has_key?(hint_info, :shortcuts) && hint_info.shortcuts != nil do
         hint_info.shortcuts
       else
         []
       end
-    
+
     container_attrs = [
       padding: 1,
       background: :black,
@@ -156,19 +167,19 @@ defmodule Raxol.Components.HintDisplay do
       border: [color: :blue, type: :light],
       width: max_width
     ]
-    
-    container_attrs = 
+
+    container_attrs =
       case position do
         :bottom -> Keyword.merge(container_attrs, [bottom: 0, left: 0, height: calculate_height(style, shortcuts)])
         :top -> Keyword.merge(container_attrs, [top: 0, left: 0, height: calculate_height(style, shortcuts)])
         :float -> Keyword.merge(container_attrs, [center: true])
       end
-      
+
     Layout.panel(container_attrs) do
       Layout.column do
         # Main hint text
         Components.text(processed_content)
-        
+
         # Render shortcuts if available
         if style != :minimal && length(shortcuts) > 0 do
           Layout.row(padding_top: 1) do
@@ -178,15 +189,15 @@ defmodule Raxol.Components.HintDisplay do
       end
     end
   end
-  
+
   defp calculate_height(style, shortcuts) do
-    base_height = 
+    base_height =
       case style do
         :minimal -> 3
         :standard -> 3
         :detailed -> 4
       end
-    
+
     # Add height for shortcuts
     if shortcuts && length(shortcuts) > 0 && style != :minimal do
       base_height + div(length(shortcuts) + 1, 2) # +1 to account for the header
@@ -194,36 +205,36 @@ defmodule Raxol.Components.HintDisplay do
       base_height
     end
   end
-  
+
   defp render_shortcuts() do
     Layout.column do
       Layout.row do
         Components.text("Keyboard Shortcuts:", style: [bold: true])
       end
-      
+
       Layout.row do
         Components.text("Tab: Next field")
       end
-      
+
       Layout.row do
         Components.text("Shift+Tab: Previous field")
       end
-      
+
       Layout.row do
         Components.text("Enter: Submit")
       end
-      
+
       Layout.row do
         Components.text("Esc: Cancel")
       end
     end
   end
-  
+
   defp highlight_shortcuts_in_text(text) do
     # Get registered shortcuts
     shortcuts = Process.get(:hint_display_shortcuts) || %{}
     shortcut_keys = Map.keys(shortcuts)
-    
+
     # Find and highlight shortcuts in text
     Enum.reduce(shortcut_keys, text, fn shortcut, acc ->
       if String.contains?(acc, shortcut) do
@@ -234,7 +245,7 @@ defmodule Raxol.Components.HintDisplay do
     end)
     |> format_markup()
   end
-  
+
   defp format_markup(text) do
     # Simple parsing of markup tags
     # In a real implementation, this would be more robust
@@ -248,22 +259,22 @@ defmodule Raxol.Components.HintDisplay do
           end
         end)
         |> List.flatten()
-        
+
       true ->
         text
     end
   end
-  
+
   @doc """
   Initialize the hint display component.
-  
+
   This function is called when the component is first created.
-  
+
   ## Options
-  
+
   * `:visible` - Whether the hint display is initially visible (default: `true`)
   * `:style` - Style of the hint display (default: `:standard`)
-  * `:position` - Position of the hint display (default: `:bottom`) 
+  * `:position` - Position of the hint display (default: `:bottom`)
   * `:always_show` - Always show hint display (default: `false`)
   * `:max_width` - Maximum width (default: `nil`)
   * `:help_level` - Initial help detail level (default: `:basic`)
@@ -271,7 +282,7 @@ defmodule Raxol.Components.HintDisplay do
   def init(opts \\ []) do
     # Initialize the help level
     Process.put(:hint_display_help_level, Keyword.get(opts, :help_level, :basic))
-    
+
     %{
       visible: Keyword.get(opts, :visible, true),
       style: Keyword.get(opts, :style, :standard),
@@ -281,7 +292,7 @@ defmodule Raxol.Components.HintDisplay do
       help_level: Keyword.get(opts, :help_level, :basic)
     }
   end
-  
+
   @doc """
   Update the hint display component state based on events.
   """
@@ -289,19 +300,19 @@ defmodule Raxol.Components.HintDisplay do
     case msg do
       {:toggle_visibility} ->
         %{model | visible: !model.visible}
-        
+
       {:set_style, style} ->
         %{model | style: style}
-        
+
       {:set_position, position} ->
         %{model | position: position}
-        
+
       {:set_help_level, level} when level in [:basic, :detailed, :examples] ->
         Process.put(:hint_display_help_level, level)
         %{model | help_level: level}
-        
+
       {:cycle_help_level} ->
-        next_level = 
+        next_level =
           case model.help_level do
             :basic -> :detailed
             :detailed -> :examples
@@ -309,12 +320,12 @@ defmodule Raxol.Components.HintDisplay do
           end
         Process.put(:hint_display_help_level, next_level)
         %{model | help_level: next_level}
-        
+
       _ ->
         model
     end
   end
-  
+
   @doc """
   Subscribe to relevant events for the hint display.
   """
@@ -322,4 +333,4 @@ defmodule Raxol.Components.HintDisplay do
     # Subscribe to focus change events to update hints
     [{:focus_change, :global}]
   end
-end 
+end

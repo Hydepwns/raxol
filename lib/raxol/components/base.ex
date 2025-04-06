@@ -1,7 +1,7 @@
 defmodule Raxol.Components.Base do
   @moduledoc """
   Provides base functionality and utilities for Raxol components.
-  
+
   This module contains shared functionality used across different components,
   including common validation, styling, and event handling patterns.
   """
@@ -11,9 +11,9 @@ defmodule Raxol.Components.Base do
 
   @doc """
   Validates component props against a schema.
-  
+
   ## Example
-  
+
       def validate_props(props) do
         Base.validate_props(props, %{
           required: [:label],
@@ -39,7 +39,7 @@ defmodule Raxol.Components.Base do
   Creates a base style for components with common properties.
   """
   def base_style(opts \\ []) do
-    Style.style([
+    Style.new([
       padding: Keyword.get(opts, :padding, [1, 2]),
       margin: Keyword.get(opts, :margin, [0, 0]),
       border: Keyword.get(opts, :border, :none),
@@ -73,7 +73,7 @@ defmodule Raxol.Components.Base do
 
   defp validate_required(props, required) do
     missing = Enum.filter(required, &(not Map.has_key?(props, &1)))
-    
+
     if Enum.empty?(missing) do
       :ok
     else
@@ -97,4 +97,4 @@ defmodule Raxol.Components.Base do
   defp validate_type(value, :atom) when is_atom(value), do: :ok
   defp validate_type(value, {:one_of, options}), do: if(value in options, do: :ok, else: {:error, "expected one of #{inspect(options)}, got #{inspect(value)}"})
   defp validate_type(value, type), do: {:error, "expected #{inspect(type)}, got #{inspect(value)}"}
-end 
+end

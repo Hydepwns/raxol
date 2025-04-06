@@ -1,7 +1,7 @@
 defmodule Raxol.Components.Terminal do
   @moduledoc """
   A terminal component for Raxol that provides terminal emulation capabilities.
-  
+
   This component handles:
   - Terminal output buffer
   - Cursor management
@@ -13,8 +13,10 @@ defmodule Raxol.Components.Terminal do
   use Raxol.Component
   alias Raxol.Components.Base
   alias Raxol.Components.Terminal.ANSI
-  import Raxol.View.Components
-  import Raxol.View.Layout
+  # alias Raxol.Style # Unused
+  # alias Raxol.Terminal.Buffer # Unused
+  # import Raxol.View.Components
+  # import Raxol.View.Layout
 
   @type terminal_state :: %{
     buffer: [String.t()],
@@ -30,19 +32,20 @@ defmodule Raxol.Components.Terminal do
 
   @doc """
   Initializes a new terminal component.
-  
+
   ## Options
-  
+
   * `:rows` - Number of rows (default: 24)
   * `:cols` - Number of columns (default: 80)
   * `:prompt` - Command prompt string (default: "$ ")
   * `:style` - Terminal style options
   """
+  @impl Raxol.Component
   def init(opts \\ []) do
     rows = Keyword.get(opts, :rows, 24)
     cols = Keyword.get(opts, :cols, 80)
     prompt = Keyword.get(opts, :prompt, "$ ")
-    
+
     %{
       buffer: [prompt],
       cursor: {String.length(prompt), 0},
@@ -69,6 +72,7 @@ defmodule Raxol.Components.Terminal do
   @doc """
   Handles terminal events.
   """
+  @impl Raxol.Component
   def handle_event(%Event{type: :key} = event, state) do
     case state.mode do
       :normal -> handle_normal_mode(event, state)
@@ -80,7 +84,7 @@ defmodule Raxol.Components.Terminal do
   def handle_event(%Event{type: :output, data: output}, state) do
     # Process ANSI codes in the output
     new_ansi_state = ANSI.process(output, state.ansi_state)
-    
+
     # Update terminal state based on ANSI processing
     %{state |
       buffer: new_ansi_state.buffer,
@@ -100,22 +104,22 @@ defmodule Raxol.Components.Terminal do
   @doc """
   Renders the terminal component.
   """
+  @impl Raxol.Component
   def render(state) do
     # Render the visible portion of the buffer
     visible_lines = Enum.slice(state.buffer, state.scroll_offset, elem(state.dimensions, 1))
-    
+
     # Create terminal content
     content = Enum.join(visible_lines, "\n")
-    
-    # Apply terminal style
-    Style.render(state.style, %{
+
+    # Return a map representing the terminal view
+    %{
       type: :terminal,
-      attrs: %{
-        content: content,
-        cursor: state.cursor,
-        dimensions: state.dimensions
-      }
-    })
+      content: content,
+      cursor: state.cursor,
+      dimensions: state.dimensions,
+      style: state.style
+    }
   end
 
   # Private functions
@@ -158,11 +162,13 @@ defmodule Raxol.Components.Terminal do
 
   defp handle_command_mode(_event, state), do: state
 
-  defp update(:insert_char, state, char) do
+  @impl true
+  def update(:insert_char, state, char) do
     %{state | buffer: state.buffer <> char}
   end
 
-  defp update(:move_cursor_up, state) do
+  @impl true
+  def update(:move_cursor_up, state) do
     if state.history_index < length(state.history) do
       %{state | history_index: state.history_index + 1}
     else
@@ -170,7 +176,8 @@ defmodule Raxol.Components.Terminal do
     end
   end
 
-  defp update(:move_cursor_down, state) do
+  @impl true
+  def update(:move_cursor_down, state) do
     if state.history_index > 0 do
       %{state | history_index: state.history_index - 1}
     else
@@ -178,8 +185,12 @@ defmodule Raxol.Components.Terminal do
     end
   end
 
-  defp update(:execute_command, state) do
+  @impl true
+  def update(:execute_command, state) do
     # Execute command and reset mode
     %{state | mode: :normal}
   end
-end 
+
+  # Public API
+
+end
