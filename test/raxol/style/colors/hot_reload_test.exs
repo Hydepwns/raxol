@@ -1,131 +1,140 @@
 defmodule Raxol.Style.Colors.HotReloadTest do
-  use ExUnit.Case
-  
-  alias Raxol.Style.Colors.{Theme, Palette, Persistence, HotReload}
-  
-  @test_theme %Theme{
+  use ExUnit.Case, async: true
+
+  alias Raxol.Style.Colors.{HotReload, Theme}
+
+  @test_theme %{
     name: "Test Theme",
-    palette: %Palette{
+    palette: %{
       name: "Test Palette",
       colors: %{
-        primary: Raxol.Style.Colors.Color.from_hex("#FF0000"),
-        secondary: Raxol.Style.Colors.Color.from_hex("#00FF00"),
-        background: Raxol.Style.Colors.Color.from_hex("#000000")
-      },
-      primary: :primary,
-      secondary: :secondary,
-      accent: :primary,
-      background: :background,
-      foreground: :primary
+        primary: "#FF0000",
+        secondary: "#00FF00",
+        background: "#000000",
+        foreground: "#FFFFFF"
+      }
     },
     ui_mappings: %{
-      button: :primary,
-      text: :secondary
+      app_background: :background,
+      app_foreground: :foreground
     },
     dark_mode: true,
     high_contrast: false
   }
-  
+
   setup do
-    # Create temporary directory for test files
+    # Create temporary directory for theme files
     tmp_dir = Path.join(System.tmp_dir!(), "raxol_test_#{:rand.uniform(1000000)}")
     File.mkdir_p!(tmp_dir)
-    
-    # Create test theme file
-    theme_path = Path.join(tmp_dir, "test_theme.json")
-    {:ok, _} = Persistence.save_theme(@test_theme, theme_path)
-    
-    # Override config directory for tests
-    Application.put_env(:raxol, :config_dir, tmp_dir)
-    
-    # Start hot reload server
-    {:ok, pid} = HotReload.start_link(theme_path: theme_path, poll_interval: 100)
-    
+
+    # Start the hot-reload server
+    {:ok, _pid} = HotReload.start_link()
+    HotReload.watch_path(tmp_dir)
+
+    # Subscribe to theme changes
+    HotReload.subscribe()
+
     on_exit(fn ->
-      HotReload.stop()
+      # Clean up
       File.rm_rf!(tmp_dir)
     end)
-    
-    {:ok, %{tmp_dir: tmp_dir, theme_path: theme_path, pid: pid}}
+
+    %{tmp_dir: tmp_dir}
   end
-  
-  describe "theme hot reloading" do
-    test "detects theme file changes", %{theme_path: theme_path} do
-      # Subscribe to theme changes
-      HotReload.subscribe()
-      
-      # Modify the theme file
-      new_theme = %{@test_theme | name: "Updated Theme"}
-      {:ok, _} = Persistence.save_theme(new_theme, theme_path)
-      
-      # Wait for change detection
-      assert_receive {:theme_changed, loaded_theme}, 1000
-      assert loaded_theme.name == "Updated Theme"
+
+  describe "theme hot-reloading" do
+    test "detects and reloads theme changes", %{tmp_dir: tmp_dir} do
+      # Create initial theme file
+      theme_path = Path.join(tmp_dir, "test_theme.json")
+      File.write!(theme_path, Jason.encode!(@test_theme))
+
+      # Wait for theme to be loaded
+      assert_receive {:theme_reloaded, theme}, 5000
+      assert theme.name == "Test Theme"
+
+      # Modify theme file
+      updated_theme = %{@test_theme | name: "Updated Theme"}
+      File.write!(theme_path, Jason.encode!(updated_theme))
+
+      # Wait for theme to be reloaded
+      assert_receive {:theme_reloaded, theme}, 5000
+      assert theme.name == "Updated Theme"
     end
-    
-    test "notifies multiple subscribers", %{theme_path: theme_path} do
-      # Subscribe two processes
-      HotReload.subscribe()
-      HotReload.subscribe()
-      
-      # Modify the theme file
-      new_theme = %{@test_theme | name: "Multi-Theme"}
-      {:ok, _} = Persistence.save_theme(new_theme, theme_path)
-      
-      # Both processes should receive the notification
-      assert_receive {:theme_changed, loaded_theme}, 1000
-      assert loaded_theme.name == "Multi-Theme"
-      assert_receive {:theme_changed, loaded_theme}, 1000
-      assert loaded_theme.name == "Multi-Theme"
+
+    test "handles multiple theme files", %{tmp_dir: tmp_dir} do
+      # Create multiple theme files
+      theme1_path = Path.join(tmp_dir, "theme1.json")
+      theme2_path = Path.join(tmp_dir, "theme2.json")
+
+      File.write!(theme1_path, Jason.encode!(%{@test_theme | name: "Theme 1"}))
+      File.write!(theme2_path, Jason.encode!(%{@test_theme | name: "Theme 2"}))
+
+      # Wait for both themes to be loaded
+      assert_receive {:theme_reloaded, theme1}, 5000
+      assert_receive {:theme_reloaded, theme2}, 5000
+
+      assert theme1.name == "Theme 1"
+      assert theme2.name == "Theme 2"
+
+      # Modify one theme
+      File.write!(theme1_path, Jason.encode!(%{@test_theme | name: "Updated Theme 1"}))
+
+      # Wait for theme to be reloaded
+      assert_receive {:theme_reloaded, theme}, 5000
+      assert theme.name == "Updated Theme 1"
     end
-    
-    test "handles subscriber unsubscribe", %{theme_path: theme_path} do
-      # Subscribe and then unsubscribe
-      HotReload.subscribe()
-      HotReload.unsubscribe()
-      
-      # Modify the theme file
-      new_theme = %{@test_theme | name: "Unsubscribed Theme"}
-      {:ok, _} = Persistence.save_theme(new_theme, theme_path)
-      
-      # Should not receive notification
-      refute_receive {:theme_changed, _}, 1000
-    end
-    
-    test "forces theme reload", %{theme_path: theme_path} do
-      # Subscribe to theme changes
-      HotReload.subscribe()
-      
-      # Force a reload
-      HotReload.reload()
-      
-      # Should receive notification with current theme
-      assert_receive {:theme_changed, loaded_theme}, 1000
-      assert loaded_theme.name == "Test Theme"
-    end
-    
-    test "handles missing theme file gracefully", %{theme_path: theme_path} do
-      # Subscribe to theme changes
-      HotReload.subscribe()
-      
-      # Delete the theme file
-      File.rm!(theme_path)
-      
-      # Should not crash
-      Process.sleep(100)
-      assert Process.alive?(HotReload)
-    end
-    
-    test "handles invalid theme file gracefully", %{theme_path: theme_path} do
-      # Subscribe to theme changes
-      HotReload.subscribe()
-      
-      # Write invalid JSON to the theme file
+
+    test "handles invalid theme files", %{tmp_dir: tmp_dir} do
+      # Create invalid theme file
+      theme_path = Path.join(tmp_dir, "invalid_theme.json")
       File.write!(theme_path, "invalid json")
-      
-      # Should not crash
-      Process.sleep(100)
-      assert Process.alive?(HotReload)
+
+      # Should not receive any theme reloaded messages
+      refute_receive {:theme_reloaded, _theme}, 1000
+    end
+
+    test "handles file deletion", %{tmp_dir: tmp_dir} do
+      # Create theme file
+      theme_path = Path.join(tmp_dir, "test_theme.json")
+      File.write!(theme_path, Jason.encode!(@test_theme))
+
+      # Wait for theme to be loaded
+      assert_receive {:theme_reloaded, theme}, 5000
+      assert theme.name == "Test Theme"
+
+      # Delete theme file
+      File.rm!(theme_path)
+
+      # Should not receive any theme reloaded messages
+      refute_receive {:theme_reloaded, _theme}, 1000
     end
   end
-end 
+
+  describe "subscriber management" do
+    test "handles multiple subscribers", %{tmp_dir: tmp_dir} do
+      # Create another subscriber
+      HotReload.subscribe()
+
+      # Create theme file
+      theme_path = Path.join(tmp_dir, "test_theme.json")
+      File.write!(theme_path, Jason.encode!(@test_theme))
+
+      # Both subscribers should receive the theme
+      assert_receive {:theme_reloaded, theme}, 5000
+      assert_receive {:theme_reloaded, theme}, 5000
+      assert theme.name == "Test Theme"
+    end
+
+    test "handles subscriber unsubscribe", %{tmp_dir: tmp_dir} do
+      # Unsubscribe
+      HotReload.unsubscribe()
+
+      # Create theme file
+      theme_path = Path.join(tmp_dir, "test_theme.json")
+      File.write!(theme_path, Jason.encode!(@test_theme))
+
+      # Should not receive any theme reloaded messages
+      refute_receive {:theme_reloaded, _theme}, 1000
+    end
+  end
+end
