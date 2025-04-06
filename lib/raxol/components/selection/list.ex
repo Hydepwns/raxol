@@ -19,9 +19,11 @@ defmodule Raxol.Components.Selection.List do
   """
 
   use Raxol.Component
+
+  alias Raxol.Core.Events.Event
+  alias Raxol.Core.Events.Subscription
   alias Raxol.View.Components
   alias Raxol.View.Layout
-  alias Raxol.Core.Style.Color
 
   @default_height 10
   @default_width 40
@@ -75,7 +77,7 @@ defmodule Raxol.Components.Selection.List do
   def update({:select_index, index}, state) do
     new_index = clamp(index, 0, length(state.filtered_items) - 1)
     new_scroll = adjust_scroll(new_index, state.scroll_offset, state.height)
-    
+
     new_state = %{state |
       selected_index: new_index,
       scroll_offset: new_scroll
@@ -106,7 +108,7 @@ defmodule Raxol.Components.Selection.List do
   @impl true
   def render(state) do
     visible_items = Enum.slice(state.filtered_items, state.scroll_offset, state.height)
-    
+
     Layout.column do
       for {item, index} <- Enum.with_index(visible_items) do
         actual_index = index + state.scroll_offset
@@ -130,67 +132,46 @@ defmodule Raxol.Components.Selection.List do
   end
 
   @impl true
-  def handle_event(%Event{type: :key} = event, state) when state.focused do
-    case event do
-      %{key: "ArrowUp"} ->
-        {update({:select_index, state.selected_index - 1}, state), []}
+  def handle_event(%Event{type: :key, data: data} = _event, state) do
+    msg = case data do
+      %{key: :up} -> {:move_selection, :up}
+      %{key: :down} -> {:move_selection, :down}
+      %{key: :page_up} -> {:move_selection, :page_up}
+      %{key: :page_down} -> {:move_selection, :page_down}
+      %{key: :home} -> {:move_selection, :home}
+      %{key: :end} -> {:move_selection, :end}
+      %{key: :enter} -> {:select}
+      %{key: key} when is_binary(key) and byte_size(key) == 1 -> {:filter, key}
+      %{key: :backspace} -> {:backspace}
+      _ -> nil
+    end
 
-      %{key: "ArrowDown"} ->
-        {update({:select_index, state.selected_index + 1}, state), []}
-
-      %{key: "PageUp"} ->
-        {update({:select_index, state.selected_index - state.height}, state), []}
-
-      %{key: "PageDown"} ->
-        {update({:select_index, state.selected_index + state.height}, state), []}
-
-      %{key: "Home"} ->
-        {update({:select_index, 0}, state), []}
-
-      %{key: "End"} ->
-        {update({:select_index, length(state.filtered_items) - 1}, state), []}
-
-      %{key: "Enter"} ->
-        if state.on_submit do
-          state.on_submit.(Enum.at(state.filtered_items, state.selected_index))
-        end
-        {state, []}
-
-      %{key: key} when byte_size(key) == 1 ->
-        # Type-ahead search
-        new_filter = state.filter <> key
-        {update({:set_filter, new_filter}, state), []}
-
-      %{key: "Backspace"} ->
-        if String.length(state.filter) > 0 do
-          new_filter = String.slice(state.filter, 0, -1)
-          {update({:set_filter, new_filter}, state), []}
-        else
-          {state, []}
-        end
-
-      _ ->
-        {state, []}
+    if msg do
+      {update(msg, state), []}
+    else
+      {state, []}
     end
   end
 
+  @impl true
   def handle_event(%Event{type: :click}, state) do
     {update(:focus, state), []}
   end
 
+  @impl true
   def handle_event(%Event{type: :blur}, state) do
     {update(:blur, state), []}
   end
 
+  @impl true
   def handle_event(%Event{type: :scroll, data: %{direction: :up}}, state) do
     {update(:scroll_up, state), []}
   end
 
+  @impl true
   def handle_event(%Event{type: :scroll, data: %{direction: :down}}, state) do
     {update(:scroll_down, state), []}
   end
-
-  def handle_event(_event, state), do: {state, []}
 
   # Helper functions
   defp clamp(value, min, max) do
@@ -221,4 +202,4 @@ defmodule Raxol.Components.Selection.List do
     filter_str = String.downcase(filter)
     String.contains?(String.downcase(item_str), filter_str)
   end
-end 
+end
