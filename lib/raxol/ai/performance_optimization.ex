@@ -1,9 +1,9 @@
 defmodule Raxol.AI.PerformanceOptimization do
   @moduledoc """
   Runtime AI features for intelligent performance optimization.
-  
+
   This module provides AI-driven performance optimizations including:
-  
+
   * Predictive rendering - Intelligently determine what needs to be rendered
   * Resource allocation - Dynamically allocate system resources based on usage patterns
   * Component caching - Smart caching of frequently used components
@@ -11,10 +11,10 @@ defmodule Raxol.AI.PerformanceOptimization do
   * Adaptive throttling - Adjust refresh rates based on current activity
   * Runtime profiling - Continuously monitor and analyze performance patterns
   """
-  
+
   alias Raxol.Core.UXRefinement
   alias Raxol.Benchmarks.Performance, as: Benchmarks
-  
+
   # State for the optimization system
   defmodule State do
     @moduledoc false
@@ -27,7 +27,7 @@ defmodule Raxol.AI.PerformanceOptimization do
       :optimization_level,
       :enabled_features
     ]
-    
+
     def new do
       %__MODULE__{
         usage_patterns: %{},
@@ -44,56 +44,56 @@ defmodule Raxol.AI.PerformanceOptimization do
       }
     end
   end
-  
+
   # Process dictionary key for optimizer state
   @state_key :raxol_optimizer_state
-  
+
   @doc """
   Initializes the performance optimization system.
-  
+
   ## Options
-  
+
   * `:optimization_level` - Level of optimization to apply (:minimal, :balanced, :aggressive)
   * `:features` - List of features to enable
-  
+
   ## Examples
-  
+
       iex> init(optimization_level: :balanced)
       :ok
   """
   def init(opts \\ []) do
     if UXRefinement.feature_enabled?(:ai_performance_optimization) do
       state = State.new()
-      
-      state = %{state | 
+
+      state = %{state |
         optimization_level: Keyword.get(opts, :optimization_level, :balanced),
         enabled_features: MapSet.new(Keyword.get(opts, :features, MapSet.to_list(state.enabled_features)))
       }
-      
+
       Process.put(@state_key, state)
-      
+
       # Start collecting initial metrics
       collect_baseline_metrics()
-      
+
       :ok
     else
       {:error, "AI performance optimization is not enabled"}
     end
   end
-  
+
   @doc """
   Records component render time for optimization analysis.
-  
+
   ## Examples
-  
+
       iex> record_render_time("user_profile", 25)
       :ok
   """
   def record_render_time(component_name, time_ms) do
     with_state(fn state ->
       render_metrics = Map.update(
-        state.render_metrics, 
-        component_name, 
+        state.render_metrics,
+        component_name,
         %{count: 1, total_time: time_ms, avg_time: time_ms, samples: [time_ms]},
         fn metrics ->
           samples = [time_ms | metrics.samples] |> Enum.take(10)
@@ -107,18 +107,18 @@ defmodule Raxol.AI.PerformanceOptimization do
           }
         end
       )
-      
+
       %{state | render_metrics: render_metrics}
     end)
-    
+
     :ok
   end
-  
+
   @doc """
   Records component usage for optimization analysis.
-  
+
   ## Examples
-  
+
       iex> record_component_usage("dropdown_menu")
       :ok
   """
@@ -132,19 +132,19 @@ defmodule Raxol.AI.PerformanceOptimization do
           %{usage | count: usage.count + 1, last_used: System.monotonic_time()}
         end
       )
-      
+
       %{state | component_usage: component_usage}
     end)
-    
+
     :ok
   end
-  
+
   @doc """
   Determines if a component should be rendered based on current conditions.
   Uses predictive rendering to optimize performance.
-  
+
   ## Examples
-  
+
       iex> should_render?("large_table", %{visible: false, scroll_position: 500})
       false
   """
@@ -160,7 +160,7 @@ defmodule Raxol.AI.PerformanceOptimization do
         else
           # Get component's render history
           metrics = Map.get(state.render_metrics, component_name)
-          
+
           # Default result when we don't have enough data
           result = if metrics == nil or metrics.count < 5 do
             true
@@ -169,7 +169,7 @@ defmodule Raxol.AI.PerformanceOptimization do
             Map.get(context, :visible, true) and
               (Map.get(context, :in_viewport, true) or is_important_component?(component_name, state))
           end
-          
+
           # Track the decision in usage patterns for future optimization
           usage_patterns = Map.update(
             state.usage_patterns,
@@ -182,18 +182,18 @@ defmodule Raxol.AI.PerformanceOptimization do
               }
             end
           )
-          
+
           {%{state | usage_patterns: usage_patterns}, result}
         end
       end)
     end
   end
-  
+
   @doc """
   Gets the recommended refresh rate for a component based on current activity.
-  
+
   ## Examples
-  
+
       iex> get_refresh_rate("animated_progress")
       16  # milliseconds (approximately 60fps)
   """
@@ -210,7 +210,7 @@ defmodule Raxol.AI.PerformanceOptimization do
           # Get component's usage patterns
           metrics = Map.get(state.render_metrics, component_name)
           usage = Map.get(state.component_usage, component_name)
-          
+
           # Default rates
           default_rates = %{
             high: 16,      # ~60fps
@@ -218,7 +218,7 @@ defmodule Raxol.AI.PerformanceOptimization do
             low: 100,      # 10fps
             idle: 250      # 4fps
           }
-          
+
           # Calculate refresh rate based on metrics and usage
           refresh_rate = cond do
             metrics == nil or metrics.count < 5 ->
@@ -232,18 +232,18 @@ defmodule Raxol.AI.PerformanceOptimization do
             true ->
               default_rates.high
           end
-          
+
           {state, refresh_rate}
         end
       end)
     end
   end
-  
+
   @doc """
   Recommends components for prefetching based on usage patterns.
-  
+
   ## Examples
-  
+
       iex> get_prefetch_recommendations("user_profile")
       ["user_settings", "user_activity"]
   """
@@ -255,23 +255,23 @@ defmodule Raxol.AI.PerformanceOptimization do
       with_state(fn state ->
         # This would use a more sophisticated predictive model in a real implementation
         # For now, just return a simple recommendation based on component usage
-        recommendations = 
+        recommendations =
           state.component_usage
           |> Enum.filter(fn {name, _} -> name != current_component end)
           |> Enum.sort_by(fn {_, usage} -> usage.count end, :desc)
           |> Enum.take(3)
           |> Enum.map(fn {name, _} -> name end)
-          
+
         {state, recommendations}
       end)
     end
   end
-  
+
   @doc """
   Analyzes performance and suggests optimizations.
-  
+
   ## Examples
-  
+
       iex> analyze_performance()
       [
         %{type: :component, name: "data_table", issue: :slow_rendering, suggestion: "Consider virtual scrolling"},
@@ -284,31 +284,31 @@ defmodule Raxol.AI.PerformanceOptimization do
     else
       with_state(fn state ->
         # Identify slow components
-        slow_components = 
+        slow_components =
           state.render_metrics
           |> Enum.filter(fn {_, metrics} -> metrics.avg_time > 50 and metrics.count > 5 end)
           |> Enum.map(fn {name, metrics} ->
             %{
-              type: :component, 
-              name: name, 
+              type: :component,
+              name: name,
               issue: :slow_rendering,
               avg_time: metrics.avg_time,
               suggestion: get_optimization_suggestion(name, metrics)
             }
           end)
-          
+
         # Additional analyses would go here
-        
+
         {state, slow_components}
       end)
     end
   end
-  
+
   @doc """
   Enables or disables a specific optimization feature.
-  
+
   ## Examples
-  
+
       iex> toggle_feature(:predictive_rendering, true)
       :ok
   """
@@ -319,18 +319,18 @@ defmodule Raxol.AI.PerformanceOptimization do
       else
         MapSet.delete(state.enabled_features, feature)
       end
-      
+
       %{state | enabled_features: enabled_features}
     end)
-    
+
     :ok
   end
-  
+
   @doc """
   Sets the optimization level for the system.
-  
+
   ## Examples
-  
+
       iex> set_optimization_level(:aggressive)
       :ok
   """
@@ -338,15 +338,15 @@ defmodule Raxol.AI.PerformanceOptimization do
     with_state(fn state ->
       %{state | optimization_level: level}
     end)
-    
+
     :ok
   end
-  
+
   # Private helpers
-  
+
   defp with_state(fun) do
     state = Process.get(@state_key) || State.new()
-    
+
     case fun.(state) do
       {new_state, result} ->
         Process.put(@state_key, new_state)
@@ -356,24 +356,24 @@ defmodule Raxol.AI.PerformanceOptimization do
         nil
     end
   end
-  
+
   defp feature_enabled?(feature, state) do
     MapSet.member?(state.enabled_features, feature)
   end
-  
+
   defp is_important_component?(component_name, _state) do
     # This would be more sophisticated in a real implementation
     String.contains?(component_name, "header") or
     String.contains?(component_name, "navigation") or
     String.contains?(component_name, "menu")
   end
-  
+
   defp collect_baseline_metrics do
     # This would collect system metrics to establish a baseline
     # For now, just a placeholder
-    Benchmarks.run_basic_benchmark()
+    Benchmarks.run_all([])
   end
-  
+
   defp get_optimization_suggestion(component_name, metrics) do
     cond do
       String.contains?(component_name, "table") or String.contains?(component_name, "list") ->
@@ -386,4 +386,4 @@ defmodule Raxol.AI.PerformanceOptimization do
         "Review component implementation for optimization opportunities"
     end
   end
-end 
+end

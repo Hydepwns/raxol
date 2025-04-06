@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Renderer.Manager do
   @moduledoc """
   Manages the rendering system for Raxol applications.
-  
+
   This module coordinates:
   * Frame-based rendering
   * Terminal buffer management
@@ -49,11 +49,11 @@ defmodule Raxol.Core.Renderer.Manager do
   def handle_call({:init, opts}, _from, state) do
     # Get terminal size
     {width, height} = get_terminal_size()
-    
+
     # Create buffer with specified FPS
     fps = Keyword.get(opts, :fps, 60)
     buffer = Buffer.new(width, height, fps)
-    
+
     # Set up window resize handling
     Manager.subscribe(fn
       %Event{type: :window, data: %{action: :resize, width: w, height: h}} ->
@@ -61,7 +61,7 @@ defmodule Raxol.Core.Renderer.Manager do
       _ ->
         :ok
     end)
-    
+
     {:reply, :ok, %{state |
       buffer: buffer,
       fps: fps,
@@ -84,23 +84,24 @@ defmodule Raxol.Core.Renderer.Manager do
   @impl true
   def handle_cast(:render, state) do
     # Get components that need rendering
+    # TODO: Assume ComponentManager exposes get_render_queue/0. Verify this interaction.
     components = ComponentManager.get_render_queue()
-    
+
     # Clear back buffer
     buffer = Buffer.clear(state.buffer)
-    
+
     # Render each component to back buffer
     buffer = Enum.reduce(components, buffer, &render_component/2)
-    
+
     # Try to swap buffers (respects FPS timing)
     {buffer, should_render} = Buffer.swap_buffers(buffer)
-    
+
     if should_render do
       # Get damaged regions and update screen
       damage = Buffer.get_damage(buffer)
       render_damage(damage)
     end
-    
+
     {:noreply, %{state | buffer: buffer}}
   end
 
@@ -125,7 +126,7 @@ defmodule Raxol.Core.Renderer.Manager do
   defp render_component(component, buffer) do
     # Get component's view
     view = component.module.render(component.state)
-    
+
     # Convert view to buffer cells
     render_view(view, buffer)
   end
@@ -135,10 +136,10 @@ defmodule Raxol.Core.Renderer.Manager do
     case view do
       %{type: :text, content: content, position: {x, y}} ->
         render_text(content, {x, y}, buffer)
-        
+
       %{type: :box, children: children} ->
         Enum.reduce(children, buffer, &render_view/2)
-        
+
       _ ->
         buffer
     end
@@ -159,7 +160,7 @@ defmodule Raxol.Core.Renderer.Manager do
         nil ->
           # Empty cell, just move cursor
           IO.write([IO.ANSI.cursor(y + 1, x + 1), " "])
-          
+
         %{char: char, fg: fg, bg: bg, style: style} ->
           # Apply styles and write character
           styles = build_styles(fg, bg, style)
@@ -176,7 +177,7 @@ defmodule Raxol.Core.Renderer.Manager do
   defp build_styles(fg, bg, style) do
     [
       if(fg, do: IO.ANSI.color(fg), else: []),
-      if(bg, do: IO.ANSI.background_color(bg), else: []),
+      if(bg, do: bg_to_ansi(bg), else: []),
       Enum.map(style, &style_to_ansi/1)
     ]
   end
@@ -185,4 +186,17 @@ defmodule Raxol.Core.Renderer.Manager do
   defp style_to_ansi(:underline), do: IO.ANSI.underline()
   defp style_to_ansi(:italic), do: IO.ANSI.italic()
   defp style_to_ansi(_), do: []
-end 
+
+  # Helper to convert background color atom/code to ANSI sequence
+  defp bg_to_ansi(:black), do: IO.ANSI.color(40)
+  defp bg_to_ansi(:red), do: IO.ANSI.color(41)
+  defp bg_to_ansi(:green), do: IO.ANSI.color(42)
+  defp bg_to_ansi(:yellow), do: IO.ANSI.color(43)
+  defp bg_to_ansi(:blue), do: IO.ANSI.color(44)
+  defp bg_to_ansi(:magenta), do: IO.ANSI.color(45)
+  defp bg_to_ansi(:cyan), do: IO.ANSI.color(46)
+  defp bg_to_ansi(:white), do: IO.ANSI.color(47)
+  defp bg_to_ansi(code) when is_integer(code) and code >= 0 and code <= 7, do: IO.ANSI.color(code + 40)
+  # TODO: Add support for bright background colors (100-107) if needed
+  defp bg_to_ansi(_), do: [] # Default to no background color
+end

@@ -12,7 +12,7 @@ defmodule Raxol.Core.Runtime.EventLoop do
   use GenServer
 
   alias Raxol.Core.Events.{Event, Manager}
-  alias ExTermbox.Event, as: TermboxEvent
+  # alias ExTermbox.Event, as: TermboxEvent # Unused, and ExTermbox polling is disabled
 
   require Logger
 
@@ -63,12 +63,12 @@ defmodule Raxol.Core.Runtime.EventLoop do
   def handle_call({:set_timer, delay, data}, _from, state) do
     ref = make_ref()
     timer_ref = Process.send_after(self(), {:timer, ref}, delay)
-    
+
     timers = Map.put(state.timers, ref, %{
       ref: timer_ref,
       data: data
     })
-    
+
     {:reply, {:ok, ref}, %{state | timers: timers}}
   end
 
@@ -76,13 +76,13 @@ defmodule Raxol.Core.Runtime.EventLoop do
   def handle_call({:set_interval, interval, data}, _from, state) do
     ref = make_ref()
     timer_ref = Process.send_after(self(), {:interval, ref}, interval)
-    
+
     intervals = Map.put(state.intervals, ref, %{
       ref: timer_ref,
       interval: interval,
       data: data
     })
-    
+
     {:reply, {:ok, ref}, %{state | intervals: intervals}}
   end
 
@@ -111,10 +111,12 @@ defmodule Raxol.Core.Runtime.EventLoop do
         :ok
       event ->
         # Convert and dispatch the event
-        case Event.from_termbox(event) do
-          nil -> :ok
-          raxol_event -> Manager.dispatch(raxol_event)
-        end
+        # TODO: Raxol.Core.Events.Event.from_termbox/1 is undefined and polling is disabled.
+        # case Event.from_termbox(event) do
+        #   nil -> :ok
+        #   raxol_event -> Manager.dispatch(raxol_event)
+        # end
+        :ok # Ignore polled event for now
     end
 
     # Schedule the next poll
@@ -141,13 +143,35 @@ defmodule Raxol.Core.Runtime.EventLoop do
         # Reschedule the interval
         timer_ref = Process.send_after(self(), {:interval, ref}, interval.interval)
         intervals = Map.put(state.intervals, ref, %{interval | ref: timer_ref})
-        
+
         # Dispatch the interval event
         Manager.dispatch(Event.timer(interval.data))
-        
+
         {:noreply, %{state | intervals: intervals}}
     end
   end
+
+  def handle_info({:tb_event, _event}, state) do
+    # TODO: Implement translation from Termbox events to Raxol events.
+    # The Raxol.Core.Events.Event.from_termbox/1 function is currently undefined.
+    # Commenting out the original logic to prevent crash.
+
+    # original_logic = quote do
+    #   case Event.from_termbox(event) do
+    #     nil ->
+    #       # Ignore unknown Termbox events
+    #       {:noreply, state}
+    #     raxol_event ->
+    #       # Dispatch the Raxol event
+    #       Manager.dispatch(raxol_event)
+    #       {:noreply, state}
+    #   end
+    # end
+
+    {:noreply, state} # Ignore tb_event for now
+  end
+
+  # Default handler for other messages
 
   # Private Helpers
 
@@ -156,12 +180,12 @@ defmodule Raxol.Core.Runtime.EventLoop do
   end
 
   defp poll_event do
-    try do
-      TermboxEvent.poll()
-    rescue
-      e ->
-        Logger.error("Error polling terminal events: #{inspect(e)}")
-        nil
-    end
+    # TODO: ExTermbox.Event.poll/0 is undefined (due to :ex_termbox being unavailable)
+    # case TermboxEvent.poll() do
+    #   {:ok, event} -> self() <- {:tb_event, event}
+    #   {:resize, w, h} -> self() <- {:tb_resize, w, h}
+    #   _ -> :ok # Ignore other poll results
+    # end
+    Process.sleep(100) # Avoid busy-waiting if polling is disabled
   end
-end 
+end
