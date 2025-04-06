@@ -1,7 +1,7 @@
 defmodule Raxol.Auth do
   @moduledoc """
   Authentication module for handling user authentication and authorization.
-  
+
   This module provides functionality for:
   - User authentication
   - Token generation and validation
@@ -75,4 +75,31 @@ defmodule Raxol.Auth do
   def cleanup_user_session(session_id) do
     Session.cleanup_session(session_id)
   end
-end 
+
+  @doc """
+  Retrieves user information by ID (Placeholder).
+  """
+  def get_user(user_id) do
+    # TODO: Implement actual user retrieval from database or source
+    # Placeholder: return a map with basic info and mock role
+    role = case user_id do
+      "admin" -> :admin
+      "user" -> :user
+      _ -> nil
+    end
+    if role do
+      %{id: user_id, role: role}
+    else
+      nil
+    end
+  end
+
+  @doc """
+  Checks if a user has permission for a specific action (Placeholder).
+  """
+  def has_permission?(_user, _module, _action) do
+    # TODO: Implement actual permission checking logic
+    # Placeholder: Allow everything for now
+    true
+  end
+end

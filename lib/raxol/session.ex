@@ -1,7 +1,7 @@
 defmodule Raxol.Session do
   @moduledoc """
   Session management module for handling terminal sessions.
-  
+
   This module provides functionality for:
   - Session creation and management
   - Session authentication
@@ -45,7 +45,7 @@ defmodule Raxol.Session do
   def handle_call({:create_session, user_id}, _from, sessions) do
     session_id = generate_session_id()
     token = generate_token()
-    
+
     session = %{
       id: session_id,
       user_id: user_id,
@@ -54,7 +54,7 @@ defmodule Raxol.Session do
       created_at: DateTime.utc_now(),
       last_active: DateTime.utc_now()
     }
-    
+
     sessions = Map.put(sessions, session_id, session)
     {:reply, {:ok, session}, sessions}
   end
@@ -70,9 +70,9 @@ defmodule Raxol.Session do
   @impl true
   def handle_call({:authenticate, session_id, token}, _from, sessions) do
     case Map.get(sessions, session_id) do
-      nil -> 
+      nil ->
         {:reply, {:error, :not_found}, sessions}
-      
+
       session ->
         if session.token == token do
           session = update_in(session.last_active, &DateTime.utc_now/0)
@@ -90,6 +90,11 @@ defmodule Raxol.Session do
     {:reply, :ok, sessions}
   end
 
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
+  end
+
   # Private functions
 
   defp generate_session_id do
@@ -101,4 +106,4 @@ defmodule Raxol.Session do
     :crypto.strong_rand_bytes(32)
     |> Base.encode64()
   end
-end 
+end
