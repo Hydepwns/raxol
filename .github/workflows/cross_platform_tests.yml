@@ -27,10 +27,10 @@ jobs:
             platform: macos
           - os: windows-latest
             platform: windows
-    
+
     steps:
       - name: Checkout code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v3
         with:
           fetch-depth: 0
 
@@ -56,24 +56,24 @@ jobs:
           mix local.rebar --force
           mix deps.get
           mix deps.compile
-      
+
       - name: Run unit tests
         run: mix test test/raxol
-      
+
       - name: Run integration tests
         run: mix test test/integration
-      
+
       - name: Run cross-platform specific tests
         run: mix test test/platform
-      
+
       - name: Verify terminal compatibility
         run: mix run test/platform/verify_terminal_compatibility.exs
-      
+
       - name: Build test binary
         run: mix run scripts/release.exs --env test --platform ${{ matrix.platform }}
         env:
           MIX_ENV: test
-      
+
       - name: Test binary functionality
         run: |
           cd burrito_out/test
@@ -83,4 +83,4 @@ jobs:
         uses: actions/upload-artifact@v2
         with:
           name: test-results-${{ matrix.platform }}
-          path: _build/test/results 
+          path: _build/test/results
