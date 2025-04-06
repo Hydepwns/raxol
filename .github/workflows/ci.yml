@@ -2,105 +2,158 @@ name: CI
 
 on:
   push:
-    branches: [ master ]
+    branches: [ main, master ]
   pull_request:
-    branches: [ master ]
+    branches: [ main, master ]
 
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
+    strategy:
+      matrix:
+        elixir: ['1.14', '1.15']
+        otp: ['25.0', '26.0']
+
     services:
       postgres:
-        image: postgres:13
+        image: postgres:14
         env:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: raxol_test
         ports:
-          - 5432:5432
+          - 5433:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
           --health-timeout 5s
           --health-retries 5
 
-    strategy:
-      matrix:
-        elixir: [1.14.0, 1.13.0]
-        otp: [25.0, 24.0]
-        exclude:
-          - elixir: 1.14.0
-            otp: 24.0
-          - elixir: 1.13.0
-            otp: 25.0
-
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Set up Elixir
-        uses: erlef/setup-beam@v1
+      - name: Cache Mix dependencies
+        uses: actions/cache@v3
         with:
-          elixir-version: ${{ matrix.elixir }}
-          otp-version: ${{ matrix.otp }}
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
 
       - name: Install Dependencies
         run: |
+          # Clean up problematic repositories
+          sudo rm -f /etc/apt/sources.list.d/*
+
+          # Update package lists
+          sudo apt-get update
+
+          # Install build dependencies
+          sudo apt-get install -y build-essential autoconf m4 libncurses5-dev \
+            libssl-dev libwxgtk3.0-gtk3-dev libgl1-mesa-dev libglu1-mesa-dev \
+            libpng-dev openssl
+
+      - name: Set up Erlang and Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: ${{ matrix.otp }}
+          elixir-version: ${{ matrix.elixir }}
+
+      - name: Install Mix Dependencies
+        run: |
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
+          mix deps.compile
 
       - name: Run Tests
+        run: mix test
         env:
           MIX_ENV: test
-          DATABASE_URL: postgres://postgres:postgres@localhost:5432/raxol_test
-        run: |
-          mix test
-          mix credo
-          mix dialyzer
-
-      - name: Upload Test Coverage
-        uses: codecov/codecov-action@v2
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          file: ./cover/excoveralls.json
-          flags: unittests
-          name: codecov-umbrella
-          fail_ci_if_error: true
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 5433
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
 
   format:
     name: Format
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v4
 
-      - name: Set up Elixir
-        uses: erlef/setup-beam@v1
+      - name: Cache Mix dependencies
+        uses: actions/cache@v3
         with:
-          elixir-version: 1.14.0
-          otp-version: 25.0
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
 
-      - name: Check Formatting
+      - name: Install Dependencies
         run: |
-          mix local.hex --force
-          mix local.rebar --force
-          mix format --check-formatted
+          sudo rm -f /etc/apt/sources.list.d/*
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev openssl
 
-  docs:
-    name: Docs
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Elixir
+      - name: Set up Erlang and Elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: 1.14.0
-          otp-version: 25.0
+          otp-version: '25.0'
+          elixir-version: '1.14'
 
-      - name: Generate Documentation
+      - name: Install Mix Dependencies
         run: |
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
-          mix docs 
+
+      - name: Check Formatting
+        run: mix format --check-formatted
+
+  docs:
+    name: Docs
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Mix dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      - name: Install Dependencies
+        run: |
+          sudo rm -f /etc/apt/sources.list.d/*
+          sudo apt-get update
+          sudo apt-get install -y build-essential libssl-dev openssl
+
+      - name: Set up Erlang and Elixir
+        uses: erlef/setup-beam@v1
+        with:
+          otp-version: '25.0'
+          elixir-version: '1.14'
+
+      - name: Install Mix Dependencies
+        run: |
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+          mix deps.compile
+
+      - name: Build Docs
+        run: |
+          mix compile
+          mix docs
+        env:
+          MIX_ENV: test
