@@ -52,14 +52,13 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
   end
 
   defp initialize_systems do
-    Accessibility.init()
+    Accessibility.enable()
     UserPreferences.init()
     ColorSystem.init()
     PaletteManager.init()
-    AnimationFramework.init()
+    AnimationFramework.init([])
     I18n.init(default_locale: "en", available_locales: @available_locales)
     KeyboardShortcuts.init()
-    FocusManager.init()
   end
 
   defp demo_loop(state) do
@@ -95,12 +94,12 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
     case state.active_section do
       :animation ->
         if state.sample_animation do
-          AnimationFramework.stop_animation(state.sample_animation)
+          AnimationFramework.stop_animation(:demo_animation, :demo_animation_target)
           %{state | sample_animation: nil}
         else
           animation = create_demo_animation(state.animation_speed, state.reduced_motion)
-          AnimationFramework.start_animation(animation)
-          %{state | sample_animation: animation, loading_progress: 0}
+          AnimationFramework.start_animation(:demo_animation, :demo_animation_target)
+          %{state | sample_animation: :demo_animation, loading_progress: 0}
         end
       _ -> state
     end
@@ -115,21 +114,23 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
       :fast -> 750
     end
     final_duration = if reduced_motion, do: div(base_duration, 4), else: base_duration
-    AnimationFramework.create_animation(
+    AnimationFramework.create_animation(:demo_animation, %{
       duration: final_duration,
       from: 0,
       to: 100,
       easing: :ease_in_out
-    )
+    })
   end
 
   defp update_animation(state) do
     if state.sample_animation do
-      {progress, done} = AnimationFramework.get_current_value(state.sample_animation)
-      if done do
-        %{state | loading_progress: 100, sample_animation: nil}
-      else
-        %{state | loading_progress: trunc(progress)}
+      case AnimationFramework.get_current_value(state.sample_animation, :demo_animation_target) do
+        {:not_found, _done} ->
+          %{state | sample_animation: nil}
+        {progress, true} ->
+          %{state | loading_progress: 100, sample_animation: nil}
+        {progress, false} ->
+           %{state | loading_progress: trunc(progress)}
       end
     else
       state
@@ -147,8 +148,8 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
 
   defp render_header(state, direction) do
     title = I18n.t("demo.title")
-    title_color = if state.high_contrast, 
-      do: ColorSystem.get_color(:primary, :high_contrast), 
+    title_color = if state.high_contrast,
+      do: ColorSystem.get_color(:primary, :high_contrast),
       else: ColorSystem.get_color(:primary)
     Terminal.print_centered(title, color: title_color, direction: direction)
     Terminal.println()
@@ -289,4 +290,4 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
     end
     Terminal.println(footer_text, color: ColorSystem.get_color(:foreground))
   end
-end 
+end

@@ -2,16 +2,16 @@ defmodule Raxol.Examples.ColorSystemDemo do
   @moduledoc """
   Demonstrates the color system capabilities.
   """
-  
+
   alias Raxol.Style.Colors.{Color, Palette, Theme, Utilities}
-  
+
   @doc """
   Renders a demo of the color system capabilities.
   """
   def render do
     # Create a demo theme
     theme = create_demo_theme()
-    
+
     # Render different views
     [
       render_theme_info(theme),
@@ -21,7 +21,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
     ]
     |> Enum.join("\n\n")
   end
-  
+
   defp create_demo_theme do
     # Create a demo palette
     palette = %Palette{
@@ -34,11 +34,12 @@ defmodule Raxol.Examples.ColorSystemDemo do
         background: Color.from_hex("#FFFFFF")
       }
     }
-    
+
     # Create a theme from the palette
-    Theme.from_palette(palette)
+    # Convert Palette struct to map to match Theme.from_palette spec
+    Theme.from_palette(Map.from_struct(palette))
   end
-  
+
   defp render_theme_info(theme) do
     """
     Theme: #{theme.name}
@@ -49,7 +50,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
     Text: #{theme.ui_colors.text}
     """
   end
-  
+
   defp render_palette_view(palette) do
     """
     Palette: #{palette.name}
@@ -57,7 +58,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
     #{render_color_list(palette.colors)}
     """
   end
-  
+
   defp render_color_list(colors) do
     colors
     |> Enum.map(fn {name, color} ->
@@ -65,18 +66,18 @@ defmodule Raxol.Examples.ColorSystemDemo do
     end)
     |> Enum.join("\n")
   end
-  
+
   defp render_color_adaptation_view(theme) do
     """
     Color Adaptation:
     Original Theme:
     #{render_theme_info(theme)}
-    
+
     Adapted Theme:
     #{render_theme_info(Raxol.Style.Colors.Adaptive.adapt_theme(theme))}
     """
   end
-  
+
   defp render_accessibility_view(theme) do
     """
     Accessibility:
@@ -86,7 +87,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
     Background-Accent Contrast: #{check_contrast(theme.background, theme.ui_colors.accent)}
     """
   end
-  
+
   defp check_contrast(color1, color2) do
     ratio = Utilities.contrast_ratio(color1, color2)
     cond do
@@ -95,4 +96,4 @@ defmodule Raxol.Examples.ColorSystemDemo do
       true -> "Insufficient (#{ratio |> Float.round(2)})"
     end
   end
-end 
+end
