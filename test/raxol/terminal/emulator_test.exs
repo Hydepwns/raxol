@@ -2,6 +2,9 @@ defmodule Raxol.Terminal.EmulatorTest do
   use ExUnit.Case
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ANSI.{CharacterSets, ScreenModes}
+  alias Raxol.Terminal.Cursor.{Manager, Movement, Style}
+  alias Raxol.Terminal.Modes
+  alias Raxol.Terminal.EscapeSequence
 
   # ... existing tests ...
 
@@ -78,7 +81,7 @@ defmodule Raxol.Terminal.EmulatorTest do
 
     test "switches between normal and alternate screen buffer" do
       emulator = Emulator.new(80, 24)
-      
+
       # Write some content to normal buffer
       emulator = Emulator.write_char(emulator, ?a)
       emulator = Emulator.write_char(emulator, ?b)
@@ -106,7 +109,7 @@ defmodule Raxol.Terminal.EmulatorTest do
 
     test "sets and resets screen modes" do
       emulator = Emulator.new(80, 24)
-      
+
       # Set insert mode
       emulator = process_escape(emulator, {:set_mode, :insert_mode})
       assert Emulator.screen_mode_enabled?(emulator, :insert_mode) == true
@@ -126,25 +129,25 @@ defmodule Raxol.Terminal.EmulatorTest do
 
     test "preserves mode settings when switching buffers" do
       emulator = Emulator.new(80, 24)
-      
+
       # Set some modes in normal buffer
       emulator = process_escape(emulator, {:set_mode, :insert_mode})
       emulator = process_escape(emulator, {:set_mode, :origin_mode})
-      
+
       # Switch to alternate buffer
       emulator = process_escape(emulator, {:screen_mode, :alternate})
-      
+
       # Modes should be preserved
       assert Emulator.screen_mode_enabled?(emulator, :insert_mode) == true
       assert Emulator.screen_mode_enabled?(emulator, :origin_mode) == true
-      
+
       # Set different modes in alternate buffer
       emulator = process_escape(emulator, {:reset_mode, :insert_mode})
       emulator = process_escape(emulator, {:set_mode, :application_cursor})
-      
+
       # Switch back to normal buffer
       emulator = process_escape(emulator, {:screen_mode, :normal})
-      
+
       # Original modes should be restored
       assert Emulator.screen_mode_enabled?(emulator, :insert_mode) == true
       assert Emulator.screen_mode_enabled?(emulator, :origin_mode) == true
@@ -197,7 +200,7 @@ defmodule Raxol.Terminal.EmulatorTest do
 
     test "restore_state restores most recently saved state" do
       emulator = Emulator.new()
-      
+
       # Save first state
       emulator = Emulator.write_char(emulator, "A")
       emulator = Emulator.set_attributes(emulator, %{foreground: :red})
@@ -255,6 +258,163 @@ defmodule Raxol.Terminal.EmulatorTest do
     end
   end
 
+  describe "Terminal Emulator" do
+    test "new creates a new terminal emulator instance" do
+      emulator = Emulator.new(80, 24, %{})
+      assert emulator.width == 80
+      assert emulator.height == 24
+      assert emulator.cursor.position == {0, 0}
+      assert emulator.mode_state.insert == false
+      assert emulator.mode_state.replace == true
+    end
+
+    test "process_input handles regular character input" do
+      emulator = Emulator.new(80, 24, %{})
+      {emulator, _} = Emulator.process_input(emulator, "a")
+      assert emulator.cursor.position == {1, 0}
+    end
+
+    test "process_input handles escape sequences" do
+      emulator = Emulator.new(80, 24, %{})
+      {emulator, _} = Emulator.process_input(emulator, "\e[10;5H")
+      assert emulator.cursor.position == {4, 9}  # 0-based indexing
+    end
+
+    test "process_escape_sequence processes cursor movement sequences" do
+      emulator = Emulator.new(80, 24, %{})
+      {emulator, _} = Emulator.process_escape_sequence(emulator, "\e[10;5H")
+      assert emulator.cursor.position == {4, 9}  # 0-based indexing
+    end
+
+    test "process_escape_sequence processes cursor style sequences" do
+      emulator = Emulator.new(80, 24, %{})
+      {emulator, _} = Emulator.process_escape_sequence(emulator, "\e[?25h")
+      assert emulator.cursor.state == :visible
+    end
+
+    test "process_escape_sequence processes terminal mode sequences" do
+      emulator = Emulator.new(80, 24, %{})
+      {emulator, _} = Emulator.process_escape_sequence(emulator, "\e[?1049h")
+      assert emulator.mode_state.alternate_screen == true
+    end
+
+    test "move_cursor moves cursor to specified position" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.move_cursor(emulator, 10, 5)
+      assert emulator.cursor.position == {10, 5}
+    end
+
+    test "move_cursor_up moves cursor up" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.move_cursor(emulator, 0, 5)
+      emulator = Emulator.move_cursor_up(emulator, 2)
+      assert emulator.cursor.position == {0, 3}
+    end
+
+    test "move_cursor_down moves cursor down" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.move_cursor_down(emulator, 2)
+      assert emulator.cursor.position == {0, 2}
+    end
+
+    test "move_cursor_left moves cursor left" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.move_cursor(emulator, 5, 0)
+      emulator = Emulator.move_cursor_left(emulator, 2)
+      assert emulator.cursor.position == {3, 0}
+    end
+
+    test "move_cursor_right moves cursor right" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.move_cursor_right(emulator, 2)
+      assert emulator.cursor.position == {2, 0}
+    end
+
+    test "move_cursor_to_line_start moves cursor to beginning of line" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.move_cursor(emulator, 10, 0)
+      emulator = Emulator.move_cursor_to_line_start(emulator)
+      assert emulator.cursor.position == {0, 0}
+    end
+
+    test "move_cursor_to_line_end moves cursor to end of line" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.move_cursor_to_line_end(emulator)
+      assert emulator.cursor.position == {79, 0}
+    end
+
+    test "save_cursor_position saves the current cursor position" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.move_cursor(emulator, 10, 5)
+      emulator = Emulator.save_cursor_position(emulator)
+      assert emulator.cursor.saved_position == {10, 5}
+    end
+
+    test "restore_cursor_position restores the saved cursor position" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.move_cursor(emulator, 10, 5)
+      emulator = Emulator.save_cursor_position(emulator)
+      emulator = Emulator.move_cursor(emulator, 0, 0)
+      emulator = Emulator.restore_cursor_position(emulator)
+      assert emulator.cursor.position == {10, 5}
+    end
+
+    test "set_cursor_style sets the cursor style" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.set_cursor_style(emulator, :underline)
+      assert emulator.cursor.style == :underline
+    end
+
+    test "set_cursor_visibility sets the cursor visibility" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.set_cursor_visibility(emulator, false)
+      assert emulator.cursor.state == :hidden
+    end
+
+    test "set_cursor_blink sets the cursor blink state" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.set_cursor_blink(emulator, true)
+      assert emulator.cursor.state == :blinking
+    end
+
+    test "set_terminal_mode sets a terminal mode" do
+      emulator = Emulator.new(80, 24, %{})
+      emulator = Emulator.set_terminal_mode(emulator, :insert)
+      assert emulator.mode_state.insert == true
+      assert emulator.mode_state.replace == false
+    end
+
+    test "save_terminal_state saves the current terminal state" do
+      emulator = Emulator.new(80, 24, %{})
+      {emulator, saved_state} = Emulator.save_terminal_state(emulator)
+      emulator = Emulator.set_terminal_mode(emulator, :insert)
+      emulator = Emulator.restore_terminal_state(emulator, saved_state)
+      assert emulator.mode_state.insert == false
+      assert emulator.mode_state.replace == true
+    end
+
+    test "restore_terminal_state restores a previously saved terminal state" do
+      emulator = Emulator.new(80, 24, %{})
+      {emulator, saved_state} = Emulator.save_terminal_state(emulator)
+      emulator = Emulator.set_terminal_mode(emulator, :insert)
+      emulator = Emulator.restore_terminal_state(emulator, saved_state)
+      assert emulator.mode_state.insert == false
+      assert emulator.mode_state.replace == true
+    end
+
+    test "get_active_modes returns a list of all active terminal modes" do
+      emulator = Emulator.new(80, 24, %{})
+      assert Emulator.get_active_modes(emulator) == [:normal, :replace]
+    end
+
+    test "get_terminal_state returns a string representation of the terminal state" do
+      emulator = Emulator.new(80, 24, %{})
+      state = Emulator.get_terminal_state(emulator)
+      assert is_binary(state)
+      assert String.contains?(state, "Terminal Modes: normal, replace")
+    end
+  end
+
   # Helper functions for testing
   defp process_escape(emulator, escape) do
     Emulator.process_escape(emulator, escape)
@@ -271,4 +431,4 @@ defmodule Raxol.Terminal.EmulatorTest do
     |> Enum.map(fn i -> screen.cells[{x + i, y}].char end)
     |> List.to_string()
   end
-end 
+end
