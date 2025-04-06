@@ -2,15 +2,15 @@ name: Cross-Platform Tests
 
 on:
   push:
-    branches: [ main, develop ]
+    branches: [main, develop]
   pull_request:
-    branches: [ main, develop ]
+    branches: [main, develop]
   workflow_dispatch:
     inputs:
       reason:
-        description: 'Reason for manual trigger'
+        description: "Reason for manual trigger"
         required: true
-        default: 'Manual verification'
+        default: "Manual verification"
 
 jobs:
   test:
@@ -23,10 +23,13 @@ jobs:
         include:
           - os: ubuntu-latest
             platform: linux
+            terminal: gnome-terminal
           - os: macos-latest
             platform: macos
+            terminal: iterm2
           - os: windows-latest
             platform: windows
+            terminal: windows-terminal
 
     steps:
       - name: Checkout code
@@ -37,11 +40,17 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: '1.14.x'
-          otp-version: '25.x'
+          elixir-version: "1.14.x"
+          otp-version: "25.x"
 
-      - name: Cache deps
-        uses: actions/cache@v2
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+          cache: "npm"
+
+      - name: Cache Mix dependencies
+        uses: actions/cache@v3
         with:
           path: |
             deps
@@ -50,24 +59,36 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-mix-
 
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
+
       - name: Install dependencies
         run: |
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
           mix deps.compile
+          npm ci
 
       - name: Run unit tests
-        run: mix test test/raxol
+        run: mix test test/raxol --cover
 
       - name: Run integration tests
-        run: mix test test/integration
+        run: mix test test/integration --cover
 
       - name: Run cross-platform specific tests
-        run: mix test test/platform
+        run: mix test test/platform --cover
 
       - name: Verify terminal compatibility
         run: mix run test/platform/verify_terminal_compatibility.exs
+        env:
+          TERM: xterm-256color
+          COLORTERM: truecolor
 
       - name: Build test binary
         run: mix run scripts/release.exs --env test --platform ${{ matrix.platform }}
@@ -79,8 +100,55 @@ jobs:
           cd burrito_out/test
           ./raxol --test-mode --verify-features
 
+      - name: Run platform-specific tests
+        run: |
+          case ${{ matrix.platform }} in
+            linux)
+              # Test X11/Wayland support
+              xeyes &
+              sleep 2
+              pkill xeyes
+              ;;
+            macos)
+              # Test macOS specific features
+              osascript -e 'display notification "Test" with title "Raxol Test"'
+              ;;
+            windows)
+              # Test Windows specific features
+              powershell -Command "Write-Host 'Windows Test'"
+              ;;
+          esac
+
       - name: Upload test results
-        uses: actions/upload-artifact@v2
+        uses: actions/upload-artifact@v3
         with:
           name: test-results-${{ matrix.platform }}
-          path: _build/test/results
+          path: |
+            _build/test/results
+            cover/excoveralls.json
+            test/platform/verify_terminal_compatibility.exs.log
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./cover/excoveralls.json
+          flags: cross-platform-${{ matrix.platform }}
+          name: codecov-${{ matrix.platform }}
+          fail_ci_if_error: true
+
+      - name: Generate test report
+        if: always()
+        run: |
+          echo "=== Test Report for ${{ matrix.platform }} ===" > test-report-${{ matrix.platform }}.txt
+          echo "Platform: ${{ matrix.platform }}" >> test-report-${{ matrix.platform }}.txt
+          echo "Terminal: ${{ matrix.terminal }}" >> test-report-${{ matrix.platform }}.txt
+          echo "Test Results:" >> test-report-${{ matrix.platform }}.txt
+          cat _build/test/results/terminal_*.log >> test-report-${{ matrix.platform }}.txt
+
+      - name: Upload test report
+        if: always()
+        uses: actions/upload-artifact@v3
+        with:
+          name: test-report-${{ matrix.platform }}
+          path: test-report-${{ matrix.platform }}.txt

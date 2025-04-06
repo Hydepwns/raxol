@@ -2,18 +2,20 @@ name: CI
 
 on:
   push:
-    branches: [ main, master ]
+    branches: [main, master]
   pull_request:
-    branches: [ main, master ]
+    branches: [main, master]
 
 jobs:
   test:
     name: Test
-    runs-on: ubuntu-20.04
+    runs-on: ${{ matrix.os }}
     strategy:
       matrix:
-        elixir: ['1.14', '1.15']
-        otp: ['25.0', '26.0']
+        os: [ubuntu-20.04, windows-latest, macos-latest]
+        elixir: ["1.14", "1.15", "1.16"]
+        otp: ["25.0", "26.0", "27.0"]
+      fail-fast: false
 
     services:
       postgres:
@@ -39,9 +41,19 @@ jobs:
           path: |
             deps
             _build
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+            node_modules
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('**/package-lock.json') }}
           restore-keys: |
             ${{ runner.os }}-mix-
+            ${{ runner.os }}-
+
+      - name: Cache npm dependencies
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
+          restore-keys: |
+            ${{ runner.os }}-npm-
 
       - name: Install Dependencies
         run: |
@@ -55,12 +67,19 @@ jobs:
           sudo apt-get install -y build-essential autoconf m4 libncurses5-dev \
             libssl-dev libwxgtk3.0-gtk3-dev libgl1-mesa-dev libglu1-mesa-dev \
             libpng-dev openssl
+        if: runner.os == 'Linux'
 
       - name: Set up Erlang and Elixir
         uses: erlef/setup-beam@v1
         with:
           otp-version: ${{ matrix.otp }}
           elixir-version: ${{ matrix.elixir }}
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+          cache: "npm"
 
       - name: Install Mix Dependencies
         run: |
@@ -69,8 +88,22 @@ jobs:
           mix deps.get
           mix deps.compile
 
+      - name: Install npm dependencies
+        run: npm ci
+
       - name: Run Tests
-        run: mix test
+        run: |
+          # Wait for PostgreSQL to be ready
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 5433; then
+              break
+            fi
+            echo "Waiting for PostgreSQL to be ready... ($i/30)"
+            sleep 1
+          done
+
+          # Run tests with coverage and performance monitoring
+          mix test --cover --slowest 10
         env:
           MIX_ENV: test
           POSTGRES_HOST: localhost
@@ -78,6 +111,35 @@ jobs:
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: raxol_test
+          TERM: xterm-256color
+
+      - name: Upload coverage reports
+        uses: codecov/codecov-action@v3
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: ./cover/excoveralls.json
+          flags: unittests
+          name: codecov-umbrella
+          fail_ci_if_error: true
+
+      - name: Run Security Scan
+        uses: snyk/actions/node@master
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      - name: Verify Terminal Compatibility
+        run: |
+          mix run scripts/verify_terminal_compatibility.exs
+        env:
+          TERM: xterm-256color
+
+      - name: Run Platform-Specific Tests
+        run: |
+          mix test test/platform_specific
+        env:
+          PLATFORM: ${{ runner.os }}
 
   format:
     name: Format
@@ -104,8 +166,8 @@ jobs:
       - name: Set up Erlang and Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: '25.0'
-          elixir-version: '1.14'
+          otp-version: "25.0"
+          elixir-version: "1.14"
 
       - name: Install Mix Dependencies
         run: |
@@ -141,8 +203,8 @@ jobs:
       - name: Set up Erlang and Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: '25.0'
-          elixir-version: '1.14'
+          otp-version: "25.0"
+          elixir-version: "1.14"
 
       - name: Install Mix Dependencies
         run: |
