@@ -47,9 +47,10 @@ defmodule Raxol.MyApp do
     Logger.debug("MyApp Render: model=#{inspect(model)}")
     # Render the current text using the View DSL
     view do
-      Raxol.View.panel title: "Raxol Simple Editor" do
-        Raxol.View.label content: "Type something:"
-        Raxol.View.label content: "> #{model.text}"
+      # Revert to using imported functions
+      panel title: "Raxol Simple Editor" do
+        text "Type something:"
+        text "> #{model.text}"
       end
     end
   end
