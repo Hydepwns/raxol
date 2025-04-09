@@ -4,8 +4,8 @@ defmodule RaxolWeb.CoreComponents do
   """
 
   use Phoenix.Component
-
-  alias Phoenix.LiveView.JS
+  # import Phoenix.HTML
+  # use PhoenixHTMLHelpers, except: [label: 1]
 
   @doc """
   Renders a button with the given text and options.
@@ -144,4 +144,4 @@ defmodule RaxolWeb.CoreComponents do
     </div>
     """
   end
-end 
+end

@@ -8,17 +8,26 @@ defmodule Raxol.Style do
     border: Raxol.Style.Borders.t(),
     color: Raxol.Style.Colors.Color.t() | nil,
     background: Raxol.Style.Colors.Color.t() | nil,
-    text_decoration: list(:underline | :strikethrough | :bold | :italic)
+    text_decoration: list(:underline | :strikethrough | :bold | :italic),
+    decorations: list(atom)
   }
 
   defstruct layout: Raxol.Style.Layout.new(),
             border: Raxol.Style.Borders.new(),
             color: nil, # Default color handled by renderer
             background: nil, # Default background handled by renderer
-            text_decoration: []
+            text_decoration: [],
+            decorations: []
 
   alias Raxol.Style.{Layout, Borders}
   alias Raxol.Style.Colors # Alias the parent module
+
+  @ansi_codes %{
+    underline: 4,
+    strikethrough: 9,
+    bold: 1,
+    italic: 3
+  }
 
   @doc """
   Creates a new style with default values.
@@ -28,12 +37,16 @@ defmodule Raxol.Style do
   end
 
   @doc """
-  Creates a new style with the specified values (keyword list).
+  Creates a new style from a keyword list or map of attributes.
   """
   def new(attrs) when is_list(attrs) do
     Enum.reduce(attrs, new(), fn {key, value}, acc ->
       Map.put(acc, key, value)
     end)
+  end
+
+  def new(map) when is_map(map) do
+    struct(new(), map)
   end
 
   @doc """
@@ -45,7 +58,8 @@ defmodule Raxol.Style do
       border: Borders.merge(base.border, override.border),
       color: override.color || base.color,
       background: override.background || base.background,
-      text_decoration: base.text_decoration ++ override.text_decoration |> Enum.uniq()
+      text_decoration: base.text_decoration ++ override.text_decoration |> Enum.uniq(),
+      decorations: base.decorations ++ override.decorations |> Enum.uniq()
     }
   end
 
@@ -56,10 +70,14 @@ defmodule Raxol.Style do
     fg_ansi = if style.color, do: Colors.Color.to_ansi(style.color, :foreground), else: nil
     bg_ansi = if style.background, do: Colors.Color.to_ansi(style.background, :background), else: nil
 
+    decoration_ansi = Enum.map(style.decorations, fn dec ->
+      Map.get(@ansi_codes, dec)
+    end)
+
     [
       fg_ansi,
       bg_ansi
-      # TODO: Add text decoration ANSI codes
+      | decoration_ansi
     ]
     |> Enum.reject(&is_nil/1)
     # Actual sequence generation (e.g., IO.ANSI...) should happen closer to rendering

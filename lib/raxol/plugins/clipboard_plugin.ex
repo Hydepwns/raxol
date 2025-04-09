@@ -21,7 +21,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
 
   defp yank_selection(state) do
     case get_selected_text(state) do
-      {:ok, text} -> 
+      {:ok, text} ->
         set_clipboard_content(text)
         {:ok, state}
       _ -> {:ok, state}
@@ -30,7 +30,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
 
   defp delete_selection(state) do
     case get_selected_text(state) do
-      {:ok, _text} -> 
+      {:ok, _text} ->
         {:ok, clear_selection(state)}
       _ -> {:ok, state}
     end
@@ -47,11 +47,11 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   defp set_clipboard_content(text) do
     case :os.type() do
       {:unix, :darwin} ->
-        System.cmd("pbcopy", [], input: text)
+        _ = System.cmd("pbcopy", [], input: text)
       {:unix, _} ->
-        System.cmd("xclip", ["-selection", "clipboard"], input: text)
+        _ = System.cmd("xclip", ["-selection", "clipboard"], input: text)
       {:win32, _} ->
-        System.cmd("clip", [], input: text)
+        _ = System.cmd("clip", [], input: text)
     end
     :ok
   end
@@ -59,4 +59,4 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   defp clear_selection(state) do
     %{state | selection: nil}
   end
-end 
+end

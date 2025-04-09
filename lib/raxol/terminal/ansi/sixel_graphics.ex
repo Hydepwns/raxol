@@ -23,7 +23,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   @doc """
   Creates a new Sixel state with default values.
   """
-  @spec new() :: sixel_state()
+  @spec new() :: %{
+    palette: map(),
+    current_color: 0,
+    repeat_count: 1,
+    position: {0, 0},
+    attributes: %{width: :normal, height: :normal, size: :normal},
+    image_data: <<>>
+  }
   def new do
     %{
       palette: initialize_palette(),
@@ -86,13 +93,16 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   Processes a Sixel sequence and returns the updated state and rendered image.
   """
   @spec process_sequence(sixel_state(), binary()) :: {sixel_state(), binary()}
-  def process_sequence(state, <<"\e[", rest::binary>>) do
-    case parse_sequence(rest) do
-      {:ok, operation, params} ->
-        handle_operation(state, operation, params)
-      :error ->
-        {state, ""}
-    end
+  def process_sequence(state, <<"\e[", _rest::binary>>) do
+    # Sixel parsing is currently incomplete and returns :error.
+    # Simply return the state until parsing is fixed.
+    # case parse_sequence(rest) do
+    #   {:ok, operation, params} ->
+    #     handle_operation(state, operation, params)
+    #   :error ->
+    #     {state, ""}
+    # end
+    {state, ""} # Return empty binary as no image is rendered
   end
 
   @doc """
@@ -215,32 +225,32 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
     current_color = state.current_color
     position = state.position
     attributes = state.attributes
-    
+
     # Get the color from the palette
     {r, g, b} = Map.get(state.palette, current_color, {0, 0, 0})
-    
+
     # Create a bitmap representation
     # For now, we'll return a simple SVG representation
     # In a real implementation, this would be converted to a bitmap format
     # suitable for the terminal display
-    
+
     # Calculate dimensions based on attributes
     {width, height} = calculate_dimensions(image_data, attributes)
-    
+
     # Create SVG representation
     svg = """
     <svg width="#{width}" height="#{height}" xmlns="http://www.w3.org/2000/svg">
-      <rect x="#{elem(position, 0)}" y="#{elem(position, 1)}" width="#{width}" height="#{height}" 
+      <rect x="#{elem(position, 0)}" y="#{elem(position, 1)}" width="#{width}" height="#{height}"
             fill="rgb(#{r}, #{g}, #{b})" />
       #{render_sixel_data(image_data, position, attributes)}
     </svg>
     """
-    
+
     # In a real implementation, this would be converted to a bitmap
     # For now, we'll return the SVG as a string
     svg
   end
-  
+
   @doc """
   Calculates the dimensions of the Sixel image based on the data and attributes.
   """
@@ -249,12 +259,12 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
     # Count the number of lines in the image data
     lines = String.split(image_data, "\n", trim: true)
     height = length(lines) * 6  # Each Sixel is 6 pixels high
-    
+
     # Count the maximum number of characters in a line
     max_width = Enum.reduce(lines, 0, fn line, acc ->
       max(acc, String.length(line))
     end)
-    
+
     # Apply attribute scaling
     {width, height} = case attributes do
       %{width: :double_width, height: :double_height} ->
@@ -266,10 +276,10 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
       _ ->
         {max_width, height}
     end
-    
+
     {width, height}
   end
-  
+
   @doc """
   Renders the Sixel data as SVG elements.
   """
@@ -277,7 +287,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   def render_sixel_data(image_data, position, attributes) do
     # Split the image data into lines
     lines = String.split(image_data, "\n", trim: true)
-    
+
     # Process each line
     Enum.with_index(lines)
     |> Enum.map(fn {line, y_index} ->
@@ -287,11 +297,11 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
       |> Enum.map(fn {char, x_index} ->
         # Convert the character to a Sixel pattern
         pattern = char_to_sixel_pattern(char)
-        
+
         # Calculate the position of this Sixel
         x = elem(position, 0) + x_index
         y = elem(position, 1) + y_index * 6
-        
+
         # Apply attribute scaling
         {x, y, scale_x, scale_y} = case attributes do
           %{width: :double_width, height: :double_height} ->
@@ -303,7 +313,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
           _ ->
             {x, y, 1, 1}
         end
-        
+
         # Create SVG elements for each pixel in the Sixel pattern
         Enum.with_index(pattern)
         |> Enum.map(fn {pixel, pixel_y} ->
@@ -311,7 +321,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
           |> Enum.map(fn {pixel_value, pixel_x} ->
             if pixel_value == 1 do
               """
-              <rect x="#{x + pixel_x * scale_x}" y="#{y + pixel_y * scale_y}" 
+              <rect x="#{x + pixel_x * scale_x}" y="#{y + pixel_y * scale_y}"
                     width="#{scale_x}" height="#{scale_y}" fill="currentColor" />
               """
             else
@@ -326,7 +336,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
     end)
     |> Enum.join("")
   end
-  
+
   @doc """
   Converts a character to a Sixel pattern.
   Each Sixel is represented as a 6x1 grid of pixels.
@@ -595,4 +605,4 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
       ]
     end
   end
-end 
+end

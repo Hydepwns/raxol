@@ -101,6 +101,7 @@ defmodule Raxol.Terminal.CharacterHandling do
   def process_bidi_text(text) do
     text
     |> String.graphemes()
+    |> Enum.filter(&(&1 != ""))
     |> Enum.reduce([], fn char, acc ->
       bidi_type = get_bidi_type(String.first(char))
       case acc do
@@ -120,6 +121,7 @@ defmodule Raxol.Terminal.CharacterHandling do
   def get_string_width(string) do
     string
     |> String.graphemes()
+    |> Enum.filter(&(&1 != ""))
     |> Enum.map(&get_char_width(String.first(&1)))
     |> Enum.sum()
   end

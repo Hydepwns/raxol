@@ -1,12 +1,12 @@
 defmodule Raxol.View.Components do
   @moduledoc """
   Provides component functions for Raxol views.
-  
+
   This module contains functions for creating various UI components
   that can be used in Raxol views.
   """
 
-  alias Raxol.Core.Renderer.View
+  # alias Raxol.Core.Renderer.View # Unused
 
   @doc """
   Creates a text component with options for content, style, foreground, and background colors.
@@ -21,7 +21,7 @@ defmodule Raxol.View.Components do
       text("Hello World", style: [bold: true], fg: :blue)
   """
   def text(content, opts \\ []) do
-    View.text(content, opts)
+    %{type: :text, content: content, attrs: opts}
   end
 
   @doc """
@@ -37,7 +37,7 @@ defmodule Raxol.View.Components do
       button("Submit", on_click: &handle_submit/0, style: [bg: :blue])
   """
   def button(label, opts \\ []) do
-    View.button(opts, label)
+    %{type: :button, label: label, attrs: opts}
   end
 
   @doc """
@@ -53,7 +53,7 @@ defmodule Raxol.View.Components do
       text_input(value: name, placeholder: "Enter your name", on_change: &handle_name_change/1)
   """
   def text_input(opts \\ []) do
-    View.text_input(opts)
+    %{type: :text_input, attrs: opts}
   end
 
   @doc """
@@ -69,7 +69,7 @@ defmodule Raxol.View.Components do
       space(width: 1, height: 2)
   """
   def space(opts \\ []) do
-    # Implementation
+    %{type: :spacer, attrs: opts}
   end
 
   @doc """
@@ -85,6 +85,6 @@ defmodule Raxol.View.Components do
       label("Password:", width: 10, align: :right)
   """
   def label(text, opts \\ []) do
-    # Implementation
+    %{type: :label, content: text, attrs: opts}
   end
-end 
+end

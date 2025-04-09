@@ -19,13 +19,10 @@ defmodule Raxol.Components.Progress.ProgressBar do
   use Raxol.Component
   alias Raxol.View.Components
   alias Raxol.View.Layout
-  alias Raxol.Core.Style.Color
 
   @default_width 20
   @default_style :basic
   @default_color :blue
-  @default_characters %{filled: "=", empty: "-"}
-  @block_characters %{filled: "█", empty: "░"}
 
   @impl true
   def init(props) do
@@ -68,7 +65,7 @@ defmodule Raxol.Components.Progress.ProgressBar do
   def render(state) do
     Layout.column do
       _label = Components.text(content: state.label, color: state.style.text_color)
-      
+
       bar = Layout.box style: %{border_color: state.style.border_color} do
         _filled = Components.text(content: String.duplicate("█", state.filled_width), color: state.style.fill_color)
         Components.text(content: String.duplicate("░", state.empty_width), color: state.style.empty_color)
@@ -78,30 +75,8 @@ defmodule Raxol.Components.Progress.ProgressBar do
     end
   end
 
-  defp get_characters(state) do
-    case state.style do
-      :basic -> {@default_characters.filled, @default_characters.empty}
-      :block -> {@block_characters.filled, @block_characters.empty}
-      :custom -> 
-        chars = state.characters || @default_characters
-        {chars.filled, chars.empty}
-    end
-  end
-
-  defp build_gradient_bar(char, width, colors) do
-    chars_per_segment = width / (length(colors) - 1)
-
-    colors
-    |> Enum.chunk_every(2, 1, :discard)
-    |> Enum.with_index()
-    |> Enum.map(fn {[c1, _c2], i} ->
-      _segment_start = trunc(i * chars_per_segment)
-      Components.text(content: String.duplicate(char, trunc(chars_per_segment)), color: c1)
-    end)
-  end
-
   @impl true
-  def handle_event(%Event{type: :progress_update, data: %{value: value}}, state) when is_number(value) do
+  def handle_event(%{type: :progress_update, data: %{value: value}} = _event, state) when is_number(value) do
     {update(:set_value, state, value), []}
   end
 
@@ -131,4 +106,4 @@ defmodule Raxol.Components.Progress.ProgressBar do
   defp update(:set_value, state, value) when is_number(value) do
     %{state | value: value}
   end
-end 
+end

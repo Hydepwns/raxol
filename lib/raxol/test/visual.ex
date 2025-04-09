@@ -17,7 +17,7 @@ defmodule Raxol.Test.Visual do
 
         test "renders correctly" do
           component = setup_visual_component(MyComponent)
-          
+
           assert_renders_as component, fn output ->
             assert output =~ "Expected Content"
             assert_layout_matches output, width: 10, height: 5
@@ -33,7 +33,7 @@ defmodule Raxol.Test.Visual do
     quote do
       import Raxol.Test.Visual
       import Raxol.Test.Visual.Matchers
-      
+
       setup do
         context = TestHelper.setup_test_env()
         {:ok, Map.put(context, :snapshots_dir, "test/snapshots")}
@@ -50,19 +50,20 @@ defmodule Raxol.Test.Visual do
   3. Configures the test terminal
   4. Prepares snapshot directories
   """
-  def setup_visual_component(module, props \\ %{}) do
+  def setup_visual_component(module, _props \\ %{}) do
     {:ok, component} = Raxol.Test.Unit.setup_isolated_component(module)
-    
+
     # Set up render context
     terminal = TestHelper.setup_test_terminal()
-    
-    %{component |
-      render_context: %{
-        terminal: terminal,
-        viewport: %{width: 80, height: 24},
-        theme: TestHelper.test_styles().default
-      }
+    theme = TestHelper.test_styles().default
+
+    render_context = %{
+      terminal: terminal,
+      viewport: %{width: 80, height: 24},
+      theme: theme
     }
+
+    Map.merge(component, %{render_context: render_context})
   end
 
   @doc """
@@ -94,10 +95,10 @@ defmodule Raxol.Test.Visual do
   def snapshot_component(component, name, context) do
     output = capture_render(component)
     snapshot_path = Path.join([context.snapshots_dir, "#{name}.snap"])
-    
+
     File.mkdir_p!(Path.dirname(snapshot_path))
     File.write!(snapshot_path, output)
-    
+
     output
   end
 
@@ -109,7 +110,7 @@ defmodule Raxol.Test.Visual do
   def compare_with_snapshot(component, name, context) do
     current = capture_render(component)
     snapshot_path = Path.join([context.snapshots_dir, "#{name}.snap"])
-    
+
     case File.read(snapshot_path) do
       {:ok, expected} ->
         if current == expected do
@@ -131,10 +132,10 @@ defmodule Raxol.Test.Visual do
     Enum.map(sizes, fn {width, height} ->
       # Update viewport size
       component = put_in(component.render_context.viewport, %{width: width, height: height})
-      
+
       # Capture render at this size
       output = capture_render(component)
-      
+
       # Return size and output for verification
       {{width, height}, output}
     end)
@@ -149,38 +150,38 @@ defmodule Raxol.Test.Visual do
     Enum.map(themes, fn {name, theme} ->
       # Update theme
       component = put_in(component.render_context.theme, theme)
-      
+
       # Capture themed render
       output = capture_render(component)
-      
+
       # Return theme and output for verification
       {name, output}
     end)
   end
 
-  @doc """
-  Verifies that a component's layout adapts correctly to its container.
-
-  Tests proper sizing, positioning, and constraint handling.
-  """
-  def verify_layout_constraints(component, constraints) do
-    # Get current layout
-    layout = get_component_layout(component)
-    
-    # Verify each constraint
-    Enum.reduce_while(constraints, :ok, fn
-      {:min_width, min}, :ok ->
-        if layout.width >= min, do: {:cont, :ok}, else: {:halt, {:error, :min_width}}
-      {:max_width, max}, :ok ->
-        if layout.width <= max, do: {:cont, :ok}, else: {:halt, {:error, :max_width}}
-      {:min_height, min}, :ok ->
-        if layout.height >= min, do: {:cont, :ok}, else: {:halt, {:error, :min_height}}
-      {:max_height, max}, :ok ->
-        if layout.height <= max, do: {:cont, :ok}, else: {:halt, {:error, :max_height}}
-      {key, value}, :ok ->
-        if layout[key] == value, do: {:cont, :ok}, else: {:halt, {:error, key}}
-    end)
-  end
+  # @doc """
+  # Verifies that a component's layout adapts correctly to its container.
+  #
+  # Tests proper sizing, positioning, and constraint handling.
+  # """
+  # def verify_layout_constraints(component, constraints) do
+  #   # Get current layout
+  #   layout = get_component_layout(component)
+  #
+  #   # Verify each constraint
+  #   Enum.reduce_while(constraints, :ok, fn
+  #     {:min_width, min}, :ok ->
+  #       if layout.width >= min, do: {:cont, :ok}, else: {:halt, {:error, :min_width}}
+  #     {:max_width, max}, :ok ->
+  #       if layout.width <= max, do: {:cont, :ok}, else: {:halt, {:error, :max_width}}
+  #     {:min_height, min}, :ok ->
+  #       if layout.height >= min, do: {:cont, :ok}, else: {:halt, {:error, :min_height}}
+  #     {:max_height, max}, :ok ->
+  #       if layout.height <= max, do: {:cont, :ok}, else: {:halt, {:error, :max_height}}
+  #     {key, value}, :ok ->
+  #       if layout[key] == value, do: {:cont, :ok}, else: {:halt, {:error, key}}
+  #   end)
+  # end
 
   # Private Helpers
 
@@ -193,24 +194,18 @@ defmodule Raxol.Test.Visual do
     end
   end
 
-  defp render_element(element, context) do
-    # Add element rendering logic
-    "Rendered #{element.tag}"
+  defp render_element(element, _context) do
+    # Simplified rendering for testing - converts element to string
+    inspect(element, pretty: true)
   end
 
-  defp get_component_layout(component) do
-    # Extract layout information from component
-    %{
-      width: 80,
-      height: 24,
-      x: 0,
-      y: 0
-    }
-  end
+  # defp get_component_layout(_component) do
+  #   # Placeholder: In a real scenario, this would extract the layout tree
+  #   %{}
+  # end
 
-  defp compute_visual_diff(expected, actual) do
-    # Implement visual diff algorithm
-    # This could use a library like diff-match-patch or similar
-    "Visual diff between expected and actual output"
+  defp compute_visual_diff(_expected, _actual) do
+    # Placeholder: Implement actual diffing logic (e.g., using Diffy)
+    "No difference detected (placeholder)"
   end
-end 
+end

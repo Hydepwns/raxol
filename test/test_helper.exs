@@ -2,19 +2,22 @@
 Application.put_env(:raxol, :database_enabled, false)
 Application.put_env(:raxol, Raxol.Repo, [enabled: false])
 
-# Start ExUnit without starting the application
+# Ensure database is not started (redundant with above?)
+Application.put_env(:phoenix, :serve_endpoints, false)
+# Application.put_env(:raxol, :start_db, false)
+
+# Start ExUnit without starting the full application explicitly here
+# Applications needed by tests should be started in their respective setup blocks
 ExUnit.start()
 
-# Configure test environment
-Application.put_env(:raxol, :environment, :test)
+# Setup Ecto sandbox
+# Note: Raxol.Repo might not be the correct Repo module name if using Phoenix default
+# Check lib/raxol/repo.ex or config/config.exs if unsure
+Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, :manual)
 
-# Ensure database is not started
-Application.put_env(:phoenix, :serve_endpoints, false)
-Application.put_env(:raxol, :start_db, false)
-
-# Configure mock database
-Application.put_env(:raxol, Raxol.Repo, [
-  adapter: Raxol.Test.MockDB,
-  enabled: false,
-  pool: Ecto.Adapters.SQL.Sandbox
-])
+# Optional: Configure mock database if needed, but Sandbox is usually preferred
+# Application.put_env(:raxol, Raxol.Repo, [
+#   adapter: Raxol.Test.MockDB,
+#   enabled: false, # Keep disabled if using Sandbox
+#   pool: Ecto.Adapters.SQL.Sandbox
+# ])

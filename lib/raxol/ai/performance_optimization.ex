@@ -70,10 +70,10 @@ defmodule Raxol.AI.PerformanceOptimization do
         enabled_features: MapSet.new(Keyword.get(opts, :features, MapSet.to_list(state.enabled_features)))
       }
 
-      Process.put(@state_key, state)
+      _ = Process.put(@state_key, state)
 
       # Start collecting initial metrics
-      collect_baseline_metrics()
+      _ = collect_baseline_metrics()
 
       :ok
     else
@@ -90,7 +90,7 @@ defmodule Raxol.AI.PerformanceOptimization do
       :ok
   """
   def record_render_time(component_name, time_ms) do
-    with_state(fn state ->
+    _ = with_state(fn state ->
       render_metrics = Map.update(
         state.render_metrics,
         component_name,
@@ -123,7 +123,7 @@ defmodule Raxol.AI.PerformanceOptimization do
       :ok
   """
   def record_component_usage(component_name) do
-    with_state(fn state ->
+    _ = with_state(fn state ->
       component_usage = Map.update(
         state.component_usage,
         component_name,
@@ -313,7 +313,7 @@ defmodule Raxol.AI.PerformanceOptimization do
       :ok
   """
   def toggle_feature(feature, enabled) do
-    with_state(fn state ->
+    _ = with_state(fn state ->
       enabled_features = if enabled do
         MapSet.put(state.enabled_features, feature)
       else
@@ -371,7 +371,7 @@ defmodule Raxol.AI.PerformanceOptimization do
   defp collect_baseline_metrics do
     # This would collect system metrics to establish a baseline
     # For now, just a placeholder
-    Benchmarks.run_all([])
+    _ = Benchmarks.run_all([])
   end
 
   defp get_optimization_suggestion(component_name, metrics) do

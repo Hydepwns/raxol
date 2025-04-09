@@ -19,9 +19,9 @@ defmodule Raxol.Terminal.Supervisor do
       # ANSI Processor for handling ANSI escape codes
       Raxol.Terminal.ANSI.Processor,
       # Terminal Manager for coordinating terminal sessions
-      Raxol.Terminal.Manager
+      {Raxol.Terminal.Manager, []}
     ]
 
     Supervisor.init(children, strategy: :one_for_one)
   end
-end 
+end

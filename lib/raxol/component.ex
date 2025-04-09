@@ -17,7 +17,7 @@ defmodule Raxol.Component do
         def init(props) do
           # Subscribe to events on init
           {:ok, subscription} = subscribe_to_events([:key, :mouse])
-          
+
           %{
             count: props[:initial_count] || 0,
             subscription: subscription
@@ -60,7 +60,7 @@ defmodule Raxol.Component do
   @callback init(props()) :: state()
   @callback update(message(), state()) :: state()
   @callback render(state()) :: element()
-  @callback handle_event(Raxol.Core.Events.Event.t(), state()) :: {state(), [command()]}
+  @callback handle_event(term(), state()) :: {state(), [command()]}
   @callback mount(state()) :: {state(), [command()]}
   @callback unmount(state()) :: state()
 
@@ -104,4 +104,4 @@ defmodule Raxol.Component do
       end
     end
   end
-end 
+end

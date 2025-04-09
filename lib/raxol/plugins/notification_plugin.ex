@@ -87,13 +87,13 @@ defmodule Raxol.Plugins.NotificationPlugin do
   end
 
   @impl true
-  def handle_mouse(_plugin, _event) do
-    :ok
+  def handle_mouse(plugin, _event) do
+    {:ok, plugin}
   end
 
   @impl true
-  def handle_resize(_plugin, _width, _height) do
-    :ok
+  def handle_resize(plugin, _width, _height) do
+    {:ok, plugin}
   end
 
   @impl true

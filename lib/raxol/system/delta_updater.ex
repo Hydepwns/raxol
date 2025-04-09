@@ -5,6 +5,8 @@ defmodule Raxol.System.DeltaUpdater do
 
   require Logger
 
+  alias Raxol.System.Updater
+
   def check_delta_availability(target_version) do
     with {:ok, releases} <- get_releases(),
          {:ok, assets} <- extract_assets(releases),
@@ -13,7 +15,7 @@ defmodule Raxol.System.DeltaUpdater do
       # Compare sizes to determine if delta update is beneficial
       full_size = full_asset["size"]
       delta_size = delta_asset["size"]
-      
+
       if delta_size < full_size * 0.5 do
         {:ok, delta_asset}
       else
@@ -28,25 +30,25 @@ defmodule Raxol.System.DeltaUpdater do
     # Create a temporary directory for the update
     tmp_dir = Path.join(System.tmp_dir!(), "raxol_update_#{:rand.uniform(1000000)}")
     File.mkdir_p!(tmp_dir)
-    
+
     try do
       # 1. Get the current executable path
       current_exe = get_current_executable()
-      
+
       # 2. Download the delta update
       delta_file = Path.join(tmp_dir, "update.delta")
       :ok = download_delta(delta_url, delta_file)
-      
+
       # 3. Create a new executable by applying the delta
       new_exe = Path.join(tmp_dir, "raxol.new")
       :ok = apply_binary_delta(current_exe, delta_file, new_exe)
-      
+
       # 4. Verify the patched executable
       :ok = verify_patched_executable(new_exe, target_version)
-      
+
       # 5. Replace the current executable with the new one
       :ok = replace_executable(current_exe, new_exe)
-      
+
       :ok
     catch
       {:error, reason} -> {:error, reason}
@@ -84,7 +86,7 @@ defmodule Raxol.System.DeltaUpdater do
 
   defp get_current_executable do
     exe = System.get_env("BURRITO_EXECUTABLE_PATH") || System.argv() |> List.first()
-    
+
     if is_nil(exe) do
       throw({:error, "Cannot determine executable path"})
     else
@@ -104,7 +106,7 @@ defmodule Raxol.System.DeltaUpdater do
   defp verify_patched_executable(exe_path, expected_version) do
     # Make the patched file executable
     File.chmod!(exe_path, 0o755)
-    
+
     # Run the new executable with --version to verify it reports the correct version
     case System.cmd(exe_path, ["--version"], stderr_to_stdout: true) do
       {output, 0} ->
@@ -113,48 +115,25 @@ defmodule Raxol.System.DeltaUpdater do
         else
           throw({:error, "Version verification failed for patched executable"})
         end
-      {error, _} -> 
+      {error, _} ->
         throw({:error, "Failed to verify patched executable: #{error}"})
     end
   end
 
   defp replace_executable(current_exe, new_exe) do
-    # Make the new executable executable
-    File.chmod!(new_exe, 0o755)
-    
-    case :os.type() do
-      {:win32, _} ->
-        # On Windows, we need to use a different approach since we can't replace a running executable
-        # Create a batch file that will replace the exe after we exit
-        updater_bat = System.tmp_dir!() |> Path.join("raxol_updater.bat")
-        
-        batch_contents = """
-        @echo off
-        timeout /t 2 /nobreak > nul
-        copy /y "#{new_exe}" "#{current_exe}"
-        del "#{updater_bat}"
-        """
-        
-        File.write!(updater_bat, batch_contents)
-        
-        # Execute the batch file and exit
-        System.cmd("cmd", ["/c", "start", "/b", updater_bat])
-        System.stop(0)
-      _ ->
-        # On Unix systems, we can replace the current executable directly
-        # The new process will start with the updated executable
-        case File.cp(new_exe, current_exe) do
-          :ok -> :ok
-          {:error, reason} -> throw({:error, "Failed to replace executable: #{inspect(reason)}"})
-        end
+    # Determine platform
+    platform = case :os.type() do
+      {:win32, _} -> "windows"
+      _ -> "unix" # Or be more specific if needed
     end
-    
-    :ok
+
+    # Call the shared helper function
+    Updater.do_replace_executable(current_exe, new_exe, platform)
   end
 
   defp get_releases do
     url = "https://api.github.com/repos/raxol/raxol/releases"
-    
+
     case :httpc.request(:get, {String.to_charlist(url), [
       {~c"User-Agent", ~c"Raxol-Updater"}
     ]}, [], []) do
@@ -166,4 +145,4 @@ defmodule Raxol.System.DeltaUpdater do
         {:error, "Failed to fetch releases: #{reason}"}
     end
   end
-end 
+end

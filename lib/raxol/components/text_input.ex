@@ -293,17 +293,17 @@ defmodule Raxol.Components.TextInput do
 
   # Private functions
 
-  defp get_display_text(%{value: "", placeholder: placeholder}) do
-    placeholder
-  end
-
-  defp get_display_text(%{value: value, password: true}) do
-    String.duplicate("*", String.length(value))
-  end
-
-  defp get_display_text(%{value: value}) do
-    value
-  end
+  # defp get_display_text(%{value: "", placeholder: placeholder}) do
+  #   placeholder
+  # end
+  #
+  # defp get_display_text(%{value: value, password: true}) do
+  #   String.duplicate("*", String.length(value))
+  # end
+  #
+  # defp get_display_text(%{value: value}) do
+  #   value
+  # end
 
   defp get_input_style(style_atom, disabled, valid) when is_atom(style_atom) do
     base_style = Style.new([
@@ -359,4 +359,8 @@ defmodule Raxol.Components.TextInput do
   defp generate_focus_key do
     :crypto.strong_rand_bytes(8) |> Base.encode16(case: :lower)
   end
+
+  # defp maybe_update_cursor_position(_state) do
+  #   # Implementation of maybe_update_cursor_position/1
+  # end
 end

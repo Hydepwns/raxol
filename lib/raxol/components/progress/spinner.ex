@@ -17,9 +17,9 @@ defmodule Raxol.Components.Progress.Spinner do
   """
 
   use Raxol.Component
+
   alias Raxol.View.Components
   alias Raxol.View.Layout
-  alias Raxol.Core.Style.Color
 
   @default_speed 80
   @default_style :dots
@@ -154,4 +154,4 @@ defmodule Raxol.Components.Progress.Spinner do
       speed: 1000
     })
   end
-end 
+end

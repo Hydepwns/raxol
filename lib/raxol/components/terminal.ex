@@ -162,7 +162,6 @@ defmodule Raxol.Components.Terminal do
 
   defp handle_command_mode(_event, state), do: state
 
-  @impl true
   def update(:insert_char, state, char) do
     %{state | buffer: state.buffer <> char}
   end
@@ -176,7 +175,6 @@ defmodule Raxol.Components.Terminal do
     end
   end
 
-  @impl true
   def update(:move_cursor_down, state) do
     if state.history_index > 0 do
       %{state | history_index: state.history_index - 1}
@@ -185,7 +183,6 @@ defmodule Raxol.Components.Terminal do
     end
   end
 
-  @impl true
   def update(:execute_command, state) do
     # Execute command and reset mode
     %{state | mode: :normal}

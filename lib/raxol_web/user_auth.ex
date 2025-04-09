@@ -28,15 +28,23 @@ defmodule RaxolWeb.UserAuth do
   if you are not using LiveView.
   """
   def log_in_user(conn, user, params \\ %{}) do
-    token = Auth.generate_user_session_token(user)
-    user_return_to = get_session(conn, :user_return_to)
+    case Auth.create_user_session(user.id, user.role) do
+      {:ok, session_data} ->
+        token = session_data.token
+        user_return_to = get_session(conn, :user_return_to)
 
-    conn
-    |> renew_session()
-    |> put_session(:user_token, token)
-    |> put_session(:live_socket_id, "users_sessions:#{Base.url_encode64(token)}")
-    |> maybe_write_remember_me_cookie(token, params)
-    |> redirect(to: user_return_to || signed_in_path(conn))
+        conn
+        |> renew_session()
+        |> put_session(:user_session_id, session_data.session_id)
+        |> put_session(:user_token, token)
+        |> put_session(:live_socket_id, "users_sessions:#{Base.url_encode64(token)}")
+        |> maybe_write_remember_me_cookie(token, params)
+        |> redirect(to: user_return_to || signed_in_path(conn))
+      {:error, reason} ->
+        conn
+        |> put_flash(:error, "Failed to create user session: #{inspect(reason)}")
+        |> redirect(to: "/")
+    end
   end
 
   defp maybe_write_remember_me_cookie(conn, token, %{"remember_me" => "true"}) do
@@ -73,12 +81,15 @@ defmodule RaxolWeb.UserAuth do
 
   It clears all session data for safety. See renew_session.
   """
+  @dialyzer {:nowarn_function, log_out_user: 1}
   def log_out_user(conn) do
-    user_token = get_session(conn, :user_token)
-    user_token && Auth.delete_session_token(user_token)
+    _user_token = get_session(conn, :user_token)
+    session_id = get_session(conn, :user_session_id)
+
+    _ = session_id && Auth.cleanup_user_session(session_id)
 
     if live_socket_id = get_session(conn, :live_socket_id) do
-      RaxolWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})
+      _ = RaxolWeb.Endpoint.broadcast(live_socket_id, "disconnect", %{})
     end
 
     conn
@@ -93,7 +104,17 @@ defmodule RaxolWeb.UserAuth do
   """
   def fetch_current_user(conn, _opts) do
     {user_token, conn} = ensure_user_token(conn)
-    user = user_token && Auth.get_user_by_session_token(user_token)
+    session_id = get_session(conn, :user_session_id)
+
+    user =
+      if session_id && user_token do
+        case Auth.validate_token(session_id, user_token) do
+          {:ok, user_id} -> Auth.get_user(user_id)
+          _ -> nil
+        end
+      else
+        nil
+      end
     assign(conn, :current_user, user)
   end
 
@@ -149,4 +170,4 @@ defmodule RaxolWeb.UserAuth do
   defp maybe_store_return_to(conn), do: conn
 
   defp signed_in_path(_conn), do: "/"
-end 
+end

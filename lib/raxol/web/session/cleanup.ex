@@ -1,7 +1,7 @@
 defmodule Raxol.Web.Session.Cleanup do
   @moduledoc """
   Handles session cleanup for Raxol applications.
-  
+
   This module provides functionality to clean up expired and inactive sessions,
   ensuring efficient resource usage and data hygiene.
   """
@@ -15,7 +15,7 @@ defmodule Raxol.Web.Session.Cleanup do
   """
   def init do
     # Clean up any expired sessions
-    cleanup_expired_sessions()
+    _ = cleanup_expired_sessions()
     :ok
   end
 
@@ -25,13 +25,13 @@ defmodule Raxol.Web.Session.Cleanup do
   def cleanup_expired_sessions do
     # Get current time
     now = DateTime.utc_now()
-    
+
     # Get all sessions from database
     query = from s in Session,
       where: s.status == :active and
              s.last_active < datetime_add(^now, -3600, "second")
     expired_sessions = Repo.all(query)
-    
+
     # Mark sessions as expired
     for session <- expired_sessions do
       session
@@ -40,7 +40,7 @@ defmodule Raxol.Web.Session.Cleanup do
         ended_at: now
       })
       |> Repo.update()
-      
+
       # Remove from ETS
       Storage.delete(session.id)
     end
@@ -52,7 +52,7 @@ defmodule Raxol.Web.Session.Cleanup do
   def cleanup_old_sessions(days \\ 30) do
     # Get cutoff date
     cutoff = DateTime.add(DateTime.utc_now(), -days * 24 * 60 * 60, :second)
-    
+
     # Delete old sessions from database
     query = from s in Session,
       where: s.status in [:ended, :expired] and
@@ -66,7 +66,7 @@ defmodule Raxol.Web.Session.Cleanup do
   def cleanup_orphaned_sessions do
     # Get all sessions from database
     sessions = Repo.all(Session)
-    
+
     # Check each session for orphaned status
     for session <- sessions do
       if is_orphaned?(session) do
@@ -77,7 +77,7 @@ defmodule Raxol.Web.Session.Cleanup do
           ended_at: DateTime.utc_now()
         })
         |> Repo.update()
-        
+
         # Remove from ETS
         Storage.delete(session.id)
       end
@@ -91,4 +91,4 @@ defmodule Raxol.Web.Session.Cleanup do
     session.status == :active &&
     (is_nil(session.user_id) || session.user_id == "")
   end
-end 
+end

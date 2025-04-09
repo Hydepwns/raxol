@@ -12,7 +12,7 @@ defmodule Raxol.Core.Renderer.Manager do
   use GenServer
 
   alias Raxol.Core.Renderer.Buffer
-  alias Raxol.Core.Events.{Event, Manager}
+  alias Raxol.Core.Events.Manager
   alias Raxol.Core.Runtime.ComponentManager
 
   # Client API
@@ -54,13 +54,8 @@ defmodule Raxol.Core.Renderer.Manager do
     fps = Keyword.get(opts, :fps, 60)
     buffer = Buffer.new(width, height, fps)
 
-    # Set up window resize handling
-    Manager.subscribe(fn
-      %Event{type: :window, data: %{action: :resize, width: w, height: h}} ->
-        handle_resize(w, h)
-      _ ->
-        :ok
-    end)
+    # Subscribe to window events
+    {:ok, _sub_ref} = Manager.subscribe([:window])
 
     {:reply, :ok, %{state |
       buffer: buffer,
@@ -105,6 +100,23 @@ defmodule Raxol.Core.Renderer.Manager do
     {:noreply, %{state | buffer: buffer}}
   end
 
+  @impl true
+  def handle_cast({:resize, width, height}, %{buffer: buffer} = state) do
+    new_buffer = Buffer.resize(buffer, width, height)
+    {:noreply, %{state | buffer: new_buffer}}
+  end
+
+  @impl true
+  def handle_info({:event, %Raxol.Core.Events.Event{type: :window, data: %{action: :resize, width: w, height: h}}}, state) do
+    GenServer.cast(self(), {:resize, w, h})
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:event, _event}, state) do
+    {:noreply, state} # Ignore other subscribed events for now
+  end
+
   # Private Helpers
 
   defp get_terminal_size do
@@ -117,10 +129,6 @@ defmodule Raxol.Core.Renderer.Manager do
       _ ->
         {80, 24}  # Default size
     end
-  end
-
-  defp handle_resize(width, height) do
-    GenServer.cast(__MODULE__, {:resize, width, height})
   end
 
   defp render_component(component, buffer) do

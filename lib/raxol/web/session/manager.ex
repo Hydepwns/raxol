@@ -1,7 +1,7 @@
 defmodule Raxol.Web.Session.Manager do
   @moduledoc """
   Manages web sessions for Raxol applications.
-  
+
   This module provides comprehensive session management capabilities:
   * Session storage and retrieval
   * Session recovery and cleanup
@@ -11,7 +11,9 @@ defmodule Raxol.Web.Session.Manager do
 
   use GenServer
 
-  alias Raxol.Web.Session.{Storage, Recovery, Cleanup, Monitor}
+  alias Raxol.Web.Session.{Storage, Recovery, Cleanup, Monitor, Session}
+  # alias Raxol.Logger # Remove this alias
+  require Logger
 
   # Client API
 
@@ -49,16 +51,16 @@ defmodule Raxol.Web.Session.Manager do
   def init(_opts) do
     # Initialize session storage
     :ok = Storage.init()
-    
+
     # Initialize session recovery
     :ok = Recovery.init()
-    
+
     # Initialize session cleanup
     :ok = Cleanup.init()
-    
+
     # Initialize session monitoring
-    :ok = Monitor.init()
-    
+    {:ok, _monitor_state} = Monitor.init(%{})
+
     # Create initial state
     state = %{
       sessions: %{},
@@ -66,20 +68,18 @@ defmodule Raxol.Web.Session.Manager do
       max_sessions: 1000,
       session_timeout: :timer.hours(1)
     }
-    
+
     # Start cleanup timer
     schedule_cleanup(state)
-    
+
     {:ok, state}
   end
 
   @impl true
   def handle_call({:create_session, user_id, metadata}, _from, state) do
-    # Generate session ID
     session_id = generate_session_id()
-    
-    # Create session data
-    session = %{
+
+    session = %Session{
       id: session_id,
       user_id: user_id,
       created_at: DateTime.utc_now(),
@@ -87,14 +87,16 @@ defmodule Raxol.Web.Session.Manager do
       metadata: metadata,
       status: :active
     }
-    
+
     # Store session
-    :ok = Storage.store(session)
-    
-    # Update state
-    new_state = %{state | sessions: Map.put(state.sessions, session_id, session)}
-    
-    {:reply, {:ok, session}, new_state}
+    case Storage.store(session) do
+      {:ok, _} ->
+        # Update state
+        new_state = %{state | sessions: Map.put(state.sessions, session_id, session)}
+        {:reply, {:ok, session}, new_state}
+      {:error, reason} ->
+        {:reply, {:error, reason}, state}
+    end
   end
 
   @impl true
@@ -102,10 +104,15 @@ defmodule Raxol.Web.Session.Manager do
     case Storage.get(session_id) do
       {:ok, session} ->
         # Update last active time
-        session = %{session | last_active: DateTime.utc_now()}
-        :ok = Storage.store(session)
-        
-        {:reply, {:ok, session}, state}
+        updated_session = %{session | last_active: DateTime.utc_now()}
+        case Storage.store(updated_session) do
+          {:ok, _} ->
+            {:reply, {:ok, updated_session}, state}
+          {:error, reason} ->
+            Logger.error("Failed to update session last_active time: #{inspect(reason)}")
+            # Decide if we should return the old session or an error
+            {:reply, {:ok, session}, state} # Return old session for now
+        end
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -116,14 +123,18 @@ defmodule Raxol.Web.Session.Manager do
     case Storage.get(session_id) do
       {:ok, session} ->
         # Update session metadata
-        session = %{session | 
-          metadata: Map.merge(session.metadata, metadata),
+        updated_session = %{session |
+          metadata: Map.merge(session.metadata || %{}, metadata), # Ensure metadata is a map
           last_active: DateTime.utc_now()
         }
-        
-        :ok = Storage.store(session)
-        
-        {:reply, {:ok, session}, state}
+
+        case Storage.store(updated_session) do
+          {:ok, _} ->
+            {:reply, {:ok, updated_session}, state}
+          {:error, reason} ->
+            Logger.error("Failed to update session metadata: #{inspect(reason)}")
+            {:reply, {:error, reason}, state}
+        end
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -134,13 +145,16 @@ defmodule Raxol.Web.Session.Manager do
     case Storage.get(session_id) do
       {:ok, session} ->
         # Mark session as ended
-        session = %{session | status: :ended, ended_at: DateTime.utc_now()}
-        :ok = Storage.store(session)
-        
-        # Remove from active sessions
-        new_state = %{state | sessions: Map.delete(state.sessions, session_id)}
-        
-        {:reply, :ok, new_state}
+        ended_session = %{session | status: :ended, ended_at: DateTime.utc_now()}
+        case Storage.store(ended_session) do
+          {:ok, _} ->
+            # Remove from active sessions
+            new_state = %{state | sessions: Map.delete(state.sessions, session_id)}
+            {:reply, :ok, new_state}
+          {:error, reason} ->
+            Logger.error("Failed to mark session as ended: #{inspect(reason)}")
+            {:reply, {:error, reason}, state}
+        end
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -148,17 +162,19 @@ defmodule Raxol.Web.Session.Manager do
 
   @impl true
   def handle_call(:cleanup_sessions, _from, state) do
-    # Get expired sessions
+    # Get expired sessions directly - Storage.get_expired_sessions/1 returns a list
     expired_sessions = Storage.get_expired_sessions(state.session_timeout)
-    
+
     # End expired sessions
-    for session <- expired_sessions do
-      :ok = Storage.store(%{session | status: :expired, ended_at: DateTime.utc_now()})
-    end
-    
+    Enum.each(expired_sessions, fn session ->
+      ended_session = %{session | status: :expired, ended_at: DateTime.utc_now()}
+      _ = Storage.store(ended_session) # Ignore result for cleanup
+    end)
+
     # Remove from active sessions
-    new_sessions = Map.drop(state.sessions, Enum.map(expired_sessions, & &1.id))
-    
+    expired_ids = Enum.map(expired_sessions, & &1.id)
+    new_sessions = Map.drop(state.sessions, expired_ids)
+
     {:reply, :ok, %{state | sessions: new_sessions}}
   end
 
@@ -171,10 +187,10 @@ defmodule Raxol.Web.Session.Manager do
   def handle_info(:cleanup, state) do
     # Schedule next cleanup
     schedule_cleanup(state)
-    
+
     # Perform cleanup
-    {:ok, new_state} = handle_call(:cleanup_sessions, nil, state)
-    
+    {:reply, _status, new_state} = handle_call(:cleanup_sessions, self(), state)
+
     {:noreply, new_state}
   end
 
@@ -188,4 +204,4 @@ defmodule Raxol.Web.Session.Manager do
   defp schedule_cleanup(state) do
     Process.send_after(self(), :cleanup, state.cleanup_interval)
   end
-end 
+end

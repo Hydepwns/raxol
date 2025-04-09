@@ -9,8 +9,6 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   """
 
   alias Raxol.System.Updater
-  alias Raxol.Style.Colors.Color
-  alias Raxol.Style.Colors.Adaptive
 
   @doc """
   Executes the update command with the provided options and arguments.
@@ -94,11 +92,11 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   defp handle_auto_check(value) do
     case String.downcase(value) do
       "on" ->
-        Updater.set_auto_check(true)
+        _ = Updater.set_auto_check(true)
         IO.puts(success_msg("Automatic update checks are now enabled"))
 
       "off" ->
-        Updater.set_auto_check(false)
+        _ = Updater.set_auto_check(false)
         IO.puts(success_msg("Automatic update checks are now disabled"))
 
       _ ->
@@ -215,19 +213,11 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   defp format_bytes(bytes), do: "#{Float.round(bytes/1024/1024/1024, 2)} GB"
 
   defp success_msg(text) do
-    # Replace Color.colorize with direct ANSI sequence
-    # \e[32m = green, \e[0m = reset
-    adapted_text = "\e[32m#{text}\e[0m"
-    # Apply adaptive color if needed (may override the basic green)
-    Adaptive.adapt_color(adapted_text)
+    "\e[32m#{text}\e[0m"
   end
 
   defp error_msg(text) do
-    # Replace Color.colorize with direct ANSI sequence
-    # \e[31m = red, \e[0m = reset
-    adapted_text = "\e[31m#{text}\e[0m"
-    # Apply adaptive color if needed (may override the basic red)
-    Adaptive.adapt_color(adapted_text)
+    "\e[31m#{text}\e[0m"
   end
 
   defp print_help do

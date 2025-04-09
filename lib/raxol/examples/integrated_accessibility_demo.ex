@@ -11,7 +11,6 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
   alias Raxol.Style.Colors.System, as: ColorSystem
   alias Raxol.Style.Colors.PaletteManager
   alias Raxol.Animation.Framework, as: AnimationFramework
-  alias Raxol.UI.Components.FocusManager
   alias Raxol.UI.Terminal
 
   @demo_sections [
@@ -25,40 +24,42 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
 
   @available_locales ["en", "fr", "es", "ar", "ja"]
 
+  @initial_state %{
+    active_section: :welcome,
+    theme: :standard,
+    high_contrast: false,
+    reduced_motion: false,
+    locale: "en",
+    animation_speed: :normal,
+    preferences_saved: false,
+    focus_index: 0,
+    sections: @demo_sections,
+    sample_animation: nil,
+    loading_progress: 0,
+    shortcuts: %{
+      "Alt+H" => "Toggle High Contrast",
+      "Alt+M" => "Toggle Reduced Motion",
+      "Alt+T" => "Switch Theme",
+      "Alt+L" => "Switch Language",
+      "Alt+S" => "Save Preferences",
+      "Ctrl+Q" => "Exit Demo"
+    }
+  }
+
   def run do
     initialize_systems()
-    state = %{
-      active_section: :welcome,
-      theme: :standard,
-      high_contrast: false,
-      reduced_motion: false,
-      locale: "en",
-      animation_speed: :normal,
-      preferences_saved: false,
-      focus_index: 0,
-      sections: @demo_sections,
-      sample_animation: nil,
-      loading_progress: 0,
-      shortcuts: %{
-        "Alt+H" => "Toggle High Contrast",
-        "Alt+M" => "Toggle Reduced Motion",
-        "Alt+T" => "Switch Theme",
-        "Alt+L" => "Switch Language",
-        "Alt+S" => "Save Preferences",
-        "Ctrl+Q" => "Exit Demo"
-      }
-    }
+    state = @initial_state
     demo_loop(state)
   end
 
   defp initialize_systems do
-    Accessibility.enable()
-    UserPreferences.init()
-    ColorSystem.init()
-    PaletteManager.init()
-    AnimationFramework.init([])
-    I18n.init(default_locale: "en", available_locales: @available_locales)
-    KeyboardShortcuts.init()
+    _ = Accessibility.enable()
+    _ = UserPreferences.init()
+    _ = ColorSystem.init()
+    _ = PaletteManager.init()
+    _ = AnimationFramework.init([])
+    _ = I18n.init(default_locale: "en", available_locales: @available_locales)
+    _ = KeyboardShortcuts.init()
   end
 
   defp demo_loop(state) do
@@ -97,7 +98,7 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
           AnimationFramework.stop_animation(:demo_animation, :demo_animation_target)
           %{state | sample_animation: nil}
         else
-          animation = create_demo_animation(state.animation_speed, state.reduced_motion)
+          _animation = create_demo_animation(state.animation_speed, state.reduced_motion)
           AnimationFramework.start_animation(:demo_animation, :demo_animation_target)
           %{state | sample_animation: :demo_animation, loading_progress: 0}
         end
@@ -105,7 +106,7 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
     end
   end
 
-  defp handle_key(_key, state), do: state
+  defp handle_key(_key, state), do: state # Keep catch-all
 
   defp create_demo_animation(speed, reduced_motion) do
     base_duration = case speed do
@@ -123,17 +124,13 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
   end
 
   defp update_animation(state) do
-    if state.sample_animation do
-      case AnimationFramework.get_current_value(state.sample_animation, :demo_animation_target) do
-        {:not_found, _done} ->
-          %{state | sample_animation: nil}
-        {progress, true} ->
-          %{state | loading_progress: 100, sample_animation: nil}
-        {progress, false} ->
-           %{state | loading_progress: trunc(progress)}
-      end
-    else
-      state
+    case AnimationFramework.get_current_value(state.sample_animation, :demo_animation_target) do
+      {:not_found, _done} ->
+        %{state | sample_animation: nil}
+      {_progress, true} ->
+        %{state | loading_progress: 100, sample_animation: nil}
+      {progress, false} ->
+         %{state | loading_progress: trunc(progress)}
     end
   end
 

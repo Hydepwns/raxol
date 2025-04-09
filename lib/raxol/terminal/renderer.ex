@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Renderer do
   @moduledoc """
   Terminal renderer module.
-  
+
   This module handles rendering of terminal output, including:
   - Character cell rendering
   - Text styling
@@ -27,9 +27,9 @@ defmodule Raxol.Terminal.Renderer do
 
   @doc """
   Creates a new renderer with the given screen buffer.
-  
+
   ## Examples
-  
+
       iex> screen_buffer = ScreenBuffer.new(80, 24)
       iex> renderer = Renderer.new(screen_buffer)
       iex> renderer.screen_buffer
@@ -46,9 +46,9 @@ defmodule Raxol.Terminal.Renderer do
 
   @doc """
   Renders the screen buffer to a string.
-  
+
   ## Examples
-  
+
       iex> screen_buffer = ScreenBuffer.new(80, 24)
       iex> renderer = Renderer.new(screen_buffer)
       iex> output = Renderer.render(renderer)
@@ -63,9 +63,9 @@ defmodule Raxol.Terminal.Renderer do
 
   @doc """
   Sets the cursor position.
-  
+
   ## Examples
-  
+
       iex> screen_buffer = ScreenBuffer.new(80, 24)
       iex> renderer = Renderer.new(screen_buffer)
       iex> renderer = Renderer.set_cursor(renderer, {10, 5})
@@ -78,9 +78,9 @@ defmodule Raxol.Terminal.Renderer do
 
   @doc """
   Clears the cursor position.
-  
+
   ## Examples
-  
+
       iex> screen_buffer = ScreenBuffer.new(80, 24)
       iex> renderer = Renderer.new(screen_buffer)
       iex> renderer = Renderer.set_cursor(renderer, {10, 5})
@@ -94,9 +94,9 @@ defmodule Raxol.Terminal.Renderer do
 
   @doc """
   Sets the theme.
-  
+
   ## Examples
-  
+
       iex> screen_buffer = ScreenBuffer.new(80, 24)
       iex> renderer = Renderer.new(screen_buffer)
       iex> theme = %{foreground: %{default: "#FFFFFF"}}
@@ -110,9 +110,9 @@ defmodule Raxol.Terminal.Renderer do
 
   @doc """
   Sets the font settings.
-  
+
   ## Examples
-  
+
       iex> screen_buffer = ScreenBuffer.new(80, 24)
       iex> renderer = Renderer.new(screen_buffer)
       iex> font_settings = %{family: "monospace", size: 14}
@@ -135,9 +135,9 @@ defmodule Raxol.Terminal.Renderer do
   defp render_cell(cell, renderer) do
     char = Cell.get_char(cell)
     attributes = cell.attributes
-    
+
     style = build_style(attributes, renderer.theme)
-    
+
     if style == "" do
       char
     else
@@ -147,49 +147,48 @@ defmodule Raxol.Terminal.Renderer do
 
   defp build_style(attributes, theme) do
     styles = []
-    
+
     styles = if foreground = Map.get(attributes, :foreground) do
       color = get_theme_color(theme, :foreground, foreground)
       [{"color", color} | styles]
     else
       styles
     end
-    
+
     styles = if background = Map.get(attributes, :background) do
       color = get_theme_color(theme, :background, background)
       [{"background-color", color} | styles]
     else
       styles
     end
-    
+
     styles = if Map.get(attributes, :bold) do
       [{"font-weight", "bold"} | styles]
     else
       styles
     end
-    
+
     styles = if Map.get(attributes, :underline) do
       [{"text-decoration", "underline"} | styles]
     else
       styles
     end
-    
+
     styles = if Map.get(attributes, :italic) do
       [{"font-style", "italic"} | styles]
     else
       styles
     end
-    
+
     styles
     |> Enum.map(fn {property, value} -> "#{property}: #{value}" end)
     |> Enum.join("; ")
   end
 
-  defp get_theme_color(theme, type, color) do
-    case color do
-      :default -> Map.get_in(theme, [type, :default]) || "#FFFFFF"
-      color when is_binary(color) -> color
-      _ -> "#FFFFFF"
+  defp get_theme_color(theme, type, name) do
+    case name do
+      :default -> get_in(theme, [type, :default]) || "#FFFFFF"
+      _ -> Map.get(theme[type], name) || get_in(theme, [type, :default]) || "#FFFFFF"
     end
   end
-end 
+end

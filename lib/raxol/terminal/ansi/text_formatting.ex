@@ -29,7 +29,21 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @doc """
   Creates a new text style map with default values.
   """
-  @spec new() :: text_style()
+  @spec new() :: %{
+    double_width: false,
+    double_height: :none,
+    bold: false,
+    italic: false,
+    underline: false,
+    blink: false,
+    reverse: false,
+    conceal: false,
+    strikethrough: false,
+    fraktur: false,
+    double_underline: false,
+    foreground: nil,
+    background: nil
+  }
   def new do
     %{
       double_width: false,

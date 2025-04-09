@@ -1,13 +1,13 @@
 defmodule Raxol.Theme do
   @moduledoc """
   Theming system for Raxol applications.
-  
+
   This module provides a way to define and apply consistent visual themes
   to Raxol UI components. Themes define colors, spacing, borders, and other
   visual aspects of the UI.
-  
+
   ## Usage
-  
+
   ```elixir
   # Create a custom theme
   theme = Raxol.Theme.new(
@@ -19,7 +19,7 @@ defmodule Raxol.Theme do
       text: :white
     }
   )
-  
+
   # Apply theme to a component
   Raxol.Components.button(
     [
@@ -28,34 +28,34 @@ defmodule Raxol.Theme do
     ]
   )
   ```
-  
+
   ## Built-in Themes
-  
+
   * `:default` - The default Raxol theme
   * `:dark` - A dark theme with blue accents
   * `:light` - A light theme with dark text
   * `:high_contrast` - A high contrast theme for accessibility
   """
-  
+
   @type t :: map()
-  
+
   @doc """
   Creates a new theme with the given options.
-  
+
   ## Options
-  
+
   * `:name` - Theme name (default: "Custom")
   * `:colors` - Map of color definitions
   * `:spacing` - Map of spacing values
   * `:borders` - Map of border styles
   * `:sizes` - Map of size definitions
-  
+
   ## Returns
-  
+
   A new theme map.
-  
+
   ## Example
-  
+
   ```elixir
   Raxol.Theme.new(
     name: "Forest",
@@ -74,10 +74,10 @@ defmodule Raxol.Theme do
     spacing = Keyword.get(opts, :spacing, %{})
     borders = Keyword.get(opts, :borders, %{})
     sizes = Keyword.get(opts, :sizes, %{})
-    
+
     # Start with default theme
     default_theme = default()
-    
+
     # Merge custom options
     %{
       name: name,
@@ -87,16 +87,16 @@ defmodule Raxol.Theme do
       sizes: Map.merge(default_theme.sizes, sizes)
     }
   end
-  
+
   @doc """
   Returns the default theme.
-  
+
   ## Returns
-  
+
   The default theme map.
-  
+
   ## Example
-  
+
   ```elixir
   theme = Raxol.Theme.default()
   ```
@@ -142,16 +142,16 @@ defmodule Raxol.Theme do
       }
     }
   end
-  
+
   @doc """
   Returns the dark theme.
-  
+
   ## Returns
-  
+
   The dark theme map.
-  
+
   ## Example
-  
+
   ```elixir
   theme = Raxol.Theme.dark()
   ```
@@ -170,16 +170,16 @@ defmodule Raxol.Theme do
       }
     )
   end
-  
+
   @doc """
   Returns the light theme.
-  
+
   ## Returns
-  
+
   The light theme map.
-  
+
   ## Example
-  
+
   ```elixir
   theme = Raxol.Theme.light()
   ```
@@ -202,16 +202,16 @@ defmodule Raxol.Theme do
       }
     )
   end
-  
+
   @doc """
   Returns the high contrast theme for accessibility.
-  
+
   ## Returns
-  
+
   The high contrast theme map.
-  
+
   ## Example
-  
+
   ```elixir
   theme = Raxol.Theme.high_contrast()
   ```
@@ -238,28 +238,28 @@ defmodule Raxol.Theme do
       }
     )
   end
-  
+
   @doc """
   Returns the style for a button based on the given theme and variant.
-  
+
   ## Parameters
-  
+
   * `theme` - The theme to use
   * `variant` - Button variant (:primary, :secondary, :success, :warning, :error, :info)
   * `opts` - Additional options for the button style
-  
+
   ## Options
-  
+
   * `:size` - Button size (:sm, :md, :lg, default: :md)
   * `:outlined` - Whether the button should have an outlined style (default: false)
   * `:disabled` - Whether the button is disabled (default: false)
-  
+
   ## Returns
-  
+
   A style map for use with the button component.
-  
+
   ## Example
-  
+
   ```elixir
   style = Raxol.Theme.button_style(theme, :primary, size: :lg)
   ```
@@ -269,12 +269,12 @@ defmodule Raxol.Theme do
     size = Keyword.get(opts, :size, :md)
     outlined = Keyword.get(opts, :outlined, false)
     disabled = Keyword.get(opts, :disabled, false)
-    
+
     # Base style
     base_style = %{
       min_width: get_in(theme, [:sizes, :button, :min_width]) || 8
     }
-    
+
     # Size-based styling
     size_style = case size do
       :sm -> %{padding_left: 1, padding_right: 1}
@@ -282,7 +282,7 @@ defmodule Raxol.Theme do
       :lg -> %{padding_left: 3, padding_right: 3}
       _ -> %{padding_left: 2, padding_right: 2}
     end
-    
+
     # Variant-based styling
     variant_color = case variant do
       :primary -> theme.colors.primary
@@ -293,7 +293,7 @@ defmodule Raxol.Theme do
       :info -> theme.colors.info
       _ -> theme.colors.primary
     end
-    
+
     variant_style = if outlined do
       %{
         fg: variant_color,
@@ -306,7 +306,7 @@ defmodule Raxol.Theme do
         bg: variant_color
       }
     end
-    
+
     # Disabled styling
     disabled_style = if disabled do
       if outlined do
@@ -317,34 +317,34 @@ defmodule Raxol.Theme do
     else
       %{}
     end
-    
+
     # Combine all style components
     Map.merge(base_style, size_style)
     |> Map.merge(variant_style)
     |> Map.merge(disabled_style)
   end
-  
+
   @doc """
   Returns the style for an input field based on the given theme.
-  
+
   ## Parameters
-  
+
   * `theme` - The theme to use
   * `opts` - Additional options for the input style
-  
+
   ## Options
-  
+
   * `:size` - Input size (:sm, :md, :lg, default: :md)
   * `:focused` - Whether the input is focused (default: false)
   * `:disabled` - Whether the input is disabled (default: false)
   * `:invalid` - Whether the input is invalid (default: false)
-  
+
   ## Returns
-  
+
   A style map for use with input components.
-  
+
   ## Example
-  
+
   ```elixir
   style = Raxol.Theme.input_style(theme, focused: true)
   ```
@@ -355,13 +355,13 @@ defmodule Raxol.Theme do
     focused = Keyword.get(opts, :focused, false)
     disabled = Keyword.get(opts, :disabled, false)
     invalid = Keyword.get(opts, :invalid, false)
-    
+
     # Base style
     base_style = %{
       width: get_in(theme, [:sizes, :input, :width]) || 20,
       border: true
     }
-    
+
     # Size-based styling
     size_style = case size do
       :sm -> %{padding_left: 1, padding_right: 1}
@@ -369,7 +369,7 @@ defmodule Raxol.Theme do
       :lg -> %{padding_left: 2, padding_right: 2}
       _ -> %{padding_left: 1, padding_right: 1}
     end
-    
+
     # State-based styling
     state_style = cond do
       invalid -> %{border_fg: theme.colors.error}
@@ -377,32 +377,32 @@ defmodule Raxol.Theme do
       disabled -> %{fg: :light_black, border_fg: :light_black}
       true -> %{}
     end
-    
+
     # Combine all style components
     Map.merge(base_style, size_style)
     |> Map.merge(state_style)
   end
-  
+
   @doc """
   Returns the style for a panel based on the given theme and variant.
-  
+
   ## Parameters
-  
+
   * `theme` - The theme to use
   * `variant` - Panel variant (:normal, :elevated, :inset, default: :normal)
   * `opts` - Additional options for the panel style
-  
+
   ## Options
-  
+
   * `:border` - Border style (:none, :normal, :thick, default: :normal)
   * `:padding` - Padding size (:none, :xs, :sm, :md, :lg, :xl, default: :none)
-  
+
   ## Returns
-  
+
   A style map for use with the panel component.
-  
+
   ## Example
-  
+
   ```elixir
   style = Raxol.Theme.panel_style(theme, :elevated, padding: :md)
   ```
@@ -411,14 +411,14 @@ defmodule Raxol.Theme do
     # Extract options
     border_type = Keyword.get(opts, :border, :normal)
     padding_size = Keyword.get(opts, :padding, :none)
-    
+
     # Base style based on variant
     base_style = case variant do
       :elevated -> %{bg: :light_black}
       :inset -> %{bg: :black}
       _ -> %{}
     end
-    
+
     # Border style
     border_style = case border_type do
       :none -> %{border: false}
@@ -426,7 +426,7 @@ defmodule Raxol.Theme do
       :thick -> theme.borders.thick
       _ -> %{border: false}
     end
-    
+
     # Padding style
     padding = if padding_size == :none do
       %{}
@@ -439,33 +439,33 @@ defmodule Raxol.Theme do
         padding_left: padding_value
       }
     end
-    
+
     # Combine all style components
     Map.merge(base_style, border_style)
     |> Map.merge(padding)
   end
-  
+
   @doc """
   Returns the style for text based on the given theme and variant.
-  
+
   ## Parameters
-  
+
   * `theme` - The theme to use
   * `variant` - Text variant (:normal, :dim, :accent, :primary, :success, :warning, :error, :info, default: :normal)
   * `opts` - Additional options for the text style
-  
+
   ## Options
-  
+
   * `:bold` - Whether the text should be bold (default: false)
   * `:italic` - Whether the text should be italic (default: false)
   * `:underline` - Whether the text should be underlined (default: false)
-  
+
   ## Returns
-  
+
   A style map for use with text elements.
-  
+
   ## Example
-  
+
   ```elixir
   style = Raxol.Theme.text_style(theme, :accent, bold: true)
   ```
@@ -475,7 +475,7 @@ defmodule Raxol.Theme do
     bold = Keyword.get(opts, :bold, false)
     italic = Keyword.get(opts, :italic, false)
     underline = Keyword.get(opts, :underline, false)
-    
+
     # Variant-based styling
     variant_style = case variant do
       :dim -> %{fg: theme.colors.text_dim}
@@ -487,46 +487,49 @@ defmodule Raxol.Theme do
       :info -> %{fg: theme.colors.info}
       _ -> %{fg: theme.colors.text}
     end
-    
+
     # Text decoration styling
     decoration_style = %{}
     decoration_style = if bold, do: Map.put(decoration_style, :bold, true), else: decoration_style
     decoration_style = if italic, do: Map.put(decoration_style, :italic, true), else: decoration_style
     decoration_style = if underline, do: Map.put(decoration_style, :underline, true), else: decoration_style
-    
+
     # Combine style components
     Map.merge(variant_style, decoration_style)
   end
-  
+
   @doc """
   Returns the style for a table based on the given theme.
-  
+
   ## Parameters
-  
+
   * `theme` - The theme to use
   * `component` - Table component (:table, :header, :row, :cell, :selected_row, default: :table)
   * `opts` - Additional options for the table style
-  
+
   ## Returns
-  
+
   A style map for use with table components.
-  
+
   ## Example
-  
+
   ```elixir
   header_style = Raxol.Theme.table_style(theme, :header)
   ```
   """
-  def table_style(theme, component \\ :table, opts \\ []) do
+  def table_style(theme, component \\ :table, _opts \\ []) do
+    default_style = %{
+      border: true,
+      fg: theme.colors.text,
+      bold: true,
+      bg: :light_black
+    }
+
     case component do
       :table -> %{
         border: true
       }
-      :header -> %{
-        fg: theme.colors.text,
-        bold: true,
-        bg: :light_black
-      }
+      :header -> default_style
       :row -> %{}
       :cell -> %{
         padding_left: 1,
@@ -542,26 +545,26 @@ defmodule Raxol.Theme do
       _ -> %{}
     end
   end
-  
+
   @doc """
   Applies the theme to a style map, based on a component type.
-  
+
   This is a convenience function for quickly applying theme-appropriate
   styling to components without having to use the specific style functions.
-  
+
   ## Parameters
-  
+
   * `theme` - The theme to use
   * `component` - Component type (:button, :input, :panel, :text, :table)
   * `variant` - Component variant (depends on component type)
   * `style` - Existing style map to merge with themed style
-  
+
   ## Returns
-  
+
   A style map with theme applied.
-  
+
   ## Example
-  
+
   ```elixir
   style = %{width: 30}
   themed_style = Raxol.Theme.apply(theme, :button, :primary, style)
@@ -576,7 +579,7 @@ defmodule Raxol.Theme do
       :table -> table_style(theme, variant)
       _ -> %{}
     end
-    
+
     Map.merge(themed_style, style)
   end
-end 
+end
