@@ -11,7 +11,7 @@ defmodule Raxol.Runtime do
   alias Raxol.Core.Runtime.ComponentManager
   # alias Raxol.Terminal.Renderer # Removed unused alias
   # alias Raxol.Event # Removed unused alias
-  alias Raxol.Core.Events.Event, as: CoreEvent # Alias for conversion
+  alias Raxol.Core.Events.Event # Use the original alias, needed for convert/1
   alias ExTermbox.Bindings # Use the correct module for NIFs
   # alias Raxol.Core.Events.Manager, as: EventManager
 
@@ -282,7 +282,7 @@ defmodule Raxol.Runtime do
   defp handle_event(%ExTermbox.Event{type: :key} = event, state) do
     # Check for quit keys using the updated is_quit_key? function
     # is_quit_key? expects a converted event map, so we convert here
-    converted_key_event = Raxol.Core.Events.Event.convert(event)
+    converted_key_event = Event.convert(event)
     if is_quit_key?(converted_key_event, state.quit_keys) do
       {:stop, state}
     else
@@ -303,14 +303,28 @@ defmodule Raxol.Runtime do
   # Takes the raw ExTermbox.Event struct
   defp handle_event(%ExTermbox.Event{type: :mouse} = event, state) do
     # Convert the raw mouse event and send it to the application
-    converted_mouse_event = Raxol.Core.Events.Event.convert(event)
+    converted_mouse_event = Event.convert(event)
     updated_model = update_model(state.app_module, state.model, converted_mouse_event)
     {:continue, %{state | model: updated_model}}
   end
 
-  defp handle_event(_event, state) do
-    # Ignore other events
-    {:continue, state}
+  defp handle_event(event, state) do
+    case event do
+      # Key events & Mouse events need conversion
+      %{type: :key} = key_event ->
+        converted_event = Event.convert(key_event)
+        update_model(state.app_module, converted_event, state.model)
+
+      %{type: :mouse} = mouse_event ->
+        converted_event = Event.convert(mouse_event)
+        update_model(state.app_module, converted_event, state.model)
+
+      # Other event types (e.g., resize) might pass through directly or need specific handling
+      # TODO: Handle resize events properly - map to a specific message?
+      _other_event ->
+        # Pass other events directly for now
+        update_model(state.app_module, event, state.model)
+    end
   end
   # --- End of restored handle_event/2 functions ---
 end
