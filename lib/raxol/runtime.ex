@@ -1,27 +1,25 @@
 defmodule Raxol.Runtime do
   @moduledoc """
-  The Runtime module manages application lifecycle and event processing.
-
-  This module provides the core functionality for running Raxol applications,
-  handling the event loop, and managing application state. It is responsible for:
-
-  - Starting and stopping applications
-  - Managing the event loop
-  - Handling user input
-  - Coordinating rendering
-  - Managing application state
+  Manages the core runtime processes for a Raxol application.
+  Starts and supervises the main components like EventLoop, ComponentManager, etc.
   """
-
+  # This module acts as a GenServer, not the main Application
   use GenServer
+
   require Logger
 
-  alias Raxol.Renderer
-  alias Raxol.Event
-  alias Raxol.Core.Runtime.{ComponentManager, EventManager}
-  # alias Raxol.Core.UI.ThemeManager
-  # alias Raxol.Core.Renderer.Manager, as: RendererManager # Unused
-  # alias Raxol.System
-  # alias Raxol.Terminal.Renderer
+  alias Raxol.Core.Runtime.ComponentManager
+  # alias Raxol.Terminal.Renderer # Removed unused alias
+  # alias Raxol.Event # Removed unused alias
+  alias Raxol.Core.Events.Event # Keep this for the functions we *do* call
+  alias ExTermbox.Bindings # Use the correct module for NIFs
+  # alias Raxol.Core.Events.Manager, as: EventManager
+
+  # Unused aliases to be removed:
+  # alias Raxol.Component
+  # alias Raxol.Core.Config
+  # alias Raxol.Core.Events.Manager, as: EventManager
+  # alias Raxol.Core.Runtime.{EventLoop, AnimationManager, LayoutEngine, RenderEngine}
 
   @registry Raxol.Registry
 
@@ -82,48 +80,63 @@ defmodule Raxol.Runtime do
 
   # Server callbacks
 
-  def start_link({app_module, app_name, options}) do
-    GenServer.start_link(__MODULE__, {app_module, options}, name: via_tuple(app_name))
+  # Accepts options as a keyword list from the supervisor
+  def start_link(opts) when is_list(opts) do
+    # Extract app_module and determine app_name
+    app_module = Keyword.fetch!(opts, :app_module)
+    _app_name = get_app_name(app_module) # Prefixed as it's no longer used for registration
+
+    # Pass {app_module, opts} to init/1
+    GenServer.start_link(__MODULE__, {app_module, opts})
   end
 
   @impl true
-  def init({_app_module, _options}) do
-    Logger.info("Raxol Runtime initializing...")
-    # Start core managers
-    # {:ok, component_manager_pid} = ComponentManager.start_link()
-    # {:ok, event_manager_pid} = EventManager.start_link()
-    # {:ok, layout_manager_pid} = LayoutManager.start_link()
-    # {:ok, renderer_manager_pid} = RendererManager.start_link()
-    # {:ok, theme_manager_pid} = ThemeManager.start_link()
+  def init({app_module, options}) do
+    # Pass the full options map from the supervisor/run call
+    initial_model_from_opts = Keyword.get(options, :initial_model) # Keep for potential direct model passing
+    quit_keys = Keyword.get(options, :quit_keys, [:q, :ctrl_c])
+    app_name = get_app_name(app_module)
 
+    # Start core managers
     {:ok, _comp_manager_pid} = ComponentManager.start_link()
     Raxol.Core.Events.Manager.init()
-    # TODO: Start other managers like LayoutManager, ThemeManager if needed
 
-    # Start the rendering backend (e.g., Termbox)
-    # backend_opts = Keyword.get(options, :backend_opts, [])
-    # {:ok, tb_pid} = start_backend(:termbox, backend_opts)
-    # TODO: Placeholder for Termbox start - :ex_termbox not available
-    {:ok, %{tb_pid: nil}}
+    # Start the rendering backend (Termbox)
+    case Bindings.init() do
+      :ok ->
+        Logger.info("Termbox initialized successfully.")
+        # Start polling for events from Termbox, sending them to this process (self())
+        ExTermbox.Bindings.start_polling(self())
+      {:error, init_reason} ->
+        Logger.error("Failed to initialize Termbox: #{inspect(init_reason)}")
+    end
 
-    # state = %{
-    #   app_module: app_module,
-    #   options: options,
-    #   component_manager_pid: component_manager_pid,
-    #   event_manager_pid: event_manager_pid,
-    #   layout_manager_pid: layout_manager_pid,
-    #   renderer_manager_pid: renderer_manager_pid,
-    #   theme_manager_pid: theme_manager_pid,
-    #   tb_pid: tb_pid,
-    #   shutdown_requested: false
-    # }
+    # Prepare initial state before calling app's init
+    initial_state = %{
+      app_module: app_module,
+      model: initial_model_from_opts, # Use passed model if provided, otherwise app's init sets it
+      options: options,
+      quit_keys: quit_keys,
+      shutdown_requested: false
+    }
 
-    # # Register event handlers
-    # EventManager.register_handler(:input, self(), :handle_input)
-    # EventManager.register_handler(:resize, self(), :handle_resize)
+    # Initialize the application model by calling the app module's init/1
+    final_state =
+      if Code.ensure_loaded?(app_module) and function_exported?(app_module, :init, 1) do
+        # Call app's init/1, passing the options; it should return the initial model
+        initial_model = app_module.init(options)
+        %{initial_state | model: initial_model}
+      else
+        # Fallback if init/1 is not defined (uses default from `use Raxol.App` or initial_model_from_opts)
+        Logger.warning("#{inspect(app_module)} does not implement init/1. Using default model: #{inspect(initial_state.model)}")
+        initial_state
+      end
 
-    # Logger.info("Raxol Runtime initialized successfully.")
-    # {:ok, state}
+    # Schedule the first render
+    _ = schedule_render()
+
+    Logger.info("Raxol Runtime initialized successfully for #{app_name}.")
+    {:ok, final_state}
   end
 
   @impl true
@@ -140,32 +153,67 @@ defmodule Raxol.Runtime do
 
   @impl true
   def handle_info(:render, state) do
-    # Render the current view
-    if Code.ensure_loaded?(state.app_module) and function_exported?(state.app_module, :render, 1) do
-      view = state.app_module.render(state.model)
-      Renderer.render(state.renderer_pid, view)
-    end
+    Logger.debug("Received :render message")
 
-    # Schedule the next render
+    # Render the application UI
+    view = state.app_module.render(state.model)
+    Logger.debug("App.render/1 returned: #{inspect(view)}")
+
+    # TODO: Integrate with Renderer module
+    # Potentially pass the view to the Renderer?
+    # _ = Renderer.render(state.renderer_pid) # Placeholder, renderer_pid isn't in state
+
+    # Actually draw the buffer to the screen
+    :ok = ExTermbox.Bindings.present()
+    Logger.debug("Called ExTermbox.Bindings.present()")
+
+    # Schedule the next render frame
     schedule_render()
 
     {:noreply, state}
   end
 
   @impl true
-  def handle_info({:ex_termbox, raw_event}, state) do
-    # Convert ex_termbox event to Raxol event
-    event = Event.convert(raw_event)
+  def handle_info({:event, raw_event_tuple}, state) do
+    Logger.info("MATCHED handle_info({:event, tuple}): #{inspect(raw_event_tuple)}")
+    # Re-enabled struct reconstruction and event processing
+    try do
+      {type_int, mod, key, ch, w, h, x, y} = raw_event_tuple
+      event_struct = %ExTermbox.Event{
+        type: case type_int do
+          1 -> :key
+          2 -> :resize
+          3 -> :mouse
+          _ -> :unknown
+        end,
+        mod: mod,
+        key: key,
+        ch: ch,
+        w: w,
+        h: h,
+        x: x,
+        y: y
+      }
 
-    # Process event
-    case handle_event(event, state) do
-      {:continue, updated_state} ->
-        {:noreply, updated_state}
-
-      {:stop, updated_state} ->
-        cleanup(updated_state)
-        {:stop, :normal, updated_state}
+      # Pass the raw ExTermbox struct to handle_event
+      case handle_event(event_struct, state) do
+        {:continue, updated_state} ->
+          {:noreply, updated_state}
+        {:stop, updated_state} ->
+          cleanup(updated_state)
+          {:stop, :normal, updated_state}
+      end
+    rescue
+      e ->
+        Logger.error("Failed to process event tuple #{inspect(raw_event_tuple)}: #{inspect(e)}")
+        {:noreply, state} # Continue running even if one event fails
     end
+  end
+
+  # Catch-all for unexpected messages (shouldn't be hit often now)
+  def handle_info(message, state) do
+    Logger.warning("Runtime received unexpected message: #{inspect(message)}")
+    {:noreply, state}
   end
 
   @impl true
@@ -180,10 +228,6 @@ defmodule Raxol.Runtime do
     Module.split(app_module) |> List.last() |> String.to_atom()
   rescue
     _ -> :default
-  end
-
-  defp via_tuple(app_name) do
-    {:via, Registry, {@registry, app_name}}
   end
 
   defp lookup_app(app_name) do
@@ -201,44 +245,18 @@ defmodule Raxol.Runtime do
     end
   end
 
-  defp handle_event(%{type: :key} = event, state) do
-    # Check for quit keys
-    if is_quit_key?(event, state.quit_keys) do
-      {:stop, state}
-    else
-      # Send the event to the application
-      msg = {:event, event}
-      updated_model = update_model(state.app_module, state.model, msg)
-      {:continue, %{state | model: updated_model}}
-    end
-  end
-
-  defp handle_event(%{type: :resize, width: width, height: height}, state) do
-    # Update model with resize event
-    msg = {:event, %{type: :resize, width: width, height: height}}
-    updated_model = update_model(state.app_module, state.model, msg)
-    {:continue, %{state | model: updated_model}}
-  end
-
-  defp handle_event(%{type: :mouse} = event, state) do
-    # Send the mouse event to the application
-    msg = {:event, event}
-    updated_model = update_model(state.app_module, state.model, msg)
-    {:continue, %{state | model: updated_model}}
-  end
-
-  defp handle_event(_event, state) do
-    # Ignore other events
-    {:continue, state}
-  end
-
-  defp is_quit_key?(%{type: :key, meta: meta, key: key}, quit_keys) do
+  # Updated pattern match to extract key/modifiers from nested :data map
+  defp is_quit_key?(%{type: :key, data: %{key: key, modifiers: modifiers}}, quit_keys) do
     Enum.any?(quit_keys, fn
-      :ctrl_c -> meta == :ctrl && key == ?c
-      {:ctrl, char} -> meta == :ctrl && key == char
-      :q -> meta == :none && key == ?q
-      key_code when is_integer(key_code) -> meta == :none && key == key_code
-      named_key when is_atom(named_key) -> meta == :none && key == named_key
+      # Check for Ctrl+C
+      :ctrl_c -> Enum.member?(:ctrl, modifiers) && key == ?c
+      # Check for generic Ctrl + character
+      {:ctrl, char} -> Enum.member?(:ctrl, modifiers) && key == char
+      # Check for simple 'q' key
+      :q -> modifiers == [] && key == ?q
+      # Check for other simple keys (integers or atoms) without modifiers
+      simple_key when is_integer(simple_key) or is_atom(simple_key) ->
+         modifiers == [] && key == simple_key
       _ -> false
     end)
   end
@@ -249,17 +267,50 @@ defmodule Raxol.Runtime do
   end
 
   defp cleanup(_state) do
-    Logger.info("Cleaning up Raxol runtime...")
-    # Stop core managers in reverse order of startup
-    GenServer.stop(Raxol.Core.Renderer.Manager) # Use GenServer.stop for the GenServer
-    Raxol.Core.Events.Manager.cleanup() # Use the cleanup function we added
-    GenServer.stop(Raxol.Core.Runtime.ComponentManager) # Use GenServer.stop for the GenServer
+    # Stop Termbox event polling and shut down Termbox unconditionally
+    Logger.info("Shutting down Termbox...")
+    ExTermbox.Bindings.stop_polling()
+    ExTermbox.Bindings.shutdown()
+    Logger.info("Termbox shut down.")
 
-    # Optional: Backend cleanup
-    # stop_backend(:termbox, state.tb_pid)
-    # TODO: Placeholder for Termbox stop - :ex_termbox not available
-
-    Logger.info("Raxol Runtime cleanup complete.")
+    # Perform other cleanup tasks
     :ok
   end
+
+  # --- Restored handle_event/2 functions ---
+  # Takes the raw ExTermbox.Event struct
+  defp handle_event(%ExTermbox.Event{type: :key} = event, state) do
+    # Check for quit keys using the updated is_quit_key? function
+    # is_quit_key? expects a converted event map, so we convert here
+    converted_key_event = Raxol.Core.Events.Event.convert(event)
+    if is_quit_key?(converted_key_event, state.quit_keys) do
+      {:stop, state}
+    else
+      # Send the converted event to the application
+      updated_model = update_model(state.app_module, state.model, converted_key_event)
+      {:continue, %{state | model: updated_model}}
+    end
+  end
+
+  # Takes the raw ExTermbox.Event struct
+  defp handle_event(%ExTermbox.Event{type: :resize, w: width, h: height} = _event, state) do
+    # Construct the specific message for the application's update/2
+    resize_msg = %{type: :resize, width: width, height: height}
+    updated_model = update_model(state.app_module, state.model, resize_msg)
+    {:continue, %{state | model: updated_model}}
+  end
+
+  # Takes the raw ExTermbox.Event struct
+  defp handle_event(%ExTermbox.Event{type: :mouse} = event, state) do
+    # Convert the raw mouse event and send it to the application
+    converted_mouse_event = Raxol.Core.Events.Event.convert(event)
+    updated_model = update_model(state.app_module, state.model, converted_mouse_event)
+    {:continue, %{state | model: updated_model}}
+  end
+
+  defp handle_event(_event, state) do
+    # Ignore other events
+    {:continue, state}
+  end
+  # --- End of restored handle_event/2 functions ---
 end
