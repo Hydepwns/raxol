@@ -10,14 +10,18 @@ defmodule Raxol.Application do
 
   use Application
 
+  @compile_env Mix.env()
+
   alias Raxol.Style.Colors.{Theme, Persistence, HotReload}
   alias Raxol.Core.UserPreferences
 
   @impl true
   def start(_type, _args) do
     children = [
+      # Start the Terminal Registry first (takes no args)
+      Raxol.Terminal.Registry,
       # Start the database if enabled and not in test environment
-      if Application.get_env(:raxol, :database_enabled, true) && Mix.env() != :test do
+      if Application.get_env(:raxol, :database_enabled, true) && @compile_env != :test do
         {Raxol.Repo, []}
       end,
       # Start user preferences
@@ -32,8 +36,19 @@ defmodule Raxol.Application do
       {HotReload, []}
     ]
     |> Enum.reject(&is_nil/1)
-    |> Enum.map(fn
-      {Raxol.Repo, _} = _child -> %{id: Raxol.Repo, start: {Raxol.Repo, :start_link, [[]]}, restart: :permanent, type: :supervisor}
+    # Add Raxol.Runtime to the children list, passing the default App module
+    runtime_child = {Raxol.Runtime, [app_module: Raxol.App]}
+    children = children ++ [runtime_child]
+
+    # Transform children into full specs if needed
+    children = Enum.map(children, fn
+      # Special case for Repo (which is a supervisor)
+      {Raxol.Repo, _} = _child ->
+         %{id: Raxol.Repo, start: {Raxol.Repo, :start_link, [[]]}, restart: :permanent, type: :supervisor}
+      # Explicitly define how to start the Registry (using start_link/0)
+      Raxol.Terminal.Registry ->
+         %{id: Raxol.Terminal.Registry, start: {Raxol.Terminal.Registry, :start_link, []}}
+      # Pass other children (like `{Raxol.Runtime, [...]}`) through unchanged (Supervisor handles them)
       child -> child
     end)
 
@@ -134,14 +149,14 @@ defmodule Raxol.Application do
   """
   def apply_theme(theme) do
     # Save theme for persistence
-    Persistence.save_theme(theme)
+    _ = Persistence.save_theme(theme)
 
     # Apply theme to color system
     Theme.apply_theme(theme)
 
     # Update user preferences
-    UserPreferences.set(:theme, theme.name)
-    UserPreferences.save()
+    _ = UserPreferences.set(:theme, theme.name)
+    _ = UserPreferences.save()
 
     :ok
   end

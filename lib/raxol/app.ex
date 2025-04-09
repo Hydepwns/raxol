@@ -1,17 +1,23 @@
 defmodule Raxol.App do
-  @moduledoc ~S"""
-  A behaviour module for implementing a Raxol application.
+  @moduledoc """
+  Defines the behaviour for a Raxol application and provides default implementations.
 
-  This module provides the structure for implementing applications
-  following The Elm Architecture (TEA) pattern.
+  A Raxol application follows The Elm Architecture (TEA) pattern:
 
-  ## Example
+  - `init/1`: Initializes the application state (model).
+  - `update/2`: Handles messages (events) and updates the model.
+  - `render/1`: Renders the UI based on the current model.
+
+  To create a Raxol application, `use Raxol.App` in your module and implement
+  the required callbacks (`init/1`, `update/2`, `render/1`).
+
+  Example:
 
       defmodule MyApp do
         use Raxol.App
 
         @impl true
-        def init(_) do
+        def init(_opts) do
           %{count: 0}
         end
 
@@ -24,21 +30,8 @@ defmodule Raxol.App do
           end
         end
 
-        @impl true
-        def render(%{count: count}) do
-          use Raxol.View
-
-          view do
-            panel title: "Counter Example" do
-              label content: "Count: #{count}"
-
-              row do
-                button label: "Increment", on_click: :increment
-                button label: "Decrement", on_click: :decrement
-              end
-            end
-          end
-        end
+        # The render function example was removed due to compilation issues.
+        # Refer to Raxol.View documentation for rendering examples.
       end
   """
 
@@ -56,19 +49,28 @@ defmodule Raxol.App do
     quote do
       @behaviour Raxol.App
 
-      # Default implementations
+      # Default implementations provided by the behaviour itself
+      # These can be overridden by the specific app module
 
-      @impl true
+      @impl Raxol.App
       def init(_opts), do: %{}
 
-      @impl true
+      @impl Raxol.App
       def update(model, _msg), do: model
 
-      @impl true
-      def render(_model), do: Raxol.View.view(do: nil)
+      @impl Raxol.App
+      def render(_model) do
+        # Default render returns an empty view
+        # Import View locally for the default implementation
+        require Raxol.View
+        Raxol.View.view(do: nil)
+      end
 
       # Allow overriding the defaults
       defoverridable init: 1, update: 2, render: 1
+
+      # Import View functions for use in the specific app's render
+      import Raxol.View
     end
   end
 
