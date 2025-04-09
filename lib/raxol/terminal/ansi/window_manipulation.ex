@@ -35,13 +35,16 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   Processes a window manipulation sequence and returns the updated state and response.
   """
   @spec process_sequence(window_state(), binary()) :: {window_state(), binary()}
-  def process_sequence(state, <<"\e[", rest::binary>>) do
-    case parse_sequence(rest) do
-      {:ok, operation, params} ->
-        handle_operation(state, operation, params)
-      :error ->
-        {state, ""}
-    end
+  def process_sequence(state, <<"\e[", _rest::binary>>) do
+    # Window manipulation parsing is currently incomplete and returns :error.
+    # Simply return the state until parsing is fixed.
+    # case parse_sequence(rest) do
+    #  {:ok, operation, params} ->
+    #    handle_operation(state, operation, params)
+    #  :error ->
+    #    {state, ""}
+    # end
+    {state, ""} # Return empty binary as no response is generated
   end
 
   @doc """
@@ -168,4 +171,4 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   def handle_operation(state, :unknown, _) do
     {state, ""}
   end
-end 
+end

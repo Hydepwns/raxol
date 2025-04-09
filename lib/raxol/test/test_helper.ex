@@ -9,9 +9,11 @@ defmodule Raxol.Test.TestHelper do
   - Cleanup utilities
   """
 
+  use ExUnit.CaseTemplate
   import ExUnit.Callbacks
-  alias Raxol.Core.Events.{Event, Manager, Subscription}
-  alias Raxol.Core.Runtime.EventLoop
+  alias Raxol.Core.Runtime.{EventLoop}
+  alias Raxol.Core.Events.{Event, Manager}
+  require Logger
 
   @doc """
   Sets up a test environment with all necessary dependencies.
@@ -22,10 +24,10 @@ defmodule Raxol.Test.TestHelper do
     # Start event system
     {:ok, event_pid} = start_supervised(Manager)
     {:ok, loop_pid} = start_supervised(EventLoop)
-    
+
     # Create test terminal
     terminal = setup_test_terminal()
-    
+
     %{
       event_manager: event_pid,
       event_loop: loop_pid,
@@ -92,18 +94,6 @@ defmodule Raxol.Test.TestHelper do
   end
 
   @doc """
-  Creates a test subscription for event filtering.
-  """
-  def create_test_subscription(event_type, opts \\ []) do
-    {:ok, ref} = Subscription.subscribe(event_type, opts)
-    %{
-      type: event_type,
-      ref: ref,
-      opts: opts
-    }
-  end
-
-  @doc """
   Generates test styles for component rendering.
   """
   def test_styles do
@@ -158,19 +148,20 @@ defmodule Raxol.Test.TestHelper do
   @doc """
   Cleans up test resources and resets the environment.
   """
+  @dialyzer {:nowarn_function, cleanup_test_env: 1}
   def cleanup_test_env(context) do
     # Stop supervised processes
     if context[:event_manager] do
-      stop_supervised(Manager)
+      _ = stop_supervised(Manager)
     end
-    
+
     if context[:event_loop] do
-      stop_supervised(EventLoop)
+      _ = stop_supervised(EventLoop)
     end
-    
+
     # Clear any remaining messages
     flush_messages()
-    
+
     :ok
   end
 
@@ -181,10 +172,10 @@ defmodule Raxol.Test.TestHelper do
     original_group_leader = Process.group_leader()
     {:ok, capture_pid} = StringIO.open("")
     Process.group_leader(self(), capture_pid)
-    
+
     try do
       fun.()
-      {:ok, {_input, output}} = StringIO.contents(capture_pid)
+      {_input, output} = StringIO.contents(capture_pid)
       output
     after
       Process.group_leader(self(), original_group_leader)
@@ -201,4 +192,4 @@ defmodule Raxol.Test.TestHelper do
       0 -> :ok
     end
   end
-end 
+end

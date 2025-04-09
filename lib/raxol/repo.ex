@@ -4,7 +4,7 @@ defmodule Raxol.Repo do
     adapter: Ecto.Adapters.Postgres,
     pool: DBConnection.Poolboy
 
-  def config do
-    Application.get_env(:raxol, __MODULE__, [])
-  end
+  # def config do
+  #   Application.get_env(:raxol, __MODULE__, [])
+  # end
 end

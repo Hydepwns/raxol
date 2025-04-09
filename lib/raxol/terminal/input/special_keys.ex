@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
     modifiers = calculate_modifiers(state)
     case key do
       key when byte_size(key) == 1 ->
-        code = :erlang.list_to_integer([key])
+        <<code::utf8>> = key
         if state.ctrl do
           # Handle Ctrl+key combinations
           case code do

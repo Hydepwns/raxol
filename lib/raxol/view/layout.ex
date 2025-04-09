@@ -8,6 +8,9 @@ defmodule Raxol.View.Layout do
 
   alias Raxol.View
 
+  @type opts :: keyword()
+  @type children_fun :: fun()
+
   @doc """
   Creates a row layout component.
 
@@ -27,8 +30,15 @@ defmodule Raxol.View.Layout do
   end
   ```
   """
-  def row(opts \\ [], do: block) do
-    View.row(opts, do: block)
+  @spec row(opts()) :: %{:children => list(), :opts => Keyword.t(), :type => :row}
+  def row(opts) when is_list(opts) do
+    View.row(opts)
+  end
+
+  @spec row(opts(), [{:do, children_fun()}]) :: map()
+  @dialyzer {:nowarn_function, row: 2}
+  def row(opts \\ [], do: block) when is_list(opts) and is_function(block, 0) do
+    View.row(opts, block)
   end
 
   @doc """
@@ -50,8 +60,15 @@ defmodule Raxol.View.Layout do
   end
   ```
   """
-  def column(opts \\ [], do: block) do
-    View.column(opts, do: block)
+  @spec column(opts()) :: %{:children => list(), :opts => Keyword.t(), :type => :column}
+  def column(opts) when is_list(opts) do
+    View.column(opts)
+  end
+
+  @spec column(opts(), [{:do, children_fun()}]) :: map()
+  @dialyzer {:nowarn_function, column: 2}
+  def column(opts \\ [], do: block) when is_list(opts) and is_function(block, 0) do
+    View.column(opts, block)
   end
 
   @doc """
@@ -73,7 +90,11 @@ defmodule Raxol.View.Layout do
   ```
   """
   def box(opts \\ [], do: block) do
-    View.box(opts, do: block)
+    %{
+      type: :box,
+      attrs: opts,
+      children: block
+    }
   end
 
   @doc """
@@ -94,8 +115,15 @@ defmodule Raxol.View.Layout do
   end
   ```
   """
-  def panel(opts \\ [], do: block) do
-    View.panel(opts, do: block)
+  @spec panel(opts()) :: %{:children => list(), :opts => Keyword.t(), :type => :panel}
+  def panel(opts) when is_list(opts) do
+    View.panel(opts)
+  end
+
+  @spec panel(opts(), [{:do, children_fun()}]) :: map()
+  @dialyzer {:nowarn_function, panel: 2}
+  def panel(opts \\ [], do: block) when is_list(opts) and is_function(block, 0) do
+    View.panel(opts, block)
   end
 
   @doc """
@@ -120,7 +148,11 @@ defmodule Raxol.View.Layout do
   ```
   """
   def grid(opts \\ [], do: block) do
-    View.grid(opts, do: block)
+    %{
+      type: :grid,
+      attrs: opts,
+      children: block
+    }
   end
 
   @doc """
@@ -143,7 +175,11 @@ defmodule Raxol.View.Layout do
   ```
   """
   def stack(opts \\ [], do: block) do
-    View.stack(opts, do: block)
+    %{
+      type: :stack,
+      attrs: opts,
+      children: block
+    }
   end
 
   @doc """
@@ -169,6 +205,10 @@ defmodule Raxol.View.Layout do
   ```
   """
   def flex(opts \\ [], do: block) do
-    View.flex(opts, do: block)
+    %{
+      type: :flex,
+      attrs: opts,
+      children: block
+    }
   end
 end

@@ -3,5 +3,5 @@ defmodule RaxolWeb.Gettext do
   A module providing Internationalization with a gettext-based API.
   """
 
-  use Gettext, otp_app: :raxol
-end 
+  use Gettext.Backend, otp_app: :raxol
+end

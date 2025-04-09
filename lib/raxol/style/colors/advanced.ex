@@ -113,29 +113,29 @@ defmodule Raxol.Style.Colors.Advanced do
       :complementary ->
         [
           color,
-          hsl_to_rgb(%{hsl | h: Float.rem(hsl.h + 180.0, 360.0)})
+          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 180.0), 360)})
         ]
 
       :analogous ->
         [
           color,
-          hsl_to_rgb(%{hsl | h: Float.rem(hsl.h + 30.0, 360.0)}),
-          hsl_to_rgb(%{hsl | h: Float.rem(hsl.h - 30.0 + 360.0, 360.0)})
+          hsl_to_rgb(%{hsl | h: rem(round(hsl.h - 30.0), 360)}),
+          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 30.0), 360)})
         ]
 
       :triadic ->
         [
           color,
-          hsl_to_rgb(%{hsl | h: Float.rem(hsl.h + 120.0, 360.0)}),
-          hsl_to_rgb(%{hsl | h: Float.rem(hsl.h + 240.0, 360.0)})
+          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 120.0), 360)}),
+          hsl_to_rgb(%{hsl | h: rem(round(hsl.h - 120.0), 360)})
         ]
 
       :tetradic ->
         [
           color,
-          hsl_to_rgb(%{hsl | h: Float.rem(hsl.h + 90.0, 360.0)}),
-          hsl_to_rgb(%{hsl | h: Float.rem(hsl.h + 180.0, 360.0)}),
-          hsl_to_rgb(%{hsl | h: Float.rem(hsl.h + 270.0, 360.0)})
+          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 90.0), 360)}),
+          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 180.0), 360)}),
+          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 270.0), 360)})
         ]
     end
   end
@@ -207,7 +207,7 @@ defmodule Raxol.Style.Colors.Advanced do
     l = l / 100
 
     c = (1 - abs(2 * l - 1)) * s
-    x = c * (1 - abs(Float.rem(h / 60.0, 2.0) - 1))
+    x = c * (1 - abs(rem(round(h / 60.0), 2) - 1))
     m = l - c / 2
 
     {r, g, b} = cond do

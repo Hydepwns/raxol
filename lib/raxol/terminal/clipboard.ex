@@ -103,9 +103,6 @@ defmodule Raxol.Terminal.Clipboard do
 
   # Private functions
 
-  @doc """
-  Sets the system clipboard content.
-  """
   defp set_system_clipboard(text) do
     case :os.type() do
       {:unix, :darwin} ->
@@ -123,14 +120,9 @@ defmodule Raxol.Terminal.Clipboard do
           {_, 0} -> :ok
           {error, _} -> {:error, "Failed to copy to clipboard: #{error}"}
         end
-      _ ->
-        {:error, "Unsupported operating system"}
     end
   end
 
-  @doc """
-  Gets the system clipboard content.
-  """
   defp get_system_clipboard do
     case :os.type() do
       {:unix, :darwin} ->
@@ -146,8 +138,6 @@ defmodule Raxol.Terminal.Clipboard do
       {:win32, _} ->
         # Windows doesn't have a direct paste command, so we can't implement this
         {:error, "Paste from clipboard not supported on Windows"}
-      _ ->
-        {:error, "Unsupported operating system"}
     end
   end
 end

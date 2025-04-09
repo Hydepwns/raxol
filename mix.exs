@@ -24,6 +24,16 @@ defmodule Raxol.MixProject do
         "coveralls.detail": :test,
         "coveralls.post": :test,
         "coveralls.html": :test
+      ],
+      dialyzer: [
+        plt_add_apps: [:ex_unit], # Add core Elixir apps needed for tests
+        ignore_warnings: "dialyzer.ignore-warnings", # Optional: Path to ignore file
+        flags: [ # Common flags
+          :unmatched_returns,
+          :error_handling,
+          :underspecs
+          # Add other flags as needed, e.g., :missing_return for stricter checks
+        ]
       ]
     ]
   end
@@ -56,7 +66,8 @@ defmodule Raxol.MixProject do
       {:contex, "~> 0.5.0"}, # For charts and plots
 
       # Web interface
-      {:phoenix_html, "~> 4.1"},
+      {:plug_cowboy, "~> 2.7"},
+      {:phoenix_html, "~> 4.2"},
       {:phoenix_html_helpers, "~> 1.0"},
       {:heroicons,
        github: "tailwindlabs/heroicons",
@@ -65,6 +76,9 @@ defmodule Raxol.MixProject do
        app: false,
        compile: false,
        depth: 1},
+
+      # Components & Layout (Using local path for now)
+      # {:raxol_view_components, path: "../raxol_view_components"}, # Example if extracted
 
       # Development tools
       {:phoenix_live_reload, "~> 1.2", only: :dev},

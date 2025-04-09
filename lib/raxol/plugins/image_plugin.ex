@@ -80,7 +80,7 @@ defmodule Raxol.Plugins.ImagePlugin do
         # Check if click is within any displayed image bounds
         case find_image_at_position(plugin, x, y) do
           nil -> {:ok, plugin}
-          image -> handle_image_click(plugin, image, x, y)
+          # image -> handle_image_click(plugin, image, x, y) # Unreachable - find_image_at_position always returns nil
         end
       _ -> {:ok, plugin}
     end
@@ -152,9 +152,9 @@ defmodule Raxol.Plugins.ImagePlugin do
     nil
   end
 
-  defp handle_image_click(%__MODULE__{} = plugin, _image, _x, _y) do
-    # TODO: Implement image click handling
-    # For now, just return the plugin unchanged
-    {:ok, plugin}
-  end
+  # defp handle_image_click(%__MODULE__{} = plugin, _image, _x, _y) do
+  #   # TODO: Implement image click handling
+  #   # For now, just return the plugin unchanged
+  #   {:ok, plugin}
+  # end
 end

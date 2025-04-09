@@ -18,7 +18,7 @@ defmodule Raxol.Metrics.Visualizer do
 
     chart = BarChart.new(dataset)
 
-    Plot.new(chart, options[:width] || 600, options[:height] || 400)
+    Plot.new(options[:width] || 600, options[:height] || 400, chart)
     |> Plot.titles("Event Processing Times", nil)
     |> Plot.axis_labels([x: "Event Types", y: "Processing Time (ms)"], nil)
     |> Plot.to_svg()
@@ -36,7 +36,7 @@ defmodule Raxol.Metrics.Visualizer do
 
     chart = PointPlot.new(dataset)
 
-    Plot.new(chart, options[:width] || 600, options[:height] || 400)
+    Plot.new(options[:width] || 600, options[:height] || 400, chart)
     |> Plot.titles("Event Throughput", nil)
     |> Plot.axis_labels([x: "Time", y: "Events/sec"], nil)
     |> Plot.to_svg()
@@ -54,7 +54,7 @@ defmodule Raxol.Metrics.Visualizer do
 
     chart = LinePlot.new(dataset)
 
-    Plot.new(chart, options[:width] || 600, options[:height] || 400)
+    Plot.new(options[:width] || 600, options[:height] || 400, chart)
     |> Plot.titles("Memory Usage Over Time", nil)
     |> Plot.axis_labels([x: "Time", y: "Memory Usage (MB)"], nil)
     |> Plot.to_svg()

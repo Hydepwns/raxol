@@ -151,7 +151,7 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @doc """
   Parses an SGR mouse event in the format: <button>;<x>;<y>M
   """
-  @spec parse_sgr_event(binary()) :: {:ok, map()} | :error
+  @spec parse_sgr_event(binary()) :: {:ok, %{type: :mouse, button: atom(), modifiers: MapSet.t(), position: {integer(), integer()}, mode: :sgr}} | :error
   def parse_sgr_event(<<button, ";", rest::binary>>) do
     case parse_coordinates(rest) do
       {:ok, {x, y}} ->
@@ -170,7 +170,7 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @doc """
   Parses a URXVT mouse event in the format: <button>;<x>;<y>M
   """
-  @spec parse_urxvt_event(binary()) :: {:ok, map()} | :error
+  @spec parse_urxvt_event(binary()) :: {:ok, %{type: :mouse, button: atom(), modifiers: MapSet.t(), position: {integer(), integer()}, mode: :urxvt}} | :error
   def parse_urxvt_event(<<button, ";", rest::binary>>) do
     case parse_coordinates(rest) do
       {:ok, {x, y}} ->
@@ -189,7 +189,7 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @doc """
   Parses an SGR pixels mouse event in the format: <button>;<x>;<y>M
   """
-  @spec parse_sgr_pixels_event(binary()) :: {:ok, map()} | :error
+  @spec parse_sgr_pixels_event(binary()) :: {:ok, %{type: :mouse, button: atom(), modifiers: MapSet.t(), position: {integer(), integer()}, mode: :sgr_pixels}} | :error
   def parse_sgr_pixels_event(<<button, ";", rest::binary>>) do
     case parse_coordinates(rest) do
       {:ok, {x, y}} ->
@@ -208,14 +208,14 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @doc """
   Decodes button state and modifiers from a mouse event byte.
   """
-  @spec decode_button(integer()) :: :none | :left | :middle | :right | :release
+  @spec decode_button(integer()) :: :left | :middle | :right | :release
   def decode_button(button) do
     case button &&& 0x3 do
       0 -> :release
       1 -> :left
       2 -> :middle
       3 -> :right
-      _ -> :none
+      # _ -> :none # Clause is unreachable as &&& 0x3 covers all cases
     end
   end
 
@@ -235,14 +235,14 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @doc """
   Decodes button state for URXVT mouse events.
   """
-  @spec decode_urxvt_button(integer()) :: :none | :left | :middle | :right | :release
+  @spec decode_urxvt_button(integer()) :: :left | :middle | :right | :release
   def decode_urxvt_button(button) do
     case button &&& 0x3 do
       0 -> :release
       1 -> :left
       2 -> :middle
       3 -> :right
-      _ -> :none
+      # _ -> :none # Clause is unreachable as &&& 0x3 covers all cases
     end
   end
 
@@ -251,7 +251,10 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   """
   @spec parse_coordinates(binary()) :: {:ok, {integer(), integer()}} | :error
   def parse_coordinates(<<x::binary-size(1), ";", y::binary-size(1), "M">>) do
-    {:ok, {x - 32, y - 32}}
+    # Convert binary chars x and y to integer codepoints before subtracting
+    x_codepoint = String.to_charlist(x) |> hd()
+    y_codepoint = String.to_charlist(y) |> hd()
+    {:ok, {x_codepoint - 32, y_codepoint - 32}}
   end
   def parse_coordinates(_), do: :error
 
@@ -393,4 +396,4 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
       _ -> "0"
     end
   end
-end 
+end

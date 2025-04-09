@@ -1,26 +1,35 @@
 defmodule Raxol.Terminal.Integration do
   @moduledoc """
-  Integration module for connecting the buffer manager, scroll buffer, and cursor manager
-  with the terminal emulator.
+  Integrates various terminal components like Emulator, Buffer Manager, Cursor Manager, etc.
 
-  This module provides functions for:
-  - Initializing the integrated terminal system
-  - Synchronizing buffer and cursor state
-  - Handling terminal operations with the integrated components
+  This module acts as a central orchestrator, managing interactions between:
+  - Terminal Emulator state (`Raxol.Terminal.Emulator`)
+  - Screen buffer management (`Raxol.Terminal.Buffer.Manager`)
+  - Cursor state and rendering (`Raxol.Terminal.Cursor.Manager`)
+  - Scrollback buffer (`Raxol.Terminal.Buffer.Scroll`)
+  - Input handling and command history (`Raxol.Terminal.CommandHistory`)
+  - Terminal configuration (`Raxol.Terminal.Configuration`)
   - Managing memory and performance optimizations
   - Command history management
   """
 
-  alias Raxol.Terminal.Buffer.{Manager, Scroll}
-  alias Raxol.Terminal.Cursor.{Manager, Movement, Style}
+  alias Raxol.Terminal.Buffer.Manager, as: BufferManager
+  alias Raxol.Terminal.Buffer.Scroll
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Terminal.Cursor.Style
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.CommandHistory
   alias Raxol.Terminal.Configuration
-  alias Raxol.Terminal.ScreenBuffer
+  # alias Raxol.Terminal.ScreenBuffer # Unused
+  # alias Raxol.Plugins.Manager, as: PluginManager # Unused
+  # alias Raxol.Style.TextFormatting # Unused
+  # alias Raxol.Terminal.{ANSI, Cell, Modes} # Unused
+  # alias Raxol.Utils.LRUCache # Unused
+  # alias Raxol.View # Unused
 
   @type t :: %__MODULE__{
     emulator: Emulator.t(),
-    buffer_manager: Manager.t(),
+    buffer_manager: BufferManager.t(),
     scroll_buffer: Scroll.t(),
     cursor_manager: CursorManager.t(),
     command_history: CommandHistory.t(),
@@ -57,7 +66,7 @@ defmodule Raxol.Terminal.Integration do
   def new(width, height, opts \\ []) do
     config = Configuration.new(opts)
     emulator = Emulator.new(width, height)
-    buffer_manager = Manager.new(width, height)
+    {:ok, buffer_manager} = BufferManager.new(width, height, config.scrollback_height, config.memory_limit)
     scroll_buffer = Scroll.new(config.scrollback_height)
     cursor_manager = CursorManager.new()
     command_history = CommandHistory.new(config.command_history_size)
@@ -176,7 +185,7 @@ defmodule Raxol.Terminal.Integration do
     emulator = Emulator.write(integration.emulator, text)
 
     # Update buffer manager
-    buffer_manager = Manager.mark_damaged(
+    buffer_manager = BufferManager.mark_damaged(
       integration.buffer_manager,
       0, 0, emulator.width - 1, emulator.height - 1
     )
@@ -193,8 +202,8 @@ defmodule Raxol.Terminal.Integration do
 
     # Update scroll buffer if needed
     scroll_buffer = if cursor_y >= emulator.height - 1 do
-      # Need to get the line from the screen buffer, not the emulator directly
-      line = ScreenBuffer.get_line(emulator.screen_buffer, emulator.height - 1)
+      # Get the last line directly from the cells list
+      line = Enum.at(emulator.screen_buffer.cells, emulator.height - 1)
       Scroll.add_line(integration.scroll_buffer, line)
     else
       integration.scroll_buffer
@@ -247,7 +256,7 @@ defmodule Raxol.Terminal.Integration do
     emulator = Emulator.clear_screen(integration.emulator)
 
     # Update buffer manager
-    buffer_manager = Manager.mark_damaged(
+    buffer_manager = BufferManager.mark_damaged(
       integration.buffer_manager,
       0, 0, emulator.width - 1, emulator.height - 1
     )
@@ -312,9 +321,8 @@ defmodule Raxol.Terminal.Integration do
       {10, 5}
   """
   def save_cursor(%__MODULE__{} = integration) do
-    cursor = Manager.save_position(integration.emulator.cursor)
-    emulator = %{integration.emulator | cursor: cursor}
-    %{integration | emulator: emulator}
+    cursor = CursorManager.save_position(integration.cursor_manager)
+    %{integration | cursor_manager: cursor}
   end
 
   @doc """
@@ -331,9 +339,8 @@ defmodule Raxol.Terminal.Integration do
       {10, 5}
   """
   def restore_cursor(%__MODULE__{} = integration) do
-    cursor = Manager.restore_position(integration.emulator.cursor)
-    emulator = %{integration.emulator | cursor: cursor}
-    %{integration | emulator: emulator}
+    cursor = CursorManager.restore_position(integration.cursor_manager)
+    %{integration | cursor_manager: cursor}
   end
 
   @doc """
@@ -380,9 +387,7 @@ defmodule Raxol.Terminal.Integration do
       :underline
   """
   def set_cursor_style(%__MODULE__{} = integration, style) do
-    # Set cursor style in cursor manager
     cursor_manager = CursorManager.set_style(integration.cursor_manager, style)
-
     %{integration | cursor_manager: cursor_manager}
   end
 
@@ -397,9 +402,7 @@ defmodule Raxol.Terminal.Integration do
       1000
   """
   def set_cursor_blink_rate(%__MODULE__{} = integration, rate) do
-    # Set cursor blink rate in cursor manager
     cursor_manager = %{integration.cursor_manager | blink_rate: rate}
-
     %{integration | cursor_manager: cursor_manager}
   end
 
@@ -418,22 +421,14 @@ defmodule Raxol.Terminal.Integration do
     # Update cursor blink in cursor manager
     {cursor_manager, visible} = CursorManager.update_blink(integration.cursor_manager)
 
-    # Update cursor visibility based on blink state
-    if visible do
-      Style.show(integration.cursor_manager)
+    # Update cursor visibility state using Style.show/hide
+    cursor_manager = if visible do
+      Style.show(cursor_manager)
     else
-      Style.hide(integration.cursor_manager)
-    end
-
-    # Update cursor visibility in emulator
-    emulator = if visible do
-      Emulator.show_cursor(integration.emulator)
-    else
-      Emulator.hide_cursor(integration.emulator)
+      Style.hide(cursor_manager)
     end
 
     {%{integration |
-      emulator: emulator,
       cursor_manager: cursor_manager
     }, visible}
   end
@@ -535,9 +530,7 @@ defmodule Raxol.Terminal.Integration do
       0
   """
   def clear_scroll_buffer(%__MODULE__{} = integration) do
-    # Clear scroll buffer
     scroll_buffer = Scroll.clear(integration.scroll_buffer)
-
     %{integration | scroll_buffer: scroll_buffer}
   end
 
@@ -553,7 +546,7 @@ defmodule Raxol.Terminal.Integration do
       1
   """
   def get_damage_regions(%__MODULE__{} = integration) do
-    Manager.get_damage_regions(integration.buffer_manager)
+    BufferManager.get_damage_regions(integration.buffer_manager)
   end
 
   @doc """
@@ -568,9 +561,7 @@ defmodule Raxol.Terminal.Integration do
       []
   """
   def clear_damage_regions(%__MODULE__{} = integration) do
-    # Clear damage regions in buffer manager
-    buffer_manager = Manager.clear_damage_regions(integration.buffer_manager)
-
+    buffer_manager = BufferManager.clear_damage_regions(integration.buffer_manager)
     %{integration | buffer_manager: buffer_manager}
   end
 
@@ -586,9 +577,7 @@ defmodule Raxol.Terminal.Integration do
       true
   """
   def switch_buffers(%__MODULE__{} = integration) do
-    # Switch buffers in buffer manager
-    buffer_manager = Manager.switch_buffers(integration.buffer_manager)
-
+    buffer_manager = BufferManager.switch_buffers(integration.buffer_manager)
     %{integration | buffer_manager: buffer_manager}
   end
 
@@ -603,9 +592,7 @@ defmodule Raxol.Terminal.Integration do
       true
   """
   def update_memory_usage(%__MODULE__{} = integration) do
-    # Update memory usage in buffer manager
-    buffer_manager = Manager.update_memory_usage(integration.buffer_manager)
-
+    buffer_manager = BufferManager.update_memory_usage(integration.buffer_manager)
     %{integration | buffer_manager: buffer_manager}
   end
 
@@ -619,7 +606,7 @@ defmodule Raxol.Terminal.Integration do
       true
   """
   def within_memory_limits?(%__MODULE__{} = integration) do
-    Manager.within_memory_limits?(integration.buffer_manager)
+    BufferManager.within_memory_limits?(integration.buffer_manager)
   end
 
   @doc """
@@ -732,7 +719,6 @@ defmodule Raxol.Terminal.Integration do
   defp check_memory_usage(%__MODULE__{} = integration) do
     current_time = System.system_time(:millisecond)
 
-    # Check if cleanup is needed
     if current_time - integration.last_cleanup > @cleanup_interval do
       cleanup_memory(integration)
     else
@@ -741,12 +727,9 @@ defmodule Raxol.Terminal.Integration do
   end
 
   defp cleanup_memory(%__MODULE__{} = integration) do
-    # Update memory usage
     integration = update_memory_usage(integration)
 
-    # Check if memory usage exceeds limit
     if integration.buffer_manager.memory_usage > integration.memory_limit do
-      # Clear scroll buffer
       scroll_buffer = Scroll.clear(integration.scroll_buffer)
 
       %{integration |
@@ -759,20 +742,17 @@ defmodule Raxol.Terminal.Integration do
   end
 
   def handle_event(%__MODULE__{} = integration, {:cursor_style, style}) do
-    cursor = Style.set_style(integration.emulator.cursor, style)
-    emulator = %{integration.emulator | cursor: cursor}
-    %{integration | emulator: emulator}
+    cursor_manager = CursorManager.set_style(integration.cursor_manager, style)
+    %{integration | cursor_manager: cursor_manager}
   end
 
   def handle_event(%__MODULE__{} = integration, {:cursor_visible, true}) do
-    cursor = Style.show(integration.emulator.cursor)
-    emulator = %{integration.emulator | cursor: cursor}
-    %{integration | emulator: emulator}
+    cursor_manager = Style.show(integration.cursor_manager)
+    %{integration | cursor_manager: cursor_manager}
   end
 
   def handle_event(%__MODULE__{} = integration, {:cursor_visible, false}) do
-    cursor = Style.hide(integration.emulator.cursor)
-    emulator = %{integration.emulator | cursor: cursor}
-    %{integration | emulator: emulator}
+    cursor_manager = Style.hide(integration.cursor_manager)
+    %{integration | cursor_manager: cursor_manager}
   end
 end

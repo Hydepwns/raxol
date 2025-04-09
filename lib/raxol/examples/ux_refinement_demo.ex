@@ -19,27 +19,42 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
   import Raxol.View, except: [row: 2, column: 1, button: 1, text_input: 1, label: 2, space: 1]
   import Raxol.View.Components, only: [button: 1, text_input: 1, label: 2, space: 1]
-  import Raxol.View.Layout, only: [row: 2, column: 1, panel: 1]
+  import Raxol.View.Layout, only: [row: 2]
   alias Raxol.Core.UXRefinement
   alias Raxol.Core.FocusManager
-  alias Raxol.Core.KeyboardNavigator
-  alias Raxol.Runtime
+  # alias Raxol.Core.KeyboardNavigator # Module seems to be missing
   alias Raxol.Components.HintDisplay
   alias Raxol.Components.FocusRing
+  alias Raxol.View.Layout
+  require Logger
 
   @doc """
   Run the UX Refinement demo application.
   """
   def run do
-    # Initialize the application
+    IO.puts("Starting UX Refinement Demo...")
+
+    # Start the runtime with this module as the application
+    # Ensure Raxol.Runtime is started if it's not already running as part of the main app
+    # Runtime.start_link(%{initial_component: __MODULE__})
+    Raxol.Runtime.run(__MODULE__, [])
+
+    # Placeholder state for demonstration
+    _initial_state = %{
+      current_view: :main,
+      focus_id: "button_1",
+      username: "",
+      password: "",
+      focused_component: "username_input",
+      show_help: false,
+      focus_ring_model: FocusRing.init(animation: :pulse)
+    }
 
     # Enable UX refinement features
-    UXRefinement.enable([
-      :keyboard_nav,
-      :focus_management,
-      :hints,
-      :response_optimization
-    ])
+    _ = UXRefinement.enable_feature(:keyboard_nav)
+    _ = UXRefinement.enable_feature(:focus_management)
+    _ = UXRefinement.enable_feature(:hints)
+    _ = UXRefinement.enable_feature(:response_optimization)
 
     # Configure the focus ring appearance
     FocusRing.configure(
@@ -50,24 +65,15 @@ defmodule Raxol.Examples.UXRefinementDemo do
     )
 
     # Initialize keyboard navigation
-    KeyboardNavigator.init()
-    KeyboardNavigator.configure(vim_keys: true)
+    # KeyboardNavigator.init()
+    # KeyboardNavigator.configure(vim_keys: true)
 
     # Register hints for components
-    UXRefinement.register_hint("username_input", "Enter your username (letters and numbers only)")
-    UXRefinement.register_hint("password_input", "Enter a secure password (minimum 8 characters)")
-    UXRefinement.register_hint("login_button", "Press Enter to log in")
-    UXRefinement.register_hint("reset_button", "Press Enter to reset the form")
-    UXRefinement.register_hint("help_button", "Press Enter to open the help dialog")
-
-    # Initialize the app state
-    initial_state = %{
-      username: "",
-      password: "",
-      focused_component: "username_input",
-      show_help: false,
-      focus_ring_model: FocusRing.init(animation: :pulse)
-    }
+    _ = UXRefinement.register_hint("username_input", "Enter your username (letters and numbers only)")
+    _ = UXRefinement.register_hint("password_input", "Enter a secure password (minimum 8 characters)")
+    _ = UXRefinement.register_hint("login_button", "Press Enter to log in")
+    _ = UXRefinement.register_hint("reset_button", "Press Enter to reset the form")
+    _ = UXRefinement.register_hint("help_button", "Press Enter to open the help dialog")
 
     # Register focusable components
     FocusManager.register_focusable("username_input", 1,
@@ -94,12 +100,6 @@ defmodule Raxol.Examples.UXRefinementDemo do
       "help_button" => {34, 13, 10, 3}
     }
     Process.put(:element_position_registry, element_registry)
-
-    # Start the application with our render function
-    # This demo module needs to be refactored to implement the
-    # Raxol.Core.Runtime.Application behaviour (init/1, update/2, view/1)
-    # For now, just call Runtime.run to satisfy the compiler.
-    Runtime.run(Raxol.Examples.UXRefinementDemo, [])
   end
 
   @doc """
@@ -115,12 +115,24 @@ defmodule Raxol.Examples.UXRefinementDemo do
       show_help: false,
       focus_ring_model: FocusRing.init(animation: :pulse)
     }
-    {:ok, initial_state}
+    # Return state directly or {state, commands}
+    initial_state # Or {initial_state, []}
   end
 
   @doc """
   Render the application UI.
   """
+  @impl Raxol.Core.Runtime.Application
+  def view(model) do
+    # Call the local render helper function
+    render(model, [])
+    # %{
+    #   type: :placeholder_view,
+    #   children: [%{type: :text, content: "View for UXRefinementDemo"}]
+    # }
+  end
+
+  # This is a local helper function, not part of the Application behaviour
   def render(model, _opts) do
     focused = FocusManager.get_focused_element()
 
@@ -200,8 +212,9 @@ defmodule Raxol.Examples.UXRefinementDemo do
   @doc """
   Update the application state based on events.
   """
+  @impl true
   def update(model, msg) do
-    case msg do
+    new_model = case msg do
       # Text input updates
       {:input, "username_input", value} ->
         %{model | username: value}
@@ -234,6 +247,8 @@ defmodule Raxol.Examples.UXRefinementDemo do
       _ ->
         model
     end
+    # Return {new_state, commands}
+    {new_model, []}
   end
 
   # Private functions

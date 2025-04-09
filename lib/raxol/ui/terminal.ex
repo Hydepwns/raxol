@@ -176,23 +176,34 @@ defmodule Raxol.UI.Terminal do
       :timeout
   """
   def read_key(opts \\ []) do
-    # Set raw mode to read single keypresses
-    :io.setopts([{:binary, true}, {:echo, false}])
-
-    # Get timeout
     timeout = Keyword.get(opts, :timeout, :infinity)
+    original_opts = :io.getopts()
 
-    # Read key
-    result = case :io.get_line("", timeout) do
-      :eof -> {:error, :eof}
-      {:error, reason} -> {:error, reason}
-      :timeout -> :timeout
-      data -> {:ok, parse_key(data)}
+    _ = :io.setopts([{:binary, true}, {:echo, false}, {:raw, true}])
+
+    result = receive do
+      {:io_request, from, reply_as, {:get_chars, _, _, 1}} ->
+        # Ideally, we'd read just one char, but :io interacts strangely.
+        # Instead, we read what's available immediately.
+        chars = :io.get_chars("", 1)
+        send(from, {:io_reply, reply_as, chars})
+        case chars do
+          :eof -> {:error, :eof}
+          {:error, reason} -> {:error, reason}
+          data when is_binary(data) -> {:ok, parse_key(data)}
+          _ -> {:error, :unknown_reply}
+        end
+      {:io_request, from, reply_as, req} ->
+        # Forward other IO requests
+        reply = :io.request(req)
+        send(from, {:io_reply, reply_as, reply})
+        # Re-enter receive to wait for our char or timeout
+        read_key(opts)
+    after
+      timeout -> :timeout
     end
 
-    # Restore normal mode
-    :io.setopts([{:binary, true}, {:echo, true}])
-
+    _ = :io.setopts(original_opts)
     result
   end
 

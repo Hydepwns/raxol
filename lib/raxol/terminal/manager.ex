@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Manager do
   @moduledoc """
   Terminal manager module.
-  
+
   This module manages terminal sessions, including:
   - Session creation
   - Session destruction
@@ -11,7 +11,10 @@ defmodule Raxol.Terminal.Manager do
 
   use GenServer
 
-  alias Raxol.Terminal.{Session, Registry}
+  require Logger
+
+  alias Raxol.Terminal.Session
+  # alias Raxol.Terminal.{Session, Registry} # Registry unused
 
   @type t :: %__MODULE__{
     sessions: map()
@@ -23,9 +26,9 @@ defmodule Raxol.Terminal.Manager do
 
   @doc """
   Starts the terminal manager.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Manager.start_link()
       iex> Process.alive?(pid)
       true
@@ -36,9 +39,9 @@ defmodule Raxol.Terminal.Manager do
 
   @doc """
   Creates a new terminal session.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Manager.start_link()
       iex> {:ok, session_id} = Manager.create_session(pid, %{width: 80, height: 24})
       iex> is_binary(session_id)
@@ -50,9 +53,9 @@ defmodule Raxol.Terminal.Manager do
 
   @doc """
   Destroys a terminal session.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Manager.start_link()
       iex> {:ok, session_id} = Manager.create_session(pid)
       iex> :ok = Manager.destroy_session(pid, session_id)
@@ -65,9 +68,9 @@ defmodule Raxol.Terminal.Manager do
 
   @doc """
   Gets a terminal session by ID.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Manager.start_link()
       iex> {:ok, session_id} = Manager.create_session(pid)
       iex> {:ok, session} = Manager.get_session(pid, session_id)
@@ -80,9 +83,9 @@ defmodule Raxol.Terminal.Manager do
 
   @doc """
   Lists all terminal sessions.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Manager.start_link()
       iex> {:ok, session_id1} = Manager.create_session(pid)
       iex> {:ok, session_id2} = Manager.create_session(pid)
@@ -96,9 +99,9 @@ defmodule Raxol.Terminal.Manager do
 
   @doc """
   Gets the count of terminal sessions.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Manager.start_link()
       iex> {:ok, _} = Manager.create_session(pid)
       iex> {:ok, _} = Manager.create_session(pid)
@@ -111,9 +114,9 @@ defmodule Raxol.Terminal.Manager do
 
   @doc """
   Monitors a terminal session.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Manager.start_link()
       iex> {:ok, session_id} = Manager.create_session(pid)
       iex> :ok = Manager.monitor_session(pid, session_id)
@@ -126,9 +129,9 @@ defmodule Raxol.Terminal.Manager do
 
   @doc """
   Unmonitors a terminal session.
-  
+
   ## Examples
-  
+
       iex> {:ok, pid} = Manager.start_link()
       iex> {:ok, session_id} = Manager.create_session(pid)
       iex> :ok = Manager.monitor_session(pid, session_id)
@@ -185,11 +188,11 @@ defmodule Raxol.Terminal.Manager do
   @impl true
   def handle_call(:list_sessions, _from, state) do
     sessions = state.sessions
-    |> Enum.map(fn {id, pid} -> 
+    |> Enum.map(fn {id, pid} ->
       {id, Session.get_state(pid)}
     end)
     |> Map.new()
-    
+
     {:reply, sessions, state}
   end
 
@@ -233,12 +236,12 @@ defmodule Raxol.Terminal.Manager do
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     # Remove the session from our state
-    new_state = %{state | 
+    new_state = %{state |
       sessions: state.sessions
       |> Enum.reject(fn {_id, p} -> p == pid end)
       |> Map.new()
     }
-    
+
     {:noreply, new_state}
   end
 
@@ -249,4 +252,4 @@ defmodule Raxol.Terminal.Manager do
   def update_state(new_state) do
     GenServer.call(__MODULE__, {:update_state, new_state})
   end
-end 
+end

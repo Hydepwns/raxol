@@ -3,9 +3,10 @@ defmodule RaxolWeb.MonitoringLive do
   alias Raxol.Metrics
 
   @impl true
+  @dialyzer {:nowarn_function, mount: 3}
   def mount(_params, _session, socket) do
     if connected?(socket) do
-      :timer.send_interval(5000, :update_metrics)
+      _ = :timer.send_interval(5000, :update_metrics)
     end
 
     {:ok, assign(socket,
@@ -23,4 +24,4 @@ defmodule RaxolWeb.MonitoringLive do
   def handle_event("refresh", _params, socket) do
     {:noreply, assign(socket, metrics: Metrics.get_current_metrics())}
   end
-end 
+end

@@ -36,7 +36,7 @@ defmodule Raxol.Core.Events.Subscription do
         []
       end
 
-    Manager.subscribe(:key, filter_opts)
+    Manager.subscribe([:key], filter_opts)
   end
 
   @doc """
@@ -65,7 +65,7 @@ defmodule Raxol.Core.Events.Subscription do
       |> add_filter(:click, if(click_only, do: true))
       |> add_filter(:area, area)
 
-    Manager.subscribe(:mouse, filter_opts)
+    Manager.subscribe([:mouse], filter_opts)
   end
 
   @doc """
@@ -87,7 +87,7 @@ defmodule Raxol.Core.Events.Subscription do
         []
       end
 
-    Manager.subscribe(:window, filter_opts)
+    Manager.subscribe([:window], filter_opts)
   end
 
   @doc """
@@ -109,7 +109,7 @@ defmodule Raxol.Core.Events.Subscription do
         []
       end
 
-    Manager.subscribe(:timer, filter_opts)
+    Manager.subscribe([:timer], filter_opts)
   end
 
   @doc """
@@ -131,7 +131,7 @@ defmodule Raxol.Core.Events.Subscription do
         []
       end
 
-    Manager.subscribe(:custom, filter_opts)
+    Manager.subscribe([:custom], filter_opts)
   end
 
   @doc """

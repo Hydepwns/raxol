@@ -97,10 +97,11 @@ defmodule Raxol.Metrics do
     end
   end
 
-  defp get_active_sessions do
-    case GenServer.call(Raxol.Session, :get_state) do
-      sessions when is_map(sessions) -> Map.size(sessions)
-      _ -> 0 # Handle potential errors or unexpected state
+  def get_active_sessions do
+    case Registry.lookup(Raxol.TerminalRegistry, :sessions) do
+      [] -> 0
+      [{_pid, sessions}] when is_map(sessions) -> Kernel.map_size(sessions)
+      _ -> 0
     end
   end
 

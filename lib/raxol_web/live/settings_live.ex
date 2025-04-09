@@ -61,7 +61,7 @@ defmodule RaxolWeb.SettingsLive do
     #   socket.assigns.user
     #   |> Accounts.change_user(user_params)
     #   |> Map.put(:action, :validate)
-    changeset = Ecto.Changeset.change(%{}) # Placeholder
+    changeset = Ecto.Changeset.change(socket.assigns.current_user || %Raxol.Auth.User{}) # Use user struct
 
     {:noreply, assign(socket, changeset: changeset)}
   end

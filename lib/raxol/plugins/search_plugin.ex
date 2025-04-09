@@ -4,7 +4,7 @@ defmodule Raxol.Plugins.SearchPlugin do
   """
 
   @behaviour Raxol.Plugins.Plugin
-  alias Raxol.Plugins.Plugin
+  # alias Raxol.Plugins.Plugin # Unused
 
   @type t :: %__MODULE__{
     # Plugin behaviour fields

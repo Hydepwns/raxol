@@ -25,7 +25,16 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   @doc """
   Creates a new character set state with default values.
   """
-  @spec new() :: charset_state()
+  @spec new() :: %{
+    g0: :us_ascii,
+    g1: :us_ascii,
+    g2: :us_ascii,
+    g3: :us_ascii,
+    gl: :g0,
+    gr: :g1,
+    single_shift: nil,
+    locked_shift: false
+  }
   def new do
     %{
       g0: :us_ascii,
@@ -103,4 +112,4 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     active_charset = get_active_charset(state)
     CharacterTranslations.translate_string(string, active_charset)
   end
-end 
+end

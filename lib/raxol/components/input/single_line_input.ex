@@ -18,8 +18,7 @@ defmodule Raxol.Components.Input.SingleLineInput do
   use Raxol.Component
   alias Raxol.View.Components
   alias Raxol.View.Layout
-  alias Raxol.Core.Style.Color
-  alias Raxol.Core.Events.{Event, Clipboard}
+  alias Raxol.Terminal.Clipboard
 
   @default_width 20
   @default_style %{
@@ -41,13 +40,14 @@ defmodule Raxol.Components.Input.SingleLineInput do
       selection_end: nil,
       focused: false,
       on_change: props[:on_change],
-      on_submit: props[:on_submit]
+      on_submit: props[:on_submit],
+      clipboard: Clipboard.new()
     }
   end
 
   @impl true
   def update({:set_value, value}, state) do
-    %{state | 
+    %{state |
       value: value,
       cursor_pos: String.length(value),
       selection_start: nil,
@@ -64,7 +64,7 @@ defmodule Raxol.Components.Input.SingleLineInput do
     value_length = String.length(state.value)
     start_pos = clamp(start_pos, 0, value_length)
     end_pos = clamp(end_pos, 0, value_length)
-    
+
     %{state |
       selection_start: start_pos,
       selection_end: end_pos,
@@ -89,84 +89,108 @@ defmodule Raxol.Components.Input.SingleLineInput do
     end
   end
 
-  defp render_text_with_selection(state) do
-    cond do
-      state.selection_start != nil and state.selection_end != nil ->
-        # Render text with selection
-        {before_selection, selected, after_selection} = split_text_for_selection(state)
-        [
-          Components.text(content: before_selection, color: state.style.text_color),
-          Components.text(content: selected, color: state.style.text_color, background: state.style.selection_color),
-          Components.text(content: after_selection, color: state.style.text_color)
-        ]
-      true ->
-        # Render text without selection
-        Components.text(content: state.value, color: state.style.text_color)
-    end
-  end
-
-  defp split_text_for_selection(%{value: value, selection_start: start, selection_end: end_pos}) do
-    before_selection = String.slice(value, 0, start)
-    selected = String.slice(value, start, end_pos - start)
-    after_selection = String.slice(value, end_pos, String.length(value))
-    {before_selection, selected, after_selection}
-  end
+  # defp render_text_with_selection(state) do
+  #   # Placeholder implementation
+  #   text = state.value
+  #   start = min(state.selection_start, state.selection_end)
+  #   ending = max(state.selection_start, state.selection_end)
+  #
+  #   if start == ending do
+  #     text # No selection
+  #   else
+  #     pre = String.slice(text, 0, start)
+  #     selected = String.slice(text, start, ending - start)
+  #     post = String.slice(text, ending..-1)
+  #     # TODO: Need proper View/Element structure here
+  #     # [pre, Components.text(selected, style: @selected_style), post]
+  #     pre <> "<SELECTED>" <> selected <> "</SELECTED>" <> post
+  #   end
+  # end
 
   @impl true
-  def handle_event(%Event{type: :key} = event, state) when state.focused do
-    case event do
-      %{key: key} when byte_size(key) == 1 ->
+  def handle_event(%Event{type: :key, data: key_data} = _event, state) when state.focused do
+    case key_data do
+      %{key: key} when is_binary(key) and byte_size(key) == 1 ->
         # Regular character input
         {insert_text(state, key), []}
 
-      %{key: "Enter"} ->
+      %{key: :enter} ->
         if state.on_submit, do: state.on_submit.(state.value)
         {state, []}
 
-      %{key: "Backspace"} ->
+      %{key: :backspace} ->
         {handle_backspace(state), []}
 
-      %{key: "Delete"} ->
+      %{key: :delete} ->
         {handle_delete(state), []}
 
-      %{key: "Left", ctrl?: true} ->
-        {move_cursor_word_left(state), []}
+      %{key: :left, modifiers: mods} ->
+        if :ctrl in mods do
+          {move_cursor_word_left(state), []}
+        else
+          {update({:move_cursor, state.cursor_pos - 1}, state), []}
+        end
 
-      %{key: "Right", ctrl?: true} ->
-        {move_cursor_word_right(state), []}
+      %{key: :right, modifiers: mods} ->
+        if :ctrl in mods do
+          {move_cursor_word_right(state), []}
+        else
+          {update({:move_cursor, state.cursor_pos + 1}, state), []}
+        end
 
-      %{key: "Left"} ->
-        {update({:move_cursor, state.cursor_pos - 1}, state), []}
-
-      %{key: "Right"} ->
-        {update({:move_cursor, state.cursor_pos + 1}, state), []}
-
-      %{key: "Home"} ->
+      %{key: :home} ->
         {update({:move_cursor, 0}, state), []}
 
-      %{key: "End"} ->
+      %{key: :end} ->
         {update({:move_cursor, String.length(state.value)}, state), []}
 
-      %{key: "c", ctrl?: true} ->
-        if has_selection?(state) do
-          {_, selected, _} = split_text_for_selection(state)
-          Clipboard.copy(selected)
-        end
-        {state, []}
-
-      %{key: "v", ctrl?: true} ->
-        case Clipboard.paste() do
-          {:ok, text} -> {insert_text(state, text), []}
-          _ -> {state, []}
-        end
-
-      %{key: "x", ctrl?: true} ->
-        if has_selection?(state) do
-          {_, selected, _} = split_text_for_selection(state)
-          Clipboard.copy(selected)
-          {delete_selection(state), []}
+      %{key: "c", modifiers: mods} ->
+        if :ctrl in mods do
+          new_state =
+            if has_selection?(state) do
+              {_, selected, _} = split_text_for_selection(state)
+              case Clipboard.copy(state.clipboard, selected) do
+                {:ok, new_clipboard_state} -> %{state | clipboard: new_clipboard_state}
+                {:error, _reason} -> state # TODO: Log error?
+              end
+            else
+              state
+            end
+          {new_state, []}
         else
-          {state, []}
+          {insert_text(state, "c"), []}
+        end
+
+      %{key: "v", modifiers: mods} ->
+        if :ctrl in mods do
+          case Clipboard.paste(state.clipboard) do
+            {:ok, text, new_clipboard_state} ->
+              state_with_new_clipboard = %{state | clipboard: new_clipboard_state}
+              {insert_text(state_with_new_clipboard, text), []}
+            {:error, _reason} ->
+              {state, []} # TODO: Log error?
+          end
+        else
+          {insert_text(state, "v"), []}
+        end
+
+      %{key: "x", modifiers: mods} ->
+        if :ctrl in mods do
+          new_state =
+            if has_selection?(state) do
+              {_, selected, _} = split_text_for_selection(state)
+              case Clipboard.copy(state.clipboard, selected) do
+                {:ok, new_clipboard_state} ->
+                  state_with_new_clipboard = %{state | clipboard: new_clipboard_state}
+                  delete_selection(state_with_new_clipboard)
+                {:error, _reason} -> state # TODO: Log error?
+              end
+            else
+              state
+            end
+          {new_state, []}
+        else
+          {insert_text(state, "x"), []}
         end
 
       _ ->
@@ -206,8 +230,8 @@ defmodule Raxol.Components.Input.SingleLineInput do
     %{value: value, cursor_pos: pos} = state
     new_value = String.slice(value, 0, pos) <> text <> String.slice(value, pos, String.length(value))
     new_pos = pos + String.length(text)
-    
-    new_state = %{state | 
+
+    new_state = %{state |
       value: new_value,
       cursor_pos: new_pos,
       selection_start: nil,
@@ -221,7 +245,7 @@ defmodule Raxol.Components.Input.SingleLineInput do
   defp delete_selection(state) do
     {before_selection, _, after_selection} = split_text_for_selection(state)
     new_value = before_selection <> after_selection
-    
+
     new_state = %{state |
       value: new_value,
       cursor_pos: state.selection_start,
@@ -240,7 +264,7 @@ defmodule Raxol.Components.Input.SingleLineInput do
       if state.cursor_pos > 0 do
         new_value = String.slice(state.value, 0, state.cursor_pos - 1) <>
                    String.slice(state.value, state.cursor_pos, String.length(state.value))
-        
+
         new_state = %{state |
           value: new_value,
           cursor_pos: state.cursor_pos - 1
@@ -261,7 +285,7 @@ defmodule Raxol.Components.Input.SingleLineInput do
       if state.cursor_pos < String.length(state.value) do
         new_value = String.slice(state.value, 0, state.cursor_pos) <>
                    String.slice(state.value, state.cursor_pos + 1, String.length(state.value))
-        
+
         new_state = %{state | value: new_value}
 
         if state.on_change, do: state.on_change.(new_value)
@@ -303,4 +327,11 @@ defmodule Raxol.Components.Input.SingleLineInput do
       nil -> String.length(text)
     end
   end
-end 
+
+  defp split_text_for_selection(%{value: value, selection_start: start, selection_end: end_pos}) do
+    before_selection = String.slice(value, 0, start)
+    selected = String.slice(value, start, end_pos - start)
+    after_selection = String.slice(value, end_pos, String.length(value))
+    {before_selection, selected, after_selection}
+  end
+end

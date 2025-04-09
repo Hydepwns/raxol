@@ -185,8 +185,8 @@ defmodule Raxol.Plugins.ThemePlugin do
   end
 
   @impl true
-  def handle_resize(_plugin, _width, _height) do
-    :ok
+  def handle_resize(plugin, _width, _height) do
+    {:ok, plugin}
   end
 
   @doc """

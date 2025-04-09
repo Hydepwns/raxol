@@ -71,7 +71,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
         # Check if click is within any hyperlink bounds
         case find_hyperlink_at_position(plugin, x, y) do
           nil -> {:ok, plugin}
-          hyperlink -> handle_hyperlink_click(plugin, hyperlink, x, y)
+          # hyperlink -> handle_hyperlink_click(plugin, hyperlink, x, y) # Unreachable - find_hyperlink_at_position always returns nil
         end
       _ -> {:ok, plugin}
     end
@@ -115,9 +115,9 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     nil
   end
 
-  defp handle_hyperlink_click(%__MODULE__{} = plugin, _hyperlink, _x, _y) do
-    # TODO: Implement hyperlink click handling (e.g., open in browser)
-    # For now, just return the plugin unchanged
-    {:ok, plugin}
-  end
+  # defp handle_hyperlink_click(%__MODULE__{} = plugin, _hyperlink, _x, _y) do
+  #   # TODO: Implement hyperlink click handling (e.g., open in browser)
+  #   # For now, just return the plugin unchanged
+  #   {:ok, plugin}
+  # end
 end

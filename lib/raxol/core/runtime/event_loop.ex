@@ -12,6 +12,7 @@ defmodule Raxol.Core.Runtime.EventLoop do
   use GenServer
 
   alias Raxol.Core.Events.{Event, Manager}
+  alias Raxol.Core.Runtime.ComponentManager
   # alias ExTermbox.Event, as: TermboxEvent # Unused, and ExTermbox polling is disabled
 
   require Logger
@@ -94,13 +95,21 @@ defmodule Raxol.Core.Runtime.EventLoop do
           {nil, _} ->
             {:noreply, state}
           {interval, intervals} ->
-            Process.cancel_timer(interval.ref)
+            _ = Process.cancel_timer(interval.ref)
             {:noreply, %{state | intervals: intervals}}
         end
       {timer, timers} ->
-        Process.cancel_timer(timer.ref)
+        _ = Process.cancel_timer(timer.ref)
         {:noreply, %{state | timers: timers}}
     end
+  end
+
+  @impl GenServer
+  def handle_cast({:render, _view}, state) do
+    # Implementation of handle_cast/2 for :render
+    # This function should be implemented based on the specific requirements
+    # of the :render cast.
+    {:noreply, state}
   end
 
   @impl true
@@ -109,7 +118,7 @@ defmodule Raxol.Core.Runtime.EventLoop do
     case poll_event() do
       nil ->
         :ok
-      event ->
+      _event ->
         # Convert and dispatch the event
         # TODO: Raxol.Core.Events.Event.from_termbox/1 is undefined and polling is disabled.
         # case Event.from_termbox(event) do
@@ -151,29 +160,60 @@ defmodule Raxol.Core.Runtime.EventLoop do
     end
   end
 
-  def handle_info({:tb_event, _event}, state) do
-    # TODO: Implement translation from Termbox events to Raxol events.
-    # The Raxol.Core.Events.Event.from_termbox/1 function is currently undefined.
-    # Commenting out the original logic to prevent crash.
+  def handle_info({:tb_event, event_data}, state) do
+    case Map.get(event_data, :type) do
+      # Keyboard event
+      :key ->
+        # Delegate to ComponentManager or specific key handling logic
+        ComponentManager.dispatch_event(event_data)
+        {:noreply, state}
 
-    # original_logic = quote do
-    #   case Event.from_termbox(event) do
-    #     nil ->
-    #       # Ignore unknown Termbox events
-    #       {:noreply, state}
-    #     raxol_event ->
-    #       # Dispatch the Raxol event
-    #       Manager.dispatch(raxol_event)
-    #       {:noreply, state}
-    #   end
-    # end
-
-    {:noreply, state} # Ignore tb_event for now
+      # Other event types (e.g., mouse, resize)
+      _event ->
+        # Logger.debug("EventLoop unhandled tb_event type: #{inspect(event_type)}")
+        {:noreply, state}
+    end
   end
 
-  # Default handler for other messages
+  def handle_info({:publish, topic, message}, state) do
+    Manager.dispatch({topic, message})
+    {:noreply, state}
+  end
+
+  def handle_info({:tb_resize, _w, _h} = _event, state) do
+    # TODO: Implement handling of Termbox resize event
+    # Logger.debug("EventLoop unhandled event: #{inspect(event)}")
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:event, event_data}, state) do
+    # Dispatch event using the ComponentManager's client API
+    ComponentManager.dispatch_event(event_data)
+    {:noreply, state}
+  end
+
+  def handle_info(:render_tick, state) do
+    render_frame(state)
+    {:noreply, state}
+  end
+
+  def handle_info({:system, msg}, state) do
+    handle_system_message(msg, state)
+  end
+
+  # Catch-all for unexpected messages
+  def handle_info(event, state) do
+    Logger.warning("EventLoop received unexpected message", event: inspect(event))
+    {:noreply, state}
+  end
 
   # Private Helpers
+
+  defp handle_system_message(msg, state) do
+    Logger.debug("EventLoop handle_system_message: #{inspect(msg)}")
+    {:noreply, state} # Or appropriate response based on msg
+  end
 
   defp schedule_poll do
     Process.send_after(self(), :poll, @poll_interval)
@@ -187,5 +227,12 @@ defmodule Raxol.Core.Runtime.EventLoop do
     #   _ -> :ok # Ignore other poll results
     # end
     Process.sleep(100) # Avoid busy-waiting if polling is disabled
+  end
+
+  # Placeholder function
+  defp render_frame(_state) do
+    Logger.debug("EventLoop render_frame called")
+    # TODO: Add actual frame rendering logic, e.g., call RenderEngine
+    :ok
   end
 end

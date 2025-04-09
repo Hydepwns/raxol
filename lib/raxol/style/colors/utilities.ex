@@ -241,7 +241,7 @@ defmodule Raxol.Style.Colors.Utilities do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
 
     # Rotate hue
-    new_h = rem(round(h + degrees), 360)
+    new_h = rem(trunc(h + degrees), 360)
 
     # Convert back to RGB
     {r, g, b} = hsl_to_rgb(new_h, s, l)
@@ -315,29 +315,30 @@ defmodule Raxol.Style.Colors.Utilities do
   """
   @spec hsl_to_rgb(number(), float(), float()) :: {integer(), integer(), integer()}
   def hsl_to_rgb(h, s, l) when is_number(h) and is_float(s) and is_float(l) do
-    c = (1 - abs(2 * l - 1)) * s
-    x = c * (1 - abs(Float.rem(h / 60, 2.0) - 1))
-    m = l - c / 2
+    l_ = l / 100.0
 
-    {r_prime, g_prime, b_prime} = _calculate_rgb_segment(h, c, x)
+    # Calculate intermediate values
+    c = (1 - abs(2 * l_ - 1)) * s
+    x = c * (1 - abs(rem(round(h / 60.0), 2) - 1))
+    m = l_ - c / 2.0
 
-    {
-      round((r_prime + m) * 255),
-      round((g_prime + m) * 255),
-      round((b_prime + m) * 255)
-    }
-  end
-
-  @spec _calculate_rgb_segment(number(), float(), float()) :: {float(), float(), float()}
-  defp _calculate_rgb_segment(h, c, x) do
-     cond do
-      h < 60 -> {c, x, 0.0}
-      h < 120 -> {x, c, 0.0}
-      h < 180 -> {0.0, c, x}
-      h < 240 -> {0.0, x, c}
-      h < 300 -> {x, 0.0, c}
-      true -> {c, 0.0, x} # h < 360
+    # Determine RGB based on hue segment
+    {r_prime, g_prime, b_prime} = case trunc(h / 60.0) do
+      0 -> {c, x, 0.0}
+      1 -> {x, c, 0.0}
+      2 -> {0.0, c, x}
+      3 -> {0.0, x, c}
+      4 -> {x, 0.0, c}
+      5 -> {c, 0.0, x}
+      _ -> {0.0, 0.0, 0.0} # Should not happen for valid HSL
     end
+
+    # Adjust RGB values and scale to 0-255
+    r = round((r_prime + m) * 255)
+    g = round((g_prime + m) * 255)
+    b = round((b_prime + m) * 255)
+
+    {r, g, b}
   end
 
   @doc """
@@ -555,7 +556,7 @@ defmodule Raxol.Style.Colors.Utilities do
     -hue_shift..hue_shift
     |> Enum.map(fn shift ->
       # Calculate new hue (wrapping around 360 degrees)
-      new_h = rem(h + shift + 360, 360)
+      new_h = rem(trunc(h + shift + 360), 360)
       # Convert back to RGB
       {r, g, b} = hsl_to_rgb(new_h, s, l)
       Color.from_rgb(r, g, b)
@@ -603,7 +604,7 @@ defmodule Raxol.Style.Colors.Utilities do
     [0, 120, 240]
     |> Enum.map(fn shift ->
       # Calculate new hue (wrapping around 360 degrees)
-      new_h = rem(h + shift, 360)
+      new_h = rem(trunc(h + shift), 360)
       # Convert back to RGB
       {r, g, b} = hsl_to_rgb(new_h, s, l)
       Color.from_rgb(r, g, b)

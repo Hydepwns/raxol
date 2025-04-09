@@ -41,7 +41,7 @@ defmodule Raxol.Components.Terminal.Emulator do
       dimensions: @default_dimensions,
       screen: init_screen(@default_dimensions),
       history: [],
-      ansi_state: ANSI.init()
+      ansi_state: %{}
     }
   end
 
@@ -49,8 +49,8 @@ defmodule Raxol.Components.Terminal.Emulator do
   Processes input and updates terminal state.
   """
   def process_input(input, state) do
-    {ansi_state, screen} = ANSI.process(input, state.ansi_state, state.screen)
-    %{state | ansi_state: ansi_state, screen: screen}
+    ansi_state = ANSI.process(input, state.ansi_state)
+    %{state | ansi_state: ansi_state}
   end
 
   @doc """
@@ -119,4 +119,4 @@ defmodule Raxol.Components.Terminal.Emulator do
       min(max(0, y), height - 1)
     }
   end
-end 
+end

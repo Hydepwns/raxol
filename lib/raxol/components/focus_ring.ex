@@ -220,7 +220,8 @@ defmodule Raxol.Components.FocusRing do
   Cleans up resources used by the FocusRing.
   """
   def cleanup() do
-    EventManager.unregister_handler(:focus_change, __MODULE__)
+    # Unsubscribe from focus events
+    EventManager.unregister_handler(:focus_change, __MODULE__, :handle_focus_change)
     Process.delete(:focus_ring_config)
     Process.delete(:focus_ring_component_styles)
     :ok

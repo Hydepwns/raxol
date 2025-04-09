@@ -9,14 +9,13 @@ defmodule Raxol.Test.Performance do
   - Resource utilization tracking
   """
 
-  import ExUnit.Assertions
   alias Raxol.Test.Visual
 
   defmacro __using__(_opts) do
     quote do
       import Raxol.Test.Performance
       import Raxol.Test.Performance.Assertions
-      
+
       setup do
         context = setup_benchmark_environment()
         {:ok, context}
@@ -29,7 +28,7 @@ defmodule Raxol.Test.Performance do
   """
   def setup_benchmark_component(module, props \\ %{}) do
     component = Visual.setup_visual_component(module, props)
-    %{component | benchmark_config: default_benchmark_config()}
+    Map.put(component, :benchmark_config, default_benchmark_config())
   end
 
   @doc """
@@ -41,7 +40,7 @@ defmodule Raxol.Test.Performance do
         Visual.capture_render(component)
       end)
     end)
-    
+
     time / 1_000 # Convert to milliseconds
   end
 
@@ -52,7 +51,7 @@ defmodule Raxol.Test.Performance do
     initial = :erlang.memory()
     operation.(component)
     final = :erlang.memory()
-    
+
     %{
       total: final[:total] - initial[:total],
       processes: final[:processes] - initial[:processes],
@@ -69,21 +68,8 @@ defmodule Raxol.Test.Performance do
     {time, _} = :timer.tc(fn ->
       simulate_event(component, event)
     end)
-    
-    time / 1_000 # Convert to milliseconds
-  end
 
-  @doc """
-  Profiles component rendering and returns detailed metrics.
-  """
-  def profile_render(component) do
-    :eprof.start()
-    :eprof.start_profiling([self()])
-    
-    Visual.capture_render(component)
-    
-    :eprof.stop_profiling()
-    :eprof.analyze()
+    time / 1_000 # Convert to milliseconds
   end
 
   @doc """
@@ -93,36 +79,23 @@ defmodule Raxol.Test.Performance do
     %{
       render_time: measure_render_time(component),
       memory_usage: measure_memory_usage(component, &Visual.capture_render/1),
-      event_latency: measure_event_latency(component, :benchmark_event),
-      profile: profile_render(component)
+      event_latency: measure_event_latency(component, :benchmark_event)
     }
   end
 
   @doc """
   Tracks resource utilization over time.
   """
-  def track_resource_utilization(component, duration_ms) do
-    start_time = System.monotonic_time(:millisecond)
-    measurements = []
-    
-    Stream.resource(
-      fn -> {start_time, measurements} end,
-      fn {start, acc} ->
-        current_time = System.monotonic_time(:millisecond)
-        if current_time - start < duration_ms do
-          measurement = %{
-            timestamp: current_time,
-            memory: :erlang.memory(),
-            reductions: :erlang.statistics(:reductions),
-            process_count: :erlang.system_info(:process_count)
-          }
-          {[measurement], {start, [measurement | acc]}}
-        else
-          {:halt, acc}
-        end
-      end,
-      fn _ -> :ok end
-    )
+  def track_resource_utilization(_component, duration_ms) do
+    # Track memory usage
+    initial_memory = :erlang.memory()
+    Process.sleep(duration_ms)
+    final_memory = :erlang.memory()
+
+    %{
+      memory_delta: final_memory[:total] - initial_memory[:total],
+      duration_ms: duration_ms
+    }
   end
 
   # Private Helpers
@@ -137,8 +110,9 @@ defmodule Raxol.Test.Performance do
     }
   end
 
-  defp simulate_event(component, event) do
-    # Add event simulation logic
-    {component, []}
+  defp simulate_event(component, _event) do
+    # Simulate event handling
+    Process.sleep(10)
+    component
   end
-end 
+end

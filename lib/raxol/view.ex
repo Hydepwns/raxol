@@ -27,6 +27,9 @@ defmodule Raxol.View do
 
   @type t :: term()
 
+  @type opts :: keyword()
+  @type children_fun :: fun()
+
   @doc """
   Imports the view DSL for use in the current module.
   """
@@ -62,35 +65,60 @@ defmodule Raxol.View do
   end
 
   @doc """
-  Creates a panel component.
+  Creates a panel component, returning a map describing it.
   """
-  def panel(_opts \\ [], fun) when is_function(fun, 0) do
-    # TODO: Implement actual panel rendering
-    fun.()
+  @spec panel(opts()) :: map()
+  def panel(opts) when is_list(opts) do
+    # TODO: Implement actual panel rendering based on opts
+    %{type: :panel, opts: opts, children: []} # Return a map representation
   end
 
   @doc """
-  Creates a column component.
+  Creates a panel component with child elements.
   """
-  def column(_opts \\ [], fun) when is_function(fun, 0) do
-    # TODO: Implement actual column rendering
-    fun.()
+  @spec panel(opts(), children_fun()) :: map()
+  def panel(opts, fun) when is_list(opts) and is_function(fun, 0) do
+    %{type: :panel, opts: opts, children: fun.()} # Return map for block usage too
   end
 
   @doc """
-  Creates a row component.
+  Creates a column component with child elements.
   """
-  def row(_opts \\ [], fun) when is_function(fun, 0) do
-    # TODO: Implement actual row rendering
-    fun.()
+  @spec column(opts(), children_fun()) :: map()
+  def column(opts, fun) when is_list(opts) and is_function(fun, 0) do
+    %{type: :column, opts: opts, children: fun.()}
+  end
+
+  @doc """
+  Creates a column component, returning a map describing it.
+  """
+  @spec column(opts()) :: map()
+  def column(opts) when is_list(opts) do
+    %{type: :column, opts: opts, children: []}
+  end
+
+  @doc """
+  Creates a row component with child elements.
+  """
+  @spec row(opts(), children_fun()) :: map()
+  def row(opts, fun) when is_list(opts) and is_function(fun, 0) do
+    %{type: :row, opts: opts, children: fun.()}
+  end
+
+  @doc """
+  Creates a row component, returning a map describing it.
+  """
+  @spec row(opts()) :: map()
+  def row(opts) when is_list(opts) do
+    %{type: :row, opts: opts, children: []}
   end
 
   @doc """
   Creates a text component.
   """
+  @spec text(binary(), opts()) :: any() # Simplified return type
   def text(content, _opts \\ []) when is_binary(content) do
-    # TODO: Implement actual text rendering
-    content
+    %{type: :text, text: content, attrs: %{}}
   end
 
   @doc """
@@ -107,5 +135,10 @@ defmodule Raxol.View do
   def toast(message, _opts \\ []) when is_binary(message) do
     # TODO: Implement actual toast rendering
     message
+  end
+
+  def box(children \\ [], _opts \\ []) do
+    # TODO: Implement actual box rendering
+    children
   end
 end

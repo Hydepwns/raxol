@@ -22,8 +22,8 @@ defmodule Raxol.Components.Selection.Dropdown do
   use Raxol.Component
   alias Raxol.View.Components
   alias Raxol.View.Layout
-  alias Raxol.Core.Style.Color
   alias Raxol.Components.Selection.List
+  alias Raxol.Core.Events.Event
 
   @default_width 30
   @default_max_height 10
@@ -118,8 +118,8 @@ defmodule Raxol.Components.Selection.Dropdown do
       Components.text(content: state.placeholder, color: state.style.placeholder_color)
     end
 
-    Components.box style: %{border_color: state.style.border_color} do
-      Components.row do
+    Layout.box style: %{border_color: state.style.border_color} do
+      Layout.row do
         Components.text(content: display_text, color: state.style.text_color)
         Components.text(content: " ▼", color: state.style.text_color) # Dropdown arrow
       end
@@ -127,7 +127,7 @@ defmodule Raxol.Components.Selection.Dropdown do
   end
 
   defp render_list(state) do
-    Components.box style: %{border_color: state.style.border_color} do
+    Layout.box style: %{border_color: state.style.border_color} do
       List.render(%{state.list_state |
         focused: state.focused,
         on_select: fn item -> update({:select_item, item}, state) end,
@@ -137,38 +137,35 @@ defmodule Raxol.Components.Selection.Dropdown do
   end
 
   @impl true
-  def handle_event(%Event{type: :key} = event, state) when state.focused do
-    case event do
-      %{key: " "} when not state.is_open ->
-        {update(:toggle, state), []}
-
-      %{key: "Escape"} ->
-        {update(:close, state), []}
-
-      %{key: key} when byte_size(key) == 1 and state.is_open ->
-        # Type-ahead search when open
-        new_filter = state.filter <> key
-        {update({:set_filter, new_filter}, state), []}
-
-      %{key: "Backspace"} when state.is_open ->
-        if String.length(state.filter) > 0 do
-          new_filter = String.slice(state.filter, 0, -1)
-          {update({:set_filter, new_filter}, state), []}
-        else
-          {state, []}
-        end
-
-      _ when state.is_open ->
-        # Delegate to list component when open
+  def handle_event(%Event{type: :key, data: key_data} = event, state) do
+    cond do
+      # Delegate to List component when open and focused?
+      # Assuming List component handles Up/Down/Enter/Selection internally
+      state.is_open and state.focused ->
         {new_list_state, commands} = List.handle_event(event, state.list_state)
+        # Check if List component selected an item (emitted command? Or changed state?)
+        # Need to know how List signals selection back up. Assuming it calls on_select/on_submit.
+        # For now, just update list_state.
+        # If list selection triggers on_select/on_submit which calls our update(:select_item, ...)
+        # then this might work.
         {%{state | list_state: new_list_state}, commands}
 
-      _ ->
+      # Toggle open/closed with Enter/Space when closed
+      (key_data == %{key: :enter} or key_data == %{key: " "}) and not state.is_open ->
+        {update(:toggle, state), []}
+
+      # Close with Escape when open
+      key_data == %{key: :escape} and state.is_open ->
+        {update(:close, state), []}
+
+      # Ignore other keys when closed or not focused
+      true ->
         {state, []}
     end
   end
 
   def handle_event(%Event{type: :click}, state) do
+    # Toggle on click regardless of focus?
     {update(:toggle, state), []}
   end
 
@@ -184,4 +181,4 @@ defmodule Raxol.Components.Selection.Dropdown do
     filter_str = String.downcase(filter)
     String.contains?(String.downcase(item_str), filter_str)
   end
-end 
+end

@@ -75,7 +75,7 @@ defmodule Raxol.Session do
 
       session ->
         if session.token == token do
-          session = update_in(session.last_active, &DateTime.utc_now/0)
+          session = Map.put(session, :last_active, DateTime.utc_now())
           sessions = Map.put(sessions, session_id, session)
           {:reply, {:ok, session}, sessions}
         else

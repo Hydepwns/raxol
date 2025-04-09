@@ -146,7 +146,7 @@ defmodule Raxol.Style.Colors.PaletteManager do
     saturation_adjust = Keyword.get(opts, :saturation_adjust, 0.05)
 
     # Convert base color to HSL to get starting values
-    {base_h, base_s, base_l} = Utilities.rgb_to_hsl(
+    {_base_h, base_s, base_l} = Utilities.rgb_to_hsl(
       Color.from_hex(base_color).r,
       Color.from_hex(base_color).g,
       Color.from_hex(base_color).b
@@ -250,49 +250,6 @@ defmodule Raxol.Style.Colors.PaletteManager do
         _ -> acc
       end
     end)
-  end
-
-  @doc """
-  Check if a color combination has sufficient contrast for accessibility.
-
-  ## Parameters
-
-  * `foreground` - The foreground color (typically text)
-  * `background` - The background color
-  * `level` - The WCAG level to check against (`:aa` or `:aaa`) (default: `:aa`)
-  * `size` - The text size (`:normal` or `:large`) (default: `:normal`)
-
-  ## Returns
-
-  * `{:ok, ratio}` - If the contrast is sufficient, with the calculated ratio
-  * `{:insufficient, ratio}` - If the contrast is insufficient, with the calculated ratio
-
-  ## Examples
-
-      iex> PaletteManager.check_contrast("#000000", "#FFFFFF")
-      {:ok, 21.0}
-
-      iex> PaletteManager.check_contrast("#777777", "#999999")
-      {:insufficient, 1.3}
-  """
-  def check_contrast(foreground, background, level \\ :aa, size \\ :normal) do
-    # Calculate contrast ratio
-    ratio = Utilities.contrast_ratio(foreground, background)
-
-    # Determine minimum required ratio based on level and size
-    min_ratio = case {level, size} do
-      {:aa, :normal} -> 4.5
-      {:aa, :large} -> 3.0
-      {:aaa, :normal} -> 7.0
-      {:aaa, :large} -> 4.5
-    end
-
-    # Check if ratio is sufficient
-    if ratio >= min_ratio do
-      {:ok, ratio}
-    else
-      {:insufficient, ratio}
-    end
   end
 
   @doc """

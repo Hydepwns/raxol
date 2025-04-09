@@ -11,6 +11,7 @@ defmodule Raxol.Terminal.Input.InputHandler do
 
   alias Raxol.Terminal.Input.InputBuffer
   alias Raxol.Terminal.Input.SpecialKeys
+  alias Raxol.Terminal.Input.Types
 
   @type mouse_button :: 0 | 1 | 2 | 3 | 4
   @type mouse_event_type :: :press | :release | :move | :scroll
@@ -19,13 +20,18 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @type input_mode :: :normal | :insert | :replace | :command
   @type completion_callback :: (String.t() -> list(String.t()))
   @type t :: %__MODULE__{
-    buffer: InputBuffer.t(),
     mode: input_mode(),
+    history_index: integer() | nil,
+    input_history: [String.t()],
+    buffer: Types.input_buffer(),
+    prompt: String.t() | nil,
+    completion_context: map() | nil,
+    last_event_time: integer() | nil,
+    clipboard_content: String.t() | nil,
+    clipboard_history: [String.t()],
     mouse_enabled: boolean(),
-    mouse_buttons: MapSet.new(mouse_button()),
+    mouse_buttons: MapSet.t(mouse_button()),
     mouse_position: {non_neg_integer(), non_neg_integer()},
-    input_history: list(String.t()),
-    history_index: non_neg_integer(),
     modifier_state: SpecialKeys.modifier_state(),
     input_queue: list(String.t()),
     processing_escape: boolean(),
@@ -35,13 +41,18 @@ defmodule Raxol.Terminal.Input.InputHandler do
   }
 
   defstruct [
-    :buffer,
     :mode,
+    :history_index,
+    :input_history,
+    :buffer,
+    :prompt,
+    :completion_context,
+    :last_event_time,
+    :clipboard_content,
+    :clipboard_history,
     :mouse_enabled,
     :mouse_buttons,
     :mouse_position,
-    :input_history,
-    :history_index,
     :modifier_state,
     :input_queue,
     :processing_escape,
@@ -55,13 +66,18 @@ defmodule Raxol.Terminal.Input.InputHandler do
   """
   def new do
     %__MODULE__{
-      buffer: InputBuffer.new(),
       mode: :normal,
+      history_index: nil,
+      input_history: [],
+      buffer: InputBuffer.new(),
+      prompt: nil,
+      completion_context: nil,
+      last_event_time: nil,
+      clipboard_content: nil,
+      clipboard_history: [],
       mouse_enabled: false,
       mouse_buttons: MapSet.new(),
       mouse_position: {0, 0},
-      input_history: [],
-      history_index: 0,
       modifier_state: SpecialKeys.new_state(),
       input_queue: [],
       processing_escape: false,

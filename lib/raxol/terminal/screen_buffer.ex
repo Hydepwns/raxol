@@ -94,8 +94,12 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
     if lines >= visible_lines do
       # If scrolling more than the visible region, clear it
-      new_cells = List.update_slice(buffer.cells, scroll_start, visible_lines,
-        List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines))
+      empty_region = List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
+      # Replace the slice using List functions
+      new_cells = Enum.slice(buffer.cells, 0, scroll_start) ++
+                  empty_region ++
+                  Enum.slice(buffer.cells, scroll_end + 1, buffer.height - (scroll_end + 1))
+      # List.update_slice(buffer.cells, scroll_start, visible_lines, empty_region) # Old call
       %{buffer | cells: new_cells}
     else
       # Get the lines within the scroll region
@@ -111,8 +115,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
       empty_lines = List.duplicate(List.duplicate(Cell.new(), buffer.width), lines)
 
       # Construct the new cells array by replacing the scroll region
-      new_cells = List.update_slice(buffer.cells, scroll_start, visible_lines,
-        remaining_lines ++ empty_lines)
+      new_region_content = remaining_lines ++ empty_lines
+      new_cells = Enum.slice(buffer.cells, 0, scroll_start) ++
+                  new_region_content ++
+                  Enum.slice(buffer.cells, scroll_end + 1, buffer.height - (scroll_end + 1))
+      # List.update_slice(buffer.cells, scroll_start, visible_lines, new_region_content) # Old call
 
       %{buffer | cells: new_cells, scrollback: new_scrollback}
     end
@@ -128,8 +135,12 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
     if lines >= visible_lines do
       # If scrolling more than the visible region, clear it
-      new_cells = List.update_slice(buffer.cells, scroll_start, visible_lines,
-        List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines))
+      empty_region = List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
+      # Replace the slice using List functions
+      new_cells = Enum.slice(buffer.cells, 0, scroll_start) ++
+                  empty_region ++
+                  Enum.slice(buffer.cells, scroll_end + 1, buffer.height - (scroll_end + 1))
+      # List.update_slice(buffer.cells, scroll_start, visible_lines, empty_region) # Old call
       %{buffer | cells: new_cells}
     else
       if length(buffer.scrollback) >= lines do
@@ -142,8 +153,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
         shifted_lines = Enum.drop(scroll_region_lines, -lines)
 
         # Construct the new cells array by replacing the scroll region
-        new_cells = List.update_slice(buffer.cells, scroll_start, visible_lines,
-          scroll_lines ++ shifted_lines)
+        new_region_content = scroll_lines ++ shifted_lines
+        new_cells = Enum.slice(buffer.cells, 0, scroll_start) ++
+                    new_region_content ++
+                    Enum.slice(buffer.cells, scroll_end + 1, buffer.height - (scroll_end + 1))
+        # List.update_slice(buffer.cells, scroll_start, visible_lines, new_region_content) # Old call
 
         %{buffer | cells: new_cells, scrollback: new_scrollback}
       else
@@ -290,7 +304,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
           # Copy content from the old row
           old_row = Enum.at(old_cells, y)
           Enum.with_index(row)
-            |> Enum.map(fn {cell, x} ->
+            |> Enum.map(fn {_cell, x} ->
               if x < length(old_row) do
                 # Copy the cell from the old buffer
                 Enum.at(old_row, x)
@@ -366,5 +380,53 @@ defmodule Raxol.Terminal.ScreenBuffer do
         acc_buffer
       end
     end)
+  end
+
+  @doc """
+  Deletes `n` lines starting from the specified `start_y` within the scroll region.
+  New blank lines are added at the bottom of the scroll region.
+  """
+  @spec delete_lines(t(), non_neg_integer(), non_neg_integer()) :: t()
+  def delete_lines(%__MODULE__{} = buffer, start_y, n) when start_y >= 0 and n > 0 do
+    {scroll_start, scroll_end} = get_scroll_region_boundaries(buffer)
+    visible_lines = scroll_end - scroll_start + 1
+
+    # Ensure deletion happens within the scroll region
+    if start_y < scroll_start or start_y > scroll_end do
+      buffer
+    else
+      # Calculate the effective number of lines to delete within the region
+      lines_to_delete = min(n, scroll_end - start_y + 1)
+
+      if lines_to_delete <= 0 do
+        buffer
+      else
+        # Get the lines within the scroll region
+        scroll_region_cells = Enum.slice(buffer.cells, scroll_start..scroll_end)
+
+        # Calculate indices relative to the scroll region
+        relative_start_y = start_y - scroll_start
+
+        # Split the region cells into parts: before deletion, deleted, after deletion
+        {before_deleted, rest} = Enum.split(scroll_region_cells, relative_start_y)
+        {_deleted_lines, after_deleted} = Enum.split(rest, lines_to_delete)
+
+        # Create new blank lines to insert at the bottom
+        blank_lines = List.duplicate(List.duplicate(Cell.new(), buffer.width), lines_to_delete)
+
+        # Combine the parts to form the new region content
+        new_region_content = before_deleted ++ after_deleted ++ blank_lines
+
+        # Ensure the new region content has the correct number of lines
+        new_region_content = Enum.take(new_region_content, visible_lines)
+
+        # Construct the new full cells list
+        new_cells = Enum.slice(buffer.cells, 0, scroll_start) ++
+                    new_region_content ++
+                    Enum.slice(buffer.cells, scroll_end + 1, buffer.height - (scroll_end + 1))
+
+        %{buffer | cells: new_cells}
+      end
+    end
   end
 end

@@ -54,10 +54,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
     scrollback_height = Keyword.get(opts, :scrollback_height, 1000)
     memory_limit = Keyword.get(opts, :memory_limit, 10_000_000)
 
-    case new(width, height, scrollback_height, memory_limit) do
-      {:ok, state} -> {:ok, state}
-      error -> error
-    end
+    new(width, height, scrollback_height, memory_limit)
   end
 
   def init(_opts) do
@@ -238,6 +235,34 @@ defmodule Raxol.Terminal.Buffer.Manager do
     new_active_buffer = ScreenBuffer.clear_region(
       manager.active_buffer,
       0, 0, x, y
+    )
+
+    %{manager | active_buffer: new_active_buffer}
+  end
+
+  @doc """
+  Clears the visible portion of the display (viewport) without affecting the scrollback buffer.
+
+  ## Examples
+
+      iex> manager = Buffer.Manager.new(80, 24)
+      # ... (write some data) ...
+      iex> manager = Buffer.Manager.clear_visible_display(manager)
+      iex> manager.damage_regions
+      [{0, 0, 79, 23}]
+      # Assert buffer contents are cleared, scrollback remains
+  """
+  def clear_visible_display(%__MODULE__{active_buffer: buffer} = manager) do
+    width = ScreenBuffer.width(buffer)
+    height = ScreenBuffer.height(buffer)
+
+    # Mark the entire visible region as damaged
+    manager = mark_damaged(manager, 0, 0, width - 1, height - 1)
+
+    # Clear the cells in the active buffer's viewport
+    new_active_buffer = ScreenBuffer.clear_region(
+      buffer,
+      0, 0, width - 1, height - 1
     )
 
     %{manager | active_buffer: new_active_buffer}

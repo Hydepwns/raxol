@@ -23,7 +23,18 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
   @doc """
   Creates a new screen state with default values.
   """
-  @spec new() :: screen_state()
+  @spec new() :: %{
+    mode: :normal,
+    cursor_visible: true,
+    auto_wrap: true,
+    origin_mode: false,
+    insert_mode: false,
+    line_feed_mode: false,
+    column_width_mode: :normal,
+    auto_repeat_mode: false,
+    interlacing_mode: false,
+    saved_state: nil
+  }
   def new do
     %{
       mode: :normal,
@@ -170,4 +181,4 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
       saved_state: nil
     }
   end
-end 
+end

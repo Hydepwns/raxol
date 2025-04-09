@@ -10,6 +10,7 @@ defmodule Raxol.Terminal.Session do
   """
 
   use GenServer
+  require Logger
 
   # alias Raxol.Core.Events.Event # Unused
   # alias Raxol.Core.Runtime.EventLoop # Unused
@@ -114,19 +115,9 @@ defmodule Raxol.Terminal.Session do
     GenServer.call(pid, {:update_config, config})
   end
 
-  @doc """
-  Counts the number of active terminal sessions.
-
-  ## Examples
-
-      iex> {:ok, pid1} = Session.start_link()
-      iex> {:ok, pid2} = Session.start_link()
-      iex> Session.count_active_sessions()
-      2
-  """
+  @spec count_active_sessions() :: non_neg_integer()
   def count_active_sessions do
-    Registry.select(Raxol.Terminal.Registry, [{{:"$1", :_, :_}, [], [:"$1"]}])
-    |> length()
+    Raxol.Terminal.Registry.count()
   end
 
   # Callbacks
@@ -146,17 +137,21 @@ defmodule Raxol.Terminal.Session do
       theme: theme
     }
 
-    Registry.register(Raxol.Terminal.Registry, id, state)
+    _ = Raxol.Terminal.Registry.register(id, state)
 
     {:ok, state}
   end
 
   @impl true
   def handle_cast({:input, input}, state) do
-    new_emulator = Emulator.process_input(state.emulator, input)
-    new_renderer = %{state.renderer | screen_buffer: new_emulator.screen_buffer}
-
-    {:noreply, %{state | emulator: new_emulator, renderer: new_renderer}}
+    case Emulator.process_input(state.emulator, input) do
+      {new_emulator, _output} when is_struct(new_emulator, Raxol.Terminal.Emulator) ->
+        new_renderer = %{state.renderer | screen_buffer: new_emulator.screen_buffer}
+        {:noreply, %{state | emulator: new_emulator, renderer: new_renderer}}
+      {:error, reason} ->
+        Logger.error("Error processing terminal input: #{inspect(reason)}")
+        {:noreply, state} # Or handle error appropriately
+    end
   end
 
   @impl true
@@ -167,7 +162,7 @@ defmodule Raxol.Terminal.Session do
   @impl true
   def handle_call({:update_config, config}, _from, state) do
     new_state = update_state_from_config(state, config)
-    Registry.register(Raxol.Terminal.Registry, state.id, new_state)
+    _ = Raxol.Terminal.Registry.register(state.id, new_state)
 
     {:reply, :ok, new_state}
   end

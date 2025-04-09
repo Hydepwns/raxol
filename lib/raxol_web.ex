@@ -19,7 +19,7 @@ defmodule RaxolWeb do
 
   def router do
     quote do
-      use Phoenix.Router, helpers: false
+      use Phoenix.Router
 
       # Import common connection and controller functions to use in pipelines
       import Plug.Conn
@@ -35,9 +35,16 @@ defmodule RaxolWeb do
         layouts: [html: RaxolWeb.Layouts]
 
       import Plug.Conn
-      import RaxolWeb.Gettext
+      use Gettext, backend: RaxolWeb.Gettext
 
       unquote(verified_routes())
+    end
+  end
+
+  def view do
+    quote do
+      # Include shared imports and aliases for views
+      unquote(html_helpers())
     end
   end
 
@@ -70,7 +77,7 @@ defmodule RaxolWeb do
       import Phoenix.HTML
       # Core UI components and translation
       import RaxolWeb.CoreComponents
-      import RaxolWeb.Gettext
+      use Gettext, backend: RaxolWeb.Gettext
 
       # Shortcut for generating JS commands
       alias Phoenix.LiveView.JS
@@ -95,4 +102,4 @@ defmodule RaxolWeb do
   defmacro __using__(which) when is_atom(which) do
     apply(__MODULE__, which, [])
   end
-end 
+end

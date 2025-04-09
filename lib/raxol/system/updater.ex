@@ -142,7 +142,7 @@ defmodule Raxol.System.Updater do
   """
   def notify_if_update_available do
     case check_for_updates() do
-      {:ok, %{version: version, url: url}} ->
+      {:update_available, version} ->
         # Use bright green on black for the update notification
         fg = {0, 255, 0}
         bg = {0, 0, 0}
@@ -152,7 +152,8 @@ defmodule Raxol.System.Updater do
 
         Terminal.println("Update Available!", color: fg_hex, background: bg_hex)
 
-        IO.puts("Version #{version} is available at #{url}")
+        IO.puts("Version #{version} is available.")
+        IO.puts("Run 'raxol update' to install.")
         :ok
       _ ->
         :ok
@@ -265,7 +266,7 @@ defmodule Raxol.System.Updater do
       {:unix, :darwin} -> "macos"
       {:unix, _} -> "linux"
       {:win32, _} -> "windows"
-      _ -> throw({:error, "Unsupported platform"})
+      # _ -> throw({:error, "Unsupported platform"}) # Unreachable clause removed
     end
 
     # Determine file extension based on platform
@@ -361,7 +362,7 @@ defmodule Raxol.System.Updater do
     end
   end
 
-  defp apply_update(current_exe, new_exe, platform) do
+  def do_replace_executable(current_exe, new_exe, platform) do
     # Make the new executable executable
     File.chmod!(new_exe, 0o755)
 
@@ -370,27 +371,47 @@ defmodule Raxol.System.Updater do
       # Create a batch file that will replace the exe after we exit
       updater_bat = System.tmp_dir!() |> Path.join("raxol_updater.bat")
 
+      # Ensure paths are properly escaped for the batch file
+      safe_new_exe = Path.expand(new_exe)
+      safe_current_exe = Path.expand(current_exe)
+
       batch_contents = """
       @echo off
       timeout /t 2 /nobreak > nul
-      copy /y "#{new_exe}" "#{current_exe}"
+      copy /y "#{safe_new_exe}" "#{safe_current_exe}"
       del "#{updater_bat}"
       """
 
       File.write!(updater_bat, batch_contents)
 
       # Execute the batch file and exit
-      System.cmd("cmd", ["/c", "start", "/b", updater_bat])
-      System.stop(0)
+      # Using start /b runs the command in the background without a new window
+      _ = System.cmd("cmd", ["/c", "start", "/b", updater_bat])
+      # Give the batch file a moment to start before exiting
+      Process.sleep(500)
+      System.stop(0) # Exit the current Elixir application
     else
       # On Unix systems, we can replace the current executable directly
       # The new process will start with the updated executable
       case File.cp(new_exe, current_exe) do
-        :ok -> :ok
+        :ok ->
+          IO.puts "Executable replaced successfully. Please restart the application."
+          # On Unix, we might not need to System.stop immediately,
+          # depending on how the restart is managed.
+          # For now, let's assume the caller handles the restart or exit logic
+          # after this function returns :ok.
+          :ok
         {:error, reason} -> throw({:error, "Failed to replace executable: #{inspect(reason)}"})
       end
     end
+  end
 
+  defp apply_update(current_exe, new_exe, platform) do
+    do_replace_executable(current_exe, new_exe, platform)
+    # Consider if any further action is needed here after calling the helper,
+    # especially for the non-Windows case where we didn't System.stop() inside.
+    # If the application should exit after update on Unix, add System.stop(0) here.
+    # For now, returning :ok based on the helper's success.
     :ok
   end
 

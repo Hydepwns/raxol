@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
     cursor: {non_neg_integer(), non_neg_integer()},
     attributes: map(),
     charset_state: CharacterSets.charset_state(),
-    mode_state: ScreenModes.mode_state(),
+    mode_state: ScreenModes.screen_state(),
     scroll_region: {non_neg_integer(), non_neg_integer()} | nil
   }
 
@@ -85,4 +85,4 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   def count(stack) do
     length(stack)
   end
-end 
+end

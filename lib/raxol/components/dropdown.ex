@@ -102,8 +102,8 @@ defmodule Raxol.Components.Dropdown do
     #   View.update_context(dropdown_key, :is_open, false)
     # end
 
-    # Placeholder element
-    Raxol.Core.Renderer.View.element(:div, [], content.())
+    # Placeholder element - return map instead of calling View.element
+    %{type: :div, attrs: [], children: content.()}
 
     # TODO: Original implementation used View DSL, needs refactoring
     # View.element :div, \"dropdown\",
@@ -125,22 +125,9 @@ defmodule Raxol.Components.Dropdown do
     Raxol.Core.Renderer.View.text("#{selected} #{icon}")
   end
 
-  defp render_list(options, _selected, _dropdown_key) do
-    # TODO: Raxol.View.Components.box/1 seems undefined. Commenting out layout.
-    # Components.box style: @list_style do
-    #   Enum.map(options, fn option ->
-    #     is_selected = option == selected
-    #     style = if is_selected, do: @selected_item_style, else: @item_style
-    #     Components.text option, style: style, on_click: fn -> select_item(dropdown_key, option) end
-    #   end)
-    # end
-
-    # Placeholder rendering
-    # Raxol.Core.Renderer.View.element(:ul, [], Enum.map(options, fn option ->
-    #   Raxol.Core.Renderer.View.element(:li, [], [Raxol.Core.Renderer.View.text(option)])
-    # end))
-    # Temporary placeholder until View.element is defined/fixed
-    Raxol.Core.Renderer.View.text("List Placeholder")
+  defp render_list(_options, _selected, _dropdown_key) do
+    # placeholder
+    nil
   end
 
   # TODO: Raxol.View context API seems changed.
@@ -182,48 +169,19 @@ defmodule Raxol.Components.Dropdown do
   # Handle non-key events
   def handle_event(_event, state), do: {state, []} # Default case
 
-  def filterable(dropdown_key, options, selected, filter_text, _on_change, _on_filter_change) do
-    # TODO: Raxol.View context API seems changed. Commenting out context logic.
-    # is_open = View.get_context(dropdown_key, :is_open, false)
-    is_open = false # Assume closed for now
-
-    content = fn ->
-      # TODO: Raxol.View.update_context/3 undefined
-      # trigger_click = fn -> View.update_context(dropdown_key, :is_open, true) end
-      trigger = Raxol.Core.Renderer.View.text("Trigger (Filterable)") # Placeholder
-
-      filter_input = if is_open do
-        # TODO: Raxol.View.text_input/1 undefined
-        # View.text_input(
-        #   value: filter_text,
-        #   on_change: on_filter_change,
-        #   placeholder: \"Filter options...\"
-        # )
-        Raxol.Core.Renderer.View.text("[Filter Input Placeholder]")
-      end
-
-      list = if is_open do
-        filtered_options = Enum.filter(options, &String.contains?(&1, filter_text))
-        render_list(filtered_options, selected, dropdown_key)
-      end
-
-      # TODO: Raxol.View.Components.box/1 seems undefined. Commenting out layout.
-      # Components.box style: @trigger_style, on_click: trigger_click do
-      #   trigger
-      # end
-      # filter_input
-      # list
-
-      # Placeholder rendering
-      [trigger, filter_input, list]
+  def filterable(
+         filterable?,
+         options,
+         selected,
+         dropdown_key,
+         _content,
+         _render_opts \\ []
+       ) do
+    if filterable? do
+      # Placeholder for filterable dropdown rendering
+      render_list(options, selected, dropdown_key)
+    else
+      render_list(options, selected, dropdown_key)
     end
-
-    # Placeholder element
-    # Raxol.Core.Renderer.View.element(:div, [], content.())
-    # Temporary placeholder until View.element is defined/fixed
-    Raxol.Core.Renderer.View.text("Dropdown Placeholder")
-
-    # TODO: Original implementation used View DSL, needs refactoring
-    # View.element :div, \"dropdown filterable\", content: content
   end
 end

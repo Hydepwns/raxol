@@ -186,7 +186,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
       {:subscribe, events} when is_list(events) ->
         # Set up event subscription using aliased Subscription module
         {:ok, sub_id} = Subscription.start(%Subscription{type: :events, data: events}, %{pid: self()}) # Assuming start/2 is the correct function
-        put_in(state.subscriptions[sub_id], component_id)
+        state = put_in(state.subscriptions[sub_id], component_id)
+        state
 
       {:unsubscribe, sub_id} ->
         # Remove subscription using aliased Subscription module

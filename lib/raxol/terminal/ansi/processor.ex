@@ -172,7 +172,6 @@ defmodule Raxol.Terminal.ANSI.Processor do
       :osc -> handle_osc_sequence(sequence, state)
       :esc -> handle_esc_sequence(sequence, state)
       :text -> handle_text_sequence(sequence, state)
-      _ -> state
     end
   end
 
@@ -282,10 +281,7 @@ defmodule Raxol.Terminal.ANSI.Processor do
     new_buffer_manager = case mode do
       0 -> BufferManager.erase_from_cursor_to_end(state.buffer_manager)
       1 -> BufferManager.erase_from_beginning_to_cursor(state.buffer_manager)
-      # TODO: ANSI \e[2J usually doesn't clear scrollback.
-      # This function clears scrollback too. Consider adding a specific
-      # function to BufferManager for clearing only the visible screen.
-      2 -> BufferManager.clear_entire_display_with_scrollback(state.buffer_manager)
+      2 -> BufferManager.clear_visible_display(state.buffer_manager)
       3 -> BufferManager.clear_entire_display_with_scrollback(state.buffer_manager)
       _ -> state.buffer_manager
     end
@@ -404,10 +400,15 @@ defmodule Raxol.Terminal.ANSI.Processor do
         1 -> Map.put(attrs, :bold, true)
         4 -> Map.put(attrs, :underline, true)
         7 -> Map.put(attrs, :inverse, true)
-        30..37 -> Map.put(attrs, :foreground, code - 30)
-        40..47 -> Map.put(attrs, :background, code - 40)
-        90..97 -> Map.put(attrs, :foreground, code - 82)
-        100..107 -> Map.put(attrs, :background, code - 92)
+        # Basic Foreground Colors (30-37)
+        c when c >= 30 and c <= 37 -> Map.put(attrs, :foreground, c - 30)
+        # Basic Background Colors (40-47)
+        c when c >= 40 and c <= 47 -> Map.put(attrs, :background, c - 40)
+        # Bright Foreground Colors (90-97)
+        c when c >= 90 and c <= 97 -> Map.put(attrs, :foreground, c - 90 + 8) # Map 90-97 to 8-15
+        # Bright Background Colors (100-107)
+        c when c >= 100 and c <= 107 -> Map.put(attrs, :background, c - 100 + 8) # Map 100-107 to 8-15
+        # TODO: Handle 256-color and true-color codes (38, 48)
         _ -> attrs
       end
     end)
