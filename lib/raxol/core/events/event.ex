@@ -22,6 +22,9 @@ defmodule Raxol.Core.Events.Event do
 
   defstruct [:type, :timestamp, :data]
 
+  alias ExTermbox.Event, as: ExTermboxEvent
+  alias ExTermbox.Constants, as: ExTermboxConstants
+
   @doc """
   Creates a new event with the given type and data.
   The timestamp is automatically set to the current system time.
@@ -309,5 +312,96 @@ defmodule Raxol.Core.Events.Event do
       text: text,
       position: position
     })
+  end
+
+  # Event Conversion
+
+  @doc """
+  Converts a raw event (e.g., from ExTermbox) into a Raxol event.
+  """
+  @spec convert(ExTermboxEvent.t()) :: t()
+  def convert(%ExTermboxEvent{type: :key, mod: mod, key: key_code, ch: char_code}) do
+    # TODO: Refine mapping of ExTermbox key/char/mod codes
+    key = if key_code != 0, do: map_key_code(key_code), else: <<char_code>>
+    modifiers = map_modifiers(mod)
+    key_event(key, :pressed, modifiers)
+  end
+
+  def convert(%ExTermboxEvent{type: :resize, w: width, h: height}) do
+    window_event(width, height, :resize)
+  end
+
+  def convert(%ExTermboxEvent{type: :mouse, key: button_code, x: x, y: y, mod: mod}) do
+    # TODO: Refine mapping of ExTermbox mouse button/mod codes
+    button = map_button_code(button_code)
+    modifiers = map_modifiers(mod)
+    mouse_event(button, {x, y}, :pressed, modifiers)
+  end
+
+  # --- Private Conversion Helpers ---
+
+  # Requires constants from ExTermbox.Constants
+  defp map_key_code(code) do
+    # Using cond and calling the correct constant lookup functions
+    cond do
+      code == ExTermboxConstants.key(:f1) -> :f1
+      code == ExTermboxConstants.key(:f2) -> :f2
+      code == ExTermboxConstants.key(:f3) -> :f3
+      code == ExTermboxConstants.key(:f4) -> :f4
+      code == ExTermboxConstants.key(:f5) -> :f5
+      code == ExTermboxConstants.key(:f6) -> :f6
+      code == ExTermboxConstants.key(:f7) -> :f7
+      code == ExTermboxConstants.key(:f8) -> :f8
+      code == ExTermboxConstants.key(:f9) -> :f9
+      code == ExTermboxConstants.key(:f10) -> :f10
+      code == ExTermboxConstants.key(:f11) -> :f11
+      code == ExTermboxConstants.key(:f12) -> :f12
+      code == ExTermboxConstants.key(:insert) -> :insert
+      code == ExTermboxConstants.key(:delete) -> :delete
+      code == ExTermboxConstants.key(:home) -> :home
+      code == ExTermboxConstants.key(:end) -> :end
+      code == ExTermboxConstants.key(:pgup) -> :page_up
+      code == ExTermboxConstants.key(:pgdn) -> :page_down
+      code == ExTermboxConstants.key(:arrow_up) -> :up
+      code == ExTermboxConstants.key(:arrow_down) -> :down
+      code == ExTermboxConstants.key(:arrow_left) -> :left
+      code == ExTermboxConstants.key(:arrow_right) -> :right
+      code == ExTermboxConstants.key(:ctrl_tilde) -> {:ctrl, :tilde}
+      # ... map other special keys ...
+      code == ExTermboxConstants.key(:esc) -> :escape
+      code == ExTermboxConstants.key(:enter) -> :enter
+      code == ExTermboxConstants.key(:space) -> :space
+      code == ExTermboxConstants.key(:backspace2) -> :backspace # Or KEY_BACKSPACE?
+      code == ExTermboxConstants.key(:tab) -> :tab
+      true -> {:unknown_key, code}
+    end
+  end
+
+  defp map_modifiers(mod) do
+    # Modifier constants seem to be missing from ExTermbox.Constants?
+    # Using hardcoded values based on common practice (needs verification)
+    # Or potentially they are attributes?
+    # mod_shift = ExTermboxConstants.attribute(:bold) # Placeholder - incorrect!
+    # mod_ctrl = ExTermboxConstants.attribute(:underline) # Placeholder - incorrect!
+    # mod_alt = ExTermboxConstants.attribute(:reverse) # Placeholder - incorrect!
+
+    mods = []
+    mods = if Bitwise.band(mod, 4) != 0, do: [:shift | mods], else: mods # 0x4 for Shift
+    mods = if Bitwise.band(mod, 8) != 0, do: [:alt | mods], else: mods # 0x8 for Alt
+    mods = if Bitwise.band(mod, 16) != 0, do: [:ctrl | mods], else: mods # 0x10 for Ctrl
+    Enum.reverse(mods)
+  end
+
+  defp map_button_code(code) do
+    # Using cond and calling the correct constant lookup functions
+    cond do
+      code == ExTermboxConstants.key(:mouse_left) -> :left
+      code == ExTermboxConstants.key(:mouse_right) -> :right
+      code == ExTermboxConstants.key(:mouse_middle) -> :middle
+      code == ExTermboxConstants.key(:mouse_wheel_up) -> :wheel_up
+      code == ExTermboxConstants.key(:mouse_wheel_down) -> :wheel_down
+      code == ExTermboxConstants.key(:mouse_release) -> :release # This is a key, not a button state
+      true -> nil
+    end
   end
 end

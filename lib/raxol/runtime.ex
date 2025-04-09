@@ -11,7 +11,7 @@ defmodule Raxol.Runtime do
   alias Raxol.Core.Runtime.ComponentManager
   # alias Raxol.Terminal.Renderer # Removed unused alias
   # alias Raxol.Event # Removed unused alias
-  alias Raxol.Core.Events.Event # Keep this for the functions we *do* call
+  alias Raxol.Core.Events.Event, as: CoreEvent # Alias for conversion
   alias ExTermbox.Bindings # Use the correct module for NIFs
   # alias Raxol.Core.Events.Manager, as: EventManager
 
