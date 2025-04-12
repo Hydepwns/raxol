@@ -1,10 +1,16 @@
+\
+
+> [!WARNING] > **Active Development:** Raxol is currently under active development and APIs may change. We are working towards a v1.0 release, anticipated within the next 3 weeks. Please use with caution in production environments until then.
+
 ---
+
 title: Raxol Terminal Emulator
 description: A terminal emulator written in Elixir, designed to provide a robust and extensible
 date: 2025-04-06
 author: Raxol Team
 section: main
 tags: [terminal, emulator, elixir, plugins]
+
 ---
 
 ## Features
