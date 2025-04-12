@@ -1,62 +1,62 @@
 {
   "name": "Default",
-  "high_contrast": false,
   "palette": {
     "accent": {
-      "b": 0,
       "a": 1.0,
+      "b": 0,
       "r": 229,
       "g": 127
     },
     "background": {
-      "b": 229,
       "a": 1.0,
+      "b": 229,
       "r": 229,
       "g": 229
     },
     "error": {
-      "b": 0,
       "a": 1.0,
+      "b": 0,
       "r": 204,
       "g": 0
     },
     "info": {
-      "b": 178,
       "a": 1.0,
+      "b": 178,
       "r": 0,
       "g": 127
     },
     "primary": {
-      "b": 204,
       "a": 1.0,
+      "b": 204,
       "r": 0,
       "g": 119
     },
     "secondary": {
-      "b": 102,
       "a": 1.0,
+      "b": 102,
       "r": 102,
       "g": 102
     },
     "success": {
-      "b": 0,
       "a": 1.0,
+      "b": 0,
       "r": 0,
       "g": 127
     },
     "surface": {
-      "b": 219,
       "a": 1.0,
+      "b": 219,
       "r": 219,
       "g": 219
     },
     "warning": {
-      "b": 0,
       "a": 1.0,
+      "b": 0,
       "r": 229,
       "g": 127
     }
   },
+  "high_contrast": false,
   "ui_mappings": {
     "app_background": "background",
     "accent_button": "accent",

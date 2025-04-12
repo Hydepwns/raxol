@@ -8,12 +8,12 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   alias Raxol.Terminal.ANSI.{CharacterSets, ScreenModes}
 
   @type saved_state :: %{
-    cursor: {non_neg_integer(), non_neg_integer()},
-    attributes: map(),
-    charset_state: CharacterSets.charset_state(),
-    mode_state: ScreenModes.screen_state(),
-    scroll_region: {non_neg_integer(), non_neg_integer()} | nil
-  }
+          cursor: {non_neg_integer(), non_neg_integer()},
+          attributes: map(),
+          charset_state: CharacterSets.charset_state(),
+          mode_state: ScreenModes.screen_state(),
+          scroll_region: {non_neg_integer(), non_neg_integer()} | nil
+        }
 
   @type state_stack :: [saved_state()]
 

@@ -20,7 +20,7 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
     test "initializes with provided values" do
       on_change = fn _ -> nil end
       on_submit = fn _ -> nil end
-      
+
       props = %{
         value: "test",
         placeholder: "Enter text",
@@ -133,15 +133,21 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
 
     test "handles word movement", %{state: state} do
       state = %{state | value: "hello world"}
-      
+
       # Left by word
       event = %Event{type: :key, key: "Left", ctrl?: true}
-      {new_state, _} = SingleLineInput.handle_event(event, %{state | cursor_pos: 8})
+
+      {new_state, _} =
+        SingleLineInput.handle_event(event, %{state | cursor_pos: 8})
+
       assert new_state.cursor_pos == 6
 
       # Right by word
       event = %Event{type: :key, key: "Right", ctrl?: true}
-      {new_state, _} = SingleLineInput.handle_event(event, %{state | cursor_pos: 2})
+
+      {new_state, _} =
+        SingleLineInput.handle_event(event, %{state | cursor_pos: 2})
+
       assert new_state.cursor_pos == 5
     end
 
@@ -157,22 +163,30 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
 
     test "calls on_submit when Enter is pressed", %{state: state} do
       test_pid = self()
-      state = %{state | on_submit: fn value -> send(test_pid, {:submitted, value}) end}
-      
+
+      state = %{
+        state
+        | on_submit: fn value -> send(test_pid, {:submitted, value}) end
+      }
+
       event = %Event{type: :key, key: "Enter"}
       SingleLineInput.handle_event(event, state)
-      
+
       assert_received {:submitted, "test"}
     end
 
     test "calls on_change when text changes", %{state: state} do
       test_pid = self()
-      state = %{state | on_change: fn value -> send(test_pid, {:changed, value}) end}
-      
+
+      state = %{
+        state
+        | on_change: fn value -> send(test_pid, {:changed, value}) end
+      }
+
       event = %Event{type: :key, key: "a"}
       SingleLineInput.handle_event(event, state)
-      
+
       assert_received {:changed, "testa"}
     end
   end
-end 
+end

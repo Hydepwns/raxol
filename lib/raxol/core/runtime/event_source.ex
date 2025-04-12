@@ -38,7 +38,7 @@ defmodule Raxol.Core.Runtime.EventSource do
     * `{:error, reason}` - Failed to initialize
   """
   @callback init(args :: term(), context :: map()) ::
-    {:ok, state :: term()} | {:error, reason :: term()}
+              {:ok, state :: term()} | {:error, reason :: term()}
 
   @doc """
   Called when the event source receives a message. Should handle the message
@@ -53,8 +53,8 @@ defmodule Raxol.Core.Runtime.EventSource do
     * `{:stop, reason, new_state}` - Stop the event source
   """
   @callback handle_info(msg :: term(), state :: term()) ::
-    {:noreply, new_state :: term()} |
-    {:stop, reason :: term(), new_state :: term()}
+              {:noreply, new_state :: term()}
+              | {:stop, reason :: term(), new_state :: term()}
 
   @doc """
   Called when the event source is stopping. Can be used to clean up resources.
@@ -104,7 +104,7 @@ defmodule Raxol.Core.Runtime.EventSource do
         send(context.pid, {:subscription, event})
       end
 
-      defoverridable [init: 1, handle_info: 2, terminate: 2]
+      defoverridable init: 1, handle_info: 2, terminate: 2
     end
   end
-end 
+end

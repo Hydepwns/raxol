@@ -27,7 +27,8 @@ defmodule Ratatouille.Renderer.BorderTest do
     test "supports color attribute" do
       canvas = Border.render(Canvas.from_dimensions(3, 3), %{color: :blue})
 
-      canvas.cells |> Enum.each(fn {_position, cell} ->
+      canvas.cells
+      |> Enum.each(fn {_position, cell} ->
         assert cell.fg == Attributes.to_terminal_color(:blue)
       end)
     end
@@ -35,7 +36,8 @@ defmodule Ratatouille.Renderer.BorderTest do
     test "supports background attribute" do
       canvas = Border.render(Canvas.from_dimensions(3, 3), %{background: :red})
 
-      canvas.cells |> Enum.each(fn {_position, cell} ->
+      canvas.cells
+      |> Enum.each(fn {_position, cell} ->
         assert cell.bg == Attributes.to_terminal_color(:red)
       end)
     end

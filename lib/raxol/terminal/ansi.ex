@@ -334,11 +334,11 @@ defmodule Raxol.Terminal.ANSI do
   # @screen_modes %{ ... removed ... }
 
   @type state :: %{
-    mouse_state: MouseEvents.mouse_state(),
-    window_state: WindowManipulation.window_state(),
-    sixel_state: SixelGraphics.sixel_state(),
-    # ... existing state fields ...
-  }
+          mouse_state: MouseEvents.mouse_state(),
+          window_state: WindowManipulation.window_state(),
+          sixel_state: SixelGraphics.sixel_state()
+          # ... existing state fields ...
+        }
 
   @doc """
   Creates a new ANSI state with default values.
@@ -348,7 +348,7 @@ defmodule Raxol.Terminal.ANSI do
     %{
       mouse_state: MouseEvents.new(),
       window_state: WindowManipulation.new(),
-      sixel_state: SixelGraphics.new(),
+      sixel_state: SixelGraphics.new()
       # ... existing state initialization ...
     }
   end
@@ -356,21 +356,26 @@ defmodule Raxol.Terminal.ANSI do
   @doc """
   Handles a window manipulation operation.
   """
-  @spec handle_window_operation(state(), atom(), list(integer())) :: {state(), binary()}
+  @spec handle_window_operation(state(), atom(), list(integer())) ::
+          {state(), binary()}
   def handle_window_operation(state, operation, params) do
-    {new_window_state, response} = WindowManipulation.handle_operation(state.window_state, operation, params)
+    {new_window_state, response} =
+      WindowManipulation.handle_operation(state.window_state, operation, params)
+
     {%{state | window_state: new_window_state}, response}
   end
 
   @doc """
   Handles a mouse event operation.
   """
-  @spec handle_mouse_operation(state(), atom(), list(integer())) :: {:reply, term(), state()}
+  @spec handle_mouse_operation(state(), atom(), list(integer())) ::
+          {:reply, term(), state()}
   def handle_mouse_operation(state, _operation, _params) do
     # {new_mouse_state, response} = MouseEvents.handle_operation(state.mouse_state, operation, params) # Function undefined
     # Update ANSI state with new mouse state
     # state = %{state | mouse_state: new_mouse_state}
-    response = {:ok, "Mouse operation ignored (handle_operation undefined)"} # Placeholder response
+    # Placeholder response
+    response = {:ok, "Mouse operation ignored (handle_operation undefined)"}
 
     {:reply, response, state}
   end
@@ -378,7 +383,8 @@ defmodule Raxol.Terminal.ANSI do
   @doc """
   Decodes an operation from its character code.
   """
-  @spec decode_operation(77 | 113 | 116) :: :mouse_event | :sixel_graphics | :window_manipulation
+  @spec decode_operation(77 | 113 | 116) ::
+          :mouse_event | :sixel_graphics | :window_manipulation
   def decode_operation(?t), do: :window_manipulation
   def decode_operation(?q), do: :sixel_graphics
   def decode_operation(?M), do: :mouse_event
@@ -387,7 +393,8 @@ defmodule Raxol.Terminal.ANSI do
   @doc """
   Handles an operation and returns the updated state and response.
   """
-  @spec handle_operation(state(), atom(), list(integer())) :: {state(), binary()}
+  @spec handle_operation(state(), atom(), list(integer())) ::
+          {state(), binary()}
   def handle_operation(state, :window_manipulation, params) do
     handle_window_operation(state, :window_manipulation, params)
   end
@@ -470,8 +477,9 @@ defmodule Raxol.Terminal.ANSI do
 
       {:device_status, report_type} ->
         # TODO: Handle specific device status reports (e.g., cursor position)
-        Logger.info("Received Device Status Report: #{inspect(report_type)}")
-        {emulator, nil} # Assuming no state change for now
+        Logger.debug("Received Device Status Report: #{inspect(report_type)}")
+        # Assuming no state change for now
+        {emulator, nil}
 
       {:designate_charset, gset_num, charset} ->
         set_character_set(emulator, gset_num, charset)
@@ -498,6 +506,7 @@ defmodule Raxol.Terminal.ANSI do
       {:error, :unknown_sequence, seq} ->
         Logger.warning("Unknown ANSI sequence received: #{inspect(seq)}")
         emulator
+
       # {:mouse_event, button, x, y} ->
       #   handle_mouse_event(emulator, button, x, y)
 
@@ -534,37 +543,55 @@ defmodule Raxol.Terminal.ANSI do
       :set_foreground ->
         [color] = params
         color = Color.from_hex(color)
-        adapted_color = Advanced.adapt_color_advanced(color, enhance_contrast: true)
+
+        adapted_color =
+          Advanced.adapt_color_advanced(color, enhance_contrast: true)
+
         "\e[#{color_code(adapted_color, :foreground)}m"
 
       :set_background ->
         [color] = params
         color = Color.from_hex(color)
-        adapted_color = Advanced.adapt_color_advanced(color, enhance_contrast: true)
+
+        adapted_color =
+          Advanced.adapt_color_advanced(color, enhance_contrast: true)
+
         "\e[#{color_code(adapted_color, :background)}m"
 
       :set_foreground_256 ->
         [color] = params
         color = Color.from_hex(color)
-        adapted_color = Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
+        adapted_color =
+          Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
         "\e[38;5;#{rgb_to_256color(adapted_color)}m"
 
       :set_background_256 ->
         [color] = params
         color = Color.from_hex(color)
-        adapted_color = Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
+        adapted_color =
+          Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
         "\e[48;5;#{rgb_to_256color(adapted_color)}m"
 
       :set_foreground_true ->
         [color] = params
         color = Color.from_hex(color)
-        adapted_color = Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
+        adapted_color =
+          Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
         "\e[38;2;#{adapted_color.r};#{adapted_color.g};#{adapted_color.b}m"
 
       :set_background_true ->
         [color] = params
         color = Color.from_hex(color)
-        adapted_color = Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
+        adapted_color =
+          Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
         "\e[48;2;#{adapted_color.r};#{adapted_color.g};#{adapted_color.b}m"
 
       :set_attribute ->
@@ -634,25 +661,56 @@ defmodule Raxol.Terminal.ANSI do
   defp parse_sequence(sequence) do
     case sequence do
       # Single Shifts
-      "\eN" -> {:single_shift, 2} # SS2 -> G2
-      "\eO" -> {:single_shift, 3} # SS3 -> G3
+      # SS2 -> G2
+      "\eN" ->
+        {:single_shift, 2}
+
+      # SS3 -> G3
+      "\eO" ->
+        {:single_shift, 3}
 
       # Locking Shifts (Invocation)
-      "\x0E" -> {:lock_shift, 1} # SO (^N) -> Invoke G1 in GL
-      "\x0F" -> {:lock_shift, 0} # SI (^O) -> Invoke G0 in GL
-      "\e~" -> {:lock_shift, 2} # LS2 -> Invoke G2 in GR
-      "\e}" -> {:lock_shift, 3} # LS3 -> Invoke G3 in GR
-      "\e|" -> {:lock_shift, 1} # LS1R -> Invoke G1 in GR (VT220 extension?)
+      # SO (^N) -> Invoke G1 in GL
+      "\x0E" ->
+        {:lock_shift, 1}
+
+      # SI (^O) -> Invoke G0 in GL
+      "\x0F" ->
+        {:lock_shift, 0}
+
+      # LS2 -> Invoke G2 in GR
+      "\e~" ->
+        {:lock_shift, 2}
+
+      # LS3 -> Invoke G3 in GR
+      "\e}" ->
+        {:lock_shift, 3}
+
+      # LS1R -> Invoke G1 in GR (VT220 extension?)
+      "\e|" ->
+        {:lock_shift, 1}
 
       # Charset Designation (SCS)
-      <<"\e(", charset::binary-size(1)>> -> {:designate_charset, 0, charset} # G0
-      <<"\e)", charset::binary-size(1)>> -> {:designate_charset, 1, charset} # G1
-      <<"\e*", charset::binary-size(1)>> -> {:designate_charset, 2, charset} # G2
-      <<"\e+", charset::binary-size(1)>> -> {:designate_charset, 3, charset} # G3
+      # G0
+      <<"\e(", charset::binary-size(1)>> ->
+        {:designate_charset, 0, charset}
+
+      # G1
+      <<"\e)", charset::binary-size(1)>> ->
+        {:designate_charset, 1, charset}
+
+      # G2
+      <<"\e*", charset::binary-size(1)>> ->
+        {:designate_charset, 2, charset}
+
+      # G3
+      <<"\e+", charset::binary-size(1)>> ->
+        {:designate_charset, 3, charset}
 
       # Match standard CSI sequences
       <<"\e[", rest::binary>> ->
-        case Regex.run(~r/^([\d;]*)([A-Za-z])/, rest) do # Anchor regex
+        # Anchor regex
+        case Regex.run(~r/^([\d;]*)([A-Za-z])/, rest) do
           [_, params, cmd] ->
             parse_csi_sequence(params, cmd)
 
@@ -662,7 +720,12 @@ defmodule Raxol.Terminal.ANSI do
               [_, mode_param, action] ->
                 # Handle multiple modes potentially separated by ';'
                 modes = String.split(mode_param, ";")
-                action_atom = if action == "h", do: :set_screen_mode, else: :reset_screen_mode
+
+                action_atom =
+                  if action == "h",
+                    do: :set_screen_mode,
+                    else: :reset_screen_mode
+
                 # For simplicity, return the first mode found. Proper handling might need multiple events.
                 {:mode_change, action_atom, hd(modes)}
 
@@ -670,8 +733,12 @@ defmodule Raxol.Terminal.ANSI do
                 # Match mouse event sequences (SGR format)
                 case Regex.run(~r/^<(\d+);(\d+);(\d+)([mM])/, rest) do
                   [_, button, x, y, type] ->
-                    event_type = if type == "M", do: :mouse_press, else: :mouse_release
-                    {:mouse_event, event_type, String.to_integer(button), String.to_integer(x), String.to_integer(y)}
+                    event_type =
+                      if type == "M", do: :mouse_press, else: :mouse_release
+
+                    {:mouse_event, event_type, String.to_integer(button),
+                     String.to_integer(x), String.to_integer(y)}
+
                   nil ->
                     # Add other non-CSI or specific CSI patterns here if needed
                     # The old charset regex was here, removing it as it was likely incorrect
@@ -682,7 +749,9 @@ defmodule Raxol.Terminal.ANSI do
 
       # Add other non-CSI sequences (like designation ESC ( C) here if needed
 
-      _ -> {:error, :unknown_sequence, sequence} # Fallback for sequences not starting with ESC
+      # Fallback for sequences not starting with ESC
+      _ ->
+        {:error, :unknown_sequence, sequence}
     end
   end
 
@@ -693,60 +762,44 @@ defmodule Raxol.Terminal.ANSI do
       {"H", [row, col]} -> {:cursor_move, row, col}
       {"H", [row]} -> {:cursor_move, row, 1}
       {"H", []} -> {:cursor_move, 1, 1}
-
       {"A", [n]} -> {:cursor_up, n}
       {"A", []} -> {:cursor_up, 1}
-
       {"B", [n]} -> {:cursor_down, n}
       {"B", []} -> {:cursor_down, 1}
-
       {"C", [n]} -> {:cursor_forward, n}
       {"C", []} -> {:cursor_forward, 1}
-
       {"D", [n]} -> {:cursor_backward, n}
       {"D", []} -> {:cursor_backward, 1}
-
       {"s", []} -> {:cursor_save}
       {"u", []} -> {:cursor_restore}
-
       {"h", ["25", "?"]} -> {:cursor_visible, true}
       {"l", ["25", "?"]} -> {:cursor_visible, false}
-
       {"m", params} -> parse_sgr_sequence(params)
-
       {"J", [n]} -> {:clear_screen, n}
       {"J", []} -> {:clear_screen, 0}
-
       {"K", [n]} -> {:clear_line, n}
       {"K", []} -> {:clear_line, 0}
-
       {"L", [n]} -> {:insert_line, n}
       {"L", []} -> {:insert_line, 1}
-
       {"M", [n]} -> {:delete_line, n}
       {"M", []} -> {:delete_line, 1}
-
       {"r", [top, bottom]} -> {:set_scroll_region, top, bottom}
-
       # Device status reports
       {"n", [6]} -> {:device_status, :cursor_position}
       {"n", [5]} -> {:device_status, :device_status}
       {"n", [0]} -> {:device_status, :device_ok}
       {"n", [3]} -> {:device_status, :device_malfunction}
-
       # Terminal identification
       {"c", []} -> {:device_status, :primary_attributes}
       {"c", [0]} -> {:device_status, :primary_attributes}
       {"c", [1]} -> {:device_status, :secondary_attributes}
       {"c", [2]} -> {:device_status, :tertiary_attributes}
       {"c", [3]} -> {:device_status, :fourth_attributes}
-
       # Double-width/double-height control
       {"#", [3]} -> {:text_format, :double_height_top}
       {"#", [4]} -> {:text_format, :double_height_bottom}
       {"#", [5]} -> {:text_format, :single_width}
       {"#", [6]} -> {:text_format, :double_width}
-
       _ -> {:unknown, {cmd, params}}
     end
   end
@@ -754,20 +807,15 @@ defmodule Raxol.Terminal.ANSI do
   defp parse_sgr_sequence(params) do
     case params do
       [0] -> {:reset_attributes}
-
       [38, 2, r, g, b] -> {:foreground_true, r, g, b}
       [48, 2, r, g, b] -> {:background_true, r, g, b}
-
       [38, 5, index] -> {:foreground_256, index}
       [48, 5, index] -> {:background_256, index}
-
       [n] when n >= 30 and n <= 37 -> {:foreground_basic, n - 30}
       [n] when n >= 40 and n <= 47 -> {:background_basic, n - 40}
       [n] when n >= 90 and n <= 97 -> {:foreground_basic, n - 82}
       [n] when n >= 100 and n <= 107 -> {:background_basic, n - 92}
-
       [n] when is_map_key(@attributes, n) -> {:text_attribute, @attributes[n]}
-
       _ -> {:unknown, params}
     end
   end
@@ -776,17 +824,26 @@ defmodule Raxol.Terminal.ANSI do
   @doc false
   defp set_character_set(emulator, g_set, charset) do
     # TODO: Implement charset designation - requires using CharacterSets module
-    Logger.debug("ANSI: Setting character set #{inspect(g_set)} to #{inspect(charset)} - (Not implemented)")
-    emulator # Return emulator for now
+    Logger.debug(
+      "ANSI: Setting character set #{inspect(g_set)} to #{inspect(charset)} - (Not implemented)"
+    )
+
+    # Return emulator for now
+    emulator
   end
 
   defp invoke_character_set(emulator, gset) do
     charset = Map.get(emulator.character_set_state, gset, :us_ascii)
+
     emulator
     |> update_in([:character_set_state, :active_set], fn _ -> gset end)
     |> update_in([:character_set_state, :active_charset], fn _ -> charset end)
-    |> update_in([:character_set_state, :last_modified], fn _ -> DateTime.utc_now() end)
-    |> update_in([:character_set_state, :modification_count], fn count -> count + 1 end)
+    |> update_in([:character_set_state, :last_modified], fn _ ->
+      DateTime.utc_now()
+    end)
+    |> update_in([:character_set_state, :modification_count], fn count ->
+      count + 1
+    end)
   end
 
   # Screen mode handling
@@ -799,9 +856,10 @@ defmodule Raxol.Terminal.ANSI do
   # Cursor movement functions
 
   defp move_cursor(emulator, row, col) do
-    %{emulator |
-      cursor_x: max(0, min(col - 1, emulator.width - 1)),
-      cursor_y: max(0, min(row - 1, emulator.height - 1))
+    %{
+      emulator
+      | cursor_x: max(0, min(col - 1, emulator.width - 1)),
+        cursor_y: max(0, min(row - 1, emulator.height - 1))
     }
   end
 
@@ -840,14 +898,32 @@ defmodule Raxol.Terminal.ANSI do
 
   defp set_foreground_true(emulator, r, g, b) do
     color = Color.from_rgb(r, g, b)
-    adapted_color = Advanced.adapt_color_advanced(color, preserve_brightness: true)
-    %{emulator | attributes: %{emulator.attributes | foreground_true: {adapted_color.r, adapted_color.g, adapted_color.b}}}
+
+    adapted_color =
+      Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
+    %{
+      emulator
+      | attributes: %{
+          emulator.attributes
+          | foreground_true: {adapted_color.r, adapted_color.g, adapted_color.b}
+        }
+    }
   end
 
   defp set_background_true(emulator, r, g, b) do
     color = Color.from_rgb(r, g, b)
-    adapted_color = Advanced.adapt_color_advanced(color, preserve_brightness: true)
-    %{emulator | attributes: %{emulator.attributes | background_true: {adapted_color.r, adapted_color.g, adapted_color.b}}}
+
+    adapted_color =
+      Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
+    %{
+      emulator
+      | attributes: %{
+          emulator.attributes
+          | background_true: {adapted_color.r, adapted_color.g, adapted_color.b}
+        }
+    }
   end
 
   defp set_foreground_256(emulator, index) do
@@ -860,7 +936,9 @@ defmodule Raxol.Terminal.ANSI do
 
   defp set_foreground_basic(emulator, color) do
     case get_color_name(color) do
-      nil -> emulator
+      nil ->
+        emulator
+
       color_name ->
         color_code = basic_color_code(color_name)
         "\e[#{color_code}m"
@@ -869,7 +947,9 @@ defmodule Raxol.Terminal.ANSI do
 
   defp set_background_basic(emulator, color) do
     case get_color_name(color) do
-      nil -> emulator
+      nil ->
+        emulator
+
       color_name ->
         color_code = basic_color_code(color_name)
         "\e[#{color_code + 10}m"
@@ -893,11 +973,14 @@ defmodule Raxol.Terminal.ANSI do
   defp color_code(%Raxol.Style.Colors.Color{r: r, g: g, b: b}, :foreground) do
     "\e[38;2;#{r};#{g};#{b}m"
   end
+
   defp color_code(%Raxol.Style.Colors.Color{r: r, g: g, b: b}, :background) do
     "\e[48;2;#{r};#{g};#{b}m"
   end
+
   # Add a fallback clause or handle other types if necessary
-  defp color_code(_color, _type), do: "" # Return empty string for invalid input
+  # Return empty string for invalid input
+  defp color_code(_color, _type), do: ""
 
   # Text attribute functions
 
@@ -905,70 +988,119 @@ defmodule Raxol.Terminal.ANSI do
     case Map.get(@attributes, attribute) do
       nil ->
         emulator
+
       :reset ->
         %{emulator | attributes: %{}}
+
       :style_reset ->
         %{emulator | attributes: %{}}
+
       :style_reset_all ->
         %{emulator | attributes: %{}}
+
       :style_reset_color ->
-        Map.drop(emulator.attributes, [:foreground, :background, :underline_color, :strikethrough_color, :overline_color])
+        Map.drop(emulator.attributes, [
+          :foreground,
+          :background,
+          :underline_color,
+          :strikethrough_color,
+          :overline_color
+        ])
+
       :style_reset_attributes ->
-        Map.drop(emulator.attributes, [:bold, :faint, :italic, :underline, :blink, :rapid_blink, :inverse, :conceal, :strikethrough])
+        Map.drop(emulator.attributes, [
+          :bold,
+          :faint,
+          :italic,
+          :underline,
+          :blink,
+          :rapid_blink,
+          :inverse,
+          :conceal,
+          :strikethrough
+        ])
+
       :style_reset_font ->
         Map.drop(emulator.attributes, [:font])
+
       :style_reset_alignment ->
         Map.drop(emulator.attributes, [:alignment])
+
       :style_reset_wrap ->
         Map.drop(emulator.attributes, [:wrap])
+
       :style_reset_direction ->
         Map.drop(emulator.attributes, [:direction])
+
       :style_reset_spacing ->
         Map.drop(emulator.attributes, [:spacing])
+
       :style_reset_case ->
         Map.drop(emulator.attributes, [:case])
+
       :style_reset_emphasis ->
         Map.drop(emulator.attributes, [:emphasis])
+
       :style_reset_outline ->
         Map.drop(emulator.attributes, [:outline])
+
       :style_reset_shadow ->
         Map.drop(emulator.attributes, [:shadow])
+
       :style_reset_rotation ->
         Map.drop(emulator.attributes, [:rotation])
+
       :style_reset_scale ->
         Map.drop(emulator.attributes, [:scale])
+
       :style_reset_tracking ->
         Map.drop(emulator.attributes, [:tracking])
+
       :style_reset_leading ->
         Map.drop(emulator.attributes, [:leading])
+
       :style_reset_kerning ->
         Map.drop(emulator.attributes, [:kerning])
+
       :style_reset_ligatures ->
         Map.drop(emulator.attributes, [:ligatures])
+
       :style_reset_baseline ->
         Map.drop(emulator.attributes, [:baseline])
+
       :style_reset_underline ->
         Map.drop(emulator.attributes, [:underline, :underline_style])
+
       :style_reset_strikethrough ->
         Map.drop(emulator.attributes, [:strikethrough, :strikethrough_style])
+
       :style_reset_overline ->
         Map.drop(emulator.attributes, [:overline, :overline_style])
+
       :style_reset_blink ->
         Map.drop(emulator.attributes, [:blink, :blink_style])
+
       :style_reset_inverse ->
         Map.drop(emulator.attributes, [:inverse])
+
       :style_reset_conceal ->
         Map.drop(emulator.attributes, [:conceal])
+
       :style_reset_color_foreground ->
         Map.drop(emulator.attributes, [:foreground])
+
       :style_reset_color_background ->
         Map.drop(emulator.attributes, [:background])
+
       :style_reset_color_underline ->
         Map.drop(emulator.attributes, [:underline_color])
+
       :style_reset_color_strikethrough ->
         Map.drop(emulator.attributes, [:strikethrough_color])
+
       :style_reset_color_overline ->
         Map.drop(emulator.attributes, [:overline_color])
+
       attr ->
         Map.put(emulator.attributes, attr, true)
     end
@@ -991,6 +1123,7 @@ defmodule Raxol.Terminal.ANSI do
       font: nil,
       alignment: nil
     }
+
     %{emulator | attributes: Map.merge(emulator.attributes, default_attributes)}
   end
 
@@ -1011,12 +1144,33 @@ defmodule Raxol.Terminal.ANSI do
     {cursor_x, cursor_y} = Emulator.get_cursor_position(emulator)
     buffer_width = ScreenBuffer.width(buffer)
 
-    new_buffer = case n do
-      0 -> ScreenBuffer.clear_region(buffer, cursor_x, cursor_y, buffer_width - 1, cursor_y)
-      1 -> ScreenBuffer.clear_region(buffer, 0, cursor_y, cursor_x, cursor_y)
-      2 -> ScreenBuffer.clear_region(buffer, 0, cursor_y, buffer_width - 1, cursor_y)
-      _ -> buffer # Unknown mode, do nothing
-    end
+    new_buffer =
+      case n do
+        0 ->
+          ScreenBuffer.clear_region(
+            buffer,
+            cursor_x,
+            cursor_y,
+            buffer_width - 1,
+            cursor_y
+          )
+
+        1 ->
+          ScreenBuffer.clear_region(buffer, 0, cursor_y, cursor_x, cursor_y)
+
+        2 ->
+          ScreenBuffer.clear_region(
+            buffer,
+            0,
+            cursor_y,
+            buffer_width - 1,
+            cursor_y
+          )
+
+        # Unknown mode, do nothing
+        _ ->
+          buffer
+      end
 
     Emulator.set_buffer(emulator, new_buffer)
   end
@@ -1097,19 +1251,26 @@ defmodule Raxol.Terminal.ANSI do
 
   defp clear_screen_code(mode) do
     case mode do
-      0 -> "0"  # Clear from cursor to end
-      1 -> "1"  # Clear from beginning to cursor
-      2 -> "2"  # Clear entire screen
-      3 -> "3"  # Clear entire screen and scrollback
+      # Clear from cursor to end
+      0 -> "0"
+      # Clear from beginning to cursor
+      1 -> "1"
+      # Clear entire screen
+      2 -> "2"
+      # Clear entire screen and scrollback
+      3 -> "3"
       _ -> "0"
     end
   end
 
   defp erase_line_code(mode) do
     case mode do
-      0 -> "0"  # Clear from cursor to end of line
-      1 -> "1"  # Clear from beginning of line to cursor
-      2 -> "2"  # Clear entire line
+      # Clear from cursor to end of line
+      0 -> "0"
+      # Clear from beginning of line to cursor
+      1 -> "1"
+      # Clear entire line
+      2 -> "2"
       _ -> "0"
     end
   end
@@ -1118,7 +1279,9 @@ defmodule Raxol.Terminal.ANSI do
   Switches the specified character set to the given charset.
   """
   def switch_charset(emulator, set, charset) do
-    charset_state = CharacterSets.switch_charset(emulator.charset_state, set, charset)
+    charset_state =
+      CharacterSets.switch_charset(emulator.charset_state, set, charset)
+
     %{emulator | charset_state: charset_state}
   end
 
@@ -1148,7 +1311,6 @@ defmodule Raxol.Terminal.ANSI do
     r_index = div(r, 51)
     g_index = div(g, 51)
     b_index = div(b, 51)
-    16 + (36 * r_index) + (6 * g_index) + b_index
+    16 + 36 * r_index + 6 * g_index + b_index
   end
-
 end

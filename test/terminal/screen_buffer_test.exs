@@ -14,9 +14,10 @@ defmodule Raxol.Terminal.ScreenBufferTest do
 
     test "initializes with empty cells" do
       buffer = ScreenBuffer.new(10, 5)
+
       assert Enum.all?(buffer.cells, fn row ->
-        Enum.all?(row, fn cell -> Cell.get_char(cell) == " " end)
-      end)
+               Enum.all?(row, fn cell -> Cell.get_char(cell) == " " end)
+             end)
     end
   end
 
@@ -38,14 +39,29 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.write_string(buffer, 0, 0, "Hello")
       first_row = Enum.at(buffer.cells, 0)
-      assert Enum.map(Enum.take(first_row, 5), &Cell.get_char/1) == ["H", "e", "l", "l", "o"]
+
+      assert Enum.map(Enum.take(first_row, 5), &Cell.get_char/1) == [
+               "H",
+               "e",
+               "l",
+               "l",
+               "o"
+             ]
     end
 
     test "writes a string with wide characters" do
       buffer = ScreenBuffer.new(10, 5)
       buffer = ScreenBuffer.write_string(buffer, 0, 0, "Hi 中国")
       first_row = Enum.at(buffer.cells, 0)
-      assert Enum.map(Enum.take(first_row, 6), &Cell.get_char/1) == ["H", "i", " ", "中", "国", " "]
+
+      assert Enum.map(Enum.take(first_row, 6), &Cell.get_char/1) == [
+               "H",
+               "i",
+               " ",
+               "中",
+               "国",
+               " "
+             ]
     end
   end
 
@@ -65,9 +81,10 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       buffer = ScreenBuffer.scroll_up(buffer, 1)
 
       # Verify that only the scroll region was affected
-      rows = Enum.map(buffer.cells, fn row ->
-        Enum.map(Enum.take(row, 6), &Cell.get_char/1) |> Enum.join("")
-      end)
+      rows =
+        Enum.map(buffer.cells, fn row ->
+          Enum.map(Enum.take(row, 6), &Cell.get_char/1) |> Enum.join("")
+        end)
 
       assert Enum.at(rows, 0) == "Line 0"
       assert Enum.at(rows, 1) == "Line 2"
@@ -93,9 +110,10 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       buffer = ScreenBuffer.scroll_down(buffer, 1)
 
       # Verify the content
-      rows = Enum.map(buffer.cells, fn row ->
-        Enum.map(Enum.take(row, 6), &Cell.get_char/1) |> Enum.join("")
-      end)
+      rows =
+        Enum.map(buffer.cells, fn row ->
+          Enum.map(Enum.take(row, 6), &Cell.get_char/1) |> Enum.join("")
+        end)
 
       assert Enum.at(rows, 0) == "Line 0"
       assert Enum.at(rows, 1) == "Line 1"

@@ -42,7 +42,8 @@ defmodule Raxol.Terminal.Modes do
   """
   def set_mode(%{} = modes, mode) when is_atom(mode) do
     # Turn off all modes first
-    modes = Enum.reduce(modes, %{}, fn {k, _}, acc -> Map.put(acc, k, false) end)
+    modes =
+      Enum.reduce(modes, %{}, fn {k, _}, acc -> Map.put(acc, k, false) end)
 
     # Then set the requested mode
     Map.put(modes, mode, true)
@@ -76,39 +77,66 @@ defmodule Raxol.Terminal.Modes do
   def process_escape(%{} = modes, sequence) do
     case sequence do
       # Alternate screen buffer
-      "?1049h" -> {Map.put(modes, :alternate_screen, true), "Switched to alternate screen buffer"}
-      "?1049l" -> {Map.put(modes, :alternate_screen, false), "Switched to main screen buffer"}
+      "?1049h" ->
+        {Map.put(modes, :alternate_screen, true),
+         "Switched to alternate screen buffer"}
+
+      "?1049l" ->
+        {Map.put(modes, :alternate_screen, false),
+         "Switched to main screen buffer"}
 
       # Line wrapping
-      "?7h" -> {Map.put(modes, :line_wrap, true), "Line wrapping enabled"}
-      "?7l" -> {Map.put(modes, :line_wrap, false), "Line wrapping disabled"}
+      "?7h" ->
+        {Map.put(modes, :line_wrap, true), "Line wrapping enabled"}
+
+      "?7l" ->
+        {Map.put(modes, :line_wrap, false), "Line wrapping disabled"}
 
       # Auto-repeat
-      "?8h" -> {Map.put(modes, :auto_repeat, true), "Auto-repeat enabled"}
-      "?8l" -> {Map.put(modes, :auto_repeat, false), "Auto-repeat disabled"}
+      "?8h" ->
+        {Map.put(modes, :auto_repeat, true), "Auto-repeat enabled"}
+
+      "?8l" ->
+        {Map.put(modes, :auto_repeat, false), "Auto-repeat disabled"}
 
       # Cursor visibility
-      "?25h" -> {Map.put(modes, :cursor_visible, true), "Cursor visible"}
-      "?25l" -> {Map.put(modes, :cursor_visible, false), "Cursor hidden"}
+      "?25h" ->
+        {Map.put(modes, :cursor_visible, true), "Cursor visible"}
+
+      "?25l" ->
+        {Map.put(modes, :cursor_visible, false), "Cursor hidden"}
 
       # Insert mode
-      "4h" -> {set_mode(modes, :insert), "Insert mode enabled"}
-      "4l" -> {set_mode(modes, :replace), "Replace mode enabled"}
+      "4h" ->
+        {set_mode(modes, :insert), "Insert mode enabled"}
+
+      "4l" ->
+        {set_mode(modes, :replace), "Replace mode enabled"}
 
       # Visual mode
-      "?1000h" -> {Map.put(modes, :visual, true), "Visual mode enabled"}
-      "?1000l" -> {Map.put(modes, :visual, false), "Visual mode disabled"}
+      "?1000h" ->
+        {Map.put(modes, :visual, true), "Visual mode enabled"}
+
+      "?1000l" ->
+        {Map.put(modes, :visual, false), "Visual mode disabled"}
 
       # Command mode
-      "?1001h" -> {Map.put(modes, :command, true), "Command mode enabled"}
-      "?1001l" -> {Map.put(modes, :command, false), "Command mode disabled"}
+      "?1001h" ->
+        {Map.put(modes, :command, true), "Command mode enabled"}
+
+      "?1001l" ->
+        {Map.put(modes, :command, false), "Command mode disabled"}
 
       # Normal mode
-      "?1002h" -> {set_mode(modes, :normal), "Normal mode enabled"}
-      "?1002l" -> {set_mode(modes, :normal), "Normal mode disabled"}
+      "?1002h" ->
+        {set_mode(modes, :normal), "Normal mode enabled"}
+
+      "?1002l" ->
+        {set_mode(modes, :normal), "Normal mode disabled"}
 
       # Unknown sequence
-      _ -> {modes, "Unknown escape sequence: #{sequence}"}
+      _ ->
+        {modes, "Unknown escape sequence: #{sequence}"}
     end
   end
 

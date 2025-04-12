@@ -5,45 +5,55 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   other advanced text attributes and colors.
   """
 
-  @type color :: :black | :red | :green | :yellow | :blue | :magenta | :cyan | :white |
-                 {:rgb, non_neg_integer(), non_neg_integer(), non_neg_integer()} |
-                 {:index, non_neg_integer()} |
-                 nil
+  @type color ::
+          :black
+          | :red
+          | :green
+          | :yellow
+          | :blue
+          | :magenta
+          | :cyan
+          | :white
+          | {:rgb, non_neg_integer(), non_neg_integer(), non_neg_integer()}
+          | {:index, non_neg_integer()}
+          | nil
 
   @type text_style :: %{
-    double_width: boolean(),
-    double_height: :none | :top | :bottom,
-    bold: boolean(),
-    italic: boolean(),
-    underline: boolean(),
-    blink: boolean(),
-    reverse: boolean(),
-    conceal: boolean(),
-    strikethrough: boolean(),
-    fraktur: boolean(),
-    double_underline: boolean(),
-    foreground: color(),
-    background: color()
-  }
+          double_width: boolean(),
+          double_height: :none | :top | :bottom,
+          bold: boolean(),
+          italic: boolean(),
+          underline: boolean(),
+          blink: boolean(),
+          reverse: boolean(),
+          conceal: boolean(),
+          strikethrough: boolean(),
+          fraktur: boolean(),
+          double_underline: boolean(),
+          foreground: color(),
+          background: color(),
+          hyperlink: String.t() | nil
+        }
 
   @doc """
   Creates a new text style map with default values.
   """
   @spec new() :: %{
-    double_width: false,
-    double_height: :none,
-    bold: false,
-    italic: false,
-    underline: false,
-    blink: false,
-    reverse: false,
-    conceal: false,
-    strikethrough: false,
-    fraktur: false,
-    double_underline: false,
-    foreground: nil,
-    background: nil
-  }
+          double_width: false,
+          double_height: :none,
+          bold: false,
+          italic: false,
+          underline: false,
+          blink: false,
+          reverse: false,
+          conceal: false,
+          strikethrough: false,
+          fraktur: false,
+          double_underline: false,
+          foreground: nil,
+          background: nil,
+          hyperlink: nil
+        }
   def new do
     %{
       double_width: false,
@@ -58,7 +68,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       fraktur: false,
       double_underline: false,
       foreground: nil,
-      background: nil
+      background: nil,
+      hyperlink: nil
     }
   end
 
@@ -180,7 +191,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @doc """
   Applies a color attribute to the style map.
   """
-  @spec apply_color(text_style(), :foreground | :background, color()) :: text_style()
+  @spec apply_color(text_style(), :foreground | :background, color()) ::
+          text_style()
   def apply_color(style, type, color) do
     case type do
       :foreground -> set_foreground(style, color)
@@ -196,7 +208,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   def effective_width(style, char) do
     cond do
       style.double_width -> 2
-      String.length(char) > 1 -> 2  # Handle wide Unicode characters
+      # Handle wide Unicode characters
+      String.length(char) > 1 -> 2
       true -> 1
     end
   end

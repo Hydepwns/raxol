@@ -28,7 +28,9 @@ defmodule Raxol.System.DeltaUpdater do
 
   def apply_delta_update(delta_url, target_version) do
     # Create a temporary directory for the update
-    tmp_dir = Path.join(System.tmp_dir!(), "raxol_update_#{:rand.uniform(1000000)}")
+    tmp_dir =
+      Path.join(System.tmp_dir!(), "raxol_update_#{:rand.uniform(1_000_000)}")
+
     File.mkdir_p!(tmp_dir)
 
     try do
@@ -60,7 +62,9 @@ defmodule Raxol.System.DeltaUpdater do
 
   # Private functions
 
-  defp extract_assets(%{"assets" => assets}) when is_list(assets), do: {:ok, assets}
+  defp extract_assets(%{"assets" => assets}) when is_list(assets),
+    do: {:ok, assets}
+
   defp extract_assets(_), do: {:error, "No assets found in release data"}
 
   defp find_delta_asset(assets, target_version) do
@@ -78,14 +82,20 @@ defmodule Raxol.System.DeltaUpdater do
   end
 
   defp download_delta(url, destination) do
-    case :httpc.request(:get, {String.to_charlist(url), []}, [], [{:stream, String.to_charlist(destination)}]) do
-      {:ok, :saved_to_file} -> :ok
-      {:error, reason} -> throw({:error, "Failed to download delta update: #{inspect(reason)}"})
+    case :httpc.request(:get, {String.to_charlist(url), []}, [], [
+           {:stream, String.to_charlist(destination)}
+         ]) do
+      {:ok, :saved_to_file} ->
+        :ok
+
+      {:error, reason} ->
+        throw({:error, "Failed to download delta update: #{inspect(reason)}"})
     end
   end
 
   defp get_current_executable do
-    exe = System.get_env("BURRITO_EXECUTABLE_PATH") || System.argv() |> List.first()
+    exe =
+      System.get_env("BURRITO_EXECUTABLE_PATH") || System.argv() |> List.first()
 
     if is_nil(exe) do
       throw({:error, "Cannot determine executable path"})
@@ -115,6 +125,7 @@ defmodule Raxol.System.DeltaUpdater do
         else
           throw({:error, "Version verification failed for patched executable"})
         end
+
       {error, _} ->
         throw({:error, "Failed to verify patched executable: #{error}"})
     end
@@ -122,10 +133,12 @@ defmodule Raxol.System.DeltaUpdater do
 
   defp replace_executable(current_exe, new_exe) do
     # Determine platform
-    platform = case :os.type() do
-      {:win32, _} -> "windows"
-      _ -> "unix" # Or be more specific if needed
-    end
+    platform =
+      case :os.type() do
+        {:win32, _} -> "windows"
+        # Or be more specific if needed
+        _ -> "unix"
+      end
 
     # Call the shared helper function
     Updater.do_replace_executable(current_exe, new_exe, platform)
@@ -134,13 +147,21 @@ defmodule Raxol.System.DeltaUpdater do
   defp get_releases do
     url = "https://api.github.com/repos/raxol/raxol/releases"
 
-    case :httpc.request(:get, {String.to_charlist(url), [
-      {~c"User-Agent", ~c"Raxol-Updater"}
-    ]}, [], []) do
+    case :httpc.request(
+           :get,
+           {String.to_charlist(url),
+            [
+              {~c"User-Agent", ~c"Raxol-Updater"}
+            ]},
+           [],
+           []
+         ) do
       {:ok, {{_, 200, _}, _, body}} ->
         {:ok, Jason.decode!(body)}
+
       {:ok, {{_, status, _}, _, _}} ->
         {:error, "Failed to fetch releases: HTTP #{status}"}
+
       {:error, reason} ->
         {:error, "Failed to fetch releases: #{reason}"}
     end

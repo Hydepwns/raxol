@@ -175,6 +175,7 @@ defmodule Raxol.Core.Events.Subscription do
     case subscribe_single_event(event_spec) do
       {:ok, ref} ->
         do_subscribe_events(rest, [ref | successful_refs])
+
       {:error, _reason} = error ->
         # Unsubscribe already successful subscriptions
         unsubscribe_all(successful_refs)

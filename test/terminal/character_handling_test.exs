@@ -23,15 +23,18 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
   describe "combining characters" do
     test "handles combining characters correctly" do
       # Using a proper combining character sequence for 'é'
-      assert CharacterHandling.is_combining?("\u0301")  # Combining acute accent
-      assert CharacterHandling.char_width("e\u0301") == 1  # 'é' should be width 1
+      # Combining acute accent
+      assert CharacterHandling.is_combining?("\u0301")
+      # 'é' should be width 1
+      assert CharacterHandling.char_width("e\u0301") == 1
     end
   end
 
   describe "bidirectional text" do
     test "processes bidirectional text correctly" do
       # Using a proper RTL character sequence
-      text = "Hello \u202E World"  # \u202E is RTL mark
+      # \u202E is RTL mark
+      text = "Hello \u202E World"
       assert CharacterHandling.process_bidirectional(text) == "Hello World"
     end
   end
@@ -39,8 +42,10 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
   describe "string width" do
     test "calculates string width correctly" do
       assert CharacterHandling.string_width("Hello") == 5
-      assert CharacterHandling.string_width("Hello 世界") == 9  # 5 + 2*2
-      assert CharacterHandling.string_width("Hello\u0301") == 6  # 'é' counts as 1
+      # 5 + 2*2
+      assert CharacterHandling.string_width("Hello 世界") == 9
+      # 'é' counts as 1
+      assert CharacterHandling.string_width("Hello\u0301") == 6
     end
   end
 end

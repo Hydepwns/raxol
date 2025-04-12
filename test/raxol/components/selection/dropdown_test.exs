@@ -24,7 +24,7 @@ defmodule Raxol.Components.Selection.DropdownTest do
       on_change = fn _ -> nil end
       render_item = fn item -> "Item: #{item}" end
       filter_item = fn item, filter -> String.starts_with?(item, filter) end
-      
+
       props = %{
         items: ["one", "two", "three"],
         selected_item: "two",
@@ -47,20 +47,23 @@ defmodule Raxol.Components.Selection.DropdownTest do
       assert state.render_item == render_item
       assert state.filter_item == filter_item
       assert state.on_change == on_change
-      
+
       # Check that list state was initialized correctly
       assert state.list_state.items == ["one", "two", "three"]
-      assert state.list_state.width == 38  # width - 2 for borders
+      # width - 2 for borders
+      assert state.list_state.width == 38
       assert state.list_state.height == 5
     end
   end
 
   describe "update/2" do
     setup do
-      state = Dropdown.init(%{
-        items: ["one", "two", "three"],
-        selected_item: "two"
-      })
+      state =
+        Dropdown.init(%{
+          items: ["one", "two", "three"],
+          selected_item: "two"
+        })
+
       {:ok, state: state}
     end
 
@@ -72,8 +75,12 @@ defmodule Raxol.Components.Selection.DropdownTest do
 
     test "selects item", %{state: state} do
       test_pid = self()
-      state = %{state | on_change: fn item -> send(test_pid, {:changed, item}) end}
-      
+
+      state = %{
+        state
+        | on_change: fn item -> send(test_pid, {:changed, item}) end
+      }
+
       new_state = Dropdown.update({:select_item, "three"}, state)
       assert new_state.selected_item == "three"
       assert new_state.is_open == false
@@ -117,10 +124,12 @@ defmodule Raxol.Components.Selection.DropdownTest do
 
   describe "handle_event/2" do
     setup do
-      state = Dropdown.init(%{
-        items: ["one", "two", "three"],
-        selected_item: "two"
-      })
+      state =
+        Dropdown.init(%{
+          items: ["one", "two", "three"],
+          selected_item: "two"
+        })
+
       {:ok, state: %{state | focused: true}}
     end
 
@@ -129,8 +138,11 @@ defmodule Raxol.Components.Selection.DropdownTest do
       {new_state, _} = Dropdown.handle_event(event, state)
       assert new_state.is_open == true
 
-      {new_state, _} = Dropdown.handle_event(event, %{new_state | is_open: true})
-      assert new_state.is_open == true  # Space only opens, doesn't close
+      {new_state, _} =
+        Dropdown.handle_event(event, %{new_state | is_open: true})
+
+      # Space only opens, doesn't close
+      assert new_state.is_open == true
     end
 
     test "closes on escape key", %{state: state} do
@@ -142,7 +154,7 @@ defmodule Raxol.Components.Selection.DropdownTest do
 
     test "handles type-ahead search when open", %{state: state} do
       state = %{state | is_open: true}
-      
+
       # Type 't'
       event = %Event{type: :key, key: "t"}
       {new_state, _} = Dropdown.handle_event(event, state)
@@ -158,7 +170,7 @@ defmodule Raxol.Components.Selection.DropdownTest do
 
     test "delegates list events when open", %{state: state} do
       state = %{state | is_open: true}
-      
+
       # Arrow down should be handled by list component
       event = %Event{type: :key, key: "ArrowDown"}
       {new_state, _} = Dropdown.handle_event(event, state)
@@ -187,21 +199,23 @@ defmodule Raxol.Components.Selection.DropdownTest do
   describe "filtering" do
     test "uses custom filter function" do
       filter_fn = fn item, filter -> String.starts_with?(item, filter) end
-      
-      state = Dropdown.init(%{
-        items: ["one", "two", "three"],
-        filter_item: filter_fn
-      })
-      
+
+      state =
+        Dropdown.init(%{
+          items: ["one", "two", "three"],
+          filter_item: filter_fn
+        })
+
       state = Dropdown.update({:set_filter, "t"}, state)
       assert state.list_state.filtered_items == ["two", "three"]
     end
 
     test "uses default case-insensitive filter" do
-      state = Dropdown.init(%{
-        items: ["One", "Two", "Three"]
-      })
-      
+      state =
+        Dropdown.init(%{
+          items: ["One", "Two", "Three"]
+        })
+
       state = Dropdown.update({:set_filter, "t"}, state)
       assert state.list_state.filtered_items == ["Two", "Three"]
     end
@@ -210,25 +224,27 @@ defmodule Raxol.Components.Selection.DropdownTest do
   describe "rendering" do
     test "uses custom render function" do
       render_fn = fn item -> "Item: #{item}" end
-      
-      state = Dropdown.init(%{
-        items: ["one"],
-        selected_item: "one",
-        render_item: render_fn
-      })
+
+      state =
+        Dropdown.init(%{
+          items: ["one"],
+          selected_item: "one",
+          render_item: render_fn
+        })
 
       assert state.render_item.("test") == "Item: test"
     end
 
     test "uses default to_string rendering" do
-      state = Dropdown.init(%{
-        items: [1, :two, "three"],
-        selected_item: :two
-      })
-      
+      state =
+        Dropdown.init(%{
+          items: [1, :two, "three"],
+          selected_item: :two
+        })
+
       assert state.render_item.(1) == "1"
       assert state.render_item.(:two) == "two"
       assert state.render_item.("three") == "three"
     end
   end
-end 
+end

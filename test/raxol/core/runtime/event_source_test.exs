@@ -77,7 +77,9 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
       ref = Process.monitor(pid)
 
       send(pid, :raise)
-      assert_receive {:DOWN, ^ref, :process, ^pid, {%RuntimeError{message: "Test error"}, _}}
+
+      assert_receive {:DOWN, ^ref, :process, ^pid,
+                      {%RuntimeError{message: "Test error"}, _}}
     end
   end
-end 
+end

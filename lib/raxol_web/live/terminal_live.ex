@@ -22,7 +22,9 @@ defmodule RaxolWeb.TerminalLive do
   def mount(_params, _session, socket) do
     if connected?(socket) do
       session_id = generate_session_id()
-      socket = socket
+
+      socket =
+        socket
         |> assign(:session_id, session_id)
         |> assign(:terminal_html, "")
         |> assign(:cursor, %{x: 0, y: 0, visible: true})
@@ -39,7 +41,8 @@ defmodule RaxolWeb.TerminalLive do
 
   @impl true
   def handle_event("connect", _params, socket) do
-    socket = socket
+    socket =
+      socket
       |> assign(:connected, true)
       |> push_event("js-exec", %{
         to: "#terminal",
@@ -51,14 +54,20 @@ defmodule RaxolWeb.TerminalLive do
   end
 
   @impl true
-  def handle_event("terminal_output", %{"html" => html, "cursor" => cursor}, socket) do
+  def handle_event(
+        "terminal_output",
+        %{"html" => html, "cursor" => cursor},
+        socket
+      ) do
     {:noreply, assign(socket, terminal_html: html, cursor: cursor)}
   end
 
   @impl true
   def handle_event("resize", %{"width" => width, "height" => height}, socket) do
     socket = assign(socket, dimensions: %{width: width, height: height})
-    {:noreply, push_event(socket, "terminal_resize", %{width: width, height: height})}
+
+    {:noreply,
+     push_event(socket, "terminal_resize", %{width: width, height: height})}
   end
 
   @impl true

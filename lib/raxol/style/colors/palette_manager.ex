@@ -36,11 +36,9 @@ defmodule Raxol.Style.Colors.PaletteManager do
   alias Raxol.Style.Colors.Utilities
   alias Raxol.Style.Colors.Color
 
-  defstruct [
-    palettes: %{},
-    scales: %{},
-    user_preferences: %{}
-  ]
+  defstruct palettes: %{},
+            scales: %{},
+            user_preferences: %{}
 
   @doc """
   Initialize the palette manager.
@@ -140,49 +138,70 @@ defmodule Raxol.Style.Colors.PaletteManager do
   """
   def generate_scale(base_color, steps \\ 9, opts \\ []) do
     # Default range of lightness from light to dark
-    {min_lightness, max_lightness} = Keyword.get(opts, :lightness_range, {0.1, 0.9})
+    {min_lightness, max_lightness} =
+      Keyword.get(opts, :lightness_range, {0.1, 0.9})
 
     # Get saturation adjustment (slightly more saturated for midtones)
     saturation_adjust = Keyword.get(opts, :saturation_adjust, 0.05)
 
     # Convert base color to HSL to get starting values
-    {_base_h, base_s, base_l} = Utilities.rgb_to_hsl(
-      Color.from_hex(base_color).r,
-      Color.from_hex(base_color).g,
-      Color.from_hex(base_color).b
-    )
+    {_base_h, base_s, base_l} =
+      Utilities.rgb_to_hsl(
+        Color.from_hex(base_color).r,
+        Color.from_hex(base_color).g,
+        Color.from_hex(base_color).b
+      )
 
     # Calculate lightness step size
     lightness_step = (max_lightness - min_lightness) / (steps - 1)
 
     # Generate colors
-    scale = for i <- 0..(steps - 1) do
-      # Calculate target lightness for this step (start from lightest)
-      target_lightness = max_lightness - (i * lightness_step)
-      lightness_diff = target_lightness - base_l
+    scale =
+      for i <- 0..(steps - 1) do
+        # Calculate target lightness for this step (start from lightest)
+        target_lightness = max_lightness - i * lightness_step
+        lightness_diff = target_lightness - base_l
 
-      # Calculate target saturation (parabolic curve, peaked in middle)
-      target_saturation_factor = 1.0 +
-        (saturation_adjust * (1.0 - :math.pow(2.0 * (i / (steps - 1)) - 1.0, 2)))
-      target_saturation = base_s * target_saturation_factor
-      saturation_diff = target_saturation - base_s
+        # Calculate target saturation (parabolic curve, peaked in middle)
+        target_saturation_factor =
+          1.0 +
+            saturation_adjust *
+              (1.0 - :math.pow(2.0 * (i / (steps - 1)) - 1.0, 2))
 
-      # Adjust lightness
-      adjusted_lightness_color = cond do
-        lightness_diff > 0 -> Utilities.lighten(base_color, lightness_diff)
-        lightness_diff < 0 -> Utilities.darken(base_color, abs(lightness_diff))
-        true -> base_color
+        target_saturation = base_s * target_saturation_factor
+        saturation_diff = target_saturation - base_s
+
+        # Adjust lightness
+        adjusted_lightness_color =
+          cond do
+            lightness_diff > 0 ->
+              Utilities.lighten(base_color, lightness_diff)
+
+            lightness_diff < 0 ->
+              Utilities.darken(base_color, abs(lightness_diff))
+
+            true ->
+              base_color
+          end
+
+        # Adjust saturation on the lightness-adjusted color
+        final_color =
+          cond do
+            saturation_diff > 0 ->
+              Utilities.saturate(adjusted_lightness_color, saturation_diff)
+
+            saturation_diff < 0 ->
+              Utilities.desaturate(
+                adjusted_lightness_color,
+                abs(saturation_diff)
+              )
+
+            true ->
+              adjusted_lightness_color
+          end
+
+        final_color
       end
-
-      # Adjust saturation on the lightness-adjusted color
-      final_color = cond do
-        saturation_diff > 0 -> Utilities.saturate(adjusted_lightness_color, saturation_diff)
-        saturation_diff < 0 -> Utilities.desaturate(adjusted_lightness_color, abs(saturation_diff))
-        true -> adjusted_lightness_color
-      end
-
-      final_color
-    end
 
     # Store the scale if a name was provided
     if name = Keyword.get(opts, :name) do
@@ -241,13 +260,17 @@ defmodule Raxol.Style.Colors.PaletteManager do
       case key do
         :category ->
           Map.filter(acc, fn {_, palette} -> palette.category == value end)
+
         :tags ->
           Map.filter(acc, fn {_, palette} ->
             Enum.any?(value, &Enum.member?(palette.tags, &1))
           end)
+
         :accessible ->
           Map.filter(acc, fn {_, palette} -> palette.accessible == value end)
-        _ -> acc
+
+        _ ->
+          acc
       end
     end)
   end
@@ -343,29 +366,47 @@ defmodule Raxol.Style.Colors.PaletteManager do
     # Register default palettes
 
     # Primary palette for common UI elements
-    register_palette(:primary, %{
-      main: "#4B9CD3",
-      light: "#73B4E0",
-      dark: "#2D7FB6",
-      contrast: "#FFFFFF"
-    }, description: "Primary UI colors", category: :system, accessible: true)
+    register_palette(
+      :primary,
+      %{
+        main: "#4B9CD3",
+        light: "#73B4E0",
+        dark: "#2D7FB6",
+        contrast: "#FFFFFF"
+      },
+      description: "Primary UI colors",
+      category: :system,
+      accessible: true
+    )
 
     # Neutral palette for backgrounds, borders, etc.
-    register_palette(:neutral, %{
-      main: "#808080",
-      light: "#F0F0F0",
-      lighter: "#F8F8F8",
-      dark: "#404040",
-      darker: "#202020",
-      contrast: "#FFFFFF"
-    }, description: "Neutral UI colors", category: :system, accessible: true)
+    register_palette(
+      :neutral,
+      %{
+        main: "#808080",
+        light: "#F0F0F0",
+        lighter: "#F8F8F8",
+        dark: "#404040",
+        darker: "#202020",
+        contrast: "#FFFFFF"
+      },
+      description: "Neutral UI colors",
+      category: :system,
+      accessible: true
+    )
 
     # Semantic colors for status and feedback
-    register_palette(:semantic, %{
-      success: "#28A745",
-      warning: "#FFC107",
-      error: "#DC3545",
-      info: "#17A2B8"
-    }, description: "Semantic status colors", category: :system, accessible: true)
+    register_palette(
+      :semantic,
+      %{
+        success: "#28A745",
+        warning: "#FFC107",
+        error: "#DC3545",
+        info: "#17A2B8"
+      },
+      description: "Semantic status colors",
+      category: :system,
+      accessible: true
+    )
   end
 end

@@ -1,12 +1,18 @@
 defmodule Raxol.Components.TabBar do
+  use Raxol.Component
+  require Raxol.View
+
+  # alias Raxol.Components.FocusManager # Removed - Unused
+  alias Raxol.View
+
   @moduledoc """
   A tab bar component for navigating between different sections of a UI.
-  
+
   ## Examples
-  
+
   ```elixir
   alias Raxol.Components.TabBar
-  
+
   # In your view function
   def view(model) do
     tabs = [
@@ -14,11 +20,11 @@ defmodule Raxol.Components.TabBar do
       %{id: :settings, label: "Settings"},
       %{id: :help, label: "Help"}
     ]
-    
+
     view do
       panel do
         TabBar.render(tabs, model.active_tab, &handle_tab_change/2)
-        
+
         # Content based on active tab
         case model.active_tab do
           :dashboard -> dashboard_view(model)
@@ -28,38 +34,37 @@ defmodule Raxol.Components.TabBar do
       end
     end
   end
-  
+
   # Handler function
   def handle_tab_change(model, tab_id) do
     %{model | active_tab: tab_id}
   end
-  """
-  
-  alias Raxol.View
-  
+
+  @behaviour Raxol.ComponentBehaviour
+
   @doc """
   Renders a tab bar with the given tabs, highlighting the active tab.
-  
+
   ## Parameters
-  
+
   * `tabs` - A list of tab maps, each containing `:id` and `:label` keys
   * `active_tab` - The ID of the currently active tab
   * `on_change` - A function that takes the model and a tab ID and returns an updated model
   * `opts` - Options for customizing the tab bar appearance
-    
+
   ## Options
-  
+
   * `:focus_key` - Key for focusing the tab bar (default: "tab_bar")
   * `:style` - Style for the tab bar (default: %{})
   * `:tab_style` - Style for individual tabs (default: %{})
   * `:active_tab_style` - Style for the active tab (default: %{fg: :white, bg: :blue})
-  
+
   ## Returns
-  
+
   A view element representing the tab bar.
-  
+
   ## Example
-  
+
   ```elixir
   TabBar.render(
     [
@@ -76,25 +81,28 @@ defmodule Raxol.Components.TabBar do
     focus_key = Keyword.get(opts, :focus_key, "tab_bar")
     style = Keyword.get(opts, :style, %{})
     tab_style = Keyword.get(opts, :tab_style, %{})
-    active_tab_style = Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
-    
+
+    active_tab_style =
+      Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
+
     View.row([style: style, id: focus_key], fn ->
       Enum.map(tabs, fn %{id: id, label: label} = tab ->
         is_active = id == active_tab
-        
+
         # Compute final style for this tab
-        final_style = if is_active do
-          Map.merge(tab_style, active_tab_style)
-        else
-          tab_style
-        end
-        
+        final_style =
+          if is_active do
+            Map.merge(tab_style, active_tab_style)
+          else
+            tab_style
+          end
+
         # Get additional tab properties if provided
         tooltip = Map.get(tab, :tooltip, "")
-        
+
         # Create the tab with proper focus key
         tab_focus_key = "#{focus_key}_#{id}"
-        
+
         View.button(
           [
             id: tab_focus_key,
@@ -107,35 +115,35 @@ defmodule Raxol.Components.TabBar do
       end)
     end)
   end
-  
+
   @doc """
   Creates a tabbed interface with content.
-  
+
   This is a higher-level component that combines the tab bar with
   content areas for each tab.
-  
+
   ## Parameters
-  
+
   * `tabs` - A list of tab maps, each containing `:id`, `:label`, and `:content` keys
   * `active_tab` - The ID of the currently active tab
   * `on_change` - A function that takes the model and a tab ID and returns an updated model
   * `opts` - Options for customizing the tabbed interface
-  
+
   ## Options
-  
+
   * `:focus_key` - Key for focusing the tabbed interface (default: "tabbed_view")
   * `:style` - Style for the container (default: %{})
   * `:tab_bar_style` - Style for the tab bar (default: %{})
   * `:tab_style` - Style for individual tabs (default: %{})
   * `:active_tab_style` - Style for the active tab (default: %{fg: :white, bg: :blue})
   * `:content_style` - Style for the content area (default: %{})
-  
+
   ## Returns
-  
+
   A view element representing the complete tabbed interface.
-  
+
   ## Example
-  
+
   ```elixir
   TabBar.tabbed_view(
     [
@@ -152,41 +160,44 @@ defmodule Raxol.Components.TabBar do
     style = Keyword.get(opts, :style, %{})
     tab_bar_style = Keyword.get(opts, :tab_bar_style, %{})
     tab_style = Keyword.get(opts, :tab_style, %{})
-    active_tab_style = Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
+
+    active_tab_style =
+      Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
+
     content_style = Keyword.get(opts, :content_style, %{})
-    
+
     # Extract tab details for the tab bar
-    bar_tabs = Enum.map(tabs, fn %{id: id, label: label} = tab ->
-      # Pass through tooltip if present
-      tooltip = Map.get(tab, :tooltip, "")
-      %{id: id, label: label, tooltip: tooltip}
-    end)
-    
+    bar_tabs =
+      Enum.map(tabs, fn %{id: id, label: label} = tab ->
+        # Pass through tooltip if present
+        tooltip = Map.get(tab, :tooltip, "")
+        %{id: id, label: label, tooltip: tooltip}
+      end)
+
     # Find the active tab content
-    active_content = case Enum.find(tabs, fn %{id: id} -> id == active_tab end) do
-      %{content: content_fn} when is_function(content_fn, 0) -> content_fn.()
-      %{content: content} -> content
-      _ -> View.text("No content for tab #{active_tab}")
-    end
-    
+    active_content =
+      case Enum.find(tabs, fn %{id: id} -> id == active_tab end) do
+        %{content: content_fn} when is_function(content_fn, 0) -> content_fn.()
+        %{content: content} -> content
+        _ -> View.text("No content for tab #{active_tab}")
+      end
+
     View.column([style: style, id: focus_key], fn ->
       # Render the tab bar
       render(
-        bar_tabs, 
-        active_tab, 
-        on_change, 
-        [
-          focus_key: "#{focus_key}_bar",
-          style: tab_bar_style,
-          tab_style: tab_style,
-          active_tab_style: active_tab_style
-        ]
+        bar_tabs,
+        active_tab,
+        on_change,
+        focus_key: "#{focus_key}_bar",
+        style: tab_bar_style,
+        tab_style: tab_style,
+        active_tab_style: active_tab_style
       )
-      
-      # Render the content area
-      View.panel([style: content_style, id: "#{focus_key}_content"], fn ->
+
+      # Render the content area using macro syntax
+      View.box style: content_style, id: "#{focus_key}_content" do
         active_content
-      end)
+      end
     end)
   end
-end 
+end

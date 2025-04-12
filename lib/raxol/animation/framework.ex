@@ -62,7 +62,9 @@ defmodule Raxol.Animation.Framework do
     Logger.debug("Initializing animation framework...")
 
     # Get accessibility settings
-    reduced_motion = Map.get(opts, :reduced_motion, Accessibility.reduced_motion_enabled?())
+    reduced_motion =
+      Map.get(opts, :reduced_motion, Accessibility.reduced_motion_enabled?())
+
     default_duration = Map.get(opts, :default_duration, 300)
     frame_ms = Map.get(opts, :frame_ms, @animation_frame_ms)
 
@@ -125,12 +127,16 @@ defmodule Raxol.Animation.Framework do
     default_duration = Map.get(settings, :default_duration, 300)
 
     # Create animation with defaults
-    animation = Map.merge(%{
-      name: name,
-      duration: default_duration,
-      easing: :linear,
-      type: :generic
-    }, params)
+    animation =
+      Map.merge(
+        %{
+          name: name,
+          duration: default_duration,
+          easing: :linear,
+          type: :generic
+        },
+        params
+      )
 
     # Store animation in registry
     animations = Process.get(:animation_framework_animations, %{})
@@ -170,12 +176,14 @@ defmodule Raxol.Animation.Framework do
     if animation do
       # Check if reduced motion is enabled
       settings = Process.get(:animation_framework_settings, %{})
-      adapted_animation = if Map.get(settings, :reduced_motion, false) do
-        # For reduced motion, either disable animation or use simplified version
-        adapt_for_reduced_motion(animation)
-      else
-        animation
-      end
+
+      adapted_animation =
+        if Map.get(settings, :reduced_motion, false) do
+          # For reduced motion, either disable animation or use simplified version
+          adapt_for_reduced_motion(animation)
+        else
+          animation
+        end
 
       # Create animation instance
       instance = %{
@@ -186,15 +194,27 @@ defmodule Raxol.Animation.Framework do
       }
 
       # Store active animation
-      active_animations = Process.get(:animation_framework_active_animations, %{})
+      active_animations =
+        Process.get(:animation_framework_active_animations, %{})
+
       element_animations = Map.get(active_animations, element_id, %{})
-      updated_element_animations = Map.put(element_animations, animation_name, instance)
-      updated_active_animations = Map.put(active_animations, element_id, updated_element_animations)
-      Process.put(:animation_framework_active_animations, updated_active_animations)
+
+      updated_element_animations =
+        Map.put(element_animations, animation_name, instance)
+
+      updated_active_animations =
+        Map.put(active_animations, element_id, updated_element_animations)
+
+      Process.put(
+        :animation_framework_active_animations,
+        updated_active_animations
+      )
 
       # Announce to screen reader if configured
       if Map.get(animation, :announce_to_screen_reader, false) do
-        Accessibility.announce(Map.get(animation, :description, "Animation started"))
+        Accessibility.announce(
+          Map.get(animation, :description, "Animation started")
+        )
       end
 
       :ok
@@ -219,11 +239,18 @@ defmodule Raxol.Animation.Framework do
     active_animations = Process.get(:animation_framework_active_animations, %{})
 
     # Apply each animation to the state
-    Enum.reduce(active_animations, state, fn {element_id, element_animations}, acc_state ->
+    Enum.reduce(active_animations, state, fn {element_id, element_animations},
+                                             acc_state ->
       # For each animation affecting this element
-      Enum.reduce(element_animations, acc_state, fn {animation_name, instance}, element_acc_state ->
+      Enum.reduce(element_animations, acc_state, fn {animation_name, instance},
+                                                    element_acc_state ->
         # Apply this specific animation to the state
-        apply_animation_to_state(element_acc_state, element_id, animation_name, instance)
+        apply_animation_to_state(
+          element_acc_state,
+          element_id,
+          animation_name,
+          instance
+        )
       end)
     end)
   end
@@ -251,8 +278,13 @@ defmodule Raxol.Animation.Framework do
         # For generic animations, store the value in a animations map
         animations = Map.get(state, :animations, %{})
         element_animations = Map.get(animations, element_id, %{})
-        updated_element_animations = Map.put(element_animations, animation_name, instance.value)
-        updated_animations = Map.put(animations, element_id, updated_element_animations)
+
+        updated_element_animations =
+          Map.put(element_animations, animation_name, instance.value)
+
+        updated_animations =
+          Map.put(animations, element_id, updated_element_animations)
+
         Map.put(state, :animations, updated_animations)
     end
   end
@@ -275,13 +307,18 @@ defmodule Raxol.Animation.Framework do
     element_animations = Map.get(active_animations, element_id, %{})
     updated_element_animations = Map.delete(element_animations, animation_name)
 
-    updated_active_animations = if map_size(updated_element_animations) == 0 do
-      Map.delete(active_animations, element_id)
-    else
-      Map.put(active_animations, element_id, updated_element_animations)
-    end
+    updated_active_animations =
+      if map_size(updated_element_animations) == 0 do
+        Map.delete(active_animations, element_id)
+      else
+        Map.put(active_animations, element_id, updated_element_animations)
+      end
 
-    Process.put(:animation_framework_active_animations, updated_active_animations)
+    Process.put(
+      :animation_framework_active_animations,
+      updated_active_animations
+    )
+
     :ok
   end
 
@@ -309,6 +346,7 @@ defmodule Raxol.Animation.Framework do
     case get_in(active_animations, [element_id, animation_name]) do
       nil ->
         :not_found
+
       instance ->
         current_time = System.monotonic_time(:millisecond)
         elapsed = current_time - instance.start_time
@@ -323,7 +361,8 @@ defmodule Raxol.Animation.Framework do
           progress = elapsed / duration
 
           # Apply easing function (placeholder - needs easing implementation)
-          eased_progress = progress # TODO: Apply easing function animation.easing
+          # TODO: Apply easing function animation.easing
+          eased_progress = progress
 
           # Interpolate value
           value = interpolate(animation.from, animation.to, eased_progress)
@@ -367,6 +406,8 @@ defmodule Raxol.Animation.Framework do
   defp interpolate(from, to, progress) when is_number(from) and is_number(to) do
     from + (to - from) * progress
   end
+
   # Add clauses for other types if needed
-  defp interpolate(_from, to, _progress), do: to # Default fallback
+  # Default fallback
+  defp interpolate(_from, to, _progress), do: to
 end

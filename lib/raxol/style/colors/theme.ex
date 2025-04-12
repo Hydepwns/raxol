@@ -12,11 +12,11 @@ defmodule Raxol.Style.Colors.Theme do
   alias Raxol.Style.Colors.{System, Persistence}
 
   @type color :: %{
-    r: integer(),
-    g: integer(),
-    b: integer(),
-    a: float()
-  }
+          r: integer(),
+          g: integer(),
+          b: integer(),
+          a: float()
+        }
 
   @derive Jason.Encoder
   defstruct name: "Default",
@@ -26,12 +26,12 @@ defmodule Raxol.Style.Colors.Theme do
             high_contrast: false
 
   @type theme :: %__MODULE__{
-    name: String.t(),
-    palette: %{String.t() => color()},
-    ui_mappings: %{atom() => String.t()},
-    dark_mode: boolean(),
-    high_contrast: boolean()
-  }
+          name: String.t(),
+          palette: %{String.t() => color()},
+          ui_mappings: %{atom() => String.t()},
+          dark_mode: boolean(),
+          high_contrast: boolean()
+        }
 
   @doc """
   Creates a standard theme with default colors.
@@ -97,12 +97,17 @@ defmodule Raxol.Style.Colors.Theme do
   def from_palette(palette, name \\ "Custom") when is_map(palette) do
     # Use the standard theme to get default UI mappings and structure
     default_theme = standard_theme()
+
     %__MODULE__{
       name: name,
-      palette: palette, # Use the provided palette
-      ui_mappings: default_theme.ui_mappings, # Keep default mappings
-      dark_mode: default_theme.dark_mode, # Default dark mode setting
-      high_contrast: default_theme.high_contrast # Default contrast setting
+      # Use the provided palette
+      palette: palette,
+      # Keep default mappings
+      ui_mappings: default_theme.ui_mappings,
+      # Default dark mode setting
+      dark_mode: default_theme.dark_mode,
+      # Default contrast setting
+      high_contrast: default_theme.high_contrast
     }
   end
 
@@ -125,6 +130,7 @@ defmodule Raxol.Style.Colors.Theme do
         # Update color system
         System.apply_theme(theme)
         :ok
+
       error ->
         error
     end
@@ -146,6 +152,7 @@ defmodule Raxol.Style.Colors.Theme do
     case Map.get(theme.ui_mappings, element) do
       nil ->
         nil
+
       color_name ->
         Map.get(theme.palette, color_name)
     end
@@ -183,14 +190,16 @@ defmodule Raxol.Style.Colors.Theme do
   """
   def update_ui_colors(theme, colors) do
     # Update palette with new colors
-    new_palette = Enum.reduce(colors, theme.palette, fn {element, color}, palette ->
-      case Map.get(theme.ui_mappings, element) do
-        nil ->
-          palette
-        color_name ->
-          Map.put(palette, color_name, color)
-      end
-    end)
+    new_palette =
+      Enum.reduce(colors, theme.palette, fn {element, color}, palette ->
+        case Map.get(theme.ui_mappings, element) do
+          nil ->
+            palette
+
+          color_name ->
+            Map.put(palette, color_name, color)
+        end
+      end)
 
     # Return updated theme
     %{theme | palette: new_palette}
@@ -209,11 +218,12 @@ defmodule Raxol.Style.Colors.Theme do
   """
   def create_dark_theme(theme) do
     # Create dark mode palette
-    dark_palette = Enum.map(theme.palette, fn {name, color} ->
-      dark_color = darken_color(color, 0.8)
-      {name, dark_color}
-    end)
-    |> Map.new()
+    dark_palette =
+      Enum.map(theme.palette, fn {name, color} ->
+        dark_color = darken_color(color, 0.8)
+        {name, dark_color}
+      end)
+      |> Map.new()
 
     # Return dark theme
     %{theme | palette: dark_palette, dark_mode: true}
@@ -232,11 +242,12 @@ defmodule Raxol.Style.Colors.Theme do
   """
   def create_high_contrast_theme(theme) do
     # Create high contrast palette
-    high_contrast_palette = Enum.map(theme.palette, fn {name, color} ->
-      high_contrast_color = increase_contrast(color)
-      {name, high_contrast_color}
-    end)
-    |> Map.new()
+    high_contrast_palette =
+      Enum.map(theme.palette, fn {name, color} ->
+        high_contrast_color = increase_contrast(color)
+        {name, high_contrast_color}
+      end)
+      |> Map.new()
 
     # Return high contrast theme
     %{theme | palette: high_contrast_palette, high_contrast: true}

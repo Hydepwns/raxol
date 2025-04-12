@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.CommandHistory do
   @moduledoc """
   Manages command history for the terminal emulator.
-  
+
   This module provides functionality for:
   - Storing and retrieving command history
   - Navigating through command history
@@ -10,11 +10,11 @@ defmodule Raxol.Terminal.CommandHistory do
   """
 
   @type t :: %__MODULE__{
-    commands: [String.t()],
-    current_index: integer(),
-    max_size: non_neg_integer(),
-    current_input: String.t()
-  }
+          commands: [String.t()],
+          current_index: integer(),
+          max_size: non_neg_integer(),
+          current_input: String.t()
+        }
 
   defstruct [
     :commands,
@@ -25,9 +25,9 @@ defmodule Raxol.Terminal.CommandHistory do
 
   @doc """
   Creates a new command history manager.
-  
+
   ## Examples
-  
+
       iex> history = CommandHistory.new(1000)
       iex> history.max_size
       1000
@@ -43,9 +43,9 @@ defmodule Raxol.Terminal.CommandHistory do
 
   @doc """
   Adds a command to the history.
-  
+
   ## Examples
-  
+
       iex> history = CommandHistory.new(1000)
       iex> history = CommandHistory.add(history, "ls -la")
       iex> history.commands
@@ -54,19 +54,15 @@ defmodule Raxol.Terminal.CommandHistory do
   def add(%__MODULE__{} = history, command) when is_binary(command) do
     commands = [command | history.commands]
     commands = Enum.take(commands, history.max_size)
-    
-    %{history | 
-      commands: commands,
-      current_index: -1,
-      current_input: ""
-    }
+
+    %{history | commands: commands, current_index: -1, current_input: ""}
   end
 
   @doc """
   Retrieves the previous command in history.
-  
+
   ## Examples
-  
+
       iex> history = CommandHistory.new(1000)
       iex> history = CommandHistory.add(history, "ls -la")
       iex> history = CommandHistory.add(history, "cd /tmp")
@@ -79,6 +75,7 @@ defmodule Raxol.Terminal.CommandHistory do
         new_index = history.current_index + 1
         command = Enum.at(history.commands, new_index)
         {command, %{history | current_index: new_index}}
+
       false ->
         {nil, history}
     end
@@ -86,9 +83,9 @@ defmodule Raxol.Terminal.CommandHistory do
 
   @doc """
   Retrieves the next command in history.
-  
+
   ## Examples
-  
+
       iex> history = CommandHistory.new(1000)
       iex> history = CommandHistory.add(history, "ls -la")
       iex> history = CommandHistory.add(history, "cd /tmp")
@@ -100,8 +97,14 @@ defmodule Raxol.Terminal.CommandHistory do
     case history.current_index - 1 >= -1 do
       true ->
         new_index = history.current_index - 1
-        command = if new_index == -1, do: history.current_input, else: Enum.at(history.commands, new_index)
+
+        command =
+          if new_index == -1,
+            do: history.current_input,
+            else: Enum.at(history.commands, new_index)
+
         {command, %{history | current_index: new_index}}
+
       false ->
         {nil, history}
     end
@@ -109,9 +112,9 @@ defmodule Raxol.Terminal.CommandHistory do
 
   @doc """
   Saves the current input state.
-  
+
   ## Examples
-  
+
       iex> history = CommandHistory.new(1000)
       iex> history = CommandHistory.save_input(history, "ls -l")
       iex> history.current_input
@@ -123,9 +126,9 @@ defmodule Raxol.Terminal.CommandHistory do
 
   @doc """
   Clears the command history.
-  
+
   ## Examples
-  
+
       iex> history = CommandHistory.new(1000)
       iex> history = CommandHistory.add(history, "ls -la")
       iex> history = CommandHistory.clear(history)
@@ -133,18 +136,14 @@ defmodule Raxol.Terminal.CommandHistory do
       []
   """
   def clear(%__MODULE__{} = history) do
-    %{history | 
-      commands: [],
-      current_index: -1,
-      current_input: ""
-    }
+    %{history | commands: [], current_index: -1, current_input: ""}
   end
 
   @doc """
   Returns the current command history as a list.
-  
+
   ## Examples
-  
+
       iex> history = CommandHistory.new(1000)
       iex> history = CommandHistory.add(history, "ls -la")
       iex> history = CommandHistory.add(history, "cd /tmp")
@@ -154,4 +153,4 @@ defmodule Raxol.Terminal.CommandHistory do
   def list(%__MODULE__{} = history) do
     history.commands
   end
-end 
+end

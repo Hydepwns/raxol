@@ -10,12 +10,12 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   """
 
   @type window_state :: %{
-    title: String.t(),
-    icon_name: String.t(),
-    size: {integer(), integer()},
-    position: {integer(), integer()},
-    stacking_order: :normal | :above | :below
-  }
+          title: String.t(),
+          icon_name: String.t(),
+          size: {integer(), integer()},
+          position: {integer(), integer()},
+          stacking_order: :normal | :above | :below
+        }
 
   @doc """
   Creates a new window state with default values.
@@ -44,7 +44,8 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
     #  :error ->
     #    {state, ""}
     # end
-    {state, ""} # Return empty binary as no response is generated
+    # Return empty binary as no response is generated
+    {state, ""}
   end
 
   @doc """
@@ -55,10 +56,12 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
     case parse_params(params) do
       {:ok, parsed_params} ->
         {:ok, decode_operation(operation), parsed_params}
+
       :error ->
         :error
     end
   end
+
   def parse_sequence(_), do: :error
 
   @doc """
@@ -67,11 +70,14 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   @spec parse_params(binary()) :: {:ok, list(integer())} | :error
   def parse_params(params) do
     case String.split(params, ";", trim: true) do
-      [] -> {:ok, []}
+      [] ->
+        {:ok, []}
+
       param_strings ->
         case Enum.map(param_strings, &Integer.parse/1) do
           list when length(list) == length(param_strings) ->
             {:ok, Enum.map(list, fn {num, _} -> num end)}
+
           _ ->
             :error
         end
@@ -100,7 +106,8 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   @doc """
   Handles a window manipulation operation and returns the updated state and response.
   """
-  @spec handle_operation(window_state(), atom(), list(integer())) :: {window_state(), binary()}
+  @spec handle_operation(window_state(), atom(), list(integer())) ::
+          {window_state(), binary()}
   def handle_operation(state, :move, [x, y]) do
     {%{state | position: {x, y}}, ""}
   end

@@ -1,68 +1,101 @@
 defmodule RaxolWeb.SettingsLive do
   use RaxolWeb, :live_view
-  # alias Raxol.Accounts # Accounts context likely missing
+  # Use Accounts context
+  alias Raxol.Accounts
 
   @impl true
   def mount(%{"token" => _token}, _session, socket) do
-    # TODO: Implement user fetching and profile form setup using Accounts context
-    # socket
-    # |> assign(:current_password, nil)
-    # |> assign(:password_confirmation, nil)
-    # |> assign_user_and_token(token)
-    # |> assign(:changeset, Accounts.change_user(socket.assigns.current_user))
-    {:ok, assign(socket, :page_title, "Account Settings"), temporary_assigns: [changeset: nil]}
+    # Assume user_id is in session after login (RaxolWeb.UserAuth likely handles this)
+    # Example: Adapt to actual session key
+    # Get session data passed from connect_info
+    connect_params = get_connect_params(socket)
+    user_id = connect_params["user_id"] # Adjust key if needed
+
+    case user_id && Accounts.get_user(user_id) do
+      user when not is_nil(user) ->
+        socket = assign(socket, :current_user, user)
+
+        # Use a simple map for the "changeset" for now, as Accounts doesn't provide one
+        # Empty map placeholder
+        socket = assign(socket, :changeset, %{})
+        socket = assign(socket, :page_title, "Account Settings")
+        {:ok, socket, temporary_assigns: [changeset: nil]}
+      nil ->
+        # Handle case where user_id is missing or user not found
+        updated_socket =
+          socket
+          |> put_flash(:error, "You must be logged in to access settings.")
+          # Redirect to home or login
+          |> redirect(to: "/")
+
+        {:stop, :normal, updated_socket}
+    end
   end
 
   @impl true
   def handle_event("update_profile", %{"user" => _user_params}, socket) do
-    # TODO: Implement profile update using Accounts context
+    # TODO: Implement profile update using Accounts context (requires Accounts.update_user, Accounts.change_user)
     # user = socket.assigns.current_user
-    #
-    # case Accounts.update_user(user, user_params) do
-    #   {:ok, user} ->
-    #     {:noreply,
-    #      socket
-    #      |> put_flash(:info, "Profile updated successfully")
-    #      |> assign(:changeset, Accounts.change_user(user))
-    #      |> assign(:current_user, user)}
-    #
-    #   {:error, changeset} ->
-    #     {:noreply, assign(socket, :changeset, changeset)}
-    # end
+    # ... logic ...
     {:noreply, put_flash(socket, :error, "Profile update not implemented yet.")}
   end
 
   @impl true
-  def handle_event("update_password", %{"user" => _user_params}, socket) do
-    # TODO: Implement password update using Accounts context
-    # user = socket.assigns.current_user
-    # current_password = user_params["current_password"]
-    # user_params = Map.drop(user_params, ["current_password"])
-    #
-    # case Accounts.update_user_password(user, current_password, user_params) do
-    #   {:ok, user} ->
-    #     {:noreply,
-    #      socket
-    #      |> put_flash(:info, "Password updated successfully")
-    #      |> assign(:changeset, Accounts.change_user(user, :update_password))
-    #      |> assign(:current_password, nil)
-    #      |> assign(:password_confirmation, nil)}
-    #
-    #   {:error, changeset} ->
-    #     {:noreply, assign(socket, changeset: changeset)}
-    # end
-    {:noreply, put_flash(socket, :error, "Password update not implemented yet.")}
+  def handle_event("update_password", params, socket) do
+    user = socket.assigns.current_user
+    current_password = params["current_password"]
+    # Assuming nested structure from form
+    new_password = params["user"]["password"]
+    # password_confirmation = params["user"]["password_confirmation"]
+
+    # Basic validation (add more if needed)
+    # Example minimum length
+    if is_nil(current_password) or String.length(current_password) == 0 or
+         is_nil(new_password) or String.length(new_password) < 6 do
+      # if new_password != password_confirmation do ... end
+      # Mock changeset error
+      changeset = %{
+        errors: [password: {"Password update failed validation", []}]
+      }
+
+      {:noreply, assign(socket, changeset: changeset)}
+    else
+      case Accounts.update_password(user.id, current_password, new_password) do
+        :ok ->
+          {:noreply,
+           socket
+           |> put_flash(:info, "Password updated successfully")
+           # Clear password fields on success (how depends on form implementation)
+           # Clear mock changeset errors
+           |> assign(:changeset, %{})}
+
+        {:error, :invalid_current_password} ->
+          # Mock changeset error
+          changeset = %{
+            errors: [current_password: {"Invalid current password", []}]
+          }
+
+          {:noreply, assign(socket, changeset: changeset)}
+
+        {:error, reason} ->
+          # Generic error
+          # Mock changeset error
+          changeset = %{
+            errors: [
+              password: {"Failed to update password: #{inspect(reason)}", []}
+            ]
+          }
+
+          {:noreply, assign(socket, changeset: changeset)}
+      end
+    end
   end
 
   @impl true
   def handle_event("validate", %{"user" => _user_params}, socket) do
-    # TODO: Accounts context is unavailable
-    # changeset =
-    #   socket.assigns.user
-    #   |> Accounts.change_user(user_params)
-    #   |> Map.put(:action, :validate)
-    changeset = Ecto.Changeset.change(socket.assigns.current_user || %Raxol.Auth.User{}) # Use user struct
-
+    # TODO: Validation logic needs proper changesets from Accounts
+    # For now, just return an empty changeset map
+    changeset = %{}
     {:noreply, assign(socket, changeset: changeset)}
   end
 

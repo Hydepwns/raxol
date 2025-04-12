@@ -25,7 +25,7 @@ defmodule Raxol.Components.Selection.ListTest do
       on_submit = fn _ -> nil end
       render_item = fn item -> "Item: #{item}" end
       filter_item = fn item, filter -> String.starts_with?(item, filter) end
-      
+
       props = %{
         items: ["one", "two", "three"],
         selected_index: 1,
@@ -56,10 +56,12 @@ defmodule Raxol.Components.Selection.ListTest do
 
   describe "update/2" do
     setup do
-      state = List.init(%{
-        items: ["one", "two", "three"],
-        selected_index: 1
-      })
+      state =
+        List.init(%{
+          items: ["one", "two", "three"],
+          selected_index: 1
+        })
+
       {:ok, state: state}
     end
 
@@ -93,7 +95,7 @@ defmodule Raxol.Components.Selection.ListTest do
     test "handles scrolling", %{state: state} do
       # Set up state with scroll offset
       state = %{state | scroll_offset: 5}
-      
+
       # Scroll up
       new_state = List.update(:scroll_up, state)
       assert new_state.scroll_offset == 4
@@ -113,8 +115,12 @@ defmodule Raxol.Components.Selection.ListTest do
 
     test "calls on_select when selecting item", %{state: state} do
       test_pid = self()
-      state = %{state | on_select: fn item -> send(test_pid, {:selected, item}) end}
-      
+
+      state = %{
+        state
+        | on_select: fn item -> send(test_pid, {:selected, item}) end
+      }
+
       List.update({:select_index, 2}, state)
       assert_received {:selected, "three"}
     end
@@ -122,10 +128,12 @@ defmodule Raxol.Components.Selection.ListTest do
 
   describe "handle_event/2" do
     setup do
-      state = List.init(%{
-        items: ["one", "two", "three"],
-        selected_index: 1
-      })
+      state =
+        List.init(%{
+          items: ["one", "two", "three"],
+          selected_index: 1
+        })
+
       {:ok, state: %{state | focused: true}}
     end
 
@@ -165,11 +173,15 @@ defmodule Raxol.Components.Selection.ListTest do
 
     test "handles Enter key", %{state: state} do
       test_pid = self()
-      state = %{state | on_submit: fn item -> send(test_pid, {:submitted, item}) end}
-      
+
+      state = %{
+        state
+        | on_submit: fn item -> send(test_pid, {:submitted, item}) end
+      }
+
       event = %Event{type: :key, key: "Enter"}
       List.handle_event(event, state)
-      
+
       assert_received {:submitted, "two"}
     end
 
@@ -205,21 +217,23 @@ defmodule Raxol.Components.Selection.ListTest do
   describe "filtering" do
     test "uses custom filter function" do
       filter_fn = fn item, filter -> String.starts_with?(item, filter) end
-      
-      state = List.init(%{
-        items: ["one", "two", "three"],
-        filter: "t",
-        filter_item: filter_fn
-      })
+
+      state =
+        List.init(%{
+          items: ["one", "two", "three"],
+          filter: "t",
+          filter_item: filter_fn
+        })
 
       assert state.filtered_items == ["two", "three"]
     end
 
     test "uses default case-insensitive filter" do
-      state = List.init(%{
-        items: ["One", "Two", "Three"],
-        filter: "t"
-      })
+      state =
+        List.init(%{
+          items: ["One", "Two", "Three"],
+          filter: "t"
+        })
 
       assert state.filtered_items == ["Two", "Three"]
     end
@@ -228,21 +242,22 @@ defmodule Raxol.Components.Selection.ListTest do
   describe "rendering" do
     test "uses custom render function" do
       render_fn = fn item -> "Item: #{item}" end
-      
-      state = List.init(%{
-        items: ["one"],
-        render_item: render_fn
-      })
+
+      state =
+        List.init(%{
+          items: ["one"],
+          render_item: render_fn
+        })
 
       assert state.render_item.("test") == "Item: test"
     end
 
     test "uses default to_string rendering" do
       state = List.init(%{items: [1, :two, "three"]})
-      
+
       assert state.render_item.(1) == "1"
       assert state.render_item.(:two) == "two"
       assert state.render_item.("three") == "three"
     end
   end
-end 
+end

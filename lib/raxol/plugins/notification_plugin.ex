@@ -6,16 +6,25 @@ defmodule Raxol.Plugins.NotificationPlugin do
   @behaviour Raxol.Plugins.Plugin
 
   @default_config %{
-    style: "minimal",  # minimal, banner, or popup
-    position: "top-right",  # top-right, top-left, bottom-right, bottom-left
-    duration: 5000,  # notification duration in milliseconds
-    sound: false,  # whether to play a sound
-    max_notifications: 3,  # maximum number of visible notifications
+    # minimal, banner, or popup
+    style: "minimal",
+    # top-right, top-left, bottom-right, bottom-left
+    position: "top-right",
+    # notification duration in milliseconds
+    duration: 5000,
+    # whether to play a sound
+    sound: false,
+    # maximum number of visible notifications
+    max_notifications: 3,
     colors: %{
-      success: {0, 255, 0},  # green
-      error: {255, 0, 0},    # red
-      warning: {255, 255, 0}, # yellow
-      info: {0, 0, 255}      # blue
+      # green
+      success: {0, 255, 0},
+      # red
+      error: {255, 0, 0},
+      # yellow
+      warning: {255, 255, 0},
+      # blue
+      info: {0, 0, 255}
     }
   }
 
@@ -25,7 +34,8 @@ defmodule Raxol.Plugins.NotificationPlugin do
     :description,
     :enabled,
     :config,
-    :notifications,  # list of active notifications
+    # list of active notifications
+    :notifications,
     :dependencies,
     :api_version
   ]
@@ -35,16 +45,18 @@ defmodule Raxol.Plugins.NotificationPlugin do
     # Merge provided config with defaults
     merged_config = Map.merge(@default_config, config)
 
-    {:ok, %__MODULE__{
-      name: "notification",
-      version: "1.0.0",
-      description: "Provides terminal notifications with configurable styles and behaviors",
-      enabled: true,
-      config: merged_config,
-      notifications: [],
-      dependencies: [],
-      api_version: "1.0.0"
-    }}
+    {:ok,
+     %__MODULE__{
+       name: "notification",
+       version: "1.0.0",
+       description:
+         "Provides terminal notifications with configurable styles and behaviors",
+       enabled: true,
+       config: merged_config,
+       notifications: [],
+       dependencies: [],
+       api_version: "1.0.0"
+     }}
   end
 
   @impl true
@@ -63,6 +75,7 @@ defmodule Raxol.Plugins.NotificationPlugin do
                 # TODO: Send display_string to terminal output if necessary
                 {:ok, updated_plugin}
             end
+
           {:error, reason} ->
             {:error, reason}
         end
@@ -72,6 +85,7 @@ defmodule Raxol.Plugins.NotificationPlugin do
         case parse_config_command(input) do
           {:ok, setting, value} ->
             update_config(plugin, setting, value)
+
           {:error, reason} ->
             {:error, reason}
         end
@@ -86,12 +100,12 @@ defmodule Raxol.Plugins.NotificationPlugin do
     {:ok, plugin}
   end
 
-  @impl true
-  def handle_mouse(plugin, _event) do
+  @impl Raxol.Plugins.Plugin
+  def handle_mouse(plugin, _event, _emulator_state) do
     {:ok, plugin}
   end
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def handle_resize(plugin, _width, _height) do
     {:ok, plugin}
   end
@@ -117,6 +131,7 @@ defmodule Raxol.Plugins.NotificationPlugin do
   defp parse_notification_command(command) do
     # Expected format: "/notify type message"
     pattern = ~r/^\/notify\s+(\w+)\s+(.*)$/
+
     case Regex.run(pattern, command) do
       [_, type_str, message] ->
         # Attempt to convert type string to an existing atom
@@ -127,6 +142,7 @@ defmodule Raxol.Plugins.NotificationPlugin do
           ArgumentError ->
             {:error, "Invalid notification type: #{type_str}"}
         end
+
       nil ->
         {:error, "Invalid command format. Use: /notify <type> <message>"}
     end
@@ -135,26 +151,30 @@ defmodule Raxol.Plugins.NotificationPlugin do
   defp parse_config_command(command) do
     # Expected format: "/notify-config setting value"
     pattern = ~r/^\/notify-config\s+([\w\-]+)\s+(.*)$/
+
     case Regex.run(pattern, command) do
       [_, setting, value] ->
         {:ok, String.trim(setting), String.trim(value)}
+
       nil ->
-        {:error, "Invalid command format. Use: /notify-config <setting> <value>"}
+        {:error,
+         "Invalid command format. Use: /notify-config <setting> <value>"}
     end
   end
 
   defp show_notification(plugin, type, message) do
     # Create notification
     notification = %{
-      id: :rand.uniform(1000000),
+      id: :rand.uniform(1_000_000),
       type: type,
       message: message,
       timestamp: System.system_time(:millisecond)
     }
 
     # Add to notifications list, respecting max_notifications limit
-    notifications = [notification | plugin.notifications]
-    |> Enum.take(plugin.config.max_notifications)
+    notifications =
+      [notification | plugin.notifications]
+      |> Enum.take(plugin.config.max_notifications)
 
     # Generate notification display based on style
     display = generate_notification_display(notification, plugin.config)
@@ -194,24 +214,30 @@ defmodule Raxol.Plugins.NotificationPlugin do
       "style" when value in ["minimal", "banner", "popup"] ->
         {:ok, %{plugin | config: Map.put(plugin.config, :style, value)}}
 
-      "position" when value in ["top-right", "top-left", "bottom-right", "bottom-left"] ->
+      "position"
+      when value in ["top-right", "top-left", "bottom-right", "bottom-left"] ->
         {:ok, %{plugin | config: Map.put(plugin.config, :position, value)}}
 
       "duration" ->
         case Integer.parse(value) do
           {duration, _} when duration > 0 ->
-            {:ok, %{plugin | config: Map.put(plugin.config, :duration, duration)}}
+            {:ok,
+             %{plugin | config: Map.put(plugin.config, :duration, duration)}}
+
           _ ->
             {:error, "Duration must be a positive integer"}
         end
 
       "sound" when value in ["true", "false"] ->
-        {:ok, %{plugin | config: Map.put(plugin.config, :sound, value == "true")}}
+        {:ok,
+         %{plugin | config: Map.put(plugin.config, :sound, value == "true")}}
 
       "max_notifications" ->
         case Integer.parse(value) do
           {max, _} when max > 0 ->
-            {:ok, %{plugin | config: Map.put(plugin.config, :max_notifications, max)}}
+            {:ok,
+             %{plugin | config: Map.put(plugin.config, :max_notifications, max)}}
+
           _ ->
             {:error, "Max notifications must be a positive integer"}
         end

@@ -39,6 +39,7 @@ defmodule Raxol.Test.MockDB do
       restart: :permanent,
       type: :worker
     }
+
     meta = %{pid: self(), repo: Keyword.get(opts, :repo)}
     {:ok, child_spec, meta}
   end
@@ -85,8 +86,10 @@ defmodule Raxol.Test.MockDB do
   def stream(_, _, _, _) do
     Stream.resource(
       fn -> [] end,
-      fn [] -> {:halt, []}
-         [h | t] -> {[h], t} end,
+      fn
+        [] -> {:halt, []}
+        [h | t] -> {[h], t}
+      end,
       fn _ -> :ok end
     )
   end

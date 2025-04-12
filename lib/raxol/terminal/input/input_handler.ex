@@ -15,30 +15,46 @@ defmodule Raxol.Terminal.Input.InputHandler do
 
   @type mouse_button :: 0 | 1 | 2 | 3 | 4
   @type mouse_event_type :: :press | :release | :move | :scroll
-  @type mouse_event :: {mouse_event_type(), mouse_button(), non_neg_integer(), non_neg_integer()}
-  @type special_key :: :up | :down | :left | :right | :home | :end | :page_up | :page_down | :insert | :delete | :escape | :tab | :enter | :backspace
+  @type mouse_event ::
+          {mouse_event_type(), mouse_button(), non_neg_integer(),
+           non_neg_integer()}
+  @type special_key ::
+          :up
+          | :down
+          | :left
+          | :right
+          | :home
+          | :end
+          | :page_up
+          | :page_down
+          | :insert
+          | :delete
+          | :escape
+          | :tab
+          | :enter
+          | :backspace
   @type input_mode :: :normal | :insert | :replace | :command
   @type completion_callback :: (String.t() -> list(String.t()))
   @type t :: %__MODULE__{
-    mode: input_mode(),
-    history_index: integer() | nil,
-    input_history: [String.t()],
-    buffer: Types.input_buffer(),
-    prompt: String.t() | nil,
-    completion_context: map() | nil,
-    last_event_time: integer() | nil,
-    clipboard_content: String.t() | nil,
-    clipboard_history: [String.t()],
-    mouse_enabled: boolean(),
-    mouse_buttons: MapSet.t(mouse_button()),
-    mouse_position: {non_neg_integer(), non_neg_integer()},
-    modifier_state: SpecialKeys.modifier_state(),
-    input_queue: list(String.t()),
-    processing_escape: boolean(),
-    completion_callback: completion_callback() | nil,
-    completion_options: list(String.t()),
-    completion_index: non_neg_integer()
-  }
+          mode: input_mode(),
+          history_index: integer() | nil,
+          input_history: [String.t()],
+          buffer: Types.input_buffer(),
+          prompt: String.t() | nil,
+          completion_context: map() | nil,
+          last_event_time: integer() | nil,
+          clipboard_content: String.t() | nil,
+          clipboard_history: [String.t()],
+          mouse_enabled: boolean(),
+          mouse_buttons: MapSet.t(mouse_button()),
+          mouse_position: {non_neg_integer(), non_neg_integer()},
+          modifier_state: SpecialKeys.modifier_state(),
+          input_queue: list(String.t()),
+          processing_escape: boolean(),
+          completion_callback: completion_callback() | nil,
+          completion_options: list(String.t()),
+          completion_index: non_neg_integer()
+        }
 
   defstruct [
     :mode,
@@ -97,6 +113,7 @@ defmodule Raxol.Terminal.Input.InputHandler do
       case input do
         "\e" ->
           %{handler | processing_escape: true}
+
         _ ->
           process_normal_input(handler, input)
       end
@@ -114,14 +131,20 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Updates the modifier state for a key.
   """
-  def update_modifier(%__MODULE__{} = handler, key, pressed) when is_binary(key) and is_boolean(pressed) do
-    %{handler | modifier_state: SpecialKeys.update_state(handler.modifier_state, key, pressed)}
+  def update_modifier(%__MODULE__{} = handler, key, pressed)
+      when is_binary(key) and is_boolean(pressed) do
+    %{
+      handler
+      | modifier_state:
+          SpecialKeys.update_state(handler.modifier_state, key, pressed)
+    }
   end
 
   @doc """
   Processes a key with the current modifier state.
   """
-  def process_key_with_modifiers(%__MODULE__{} = handler, key) when is_binary(key) do
+  def process_key_with_modifiers(%__MODULE__{} = handler, key)
+      when is_binary(key) do
     sequence = SpecialKeys.to_escape_sequence(handler.modifier_state, key)
     process_keyboard(handler, sequence)
   end
@@ -132,10 +155,13 @@ defmodule Raxol.Terminal.Input.InputHandler do
   def process_mouse(%__MODULE__{} = handler, {event_type, button, x, y}) do
     if handler.mouse_enabled do
       mouse_sequence = encode_mouse_event(event_type, button, x, y)
-      %{handler |
-        buffer: InputBuffer.append(handler.buffer, mouse_sequence),
-        mouse_buttons: update_mouse_buttons(handler.mouse_buttons, event_type, button),
-        mouse_position: {x, y}
+
+      %{
+        handler
+        | buffer: InputBuffer.append(handler.buffer, mouse_sequence),
+          mouse_buttons:
+            update_mouse_buttons(handler.mouse_buttons, event_type, button),
+          mouse_position: {x, y}
       }
     else
       handler
@@ -145,7 +171,8 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Enables or disables mouse event handling.
   """
-  def set_mouse_enabled(%__MODULE__{} = handler, enabled) when is_boolean(enabled) do
+  def set_mouse_enabled(%__MODULE__{} = handler, enabled)
+      when is_boolean(enabled) do
     %{handler | mouse_enabled: enabled}
   end
 
@@ -170,9 +197,12 @@ defmodule Raxol.Terminal.Input.InputHandler do
     if InputBuffer.empty?(handler.buffer) do
       handler
     else
-      %{handler |
-        input_history: [InputBuffer.get_contents(handler.buffer) | handler.input_history],
-        history_index: 0
+      %{
+        handler
+        | input_history: [
+            InputBuffer.get_contents(handler.buffer) | handler.input_history
+          ],
+          history_index: 0
       }
     end
   end
@@ -196,9 +226,11 @@ defmodule Raxol.Terminal.Input.InputHandler do
     if handler.history_index < length(handler.input_history) - 1 do
       new_index = handler.history_index + 1
       entry = Enum.at(handler.input_history, new_index)
-      %{handler |
-        buffer: InputBuffer.set_contents(handler.buffer, entry),
-        history_index: new_index
+
+      %{
+        handler
+        | buffer: InputBuffer.set_contents(handler.buffer, entry),
+          history_index: new_index
       }
     else
       handler
@@ -212,9 +244,11 @@ defmodule Raxol.Terminal.Input.InputHandler do
     if handler.history_index > 0 do
       new_index = handler.history_index - 1
       entry = Enum.at(handler.input_history, new_index)
-      %{handler |
-        buffer: InputBuffer.set_contents(handler.buffer, entry),
-        history_index: new_index
+
+      %{
+        handler
+        | buffer: InputBuffer.set_contents(handler.buffer, entry),
+          history_index: new_index
       }
     else
       handler
@@ -245,7 +279,8 @@ defmodule Raxol.Terminal.Input.InputHandler do
   @doc """
   Sets a completion callback function for tab completion.
   """
-  def set_completion_callback(%__MODULE__{} = handler, callback) when is_function(callback, 1) do
+  def set_completion_callback(%__MODULE__{} = handler, callback)
+      when is_function(callback, 1) do
     %{handler | completion_callback: callback}
   end
 
@@ -257,23 +292,35 @@ defmodule Raxol.Terminal.Input.InputHandler do
       current_input = InputBuffer.get_contents(handler.buffer)
 
       # Get completion options
-      completion_options = (handler.completion_callback).(current_input)
+      completion_options = handler.completion_callback.(current_input)
 
       if length(completion_options) > 0 do
         # If we have a single option, complete it
         if length(completion_options) == 1 do
-          %{handler |
-            buffer: InputBuffer.set_contents(handler.buffer, Enum.at(completion_options, 0)),
-            completion_options: [],
-            completion_index: 0
+          %{
+            handler
+            | buffer:
+                InputBuffer.set_contents(
+                  handler.buffer,
+                  Enum.at(completion_options, 0)
+                ),
+              completion_options: [],
+              completion_index: 0
           }
         else
           # If we have multiple options, cycle through them
-          new_index = rem(handler.completion_index + 1, length(completion_options))
-          %{handler |
-            buffer: InputBuffer.set_contents(handler.buffer, Enum.at(completion_options, new_index)),
-            completion_options: completion_options,
-            completion_index: new_index
+          new_index =
+            rem(handler.completion_index + 1, length(completion_options))
+
+          %{
+            handler
+            | buffer:
+                InputBuffer.set_contents(
+                  handler.buffer,
+                  Enum.at(completion_options, new_index)
+                ),
+              completion_options: completion_options,
+              completion_index: new_index
           }
         end
       else
@@ -290,10 +337,12 @@ defmodule Raxol.Terminal.Input.InputHandler do
     case input do
       # End of escape sequence
       <<c>> when c >= ?@ and c <= ?~ ->
-        %{handler |
-          buffer: InputBuffer.append(handler.buffer, "\e" <> input),
-          processing_escape: false
+        %{
+          handler
+          | buffer: InputBuffer.append(handler.buffer, "\e" <> input),
+            processing_escape: false
         }
+
       # More escape sequence data
       _ ->
         %{handler | buffer: InputBuffer.append(handler.buffer, input)}
@@ -306,10 +355,13 @@ defmodule Raxol.Terminal.Input.InputHandler do
         handler
         |> add_to_history()
         |> clear_buffer()
+
       "\b" ->
         %{handler | buffer: InputBuffer.backspace(handler.buffer)}
+
       "\t" ->
         handle_tab(handler)
+
       _ ->
         %{handler | buffer: InputBuffer.append(handler.buffer, input)}
     end
@@ -341,16 +393,19 @@ defmodule Raxol.Terminal.Input.InputHandler do
     y = y + 1
 
     # Encode the event type and button
-    event_code = case {event_type, button} do
-      {:press, 0} -> 0
-      {:press, 1} -> 1
-      {:press, 2} -> 2
-      {:release, _} -> 3
-      {:move, _} -> 35
-      {:scroll, 4} -> 64  # Scroll up
-      {:scroll, 5} -> 65  # Scroll down
-      _ -> 0
-    end
+    event_code =
+      case {event_type, button} do
+        {:press, 0} -> 0
+        {:press, 1} -> 1
+        {:press, 2} -> 2
+        {:release, _} -> 3
+        {:move, _} -> 35
+        # Scroll up
+        {:scroll, 4} -> 64
+        # Scroll down
+        {:scroll, 5} -> 65
+        _ -> 0
+      end
 
     # Encode the coordinates
     # Format: \e[M<event_code><x><y>

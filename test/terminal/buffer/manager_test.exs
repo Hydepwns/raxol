@@ -3,10 +3,13 @@ describe "scrollback buffer" do
     manager = Manager.new(80, 24)
 
     # Add some content to scrollback buffer
-    manager = %{manager | scrollback_buffer: [
-      ScreenBuffer.new(80, 24),
-      ScreenBuffer.new(80, 24)
-    ]}
+    manager = %{
+      manager
+      | scrollback_buffer: [
+          ScreenBuffer.new(80, 24),
+          ScreenBuffer.new(80, 24)
+        ]
+    }
 
     # Clear entire display with scrollback
     manager = Manager.clear_entire_display_with_scrollback(manager)
@@ -28,6 +31,7 @@ describe "scrollback buffer" do
       ScreenBuffer.new(80, 24),
       ScreenBuffer.new(80, 24)
     ]
+
     manager = %{manager | scrollback_buffer: scrollback}
 
     # Clear entire display without scrollback
@@ -57,7 +61,9 @@ describe "scrolling" do
 
     # Check scrollback buffer
     assert length(manager.scrollback_buffer) == 1
-    assert Cell.get_char(List.first(List.first(manager.scrollback_buffer))) == "A"
+
+    assert Cell.get_char(List.first(List.first(manager.scrollback_buffer))) ==
+             "A"
 
     # Check damage regions
     damage_regions = Manager.get_damage_regions(manager)
@@ -83,7 +89,8 @@ describe "scrolling" do
   end
 
   test "respects scrollback limit" do
-    manager = Manager.new(80, 24, 2)  # Small scrollback limit
+    # Small scrollback limit
+    manager = Manager.new(80, 24, 2)
 
     # Write text and scroll multiple times
     manager = Manager.write_char(manager, "A")
@@ -117,8 +124,11 @@ describe "scroll region" do
     manager = Manager.scroll_up(manager, 1)
 
     # Check that only the scroll region was affected
-    assert Cell.get_char(ScreenBuffer.get_cell(manager.active_buffer, 0, 4)) == "A"
-    assert Cell.get_char(ScreenBuffer.get_cell(manager.active_buffer, 0, 20)) == "B"
+    assert Cell.get_char(ScreenBuffer.get_cell(manager.active_buffer, 0, 4)) ==
+             "A"
+
+    assert Cell.get_char(ScreenBuffer.get_cell(manager.active_buffer, 0, 20)) ==
+             "B"
   end
 end
 

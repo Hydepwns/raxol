@@ -81,16 +81,20 @@ defmodule Raxol.Terminal.Registry do
   end
 
   def handle_call({:match, pattern}, _from, sessions) do
-    matches = sessions
-    |> Enum.filter(fn {id, _} -> String.match?(id, ~r/#{pattern}/) end)
-    |> Enum.map(fn {_id, state} -> {self(), state} end)
+    matches =
+      sessions
+      |> Enum.filter(fn {id, _} -> String.match?(id, ~r/#{pattern}/) end)
+      |> Enum.map(fn {_id, state} -> {self(), state} end)
+
     {:reply, matches, sessions}
   end
 
   def handle_call({:match_except, pattern}, _from, sessions) do
-    matches = sessions
-    |> Enum.filter(fn {id, _} -> not String.match?(id, ~r/#{pattern}/) end)
-    |> Enum.map(fn {_id, state} -> {self(), state} end)
+    matches =
+      sessions
+      |> Enum.filter(fn {id, _} -> not String.match?(id, ~r/#{pattern}/) end)
+      |> Enum.map(fn {_id, state} -> {self(), state} end)
+
     {:reply, matches, sessions}
   end
 
@@ -112,9 +116,12 @@ defmodule Raxol.Terminal.Registry do
 
   def handle_call({:list_by_tag, tag}, _from, state) do
     pattern = "^#{tag}:"
-    results = state
-    |> Enum.filter(fn {id, _} -> String.match?(id, ~r/#{pattern}/) end)
-    |> Map.new()
+
+    results =
+      state
+      |> Enum.filter(fn {id, _} -> String.match?(id, ~r/#{pattern}/) end)
+      |> Map.new()
+
     {:reply, {:ok, results}, state}
   end
 

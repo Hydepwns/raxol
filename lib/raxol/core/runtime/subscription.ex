@@ -31,9 +31,9 @@ defmodule Raxol.Core.Runtime.Subscription do
   """
 
   @type t :: %__MODULE__{
-    type: :interval | :events | :file_watch | :custom,
-    data: term()
-  }
+          type: :interval | :events | :file_watch | :custom,
+          data: term()
+        }
 
   defstruct [:type, :data]
 
@@ -52,13 +52,15 @@ defmodule Raxol.Core.Runtime.Subscription do
     * `:start_immediately` - Send first message immediately (default: false)
     * `:jitter` - Add random jitter to interval (default: 0)
   """
-  def interval(interval_ms, msg, opts \\ []) when is_integer(interval_ms) and interval_ms > 0 do
+  def interval(interval_ms, msg, opts \\ [])
+      when is_integer(interval_ms) and interval_ms > 0 do
     data = %{
       interval: interval_ms,
       message: msg,
       start_immediately: Keyword.get(opts, :start_immediately, false),
       jitter: Keyword.get(opts, :jitter, 0)
     }
+
     new(:interval, data)
   end
 
@@ -92,6 +94,7 @@ defmodule Raxol.Core.Runtime.Subscription do
       path: path,
       events: event_types
     }
+
     new(:file_watch, data)
   end
 
@@ -105,6 +108,7 @@ defmodule Raxol.Core.Runtime.Subscription do
       module: source_module,
       args: init_args
     }
+
     new(:custom, data)
   end
 
@@ -156,32 +160,41 @@ defmodule Raxol.Core.Runtime.Subscription do
   # Private helpers for starting different types of subscriptions
 
   defp start_interval(data, context) do
-    %{interval: interval, message: msg, start_immediately: immediate, jitter: jitter} = data
+    %{
+      interval: interval,
+      message: msg,
+      start_immediately: immediate,
+      jitter: jitter
+    } = data
 
     if immediate do
       send(context.pid, {:subscription, msg})
     end
 
-    {:ok, timer_ref} = :timer.send_interval(
-      interval + :rand.uniform(jitter),
-      context.pid,
-      {:subscription, msg}
-    )
+    {:ok, timer_ref} =
+      :timer.send_interval(
+        interval + :rand.uniform(jitter),
+        context.pid,
+        {:subscription, msg}
+      )
 
     {:ok, {:interval, timer_ref}}
   end
 
   defp start_event_subscription(event_types, context) do
-    subscription_id = Raxol.Core.Events.Manager.subscribe(event_types, context.pid)
+    subscription_id =
+      Raxol.Core.Events.Manager.subscribe(event_types, context.pid)
+
     {:ok, {:events, subscription_id}}
   end
 
   defp start_file_watch(data, context) do
     %{path: path, events: events} = data
 
-    {:ok, pid} = Task.start(fn ->
-      watch_file(path, events, context.pid)
-    end)
+    {:ok, pid} =
+      Task.start(fn ->
+        watch_file(path, events, context.pid)
+      end)
 
     {:ok, {:file_watch, pid}}
   end
@@ -205,10 +218,11 @@ defmodule Raxol.Core.Runtime.Subscription do
         if Enum.any?(file_events, &(&1 in events)) do
           send(target_pid, {:subscription, {:file_change, path, file_events}})
         end
+
         watch_file(path, events, target_pid)
 
       _ ->
         watch_file(path, events, target_pid)
     end
   end
-end 
+end

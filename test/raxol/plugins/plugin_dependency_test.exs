@@ -65,13 +65,23 @@ defmodule Raxol.Plugins.PluginDependencyTest do
 
     test "checks version compatibility" do
       # Test various version constraints
-      assert :ok == PluginDependency.check_version_compatibility("1.0.0", ">= 1.0.0")
-      assert :ok == PluginDependency.check_version_compatibility("1.0.0", ">= 0.9.0")
-      assert :ok == PluginDependency.check_version_compatibility("1.0.0", "<= 1.1.0")
-      assert :ok == PluginDependency.check_version_compatibility("1.0.0", "= 1.0.0")
-      
-      assert {:error, _} = PluginDependency.check_version_compatibility("1.0.0", ">= 1.1.0")
-      assert {:error, _} = PluginDependency.check_version_compatibility("1.0.0", "<= 0.9.0")
+      assert :ok ==
+               PluginDependency.check_version_compatibility("1.0.0", ">= 1.0.0")
+
+      assert :ok ==
+               PluginDependency.check_version_compatibility("1.0.0", ">= 0.9.0")
+
+      assert :ok ==
+               PluginDependency.check_version_compatibility("1.0.0", "<= 1.1.0")
+
+      assert :ok ==
+               PluginDependency.check_version_compatibility("1.0.0", "= 1.0.0")
+
+      assert {:error, _} =
+               PluginDependency.check_version_compatibility("1.0.0", ">= 1.1.0")
+
+      assert {:error, _} =
+               PluginDependency.check_version_compatibility("1.0.0", "<= 0.9.0")
     end
 
     test "checks plugin dependencies" do
@@ -81,7 +91,11 @@ defmodule Raxol.Plugins.PluginDependencyTest do
         version: "1.0.0",
         dependencies: [
           %{"name" => "dependency_a", "version" => ">= 1.0.0"},
-          %{"name" => "dependency_b", "version" => ">= 1.0.0", "optional" => true}
+          %{
+            "name" => "dependency_b",
+            "version" => ">= 1.0.0",
+            "optional" => true
+          }
         ]
       }
 
@@ -99,8 +113,13 @@ defmodule Raxol.Plugins.PluginDependencyTest do
         %{name: "other_plugin", version: "1.0.0"}
       ]
 
-      {:error, error_message} = PluginDependency.check_dependencies(plugin, loaded_plugins)
-      assert String.contains?(error_message, "Required dependency 'dependency_a' not found")
+      {:error, error_message} =
+        PluginDependency.check_dependencies(plugin, loaded_plugins)
+
+      assert String.contains?(
+               error_message,
+               "Required dependency 'dependency_a' not found"
+             )
 
       # Test with version mismatch
       loaded_plugins = [
@@ -108,7 +127,9 @@ defmodule Raxol.Plugins.PluginDependencyTest do
         %{name: "other_plugin", version: "1.0.0"}
       ]
 
-      {:error, error_message} = PluginDependency.check_dependencies(plugin, loaded_plugins)
+      {:error, error_message} =
+        PluginDependency.check_dependencies(plugin, loaded_plugins)
+
       assert String.contains?(error_message, "Version mismatch")
     end
 
@@ -117,10 +138,13 @@ defmodule Raxol.Plugins.PluginDependencyTest do
       assert :ok == PluginDependency.check_api_compatibility("1.0.0", "1.0.0")
       assert :ok == PluginDependency.check_api_compatibility("1.1.0", "1.0.0")
       assert :ok == PluginDependency.check_api_compatibility("1.0.0", "1.1.0")
-      
+
       # Test incompatible API versions
-      assert {:error, _} = PluginDependency.check_api_compatibility("2.0.0", "1.0.0")
-      assert {:error, _} = PluginDependency.check_api_compatibility("1.0.0", "2.0.0")
+      assert {:error, _} =
+               PluginDependency.check_api_compatibility("2.0.0", "1.0.0")
+
+      assert {:error, _} =
+               PluginDependency.check_api_compatibility("1.0.0", "2.0.0")
     end
   end
-end 
+end

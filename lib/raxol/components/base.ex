@@ -39,13 +39,13 @@ defmodule Raxol.Components.Base do
   Creates a base style for components with common properties.
   """
   def base_style(opts \\ []) do
-    Style.new([
+    Style.new(
       padding: Keyword.get(opts, :padding, [1, 2]),
       margin: Keyword.get(opts, :margin, [0, 0]),
       border: Keyword.get(opts, :border, :none),
       width: Keyword.get(opts, :width, :auto),
       height: Keyword.get(opts, :height, :auto)
-    ])
+    )
   end
 
   @doc """
@@ -59,7 +59,10 @@ defmodule Raxol.Components.Base do
     {Map.put(state, :focused, false), []}
   end
 
-  def handle_common_events(%Event{type: :key, data: %{key: key}} = _event, state) do
+  def handle_common_events(
+        %Event{type: :key, data: %{key: key}} = _event,
+        state
+      ) do
     case key do
       :tab -> {state, [{:focus_next, state.focus_key}]}
       {:shift, :tab} -> {state, [{:focus_previous, state.focus_key}]}
@@ -84,8 +87,11 @@ defmodule Raxol.Components.Base do
   defp validate_types(props, types) do
     Enum.reduce_while(props, :ok, fn {key, value}, :ok ->
       case validate_type(value, types[key]) do
-        :ok -> {:cont, :ok}
-        {:error, reason} -> {:halt, {:error, "Invalid type for #{key}: #{reason}"}}
+        :ok ->
+          {:cont, :ok}
+
+        {:error, reason} ->
+          {:halt, {:error, "Invalid type for #{key}: #{reason}"}}
       end
     end)
   end
@@ -95,6 +101,15 @@ defmodule Raxol.Components.Base do
   defp validate_type(value, :boolean) when is_boolean(value), do: :ok
   defp validate_type(value, :integer) when is_integer(value), do: :ok
   defp validate_type(value, :atom) when is_atom(value), do: :ok
-  defp validate_type(value, {:one_of, options}), do: if(value in options, do: :ok, else: {:error, "expected one of #{inspect(options)}, got #{inspect(value)}"})
-  defp validate_type(value, type), do: {:error, "expected #{inspect(type)}, got #{inspect(value)}"}
+
+  defp validate_type(value, {:one_of, options}),
+    do:
+      if(value in options,
+        do: :ok,
+        else:
+          {:error, "expected one of #{inspect(options)}, got #{inspect(value)}"}
+      )
+
+  defp validate_type(value, type),
+    do: {:error, "expected #{inspect(type)}, got #{inspect(value)}"}
 end

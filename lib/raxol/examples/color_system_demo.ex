@@ -90,6 +90,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
 
   defp check_contrast(color1, color2) do
     ratio = Utilities.contrast_ratio(color1, color2)
+
     cond do
       ratio >= 7.0 -> "AAA (#{ratio |> Float.round(2)})"
       ratio >= 4.5 -> "AA (#{ratio |> Float.round(2)})"

@@ -6,30 +6,32 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   @behaviour Raxol.Plugins.Plugin
   alias Raxol.Plugins.Plugin
 
+  # Require Logger for logging macros
+  require Logger
+
   @url_pattern ~r/https?:\/\/[^\s<>"]+|www\.[^\s<>"]+/i
 
   # Define the struct type matching the Plugin behaviour
   @type t :: %Plugin{
-    name: String.t(),
-    version: String.t(),
-    description: String.t(),
-    enabled: boolean(),
-    config: map(),
-    dependencies: list(map()),
-    api_version: String.t()
-    # Add plugin-specific fields here if needed
-  }
+          name: String.t(),
+          version: String.t(),
+          description: String.t(),
+          enabled: boolean(),
+          config: map(),
+          dependencies: list(map()),
+          api_version: String.t()
+          # Add plugin-specific fields here if needed
+        }
 
   # Update defstruct to match the Plugin behaviour fields
-  defstruct [
-    name: "hyperlink",
-    version: "0.1.0",
-    description: "Detects URLs in terminal output and makes them clickable.",
-    enabled: true,
-    config: %{},
-    dependencies: [],
-    api_version: "1.0.0"
-  ]
+  defstruct name: "hyperlink",
+            version: "0.1.0",
+            description:
+              "Detects URLs in terminal output and makes them clickable.",
+            enabled: true,
+            config: %{},
+            dependencies: [],
+            api_version: "1.0.0"
 
   @impl true
   def init(config \\ %{}) do
@@ -43,10 +45,13 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     case Regex.scan(@url_pattern, output) do
       [] ->
         {:ok, plugin}
+
       urls ->
-        new_output = Enum.reduce(urls, output, fn [url], acc ->
-          String.replace(acc, url, create_hyperlink(url))
-        end)
+        new_output =
+          Enum.reduce(urls, output, fn [url], acc ->
+            String.replace(acc, url, create_hyperlink(url))
+          end)
+
         {:ok, plugin, new_output}
     end
   end
@@ -59,28 +64,40 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
         # Create and display a hyperlink
         hyperlink = create_hyperlink(url)
         {:ok, plugin, hyperlink}
-      _ -> {:ok, plugin}
+
+      _ ->
+        {:ok, plugin}
     end
   end
 
-  @impl true
-  def handle_mouse(%__MODULE__{} = plugin, event) do
-    # Handle mouse events for hyperlink interaction
+  @impl Raxol.Plugins.Plugin
+  def handle_mouse(%__MODULE__{} = plugin, event, _emulator_state) do
+    # Only handle left clicks for now
     case event do
-      {:click, x, y} ->
-        # Check if click is within any hyperlink bounds
-        case find_hyperlink_at_position(plugin, x, y) do
-          nil -> {:ok, plugin}
-          # hyperlink -> handle_hyperlink_click(plugin, hyperlink, x, y) # Unreachable - find_hyperlink_at_position always returns nil
-        end
-      _ -> {:ok, plugin}
+      %{type: :mouse, button: :left, x: click_x, y: click_y, modifiers: []} ->
+        # TODO: Resolve how to get the Cell at (click_x, click_y) from _emulator_state.
+        # The Cell's style map should contain the hyperlink URL if the renderer
+        # correctly processes OSC 8 sequences.
+        # Once cell data is available, extract the URL and call open_url(url).
+        # Example placeholder logic:
+        # case get_cell_at(_emulator_state, click_x, click_y) do
+        #   %Raxol.Terminal.Cell{style: %{hyperlink: url}} when is_binary(url) ->
+        #     open_url(url)
+        #   _ ->
+        #     :ok # Click was not on a hyperlink
+        # end
+        Logger.debug("[HyperlinkPlugin] Mouse click detected at (#{click_x}, #{click_y}). URL opening disabled until cell data retrieval is fixed.")
+        {:ok, plugin}
+
+      _ ->
+        # Ignore other mouse events (right click, wheel, etc.)
+        {:ok, plugin}
     end
   end
 
-  # Add missing behaviour callbacks
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def handle_resize(%__MODULE__{} = plugin, _width, _height) do
-    # This plugin doesn't need to react to resize
+    # This plugin might not need to react to resize
     {:ok, plugin}
   end
 
@@ -109,15 +126,22 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     "\e]8;;#{url}\e\\#{url}\e]8;;\e\\"
   end
 
-  defp find_hyperlink_at_position(_plugin, _x, _y) do
-    # TODO: Implement hyperlink position tracking
-    # For now, return nil to indicate no hyperlink found at position
-    nil
-  end
+  # credo:disable-for-next-line UnusedFunction
+  defp open_url(url) do
+    command =
+      case :os.type() do
+        {:unix, :darwin} -> "open"
+        {:unix, _} -> "xdg-open" # Covers Linux and other Unix-like
+        {:win32, _} -> "start"
+      end
 
-  # defp handle_hyperlink_click(%__MODULE__{} = plugin, _hyperlink, _x, _y) do
-  #   # TODO: Implement hyperlink click handling (e.g., open in browser)
-  #   # For now, just return the plugin unchanged
-  #   {:ok, plugin}
-  # end
+    case System.cmd(command, [url], stderr_to_stdout: true) do
+      {_output, 0} ->
+        Logger.info("[HyperlinkPlugin] Opened URL: #{url}")
+        :ok
+      {output, exit_code} ->
+        Logger.error("[HyperlinkPlugin] Failed to open URL '#{url}' with command '#{command}'. Exit code: #{exit_code}, Output: #{output}")
+        {:error, :command_failed}
+    end
+  end
 end

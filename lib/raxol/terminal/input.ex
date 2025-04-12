@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Input do
   @moduledoc """
   Terminal input module.
-  
+
   This module handles keyboard and mouse input events for the terminal, including:
   - Input buffering
   - Mode management
@@ -10,12 +10,12 @@ defmodule Raxol.Terminal.Input do
   """
 
   @type t :: %__MODULE__{
-    buffer: String.t(),
-    mode: atom(),
-    history: list(String.t()),
-    history_index: non_neg_integer(),
-    history_limit: non_neg_integer()
-  }
+          buffer: String.t(),
+          mode: atom(),
+          history: list(String.t()),
+          history_index: non_neg_integer(),
+          history_limit: non_neg_integer()
+        }
 
   defstruct [
     :buffer,
@@ -27,9 +27,9 @@ defmodule Raxol.Terminal.Input do
 
   @doc """
   Creates a new input handler.
-  
+
   ## Examples
-  
+
       iex> input = Input.new()
       iex> input.mode
       :normal
@@ -48,9 +48,9 @@ defmodule Raxol.Terminal.Input do
 
   @doc """
   Processes a keyboard event.
-  
+
   ## Examples
-  
+
       iex> input = Input.new()
       iex> input = Input.process_keyboard(input, "a")
       iex> input.buffer
@@ -69,9 +69,9 @@ defmodule Raxol.Terminal.Input do
 
   @doc """
   Processes a mouse event.
-  
+
   ## Examples
-  
+
       iex> input = Input.new()
       iex> input = Input.process_mouse(input, {:click, 1, 2, 1})
       iex> input.buffer
@@ -88,9 +88,9 @@ defmodule Raxol.Terminal.Input do
 
   @doc """
   Gets the current input buffer.
-  
+
   ## Examples
-  
+
       iex> input = Input.new()
       iex> input = Input.process_keyboard(input, "test")
       iex> Input.get_buffer(input)
@@ -102,9 +102,9 @@ defmodule Raxol.Terminal.Input do
 
   @doc """
   Clears the input buffer.
-  
+
   ## Examples
-  
+
       iex> input = Input.new()
       iex> input = Input.process_keyboard(input, "test")
       iex> input = Input.clear_buffer(input)
@@ -117,9 +117,9 @@ defmodule Raxol.Terminal.Input do
 
   @doc """
   Sets the input mode.
-  
+
   ## Examples
-  
+
       iex> input = Input.new()
       iex> input = Input.set_mode(input, :insert)
       iex> input.mode
@@ -131,9 +131,9 @@ defmodule Raxol.Terminal.Input do
 
   @doc """
   Gets the input mode.
-  
+
   ## Examples
-  
+
       iex> input = Input.new()
       iex> Input.get_mode(input)
       :normal
@@ -144,29 +144,27 @@ defmodule Raxol.Terminal.Input do
 
   @doc """
   Adds a command to the history.
-  
+
   ## Examples
-  
+
       iex> input = Input.new()
       iex> input = Input.add_to_history(input, "test")
       iex> length(input.history)
       1
   """
   def add_to_history(%__MODULE__{} = input, command) do
-    new_history = [command | input.history]
-    |> Enum.take(input.history_limit)
+    new_history =
+      [command | input.history]
+      |> Enum.take(input.history_limit)
 
-    %{input |
-      history: new_history,
-      history_index: 0
-    }
+    %{input | history: new_history, history_index: 0}
   end
 
   @doc """
   Gets the previous command from history.
-  
+
   ## Examples
-  
+
       iex> input = Input.new()
       iex> input = Input.add_to_history(input, "test")
       iex> input = Input.previous_command(input)
@@ -176,10 +174,7 @@ defmodule Raxol.Terminal.Input do
   def previous_command(%__MODULE__{} = input) do
     if input.history_index < length(input.history) do
       command = Enum.at(input.history, input.history_index)
-      %{input |
-        buffer: command,
-        history_index: input.history_index + 1
-      }
+      %{input | buffer: command, history_index: input.history_index + 1}
     else
       input
     end
@@ -187,9 +182,9 @@ defmodule Raxol.Terminal.Input do
 
   @doc """
   Gets the next command from history.
-  
+
   ## Examples
-  
+
       iex> input = Input.new()
       iex> input = Input.add_to_history(input, "test")
       iex> input = Input.previous_command(input)
@@ -199,9 +194,14 @@ defmodule Raxol.Terminal.Input do
   """
   def next_command(%__MODULE__{} = input) do
     if input.history_index > 0 do
-      %{input |
-        history_index: input.history_index - 1,
-        buffer: if(input.history_index == 1, do: "", else: Enum.at(input.history, input.history_index - 2))
+      %{
+        input
+        | history_index: input.history_index - 1,
+          buffer:
+            if(input.history_index == 1,
+              do: "",
+              else: Enum.at(input.history, input.history_index - 2)
+            )
       }
     else
       input
@@ -225,8 +225,12 @@ defmodule Raxol.Terminal.Input do
   end
 
   defp handle_tab(%__MODULE__{} = input) do
-    # TODO: Implement tab completion
-    input
+    # Basic tab completion: insert spaces
+    # TODO: Implement context-aware tab completion later
+    # Or get from config/options
+    tab_width = 4
+    spaces = String.duplicate(" ", tab_width)
+    %{input | buffer: input.buffer <> spaces}
   end
 
   defp handle_escape(%__MODULE__{} = input) do

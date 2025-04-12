@@ -38,7 +38,8 @@ defmodule Raxol.Cloud.EdgeComputing do
           sync_interval: 30000,
           retry_limit: 5,
           compression_enabled: true,
-          offline_cache_size: 100_000_000, # 100MB
+          # 100MB
+          offline_cache_size: 100_000_000,
           priority_functions: []
         },
         edge_status: :initialized,
@@ -86,15 +87,16 @@ defmodule Raxol.Cloud.EdgeComputing do
     state = State.new()
 
     # Override defaults with provided options
-    config = Keyword.take(opts, [
-      :mode,
-      :connection_check_interval,
-      :sync_interval,
-      :retry_limit,
-      :compression_enabled,
-      :offline_cache_size,
-      :priority_functions
-    ])
+    config =
+      Keyword.take(opts, [
+        :mode,
+        :connection_check_interval,
+        :sync_interval,
+        :retry_limit,
+        :compression_enabled,
+        :offline_cache_size,
+        :priority_functions
+      ])
 
     # Update state with provided config
     state = update_config(state, config)
@@ -127,12 +129,17 @@ defmodule Raxol.Cloud.EdgeComputing do
         |> Map.merge(Map.new(config))
 
       # Update mode if specified
-      updated_state = case Keyword.get(config, :mode) do
-        nil -> s
-        mode when mode in [:edge_only, :cloud_only, :hybrid] ->
-          %{s | mode: mode}
-        _ -> s
-      end
+      updated_state =
+        case Keyword.get(config, :mode) do
+          nil ->
+            s
+
+          mode when mode in [:edge_only, :cloud_only, :hybrid] ->
+            %{s | mode: mode}
+
+          _ ->
+            s
+        end
 
       %{updated_state | config: updated_config}
     end)
@@ -169,7 +176,9 @@ defmodule Raxol.Cloud.EdgeComputing do
       :hybrid ->
         # Try edge first, fallback to cloud
         case execute_at_edge(func, opts) do
-          {:ok, result} -> {:ok, result}
+          {:ok, result} ->
+            {:ok, result}
+
           {:error, _reason} ->
             # Log the edge failure
             record_metric(:edge_failure)
@@ -238,7 +247,11 @@ defmodule Raxol.Cloud.EdgeComputing do
 
       # Update state with connection result
       with_state(fn s ->
-        %{s | cloud_status: if(connection_result, do: :connected, else: :disconnected)}
+        %{
+          s
+          | cloud_status:
+              if(connection_result, do: :connected, else: :disconnected)
+        }
       end)
 
       # Process queued operations if we're connected
@@ -286,11 +299,12 @@ defmodule Raxol.Cloud.EdgeComputing do
   # Private functions
 
   defp with_state(arg1, arg2 \\ nil) do
-    {state, fun} = if is_function(arg1) do
-      {get_state(), arg1}
-    else
-      {arg1 || get_state(), arg2}
-    end
+    {state, fun} =
+      if is_function(arg1) do
+        {get_state(), arg1}
+      else
+        {arg1 || get_state(), arg2}
+      end
 
     result = fun.(state)
 
@@ -314,24 +328,34 @@ defmodule Raxol.Cloud.EdgeComputing do
 
     cond do
       # Check forced options
-      force_edge -> :edge
-      force_cloud -> :cloud
+      force_edge ->
+        :edge
+
+      force_cloud ->
+        :cloud
 
       # Check configured mode
-      state.mode == :edge_only -> :edge
-      state.mode == :cloud_only -> :cloud
+      state.mode == :edge_only ->
+        :edge
+
+      state.mode == :cloud_only ->
+        :cloud
 
       # If hybrid, check cloud status
-      state.mode == :hybrid and state.cloud_status != :connected -> :edge
+      state.mode == :hybrid and state.cloud_status != :connected ->
+        :edge
 
       # If hybrid, check if function is prioritized for edge
-      state.mode == :hybrid and is_prioritized_for_edge?(opts[:function_name]) -> :edge
+      state.mode == :hybrid and is_prioritized_for_edge?(opts[:function_name]) ->
+        :edge
 
       # If hybrid, check resource availability for optimal execution
-      state.mode == :hybrid -> :hybrid
+      state.mode == :hybrid ->
+        :hybrid
 
       # Default to edge
-      true -> :edge
+      true ->
+        :edge
     end
   end
 
@@ -357,6 +381,7 @@ defmodule Raxol.Cloud.EdgeComputing do
       :exit, {:timeout, _} ->
         _ = Task.shutdown(task)
         {:error, :timeout}
+
       kind, reason ->
         _ = Task.shutdown(task)
         {:error, {kind, reason}}
@@ -383,7 +408,8 @@ defmodule Raxol.Cloud.EdgeComputing do
       end
     else
       # We're offline, queue the operation for later
-      operation_id = Queue.enqueue_operation(:function, %{function: func, options: opts})
+      operation_id =
+        Queue.enqueue_operation(:function, %{function: func, options: opts})
 
       # Return queued status
       {:ok, %{status: :queued, operation_id: operation_id}}
@@ -413,29 +439,39 @@ defmodule Raxol.Cloud.EdgeComputing do
   defp get_resource_info() do
     # In a real implementation, this would check actual system resources
     %{
-      cpu_available: 80, # percentage
-      memory_available: 500_000_000, # bytes
-      storage_available: 1_000_000_000, # bytes
-      bandwidth_available: 1_000_000 # bytes/s
+      # percentage
+      cpu_available: 80,
+      # bytes
+      memory_available: 500_000_000,
+      # bytes
+      storage_available: 1_000_000_000,
+      # bytes/s
+      bandwidth_available: 1_000_000
     }
   end
 
   defp record_metric(metric_type) do
     with_state(fn state ->
-      updated_metrics = case metric_type do
-        :edge_request ->
-          Map.update!(state.metrics, :edge_requests, &(&1 + 1))
-        :cloud_request ->
-          Map.update!(state.metrics, :cloud_requests, &(&1 + 1))
-        :sync_operation ->
-          Map.update!(state.metrics, :sync_operations, &(&1 + 1))
-        :sync_failure ->
-          Map.update!(state.metrics, :sync_failures, &(&1 + 1))
-        :edge_failure ->
-          state.metrics
-        _ ->
-          state.metrics
-      end
+      updated_metrics =
+        case metric_type do
+          :edge_request ->
+            Map.update!(state.metrics, :edge_requests, &(&1 + 1))
+
+          :cloud_request ->
+            Map.update!(state.metrics, :cloud_requests, &(&1 + 1))
+
+          :sync_operation ->
+            Map.update!(state.metrics, :sync_operations, &(&1 + 1))
+
+          :sync_failure ->
+            Map.update!(state.metrics, :sync_failures, &(&1 + 1))
+
+          :edge_failure ->
+            state.metrics
+
+          _ ->
+            state.metrics
+        end
 
       %{state | metrics: updated_metrics}
     end)
@@ -494,10 +530,13 @@ defmodule Raxol.Cloud.EdgeComputing.Cache do
     cache = get_cache()
 
     case Map.get(cache.items, key) do
-      nil -> nil
+      nil ->
+        nil
+
       item ->
         # Check TTL
-        if item.ttl && DateTime.diff(DateTime.utc_now(), item.created_at) > item.ttl do
+        if item.ttl &&
+             DateTime.diff(DateTime.utc_now(), item.created_at) > item.ttl do
           # Item expired
           delete(key)
           nil
@@ -511,13 +550,19 @@ defmodule Raxol.Cloud.EdgeComputing.Cache do
     cache = get_cache()
 
     case Map.get(cache.items, key) do
-      nil -> :ok
+      nil ->
+        :ok
+
       item ->
         # Update cache
         updated_items = Map.delete(cache.items, key)
         updated_size = cache.size - item.size
 
-        Process.put(@cache_key, %{cache | items: updated_items, size: updated_size})
+        Process.put(@cache_key, %{
+          cache
+          | items: updated_items,
+            size: updated_size
+        })
 
         :ok
     end
@@ -557,14 +602,20 @@ defmodule Raxol.Cloud.EdgeComputing.Cache do
     else
       # Simple LRU eviction strategy
       # Sort by creation time (oldest first)
-      sorted_items = cache.items
-      |> Enum.sort_by(fn {_, item} -> item.created_at end, DateTime)
+      sorted_items =
+        cache.items
+        |> Enum.sort_by(fn {_, item} -> item.created_at end, DateTime)
 
       # Start evicting until we have enough space
-      {updated_items, updated_size} = evict_items(sorted_items, cache.items, cache.size, needed_size)
+      {updated_items, updated_size} =
+        evict_items(sorted_items, cache.items, cache.size, needed_size)
 
       # Update cache
-      Process.put(@cache_key, %{cache | items: updated_items, size: updated_size})
+      Process.put(@cache_key, %{
+        cache
+        | items: updated_items,
+          size: updated_size
+      })
 
       :ok
     end
@@ -623,7 +674,11 @@ defmodule Raxol.Cloud.EdgeComputing.Queue do
     updated_operations = queue.operations ++ [operation]
 
     # Update queue
-    Process.put(@queue_key, %{queue | operations: updated_operations, next_id: queue.next_id + 1})
+    Process.put(@queue_key, %{
+      queue
+      | operations: updated_operations,
+        next_id: queue.next_id + 1
+    })
 
     operation.id
   end
@@ -632,23 +687,29 @@ defmodule Raxol.Cloud.EdgeComputing.Queue do
     queue = get_queue()
 
     # Process each pending operation
-    {processed, failed} = Enum.reduce(queue.operations, {0, 0}, fn op, {processed, failed} ->
-      case process_operation(op) do
-        :ok -> {processed + 1, failed}
-        :retry -> {processed, failed}
-        :failed -> {processed, failed + 1}
-      end
-    end)
+    {processed, failed} =
+      Enum.reduce(queue.operations, {0, 0}, fn op, {processed, failed} ->
+        case process_operation(op) do
+          :ok -> {processed + 1, failed}
+          :retry -> {processed, failed}
+          :failed -> {processed, failed + 1}
+        end
+      end)
 
     # Remove processed operations
-    updated_operations = Enum.filter(queue.operations, fn op ->
-      op.attempts > 0 && process_operation(op) == :retry
-    end)
+    updated_operations =
+      Enum.filter(queue.operations, fn op ->
+        op.attempts > 0 && process_operation(op) == :retry
+      end)
 
     # Update queue
     Process.put(@queue_key, %{queue | operations: updated_operations})
 
-    %{processed: processed, failed: failed, remaining: length(updated_operations)}
+    %{
+      processed: processed,
+      failed: failed,
+      remaining: length(updated_operations)
+    }
   end
 
   def pending_count() do
@@ -726,21 +787,23 @@ defmodule Raxol.Cloud.EdgeComputing.SyncManager do
     Process.sleep(100)
 
     # Return success with some stats
-    {:ok, %{
-      status: :completed,
-      synced_items: map_size(sync_state.pending_changes),
-      timestamp: DateTime.utc_now()
-    }}
+    {:ok,
+     %{
+       status: :completed,
+       synced_items: map_size(sync_state.pending_changes),
+       timestamp: DateTime.utc_now()
+     }}
   end
 
   # Private helpers
 
   defp get_sync_state() do
-    Process.get(@sync_key) || %{
-      last_sync: nil,
-      config: %{},
-      pending_changes: %{},
-      conflict_strategy: :latest_wins
-    }
+    Process.get(@sync_key) ||
+      %{
+        last_sync: nil,
+        config: %{},
+        pending_changes: %{},
+        conflict_strategy: :latest_wins
+      }
   end
 end

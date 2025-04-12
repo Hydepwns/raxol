@@ -50,18 +50,24 @@ defmodule Raxol.Components.Progress.Spinner do
     }
   end
 
-  defp get_frames(:custom, custom_frames) when is_list(custom_frames), do: custom_frames
-  defp get_frames(style, _) when is_atom(style), do: @animation_frames[style] || @animation_frames.dots
+  defp get_frames(:custom, custom_frames) when is_list(custom_frames),
+    do: custom_frames
+
+  defp get_frames(style, _) when is_atom(style),
+    do: @animation_frames[style] || @animation_frames.dots
+
   defp get_frames(_, _), do: @animation_frames.dots
 
   @impl true
   def update(:tick, state) do
     current_time = System.monotonic_time(:millisecond)
+
     if current_time - state.last_update >= state.speed do
-      %{state |
-        frame_index: rem(state.frame_index + 1, length(state.frames)),
-        color_index: rem(state.color_index + 1, length(state.colors)),
-        last_update: current_time
+      %{
+        state
+        | frame_index: rem(state.frame_index + 1, length(state.frames)),
+          color_index: rem(state.color_index + 1, length(state.colors)),
+          last_update: current_time
       }
     else
       state
@@ -101,9 +107,11 @@ defmodule Raxol.Components.Progress.Spinner do
     current_color = Enum.at(state.colors, state.color_index)
 
     spinner = Components.text(content: current_frame, color: current_color)
-    text_element = if state.text do
-      Components.text(content: state.text)
-    end
+
+    text_element =
+      if state.text do
+        Components.text(content: state.text)
+      end
 
     Layout.box do
       Layout.row do

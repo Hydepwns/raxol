@@ -10,26 +10,26 @@ defmodule Raxol.Components.Terminal.Emulator do
   alias Raxol.Components.Terminal.ANSI
 
   @type cell :: %{
-    char: String.t(),
-    style: map(),
-    dirty: boolean()
-  }
+          char: String.t(),
+          style: map(),
+          dirty: boolean()
+        }
 
   @type screen :: %{
-    cells: [[cell()]],
-    cursor: {integer(), integer()},
-    dimensions: {integer(), integer()},
-    scroll_region: {integer(), integer()} | nil,
-    mode: :normal | :insert,
-    attributes: map()
-  }
+          cells: [[cell()]],
+          cursor: {integer(), integer()},
+          dimensions: {integer(), integer()},
+          scroll_region: {integer(), integer()} | nil,
+          mode: :normal | :insert,
+          attributes: map()
+        }
 
   @type emulator_state :: %{
-    dimensions: {integer(), integer()},
-    screen: screen(),
-    history: [String.t()],
-    ansi_state: ANSI.ansi_state()
-  }
+          dimensions: {integer(), integer()},
+          screen: screen(),
+          history: [String.t()],
+          ansi_state: ANSI.ansi_state()
+        }
 
   @default_dimensions {80, 24}
 
@@ -77,11 +77,12 @@ defmodule Raxol.Components.Terminal.Emulator do
   # Private functions
 
   defp init_screen({width, height}) do
-    cells = for _ <- 1..height do
-      for _ <- 1..width do
-        %{char: " ", style: %{}, dirty: false}
+    cells =
+      for _ <- 1..height do
+        for _ <- 1..width do
+          %{char: " ", style: %{}, dirty: false}
+        end
       end
-    end
 
     %{
       cells: cells,
@@ -95,21 +96,26 @@ defmodule Raxol.Components.Terminal.Emulator do
 
   defp resize_screen(screen, {new_width, new_height}) do
     current_cells = screen.cells
-    new_cells = for y <- 0..(new_height - 1) do
-      for x <- 0..(new_width - 1) do
-        case {x, y} do
-          {x, y} when x < length(hd(current_cells)) and y < length(current_cells) ->
-            Enum.at(Enum.at(current_cells, y), x)
-          _ ->
-            %{char: " ", style: %{}, dirty: true}
+
+    new_cells =
+      for y <- 0..(new_height - 1) do
+        for x <- 0..(new_width - 1) do
+          case {x, y} do
+            {x, y}
+            when x < length(hd(current_cells)) and y < length(current_cells) ->
+              Enum.at(Enum.at(current_cells, y), x)
+
+            _ ->
+              %{char: " ", style: %{}, dirty: true}
+          end
         end
       end
-    end
 
-    %{screen |
-      cells: new_cells,
-      dimensions: {new_width, new_height},
-      cursor: clamp_cursor(screen.cursor, {new_width, new_height})
+    %{
+      screen
+      | cells: new_cells,
+        dimensions: {new_width, new_height},
+        cursor: clamp_cursor(screen.cursor, {new_width, new_height})
     }
   end
 

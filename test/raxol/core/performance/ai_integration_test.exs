@@ -1,12 +1,12 @@
 defmodule Raxol.Core.Performance.AIIntegrationTest do
   use ExUnit.Case
   use Mox
-  
+
   alias Raxol.Core.Performance.AIIntegration
-  
+
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
-  
+
   describe "AI Integration" do
     setup do
       # Set up test configuration
@@ -17,44 +17,47 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         retry_attempts: 2,
         retry_delay: 100
       })
-      
+
       :ok
     end
-    
+
     test "validates configuration" do
       assert :ok = AIIntegration.validate_config()
     end
-    
+
     test "detects missing configuration" do
       Application.put_env(:raxol, :ai_integration, %{})
       assert {:error, :missing_config} = AIIntegration.validate_config()
     end
-    
+
     test "detects invalid endpoint" do
       Application.put_env(:raxol, :ai_integration, %{
         endpoint: "invalid-url",
         api_key: "test-api-key"
       })
+
       assert {:error, :invalid_endpoint} = AIIntegration.validate_config()
     end
-    
+
     test "detects invalid API key" do
       Application.put_env(:raxol, :ai_integration, %{
         endpoint: "https://api.ai-agent.com/v1",
         api_key: ""
       })
+
       assert {:error, :invalid_api_key} = AIIntegration.validate_config()
     end
-    
+
     test "detects invalid timeout" do
       Application.put_env(:raxol, :ai_integration, %{
         endpoint: "https://api.ai-agent.com/v1",
         api_key: "test-api-key",
         timeout: -1
       })
+
       assert {:error, :invalid_timeout} = AIIntegration.validate_config()
     end
-    
+
     test "detects invalid retry configuration" do
       Application.put_env(:raxol, :ai_integration, %{
         endpoint: "https://api.ai-agent.com/v1",
@@ -62,17 +65,19 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         retry_attempts: 0,
         retry_delay: 100
       })
+
       assert {:error, :invalid_retry_attempts} = AIIntegration.validate_config()
-      
+
       Application.put_env(:raxol, :ai_integration, %{
         endpoint: "https://api.ai-agent.com/v1",
         api_key: "test-api-key",
         retry_attempts: 2,
         retry_delay: 0
       })
+
       assert {:error, :invalid_retry_delay} = AIIntegration.validate_config()
     end
-    
+
     test "sends performance data for analysis" do
       data = %{
         metrics: %{
@@ -100,7 +105,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
           }
         }
       }
-      
+
       expected_response = %{
         insights: [
           "Performance analysis indicates stable frame rates",
@@ -132,111 +137,121 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         },
         ai_confidence: 0.95
       }
-      
+
       # Mock HTTPoison for successful request
       expect(HTTPoison, :request, fn method, url, body, headers, opts ->
         assert method == :post
         assert url == "https://api.ai-agent.com/v1/analyze"
+
         assert headers == [
-          {"Authorization", "Bearer test-api-key"},
-          {"Content-Type", "application/json"}
-        ]
+                 {"Authorization", "Bearer test-api-key"},
+                 {"Content-Type", "application/json"}
+               ]
+
         assert opts[:timeout] == 5000
         assert opts[:recv_timeout] == 5000
-        
-        {:ok, %{
-          status_code: 200,
-          body: Jason.encode!(expected_response)
-        }}
+
+        {:ok,
+         %{
+           status_code: 200,
+           body: Jason.encode!(expected_response)
+         }}
       end)
-      
+
       assert {:ok, analysis} = AIIntegration.analyze(data)
-      
+
       assert analysis.insights == expected_response.insights
       assert analysis.recommendations == expected_response.recommendations
       assert analysis.risk_assessment == expected_response.risk_assessment
-      assert analysis.optimization_impact == expected_response.optimization_impact
+
+      assert analysis.optimization_impact ==
+               expected_response.optimization_impact
+
       assert analysis.ai_confidence == expected_response.ai_confidence
       assert Map.has_key?(analysis.metadata, :analyzed_at)
       assert analysis.metadata.version == "1.0.0"
     end
-    
+
     test "handles API errors" do
       data = %{
         metrics: %{fps: 60},
         analysis: %{},
         context: %{}
       }
-      
+
       # Mock HTTPoison for failed request
       expect(HTTPoison, :request, fn _method, _url, _body, _headers, _opts ->
-        {:ok, %{
-          status_code: 500,
-          body: "Internal Server Error"
-        }}
+        {:ok,
+         %{
+           status_code: 500,
+           body: "Internal Server Error"
+         }}
       end)
-      
+
       assert {:error, :max_retries_exceeded} = AIIntegration.analyze(data)
     end
-    
+
     test "handles network errors" do
       data = %{
         metrics: %{fps: 60},
         analysis: %{},
         context: %{}
       }
-      
+
       # Mock HTTPoison for network error
       expect(HTTPoison, :request, fn _method, _url, _body, _headers, _opts ->
         {:error, %HTTPoison.Error{reason: "Connection refused"}}
       end)
-      
+
       assert {:error, :max_retries_exceeded} = AIIntegration.analyze(data)
     end
-    
+
     test "handles invalid response format" do
       data = %{
         metrics: %{fps: 60},
         analysis: %{},
         context: %{}
       }
-      
+
       # Mock HTTPoison for invalid response
       expect(HTTPoison, :request, fn _method, _url, _body, _headers, _opts ->
-        {:ok, %{
-          status_code: 200,
-          body: Jason.encode!(%{invalid: "format"})
-        }}
+        {:ok,
+         %{
+           status_code: 200,
+           body: Jason.encode!(%{invalid: "format"})
+         }}
       end)
-      
+
       assert {:error, :invalid_analysis_format} = AIIntegration.analyze(data)
     end
-    
+
     test "respects custom timeout and retry options" do
       data = %{
         metrics: %{fps: 60},
         analysis: %{},
         context: %{}
       }
-      
+
       options = %{
         timeout: 10000,
         retry_attempts: 1,
         retry_delay: 200
       }
-      
+
       # Mock HTTPoison to verify options
       expect(HTTPoison, :request, fn _method, _url, _body, _headers, opts ->
         assert opts[:timeout] == 10000
         assert opts[:recv_timeout] == 10000
-        
-        {:ok, %{
-          status_code: 500,
-          body: "Internal Server Error"
-        }}
+
+        {:ok,
+         %{
+           status_code: 500,
+           body: "Internal Server Error"
+         }}
       end)
-      
-      assert {:error, :max_retries_exceeded} = AIIntegration.analyze(data, options)
+
+      assert {:error, :max_retries_exceeded} =
+               AIIntegration.analyze(data, options)
     end
   end
-end 
+end

@@ -8,7 +8,7 @@ defmodule Raxol.Accessibility do
 
   ## Usage
 
-  @example_code """
+  @example_code \"""
   # Initialize accessibility support in your application
   def init(_) do
     %{
@@ -98,7 +98,10 @@ defmodule Raxol.Accessibility do
       timestamp: System.monotonic_time(:millisecond)
     }
 
-    %{accessibility | announcements: [announcement | accessibility.announcements]}
+    %{
+      accessibility
+      | announcements: [announcement | accessibility.announcements]
+    }
   end
 
   @doc """
@@ -203,8 +206,11 @@ defmodule Raxol.Accessibility do
   )
   ```
   """
-  def register_element_metadata(accessibility, element_id, metadata) when is_map(metadata) do
-    updated_metadata = Map.put(accessibility.element_metadata, element_id, metadata)
+  def register_element_metadata(accessibility, element_id, metadata)
+      when is_map(metadata) do
+    updated_metadata =
+      Map.put(accessibility.element_metadata, element_id, metadata)
+
     %{accessibility | element_metadata: updated_metadata}
   end
 

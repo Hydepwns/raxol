@@ -46,18 +46,21 @@ defmodule Raxol.Renderer do
           render_count: 0,
           last_dimensions: get_terminal_dimensions()
         }
+
         {:ok, state}
+
       {:error, reason} ->
-         {:stop, {:failed_to_initialize_termbox, reason}}
+        {:stop, {:failed_to_initialize_termbox, reason}}
     end
   end
 
   @impl true
   def handle_cast({:render, view}, state) do
     dimensions = get_terminal_dimensions()
+
     should_render =
       state.last_render != view ||
-      state.last_dimensions != dimensions
+        state.last_dimensions != dimensions
 
     if should_render do
       _ = Bindings.clear()
@@ -65,14 +68,16 @@ defmodule Raxol.Renderer do
       _ = Bindings.present()
 
       state = %{
-        state |
-        last_render: view,
-        render_count: state.render_count + 1,
-        last_dimensions: dimensions
+        state
+        | last_render: view,
+          render_count: state.render_count + 1,
+          last_dimensions: dimensions
       }
+
       if state.debug do
         IO.puts("Rendered frame ##{state.render_count}")
       end
+
       {:noreply, state}
     else
       {:noreply, state}
@@ -92,8 +97,10 @@ defmodule Raxol.Renderer do
     case {Bindings.width(), Bindings.height()} do
       {{:ok, w}, {:ok, h}} ->
         %{width: w, height: h}
+
       {{:error, reason}, _} ->
         raise "Failed to get terminal width: #{inspect(reason)}"
+
       {_, {:error, reason}} ->
         raise "Failed to get terminal height: #{inspect(reason)}"
     end
@@ -113,46 +120,83 @@ defmodule Raxol.Renderer do
 
     # Combine attributes using Constants module
     attr = 0
-    attr = if Map.get(attrs, :bold, false), do: Bitwise.bor(attr, Constants.attribute(:bold)), else: attr
-    attr = if Map.get(attrs, :underline, false), do: Bitwise.bor(attr, Constants.attribute(:underline)), else: attr
-    attr = if Map.get(attrs, :reverse, false), do: Bitwise.bor(attr, Constants.attribute(:reverse)), else: attr
+
+    attr =
+      if Map.get(attrs, :bold, false),
+        do: Bitwise.bor(attr, Constants.attribute(:bold)),
+        else: attr
+
+    attr =
+      if Map.get(attrs, :underline, false),
+        do: Bitwise.bor(attr, Constants.attribute(:underline)),
+        else: attr
+
+    attr =
+      if Map.get(attrs, :reverse, false),
+        do: Bitwise.bor(attr, Constants.attribute(:reverse)),
+        else: attr
 
     fg_attr = Bitwise.bor(fg, attr)
 
     # Draw the text character by character
-    _ = Enum.reduce(String.graphemes(text), x, fn grapheme, current_x ->
-      <<char::utf8, _rest::binary>> = grapheme
-      _ = Bindings.change_cell(current_x, y, char, fg_attr, bg)
-      current_x + 1 # Increment by 1 for now
-    end)
+    _ =
+      Enum.reduce(String.graphemes(text), x, fn grapheme, current_x ->
+        <<char::utf8, _rest::binary>> = grapheme
+        _ = Bindings.change_cell(current_x, y, char, fg_attr, bg)
+        # Increment by 1 for now
+        current_x + 1
+      end)
   end
 
-  defp draw_element(%{type: :box, x: x, y: y, width: w, height: h, attrs: attrs}) do
+  defp draw_element(%{
+         type: :box,
+         x: x,
+         y: y,
+         width: w,
+         height: h,
+         attrs: attrs
+       }) do
     fg = parse_color(attrs.fg)
     bg = parse_color(attrs.bg)
 
     # Combine attributes using Constants module
     attr = 0
-    attr = if Map.get(attrs, :bold, false), do: Bitwise.bor(attr, Constants.attribute(:bold)), else: attr
-    attr = if Map.get(attrs, :underline, false), do: Bitwise.bor(attr, Constants.attribute(:underline)), else: attr
-    attr = if Map.get(attrs, :reverse, false), do: Bitwise.bor(attr, Constants.attribute(:reverse)), else: attr
+
+    attr =
+      if Map.get(attrs, :bold, false),
+        do: Bitwise.bor(attr, Constants.attribute(:bold)),
+        else: attr
+
+    attr =
+      if Map.get(attrs, :underline, false),
+        do: Bitwise.bor(attr, Constants.attribute(:underline)),
+        else: attr
+
+    attr =
+      if Map.get(attrs, :reverse, false),
+        do: Bitwise.bor(attr, Constants.attribute(:reverse)),
+        else: attr
 
     fg_attr = Bitwise.bor(fg, attr)
     bg_attr = bg
 
     # Get border style
     border_style = Map.get(attrs, :border_style, :normal)
-    {h_char, v_char, tl_char, tr_char, bl_char, br_char} = get_border_chars(border_style)
+
+    {h_char, v_char, tl_char, tr_char, bl_char, br_char} =
+      get_border_chars(border_style)
 
     # Draw lines
-    for dx <- 0..(w-1) do
+    for dx <- 0..(w - 1) do
       _ = Bindings.change_cell(x + dx, y, h_char, fg_attr, bg_attr)
       _ = Bindings.change_cell(x + dx, y + h - 1, h_char, fg_attr, bg_attr)
     end
-    for dy <- 1..(h-2) do
+
+    for dy <- 1..(h - 2) do
       _ = Bindings.change_cell(x, y + dy, v_char, fg_attr, bg_attr)
       _ = Bindings.change_cell(x + w - 1, y + dy, v_char, fg_attr, bg_attr)
     end
+
     _ = Bindings.change_cell(x, y, tl_char, fg_attr, bg_attr)
     _ = Bindings.change_cell(x + w - 1, y, tr_char, fg_attr, bg_attr)
     _ = Bindings.change_cell(x, y + h - 1, bl_char, fg_attr, bg_attr)
@@ -160,9 +204,11 @@ defmodule Raxol.Renderer do
 
     # Fill box
     fill = Map.get(attrs, :fill, true)
-    fill_char = Map.get(attrs, :fill_char, ?\s) # Use ?\s for space character
+    # Use ?\s for space character
+    fill_char = Map.get(attrs, :fill_char, ?\s)
+
     if fill do
-      for dy <- 1..(h-2), dx <- 1..(w-2) do
+      for dy <- 1..(h - 2), dx <- 1..(w - 2) do
         _ = Bindings.change_cell(x + dx, y + dy, fill_char, fg_attr, bg_attr)
       end
     end
@@ -176,7 +222,8 @@ defmodule Raxol.Renderer do
   defp get_border_chars(:thick), do: {?━, ?┃, ?┏, ?┓, ?┗, ?┛}
   defp get_border_chars(:double), do: {?═, ?║, ?╔, ?╗, ?╚, ?╝}
   defp get_border_chars(:rounded), do: {?─, ?│, ?╭, ?╮, ?╰, ?╯}
-  defp get_border_chars(_), do: {?─, ?│, ?┌, ?┐, ?└, ?┘} # Default to normal
+  # Default to normal
+  defp get_border_chars(_), do: {?─, ?│, ?┌, ?┐, ?└, ?┘}
 
   defp parse_color(:default), do: Constants.color(:default)
   defp parse_color(:black), do: Constants.color(:black)
@@ -197,6 +244,8 @@ defmodule Raxol.Renderer do
   defp parse_color(:light_white), do: Constants.color(:white)
   defp parse_color(:gray), do: Constants.color(:black)
   defp parse_color(:dark_gray), do: Constants.color(:black)
-  defp parse_color(n) when is_integer(n) and n >= 0 and n <= 255, do: n # Assume direct 256 color index
-  defp parse_color(_), do: Constants.color(:default) # Default
+  # Assume direct 256 color index
+  defp parse_color(n) when is_integer(n) and n >= 0 and n <= 255, do: n
+  # Default
+  defp parse_color(_), do: Constants.color(:default)
 end

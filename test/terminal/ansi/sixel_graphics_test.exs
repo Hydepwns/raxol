@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
   describe "new/0" do
     test "creates a new Sixel state with default values" do
       state = SixelGraphics.new()
-      
+
       assert state.current_color == 0
       assert state.repeat_count == 1
       assert state.position == {0, 0}
@@ -20,32 +20,52 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
   describe "initialize_palette/0" do
     test "initializes the default Sixel color palette" do
       palette = SixelGraphics.initialize_palette()
-      
+
       # Check standard 16 colors
-      assert palette[0] == {0, 0, 0}       # Black
-      assert palette[1] == {205, 0, 0}     # Red
-      assert palette[2] == {0, 205, 0}     # Green
-      assert palette[3] == {205, 205, 0}   # Yellow
-      assert palette[4] == {0, 0, 238}     # Blue
-      assert palette[5] == {205, 0, 205}   # Magenta
-      assert palette[6] == {0, 205, 205}   # Cyan
-      assert palette[7] == {229, 229, 229} # White
-      assert palette[8] == {127, 127, 127} # Bright Black
-      assert palette[9] == {255, 0, 0}     # Bright Red
-      assert palette[10] == {0, 255, 0}    # Bright Green
-      assert palette[11] == {255, 255, 0}  # Bright Yellow
-      assert palette[12] == {92, 92, 255}  # Bright Blue
-      assert palette[13] == {255, 0, 255}  # Bright Magenta
-      assert palette[14] == {0, 255, 255}  # Bright Cyan
-      assert palette[15] == {255, 255, 255} # Bright White
+      # Black
+      assert palette[0] == {0, 0, 0}
+      # Red
+      assert palette[1] == {205, 0, 0}
+      # Green
+      assert palette[2] == {0, 205, 0}
+      # Yellow
+      assert palette[3] == {205, 205, 0}
+      # Blue
+      assert palette[4] == {0, 0, 238}
+      # Magenta
+      assert palette[5] == {205, 0, 205}
+      # Cyan
+      assert palette[6] == {0, 205, 205}
+      # White
+      assert palette[7] == {229, 229, 229}
+      # Bright Black
+      assert palette[8] == {127, 127, 127}
+      # Bright Red
+      assert palette[9] == {255, 0, 0}
+      # Bright Green
+      assert palette[10] == {0, 255, 0}
+      # Bright Yellow
+      assert palette[11] == {255, 255, 0}
+      # Bright Blue
+      assert palette[12] == {92, 92, 255}
+      # Bright Magenta
+      assert palette[13] == {255, 0, 255}
+      # Bright Cyan
+      assert palette[14] == {0, 255, 255}
+      # Bright White
+      assert palette[15] == {255, 255, 255}
 
       # Check RGB cube colors
-      assert palette[16] == {0, 0, 0}      # First RGB cube color
-      assert palette[231] == {255, 255, 255} # Last RGB cube color
+      # First RGB cube color
+      assert palette[16] == {0, 0, 0}
+      # Last RGB cube color
+      assert palette[231] == {255, 255, 255}
 
       # Check grayscale colors
-      assert palette[232] == {8, 8, 8}     # First grayscale color
-      assert palette[255] == {238, 238, 238} # Last grayscale color
+      # First grayscale color
+      assert palette[232] == {8, 8, 8}
+      # Last grayscale color
+      assert palette[255] == {238, 238, 238}
     end
   end
 
@@ -53,7 +73,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "handles color setting" do
       state = SixelGraphics.new()
       {new_state, response} = SixelGraphics.process_sequence(state, "\e[1q")
-      
+
       assert new_state.current_color == 1
       assert response == ""
     end
@@ -61,7 +81,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "handles position setting" do
       state = SixelGraphics.new()
       {new_state, response} = SixelGraphics.process_sequence(state, "\e[10;5p")
-      
+
       assert new_state.position == {5, 10}
       assert response == ""
     end
@@ -69,7 +89,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "handles repeat count setting" do
       state = SixelGraphics.new()
       {new_state, response} = SixelGraphics.process_sequence(state, "\e[5r")
-      
+
       assert new_state.repeat_count == 5
       assert response == ""
     end
@@ -77,7 +97,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "handles attribute setting" do
       state = SixelGraphics.new()
       {new_state, response} = SixelGraphics.process_sequence(state, "\e[1a")
-      
+
       assert new_state.attributes.width == :double_width
       assert response == ""
     end
@@ -85,7 +105,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "handles background color setting" do
       state = SixelGraphics.new()
       {new_state, response} = SixelGraphics.process_sequence(state, "\e[1b")
-      
+
       assert new_state == state
       assert response == ""
     end
@@ -93,15 +113,17 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "handles foreground color setting" do
       state = SixelGraphics.new()
       {new_state, response} = SixelGraphics.process_sequence(state, "\e[2c")
-      
+
       assert new_state.current_color == 2
       assert response == ""
     end
 
     test "handles dimension setting" do
       state = SixelGraphics.new()
-      {new_state, response} = SixelGraphics.process_sequence(state, "\e[100;50d")
-      
+
+      {new_state, response} =
+        SixelGraphics.process_sequence(state, "\e[100;50d")
+
       assert new_state == state
       assert response == ""
     end
@@ -109,7 +131,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "handles scale setting" do
       state = SixelGraphics.new()
       {new_state, response} = SixelGraphics.process_sequence(state, "\e[2s")
-      
+
       assert new_state == state
       assert response == ""
     end
@@ -117,15 +139,17 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "handles transparency setting" do
       state = SixelGraphics.new()
       {new_state, response} = SixelGraphics.process_sequence(state, "\e[128t")
-      
+
       assert new_state == state
       assert response == ""
     end
 
     test "handles invalid sequence" do
       state = SixelGraphics.new()
-      {new_state, response} = SixelGraphics.process_sequence(state, "\e[invalid")
-      
+
+      {new_state, response} =
+        SixelGraphics.process_sequence(state, "\e[invalid")
+
       assert new_state == state
       assert response == ""
     end
@@ -137,7 +161,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     end
 
     test "parses position setting sequence" do
-      assert {:ok, :set_position, [10, 5]} = SixelGraphics.parse_sequence("10;5p")
+      assert {:ok, :set_position, [10, 5]} =
+               SixelGraphics.parse_sequence("10;5p")
     end
 
     test "parses repeat count sequence" do
@@ -157,7 +182,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     end
 
     test "parses dimension setting sequence" do
-      assert {:ok, :set_dimension, [100, 50]} = SixelGraphics.parse_sequence("100;50d")
+      assert {:ok, :set_dimension, [100, 50]} =
+               SixelGraphics.parse_sequence("100;50d")
     end
 
     test "parses scale setting sequence" do
@@ -165,7 +191,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     end
 
     test "parses transparency setting sequence" do
-      assert {:ok, :set_transparency, [128]} = SixelGraphics.parse_sequence("128t")
+      assert {:ok, :set_transparency, [128]} =
+               SixelGraphics.parse_sequence("128t")
     end
 
     test "parses invalid sequence" do
@@ -177,7 +204,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "updates width attribute" do
       attrs = %{width: :normal, height: :normal, size: :normal}
       new_attrs = SixelGraphics.update_attributes(attrs, 1)
-      
+
       assert new_attrs.width == :double_width
       assert new_attrs.height == :normal
       assert new_attrs.size == :normal
@@ -186,7 +213,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "updates height attribute" do
       attrs = %{width: :normal, height: :normal, size: :normal}
       new_attrs = SixelGraphics.update_attributes(attrs, 2)
-      
+
       assert new_attrs.width == :normal
       assert new_attrs.height == :double_height
       assert new_attrs.size == :normal
@@ -195,7 +222,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "updates size attribute" do
       attrs = %{width: :normal, height: :normal, size: :normal}
       new_attrs = SixelGraphics.update_attributes(attrs, 3)
-      
+
       assert new_attrs.width == :double_width
       assert new_attrs.height == :double_height
       assert new_attrs.size == :double_size
@@ -204,8 +231,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     test "handles invalid attribute code" do
       attrs = %{width: :normal, height: :normal, size: :normal}
       new_attrs = SixelGraphics.update_attributes(attrs, 4)
-      
+
       assert new_attrs == attrs
     end
   end
-end 
+end

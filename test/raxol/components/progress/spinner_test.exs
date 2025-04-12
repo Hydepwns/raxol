@@ -51,28 +51,32 @@ defmodule Raxol.Components.Progress.SpinnerTest do
 
   describe "update/2" do
     setup do
-      state = Spinner.init(%{
-        style: :line,
-        colors: [:red, :blue],
-        speed: 100
-      })
+      state =
+        Spinner.init(%{
+          style: :line,
+          colors: [:red, :blue],
+          speed: 100
+        })
+
       {:ok, state: state}
     end
 
     test "advances frame on tick after speed interval", %{state: state} do
       # Set last_update to simulate elapsed time
       state = %{state | last_update: System.monotonic_time(:millisecond) - 200}
-      
+
       new_state = Spinner.update(:tick, state)
       assert new_state.frame_index == 1
       assert new_state.color_index == 1
       assert new_state.last_update > state.last_update
     end
 
-    test "doesn't advance frame if speed interval hasn't elapsed", %{state: state} do
+    test "doesn't advance frame if speed interval hasn't elapsed", %{
+      state: state
+    } do
       # Set last_update to recent time
       state = %{state | last_update: System.monotonic_time(:millisecond)}
-      
+
       new_state = Spinner.update(:tick, state)
       assert new_state.frame_index == 0
       assert new_state.color_index == 0
@@ -80,10 +84,7 @@ defmodule Raxol.Components.Progress.SpinnerTest do
     end
 
     test "resets frame and color indices", %{state: state} do
-      state = %{state |
-        frame_index: 2,
-        color_index: 1
-      }
+      state = %{state | frame_index: 2, color_index: 1}
 
       new_state = Spinner.update(:reset, state)
       assert new_state.frame_index == 0
@@ -123,9 +124,10 @@ defmodule Raxol.Components.Progress.SpinnerTest do
 
   describe "handle_event/2" do
     test "handles frame events" do
-      state = Spinner.init(%{speed: 0}) # Set speed to 0 to ensure tick happens
+      # Set speed to 0 to ensure tick happens
+      state = Spinner.init(%{speed: 0})
       event = %Event{type: :frame}
-      
+
       {new_state, _} = Spinner.handle_event(event, state)
       assert new_state.frame_index == 1
     end
@@ -133,7 +135,7 @@ defmodule Raxol.Components.Progress.SpinnerTest do
     test "ignores other events" do
       state = Spinner.init(%{})
       event = %Event{type: :key, key: "x"}
-      
+
       {new_state, _} = Spinner.handle_event(event, state)
       assert new_state == state
     end
@@ -171,4 +173,4 @@ defmodule Raxol.Components.Progress.SpinnerTest do
       assert state.speed == 1000
     end
   end
-end 
+end

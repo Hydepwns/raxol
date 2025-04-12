@@ -16,7 +16,8 @@ defmodule Raxol.Metrics do
   alias Raxol.Repo
   require Logger
 
-  @collection_interval 5_000  # 5 seconds
+  # 5 seconds
+  @collection_interval 5_000
 
   def start_link(_) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
@@ -75,8 +76,11 @@ defmodule Raxol.Metrics do
 
   def get_cpu_usage do
     pid_string = :erlang.pid_to_list(System.pid())
+
     case :os.cmd(~c"ps -p #{pid_string} -o %cpu=") do
-      [] -> 0.0
+      [] ->
+        0.0
+
       output ->
         output
         |> List.to_string()
@@ -87,8 +91,11 @@ defmodule Raxol.Metrics do
 
   def get_memory_usage do
     pid_string = :erlang.pid_to_list(System.pid())
+
     case :os.cmd(~c"ps -p #{pid_string} -o %mem=") do
-      [] -> 0.0
+      [] ->
+        0.0
+
       output ->
         output
         |> List.to_string()
@@ -130,7 +137,9 @@ defmodule Raxol.Metrics do
   defp calculate_error_rate(endpoint, rates) do
     # Calculate error rate based on endpoint and current rates
     case Map.get(rates, endpoint) do
-      nil -> 0.0
+      nil ->
+        0.0
+
       current_rate ->
         # Simulate some error rate fluctuation
         max(0.0, min(1.0, current_rate + :rand.uniform() * 0.1 - 0.05))

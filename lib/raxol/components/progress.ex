@@ -30,7 +30,16 @@ defmodule Raxol.Components.Progress do
   alias Raxol.View
 
   @spinner_frames [
-    "⠋", "⠙", "⠹", "⠸", "⠼", "⠴", "⠦", "⠧", "⠇", "⠏"
+    "⠋",
+    "⠙",
+    "⠹",
+    "⠸",
+    "⠼",
+    "⠴",
+    "⠦",
+    "⠧",
+    "⠇",
+    "⠏"
   ]
 
   @doc """
@@ -116,11 +125,11 @@ defmodule Raxol.Components.Progress do
     # Create the progress bar
     View.row([id: id, style: style], fn ->
       if filled_width > 0 do
-        View.text(filled_portion, [style: filled_style])
+        View.text(filled_portion, style: filled_style)
       end
 
       if empty_width > 0 do
-        View.text(empty_portion, [style: empty_style])
+        View.text(empty_portion, style: empty_style)
       end
     end)
   end
@@ -166,11 +175,12 @@ defmodule Raxol.Components.Progress do
     position = Keyword.get(opts, :position, :above)
 
     # Generate percentage text
-    percentage_text = if show_percentage do
-      "#{round(value * 100)}%"
-    else
-      nil
-    end
+    percentage_text =
+      if show_percentage do
+        "#{round(value * 100)}%"
+      else
+        nil
+      end
 
     # Container ID
     id = Keyword.get(opts, :id, "progress_bar_with_label")
@@ -180,26 +190,46 @@ defmodule Raxol.Components.Progress do
       :above ->
         View.column([id: id], fn ->
           View.row([style: %{justify: :space_between}], fn ->
-            View.text(label, [style: label_style])
-            if percentage_text, do: View.text(percentage_text, [style: percentage_style])
+            View.text(label, style: label_style)
+
+            if percentage_text,
+              do: View.text(percentage_text, style: percentage_style)
           end)
+
           bar(value, opts)
         end)
 
       :below ->
         View.column([id: id], fn ->
           bar(value, opts)
+
           View.row([style: %{justify: :space_between}], fn ->
-            View.text(label, [style: label_style])
-            if percentage_text, do: View.text(percentage_text, [style: percentage_style])
+            View.text(label, style: label_style)
+
+            if percentage_text,
+              do: View.text(percentage_text, style: percentage_style)
           end)
         end)
 
       :right ->
         View.row([id: id], fn ->
-          bar(value, Keyword.put(opts, :width, Keyword.get(opts, :width, 20) - String.length(label) - if(percentage_text, do: String.length(percentage_text) + 1, else: 0)))
-          View.text(" #{label}", [style: label_style])
-          if percentage_text, do: View.text(" #{percentage_text}", [style: percentage_style])
+          bar(
+            value,
+            Keyword.put(
+              opts,
+              :width,
+              Keyword.get(opts, :width, 20) - String.length(label) -
+                if(percentage_text,
+                  do: String.length(percentage_text) + 1,
+                  else: 0
+                )
+            )
+          )
+
+          View.text(" #{label}", style: label_style)
+
+          if percentage_text,
+            do: View.text(" #{percentage_text}", style: percentage_style)
         end)
 
       _ ->
@@ -263,10 +293,10 @@ defmodule Raxol.Components.Progress do
 
     # Create the spinner with optional message
     View.row([id: id, style: style], fn ->
-      View.text(current_frame, [style: spinner_style])
+      View.text(current_frame, style: spinner_style)
 
       if message do
-        View.text(" #{message}", [style: message_style])
+        View.text(" #{message}", style: message_style)
       end
     end)
   end
@@ -318,15 +348,19 @@ defmodule Raxol.Components.Progress do
     # Calculate position of the animated segment
     # First move right for width steps, then move left back
     total_frames = width * 2 - segment_size * 2
-    current_position = frame
+
+    current_position =
+      frame
       |> rem(total_frames)
       |> (fn pos ->
-           if pos < width - segment_size do
-             pos  # Moving right
-           else
-             total_frames - pos  # Moving left
-           end
-         end).()
+            if pos < width - segment_size do
+              # Moving right
+              pos
+            else
+              # Moving left
+              total_frames - pos
+            end
+          end).()
 
     # Left part (before the bar)
     left_width = current_position
@@ -338,13 +372,13 @@ defmodule Raxol.Components.Progress do
     # Create the indeterminate progress bar
     View.row([id: id, style: style], fn ->
       if left_width > 0 do
-        View.text(String.duplicate(" ", left_width), [style: background_style])
+        View.text(String.duplicate(" ", left_width), style: background_style)
       end
 
-      View.text(String.duplicate(" ", bar_width), [style: bar_style])
+      View.text(String.duplicate(" ", bar_width), style: bar_style)
 
       if right_width > 0 do
-        View.text(String.duplicate(" ", right_width), [style: background_style])
+        View.text(String.duplicate(" ", right_width), style: background_style)
       end
     end)
   end
@@ -395,17 +429,19 @@ defmodule Raxol.Components.Progress do
     progress_char = Enum.at(chars, char_index)
 
     # Generate percentage text
-    percentage_text = if show_percentage do
-      "#{round(value * 100)}%"
-    else
-      ""
-    end
+    percentage_text =
+      if show_percentage do
+        "#{round(value * 100)}%"
+      else
+        ""
+      end
 
     # Create the circular progress indicator
     View.row([id: id], fn ->
-      View.text(progress_char, [style: style])
+      View.text(progress_char, style: style)
+
       if show_percentage do
-        View.text(percentage_text, [style: percentage_style])
+        View.text(percentage_text, style: percentage_style)
       end
     end)
   end

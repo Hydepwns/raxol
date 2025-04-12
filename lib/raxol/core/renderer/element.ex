@@ -10,13 +10,13 @@ defmodule Raxol.Core.Renderer.Element do
   """
 
   @type t :: %__MODULE__{
-    tag: atom(),
-    attributes: [{atom(), term()}],
-    children: [t()],
-    ref: reference() | nil,
-    content: term(),
-    style: map()
-  }
+          tag: atom(),
+          attributes: [{atom(), term()}],
+          children: [t()],
+          ref: reference() | nil,
+          content: term(),
+          style: map()
+        }
 
   defstruct tag: nil,
             attributes: [],
@@ -69,4 +69,4 @@ defmodule Raxol.Core.Renderer.Element do
   defp validate_tag(_tag), do: :ok
   defp validate_attributes(_attrs), do: :ok
   defp validate_children(_children), do: :ok
-end 
+end

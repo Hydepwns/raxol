@@ -143,7 +143,10 @@ defmodule Raxol.Core.UXRefinement do
     Process.put(:ux_refinement_metadata, %{})
 
     # Register focus change handler
-    _ = FocusManager.register_focus_change_handler(&handle_accessibility_focus_change/2)
+    _ =
+      FocusManager.register_focus_change_handler(
+        &handle_accessibility_focus_change/2
+      )
 
     # Register the feature as enabled
     _ = register_enabled_feature(:accessibility)
@@ -243,7 +246,9 @@ defmodule Raxol.Core.UXRefinement do
     Process.put(:ux_refinement_metadata, %{})
 
     # Unregister focus change handler
-    FocusManager.unregister_focus_change_handler(&handle_accessibility_focus_change/2)
+    FocusManager.unregister_focus_change_handler(
+      &handle_accessibility_focus_change/2
+    )
 
     # Unregister the feature
     unregister_enabled_feature(:accessibility)
@@ -265,8 +270,10 @@ defmodule Raxol.Core.UXRefinement do
     # Check if other features depend on events
     features = Process.get(:ux_refinement_features)
 
-    if MapSet.member?(features, :accessibility) || MapSet.member?(features, :keyboard_shortcuts) do
-      {:error, "Cannot disable events while accessibility or keyboard shortcuts are enabled"}
+    if MapSet.member?(features, :accessibility) ||
+         MapSet.member?(features, :keyboard_shortcuts) do
+      {:error,
+       "Cannot disable events while accessibility or keyboard shortcuts are enabled"}
     else
       # Clean up events manager
       EventManager.cleanup()
@@ -413,7 +420,8 @@ defmodule Raxol.Core.UXRefinement do
       iex> UXRefinement.get_component_hint("search_button", :detailed)
       "Search for content in the application using keywords"
   """
-  def get_component_hint(component_id, level) when level in [:basic, :detailed, :examples] do
+  def get_component_hint(component_id, level)
+      when level in [:basic, :detailed, :examples] do
     # Ensure hints feature is enabled
     ensure_feature_enabled(:hints)
 
@@ -490,52 +498,44 @@ defmodule Raxol.Core.UXRefinement do
   # Private helper functions (Placeholders added to fix compilation)
 
   defp register_enabled_feature(feature) do
-    Logger.debug("[UXRefinement] Registering feature: #{inspect(feature)}")
     features = Process.get(:ux_refinement_features, MapSet.new())
     Process.put(:ux_refinement_features, MapSet.put(features, feature))
     :ok
   end
 
   defp unregister_enabled_feature(feature) do
-    Logger.debug("[UXRefinement] Unregistering feature: #{inspect(feature)}")
     features = Process.get(:ux_refinement_features, MapSet.new())
     Process.put(:ux_refinement_features, MapSet.delete(features, feature))
     :ok
   end
 
-  defp ensure_feature_enabled(feature) do
-    Logger.debug("[UXRefinement] Ensuring feature enabled: #{inspect(feature)}")
+  defp ensure_feature_enabled(_feature) do
     # Placeholder: Assume feature is enabled or enable it if needed (actual logic missing)
     # enable_feature(feature) # Avoid recursion for now
     :ok
   end
 
-  defp handle_accessibility_focus_change(previous_focus, current_focus) do
-    Logger.debug("[UXRefinement] Handling accessibility focus change: #{inspect(previous_focus)} -> #{inspect(current_focus)}")
+  defp handle_accessibility_focus_change(_previous_focus, _current_focus) do
     # Placeholder: Delegate to Accessibility module if it exists
     # Accessibility.handle_focus_change(previous_focus, current_focus)
     :ok
   end
 
   defp normalize_hint_info(hint_info) when is_map(hint_info) do
-    Logger.debug("[UXRefinement] Normalizing hint map: #{inspect(hint_info)}")
-    # Placeholder: Basic normalization (actual logic missing)
-    Map.merge(%{basic: nil, detailed: nil, examples: nil, shortcuts: []}, hint_info)
+    Map.merge(
+      %{basic: nil, detailed: nil, examples: nil, shortcuts: []},
+      hint_info
+    )
   end
 
   defp normalize_hint_info(hint) when is_binary(hint) do
-    Logger.debug("[UXRefinement] Normalizing hint string: #{inspect(hint)}")
-    # Placeholder: Convert string to map
     %{basic: hint, detailed: nil, examples: nil, shortcuts: []}
   end
 
-  defp maybe_register_shortcuts(component_id, hint_info) do
-    Logger.debug("[UXRefinement] Maybe registering shortcuts for #{inspect(component_id)}: #{inspect(hint_info)}")
+  defp maybe_register_shortcuts(_component_id, _hint_info) do
     # Placeholder: Register shortcuts if feature enabled (actual logic missing)
     # if feature_enabled?(:keyboard_shortcuts) && hint_info.shortcuts != [] do
     #   ...
-    # end
     :ok
   end
-
 end

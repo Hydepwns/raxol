@@ -35,15 +35,22 @@ defmodule Raxol.Cloud.Monitoring do
       %__MODULE__{
         active: false,
         config: %{
-          metrics_interval: 10000, # 10 seconds
-          health_check_interval: 60000, # 1 minute
-          error_sample_rate: 1.0, # 100%
+          # 10 seconds
+          metrics_interval: 10000,
+          # 1 minute
+          health_check_interval: 60000,
+          # 100%
+          error_sample_rate: 1.0,
           metrics_batch_size: 100,
-          backends: [], # monitoring service backends
+          # monitoring service backends
+          backends: [],
           alert_thresholds: %{
-            error_rate: 0.05, # 5% error rate
-            response_time: 1000, # 1 second
-            memory_usage: 0.9 # 90% usage
+            # 5% error rate
+            error_rate: 0.05,
+            # 1 second
+            response_time: 1000,
+            # 90% usage
+            memory_usage: 0.9
           }
         },
         current_session: nil,
@@ -80,14 +87,15 @@ defmodule Raxol.Cloud.Monitoring do
     state = State.new()
 
     # Override defaults with provided options
-    config = Keyword.take(opts, [
-      :metrics_interval,
-      :health_check_interval,
-      :error_sample_rate,
-      :metrics_batch_size,
-      :backends,
-      :alert_thresholds
-    ])
+    config =
+      Keyword.take(opts, [
+        :metrics_interval,
+        :health_check_interval,
+        :error_sample_rate,
+        :metrics_batch_size,
+        :backends,
+        :alert_thresholds
+      ])
 
     # Update state with provided config
     state = update_config(state, config)
@@ -229,7 +237,10 @@ defmodule Raxol.Cloud.Monitoring do
     if state.active do
       # Sample errors based on configuration
       if :rand.uniform() <= state.config.error_sample_rate do
-        Errors.record(error, Keyword.put_new(opts, :session_id, state.current_session))
+        Errors.record(
+          error,
+          Keyword.put_new(opts, :session_id, state.current_session)
+        )
       end
     end
 
@@ -391,7 +402,14 @@ defmodule Raxol.Cloud.Monitoring do
     state = get_state()
 
     limit = Keyword.get(opts, :limit, 100)
-    since = Keyword.get(opts, :since, DateTime.add(DateTime.utc_now(), -24 * 60 * 60, :second))
+
+    since =
+      Keyword.get(
+        opts,
+        :since,
+        DateTime.add(DateTime.utc_now(), -24 * 60 * 60, :second)
+      )
+
     until = Keyword.get(opts, :until, DateTime.utc_now())
     type = Keyword.get(opts, :type)
     severity = Keyword.get(opts, :severity)
@@ -399,9 +417,9 @@ defmodule Raxol.Cloud.Monitoring do
     state.alert_history
     |> Enum.filter(fn alert ->
       DateTime.compare(alert.timestamp, since) in [:gt, :eq] &&
-      DateTime.compare(alert.timestamp, until) in [:lt, :eq] &&
-      (type == nil || alert.type == type) &&
-      (severity == nil || alert.severity == severity)
+        DateTime.compare(alert.timestamp, until) in [:lt, :eq] &&
+        (type == nil || alert.type == type) &&
+        (severity == nil || alert.severity == severity)
     end)
     |> Enum.take(limit)
   end
@@ -409,11 +427,12 @@ defmodule Raxol.Cloud.Monitoring do
   # Private functions
 
   defp with_state(arg1, arg2 \\ nil) do
-    {state, fun} = if is_function(arg1) do
-      {get_state(), arg1}
-    else
-      {arg1 || get_state(), arg2}
-    end
+    {state, fun} =
+      if is_function(arg1) do
+        {get_state(), arg1}
+      else
+        {arg1 || get_state(), arg2}
+      end
 
     result = fun.(state)
 
@@ -444,6 +463,7 @@ defmodule Raxol.Cloud.Monitoring do
       Process.sleep(interval)
 
       state = get_state()
+
       if state.active do
         # Collect system metrics
         collect_system_metrics()
@@ -459,6 +479,7 @@ defmodule Raxol.Cloud.Monitoring do
       Process.sleep(interval)
 
       state = get_state()
+
       if state.active do
         # Run health check
         _ = run_health_check()
@@ -479,7 +500,10 @@ defmodule Raxol.Cloud.Monitoring do
 
     record_metric("memory.total", total_memory, source: :system)
     record_metric("memory.processes", process_memory, source: :system)
-    record_metric("memory.usage_ratio", process_memory / total_memory, source: :system)
+
+    record_metric("memory.usage_ratio", process_memory / total_memory,
+      source: :system
+    )
 
     # Process metrics
     process_count = length(:erlang.processes())
@@ -503,10 +527,16 @@ defmodule Raxol.Cloud.Monitoring do
     end
 
     # GC metrics
-    record_metric("gc.count", :erlang.statistics(:garbage_collection) |> elem(0), source: :system)
+    record_metric(
+      "gc.count",
+      :erlang.statistics(:garbage_collection) |> elem(0),
+      source: :system
+    )
 
     # Reductions (work done)
-    record_metric("reductions", :erlang.statistics(:reductions) |> elem(0), source: :system)
+    record_metric("reductions", :erlang.statistics(:reductions) |> elem(0),
+      source: :system
+    )
   end
 
   defp check_alert_threshold(name, value, _opts) do
@@ -516,22 +546,34 @@ defmodule Raxol.Cloud.Monitoring do
     # Check specific metric thresholds
     case name do
       "memory.usage_ratio" when value > thresholds.memory_usage ->
-        trigger_alert(:high_memory_usage, %{
-          value: value,
-          threshold: thresholds.memory_usage
-        }, severity: determine_severity(value, thresholds.memory_usage))
+        trigger_alert(
+          :high_memory_usage,
+          %{
+            value: value,
+            threshold: thresholds.memory_usage
+          },
+          severity: determine_severity(value, thresholds.memory_usage)
+        )
 
       "response_time" when value > thresholds.response_time ->
-        trigger_alert(:high_response_time, %{
-          value: value,
-          threshold: thresholds.response_time
-        }, severity: determine_severity(value, thresholds.response_time))
+        trigger_alert(
+          :high_response_time,
+          %{
+            value: value,
+            threshold: thresholds.response_time
+          },
+          severity: determine_severity(value, thresholds.response_time)
+        )
 
       "error_rate" when value > thresholds.error_rate ->
-        trigger_alert(:high_error_rate, %{
-          value: value,
-          threshold: thresholds.error_rate
-        }, severity: determine_severity(value, thresholds.error_rate))
+        trigger_alert(
+          :high_error_rate,
+          %{
+            value: value,
+            threshold: thresholds.error_rate
+          },
+          severity: determine_severity(value, thresholds.error_rate)
+        )
 
       _ ->
         # No threshold hit
@@ -549,11 +591,11 @@ defmodule Raxol.Cloud.Monitoring do
   end
 
   defp generate_session_id() do
-    "session_#{:erlang.system_time(:microsecond)}_#{:rand.uniform(1000000)}"
+    "session_#{:erlang.system_time(:microsecond)}_#{:rand.uniform(1_000_000)}"
   end
 
   defp generate_alert_id() do
-    "alert_#{:erlang.system_time(:microsecond)}_#{:rand.uniform(1000000)}"
+    "alert_#{:erlang.system_time(:microsecond)}_#{:rand.uniform(1_000_000)}"
   end
 end
 
@@ -589,12 +631,13 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
     }
 
     # Add to metrics history
-    updated_metrics = Map.update(
-      metrics_state.metrics,
-      name,
-      [metric],
-      fn metrics -> [metric | metrics] |> Enum.take(1000) end
-    )
+    updated_metrics =
+      Map.update(
+        metrics_state.metrics,
+        name,
+        [metric],
+        fn metrics -> [metric | metrics] |> Enum.take(1000) end
+      )
 
     # Add to batch for sending
     updated_batch = [metric | metrics_state.batch]
@@ -611,10 +654,10 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
 
     # Update metrics state
     Process.put(@metrics_key, %{
-      metrics_state |
-      metrics: updated_metrics,
-      batch: updated_batch,
-      last_flush: updated_last_flush
+      metrics_state
+      | metrics: updated_metrics,
+        batch: updated_batch,
+        last_flush: updated_last_flush
     })
 
     :ok
@@ -624,18 +667,27 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
     metrics_state = get_metrics_state()
 
     limit = Keyword.get(opts, :limit, 100)
-    since = Keyword.get(opts, :since, DateTime.add(DateTime.utc_now(), -60 * 60, :second))
+
+    since =
+      Keyword.get(
+        opts,
+        :since,
+        DateTime.add(DateTime.utc_now(), -60 * 60, :second)
+      )
+
     until = Keyword.get(opts, :until, DateTime.utc_now())
     tags = Keyword.get(opts, :tags)
 
     case Map.get(metrics_state.metrics, name) do
-      nil -> []
+      nil ->
+        []
+
       metrics ->
         metrics
         |> Enum.filter(fn metric ->
           DateTime.compare(metric.timestamp, since) in [:gt, :eq] &&
-          DateTime.compare(metric.timestamp, until) in [:lt, :eq] &&
-          (tags == nil || Enum.all?(tags, &(&1 in metric.tags)))
+            DateTime.compare(metric.timestamp, until) in [:lt, :eq] &&
+            (tags == nil || Enum.all?(tags, &(&1 in metric.tags)))
         end)
         |> Enum.take(limit)
     end
@@ -653,7 +705,8 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
   # Private helpers
 
   defp get_metrics_state() do
-    Process.get(@metrics_key) || %{metrics: %{}, config: %{}, batch: [], last_flush: DateTime.utc_now()}
+    Process.get(@metrics_key) ||
+      %{metrics: %{}, config: %{}, batch: [], last_flush: DateTime.utc_now()}
   end
 
   defp flush_metrics(batch, config) do
@@ -733,7 +786,14 @@ defmodule Raxol.Cloud.Monitoring.Errors do
     errors_state = get_errors_state()
 
     limit = Keyword.get(opts, :limit, 100)
-    since = Keyword.get(opts, :since, DateTime.add(DateTime.utc_now(), -24 * 60 * 60, :second))
+
+    since =
+      Keyword.get(
+        opts,
+        :since,
+        DateTime.add(DateTime.utc_now(), -24 * 60 * 60, :second)
+      )
+
     until = Keyword.get(opts, :until, DateTime.utc_now())
     severity = Keyword.get(opts, :severity)
     tags = Keyword.get(opts, :tags)
@@ -741,9 +801,9 @@ defmodule Raxol.Cloud.Monitoring.Errors do
     errors_state.errors
     |> Enum.filter(fn error ->
       DateTime.compare(error.timestamp, since) in [:gt, :eq] &&
-      DateTime.compare(error.timestamp, until) in [:lt, :eq] &&
-      (severity == nil || error.severity == severity) &&
-      (tags == nil || Enum.all?(tags, &(&1 in error.tags)))
+        DateTime.compare(error.timestamp, until) in [:lt, :eq] &&
+        (severity == nil || error.severity == severity) &&
+        (tags == nil || Enum.all?(tags, &(&1 in error.tags)))
     end)
     |> Enum.take(limit)
   end
@@ -768,7 +828,11 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   end
 
   defp get_stacktrace(opts) do
-    Keyword.get(opts, :stacktrace, Process.info(self(), :current_stacktrace) |> elem(1))
+    Keyword.get(
+      opts,
+      :stacktrace,
+      Process.info(self(), :current_stacktrace) |> elem(1)
+    )
   end
 
   defp send_error_to_backends(error, config) do
@@ -822,28 +886,32 @@ defmodule Raxol.Cloud.Monitoring.Health do
   def check(opts \\ []) do
     health_state = get_health_state()
 
-    components_to_check = Keyword.get(opts, :components, [:system, :application, :connections])
+    components_to_check =
+      Keyword.get(opts, :components, [:system, :application, :connections])
+
     timeout = Keyword.get(opts, :timeout, 5000)
 
-    component_results = components_to_check
-    |> Enum.map(fn component ->
-      {component, check_component(component, timeout)}
-    end)
-    |> Enum.into(%{})
+    component_results =
+      components_to_check
+      |> Enum.map(fn component ->
+        {component, check_component(component, timeout)}
+      end)
+      |> Enum.into(%{})
 
     # Determine overall status
-    status = if Enum.any?(component_results, fn {_, status} -> status == :unhealthy end) do
-      :unhealthy
-    else
-      :healthy
-    end
+    status =
+      if Enum.any?(component_results, fn {_, status} -> status == :unhealthy end) do
+        :unhealthy
+      else
+        :healthy
+      end
 
     # Update health state
     updated_health_state = %{
-      health_state |
-      status: status,
-      last_check: DateTime.utc_now(),
-      components: Map.merge(health_state.components, component_results)
+      health_state
+      | status: status,
+        last_check: DateTime.utc_now(),
+        components: Map.merge(health_state.components, component_results)
     }
 
     Process.put(@health_key, updated_health_state)
@@ -864,7 +932,8 @@ defmodule Raxol.Cloud.Monitoring.Health do
   # Private helpers
 
   defp get_health_state() do
-    Process.get(@health_key) || %{status: :unknown, last_check: nil, components: %{}, config: %{}}
+    Process.get(@health_key) ||
+      %{status: :unknown, last_check: nil, components: %{}, config: %{}}
   end
 
   defp check_component(:system, _timeout) do

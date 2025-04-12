@@ -24,8 +24,16 @@ defmodule Raxol.Web.Session.Session do
   """
   def changeset(session, attrs) do
     session
-    |> cast(attrs, [:id, :user_id, :status, :created_at, :last_active, :ended_at, :metadata])
+    |> cast(attrs, [
+      :id,
+      :user_id,
+      :status,
+      :created_at,
+      :last_active,
+      :ended_at,
+      :metadata
+    ])
     |> validate_required([:id, :user_id, :status, :created_at, :last_active])
     |> validate_inclusion(:status, [:active, :ended, :expired])
   end
-end 
+end

@@ -20,33 +20,34 @@ defmodule Raxol.Terminal.ANSI.Processor do
 
   # ANSI sequence structure
   @type sequence :: %{
-    type: sequence_type(),
-    command: String.t(),
-    params: list(String.t()),
-    intermediate: String.t(),
-    final: String.t(),
-    text: String.t()
-  }
+          type: sequence_type(),
+          command: String.t(),
+          params: list(String.t()),
+          intermediate: String.t(),
+          final: String.t(),
+          text: String.t()
+        }
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts)
   end
 
   def init(_opts) do
-    {:ok, %{
-      buffer_manager: nil,
-      current_sequence: nil,
-      sequence_buffer: "",
-      terminal_state: %{
-        cursor_position: {0, 0},
-        attributes: %{},
-        modes: %{
-          bracketed_paste: false,
-          focus_reporting: false,
-          cursor_visible: true
-        }
-      }
-    }}
+    {:ok,
+     %{
+       buffer_manager: nil,
+       current_sequence: nil,
+       sequence_buffer: "",
+       terminal_state: %{
+         cursor_position: {0, 0},
+         attributes: %{},
+         modes: %{
+           bracketed_paste: false,
+           focus_reporting: false,
+           cursor_visible: true
+         }
+       }
+     }}
   end
 
   @doc """
@@ -97,6 +98,7 @@ defmodule Raxol.Terminal.ANSI.Processor do
 
   def handle_call({:process_sequence, sequence}, _from, state) do
     parsed_sequence = parse_sequence(sequence)
+
     case handle_sequence(parsed_sequence, state) do
       {:ok, new_state} -> {:reply, {:ok, new_state}, new_state}
       new_state -> {:reply, {:ok, new_state}, new_state}
@@ -127,7 +129,9 @@ defmodule Raxol.Terminal.ANSI.Processor do
               final: final,
               text: ""
             }
-          _ -> %{type: :text, text: sequence}
+
+          _ ->
+            %{type: :text, text: sequence}
         end
 
       # OSC sequence: \e]<params><text><bell>
@@ -142,7 +146,9 @@ defmodule Raxol.Terminal.ANSI.Processor do
               final: "",
               text: text
             }
-          _ -> %{type: :text, text: sequence}
+
+          _ ->
+            %{type: :text, text: sequence}
         end
 
       # ESC sequence: \e<command>
@@ -157,7 +163,9 @@ defmodule Raxol.Terminal.ANSI.Processor do
               final: "",
               text: ""
             }
-          _ -> %{type: :text, text: sequence}
+
+          _ ->
+            %{type: :text, text: sequence}
         end
 
       # Plain text
@@ -278,13 +286,25 @@ defmodule Raxol.Terminal.ANSI.Processor do
     mode = parse_param(sequence.params, 0)
 
     # Update the buffer based on the erase mode
-    new_buffer_manager = case mode do
-      0 -> BufferManager.erase_from_cursor_to_end(state.buffer_manager)
-      1 -> BufferManager.erase_from_beginning_to_cursor(state.buffer_manager)
-      2 -> BufferManager.clear_visible_display(state.buffer_manager)
-      3 -> BufferManager.clear_entire_display_with_scrollback(state.buffer_manager)
-      _ -> state.buffer_manager
-    end
+    new_buffer_manager =
+      case mode do
+        0 ->
+          BufferManager.erase_from_cursor_to_end(state.buffer_manager)
+
+        1 ->
+          BufferManager.erase_from_beginning_to_cursor(state.buffer_manager)
+
+        2 ->
+          BufferManager.clear_visible_display(state.buffer_manager)
+
+        3 ->
+          BufferManager.clear_entire_display_with_scrollback(
+            state.buffer_manager
+          )
+
+        _ ->
+          state.buffer_manager
+      end
 
     new_state = %{state | buffer_manager: new_buffer_manager}
     {:ok, new_state}
@@ -295,12 +315,22 @@ defmodule Raxol.Terminal.ANSI.Processor do
     mode = parse_param(sequence.params, 0)
 
     # Update the buffer based on the erase mode
-    new_buffer_manager = case mode do
-      0 -> BufferManager.erase_from_cursor_to_end_of_line(state.buffer_manager)
-      1 -> BufferManager.erase_from_beginning_of_line_to_cursor(state.buffer_manager)
-      2 -> BufferManager.clear_current_line(state.buffer_manager)
-      _ -> state.buffer_manager
-    end
+    new_buffer_manager =
+      case mode do
+        0 ->
+          BufferManager.erase_from_cursor_to_end_of_line(state.buffer_manager)
+
+        1 ->
+          BufferManager.erase_from_beginning_of_line_to_cursor(
+            state.buffer_manager
+          )
+
+        2 ->
+          BufferManager.clear_current_line(state.buffer_manager)
+
+        _ ->
+          state.buffer_manager
+      end
 
     new_state = %{state | buffer_manager: new_buffer_manager}
     {:ok, new_state}
@@ -311,11 +341,14 @@ defmodule Raxol.Terminal.ANSI.Processor do
     codes = parse_params(sequence.params, [0])
 
     # Update the terminal state with new attributes
-    new_attributes = apply_text_attributes(codes, state.terminal_state.attributes)
+    new_attributes =
+      apply_text_attributes(codes, state.terminal_state.attributes)
 
-    new_state = %{state |
-      terminal_state: %{state.terminal_state | attributes: new_attributes}
+    new_state = %{
+      state
+      | terminal_state: %{state.terminal_state | attributes: new_attributes}
     }
+
     {:ok, new_state}
   end
 
@@ -324,11 +357,14 @@ defmodule Raxol.Terminal.ANSI.Processor do
     mode = parse_param(sequence.params, 1)
 
     # Update cursor visibility in terminal state
-    new_state = %{state |
-      terminal_state: %{state.terminal_state |
-        modes: %{state.terminal_state.modes | cursor_visible: mode == 1}
-      }
+    new_state = %{
+      state
+      | terminal_state: %{
+          state.terminal_state
+          | modes: %{state.terminal_state.modes | cursor_visible: mode == 1}
+        }
     }
+
     {:ok, new_state}
   end
 
@@ -337,11 +373,14 @@ defmodule Raxol.Terminal.ANSI.Processor do
     mode = parse_param(sequence.params, 1)
 
     # Update bracketed paste mode in terminal state
-    new_state = %{state |
-      terminal_state: %{state.terminal_state |
-        modes: %{state.terminal_state.modes | bracketed_paste: mode == 1}
-      }
+    new_state = %{
+      state
+      | terminal_state: %{
+          state.terminal_state
+          | modes: %{state.terminal_state.modes | bracketed_paste: mode == 1}
+        }
     }
+
     {:ok, new_state}
   end
 
@@ -350,11 +389,14 @@ defmodule Raxol.Terminal.ANSI.Processor do
     mode = parse_param(sequence.params, 1)
 
     # Update focus reporting mode in terminal state
-    new_state = %{state |
-      terminal_state: %{state.terminal_state |
-        modes: %{state.terminal_state.modes | focus_reporting: mode == 1}
-      }
+    new_state = %{
+      state
+      | terminal_state: %{
+          state.terminal_state
+          | modes: %{state.terminal_state.modes | focus_reporting: mode == 1}
+        }
     }
+
     {:ok, new_state}
   end
 
@@ -362,12 +404,14 @@ defmodule Raxol.Terminal.ANSI.Processor do
 
   defp update_cursor_position(state, {x, y}) do
     # Update the buffer manager's cursor position
-    new_buffer_manager = BufferManager.set_cursor_position(state.buffer_manager, x, y)
+    new_buffer_manager =
+      BufferManager.set_cursor_position(state.buffer_manager, x, y)
 
     # Update the terminal state
-    %{state |
-      buffer_manager: new_buffer_manager,
-      terminal_state: %{state.terminal_state | cursor_position: {x, y}}
+    %{
+      state
+      | buffer_manager: new_buffer_manager,
+        terminal_state: %{state.terminal_state | cursor_position: {x, y}}
     }
   end
 
@@ -378,7 +422,9 @@ defmodule Raxol.Terminal.ANSI.Processor do
           {value, _} -> value
           :error -> default
         end
-      _ -> default
+
+      _ ->
+        default
     end
   end
 
@@ -396,7 +442,8 @@ defmodule Raxol.Terminal.ANSI.Processor do
   defp apply_text_attributes(codes, current_attributes) do
     Enum.reduce(codes, current_attributes, fn code, attrs ->
       case code do
-        0 -> %{}  # Reset all attributes
+        # Reset all attributes
+        0 -> %{}
         1 -> Map.put(attrs, :bold, true)
         4 -> Map.put(attrs, :underline, true)
         7 -> Map.put(attrs, :inverse, true)
@@ -405,9 +452,11 @@ defmodule Raxol.Terminal.ANSI.Processor do
         # Basic Background Colors (40-47)
         c when c >= 40 and c <= 47 -> Map.put(attrs, :background, c - 40)
         # Bright Foreground Colors (90-97)
-        c when c >= 90 and c <= 97 -> Map.put(attrs, :foreground, c - 90 + 8) # Map 90-97 to 8-15
+        # Map 90-97 to 8-15
+        c when c >= 90 and c <= 97 -> Map.put(attrs, :foreground, c - 90 + 8)
         # Bright Background Colors (100-107)
-        c when c >= 100 and c <= 107 -> Map.put(attrs, :background, c - 100 + 8) # Map 100-107 to 8-15
+        # Map 100-107 to 8-15
+        c when c >= 100 and c <= 107 -> Map.put(attrs, :background, c - 100 + 8)
         # TODO: Handle 256-color and true-color codes (38, 48)
         _ -> attrs
       end

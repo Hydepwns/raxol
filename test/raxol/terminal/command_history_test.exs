@@ -152,4 +152,4 @@ defmodule Raxol.Terminal.CommandHistoryTest do
       assert CommandHistory.list(history) == []
     end
   end
-end 
+end

@@ -23,7 +23,9 @@ defmodule Raxol.Terminal.ANSI.ScreenModesTest do
     test "switches from normal to alternate mode" do
       state = ScreenModes.new()
       current_buffer = %{cells: %{{0, 0} => "test"}, cursor: {0, 0}}
-      {new_state, new_buffer} = ScreenModes.switch_mode(state, :alternate, current_buffer)
+
+      {new_state, new_buffer} =
+        ScreenModes.switch_mode(state, :alternate, current_buffer)
 
       assert new_state.current_mode == :alternate
       assert new_state.saved_normal_state == current_buffer
@@ -35,7 +37,9 @@ defmodule Raxol.Terminal.ANSI.ScreenModesTest do
       state = ScreenModes.new()
       state = %{state | current_mode: :alternate}
       current_buffer = %{cells: %{{0, 0} => "test"}, cursor: {0, 0}}
-      {new_state, new_buffer} = ScreenModes.switch_mode(state, :normal, current_buffer)
+
+      {new_state, new_buffer} =
+        ScreenModes.switch_mode(state, :normal, current_buffer)
 
       assert new_state.current_mode == :normal
       assert new_state.saved_alternate_state == current_buffer
@@ -46,7 +50,9 @@ defmodule Raxol.Terminal.ANSI.ScreenModesTest do
     test "returns same state and buffer when switching to current mode" do
       state = ScreenModes.new()
       current_buffer = %{cells: %{{0, 0} => "test"}, cursor: {0, 0}}
-      {new_state, new_buffer} = ScreenModes.switch_mode(state, :normal, current_buffer)
+
+      {new_state, new_buffer} =
+        ScreenModes.switch_mode(state, :normal, current_buffer)
 
       assert new_state == state
       assert new_buffer == current_buffer
@@ -57,7 +63,9 @@ defmodule Raxol.Terminal.ANSI.ScreenModesTest do
       normal_buffer = %{cells: %{{0, 0} => "normal"}, cursor: {0, 0}}
       {state, _} = ScreenModes.switch_mode(state, :alternate, normal_buffer)
       alternate_buffer = %{cells: %{{0, 0} => "alternate"}, cursor: {1, 1}}
-      {state, buffer} = ScreenModes.switch_mode(state, :normal, alternate_buffer)
+
+      {state, buffer} =
+        ScreenModes.switch_mode(state, :normal, alternate_buffer)
 
       assert state.current_mode == :normal
       assert buffer == normal_buffer
@@ -87,7 +95,13 @@ defmodule Raxol.Terminal.ANSI.ScreenModesTest do
   describe "reset_mode/2" do
     test "resets various screen modes" do
       state = ScreenModes.new()
-      state = %{state | insert_mode: true, origin_mode: true, application_cursor: true}
+
+      state = %{
+        state
+        | insert_mode: true,
+          origin_mode: true,
+          application_cursor: true
+      }
 
       state = ScreenModes.reset_mode(state, :insert_mode)
       assert state.insert_mode == false
@@ -130,4 +144,4 @@ defmodule Raxol.Terminal.ANSI.ScreenModesTest do
       assert ScreenModes.mode_enabled?(state, :unknown_mode) == false
     end
   end
-end 
+end

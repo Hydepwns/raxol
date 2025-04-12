@@ -15,7 +15,8 @@ defmodule Raxol.Web.Supervisor do
       # WebSocket Registry for managing WebSocket connections
       {Registry, keys: :unique, name: Raxol.Web.Registry},
       # Dynamic Supervisor for WebSocket processes
-      {DynamicSupervisor, name: Raxol.Web.DynamicSupervisor, strategy: :one_for_one},
+      {DynamicSupervisor,
+       name: Raxol.Web.DynamicSupervisor, strategy: :one_for_one},
       # Web Interface Manager for coordinating web sessions
       Raxol.Web.Manager,
       # Authentication Manager for handling user authentication
@@ -26,4 +27,4 @@ defmodule Raxol.Web.Supervisor do
 
     Supervisor.init(children, strategy: :one_for_one)
   end
-end 
+end

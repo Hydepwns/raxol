@@ -9,34 +9,24 @@ defmodule Raxol.Auth do
   - Session management
   """
 
-  alias Raxol.Session
+  alias Raxol.Accounts
+  # alias Raxol.Auth.Session # Removed - Session module undefined
+
+  require Logger # Add require Logger
 
   @doc """
-  Authenticates a user and creates a new session.
+  Validates a session token and returns the associated user ID.
+  WARNING: This is a placeholder and insecure. Needs proper implementation.
   """
-  def authenticate_user(username, password) do
-    # TODO: Implement actual user authentication
-    # For now, we'll use a simple mock authentication
-    case {username, password} do
-      {"admin", "admin"} ->
-        create_user_session("admin", :admin)
-      {"user", "user"} ->
-        create_user_session("user", :user)
-      _ ->
-        {:error, :invalid_credentials}
-    end
-  end
-
-  @doc """
-  Validates a session token and returns the associated user.
-  """
-  def validate_token(session_id, token) do
-    case Session.authenticate_session(session_id, token) do
-      {:ok, session} ->
-        {:ok, session.user_id}
-      error ->
-        error
-    end
+  def validate_token(_session_id, _token) do
+    # TODO: Implement proper session/token validation
+    # Placeholder: Assume token is valid and belongs to "user" for testing
+    # In a real app, look up session_id/token in a secure store.
+    # This mock implementation might need adjustment based on how UserAuth stores/retrieves tokens.
+    # It might be sufficient to just return {:ok, user_id} if Auth.get_user is called later.
+    # For now, let's assume a fixed user ID for testing UI flows.
+    # Mock: Always validates as user "user"'s session
+    {:ok, "user"}
   end
 
   @doc """
@@ -55,43 +45,50 @@ defmodule Raxol.Auth do
   @doc """
   Creates a new session for an authenticated user.
   """
-  def create_user_session(user_id, role) do
-    case Session.create_session(user_id) do
-      {:ok, session} ->
-        {:ok, %{
-          session_id: session.id,
-          token: session.token,
-          user_id: user_id,
-          role: role
-        }}
-      error ->
-        error
-    end
+  @spec create_user_session(integer(), map()) :: {:ok, Session.t()} | {:error, any()}
+  def create_user_session(user_id, _metadata \\ %{}) do
+    Logger.debug("Creating session for user ID: #{user_id}")
+    # case Session.create_session(user_id, metadata) do
+    #   {:ok, session} ->
+    #     Logger.debug("Session created successfully: #{session.session_id}")
+    #     {:ok, session}
+    #   {:error, reason} ->
+    #     Logger.error("Failed to create session: #{inspect(reason)}")
+    #     {:error, reason}
+    # end
+    :ok
   end
 
   @doc """
   Cleans up a user session.
   """
+  @spec cleanup_user_session(String.t()) :: :ok
   def cleanup_user_session(session_id) do
-    Session.cleanup_session(session_id)
+    Logger.debug("Cleaning up session: #{session_id}")
+    # Raxol.Auth.Session is undefined, comment out for now
+    # Session.cleanup_session(session_id)
+    :ok
   end
 
   @doc """
-  Retrieves user information by ID (Placeholder).
+  Retrieves user information by ID (Calls Accounts).
   """
   def get_user(user_id) do
-    # TODO: Implement actual user retrieval from database or source
-    # Placeholder: return a map with basic info and mock role
-    role = case user_id do
-      "admin" -> :admin
-      "user" -> :user
-      _ -> nil
-    end
-    if role do
-      %{id: user_id, role: role}
-    else
-      nil
-    end
+    # Delegate to Raxol.Accounts
+    Accounts.get_user(user_id)
+    # Old Placeholder:
+    # # TODO: Implement actual user retrieval from database or source
+    # # Placeholder: return a map with basic info and mock role
+    # role = case user_id do
+    #   "admin" -> :admin
+    #   "user" -> :user
+    #   _ -> nil
+    # end
+    # if role do
+    #   %{id: user_id, role: role}
+    # else
+    #   nil
+    # end
   end
 
   @doc """
@@ -102,4 +99,26 @@ defmodule Raxol.Auth do
     # Placeholder: Allow everything for now
     true
   end
+
+  @doc """
+  TODO: Review if needed, Accounts.get_user/1 exists
+  Retrieves a user by their session ID.
+  Returns the user or nil if not found or session is invalid.
+  """
+  def get_user_by_session(_session_id) do
+    # Raxol.Auth.Session is undefined, comment out for now
+    # case Session.get_session(session_id) do
+    Logger.warning("get_user_by_session called, but Raxol.Auth.Session is undefined.")
+    nil
+  end
+
+  # @doc """
+  # TODO: Review if needed
+  # Checks if a user has a specific permission.
+  # """
+  # def has_permission?(user_id, permission) do
+  #   user = Accounts.get_user(user_id)
+  #   # Assuming permissions are stored in user.permissions list
+  #   user && permission in user.permissions
+  # end
 end

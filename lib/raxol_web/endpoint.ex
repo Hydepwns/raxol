@@ -11,8 +11,9 @@ defmodule RaxolWeb.Endpoint do
     same_site: "Lax"
   ]
 
-  socket "/live", Phoenix.LiveView.Socket,
+  socket("/live", Phoenix.LiveView.Socket,
     websocket: [connect_info: [session: @session_options]]
+  )
 
   # Serve at "/" the static files from "priv/static" directory.
   plug Plug.Static,
@@ -27,6 +28,7 @@ defmodule RaxolWeb.Endpoint do
     socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
     plug Phoenix.LiveReloader
     plug Phoenix.CodeReloader
+
     # TODO: Commenting out CheckRepoStatus as DB is not configured/running reliably
     # if Mix.env() == :dev do
     #   plug Phoenix.Ecto.CheckRepoStatus, otp_app: :raxol

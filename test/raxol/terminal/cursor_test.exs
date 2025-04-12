@@ -301,7 +301,8 @@ defmodule Raxol.Terminal.CursorTest do
     test "process_cursor_movement processes an escape sequence for cursor movement" do
       cursor = Manager.new()
       {cursor, _} = EscapeSequence.process_cursor_movement(cursor, "10;5H")
-      assert cursor.position == {4, 9}  # 0-based indexing
+      # 0-based indexing
+      assert cursor.position == {4, 9}
     end
 
     test "process_cursor_style processes an escape sequence for cursor style" do
@@ -317,16 +318,24 @@ defmodule Raxol.Terminal.CursorTest do
     end
 
     test "parse_sequence parses an escape sequence and determines its type" do
-      assert EscapeSequence.parse_sequence("\e[10;5H") == {:cursor_movement, "10;5H"}
+      assert EscapeSequence.parse_sequence("\e[10;5H") ==
+               {:cursor_movement, "10;5H"}
+
       assert EscapeSequence.parse_sequence("\e[?25h") == {:cursor_style, "?25h"}
-      assert EscapeSequence.parse_sequence("\e[?1049h") == {:terminal_mode, "?1049h"}
+
+      assert EscapeSequence.parse_sequence("\e[?1049h") ==
+               {:terminal_mode, "?1049h"}
     end
 
     test "process_sequence processes an escape sequence and returns the updated state" do
       cursor = Manager.new()
       modes = Modes.new()
-      {cursor, modes, _} = EscapeSequence.process_sequence(cursor, modes, "\e[10;5H")
-      assert cursor.position == {4, 9}  # 0-based indexing
+
+      {cursor, modes, _} =
+        EscapeSequence.process_sequence(cursor, modes, "\e[10;5H")
+
+      # 0-based indexing
+      assert cursor.position == {4, 9}
     end
   end
 end

@@ -67,15 +67,18 @@ defmodule Raxol.Components.Terminal.EmulatorTest do
 
   test "handles scroll region" do
     state = Emulator.process_input("\e[5;20r", @initial_state)
-    assert state.screen.scroll_region == {4, 19}  # 1-based to 0-based conversion
+    # 1-based to 0-based conversion
+    assert state.screen.scroll_region == {4, 19}
   end
 
   test "preserves content during resize" do
     # Fill screen with content
     content = for i <- 1..24, do: "Line #{i}"
-    state = Enum.reduce(content, @initial_state, fn line, acc ->
-      Emulator.process_input(line <> "\n", acc)
-    end)
+
+    state =
+      Enum.reduce(content, @initial_state, fn line, acc ->
+        Emulator.process_input(line <> "\n", acc)
+      end)
 
     # Resize and check content preservation
     state = Emulator.handle_resize({40, 12}, state)
@@ -87,10 +90,12 @@ defmodule Raxol.Components.Terminal.EmulatorTest do
   end
 
   test "handles terminal modes" do
-    state = Emulator.process_input("\e[4h", @initial_state)  # Insert mode
+    # Insert mode
+    state = Emulator.process_input("\e[4h", @initial_state)
     assert state.screen.mode == :insert
 
-    state = Emulator.process_input("\e[4l", state)  # Normal mode
+    # Normal mode
+    state = Emulator.process_input("\e[4l", state)
     assert state.screen.mode == :normal
   end
 

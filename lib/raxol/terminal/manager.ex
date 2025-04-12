@@ -17,8 +17,8 @@ defmodule Raxol.Terminal.Manager do
   # alias Raxol.Terminal.{Session, Registry} # Registry unused
 
   @type t :: %__MODULE__{
-    sessions: map()
-  }
+          sessions: map()
+        }
 
   defstruct [
     :sessions
@@ -155,8 +155,14 @@ defmodule Raxol.Terminal.Manager do
     case Session.start_link(opts) do
       {:ok, pid} ->
         session_id = UUID.uuid4()
-        new_state = %{state | sessions: Map.put(state.sessions, session_id, pid)}
+
+        new_state = %{
+          state
+          | sessions: Map.put(state.sessions, session_id, pid)
+        }
+
         {:reply, {:ok, session_id}, new_state}
+
       error ->
         {:reply, error, state}
     end
@@ -167,6 +173,7 @@ defmodule Raxol.Terminal.Manager do
     case Map.get(state.sessions, session_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
+
       pid ->
         Session.stop(pid)
         new_state = %{state | sessions: Map.delete(state.sessions, session_id)}
@@ -179,6 +186,7 @@ defmodule Raxol.Terminal.Manager do
     case Map.get(state.sessions, session_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
+
       pid ->
         session_state = Session.get_state(pid)
         {:reply, {:ok, session_state}, state}
@@ -187,11 +195,12 @@ defmodule Raxol.Terminal.Manager do
 
   @impl true
   def handle_call(:list_sessions, _from, state) do
-    sessions = state.sessions
-    |> Enum.map(fn {id, pid} ->
-      {id, Session.get_state(pid)}
-    end)
-    |> Map.new()
+    sessions =
+      state.sessions
+      |> Enum.map(fn {id, pid} ->
+        {id, Session.get_state(pid)}
+      end)
+      |> Map.new()
 
     {:reply, sessions, state}
   end
@@ -206,6 +215,7 @@ defmodule Raxol.Terminal.Manager do
     case Map.get(state.sessions, session_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
+
       pid ->
         Process.monitor(pid)
         {:reply, :ok, state}
@@ -217,6 +227,7 @@ defmodule Raxol.Terminal.Manager do
     case Map.get(state.sessions, session_id) do
       nil ->
         {:reply, {:error, :not_found}, state}
+
       pid ->
         Process.demonitor(pid)
         {:reply, :ok, state}
@@ -236,10 +247,12 @@ defmodule Raxol.Terminal.Manager do
   @impl true
   def handle_info({:DOWN, _ref, :process, pid, _reason}, state) do
     # Remove the session from our state
-    new_state = %{state |
-      sessions: state.sessions
-      |> Enum.reject(fn {_id, p} -> p == pid end)
-      |> Map.new()
+    new_state = %{
+      state
+      | sessions:
+          state.sessions
+          |> Enum.reject(fn {_id, p} -> p == pid end)
+          |> Map.new()
     }
 
     {:noreply, new_state}

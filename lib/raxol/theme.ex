@@ -276,47 +276,51 @@ defmodule Raxol.Theme do
     }
 
     # Size-based styling
-    size_style = case size do
-      :sm -> %{padding_left: 1, padding_right: 1}
-      :md -> %{padding_left: 2, padding_right: 2}
-      :lg -> %{padding_left: 3, padding_right: 3}
-      _ -> %{padding_left: 2, padding_right: 2}
-    end
+    size_style =
+      case size do
+        :sm -> %{padding_left: 1, padding_right: 1}
+        :md -> %{padding_left: 2, padding_right: 2}
+        :lg -> %{padding_left: 3, padding_right: 3}
+        _ -> %{padding_left: 2, padding_right: 2}
+      end
 
     # Variant-based styling
-    variant_color = case variant do
-      :primary -> theme.colors.primary
-      :secondary -> theme.colors.secondary
-      :success -> theme.colors.success
-      :warning -> theme.colors.warning
-      :error -> theme.colors.error
-      :info -> theme.colors.info
-      _ -> theme.colors.primary
-    end
+    variant_color =
+      case variant do
+        :primary -> theme.colors.primary
+        :secondary -> theme.colors.secondary
+        :success -> theme.colors.success
+        :warning -> theme.colors.warning
+        :error -> theme.colors.error
+        :info -> theme.colors.info
+        _ -> theme.colors.primary
+      end
 
-    variant_style = if outlined do
-      %{
-        fg: variant_color,
-        border: true,
-        border_fg: variant_color
-      }
-    else
-      %{
-        fg: :white,
-        bg: variant_color
-      }
-    end
+    variant_style =
+      if outlined do
+        %{
+          fg: variant_color,
+          border: true,
+          border_fg: variant_color
+        }
+      else
+        %{
+          fg: :white,
+          bg: variant_color
+        }
+      end
 
     # Disabled styling
-    disabled_style = if disabled do
-      if outlined do
-        %{fg: :light_black, border_fg: :light_black}
+    disabled_style =
+      if disabled do
+        if outlined do
+          %{fg: :light_black, border_fg: :light_black}
+        else
+          %{fg: :light_black, bg: :black}
+        end
       else
-        %{fg: :light_black, bg: :black}
+        %{}
       end
-    else
-      %{}
-    end
 
     # Combine all style components
     Map.merge(base_style, size_style)
@@ -363,20 +367,22 @@ defmodule Raxol.Theme do
     }
 
     # Size-based styling
-    size_style = case size do
-      :sm -> %{padding_left: 1, padding_right: 1}
-      :md -> %{padding_left: 1, padding_right: 1}
-      :lg -> %{padding_left: 2, padding_right: 2}
-      _ -> %{padding_left: 1, padding_right: 1}
-    end
+    size_style =
+      case size do
+        :sm -> %{padding_left: 1, padding_right: 1}
+        :md -> %{padding_left: 1, padding_right: 1}
+        :lg -> %{padding_left: 2, padding_right: 2}
+        _ -> %{padding_left: 1, padding_right: 1}
+      end
 
     # State-based styling
-    state_style = cond do
-      invalid -> %{border_fg: theme.colors.error}
-      focused -> %{border_fg: theme.colors.primary}
-      disabled -> %{fg: :light_black, border_fg: :light_black}
-      true -> %{}
-    end
+    state_style =
+      cond do
+        invalid -> %{border_fg: theme.colors.error}
+        focused -> %{border_fg: theme.colors.primary}
+        disabled -> %{fg: :light_black, border_fg: :light_black}
+        true -> %{}
+      end
 
     # Combine all style components
     Map.merge(base_style, size_style)
@@ -413,32 +419,36 @@ defmodule Raxol.Theme do
     padding_size = Keyword.get(opts, :padding, :none)
 
     # Base style based on variant
-    base_style = case variant do
-      :elevated -> %{bg: :light_black}
-      :inset -> %{bg: :black}
-      _ -> %{}
-    end
+    base_style =
+      case variant do
+        :elevated -> %{bg: :light_black}
+        :inset -> %{bg: :black}
+        _ -> %{}
+      end
 
     # Border style
-    border_style = case border_type do
-      :none -> %{border: false}
-      :normal -> theme.borders.normal
-      :thick -> theme.borders.thick
-      _ -> %{border: false}
-    end
+    border_style =
+      case border_type do
+        :none -> %{border: false}
+        :normal -> theme.borders.normal
+        :thick -> theme.borders.thick
+        _ -> %{border: false}
+      end
 
     # Padding style
-    padding = if padding_size == :none do
-      %{}
-    else
-      padding_value = get_in(theme, [:spacing, padding_size]) || 0
-      %{
-        padding_top: padding_value,
-        padding_right: padding_value,
-        padding_bottom: padding_value,
-        padding_left: padding_value
-      }
-    end
+    padding =
+      if padding_size == :none do
+        %{}
+      else
+        padding_value = get_in(theme, [:spacing, padding_size]) || 0
+
+        %{
+          padding_top: padding_value,
+          padding_right: padding_value,
+          padding_bottom: padding_value,
+          padding_left: padding_value
+        }
+      end
 
     # Combine all style components
     Map.merge(base_style, border_style)
@@ -477,22 +487,35 @@ defmodule Raxol.Theme do
     underline = Keyword.get(opts, :underline, false)
 
     # Variant-based styling
-    variant_style = case variant do
-      :dim -> %{fg: theme.colors.text_dim}
-      :accent -> %{fg: theme.colors.text_accent}
-      :primary -> %{fg: theme.colors.primary}
-      :success -> %{fg: theme.colors.success}
-      :warning -> %{fg: theme.colors.warning}
-      :error -> %{fg: theme.colors.error}
-      :info -> %{fg: theme.colors.info}
-      _ -> %{fg: theme.colors.text}
-    end
+    variant_style =
+      case variant do
+        :dim -> %{fg: theme.colors.text_dim}
+        :accent -> %{fg: theme.colors.text_accent}
+        :primary -> %{fg: theme.colors.primary}
+        :success -> %{fg: theme.colors.success}
+        :warning -> %{fg: theme.colors.warning}
+        :error -> %{fg: theme.colors.error}
+        :info -> %{fg: theme.colors.info}
+        _ -> %{fg: theme.colors.text}
+      end
 
     # Text decoration styling
     decoration_style = %{}
-    decoration_style = if bold, do: Map.put(decoration_style, :bold, true), else: decoration_style
-    decoration_style = if italic, do: Map.put(decoration_style, :italic, true), else: decoration_style
-    decoration_style = if underline, do: Map.put(decoration_style, :underline, true), else: decoration_style
+
+    decoration_style =
+      if bold,
+        do: Map.put(decoration_style, :bold, true),
+        else: decoration_style
+
+    decoration_style =
+      if italic,
+        do: Map.put(decoration_style, :italic, true),
+        else: decoration_style
+
+    decoration_style =
+      if underline,
+        do: Map.put(decoration_style, :underline, true),
+        else: decoration_style
 
     # Combine style components
     Map.merge(variant_style, decoration_style)
@@ -526,23 +549,36 @@ defmodule Raxol.Theme do
     }
 
     case component do
-      :table -> %{
-        border: true
-      }
-      :header -> default_style
-      :row -> %{}
-      :cell -> %{
-        padding_left: 1,
-        padding_right: 1
-      }
-      :selected_row -> %{
-        bg: theme.colors.primary,
-        fg: :white
-      }
-      :zebra_row -> %{
-        bg: :light_black
-      }
-      _ -> %{}
+      :table ->
+        %{
+          border: true
+        }
+
+      :header ->
+        default_style
+
+      :row ->
+        %{}
+
+      :cell ->
+        %{
+          padding_left: 1,
+          padding_right: 1
+        }
+
+      :selected_row ->
+        %{
+          bg: theme.colors.primary,
+          fg: :white
+        }
+
+      :zebra_row ->
+        %{
+          bg: :light_black
+        }
+
+      _ ->
+        %{}
     end
   end
 
@@ -571,14 +607,15 @@ defmodule Raxol.Theme do
   ```
   """
   def apply(theme, component, variant \\ :normal, style \\ %{}) do
-    themed_style = case component do
-      :button -> button_style(theme, variant)
-      :input -> input_style(theme)
-      :panel -> panel_style(theme, variant)
-      :text -> text_style(theme, variant)
-      :table -> table_style(theme, variant)
-      _ -> %{}
-    end
+    themed_style =
+      case component do
+        :button -> button_style(theme, variant)
+        :input -> input_style(theme)
+        :panel -> panel_style(theme, variant)
+        :text -> text_style(theme, variant)
+        :table -> table_style(theme, variant)
+        _ -> %{}
+      end
 
     Map.merge(themed_style, style)
   end

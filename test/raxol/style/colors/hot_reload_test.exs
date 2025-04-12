@@ -24,7 +24,9 @@ defmodule Raxol.Style.Colors.HotReloadTest do
 
   setup do
     # Create temporary directory for theme files
-    tmp_dir = Path.join(System.tmp_dir!(), "raxol_test_#{:rand.uniform(1000000)}")
+    tmp_dir =
+      Path.join(System.tmp_dir!(), "raxol_test_#{:rand.uniform(1_000_000)}")
+
     File.mkdir_p!(tmp_dir)
 
     # Start the hot-reload server
@@ -77,7 +79,10 @@ defmodule Raxol.Style.Colors.HotReloadTest do
       assert theme2.name == "Theme 2"
 
       # Modify one theme
-      File.write!(theme1_path, Jason.encode!(%{@test_theme | name: "Updated Theme 1"}))
+      File.write!(
+        theme1_path,
+        Jason.encode!(%{@test_theme | name: "Updated Theme 1"})
+      )
 
       # Wait for theme to be reloaded
       assert_receive {:theme_reloaded, theme}, 5000

@@ -29,11 +29,13 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
 
     test "accumulates appended data" do
       buffer = InputBuffer.new()
-      buffer = buffer
+
+      buffer =
+        buffer
         |> InputBuffer.append("Hello")
         |> InputBuffer.append(" ")
         |> InputBuffer.append("World")
-      
+
       assert InputBuffer.get_contents(buffer) == "Hello World"
     end
 
@@ -46,7 +48,7 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
     test "raises error when buffer is full in error mode" do
       buffer = InputBuffer.new(5, :error)
       buffer = InputBuffer.append(buffer, "Hello")
-      
+
       assert_raise RuntimeError, "Buffer overflow", fn ->
         InputBuffer.append(buffer, " World")
       end
@@ -68,11 +70,13 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
 
     test "accumulates prepended data" do
       buffer = InputBuffer.new()
-      buffer = buffer
+
+      buffer =
+        buffer
         |> InputBuffer.prepend("World")
         |> InputBuffer.prepend(" ")
         |> InputBuffer.prepend("Hello")
-      
+
       assert InputBuffer.get_contents(buffer) == "Hello World"
     end
 
@@ -85,7 +89,7 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
     test "raises error when buffer is full in error mode" do
       buffer = InputBuffer.new(5, :error)
       buffer = InputBuffer.prepend(buffer, "Hello")
-      
+
       assert_raise RuntimeError, "Buffer overflow", fn ->
         InputBuffer.prepend(buffer, " World")
       end
@@ -113,7 +117,7 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
 
     test "raises error when content exceeds max size in error mode" do
       buffer = InputBuffer.new(5, :error)
-      
+
       assert_raise RuntimeError, "Buffer overflow", fn ->
         InputBuffer.set_contents(buffer, "Hello World")
       end
@@ -131,7 +135,7 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
       buffer = InputBuffer.new()
       buffer = InputBuffer.append(buffer, "Hello World")
       assert InputBuffer.get_contents(buffer) == "Hello World"
-      
+
       buffer = InputBuffer.clear(buffer)
       assert InputBuffer.get_contents(buffer) == ""
     end
@@ -229,7 +233,7 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
     test "raises error when position is out of bounds" do
       buffer = InputBuffer.new()
       buffer = InputBuffer.append(buffer, "Hello")
-      
+
       assert_raise ArgumentError, "Position out of bounds", fn ->
         InputBuffer.insert_at(buffer, 10, "!")
       end
@@ -247,10 +251,10 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
     test "raises error when position is out of bounds" do
       buffer = InputBuffer.new()
       buffer = InputBuffer.append(buffer, "Hello")
-      
+
       assert_raise ArgumentError, "Position out of bounds", fn ->
         InputBuffer.replace_at(buffer, 10, "!")
       end
     end
   end
-end 
+end

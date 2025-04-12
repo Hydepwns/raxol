@@ -12,11 +12,11 @@ defmodule Raxol.Terminal.Renderer do
   alias Raxol.Terminal.{Cell, ScreenBuffer}
 
   @type t :: %__MODULE__{
-    screen_buffer: ScreenBuffer.t(),
-    cursor: {non_neg_integer(), non_neg_integer()} | nil,
-    theme: map(),
-    font_settings: map()
-  }
+          screen_buffer: ScreenBuffer.t(),
+          cursor: {non_neg_integer(), non_neg_integer()} | nil,
+          theme: map(),
+          font_settings: map()
+        }
 
   defstruct [
     :screen_buffer,
@@ -148,37 +148,42 @@ defmodule Raxol.Terminal.Renderer do
   defp build_style(attributes, theme) do
     styles = []
 
-    styles = if foreground = Map.get(attributes, :foreground) do
-      color = get_theme_color(theme, :foreground, foreground)
-      [{"color", color} | styles]
-    else
-      styles
-    end
+    styles =
+      if foreground = Map.get(attributes, :foreground) do
+        color = get_theme_color(theme, :foreground, foreground)
+        [{"color", color} | styles]
+      else
+        styles
+      end
 
-    styles = if background = Map.get(attributes, :background) do
-      color = get_theme_color(theme, :background, background)
-      [{"background-color", color} | styles]
-    else
-      styles
-    end
+    styles =
+      if background = Map.get(attributes, :background) do
+        color = get_theme_color(theme, :background, background)
+        [{"background-color", color} | styles]
+      else
+        styles
+      end
 
-    styles = if Map.get(attributes, :bold) do
-      [{"font-weight", "bold"} | styles]
-    else
-      styles
-    end
+    styles =
+      if Map.get(attributes, :bold) do
+        [{"font-weight", "bold"} | styles]
+      else
+        styles
+      end
 
-    styles = if Map.get(attributes, :underline) do
-      [{"text-decoration", "underline"} | styles]
-    else
-      styles
-    end
+    styles =
+      if Map.get(attributes, :underline) do
+        [{"text-decoration", "underline"} | styles]
+      else
+        styles
+      end
 
-    styles = if Map.get(attributes, :italic) do
-      [{"font-style", "italic"} | styles]
-    else
-      styles
-    end
+    styles =
+      if Map.get(attributes, :italic) do
+        [{"font-style", "italic"} | styles]
+      else
+        styles
+      end
 
     styles
     |> Enum.map(fn {property, value} -> "#{property}: #{value}" end)
@@ -187,8 +192,12 @@ defmodule Raxol.Terminal.Renderer do
 
   defp get_theme_color(theme, type, name) do
     case name do
-      :default -> get_in(theme, [type, :default]) || "#FFFFFF"
-      _ -> Map.get(theme[type], name) || get_in(theme, [type, :default]) || "#FFFFFF"
+      :default ->
+        get_in(theme, [type, :default]) || "#FFFFFF"
+
+      _ ->
+        Map.get(theme[type], name) || get_in(theme, [type, :default]) ||
+          "#FFFFFF"
     end
   end
 end

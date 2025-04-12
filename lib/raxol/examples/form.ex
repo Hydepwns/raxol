@@ -44,6 +44,7 @@ defmodule Raxol.Examples.Form do
 
   def render(state) do
     content = render_content(state)
+
     %Element{
       tag: :form,
       content: content,
@@ -76,6 +77,7 @@ defmodule Raxol.Examples.Form do
   end
 
   defp render_error(%{error: nil}), do: nil
+
   defp render_error(%{error: error}) do
     "[ERROR] #{error}"
   end
@@ -90,8 +92,10 @@ defmodule Raxol.Examples.Form do
     case child.module.render(child.state) do
       %Element{content: content} when not is_nil(content) ->
         "  " <> content
+
       %Element{} = element ->
         "  " <> (element |> Map.get(:content, ""))
+
       _ ->
         ""
     end
@@ -104,4 +108,4 @@ defmodule Raxol.Examples.Form do
   defp render_status(_) do
     "Status: Not submitted"
   end
-end 
+end

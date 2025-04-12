@@ -65,20 +65,21 @@ defmodule Raxol.View do
   end
 
   @doc """
-  Creates a panel component, returning a map describing it.
+  Creates a panel component, handling options and an optional do block.
   """
-  @spec panel(opts()) :: map()
-  def panel(opts) when is_list(opts) do
-    # TODO: Implement actual panel rendering based on opts
-    %{type: :panel, opts: opts, children: []} # Return a map representation
-  end
+  defmacro panel(opts \\ [], do: block) do
+    quote do
+      panel_opts = unquote(opts)
 
-  @doc """
-  Creates a panel component with child elements.
-  """
-  @spec panel(opts(), children_fun()) :: map()
-  def panel(opts, fun) when is_list(opts) and is_function(fun, 0) do
-    %{type: :panel, opts: opts, children: fun.()} # Return map for block usage too
+      panel_children =
+        if is_nil(unquote(block)) do
+          []
+        else
+          List.wrap(unquote(block)) |> List.flatten() |> Enum.reject(&is_nil(&1))
+        end
+
+      %{type: :panel, opts: panel_opts, children: panel_children}
+    end
   end
 
   @doc """
@@ -116,7 +117,8 @@ defmodule Raxol.View do
   @doc """
   Creates a text component.
   """
-  @spec text(binary(), opts()) :: any() # Simplified return type
+  # Simplified return type
+  @spec text(binary(), opts()) :: any()
   def text(content, _opts \\ []) when is_binary(content) do
     %{type: :text, text: content, attrs: %{}}
   end
@@ -124,21 +126,50 @@ defmodule Raxol.View do
   @doc """
   Creates a button component.
   """
-  def button(_opts \\ [], label) when is_binary(label) do
-    # TODO: Implement actual button rendering
-    label
+  # Keep opts for future styling/behaviour
+  def button(opts \\ [], label) when is_list(opts) and is_binary(label) do
+    %{type: :button, label: label, opts: opts}
   end
 
   @doc """
-  Creates a toast notification.
+  Creates a toast notification representation.
   """
-  def toast(message, _opts \\ []) when is_binary(message) do
-    # TODO: Implement actual toast rendering
-    message
+  # Keep opts for future styling/duration
+  def toast(message, opts \\ []) when is_binary(message) do
+    %{type: :toast, message: message, opts: opts}
   end
 
-  def box(children \\ [], _opts \\ []) do
-    # TODO: Implement actual box rendering
-    children
+  @doc """
+  Creates a box layout element.
+  Accepts children via a do block.
+  """
+  defmacro box(opts \\ [], do: block) do
+    quote do
+      box_opts = unquote(opts)
+
+      box_children =
+        if is_nil(unquote(block)) do
+          []
+        else
+          List.wrap(unquote(block)) |> List.flatten() |> Enum.reject(&is_nil(&1))
+        end
+
+      %{type: :box, opts: box_opts, children: box_children}
+    end
+  end
+
+  @doc """
+  Represents a placeholder element that plugins can replace.
+
+  This is not directly rendered but acts as a marker for plugins
+  to insert dynamic content (like images).
+
+  ## Attributes
+
+  - `type` - An atom identifying the type of placeholder (e.g., `:image`).
+  """
+  def placeholder(type, _opts \\ []) when is_atom(type) do
+    # Placeholders don't have children or standard attributes like text/panel
+    %{type: :placeholder, placeholder_type: type}
   end
 end

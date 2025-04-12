@@ -45,10 +45,11 @@ defmodule Raxol.Terminal.IntegrationTest do
     test "updates scroll buffer when content exceeds screen height" do
       # Create a terminal with small height
       integration = Integration.new(80, 3)
-      
+
       # Write multiple lines
-      integration = Integration.write(integration, "Line 1\nLine 2\nLine 3\nLine 4")
-      
+      integration =
+        Integration.write(integration, "Line 1\nLine 2\nLine 3\nLine 4")
+
       # Check scroll buffer
       assert Integration.get_scroll_height(integration) > 0
     end
@@ -65,7 +66,7 @@ defmodule Raxol.Terminal.IntegrationTest do
     test "handles cursor movement bounds with integrated cursor management" do
       integration = Integration.move_cursor(@initial_state, -1, -1)
       assert integration.cursor_manager.position == {0, 0}
-      
+
       integration = Integration.move_cursor(@initial_state, 100, 100)
       assert integration.cursor_manager.position == {79, 23}
     end
@@ -75,7 +76,7 @@ defmodule Raxol.Terminal.IntegrationTest do
     test "clears the screen with integrated buffer management" do
       integration = Integration.write(@initial_state, "Hello")
       integration = Integration.clear_screen(integration)
-      
+
       content = Integration.get_visible_content(integration)
       assert content == String.duplicate(" ", 80 * 24)
       assert integration.cursor_manager.position == {0, 0}
@@ -87,7 +88,7 @@ defmodule Raxol.Terminal.IntegrationTest do
     test "scrolls the terminal content with integrated scroll buffer management" do
       integration = Integration.write(@initial_state, "Line 1\nLine 2\nLine 3")
       integration = Integration.scroll(integration, 1)
-      
+
       content = Integration.get_visible_content(integration)
       assert content =~ "Line 2"
       assert content =~ "Line 3"
@@ -98,7 +99,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       integration = Integration.write(@initial_state, "Line 1\nLine 2\nLine 3")
       integration = Integration.scroll(integration, 1)
       integration = Integration.scroll(integration, -1)
-      
+
       assert Integration.get_scroll_position(integration) == 0
     end
   end
@@ -108,7 +109,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       integration = Integration.move_cursor(@initial_state, 10, 5)
       integration = Integration.save_cursor(integration)
       assert integration.cursor_manager.saved_position == {10, 5}
-      
+
       integration = Integration.move_cursor(integration, 0, 0)
       integration = Integration.restore_cursor(integration)
       assert integration.cursor_manager.position == {10, 5}
@@ -118,7 +119,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       integration = Integration.hide_cursor(@initial_state)
       assert integration.cursor_manager.state == :hidden
       assert integration.emulator.cursor_visible == false
-      
+
       integration = Integration.show_cursor(integration)
       assert integration.cursor_manager.state == :visible
       assert integration.emulator.cursor_visible == true
@@ -181,7 +182,9 @@ defmodule Raxol.Terminal.IntegrationTest do
     test "switches buffers in the buffer manager" do
       integration = Integration.write(@initial_state, "Hello")
       integration = Integration.switch_buffers(integration)
-      assert integration.buffer_manager.active_buffer != integration.buffer_manager.back_buffer
+
+      assert integration.buffer_manager.active_buffer !=
+               integration.buffer_manager.back_buffer
     end
   end
 
@@ -192,10 +195,11 @@ defmodule Raxol.Terminal.IntegrationTest do
     end
 
     test "checks if memory usage is within limits" do
-      integration = Integration.new(80, 24, 1000, 100)  # Very low memory limit
+      # Very low memory limit
+      integration = Integration.new(80, 24, 1000, 100)
       integration = Integration.write(integration, String.duplicate("a", 1000))
       integration = Integration.update_memory_usage(integration)
-      
+
       refute Integration.within_memory_limits?(integration)
     end
   end
@@ -212,7 +216,12 @@ defmodule Raxol.Terminal.IntegrationTest do
     end
 
     test "creates a new integration with custom configuration" do
-      integration = Integration.new(80, 24, command_history_size: 500, enable_command_history: false)
+      integration =
+        Integration.new(80, 24,
+          command_history_size: 500,
+          enable_command_history: false
+        )
+
       assert integration.config.command_history_size == 500
       assert integration.config.enable_command_history == false
     end
@@ -267,7 +276,10 @@ defmodule Raxol.Terminal.IntegrationTest do
   describe "update_config/2" do
     test "updates configuration successfully" do
       integration = Integration.new(80, 24)
-      {:ok, integration} = Integration.update_config(integration, theme: "light")
+
+      {:ok, integration} =
+        Integration.update_config(integration, theme: "light")
+
       assert integration.config.theme == "light"
     end
 
@@ -276,4 +288,4 @@ defmodule Raxol.Terminal.IntegrationTest do
       {:error, _reason} = Integration.update_config(integration, width: -1)
     end
   end
-end 
+end

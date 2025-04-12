@@ -6,19 +6,19 @@ defmodule Ratatouille.RuntimeTest do
   defmodule BindingsStub do
     use Ratatouille.Stub
 
-    deftracked init, do: :ok
-    deftracked start_polling(_), do: {:ok, :fake_resource}
-    deftracked stop_polling, do: :ok
-    deftracked select_input_mode(_), do: {:ok, 1}
-    deftracked select_output_mode(_), do: {:ok, 1}
-    deftracked shutdown, do: :ok
-    deftracked clear, do: :ok
-    deftracked present, do: :ok
-    deftracked put_cell(_), do: :ok
-    deftracked height, do: {:ok, 42}
-    deftracked width, do: {:ok, 81}
-    deftracked info, do: {:width, 81, :height, 42}
-    deftracked put_string(_, _, _, _, _), do: :ok
+    deftracked(init, do: :ok)
+    deftracked(start_polling(_), do: {:ok, :fake_resource})
+    deftracked(stop_polling, do: :ok)
+    deftracked(select_input_mode(_), do: {:ok, 1})
+    deftracked(select_output_mode(_), do: {:ok, 1})
+    deftracked(shutdown, do: :ok)
+    deftracked(clear, do: :ok)
+    deftracked(present, do: :ok)
+    deftracked(put_cell(_), do: :ok)
+    deftracked(height, do: {:ok, 42})
+    deftracked(width, do: {:ok, 81})
+    deftracked(info, do: {:width, 81, :height, 42})
+    deftracked(put_string(_, _, _, _, _), do: :ok)
   end
 
   defmodule AppStub do

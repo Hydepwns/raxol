@@ -60,7 +60,11 @@ defmodule Raxol.Core.KeyboardShortcuts do
     })
 
     # Register event handler for keyboard events
-    EventManager.register_handler(:keyboard_event, __MODULE__, :handle_keyboard_event)
+    EventManager.register_handler(
+      :keyboard_event,
+      __MODULE__,
+      :handle_keyboard_event
+    )
 
     :ok
   end
@@ -78,7 +82,11 @@ defmodule Raxol.Core.KeyboardShortcuts do
   """
   def cleanup do
     # Unregister event handler
-    EventManager.unregister_handler(:keyboard_event, __MODULE__, :handle_keyboard_event)
+    EventManager.unregister_handler(
+      :keyboard_event,
+      __MODULE__,
+      :handle_keyboard_event
+    )
 
     # Clean up shortcuts registry
     Process.delete(:keyboard_shortcuts)
@@ -133,20 +141,23 @@ defmodule Raxol.Core.KeyboardShortcuts do
     shortcuts = Process.get(:keyboard_shortcuts)
 
     # Update shortcuts registry
-    updated_shortcuts = if context == :global do
-      # Update global shortcuts
-      global = Map.put(shortcuts.global, name, shortcut_def)
-      %{shortcuts | global: global}
-    else
-      # Update context-specific shortcuts
-      contexts = Map.update(
-        shortcuts.contexts,
-        context,
-        %{name => shortcut_def},
-        &Map.put(&1, name, shortcut_def)
-      )
-      %{shortcuts | contexts: contexts}
-    end
+    updated_shortcuts =
+      if context == :global do
+        # Update global shortcuts
+        global = Map.put(shortcuts.global, name, shortcut_def)
+        %{shortcuts | global: global}
+      else
+        # Update context-specific shortcuts
+        contexts =
+          Map.update(
+            shortcuts.contexts,
+            context,
+            %{name => shortcut_def},
+            &Map.put(&1, name, shortcut_def)
+          )
+
+        %{shortcuts | contexts: contexts}
+      end
 
     # Store updated shortcuts
     Process.put(:keyboard_shortcuts, updated_shortcuts)
@@ -178,20 +189,23 @@ defmodule Raxol.Core.KeyboardShortcuts do
     shortcuts = Process.get(:keyboard_shortcuts)
 
     # Update shortcuts registry
-    updated_shortcuts = if context == :global do
-      # Update global shortcuts
-      global = Map.delete(shortcuts.global, name)
-      %{shortcuts | global: global}
-    else
-      # Update context-specific shortcuts
-      contexts = Map.update(
-        shortcuts.contexts,
-        context,
-        %{},
-        &Map.delete(&1, name)
-      )
-      %{shortcuts | contexts: contexts}
-    end
+    updated_shortcuts =
+      if context == :global do
+        # Update global shortcuts
+        global = Map.delete(shortcuts.global, name)
+        %{shortcuts | global: global}
+      else
+        # Update context-specific shortcuts
+        contexts =
+          Map.update(
+            shortcuts.contexts,
+            context,
+            %{},
+            &Map.delete(&1, name)
+          )
+
+        %{shortcuts | contexts: contexts}
+      end
 
     # Store updated shortcuts
     Process.put(:keyboard_shortcuts, updated_shortcuts)
@@ -306,13 +320,16 @@ defmodule Raxol.Core.KeyboardShortcuts do
     shortcuts = get_shortcuts_for_context(current_context)
 
     # Format help message
-    context_name = if current_context == :global, do: "Global", else: "#{current_context}"
+    context_name =
+      if current_context == :global, do: "Global", else: "#{current_context}"
+
     help_message = "Available keyboard shortcuts for #{context_name}:\n"
 
-    shortcuts_help = shortcuts
-    |> Enum.sort_by(fn s -> s.key_combo end)
-    |> Enum.map(fn s -> "#{s.key_combo}: #{s.description}" end)
-    |> Enum.join("\n")
+    shortcuts_help =
+      shortcuts
+      |> Enum.sort_by(fn s -> s.key_combo end)
+      |> Enum.map(fn s -> "#{s.key_combo}: #{s.description}" end)
+      |> Enum.join("\n")
 
     full_message = help_message <> shortcuts_help
 
@@ -349,12 +366,13 @@ defmodule Raxol.Core.KeyboardShortcuts do
     context_to_use = context || get_current_context()
 
     # Find shortcut
-    shortcut = if context_to_use == :global do
-      Map.get(shortcuts.global, name)
-    else
-      context_map = Map.get(shortcuts.contexts, context_to_use, %{})
-      Map.get(context_map, name) || Map.get(shortcuts.global, name)
-    end
+    shortcut =
+      if context_to_use == :global do
+        Map.get(shortcuts.global, name)
+      else
+        context_map = Map.get(shortcuts.contexts, context_to_use, %{})
+        Map.get(context_map, name) || Map.get(shortcuts.global, name)
+      end
 
     # Execute callback if found
     if shortcut do

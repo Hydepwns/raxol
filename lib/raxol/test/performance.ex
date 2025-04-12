@@ -35,19 +35,22 @@ defmodule Raxol.Test.Performance do
   Measures the time taken to render a component multiple times.
   """
   def measure_render_time(component, iterations \\ 1000) do
-    {time, _} = :timer.tc(fn ->
-      Enum.each(1..iterations, fn _ ->
-        Visual.capture_render(component)
+    {time, _} =
+      :timer.tc(fn ->
+        Enum.each(1..iterations, fn _ ->
+          Visual.capture_render(component)
+        end)
       end)
-    end)
 
-    time / 1_000 # Convert to milliseconds
+    # Convert to milliseconds
+    time / 1_000
   end
 
   @doc """
   Measures memory usage during component operations.
   """
-  def measure_memory_usage(component, operation) when is_function(operation, 1) do
+  def measure_memory_usage(component, operation)
+      when is_function(operation, 1) do
     initial = :erlang.memory()
     operation.(component)
     final = :erlang.memory()
@@ -65,11 +68,13 @@ defmodule Raxol.Test.Performance do
   Measures event handling latency.
   """
   def measure_event_latency(component, event) do
-    {time, _} = :timer.tc(fn ->
-      simulate_event(component, event)
-    end)
+    {time, _} =
+      :timer.tc(fn ->
+        simulate_event(component, event)
+      end)
 
-    time / 1_000 # Convert to milliseconds
+    # Convert to milliseconds
+    time / 1_000
   end
 
   @doc """
@@ -104,9 +109,12 @@ defmodule Raxol.Test.Performance do
     %{
       iterations: 1000,
       warmup: 100,
-      max_render_time: 100, # ms
-      max_memory_usage: 1024 * 1024, # 1MB
-      max_event_latency: 10 # ms
+      # ms
+      max_render_time: 100,
+      # 1MB
+      max_memory_usage: 1024 * 1024,
+      # ms
+      max_event_latency: 10
     }
   end
 

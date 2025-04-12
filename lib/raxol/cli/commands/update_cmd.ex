@@ -50,26 +50,27 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   ```
   """
   def execute(args) do
-    {opts, _, _} = OptionParser.parse(args,
-      strict: [
-        check: :boolean,
-        force: :boolean,
-        auto: :string,
-        version: :string,
-        help: :boolean,
-        no_delta: :boolean,
-        delta_info: :boolean
-      ],
-      aliases: [
-        c: :check,
-        f: :force,
-        a: :auto,
-        v: :version,
-        h: :help,
-        n: :no_delta,
-        d: :delta_info
-      ]
-    )
+    {opts, _, _} =
+      OptionParser.parse(args,
+        strict: [
+          check: :boolean,
+          force: :boolean,
+          auto: :string,
+          version: :string,
+          help: :boolean,
+          no_delta: :boolean,
+          delta_info: :boolean
+        ],
+        aliases: [
+          c: :check,
+          f: :force,
+          a: :auto,
+          v: :version,
+          h: :help,
+          n: :no_delta,
+          d: :delta_info
+        ]
+      )
 
     cond do
       opts[:help] ->
@@ -85,7 +86,10 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
         show_delta_info(opts[:version], force: opts[:force])
 
       true ->
-        perform_update(opts[:version], force: opts[:force], use_delta: !opts[:no_delta])
+        perform_update(opts[:version],
+          force: opts[:force],
+          use_delta: !opts[:no_delta]
+        )
     end
   end
 
@@ -127,22 +131,27 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     use_delta = Keyword.get(opts, :use_delta, true)
 
     # First check if an update is available
-    check_result = if is_nil(version) do
-      # If no specific version is provided, check for updates
-      IO.puts("Checking for updates...")
-      Updater.check_for_updates(opts)
-    else
-      # If a specific version is provided, we'll try to update to it
-      {:update_available, version}
-    end
+    check_result =
+      if is_nil(version) do
+        # If no specific version is provided, check for updates
+        IO.puts("Checking for updates...")
+        Updater.check_for_updates(opts)
+      else
+        # If a specific version is provided, we'll try to update to it
+        {:update_available, version}
+      end
 
     case check_result do
       {:update_available, update_version} ->
         # Show if using delta updates
         if use_delta do
-          IO.puts("Updating to version v#{update_version} (with delta updates if available)...")
+          IO.puts(
+            "Updating to version v#{update_version} (with delta updates if available)..."
+          )
         else
-          IO.puts("Updating to version v#{update_version} (using full update)...")
+          IO.puts(
+            "Updating to version v#{update_version} (using full update)..."
+          )
         end
 
         case Updater.self_update(update_version, use_delta: use_delta) do
@@ -156,7 +165,11 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
 
           {:error, reason} ->
             IO.puts(error_msg("Update failed: #{reason}"))
-            IO.puts("\nYou can try downloading the latest version manually from:")
+
+            IO.puts(
+              "\nYou can try downloading the latest version manually from:"
+            )
+
             IO.puts("https://github.com/username/raxol/releases/latest")
         end
 
@@ -172,12 +185,16 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     # If no specific version is provided, check for latest
     if is_nil(version) do
       IO.puts("Checking for updates...")
+
       case Updater.check_for_updates(opts) do
         {:update_available, latest_version} ->
           check_delta_for_version(latest_version)
 
         {:no_update, current_version} ->
-          IO.puts(success_msg("Raxol is already up to date (v#{current_version})"))
+          IO.puts(
+            success_msg("Raxol is already up to date (v#{current_version})")
+          )
+
           IO.puts("No delta update information available.")
 
         {:error, reason} ->
@@ -193,6 +210,7 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
     IO.puts("Checking delta update availability for version v#{version}...")
 
     alias Raxol.System.DeltaUpdater
+
     case DeltaUpdater.check_delta_availability(version) do
       {:ok, delta_info} ->
         IO.puts(success_msg("Delta update available!"))
@@ -208,9 +226,15 @@ defmodule Raxol.CLI.Commands.UpdateCmd do
   end
 
   defp format_bytes(bytes) when bytes < 1024, do: "#{bytes} B"
-  defp format_bytes(bytes) when bytes < 1024*1024, do: "#{Float.round(bytes/1024, 2)} KB"
-  defp format_bytes(bytes) when bytes < 1024*1024*1024, do: "#{Float.round(bytes/1024/1024, 2)} MB"
-  defp format_bytes(bytes), do: "#{Float.round(bytes/1024/1024/1024, 2)} GB"
+
+  defp format_bytes(bytes) when bytes < 1024 * 1024,
+    do: "#{Float.round(bytes / 1024, 2)} KB"
+
+  defp format_bytes(bytes) when bytes < 1024 * 1024 * 1024,
+    do: "#{Float.round(bytes / 1024 / 1024, 2)} MB"
+
+  defp format_bytes(bytes),
+    do: "#{Float.round(bytes / 1024 / 1024 / 1024, 2)} GB"
 
   defp success_msg(text) do
     "\e[32m#{text}\e[0m"

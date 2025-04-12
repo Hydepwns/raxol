@@ -26,6 +26,7 @@ defmodule Raxol.Components.Progress.ProgressBarTest do
         show_percentage: false,
         label: "Progress"
       }
+
       state = ProgressBar.init(props)
       assert state.value == 50
       assert state.width == 30
@@ -111,7 +112,8 @@ defmodule Raxol.Components.Progress.ProgressBarTest do
     end
 
     test "set_characters/2 returns correct message" do
-      assert ProgressBar.set_characters("#", ".") == {:set_characters, %{filled: "#", empty: "."}}
+      assert ProgressBar.set_characters("#", ".") ==
+               {:set_characters, %{filled: "#", empty: "."}}
     end
   end
-end 
+end

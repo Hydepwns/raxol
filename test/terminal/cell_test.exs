@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.CellTest do
       cell1 = Cell.new("A", %{foreground: :red})
       cell2 = Cell.new("B", %{background: :blue})
       cell = Cell.merge_attributes(cell1, cell2)
-      
+
       assert Cell.get_attribute(cell, :foreground) == :red
       assert Cell.get_attribute(cell, :background) == :blue
     end
@@ -100,7 +100,7 @@ defmodule Raxol.Terminal.CellTest do
       cell1 = Cell.new("A", %{foreground: :red})
       cell2 = Cell.new("B", %{foreground: :blue})
       cell = Cell.merge_attributes(cell1, cell2)
-      
+
       assert Cell.get_attribute(cell, :foreground) == :blue
     end
   end
@@ -109,7 +109,7 @@ defmodule Raxol.Terminal.CellTest do
     test "creates a copy with new character" do
       cell = Cell.new("A", %{foreground: :red})
       new_cell = Cell.copy_with_char(cell, "B")
-      
+
       assert Cell.get_char(new_cell) == "B"
       assert Cell.get_attribute(new_cell, :foreground) == :red
       assert cell != new_cell
@@ -120,7 +120,7 @@ defmodule Raxol.Terminal.CellTest do
     test "creates a copy with new attributes" do
       cell = Cell.new("A", %{foreground: :red})
       new_cell = Cell.copy_with_attributes(cell, %{background: :blue})
-      
+
       assert Cell.get_char(new_cell) == "A"
       assert Cell.get_attribute(new_cell, :background) == :blue
       assert Cell.get_attribute(new_cell, :foreground) == nil
@@ -132,15 +132,15 @@ defmodule Raxol.Terminal.CellTest do
     test "creates a deep copy of a cell" do
       cell = Cell.new("A", %{foreground: :red})
       copy = Cell.deep_copy(cell)
-      
+
       assert Cell.get_char(copy) == "A"
       assert Cell.get_attribute(copy, :foreground) == :red
       assert cell != copy
-      
+
       # Modify original
       cell = Cell.set_char(cell, "B")
       cell = Cell.set_attribute(cell, :foreground, :blue)
-      
+
       # Copy should remain unchanged
       assert Cell.get_char(copy) == "A"
       assert Cell.get_attribute(copy, :foreground) == :red
@@ -153,10 +153,10 @@ defmodule Raxol.Terminal.CellTest do
       cell2 = Cell.new("A", %{foreground: :red})
       cell3 = Cell.new("B", %{foreground: :red})
       cell4 = Cell.new("A", %{foreground: :blue})
-      
+
       assert cell1 == cell2
       refute cell1 == cell3
       refute cell1 == cell4
     end
   end
-end 
+end

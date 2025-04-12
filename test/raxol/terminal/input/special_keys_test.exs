@@ -51,10 +51,13 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
 
     test "handles multiple modifiers" do
       state = SpecialKeys.new_state()
-      state = state
+
+      state =
+        state
         |> SpecialKeys.update_state("Control", true)
         |> SpecialKeys.update_state("Alt", true)
         |> SpecialKeys.update_state("Shift", true)
+
       assert state.ctrl == true
       assert state.alt == true
       assert state.shift == true
@@ -78,7 +81,9 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
     end
 
     test "handles regular characters with ctrl modifier" do
-      state = SpecialKeys.new_state() |> SpecialKeys.update_state("Control", true)
+      state =
+        SpecialKeys.new_state() |> SpecialKeys.update_state("Control", true)
+
       assert SpecialKeys.to_escape_sequence(state, "a") == "\e[1;97"
     end
 
@@ -98,10 +103,12 @@ defmodule Raxol.Terminal.Input.SpecialKeysTest do
     end
 
     test "handles multiple modifiers" do
-      state = SpecialKeys.new_state()
+      state =
+        SpecialKeys.new_state()
         |> SpecialKeys.update_state("Control", true)
         |> SpecialKeys.update_state("Alt", true)
         |> SpecialKeys.update_state("Shift", true)
+
       assert SpecialKeys.to_escape_sequence(state, "a") == "\e[7;97"
     end
 

@@ -102,24 +102,32 @@ defmodule Raxol.Plugins.ThemePlugin do
   @impl true
   def init(config \\ %{}) do
     theme_name = Map.get(config, :theme, "default")
-    theme = Map.get(@default_themes, theme_name, Map.get(@default_themes, "default"))
 
-    {:ok, %__MODULE__{
-      name: "theme",
-      enabled: true,
-      config: config,
-      current_theme: theme
-    }}
+    theme =
+      Map.get(@default_themes, theme_name, Map.get(@default_themes, "default"))
+
+    {:ok,
+     %__MODULE__{
+       name: "theme",
+       enabled: true,
+       config: config,
+       current_theme: theme
+     }}
   end
 
   @impl true
-  def handle_output(plugin, output) do
-    # Process output for theme-related content
-    case output do
-      {:theme_change, theme_name} ->
-        change_theme(plugin, theme_name)
-      _ -> {:ok, plugin}
-    end
+  def handle_output(plugin, _output), do: {:ok, plugin}
+
+  @impl Raxol.Plugins.Plugin
+  def handle_mouse(plugin, _event, _emulator_state) do
+    # TODO: Implement mouse interaction if needed (e.g., clicking theme swatches)
+    {:ok, plugin}
+  end
+
+  @impl Raxol.Plugins.Plugin
+  def handle_resize(plugin, _width, _height) do
+    # Theme changes don't typically depend on resize
+    {:ok, plugin}
   end
 
   @impl true
@@ -129,27 +137,18 @@ defmodule Raxol.Plugins.ThemePlugin do
         case String.slice(command, 0..6//1) do
           "theme: " ->
             theme_name = String.slice(command, 7..-1//1)
+
             case load_theme(theme_name) do
               {:ok, theme} -> %{plugin | current_theme: theme}
               {:error, _} -> plugin
             end
+
           _ ->
             plugin
         end
+
       _ ->
         plugin
-    end
-  end
-
-  @impl true
-  def handle_mouse(plugin, event) do
-    # Handle mouse events for theme-related interactions
-    case event do
-      {:click, _x, _y} ->
-        # Check if click is within theme selector bounds
-        # For now, just pass through
-        {:ok, plugin}
-      _ -> {:ok, plugin}
     end
   end
 
@@ -182,11 +181,6 @@ defmodule Raxol.Plugins.ThemePlugin do
   @impl true
   def get_dependencies do
     []
-  end
-
-  @impl true
-  def handle_resize(plugin, _width, _height) do
-    {:ok, plugin}
   end
 
   @doc """
@@ -222,13 +216,30 @@ defmodule Raxol.Plugins.ThemePlugin do
   def create_custom_theme(plugin, name, colors) do
     # Validate that all required colors are present
     required_colors = [
-      :background, :foreground, :cursor, :selection,
-      :black, :red, :green, :yellow, :blue, :magenta, :cyan, :white,
-      :bright_black, :bright_red, :bright_green, :bright_yellow,
-      :bright_blue, :bright_magenta, :bright_cyan, :bright_white
+      :background,
+      :foreground,
+      :cursor,
+      :selection,
+      :black,
+      :red,
+      :green,
+      :yellow,
+      :blue,
+      :magenta,
+      :cyan,
+      :white,
+      :bright_black,
+      :bright_red,
+      :bright_green,
+      :bright_yellow,
+      :bright_blue,
+      :bright_magenta,
+      :bright_cyan,
+      :bright_white
     ]
 
-    missing_colors = Enum.filter(required_colors, fn color -> !Map.has_key?(colors, color) end)
+    missing_colors =
+      Enum.filter(required_colors, fn color -> !Map.has_key?(colors, color) end)
 
     if Enum.empty?(missing_colors) do
       # Add the custom theme to the available themes

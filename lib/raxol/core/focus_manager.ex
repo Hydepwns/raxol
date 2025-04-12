@@ -86,7 +86,9 @@ defmodule Raxol.Core.FocusManager do
     updated_focusables =
       focusables
       |> Enum.map(fn {group, components} ->
-        updated_components = Enum.reject(components, fn c -> c.id == component_id end)
+        updated_components =
+          Enum.reject(components, fn c -> c.id == component_id end)
+
         {group, updated_components}
       end)
       |> Enum.into(%{})
@@ -106,7 +108,8 @@ defmodule Raxol.Core.FocusManager do
   def set_initial_focus(component_id) do
     focus_state = get_focus_state()
 
-    if not is_map_key(focus_state, :active_element) || focus_state.active_element != component_id do
+    if not is_map_key(focus_state, :active_element) ||
+         focus_state.active_element != component_id do
       set_focus(component_id)
     else
       :ok
@@ -194,7 +197,9 @@ defmodule Raxol.Core.FocusManager do
       group_components = Map.get(focusables, group, [])
 
       # Find the current component in the group
-      current_component = Enum.find(group_components, fn c -> c.id == current_focus end)
+      current_component =
+        Enum.find(group_components, fn c -> c.id == current_focus end)
+
       current_index =
         if current_component do
           Enum.find_index(group_components, fn c -> c.id == current_focus end)
@@ -203,7 +208,8 @@ defmodule Raxol.Core.FocusManager do
         end
 
       # Find the next enabled component
-      next_component = find_next_enabled_component(group_components, current_index, wrap)
+      next_component =
+        find_next_enabled_component(group_components, current_index, wrap)
 
       if next_component do
         set_focus(next_component.id)
@@ -246,7 +252,9 @@ defmodule Raxol.Core.FocusManager do
       group_components = Map.get(focusables, group, [])
 
       # Find the current component in the group
-      current_component = Enum.find(group_components, fn c -> c.id == current_focus end)
+      current_component =
+        Enum.find(group_components, fn c -> c.id == current_focus end)
+
       current_index =
         if current_component do
           Enum.find_index(group_components, fn c -> c.id == current_focus end)
@@ -255,7 +263,8 @@ defmodule Raxol.Core.FocusManager do
         end
 
       # Find the previous enabled component
-      prev_component = find_prev_enabled_component(group_components, current_index, wrap)
+      prev_component =
+        find_prev_enabled_component(group_components, current_index, wrap)
 
       if prev_component do
         set_focus(prev_component.id)
@@ -303,13 +312,16 @@ defmodule Raxol.Core.FocusManager do
     # Find the index of the current component
     current_index =
       if current_focus_id do
-        Enum.find_index(group_components, fn c -> c.id == current_focus_id end) || -1
+        Enum.find_index(group_components, fn c -> c.id == current_focus_id end) ||
+          -1
       else
-        -1 # Start from beginning if current_focus_id is nil
+        # Start from beginning if current_focus_id is nil
+        -1
       end
 
     # Find the next enabled component (wrapping)
-    next_component = find_next_enabled_component(group_components, current_index, true)
+    next_component =
+      find_next_enabled_component(group_components, current_index, true)
 
     if next_component do
       next_component.id
@@ -354,10 +366,13 @@ defmodule Raxol.Core.FocusManager do
         Process.put(:focus_manager_state, updated_focus_state)
 
         # Send focus change event
-        EventManager.dispatch({:focus_change, focus_state[:active_element], prev})
+        EventManager.dispatch(
+          {:focus_change, focus_state[:active_element], prev}
+        )
 
         # Announce focus change if configured
         component = find_component_by_id(prev)
+
         if component && component.announce do
           announce_focus_change(component.announce)
         end
@@ -407,7 +422,8 @@ defmodule Raxol.Core.FocusManager do
   (Placeholder implementation)
   """
   @spec register_focus_change_handler(fun()) :: :ok
-  def register_focus_change_handler(handler_fun) when is_function(handler_fun, 2) do
+  def register_focus_change_handler(handler_fun)
+      when is_function(handler_fun, 2) do
     handlers = Process.get(:focus_manager_change_handlers, [])
     updated_handlers = [handler_fun | handlers]
     Process.put(:focus_manager_change_handlers, updated_handlers)
@@ -419,7 +435,8 @@ defmodule Raxol.Core.FocusManager do
   (Placeholder implementation)
   """
   @spec unregister_focus_change_handler(fun()) :: :ok
-  def unregister_focus_change_handler(handler_fun) when is_function(handler_fun, 2) do
+  def unregister_focus_change_handler(handler_fun)
+      when is_function(handler_fun, 2) do
     handlers = Process.get(:focus_manager_change_handlers, [])
     updated_handlers = List.delete(handlers, handler_fun)
     Process.put(:focus_manager_change_handlers, updated_handlers)
@@ -462,7 +479,13 @@ defmodule Raxol.Core.FocusManager do
       start_index = rem(current_index + 1, component_count)
 
       # Search for the next enabled component
-      find_enabled_component_from_index(components, start_index, 1, component_count, wrap)
+      find_enabled_component_from_index(
+        components,
+        start_index,
+        1,
+        component_count,
+        wrap
+      )
     end
   end
 
@@ -481,11 +504,23 @@ defmodule Raxol.Core.FocusManager do
         end
 
       # Search for the previous enabled component
-      find_enabled_component_from_index(components, start_index, -1, component_count, wrap)
+      find_enabled_component_from_index(
+        components,
+        start_index,
+        -1,
+        component_count,
+        wrap
+      )
     end
   end
 
-  defp find_enabled_component_from_index(components, start_index, step, count, wrap) do
+  defp find_enabled_component_from_index(
+         components,
+         start_index,
+         step,
+         count,
+         wrap
+       ) do
     # Early return for invalid indices
     if start_index < 0 || start_index >= count do
       nil
@@ -501,7 +536,7 @@ defmodule Raxol.Core.FocusManager do
             {:halt, component}
 
           # Reached the boundary and no wrapping
-          (i == count - 1 && !wrap) || (i == count - 1) ->
+          (i == count - 1 && !wrap) || i == count - 1 ->
             {:halt, nil}
 
           # Continue searching

@@ -19,14 +19,14 @@ defmodule Raxol.Terminal.Session do
   alias Raxol.Terminal.{Emulator, Renderer}
 
   @type t :: %__MODULE__{
-    id: String.t(),
-    emulator: Emulator.t(),
-    renderer: Renderer.t(),
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    title: String.t(),
-    theme: map()
-  }
+          id: String.t(),
+          emulator: Emulator.t(),
+          renderer: Renderer.t(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          title: String.t(),
+          theme: map()
+        }
 
   defstruct [
     :id,
@@ -145,12 +145,19 @@ defmodule Raxol.Terminal.Session do
   @impl true
   def handle_cast({:input, input}, state) do
     case Emulator.process_input(state.emulator, input) do
-      {new_emulator, _output} when is_struct(new_emulator, Raxol.Terminal.Emulator) ->
-        new_renderer = %{state.renderer | screen_buffer: new_emulator.screen_buffer}
+      {new_emulator, _output}
+      when is_struct(new_emulator, Raxol.Terminal.Emulator) ->
+        new_renderer = %{
+          state.renderer
+          | screen_buffer: new_emulator.screen_buffer
+        }
+
         {:noreply, %{state | emulator: new_emulator, renderer: new_renderer}}
+
       {:error, reason} ->
         Logger.error("Error processing terminal input: #{inspect(reason)}")
-        {:noreply, state} # Or handle error appropriately
+        # Or handle error appropriately
+        {:noreply, state}
     end
   end
 
@@ -178,13 +185,14 @@ defmodule Raxol.Terminal.Session do
     emulator = Emulator.new(width, height)
     renderer = Renderer.new(emulator.screen_buffer, theme)
 
-    %{state |
-      emulator: emulator,
-      renderer: renderer,
-      width: width,
-      height: height,
-      title: title,
-      theme: theme
+    %{
+      state
+      | emulator: emulator,
+        renderer: renderer,
+        width: width,
+        height: height,
+        title: title,
+        theme: theme
     }
   end
 end

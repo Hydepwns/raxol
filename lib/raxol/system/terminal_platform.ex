@@ -6,7 +6,14 @@ defmodule Raxol.System.TerminalPlatform do
   feature support, and compatibility across different platforms and terminal emulators.
   """
 
-  @type terminal_feature :: :true_color | :unicode | :mouse | :clipboard | :bracketed_paste | :focus | :title
+  @type terminal_feature ::
+          :true_color
+          | :unicode
+          | :mouse
+          | :clipboard
+          | :bracketed_paste
+          | :focus
+          | :title
 
   @doc """
   Returns detailed information about the current terminal's capabilities.
@@ -64,7 +71,8 @@ defmodule Raxol.System.TerminalPlatform do
     #   input: get_input_capabilities(),
     #   output: get_output_capabilities()
     # }
-    :none # Explicitly return :none to satisfy Dialyzer for unused function
+    # Explicitly return :none to satisfy Dialyzer for unused function
+    :none
   end
 
   @doc """
@@ -88,7 +96,8 @@ defmodule Raxol.System.TerminalPlatform do
   def supports_feature?(_feature) do
     # Function is unused, returning :none as per Dialyzer
     # feature in get_supported_features()
-    :none # Explicitly return :none to satisfy Dialyzer for unused function
+    # Explicitly return :none to satisfy Dialyzer for unused function
+    :none
   end
 
   @doc """
@@ -109,10 +118,20 @@ defmodule Raxol.System.TerminalPlatform do
     term_program = System.get_env("TERM_PROGRAM") || ""
     term_emulator = System.get_env("TERM_EMULATOR") || ""
 
-    supports_256_colors? = String.contains?(term, "256") || term_program in ["iTerm.app", "vscode"]
-    supports_true_color? = term_program in ["iTerm.app", "vscode"] || term_emulator == "JetBrains-JediTerm"
-    supports_mouse? = term_program in ["iTerm.app", "vscode"] || term_emulator == "JetBrains-JediTerm"
-    supports_title? = term_program in ["iTerm.app", "vscode", "Apple_Terminal"] || term_emulator == "JetBrains-JediTerm"
+    supports_256_colors? =
+      String.contains?(term, "256") || term_program in ["iTerm.app", "vscode"]
+
+    supports_true_color? =
+      term_program in ["iTerm.app", "vscode"] ||
+        term_emulator == "JetBrains-JediTerm"
+
+    supports_mouse? =
+      term_program in ["iTerm.app", "vscode"] ||
+        term_emulator == "JetBrains-JediTerm"
+
+    supports_title? =
+      term_program in ["iTerm.app", "vscode", "Apple_Terminal"] ||
+        term_emulator == "JetBrains-JediTerm"
 
     %{}
     |> maybe_add_feature(:colors_256, supports_256_colors?)

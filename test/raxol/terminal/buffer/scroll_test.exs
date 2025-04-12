@@ -26,20 +26,21 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
       scroll = Scroll.new(1000)
       line = [Cell.new("A"), Cell.new("B")]
       scroll = Scroll.add_line(scroll, line)
-      
+
       assert scroll.height == 1
       assert length(scroll.buffer) == 1
       assert hd(scroll.buffer) == line
     end
 
     test "trims buffer when it exceeds max height" do
-      scroll = Scroll.new(2)  # Small max height for testing
-      
+      # Small max height for testing
+      scroll = Scroll.new(2)
+
       # Add three lines
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
       scroll = Scroll.add_line(scroll, [Cell.new("B")])
       scroll = Scroll.add_line(scroll, [Cell.new("C")])
-      
+
       assert scroll.height == 2
       assert length(scroll.buffer) == 2
       assert hd(scroll.buffer) == [Cell.new("C")]
@@ -47,12 +48,17 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
     end
 
     test "compresses buffer when memory usage exceeds limit" do
-      scroll = Scroll.new(1000, 100)  # Very low memory limit
-      
+      # Very low memory limit
+      scroll = Scroll.new(1000, 100)
+
       # Add a line with many cells to exceed memory limit
-      line = Enum.map(1..100, fn _ -> Cell.new("A", %{foreground: :white, background: :black}) end)
+      line =
+        Enum.map(1..100, fn _ ->
+          Cell.new("A", %{foreground: :white, background: :black})
+        end)
+
       scroll = Scroll.add_line(scroll, line)
-      
+
       assert scroll.compression_ratio < 1.0
       assert scroll.memory_usage <= scroll.memory_limit
     end
@@ -61,15 +67,15 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
   describe "get_view/2" do
     test "gets a view of the scroll buffer at the current position" do
       scroll = Scroll.new(1000)
-      
+
       # Add three lines
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
       scroll = Scroll.add_line(scroll, [Cell.new("B")])
       scroll = Scroll.add_line(scroll, [Cell.new("C")])
-      
+
       # Get a view of height 2
       view = Scroll.get_view(scroll, 2)
-      
+
       assert length(view) == 2
       assert hd(view) == [Cell.new("C")]
       assert hd(tl(view)) == [Cell.new("B")]
@@ -78,23 +84,24 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
     test "returns empty list when position is beyond buffer height" do
       scroll = Scroll.new(1000)
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
-      scroll = Scroll.scroll(scroll, 10)  # Scroll beyond buffer height
-      
+      # Scroll beyond buffer height
+      scroll = Scroll.scroll(scroll, 10)
+
       view = Scroll.get_view(scroll, 2)
       assert view == []
     end
 
     test "returns partial view when near the end of the buffer" do
       scroll = Scroll.new(1000)
-      
+
       # Add three lines
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
       scroll = Scroll.add_line(scroll, [Cell.new("B")])
       scroll = Scroll.add_line(scroll, [Cell.new("C")])
-      
+
       # Get a view of height 5 (larger than buffer)
       view = Scroll.get_view(scroll, 5)
-      
+
       assert length(view) == 3
       assert hd(view) == [Cell.new("C")]
       assert hd(tl(view)) == [Cell.new("B")]
@@ -113,7 +120,8 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
       scroll = Scroll.new(1000)
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
       scroll = Scroll.scroll(scroll, 10)
-      assert scroll.position == 0  # Cannot scroll beyond buffer height
+      # Cannot scroll beyond buffer height
+      assert scroll.position == 0
     end
 
     test "handles negative scroll amounts" do
@@ -147,13 +155,13 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
       scroll = Scroll.add_line(scroll, [Cell.new("A")])
       scroll = Scroll.add_line(scroll, [Cell.new("B")])
       scroll = Scroll.scroll(scroll, 1)
-      
+
       scroll = Scroll.clear(scroll)
-      
+
       assert scroll.buffer == []
       assert scroll.position == 0
       assert scroll.height == 0
       assert scroll.memory_usage == 0
     end
   end
-end 
+end

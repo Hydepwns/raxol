@@ -25,7 +25,9 @@ defmodule Raxol.Terminal.EscapeSequence do
       <<n1::binary-size(1), ";", n2::binary-size(1), "H">> ->
         {row, _} = Integer.parse(n1)
         {col, _} = Integer.parse(n2)
-        {Movement.move_to_position(cursor, col - 1, row - 1), "Moved cursor to row #{row}, column #{col}"}
+
+        {Movement.move_to_position(cursor, col - 1, row - 1),
+         "Moved cursor to row #{row}, column #{col}"}
 
       # Cursor Up (A)
       <<n::binary-size(1), "A">> ->
@@ -40,30 +42,39 @@ defmodule Raxol.Terminal.EscapeSequence do
       # Cursor Forward (C)
       <<n::binary-size(1), "C">> ->
         {count, _} = Integer.parse(n)
-        {Movement.move_right(cursor, count), "Moved cursor right #{count} columns"}
+
+        {Movement.move_right(cursor, count),
+         "Moved cursor right #{count} columns"}
 
       # Cursor Backward (D)
       <<n::binary-size(1), "D">> ->
         {count, _} = Integer.parse(n)
-        {Movement.move_left(cursor, count), "Moved cursor left #{count} columns"}
+
+        {Movement.move_left(cursor, count),
+         "Moved cursor left #{count} columns"}
 
       # Cursor Next Line (E)
       <<n::binary-size(1), "E">> ->
         {count, _} = Integer.parse(n)
         cursor = Movement.move_down(cursor, count)
-        {Movement.move_to_line_start(cursor), "Moved cursor to beginning of next line #{count} times"}
+
+        {Movement.move_to_line_start(cursor),
+         "Moved cursor to beginning of next line #{count} times"}
 
       # Cursor Previous Line (F)
       <<n::binary-size(1), "F">> ->
         {count, _} = Integer.parse(n)
         cursor = Movement.move_up(cursor, count)
-        {Movement.move_to_line_start(cursor), "Moved cursor to beginning of previous line #{count} times"}
+
+        {Movement.move_to_line_start(cursor),
+         "Moved cursor to beginning of previous line #{count} times"}
 
       # Cursor Horizontal Absolute (G)
       <<n::binary-size(1), "G">> ->
         {col, _} = Integer.parse(n)
         # Convert from 1-based to 0-based indexing
-        {Movement.move_to_column(cursor, col - 1), "Moved cursor to column #{col}"}
+        {Movement.move_to_column(cursor, col - 1),
+         "Moved cursor to column #{col}"}
 
       # Save Cursor Position (s)
       "s" ->
@@ -156,27 +167,68 @@ defmodule Raxol.Terminal.EscapeSequence do
   def parse_sequence(sequence) do
     case sequence do
       # Check for specific known CSI sequences first
-      "\e[?25h" -> {:cursor_style, "?25h"}
-      "\e[?25l" -> {:cursor_style, "?25l"}
-      "\e[?12h" -> {:cursor_style, "?12h"}
-      "\e[?12l" -> {:cursor_style, "?12l"}
-      "\e[?1h" -> {:cursor_style, "?1h"}
-      "\e[?1l" -> {:cursor_style, "?1l"}
-      "\e[?5h" -> {:cursor_style, "?5h"}
-      "\e[?1049h" -> {:terminal_mode, "?1049h"}
-      "\e[?1049l" -> {:terminal_mode, "?1049l"}
-      "\e[?7h" -> {:terminal_mode, "?7h"}
-      "\e[?7l" -> {:terminal_mode, "?7l"}
-      "\e[?8h" -> {:terminal_mode, "?8h"}
-      "\e[?8l" -> {:terminal_mode, "?8l"}
-      "\e[4h" -> {:terminal_mode, "4h"}
-      "\e[4l" -> {:terminal_mode, "4l"}
-      "\e[?1000h" -> {:terminal_mode, "?1000h"}
-      "\e[?1000l" -> {:terminal_mode, "?1000l"}
-      "\e[?1001h" -> {:terminal_mode, "?1001h"}
-      "\e[?1001l" -> {:terminal_mode, "?1001l"}
-      "\e[?1002h" -> {:terminal_mode, "?1002h"}
-      "\e[?1002l" -> {:terminal_mode, "?1002l"}
+      "\e[?25h" ->
+        {:cursor_style, "?25h"}
+
+      "\e[?25l" ->
+        {:cursor_style, "?25l"}
+
+      "\e[?12h" ->
+        {:cursor_style, "?12h"}
+
+      "\e[?12l" ->
+        {:cursor_style, "?12l"}
+
+      "\e[?1h" ->
+        {:cursor_style, "?1h"}
+
+      "\e[?1l" ->
+        {:cursor_style, "?1l"}
+
+      "\e[?5h" ->
+        {:cursor_style, "?5h"}
+
+      "\e[?1049h" ->
+        {:terminal_mode, "?1049h"}
+
+      "\e[?1049l" ->
+        {:terminal_mode, "?1049l"}
+
+      "\e[?7h" ->
+        {:terminal_mode, "?7h"}
+
+      "\e[?7l" ->
+        {:terminal_mode, "?7l"}
+
+      "\e[?8h" ->
+        {:terminal_mode, "?8h"}
+
+      "\e[?8l" ->
+        {:terminal_mode, "?8l"}
+
+      "\e[4h" ->
+        {:terminal_mode, "4h"}
+
+      "\e[4l" ->
+        {:terminal_mode, "4l"}
+
+      "\e[?1000h" ->
+        {:terminal_mode, "?1000h"}
+
+      "\e[?1000l" ->
+        {:terminal_mode, "?1000l"}
+
+      "\e[?1001h" ->
+        {:terminal_mode, "?1001h"}
+
+      "\e[?1001l" ->
+        {:terminal_mode, "?1001l"}
+
+      "\e[?1002h" ->
+        {:terminal_mode, "?1002h"}
+
+      "\e[?1002l" ->
+        {:terminal_mode, "?1002l"}
 
       # General Cursor movement CSI sequences
       <<"\e[", rest::binary>> ->
@@ -186,6 +238,15 @@ defmodule Raxol.Terminal.EscapeSequence do
           {:cursor_movement, rest}
         else
           {:unknown, sequence}
+        end
+
+      # Operating System Command (OSC)
+      <<"\e]", rest::binary>> ->
+        case parse_osc_sequence(rest) do
+          {:ok, type, data} ->
+            {:osc, type, data}
+          {:error, _reason} ->
+            {:unknown, sequence}
         end
 
       # Other escape sequences (OSC, etc.) - can be added here if needed
@@ -221,8 +282,61 @@ defmodule Raxol.Terminal.EscapeSequence do
         {updated_modes, message} = process_terminal_mode(modes, rest)
         {cursor, updated_modes, message}
 
+      {:osc, type, data} ->
+        updated_emulator = process_osc_sequence(type, data, modes)
+        message = nil # No message generated for OSC in this impl
+        {cursor, updated_emulator, message}
+
       {:unknown, rest} ->
         {cursor, modes, "Unknown escape sequence: #{rest}"}
+    end
+  end
+
+  @doc """
+  Processes an Operating System Command (OSC) sequence.
+  Currently handles OSC 8 for hyperlinks.
+  """
+  def process_osc_sequence(osc_type, data, %{} = emulator) do
+    case osc_type do
+      8 ->
+        # OSC 8: Hyperlink
+        # Format: <params>;<url>
+        case String.split(data, ";", parts: 2) do
+          [_params, url] ->
+            # Set the active hyperlink URL
+            %{emulator | current_hyperlink_url: url}
+          [""] ->
+            # Empty data means end of hyperlink
+            %{emulator | current_hyperlink_url: nil}
+          _ ->
+            # Invalid OSC 8 format
+            emulator
+        end
+
+      _ ->
+        # Ignore other OSC sequences for now
+        emulator
+    end
+  end
+
+  # --- Private Helper Functions ---
+
+  # Parses the content of an OSC sequence (after \e])
+  # Returns {:ok, type, data} or {:error, reason}
+  defp parse_osc_sequence(rest) do
+    # OSC sequence ends with BEL (\a) or ST (\e\\)
+    case String.split(rest, ["\a", "\e\\"]) do
+      [osc_content, _] ->
+        # Content is typically <type>;<data>
+        case String.split(osc_content, ";", parts: 2) do
+          [type_str, data] ->
+            case Integer.parse(type_str) do
+              {type_int, ""} -> {:ok, type_int, data}
+              _ -> {:error, "Invalid OSC type: #{type_str}"}
+            end
+          _ -> {:error, "Invalid OSC content format: #{osc_content}"}
+        end
+      _ -> {:error, "Unterminated OSC sequence: #{rest}"}
     end
   end
 end

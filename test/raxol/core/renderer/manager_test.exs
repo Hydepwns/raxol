@@ -58,39 +58,41 @@ defmodule Raxol.Core.Renderer.ManagerTest do
       view = View.text("Hello", position: {0, 0})
       :ok = Manager.set_root_view(manager, view)
       :ok = Manager.render_frame(manager)
-      
+
       state = :sys.get_state(manager)
       cell = get_in(state.buffer.front_buffer.cells, [{0, 0}])
       assert cell.char == "H"
     end
 
     test "handles complex layouts", %{manager: manager} do
-      view = View.flex(direction: :row) do
-        [
-          View.text("A", size: {1, 1}),
-          View.text("B", size: {1, 1})
-        ]
-      end
+      view =
+        View.flex direction: :row do
+          [
+            View.text("A", size: {1, 1}),
+            View.text("B", size: {1, 1})
+          ]
+        end
 
       :ok = Manager.set_root_view(manager, view)
       :ok = Manager.render_frame(manager)
-      
+
       state = :sys.get_state(manager)
       assert get_in(state.buffer.front_buffer.cells, [{0, 0}]).char == "A"
       assert get_in(state.buffer.front_buffer.cells, [{1, 0}]).char == "B"
     end
 
     test "respects z-index ordering", %{manager: manager} do
-      view = View.box do
-        [
-          View.text("A", position: {0, 0}, z_index: 1),
-          View.text("B", position: {0, 0}, z_index: 2)
-        ]
-      end
+      view =
+        View.box do
+          [
+            View.text("A", position: {0, 0}, z_index: 1),
+            View.text("B", position: {0, 0}, z_index: 2)
+          ]
+        end
 
       :ok = Manager.set_root_view(manager, view)
       :ok = Manager.render_frame(manager)
-      
+
       state = :sys.get_state(manager)
       assert get_in(state.buffer.front_buffer.cells, [{0, 0}]).char == "B"
     end
@@ -128,7 +130,7 @@ defmodule Raxol.Core.Renderer.ManagerTest do
       :ok = Manager.set_root_view(manager, view)
       :ok = Manager.render_frame(manager)
       :ok = Manager.clear(manager)
-      
+
       state = :sys.get_state(manager)
       assert map_size(state.buffer.front_buffer.cells) == 0
     end
@@ -138,17 +140,20 @@ defmodule Raxol.Core.Renderer.ManagerTest do
     test "maintains target frame rate", %{manager: manager} do
       view = View.text("Test")
       :ok = Manager.set_root_view(manager, view)
-      
+
       start_time = System.monotonic_time(:millisecond)
+
       for _ <- 1..10 do
         :ok = Manager.render_frame(manager)
-        Process.sleep(16)  # ~60 FPS
+        # ~60 FPS
+        Process.sleep(16)
       end
+
       end_time = System.monotonic_time(:millisecond)
-      
+
       # Should take ~160ms for 10 frames at 60 FPS
-      assert (end_time - start_time) >= 160
-      assert (end_time - start_time) <= 200
+      assert end_time - start_time >= 160
+      assert end_time - start_time <= 200
     end
   end
-end 
+end

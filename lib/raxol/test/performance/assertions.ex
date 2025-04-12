@@ -23,7 +23,9 @@ defmodule Raxol.Test.Performance.Assertions do
   """
   def assert_render_time(component, operation, opts \\ []) do
     time = Performance.measure_render_time(component, operation)
-    threshold = Keyword.get(opts, :under, component.benchmark_config.max_render_time)
+
+    threshold =
+      Keyword.get(opts, :under, component.benchmark_config.max_render_time)
 
     assert time <= threshold,
            "Render time #{time}ms exceeds threshold of #{threshold}ms"
@@ -40,7 +42,9 @@ defmodule Raxol.Test.Performance.Assertions do
   """
   def assert_memory_usage(component, operation, opts \\ []) do
     usage = Performance.measure_memory_usage(component, operation)
-    threshold = Keyword.get(opts, :under, component.benchmark_config.max_memory_usage)
+
+    threshold =
+      Keyword.get(opts, :under, component.benchmark_config.max_memory_usage)
 
     assert usage.total <= threshold,
            "Memory usage #{usage.total} bytes exceeds threshold of #{threshold} bytes"
@@ -58,7 +62,9 @@ defmodule Raxol.Test.Performance.Assertions do
   """
   def assert_event_latency(component, event, opts \\ []) do
     latency = Performance.measure_event_latency(component, event)
-    threshold = Keyword.get(opts, :under, component.benchmark_config.max_event_latency)
+
+    threshold =
+      Keyword.get(opts, :under, component.benchmark_config.max_event_latency)
 
     assert latency <= threshold,
            "Event latency #{latency}ms exceeds threshold of #{threshold}ms"
@@ -77,11 +83,13 @@ defmodule Raxol.Test.Performance.Assertions do
 
     # Analyze memory stability
     memory_trend = analyze_trend(measurements, & &1.memory[:total])
+
     assert memory_trend.stable?,
            "Memory usage is not stable: #{inspect(memory_trend)}"
 
     # Analyze process count stability
     process_trend = analyze_trend(measurements, & &1.process_count)
+
     assert process_trend.stable?,
            "Process count is not stable: #{inspect(process_trend)}"
 
@@ -104,6 +112,7 @@ defmodule Raxol.Test.Performance.Assertions do
 
     Enum.each(requirements, fn {metric, threshold} ->
       value = get_in(results, [metric])
+
       assert value <= threshold,
              "#{metric} #{value} exceeds requirement of #{threshold}"
     end)
@@ -149,15 +158,17 @@ defmodule Raxol.Test.Performance.Assertions do
     %{
       mean: mean,
       stddev: stddev,
-      stable?: stddev / mean <= 0.1 # Consider stable if stddev is within 10% of mean
+      # Consider stable if stddev is within 10% of mean
+      stable?: stddev / mean <= 0.1
     }
   end
 
   defp calculate_stddev(values, mean) do
-    variance = Enum.reduce(values, 0, fn value, acc ->
-      diff = value - mean
-      acc + diff * diff
-    end) / length(values)
+    variance =
+      Enum.reduce(values, 0, fn value, acc ->
+        diff = value - mean
+        acc + diff * diff
+      end) / length(values)
 
     :math.sqrt(variance)
   end

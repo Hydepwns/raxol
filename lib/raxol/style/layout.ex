@@ -4,13 +4,13 @@ defmodule Raxol.Style.Layout do
   """
 
   @type t :: %__MODULE__{
-    padding: {integer(), integer(), integer(), integer()},
-    margin: {integer(), integer(), integer(), integer()},
-    width: integer() | :auto,
-    height: integer() | :auto,
-    alignment: :left | :center | :right,
-    overflow: :visible | :hidden | :scroll
-  }
+          padding: {integer(), integer(), integer(), integer()},
+          margin: {integer(), integer(), integer(), integer()},
+          width: integer() | :auto,
+          height: integer() | :auto,
+          alignment: :left | :center | :right,
+          overflow: :visible | :hidden | :scroll
+        }
 
   defstruct padding: {0, 0, 0, 0},
             margin: {0, 0, 0, 0},

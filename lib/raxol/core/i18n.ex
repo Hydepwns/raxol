@@ -68,6 +68,7 @@ defmodule Raxol.Core.I18n do
       fallback_locale: fallback_locale,
       translations_dir: translations_dir
     }
+
     Process.put(:i18n_config, config)
 
     # Set initial locale
@@ -84,7 +85,12 @@ defmodule Raxol.Core.I18n do
     load_translations(default_locale)
 
     # Register event handlers
-    _ = EventManager.register_handler(:locale_changed, __MODULE__, :handle_locale_changed)
+    _ =
+      EventManager.register_handler(
+        :locale_changed,
+        __MODULE__,
+        :handle_locale_changed
+      )
 
     :ok
   end
@@ -125,25 +131,27 @@ defmodule Raxol.Core.I18n do
     translations = get_translations(locale)
 
     # Get translation or fallback
-    translation = case Map.get(translations, key) do
-      nil ->
-        # Try fallback locale
-        config = Process.get(:i18n_config)
-        fallback_locale = Map.get(config, :fallback_locale)
+    translation =
+      case Map.get(translations, key) do
+        nil ->
+          # Try fallback locale
+          config = Process.get(:i18n_config)
+          fallback_locale = Map.get(config, :fallback_locale)
 
-        if fallback_locale && fallback_locale != locale do
-          # Get translations for fallback locale
-          fallback_translations = get_translations(fallback_locale)
+          if fallback_locale && fallback_locale != locale do
+            # Get translations for fallback locale
+            fallback_translations = get_translations(fallback_locale)
 
-          # Get translation from fallback or use default
-          Map.get(fallback_translations, key, default)
-        else
-          # Use default
-          default
-        end
-      translation ->
-        translation
-    end
+            # Get translation from fallback or use default
+            Map.get(fallback_translations, key, default)
+          else
+            # Use default
+            default
+          end
+
+        translation ->
+          translation
+      end
 
     # Apply variable bindings
     apply_bindings(translation, bindings)
@@ -291,7 +299,10 @@ defmodule Raxol.Core.I18n do
 
     # Store updated translations
     all_translations = Process.get(:i18n_translations, %{})
-    updated_all_translations = Map.put(all_translations, locale, updated_translations)
+
+    updated_all_translations =
+      Map.put(all_translations, locale, updated_translations)
+
     Process.put(:i18n_translations, updated_all_translations)
 
     :ok

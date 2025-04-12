@@ -59,20 +59,26 @@ defmodule Raxol.Components.Input.MultiLineInput do
   @impl true
   def update({:set_value, value}, state) do
     _lines = split_into_lines(value, state.width, state.wrap)
-    %{state |
-      value: value,
-      cursor_row: 0,
-      cursor_col: 0,
-      scroll_offset: 0,
-      selection_start: nil,
-      selection_end: nil
+
+    %{
+      state
+      | value: value,
+        cursor_row: 0,
+        cursor_col: 0,
+        scroll_offset: 0,
+        selection_start: nil,
+        selection_end: nil
     }
   end
 
   def update({:move_cursor, row, col}, state) do
     lines = split_into_lines(state.value, state.width, state.wrap)
     max_row = length(lines) - 1
-    max_col = if row >= 0 and row <= max_row, do: String.length(Enum.at(lines, row)), else: 0
+
+    max_col =
+      if row >= 0 and row <= max_row,
+        do: String.length(Enum.at(lines, row)),
+        else: 0
 
     new_row = clamp(row, 0, max_row)
     new_col = clamp(col, 0, max_col)
@@ -80,12 +86,13 @@ defmodule Raxol.Components.Input.MultiLineInput do
     # Adjust scroll if cursor would be outside visible area
     new_scroll = adjust_scroll(new_row, state.scroll_offset, state.height)
 
-    %{state |
-      cursor_row: new_row,
-      cursor_col: new_col,
-      scroll_offset: new_scroll,
-      selection_start: nil,
-      selection_end: nil
+    %{
+      state
+      | cursor_row: new_row,
+        cursor_col: new_col,
+        scroll_offset: new_scroll,
+        selection_start: nil,
+        selection_end: nil
     }
   end
 
@@ -99,11 +106,12 @@ defmodule Raxol.Components.Input.MultiLineInput do
     start_col = clamp(start_col, 0, String.length(Enum.at(lines, start_row)))
     end_col = clamp(end_col, 0, String.length(Enum.at(lines, end_row)))
 
-    %{state |
-      selection_start: {start_row, start_col},
-      selection_end: {end_row, end_col},
-      cursor_row: end_row,
-      cursor_col: end_col
+    %{
+      state
+      | selection_start: {start_row, start_col},
+        selection_end: {end_row, end_col},
+        cursor_row: end_row,
+        cursor_col: end_col
     }
   end
 
@@ -133,28 +141,38 @@ defmodule Raxol.Components.Input.MultiLineInput do
   end
 
   defp render_placeholder(state) do
-    Components.text(content: state.placeholder, color: state.style.placeholder_color)
+    Components.text(
+      content: state.placeholder,
+      color: state.style.placeholder_color
+    )
   end
 
   defp render_content(state) do
     lines = split_into_lines(state.value, state.width, state.wrap)
     visible_lines = Enum.slice(lines, state.scroll_offset, state.height)
 
-    line_number_width = if state.style.line_numbers do
-      String.length(Integer.to_string(length(lines)))
-    else
-      0
-    end
+    line_number_width =
+      if state.style.line_numbers do
+        String.length(Integer.to_string(length(lines)))
+      else
+        0
+      end
 
     Layout.column do
       for {line, index} <- Enum.with_index(visible_lines) do
         row_index = index + state.scroll_offset
+
         row do
           if state.style.line_numbers do
             Components.text(
-              content: String.pad_leading(Integer.to_string(row_index + 1), line_number_width),
+              content:
+                String.pad_leading(
+                  Integer.to_string(row_index + 1),
+                  line_number_width
+                ),
               color: state.style.line_number_color
             )
+
             Components.text(content: " ")
           end
 
@@ -168,8 +186,10 @@ defmodule Raxol.Components.Input.MultiLineInput do
     cond do
       has_selection?(state) and line_in_selection?(row_index, state) ->
         render_line_with_selection(line, row_index, state)
+
       row_index == state.cursor_row and state.focused ->
         render_line_with_cursor(line, state)
+
       true ->
         Components.text(content: line, color: state.style.text_color)
     end
@@ -198,9 +218,19 @@ defmodule Raxol.Components.Input.MultiLineInput do
         after_selection = String.slice(line, end_col, String.length(line))
 
         [
-          Components.text(content: before_selection, color: state.style.text_color),
-          Components.text(content: selected, color: state.style.text_color, background: state.style.selection_color),
-          Components.text(content: after_selection, color: state.style.text_color)
+          Components.text(
+            content: before_selection,
+            color: state.style.text_color
+          ),
+          Components.text(
+            content: selected,
+            color: state.style.text_color,
+            background: state.style.selection_color
+          ),
+          Components.text(
+            content: after_selection,
+            color: state.style.text_color
+          )
         ]
 
       row_index == start_row ->
@@ -209,8 +239,15 @@ defmodule Raxol.Components.Input.MultiLineInput do
         selected = String.slice(line, start_col, String.length(line))
 
         [
-          Components.text(content: before_selection, color: state.style.text_color),
-          Components.text(content: selected, color: state.style.text_color, background: state.style.selection_color)
+          Components.text(
+            content: before_selection,
+            color: state.style.text_color
+          ),
+          Components.text(
+            content: selected,
+            color: state.style.text_color,
+            background: state.style.selection_color
+          )
         ]
 
       row_index == end_row ->
@@ -219,29 +256,41 @@ defmodule Raxol.Components.Input.MultiLineInput do
         after_selection = String.slice(line, end_col, String.length(line))
 
         [
-          Components.text(content: selected, color: state.style.text_color, background: state.style.selection_color),
-          Components.text(content: after_selection, color: state.style.text_color)
+          Components.text(
+            content: selected,
+            color: state.style.text_color,
+            background: state.style.selection_color
+          ),
+          Components.text(
+            content: after_selection,
+            color: state.style.text_color
+          )
         ]
 
       true ->
         # Middle line of selection
-        Components.text(content: line, color: state.style.text_color, background: state.style.selection_color)
+        Components.text(
+          content: line,
+          color: state.style.text_color,
+          background: state.style.selection_color
+        )
     end
   end
 
   @impl true
   def handle_event(%Event{type: :key, data: data} = _event, state) do
-    msg = case data do
-      %{key: key} when is_binary(key) and byte_size(key) == 1 -> {:input, key}
-      %{key: :enter} -> {:enter}
-      %{key: :backspace} -> {:backspace}
-      %{key: :delete} -> {:delete}
-      %{key: :left} -> {:move_cursor, state.cursor_row, state.cursor_col - 1}
-      %{key: :right} -> {:move_cursor, state.cursor_row, state.cursor_col + 1}
-      %{key: :up} -> {:move_cursor, state.cursor_row - 1, state.cursor_col}
-      %{key: :down} -> {:move_cursor, state.cursor_row + 1, state.cursor_col}
-      _ -> nil
-    end
+    msg =
+      case data do
+        %{key: key} when is_binary(key) and byte_size(key) == 1 -> {:input, key}
+        %{key: :enter} -> {:enter}
+        %{key: :backspace} -> {:backspace}
+        %{key: :delete} -> {:delete}
+        %{key: :left} -> {:move_cursor, state.cursor_row, state.cursor_col - 1}
+        %{key: :right} -> {:move_cursor, state.cursor_row, state.cursor_col + 1}
+        %{key: :up} -> {:move_cursor, state.cursor_row - 1, state.cursor_col}
+        %{key: :down} -> {:move_cursor, state.cursor_row + 1, state.cursor_col}
+        _ -> nil
+      end
 
     if msg do
       {update(msg, state), []}
@@ -279,12 +328,17 @@ defmodule Raxol.Components.Input.MultiLineInput do
     start != nil and end_pos != nil and start != end_pos
   end
 
-  defp line_in_selection?(row_index, %{selection_start: {start_row, _}, selection_end: {end_row, _}}) do
-    row_index >= min(start_row, end_row) and row_index <= max(start_row, end_row)
+  defp line_in_selection?(row_index, %{
+         selection_start: {start_row, _},
+         selection_end: {end_row, _}
+       }) do
+    row_index >= min(start_row, end_row) and
+      row_index <= max(start_row, end_row)
   end
 
   defp split_into_lines(text, width, wrap_mode) do
     lines = String.split(text, "\n")
+
     case wrap_mode do
       :none -> lines
       :char -> Enum.flat_map(lines, &wrap_line_by_char(&1, width))
@@ -309,11 +363,18 @@ defmodule Raxol.Components.Input.MultiLineInput do
   end
 
   defp do_wrap_words([word | rest], width, lines, current_line) do
-    new_line = if current_line == "", do: word, else: current_line <> " " <> word
+    new_line =
+      if current_line == "", do: word, else: current_line <> " " <> word
+
     if String.length(new_line) <= width do
       do_wrap_words(rest, width, lines, new_line)
     else
-      do_wrap_words([word | rest], width, [String.trim(current_line) | lines], "")
+      do_wrap_words(
+        [word | rest],
+        width,
+        [String.trim(current_line) | lines],
+        ""
+      )
     end
   end
 
@@ -321,8 +382,10 @@ defmodule Raxol.Components.Input.MultiLineInput do
     cond do
       cursor_row < scroll_offset ->
         cursor_row
+
       cursor_row >= scroll_offset + height ->
         cursor_row - height + 1
+
       true ->
         scroll_offset
     end

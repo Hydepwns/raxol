@@ -25,7 +25,8 @@ config :raxol, RaxolWeb.Endpoint,
   debug_errors: true,
   secret_key_base: "your-secret-key-base",
   watchers: [
-    esbuild: {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+    esbuild:
+      {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
     sass: {DartSass, :install_and_run, [:default, ~w(--watch)]}
   ]
 
@@ -68,4 +69,4 @@ config :raxol, :web,
   enable_websockets: true,
   session_timeout: 3600,
   debug_mode: true,
-  enable_hot_reload: true 
+  enable_hot_reload: true

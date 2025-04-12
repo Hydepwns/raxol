@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Cursor.Manager do
   @moduledoc """
   Terminal cursor manager module.
-  
+
   This module handles the management of terminal cursors, including:
   - Multiple cursor styles
   - State persistence
@@ -11,21 +11,22 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @type cursor_style :: :block | :underline | :bar | :custom
   @type cursor_state :: :visible | :hidden | :blinking
-  @type cursor_shape :: {non_neg_integer(), non_neg_integer()}  # width, height
+  # width, height
+  @type cursor_shape :: {non_neg_integer(), non_neg_integer()}
 
   @type t :: %__MODULE__{
-    position: {non_neg_integer(), non_neg_integer()},
-    saved_position: {non_neg_integer(), non_neg_integer()} | nil,
-    style: cursor_style,
-    state: cursor_state,
-    shape: cursor_shape,
-    blink_rate: non_neg_integer(),
-    last_blink: integer(),
-    custom_shape: String.t() | nil,
-    history: list(map()),
-    history_index: non_neg_integer(),
-    history_limit: non_neg_integer()
-  }
+          position: {non_neg_integer(), non_neg_integer()},
+          saved_position: {non_neg_integer(), non_neg_integer()} | nil,
+          style: cursor_style,
+          state: cursor_state,
+          shape: cursor_shape,
+          blink_rate: non_neg_integer(),
+          last_blink: integer(),
+          custom_shape: String.t() | nil,
+          history: list(map()),
+          history_index: non_neg_integer(),
+          history_limit: non_neg_integer()
+        }
 
   defstruct [
     :position,
@@ -43,9 +44,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @doc """
   Creates a new cursor manager.
-  
+
   ## Examples
-  
+
       iex> cursor = Cursor.Manager.new()
       iex> cursor.position
       {0, 0}
@@ -59,7 +60,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
       style: :block,
       state: :visible,
       shape: {1, 1},
-      blink_rate: 530,  # milliseconds
+      # milliseconds
+      blink_rate: 530,
       last_blink: System.system_time(:millisecond),
       custom_shape: nil,
       history: [],
@@ -70,9 +72,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @doc """
   Moves the cursor to a new position.
-  
+
   ## Examples
-  
+
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.move_to(cursor, 10, 5)
       iex> cursor.position
@@ -84,9 +86,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @doc """
   Saves the current cursor position.
-  
+
   ## Examples
-  
+
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.move_to(cursor, 10, 5)
       iex> cursor = Cursor.Manager.save_position(cursor)
@@ -99,9 +101,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @doc """
   Restores the saved cursor position.
-  
+
   ## Examples
-  
+
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.move_to(cursor, 10, 5)
       iex> cursor = Cursor.Manager.save_position(cursor)
@@ -119,29 +121,31 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @doc """
   Sets the cursor style.
-  
+
   ## Examples
-  
+
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.set_style(cursor, :underline)
       iex> cursor.style
       :underline
   """
-  def set_style(%__MODULE__{} = cursor, style) when style in [:block, :underline, :bar] do
-    shape = case style do
-      :block -> {1, 1}
-      :underline -> {1, 1}
-      :bar -> {1, 1}
-    end
-    
+  def set_style(%__MODULE__{} = cursor, style)
+      when style in [:block, :underline, :bar] do
+    shape =
+      case style do
+        :block -> {1, 1}
+        :underline -> {1, 1}
+        :bar -> {1, 1}
+      end
+
     %{cursor | style: style, shape: shape, custom_shape: nil}
   end
 
   @doc """
   Sets a custom cursor shape.
-  
+
   ## Examples
-  
+
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.set_custom_shape(cursor, "█", {2, 1})
       iex> cursor.style
@@ -150,32 +154,29 @@ defmodule Raxol.Terminal.Cursor.Manager do
       "█"
   """
   def set_custom_shape(%__MODULE__{} = cursor, shape, dimensions) do
-    %{cursor | 
-      style: :custom,
-      custom_shape: shape,
-      shape: dimensions
-    }
+    %{cursor | style: :custom, custom_shape: shape, shape: dimensions}
   end
 
   @doc """
   Sets the cursor state.
-  
+
   ## Examples
-  
+
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.set_state(cursor, :hidden)
       iex> cursor.state
       :hidden
   """
-  def set_state(%__MODULE__{} = cursor, state) when state in [:visible, :hidden, :blinking] do
+  def set_state(%__MODULE__{} = cursor, state)
+      when state in [:visible, :hidden, :blinking] do
     %{cursor | state: state}
   end
 
   @doc """
   Updates the cursor blink state.
-  
+
   ## Examples
-  
+
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.set_state(cursor, :blinking)
       iex> {cursor, visible} = Cursor.Manager.update_blink(cursor)
@@ -188,8 +189,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
         now = System.system_time(:millisecond)
         elapsed = now - cursor.last_blink
         visible = rem(div(elapsed, cursor.blink_rate), 2) == 0
-        
+
         {%{cursor | last_blink: now}, visible}
+
       _ ->
         {cursor, cursor.state == :visible}
     end
@@ -197,9 +199,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @doc """
   Adds the current cursor state to history.
-  
+
   ## Examples
-  
+
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.add_to_history(cursor)
       iex> length(cursor.history)
@@ -213,20 +215,21 @@ defmodule Raxol.Terminal.Cursor.Manager do
       shape: cursor.shape,
       custom_shape: cursor.custom_shape
     }
-    
+
     history = [state | Enum.take(cursor.history, cursor.history_limit - 1)]
-    
-    %{cursor | 
-      history: history,
-      history_index: min(cursor.history_index + 1, cursor.history_limit)
+
+    %{
+      cursor
+      | history: history,
+        history_index: min(cursor.history_index + 1, cursor.history_limit)
     }
   end
 
   @doc """
   Restores the cursor state from history.
-  
+
   ## Examples
-  
+
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.add_to_history(cursor)
       iex> cursor = Cursor.Manager.move_to(cursor, 10, 5)
@@ -236,15 +239,18 @@ defmodule Raxol.Terminal.Cursor.Manager do
   """
   def restore_from_history(%__MODULE__{} = cursor) do
     case Enum.at(cursor.history, cursor.history_index - 1) do
-      nil -> cursor
+      nil ->
+        cursor
+
       state ->
-        %{cursor |
-          position: state.position,
-          style: state.style,
-          state: state.state,
-          shape: state.shape,
-          custom_shape: state.custom_shape
+        %{
+          cursor
+          | position: state.position,
+            style: state.style,
+            state: state.state,
+            shape: state.shape,
+            custom_shape: state.custom_shape
         }
     end
   end
-end 
+end

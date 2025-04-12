@@ -57,7 +57,8 @@ defmodule Raxol.Core.Events.Manager do
       iex> EventManager.register_handler(:click, MyModule, :handle_click)
       :ok
   """
-  def register_handler(event_type, module, function) when is_atom(event_type) and is_atom(module) and is_atom(function) do
+  def register_handler(event_type, module, function)
+      when is_atom(event_type) and is_atom(module) and is_atom(function) do
     # Get current handlers
     handlers = Process.get(:event_handlers) || %{}
 
@@ -93,7 +94,8 @@ defmodule Raxol.Core.Events.Manager do
       iex> EventManager.unregister_handler(:click, MyModule, :handle_click)
       :ok
   """
-  def unregister_handler(event_type, module, function) when is_atom(event_type) and is_atom(module) and is_atom(function) do
+  def unregister_handler(event_type, module, function)
+      when is_atom(event_type) and is_atom(module) and is_atom(function) do
     # Get current handlers
     handlers = Process.get(:event_handlers) || %{}
 
@@ -101,7 +103,8 @@ defmodule Raxol.Core.Events.Manager do
     event_handlers = Map.get(handlers, event_type, [])
 
     # Remove the handler
-    updated_handlers = Enum.reject(event_handlers, fn {m, f} -> m == module and f == function end)
+    updated_handlers =
+      Enum.reject(event_handlers, fn {m, f} -> m == module and f == function end)
 
     # Update the registry
     updated_registry = Map.put(handlers, event_type, updated_handlers)
@@ -199,7 +202,8 @@ defmodule Raxol.Core.Events.Manager do
 
     # Notify matching subscribers
     Enum.each(subscriptions, fn {_ref, subscription} ->
-      if event_type in subscription.event_types and matches_filters?(event, subscription.filters) do
+      if event_type in subscription.event_types and
+           matches_filters?(event, subscription.filters) do
         send(subscription.pid, {:event, event})
       end
     end)
@@ -264,10 +268,14 @@ defmodule Raxol.Core.Events.Manager do
   # Private functions
 
   defp extract_event_type(event) when is_atom(event), do: event
-  defp extract_event_type({event_type, _data}) when is_atom(event_type), do: event_type
+
+  defp extract_event_type({event_type, _data}) when is_atom(event_type),
+    do: event_type
+
   defp extract_event_type(_), do: :unknown
 
   defp matches_filters?(_event, []), do: true
+
   defp matches_filters?(event, filters) do
     Enum.all?(filters, fn {key, value} ->
       case event do

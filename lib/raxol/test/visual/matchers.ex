@@ -20,8 +20,10 @@ defmodule Raxol.Test.Visual.Matchers do
   """
   def matches_color(output, color, content) when is_binary(output) do
     color_code = ansi_color_code(color)
-    pattern = Regex.compile!("#{color_code}#{Regex.escape(content)}#{IO.ANSI.reset()}")
-    
+
+    pattern =
+      Regex.compile!("#{color_code}#{Regex.escape(content)}#{IO.ANSI.reset()}")
+
     if Regex.match?(pattern, output) do
       {:ok, output}
     else
@@ -40,8 +42,10 @@ defmodule Raxol.Test.Visual.Matchers do
   """
   def matches_style(output, style, content) when is_binary(output) do
     style_code = ansi_style_code(style)
-    pattern = Regex.compile!("#{style_code}#{Regex.escape(content)}#{IO.ANSI.reset()}")
-    
+
+    pattern =
+      Regex.compile!("#{style_code}#{Regex.escape(content)}#{IO.ANSI.reset()}")
+
     if Regex.match?(pattern, output) do
       {:ok, output}
     else
@@ -61,17 +65,20 @@ defmodule Raxol.Test.Visual.Matchers do
   def matches_box_edges(output) when is_binary(output) do
     horizontal = "─"
     vertical = "│"
-    
+
     has_horizontal = String.contains?(output, horizontal)
     has_vertical = String.contains?(output, vertical)
-    
+
     cond do
       has_horizontal and has_vertical ->
         {:ok, output}
+
       has_horizontal ->
         {:partial, "Missing vertical edges"}
+
       has_vertical ->
         {:partial, "Missing horizontal edges"}
+
       true ->
         {:error, "No box edges found"}
     end
@@ -87,15 +94,17 @@ defmodule Raxol.Test.Visual.Matchers do
       |> matches_layout(:padded, padding: 2)
   """
   def matches_layout(output, layout, opts \\ [])
+
   def matches_layout(output, :centered, _opts) when is_binary(output) do
     lines = String.split(output, "\n")
     max_length = Enum.map(lines, &String.length/1) |> Enum.max()
-    
-    centered? = Enum.all?(lines, fn line ->
-      padding = div(max_length - String.length(line), 2)
-      String.starts_with?(line, String.duplicate(" ", padding))
-    end)
-    
+
+    centered? =
+      Enum.all?(lines, fn line ->
+        padding = div(max_length - String.length(line), 2)
+        String.starts_with?(line, String.duplicate(" ", padding))
+      end)
+
     if centered? do
       {:ok, output}
     else
@@ -106,12 +115,13 @@ defmodule Raxol.Test.Visual.Matchers do
   def matches_layout(output, :padded, opts) when is_binary(output) do
     padding = Keyword.get(opts, :padding, 1)
     lines = String.split(output, "\n")
-    
-    padded? = Enum.all?(lines, fn line ->
-      String.starts_with?(line, String.duplicate(" ", padding)) and
-        String.ends_with?(line, String.duplicate(" ", padding))
-    end)
-    
+
+    padded? =
+      Enum.all?(lines, fn line ->
+        String.starts_with?(line, String.duplicate(" ", padding)) and
+          String.ends_with?(line, String.duplicate(" ", padding))
+      end)
+
     if padded? do
       {:ok, output}
     else
@@ -129,9 +139,10 @@ defmodule Raxol.Test.Visual.Matchers do
       |> matches_component(:input, placeholder: "Enter text")
   """
   def matches_component(output, type, opts \\ [])
+
   def matches_component(output, :button, label) when is_binary(output) do
     pattern = ~r/\[#{Regex.escape(label)}\]/
-    
+
     if Regex.match?(pattern, output) do
       {:ok, output}
     else
@@ -142,7 +153,7 @@ defmodule Raxol.Test.Visual.Matchers do
   def matches_component(output, :input, opts) when is_binary(output) do
     placeholder = Keyword.get(opts, :placeholder, "")
     pattern = ~r/\[#{Regex.escape(placeholder)}_+\]/
-    
+
     if Regex.match?(pattern, output) do
       {:ok, output}
     else
@@ -162,20 +173,24 @@ defmodule Raxol.Test.Visual.Matchers do
   def matches_alignment(output, alignment, opts \\ []) when is_binary(output) do
     width = Keyword.get(opts, :width, 80)
     lines = String.split(output, "\n")
-    
-    aligned? = Enum.all?(lines, fn line ->
-      case alignment do
-        :left -> String.trim_leading(line) == line
-        :right ->
-          padding = width - String.length(String.trim(line))
-          String.starts_with?(line, String.duplicate(" ", padding))
-        :center ->
-          line = String.trim(line)
-          padding = div(width - String.length(line), 2)
-          String.starts_with?(line, String.duplicate(" ", padding))
-      end
-    end)
-    
+
+    aligned? =
+      Enum.all?(lines, fn line ->
+        case alignment do
+          :left ->
+            String.trim_leading(line) == line
+
+          :right ->
+            padding = width - String.length(String.trim(line))
+            String.starts_with?(line, String.duplicate(" ", padding))
+
+          :center ->
+            line = String.trim(line)
+            padding = div(width - String.length(line), 2)
+            String.starts_with?(line, String.duplicate(" ", padding))
+        end
+      end)
+
     if aligned? do
       {:ok, output}
     else
@@ -204,4 +219,4 @@ defmodule Raxol.Test.Visual.Matchers do
   defp ansi_style_code(:hidden), do: IO.ANSI.conceal()
   defp ansi_style_code(:strike), do: IO.ANSI.crossed_out()
   defp ansi_style_code(_), do: ""
-end 
+end

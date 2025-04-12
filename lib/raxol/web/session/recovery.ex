@@ -36,6 +36,7 @@ defmodule Raxol.Web.Session.Recovery do
         else
           {:ok, session}
         end
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -58,21 +59,20 @@ defmodule Raxol.Web.Session.Recovery do
 
   defp needs_recovery?(session) do
     # Check if session is active but last active time is too old
+    # 5 minutes
     session.status == :active &&
-    DateTime.diff(DateTime.utc_now(), session.last_active) > 300 # 5 minutes
+      DateTime.diff(DateTime.utc_now(), session.last_active) > 300
   end
 
   defp recover_session_data(session) do
     # Update session metadata with recovery information
-    metadata = Map.merge(session.metadata, %{
-      recovered_at: DateTime.utc_now(),
-      recovery_count: (session.metadata[:recovery_count] || 0) + 1
-    })
+    metadata =
+      Map.merge(session.metadata, %{
+        recovered_at: DateTime.utc_now(),
+        recovery_count: (session.metadata[:recovery_count] || 0) + 1
+      })
 
     # Update session
-    %{session |
-      last_active: DateTime.utc_now(),
-      metadata: metadata
-    }
+    %{session | last_active: DateTime.utc_now(), metadata: metadata}
   end
 end

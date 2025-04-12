@@ -13,7 +13,8 @@ defmodule Raxol.Style.Colors.HotReload do
   # alias Raxol.Style.Colors.Theme # Unused
   # alias Raxol.Core.Events.Manager, as: EventManager # Unused
 
-  @check_interval 1000  # Check for changes every second
+  # Check for changes every second
+  @check_interval 1000
 
   defstruct [
     :watched_paths,
@@ -94,7 +95,8 @@ defmodule Raxol.Style.Colors.HotReload do
 
   @impl true
   def handle_call(:unsubscribe, _from, state) do
-    {:reply, :ok, %{state | subscribers: List.delete(state.subscribers, self())}}
+    {:reply, :ok,
+     %{state | subscribers: List.delete(state.subscribers, self())}}
   end
 
   @impl true
@@ -145,6 +147,7 @@ defmodule Raxol.Style.Colors.HotReload do
         |> Enum.filter(&String.ends_with?(&1, ".json"))
         |> Enum.map(fn file ->
           full_path = Path.join(path, file)
+
           case File.stat(full_path) do
             {:ok, %{mtime: mtime}} -> {full_path, mtime}
             _ -> nil
@@ -160,17 +163,19 @@ defmodule Raxol.Style.Colors.HotReload do
 
   defp check_for_changes(state) do
     # Get current modification times
-    current_times = Enum.reduce(state.watched_paths, %{}, fn path, acc ->
-      Map.merge(acc, get_path_modification_times(path))
-    end)
+    current_times =
+      Enum.reduce(state.watched_paths, %{}, fn path, acc ->
+        Map.merge(acc, get_path_modification_times(path))
+      end)
 
     # Check for changes
-    changed_files = Enum.filter(current_times, fn {path, mtime} ->
-      case Map.get(state.last_modified, path) do
-        nil -> true
-        old_time -> old_time != mtime
-      end
-    end)
+    changed_files =
+      Enum.filter(current_times, fn {path, mtime} ->
+        case Map.get(state.last_modified, path) do
+          nil -> true
+          old_time -> old_time != mtime
+        end
+      end)
 
     # Handle changes
     Enum.each(changed_files, fn {path, _mtime} ->

@@ -14,14 +14,17 @@ defmodule RaxolWeb.UserRegistrationController do
     # changeset = Auth.change_user_registration(%User{}) # Placeholder
     # Temporarily commenting out as Raxol.Accounts.change_user_registration/2 was removed
     # changeset = Raxol.Accounts.change_user_registration(%User{}, %{}) # Assuming an Accounts context exists
-    changeset = %{} # Placeholder
+    # Placeholder
+    changeset = %{}
     render(conn, :new, changeset: changeset)
   end
 
+  @spec create(Plug.Conn.t(), %{required(String.t()) => map()}) :: Plug.Conn.t()
   def create(conn, %{"user" => user_params}) do
     # TODO: Implement user creation (Auth.create_user is undefined)
-    case Raxol.Accounts.register_user(user_params) do # Assuming an Accounts context exists
-    # case Auth.create_user(user_params) do
+    # Assuming an Accounts context exists
+    case Raxol.Accounts.register_user(user_params) do
+      # case Auth.create_user(user_params) do
       {:ok, user} ->
         conn
         |> UserAuth.log_in_user(user)
@@ -30,17 +33,20 @@ defmodule RaxolWeb.UserRegistrationController do
 
       {:error, reason} ->
         # Convert reason map to a user-friendly string if possible
-        error_msg = if is_map(reason) do
-                      reason
-                      |> Enum.map(fn {field, msg} -> "#{field} #{msg}" end)
-                      |> Enum.join(", ")
-                    else
-                      "Registration failed." # Generic fallback
-                    end
+        error_msg =
+          if is_map(reason) do
+            reason
+            |> Enum.map(fn {field, msg} -> "#{field} #{msg}" end)
+            |> Enum.join(", ")
+          else
+            # Generic fallback
+            "Registration failed."
+          end
 
         conn
         |> put_flash(:error, "Registration failed: #{error_msg}")
-        |> render(:new, changeset: %{}) # Pass an empty map as changeset for the form
+        # Pass an empty map as changeset for the form
+        |> render(:new, changeset: %{})
     end
   end
 end

@@ -40,12 +40,13 @@ defmodule Raxol.Style.Colors.Accessibility do
     ratio = Utilities.contrast_ratio(foreground, background)
 
     # Determine minimum required ratio based on level and size
-    min_ratio = case {level, size} do
-      {:aa, :normal} -> 4.5
-      {:aa, :large} -> 3.0
-      {:aaa, :normal} -> 7.0
-      {:aaa, :large} -> 4.5
-    end
+    min_ratio =
+      case {level, size} do
+        {:aa, :normal} -> 4.5
+        {:aa, :large} -> 3.0
+        {:aaa, :normal} -> 7.0
+        {:aaa, :large} -> 4.5
+      end
 
     # Check if ratio is sufficient
     if ratio >= min_ratio do
@@ -75,12 +76,13 @@ defmodule Raxol.Style.Colors.Accessibility do
     ratio = Utilities.contrast_ratio(color, background)
 
     # Determine minimum required ratio
-    min_ratio = case {level, size} do
-      {:aa, :normal} -> 4.5
-      {:aa, :large} -> 3.0
-      {:aaa, :normal} -> 7.0
-      {:aaa, :large} -> 4.5
-    end
+    min_ratio =
+      case {level, size} do
+        {:aa, :normal} -> 4.5
+        {:aa, :large} -> 3.0
+        {:aaa, :normal} -> 7.0
+        {:aaa, :large} -> 4.5
+      end
 
     # If already sufficient, return original color
     if ratio >= min_ratio do
@@ -115,18 +117,48 @@ defmodule Raxol.Style.Colors.Accessibility do
       iex> Map.keys(palette)
       [:primary, :secondary, :accent, :text]
   """
-  def generate_accessible_palette(base_color, background, level \\ :aa, size \\ :normal) do
+  def generate_accessible_palette(
+        base_color,
+        background,
+        level \\ :aa,
+        size \\ :normal
+      ) do
     # Generate color variations
     primary = suggest_accessible_color(base_color, background, level, size)
-    secondary = suggest_accessible_color(Utilities.rotate_hue(base_color, 120), background, level, size)
-    accent = suggest_accessible_color(Utilities.rotate_hue(base_color, 240), background, level, size)
+
+    secondary =
+      suggest_accessible_color(
+        Utilities.rotate_hue(base_color, 120),
+        background,
+        level,
+        size
+      )
+
+    accent =
+      suggest_accessible_color(
+        Utilities.rotate_hue(base_color, 240),
+        background,
+        level,
+        size
+      )
 
     # Generate text color based on background
-    text = if Utilities.dark_color?(background) do
-      suggest_accessible_color(Color.from_hex("#FFFFFF"), background, level, size)
-    else
-      suggest_accessible_color(Color.from_hex("#000000"), background, level, size)
-    end
+    text =
+      if Utilities.dark_color?(background) do
+        suggest_accessible_color(
+          Color.from_hex("#FFFFFF"),
+          background,
+          level,
+          size
+        )
+      else
+        suggest_accessible_color(
+          Color.from_hex("#000000"),
+          background,
+          level,
+          size
+        )
+      end
 
     %{
       primary: primary,
@@ -162,14 +194,16 @@ defmodule Raxol.Style.Colors.Accessibility do
   """
   def validate_colors(colors, background, level \\ :aa, size \\ :normal) do
     # Check each color against the background
-    issues = Enum.reduce(colors, [], fn {name, color}, acc ->
-      case check_contrast(color, background, level, size) do
-        {:ok, _ratio} ->
-          acc
-        {:insufficient, ratio} ->
-          [{name, ratio} | acc]
-      end
-    end)
+    issues =
+      Enum.reduce(colors, [], fn {name, color}, acc ->
+        case check_contrast(color, background, level, size) do
+          {:ok, _ratio} ->
+            acc
+
+          {:insufficient, ratio} ->
+            [{name, ratio} | acc]
+        end
+      end)
 
     if Enum.empty?(issues) do
       {:ok, colors}
@@ -252,11 +286,12 @@ defmodule Raxol.Style.Colors.Accessibility do
   """
   def get_optimal_text_color(background, level \\ :aa, size \\ :normal) do
     # Suggest text color based on background darkness
-    suggested_color = if Utilities.dark_color?(background) do
-      Color.from_hex("#FFFFFF")
-    else
-      Color.from_hex("#000000")
-    end
+    suggested_color =
+      if Utilities.dark_color?(background) do
+        Color.from_hex("#FFFFFF")
+      else
+        Color.from_hex("#000000")
+      end
 
     # Check if suggested color is suitable for text
     if is_suitable_for_text?(suggested_color, background, level, size) do
@@ -264,9 +299,19 @@ defmodule Raxol.Style.Colors.Accessibility do
     else
       # If suggested color is not suitable, adjust the background color
       if Utilities.dark_color?(background) do
-        suggest_accessible_color(Color.from_hex("#FFFFFF"), background, level, size)
+        suggest_accessible_color(
+          Color.from_hex("#FFFFFF"),
+          background,
+          level,
+          size
+        )
       else
-        suggest_accessible_color(Color.from_hex("#000000"), background, level, size)
+        suggest_accessible_color(
+          Color.from_hex("#000000"),
+          background,
+          level,
+          size
+        )
       end
     end
   end

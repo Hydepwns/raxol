@@ -63,7 +63,9 @@ defmodule Raxol.Style.Colors.PersistenceTest do
     test "lists themes" do
       # Save multiple themes
       assert :ok == Persistence.save_theme(@test_theme)
-      assert :ok == Persistence.save_theme(%{@test_theme | name: "Another Theme"})
+
+      assert :ok ==
+               Persistence.save_theme(%{@test_theme | name: "Another Theme"})
 
       # List themes
       themes = Persistence.list_themes()
@@ -123,7 +125,8 @@ defmodule Raxol.Style.Colors.PersistenceTest do
       assert :ok == Persistence.save_theme(@test_theme)
 
       # Save preferences
-      assert :ok == Persistence.save_user_preferences(%{"theme" => @test_theme.name})
+      assert :ok ==
+               Persistence.save_user_preferences(%{"theme" => @test_theme.name})
 
       # Load current theme
       assert {:ok, current_theme} = Persistence.load_current_theme()
@@ -144,7 +147,10 @@ defmodule Raxol.Style.Colors.PersistenceTest do
 
     test "loads default theme when theme doesn't exist" do
       # Save preferences with non-existent theme
-      assert :ok == Persistence.save_user_preferences(%{"theme" => "Non Existent Theme"})
+      assert :ok ==
+               Persistence.save_user_preferences(%{
+                 "theme" => "Non Existent Theme"
+               })
 
       # Load current theme
       assert {:ok, current_theme} = Persistence.load_current_theme()

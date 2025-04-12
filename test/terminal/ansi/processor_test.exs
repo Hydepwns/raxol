@@ -52,7 +52,10 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
   end
 
   describe "process_sequence/1" do
-    test "processes cursor up sequence", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes cursor up sequence", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 10, 10)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -66,10 +69,14 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
       # Check cursor position
       {x, y} = Manager.get_cursor_position(new_buffer_manager)
       assert x == 10
-      assert y == 5  # 10 - 5 = 5
+      # 10 - 5 = 5
+      assert y == 5
     end
 
-    test "processes cursor down sequence", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes cursor down sequence", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 10, 5)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -83,10 +90,14 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
       # Check cursor position
       {x, y} = Manager.get_cursor_position(new_buffer_manager)
       assert x == 10
-      assert y == 10  # 5 + 5 = 10
+      # 5 + 5 = 10
+      assert y == 10
     end
 
-    test "processes cursor forward sequence", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes cursor forward sequence", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 5, 10)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -99,11 +110,15 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
 
       # Check cursor position
       {x, y} = Manager.get_cursor_position(new_buffer_manager)
-      assert x == 10  # 5 + 5 = 10
+      # 5 + 5 = 10
+      assert x == 10
       assert y == 10
     end
 
-    test "processes cursor backward sequence", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes cursor backward sequence", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 10, 10)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -116,11 +131,15 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
 
       # Check cursor position
       {x, y} = Manager.get_cursor_position(new_buffer_manager)
-      assert x == 5  # 10 - 5 = 5
+      # 10 - 5 = 5
+      assert x == 5
       assert y == 10
     end
 
-    test "processes cursor position sequence", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes cursor position sequence", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 0, 0)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -133,11 +152,16 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
 
       # Check cursor position (1-based to 0-based conversion)
       {x, y} = Manager.get_cursor_position(new_buffer_manager)
-      assert x == 19  # 20 - 1 = 19
-      assert y == 9   # 10 - 1 = 9
+      # 20 - 1 = 19
+      assert x == 19
+      # 10 - 1 = 9
+      assert y == 9
     end
 
-    test "processes erase display sequence (from cursor to end)", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes erase display sequence (from cursor to end)", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 10, 5)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -154,7 +178,10 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
       assert hd(damage_regions) == {10, 5, 79, 23}
     end
 
-    test "processes erase display sequence (from beginning to cursor)", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes erase display sequence (from beginning to cursor)", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 10, 5)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -171,7 +198,10 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
       assert hd(damage_regions) == {0, 0, 10, 5}
     end
 
-    test "processes erase display sequence (entire display)", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes erase display sequence (entire display)", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 10, 5)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -188,7 +218,10 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
       assert hd(damage_regions) == {0, 0, 79, 23}
     end
 
-    test "processes erase line sequence (from cursor to end)", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes erase line sequence (from cursor to end)", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 10, 5)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -205,7 +238,10 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
       assert hd(damage_regions) == {10, 5, 79, 5}
     end
 
-    test "processes erase line sequence (from beginning to cursor)", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes erase line sequence (from beginning to cursor)", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 10, 5)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -222,7 +258,10 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
       assert hd(damage_regions) == {0, 5, 10, 5}
     end
 
-    test "processes erase line sequence (entire line)", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes erase line sequence (entire line)", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 10, 5)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -239,7 +278,10 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
       assert hd(damage_regions) == {0, 5, 79, 5}
     end
 
-    test "processes text attributes sequence", %{processor: processor, buffer_manager: buffer_manager} do
+    test "processes text attributes sequence", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 0, 0)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)
@@ -253,7 +295,8 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
       # Check attributes
       assert terminal_state.attributes.bold == true
       assert terminal_state.attributes.underline == true
-      assert terminal_state.attributes.foreground == 1  # 31 - 30 = 1
+      # 31 - 30 = 1
+      assert terminal_state.attributes.foreground == 1
     end
   end
 
@@ -290,7 +333,10 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
   end
 
   describe "display erasure" do
-    test "handles clear entire display with scrollback", %{processor: processor, buffer_manager: buffer_manager} do
+    test "handles clear entire display with scrollback", %{
+      processor: processor,
+      buffer_manager: buffer_manager
+    } do
       # Set initial cursor position
       buffer_manager = Manager.set_cursor_position(buffer_manager, 10, 5)
       :ok = Processor.set_buffer_manager(processor, buffer_manager)

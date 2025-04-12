@@ -14,8 +14,9 @@ defmodule Raxol.Examples.ButtonTest do
     end
 
     test "handles click events" do
-      {:ok, button} = setup_isolated_component(Button, %{on_click: fn -> :clicked end})
-      
+      {:ok, button} =
+        setup_isolated_component(Button, %{on_click: fn -> :clicked end})
+
       {updated, commands} = simulate_event(button, {:click, {1, 1}})
       assert updated.state.pressed == true
       assert :clicked in commands
@@ -23,7 +24,7 @@ defmodule Raxol.Examples.ButtonTest do
 
     test "handles disable state" do
       {:ok, button} = setup_isolated_component(Button, %{disabled: true})
-      
+
       {updated, commands} = simulate_event(button, {:click, {1, 1}})
       assert updated.state == button.state
       assert commands == []
@@ -33,14 +34,14 @@ defmodule Raxol.Examples.ButtonTest do
   describe "integration tests" do
     test_scenario "button in form interaction", %{form: Form, button: Button} do
       {:ok, form, button} = setup_component_hierarchy(Form, Button)
-      
+
       # Simulate button click
       simulate_user_action(button, {:click, {1, 1}})
-      
+
       # Verify event propagation
       assert_child_received(button, :clicked)
       assert_parent_updated(form, :button_clicked)
-      
+
       # Verify state synchronization
       assert_state_synchronized([form, button], fn [form_state, button_state] ->
         form_state.submitted && button_state.pressed
@@ -49,7 +50,7 @@ defmodule Raxol.Examples.ButtonTest do
 
     test "handles system events properly" do
       {:ok, button} = setup_isolated_component(Button)
-      
+
       assert_system_events_handled(button, [
         {:resize, {80, 24}},
         :focus,
@@ -59,7 +60,7 @@ defmodule Raxol.Examples.ButtonTest do
 
     test "contains errors properly" do
       {:ok, form, button} = setup_component_hierarchy(Form, Button)
-      
+
       assert_error_contained(form, button, fn ->
         simulate_user_action(button, :trigger_error)
       end)
@@ -69,8 +70,9 @@ defmodule Raxol.Examples.ButtonTest do
   describe "visual tests" do
     test "renders with correct style" do
       button = setup_visual_component(Button, %{label: "Click Me"})
-      
+
       assert_renders_with(button, "Click Me")
+
       assert_styled_with(button, %{
         color: :blue,
         bold: true
@@ -84,17 +86,20 @@ defmodule Raxol.Examples.ButtonTest do
 
     test "adapts to different sizes" do
       button = setup_visual_component(Button)
-      
+
       assert_responsive(button, [
-        {80, 24},  # Full terminal
-        {40, 12},  # Half terminal
-        {20, 6}    # Quarter terminal
+        # Full terminal
+        {80, 24},
+        # Half terminal
+        {40, 12},
+        # Quarter terminal
+        {20, 6}
       ])
     end
 
     test "maintains consistent structure across themes" do
       button = setup_visual_component(Button)
-      
+
       assert_theme_consistent(button, %{
         light: %{fg: :black, bg: :white},
         dark: %{fg: :white, bg: :black}
@@ -104,9 +109,9 @@ defmodule Raxol.Examples.ButtonTest do
     test "aligns properly" do
       button = setup_visual_component(Button)
       assert_aligned(button, :all)
-      
+
       output = capture_render(button)
-      
+
       # Verify specific layout patterns
       assert {:ok, _} = matches_layout(output, :centered, width: 80)
       assert {:ok, _} = matches_box_edges(output)
@@ -118,17 +123,17 @@ defmodule Raxol.Examples.ButtonTest do
       button = setup_visual_component(Button)
       output = capture_render(button)
       assert {:ok, _} = matches_color(output, :blue, "Button")
-      
+
       # Disabled state
       disabled_button = setup_visual_component(Button, %{disabled: true})
       disabled_output = capture_render(disabled_button)
       assert {:ok, _} = matches_color(disabled_output, :gray, "Button")
       assert {:ok, _} = matches_style(disabled_output, :dim, "Button")
-      
+
       # Pressed state
       pressed_button = setup_visual_component(Button, %{pressed: true})
       pressed_output = capture_render(pressed_button)
       assert {:ok, _} = matches_style(pressed_output, :reverse, "Button")
     end
   end
-end 
+end
