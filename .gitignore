@@ -70,3 +70,6 @@ yarn-error.log
 *.elixir_ls/*
 !.elixir_ls/.gitkeep
 NEXT_AGENT_PROMPT.md
+
+# Editor / Development Artifacts
+preferences.json
