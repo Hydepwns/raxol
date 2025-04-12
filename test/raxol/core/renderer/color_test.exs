@@ -77,11 +77,12 @@ defmodule Raxol.Core.Renderer.ColorTest do
 
   describe "create_theme/1" do
     test "creates a theme with custom colors" do
-      theme = Color.create_theme(%{
-        primary: "#FF0000",
-        secondary: {0, 255, 0},
-        accent: :blue
-      })
+      theme =
+        Color.create_theme(%{
+          primary: "#FF0000",
+          secondary: {0, 255, 0},
+          accent: :blue
+        })
 
       assert theme.primary == {255, 0, 0}
       assert theme.secondary == {0, 255, 0}
@@ -99,7 +100,7 @@ defmodule Raxol.Core.Renderer.ColorTest do
   describe "default_theme/0" do
     test "returns a complete theme map" do
       theme = Color.default_theme()
-      
+
       assert is_map(theme)
       assert Map.has_key?(theme, :background)
       assert Map.has_key?(theme, :foreground)
@@ -118,4 +119,4 @@ defmodule Raxol.Core.Renderer.ColorTest do
       assert is_tuple(background) or is_atom(background)
     end
   end
-end 
+end

@@ -1,4 +1,8 @@
 defmodule Raxol.Examples.UXRefinementDemo do
+  use Raxol.App
+  alias Raxol.View
+  # removed: @behaviour Raxol.Core.Runtime.Application
+
   @moduledoc """
   Demo example showcasing the User Experience Refinement components.
 
@@ -14,11 +18,12 @@ defmodule Raxol.Examples.UXRefinementDemo do
   ```
   """
 
-  # Add the behaviour specification
-  @behaviour Raxol.Core.Runtime.Application
+  import Raxol.View,
+    except: [row: 2, column: 1, button: 1, text_input: 1, label: 2, space: 1]
 
-  import Raxol.View, except: [row: 2, column: 1, button: 1, text_input: 1, label: 2, space: 1]
-  import Raxol.View.Components, only: [button: 1, text_input: 1, label: 2, space: 1]
+  import Raxol.View.Components,
+    only: [button: 1, text_input: 1, label: 2, space: 1]
+
   import Raxol.View.Layout, only: [row: 2]
   alias Raxol.Core.UXRefinement
   alias Raxol.Core.FocusManager
@@ -27,6 +32,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
   alias Raxol.Components.FocusRing
   alias Raxol.View.Layout
   require Logger
+  require Raxol.View
 
   @doc """
   Run the UX Refinement demo application.
@@ -69,23 +75,55 @@ defmodule Raxol.Examples.UXRefinementDemo do
     # KeyboardNavigator.configure(vim_keys: true)
 
     # Register hints for components
-    _ = UXRefinement.register_hint("username_input", "Enter your username (letters and numbers only)")
-    _ = UXRefinement.register_hint("password_input", "Enter a secure password (minimum 8 characters)")
+    _ =
+      UXRefinement.register_hint(
+        "username_input",
+        "Enter your username (letters and numbers only)"
+      )
+
+    _ =
+      UXRefinement.register_hint(
+        "password_input",
+        "Enter a secure password (minimum 8 characters)"
+      )
+
     _ = UXRefinement.register_hint("login_button", "Press Enter to log in")
-    _ = UXRefinement.register_hint("reset_button", "Press Enter to reset the form")
-    _ = UXRefinement.register_hint("help_button", "Press Enter to open the help dialog")
+
+    _ =
+      UXRefinement.register_hint(
+        "reset_button",
+        "Press Enter to reset the form"
+      )
+
+    _ =
+      UXRefinement.register_hint(
+        "help_button",
+        "Press Enter to open the help dialog"
+      )
 
     # Register focusable components
     FocusManager.register_focusable("username_input", 1,
-      announce: "Username input field. Enter your username.")
+      announce: "Username input field. Enter your username."
+    )
+
     FocusManager.register_focusable("password_input", 2,
-      announce: "Password input field. Enter your password.")
+      announce: "Password input field. Enter your password."
+    )
+
     FocusManager.register_focusable("login_button", 3,
-      group: :buttons, announce: "Login button")
+      group: :buttons,
+      announce: "Login button"
+    )
+
     FocusManager.register_focusable("reset_button", 4,
-      group: :buttons, announce: "Reset button")
+      group: :buttons,
+      announce: "Reset button"
+    )
+
     FocusManager.register_focusable("help_button", 5,
-      group: :buttons, announce: "Help button")
+      group: :buttons,
+      announce: "Help button"
+    )
 
     # Set initial focus
     FocusManager.set_initial_focus("username_input")
@@ -99,13 +137,13 @@ defmodule Raxol.Examples.UXRefinementDemo do
       "reset_button" => {22, 13, 10, 3},
       "help_button" => {34, 13, 10, 3}
     }
+
     Process.put(:element_position_registry, element_registry)
   end
 
   @doc """
   Placeholder init/1 callback to satisfy the behaviour.
   """
-  @impl Raxol.Core.Runtime.Application
   def init(_opts) do
     # Initialize the app state
     initial_state = %{
@@ -115,14 +153,15 @@ defmodule Raxol.Examples.UXRefinementDemo do
       show_help: false,
       focus_ring_model: FocusRing.init(animation: :pulse)
     }
+
     # Return state directly or {state, commands}
-    initial_state # Or {initial_state, []}
+    # Or {initial_state, []}
+    initial_state
   end
 
   @doc """
   Render the application UI.
   """
-  @impl Raxol.Core.Runtime.Application
   def view(model) do
     # Call the local render helper function
     render(model, [])
@@ -136,15 +175,19 @@ defmodule Raxol.Examples.UXRefinementDemo do
   def render(model, _opts) do
     focused = FocusManager.get_focused_element()
 
-    Layout.panel(background: :default, height: "100%", width: "100%") do
-      Layout.panel(title: "Login Form Example", height: 20, width: 50, center: true, border: true) do
-        Layout.column(padding: 1) do
+    # Main layout
+    # Use View.panel macro directly
+    View.panel background: :default, height: "100%", width: "100%" do
+      # Layout the three main sections
+      Layout.row height: "100%" do
+        Layout.column padding: 1 do
           if model.show_help do
             render_help_dialog()
           else
             # Form elements
             row(padding_bottom: 1) do
               label("Username:", width: 10)
+
               text_input(
                 id: "username_input",
                 value: model.username,
@@ -155,6 +198,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
             row(padding_bottom: 1) do
               label("Password:", width: 10)
+
               text_input(
                 id: "password_input",
                 value: model.password,
@@ -197,7 +241,9 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
           # Keyboard shortcut info
           row(padding_top: 2) do
-            text("Tab: Next field | Shift+Tab: Previous field | Esc: Exit", align: :center)
+            text("Tab: Next field | Shift+Tab: Previous field | Esc: Exit",
+              align: :center
+            )
           end
 
           # Hint display at the bottom
@@ -214,39 +260,50 @@ defmodule Raxol.Examples.UXRefinementDemo do
   """
   @impl true
   def update(model, msg) do
-    new_model = case msg do
-      # Text input updates
-      {:input, "username_input", value} ->
-        %{model | username: value}
+    new_model =
+      case msg do
+        # Text input updates
+        {:input, "username_input", value} ->
+          %{model | username: value}
 
-      {:input, "password_input", value} ->
-        %{model | password: value}
+        {:input, "password_input", value} ->
+          %{model | password: value}
 
-      # Button clicks
-      {:click, "login_button"} ->
-        # In a real app, this would handle authentication
-        model
+        # Button clicks
+        {:click, "login_button"} ->
+          # In a real app, this would handle authentication
+          model
 
-      {:click, "reset_button"} ->
-        %{model | username: "", password: ""}
+        {:click, "reset_button"} ->
+          %{model | username: "", password: ""}
 
-      {:click, "help_button"} ->
-        %{model | show_help: true}
+        {:click, "help_button"} ->
+          %{model | show_help: true}
 
-      # Focus change events
-      {:focus_change, _old_focus, new_focus} ->
-        # Update the focus ring position
-        updated_focus_ring = FocusRing.update(model.focus_ring_model, {:focus_change, nil, new_focus})
-        %{model | focused_component: new_focus, focus_ring_model: updated_focus_ring}
+        # Focus change events
+        {:focus_change, _old_focus, new_focus} ->
+          # Update the focus ring position
+          updated_focus_ring =
+            FocusRing.update(
+              model.focus_ring_model,
+              {:focus_change, nil, new_focus}
+            )
 
-      # Close help dialog
-      {:close_help} ->
-        %{model | show_help: false}
+          %{
+            model
+            | focused_component: new_focus,
+              focus_ring_model: updated_focus_ring
+          }
 
-      # Default case
-      _ ->
-        model
-    end
+        # Close help dialog
+        {:close_help} ->
+          %{model | show_help: false}
+
+        # Default case
+        _ ->
+          model
+      end
+
     # Return {new_state, commands}
     {new_model, []}
   end
@@ -254,7 +311,15 @@ defmodule Raxol.Examples.UXRefinementDemo do
   # Private functions
 
   defp render_help_dialog do
-    Layout.panel(title: "Help", padding: 1, height: 12, width: 40, center: true, border: true) do
+    # Use View.panel macro directly
+    View.panel(
+      title: "Help",
+      padding: 1,
+      height: 12,
+      width: 40,
+      border: true,
+      style: %{position: :absolute, top: "50%", left: "50%", transform: "translate(-50%, -50%)"}
+    ) do
       Layout.column do
         text("This is a demo of the UX Refinement features in Raxol.")
         text("Use Tab and Shift+Tab to navigate between form fields.")

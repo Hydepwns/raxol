@@ -175,7 +175,8 @@ defmodule Raxol do
   ```
   """
   def version do
-    "1.0.0" # Update this with each release
+    # Update this with each release
+    "1.0.0"
   end
 
   @doc """
@@ -265,16 +266,18 @@ defmodule Raxol do
   ```
   """
   def set_accessibility(features) do
-    current = Application.get_env(:raxol, :accessibility, %{
-      screen_reader: true,
-      high_contrast: false,
-      large_text: false,
-      reduced_motion: false
-    })
+    current =
+      Application.get_env(:raxol, :accessibility, %{
+        screen_reader: true,
+        high_contrast: false,
+        large_text: false,
+        reduced_motion: false
+      })
 
-    updated = Enum.reduce(features, current, fn {k, v}, acc ->
-      Map.put(acc, k, v)
-    end)
+    updated =
+      Enum.reduce(features, current, fn {k, v}, acc ->
+        Map.put(acc, k, v)
+      end)
 
     Application.put_env(:raxol, :accessibility, updated)
 

@@ -19,16 +19,16 @@ defmodule Raxol.Components.Terminal do
   # import Raxol.View.Layout
 
   @type terminal_state :: %{
-    buffer: [String.t()],
-    cursor: {integer(), integer()},
-    dimensions: {integer(), integer()},
-    mode: :normal | :insert | :command,
-    history: [String.t()],
-    history_index: integer(),
-    scroll_offset: integer(),
-    style: map(),
-    ansi_state: ANSI.ansi_state()
-  }
+          buffer: [String.t()],
+          cursor: {integer(), integer()},
+          dimensions: {integer(), integer()},
+          mode: :normal | :insert | :command,
+          history: [String.t()],
+          history_index: integer(),
+          scroll_offset: integer(),
+          style: map(),
+          ansi_state: ANSI.ansi_state()
+        }
 
   @doc """
   Initializes a new terminal component.
@@ -54,12 +54,13 @@ defmodule Raxol.Components.Terminal do
       history: [],
       history_index: 0,
       scroll_offset: 0,
-      style: Base.base_style([
-        padding: [1, 1],
-        border: :rounded,
-        background: :black,
-        color: :white
-      ]),
+      style:
+        Base.base_style(
+          padding: [1, 1],
+          border: :rounded,
+          background: :black,
+          color: :white
+        ),
       ansi_state: %{
         cursor: {String.length(prompt), 0},
         style: %{},
@@ -86,11 +87,12 @@ defmodule Raxol.Components.Terminal do
     new_ansi_state = ANSI.process(output, state.ansi_state)
 
     # Update terminal state based on ANSI processing
-    %{state |
-      buffer: new_ansi_state.buffer,
-      cursor: new_ansi_state.cursor,
-      style: Map.merge(state.style, new_ansi_state.style),
-      ansi_state: new_ansi_state
+    %{
+      state
+      | buffer: new_ansi_state.buffer,
+        cursor: new_ansi_state.cursor,
+        style: Map.merge(state.style, new_ansi_state.style),
+        ansi_state: new_ansi_state
     }
   end
 
@@ -107,7 +109,8 @@ defmodule Raxol.Components.Terminal do
   @impl Raxol.Component
   def render(state) do
     # Render the visible portion of the buffer
-    visible_lines = Enum.slice(state.buffer, state.scroll_offset, elem(state.dimensions, 1))
+    visible_lines =
+      Enum.slice(state.buffer, state.scroll_offset, elem(state.dimensions, 1))
 
     # Create terminal content
     content = Enum.join(visible_lines, "\n")
@@ -142,7 +145,8 @@ defmodule Raxol.Components.Terminal do
 
   defp handle_normal_mode(_event, state), do: state
 
-  defp handle_insert_mode(%Event{type: :key, data: %{key: key}}, state) when is_binary(key) do
+  defp handle_insert_mode(%Event{type: :key, data: %{key: key}}, state)
+       when is_binary(key) do
     {update(:insert_char, state, key), []}
   end
 
@@ -189,5 +193,4 @@ defmodule Raxol.Components.Terminal do
   end
 
   # Public API
-
 end

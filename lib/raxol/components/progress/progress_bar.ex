@@ -43,7 +43,8 @@ defmodule Raxol.Components.Progress.ProgressBar do
     %{state | value: value}
   end
 
-  def update({:set_style, style}, state) when style in [:basic, :block, :custom] do
+  def update({:set_style, style}, state)
+      when style in [:basic, :block, :custom] do
     %{state | style: style}
   end
 
@@ -64,26 +65,41 @@ defmodule Raxol.Components.Progress.ProgressBar do
   @impl true
   def render(state) do
     Layout.column do
-      _label = Components.text(content: state.label, color: state.style.text_color)
+      _label =
+        Components.text(content: state.label, color: state.style.text_color)
 
-      bar = Layout.box style: %{border_color: state.style.border_color} do
-        _filled = Components.text(content: String.duplicate("█", state.filled_width), color: state.style.fill_color)
-        Components.text(content: String.duplicate("░", state.empty_width), color: state.style.empty_color)
-      end
+      bar =
+        Layout.box style: %{border_color: state.style.border_color} do
+          _filled =
+            Components.text(
+              content: String.duplicate("█", state.filled_width),
+              color: state.style.fill_color
+            )
+
+          Components.text(
+            content: String.duplicate("░", state.empty_width),
+            color: state.style.empty_color
+          )
+        end
 
       [bar]
     end
   end
 
   @impl true
-  def handle_event(%{type: :progress_update, data: %{value: value}} = _event, state) when is_number(value) do
+  def handle_event(
+        %{type: :progress_update, data: %{value: value}} = _event,
+        state
+      )
+      when is_number(value) do
     {update(:set_value, state, value), []}
   end
 
   def handle_event(_event, state), do: {state, []}
 
   # Public API for controlling the progress bar
-  def set_progress(value) when is_number(value) and value >= 0 and value <= 100 do
+  def set_progress(value)
+      when is_number(value) and value >= 0 and value <= 100 do
     {:progress_update, value}
   end
 

@@ -14,7 +14,8 @@ config :raxol, Raxol.Repo,
   enabled: false
 
 # Configure database settings
-config :raxol, database_enabled: false  # Global flag to disable database
+# Global flag to disable database
+config :raxol, database_enabled: false
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.

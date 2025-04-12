@@ -152,7 +152,7 @@ defmodule Raxol.Core.Runtime.Application do
       # Helper functions
       def command(cmd), do: Command.new(cmd)
       def batch(cmds) when is_list(cmds), do: Command.batch(cmds)
-      
+
       def subscribe_to_events(events) when is_list(events) do
         Subscription.events(events)
       end
@@ -162,4 +162,4 @@ defmodule Raxol.Core.Runtime.Application do
       end
     end
   end
-end 
+end

@@ -24,7 +24,8 @@ defmodule Raxol.Components.Terminal.ANSITest do
 
   test "processes cursor movement" do
     state = ANSI.process("\e[5;10H", @initial_state)
-    assert state.cursor == {9, 4}  # 1-based to 0-based conversion
+    # 1-based to 0-based conversion
+    assert state.cursor == {9, 4}
   end
 
   test "processes multiple ANSI codes" do
@@ -35,7 +36,8 @@ defmodule Raxol.Components.Terminal.ANSITest do
 
   test "handles line wrapping" do
     state = ANSI.process(String.duplicate("a", 85), @initial_state)
-    assert state.cursor == {5, 1}  # 80 chars per line, 5 chars on second line
+    # 80 chars per line, 5 chars on second line
+    assert state.cursor == {5, 1}
   end
 
   test "processes cursor up movement" do
@@ -93,4 +95,4 @@ defmodule Raxol.Components.Terminal.ANSITest do
     state = ANSI.process("\e[101mBright Red Background\e[0m", @initial_state)
     assert state.style == %{background: :red}
   end
-end 
+end

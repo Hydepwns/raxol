@@ -92,8 +92,13 @@ defmodule Raxol.Web.Session.Manager do
     case Storage.store(session) do
       {:ok, _} ->
         # Update state
-        new_state = %{state | sessions: Map.put(state.sessions, session_id, session)}
+        new_state = %{
+          state
+          | sessions: Map.put(state.sessions, session_id, session)
+        }
+
         {:reply, {:ok, session}, new_state}
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -105,14 +110,21 @@ defmodule Raxol.Web.Session.Manager do
       {:ok, session} ->
         # Update last active time
         updated_session = %{session | last_active: DateTime.utc_now()}
+
         case Storage.store(updated_session) do
           {:ok, _} ->
             {:reply, {:ok, updated_session}, state}
+
           {:error, reason} ->
-            Logger.error("Failed to update session last_active time: #{inspect(reason)}")
+            Logger.error(
+              "Failed to update session last_active time: #{inspect(reason)}"
+            )
+
             # Decide if we should return the old session or an error
-            {:reply, {:ok, session}, state} # Return old session for now
+            # Return old session for now
+            {:reply, {:ok, session}, state}
         end
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -123,18 +135,25 @@ defmodule Raxol.Web.Session.Manager do
     case Storage.get(session_id) do
       {:ok, session} ->
         # Update session metadata
-        updated_session = %{session |
-          metadata: Map.merge(session.metadata || %{}, metadata), # Ensure metadata is a map
-          last_active: DateTime.utc_now()
+        updated_session = %{
+          session
+          | # Ensure metadata is a map
+            metadata: Map.merge(session.metadata || %{}, metadata),
+            last_active: DateTime.utc_now()
         }
 
         case Storage.store(updated_session) do
           {:ok, _} ->
             {:reply, {:ok, updated_session}, state}
+
           {:error, reason} ->
-            Logger.error("Failed to update session metadata: #{inspect(reason)}")
+            Logger.error(
+              "Failed to update session metadata: #{inspect(reason)}"
+            )
+
             {:reply, {:error, reason}, state}
         end
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -145,16 +164,27 @@ defmodule Raxol.Web.Session.Manager do
     case Storage.get(session_id) do
       {:ok, session} ->
         # Mark session as ended
-        ended_session = %{session | status: :ended, ended_at: DateTime.utc_now()}
+        ended_session = %{
+          session
+          | status: :ended,
+            ended_at: DateTime.utc_now()
+        }
+
         case Storage.store(ended_session) do
           {:ok, _} ->
             # Remove from active sessions
-            new_state = %{state | sessions: Map.delete(state.sessions, session_id)}
+            new_state = %{
+              state
+              | sessions: Map.delete(state.sessions, session_id)
+            }
+
             {:reply, :ok, new_state}
+
           {:error, reason} ->
             Logger.error("Failed to mark session as ended: #{inspect(reason)}")
             {:reply, {:error, reason}, state}
         end
+
       {:error, reason} ->
         {:reply, {:error, reason}, state}
     end
@@ -167,8 +197,14 @@ defmodule Raxol.Web.Session.Manager do
 
     # End expired sessions
     Enum.each(expired_sessions, fn session ->
-      ended_session = %{session | status: :expired, ended_at: DateTime.utc_now()}
-      _ = Storage.store(ended_session) # Ignore result for cleanup
+      ended_session = %{
+        session
+        | status: :expired,
+          ended_at: DateTime.utc_now()
+      }
+
+      # Ignore result for cleanup
+      _ = Storage.store(ended_session)
     end)
 
     # Remove from active sessions

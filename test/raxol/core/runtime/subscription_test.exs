@@ -5,7 +5,11 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
   describe "new/2" do
     test "creates a new subscription with given type and data" do
       sub = Subscription.new(:interval, %{interval: 1000, message: :tick})
-      assert %Subscription{type: :interval, data: %{interval: 1000, message: :tick}} = sub
+
+      assert %Subscription{
+               type: :interval,
+               data: %{interval: 1000, message: :tick}
+             } = sub
     end
   end
 
@@ -13,23 +17,27 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
     test "creates an interval subscription with default options" do
       sub = Subscription.interval(1000, :tick)
       assert %Subscription{type: :interval} = sub
+
       assert %{
-        interval: 1000,
-        message: :tick,
-        start_immediately: false,
-        jitter: 0
-      } = sub.data
+               interval: 1000,
+               message: :tick,
+               start_immediately: false,
+               jitter: 0
+             } = sub.data
     end
 
     test "creates an interval subscription with custom options" do
-      sub = Subscription.interval(1000, :tick, start_immediately: true, jitter: 100)
+      sub =
+        Subscription.interval(1000, :tick, start_immediately: true, jitter: 100)
+
       assert %Subscription{type: :interval} = sub
+
       assert %{
-        interval: 1000,
-        message: :tick,
-        start_immediately: true,
-        jitter: 100
-      } = sub.data
+               interval: 1000,
+               message: :tick,
+               start_immediately: true,
+               jitter: 100
+             } = sub.data
     end
 
     test "validates interval is positive" do
@@ -133,4 +141,4 @@ defmodule Raxol.Core.Runtime.SubscriptionTest do
       assert {:error, :invalid_subscription} = Subscription.stop(:invalid)
     end
   end
-end 
+end

@@ -9,10 +9,11 @@ defmodule RaxolWeb.MonitoringLive do
       _ = :timer.send_interval(5000, :update_metrics)
     end
 
-    {:ok, assign(socket,
-      metrics: Metrics.get_current_metrics(),
-      error: nil
-    )}
+    {:ok,
+     assign(socket,
+       metrics: Metrics.get_current_metrics(),
+       error: nil
+     )}
   end
 
   @impl true

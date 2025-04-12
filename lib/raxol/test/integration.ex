@@ -37,12 +37,12 @@ defmodule Raxol.Test.Integration do
     quote do
       import Raxol.Test.Integration
       import Raxol.Test.Integration.Assertions
-      
+
       setup do
         context = TestHelper.setup_test_env()
         {:ok, context}
       end
-      
+
       teardown do
         TestHelper.cleanup_test_env(context)
       end
@@ -70,11 +70,12 @@ defmodule Raxol.Test.Integration do
   """
   def setup_test_scenario(components) when is_map(components) do
     # Initialize each component
-    initialized_components = Enum.map(components, fn {name, module} ->
-      {:ok, component} = setup_component(module)
-      {name, component}
-    end)
-    |> Map.new()
+    initialized_components =
+      Enum.map(components, fn {name, module} ->
+        {:ok, component} = setup_component(module)
+        {name, component}
+      end)
+      |> Map.new()
 
     # Set up event routing between components
     routed_components = setup_event_routing(initialized_components)
@@ -108,22 +109,28 @@ defmodule Raxol.Test.Integration do
   Handles various types of user interactions and ensures proper event propagation.
   """
   def simulate_user_action(component, action) do
-    event = case action do
-      {:click, pos} -> 
-        Event.mouse(:left, pos)
-      {:type, text} -> 
-        text |> String.to_charlist() |> Enum.map(&Event.key({:char, &1}))
-      {:key, key} -> 
-        Event.key(key)
-      {:resize, {w, h}} -> 
-        Event.window(w, h, :resize)
-      _ -> 
-        raise "Unsupported action: #{inspect(action)}"
-    end
+    event =
+      case action do
+        {:click, pos} ->
+          Event.mouse(:left, pos)
+
+        {:type, text} ->
+          text |> String.to_charlist() |> Enum.map(&Event.key({:char, &1}))
+
+        {:key, key} ->
+          Event.key(key)
+
+        {:resize, {w, h}} ->
+          Event.window(w, h, :resize)
+
+        _ ->
+          raise "Unsupported action: #{inspect(action)}"
+      end
 
     case event do
       events when is_list(events) ->
         Enum.each(events, &dispatch_event(component, &1))
+
       event ->
         dispatch_event(component, event)
     end
@@ -135,13 +142,14 @@ defmodule Raxol.Test.Integration do
   def mount_component(component, parent \\ nil) do
     # Initialize mount state
     mounted_component = put_in(component.mounted, true)
-    
+
     # Set up parent relationship if provided
-    mounted_component = if parent do
-      put_in(mounted_component.parent, parent)
-    else
-      mounted_component
-    end
+    mounted_component =
+      if parent do
+        put_in(mounted_component.parent, parent)
+      else
+        mounted_component
+      end
 
     # Trigger mount callbacks
     if function_exported?(component.module, :mount, 1) do
@@ -190,13 +198,14 @@ defmodule Raxol.Test.Integration do
 
   defp setup_component(module) do
     {:ok, component} = Raxol.Test.Unit.setup_isolated_component(module)
-    
-    component = Map.merge(component, %{
-      mounted: false,
-      parent: nil,
-      children: [],
-      event_queue: :queue.new()
-    })
+
+    component =
+      Map.merge(component, %{
+        mounted: false,
+        parent: nil,
+        children: [],
+        event_queue: :queue.new()
+      })
 
     {:ok, component}
   end
@@ -241,11 +250,12 @@ defmodule Raxol.Test.Integration do
 
   defp handle_routed_event(component, event, components) do
     # Handle event based on routing rules
-    {new_state, commands} = component.module.handle_event(event, component.state)
-    
+    {new_state, commands} =
+      component.module.handle_event(event, component.state)
+
     # Update component state
     updated_component = %{component | state: new_state}
-    
+
     # Process commands and route to other components
     process_commands(updated_component, commands, components)
   end
@@ -253,10 +263,10 @@ defmodule Raxol.Test.Integration do
   defp handle_parent_event(parent, child, event) do
     # Handle parent event
     {new_state, commands} = parent.module.handle_event(event, parent.state)
-    
+
     # Update parent state
     updated_parent = %{parent | state: new_state}
-    
+
     # Process commands and propagate to child
     process_commands(updated_parent, commands, %{child: child})
   end
@@ -264,32 +274,40 @@ defmodule Raxol.Test.Integration do
   defp handle_child_event(parent, child, event) do
     # Handle child event
     {new_state, commands} = child.module.handle_event(event, child.state)
-    
+
     # Update child state
     updated_child = %{child | state: new_state}
-    
+
     # Process commands and bubble to parent
     process_commands(updated_child, commands, %{parent: parent})
   end
 
   defp process_commands(component, commands, components) do
-    Enum.reduce(commands, {component, []}, fn command, {acc_component, acc_commands} ->
+    Enum.reduce(commands, {component, []}, fn command,
+                                              {acc_component, acc_commands} ->
       case command do
         {:propagate, event} ->
           target_component = find_target_component(event, components)
+
           if target_component do
-            {_updated_target, target_commands} = propagate_to_children(target_component, event, [])
+            {_updated_target, target_commands} =
+              propagate_to_children(target_component, event, [])
+
             {acc_component, acc_commands ++ target_commands}
           else
             {acc_component, acc_commands}
           end
+
         {:bubble, event} ->
           if component.parent do
-            {_updated_parent, parent_commands} = bubble_to_parent(component.parent, event, [])
+            {_updated_parent, parent_commands} =
+              bubble_to_parent(component.parent, event, [])
+
             {acc_component, acc_commands ++ parent_commands}
           else
             {acc_component, acc_commands}
           end
+
         _ ->
           {acc_component, acc_commands ++ [command]}
       end
@@ -300,13 +318,16 @@ defmodule Raxol.Test.Integration do
     case event do
       %{target: target} when is_atom(target) ->
         Map.get(components, target)
+
       _ ->
         nil
     end
   end
 
   defp propagate_to_children(component, event, acc) do
-    Enum.reduce(component.children, {component, acc}, fn child, {acc_component, acc_commands} ->
+    Enum.reduce(component.children, {component, acc}, fn child,
+                                                         {acc_component,
+                                                          acc_commands} ->
       {_updated_child, child_commands} = dispatch_event(child, event)
       {acc_component, acc_commands ++ child_commands}
     end)

@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.InputTest do
     test "processes normal text input" do
       processor = Input.new()
       {events, processor} = Input.process_input("Hello", processor)
-      
+
       assert length(events) == 5
       assert Enum.all?(events, fn {:key, char} -> char in 'Hello' end)
     end
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.InputTest do
     test "processes escape sequences" do
       processor = Input.new()
       {events, processor} = Input.process_input("\e[10;5H", processor)
-      
+
       assert length(events) == 1
       assert hd(events) == {:cursor_move, 10, 5}
     end
@@ -38,15 +38,17 @@ defmodule Raxol.Terminal.InputTest do
     test "processes mouse events" do
       processor = Input.new(mode: :mouse)
       {events, processor} = Input.process_input("\e[M aaa", processor)
-      
+
       assert length(events) == 1
       assert hd(events) == {:mouse_event, 0, 0, 0}
     end
 
     test "processes bracketed paste" do
       processor = Input.new(mode: :paste)
-      {events, processor} = Input.process_input("\e[200~Hello\e[201~", processor)
-      
+
+      {events, processor} =
+        Input.process_input("\e[200~Hello\e[201~", processor)
+
       assert length(events) == 3
       assert Enum.at(events, 0) == {:paste_start}
       assert Enum.at(events, 1) == {:key, ?H}
@@ -56,7 +58,7 @@ defmodule Raxol.Terminal.InputTest do
     test "buffers incomplete sequences" do
       processor = Input.new()
       {events, processor} = Input.process_input("\e[", processor)
-      
+
       assert length(events) == 0
       assert processor.buffer == "\e["
     end
@@ -64,7 +66,7 @@ defmodule Raxol.Terminal.InputTest do
     test "flushes buffer after timeout" do
       processor = %{Input.new() | last_event: 0}
       {events, processor} = Input.process_input("Hello", processor)
-      
+
       assert length(events) == 5
       assert processor.buffer == ""
     end
@@ -94,7 +96,7 @@ defmodule Raxol.Terminal.InputTest do
     test "filters events using custom filter" do
       processor = Input.new(filter: fn {:key, char} -> char != ?l end)
       {events, _processor} = Input.process_input("Hello", processor)
-      
+
       assert length(events) == 4
       assert Enum.all?(events, fn {:key, char} -> char != ?l end)
     end
@@ -102,7 +104,7 @@ defmodule Raxol.Terminal.InputTest do
     test "uses default filter when none specified" do
       processor = Input.new()
       {events, _processor} = Input.process_input("Hello", processor)
-      
+
       assert length(events) == 5
     end
   end
@@ -110,8 +112,10 @@ defmodule Raxol.Terminal.InputTest do
   describe "special sequences" do
     test "processes cursor movement sequences" do
       processor = Input.new()
-      {events, _processor} = Input.process_input("\e[10;5H\e[3A\e[2B\e[4C\e[1D", processor)
-      
+
+      {events, _processor} =
+        Input.process_input("\e[10;5H\e[3A\e[2B\e[4C\e[1D", processor)
+
       assert length(events) == 5
       assert Enum.at(events, 0) == {:cursor_move, 10, 5}
       assert Enum.at(events, 1) == {:cursor_up, 3}
@@ -122,8 +126,10 @@ defmodule Raxol.Terminal.InputTest do
 
     test "processes text attribute sequences" do
       processor = Input.new()
-      {events, _processor} = Input.process_input("\e[1;4;5;7m\e[31;42m", processor)
-      
+
+      {events, _processor} =
+        Input.process_input("\e[1;4;5;7m\e[31;42m", processor)
+
       assert length(events) == 6
       assert {:set_attribute, :bold} in events
       assert {:set_attribute, :underline} in events
@@ -136,7 +142,7 @@ defmodule Raxol.Terminal.InputTest do
     test "processes cursor visibility sequences" do
       processor = Input.new()
       {events, _processor} = Input.process_input("\e[?25l\e[?25h", processor)
-      
+
       assert length(events) == 2
       assert Enum.at(events, 0) == {:hide_cursor}
       assert Enum.at(events, 1) == {:show_cursor}
@@ -145,7 +151,7 @@ defmodule Raxol.Terminal.InputTest do
     test "processes cursor save/restore sequences" do
       processor = Input.new()
       {events, _processor} = Input.process_input("\e[s\e[u", processor)
-      
+
       assert length(events) == 2
       assert Enum.at(events, 0) == {:save_cursor}
       assert Enum.at(events, 1) == {:restore_cursor}
@@ -161,13 +167,13 @@ defmodule Raxol.Terminal.InputTest do
     test "processes arrow keys" do
       events = Input.process_input("\e[A")
       assert events == [{:key, :up, []}]
-      
+
       events = Input.process_input("\e[B")
       assert events == [{:key, :down, []}]
-      
+
       events = Input.process_input("\e[C")
       assert events == [{:key, :right, []}]
-      
+
       events = Input.process_input("\e[D")
       assert events == [{:key, :left, []}]
     end
@@ -175,7 +181,7 @@ defmodule Raxol.Terminal.InputTest do
     test "processes function keys" do
       events = Input.process_input("\eOP")
       assert events == [{:key, :f1, []}]
-      
+
       events = Input.process_input("\eOQ")
       assert events == [{:key, :f2, []}]
     end
@@ -183,7 +189,7 @@ defmodule Raxol.Terminal.InputTest do
     test "processes mouse events" do
       events = Input.process_input("\e[1;2M")
       assert events == [{:mouse, 1, 2, :left, []}]
-      
+
       events = Input.process_input("\e[1;2m")
       assert events == [{:mouse, 1, 2, :release, []}]
     end
@@ -201,7 +207,7 @@ defmodule Raxol.Terminal.InputTest do
         {:mouse, 1, 2, :left, []},
         {:unknown, "data"}
       ]
-      
+
       buffered = Input.buffer_events(events)
       assert length(buffered) == 2
       assert {:key, :a, []} in buffered
@@ -214,13 +220,14 @@ defmodule Raxol.Terminal.InputTest do
         {:key, :b, []},
         {:key, :c, []}
       ]
-      
+
       buffered = Input.buffer_events(events)
+
       assert buffered == [
-        {:key, :a, []},
-        {:key, :b, []},
-        {:key, :c, []}
-      ]
+               {:key, :a, []},
+               {:key, :b, []},
+               {:key, :c, []}
+             ]
     end
   end
 
@@ -237,8 +244,11 @@ defmodule Raxol.Terminal.InputTest do
 
     test "rejects invalid events" do
       assert {:error, :invalid_event} = Input.validate_event({:key, "a", []})
-      assert {:error, :invalid_event} = Input.validate_event({:mouse, "1", 2, :left, []})
+
+      assert {:error, :invalid_event} =
+               Input.validate_event({:mouse, "1", 2, :left, []})
+
       assert {:error, :invalid_event} = Input.validate_event({:unknown, "data"})
     end
   end
-end 
+end

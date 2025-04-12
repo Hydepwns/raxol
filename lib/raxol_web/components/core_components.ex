@@ -14,7 +14,7 @@ defmodule RaxolWeb.CoreComponents do
   attr :class, :string, default: nil
   attr :disabled, :boolean, default: false
   attr :rest, :global, include: ~w(form name value)
-  slot :inner_block, required: true
+  slot(:inner_block, required: true)
 
   def button(assigns) do
     ~H"""
@@ -40,7 +40,7 @@ defmodule RaxolWeb.CoreComponents do
   """
   attr :type, :string, default: "text"
   attr :name, :string, required: true
-  attr :value, :any
+  attr(:value, :any)
   attr :placeholder, :string, default: nil
   attr :class, :string, default: nil
   attr :disabled, :boolean, default: false
@@ -70,7 +70,7 @@ defmodule RaxolWeb.CoreComponents do
   """
   attr :for, :string, required: true
   attr :class, :string, default: nil
-  slot :inner_block, required: true
+  slot(:inner_block, required: true)
 
   def label(assigns) do
     ~H"""
@@ -92,7 +92,7 @@ defmodule RaxolWeb.CoreComponents do
   attr :name, :string, required: true
   attr :label, :string, required: true
   attr :type, :string, default: "text"
-  attr :value, :any
+  attr(:value, :any)
   attr :placeholder, :string, default: nil
   attr :class, :string, default: nil
   attr :disabled, :boolean, default: false
@@ -120,7 +120,7 @@ defmodule RaxolWeb.CoreComponents do
   attr :kind, :string, required: true
   attr :title, :string, default: nil
   attr :rest, :global, include: ~w(phx-click phx-value)
-  slot :inner_block, required: true
+  slot(:inner_block, required: true)
 
   def flash(assigns) do
     ~H"""

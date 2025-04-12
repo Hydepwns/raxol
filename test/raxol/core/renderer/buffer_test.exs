@@ -35,12 +35,13 @@ defmodule Raxol.Core.Renderer.BufferTest do
     end
 
     test "applies cell styles", %{buffer: buffer} do
-      buffer = Buffer.put_cell(buffer, {0, 0}, "a",
-        fg: :red,
-        bg: :blue,
-        style: [:bold]
-      )
-      
+      buffer =
+        Buffer.put_cell(buffer, {0, 0}, "a",
+          fg: :red,
+          bg: :blue,
+          style: [:bold]
+        )
+
       cell = get_in(buffer.back_buffer.cells, [{0, 0}])
       assert cell.fg == :red
       assert cell.bg == :blue
@@ -50,20 +51,24 @@ defmodule Raxol.Core.Renderer.BufferTest do
 
   describe "clear/1" do
     test "clears all cells and marks entire buffer as damaged" do
-      buffer = Buffer.new(2, 2)
-      |> Buffer.put_cell({0, 0}, "a")
-      |> Buffer.put_cell({1, 1}, "b")
-      |> Buffer.clear()
+      buffer =
+        Buffer.new(2, 2)
+        |> Buffer.put_cell({0, 0}, "a")
+        |> Buffer.put_cell({1, 1}, "b")
+        |> Buffer.clear()
 
       assert map_size(buffer.back_buffer.cells) == 0
-      assert MapSet.size(buffer.back_buffer.damage) == 4  # 2x2 buffer
+      # 2x2 buffer
+      assert MapSet.size(buffer.back_buffer.damage) == 4
     end
   end
 
   describe "swap_buffers/1" do
     setup do
-      buffer = Buffer.new(2, 2, 60)
-      |> Buffer.put_cell({0, 0}, "a")
+      buffer =
+        Buffer.new(2, 2, 60)
+        |> Buffer.put_cell({0, 0}, "a")
+
       {:ok, buffer: buffer}
     end
 
@@ -90,42 +95,47 @@ defmodule Raxol.Core.Renderer.BufferTest do
 
   describe "get_damage/1" do
     test "returns list of damaged cells" do
-      buffer = Buffer.new(2, 2)
-      |> Buffer.put_cell({0, 0}, "a")
-      |> Buffer.put_cell({1, 1}, "b")
-      
+      buffer =
+        Buffer.new(2, 2)
+        |> Buffer.put_cell({0, 0}, "a")
+        |> Buffer.put_cell({1, 1}, "b")
+
       # Swap buffers to move cells to front buffer
       buffer = %{buffer | last_frame_time: 0}
       {buffer, _} = Buffer.swap_buffers(buffer)
 
       damage = Buffer.get_damage(buffer)
       assert length(damage) == 2
+
       assert Enum.any?(damage, fn {{x, y}, cell} ->
-        x == 0 and y == 0 and cell.char == "a"
-      end)
+               x == 0 and y == 0 and cell.char == "a"
+             end)
+
       assert Enum.any?(damage, fn {{x, y}, cell} ->
-        x == 1 and y == 1 and cell.char == "b"
-      end)
+               x == 1 and y == 1 and cell.char == "b"
+             end)
     end
   end
 
   describe "resize/3" do
     test "preserves content when growing buffer" do
-      buffer = Buffer.new(2, 2)
-      |> Buffer.put_cell({0, 0}, "a")
-      |> Buffer.resize(3, 3)
+      buffer =
+        Buffer.new(2, 2)
+        |> Buffer.put_cell({0, 0}, "a")
+        |> Buffer.resize(3, 3)
 
       assert get_in(buffer.back_buffer.cells, [{0, 0}]).char == "a"
       assert buffer.back_buffer.size == {3, 3}
     end
 
     test "marks cells as damaged when shrinking buffer" do
-      buffer = Buffer.new(3, 3)
-      |> Buffer.put_cell({2, 2}, "a")
-      |> Buffer.resize(2, 2)
+      buffer =
+        Buffer.new(3, 3)
+        |> Buffer.put_cell({2, 2}, "a")
+        |> Buffer.resize(2, 2)
 
       assert map_size(buffer.back_buffer.cells) == 0
       assert MapSet.member?(buffer.back_buffer.damage, {2, 2})
     end
   end
-end 
+end

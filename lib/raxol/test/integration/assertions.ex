@@ -21,12 +21,13 @@ defmodule Raxol.Test.Integration.Assertions do
   """
   def assert_child_received(child, expected_event) do
     {:messages, messages} = Process.info(self(), :messages)
-    
-    received = Enum.any?(messages, fn
-      {:event_dispatched, ^child, ^expected_event} -> true
-      _ -> false
-    end)
-    
+
+    received =
+      Enum.any?(messages, fn
+        {:event_dispatched, ^child, ^expected_event} -> true
+        _ -> false
+      end)
+
     assert received,
            "Expected child component to receive event #{inspect(expected_event)}"
   end
@@ -40,12 +41,13 @@ defmodule Raxol.Test.Integration.Assertions do
   """
   def assert_parent_updated(parent, expected_update) do
     {:messages, messages} = Process.info(self(), :messages)
-    
-    updated = Enum.any?(messages, fn
-      {:command_executed, ^parent, ^expected_update} -> true
-      _ -> false
-    end)
-    
+
+    updated =
+      Enum.any?(messages, fn
+        {:command_executed, ^parent, ^expected_update} -> true
+        _ -> false
+      end)
+
     assert updated,
            "Expected parent component to update with #{inspect(expected_update)}"
   end
@@ -67,7 +69,7 @@ defmodule Raxol.Test.Integration.Assertions do
     # Verify children list
     assert length(parent.children) == length(children),
            "Expected parent to have #{length(children)} children, but got #{length(parent.children)}"
-           
+
     Enum.each(children, fn child ->
       assert child in parent.children,
              "Expected child #{inspect(child.module)} to be in parent's children list"
@@ -89,10 +91,11 @@ defmodule Raxol.Test.Integration.Assertions do
   def assert_lifecycle_handled(component, lifecycle_fn) do
     try do
       lifecycle_fn.(component)
-      
+
       # Verify cleanup
       assert component.subscriptions == [],
              "Expected all subscriptions to be cleaned up"
+
       assert not component.mounted,
              "Expected component to be unmounted"
     rescue
@@ -110,19 +113,20 @@ defmodule Raxol.Test.Integration.Assertions do
         # Verify each component's response
       end
   """
-  def assert_event_propagation(components, event, verification_fn) when is_list(components) do
+  def assert_event_propagation(components, event, verification_fn)
+      when is_list(components) do
     # Track event propagation
     ref = make_ref()
     Process.put(ref, [])
-    
+
     try do
       # Dispatch event to first component
       [first | _] = components
       Raxol.Test.Integration.simulate_user_action(first, event)
-      
+
       # Get propagation history
       history = Process.get(ref)
-      
+
       # Run verification
       verification_fn.(history)
     after
@@ -139,12 +143,13 @@ defmodule Raxol.Test.Integration.Assertions do
   """
   def assert_command_routing(source, target, command) do
     {:messages, messages} = Process.info(self(), :messages)
-    
-    routed = Enum.any?(messages, fn
-      {:command_sent, ^source, ^target, ^command} -> true
-      _ -> false
-    end)
-    
+
+    routed =
+      Enum.any?(messages, fn
+        {:command_sent, ^source, ^target, ^command} -> true
+        _ -> false
+      end)
+
     assert routed,
            "Expected command #{inspect(command)} to be routed from #{inspect(source)} to #{inspect(target)}"
   end
@@ -158,9 +163,10 @@ defmodule Raxol.Test.Integration.Assertions do
         Enum.all?(states, & &1.counter == 0)
       end
   """
-  def assert_state_synchronized(components, state_check) when is_list(components) do
+  def assert_state_synchronized(components, state_check)
+      when is_list(components) do
     states = Enum.map(components, & &1.state)
-    
+
     assert state_check.(states),
            "Expected component states to be synchronized"
   end
@@ -174,11 +180,12 @@ defmodule Raxol.Test.Integration.Assertions do
   """
   def assert_system_events_handled(component, events) when is_list(events) do
     Enum.each(events, fn event ->
-      {updated, initial, _commands} = Raxol.Test.Integration.assert_handles_system_event(component, event)
-      
+      {updated, initial, _commands} =
+        Raxol.Test.Integration.assert_handles_system_event(component, event)
+
       assert updated.state != nil,
              "Expected component to maintain valid state after #{inspect(event)}"
-             
+
       assert Map.keys(updated.state) == Map.keys(initial),
              "Expected component state structure to remain consistent"
     end)
@@ -195,7 +202,7 @@ defmodule Raxol.Test.Integration.Assertions do
   """
   def assert_error_contained(parent, child, error_fn) do
     parent_state = parent.state
-    
+
     try do
       error_fn.()
       flunk("Expected error to be raised")
@@ -204,10 +211,10 @@ defmodule Raxol.Test.Integration.Assertions do
         # Verify parent remained stable
         assert parent.state == parent_state,
                "Expected parent state to remain unchanged after child error"
-        
+
         # Verify child was handled
         assert child.state != nil,
                "Expected child to maintain valid state after error"
     end
   end
-end 
+end

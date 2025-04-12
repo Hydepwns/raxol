@@ -7,7 +7,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       purple = Advanced.blend_colors(red, blue, 0.5)
-      
+
       assert purple.hex == "#800080"
     end
 
@@ -15,7 +15,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       result = Advanced.blend_colors(red, blue, 0.0)
-      
+
       assert result.hex == red.hex
     end
 
@@ -23,7 +23,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       result = Advanced.blend_colors(red, blue, 1.0)
-      
+
       assert result.hex == blue.hex
     end
   end
@@ -33,7 +33,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       gradient = Advanced.create_gradient(red, blue, 3)
-      
+
       assert length(gradient) == 3
       assert Enum.at(gradient, 0).hex == "#FF0000"
       assert Enum.at(gradient, 1).hex == "#800080"
@@ -44,7 +44,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
       red = Color.from_hex("#FF0000")
       blue = Color.from_hex("#0000FF")
       gradient = Advanced.create_gradient(red, blue, 2)
-      
+
       assert length(gradient) == 2
       assert Enum.at(gradient, 0).hex == "#FF0000"
       assert Enum.at(gradient, 1).hex == "#0000FF"
@@ -55,7 +55,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
     test "converts RGB to HSL" do
       red = Color.from_hex("#FF0000")
       hsl = Advanced.convert_color_space(red, :hsl)
-      
+
       assert hsl.h == 0
       assert hsl.s == 100
       assert hsl.l == 50
@@ -64,7 +64,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
     test "converts RGB to Lab" do
       red = Color.from_hex("#FF0000")
       lab = Advanced.convert_color_space(red, :lab)
-      
+
       assert is_number(lab.l)
       assert is_number(lab.a)
       assert is_number(lab.b)
@@ -73,7 +73,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
     test "converts RGB to XYZ" do
       red = Color.from_hex("#FF0000")
       xyz = Advanced.convert_color_space(red, :xyz)
-      
+
       assert is_number(xyz.x)
       assert is_number(xyz.y)
       assert is_number(xyz.z)
@@ -84,7 +84,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
     test "creates complementary harmony" do
       red = Color.from_hex("#FF0000")
       harmony = Advanced.create_harmony(red, :complementary)
-      
+
       assert length(harmony) == 2
       assert Enum.at(harmony, 0).hex == "#FF0000"
       assert Enum.at(harmony, 1).hex == "#00FFFF"
@@ -93,7 +93,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
     test "creates analogous harmony" do
       red = Color.from_hex("#FF0000")
       harmony = Advanced.create_harmony(red, :analogous)
-      
+
       assert length(harmony) == 3
       assert Enum.at(harmony, 0).hex == "#FF0000"
     end
@@ -101,7 +101,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
     test "creates triadic harmony" do
       red = Color.from_hex("#FF0000")
       harmony = Advanced.create_harmony(red, :triadic)
-      
+
       assert length(harmony) == 3
       assert Enum.at(harmony, 0).hex == "#FF0000"
     end
@@ -109,7 +109,7 @@ defmodule Raxol.Style.Colors.AdvancedTest do
     test "creates tetradic harmony" do
       red = Color.from_hex("#FF0000")
       harmony = Advanced.create_harmony(red, :tetradic)
-      
+
       assert length(harmony) == 4
       assert Enum.at(harmony, 0).hex == "#FF0000"
     end
@@ -119,29 +119,29 @@ defmodule Raxol.Style.Colors.AdvancedTest do
     test "adapts color with default options" do
       red = Color.from_hex("#FF0000")
       adapted = Advanced.adapt_color_advanced(red)
-      
+
       assert adapted.hex == red.hex
     end
 
     test "adapts color with preserve_brightness option" do
       red = Color.from_hex("#FF0000")
       adapted = Advanced.adapt_color_advanced(red, preserve_brightness: true)
-      
+
       assert adapted.hex == red.hex
     end
 
     test "adapts color with enhance_contrast option" do
       red = Color.from_hex("#FF0000")
       adapted = Advanced.adapt_color_advanced(red, enhance_contrast: true)
-      
+
       assert adapted.hex == red.hex
     end
 
     test "adapts color with color_blind_safe option" do
       red = Color.from_hex("#FF0000")
       adapted = Advanced.adapt_color_advanced(red, color_blind_safe: true)
-      
+
       assert adapted.hex == red.hex
     end
   end
-end 
+end

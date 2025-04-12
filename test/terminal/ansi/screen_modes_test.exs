@@ -35,14 +35,14 @@ defmodule Raxol.Terminal.ANSI.ScreenModesTest do
     test "column width mode is saved and restored when switching screen modes" do
       state = ScreenModes.new()
       state = ScreenModes.set_mode(state, :wide_column)
-      
+
       # Switch to alternate mode (saves state)
       state = ScreenModes.switch_mode(state, :alternate)
       assert ScreenModes.get_column_width_mode(state) == :wide
-      
+
       # Switch back to normal mode (restores state)
       state = ScreenModes.switch_mode(state, :normal)
       assert ScreenModes.get_column_width_mode(state) == :wide
     end
   end
-end 
+end

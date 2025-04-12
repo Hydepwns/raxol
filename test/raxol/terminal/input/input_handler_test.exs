@@ -27,12 +27,15 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
 
     test "processes multiple keyboard inputs" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.process_keyboard("h")
         |> InputHandler.process_keyboard("e")
         |> InputHandler.process_keyboard("l")
         |> InputHandler.process_keyboard("l")
         |> InputHandler.process_keyboard("o")
+
       assert InputHandler.get_buffer_contents(handler) == "hello"
     end
   end
@@ -69,10 +72,13 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
 
     test "updates multiple modifiers" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.update_modifier("Control", true)
         |> InputHandler.update_modifier("Alt", true)
         |> InputHandler.update_modifier("Shift", true)
+
       assert handler.modifier_state.ctrl == true
       assert handler.modifier_state.alt == true
       assert handler.modifier_state.shift == true
@@ -83,27 +89,36 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
   describe "process_key_with_modifiers/2" do
     test "processes key with ctrl modifier" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.update_modifier("Control", true)
         |> InputHandler.process_key_with_modifiers("a")
+
       assert InputHandler.get_buffer_contents(handler) == "\e[1;97"
     end
 
     test "processes key with multiple modifiers" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.update_modifier("Control", true)
         |> InputHandler.update_modifier("Alt", true)
         |> InputHandler.update_modifier("Shift", true)
         |> InputHandler.process_key_with_modifiers("a")
+
       assert InputHandler.get_buffer_contents(handler) == "\e[7;97"
     end
 
     test "processes special key with modifiers" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.update_modifier("Control", true)
         |> InputHandler.process_key_with_modifiers("ArrowUp")
+
       assert InputHandler.get_buffer_contents(handler) == "\e[1;A"
     end
   end
@@ -111,9 +126,12 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
   describe "process_mouse/2" do
     test "processes mouse click when enabled" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.set_mouse_enabled(true)
         |> InputHandler.process_mouse({:press, 0, 10, 20})
+
       assert InputHandler.get_buffer_contents(handler) == "\e[M0*4"
       assert handler.mouse_position == {10, 20}
       assert MapSet.member?(handler.mouse_buttons, 0)
@@ -137,9 +155,12 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
 
     test "disables mouse handling" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.set_mouse_enabled(true)
         |> InputHandler.set_mouse_enabled(false)
+
       assert handler.mouse_enabled == false
     end
   end
@@ -155,9 +176,12 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
   describe "add_to_history/1" do
     test "adds non-empty buffer to history" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.process_keyboard("test")
         |> InputHandler.add_to_history()
+
       assert length(handler.input_history) == 1
       assert hd(handler.input_history) == "test"
     end
@@ -172,11 +196,14 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
   describe "get_history_entry/2" do
     test "retrieves history entry" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.process_keyboard("test1")
         |> InputHandler.add_to_history()
         |> InputHandler.process_keyboard("test2")
         |> InputHandler.add_to_history()
+
       handler = InputHandler.get_history_entry(handler, 0)
       assert InputHandler.get_buffer_contents(handler) == "test2"
     end
@@ -191,13 +218,16 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
   describe "next_history_entry/1" do
     test "moves to next history entry" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.process_keyboard("test1")
         |> InputHandler.add_to_history()
         |> InputHandler.process_keyboard("test2")
         |> InputHandler.add_to_history()
         |> InputHandler.process_keyboard("test3")
         |> InputHandler.add_to_history()
+
       handler = InputHandler.next_history_entry(handler)
       assert InputHandler.get_buffer_contents(handler) == "test2"
     end
@@ -206,13 +236,16 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
   describe "previous_history_entry/1" do
     test "moves to previous history entry" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.process_keyboard("test1")
         |> InputHandler.add_to_history()
         |> InputHandler.process_keyboard("test2")
         |> InputHandler.add_to_history()
         |> InputHandler.process_keyboard("test3")
         |> InputHandler.add_to_history()
+
       handler = InputHandler.previous_history_entry(handler)
       assert InputHandler.get_buffer_contents(handler) == "test1"
     end
@@ -221,9 +254,12 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
   describe "clear_buffer/1" do
     test "clears the input buffer" do
       handler = InputHandler.new()
-      handler = handler
+
+      handler =
+        handler
         |> InputHandler.process_keyboard("test")
         |> InputHandler.clear_buffer()
+
       assert InputHandler.get_buffer_contents(handler) == ""
     end
   end

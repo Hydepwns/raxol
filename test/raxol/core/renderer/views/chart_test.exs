@@ -18,12 +18,13 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
 
   describe "new/1" do
     test "creates a basic bar chart" do
-      view = Chart.new(
-        type: :bar,
-        series: @sample_series,
-        width: 20,
-        height: 10
-      )
+      view =
+        Chart.new(
+          type: :bar,
+          series: @sample_series,
+          width: 20,
+          height: 10
+        )
 
       assert view.type == :box
       content = List.first(view.children)
@@ -31,12 +32,13 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
     end
 
     test "creates a line chart" do
-      view = Chart.new(
-        type: :line,
-        series: @sample_series,
-        width: 20,
-        height: 10
-      )
+      view =
+        Chart.new(
+          type: :line,
+          series: @sample_series,
+          width: 20,
+          height: 10
+        )
 
       assert view.type == :box
       content = List.first(view.children)
@@ -44,11 +46,12 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
     end
 
     test "creates a sparkline" do
-      view = Chart.new(
-        type: :sparkline,
-        series: [@sample_series |> List.first()],
-        width: 20
-      )
+      view =
+        Chart.new(
+          type: :sparkline,
+          series: [@sample_series |> List.first()],
+          width: 20
+        )
 
       assert view.type == :box
       content = List.first(view.children)
@@ -59,13 +62,14 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
 
   describe "bar chart features" do
     test "handles vertical orientation" do
-      view = Chart.new(
-        type: :bar,
-        orientation: :vertical,
-        series: @sample_series,
-        width: 20,
-        height: 10
-      )
+      view =
+        Chart.new(
+          type: :bar,
+          orientation: :vertical,
+          series: @sample_series,
+          width: 20,
+          height: 10
+        )
 
       content = get_bar_content(view)
       assert content.type == :flex
@@ -73,13 +77,14 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
     end
 
     test "handles horizontal orientation" do
-      view = Chart.new(
-        type: :bar,
-        orientation: :horizontal,
-        series: @sample_series,
-        width: 20,
-        height: 10
-      )
+      view =
+        Chart.new(
+          type: :bar,
+          orientation: :horizontal,
+          series: @sample_series,
+          width: 20,
+          height: 10
+        )
 
       content = get_bar_content(view)
       assert content.type == :flex
@@ -87,12 +92,13 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
     end
 
     test "applies colors to bars" do
-      view = Chart.new(
-        type: :bar,
-        series: @sample_series,
-        width: 20,
-        height: 10
-      )
+      view =
+        Chart.new(
+          type: :bar,
+          series: @sample_series,
+          width: 20,
+          height: 10
+        )
 
       content = get_bar_content(view)
       bars = content.children
@@ -103,12 +109,13 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
 
   describe "line chart features" do
     test "creates points and lines" do
-      view = Chart.new(
-        type: :line,
-        series: @sample_series,
-        width: 20,
-        height: 10
-      )
+      view =
+        Chart.new(
+          type: :line,
+          series: @sample_series,
+          width: 20,
+          height: 10
+        )
 
       content = get_line_content(view)
       points = List.flatten(content.children)
@@ -118,12 +125,13 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
     end
 
     test "applies colors to lines" do
-      view = Chart.new(
-        type: :line,
-        series: @sample_series,
-        width: 20,
-        height: 10
-      )
+      view =
+        Chart.new(
+          type: :line,
+          series: @sample_series,
+          width: 20,
+          height: 10
+        )
 
       content = get_line_content(view)
       points = List.flatten(content.children)
@@ -134,44 +142,53 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
 
   describe "axes and labels" do
     test "adds axes when enabled" do
-      view = Chart.new(
-        type: :bar,
-        series: @sample_series,
-        width: 20,
-        height: 10,
-        show_axes: true
-      )
+      view =
+        Chart.new(
+          type: :bar,
+          series: @sample_series,
+          width: 20,
+          height: 10,
+          show_axes: true
+        )
 
       # Find y-axis
-      y_axis = find_child(view, fn child ->
-        child.type == :box and
-        Enum.any?(child.children, &(&1.content =~ "│"))
-      end)
+      y_axis =
+        find_child(view, fn child ->
+          child.type == :box and
+            Enum.any?(child.children, &(&1.content =~ "│"))
+        end)
+
       assert y_axis != nil
 
       # Find x-axis
-      x_axis = find_child(view, fn child ->
-        child.type == :text and
-        String.contains?(child.content, "─")
-      end)
+      x_axis =
+        find_child(view, fn child ->
+          child.type == :text and
+            String.contains?(child.content, "─")
+        end)
+
       assert x_axis != nil
     end
 
     test "adds legend when enabled" do
-      view = Chart.new(
-        type: :bar,
-        series: @sample_series,
-        width: 20,
-        height: 10,
-        show_legend: true
-      )
+      view =
+        Chart.new(
+          type: :bar,
+          series: @sample_series,
+          width: 20,
+          height: 10,
+          show_legend: true
+        )
 
-      legend = find_child(view, fn child ->
-        child.type == :flex and
-        Enum.any?(child.children, &(&1.content =~ "█"))
-      end)
+      legend =
+        find_child(view, fn child ->
+          child.type == :flex and
+            Enum.any?(child.children, &(&1.content =~ "█"))
+        end)
+
       assert legend != nil
-      assert length(legend.children) == 2  # Two series
+      # Two series
+      assert length(legend.children) == 2
     end
   end
 
@@ -183,16 +200,18 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
     end
 
     test "respects custom min/max" do
-      view = Chart.new(
-        type: :bar,
-        series: @sample_series,
-        width: 20,
-        height: 10,
-        min: 0,
-        max: 10
-      )
+      view =
+        Chart.new(
+          type: :bar,
+          series: @sample_series,
+          width: 20,
+          height: 10,
+          min: 0,
+          max: 10
+        )
 
-      assert view != nil  # Just ensure it creates without errors
+      # Just ensure it creates without errors
+      assert view != nil
     end
 
     test "scales values correctly" do
@@ -230,8 +249,9 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
             find_child(child, predicate)
           end
         end)
+
       _ ->
         nil
     end
   end
-end 
+end

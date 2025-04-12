@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Renderer.Buffer do
   @moduledoc """
   Manages terminal buffer rendering with double buffering and damage tracking.
-  
+
   This module provides efficient terminal rendering by:
   * Using double buffering to prevent screen flicker
   * Tracking damaged regions to minimize updates
@@ -12,16 +12,16 @@ defmodule Raxol.Core.Renderer.Buffer do
   @type position :: {non_neg_integer(), non_neg_integer()}
   @type size :: {non_neg_integer(), non_neg_integer()}
   @type cell :: %{
-    char: String.t(),
-    fg: term(),
-    bg: term(),
-    style: [atom()]
-  }
+          char: String.t(),
+          fg: term(),
+          bg: term(),
+          style: [atom()]
+        }
   @type buffer :: %{
-    size: size(),
-    cells: %{position() => cell()},
-    damage: MapSet.t(position())
-  }
+          size: size(),
+          cells: %{position() => cell()},
+          damage: MapSet.t(position())
+        }
 
   defstruct [:front_buffer, :back_buffer, :fps, :last_frame_time]
 
@@ -48,7 +48,7 @@ defmodule Raxol.Core.Renderer.Buffer do
   """
   def put_cell(buffer, {x, y} = pos, char, opts \\ []) do
     {width, height} = buffer.back_buffer.size
-    
+
     if x >= 0 and x < width and y >= 0 and y < height do
       cell = %{
         char: char,
@@ -56,13 +56,15 @@ defmodule Raxol.Core.Renderer.Buffer do
         bg: Keyword.get(opts, :bg),
         style: Keyword.get(opts, :style, [])
       }
-      
+
       back_buffer = buffer.back_buffer
-      back_buffer = %{back_buffer |
-        cells: Map.put(back_buffer.cells, pos, cell),
-        damage: MapSet.put(back_buffer.damage, pos)
+
+      back_buffer = %{
+        back_buffer
+        | cells: Map.put(back_buffer.cells, pos, cell),
+          damage: MapSet.put(back_buffer.damage, pos)
       }
-      
+
       %{buffer | back_buffer: back_buffer}
     else
       buffer
@@ -74,16 +76,15 @@ defmodule Raxol.Core.Renderer.Buffer do
   """
   def clear(buffer) do
     {width, height} = buffer.back_buffer.size
-    damage = for x <- 0..(width-1),
-                y <- 0..(height-1),
-                into: MapSet.new(),
-                do: {x, y}
-                
-    back_buffer = %{buffer.back_buffer |
-      cells: %{},
-      damage: damage
-    }
-    
+
+    damage =
+      for x <- 0..(width - 1),
+          y <- 0..(height - 1),
+          into: MapSet.new(),
+          do: {x, y}
+
+    back_buffer = %{buffer.back_buffer | cells: %{}, damage: damage}
+
     %{buffer | back_buffer: back_buffer}
   end
 
@@ -94,14 +95,16 @@ defmodule Raxol.Core.Renderer.Buffer do
   def swap_buffers(buffer) do
     now = System.monotonic_time(:millisecond)
     frame_time = 1000 / buffer.fps
-    
+
     if now - buffer.last_frame_time >= frame_time do
       # Swap buffers
-      new_buffer = %{buffer |
-        front_buffer: buffer.back_buffer,
-        back_buffer: %{buffer.back_buffer | damage: MapSet.new()},
-        last_frame_time: now
+      new_buffer = %{
+        buffer
+        | front_buffer: buffer.back_buffer,
+          back_buffer: %{buffer.back_buffer | damage: MapSet.new()},
+          last_frame_time: now
       }
+
       {new_buffer, true}
     else
       {buffer, false}
@@ -125,25 +128,24 @@ defmodule Raxol.Core.Renderer.Buffer do
   def resize(buffer, new_width, new_height) do
     old_size = buffer.back_buffer.size
     new_size = {new_width, new_height}
-    
+
     # Create new empty buffer
     new_back_buffer = %{
       size: new_size,
       cells: %{},
       damage: MapSet.new()
     }
-    
+
     # Copy existing cells that are still in bounds
-    {new_cells, damage} = copy_cells(buffer.back_buffer.cells, old_size, new_size)
-    
-    new_back_buffer = %{new_back_buffer |
-      cells: new_cells,
-      damage: damage
-    }
-    
-    %{buffer |
-      back_buffer: new_back_buffer,
-      front_buffer: %{buffer.front_buffer | size: new_size}
+    {new_cells, damage} =
+      copy_cells(buffer.back_buffer.cells, old_size, new_size)
+
+    new_back_buffer = %{new_back_buffer | cells: new_cells, damage: damage}
+
+    %{
+      buffer
+      | back_buffer: new_back_buffer,
+        front_buffer: %{buffer.front_buffer | size: new_size}
     }
   end
 
@@ -161,4 +163,4 @@ defmodule Raxol.Core.Renderer.Buffer do
       end
     end
   end
-end 
+end

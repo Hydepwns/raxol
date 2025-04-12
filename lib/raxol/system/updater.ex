@@ -19,7 +19,8 @@ defmodule Raxol.System.Updater do
 
   @github_repo "username/raxol"
   @version Mix.Project.config()[:version]
-  @update_check_interval 86400 # 24 hours in seconds
+  # 24 hours in seconds
+  @update_check_interval 86400
   @update_settings_file "~/.raxol/update_settings.json"
 
   @doc """
@@ -48,21 +49,25 @@ defmodule Raxol.System.Updater do
     with {:ok, settings} <- get_update_settings(),
          true <- force || should_check_for_update?(settings),
          {:ok, latest_version} <- fetch_latest_version() do
-
       # Update the last check timestamp
       settings = Map.put(settings, "last_check", :os.system_time(:second))
       _ = save_update_settings(settings)
 
       # case Version.compare(@version, latest_version) do # Version module seems unavailable
-      case @version == latest_version[:version] do # Basic comparison for now
-        true -> {:no_update, @version}
-        false -> {:update_available, latest_version[:version]}
-      #  :lt -> {:update_available, latest_version}
-      #  _ -> {:no_update, @version}
+      # Basic comparison for now
+      case @version == latest_version[:version] do
+        true ->
+          {:no_update, @version}
+
+        false ->
+          {:update_available, latest_version[:version]}
+          #  :lt -> {:update_available, latest_version}
+          #  _ -> {:no_update, @version}
       end
     else
       {:error, reason} -> {:error, reason}
-      false -> {:no_update, @version} # Don't check yet based on interval
+      # Don't check yet based on interval
+      false -> {:no_update, @version}
     end
   end
 
@@ -94,26 +99,29 @@ defmodule Raxol.System.Updater do
     # First check if we're running as a compiled binary
     # TODO: `:burrito_util` module is not available. Commenting out.
     # is_binary = function_exported?(:burrito_util, :is_binary?, 0) && :burrito_util.is_binary?()
-    is_binary = false # Assume not running as binary for now
+    # Assume not running as binary for now
+    is_binary = false
 
     if !is_binary do
       {:error, "Not running as a compiled binary"}
     else
       # If no specific version is provided, fetch the latest
-      version = if is_nil(version) do
-        case fetch_latest_version() do
-          {:ok, latest} -> latest
-          {:error, reason} -> throw({:error, reason})
+      version =
+        if is_nil(version) do
+          case fetch_latest_version() do
+            {:ok, latest} -> latest
+            {:error, reason} -> throw({:error, reason})
+          end
+        else
+          version
         end
-      else
-        version
-      end
 
       # Check if we actually need to update
       # case Version.compare(@version, version) do # Version module seems unavailable
-      case @version == version do # Basic comparison for now
+      # Basic comparison for now
+      case @version == version do
         false ->
-      #  :lt ->
+          #  :lt ->
           if use_delta do
             # Try delta update first, fall back to full update
             try_delta_update(version)
@@ -121,8 +129,10 @@ defmodule Raxol.System.Updater do
             # Skip delta update attempt
             do_self_update(version)
           end
-        true -> {:no_update, @version}
-      #  _ -> {:no_update, @version}
+
+        true ->
+          {:no_update, @version}
+          #  _ -> {:no_update, @version}
       end
     end
   catch
@@ -147,14 +157,20 @@ defmodule Raxol.System.Updater do
         fg = {0, 255, 0}
         bg = {0, 0, 0}
 
-        fg_hex = Color.from_rgb(elem(fg, 0), elem(fg, 1), elem(fg, 2)) |> Color.to_hex()
-        bg_hex = Color.from_rgb(elem(bg, 0), elem(bg, 1), elem(bg, 2)) |> Color.to_hex()
+        fg_hex =
+          Color.from_rgb(elem(fg, 0), elem(fg, 1), elem(fg, 2))
+          |> Color.to_hex()
+
+        bg_hex =
+          Color.from_rgb(elem(bg, 0), elem(bg, 1), elem(bg, 2))
+          |> Color.to_hex()
 
         Terminal.println("Update Available!", color: fg_hex, background: bg_hex)
 
         IO.puts("Version #{version} is available.")
         IO.puts("Run 'raxol update' to install.")
         :ok
+
       _ ->
         :ok
     end
@@ -194,6 +210,7 @@ defmodule Raxol.System.Updater do
             {:ok, settings} -> {:ok, settings}
             _error -> {:ok, default_settings()}
           end
+
         _error ->
           {:ok, default_settings()}
       end
@@ -221,6 +238,7 @@ defmodule Raxol.System.Updater do
     case Jason.encode(settings) do
       {:ok, json} ->
         File.write(file_path, json)
+
       error ->
         error
     end
@@ -239,9 +257,15 @@ defmodule Raxol.System.Updater do
   defp fetch_latest_version do
     url = "https://api.github.com/repos/#{@github_repo}/releases/latest"
 
-    case :httpc.request(:get, {String.to_charlist(url), [
-      {~c"User-Agent", ~c"Raxol-Updater"}
-    ]}, [], []) do
+    case :httpc.request(
+           :get,
+           {String.to_charlist(url),
+            [
+              {~c"User-Agent", ~c"Raxol-Updater"}
+            ]},
+           [],
+           []
+         ) do
       {:ok, {{_, 200, _}, _, body}} ->
         body_str = List.to_string(body)
 
@@ -255,6 +279,7 @@ defmodule Raxol.System.Updater do
 
       {:ok, {{_, status, _}, _, _}} ->
         {:error, "GitHub API returned status #{status}"}
+
       {:error, reason} ->
         {:error, "Failed to connect to GitHub: #{inspect(reason)}"}
     end
@@ -262,18 +287,26 @@ defmodule Raxol.System.Updater do
 
   defp do_self_update(version) do
     # Platform detection
-    platform = case :os.type() do
-      {:unix, :darwin} -> "macos"
-      {:unix, _} -> "linux"
-      {:win32, _} -> "windows"
-      # _ -> throw({:error, "Unsupported platform"}) # Unreachable clause removed
-    end
+    platform =
+      case :os.type() do
+        {:unix, :darwin} ->
+          "macos"
+
+        {:unix, _} ->
+          "linux"
+
+        {:win32, _} ->
+          "windows"
+
+          # _ -> throw({:error, "Unsupported platform"}) # Unreachable clause removed
+      end
 
     # Determine file extension based on platform
     ext = if platform == "windows", do: "zip", else: "tar.gz"
 
     # Download URL for the new version
-    url = "https://github.com/#{@github_repo}/releases/download/v#{version}/raxol-#{version}-#{platform}.#{ext}"
+    url =
+      "https://github.com/#{@github_repo}/releases/download/v#{version}/raxol-#{version}-#{platform}.#{ext}"
 
     # Temporary directory for the update
     tmp_dir = System.tmp_dir!() |> Path.join("raxol_update_#{version}")
@@ -289,7 +322,10 @@ defmodule Raxol.System.Updater do
       :ok = extract_archive(archive_path, tmp_dir, ext)
 
       # Get the current executable path
-      current_exe = System.get_env("BURRITO_EXECUTABLE_PATH") || System.argv() |> List.first() || throw({:error, "Cannot determine executable path"})
+      current_exe =
+        System.get_env("BURRITO_EXECUTABLE_PATH") ||
+          System.argv() |> List.first() ||
+          throw({:error, "Cannot determine executable path"})
 
       # Find the new executable in the extracted files
       new_exe = find_executable(tmp_dir, platform)
@@ -307,9 +343,14 @@ defmodule Raxol.System.Updater do
   end
 
   defp download_file(url, destination) do
-    case :httpc.request(:get, {String.to_charlist(url), []}, [], [{:stream, String.to_charlist(destination)}]) do
-      {:ok, :saved_to_file} -> :ok
-      {:error, reason} -> throw({:error, "Failed to download update: #{inspect(reason)}"})
+    case :httpc.request(:get, {String.to_charlist(url), []}, [], [
+           {:stream, String.to_charlist(destination)}
+         ]) do
+      {:ok, :saved_to_file} ->
+        :ok
+
+      {:error, reason} ->
+        throw({:error, "Failed to download update: #{inspect(reason)}"})
     end
   end
 
@@ -336,8 +377,11 @@ defmodule Raxol.System.Updater do
     else
       # Search recursively in subdirectories
       case find_file_recursive(dir, executable_name) do
-        nil -> throw({:error, "Could not find new executable in update package"})
-        path -> path
+        nil ->
+          throw({:error, "Could not find new executable in update package"})
+
+        path ->
+          path
       end
     end
   end
@@ -351,12 +395,15 @@ defmodule Raxol.System.Updater do
           cond do
             Path.basename(path) == filename ->
               path
+
             File.dir?(path) ->
               find_file_recursive(path, filename)
+
             true ->
               nil
           end
         end)
+
       _ ->
         nil
     end
@@ -389,19 +436,25 @@ defmodule Raxol.System.Updater do
       _ = System.cmd("cmd", ["/c", "start", "/b", updater_bat])
       # Give the batch file a moment to start before exiting
       Process.sleep(500)
-      System.stop(0) # Exit the current Elixir application
+      # Exit the current Elixir application
+      System.stop(0)
     else
       # On Unix systems, we can replace the current executable directly
       # The new process will start with the updated executable
       case File.cp(new_exe, current_exe) do
         :ok ->
-          IO.puts "Executable replaced successfully. Please restart the application."
+          IO.puts(
+            "Executable replaced successfully. Please restart the application."
+          )
+
           # On Unix, we might not need to System.stop immediately,
           # depending on how the restart is managed.
           # For now, let's assume the caller handles the restart or exit logic
           # after this function returns :ok.
           :ok
-        {:error, reason} -> throw({:error, "Failed to replace executable: #{inspect(reason)}"})
+
+        {:error, reason} ->
+          throw({:error, "Failed to replace executable: #{inspect(reason)}"})
       end
     end
   end
@@ -420,14 +473,18 @@ defmodule Raxol.System.Updater do
     case DeltaUpdater.check_delta_availability(version) do
       {:ok, delta_info} ->
         # Delta update is available
-        IO.puts "Delta update available (#{delta_info.savings_percent}% smaller download)"
+        IO.puts(
+          "Delta update available (#{delta_info.savings_percent}% smaller download)"
+        )
 
         case DeltaUpdater.apply_delta_update(version, delta_info.delta_url) do
-          :ok -> :ok
+          :ok ->
+            :ok
+
           {:error, reason} ->
             # If delta update fails, fall back to full update
-            IO.puts "Delta update failed: #{reason}"
-            IO.puts "Falling back to full update..."
+            IO.puts("Delta update failed: #{reason}")
+            IO.puts("Falling back to full update...")
             do_self_update(version)
         end
 

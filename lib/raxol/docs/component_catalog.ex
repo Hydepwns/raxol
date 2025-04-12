@@ -135,10 +135,13 @@ defmodule Raxol.Docs.ComponentCatalog do
       Enum.filter(category.components, fn component ->
         # Search in name, description, and tags
         String.contains?(String.downcase(component.name), query_downcase) ||
-        String.contains?(String.downcase(component.description), query_downcase) ||
-        Enum.any?(component.tags, fn tag ->
-          String.contains?(String.downcase(tag), query_downcase)
-        end)
+          String.contains?(
+            String.downcase(component.description),
+            query_downcase
+          ) ||
+          Enum.any?(component.tags, fn tag ->
+            String.contains?(String.downcase(tag), query_downcase)
+          end)
       end)
     end)
   end
@@ -150,9 +153,10 @@ defmodule Raxol.Docs.ComponentCatalog do
     component = get_component(component_id)
 
     if component do
-      example = Enum.find(component.examples, fn example ->
-        example.id == example_id
-      end)
+      example =
+        Enum.find(component.examples, fn example ->
+          example.id == example_id
+        end)
 
       if example do
         # Call the preview function with custom props
@@ -202,12 +206,14 @@ defmodule Raxol.Docs.ComponentCatalog do
     component = get_component(component_id)
 
     if component do
-      module_name = component.module |> to_string() |> String.replace("Elixir.", "")
+      module_name =
+        component.module |> to_string() |> String.replace("Elixir.", "")
 
       # Generate props string
-      props_str = props
-                  |> Enum.map(fn {k, v} -> "#{k}: #{inspect(v)}" end)
-                  |> Enum.join(", ")
+      props_str =
+        props
+        |> Enum.map(fn {k, v} -> "#{k}: #{inspect(v)}" end)
+        |> Enum.join(", ")
 
       # Basic snippet for simple components
       """
@@ -271,13 +277,44 @@ defmodule Raxol.Docs.ComponentCatalog do
             description: "A simple button with default styling.",
             code: "Components.button(\"Click me\")",
             preview_fn: fn props ->
-              Raxol.Components.Button.new(props[:label] || "Click me", Map.drop(props, [:label]))
+              Raxol.Components.Button.new(
+                props[:label] || "Click me",
+                Map.drop(props, [:label])
+              )
             end,
             customizable_props: [
-              %Property{name: :label, type: :string, description: "Button text", default_value: "Click me"},
-              %Property{name: :on_click, type: :function, description: "Function called when clicked", default_value: nil},
-              %Property{name: :disabled, type: :boolean, description: "Whether the button is disabled", default_value: false},
-              %Property{name: :style, type: :atom, description: "Button style", default_value: :primary, options: [:primary, :secondary, :success, :danger, :warning, :info]}
+              %Property{
+                name: :label,
+                type: :string,
+                description: "Button text",
+                default_value: "Click me"
+              },
+              %Property{
+                name: :on_click,
+                type: :function,
+                description: "Function called when clicked",
+                default_value: nil
+              },
+              %Property{
+                name: :disabled,
+                type: :boolean,
+                description: "Whether the button is disabled",
+                default_value: false
+              },
+              %Property{
+                name: :style,
+                type: :atom,
+                description: "Button style",
+                default_value: :primary,
+                options: [
+                  :primary,
+                  :secondary,
+                  :success,
+                  :danger,
+                  :warning,
+                  :info
+                ]
+              }
             ]
           },
           %Example{
@@ -286,31 +323,102 @@ defmodule Raxol.Docs.ComponentCatalog do
             description: "A button with an icon.",
             code: "Components.button(\"Save\", icon: :save)",
             preview_fn: fn props ->
-              Raxol.Components.Button.new(props[:label] || "Save", Map.merge(%{icon: props[:icon] || :save}, Map.drop(props, [:label, :icon])))
+              Raxol.Components.Button.new(
+                props[:label] || "Save",
+                Map.merge(
+                  %{icon: props[:icon] || :save},
+                  Map.drop(props, [:label, :icon])
+                )
+              )
             end,
             customizable_props: [
-              %Property{name: :label, type: :string, description: "Button text", default_value: "Save"},
-              %Property{name: :icon, type: :atom, description: "Icon to display", default_value: :save, options: [:save, :delete, :edit, :add, :cancel, :search]}
+              %Property{
+                name: :label,
+                type: :string,
+                description: "Button text",
+                default_value: "Save"
+              },
+              %Property{
+                name: :icon,
+                type: :atom,
+                description: "Icon to display",
+                default_value: :save,
+                options: [:save, :delete, :edit, :add, :cancel, :search]
+              }
             ]
           }
         ],
         properties: [
-          %Property{name: :label, type: :string, description: "Text to display on the button", required: true},
-          %Property{name: :on_click, type: :function, description: "Function called when the button is clicked", required: false},
-          %Property{name: :disabled, type: :boolean, description: "Whether the button is disabled", default_value: false, required: false},
-          %Property{name: :style, type: :atom, description: "Button style variant", default_value: :primary, options: [:primary, :secondary, :success, :danger, :warning, :info], required: false},
-          %Property{name: :icon, type: :atom, description: "Icon to display next to the text", required: false},
-          %Property{name: :icon_position, type: :atom, description: "Position of the icon", default_value: :left, options: [:left, :right], required: false},
-          %Property{name: :size, type: :atom, description: "Button size", default_value: :medium, options: [:small, :medium, :large], required: false},
-          %Property{name: :full_width, type: :boolean, description: "Whether the button should take full width", default_value: false, required: false},
-          %Property{name: :id, type: :string, description: "Unique identifier for the button", required: false}
+          %Property{
+            name: :label,
+            type: :string,
+            description: "Text to display on the button",
+            required: true
+          },
+          %Property{
+            name: :on_click,
+            type: :function,
+            description: "Function called when the button is clicked",
+            required: false
+          },
+          %Property{
+            name: :disabled,
+            type: :boolean,
+            description: "Whether the button is disabled",
+            default_value: false,
+            required: false
+          },
+          %Property{
+            name: :style,
+            type: :atom,
+            description: "Button style variant",
+            default_value: :primary,
+            options: [:primary, :secondary, :success, :danger, :warning, :info],
+            required: false
+          },
+          %Property{
+            name: :icon,
+            type: :atom,
+            description: "Icon to display next to the text",
+            required: false
+          },
+          %Property{
+            name: :icon_position,
+            type: :atom,
+            description: "Position of the icon",
+            default_value: :left,
+            options: [:left, :right],
+            required: false
+          },
+          %Property{
+            name: :size,
+            type: :atom,
+            description: "Button size",
+            default_value: :medium,
+            options: [:small, :medium, :large],
+            required: false
+          },
+          %Property{
+            name: :full_width,
+            type: :boolean,
+            description: "Whether the button should take full width",
+            default_value: false,
+            required: false
+          },
+          %Property{
+            name: :id,
+            type: :string,
+            description: "Unique identifier for the button",
+            required: false
+          }
         ],
         accessibility: %{
           role: "button",
           aria_attributes: ["aria-disabled", "aria-pressed", "aria-expanded"],
           keyboard_support: ["Enter", "Space"],
           screen_reader_text: "Announces the button label when focused",
-          high_contrast: "Uses high-contrast styles when high-contrast mode is enabled",
+          high_contrast:
+            "Uses high-contrast styles when high-contrast mode is enabled",
           best_practices: [
             "Use clear and concise labels",
             "Avoid using generic labels like 'Click here'",
@@ -339,39 +447,115 @@ defmodule Raxol.Docs.ComponentCatalog do
               # Assuming ExampleComponent.TextInput.render exists and handles props
               # Placeholder: Render the props map for now
               # ExampleComponent.TextInput.render(props, do: [IO.inspect(props, label: "TextInput Props")])
-              Raxol.Components.TextInput.new(props) # Use new/1 instead of text_input/1
+              # Use new/1 instead of text_input/1
+              Raxol.Components.TextInput.new(props)
             end,
             customizable_props: [
-              %Property{name: :value, type: :string, description: "Current input value", default_value: ""},
-              %Property{name: :placeholder, type: :string, description: "Placeholder text", default_value: "Enter your name"},
-              %Property{name: :disabled, type: :boolean, description: "Whether the input is disabled", default_value: false}
+              %Property{
+                name: :value,
+                type: :string,
+                description: "Current input value",
+                default_value: ""
+              },
+              %Property{
+                name: :placeholder,
+                type: :string,
+                description: "Placeholder text",
+                default_value: "Enter your name"
+              },
+              %Property{
+                name: :disabled,
+                type: :boolean,
+                description: "Whether the input is disabled",
+                default_value: false
+              }
             ]
           }
         ],
         properties: [
-          %Property{name: :value, type: :string, description: "Current value of the input", required: false},
-          %Property{name: :placeholder, type: :string, description: "Placeholder text when input is empty", required: false},
-          %Property{name: :on_change, type: :function, description: "Function called when the value changes", required: false},
-          %Property{name: :on_submit, type: :function, description: "Function called when Enter is pressed", required: false},
-          %Property{name: :disabled, type: :boolean, description: "Whether the input is disabled", default_value: false, required: false},
-          %Property{name: :type, type: :atom, description: "Input type", default_value: :text, options: [:text, :password, :number, :email], required: false},
-          %Property{name: :id, type: :string, description: "Unique identifier for the input", required: false},
-          %Property{name: :label, type: :string, description: "Label for the input", required: false},
-          %Property{name: :error, type: :string, description: "Error message to display", required: false}
+          %Property{
+            name: :value,
+            type: :string,
+            description: "Current value of the input",
+            required: false
+          },
+          %Property{
+            name: :placeholder,
+            type: :string,
+            description: "Placeholder text when input is empty",
+            required: false
+          },
+          %Property{
+            name: :on_change,
+            type: :function,
+            description: "Function called when the value changes",
+            required: false
+          },
+          %Property{
+            name: :on_submit,
+            type: :function,
+            description: "Function called when Enter is pressed",
+            required: false
+          },
+          %Property{
+            name: :disabled,
+            type: :boolean,
+            description: "Whether the input is disabled",
+            default_value: false,
+            required: false
+          },
+          %Property{
+            name: :type,
+            type: :atom,
+            description: "Input type",
+            default_value: :text,
+            options: [:text, :password, :number, :email],
+            required: false
+          },
+          %Property{
+            name: :id,
+            type: :string,
+            description: "Unique identifier for the input",
+            required: false
+          },
+          %Property{
+            name: :label,
+            type: :string,
+            description: "Label for the input",
+            required: false
+          },
+          %Property{
+            name: :error,
+            type: :string,
+            description: "Error message to display",
+            required: false
+          }
         ],
         accessibility: %{
           role: "textbox",
-          aria_attributes: ["aria-disabled", "aria-required", "aria-invalid", "aria-describedby"],
+          aria_attributes: [
+            "aria-disabled",
+            "aria-required",
+            "aria-invalid",
+            "aria-describedby"
+          ],
           keyboard_support: ["Tab", "Shift+Tab", "Enter"],
-          screen_reader_text: "Announces the input label, placeholder, and current value",
-          high_contrast: "Uses high-contrast styles when high-contrast mode is enabled",
+          screen_reader_text:
+            "Announces the input label, placeholder, and current value",
+          high_contrast:
+            "Uses high-contrast styles when high-contrast mode is enabled",
           best_practices: [
             "Always provide a label",
             "Use placeholder text as supplementary information, not as a replacement for labels",
             "Provide clear error messages when validation fails"
           ]
         },
-        related_components: ["textarea", "number_input", "password_input", "form"],
+        related_components: [
+          "textarea",
+          "number_input",
+          "password_input",
+          "form"
+        ],
         tags: ["input", "interactive", "form", "basic"],
         metadata: %{
           added_in_version: "0.1.0",
@@ -404,28 +588,77 @@ defmodule Raxol.Docs.ComponentCatalog do
               #   Raxol.Components.Text.text(props[:content] || "Panel content goes here.")
               # ])
               # Placeholder until components are confirmed available
-              IO.inspect(props, label: "Panel Props")
+              %{type: :panel, props: props}
             end,
             customizable_props: [
-              %Property{name: :title, type: :string, description: "Panel title", default_value: "Panel Title"},
-              %Property{name: :style, type: :atom, description: "Panel style", default_value: :default, options: [:default, :primary, :secondary, :bordered, :none]}
+              %Property{
+                name: :title,
+                type: :string,
+                description: "Panel title",
+                default_value: "Panel Title"
+              },
+              %Property{
+                name: :style,
+                type: :atom,
+                description: "Panel style",
+                default_value: :default,
+                options: [:default, :primary, :secondary, :bordered, :none]
+              }
             ]
           }
         ],
         properties: [
-          %Property{name: :title, type: :string, description: "Title of the panel", required: false},
-          %Property{name: :style, type: :atom, description: "Panel style variant", default_value: :default, options: [:default, :primary, :secondary, :bordered, :none], required: false},
-          %Property{name: :padding, type: :atom, description: "Padding inside the panel", default_value: :medium, options: [:none, :small, :medium, :large], required: false},
-          %Property{name: :border, type: :boolean, description: "Whether to show a border", default_value: true, required: false},
-          %Property{name: :shadow, type: :boolean, description: "Whether to show a shadow", default_value: false, required: false},
-          %Property{name: :id, type: :string, description: "Unique identifier for the panel", required: false}
+          %Property{
+            name: :title,
+            type: :string,
+            description: "Title of the panel",
+            required: false
+          },
+          %Property{
+            name: :style,
+            type: :atom,
+            description: "Panel style variant",
+            default_value: :default,
+            options: [:default, :primary, :secondary, :bordered, :none],
+            required: false
+          },
+          %Property{
+            name: :padding,
+            type: :atom,
+            description: "Padding inside the panel",
+            default_value: :medium,
+            options: [:none, :small, :medium, :large],
+            required: false
+          },
+          %Property{
+            name: :border,
+            type: :boolean,
+            description: "Whether to show a border",
+            default_value: true,
+            required: false
+          },
+          %Property{
+            name: :shadow,
+            type: :boolean,
+            description: "Whether to show a shadow",
+            default_value: false,
+            required: false
+          },
+          %Property{
+            name: :id,
+            type: :string,
+            description: "Unique identifier for the panel",
+            required: false
+          }
         ],
         accessibility: %{
           role: "region",
           aria_attributes: ["aria-labelledby"],
           keyboard_support: [],
-          screen_reader_text: "If a title is provided, it will be announced as the region label",
-          high_contrast: "Uses high-contrast styles when high-contrast mode is enabled",
+          screen_reader_text:
+            "If a title is provided, it will be announced as the region label",
+          high_contrast:
+            "Uses high-contrast styles when high-contrast mode is enabled",
           best_practices: [
             "Always provide a title for the panel",
             "Group related content within panels",

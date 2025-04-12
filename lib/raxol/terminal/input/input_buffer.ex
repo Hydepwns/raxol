@@ -44,6 +44,7 @@ defmodule Raxol.Terminal.Input.InputBuffer do
       case data do
         "\e" ->
           %{buffer | escape_sequence_mode: true, escape_sequence: "\e"}
+
         _ ->
           append_to_contents(buffer, data)
       end
@@ -62,8 +63,10 @@ defmodule Raxol.Terminal.Input.InputBuffer do
       case buffer.overflow_mode do
         :truncate ->
           %{buffer | contents: String.slice(new_contents, 0, buffer.max_size)}
+
         :error ->
           buffer
+
         :wrap ->
           %{buffer | contents: String.slice(new_contents, -buffer.max_size..-1)}
       end
@@ -80,8 +83,10 @@ defmodule Raxol.Terminal.Input.InputBuffer do
       case buffer.overflow_mode do
         :truncate ->
           %{buffer | contents: String.slice(contents, 0, buffer.max_size)}
+
         :error ->
           buffer
+
         :wrap ->
           %{buffer | contents: String.slice(contents, -buffer.max_size..-1)}
       end
@@ -126,14 +131,16 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   @doc """
   Sets the maximum size of the buffer.
   """
-  def set_max_size(%__MODULE__{} = buffer, max_size) when is_integer(max_size) and max_size > 0 do
+  def set_max_size(%__MODULE__{} = buffer, max_size)
+      when is_integer(max_size) and max_size > 0 do
     %{buffer | max_size: max_size}
   end
 
   @doc """
   Sets the overflow mode of the buffer.
   """
-  def set_overflow_mode(%__MODULE__{} = buffer, mode) when mode in [:truncate, :error, :wrap] do
+  def set_overflow_mode(%__MODULE__{} = buffer, mode)
+      when mode in [:truncate, :error, :wrap] do
     %{buffer | overflow_mode: mode}
   end
 
@@ -173,8 +180,8 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     if String.length(char) == 1 and position <= String.length(buffer.contents) do
       new_contents =
         String.slice(buffer.contents, 0, position) <>
-        char <>
-        String.slice(buffer.contents, position..-1)
+          char <>
+          String.slice(buffer.contents, position..-1)
 
       %{buffer | contents: new_contents}
     else
@@ -189,8 +196,8 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     if String.length(char) == 1 and position <= String.length(buffer.contents) do
       new_contents =
         String.slice(buffer.contents, 0, position) <>
-        char <>
-        String.slice(buffer.contents, position + 1..-1)
+          char <>
+          String.slice(buffer.contents, (position + 1)..-1)
 
       %{buffer | contents: new_contents}
     else
@@ -207,11 +214,13 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     case data do
       # End of escape sequence
       <<c>> when c >= ?@ and c <= ?~ ->
-        %{buffer |
-          contents: buffer.contents <> new_sequence,
-          escape_sequence: "",
-          escape_sequence_mode: false
+        %{
+          buffer
+          | contents: buffer.contents <> new_sequence,
+            escape_sequence: "",
+            escape_sequence_mode: false
         }
+
       # More escape sequence data
       _ ->
         %{buffer | escape_sequence: new_sequence}
@@ -227,8 +236,10 @@ defmodule Raxol.Terminal.Input.InputBuffer do
       case buffer.overflow_mode do
         :truncate ->
           %{buffer | contents: String.slice(new_contents, 0, buffer.max_size)}
+
         :error ->
           buffer
+
         :wrap ->
           %{buffer | contents: String.slice(new_contents, -buffer.max_size..-1)}
       end
@@ -240,17 +251,30 @@ defmodule Raxol.Terminal.Input.InputBuffer do
       buffer
     else
       {original_logical_line_index, original_pos_in_line} =
-        InputBufferUtils.find_logical_position(buffer.contents, buffer.cursor_pos)
+        InputBufferUtils.find_logical_position(
+          buffer.contents,
+          buffer.cursor_pos
+        )
 
       logical_lines_old = String.split(buffer.contents, "\n")
 
       # Build mapping *during* wrapping (More Accurate Approach)
       {wrapped_lines_new_list, {_final_wrapped_idx, line_mapping}} =
-        Enum.map_reduce(Enum.with_index(logical_lines_old), {0, %{}}, fn {line, old_idx}, {current_wrapped_idx, acc_mapping} ->
+        Enum.map_reduce(Enum.with_index(logical_lines_old), {0, %{}}, fn {line,
+                                                                          old_idx},
+                                                                         {current_wrapped_idx,
+                                                                          acc_mapping} ->
           newly_wrapped_lines = InputBufferUtils.wrap_line(line, new_width)
           num_lines_produced = length(newly_wrapped_lines)
-          indices = Enum.to_list(current_wrapped_idx .. (current_wrapped_idx + num_lines_produced - 1))
-          {newly_wrapped_lines, {current_wrapped_idx + num_lines_produced, Map.put(acc_mapping, old_idx, indices)}}
+
+          indices =
+            Enum.to_list(
+              current_wrapped_idx..(current_wrapped_idx + num_lines_produced - 1)
+            )
+
+          {newly_wrapped_lines,
+           {current_wrapped_idx + num_lines_produced,
+            Map.put(acc_mapping, old_idx, indices)}}
         end)
 
       wrapped_lines_new = List.flatten(wrapped_lines_new_list)
@@ -265,13 +289,21 @@ defmodule Raxol.Terminal.Input.InputBuffer do
           new_contents
         )
 
-      %{buffer | contents: new_contents, width: new_width, cursor_pos: new_cursor_pos}
+      %{
+        buffer
+        | contents: new_contents,
+          width: new_width,
+          cursor_pos: new_cursor_pos
+      }
     end
   end
 
-  def move_cursor_to_end_of_line(%__MODULE__{contents: contents, cursor_pos: cursor_pos} = buffer) do
+  def move_cursor_to_end_of_line(
+        %__MODULE__{contents: contents, cursor_pos: cursor_pos} = buffer
+      ) do
     # 1. Find the index of the logical line the cursor is currently on
-    {logical_line_index, _pos_in_line} = InputBufferUtils.find_logical_position(contents, cursor_pos)
+    {logical_line_index, _pos_in_line} =
+      InputBufferUtils.find_logical_position(contents, cursor_pos)
 
     # 2. Calculate the character offset for the end of that logical line
     logical_lines = String.split(contents, "\n")
@@ -280,6 +312,7 @@ defmodule Raxol.Terminal.Input.InputBuffer do
       Enum.reduce(0..logical_line_index, 0, fn i, acc ->
         # Add length of the current line
         current_line_len = String.length(Enum.at(logical_lines, i))
+
         # Add 1 for the newline, unless it's the very last line being considered *and* it's the last line of the buffer
         newline_char_count = if i < logical_line_index, do: 1, else: 0
         acc + current_line_len + newline_char_count

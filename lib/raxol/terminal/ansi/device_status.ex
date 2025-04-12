@@ -6,12 +6,12 @@ defmodule Raxol.Terminal.ANSI.DeviceStatus do
   """
 
   @type device_status :: %{
-    cursor_position: {integer(), integer()},
-    device_type: String.t(),
-    version: String.t(),
-    terminal_id: String.t(),
-    features: MapSet.t()
-  }
+          cursor_position: {integer(), integer()},
+          device_type: String.t(),
+          version: String.t(),
+          terminal_id: String.t(),
+          features: MapSet.t()
+        }
 
   @doc """
   Creates a new device status map with default values.
@@ -23,14 +23,15 @@ defmodule Raxol.Terminal.ANSI.DeviceStatus do
       device_type: "VT100",
       version: "1.0.0",
       terminal_id: "00000000",
-      features: MapSet.new([
-        :advanced_video_option,
-        :sixel_graphics,
-        :mouse_support,
-        :bracketed_paste,
-        :focus_events,
-        :alternate_screen
-      ])
+      features:
+        MapSet.new([
+          :advanced_video_option,
+          :sixel_graphics,
+          :mouse_support,
+          :bracketed_paste,
+          :focus_events,
+          :alternate_screen
+        ])
     }
   end
 
@@ -90,7 +91,8 @@ defmodule Raxol.Terminal.ANSI.DeviceStatus do
   @doc """
   Updates the cursor position in the device status.
   """
-  @spec update_cursor_position(device_status(), {integer(), integer()}) :: device_status()
+  @spec update_cursor_position(device_status(), {integer(), integer()}) ::
+          device_status()
   def update_cursor_position(status, {row, col}) do
     %{status | cursor_position: {row, col}}
   end
@@ -116,11 +118,12 @@ defmodule Raxol.Terminal.ANSI.DeviceStatus do
   defp parse_version(version) do
     case String.split(version, ".") do
       [major, minor, patch] ->
-        {String.to_integer(major),
-         String.to_integer(minor),
+        {String.to_integer(major), String.to_integer(minor),
          String.to_integer(patch)}
+
       _ ->
-        {1, 0, 0}  # Default version if parsing fails
+        # Default version if parsing fails
+        {1, 0, 0}
     end
   end
-end 
+end

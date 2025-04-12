@@ -5,36 +5,37 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
   line wrapping, and other terminal modes.
   """
 
-  @type screen_mode :: :normal | :alternate | :application | :origin | :insert | :replace
+  @type screen_mode ::
+          :normal | :alternate | :application | :origin | :insert | :replace
 
   @type screen_state :: %{
-    mode: screen_mode(),
-    cursor_visible: boolean(),
-    auto_wrap: boolean(),
-    origin_mode: boolean(),
-    insert_mode: boolean(),
-    line_feed_mode: boolean(),
-    column_width_mode: :normal | :wide,
-    auto_repeat_mode: boolean(),
-    interlacing_mode: boolean(),
-    saved_state: map() | nil
-  }
+          mode: screen_mode(),
+          cursor_visible: boolean(),
+          auto_wrap: boolean(),
+          origin_mode: boolean(),
+          insert_mode: boolean(),
+          line_feed_mode: boolean(),
+          column_width_mode: :normal | :wide,
+          auto_repeat_mode: boolean(),
+          interlacing_mode: boolean(),
+          saved_state: map() | nil
+        }
 
   @doc """
   Creates a new screen state with default values.
   """
   @spec new() :: %{
-    mode: :normal,
-    cursor_visible: true,
-    auto_wrap: true,
-    origin_mode: false,
-    insert_mode: false,
-    line_feed_mode: false,
-    column_width_mode: :normal,
-    auto_repeat_mode: false,
-    interlacing_mode: false,
-    saved_state: nil
-  }
+          mode: :normal,
+          cursor_visible: true,
+          auto_wrap: true,
+          origin_mode: false,
+          insert_mode: false,
+          line_feed_mode: false,
+          column_width_mode: :normal,
+          auto_repeat_mode: false,
+          interlacing_mode: false,
+          saved_state: nil
+        }
   def new do
     %{
       mode: :normal,
@@ -56,19 +57,20 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
   @spec switch_mode(screen_state(), screen_mode()) :: screen_state()
   def switch_mode(state, new_mode) do
     case {state.mode, new_mode} do
-      {current, current} -> state
+      {current, current} ->
+        state
+
       {:normal, :alternate} ->
         # Save normal screen state and switch to alternate
-        %{state |
-          mode: :alternate,
-          saved_state: save_current_state(state)
-        }
+        %{state | mode: :alternate, saved_state: save_current_state(state)}
+
       {:alternate, :normal} ->
         # Restore normal screen state
         case state.saved_state do
           nil -> %{state | mode: :normal}
           saved -> restore_saved_state(saved)
         end
+
       _ ->
         %{state | mode: new_mode}
     end

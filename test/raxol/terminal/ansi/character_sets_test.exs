@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
   describe "new/0" do
     test "creates a new character set state with default values" do
       state = CharacterSets.new()
-      
+
       assert state.g0 == :us_ascii
       assert state.g1 == :us_ascii
       assert state.g2 == :us_ascii
@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
     test "switches the specified character set" do
       state = CharacterSets.new()
       state = CharacterSets.switch_charset(state, :g0, :french)
-      
+
       assert state.g0 == :french
       assert state.g1 == :us_ascii
       assert state.g2 == :us_ascii
@@ -33,7 +33,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
     test "sets the GL character set" do
       state = CharacterSets.new()
       state = CharacterSets.set_gl(state, :g1)
-      
+
       assert state.gl == :g1
       assert state.gr == :g1
     end
@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
     test "sets the GR character set" do
       state = CharacterSets.new()
       state = CharacterSets.set_gr(state, :g2)
-      
+
       assert state.gl == :g0
       assert state.gr == :g2
     end
@@ -53,10 +53,10 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
     test "sets and clears the single shift character set" do
       state = CharacterSets.new()
       state = CharacterSets.set_single_shift(state, :g2)
-      
+
       assert state.single_shift == :g2
       state = CharacterSets.set_single_shift(state, nil)
-      
+
       assert state.single_shift == nil
     end
   end
@@ -96,4 +96,4 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
       assert CharacterSets.translate_string(state, "café") == "café"
     end
   end
-end 
+end

@@ -30,16 +30,16 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
   describe "switch_buffers/1" do
     test "switches active and back buffers" do
       manager = Manager.new(80, 24)
-      
+
       # Modify active buffer
       active_buffer = manager.active_buffer
       active_buffer = %{active_buffer | cursor: {10, 5}}
-      
+
       manager = %{manager | active_buffer: active_buffer}
-      
+
       # Switch buffers
       manager = Manager.switch_buffers(manager)
-      
+
       # Check that buffers were switched
       assert manager.active_buffer.cursor == {0, 0}
       assert manager.back_buffer.cursor == {10, 5}
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     test "marks a region as damaged" do
       manager = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
-      
+
       assert length(manager.damage_regions) == 1
       assert hd(manager.damage_regions) == {0, 0, 10, 5}
     end
@@ -60,7 +60,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       manager = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
       manager = Manager.mark_damaged(manager, 5, 0, 15, 5)
-      
+
       assert length(manager.damage_regions) == 1
       assert hd(manager.damage_regions) == {0, 0, 15, 5}
     end
@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       manager = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
       manager = Manager.mark_damaged(manager, 20, 0, 30, 5)
-      
+
       assert length(manager.damage_regions) == 2
       assert {0, 0, 10, 5} in manager.damage_regions
       assert {20, 0, 30, 5} in manager.damage_regions
@@ -81,7 +81,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       manager = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
       manager = Manager.mark_damaged(manager, 20, 0, 30, 5)
-      
+
       regions = Manager.get_damage_regions(manager)
       assert length(regions) == 2
       assert {0, 0, 10, 5} in regions
@@ -95,7 +95,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
       manager = Manager.mark_damaged(manager, 20, 0, 30, 5)
       manager = Manager.clear_damage_regions(manager)
-      
+
       assert manager.damage_regions == []
     end
   end
@@ -104,20 +104,20 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     test "updates memory usage tracking" do
       manager = Manager.new(80, 24)
       manager = Manager.update_memory_usage(manager)
-      
+
       assert manager.memory_usage > 0
     end
 
     test "calculates memory usage for both buffers" do
       manager = Manager.new(80, 24)
-      
+
       # Modify active buffer to increase memory usage
       active_buffer = manager.active_buffer
       active_buffer = %{active_buffer | buffer: create_test_buffer(80, 24)}
-      
+
       manager = %{manager | active_buffer: active_buffer}
       manager = Manager.update_memory_usage(manager)
-      
+
       assert manager.memory_usage > 0
     end
   end
@@ -126,20 +126,21 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     test "returns true when within memory limits" do
       manager = Manager.new(80, 24)
       manager = Manager.update_memory_usage(manager)
-      
+
       assert Manager.within_memory_limits?(manager)
     end
 
     test "returns false when exceeding memory limits" do
-      manager = Manager.new(80, 24, 1000, 100)  # Very low memory limit
-      
+      # Very low memory limit
+      manager = Manager.new(80, 24, 1000, 100)
+
       # Modify active buffer to increase memory usage
       active_buffer = manager.active_buffer
       active_buffer = %{active_buffer | buffer: create_test_buffer(80, 24)}
-      
+
       manager = %{manager | active_buffer: active_buffer}
       manager = Manager.update_memory_usage(manager)
-      
+
       refute Manager.within_memory_limits?(manager)
     end
   end
@@ -147,10 +148,10 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
   # Helper functions
 
   defp create_test_buffer(width, height) do
-    for y <- 0..(height-1) do
-      for x <- 0..(width-1) do
+    for y <- 0..(height - 1) do
+      for x <- 0..(width - 1) do
         Cell.new("A", %{foreground: :white, background: :black})
       end
     end
   end
-end 
+end

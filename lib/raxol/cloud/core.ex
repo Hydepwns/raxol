@@ -102,31 +102,38 @@ defmodule Raxol.Cloud.Core do
     operation_id = "op-#{:erlang.system_time(:microsecond)}"
 
     # Record execution start
-    record_metric("cloud.execute.start", 1, tags: [
-      "operation_id:#{operation_id}",
-      "priority:#{Keyword.get(opts, :priority, :auto)}",
-      "location:#{Keyword.get(opts, :location, :auto)}"
-    ])
+    record_metric("cloud.execute.start", 1,
+      tags: [
+        "operation_id:#{operation_id}",
+        "priority:#{Keyword.get(opts, :priority, :auto)}",
+        "location:#{Keyword.get(opts, :location, :auto)}"
+      ]
+    )
 
     # Execute function
     {time, result} = :timer.tc(fn -> Integrations.execute(fun, opts) end)
     execution_time_ms = time / 1000
 
     # Record execution metrics
-    status_tag = case result do
-      {:ok, _} -> "status:success"
-      {:error, _} -> "status:error"
-    end
+    status_tag =
+      case result do
+        {:ok, _} -> "status:success"
+        {:error, _} -> "status:error"
+      end
 
-    record_metric("cloud.execute.end", 1, tags: [
-      "operation_id:#{operation_id}",
-      status_tag
-    ])
+    record_metric("cloud.execute.end", 1,
+      tags: [
+        "operation_id:#{operation_id}",
+        status_tag
+      ]
+    )
 
-    record_metric("cloud.execute.time", execution_time_ms, tags: [
-      "operation_id:#{operation_id}",
-      status_tag
-    ])
+    record_metric("cloud.execute.time", execution_time_ms,
+      tags: [
+        "operation_id:#{operation_id}",
+        status_tag
+      ]
+    )
 
     result
   end

@@ -11,18 +11,43 @@ defmodule Raxol.Core.Renderer.Color do
   """
 
   @type color :: ansi_16() | ansi_256() | true_color()
-  @type ansi_16 :: :black | :red | :green | :yellow | :blue | :magenta | :cyan | :white |
-                   :bright_black | :bright_red | :bright_green | :bright_yellow |
-                   :bright_blue | :bright_magenta | :bright_cyan | :bright_white
+  @type ansi_16 ::
+          :black
+          | :red
+          | :green
+          | :yellow
+          | :blue
+          | :magenta
+          | :cyan
+          | :white
+          | :bright_black
+          | :bright_red
+          | :bright_green
+          | :bright_yellow
+          | :bright_blue
+          | :bright_magenta
+          | :bright_cyan
+          | :bright_white
   @type ansi_256 :: 0..255
   @type true_color :: {0..255, 0..255, 0..255}
 
   @ansi_16_colors [
-    black: 0, red: 1, green: 2, yellow: 3,
-    blue: 4, magenta: 5, cyan: 6, white: 7,
-    bright_black: 8, bright_red: 9, bright_green: 10,
-    bright_yellow: 11, bright_blue: 12, bright_magenta: 13,
-    bright_cyan: 14, bright_white: 15
+    black: 0,
+    red: 1,
+    green: 2,
+    yellow: 3,
+    blue: 4,
+    magenta: 5,
+    cyan: 6,
+    white: 7,
+    bright_black: 8,
+    bright_red: 9,
+    bright_green: 10,
+    bright_yellow: 11,
+    bright_blue: 12,
+    bright_magenta: 13,
+    bright_cyan: 14,
+    bright_white: 15
   ]
 
   @doc """
@@ -107,9 +132,13 @@ defmodule Raxol.Core.Renderer.Color do
     case String.length(hex) do
       6 ->
         <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
-        {String.to_integer(r, 16), String.to_integer(g, 16), String.to_integer(b, 16)}
+
+        {String.to_integer(r, 16), String.to_integer(g, 16),
+         String.to_integer(b, 16)}
+
       3 ->
         <<r::binary-size(1), g::binary-size(1), b::binary-size(1)>> = hex
+
         {
           String.to_integer(r <> r, 16),
           String.to_integer(g <> g, 16),
@@ -135,7 +164,7 @@ defmodule Raxol.Core.Renderer.Color do
       ir = div(r * 6, 256)
       ig = div(g * 6, 256)
       ib = div(b * 6, 256)
-      16 + (36 * ir) + (6 * ig) + ib
+      16 + 36 * ir + 6 * ig + ib
     end
   end
 
@@ -145,7 +174,8 @@ defmodule Raxol.Core.Renderer.Color do
     case System.get_env("TERM_PROGRAM") do
       "Apple_Terminal" -> :light
       "iTerm.app" -> detect_iterm_background()
-      _ -> :dark  # Default to dark
+      # Default to dark
+      _ -> :dark
     end
   end
 
@@ -164,8 +194,9 @@ defmodule Raxol.Core.Renderer.Color do
           n when n <= 6 -> :light
           _ -> :dark
         end
+
       _ ->
         :dark
     end
   end
-end 
+end

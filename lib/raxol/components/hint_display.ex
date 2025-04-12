@@ -3,6 +3,8 @@ defmodule Raxol.Components.HintDisplay do
   alias Raxol.View.Components
   alias Raxol.View.Layout
   alias Raxol.Core.UXRefinement
+  alias Raxol.View
+  require Raxol.View
 
   @moduledoc """
   A component for displaying hints and tooltips.
@@ -67,7 +69,13 @@ defmodule Raxol.Components.HintDisplay do
     hint_info = UXRefinement.get_component_hint(focused_component, help_level)
 
     if hint_info || always_show do
-      render_hint_display(hint_info, style, position, max_width, highlight_shortcuts)
+      render_hint_display(
+        hint_info,
+        style,
+        position,
+        max_width,
+        highlight_shortcuts
+      )
     else
       # Return empty element when no hint and not always_show
       nil
@@ -136,7 +144,13 @@ defmodule Raxol.Components.HintDisplay do
 
   # Private functions
 
-  defp render_hint_display(hint_info, style, position, max_width, highlight_shortcuts) do
+  defp render_hint_display(
+         hint_info,
+         style,
+         position,
+         max_width,
+         highlight_shortcuts
+       ) do
     content =
       case hint_info do
         nil -> "No hints available for this component"
@@ -145,7 +159,7 @@ defmodule Raxol.Components.HintDisplay do
       end
 
     # Process shortcuts in content if highlighting is enabled
-    processed_content =
+    _processed_content =
       if highlight_shortcuts do
         highlight_shortcuts_in_text(content)
       else
@@ -154,11 +168,17 @@ defmodule Raxol.Components.HintDisplay do
 
     # Get keyboard shortcuts if available in hint info
     shortcuts =
-      if hint_info && Map.has_key?(hint_info, :shortcuts) && hint_info.shortcuts != nil do
+      if hint_info && Map.has_key?(hint_info, :shortcuts) &&
+           hint_info.shortcuts != nil do
         hint_info.shortcuts
       else
         []
       end
+
+    # Define view elements
+    title_view = render_title(hint_info)
+    hints_view = render_hints(content, style, highlight_shortcuts)
+    footer_view = render_footer(shortcuts, style)
 
     container_attrs = [
       padding: 1,
@@ -170,23 +190,30 @@ defmodule Raxol.Components.HintDisplay do
 
     container_attrs =
       case position do
-        :bottom -> Keyword.merge(container_attrs, [bottom: 0, left: 0, height: calculate_height(style, shortcuts)])
-        :top -> Keyword.merge(container_attrs, [top: 0, left: 0, height: calculate_height(style, shortcuts)])
-        :float -> Keyword.merge(container_attrs, [center: true])
+        :bottom ->
+          Keyword.merge(container_attrs,
+            bottom: 0,
+            left: 0,
+            height: calculate_height(style, shortcuts)
+          )
+
+        :top ->
+          Keyword.merge(container_attrs,
+            top: 0,
+            left: 0,
+            height: calculate_height(style, shortcuts)
+          )
+
+        :float ->
+          Keyword.merge(container_attrs, center: true)
       end
 
-    Layout.panel(container_attrs) do
-      Layout.column do
-        # Main hint text
-        Components.text(processed_content)
-
-        # Render shortcuts if available
-        if style != :minimal && length(shortcuts) > 0 do
-          Layout.row(padding_top: 1) do
-            render_shortcuts()
-          end
-        end
-      end
+    # Apply container style and layout
+    # Use View.panel macro directly
+    View.panel container_attrs do
+      # Combine title, hints, and footer
+      [title_view, hints_view, footer_view]
+      |> Enum.reject(&is_nil/1)
     end
   end
 
@@ -200,9 +227,53 @@ defmodule Raxol.Components.HintDisplay do
 
     # Add height for shortcuts
     if shortcuts && length(shortcuts) > 0 && style != :minimal do
-      base_height + div(length(shortcuts) + 1, 2) # +1 to account for the header
+      # +1 to account for the header
+      base_height + div(length(shortcuts) + 1, 2)
     else
       base_height
+    end
+  end
+
+  # Renders the title section
+  defp render_title(hint_info) do
+    title =
+      if hint_info && Map.has_key?(hint_info, :title) do
+        hint_info.title
+      else
+        nil
+      end
+
+    if title do
+      Components.text(title, style: [bold: true])
+    else
+      nil
+    end
+  end
+
+  # Renders the main hint text
+  defp render_hints(content, style, highlight_shortcuts) do
+    processed_content =
+      if highlight_shortcuts do
+        highlight_shortcuts_in_text(content)
+      else
+        content
+      end
+
+    case style do
+      :minimal -> nil # Minimal doesn't show main content
+      _ -> Components.text(processed_content)
+    end
+  end
+
+  # Renders the footer section (shortcuts)
+  defp render_footer(shortcuts, style) do
+    if style != :minimal && length(shortcuts) > 0 do
+      Layout.row padding_top: 1 do
+        # Assuming render_shortcuts/0 exists and returns a view element
+        render_shortcuts()
+      end
+    else
+      nil
     end
   end
 
@@ -252,6 +323,7 @@ defmodule Raxol.Components.HintDisplay do
     cond do
       String.contains?(text, "<b>") ->
         parts = String.split(text, ~r{<b>(.*?)</b>}, include_captures: true)
+
         Enum.map(parts, fn part ->
           case Regex.run(~r{<b>(.*?)</b>}, part) do
             [_, content] -> {:bold, content}
@@ -281,7 +353,10 @@ defmodule Raxol.Components.HintDisplay do
   """
   def init(opts \\ []) do
     # Initialize the help level
-    Process.put(:hint_display_help_level, Keyword.get(opts, :help_level, :basic))
+    Process.put(
+      :hint_display_help_level,
+      Keyword.get(opts, :help_level, :basic)
+    )
 
     %{
       visible: Keyword.get(opts, :visible, true),
@@ -318,6 +393,7 @@ defmodule Raxol.Components.HintDisplay do
             :detailed -> :examples
             :examples -> :basic
           end
+
         Process.put(:hint_display_help_level, next_level)
         %{model | help_level: next_level}
 

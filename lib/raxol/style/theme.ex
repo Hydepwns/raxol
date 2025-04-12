@@ -10,13 +10,13 @@ defmodule Raxol.Style.Theme do
   alias Raxol.Style
 
   @type t :: %__MODULE__{
-    name: String.t(),
-    description: String.t(),
-    styles: map(),
-    variants: map(),
-    color_palette: map(),
-    metadata: map()
-  }
+          name: String.t(),
+          description: String.t(),
+          styles: map(),
+          variants: map(),
+          color_palette: map(),
+          metadata: map()
+        }
 
   defstruct name: "default",
             description: "Default theme",
@@ -67,7 +67,12 @@ defmodule Raxol.Style.Theme do
   """
   def register_variant(name, variant_styles) when is_atom(name) do
     current = current()
-    updated = %{current | variants: Map.put(current.variants, name, variant_styles)}
+
+    updated = %{
+      current
+      | variants: Map.put(current.variants, name, variant_styles)
+    }
+
     set_current(updated)
     :ok
   end

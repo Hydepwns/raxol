@@ -151,7 +151,9 @@ defmodule Raxol.Terminal.EmulatorTest do
       # Original modes should be restored
       assert Emulator.screen_mode_enabled?(emulator, :insert_mode) == true
       assert Emulator.screen_mode_enabled?(emulator, :origin_mode) == true
-      assert Emulator.screen_mode_enabled?(emulator, :application_cursor) == false
+
+      assert Emulator.screen_mode_enabled?(emulator, :application_cursor) ==
+               false
     end
 
     test "handles cursor visibility" do
@@ -167,13 +169,19 @@ defmodule Raxol.Terminal.EmulatorTest do
 
     test "handles application keypad mode" do
       emulator = Emulator.new(80, 24)
-      assert Emulator.screen_mode_enabled?(emulator, :application_keypad) == false
+
+      assert Emulator.screen_mode_enabled?(emulator, :application_keypad) ==
+               false
 
       emulator = process_escape(emulator, {:set_mode, :application_keypad})
-      assert Emulator.screen_mode_enabled?(emulator, :application_keypad) == true
+
+      assert Emulator.screen_mode_enabled?(emulator, :application_keypad) ==
+               true
 
       emulator = process_escape(emulator, {:reset_mode, :application_keypad})
-      assert Emulator.screen_mode_enabled?(emulator, :application_keypad) == false
+
+      assert Emulator.screen_mode_enabled?(emulator, :application_keypad) ==
+               false
     end
   end
 
@@ -277,13 +285,15 @@ defmodule Raxol.Terminal.EmulatorTest do
     test "process_input handles escape sequences" do
       emulator = Emulator.new(80, 24, %{})
       {emulator, _} = Emulator.process_input(emulator, "\e[10;5H")
-      assert emulator.cursor.position == {4, 9}  # 0-based indexing
+      # 0-based indexing
+      assert emulator.cursor.position == {4, 9}
     end
 
     test "process_escape_sequence processes cursor movement sequences" do
       emulator = Emulator.new(80, 24, %{})
       {emulator, _} = Emulator.process_escape_sequence(emulator, "\e[10;5H")
-      assert emulator.cursor.position == {4, 9}  # 0-based indexing
+      # 0-based indexing
+      assert emulator.cursor.position == {4, 9}
     end
 
     test "process_escape_sequence processes cursor style sequences" do
@@ -427,6 +437,7 @@ defmodule Raxol.Terminal.EmulatorTest do
 
   defp get_string_at(emulator, x, y, length) do
     screen = Emulator.get_screen(emulator)
+
     0..(length - 1)
     |> Enum.map(fn i -> screen.cells[{x + i, y}].char end)
     |> List.to_string()

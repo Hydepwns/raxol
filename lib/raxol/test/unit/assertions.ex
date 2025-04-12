@@ -47,6 +47,7 @@ defmodule Raxol.Test.Unit.Assertions do
 
     Enum.each(constraints, fn {key, value} ->
       actual = Map.get(layout, key)
+
       assert actual == value,
              "Expected layout.#{key} to be #{inspect(value)}, but got: #{inspect(actual)}"
     end)
@@ -68,6 +69,7 @@ defmodule Raxol.Test.Unit.Assertions do
 
     Enum.each(style, fn {key, value} ->
       actual = Map.get(applied_style, key)
+
       assert actual == value,
              "Expected style.#{key} to be #{inspect(value)}, but got: #{inspect(actual)}"
     end)
@@ -80,7 +82,8 @@ defmodule Raxol.Test.Unit.Assertions do
 
       assert_subscribed component, [:keyboard, :mouse]
   """
-  def assert_subscribed(component, subscription_types) when is_list(subscription_types) do
+  def assert_subscribed(component, subscription_types)
+      when is_list(subscription_types) do
     active_subs = get_component_subscriptions(component)
 
     Enum.each(subscription_types, fn type ->
@@ -100,7 +103,8 @@ defmodule Raxol.Test.Unit.Assertions do
         %{text: "Hello, World!"}
       ]
   """
-  def assert_state_history(component, expected_states) when is_list(expected_states) do
+  def assert_state_history(component, expected_states)
+      when is_list(expected_states) do
     history = get_component_state_history(component)
 
     assert length(history) == length(expected_states),
@@ -123,9 +127,11 @@ defmodule Raxol.Test.Unit.Assertions do
         {:submit}
       ]
   """
-  def assert_command_sequence(_component, expected_commands) when is_list(expected_commands) do
+  def assert_command_sequence(_component, expected_commands)
+      when is_list(expected_commands) do
     # Placeholder: Need to integrate with command history or mocking framework
-    assert true # Always passes for now
+    # Always passes for now
+    assert true
   end
 
   @doc """
@@ -146,6 +152,7 @@ defmodule Raxol.Test.Unit.Assertions do
         # Verify the component is still in a valid state
         assert component.state != nil,
                "Component state was corrupted after error"
+
         # Verify error was logged or handled appropriately
         assert_error_handled(error)
     end
@@ -153,7 +160,8 @@ defmodule Raxol.Test.Unit.Assertions do
 
   # Private Helpers
 
-  def assert_state_match(actual, expected) when is_map(actual) and is_map(expected) do
+  def assert_state_match(actual, expected)
+      when is_map(actual) and is_map(expected) do
     Enum.each(expected, fn {key, value} ->
       assert Map.get(actual, key) == value,
              "Expected state.#{key} to be #{inspect(value)}, but got: #{inspect(Map.get(actual, key))}"
@@ -162,7 +170,8 @@ defmodule Raxol.Test.Unit.Assertions do
 
   defp assert_error_handled(_error) do
     # Placeholder: Need to integrate with error handling/logging mechanism
-    true # Assume handled for now
+    # Assume handled for now
+    true
   end
 
   defp get_component_layout(_component) do

@@ -35,6 +35,7 @@ defmodule Raxol.Web.Session.Storage do
         %Session{}
         |> Session.changeset(Map.from_struct(session))
         |> Repo.insert()
+
       existing ->
         # Update existing session
         existing
@@ -51,6 +52,7 @@ defmodule Raxol.Web.Session.Storage do
     case :ets.lookup(@table_name, session_id) do
       [{^session_id, session}] ->
         {:ok, session}
+
       [] ->
         # Try database
         case Repo.get(Session, session_id) do
@@ -74,7 +76,7 @@ defmodule Raxol.Web.Session.Storage do
     Enum.filter(sessions, fn {_id, session} ->
       # Check if session is active and last active time is older than timeout
       session.status == :active &&
-      DateTime.diff(now, session.last_active) > div(timeout, 1000)
+        DateTime.diff(now, session.last_active) > div(timeout, 1000)
     end)
     |> Enum.map(fn {_id, session} -> session end)
   end

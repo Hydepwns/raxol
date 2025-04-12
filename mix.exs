@@ -26,13 +26,27 @@ defmodule Raxol.MixProject do
         "coveralls.html": :test
       ],
       dialyzer: [
-        plt_add_apps: [:ex_unit], # Add core Elixir apps needed for tests
-        ignore_warnings: "dialyzer.ignore-warnings", # Optional: Path to ignore file
-        flags: [ # Common flags
+        # Add core Elixir apps needed for tests
+        plt_add_apps: [:ex_unit],
+        # Optional: Path to ignore file
+        ignore_warnings: "dialyzer.ignore-warnings",
+        # Common flags
+        flags: [
           :unmatched_returns,
           :error_handling,
           :underspecs
           # Add other flags as needed, e.g., :missing_return for stricter checks
+        ],
+        # You can skip checks for modules by adding them to the `ignore_modules` list below.
+        plt_core_path: "priv/plts",
+        # plt_add_apps: [:mix], # Specify apps to add to PLT list
+        # plt_file: {:no_warn, "priv/plts/core"},
+        ignore_modules: [
+          # Example:
+          # Raxol.ExampleModule,
+          # Phoenix.HTML.Form, # Ignore specific modules if needed
+          Raxol.Runtime.Termbox, # Ignore NIF module wrappers
+          Raxol.Terminal.Configuration # Suppress persistent spurious warnings
         ]
       ]
     ]
@@ -51,7 +65,8 @@ defmodule Raxol.MixProject do
   defp deps do
     [
       # Core dependencies
-      {:ex_termbox, "~> 1.0"}, # Terminal rendering library
+      # Terminal rendering library
+      {:ex_termbox, "~> 1.0"},
       {:phoenix, "~> 1.7.20"},
       {:phoenix_live_view, "~> 1.0.0"},
       {:phoenix_live_dashboard, "~> 0.8.0"},
@@ -60,10 +75,12 @@ defmodule Raxol.MixProject do
       # Database and persistence
       {:ecto_sql, "~> 3.10"},
       {:postgrex, ">= 0.0.0"},
-      {:bcrypt_elixir, "~> 3.0"}, # For password hashing
+      # For password hashing
+      {:bcrypt_elixir, "~> 3.0"},
 
       # Visualization
-      {:contex, "~> 0.5.0"}, # For charts and plots
+      # For charts and plots
+      {:contex, "~> 0.5.0"},
 
       # Web interface
       {:plug_cowboy, "~> 2.7"},
@@ -112,7 +129,10 @@ defmodule Raxol.MixProject do
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["test"],
-      "assets.setup": ["esbuild.install --if-missing", "sass.install --if-missing"],
+      "assets.setup": [
+        "esbuild.install --if-missing",
+        "sass.install --if-missing"
+      ],
       "assets.build": ["esbuild raxol", "sass default"],
       "assets.deploy": [
         "esbuild raxol --minify",

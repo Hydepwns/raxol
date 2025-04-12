@@ -117,18 +117,21 @@ defmodule Raxol.System.Platform do
       }
   """
   @spec get_platform_info() :: %{
-    :architecture => binary() | atom(),
-    :name => :linux | :macos | :windows,
-    :terminal => nil | binary(),
-    :version => binary() | nil,
-    :console_type => any(), # Placeholder, type can vary
-    :distribution => any(), # Placeholder, type can vary
-    :is_apple_silicon => boolean(),
-    :is_wayland => boolean(),
-    :is_windows_terminal => boolean(),
-    :is_wsl => boolean(),
-    :terminal_app => any() # Placeholder, type can vary
-  }
+          :architecture => binary() | atom(),
+          :name => :linux | :macos | :windows,
+          :terminal => nil | binary(),
+          :version => binary() | nil,
+          # Placeholder, type can vary
+          :console_type => any(),
+          # Placeholder, type can vary
+          :distribution => any(),
+          :is_apple_silicon => boolean(),
+          :is_wayland => boolean(),
+          :is_windows_terminal => boolean(),
+          :is_wsl => boolean(),
+          # Placeholder, type can vary
+          :terminal_app => any()
+        }
   def get_platform_info do
     platform = get_current_platform()
 
@@ -171,23 +174,19 @@ defmodule Raxol.System.Platform do
       # Features fully supported across all platforms
       {_, :keyboard} -> true
       {_, :basic_colors} -> true
-
       # Platform-specific feature support
       {:macos, :true_color} -> true
       {:macos, :unicode} -> true
       {:macos, :mouse} -> true
       {:macos, :clipboard} -> true
-
       {:linux, :true_color} -> true
       {:linux, :unicode} -> true
       {:linux, :mouse} -> true
       {:linux, :clipboard} -> detect_linux_clipboard_support()
-
       {:windows, :true_color} -> detect_windows_true_color()
       {:windows, :unicode} -> detect_windows_unicode()
       {:windows, :mouse} -> true
       {:windows, :clipboard} -> true
-
       # Default for unknown features/platforms
       {_, _} -> false
     end
@@ -262,7 +261,9 @@ defmodule Raxol.System.Platform do
             _ -> false
           end
         end)
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   end
 
@@ -274,7 +275,9 @@ defmodule Raxol.System.Platform do
         |> String.split("[")
         |> List.last()
         |> String.trim_trailing("]")
-      _ -> "unknown"
+
+      _ ->
+        "unknown"
     end
   rescue
     _ -> "unknown"
@@ -289,7 +292,9 @@ defmodule Raxol.System.Platform do
           {"arm64\n", 0} -> true
           _ -> false
         end
-      _ -> false
+
+      _ ->
+        false
     end
   rescue
     _ -> false
@@ -321,8 +326,12 @@ defmodule Raxol.System.Platform do
   defp is_wsl? do
     File.exists?("/proc/sys/kernel/osrelease") &&
       case File.read("/proc/sys/kernel/osrelease") do
-        {:ok, content} -> String.contains?(content, "Microsoft") || String.contains?(content, "WSL")
-        _ -> false
+        {:ok, content} ->
+          String.contains?(content, "Microsoft") ||
+            String.contains?(content, "WSL")
+
+        _ ->
+          false
       end
   end
 
@@ -336,18 +345,32 @@ defmodule Raxol.System.Platform do
 
   defp detect_windows_console_type do
     cond do
-      System.get_env("WT_SESSION") != nil -> "Windows Terminal"
-      System.get_env("TERM_PROGRAM") == "vscode" -> "VS Code"
-      System.get_env("CMDER_ROOT") != nil -> "Cmder"
-      System.get_env("PROMPT") != nil && String.contains?(System.get_env("PROMPT") || "", "$P$G") -> "Command Prompt"
-      System.get_env("PSModulePath") != nil -> "PowerShell"
-      true -> "unknown"
+      System.get_env("WT_SESSION") != nil ->
+        "Windows Terminal"
+
+      System.get_env("TERM_PROGRAM") == "vscode" ->
+        "VS Code"
+
+      System.get_env("CMDER_ROOT") != nil ->
+        "Cmder"
+
+      System.get_env("PROMPT") != nil &&
+          String.contains?(System.get_env("PROMPT") || "", "$P$G") ->
+        "Command Prompt"
+
+      System.get_env("PSModulePath") != nil ->
+        "PowerShell"
+
+      true ->
+        "unknown"
     end
   end
 
   defp detect_linux_clipboard_support do
     case System.cmd("which", ["xclip"], stderr_to_stdout: true) do
-      {_, 0} -> true
+      {_, 0} ->
+        true
+
       _ ->
         case System.cmd("which", ["wl-copy"], stderr_to_stdout: true) do
           {_, 0} -> true
@@ -368,6 +391,7 @@ defmodule Raxol.System.Platform do
 
   defp detect_windows_unicode do
     # Windows Terminal and WSL have better unicode support than native cmd/powershell
-    is_windows_terminal?() || is_wsl?() || System.get_env("TERM") == "xterm-256color"
+    is_windows_terminal?() || is_wsl?() ||
+      System.get_env("TERM") == "xterm-256color"
   end
 end

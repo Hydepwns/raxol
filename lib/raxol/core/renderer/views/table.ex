@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Renderer.Views.Table do
   @moduledoc """
   Table view component for displaying tabular data.
-  
+
   Features:
   * Column headers
   * Row striping
@@ -14,23 +14,23 @@ defmodule Raxol.Core.Renderer.Views.Table do
   alias Raxol.Core.Renderer.View
 
   @type column :: %{
-    header: String.t(),
-    key: atom() | (map() -> term()),
-    width: non_neg_integer() | :auto,
-    align: :left | :center | :right,
-    format: (term() -> String.t()) | nil
-  }
+          header: String.t(),
+          key: atom() | (map() -> term()),
+          width: non_neg_integer() | :auto,
+          align: :left | :center | :right,
+          format: (term() -> String.t()) | nil
+        }
 
   @type options :: [
-    columns: [column()],
-    data: [map()],
-    border: View.border_style(),
-    striped: boolean(),
-    selectable: boolean(),
-    selected: non_neg_integer() | nil,
-    header_style: View.style(),
-    row_style: View.style()
-  ]
+          columns: [column()],
+          data: [map()],
+          border: View.border_style(),
+          striped: boolean(),
+          selectable: boolean(),
+          selected: non_neg_integer() | nil,
+          header_style: View.style(),
+          row_style: View.style()
+        ]
 
   @doc """
   Creates a new table view.
@@ -52,10 +52,20 @@ defmodule Raxol.Core.Renderer.Views.Table do
     header = create_header_row(columns, widths, header_style)
 
     # Create data rows
-    rows = create_data_rows(columns, data, widths, striped, selectable, selected, row_style)
+    rows =
+      create_data_rows(
+        columns,
+        data,
+        widths,
+        striped,
+        selectable,
+        selected,
+        row_style
+      )
 
     # Wrap in border if needed
     content = [header | rows]
+
     if border != :none do
       View.border(border, do: content)
     else
@@ -71,12 +81,16 @@ defmodule Raxol.Core.Renderer.Views.Table do
         :auto ->
           # Calculate based on content
           header_width = String.length(column.header)
-          content_width = Enum.reduce(data, 0, fn row, max ->
-            value = get_column_value(row, column)
-            len = String.length(to_string(value))
-            if len > max, do: len, else: max
-          end)
+
+          content_width =
+            Enum.reduce(data, 0, fn row, max ->
+              value = get_column_value(row, column)
+              len = String.length(to_string(value))
+              if len > max, do: len, else: max
+            end)
+
           max(header_width, content_width)
+
         width when is_integer(width) ->
           width
       end
@@ -84,44 +98,57 @@ defmodule Raxol.Core.Renderer.Views.Table do
   end
 
   defp create_header_row(columns, widths, style) do
-    cells = Enum.zip(columns, widths)
-    |> Enum.map(fn {column, width} ->
-      View.text(pad_text(column.header, width, column.align),
-        style: style
-      )
-    end)
+    cells =
+      Enum.zip(columns, widths)
+      |> Enum.map(fn {column, width} ->
+        View.text(pad_text(column.header, width, column.align),
+          style: style
+        )
+      end)
 
     View.flex(direction: :row, children: cells)
   end
 
-  defp create_data_rows(columns, data, widths, striped, selectable, selected, style) do
+  defp create_data_rows(
+         columns,
+         data,
+         widths,
+         striped,
+         selectable,
+         selected,
+         style
+       ) do
     data
     |> Enum.with_index()
     |> Enum.map(fn {row, index} ->
       # Calculate row style
-      row_style = style ++
-        if striped and rem(index, 2) == 1 do
-          [bg: :bright_black]
-        else
-          []
-        end ++
-        if selectable and selected == index do
-          [bg: :blue, fg: :white]
-        else
-          []
-        end
+      row_style =
+        style ++
+          if striped and rem(index, 2) == 1 do
+            [bg: :bright_black]
+          else
+            []
+          end ++
+          if selectable and selected == index do
+            [bg: :blue, fg: :white]
+          else
+            []
+          end
 
       # Create row cells
-      cells = Enum.zip(columns, widths)
-      |> Enum.map(fn {column, width} ->
-        value = get_column_value(row, column)
-        |> format_value(column.format)
-        |> pad_text(width, column.align)
+      cells =
+        Enum.zip(columns, widths)
+        |> Enum.map(fn {column, width} ->
+          value =
+            get_column_value(row, column)
+            |> format_value(column.format)
+            |> pad_text(width, column.align)
 
-        View.text(value)
-      end)
+          View.text(value)
+        end)
 
-      View.flex(direction: :row,
+      View.flex(
+        direction: :row,
         style: row_style,
         children: cells
       )
@@ -140,13 +167,19 @@ defmodule Raxol.Core.Renderer.Views.Table do
 
   defp pad_text(text, width, align) do
     text = String.slice(to_string(text), 0, width)
+
     case align do
-      :left -> String.pad_trailing(text, width)
-      :right -> String.pad_leading(text, width)
+      :left ->
+        String.pad_trailing(text, width)
+
+      :right ->
+        String.pad_leading(text, width)
+
       :center ->
         left = div(width - String.length(text), 2)
+
         String.pad_leading(text, left + String.length(text))
         |> String.pad_trailing(width)
     end
   end
-end 
+end

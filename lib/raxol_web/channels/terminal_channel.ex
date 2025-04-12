@@ -17,12 +17,12 @@ defmodule RaxolWeb.TerminalChannel do
   # alias Phoenix.Socket # Unused
 
   @type t :: %__MODULE__{
-    emulator: Emulator.t(),
-    input: Input.t(),
-    renderer: Renderer.t(),
-    session_id: String.t(),
-    user_id: String.t()
-  }
+          emulator: Emulator.t(),
+          input: Input.t(),
+          renderer: Renderer.t(),
+          session_id: String.t(),
+          user_id: String.t()
+        }
 
   defstruct [:emulator, :input, :renderer, :session_id, :user_id]
 
@@ -50,16 +50,14 @@ defmodule RaxolWeb.TerminalChannel do
 
   @impl true
   def handle_in("input", %{"data" => data}, socket) do
-    _state = socket.assigns.terminal_state # Prefix unused state
-    # TODO: Implement/find correct InputHandler.process_input function
-    # {events, input} = InputHandler.process_input(state.input, data)
-    # IO.inspect({:input_processed, events: events, remaining_input: input})
+    state = socket.assigns.terminal_state
+    # Process keyboard input using the Input module
+    # We ignore the returned state for now, as we aren't using it elsewhere yet.
+    _ = Input.process_keyboard(state.input, data)
 
-    # For now, just echo back?
-    push(socket, "output", %{data: "Received: #{data}"}) # Placeholder
-
-    # Send events to terminal emulator/application?
-    # Terminal.handle_events(socket.assigns.terminal_pid, events)
+    # Placeholder output for testing
+    # Placeholder
+    push(socket, "output", %{data: "Received: #{data}"})
 
     {:noreply, socket}
   end
@@ -68,43 +66,38 @@ defmodule RaxolWeb.TerminalChannel do
   def handle_in("resize", %{"width" => width, "height" => height}, socket) do
     state = socket.assigns.terminal_state
     emulator = Emulator.resize(state.emulator, width, height)
+    # Renderer doesn't need explicit resizing; it uses the emulator's buffer
+    renderer = state.renderer
 
-    # TODO: Raxol.Terminal.Renderer.resize/3 is undefined
-    # renderer = Renderer.resize(state.renderer, width, height)
-    renderer = state.renderer # Keep old renderer for now
-
-    new_state = %{state |
-      emulator: emulator,
-      renderer: renderer
-    }
+    new_state = %{state | emulator: emulator, renderer: renderer}
 
     socket = assign(socket, :terminal_state, new_state)
 
+    # Get updated cursor info after emulator resize
     {cursor_x, cursor_y} = Emulator.get_cursor_position(emulator)
     cursor_visible = Emulator.get_cursor_visible(emulator)
 
-    {:reply, :ok, push(socket, "output", %{
-      html: Renderer.render(renderer),
-      cursor: %{
-        x: cursor_x,
-        y: cursor_y,
-        visible: cursor_visible
-      }
-    })}
+    {:reply, :ok,
+     push(socket, "output", %{
+       html: Renderer.render(renderer),
+       cursor: %{
+         x: cursor_x,
+         y: cursor_y,
+         visible: cursor_visible
+       }
+     })}
   end
 
   @impl true
   def handle_in("scroll", %{"offset" => _offset}, socket) do
     state = socket.assigns.terminal_state
-    # renderer = Renderer.set_scroll_offset(state.renderer, offset) # Undefined function
 
-    # new_state = %{state | renderer: renderer}
-    # socket = assign(socket, :terminal_state, new_state)
-    socket = assign(socket, :terminal_state, state) # Keep original state for now
-
-    {:reply, :ok, push(socket, "output", %{
-      html: Renderer.render(state.renderer) # Use existing renderer state
-    })}
+    # Renderer doesn't need scroll offset; scrolling is handled by Emulator/ScreenBuffer
+    # Just render the current state
+    {:reply, :ok,
+     push(socket, "output", %{
+       html: Renderer.render(state.renderer)
+     })}
   end
 
   @impl true
@@ -115,9 +108,10 @@ defmodule RaxolWeb.TerminalChannel do
     new_state = %{state | renderer: renderer}
     socket = assign(socket, :terminal_state, new_state)
 
-    {:reply, :ok, push(socket, "output", %{
-      html: Renderer.render(renderer)
-    })}
+    {:reply, :ok,
+     push(socket, "output", %{
+       html: Renderer.render(renderer)
+     })}
   end
 
   @impl true
@@ -162,4 +156,3 @@ defmodule RaxolWeb.TerminalChannel do
   # ... (rest of original handler)
   # end
 end
-

@@ -38,6 +38,7 @@ defmodule Raxol.Components.Selection.Dropdown do
   @impl true
   def init(props) do
     items = props[:items] || []
+
     %{
       items: items,
       selected_item: props[:selected_item],
@@ -47,8 +48,8 @@ defmodule Raxol.Components.Selection.Dropdown do
       style: Map.merge(@default_style, props[:style] || %{}),
       is_open: false,
       filter: "",
-      render_item: props[:render_item] || &to_string/1,
-      filter_item: props[:filter_item] || &default_filter/2,
+      render_item: props[:render_item] || (&to_string/1),
+      filter_item: props[:filter_item] || (&default_filter/2),
       on_change: props[:on_change],
       focused: false,
       list_state: init_list_state(props)
@@ -58,13 +59,16 @@ defmodule Raxol.Components.Selection.Dropdown do
   defp init_list_state(props) do
     List.init(%{
       items: props[:items] || [],
-      width: (props[:width] || @default_width) - 2, # Account for borders
+      # Account for borders
+      width: (props[:width] || @default_width) - 2,
       height: props[:max_height] || @default_max_height,
       style: Map.merge(@default_style, props[:style] || %{}),
-      render_item: props[:render_item] || &to_string/1,
-      filter_item: props[:filter_item] || &default_filter/2,
-      on_select: nil, # We'll set this in the update function
-      on_submit: nil  # We'll set this in the update function
+      render_item: props[:render_item] || (&to_string/1),
+      filter_item: props[:filter_item] || (&default_filter/2),
+      # We'll set this in the update function
+      on_select: nil,
+      # We'll set this in the update function
+      on_submit: nil
     })
   end
 
@@ -75,11 +79,7 @@ defmodule Raxol.Components.Selection.Dropdown do
   end
 
   def update({:select_item, item}, state) do
-    new_state = %{state |
-      selected_item: item,
-      is_open: false,
-      filter: ""
-    }
+    new_state = %{state | selected_item: item, is_open: false, filter: ""}
     if state.on_change, do: state.on_change.(item)
     new_state
   end
@@ -105,6 +105,7 @@ defmodule Raxol.Components.Selection.Dropdown do
   def render(state) do
     Layout.column do
       render_trigger(state)
+
       if state.is_open do
         render_list(state)
       end
@@ -112,26 +113,32 @@ defmodule Raxol.Components.Selection.Dropdown do
   end
 
   defp render_trigger(state) do
-    display_text = if state.selected_item do
-      state.render_item.(state.selected_item)
-    else
-      Components.text(content: state.placeholder, color: state.style.placeholder_color)
-    end
+    display_text =
+      if state.selected_item do
+        state.render_item.(state.selected_item)
+      else
+        Components.text(
+          content: state.placeholder,
+          color: state.style.placeholder_color
+        )
+      end
 
     Layout.box style: %{border_color: state.style.border_color} do
       Layout.row do
         Components.text(content: display_text, color: state.style.text_color)
-        Components.text(content: " ▼", color: state.style.text_color) # Dropdown arrow
+        # Dropdown arrow
+        Components.text(content: " ▼", color: state.style.text_color)
       end
     end
   end
 
   defp render_list(state) do
     Layout.box style: %{border_color: state.style.border_color} do
-      List.render(%{state.list_state |
-        focused: state.focused,
-        on_select: fn item -> update({:select_item, item}, state) end,
-        on_submit: fn item -> update({:select_item, item}, state) end
+      List.render(%{
+        state.list_state
+        | focused: state.focused,
+          on_select: fn item -> update({:select_item, item}, state) end,
+          on_submit: fn item -> update({:select_item, item}, state) end
       })
     end
   end
@@ -143,6 +150,7 @@ defmodule Raxol.Components.Selection.Dropdown do
       # Assuming List component handles Up/Down/Enter/Selection internally
       state.is_open and state.focused ->
         {new_list_state, commands} = List.handle_event(event, state.list_state)
+
         # Check if List component selected an item (emitted command? Or changed state?)
         # Need to know how List signals selection back up. Assuming it calls on_select/on_submit.
         # For now, just update list_state.
@@ -151,7 +159,8 @@ defmodule Raxol.Components.Selection.Dropdown do
         {%{state | list_state: new_list_state}, commands}
 
       # Toggle open/closed with Enter/Space when closed
-      (key_data == %{key: :enter} or key_data == %{key: " "}) and not state.is_open ->
+      (key_data == %{key: :enter} or key_data == %{key: " "}) and
+          not state.is_open ->
         {update(:toggle, state), []}
 
       # Close with Escape when open

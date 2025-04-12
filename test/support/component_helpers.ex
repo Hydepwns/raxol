@@ -1,7 +1,7 @@
 defmodule Raxol.ComponentHelpers do
   @moduledoc """
   Test helpers for Raxol components.
-  
+
   This module provides utilities for testing components, including
   rendering, event simulation, and state inspection.
   """
@@ -30,8 +30,9 @@ defmodule Raxol.ComponentHelpers do
     quote do
       style = unquote(component).style
       actual = Map.get(style, unquote(property))
+
       assert actual == unquote(expected),
-        "Expected style property #{unquote(property)} to be #{inspect(unquote(expected))}, got #{inspect(actual)}"
+             "Expected style property #{unquote(property)} to be #{inspect(unquote(expected))}, got #{inspect(actual)}"
     end
   end
 
@@ -40,8 +41,9 @@ defmodule Raxol.ComponentHelpers do
   """
   defmacro assert_commands(actual_commands, expected_commands) do
     quote do
-      assert Enum.sort(unquote(actual_commands)) == Enum.sort(unquote(expected_commands)),
-        "Expected commands #{inspect(unquote(expected_commands))}, got #{inspect(unquote(actual_commands))}"
+      assert Enum.sort(unquote(actual_commands)) ==
+               Enum.sort(unquote(expected_commands)),
+             "Expected commands #{inspect(unquote(expected_commands))}, got #{inspect(unquote(actual_commands))}"
     end
   end
 
@@ -51,4 +53,4 @@ defmodule Raxol.ComponentHelpers do
   def create_test_component(module, state \\ %{}) do
     struct(module, %{state: state})
   end
-end 
+end

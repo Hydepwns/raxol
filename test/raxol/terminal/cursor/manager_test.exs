@@ -127,14 +127,14 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
     test "toggles visibility for blinking cursor" do
       cursor = Manager.new()
       cursor = Manager.set_state(cursor, :blinking)
-      
+
       # First update should be visible
       {cursor, visible1} = Manager.update_blink(cursor)
       assert visible1 == true
-      
+
       # Wait for half a blink cycle
       Process.sleep(300)
-      
+
       # Second update should be hidden
       {_cursor, visible2} = Manager.update_blink(cursor)
       assert visible2 == false
@@ -147,10 +147,10 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       cursor = Manager.move_to(cursor, 10, 5)
       cursor = Manager.set_style(cursor, :underline)
       cursor = Manager.add_to_history(cursor)
-      
+
       assert length(cursor.history) == 1
       assert cursor.history_index == 1
-      
+
       state = hd(cursor.history)
       assert state.position == {10, 5}
       assert state.style == :underline
@@ -163,10 +163,10 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       cursor = Manager.move_to(cursor, 10, 5)
       cursor = Manager.set_style(cursor, :underline)
       cursor = Manager.add_to_history(cursor)
-      
+
       cursor = Manager.move_to(cursor, 0, 0)
       cursor = Manager.set_style(cursor, :block)
-      
+
       cursor = Manager.restore_from_history(cursor)
       assert cursor.position == {10, 5}
       assert cursor.style == :underline
@@ -179,4 +179,4 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
       assert restored.position == {10, 5}
     end
   end
-end 
+end

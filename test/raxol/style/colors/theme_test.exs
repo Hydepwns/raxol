@@ -199,7 +199,8 @@ defmodule Raxol.Style.Colors.ThemeTest do
       color = Theme.get_ui_color(theme, :error)
 
       assert %Color{} = color
-      assert color.ansi_code == 1  # Red ANSI code
+      # Red ANSI code
+      assert color.ansi_code == 1
     end
 
     test "gets a default color when UI element not defined" do
@@ -288,7 +289,9 @@ defmodule Raxol.Style.Colors.ThemeTest do
 
       # Verify other colors were not changed
       assert updated_theme.palette["accent"] == @test_theme.palette["accent"]
-      assert updated_theme.palette["background"] == @test_theme.palette["background"]
+
+      assert updated_theme.palette["background"] ==
+               @test_theme.palette["background"]
     end
   end
 
@@ -324,13 +327,16 @@ defmodule Raxol.Style.Colors.ThemeTest do
       assert high_contrast_theme.palette["primary"].b in [0, 255]
 
       # Verify alpha values are unchanged
-      assert high_contrast_theme.palette["primary"].a == @test_theme.palette["primary"].a
+      assert high_contrast_theme.palette["primary"].a ==
+               @test_theme.palette["primary"].a
     end
   end
 
   # Helper for temporary directory in tests
   setup do
-    tmp_dir = System.tmp_dir!() |> Path.join("raxol_theme_test_#{:rand.uniform(1000)}")
+    tmp_dir =
+      System.tmp_dir!() |> Path.join("raxol_theme_test_#{:rand.uniform(1000)}")
+
     File.mkdir_p!(tmp_dir)
     on_exit(fn -> File.rm_rf!(tmp_dir) end)
     {:ok, tmp_dir: tmp_dir}

@@ -77,7 +77,8 @@ defmodule Raxol.Components.Dropdown do
   def render(dropdown_key, options, selected, _on_change) do
     # TODO: Raxol.View context API seems changed. Commenting out context logic.
     # is_open = View.get_context(dropdown_key, :is_open, false)
-    is_open = false # Assume closed for now
+    # Assume closed for now
+    is_open = false
 
     content = fn ->
       trigger = render_trigger(selected, is_open)
@@ -139,7 +140,8 @@ defmodule Raxol.Components.Dropdown do
   # @impl true
   def handle_event(%Event{type: :key, data: %{key: key}} = _event, state) do
     _dropdown_key = state.dropdown_key
-    is_open = false # TODO: Need context -> View.get_context(dropdown_key, :is_open, false)
+    # TODO: Need context -> View.get_context(dropdown_key, :is_open, false)
+    is_open = false
 
     case key do
       # Match on key directly from event.data
@@ -166,17 +168,19 @@ defmodule Raxol.Components.Dropdown do
         {state, []}
     end
   end
+
   # Handle non-key events
-  def handle_event(_event, state), do: {state, []} # Default case
+  # Default case
+  def handle_event(_event, state), do: {state, []}
 
   def filterable(
-         filterable?,
-         options,
-         selected,
-         dropdown_key,
-         _content,
-         _render_opts \\ []
-       ) do
+        filterable?,
+        options,
+        selected,
+        dropdown_key,
+        _content,
+        _render_opts \\ []
+      ) do
     if filterable? do
       # Placeholder for filterable dropdown rendering
       render_list(options, selected, dropdown_key)

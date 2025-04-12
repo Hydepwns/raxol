@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Buffer.Scroll do
   @moduledoc """
   Terminal scroll buffer module.
-  
+
   This module handles the management of terminal scrollback buffers, including:
   - Virtual scrolling implementation
   - Memory-efficient buffer management
@@ -12,14 +12,14 @@ defmodule Raxol.Terminal.Buffer.Scroll do
   alias Raxol.Terminal.Cell
 
   @type t :: %__MODULE__{
-    buffer: list(list(Cell.t())),
-    position: non_neg_integer(),
-    height: non_neg_integer(),
-    max_height: non_neg_integer(),
-    compression_ratio: float(),
-    memory_limit: non_neg_integer(),
-    memory_usage: non_neg_integer()
-  }
+          buffer: list(list(Cell.t())),
+          position: non_neg_integer(),
+          height: non_neg_integer(),
+          max_height: non_neg_integer(),
+          compression_ratio: float(),
+          memory_limit: non_neg_integer(),
+          memory_usage: non_neg_integer()
+        }
 
   defstruct [
     :buffer,
@@ -33,9 +33,9 @@ defmodule Raxol.Terminal.Buffer.Scroll do
 
   @doc """
   Creates a new scroll buffer with the given dimensions.
-  
+
   ## Examples
-  
+
       iex> scroll = Scroll.new(1000)
       iex> scroll.max_height
       1000
@@ -56,9 +56,9 @@ defmodule Raxol.Terminal.Buffer.Scroll do
 
   @doc """
   Adds a line to the scroll buffer.
-  
+
   ## Examples
-  
+
       iex> scroll = Scroll.new(1000)
       iex> line = [Cell.new("A"), Cell.new("B")]
       iex> scroll = Scroll.add_line(scroll, line)
@@ -67,36 +67,39 @@ defmodule Raxol.Terminal.Buffer.Scroll do
   """
   def add_line(%__MODULE__{} = scroll, line) do
     new_buffer = [line | scroll.buffer]
-    
+
     # Trim buffer if it exceeds max height
-    new_buffer = if length(new_buffer) > scroll.max_height do
-      Enum.take(new_buffer, scroll.max_height)
-    else
-      new_buffer
-    end
-    
+    new_buffer =
+      if length(new_buffer) > scroll.max_height do
+        Enum.take(new_buffer, scroll.max_height)
+      else
+        new_buffer
+      end
+
     # Update memory usage and compression if needed
     new_usage = calculate_memory_usage(new_buffer)
-    
-    {new_buffer, new_ratio} = if new_usage > scroll.memory_limit do
-      compress_buffer(new_buffer)
-    else
-      {new_buffer, scroll.compression_ratio}
-    end
-    
-    %{scroll |
-      buffer: new_buffer,
-      height: length(new_buffer),
-      compression_ratio: new_ratio,
-      memory_usage: new_usage
+
+    {new_buffer, new_ratio} =
+      if new_usage > scroll.memory_limit do
+        compress_buffer(new_buffer)
+      else
+        {new_buffer, scroll.compression_ratio}
+      end
+
+    %{
+      scroll
+      | buffer: new_buffer,
+        height: length(new_buffer),
+        compression_ratio: new_ratio,
+        memory_usage: new_usage
     }
   end
 
   @doc """
   Gets a view of the scroll buffer at the current position.
-  
+
   ## Examples
-  
+
       iex> scroll = Scroll.new(1000)
       iex> line = [Cell.new("A"), Cell.new("B")]
       iex> scroll = Scroll.add_line(scroll, line)
@@ -107,7 +110,7 @@ defmodule Raxol.Terminal.Buffer.Scroll do
   def get_view(%__MODULE__{} = scroll, view_height) do
     start_pos = max(0, scroll.height - view_height - scroll.position)
     end_pos = min(scroll.height, start_pos + view_height)
-    
+
     scroll.buffer
     |> Enum.slice(start_pos, end_pos - start_pos)
     |> Enum.reverse()
@@ -115,9 +118,9 @@ defmodule Raxol.Terminal.Buffer.Scroll do
 
   @doc """
   Scrolls the buffer by the given amount.
-  
+
   ## Examples
-  
+
       iex> scroll = Scroll.new(1000)
       iex> line = [Cell.new("A"), Cell.new("B")]
       iex> scroll = Scroll.add_line(scroll, line)
@@ -132,9 +135,9 @@ defmodule Raxol.Terminal.Buffer.Scroll do
 
   @doc """
   Gets the current scroll position.
-  
+
   ## Examples
-  
+
       iex> scroll = Scroll.new(1000)
       iex> Scroll.get_position(scroll)
       0
@@ -145,9 +148,9 @@ defmodule Raxol.Terminal.Buffer.Scroll do
 
   @doc """
   Gets the total height of the scroll buffer.
-  
+
   ## Examples
-  
+
       iex> scroll = Scroll.new(1000)
       iex> line = [Cell.new("A"), Cell.new("B")]
       iex> scroll = Scroll.add_line(scroll, line)
@@ -160,9 +163,9 @@ defmodule Raxol.Terminal.Buffer.Scroll do
 
   @doc """
   Clears the scroll buffer.
-  
+
   ## Examples
-  
+
       iex> scroll = Scroll.new(1000)
       iex> line = [Cell.new("A"), Cell.new("B")]
       iex> scroll = Scroll.add_line(scroll, line)
@@ -171,51 +174,51 @@ defmodule Raxol.Terminal.Buffer.Scroll do
       0
   """
   def clear(%__MODULE__{} = scroll) do
-    %{scroll |
-      buffer: [],
-      position: 0,
-      height: 0,
-      memory_usage: 0
-    }
+    %{scroll | buffer: [], position: 0, height: 0, memory_usage: 0}
   end
 
   # Private functions
 
   defp calculate_memory_usage(buffer) do
     # Rough estimation of memory usage based on buffer size and content
-    total_cells = buffer
-    |> Enum.map(&length/1)
-    |> Enum.sum()
-    
-    cell_size = 100  # Estimated bytes per cell
+    total_cells =
+      buffer
+      |> Enum.map(&length/1)
+      |> Enum.sum()
+
+    # Estimated bytes per cell
+    cell_size = 100
     total_cells * cell_size
   end
 
   defp compress_buffer(buffer) do
     # Simple compression: merge empty cells and reduce attribute storage
-    compressed = buffer
-    |> Enum.map(fn line ->
-      line
-      |> Enum.chunk_by(&Cell.is_empty?/1)
-      |> Enum.map(fn
-        [cell] -> cell
-        cells -> 
-          # If all cells are empty, just keep one
-          if Enum.all?(cells, &Cell.is_empty?/1) do
-            List.first(cells)
-          else
-            # Otherwise, keep all cells but with minimal attributes
-            Enum.map(cells, &minimize_cell_attributes/1)
-          end
+    compressed =
+      buffer
+      |> Enum.map(fn line ->
+        line
+        |> Enum.chunk_by(&Cell.is_empty?/1)
+        |> Enum.map(fn
+          [cell] ->
+            cell
+
+          cells ->
+            # If all cells are empty, just keep one
+            if Enum.all?(cells, &Cell.is_empty?/1) do
+              List.first(cells)
+            else
+              # Otherwise, keep all cells but with minimal attributes
+              Enum.map(cells, &minimize_cell_attributes/1)
+            end
+        end)
+        |> List.flatten()
       end)
-      |> List.flatten()
-    end)
-    
+
     # Calculate new compression ratio
     original_size = calculate_memory_usage(buffer)
     compressed_size = calculate_memory_usage(compressed)
     ratio = compressed_size / original_size
-    
+
     {compressed, ratio}
   end
 
@@ -223,4 +226,4 @@ defmodule Raxol.Terminal.Buffer.Scroll do
     # Keep only essential attributes
     %{cell | attributes: Map.take(cell.attributes, [:foreground, :background])}
   end
-end 
+end

@@ -1,10 +1,12 @@
 defmodule Raxol.Terminal.CharacterSets do
   @moduledoc """
   Handles character set translation for the terminal emulator.
-  
+
   This module provides translation tables for different character sets
   and functions to translate characters between them.
   """
+
+  @type charset_state :: atom()
 
   @doc """
   Translates a character using the specified character set.
@@ -78,106 +80,200 @@ defmodule Raxol.Terminal.CharacterSets do
       <<0x1D>> -> " "
       <<0x1E>> -> " "
       <<0x1F>> -> " "
-      
       # Special characters (0x7F-0xFF)
       <<0x7F>> -> " "
-      <<0xA0>> -> " "  # Non-breaking space
-      <<0xA1>> -> "¡"  # Inverted exclamation mark
-      <<0xA2>> -> "¢"  # Cent sign
-      <<0xA3>> -> "£"  # Pound sign
-      <<0xA4>> -> "¤"  # Currency sign
-      <<0xA5>> -> "¥"  # Yen sign
-      <<0xA6>> -> "¦"  # Broken vertical bar
-      <<0xA7>> -> "§"  # Section sign
-      <<0xA8>> -> "¨"  # Diaeresis
-      <<0xA9>> -> "©"  # Copyright sign
-      <<0xAA>> -> "ª"  # Feminine ordinal indicator
-      <<0xAB>> -> "«"  # Left-pointing double angle quotation mark
-      <<0xAC>> -> "¬"  # Not sign
-      <<0xAD>> -> "­"  # Soft hyphen
-      <<0xAE>> -> "®"  # Registered sign
-      <<0xAF>> -> "¯"  # Macron
-      <<0xB0>> -> "°"  # Degree sign
-      <<0xB1>> -> "±"  # Plus-minus sign
-      <<0xB2>> -> "²"  # Superscript two
-      <<0xB3>> -> "³"  # Superscript three
-      <<0xB4>> -> "´"  # Acute accent
-      <<0xB5>> -> "µ"  # Micro sign
-      <<0xB6>> -> "¶"  # Pilcrow sign
-      <<0xB7>> -> "·"  # Middle dot
-      <<0xB8>> -> "¸"  # Cedilla
-      <<0xB9>> -> "¹"  # Superscript one
-      <<0xBA>> -> "º"  # Masculine ordinal indicator
-      <<0xBB>> -> "»"  # Right-pointing double angle quotation mark
-      <<0xBC>> -> "¼"  # Vulgar fraction one quarter
-      <<0xBD>> -> "½"  # Vulgar fraction one half
-      <<0xBE>> -> "¾"  # Vulgar fraction three quarters
-      <<0xBF>> -> "¿"  # Inverted question mark
-      <<0xC0>> -> "À"  # Latin capital letter A with grave
-      <<0xC1>> -> "Á"  # Latin capital letter A with acute
-      <<0xC2>> -> "Â"  # Latin capital letter A with circumflex
-      <<0xC3>> -> "Ã"  # Latin capital letter A with tilde
-      <<0xC4>> -> "Ä"  # Latin capital letter A with diaeresis
-      <<0xC5>> -> "Å"  # Latin capital letter A with ring above
-      <<0xC6>> -> "Æ"  # Latin capital letter AE
-      <<0xC7>> -> "Ç"  # Latin capital letter C with cedilla
-      <<0xC8>> -> "È"  # Latin capital letter E with grave
-      <<0xC9>> -> "É"  # Latin capital letter E with acute
-      <<0xCA>> -> "Ê"  # Latin capital letter E with circumflex
-      <<0xCB>> -> "Ë"  # Latin capital letter E with diaeresis
-      <<0xCC>> -> "Ì"  # Latin capital letter I with grave
-      <<0xCD>> -> "Í"  # Latin capital letter I with acute
-      <<0xCE>> -> "Î"  # Latin capital letter I with circumflex
-      <<0xCF>> -> "Ï"  # Latin capital letter I with diaeresis
-      <<0xD0>> -> "Ð"  # Latin capital letter Eth
-      <<0xD1>> -> "Ñ"  # Latin capital letter N with tilde
-      <<0xD2>> -> "Ò"  # Latin capital letter O with grave
-      <<0xD3>> -> "Ó"  # Latin capital letter O with acute
-      <<0xD4>> -> "Ô"  # Latin capital letter O with circumflex
-      <<0xD5>> -> "Õ"  # Latin capital letter O with tilde
-      <<0xD6>> -> "Ö"  # Latin capital letter O with diaeresis
-      <<0xD7>> -> "×"  # Multiplication sign
-      <<0xD8>> -> "Ø"  # Latin capital letter O with stroke
-      <<0xD9>> -> "Ù"  # Latin capital letter U with grave
-      <<0xDA>> -> "Ú"  # Latin capital letter U with acute
-      <<0xDB>> -> "Û"  # Latin capital letter U with circumflex
-      <<0xDC>> -> "Ü"  # Latin capital letter U with diaeresis
-      <<0xDD>> -> "Ý"  # Latin capital letter Y with acute
-      <<0xDE>> -> "Þ"  # Latin capital letter Thorn
-      <<0xDF>> -> "ß"  # Latin small letter sharp s
-      <<0xE0>> -> "à"  # Latin small letter a with grave
-      <<0xE1>> -> "á"  # Latin small letter a with acute
-      <<0xE2>> -> "â"  # Latin small letter a with circumflex
-      <<0xE3>> -> "ã"  # Latin small letter a with tilde
-      <<0xE4>> -> "ä"  # Latin small letter a with diaeresis
-      <<0xE5>> -> "å"  # Latin small letter a with ring above
-      <<0xE6>> -> "æ"  # Latin small letter ae
-      <<0xE7>> -> "ç"  # Latin small letter c with cedilla
-      <<0xE8>> -> "è"  # Latin small letter e with grave
-      <<0xE9>> -> "é"  # Latin small letter e with acute
-      <<0xEA>> -> "ê"  # Latin small letter e with circumflex
-      <<0xEB>> -> "ë"  # Latin small letter e with diaeresis
-      <<0xEC>> -> "ì"  # Latin small letter i with grave
-      <<0xED>> -> "í"  # Latin small letter i with acute
-      <<0xEE>> -> "î"  # Latin small letter i with circumflex
-      <<0xEF>> -> "ï"  # Latin small letter i with diaeresis
-      <<0xF0>> -> "ð"  # Latin small letter eth
-      <<0xF1>> -> "ñ"  # Latin small letter n with tilde
-      <<0xF2>> -> "ò"  # Latin small letter o with grave
-      <<0xF3>> -> "ó"  # Latin small letter o with acute
-      <<0xF4>> -> "ô"  # Latin small letter o with circumflex
-      <<0xF5>> -> "õ"  # Latin small letter o with tilde
-      <<0xF6>> -> "ö"  # Latin small letter o with diaeresis
-      <<0xF7>> -> "÷"  # Division sign
-      <<0xF8>> -> "ø"  # Latin small letter o with stroke
-      <<0xF9>> -> "ù"  # Latin small letter u with grave
-      <<0xFA>> -> "ú"  # Latin small letter u with acute
-      <<0xFB>> -> "û"  # Latin small letter u with circumflex
-      <<0xFC>> -> "ü"  # Latin small letter u with diaeresis
-      <<0xFD>> -> "ý"  # Latin small letter y with acute
-      <<0xFE>> -> "þ"  # Latin small letter thorn
-      <<0xFF>> -> "ÿ"  # Latin small letter y with diaeresis
-      
+      # Non-breaking space
+      <<0xA0>> -> " "
+      # Inverted exclamation mark
+      <<0xA1>> -> "¡"
+      # Cent sign
+      <<0xA2>> -> "¢"
+      # Pound sign
+      <<0xA3>> -> "£"
+      # Currency sign
+      <<0xA4>> -> "¤"
+      # Yen sign
+      <<0xA5>> -> "¥"
+      # Broken vertical bar
+      <<0xA6>> -> "¦"
+      # Section sign
+      <<0xA7>> -> "§"
+      # Diaeresis
+      <<0xA8>> -> "¨"
+      # Copyright sign
+      <<0xA9>> -> "©"
+      # Feminine ordinal indicator
+      <<0xAA>> -> "ª"
+      # Left-pointing double angle quotation mark
+      <<0xAB>> -> "«"
+      # Not sign
+      <<0xAC>> -> "¬"
+      # Soft hyphen
+      <<0xAD>> -> "­"
+      # Registered sign
+      <<0xAE>> -> "®"
+      # Macron
+      <<0xAF>> -> "¯"
+      # Degree sign
+      <<0xB0>> -> "°"
+      # Plus-minus sign
+      <<0xB1>> -> "±"
+      # Superscript two
+      <<0xB2>> -> "²"
+      # Superscript three
+      <<0xB3>> -> "³"
+      # Acute accent
+      <<0xB4>> -> "´"
+      # Micro sign
+      <<0xB5>> -> "µ"
+      # Pilcrow sign
+      <<0xB6>> -> "¶"
+      # Middle dot
+      <<0xB7>> -> "·"
+      # Cedilla
+      <<0xB8>> -> "¸"
+      # Superscript one
+      <<0xB9>> -> "¹"
+      # Masculine ordinal indicator
+      <<0xBA>> -> "º"
+      # Right-pointing double angle quotation mark
+      <<0xBB>> -> "»"
+      # Vulgar fraction one quarter
+      <<0xBC>> -> "¼"
+      # Vulgar fraction one half
+      <<0xBD>> -> "½"
+      # Vulgar fraction three quarters
+      <<0xBE>> -> "¾"
+      # Inverted question mark
+      <<0xBF>> -> "¿"
+      # Latin capital letter A with grave
+      <<0xC0>> -> "À"
+      # Latin capital letter A with acute
+      <<0xC1>> -> "Á"
+      # Latin capital letter A with circumflex
+      <<0xC2>> -> "Â"
+      # Latin capital letter A with tilde
+      <<0xC3>> -> "Ã"
+      # Latin capital letter A with diaeresis
+      <<0xC4>> -> "Ä"
+      # Latin capital letter A with ring above
+      <<0xC5>> -> "Å"
+      # Latin capital letter AE
+      <<0xC6>> -> "Æ"
+      # Latin capital letter C with cedilla
+      <<0xC7>> -> "Ç"
+      # Latin capital letter E with grave
+      <<0xC8>> -> "È"
+      # Latin capital letter E with acute
+      <<0xC9>> -> "É"
+      # Latin capital letter E with circumflex
+      <<0xCA>> -> "Ê"
+      # Latin capital letter E with diaeresis
+      <<0xCB>> -> "Ë"
+      # Latin capital letter I with grave
+      <<0xCC>> -> "Ì"
+      # Latin capital letter I with acute
+      <<0xCD>> -> "Í"
+      # Latin capital letter I with circumflex
+      <<0xCE>> -> "Î"
+      # Latin capital letter I with diaeresis
+      <<0xCF>> -> "Ï"
+      # Latin capital letter Eth
+      <<0xD0>> -> "Ð"
+      # Latin capital letter N with tilde
+      <<0xD1>> -> "Ñ"
+      # Latin capital letter O with grave
+      <<0xD2>> -> "Ò"
+      # Latin capital letter O with acute
+      <<0xD3>> -> "Ó"
+      # Latin capital letter O with circumflex
+      <<0xD4>> -> "Ô"
+      # Latin capital letter O with tilde
+      <<0xD5>> -> "Õ"
+      # Latin capital letter O with diaeresis
+      <<0xD6>> -> "Ö"
+      # Multiplication sign
+      <<0xD7>> -> "×"
+      # Latin capital letter O with stroke
+      <<0xD8>> -> "Ø"
+      # Latin capital letter U with grave
+      <<0xD9>> -> "Ù"
+      # Latin capital letter U with acute
+      <<0xDA>> -> "Ú"
+      # Latin capital letter U with circumflex
+      <<0xDB>> -> "Û"
+      # Latin capital letter U with diaeresis
+      <<0xDC>> -> "Ü"
+      # Latin capital letter Y with acute
+      <<0xDD>> -> "Ý"
+      # Latin capital letter Thorn
+      <<0xDE>> -> "Þ"
+      # Latin small letter sharp s
+      <<0xDF>> -> "ß"
+      # Latin small letter a with grave
+      <<0xE0>> -> "à"
+      # Latin small letter a with acute
+      <<0xE1>> -> "á"
+      # Latin small letter a with circumflex
+      <<0xE2>> -> "â"
+      # Latin small letter a with tilde
+      <<0xE3>> -> "ã"
+      # Latin small letter a with diaeresis
+      <<0xE4>> -> "ä"
+      # Latin small letter a with ring above
+      <<0xE5>> -> "å"
+      # Latin small letter ae
+      <<0xE6>> -> "æ"
+      # Latin small letter c with cedilla
+      <<0xE7>> -> "ç"
+      # Latin small letter e with grave
+      <<0xE8>> -> "è"
+      # Latin small letter e with acute
+      <<0xE9>> -> "é"
+      # Latin small letter e with circumflex
+      <<0xEA>> -> "ê"
+      # Latin small letter e with diaeresis
+      <<0xEB>> -> "ë"
+      # Latin small letter i with grave
+      <<0xEC>> -> "ì"
+      # Latin small letter i with acute
+      <<0xED>> -> "í"
+      # Latin small letter i with circumflex
+      <<0xEE>> -> "î"
+      # Latin small letter i with diaeresis
+      <<0xEF>> -> "ï"
+      # Latin small letter eth
+      <<0xF0>> -> "ð"
+      # Latin small letter n with tilde
+      <<0xF1>> -> "ñ"
+      # Latin small letter o with grave
+      <<0xF2>> -> "ò"
+      # Latin small letter o with acute
+      <<0xF3>> -> "ó"
+      # Latin small letter o with circumflex
+      <<0xF4>> -> "ô"
+      # Latin small letter o with tilde
+      <<0xF5>> -> "õ"
+      # Latin small letter o with diaeresis
+      <<0xF6>> -> "ö"
+      # Division sign
+      <<0xF7>> -> "÷"
+      # Latin small letter o with stroke
+      <<0xF8>> -> "ø"
+      # Latin small letter u with grave
+      <<0xF9>> -> "ù"
+      # Latin small letter u with acute
+      <<0xFA>> -> "ú"
+      # Latin small letter u with circumflex
+      <<0xFB>> -> "û"
+      # Latin small letter u with diaeresis
+      <<0xFC>> -> "ü"
+      # Latin small letter y with acute
+      <<0xFD>> -> "ý"
+      # Latin small letter thorn
+      <<0xFE>> -> "þ"
+      # Latin small letter y with diaeresis
+      <<0xFF>> -> "ÿ"
       # Default case: return the character as is
       _ -> char
     end
@@ -298,9 +394,10 @@ defmodule Raxol.Terminal.CharacterSets do
   # UK translation table
   # Maps UK-specific characters
   defp translate_uk(char) do
-    # For now, we'll just return the character as is
-    # In a real implementation, we would translate based on the UK character set
-    char
+    case char do
+      # Add specific UK translations
+      _ -> <<char>> # Default case returns string
+    end
   end
 
   # French translation table
@@ -362,16 +459,18 @@ defmodule Raxol.Terminal.CharacterSets do
   # Japanese translation table
   # Maps Japanese-specific characters
   defp translate_japanese(char) do
-    # For now, we'll just return the character as is
-    # In a real implementation, we would translate based on the Japanese character set
-    char
+    case char do
+      # Add specific Japanese translations
+      _ -> <<char>> # Default case returns string
+    end
   end
 
   # Korean translation table
   # Maps Korean-specific characters
   defp translate_korean(char) do
-    # For now, we'll just return the character as is
-    # In a real implementation, we would translate based on the Korean character set
-    char
+    case char do
+      # Add specific Korean translations
+      _ -> <<char>> # Default case returns string
+    end
   end
-end 
+end

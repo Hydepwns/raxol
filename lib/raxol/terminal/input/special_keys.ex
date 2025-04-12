@@ -61,9 +61,11 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
   """
   def to_escape_sequence(state, key) do
     modifiers = calculate_modifiers(state)
+
     case key do
       key when byte_size(key) == 1 ->
         <<code::utf8>> = key
+
         if state.ctrl do
           # Handle Ctrl+key combinations
           case code do
@@ -74,6 +76,7 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
         else
           "\e[#{modifiers}#{code}"
         end
+
       key when is_binary(key) ->
         case key do
           "ArrowUp" -> "\e[#{modifiers}A"
@@ -110,19 +113,23 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
   # Private functions
 
   defp calculate_modifiers(state) do
-    modifier_value = cond do
-      state.ctrl -> 1
-      true -> 0
-    end + cond do
-      state.alt -> 2
-      true -> 0
-    end + cond do
-      state.shift -> 4
-      true -> 0
-    end + cond do
-      state.meta -> 8
-      true -> 0
-    end
+    modifier_value =
+      cond do
+        state.ctrl -> 1
+        true -> 0
+      end +
+        cond do
+          state.alt -> 2
+          true -> 0
+        end +
+        cond do
+          state.shift -> 4
+          true -> 0
+        end +
+        cond do
+          state.meta -> 8
+          true -> 0
+        end
 
     if modifier_value > 0, do: "#{modifier_value};", else: ""
   end

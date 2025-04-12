@@ -33,7 +33,8 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> blended.hex
       "#800080"  # Purple
   """
-  def blend_colors(%Color{} = color1, %Color{} = color2, ratio) when ratio >= 0 and ratio <= 1 do
+  def blend_colors(%Color{} = color1, %Color{} = color2, ratio)
+      when ratio >= 0 and ratio <= 1 do
     r = round(color1.r * (1 - ratio) + color2.r * ratio)
     g = round(color1.g * (1 - ratio) + color2.g * ratio)
     b = round(color1.b * (1 - ratio) + color2.b * ratio)
@@ -58,10 +59,11 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> Enum.map(gradient, & &1.hex)
       ["#FF0000", "#800080", "#0000FF"]
   """
-  def create_gradient(%Color{} = color1, %Color{} = color2, steps) when steps > 1 do
+  def create_gradient(%Color{} = color1, %Color{} = color2, steps)
+      when steps > 1 do
     step_size = 1.0 / (steps - 1)
 
-    for i <- 0..(steps-1) do
+    for i <- 0..(steps - 1) do
       ratio = i * step_size
       blend_colors(color1, color2, ratio)
     end
@@ -184,20 +186,22 @@ defmodule Raxol.Style.Colors.Advanced do
     min = Enum.min([r, g, b])
     delta = max - min
 
-    h = cond do
-      delta == 0 -> 0
-      max == r -> 60 * rem(round((g - b) / delta) + 360, 360)
-      max == g -> 60 * ((b - r) / delta + 2)
-      true -> 60 * ((r - g) / delta + 4)
-    end
+    h =
+      cond do
+        delta == 0 -> 0
+        max == r -> 60 * rem(round((g - b) / delta) + 360, 360)
+        max == g -> 60 * ((b - r) / delta + 2)
+        true -> 60 * ((r - g) / delta + 4)
+      end
 
     l = (max + min) / 2
 
-    s = if delta == 0 do
-      0
-    else
-      delta / (1 - abs(2 * l - 1))
-    end
+    s =
+      if delta == 0 do
+        0
+      else
+        delta / (1 - abs(2 * l - 1))
+      end
 
     %{h: round(h), s: round(s * 100), l: round(l * 100)}
   end
@@ -210,14 +214,15 @@ defmodule Raxol.Style.Colors.Advanced do
     x = c * (1 - abs(rem(round(h / 60.0), 2) - 1))
     m = l - c / 2
 
-    {r, g, b} = cond do
-      h < 60 -> {c, x, 0}
-      h < 120 -> {x, c, 0}
-      h < 180 -> {0, c, x}
-      h < 240 -> {0, x, c}
-      h < 300 -> {x, 0, c}
-      true -> {c, 0, x}
-    end
+    {r, g, b} =
+      cond do
+        h < 60 -> {c, x, 0}
+        h < 120 -> {x, c, 0}
+        h < 180 -> {0, c, x}
+        h < 240 -> {0, x, c}
+        h < 300 -> {x, 0, c}
+        true -> {c, 0, x}
+      end
 
     Color.from_rgb(
       round((r + m) * 255),
@@ -236,11 +241,11 @@ defmodule Raxol.Style.Colors.Advanced do
     y = xyz.y / 100.0
     z = xyz.z / 108.883
 
-    x = if x > 0.008856, do: :math.pow(x, 1/3), else: (7.787 * x) + 16/116
-    y = if y > 0.008856, do: :math.pow(y, 1/3), else: (7.787 * y) + 16/116
-    z = if z > 0.008856, do: :math.pow(z, 1/3), else: (7.787 * z) + 16/116
+    x = if x > 0.008856, do: :math.pow(x, 1 / 3), else: 7.787 * x + 16 / 116
+    y = if y > 0.008856, do: :math.pow(y, 1 / 3), else: 7.787 * y + 16 / 116
+    z = if z > 0.008856, do: :math.pow(z, 1 / 3), else: 7.787 * z + 16 / 116
 
-    l = (116 * y) - 16
+    l = 116 * y - 16
     a = 500 * (x - y)
     b = 200 * (y - z)
 
@@ -250,9 +255,20 @@ defmodule Raxol.Style.Colors.Advanced do
   defp rgb_to_xyz(%Color{r: r, g: g, b: b}) do
     # Convert RGB to XYZ
     # This is a simplified conversion - a full implementation would be more complex
-    r = if r > 10.3148, do: :math.pow((r + 14.025) / 269.025, 2.4), else: r / 3294.6
-    g = if g > 10.3148, do: :math.pow((g + 14.025) / 269.025, 2.4), else: g / 3294.6
-    b = if b > 10.3148, do: :math.pow((b + 14.025) / 269.025, 2.4), else: b / 3294.6
+    r =
+      if r > 10.3148,
+        do: :math.pow((r + 14.025) / 269.025, 2.4),
+        else: r / 3294.6
+
+    g =
+      if g > 10.3148,
+        do: :math.pow((g + 14.025) / 269.025, 2.4),
+        else: g / 3294.6
+
+    b =
+      if b > 10.3148,
+        do: :math.pow((b + 14.025) / 269.025, 2.4),
+        else: b / 3294.6
 
     x = r * 0.4124 + g * 0.3576 + b * 0.1805
     y = r * 0.2126 + g * 0.7152 + b * 0.0722
@@ -265,17 +281,20 @@ defmodule Raxol.Style.Colors.Advanced do
     # Implement brightness preservation logic
     color
   end
+
   defp maybe_preserve_brightness(color, false), do: color
 
   defp maybe_enhance_contrast(color, true) do
     # Implement contrast enhancement logic
     color
   end
+
   defp maybe_enhance_contrast(color, false), do: color
 
   defp maybe_make_color_blind_safe(color, true) do
     # Implement color blind safety logic
     color
   end
+
   defp maybe_make_color_blind_safe(color, false), do: color
 end

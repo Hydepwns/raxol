@@ -32,13 +32,18 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     ai_data = Analyzer.prepare_ai_data(analysis_data)
 
     # Merge with options
-    ai_data = Map.merge(ai_data, %{
-      options: Map.merge(%{
-        depth: :detailed,
-        focus: [:fps, :memory, :jank, :gc],
-        historical_data: []
-      }, options)
-    })
+    ai_data =
+      Map.merge(ai_data, %{
+        options:
+          Map.merge(
+            %{
+              depth: :detailed,
+              focus: [:fps, :memory, :jank, :gc],
+              historical_data: []
+            },
+            options
+          )
+      })
 
     # Send data to AI agent for analysis
     # TODO: Implement actual AI integration call
@@ -224,7 +229,8 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
   end
 
   defp format_impact(impact) do
-    Enum.map(impact, fn {area, value} -> "#{area}: #{value}" end) |> Enum.join("\n")
+    Enum.map(impact, fn {area, value} -> "#{area}: #{value}" end)
+    |> Enum.join("\n")
   end
 
   defp format_impact_html(impact) do

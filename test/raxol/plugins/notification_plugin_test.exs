@@ -12,14 +12,20 @@ defmodule Raxol.Plugins.NotificationPluginTest do
 
   test "shows notification" do
     {:ok, plugin} = NotificationPlugin.init()
-    {:ok, updated_plugin, display} = NotificationPlugin.handle_input(plugin, "/notify success Test")
+
+    {:ok, updated_plugin, display} =
+      NotificationPlugin.handle_input(plugin, "/notify success Test")
+
     assert length(updated_plugin.notifications) == 1
     assert String.contains?(display, "[SUCCESS]")
   end
 
   test "updates configuration" do
     {:ok, plugin} = NotificationPlugin.init()
-    {:ok, updated_plugin} = NotificationPlugin.handle_input(plugin, "/notify-config style banner")
+
+    {:ok, updated_plugin} =
+      NotificationPlugin.handle_input(plugin, "/notify-config style banner")
+
     assert updated_plugin.config.style == "banner"
   end
-end 
+end

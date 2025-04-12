@@ -4,13 +4,14 @@ defmodule Raxol.Plugins.PluginConfig do
   Stores and loads plugin configurations from disk.
   """
 
+  @derive Jason.Encoder
   @config_dir ".config/raxol/plugins"
   @config_file "plugin_config.json"
 
   @type t :: %__MODULE__{
-    plugin_configs: %{String.t() => map()},
-    enabled_plugins: [String.t()]
-  }
+          plugin_configs: %{String.t() => map()},
+          enabled_plugins: [String.t()]
+        }
 
   defstruct [
     :plugin_configs,
@@ -38,12 +39,15 @@ defmodule Raxol.Plugins.PluginConfig do
         case Jason.decode(content) do
           {:ok, decoded} ->
             {:ok, struct(__MODULE__, decoded)}
+
           {:error, reason} ->
             {:error, "Failed to decode plugin configuration: #{reason}"}
         end
+
       {:error, :enoent} ->
         # Config file doesn't exist, return default config
         {:ok, new()}
+
       {:error, reason} ->
         {:error, "Failed to read plugin configuration: #{reason}"}
     end
@@ -62,9 +66,13 @@ defmodule Raxol.Plugins.PluginConfig do
     case Jason.encode(config) do
       {:ok, encoded} ->
         case File.write(config_path, encoded) do
-          :ok -> {:ok, config}
-          {:error, reason} -> {:error, "Failed to write plugin configuration: #{reason}"}
+          :ok ->
+            {:ok, config}
+
+          {:error, reason} ->
+            {:error, "Failed to write plugin configuration: #{reason}"}
         end
+
       {:error, reason} ->
         {:error, "Failed to encode plugin configuration: #{reason}"}
     end
@@ -73,14 +81,15 @@ defmodule Raxol.Plugins.PluginConfig do
   @doc """
   Gets the configuration for a specific plugin.
   """
-  def get_plugin_config(%__MODULE__{} = config, plugin_name) when is_binary(plugin_name) do
+  def get_plugin_config(%__MODULE__{} = config, plugin_name)
+      when is_binary(plugin_name) do
     Map.get(config.plugin_configs, plugin_name, %{})
   end
 
   @doc """
   Updates the configuration for a specific plugin.
   """
-  def update_plugin_config(%__MODULE__{} = config, plugin_name, plugin_config) 
+  def update_plugin_config(%__MODULE__{} = config, plugin_name, plugin_config)
       when is_binary(plugin_name) and is_map(plugin_config) do
     updated_configs = Map.put(config.plugin_configs, plugin_name, plugin_config)
     %{config | plugin_configs: updated_configs}
@@ -89,14 +98,16 @@ defmodule Raxol.Plugins.PluginConfig do
   @doc """
   Checks if a plugin is enabled.
   """
-  def is_plugin_enabled?(%__MODULE__{} = config, plugin_name) when is_binary(plugin_name) do
+  def is_plugin_enabled?(%__MODULE__{} = config, plugin_name)
+      when is_binary(plugin_name) do
     plugin_name in config.enabled_plugins
   end
 
   @doc """
   Enables a plugin.
   """
-  def enable_plugin(%__MODULE__{} = config, plugin_name) when is_binary(plugin_name) do
+  def enable_plugin(%__MODULE__{} = config, plugin_name)
+      when is_binary(plugin_name) do
     if plugin_name in config.enabled_plugins do
       config
     else
@@ -107,8 +118,12 @@ defmodule Raxol.Plugins.PluginConfig do
   @doc """
   Disables a plugin.
   """
-  def disable_plugin(%__MODULE__{} = config, plugin_name) when is_binary(plugin_name) do
-    %{config | enabled_plugins: List.delete(config.enabled_plugins, plugin_name)}
+  def disable_plugin(%__MODULE__{} = config, plugin_name)
+      when is_binary(plugin_name) do
+    %{
+      config
+      | enabled_plugins: List.delete(config.enabled_plugins, plugin_name)
+    }
   end
 
   # Private functions
@@ -116,4 +131,4 @@ defmodule Raxol.Plugins.PluginConfig do
   defp config_file_path do
     Path.join([System.get_env("HOME"), @config_dir, @config_file])
   end
-end 
+end

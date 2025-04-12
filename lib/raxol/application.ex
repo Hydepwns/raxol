@@ -17,40 +17,55 @@ defmodule Raxol.Application do
 
   @impl true
   def start(_type, _args) do
-    children = [
-      # Start the Terminal Registry first (takes no args)
-      Raxol.Terminal.Registry,
-      # Start the database if enabled and not in test environment
-      if Application.get_env(:raxol, :database_enabled, true) && @compile_env != :test do
-        {Raxol.Repo, []}
-      end,
-      # Start user preferences
-      {UserPreferences, []},
-      # Start the ANSI processor
-      {Raxol.Terminal.ANSI.Processor, %{}},
-      # Start the buffer manager
-      {Raxol.Terminal.Buffer.Manager, %{}},
-      # Initialize color system
-      {Task, &init_color_system/0},
-      # Start hot-reload server
-      {HotReload, []}
-    ]
-    |> Enum.reject(&is_nil/1)
-    # Add Raxol.Runtime to the children list, passing the default App module
-    runtime_child = {Raxol.Runtime, [app_module: Raxol.App]}
+    children =
+      [
+        # Start the Terminal Registry first (takes no args)
+        Raxol.Terminal.Registry,
+        # Start the database if enabled and not in test environment
+        if Application.get_env(:raxol, :database_enabled, true) &&
+             @compile_env != :test do
+          {Raxol.Repo, []}
+        end,
+        # Start user preferences
+        {UserPreferences, []},
+        # Start the ANSI processor
+        {Raxol.Terminal.ANSI.Processor, %{}},
+        # Start the buffer manager
+        {Raxol.Terminal.Buffer.Manager, %{}},
+        # Initialize color system
+        {Task, &init_color_system/0},
+        # Start hot-reload server
+        {HotReload, []}
+      ]
+      |> Enum.reject(&is_nil/1)
+
+    # Add Raxol.Runtime to the children list, passing the desired App module
+    runtime_child = {Raxol.Runtime, [app_module: Raxol.MyApp]}
     children = children ++ [runtime_child]
 
     # Transform children into full specs if needed
-    children = Enum.map(children, fn
-      # Special case for Repo (which is a supervisor)
-      {Raxol.Repo, _} = _child ->
-         %{id: Raxol.Repo, start: {Raxol.Repo, :start_link, [[]]}, restart: :permanent, type: :supervisor}
-      # Explicitly define how to start the Registry (using start_link/0)
-      Raxol.Terminal.Registry ->
-         %{id: Raxol.Terminal.Registry, start: {Raxol.Terminal.Registry, :start_link, []}}
-      # Pass other children (like `{Raxol.Runtime, [...]}`) through unchanged (Supervisor handles them)
-      child -> child
-    end)
+    children =
+      Enum.map(children, fn
+        # Special case for Repo (which is a supervisor)
+        {Raxol.Repo, _} = _child ->
+          %{
+            id: Raxol.Repo,
+            start: {Raxol.Repo, :start_link, [[]]},
+            restart: :permanent,
+            type: :supervisor
+          }
+
+        # Explicitly define how to start the Registry (using start_link/0)
+        Raxol.Terminal.Registry ->
+          %{
+            id: Raxol.Terminal.Registry,
+            start: {Raxol.Terminal.Registry, :start_link, []}
+          }
+
+        # Pass other children (like `{Raxol.Runtime, [...]}`) through unchanged (Supervisor handles them)
+        child ->
+          child
+      end)
 
     opts = [strategy: :one_for_one, name: Raxol.Supervisor]
     Supervisor.start_link(children, opts)
@@ -116,6 +131,7 @@ defmodule Raxol.Application do
     case validate_colors(theme, background) do
       {:ok, _} ->
         theme
+
       {:error, _} ->
         # Adjust colors to meet accessibility requirements
         adjusted_theme = adjust_theme_colors(theme, background)
@@ -207,9 +223,14 @@ defmodule Raxol.Application do
     b = color.b / 255
 
     # Apply gamma correction
-    r = if r <= 0.03928, do: r / 12.92, else: :math.pow((r + 0.055) / 1.055, 2.4)
-    g = if g <= 0.03928, do: g / 12.92, else: :math.pow((g + 0.055) / 1.055, 2.4)
-    b = if b <= 0.03928, do: b / 12.92, else: :math.pow((b + 0.055) / 1.055, 2.4)
+    r =
+      if r <= 0.03928, do: r / 12.92, else: :math.pow((r + 0.055) / 1.055, 2.4)
+
+    g =
+      if g <= 0.03928, do: g / 12.92, else: :math.pow((g + 0.055) / 1.055, 2.4)
+
+    b =
+      if b <= 0.03928, do: b / 12.92, else: :math.pow((b + 0.055) / 1.055, 2.4)
 
     # Calculate relative luminance
     0.2126 * r + 0.7152 * g + 0.0722 * b
@@ -220,10 +241,11 @@ defmodule Raxol.Application do
     ui_colors = Theme.get_all_ui_colors(theme)
 
     # Adjust each color for better contrast
-    adjusted_colors = Enum.map(ui_colors, fn {element, color} ->
-      adjusted_color = adjust_color_for_contrast(color, background)
-      {element, adjusted_color}
-    end)
+    adjusted_colors =
+      Enum.map(ui_colors, fn {element, color} ->
+        adjusted_color = adjust_color_for_contrast(color, background)
+        {element, adjusted_color}
+      end)
 
     # Create new theme with adjusted colors
     Theme.update_ui_colors(theme, Map.new(adjusted_colors))

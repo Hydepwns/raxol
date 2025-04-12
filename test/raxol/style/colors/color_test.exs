@@ -248,4 +248,4 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert mixed.b == 255
     end
   end
-end 
+end

@@ -82,9 +82,10 @@ defmodule Raxol.Web.Session.Monitor do
 
   defp update_stats(stats, sessions) do
     # Calculate session durations
-    durations = Enum.map(sessions, fn session ->
-      DateTime.diff(DateTime.utc_now(), session.created_at)
-    end)
+    durations =
+      Enum.map(sessions, fn session ->
+        DateTime.diff(DateTime.utc_now(), session.created_at)
+      end)
 
     # Update stats
     %{
@@ -101,10 +102,11 @@ defmodule Raxol.Web.Session.Monitor do
     sessions
     |> Enum.group_by(& &1.user_id)
     |> Map.new(fn {user_id, user_sessions} ->
-      {user_id, %{
-        session_count: length(user_sessions),
-        last_active: Enum.max_by(user_sessions, & &1.last_active).last_active
-      }}
+      {user_id,
+       %{
+         session_count: length(user_sessions),
+         last_active: Enum.max_by(user_sessions, & &1.last_active).last_active
+       }}
     end)
   end
 
@@ -120,7 +122,12 @@ defmodule Raxol.Web.Session.Monitor do
     # Report session metrics
     Monitoring.record_metric("sessions.active", stats.active_sessions)
     Monitoring.record_metric("sessions.total", stats.total_sessions)
-    Monitoring.record_metric("sessions.avg_duration", stats.avg_session_duration)
+
+    Monitoring.record_metric(
+      "sessions.avg_duration",
+      stats.avg_session_duration
+    )
+
     Monitoring.record_metric("sessions.peak_concurrent", stats.peak_concurrent)
   end
 

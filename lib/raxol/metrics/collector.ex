@@ -5,7 +5,7 @@ defmodule Raxol.Metrics.Collector do
   """
 
   use GenServer
-  
+
   # Client API
 
   def start_link(opts \\ []) do
@@ -33,22 +33,25 @@ defmodule Raxol.Metrics.Collector do
 
   @impl true
   def init(_opts) do
-    {:ok, %{
-      timings: %{},
-      throughput: [],
-      memory_usage: [],
-      start_time: System.system_time(:second)
-    }}
+    {:ok,
+     %{
+       timings: %{},
+       throughput: [],
+       memory_usage: [],
+       start_time: System.system_time(:second)
+     }}
   end
 
   @impl true
   def handle_cast({:record_timing, event_type, time}, state) do
-    timings = Map.update(
-      state.timings,
-      event_type,
-      [time],
-      &[time | &1]
-    )
+    timings =
+      Map.update(
+        state.timings,
+        event_type,
+        [time],
+        &[time | &1]
+      )
+
     {:noreply, %{state | timings: timings}}
   end
 
@@ -63,7 +66,11 @@ defmodule Raxol.Metrics.Collector do
   def handle_cast({:record_memory, memory}, state) do
     current_time = System.system_time(:second)
     memory_mb = memory / (1024 * 1024)
-    memory_usage = [{current_time - state.start_time, memory_mb} | state.memory_usage]
+
+    memory_usage = [
+      {current_time - state.start_time, memory_mb} | state.memory_usage
+    ]
+
     {:noreply, %{state | memory_usage: memory_usage}}
   end
 
@@ -74,6 +81,7 @@ defmodule Raxol.Metrics.Collector do
       throughput: Enum.reverse(state.throughput),
       memory_usage: Enum.reverse(state.memory_usage)
     }
+
     {:reply, metrics, state}
   end
-end 
+end

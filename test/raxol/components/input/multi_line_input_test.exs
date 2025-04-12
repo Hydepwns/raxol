@@ -22,7 +22,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
 
     test "initializes with provided values" do
       on_change = fn _ -> nil end
-      
+
       props = %{
         value: "test\ntext",
         placeholder: "Enter text",
@@ -84,7 +84,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
     test "handles scrolling", %{state: state} do
       # Set up state with scroll offset
       state = %{state | scroll_offset: 5}
-      
+
       # Scroll up
       new_state = MultiLineInput.update(:scroll_up, state)
       assert new_state.scroll_offset == 4
@@ -126,7 +126,14 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
 
     test "handles backspace", %{state: state} do
       event = %Event{type: :key, key: "Backspace"}
-      {new_state, _} = MultiLineInput.handle_event(event, %{state | cursor_row: 1, cursor_col: 0})
+
+      {new_state, _} =
+        MultiLineInput.handle_event(event, %{
+          state
+          | cursor_row: 1,
+            cursor_col: 0
+        })
+
       assert new_state.value == "testtext"
       assert new_state.cursor_row == 0
       assert new_state.cursor_col == 4
@@ -134,7 +141,14 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
 
     test "handles delete", %{state: state} do
       event = %Event{type: :key, key: "Delete"}
-      {new_state, _} = MultiLineInput.handle_event(event, %{state | cursor_row: 0, cursor_col: 4})
+
+      {new_state, _} =
+        MultiLineInput.handle_event(event, %{
+          state
+          | cursor_row: 0,
+            cursor_col: 4
+        })
+
       assert new_state.value == "testtext"
       assert new_state.cursor_row == 0
       assert new_state.cursor_col == 4
@@ -143,7 +157,10 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
     test "handles cursor movement", %{state: state} do
       # Up
       event = %Event{type: :key, key: "Up"}
-      {new_state, _} = MultiLineInput.handle_event(event, %{state | cursor_row: 1})
+
+      {new_state, _} =
+        MultiLineInput.handle_event(event, %{state | cursor_row: 1})
+
       assert new_state.cursor_row == 0
 
       # Down
@@ -153,37 +170,62 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
 
       # Left at line start
       event = %Event{type: :key, key: "Left"}
-      {new_state, _} = MultiLineInput.handle_event(event, %{state | cursor_row: 1, cursor_col: 0})
+
+      {new_state, _} =
+        MultiLineInput.handle_event(event, %{
+          state
+          | cursor_row: 1,
+            cursor_col: 0
+        })
+
       assert new_state.cursor_row == 0
       assert new_state.cursor_col == 4
 
       # Right at line end
       event = %Event{type: :key, key: "Right"}
-      {new_state, _} = MultiLineInput.handle_event(event, %{state | cursor_row: 0, cursor_col: 4})
+
+      {new_state, _} =
+        MultiLineInput.handle_event(event, %{
+          state
+          | cursor_row: 0,
+            cursor_col: 4
+        })
+
       assert new_state.cursor_row == 1
       assert new_state.cursor_col == 0
     end
 
     test "handles word movement", %{state: state} do
       state = %{state | value: "hello world\ntest text"}
-      
+
       # Left by word
       event = %Event{type: :key, key: "Left", ctrl?: true}
-      {new_state, _} = MultiLineInput.handle_event(event, %{state | cursor_row: 0, cursor_col: 11})
+
+      {new_state, _} =
+        MultiLineInput.handle_event(event, %{
+          state
+          | cursor_row: 0,
+            cursor_col: 11
+        })
+
       assert new_state.cursor_col == 6
 
       # Right by word
       event = %Event{type: :key, key: "Right", ctrl?: true}
-      {new_state, _} = MultiLineInput.handle_event(event, %{state | cursor_row: 1, cursor_col: 0})
+
+      {new_state, _} =
+        MultiLineInput.handle_event(event, %{
+          state
+          | cursor_row: 1,
+            cursor_col: 0
+        })
+
       assert new_state.cursor_col == 4
     end
 
     test "handles selection deletion", %{state: state} do
-      state = %{state |
-        selection_start: {0, 1},
-        selection_end: {1, 2}
-      }
-      
+      state = %{state | selection_start: {0, 1}, selection_end: {1, 2}}
+
       event = %Event{type: :key, key: "Backspace"}
       {new_state, _} = MultiLineInput.handle_event(event, state)
       assert new_state.value == "txt"
@@ -195,26 +237,32 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
 
     test "calls on_change when text changes", %{state: state} do
       test_pid = self()
-      state = %{state | on_change: fn value -> send(test_pid, {:changed, value}) end}
-      
+
+      state = %{
+        state
+        | on_change: fn value -> send(test_pid, {:changed, value}) end
+      }
+
       event = %Event{type: :key, key: "a"}
       MultiLineInput.handle_event(event, state)
-      
+
       assert_received {:changed, "testa\ntext"}
     end
   end
 
   describe "line wrapping" do
     test "wraps text by character" do
-      state = MultiLineInput.init(%{
-        value: "This is a long line of text",
-        width: 10,
-        wrap: :char
-      })
+      state =
+        MultiLineInput.init(%{
+          value: "This is a long line of text",
+          width: 10,
+          wrap: :char
+        })
 
-      lines = state.value
-      |> String.split("\n")
-      |> Enum.flat_map(&MultiLineInput.wrap_line_by_char(&1, state.width))
+      lines =
+        state.value
+        |> String.split("\n")
+        |> Enum.flat_map(&MultiLineInput.wrap_line_by_char(&1, state.width))
 
       assert length(lines) == 3
       assert Enum.at(lines, 0) == "This is a "
@@ -223,15 +271,17 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
     end
 
     test "wraps text by word" do
-      state = MultiLineInput.init(%{
-        value: "This is a long line of text",
-        width: 10,
-        wrap: :word
-      })
+      state =
+        MultiLineInput.init(%{
+          value: "This is a long line of text",
+          width: 10,
+          wrap: :word
+        })
 
-      lines = state.value
-      |> String.split("\n")
-      |> Enum.flat_map(&MultiLineInput.wrap_line_by_word(&1, state.width))
+      lines =
+        state.value
+        |> String.split("\n")
+        |> Enum.flat_map(&MultiLineInput.wrap_line_by_word(&1, state.width))
 
       assert length(lines) == 4
       assert Enum.at(lines, 0) == "This is a"
@@ -239,4 +289,4 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
       assert Enum.at(lines, 2) == "of text"
     end
   end
-end 
+end

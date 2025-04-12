@@ -112,18 +112,20 @@ defmodule Raxol.Core.Performance.Analyzer do
     # Deduct points for issues
     deductions = [
       # FPS deductions
-      (if metrics.fps < 30, do: 20, else: 0),
-      (if metrics.fps < 45, do: 10, else: 0),
+      if(metrics.fps < 30, do: 20, else: 0),
+      if(metrics.fps < 45, do: 10, else: 0),
 
       # Jank deductions
-      (if metrics.jank_count > 0, do: metrics.jank_count * 5, else: 0),
+      if(metrics.jank_count > 0, do: metrics.jank_count * 5, else: 0),
 
       # Memory usage deductions
-      (if metrics.memory_usage > 1_000_000_000, do: 15, else: 0),  # 1GB
-      (if metrics.memory_usage > 500_000_000, do: 10, else: 0),   # 500MB
+      # 1GB
+      if(metrics.memory_usage > 1_000_000_000, do: 15, else: 0),
+      # 500MB
+      if(metrics.memory_usage > 500_000_000, do: 10, else: 0),
 
       # GC pressure deductions
-      (if Map.get(metrics.gc_stats, :number_of_gcs, 0) > 100, do: 10, else: 0)
+      if(Map.get(metrics.gc_stats, :number_of_gcs, 0) > 100, do: 10, else: 0)
     ]
 
     # Calculate final score
@@ -134,8 +136,15 @@ defmodule Raxol.Core.Performance.Analyzer do
     issues = []
 
     # Check FPS
-    issues = if metrics.fps < 30, do: ["Critical: Low FPS (< 30)" | issues], else: issues
-    issues = if metrics.fps < 45, do: ["Warning: Suboptimal FPS (< 45)" | issues], else: issues
+    issues =
+      if metrics.fps < 30,
+        do: ["Critical: Low FPS (< 30)" | issues],
+        else: issues
+
+    issues =
+      if metrics.fps < 45,
+        do: ["Warning: Suboptimal FPS (< 45)" | issues],
+        else: issues
 
     # Check UI jank
     issues =
@@ -181,7 +190,8 @@ defmodule Raxol.Core.Performance.Analyzer do
           "Consider using virtual scrolling for large lists",
           "Implement component memoization",
           "Review and optimize expensive computations"
-        | suggestions]
+          | suggestions
+        ]
       else
         suggestions
       end
@@ -193,7 +203,8 @@ defmodule Raxol.Core.Performance.Analyzer do
           "Review memory usage patterns",
           "Implement memory-efficient data structures",
           "Consider implementing pagination"
-        | suggestions]
+          | suggestions
+        ]
       else
         suggestions
       end
@@ -205,7 +216,8 @@ defmodule Raxol.Core.Performance.Analyzer do
           "Review object lifecycle management",
           "Implement object pooling where appropriate",
           "Consider using WeakMap/WeakSet for caches"
-        | suggestions]
+          | suggestions
+        ]
       else
         suggestions
       end

@@ -12,11 +12,12 @@ defmodule Raxol.Web.Auth.Manager do
   end
 
   def init(opts) do
-    {:ok, %{
-      sessions: %{},
-      tokens: %{},
-      opts: opts
-    }}
+    {:ok,
+     %{
+       sessions: %{},
+       tokens: %{},
+       opts: opts
+     }}
   end
 
   # Server callbacks
@@ -41,4 +42,4 @@ defmodule Raxol.Web.Auth.Manager do
   def handle_call(:get_sessions, _from, state) do
     {:reply, state.sessions, state}
   end
-end 
+end

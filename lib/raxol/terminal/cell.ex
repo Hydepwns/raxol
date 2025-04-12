@@ -12,9 +12,9 @@ defmodule Raxol.Terminal.Cell do
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @type t :: %__MODULE__{
-    char: String.t(),
-    style: TextFormatting.text_style()
-  }
+          char: String.t(),
+          style: TextFormatting.text_style()
+        }
 
   defstruct [
     :char,
@@ -42,14 +42,16 @@ defmodule Raxol.Terminal.Cell do
   """
   def new() do
     %__MODULE__{
-      char: " ",  # Use a space character for empty cells
+      # Use a space character for empty cells
+      char: " ",
       style: TextFormatting.new()
     }
   end
 
   def new(style) when not is_binary(style) do
     %__MODULE__{
-      char: " ",  # Use a space character for empty cells
+      # Use a space character for empty cells
+      char: " ",
       style: style
     }
   end
@@ -180,7 +182,8 @@ defmodule Raxol.Terminal.Cell do
       iex> Cell.double_height?(cell)
       false
   """
-  def double_height?(%__MODULE__{style: style}), do: style.double_height != :none
+  def double_height?(%__MODULE__{style: style}),
+    do: style.double_height != :none
 
   @doc """
   Checks if a cell is empty.

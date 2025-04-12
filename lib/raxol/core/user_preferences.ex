@@ -39,6 +39,7 @@ defmodule Raxol.Core.UserPreferences do
     case Persistence.load_user_preferences() do
       {:ok, preferences} ->
         {:ok, preferences}
+
       {:error, _} ->
         # Return default preferences if file doesn't exist
         {:ok, %{"theme" => "Default"}}
@@ -73,6 +74,7 @@ defmodule Raxol.Core.UserPreferences do
   - `:ok` on success
   - `{:error, reason}` on failure
   """
+  @spec set(any(), any()) :: :ok
   def set(key, value) do
     GenServer.call(__MODULE__, {:set, key, value})
   end
@@ -97,6 +99,7 @@ defmodule Raxol.Core.UserPreferences do
     case Persistence.load_user_preferences() do
       {:ok, preferences} ->
         {:ok, preferences}
+
       {:error, _} ->
         # Return default preferences if file doesn't exist
         {:ok, %{"theme" => "Default"}}

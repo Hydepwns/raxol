@@ -44,9 +44,11 @@ defmodule Raxol.Terminal.CharacterHandling do
   Gets the width of a character in terminal cells.
   Returns 1 for narrow characters, 2 for wide characters.
   """
-  @spec get_char_width(char()) :: 1 | 2
-  def get_char_width(char) do
-    if is_wide_char?(char), do: 2, else: 1
+  @spec get_char_width(String.t()) :: 1 | 2
+  def get_char_width(char_str) when is_binary(char_str) do
+    # Check the first codepoint of the grapheme
+    codepoint = String.first(char_str)
+    if is_wide_char?(codepoint), do: 2, else: 1
   end
 
   @doc """
@@ -77,17 +79,27 @@ defmodule Raxol.Terminal.CharacterHandling do
     cond do
       is_combining_char?(char) -> :COMBINING
       # Right-to-left scripts
-      char >= 0x0590 and char <= 0x05FF -> :RTL  # Hebrew
-      char >= 0x0600 and char <= 0x06FF -> :RTL  # Arabic
-      char >= 0x0750 and char <= 0x077F -> :RTL  # Arabic Supplement
-      char >= 0x08A0 and char <= 0x08FF -> :RTL  # Arabic Extended-A
-      char >= 0xFB50 and char <= 0xFDFF -> :RTL  # Arabic Presentation Forms-A
-      char >= 0xFE70 and char <= 0xFEFF -> :RTL  # Arabic Presentation Forms-B
+      # Hebrew
+      char >= 0x0590 and char <= 0x05FF -> :RTL
+      # Arabic
+      char >= 0x0600 and char <= 0x06FF -> :RTL
+      # Arabic Supplement
+      char >= 0x0750 and char <= 0x077F -> :RTL
+      # Arabic Extended-A
+      char >= 0x08A0 and char <= 0x08FF -> :RTL
+      # Arabic Presentation Forms-A
+      char >= 0xFB50 and char <= 0xFDFF -> :RTL
+      # Arabic Presentation Forms-B
+      char >= 0xFE70 and char <= 0xFEFF -> :RTL
       # Left-to-right scripts (most Latin-based scripts)
-      char >= 0x0000 and char <= 0x007F -> :LTR  # Basic Latin
-      char >= 0x0080 and char <= 0x00FF -> :LTR  # Latin-1 Supplement
-      char >= 0x0100 and char <= 0x017F -> :LTR  # Latin Extended-A
-      char >= 0x0180 and char <= 0x024F -> :LTR  # Latin Extended-B
+      # Basic Latin
+      char >= 0x0000 and char <= 0x007F -> :LTR
+      # Latin-1 Supplement
+      char >= 0x0080 and char <= 0x00FF -> :LTR
+      # Latin Extended-A
+      char >= 0x0100 and char <= 0x017F -> :LTR
+      # Latin Extended-B
+      char >= 0x0180 and char <= 0x024F -> :LTR
       # Neutral characters (spaces, punctuation, etc.)
       true -> :NEUTRAL
     end
@@ -104,9 +116,11 @@ defmodule Raxol.Terminal.CharacterHandling do
     |> Enum.filter(&(&1 != ""))
     |> Enum.reduce([], fn char, acc ->
       bidi_type = get_bidi_type(String.first(char))
+
       case acc do
         [{type, segment} | rest] when type == bidi_type ->
           [{type, segment <> char} | rest]
+
         _ ->
           [{bidi_type, char} | acc]
       end
@@ -122,14 +136,20 @@ defmodule Raxol.Terminal.CharacterHandling do
     string
     |> String.graphemes()
     |> Enum.filter(&(&1 != ""))
-    |> Enum.map(&get_char_width(String.first(&1)))
+    |> Enum.map(fn grapheme ->
+         case String.first(grapheme) do
+           nil -> 0 # Grapheme was unexpectedly empty, treat as width 0.
+           first_char -> get_char_width(first_char)
+         end
+       end)
     |> Enum.sum()
   end
 
   @doc """
   Splits a string at a given width, respecting wide characters.
   """
-  @spec split_at_width(String.t(), non_neg_integer()) :: {String.t(), String.t()}
+  @spec split_at_width(String.t(), non_neg_integer()) ::
+          {String.t(), String.t()}
   def split_at_width(string, width) do
     {before_text, remaining} = do_split_at_width(string, width, 0, "")
     {before_text, remaining}
@@ -139,10 +159,21 @@ defmodule Raxol.Terminal.CharacterHandling do
     {acc, ""}
   end
 
-  defp do_split_at_width(<<char::utf8, rest::binary>>, width, current_width, acc) do
+  defp do_split_at_width(
+         <<char::utf8, rest::binary>>,
+         width,
+         current_width,
+         acc
+       ) do
     char_width = get_char_width(char)
+
     if current_width + char_width <= width do
-      do_split_at_width(rest, width, current_width + char_width, acc <> <<char::utf8>>)
+      do_split_at_width(
+        rest,
+        width,
+        current_width + char_width,
+        acc <> <<char::utf8>>
+      )
     else
       {acc, <<char::utf8, rest::binary>>}
     end

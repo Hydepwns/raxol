@@ -119,7 +119,8 @@ defmodule Raxol.Terminal.Cursor.Style do
       iex> cursor.blink_rate
       1000
   """
-  def set_blink_rate(%Manager{} = cursor, rate) when is_integer(rate) and rate > 0 do
+  def set_blink_rate(%Manager{} = cursor, rate)
+      when is_integer(rate) and rate > 0 do
     %{cursor | blink_rate: rate}
   end
 

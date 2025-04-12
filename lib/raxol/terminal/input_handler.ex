@@ -14,13 +14,13 @@ defmodule Raxol.Terminal.InputHandler do
   # alias Raxol.Core.Events.Event # Unused
 
   @type t :: %__MODULE__{
-    buffer: String.t(),
-    cursor_position: non_neg_integer(),
-    clipboard: Clipboard.t(),
-    tab_completion: map(),
-    tab_completion_index: non_neg_integer(),
-    tab_completion_matches: list(String.t())
-  }
+          buffer: String.t(),
+          cursor_position: non_neg_integer(),
+          clipboard: Clipboard.t(),
+          tab_completion: map(),
+          tab_completion_index: non_neg_integer(),
+          tab_completion_matches: list(String.t())
+        }
 
   defstruct [
     :buffer,
@@ -56,11 +56,14 @@ defmodule Raxol.Terminal.InputHandler do
         new_buffer = insert_text(handler.buffer, handler.cursor_position, text)
         new_position = handler.cursor_position + String.length(text)
 
-        {:ok, %{handler |
-          buffer: new_buffer,
-          cursor_position: new_position,
-          clipboard: new_clipboard
-        }}
+        {:ok,
+         %{
+           handler
+           | buffer: new_buffer,
+             cursor_position: new_position,
+             clipboard: new_clipboard
+         }}
+
       error ->
         error
     end
@@ -74,6 +77,7 @@ defmodule Raxol.Terminal.InputHandler do
     case Clipboard.copy(handler.clipboard, handler.buffer) do
       {:ok, new_clipboard} ->
         {:ok, %{handler | clipboard: new_clipboard}}
+
       error ->
         error
     end
@@ -84,14 +88,17 @@ defmodule Raxol.Terminal.InputHandler do
   """
   @spec handle_cut(t()) :: {:ok, t()} | {:error, String.t()}
   def handle_cut(%__MODULE__{} = handler) do
-    with {:ok, new_clipboard} <- Clipboard.copy(handler.clipboard, handler.buffer),
+    with {:ok, new_clipboard} <-
+           Clipboard.copy(handler.clipboard, handler.buffer),
          new_buffer = "",
          new_position = 0 do
-      {:ok, %{handler |
-        buffer: new_buffer,
-        cursor_position: new_position,
-        clipboard: new_clipboard
-      }}
+      {:ok,
+       %{
+         handler
+         | buffer: new_buffer,
+           cursor_position: new_position,
+           clipboard: new_clipboard
+       }}
     end
   end
 

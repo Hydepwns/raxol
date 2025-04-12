@@ -69,4 +69,4 @@ config :raxol, :production,
   enable_metrics: true,
   enable_logging: true,
   enable_error_reporting: true,
-  enable_performance_monitoring: true 
+  enable_performance_monitoring: true

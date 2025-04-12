@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Renderer.Views.Chart do
   @moduledoc """
   Chart view component for data visualization.
-  
+
   Supports:
   * Bar charts (vertical and horizontal)
   * Line charts
@@ -16,24 +16,24 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   @type chart_type :: :bar | :line | :sparkline
   @type orientation :: :vertical | :horizontal
   @type series :: %{
-    name: String.t(),
-    data: [number()],
-    color: View.color()
-  }
+          name: String.t(),
+          data: [number()],
+          color: View.color()
+        }
 
   @type options :: [
-    type: chart_type(),
-    orientation: orientation(),
-    series: [series()],
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    show_axes: boolean(),
-    show_labels: boolean(),
-    show_legend: boolean(),
-    min: number() | :auto,
-    max: number() | :auto,
-    style: View.style()
-  ]
+          type: chart_type(),
+          orientation: orientation(),
+          series: [series()],
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          show_axes: boolean(),
+          show_labels: boolean(),
+          show_legend: boolean(),
+          min: number() | :auto,
+          max: number() | :auto,
+          style: View.style()
+        ]
 
   @bar_chars ["▁", "▂", "▃", "▄", "▅", "▆", "▇", "█"]
 
@@ -53,34 +53,38 @@ defmodule Raxol.Core.Renderer.Views.Chart do
 
     # Calculate data range
     {min, max} = calculate_range(series, opts[:min], opts[:max])
-    
+
     # Create chart content based on type
-    content = case type do
-      :bar -> create_bar_chart(series, min, max, width, height, orientation)
-      :line -> create_line_chart(series, min, max, width, height)
-      :sparkline -> create_sparkline(series, min, max, width)
-    end
+    content =
+      case type do
+        :bar -> create_bar_chart(series, min, max, width, height, orientation)
+        :line -> create_line_chart(series, min, max, width, height)
+        :sparkline -> create_sparkline(series, min, max, width)
+      end
 
     # Add axes if needed
-    content = if show_axes do
-      add_axes(content, min, max, width, height, orientation)
-    else
-      content
-    end
+    content =
+      if show_axes do
+        add_axes(content, min, max, width, height, orientation)
+      else
+        content
+      end
 
     # Add labels if needed
-    content = if show_labels do
-      add_labels(content, series, width, height)
-    else
-      content
-    end
+    content =
+      if show_labels do
+        add_labels(content, series, width, height)
+      else
+        content
+      end
 
     # Add legend if needed
-    content = if show_legend do
-      add_legend(content, series)
-    else
-      content
-    end
+    content =
+      if show_legend do
+        add_legend(content, series)
+      else
+        content
+      end
 
     View.box([style: style], do: content)
   end
@@ -89,6 +93,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
 
   defp calculate_range(series, min, max) do
     data = Enum.flat_map(series, & &1.data)
+
     {
       min || Enum.min(data),
       max || Enum.max(data)
@@ -104,56 +109,60 @@ defmodule Raxol.Core.Renderer.Views.Chart do
 
   defp create_vertical_bars(series, min, max, width, height) do
     bar_width = div(width, Enum.sum(Enum.map(series, &length(&1.data))))
-    
-    bars = series
-    |> Enum.flat_map(fn %{data: data, color: color} ->
-      data
-      |> Enum.map(fn value ->
-        bar_height = scale_value(value, min, max, 1, height)
-        chars = create_vertical_bar(bar_height, height)
-        
-        View.text(chars,
-          size: {bar_width, height},
-          fg: color
-        )
+
+    bars =
+      series
+      |> Enum.flat_map(fn %{data: data, color: color} ->
+        data
+        |> Enum.map(fn value ->
+          bar_height = scale_value(value, min, max, 1, height)
+          chars = create_vertical_bar(bar_height, height)
+
+          View.text(chars,
+            size: {bar_width, height},
+            fg: color
+          )
+        end)
       end)
-    end)
 
     View.flex(direction: :row, children: bars)
   end
 
   defp create_horizontal_bars(series, min, max, width, height) do
     bar_height = div(height, Enum.sum(Enum.map(series, &length(&1.data))))
-    
-    bars = series
-    |> Enum.flat_map(fn %{data: data, color: color} ->
-      data
-      |> Enum.map(fn value ->
-        bar_width = scale_value(value, min, max, 1, width)
-        chars = create_horizontal_bar(bar_width, width)
-        
-        View.text(chars,
-          size: {width, bar_height},
-          fg: color
-        )
+
+    bars =
+      series
+      |> Enum.flat_map(fn %{data: data, color: color} ->
+        data
+        |> Enum.map(fn value ->
+          bar_width = scale_value(value, min, max, 1, width)
+          chars = create_horizontal_bar(bar_width, width)
+
+          View.text(chars,
+            size: {width, bar_height},
+            fg: color
+          )
+        end)
       end)
-    end)
 
     View.flex(direction: :column, children: bars)
   end
 
   defp create_line_chart(series, min, max, width, height) do
-    lines = series
-    |> Enum.map(fn %{data: data, color: color} ->
-      points = data
-      |> Enum.with_index()
-      |> Enum.map(fn {value, x} ->
-        y = scale_value(value, min, max, 0, height - 1)
-        {x, y}
+    lines =
+      series
+      |> Enum.map(fn %{data: data, color: color} ->
+        points =
+          data
+          |> Enum.with_index()
+          |> Enum.map(fn {value, x} ->
+            y = scale_value(value, min, max, 0, height - 1)
+            {x, y}
+          end)
+
+        create_line(points, width, height, color)
       end)
-      
-      create_line(points, width, height, color)
-    end)
 
     View.box(children: lines)
   end
@@ -162,7 +171,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     %{data: data, color: color} = series
     values = Enum.map(data, &scale_value(&1, min, max, 0, 7))
     chars = Enum.map(values, &Enum.at(@bar_chars, floor(&1)))
-    
+
     View.text(Enum.join(chars),
       size: {width, 1},
       fg: color
@@ -172,49 +181,57 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   defp create_vertical_bar(height, total_height) do
     full = div(height, 1)
     remainder = height - full
-    
+
     full_blocks = String.duplicate("█", full)
-    partial_block = if remainder > 0 do
-      index = floor(remainder * 8)
-      Enum.at(@bar_chars, index)
-    else
-      ""
-    end
+
+    partial_block =
+      if remainder > 0 do
+        index = floor(remainder * 8)
+        Enum.at(@bar_chars, index)
+      else
+        ""
+      end
+
     padding = String.duplicate(" ", total_height - full - 1)
-    
+
     padding <> partial_block <> full_blocks
   end
 
   defp create_horizontal_bar(width, total_width) do
     full = div(width, 1)
     remainder = width - full
-    
+
     full_blocks = String.duplicate("█", full)
-    partial_block = if remainder > 0 do
-      index = floor(remainder * 8)
-      Enum.at(@bar_chars, index)
-    else
-      ""
-    end
+
+    partial_block =
+      if remainder > 0 do
+        index = floor(remainder * 8)
+        Enum.at(@bar_chars, index)
+      else
+        ""
+      end
+
     padding = String.duplicate(" ", total_width - full - 1)
-    
+
     full_blocks <> partial_block <> padding
   end
 
   defp create_line(points, width, height, color) do
     # Create a blank canvas
-    canvas = for _y <- 0..(height-1) do
-      for _x <- 0..(width-1) do
-        " "
+    canvas =
+      for _y <- 0..(height - 1) do
+        for _x <- 0..(width - 1) do
+          " "
+        end
       end
-    end
-    
+
     # Draw lines between points
-    canvas = Enum.chunk_every(points, 2, 1, :discard)
-    |> Enum.reduce(canvas, fn [{x1, y1}, {x2, y2}], acc ->
-      draw_line(acc, {x1, y1}, {x2, y2})
-    end)
-    
+    canvas =
+      Enum.chunk_every(points, 2, 1, :discard)
+      |> Enum.reduce(canvas, fn [{x1, y1}, {x2, y2}], acc ->
+        draw_line(acc, {x1, y1}, {x2, y2})
+      end)
+
     # Convert to view cells
     canvas
     |> Enum.with_index()
@@ -252,32 +269,36 @@ defmodule Raxol.Core.Renderer.Views.Chart do
 
   defp scale_value(value, min, max, out_min, out_max) do
     ratio = (value - min) / (max - min)
-    out_min + (ratio * (out_max - out_min))
+    out_min + ratio * (out_max - out_min)
   end
 
   defp add_axes(content, min, max, width, height, _orientation) do
     y_axis = create_y_axis(min, max, height)
     x_axis = create_x_axis(width)
-    
-    View.box(children: [
-      View.box([
-        children: [
-          y_axis,
-          content
-        ]
-      ]),
-      x_axis
-    ])
+
+    View.box(
+      children: [
+        View.box(
+          children: [
+            y_axis,
+            content
+          ]
+        ),
+        x_axis
+      ]
+    )
   end
 
   defp create_y_axis(min, max, height) do
-    labels = for i <- 0..(height-1) do
-      value = min + (i * ((max - min) / (height - 1)))
-      View.text(
-        "#{Float.round(value, 1)} │",
-        position: {0, height - i - 1}
-      )
-    end
+    labels =
+      for i <- 0..(height - 1) do
+        value = min + i * ((max - min) / (height - 1))
+
+        View.text(
+          "#{Float.round(value, 1)} │",
+          position: {0, height - i - 1}
+        )
+      end
 
     View.box(children: labels)
   end
@@ -292,21 +313,26 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   defp add_legend(content, series) do
-    legend_items = series
-    |> Enum.map(fn %{name: name, color: color} ->
-      View.flex(direction: :row,
-        children: [
-          View.text("█ ", fg: color),
-          View.text(name)
-        ]
-      )
-    end)
+    legend_items =
+      series
+      |> Enum.map(fn %{name: name, color: color} ->
+        View.flex(
+          direction: :row,
+          children: [
+            View.text("█ ", fg: color),
+            View.text(name)
+          ]
+        )
+      end)
 
-    View.box(children: [
-      content,
-      View.flex(direction: :column,
-        children: legend_items
-      )
-    ])
+    View.box(
+      children: [
+        content,
+        View.flex(
+          direction: :column,
+          children: legend_items
+        )
+      ]
+    )
   end
-end 
+end

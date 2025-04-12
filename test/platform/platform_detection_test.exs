@@ -38,13 +38,16 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
 
       # Common environment variables
       assert Map.has_key?(env_vars, "PATH")
-      assert Map.has_key?(env_vars, "HOME") || Map.has_key?(env_vars, "USERPROFILE")
+
+      assert Map.has_key?(env_vars, "HOME") ||
+               Map.has_key?(env_vars, "USERPROFILE")
 
       # Platform-specific environment variables
       case Platform.get_current_platform() do
         :windows ->
           assert Map.has_key?(env_vars, "USERPROFILE")
           assert Map.has_key?(env_vars, "TEMP")
+
         _ ->
           assert Map.has_key?(env_vars, "HOME")
           assert Map.has_key?(env_vars, "USER")
@@ -65,9 +68,11 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
         :windows ->
           assert Map.has_key?(capabilities, :windows_specific)
           assert Map.has_key?(capabilities.windows_specific, :registry)
+
         :macos ->
           assert Map.has_key?(capabilities, :macos_specific)
           assert Map.has_key?(capabilities.macos_specific, :metal)
+
         :linux ->
           assert Map.has_key?(capabilities, :linux_specific)
           assert Map.has_key?(capabilities.linux_specific, :systemd)
@@ -93,7 +98,8 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
     end
 
     test "detects terminal capabilities" do
-      terminal_features = Platform.get_platform_info().capabilities.terminal_features
+      terminal_features =
+        Platform.get_platform_info().capabilities.terminal_features
 
       assert Map.has_key?(terminal_features, :colors)
       assert Map.has_key?(terminal_features, :unicode)

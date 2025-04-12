@@ -23,11 +23,13 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
 
     test "can add multiple attributes" do
       style = TextFormatting.new()
-      style = style
+
+      style =
+        style
         |> TextFormatting.set_attribute(:bold)
         |> TextFormatting.set_attribute(:italic)
         |> TextFormatting.set_attribute(:underline)
-      
+
       assert MapSet.member?(style.attributes, :bold)
       assert MapSet.member?(style.attributes, :italic)
       assert MapSet.member?(style.attributes, :underline)
@@ -37,10 +39,12 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
   describe "remove_attribute/2" do
     test "removes a text attribute from the style" do
       style = TextFormatting.new()
-      style = style
+
+      style =
+        style
         |> TextFormatting.set_attribute(:bold)
         |> TextFormatting.remove_attribute(:bold)
-      
+
       refute MapSet.member?(style.attributes, :bold)
     end
   end
@@ -54,10 +58,12 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
 
     test "can add multiple decorations" do
       style = TextFormatting.new()
-      style = style
+
+      style =
+        style
         |> TextFormatting.set_decoration(:underline)
         |> TextFormatting.set_decoration(:overline)
-      
+
       assert MapSet.member?(style.decorations, :underline)
       assert MapSet.member?(style.decorations, :overline)
     end
@@ -66,10 +72,12 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
   describe "remove_decoration/2" do
     test "removes a text decoration from the style" do
       style = TextFormatting.new()
-      style = style
+
+      style =
+        style
         |> TextFormatting.set_decoration(:underline)
         |> TextFormatting.remove_decoration(:underline)
-      
+
       refute MapSet.member?(style.decorations, :underline)
     end
   end
@@ -111,9 +119,12 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
 
     test "disables double-width mode" do
       style = TextFormatting.new()
-      style = style
+
+      style =
+        style
         |> TextFormatting.set_double_width(true)
         |> TextFormatting.set_double_width(false)
+
       assert style.double_width == false
     end
   end
@@ -127,9 +138,12 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
 
     test "disables double-height mode" do
       style = TextFormatting.new()
-      style = style
+
+      style =
+        style
         |> TextFormatting.set_double_height(true)
         |> TextFormatting.set_double_height(false)
+
       assert style.double_height == false
     end
   end
@@ -137,7 +151,9 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
   describe "reset/1" do
     test "resets all formatting to default values" do
       style = TextFormatting.new()
-      style = style
+
+      style =
+        style
         |> TextFormatting.set_attribute(:bold)
         |> TextFormatting.set_decoration(:underline)
         |> TextFormatting.set_foreground(:red)
@@ -145,7 +161,7 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
         |> TextFormatting.set_double_width(true)
         |> TextFormatting.set_double_height(true)
         |> TextFormatting.reset()
-      
+
       assert style.foreground == :default
       assert style.background == :default
       assert MapSet.size(style.attributes) == 0
@@ -157,22 +173,24 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
 
   describe "merge/2" do
     test "merges two styles with second style taking precedence" do
-      style1 = TextFormatting.new()
+      style1 =
+        TextFormatting.new()
         |> TextFormatting.set_attribute(:bold)
         |> TextFormatting.set_foreground(:red)
         |> TextFormatting.set_double_width(true)
-      
-      style2 = TextFormatting.new()
+
+      style2 =
+        TextFormatting.new()
         |> TextFormatting.set_attribute(:italic)
         |> TextFormatting.set_foreground(:blue)
         |> TextFormatting.set_double_width(false)
-      
+
       merged = TextFormatting.merge(style1, style2)
-      
+
       assert MapSet.member?(merged.attributes, :bold)
       assert MapSet.member?(merged.attributes, :italic)
       assert merged.foreground == :blue
       assert merged.double_width == false
     end
   end
-end 
+end

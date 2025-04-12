@@ -12,7 +12,10 @@ defmodule Raxol.Plugins.PluginTest do
 
     test "loads a plugin" do
       manager = PluginManager.new()
-      {:ok, updated_manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
+
+      {:ok, updated_manager} =
+        PluginManager.load_plugin(manager, HyperlinkPlugin)
+
       assert length(Map.keys(updated_manager.plugins)) == 1
       assert Map.has_key?(updated_manager.plugins, "hyperlink")
     end
@@ -50,7 +53,9 @@ defmodule Raxol.Plugins.PluginTest do
     test "processes mouse events through plugins" do
       manager = PluginManager.new()
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
-      {:ok, _manager} = PluginManager.process_mouse(manager, {:click, 1, 10, 10})
+
+      {:ok, _manager} =
+        PluginManager.process_mouse(manager, {:click, 1, 10, 10})
     end
   end
 
@@ -70,4 +75,4 @@ defmodule Raxol.Plugins.PluginTest do
       # since it involves terminal escape sequences
     end
   end
-end 
+end

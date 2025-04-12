@@ -80,7 +80,12 @@ defmodule Raxol.Component do
       def unmount(state), do: state
 
       # Allow overriding
-      defoverridable init: 1, update: 2, render: 1, handle_event: 2, mount: 1, unmount: 1
+      defoverridable init: 1,
+                     update: 2,
+                     render: 1,
+                     handle_event: 2,
+                     mount: 1,
+                     unmount: 1
 
       # Helper functions available to all components
       def component_id, do: inspect(__MODULE__)

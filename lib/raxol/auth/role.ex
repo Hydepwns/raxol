@@ -40,4 +40,4 @@ defmodule Raxol.Auth.Role do
     |> changeset(attrs)
     |> put_change(:is_system, true)
   end
-end 
+end

@@ -88,4 +88,4 @@ defmodule RaxolWeb.AccessibilityComponent do
   def handle_event("toggle_font_size", _params, socket) do
     {:noreply, push_event(socket, "toggle_font_size", %{})}
   end
-end 
+end

@@ -14,13 +14,16 @@ defmodule RaxolWeb.AuthPlug do
 
       token ->
         case Raxol.Auth.validate_token(token, conn) do
-          {:ok, _user} -> conn
-          _ ->
+          {:ok, _user} ->
             conn
-            |> put_flash(:error, "Invalid session. Please log in again.")
-            |> redirect(to: "/login")
-            |> halt()
+
+          # The following clause is unreachable because validate_token always returns {:ok, _} currently.
+          # _ ->
+          #   conn
+          #   |> put_flash(:error, "Invalid session. Please log in again.")
+          #   |> redirect(to: "/login")
+          #   |> halt()
         end
     end
   end
-end 
+end

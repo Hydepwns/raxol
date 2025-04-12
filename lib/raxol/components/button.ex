@@ -96,38 +96,49 @@ defmodule Raxol.Components.Button do
 
   # Private functions
 
-  defp get_button_style(style_type, size, full_width, disabled) when is_atom(style_type) do
-    base_style = Style.new([
-      padding: get_padding_for_size(size),
-      align: :center,
-      width: if(full_width, do: :fill, else: :auto),
-      border: :rounded
-    ])
+  defp get_button_style(style_type, size, full_width, disabled)
+       when is_atom(style_type) do
+    base_style =
+      Style.new(
+        padding: get_padding_for_size(size),
+        align: :center,
+        width: if(full_width, do: :fill, else: :auto),
+        border: :rounded
+      )
 
     color_style = get_color_style(style_type)
     size_style = get_size_style(size)
 
-    combined_style = Style.merge(base_style, Style.merge(color_style, size_style))
+    combined_style =
+      Style.merge(base_style, Style.merge(color_style, size_style))
 
     if disabled do
-      Style.merge(combined_style, Style.new(%{color: :gray, background: :dark_gray}))
+      Style.merge(
+        combined_style,
+        Style.new(%{color: :gray, background: :dark_gray})
+      )
     else
       combined_style
     end
   end
 
-  defp get_button_style(custom_style, size, full_width, disabled) when is_map(custom_style) do
-    base_style = Style.new([
-      padding: get_padding_for_size(size),
-      align: :center,
-      width: if(full_width, do: :fill, else: :auto),
-      border: :rounded
-    ])
+  defp get_button_style(custom_style, size, full_width, disabled)
+       when is_map(custom_style) do
+    base_style =
+      Style.new(
+        padding: get_padding_for_size(size),
+        align: :center,
+        width: if(full_width, do: :fill, else: :auto),
+        border: :rounded
+      )
 
     combined_style = Style.merge(base_style, custom_style)
 
     if disabled do
-      Style.merge(combined_style, Style.new(%{color: :gray, background: :dark_gray}))
+      Style.merge(
+        combined_style,
+        Style.new(%{color: :gray, background: :dark_gray})
+      )
     else
       combined_style
     end

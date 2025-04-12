@@ -43,4 +43,4 @@ defmodule Raxol.Auth.Permission do
     |> changeset(attrs)
     |> put_change(:is_system, true)
   end
-end 
+end

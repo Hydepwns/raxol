@@ -87,6 +87,7 @@ defmodule Raxol.Auth.User do
     case changeset do
       %Ecto.Changeset{valid?: true, changes: %{password: password}} ->
         put_change(changeset, :password_hash, Bcrypt.hash_pwd_salt(password))
+
       _ ->
         changeset
     end
@@ -101,4 +102,4 @@ defmodule Raxol.Auth.User do
     token = :crypto.strong_rand_bytes(32) |> Base.encode16(case: :lower)
     put_change(changeset, :reset_password_token, token)
   end
-end 
+end

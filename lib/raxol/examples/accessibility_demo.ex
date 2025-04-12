@@ -161,6 +161,7 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
     # End the demo
     Process.sleep(3000)
+
     # UXRefinement.announce("Demo complete. Thank you for exploring the accessibility features.",
     #                       priority: :high, interrupt: true)
   end
@@ -207,11 +208,12 @@ defmodule Raxol.Examples.AccessibilityDemo do
     Accessibility.set_high_contrast(new_state)
 
     # Announce the change
-    _message = if new_state do
-      "High contrast mode enabled. Colors have been adjusted for better visibility."
-    else
-      "High contrast mode disabled. Standard color scheme restored."
-    end
+    _message =
+      if new_state do
+        "High contrast mode enabled. Colors have been adjusted for better visibility."
+      else
+        "High contrast mode disabled. Standard color scheme restored."
+      end
 
     # UXRefinement.announce(_message, priority: :medium)
   end
@@ -227,11 +229,12 @@ defmodule Raxol.Examples.AccessibilityDemo do
     Accessibility.set_reduced_motion(new_state)
 
     # Announce the change
-    _message = if new_state do
-      "Reduced motion enabled. Animations have been minimized."
-    else
-      "Reduced motion disabled. Standard animations restored."
-    end
+    _message =
+      if new_state do
+        "Reduced motion enabled. Animations have been minimized."
+      else
+        "Reduced motion disabled. Standard animations restored."
+      end
 
     # UXRefinement.announce(_message, priority: :medium)
   end
@@ -247,11 +250,12 @@ defmodule Raxol.Examples.AccessibilityDemo do
     Accessibility.set_large_text(new_state)
 
     # Announce the change
-    _message = if new_state do
-      "Large text enabled. Text size increased to #{Accessibility.get_text_scale()} times normal size."
-    else
-      "Large text disabled. Standard text size restored."
-    end
+    _message =
+      if new_state do
+        "Large text enabled. Text size increased to #{Accessibility.get_text_scale()} times normal size."
+      else
+        "Large text disabled. Standard text size restored."
+      end
 
     # UXRefinement.announce(_message, priority: :medium)
   end
@@ -293,11 +297,12 @@ defmodule Raxol.Examples.AccessibilityDemo do
     foreground_color = format_color_for_announcement(colors.foreground)
 
     # Create message about current theme
-    _theme_message = "Current theme settings: " <>
-                    "High contrast is #{if high_contrast, do: "enabled", else: "disabled"}. " <>
-                    "Reduced motion is #{if reduced_motion, do: "enabled", else: "disabled"}. " <>
-                    "Large text is #{if large_text, do: "enabled", else: "disabled"}. " <>
-                    "Using #{background_color} background and #{foreground_color} text."
+    _theme_message =
+      "Current theme settings: " <>
+        "High contrast is #{if high_contrast, do: "enabled", else: "disabled"}. " <>
+        "Reduced motion is #{if reduced_motion, do: "enabled", else: "disabled"}. " <>
+        "Large text is #{if large_text, do: "enabled", else: "disabled"}. " <>
+        "Using #{background_color} background and #{foreground_color} text."
 
     # Announce theme information (UXRefinement.announce is undefined)
     # UXRefinement.announce(_theme_message, priority: :medium) # Function undefined

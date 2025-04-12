@@ -82,7 +82,8 @@ defmodule Raxol.Test.Visual do
 
   Takes a function that can make assertions about the rendered output.
   """
-  def assert_renders_as(component, assertions) when is_function(assertions, 1) do
+  def assert_renders_as(component, assertions)
+      when is_function(assertions, 1) do
     output = capture_render(component)
     assertions.(output)
   end
@@ -118,6 +119,7 @@ defmodule Raxol.Test.Visual do
         else
           {:diff, compute_visual_diff(expected, current)}
         end
+
       {:error, :enoent} ->
         {:error, :no_snapshot}
     end
@@ -131,7 +133,11 @@ defmodule Raxol.Test.Visual do
   def test_responsive_rendering(component, sizes) when is_list(sizes) do
     Enum.map(sizes, fn {width, height} ->
       # Update viewport size
-      component = put_in(component.render_context.viewport, %{width: width, height: height})
+      component =
+        put_in(component.render_context.viewport, %{
+          width: width,
+          height: height
+        })
 
       # Capture render at this size
       output = capture_render(component)
@@ -189,6 +195,7 @@ defmodule Raxol.Test.Visual do
     case component.module.render(component.state) do
       %Element{} = element ->
         render_element(element, component.render_context)
+
       other ->
         raise "Component returned invalid render result: #{inspect(other)}"
     end

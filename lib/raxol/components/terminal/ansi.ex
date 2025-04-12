@@ -1,7 +1,7 @@
 defmodule Raxol.Components.Terminal.ANSI do
   @moduledoc """
   Handles ANSI escape code processing for the terminal component.
-  
+
   This module provides:
   - ANSI escape code parsing
   - Terminal state updates based on escape codes
@@ -10,17 +10,17 @@ defmodule Raxol.Components.Terminal.ANSI do
   """
 
   @type ansi_state :: %{
-    cursor: {integer(), integer()},
-    style: map(),
-    screen: map(),
-    buffer: [String.t()]
-  }
+          cursor: {integer(), integer()},
+          style: map(),
+          screen: map(),
+          buffer: [String.t()]
+        }
 
   @doc """
   Processes ANSI escape codes in the input string and updates the terminal state.
-  
+
   ## Examples
-  
+
       iex> ANSI.process("\\e[31mHello\\e[0m", %{cursor: {0, 0}, style: %{}, screen: %{}, buffer: []})
       %{
         cursor: {5, 0},
@@ -42,6 +42,7 @@ defmodule Raxol.Components.Terminal.ANSI do
     cond do
       String.starts_with?(segment, "\e[") ->
         process_escape_code(segment, state)
+
       true ->
         process_text(segment, state)
     end
@@ -49,7 +50,7 @@ defmodule Raxol.Components.Terminal.ANSI do
 
   @doc """
   Processes ANSI escape codes.
-  
+
   Supported codes:
   - Cursor movement: [A, B, C, D, H, f
   - Erase: [J, K
@@ -60,20 +61,23 @@ defmodule Raxol.Components.Terminal.ANSI do
     case extract_escape_sequence(rest) do
       {sequence, rest} ->
         # Process the sequence and continue
-        new_state = case sequence do
-          # Cursor movement (A=65, B=66, C=67, D=68)
-          n when n in [65, 66, 67, 68] -> move_cursor(state, sequence)
-          # Screen clearing (J=74, K=75)
-          n when n in [74, 75] -> clear_screen(state, sequence)
-          # Style changes
-          n when n in 0..7 -> set_style(state, [sequence])
-          n when n in 30..37 -> set_style(state, [sequence])
-          n when n in 40..47 -> set_style(state, [sequence])
-          n when n in 90..97 -> set_style(state, [sequence])
-          n when n in 100..107 -> set_style(state, [sequence])
-          _ -> state
-        end
+        new_state =
+          case sequence do
+            # Cursor movement (A=65, B=66, C=67, D=68)
+            n when n in [65, 66, 67, 68] -> move_cursor(state, sequence)
+            # Screen clearing (J=74, K=75)
+            n when n in [74, 75] -> clear_screen(state, sequence)
+            # Style changes
+            n when n in 0..7 -> set_style(state, [sequence])
+            n when n in 30..37 -> set_style(state, [sequence])
+            n when n in 40..47 -> set_style(state, [sequence])
+            n when n in 90..97 -> set_style(state, [sequence])
+            n when n in 100..107 -> set_style(state, [sequence])
+            _ -> state
+          end
+
         process_escape_code(rest, new_state)
+
       :error ->
         # Invalid escape sequence, treat as literal
         process_escape_code(rest, [?\e, ?[ | state])
@@ -87,19 +91,14 @@ defmodule Raxol.Components.Terminal.ANSI do
     # Update cursor position based on text length
     {x, y} = state.cursor
     new_x = x + String.length(text)
-    
+
     # Handle line wrapping
     {cols, _} = state.dimensions
+
     if new_x >= cols do
-      %{state | 
-        cursor: {new_x - cols, y + 1},
-        buffer: [text | state.buffer]
-      }
+      %{state | cursor: {new_x - cols, y + 1}, buffer: [text | state.buffer]}
     else
-      %{state | 
-        cursor: {new_x, y},
-        buffer: [text | state.buffer]
-      }
+      %{state | cursor: {new_x, y}, buffer: [text | state.buffer]}
     end
   end
 
@@ -107,18 +106,24 @@ defmodule Raxol.Components.Terminal.ANSI do
 
   defp move_cursor(state, sequence) do
     case sequence do
-      65 -> move_cursor_up(state, [1])      # Up
-      66 -> move_cursor_down(state, [1])    # Down
-      67 -> move_cursor_forward(state, [1]) # Right
-      68 -> move_cursor_backward(state, [1])# Left
+      # Up
+      65 -> move_cursor_up(state, [1])
+      # Down
+      66 -> move_cursor_down(state, [1])
+      # Right
+      67 -> move_cursor_forward(state, [1])
+      # Left
+      68 -> move_cursor_backward(state, [1])
       _ -> state
     end
   end
 
   defp clear_screen(state, sequence) do
     case sequence do
-      74 -> erase_display(state, [0])  # Clear from cursor to end
-      75 -> erase_line(state, [0])     # Clear from cursor to end of line
+      # Clear from cursor to end
+      74 -> erase_display(state, [0])
+      # Clear from cursor to end of line
+      75 -> erase_line(state, [0])
       _ -> state
     end
   end
@@ -147,18 +152,24 @@ defmodule Raxol.Components.Terminal.ANSI do
 
   defp erase_display(state, [n]) do
     case n do
-      0 -> %{state | buffer: []}  # Clear from cursor to end
-      1 -> %{state | buffer: []}  # Clear from beginning to cursor
-      2 -> %{state | buffer: []}  # Clear entire screen
+      # Clear from cursor to end
+      0 -> %{state | buffer: []}
+      # Clear from beginning to cursor
+      1 -> %{state | buffer: []}
+      # Clear entire screen
+      2 -> %{state | buffer: []}
       _ -> state
     end
   end
 
   defp erase_line(state, [n]) do
     case n do
-      0 -> %{state | buffer: []}  # Clear from cursor to end of line
-      1 -> %{state | buffer: []}  # Clear from beginning of line to cursor
-      2 -> %{state | buffer: []}  # Clear entire line
+      # Clear from cursor to end of line
+      0 -> %{state | buffer: []}
+      # Clear from beginning of line to cursor
+      1 -> %{state | buffer: []}
+      # Clear entire line
+      2 -> %{state | buffer: []}
       _ -> state
     end
   end
@@ -171,22 +182,35 @@ defmodule Raxol.Components.Terminal.ANSI do
   defp apply_style_param(param, style) do
     case param do
       # Reset
-      0 -> %{}
-      
+      0 ->
+        %{}
+
       # Text styles
-      1 -> Map.put(style, :bold, true)
-      4 -> Map.put(style, :underline, true)
-      7 -> Map.put(style, :inverse, true)
-      
+      1 ->
+        Map.put(style, :bold, true)
+
+      4 ->
+        Map.put(style, :underline, true)
+
+      7 ->
+        Map.put(style, :inverse, true)
+
       # Foreground colors
-      n when n in 30..37 -> Map.put(style, :color, color_for_code(n - 30))
-      n when n in 90..97 -> Map.put(style, :color, color_for_code(n - 90))
-      
+      n when n in 30..37 ->
+        Map.put(style, :color, color_for_code(n - 30))
+
+      n when n in 90..97 ->
+        Map.put(style, :color, color_for_code(n - 90))
+
       # Background colors
-      n when n in 40..47 -> Map.put(style, :background, color_for_code(n - 40))
-      n when n in 100..107 -> Map.put(style, :background, color_for_code(n - 100))
-      
-      _ -> style
+      n when n in 40..47 ->
+        Map.put(style, :background, color_for_code(n - 40))
+
+      n when n in 100..107 ->
+        Map.put(style, :background, color_for_code(n - 100))
+
+      _ ->
+        style
     end
   end
 
@@ -207,6 +231,7 @@ defmodule Raxol.Components.Terminal.ANSI do
     case binary do
       <<digit, rest::binary>> when digit in ?0..?9 ->
         extract_digits(rest, [digit])
+
       _ ->
         :error
     end
@@ -228,7 +253,7 @@ defmodule Raxol.Components.Terminal.ANSI do
     b_index = trunc(b / 255.0 * 5)
 
     # Calculate color cube index (16..231)
-    cube_index = 16 + (36 * r_index) + (6 * g_index) + b_index
+    cube_index = 16 + 36 * r_index + 6 * g_index + b_index
 
     # Handle grayscale colors (232..255)
     gray_value = (r + g + b) / 3
@@ -240,6 +265,7 @@ defmodule Raxol.Components.Terminal.ANSI do
       g_index * 51,
       b_index * 51
     }
+
     gray_rgb = {gray_value, gray_value, gray_value}
 
     cube_distance = color_distance({r, g, b}, cube_color)
@@ -271,4 +297,4 @@ defmodule Raxol.Components.Terminal.ANSI do
     gray = (code - 232) * 10 + 8
     {gray, gray, gray}
   end
-end 
+end

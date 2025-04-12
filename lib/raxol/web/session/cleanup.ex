@@ -27,9 +27,13 @@ defmodule Raxol.Web.Session.Cleanup do
     now = DateTime.utc_now()
 
     # Get all sessions from database
-    query = from s in Session,
-      where: s.status == :active and
-             s.last_active < datetime_add(^now, -3600, "second")
+    query =
+      from(s in Session,
+        where:
+          s.status == :active and
+            s.last_active < datetime_add(^now, -3600, "second")
+      )
+
     expired_sessions = Repo.all(query)
 
     # Mark sessions as expired
@@ -54,9 +58,13 @@ defmodule Raxol.Web.Session.Cleanup do
     cutoff = DateTime.add(DateTime.utc_now(), -days * 24 * 60 * 60, :second)
 
     # Delete old sessions from database
-    query = from s in Session,
-      where: s.status in [:ended, :expired] and
-             s.ended_at < ^cutoff
+    query =
+      from(s in Session,
+        where:
+          s.status in [:ended, :expired] and
+            s.ended_at < ^cutoff
+      )
+
     Repo.delete_all(query)
   end
 
@@ -89,6 +97,6 @@ defmodule Raxol.Web.Session.Cleanup do
   defp is_orphaned?(session) do
     # Check if session is active but has no associated user
     session.status == :active &&
-    (is_nil(session.user_id) || session.user_id == "")
+      (is_nil(session.user_id) || session.user_id == "")
   end
 end

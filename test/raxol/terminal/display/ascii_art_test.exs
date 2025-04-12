@@ -142,11 +142,13 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   describe "table/2" do
     test "returns a formatted table with headers and rows" do
       headers = ["Name", "Age", "City"]
+
       rows = [
         ["John", "25", "New York"],
         ["Alice", "30", "London"],
         ["Bob", "35", "Paris"]
       ]
+
       table = AsciiArt.table(headers, rows)
       assert is_binary(table)
       assert String.contains?(table, "Name")
@@ -168,9 +170,11 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
 
   describe "spinner/1" do
     test "returns different spinner frames for different steps" do
-      frames = for step <- 0..9 do
-        AsciiArt.spinner(step)
-      end
+      frames =
+        for step <- 0..9 do
+          AsciiArt.spinner(step)
+        end
+
       assert length(Enum.uniq(frames)) > 1
       assert Enum.all?(frames, &String.contains?(&1, "Processing"))
     end
@@ -179,11 +183,14 @@ defmodule Raxol.Terminal.Display.AsciiArtTest do
   describe "loading/2" do
     test "returns loading animation with dots" do
       text = "Loading"
-      frames = for step <- 0..3 do
-        AsciiArt.loading(text, step)
-      end
+
+      frames =
+        for step <- 0..3 do
+          AsciiArt.loading(text, step)
+        end
+
       assert length(Enum.uniq(frames)) == 4
       assert Enum.all?(frames, &String.starts_with?(&1, text))
     end
   end
-end 
+end

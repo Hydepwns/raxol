@@ -37,12 +37,13 @@ defmodule Raxol.Core.Renderer.Manager do
 
   @impl true
   def init(_opts) do
-    {:ok, %{
-      buffer: nil,
-      fps: 60,
-      render_queue: [],
-      initialized: false
-    }}
+    {:ok,
+     %{
+       buffer: nil,
+       fps: 60,
+       render_queue: [],
+       initialized: false
+     }}
   end
 
   @impl true
@@ -57,11 +58,7 @@ defmodule Raxol.Core.Renderer.Manager do
     # Subscribe to window events
     {:ok, _sub_ref} = Manager.subscribe([:window])
 
-    {:reply, :ok, %{state |
-      buffer: buffer,
-      fps: fps,
-      initialized: true
-    }}
+    {:reply, :ok, %{state | buffer: buffer, fps: fps, initialized: true}}
   end
 
   @impl true
@@ -78,9 +75,14 @@ defmodule Raxol.Core.Renderer.Manager do
 
   @impl true
   def handle_cast(:render, state) do
-    # Get components that need rendering
-    # TODO: Assume ComponentManager exposes get_render_queue/0. Verify this interaction.
-    components = ComponentManager.get_render_queue()
+    # Get component IDs that need rendering
+    component_ids = ComponentManager.get_render_queue()
+
+    # Fetch component data for each ID
+    components =
+      Enum.map(component_ids, &ComponentManager.get_component/1)
+      # Filter out any nil results if a component disappeared
+      |> Enum.reject(&is_nil(&1))
 
     # Clear back buffer
     buffer = Buffer.clear(state.buffer)
@@ -107,14 +109,22 @@ defmodule Raxol.Core.Renderer.Manager do
   end
 
   @impl true
-  def handle_info({:event, %Raxol.Core.Events.Event{type: :window, data: %{action: :resize, width: w, height: h}}}, state) do
+  def handle_info(
+        {:event,
+         %Raxol.Core.Events.Event{
+           type: :window,
+           data: %{action: :resize, width: w, height: h}
+         }},
+        state
+      ) do
     GenServer.cast(self(), {:resize, w, h})
     {:noreply, state}
   end
 
   @impl true
   def handle_info({:event, _event}, state) do
-    {:noreply, state} # Ignore other subscribed events for now
+    # Ignore other subscribed events for now
+    {:noreply, state}
   end
 
   # Private Helpers
@@ -124,10 +134,13 @@ defmodule Raxol.Core.Renderer.Manager do
       {:ok, width} ->
         case :io.rows() do
           {:ok, height} -> {width, height}
-          _ -> {80, 24}  # Default size
+          # Default size
+          _ -> {80, 24}
         end
+
       _ ->
-        {80, 24}  # Default size
+        # Default size
+        {80, 24}
     end
   end
 
@@ -140,6 +153,7 @@ defmodule Raxol.Core.Renderer.Manager do
   end
 
   defp render_view(nil, buffer), do: buffer
+
   defp render_view(view, buffer) do
     case view do
       %{type: :text, content: content, position: {x, y}} ->
@@ -172,6 +186,7 @@ defmodule Raxol.Core.Renderer.Manager do
         %{char: char, fg: fg, bg: bg, style: style} ->
           # Apply styles and write character
           styles = build_styles(fg, bg, style)
+
           IO.write([
             IO.ANSI.cursor(y + 1, x + 1),
             styles,
@@ -204,7 +219,23 @@ defmodule Raxol.Core.Renderer.Manager do
   defp bg_to_ansi(:magenta), do: IO.ANSI.color(45)
   defp bg_to_ansi(:cyan), do: IO.ANSI.color(46)
   defp bg_to_ansi(:white), do: IO.ANSI.color(47)
-  defp bg_to_ansi(code) when is_integer(code) and code >= 0 and code <= 7, do: IO.ANSI.color(code + 40)
-  # TODO: Add support for bright background colors (100-107) if needed
-  defp bg_to_ansi(_), do: [] # Default to no background color
+
+  defp bg_to_ansi(code) when is_integer(code) and code >= 0 and code <= 7,
+    do: IO.ANSI.color(code + 40)
+
+  # Bright backgrounds
+  defp bg_to_ansi(:bright_black), do: IO.ANSI.color(100)
+  defp bg_to_ansi(:bright_red), do: IO.ANSI.color(101)
+  defp bg_to_ansi(:bright_green), do: IO.ANSI.color(102)
+  defp bg_to_ansi(:bright_yellow), do: IO.ANSI.color(103)
+  defp bg_to_ansi(:bright_blue), do: IO.ANSI.color(104)
+  defp bg_to_ansi(:bright_magenta), do: IO.ANSI.color(105)
+  defp bg_to_ansi(:bright_cyan), do: IO.ANSI.color(106)
+  defp bg_to_ansi(:bright_white), do: IO.ANSI.color(107)
+
+  defp bg_to_ansi(code) when is_integer(code) and code >= 100 and code <= 107,
+    do: IO.ANSI.color(code)
+
+  # Default to no background color
+  defp bg_to_ansi(_), do: []
 end

@@ -23,39 +23,61 @@ defmodule Raxol.Style.Colors.Color do
   """
 
   @ansi_16_colors %{
-    0 => {0, 0, 0},         # black
-    1 => {128, 0, 0},        # red
-    2 => {0, 128, 0},        # green
-    3 => {128, 128, 0},      # yellow
-    4 => {0, 0, 128},        # blue
-    5 => {128, 0, 128},      # magenta
-    6 => {0, 128, 128},      # cyan
-    7 => {192, 192, 192},    # white
-    8 => {128, 128, 128},    # bright black (gray)
-    9 => {255, 0, 0},        # bright red
-    10 => {0, 255, 0},       # bright green
-    11 => {255, 255, 0},     # bright yellow
-    12 => {0, 0, 255},       # bright blue
-    13 => {255, 0, 255},     # bright magenta
-    14 => {0, 255, 255},     # bright cyan
-    15 => {255, 255, 255}    # bright white
+    # black
+    0 => {0, 0, 0},
+    # red
+    1 => {128, 0, 0},
+    # green
+    2 => {0, 128, 0},
+    # yellow
+    3 => {128, 128, 0},
+    # blue
+    4 => {0, 0, 128},
+    # magenta
+    5 => {128, 0, 128},
+    # cyan
+    6 => {0, 128, 128},
+    # white
+    7 => {192, 192, 192},
+    # bright black (gray)
+    8 => {128, 128, 128},
+    # bright red
+    9 => {255, 0, 0},
+    # bright green
+    10 => {0, 255, 0},
+    # bright yellow
+    11 => {255, 255, 0},
+    # bright blue
+    12 => {0, 0, 255},
+    # bright magenta
+    13 => {255, 0, 255},
+    # bright cyan
+    14 => {0, 255, 255},
+    # bright white
+    15 => {255, 255, 255}
   }
 
   defstruct [
-    :r, :g, :b,      # RGB components (0-255)
-    :ansi_code,      # ANSI color code if applicable
-    :hex,            # Hex representation
-    :name            # Optional name for predefined colors
+    # RGB components (0-255)
+    :r,
+    :g,
+    :b,
+    # ANSI color code if applicable
+    :ansi_code,
+    # Hex representation
+    :hex,
+    # Optional name for predefined colors
+    :name
   ]
 
   @type t :: %__MODULE__{
-    r: integer(),
-    g: integer(),
-    b: integer(),
-    ansi_code: integer() | nil,
-    hex: String.t(),
-    name: String.t() | nil
-  }
+          r: integer(),
+          g: integer(),
+          b: integer(),
+          ansi_code: integer() | nil,
+          hex: String.t(),
+          name: String.t() | nil
+        }
 
   @doc """
   Creates a color from a hex string.
@@ -77,24 +99,32 @@ defmodule Raxol.Style.Colors.Color do
   @spec from_hex(binary()) :: t() | {:error, :invalid_hex}
   def from_hex(hex) when is_binary(hex) do
     hex = String.trim_leading(hex, "#")
+
     case String.length(hex) do
       6 ->
-        {r, g, b} = String.split_at(hex, 2)
-                    |> then(fn {r, rest} -> {r, String.split_at(rest, 2)} end)
-                    |> then(fn {r, {g, b}} -> {r, g, b} end)
-                    |> then(fn {r, g, b} -> {
-                      String.to_integer(r, 16),
-                      String.to_integer(g, 16),
-                      String.to_integer(b, 16)
-                    } end)
+        {r, g, b} =
+          String.split_at(hex, 2)
+          |> then(fn {r, rest} -> {r, String.split_at(rest, 2)} end)
+          |> then(fn {r, {g, b}} -> {r, g, b} end)
+          |> then(fn {r, g, b} ->
+            {
+              String.to_integer(r, 16),
+              String.to_integer(g, 16),
+              String.to_integer(b, 16)
+            }
+          end)
+
         from_rgb(r, g, b)
+
       3 ->
         [r, g, b] = String.graphemes(hex)
+
         from_rgb(
           String.to_integer(r <> r, 16),
           String.to_integer(g <> g, 16),
           String.to_integer(b <> b, 16)
         )
+
       _ ->
         {:error, :invalid_hex}
     end
@@ -147,7 +177,7 @@ defmodule Raxol.Style.Colors.Color do
     r_hex = Integer.to_string(r, 16) |> String.pad_leading(2, "0")
     g_hex = Integer.to_string(g, 16) |> String.pad_leading(2, "0")
     b_hex = Integer.to_string(b, 16) |> String.pad_leading(2, "0")
-    hex = "#" <> r_hex <> g_hex <> b_hex |> String.upcase()
+    hex = ("#" <> r_hex <> g_hex <> b_hex) |> String.upcase()
 
     %__MODULE__{r: r, g: g, b: b, hex: hex, ansi_code: code}
   end
@@ -201,7 +231,8 @@ defmodule Raxol.Style.Colors.Color do
       iex> {lightened.r, lightened.g, lightened.b}
       {177, 177, 177}
   """
-  def lighten(%__MODULE__{r: r, g: g, b: b} = _color, amount) when amount >= 0 and amount <= 1 do
+  def lighten(%__MODULE__{r: r, g: g, b: b} = _color, amount)
+      when amount >= 0 and amount <= 1 do
     new_r = min(round(r + (255 - r) * amount), 255)
     new_g = min(round(g + (255 - g) * amount), 255)
     new_b = min(round(b + (255 - b) * amount), 255)
@@ -219,7 +250,8 @@ defmodule Raxol.Style.Colors.Color do
       iex> {darkened.r, darkened.g, darkened.b}
       {100, 100, 100}
   """
-  def darken(%__MODULE__{r: r, g: g, b: b} = _color, amount) when amount >= 0 and amount <= 1 do
+  def darken(%__MODULE__{r: r, g: g, b: b} = _color, amount)
+      when amount >= 0 and amount <= 1 do
     new_r = max(round(r * (1 - amount)), 0)
     new_g = max(round(g * (1 - amount)), 0)
     new_b = max(round(b * (1 - amount)), 0)
@@ -238,7 +270,12 @@ defmodule Raxol.Style.Colors.Color do
       iex> {blended.r, blended.g, blended.b}
       {127, 0, 127}
   """
-  def alpha_blend(%__MODULE__{r: r1, g: g1, b: b1}, %__MODULE__{r: r2, g: g2, b: b2}, alpha) when alpha >= 0 and alpha <= 1 do
+  def alpha_blend(
+        %__MODULE__{r: r1, g: g1, b: b1},
+        %__MODULE__{r: r2, g: g2, b: b2},
+        alpha
+      )
+      when alpha >= 0 and alpha <= 1 do
     new_r = round(r1 * (1 - alpha) + r2 * alpha)
     new_g = round(g1 * (1 - alpha) + g2 * alpha)
     new_b = round(b1 * (1 - alpha) + b2 * alpha)
@@ -271,7 +308,12 @@ defmodule Raxol.Style.Colors.Color do
       iex> {mixed.r, mixed.g, mixed.b}
       {127, 0, 127}
   """
-  def mix(%__MODULE__{r: r1, g: g1, b: b1}, %__MODULE__{r: r2, g: g2, b: b2}, weight \\ 0.5) when weight >= 0 and weight <= 1 do
+  def mix(
+        %__MODULE__{r: r1, g: g1, b: b1},
+        %__MODULE__{r: r2, g: g2, b: b2},
+        weight \\ 0.5
+      )
+      when weight >= 0 and weight <= 1 do
     new_r = round(r1 * (1 - weight) + r2 * weight)
     new_g = round(g1 * (1 - weight) + g2 * weight)
     new_b = round(b1 * (1 - weight) + b2 * weight)
@@ -284,7 +326,9 @@ defmodule Raxol.Style.Colors.Color do
   defp find_closest_ansi_16(r, g, b) do
     # Find the closest ANSI 16-color based on Euclidean distance in RGB space
     Enum.min_by(@ansi_16_colors, fn {_code, {ar, ag, ab}} ->
-      :math.sqrt(:math.pow(r - ar, 2) + :math.pow(g - ag, 2) + :math.pow(b - ab, 2))
+      :math.sqrt(
+        :math.pow(r - ar, 2) + :math.pow(g - ag, 2) + :math.pow(b - ab, 2)
+      )
     end)
     |> elem(0)
   end

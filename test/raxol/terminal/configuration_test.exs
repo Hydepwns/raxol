@@ -7,7 +7,14 @@ defmodule Raxol.Terminal.ConfigurationTest do
     test "creates a configuration with detected terminal type" do
       config = Configuration.new()
       assert is_map(config)
-      assert config.terminal_type in [:iterm2, :windows_terminal, :xterm, :screen, :unknown]
+
+      assert config.terminal_type in [
+               :iterm2,
+               :windows_terminal,
+               :xterm,
+               :screen,
+               :unknown
+             ]
     end
 
     test "detects color mode based on terminal capabilities" do
@@ -18,12 +25,13 @@ defmodule Raxol.Terminal.ConfigurationTest do
     test "sets appropriate font family based on terminal type" do
       config = Configuration.new()
       assert is_binary(config.font_family)
+
       assert config.font_family in [
-        "Fira Code",
-        "Cascadia Code",
-        "DejaVu Sans Mono",
-        "Monospace"
-      ]
+               "Fira Code",
+               "Cascadia Code",
+               "DejaVu Sans Mono",
+               "Monospace"
+             ]
     end
 
     test "sets appropriate font size based on terminal type" do
@@ -144,7 +152,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
     test "saves relevant settings to user preferences" do
       config = Configuration.new()
       Configuration.apply(config)
-      
+
       # Verify that settings were saved to preferences
       saved_config = Raxol.Core.UserPreferences.get(:terminal_config)
       assert is_map(saved_config)
@@ -156,4 +164,4 @@ defmodule Raxol.Terminal.ConfigurationTest do
       assert Map.has_key?(saved_config, :theme)
     end
   end
-end 
+end

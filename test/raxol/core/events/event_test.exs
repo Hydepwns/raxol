@@ -16,21 +16,23 @@ defmodule Raxol.Core.Events.EventTest do
     test "creates a keyboard event with default modifiers" do
       event = Event.key_event(:enter, :pressed)
       assert %Event{type: :key} = event
+
       assert %{
-        key: :enter,
-        state: :pressed,
-        modifiers: []
-      } = event.data
+               key: :enter,
+               state: :pressed,
+               modifiers: []
+             } = event.data
     end
 
     test "creates a keyboard event with modifiers" do
       event = Event.key_event("a", :released, [:shift, :ctrl])
       assert %Event{type: :key} = event
+
       assert %{
-        key: "a",
-        state: :released,
-        modifiers: [:shift, :ctrl]
-      } = event.data
+               key: "a",
+               state: :released,
+               modifiers: [:shift, :ctrl]
+             } = event.data
     end
 
     test "validates key state" do
@@ -50,23 +52,25 @@ defmodule Raxol.Core.Events.EventTest do
     test "creates a mouse event with defaults" do
       event = Event.mouse_event(nil, nil, {10, 20})
       assert %Event{type: :mouse} = event
+
       assert %{
-        button: nil,
-        state: nil,
-        position: {10, 20},
-        modifiers: []
-      } = event.data
+               button: nil,
+               state: nil,
+               position: {10, 20},
+               modifiers: []
+             } = event.data
     end
 
     test "creates a mouse event with all parameters" do
       event = Event.mouse_event(:left, :pressed, {10, 20}, [:shift])
       assert %Event{type: :mouse} = event
+
       assert %{
-        button: :left,
-        state: :pressed,
-        position: {10, 20},
-        modifiers: [:shift]
-      } = event.data
+               button: :left,
+               state: :pressed,
+               position: {10, 20},
+               modifiers: [:shift]
+             } = event.data
     end
 
     test "validates mouse button" do
@@ -96,21 +100,23 @@ defmodule Raxol.Core.Events.EventTest do
     test "creates a window event with defaults" do
       event = Event.window_event(:focus)
       assert %Event{type: :window} = event
+
       assert %{
-        action: :focus,
-        width: nil,
-        height: nil
-      } = event.data
+               action: :focus,
+               width: nil,
+               height: nil
+             } = event.data
     end
 
     test "creates a resize event with dimensions" do
       event = Event.window_event(:resize, 80, 24)
       assert %Event{type: :window} = event
+
       assert %{
-        action: :resize,
-        width: 80,
-        height: 24
-      } = event.data
+               action: :resize,
+               width: 80,
+               height: 24
+             } = event.data
     end
 
     test "validates window action" do
@@ -157,4 +163,4 @@ defmodule Raxol.Core.Events.EventTest do
       end
     end
   end
-end 
+end

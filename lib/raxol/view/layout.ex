@@ -6,6 +6,9 @@ defmodule Raxol.View.Layout do
   that can be used in Raxol views.
   """
 
+  # Require the main View module to use its macros (like box)
+  require Raxol.View
+
   alias Raxol.View
 
   @type opts :: keyword()
@@ -30,7 +33,11 @@ defmodule Raxol.View.Layout do
   end
   ```
   """
-  @spec row(opts()) :: %{:children => list(), :opts => Keyword.t(), :type => :row}
+  @spec row(opts()) :: %{
+          :children => list(),
+          :opts => Keyword.t(),
+          :type => :row
+        }
   def row(opts) when is_list(opts) do
     View.row(opts)
   end
@@ -60,14 +67,19 @@ defmodule Raxol.View.Layout do
   end
   ```
   """
-  @spec column(opts()) :: %{:children => list(), :opts => Keyword.t(), :type => :column}
+  @spec column(opts()) :: %{
+          :children => list(),
+          :opts => Keyword.t(),
+          :type => :column
+        }
   def column(opts) when is_list(opts) do
     View.column(opts)
   end
 
   @spec column(opts(), [{:do, children_fun()}]) :: map()
   @dialyzer {:nowarn_function, column: 2}
-  def column(opts \\ [], do: block) when is_list(opts) and is_function(block, 0) do
+  def column(opts \\ [], do: block)
+      when is_list(opts) and is_function(block, 0) do
     View.column(opts, block)
   end
 
@@ -95,35 +107,6 @@ defmodule Raxol.View.Layout do
       attrs: opts,
       children: block
     }
-  end
-
-  @doc """
-  Creates a panel component.
-
-  ## Options
-
-  * `:title` - Panel title
-  * `:style` - Style map for the panel
-  * `:border` - Border style
-  * `:padding` - Padding around the content
-
-  ## Example
-
-  ```elixir
-  panel(title: "My Panel", style: %{border: :single}) do
-    text("Panel content")
-  end
-  ```
-  """
-  @spec panel(opts()) :: %{:children => list(), :opts => Keyword.t(), :type => :panel}
-  def panel(opts) when is_list(opts) do
-    View.panel(opts)
-  end
-
-  @spec panel(opts(), [{:do, children_fun()}]) :: map()
-  @dialyzer {:nowarn_function, panel: 2}
-  def panel(opts \\ [], do: block) when is_list(opts) and is_function(block, 0) do
-    View.panel(opts, block)
   end
 
   @doc """

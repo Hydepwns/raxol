@@ -24,11 +24,13 @@ defmodule Raxol.Test.Visual.Assertions do
     case Visual.compare_with_snapshot(component, name, context) do
       :ok ->
         true
+
       {:diff, diff} ->
-        flunk """
+        flunk("""
         Component render does not match snapshot:
         #{format_diff(diff)}
-        """
+        """)
+
       {:error, :no_snapshot} ->
         _snapshot_content = Visual.snapshot_component(component, name, context)
         {:ok, :snapshot_created}
@@ -64,6 +66,7 @@ defmodule Raxol.Test.Visual.Assertions do
   """
   def assert_renders_with(component, expected) when is_binary(expected) do
     output = Visual.capture_render(component)
+
     assert output =~ expected,
            "Expected rendered output to include: #{inspect(expected)}\nGot: #{inspect(output)}"
   end
@@ -108,6 +111,7 @@ defmodule Raxol.Test.Visual.Assertions do
 
       assert max_line_length <= width,
              "Component output exceeds width at size #{width}x#{height}"
+
       assert length(lines) <= height,
              "Component output exceeds height at size #{width}x#{height}"
     end)
@@ -129,8 +133,10 @@ defmodule Raxol.Test.Visual.Assertions do
     # Verify basic structure remains consistent
     base_structure = fn output ->
       output
-      |> String.replace(~r/\e\[[0-9;]*m/, "") # Remove ANSI codes
-      |> String.replace(~r/\s+/, " ")         # Normalize whitespace
+      # Remove ANSI codes
+      |> String.replace(~r/\e\[[0-9;]*m/, "")
+      # Normalize whitespace
+      |> String.replace(~r/\s+/, " ")
       |> String.trim()
     end
 
@@ -162,15 +168,19 @@ defmodule Raxol.Test.Visual.Assertions do
         :top ->
           [first | _] = lines
           assert String.trim(first) != "", "Top edge is not aligned"
+
         :bottom ->
           last = List.last(lines)
           assert String.trim(last) != "", "Bottom edge is not aligned"
+
         :left ->
           Enum.each(lines, fn line ->
             assert String.match?(line, ~r/^\S/), "Left edge is not aligned"
           end)
+
         :right ->
           width = Enum.max_by(lines, &String.length/1) |> String.length()
+
           Enum.each(lines, fn line ->
             assert String.length(line) == width, "Right edge is not aligned"
           end)
@@ -213,6 +223,7 @@ defmodule Raxol.Test.Visual.Assertions do
 
   defp has_style?(_output, _property, _value) do
     # Placeholder: Parse output and check for style property
-    true # Assume true for now
+    # Assume true for now
+    true
   end
 end

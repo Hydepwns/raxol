@@ -6,11 +6,11 @@ defmodule Raxol.Style.Borders do
   alias Raxol.Style.Colors.Color
 
   @type t :: %__MODULE__{
-    style: :none | :solid | :double | :dashed | :dotted,
-    width: integer(),
-    color: Color.t(),
-    radius: integer()
-  }
+          style: :none | :solid | :double | :dashed | :dotted,
+          width: integer(),
+          color: Color.t(),
+          radius: integer()
+        }
 
   defstruct style: :none,
             width: 0,

@@ -15,17 +15,26 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
 
   import Bitwise
 
-  @type mouse_mode :: :basic | :highlight | :cell | :all | :focus | :utf8 | :sgr | :urxvt | :sgr_pixels
+  @type mouse_mode ::
+          :basic
+          | :highlight
+          | :cell
+          | :all
+          | :focus
+          | :utf8
+          | :sgr
+          | :urxvt
+          | :sgr_pixels
 
   @type mouse_state :: %{
-    enabled: boolean(),
-    mode: mouse_mode(),
-    button_state: :none | :left | :middle | :right | :release,
-    modifiers: MapSet.t(),
-    position: {integer(), integer()},
-    last_position: {integer(), integer()},
-    drag_state: :none | :dragging | :drag_end
-  }
+          enabled: boolean(),
+          mode: mouse_mode(),
+          button_state: :none | :left | :middle | :right | :release,
+          modifiers: MapSet.t(),
+          position: {integer(), integer()},
+          last_position: {integer(), integer()},
+          drag_state: :none | :dragging | :drag_end
+        }
 
   @type modifier :: :shift | :alt | :ctrl | :meta
 
@@ -72,7 +81,10 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @doc """
   Updates the button state.
   """
-  @spec update_button_state(mouse_state(), :none | :left | :middle | :right | :release) :: mouse_state()
+  @spec update_button_state(
+          mouse_state(),
+          :none | :left | :middle | :right | :release
+        ) :: mouse_state()
   def update_button_state(state, button_state) do
     %{state | button_state: button_state}
   end
@@ -88,7 +100,8 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @doc """
   Updates the drag state.
   """
-  @spec update_drag_state(mouse_state(), :none | :dragging | :drag_end) :: mouse_state()
+  @spec update_drag_state(mouse_state(), :none | :dragging | :drag_end) ::
+          mouse_state()
   def update_drag_state(state, drag_state) do
     %{state | drag_state: drag_state}
   end
@@ -116,7 +129,8 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   Supports extended mouse reporting modes including SGR pixels and URXVT.
   """
   @spec process_event(mouse_state(), binary()) :: {mouse_state(), map()}
-  def process_event(state, <<"\e[M", button, x, y>>) when state.mode == :basic do
+  def process_event(state, <<"\e[M", button, x, y>>)
+      when state.mode == :basic do
     {new_state, event} = process_basic_event(state, button, x - 32, y - 32)
     {new_state, event}
   end
@@ -125,6 +139,7 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     case parse_sgr_event(rest) do
       {:ok, event_data} ->
         {update_state(state, event_data), event_data}
+
       :error ->
         {state, %{type: :error, message: "Invalid SGR mouse event"}}
     end
@@ -134,15 +149,18 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     case parse_urxvt_event(rest) do
       {:ok, event_data} ->
         {update_state(state, event_data), event_data}
+
       :error ->
         {state, %{type: :error, message: "Invalid URXVT mouse event"}}
     end
   end
 
-  def process_event(state, <<"\e[", rest::binary>>) when state.mode == :sgr_pixels do
+  def process_event(state, <<"\e[", rest::binary>>)
+      when state.mode == :sgr_pixels do
     case parse_sgr_pixels_event(rest) do
       {:ok, event_data} ->
         {update_state(state, event_data), event_data}
+
       :error ->
         {state, %{type: :error, message: "Invalid SGR pixels mouse event"}}
     end
@@ -151,17 +169,28 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @doc """
   Parses an SGR mouse event in the format: <button>;<x>;<y>M
   """
-  @spec parse_sgr_event(binary()) :: {:ok, %{type: :mouse, button: atom(), modifiers: MapSet.t(), position: {integer(), integer()}, mode: :sgr}} | :error
+  @spec parse_sgr_event(binary()) ::
+          {:ok,
+           %{
+             type: :mouse,
+             button: atom(),
+             modifiers: MapSet.t(),
+             position: {integer(), integer()},
+             mode: :sgr
+           }}
+          | :error
   def parse_sgr_event(<<button, ";", rest::binary>>) do
     case parse_coordinates(rest) do
       {:ok, {x, y}} ->
-        {:ok, %{
-          type: :mouse,
-          button: decode_button(button),
-          modifiers: decode_modifiers(button),
-          position: {x, y},
-          mode: :sgr
-        }}
+        {:ok,
+         %{
+           type: :mouse,
+           button: decode_button(button),
+           modifiers: decode_modifiers(button),
+           position: {x, y},
+           mode: :sgr
+         }}
+
       _ ->
         :error
     end
@@ -170,17 +199,28 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @doc """
   Parses a URXVT mouse event in the format: <button>;<x>;<y>M
   """
-  @spec parse_urxvt_event(binary()) :: {:ok, %{type: :mouse, button: atom(), modifiers: MapSet.t(), position: {integer(), integer()}, mode: :urxvt}} | :error
+  @spec parse_urxvt_event(binary()) ::
+          {:ok,
+           %{
+             type: :mouse,
+             button: atom(),
+             modifiers: MapSet.t(),
+             position: {integer(), integer()},
+             mode: :urxvt
+           }}
+          | :error
   def parse_urxvt_event(<<button, ";", rest::binary>>) do
     case parse_coordinates(rest) do
       {:ok, {x, y}} ->
-        {:ok, %{
-          type: :mouse,
-          button: decode_urxvt_button(button),
-          modifiers: decode_modifiers(button),
-          position: {x, y},
-          mode: :urxvt
-        }}
+        {:ok,
+         %{
+           type: :mouse,
+           button: decode_urxvt_button(button),
+           modifiers: decode_modifiers(button),
+           position: {x, y},
+           mode: :urxvt
+         }}
+
       _ ->
         :error
     end
@@ -189,17 +229,28 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @doc """
   Parses an SGR pixels mouse event in the format: <button>;<x>;<y>M
   """
-  @spec parse_sgr_pixels_event(binary()) :: {:ok, %{type: :mouse, button: atom(), modifiers: MapSet.t(), position: {integer(), integer()}, mode: :sgr_pixels}} | :error
+  @spec parse_sgr_pixels_event(binary()) ::
+          {:ok,
+           %{
+             type: :mouse,
+             button: atom(),
+             modifiers: MapSet.t(),
+             position: {integer(), integer()},
+             mode: :sgr_pixels
+           }}
+          | :error
   def parse_sgr_pixels_event(<<button, ";", rest::binary>>) do
     case parse_coordinates(rest) do
       {:ok, {x, y}} ->
-        {:ok, %{
-          type: :mouse,
-          button: decode_button(button),
-          modifiers: decode_modifiers(button),
-          position: {x, y},
-          mode: :sgr_pixels
-        }}
+        {:ok,
+         %{
+           type: :mouse,
+           button: decode_button(button),
+           modifiers: decode_modifiers(button),
+           position: {x, y},
+           mode: :sgr_pixels
+         }}
+
       _ ->
         :error
     end
@@ -211,11 +262,18 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @spec decode_button(integer()) :: :left | :middle | :right | :release
   def decode_button(button) do
     case button &&& 0x3 do
-      0 -> :release
-      1 -> :left
-      2 -> :middle
-      3 -> :right
-      # _ -> :none # Clause is unreachable as &&& 0x3 covers all cases
+      0 ->
+        :release
+
+      1 ->
+        :left
+
+      2 ->
+        :middle
+
+      3 ->
+        :right
+        # _ -> :none # Clause is unreachable as &&& 0x3 covers all cases
     end
   end
 
@@ -225,10 +283,25 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @spec decode_modifiers(integer()) :: MapSet.t(modifier())
   def decode_modifiers(button) do
     modifiers = MapSet.new()
-    modifiers = if (button &&& 0x4) != 0, do: MapSet.put(modifiers, :shift), else: modifiers
-    modifiers = if (button &&& 0x8) != 0, do: MapSet.put(modifiers, :alt), else: modifiers
-    modifiers = if (button &&& 0x10) != 0, do: MapSet.put(modifiers, :ctrl), else: modifiers
-    modifiers = if (button &&& 0x20) != 0, do: MapSet.put(modifiers, :meta), else: modifiers
+
+    modifiers =
+      if (button &&& 0x4) != 0,
+        do: MapSet.put(modifiers, :shift),
+        else: modifiers
+
+    modifiers =
+      if (button &&& 0x8) != 0, do: MapSet.put(modifiers, :alt), else: modifiers
+
+    modifiers =
+      if (button &&& 0x10) != 0,
+        do: MapSet.put(modifiers, :ctrl),
+        else: modifiers
+
+    modifiers =
+      if (button &&& 0x20) != 0,
+        do: MapSet.put(modifiers, :meta),
+        else: modifiers
+
     modifiers
   end
 
@@ -238,11 +311,18 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @spec decode_urxvt_button(integer()) :: :left | :middle | :right | :release
   def decode_urxvt_button(button) do
     case button &&& 0x3 do
-      0 -> :release
-      1 -> :left
-      2 -> :middle
-      3 -> :right
-      # _ -> :none # Clause is unreachable as &&& 0x3 covers all cases
+      0 ->
+        :release
+
+      1 ->
+        :left
+
+      2 ->
+        :middle
+
+      3 ->
+        :right
+        # _ -> :none # Clause is unreachable as &&& 0x3 covers all cases
     end
   end
 
@@ -256,6 +336,7 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
     y_codepoint = String.to_charlist(y) |> hd()
     {:ok, {x_codepoint - 32, y_codepoint - 32}}
   end
+
   def parse_coordinates(_), do: :error
 
   @doc """
@@ -263,32 +344,37 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   """
   @spec update_state(mouse_state(), map()) :: mouse_state()
   def update_state(state, event) do
-    %{state |
-      button_state: event.button,
-      modifiers: event.modifiers,
-      last_position: state.position,
-      position: event.position,
-      drag_state: calculate_drag_state(state, event)
+    %{
+      state
+      | button_state: event.button,
+        modifiers: event.modifiers,
+        last_position: state.position,
+        position: event.position,
+        drag_state: calculate_drag_state(state, event)
     }
   end
 
   @doc """
   Calculates the drag state based on the current and previous mouse states.
   """
-  @spec calculate_drag_state(mouse_state(), map()) :: :none | :dragging | :drag_end
+  @spec calculate_drag_state(mouse_state(), map()) ::
+          :none | :dragging | :drag_end
   def calculate_drag_state(state, event) do
     cond do
       event.button == :release ->
         :drag_end
+
       state.button_state != :none and event.button != :none ->
         :dragging
+
       true ->
         :none
     end
   end
 
   # Processes a basic mouse event and returns the updated state and event data
-  @spec process_basic_event(mouse_state(), integer(), integer(), integer()) :: {mouse_state(), map()}
+  @spec process_basic_event(mouse_state(), integer(), integer(), integer()) ::
+          {mouse_state(), map()}
   defp process_basic_event(state, button, x, y) do
     event_data = %{
       type: :mouse,
@@ -297,6 +383,7 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
       x: x,
       y: y
     }
+
     {state, event_data}
   end
 

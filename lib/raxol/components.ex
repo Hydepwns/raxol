@@ -37,46 +37,118 @@ defmodule Raxol.Components do
   defdelegate button(opts \\ [], label), to: Raxol.Components.Button, as: :new
 
   # Text Input
-  defdelegate text_input(opts \\ []), to: Raxol.Components.TextInput, as: :render
-  defdelegate multi_line_input(opts \\ []), to: Raxol.Components.Input.MultiLineInput, as: :render
-  defdelegate single_line_input(opts \\ []), to: Raxol.Components.Input.SingleLineInput, as: :render
+  defdelegate text_input(opts \\ []),
+    to: Raxol.Components.TextInput,
+    as: :render
+
+  defdelegate multi_line_input(opts \\ []),
+    to: Raxol.Components.Input.MultiLineInput,
+    as: :render
+
+  defdelegate single_line_input(opts \\ []),
+    to: Raxol.Components.Input.SingleLineInput,
+    as: :render
 
   # Modal Components
-  defdelegate modal(title, content_fn, actions_fn, opts \\ []), to: Raxol.Components.Modal, as: :render
-  defdelegate alert(title, message, on_ok, opts \\ []), to: Raxol.Components.Modal, as: :alert
-  defdelegate confirmation(title, message, on_confirm, on_cancel, opts \\ []), to: Raxol.Components.Modal, as: :confirmation
-  defdelegate form_modal(title, form_fn, on_submit, on_cancel, opts \\ []), to: Raxol.Components.Modal, as: :form
+  defdelegate modal(title, content_fn, actions_fn, opts \\ []),
+    to: Raxol.Components.Modal,
+    as: :render
+
+  defdelegate alert(title, message, on_ok, opts \\ []),
+    to: Raxol.Components.Modal,
+    as: :alert
+
+  defdelegate confirmation(title, message, on_confirm, on_cancel, opts \\ []),
+    to: Raxol.Components.Modal,
+    as: :confirmation
+
+  defdelegate form_modal(title, form_fn, on_submit, on_cancel, opts \\ []),
+    to: Raxol.Components.Modal,
+    as: :form
 
   # Dropdown/Select
-  defdelegate dropdown(options, selected, on_change, opts \\ []), to: Raxol.Components.Dropdown, as: :render
-  defdelegate filterable_dropdown(options, selected, filter_text, on_change, on_filter_change, opts \\ []), to: Raxol.Components.Dropdown, as: :filterable
+  defdelegate dropdown(options, selected, on_change, opts \\ []),
+    to: Raxol.Components.Dropdown,
+    as: :render
+
+  defdelegate filterable_dropdown(
+                options,
+                selected,
+                filter_text,
+                on_change,
+                on_filter_change,
+                opts \\ []
+              ),
+              to: Raxol.Components.Dropdown,
+              as: :filterable
 
   # Tab Bar
-  defdelegate tab_bar(tabs, active_tab, on_change, opts \\ []), to: Raxol.Components.TabBar, as: :render
-  defdelegate tabbed_view(tabs, active_tab, on_change, opts \\ []), to: Raxol.Components.TabBar, as: :tabbed_view
+  defdelegate tab_bar(tabs, active_tab, on_change, opts \\ []),
+    to: Raxol.Components.TabBar,
+    as: :render
+
+  defdelegate tabbed_view(tabs, active_tab, on_change, opts \\ []),
+    to: Raxol.Components.TabBar,
+    as: :tabbed_view
 
   # Progress Indicators
-  defdelegate progress_bar(value, opts \\ []), to: Raxol.Components.Progress, as: :bar
-  defdelegate progress_bar_with_label(value, label, opts \\ []), to: Raxol.Components.Progress, as: :bar_with_label
-  defdelegate spinner(message \\ nil, frame, opts \\ []), to: Raxol.Components.Progress, as: :spinner
-  defdelegate indeterminate_progress(frame, opts \\ []), to: Raxol.Components.Progress, as: :indeterminate
-  defdelegate circular_progress(value, opts \\ []), to: Raxol.Components.Progress, as: :circular
+  defdelegate progress_bar(value, opts \\ []),
+    to: Raxol.Components.Progress,
+    as: :bar
+
+  defdelegate progress_bar_with_label(value, label, opts \\ []),
+    to: Raxol.Components.Progress,
+    as: :bar_with_label
+
+  defdelegate spinner(message \\ nil, frame, opts \\ []),
+    to: Raxol.Components.Progress,
+    as: :spinner
+
+  defdelegate indeterminate_progress(frame, opts \\ []),
+    to: Raxol.Components.Progress,
+    as: :indeterminate
+
+  defdelegate circular_progress(value, opts \\ []),
+    to: Raxol.Components.Progress,
+    as: :circular
 
   # Table
-  defdelegate table(data, columns, opts \\ []), to: Raxol.Components.Table, as: :render
-  defdelegate paginated_table(data, columns, page, total_pages, on_page_change, opts \\ []), to: Raxol.Components.Table, as: :paginated
+  defdelegate table(data, columns, opts \\ []),
+    to: Raxol.Components.Table,
+    as: :render
+
+  defdelegate paginated_table(
+                data,
+                columns,
+                page,
+                total_pages,
+                on_page_change,
+                opts \\ []
+              ),
+              to: Raxol.Components.Table,
+              as: :paginated
 
   # Focus Ring
-  defdelegate focus_ring(children, opts \\ []), to: Raxol.Components.FocusRing, as: :render
+  defdelegate focus_ring(children, opts \\ []),
+    to: Raxol.Components.FocusRing,
+    as: :render
 
   # Hint Display
-  defdelegate hint_display(hints, opts \\ []), to: Raxol.Components.HintDisplay, as: :render
+  defdelegate hint_display(hints, opts \\ []),
+    to: Raxol.Components.HintDisplay,
+    as: :render
 
   # Accessibility
   defdelegate accessibility_new(opts \\ []), to: Raxol.Accessibility, as: :new
-  defdelegate announce(accessibility, message, priority \\ :normal), to: Raxol.Accessibility
+
+  defdelegate announce(accessibility, message, priority \\ :normal),
+    to: Raxol.Accessibility
+
   defdelegate set_high_contrast(accessibility, enabled), to: Raxol.Accessibility
-  defdelegate set_reduced_motion(accessibility, enabled), to: Raxol.Accessibility
+
+  defdelegate set_reduced_motion(accessibility, enabled),
+    to: Raxol.Accessibility
+
   defdelegate set_large_text(accessibility, enabled), to: Raxol.Accessibility
   defdelegate get_color_scheme(accessibility), to: Raxol.Accessibility
 
@@ -157,13 +229,14 @@ defmodule Raxol.Components do
     style = Keyword.get(opts, :style, %{})
 
     # Get type-specific style
-    type_style = case type do
-      :success -> %{backgroundColor: "#4caf50", color: "white"}
-      :error -> %{backgroundColor: "#f44336", color: "white"}
-      :warning -> %{backgroundColor: "#ff9800", color: "white"}
-      :info -> %{backgroundColor: "#2196f3", color: "white"}
-      _ -> %{backgroundColor: "#757575", color: "white"}
-    end
+    type_style =
+      case type do
+        :success -> %{backgroundColor: "#4caf50", color: "white"}
+        :error -> %{backgroundColor: "#f44336", color: "white"}
+        :warning -> %{backgroundColor: "#ff9800", color: "white"}
+        :info -> %{backgroundColor: "#2196f3", color: "white"}
+        _ -> %{backgroundColor: "#757575", color: "white"}
+      end
 
     # Combine styles
     final_style = Map.merge(style, type_style)

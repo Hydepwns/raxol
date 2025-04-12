@@ -8,28 +8,32 @@ defmodule Raxol.Terminal.Emulator do
   due to how it's processed. This is expected behavior and doesn't affect functionality.
   """
 
-  alias Raxol.Terminal.{ScreenBuffer}
-  alias Raxol.Terminal.ANSI.{CharacterSets, TerminalState, TextFormatting}
-  alias Raxol.Terminal.Cursor.{Manager, Movement, Style}
-  alias Raxol.Terminal.Modes
+  alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Cursor.{Manager, Movement}
+  alias Raxol.Terminal.Cursor.Style
   alias Raxol.Terminal.EscapeSequence
+  alias Raxol.Terminal.Modes
+  alias Raxol.Terminal.CharacterSets
+  alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Plugins.PluginManager
+  alias Raxol.Terminal.ANSI.TerminalState
   require Logger
 
   @type t :: %__MODULE__{
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    screen_buffer: ScreenBuffer.t(),
-    cursor: Manager.t(),
-    scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
-    text_style: TextFormatting.text_style(),
-    memory_limit: non_neg_integer(),
-    charset_state: CharacterSets.charset_state(),
-    mode_state: Modes.mode_state(),
-    state_stack: TerminalState.state_stack(),
-    plugin_manager: PluginManager.t(),
-    options: map()
-  }
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          screen_buffer: ScreenBuffer.t(),
+          cursor: Manager.t(),
+          scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
+          text_style: TextFormatting.text_style(),
+          memory_limit: non_neg_integer(),
+          charset_state: CharacterSets.charset_state(),
+          mode_state: Modes.mode_state(),
+          state_stack: TerminalState.state_stack(),
+          plugin_manager: PluginManager.t(),
+          options: map(),
+          current_hyperlink_url: String.t() | nil
+        }
 
   defstruct [
     :width,
@@ -43,7 +47,8 @@ defmodule Raxol.Terminal.Emulator do
     :mode_state,
     :state_stack,
     :plugin_manager,
-    :options
+    :options,
+    :current_hyperlink_url
   ]
 
   @doc """
@@ -69,13 +74,14 @@ defmodule Raxol.Terminal.Emulator do
       screen_buffer: ScreenBuffer.new(width, height),
       cursor: Manager.new(),
       scroll_region: nil,
-      text_style: TextFormatting.new(),
+      text_style: %{},
       memory_limit: 1000,
-      charset_state: CharacterSets.new(),
+      charset_state: nil,
       mode_state: Modes.new(),
-      state_stack: TerminalState.new(),
-      plugin_manager: PluginManager.new(),
-      options: options
+      state_stack: Raxol.Terminal.ANSI.TerminalState.new(),
+      plugin_manager: Raxol.Plugins.PluginManager.new(),
+      options: options,
+      current_hyperlink_url: nil
     }
   end
 
@@ -95,8 +101,10 @@ defmodule Raxol.Terminal.Emulator do
     case input do
       "\e" <> rest ->
         process_escape_sequence(emulator, "\e" <> rest)
+
       char when is_binary(char) and byte_size(char) == 1 ->
         process_character(emulator, char)
+
       _ ->
         {emulator, ""}
     end
@@ -115,30 +123,30 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec process_escape_sequence(t(), String.t()) :: {t(), String.t()}
   def process_escape_sequence(%__MODULE__{} = emulator, sequence) do
-    {cursor, mode_state, _message} = EscapeSequence.process_sequence(
-      emulator.cursor,
-      emulator.mode_state,
-      sequence
-    )
+    {cursor, mode_state, _message} =
+      EscapeSequence.process_sequence(
+        emulator.cursor,
+        emulator.mode_state,
+        sequence
+      )
 
     # Update cursor visibility based on terminal mode
-    cursor = if Map.get(mode_state, :cursor_visible, true) do
-      Style.show(cursor)
-    else
-      Style.hide(cursor)
-    end
+    cursor =
+      if Map.get(mode_state, :cursor_visible, true) do
+        Raxol.Terminal.Cursor.Style.show(cursor)
+      else
+        Raxol.Terminal.Cursor.Style.hide(cursor)
+      end
 
     # Update cursor style based on terminal mode
-    cursor = if Map.get(mode_state, :block_cursor, false) do
-      Style.set_block(cursor)
-    else
-      Style.set_underline(cursor)
-    end
+    cursor =
+      if Map.get(mode_state, :block_cursor, false) do
+        Raxol.Terminal.Cursor.Style.set_block(cursor)
+      else
+        Raxol.Terminal.Cursor.Style.set_underline(cursor)
+      end
 
-    updated_emulator = %{emulator |
-      cursor: cursor,
-      mode_state: mode_state
-    }
+    updated_emulator = %{emulator | cursor: cursor, mode_state: mode_state}
     {updated_emulator, ""}
   end
 
@@ -153,19 +161,28 @@ defmodule Raxol.Terminal.Emulator do
       {1, 0}
 
   """
-  @spec process_character(t(), String.t()) :: {t(), String.t()} | {:error, any()}
+  @spec process_character(t(), String.t()) ::
+          {t(), String.t()} | {:error, any()}
   def process_character(emulator, char) do
     <<codepoint::utf8>> = char
-    translated_codepoint = CharacterSets.translate_char(emulator.charset_state, codepoint)
+
+    # Translate character if necessary based on charset
+    # TODO: Ensure charset_state is correctly tracked and passed
+    translated_char =
+      Raxol.Terminal.CharacterSets.translate(emulator.charset_state, codepoint)
 
     # Process output through plugins
-    case PluginManager.process_output(emulator.plugin_manager, <<translated_codepoint::utf8>>) do
+    case Raxol.Plugins.PluginManager.process_output(
+           emulator.plugin_manager,
+           translated_char
+         ) do
       {:ok, updated_manager, transformed_output} ->
         emulator = %{emulator | plugin_manager: updated_manager}
         process_transformed_output(emulator, transformed_output)
+
       {:error, reason} ->
         Logger.error("Plugin failed to process output: #{inspect(reason)}")
-        {:error, reason} # Now matches the updated spec
+        {:error, reason}
     end
   end
 
@@ -181,13 +198,15 @@ defmodule Raxol.Terminal.Emulator do
   """
   def process_mouse(%__MODULE__{} = emulator, event) do
     # Process mouse event through plugins first
-    case PluginManager.process_mouse(emulator.plugin_manager, event) do
+    case Raxol.Plugins.PluginManager.process_mouse(emulator.plugin_manager, event, emulator) do
       {:ok, updated_manager} ->
         emulator = %{emulator | plugin_manager: updated_manager}
         # TODO: Where should the result of Input.process_mouse be stored?
         # The Emulator struct has no :input field. Commenting out for now.
         # %{emulator | input: Input.process_mouse(emulator.input, event)}
-        emulator # Return the emulator with updated plugin_manager
+        # Return the emulator with updated plugin_manager
+        emulator
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -299,6 +318,7 @@ defmodule Raxol.Terminal.Emulator do
       else
         Style.hide(emulator.cursor)
       end
+
     %{emulator | cursor: cursor}
   end
 
@@ -359,7 +379,7 @@ defmodule Raxol.Terminal.Emulator do
       false
   """
   def reset_text_style(%__MODULE__{} = emulator) do
-    %{emulator | text_style: TextFormatting.new()}
+    %{emulator | text_style: %{}}
   end
 
   @doc """
@@ -372,55 +392,45 @@ defmodule Raxol.Terminal.Emulator do
       iex> TerminalState.count(emulator.state_stack)
       1
   """
+  @spec push_state(t()) :: t()
   def push_state(%__MODULE__{} = emulator) do
-    # Collect current state into a map matching TerminalState format
     current_state_map = %{
-      cursor: emulator.cursor.position,
-      attributes: emulator.text_style, # Assuming text_style holds attributes
+      cursor_position: emulator.cursor.position,
+      text_style: emulator.text_style,
       charset_state: emulator.charset_state,
-      mode_state: emulator.mode_state, # Assuming mode_state corresponds to ScreenModes.mode_state
-      scroll_region: emulator.scroll_region
-      # Note: Ensure the keys and value types match TerminalState.saved_state exactly
+      mode_state: emulator.mode_state
     }
-    new_stack = TerminalState.save_state(emulator.state_stack, current_state_map)
-    %{emulator | state_stack: new_stack}
+
+    updated_stack =
+      Raxol.Terminal.ANSI.TerminalState.save_state(emulator.state_stack, current_state_map)
+
+    %{emulator | state_stack: updated_stack}
   end
 
   @doc """
-  Pops the terminal state from the stack.
-
-  ## Examples
-
-      iex> emulator = Emulator.new(80, 24)
-      iex> emulator = Emulator.push_state(emulator)
-      iex> emulator = Emulator.pop_state(emulator)
-      iex> TerminalState.count(emulator.state_stack)
-      0
+  Pops the most recently saved terminal state from the stack and applies it.
   """
-  def pop_state(%__MODULE__{} = emulator) do
-    case TerminalState.restore_state(emulator.state_stack) do
-      {new_stack, nil} -> # Stack was empty
-        %{emulator | state_stack: new_stack}
-      {new_stack, restored_state} ->
-        # Apply the restored state back to the emulator
-        new_cursor = Manager.move_to(emulator.cursor,
-                                     elem(restored_state.cursor, 0),
-                                     elem(restored_state.cursor, 1))
-        # Assuming restored_state.attributes corresponds to text_style
-        new_text_style = restored_state.attributes
-        # Assuming restored_state.mode_state corresponds to emulator.mode_state
-        new_mode_state = restored_state.mode_state
-        new_charset_state = restored_state.charset_state
-        new_scroll_region = restored_state.scroll_region
-
-        %{emulator |
-          cursor: new_cursor,
-          text_style: new_text_style,
-          mode_state: new_mode_state,
-          charset_state: new_charset_state,
-          scroll_region: new_scroll_region,
-          state_stack: new_stack
+  @spec pop_state(t()) :: t()
+  def pop_state(%__MODULE__{state_stack: stack} = emulator) do
+    # Call restore_state with the current stack
+    case Raxol.Terminal.ANSI.TerminalState.restore_state(stack) do
+      {updated_stack, %{} = restored_state} -> # Match {new_stack, state_map}
+        Logger.debug("Popped and restoring state: #{inspect(restored_state)}")
+        # Apply the restored state components to the emulator
+        %{
+          emulator
+          | state_stack: updated_stack,
+            # Assuming restored_state map contains these keys from push_state
+            cursor: Map.get(restored_state, :cursor, emulator.cursor), # Add restore logic
+            text_style: Map.get(restored_state, :text_style, emulator.text_style),
+            charset_state: Map.get(restored_state, :charset_state, emulator.charset_state),
+            mode_state: Map.get(restored_state, :mode_state, emulator.mode_state),
+            scroll_region: Map.get(restored_state, :scroll_region, emulator.scroll_region)
         }
+
+      {updated_stack, nil} -> # Handle case where state couldn't be popped/restored
+        Logger.warning("pop_state called, but no state was restored (stack might be empty).")
+        %{emulator | state_stack: updated_stack}
     end
   end
 
@@ -468,26 +478,42 @@ defmodule Raxol.Terminal.Emulator do
       Map.take(state_map, [:cursor_position, :cursor_style, :cursor_state])
       |> Enum.reduce(emulator.cursor, fn {key, value}, acc ->
         case key do
-          :cursor_position -> Manager.move_to(acc, elem(value, 0), elem(value, 1))
-          :cursor_style    -> Manager.set_style(acc, value)
-          :cursor_state    -> Manager.set_state(acc, value)
-          _ -> acc
+          :cursor_position ->
+            Manager.move_to(acc, elem(value, 0), elem(value, 1))
+
+          :cursor_style ->
+            Manager.set_style(acc, value)
+
+          :cursor_state ->
+            Manager.set_state(acc, value)
+
+          _ ->
+            acc
         end
       end)
 
-    new_text_style = Map.merge(emulator.text_style, Map.get(state_map, :text_style, %{}))
-    new_mode_state = Map.merge(emulator.mode_state, Map.get(state_map, :mode_state, %{}))
-    new_charset_state = Map.merge(emulator.charset_state, Map.get(state_map, :charset_state, %{}))
-    new_scroll_region = Map.get(state_map, :scroll_region, emulator.scroll_region)
+    new_text_style =
+      Map.merge(emulator.text_style, Map.get(state_map, :text_style, %{}))
+
+    new_mode_state =
+      Map.merge(emulator.mode_state, Map.get(state_map, :mode_state, %{}))
+
+    new_charset_state =
+      Map.merge(emulator.charset_state, Map.get(state_map, :charset_state, %{}))
+
+    new_scroll_region =
+      Map.get(state_map, :scroll_region, emulator.scroll_region)
+
     # Add logic to update width/height if they are included in state_map and resizing is intended
 
-    %{emulator |
-      cursor: new_cursor,
-      text_style: new_text_style,
-      mode_state: new_mode_state,
-      charset_state: new_charset_state,
-      scroll_region: new_scroll_region
-      # Update other fields as necessary
+    %{
+      emulator
+      | cursor: new_cursor,
+        text_style: new_text_style,
+        mode_state: new_mode_state,
+        charset_state: new_charset_state,
+        scroll_region: new_scroll_region
+        # Update other fields as necessary
     }
   end
 
@@ -528,7 +554,10 @@ defmodule Raxol.Terminal.Emulator do
   """
   def clear_buffer(%__MODULE__{} = emulator) do
     # Replace undefined clear/1 with a call to new/2 to reset the buffer
-    %{emulator | screen_buffer: ScreenBuffer.new(emulator.width, emulator.height)}
+    %{
+      emulator
+      | screen_buffer: ScreenBuffer.new(emulator.width, emulator.height)
+    }
   end
 
   @doc """
@@ -651,10 +680,12 @@ defmodule Raxol.Terminal.Emulator do
       {100, 30}
   """
   def resize(%__MODULE__{} = emulator, width, height) do
-    %{emulator |
-      width: width,
-      height: height,
-      screen_buffer: ScreenBuffer.resize(emulator.screen_buffer, width, height)
+    %{
+      emulator
+      | width: width,
+        height: height,
+        screen_buffer:
+          ScreenBuffer.resize(emulator.screen_buffer, width, height)
     }
   end
 
@@ -749,16 +780,19 @@ defmodule Raxol.Terminal.Emulator do
     {x, y} = emulator.cursor.position
 
     # Use write_string/4 which exists in ScreenBuffer
-    new_screen_buffer = ScreenBuffer.write_string(
-      emulator.screen_buffer,
-      x, y,
-      text
-      # text_style and charset_state are not used by write_string
-    )
+    new_screen_buffer =
+      ScreenBuffer.write_string(
+        emulator.screen_buffer,
+        x,
+        y,
+        text
+        # text_style and charset_state are not used by write_string
+      )
 
     # Calculate new cursor position (simplified: assumes fixed width, basic wrap)
     # TODO: Use CharacterHandling.calculate_string_width for accuracy
-    text_length = String.length(text) # Simple length for now
+    # Simple length for now
+    text_length = String.length(text)
     new_x = x + text_length
     new_y = y + div(new_x, emulator.width)
     final_x = rem(new_x, emulator.width)
@@ -768,20 +802,19 @@ defmodule Raxol.Terminal.Emulator do
 
     new_cursor = Movement.move_to_position(emulator.cursor, final_x, final_y)
 
-    %{emulator |
-      screen_buffer: new_screen_buffer,
-      cursor: new_cursor
-    }
+    %{emulator | screen_buffer: new_screen_buffer, cursor: new_cursor}
   end
 
   @doc """
-  Clears the terminal screen.
-  (Placeholder implementation)
+  Clears the entire screen buffer and moves the cursor to the home position (0, 0).
   """
   @spec clear_screen(t()) :: t()
   def clear_screen(%__MODULE__{} = emulator) do
-    # TODO: Implement screen clearing, potentially calling ScreenBuffer.clear
-    emulator
+    # TODO: Determine correct arguments for ScreenBuffer.clear_region/5 or fix ScreenBuffer.clear/1
+    updated_buffer = emulator.screen_buffer # Placeholder
+    # Move cursor to 0,0 using the Cursor Manager
+    updated_cursor = Movement.move_to_position(emulator.cursor, 0, 0)
+    %{emulator | screen_buffer: updated_buffer, cursor: updated_cursor}
   end
 
   @doc """
@@ -801,7 +834,8 @@ defmodule Raxol.Terminal.Emulator do
   @spec get_visible_content(t()) :: String.t()
   def get_visible_content(%__MODULE__{} = _emulator) do
     # TODO: Implement logic to retrieve visible content from screen_buffer.
-    "" # Placeholder return
+    # Placeholder return
+    ""
   end
 
   @doc """
@@ -851,7 +885,8 @@ defmodule Raxol.Terminal.Emulator do
   @spec screen_mode_enabled?(t(), atom() | String.t()) :: false
   def screen_mode_enabled?(%__MODULE__{} = _emulator, _mode) do
     # TODO: Implement screen mode checking logic, reading mode_state.
-    false # Placeholder return
+    # Placeholder return
+    false
   end
 
   @doc """
@@ -881,23 +916,117 @@ defmodule Raxol.Terminal.Emulator do
   @spec handle_device_status_query(t(), String.t()) :: {t(), String.t()}
   def handle_device_status_query(%__MODULE__{} = emulator, _query) do
     # TODO: Implement device status query handling (e.g., cursor position report).
-    {emulator, ""} # Placeholder return
+    # Placeholder return
+    {emulator, ""}
+  end
+
+  @doc """
+  Scrolls the content within the scroll region (or entire screen) upwards by N lines.
+  New lines at the bottom are filled with the current background color/style.
+  """
+  @spec scroll_up(t(), non_neg_integer()) :: t()
+  def scroll_up(%__MODULE__{} = emulator, lines \\ 1) do
+    # Prefix unused vars
+    {_scroll_top, _scroll_bottom} =
+      case emulator.scroll_region do
+        {top, bottom} -> {top, bottom}
+        # Default to full screen
+        nil -> {0, emulator.height - 1}
+      end
+
+    # Call ScreenBuffer.scroll_up/2
+    updated_buffer = ScreenBuffer.scroll_up(emulator.screen_buffer, lines)
+    %{emulator | screen_buffer: updated_buffer}
+  end
+
+  @doc """
+  Scrolls the content within the scroll region (or entire screen) downwards by N lines.
+  New lines at the top are filled with the current background color/style.
+  """
+  @spec scroll_down(t(), non_neg_integer()) :: t()
+  def scroll_down(%__MODULE__{} = emulator, lines \\ 1) do
+    # Prefix unused vars
+    {_scroll_top, _scroll_bottom} =
+      case emulator.scroll_region do
+        {top, bottom} -> {top, bottom}
+        # Default to full screen
+        nil -> {0, emulator.height - 1}
+      end
+
+    # Call ScreenBuffer.scroll_down/2
+    updated_buffer = ScreenBuffer.scroll_down(emulator.screen_buffer, lines)
+    %{emulator | screen_buffer: updated_buffer}
+  end
+
+  @doc """
+  Gets the cell at the specified coordinates from the screen buffer.
+  Returns nil if coordinates are out of bounds.
+  """
+  @spec get_cell_at(t(), non_neg_integer(), non_neg_integer()) :: Raxol.Terminal.Cell.t() | nil
+  def get_cell_at(%__MODULE__{} = emulator, x, y) when x >= 0 and y >= 0 do
+    ScreenBuffer.get_cell_at(emulator.screen_buffer, x, y)
   end
 
   # Private functions
 
   defp process_transformed_output(emulator, output) do
-    # Process the transformed output
-    case output do
-      "" ->
-        {emulator, ""}
-      _ ->
-        # Update the screen buffer with the output
-        {cursor_x, cursor_y} = emulator.cursor.position
-        screen_buffer = ScreenBuffer.write_string(emulator.screen_buffer, cursor_x, cursor_y, output)
-        # Move the cursor
-        cursor = Movement.move_right(emulator.cursor, String.length(output))
-        {%{emulator | screen_buffer: screen_buffer, cursor: cursor}, ""}
+    # This function needs to iterate through the output string,
+    # handling both regular characters and potential embedded escape sequences.
+    # For now, a simplified approach writing char by char.
+
+    {final_emulator, _remaining_output} =
+      Enum.reduce(
+        String.graphemes(output),
+        {emulator, ""},
+        fn grapheme, {current_emulator, _acc_output} ->
+          {x, y} = current_emulator.cursor.position
+
+          # Combine current text style with hyperlink if active
+          current_style = current_emulator.text_style
+          style_with_link =
+            if current_emulator.current_hyperlink_url do
+              %{current_style | hyperlink: current_emulator.current_hyperlink_url}
+            else
+              current_style
+            end
+
+          updated_buffer =
+            ScreenBuffer.write_char(
+              current_emulator.screen_buffer,
+              x,
+              y,
+              grapheme,
+              style_with_link # Pass style here
+            )
+
+          # Move cursor forward
+          # TODO: Handle wrapping and scrolling
+          new_x = x + 1 # Placeholder
+          new_cursor =
+            Movement.move_to_position(current_emulator.cursor, new_x, y)
+
+          updated_emulator = %{
+            current_emulator
+            | screen_buffer: updated_buffer,
+              cursor: new_cursor
+          }
+
+          {updated_emulator, ""} # Continue reduction
+        end
+      )
+
+    final_emulator
+  end
+
+  @spec handle_escape_sequence(t(), atom(), [non_neg_integer()], String.t()) :: t()
+  def handle_escape_sequence(emulator, command, _params, _intermediate) do
+    case command do
+      # ... other cases ...
+      :restore_state ->
+        # TODO: Ensure state_stack is handled correctly
+        {restored_state, _popped_value} = Raxol.Terminal.ANSI.TerminalState.restore_state(emulator.state_stack)
+        %{emulator | state_stack: restored_state}
+      # ... other cases ...
     end
   end
 end

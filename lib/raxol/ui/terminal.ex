@@ -74,12 +74,13 @@ defmodule Raxol.UI.Terminal do
     rtl = Keyword.get(opts, :rtl) || I18n.rtl?()
 
     # Format text for RTL if needed
-    formatted_text = if rtl do
-      # Basic RTL formatting - in a real implementation this would be more sophisticated
-      String.reverse(text)
-    else
-      text
-    end
+    formatted_text =
+      if rtl do
+        # Basic RTL formatting - in a real implementation this would be more sophisticated
+        String.reverse(text)
+      else
+        text
+      end
 
     # Apply styles
     styled_text = apply_styles(formatted_text, opts)
@@ -181,27 +182,30 @@ defmodule Raxol.UI.Terminal do
 
     _ = :io.setopts([{:binary, true}, {:echo, false}, {:raw, true}])
 
-    result = receive do
-      {:io_request, from, reply_as, {:get_chars, _, _, 1}} ->
-        # Ideally, we'd read just one char, but :io interacts strangely.
-        # Instead, we read what's available immediately.
-        chars = :io.get_chars("", 1)
-        send(from, {:io_reply, reply_as, chars})
-        case chars do
-          :eof -> {:error, :eof}
-          {:error, reason} -> {:error, reason}
-          data when is_binary(data) -> {:ok, parse_key(data)}
-          _ -> {:error, :unknown_reply}
-        end
-      {:io_request, from, reply_as, req} ->
-        # Forward other IO requests
-        reply = :io.request(req)
-        send(from, {:io_reply, reply_as, reply})
-        # Re-enter receive to wait for our char or timeout
-        read_key(opts)
-    after
-      timeout -> :timeout
-    end
+    result =
+      receive do
+        {:io_request, from, reply_as, {:get_chars, _, _, 1}} ->
+          # Ideally, we'd read just one char, but :io interacts strangely.
+          # Instead, we read what's available immediately.
+          chars = :io.get_chars("", 1)
+          send(from, {:io_reply, reply_as, chars})
+
+          case chars do
+            :eof -> {:error, :eof}
+            {:error, reason} -> {:error, reason}
+            data when is_binary(data) -> {:ok, parse_key(data)}
+            _ -> {:error, :unknown_reply}
+          end
+
+        {:io_request, from, reply_as, req} ->
+          # Forward other IO requests
+          reply = :io.request(req)
+          send(from, {:io_reply, reply_as, reply})
+          # Re-enter receive to wait for our char or timeout
+          read_key(opts)
+      after
+        timeout -> :timeout
+      end
 
     _ = :io.setopts(original_opts)
     result
@@ -252,6 +256,7 @@ defmodule Raxol.UI.Terminal do
 
     # Print top border
     border_top = "┌" <> String.duplicate("─", width - 2) <> "┐"
+
     if centered do
       print_centered(border_top, color: border_color)
       println()
@@ -262,6 +267,7 @@ defmodule Raxol.UI.Terminal do
     # Print title if provided
     if title do
       title_line = "│ " <> String.pad_trailing(title, width - 4) <> " │"
+
       if centered do
         print_centered(title_line, color: title_color)
         println()
@@ -272,7 +278,10 @@ defmodule Raxol.UI.Terminal do
         println()
       else
         println(title_line, color: title_color)
-        println("├" <> String.duplicate("─", width - 2) <> "┤", color: border_color)
+
+        println("├" <> String.duplicate("─", width - 2) <> "┤",
+          color: border_color
+        )
       end
     end
 
@@ -281,6 +290,7 @@ defmodule Raxol.UI.Terminal do
 
     Enum.each(lines, fn line ->
       line_str = "│ " <> String.pad_trailing(line, width - 4) <> " │"
+
       if centered do
         print_centered(line_str, color: border_color)
         println()
@@ -291,6 +301,7 @@ defmodule Raxol.UI.Terminal do
 
     # Print bottom border
     border_bottom = "└" <> String.duplicate("─", width - 2) <> "┘"
+
     if centered do
       print_centered(border_bottom, color: border_color)
       println()
@@ -308,35 +319,62 @@ defmodule Raxol.UI.Terminal do
     style_codes = []
 
     # Add color codes if provided
-    style_codes = case Keyword.get(opts, :color) do
-      nil -> style_codes
-      color when is_atom(color) ->
-        # Resolve color from ColorSystem if it's an atom
-        hex = ColorSystem.get_color(color)
-        [fg_color_code(hex) | style_codes]
-      hex ->
-        # Use the hex color directly
-        [fg_color_code(hex) | style_codes]
-    end
+    style_codes =
+      case Keyword.get(opts, :color) do
+        nil ->
+          style_codes
+
+        color when is_atom(color) ->
+          # Resolve color from ColorSystem if it's an atom
+          hex = ColorSystem.get_color(color)
+          [fg_color_code(hex) | style_codes]
+
+        hex ->
+          # Use the hex color directly
+          [fg_color_code(hex) | style_codes]
+      end
 
     # Add background color codes if provided
-    style_codes = case Keyword.get(opts, :background) do
-      nil -> style_codes
-      color when is_atom(color) ->
-        # Resolve color from ColorSystem if it's an atom
-        hex = ColorSystem.get_color(color)
-        [bg_color_code(hex) | style_codes]
-      hex ->
-        # Use the hex color directly
-        [bg_color_code(hex) | style_codes]
-    end
+    style_codes =
+      case Keyword.get(opts, :background) do
+        nil ->
+          style_codes
+
+        color when is_atom(color) ->
+          # Resolve color from ColorSystem if it's an atom
+          hex = ColorSystem.get_color(color)
+          [bg_color_code(hex) | style_codes]
+
+        hex ->
+          # Use the hex color directly
+          [bg_color_code(hex) | style_codes]
+      end
 
     # Add other style codes
-    style_codes = if Keyword.get(opts, :bold, false), do: ["1" | style_codes], else: style_codes
-    style_codes = if Keyword.get(opts, :italic, false), do: ["3" | style_codes], else: style_codes
-    style_codes = if Keyword.get(opts, :underline, false), do: ["4" | style_codes], else: style_codes
-    style_codes = if Keyword.get(opts, :dim, false), do: ["2" | style_codes], else: style_codes
-    style_codes = if Keyword.get(opts, :blink, false), do: ["5" | style_codes], else: style_codes
+    style_codes =
+      if Keyword.get(opts, :bold, false),
+        do: ["1" | style_codes],
+        else: style_codes
+
+    style_codes =
+      if Keyword.get(opts, :italic, false),
+        do: ["3" | style_codes],
+        else: style_codes
+
+    style_codes =
+      if Keyword.get(opts, :underline, false),
+        do: ["4" | style_codes],
+        else: style_codes
+
+    style_codes =
+      if Keyword.get(opts, :dim, false),
+        do: ["2" | style_codes],
+        else: style_codes
+
+    style_codes =
+      if Keyword.get(opts, :blink, false),
+        do: ["5" | style_codes],
+        else: style_codes
 
     # Format the text with style codes
     if Enum.empty?(style_codes) do
@@ -380,19 +418,16 @@ defmodule Raxol.UI.Terminal do
       "\x7F" -> :backspace
       "\x03" -> :ctrl_c
       "\x04" -> :ctrl_d
-
       # Arrow keys
       "\e[A" -> {:arrow, :up}
       "\e[B" -> {:arrow, :down}
       "\e[C" -> {:arrow, :right}
       "\e[D" -> {:arrow, :left}
-
       # Function keys
       "\e[11~" -> :f1
       "\e[12~" -> :f2
       "\e[13~" -> :f3
       "\e[14~" -> :f4
-
       # Default - regular character
       <<char::utf8, _rest::binary>> -> {:char, <<char::utf8>>}
       _ -> {:unknown, data}
@@ -404,9 +439,13 @@ defmodule Raxol.UI.Terminal do
       {:ok, width} ->
         case :io.rows() do
           {:ok, height} -> {width, height}
-          _ -> {80, 24} # Default height
+          # Default height
+          _ -> {80, 24}
         end
-      _ -> {80, 24} # Default size
+
+      # Default size
+      _ ->
+        {80, 24}
     end
   end
 end

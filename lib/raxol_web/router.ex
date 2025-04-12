@@ -22,26 +22,26 @@ defmodule RaxolWeb.Router do
   end
 
   scope "/", RaxolWeb do
-    pipe_through :browser
+    pipe_through(:browser)
 
-    get "/", PageController, :home
+    get("/", PageController, :home)
 
     # Authentication routes
-    get "/register", UserRegistrationController, :new
-    post "/register", UserRegistrationController, :create
-    get "/login", UserSessionController, :new
-    post "/login", UserSessionController, :create
-    delete "/logout", UserSessionController, :delete
+    get("/register", UserRegistrationController, :new)
+    post("/register", UserRegistrationController, :create)
+    get("/login", UserSessionController, :new)
+    post("/login", UserSessionController, :create)
+    delete("/logout", UserSessionController, :delete)
 
     # Protected routes
-    live "/settings", SettingsLive, :index
-    live "/monitoring", MonitoringLive, :index
+    live("/settings", SettingsLive, :index)
+    live("/monitoring", MonitoringLive, :index)
   end
 
   scope "/terminal", RaxolWeb do
-    pipe_through [:browser, :auth]
+    pipe_through([:browser, :auth])
 
-    live "/:session_id", TerminalLive, :index
+    live("/:session_id", TerminalLive, :index)
   end
 
   # Other scopes may use custom stacks.
@@ -59,9 +59,9 @@ defmodule RaxolWeb.Router do
     import Phoenix.LiveDashboard.Router
 
     scope "/dev" do
-      pipe_through :browser
+      pipe_through(:browser)
 
-      live_dashboard "/dashboard", metrics: RaxolWeb.Telemetry
+      live_dashboard("/dashboard", metrics: RaxolWeb.Telemetry)
     end
   end
-end 
+end

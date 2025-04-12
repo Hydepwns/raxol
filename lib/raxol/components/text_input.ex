@@ -130,15 +130,18 @@ defmodule Raxol.Components.TextInput do
         input
       else
         # Insert the character at cursor position
-        {before_cursor, after_cursor} = String.split_at(input.value, input.cursor_pos)
+        {before_cursor, after_cursor} =
+          String.split_at(input.value, input.cursor_pos)
+
         new_value = before_cursor <> char <> after_cursor
         new_cursor_pos = input.cursor_pos + 1
 
         # Update with new value and cursor position
-        updated_input = %{input |
-          value: new_value,
-          cursor_pos: new_cursor_pos,
-          selection: nil
+        updated_input = %{
+          input
+          | value: new_value,
+            cursor_pos: new_cursor_pos,
+            selection: nil
         }
 
         # Validate if needed
@@ -162,16 +165,19 @@ defmodule Raxol.Components.TextInput do
       input
     else
       # Delete the character before cursor
-      {before_cursor, after_cursor} = String.split_at(input.value, input.cursor_pos)
+      {before_cursor, after_cursor} =
+        String.split_at(input.value, input.cursor_pos)
+
       {_, before_cursor} = String.split_at(before_cursor, -1)
       new_value = before_cursor <> after_cursor
       new_cursor_pos = input.cursor_pos - 1
 
       # Update with new value and cursor position
-      updated_input = %{input |
-        value: new_value,
-        cursor_pos: new_cursor_pos,
-        selection: nil
+      updated_input = %{
+        input
+        | value: new_value,
+          cursor_pos: new_cursor_pos,
+          selection: nil
       }
 
       # Validate if needed
@@ -190,19 +196,19 @@ defmodule Raxol.Components.TextInput do
 
   def handle_key_event(input, {:none, :delete}) do
     # Only process if not disabled and there's something to delete
-    if input.disabled || input.value == "" || input.cursor_pos >= String.length(input.value) do
+    if input.disabled || input.value == "" ||
+         input.cursor_pos >= String.length(input.value) do
       input
     else
       # Delete the character after cursor
-      {before_cursor, after_cursor} = String.split_at(input.value, input.cursor_pos)
+      {before_cursor, after_cursor} =
+        String.split_at(input.value, input.cursor_pos)
+
       {_, after_cursor} = String.split_at(after_cursor, 1)
       new_value = before_cursor <> after_cursor
 
       # Update with new value (cursor position stays the same)
-      updated_input = %{input |
-        value: new_value,
-        selection: nil
-      }
+      updated_input = %{input | value: new_value, selection: nil}
 
       # Validate if needed
       updated_input = validate_input(updated_input)
@@ -260,6 +266,7 @@ defmodule Raxol.Components.TextInput do
       input
     else
       new_cursor_pos = input.cursor_pos - 1
+
       new_selection =
         case input.selection do
           nil -> {new_cursor_pos, input.cursor_pos}
@@ -276,6 +283,7 @@ defmodule Raxol.Components.TextInput do
       input
     else
       new_cursor_pos = input.cursor_pos + 1
+
       new_selection =
         case input.selection do
           nil -> {input.cursor_pos, new_cursor_pos}
@@ -306,31 +314,37 @@ defmodule Raxol.Components.TextInput do
   # end
 
   defp get_input_style(style_atom, disabled, valid) when is_atom(style_atom) do
-    base_style = Style.new([
-      padding: [0, 1],
-      width: :fill,
-      border: :single
-    ])
+    base_style =
+      Style.new(
+        padding: [0, 1],
+        width: :fill,
+        border: :single
+      )
 
     # Define state-based styles
     state_style =
       cond do
-        disabled -> Style.new(%{color: :gray, border_color: :dark_gray}) # Example disabled style
-        !valid -> Style.new(%{border_color: :red}) # Invalid style
-        true -> Style.new(%{border_color: :gray}) # Default valid style
+        # Example disabled style
+        disabled -> Style.new(%{color: :gray, border_color: :dark_gray})
+        # Invalid style
+        !valid -> Style.new(%{border_color: :red})
+        # Default valid style
+        true -> Style.new(%{border_color: :gray})
       end
 
     # Merge base and state styles
     Style.merge(base_style, state_style)
   end
 
-  defp get_input_style(custom_style, disabled, valid) when is_map(custom_style) do
+  defp get_input_style(custom_style, disabled, valid)
+       when is_map(custom_style) do
     # Define a base style if needed, or assume custom_style provides all defaults
-    base_style = Style.new([
-      padding: [0, 1],
-      width: :fill,
-      border: :single
-    ])
+    base_style =
+      Style.new(
+        padding: [0, 1],
+        width: :fill,
+        border: :single
+      )
 
     # Merge base with the custom style provided
     merged_base = Style.merge(base_style, custom_style)
@@ -338,9 +352,12 @@ defmodule Raxol.Components.TextInput do
     # Define state-based overrides
     state_override_style =
       cond do
-        disabled -> Style.new(%{color: :gray, border_color: :dark_gray}) # Example disabled style
-        !valid -> Style.new(%{border_color: :red}) # Invalid style override
-        true -> Style.new(%{}) # No override needed for valid state if custom_style handles it
+        # Example disabled style
+        disabled -> Style.new(%{color: :gray, border_color: :dark_gray})
+        # Invalid style override
+        !valid -> Style.new(%{border_color: :red})
+        # No override needed for valid state if custom_style handles it
+        true -> Style.new(%{})
       end
 
     # Merge the combined base/custom style with state overrides

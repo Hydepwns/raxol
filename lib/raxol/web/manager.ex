@@ -12,11 +12,12 @@ defmodule Raxol.Web.Manager do
   end
 
   def init(opts) do
-    {:ok, %{
-      sessions: %{},
-      terminals: %{},
-      opts: opts
-    }}
+    {:ok,
+     %{
+       sessions: %{},
+       terminals: %{},
+       opts: opts
+     }}
   end
 
   # Server callbacks
@@ -31,7 +32,11 @@ defmodule Raxol.Web.Manager do
     {:reply, :ok, new_state}
   end
 
-  def handle_call({:register_terminal, terminal_id, terminal_data}, _from, state) do
+  def handle_call(
+        {:register_terminal, terminal_id, terminal_data},
+        _from,
+        state
+      ) do
     new_state = put_in(state, [:terminals, terminal_id], terminal_data)
     {:reply, :ok, new_state}
   end
@@ -48,4 +53,4 @@ defmodule Raxol.Web.Manager do
   def handle_call(:get_terminals, _from, state) do
     {:reply, state.terminals, state}
   end
-end 
+end

@@ -30,10 +30,14 @@ defmodule Raxol.Style.Colors.Utilities do
   alias Raxol.Style.Colors.Color
 
   # WCAG contrast ratio thresholds
-  @contrast_aa 4.5  # AA level for normal text
-  @contrast_aaa 7.0  # AAA level for normal text
-  @contrast_aa_large 3.0  # AA level for large text
-  @contrast_aaa_large 4.5  # AAA level for large text
+  # AA level for normal text
+  @contrast_aa 4.5
+  # AAA level for normal text
+  @contrast_aaa 7.0
+  # AA level for large text
+  @contrast_aa_large 3.0
+  # AAA level for large text
+  @contrast_aaa_large 4.5
 
   @doc """
   Calculates the relative luminance of a color according to WCAG guidelines.
@@ -61,9 +65,20 @@ defmodule Raxol.Style.Colors.Utilities do
 
   def relative_luminance(%Color{r: r, g: g, b: b}) do
     # Convert RGB values to relative luminance
-    r = if r <= 10, do: r / 255 / 12.92, else: :math.pow((r / 255 + 0.055) / 1.055, 2.4)
-    g = if g <= 10, do: g / 255 / 12.92, else: :math.pow((g / 255 + 0.055) / 1.055, 2.4)
-    b = if b <= 10, do: b / 255 / 12.92, else: :math.pow((b / 255 + 0.055) / 1.055, 2.4)
+    r =
+      if r <= 10,
+        do: r / 255 / 12.92,
+        else: :math.pow((r / 255 + 0.055) / 1.055, 2.4)
+
+    g =
+      if g <= 10,
+        do: g / 255 / 12.92,
+        else: :math.pow((g / 255 + 0.055) / 1.055, 2.4)
+
+    b =
+      if b <= 10,
+        do: b / 255 / 12.92,
+        else: :math.pow((b / 255 + 0.055) / 1.055, 2.4)
 
     0.2126 * r + 0.7152 * g + 0.0722 * b
   end
@@ -88,7 +103,8 @@ defmodule Raxol.Style.Colors.Utilities do
       iex> Utilities.contrast_ratio("#777777", "#999999")
       1.3
   """
-  def contrast_ratio(color1, color2) when is_binary(color1) or is_binary(color2) do
+  def contrast_ratio(color1, color2)
+      when is_binary(color1) or is_binary(color2) do
     color1 = if is_binary(color1), do: Color.from_hex(color1), else: color1
     color2 = if is_binary(color2), do: Color.from_hex(color2), else: color2
     contrast_ratio(color1, color2)
@@ -150,13 +166,21 @@ defmodule Raxol.Style.Colors.Utilities do
       iex> Utilities.darken_until_contrast("#777777", "#FFFFFF", 4.5)
       "#595959"
   """
-  def darken_until_contrast(color, background, target_ratio) when is_binary(color) or is_binary(background) do
+  def darken_until_contrast(color, background, target_ratio)
+      when is_binary(color) or is_binary(background) do
     color = if is_binary(color), do: Color.from_hex(color), else: color
-    background = if is_binary(background), do: Color.from_hex(background), else: background
+
+    background =
+      if is_binary(background), do: Color.from_hex(background), else: background
+
     darken_until_contrast(color, background, target_ratio)
   end
 
-  def darken_until_contrast(%Color{} = color, %Color{} = background, target_ratio) do
+  def darken_until_contrast(
+        %Color{} = color,
+        %Color{} = background,
+        target_ratio
+      ) do
     # Start with the original color
     current = color
 
@@ -168,7 +192,8 @@ defmodule Raxol.Style.Colors.Utilities do
       ratio >= target_ratio
     end)
     |> case do
-      nil -> color  # If we couldn't find a suitable color, return the original
+      # If we couldn't find a suitable color, return the original
+      nil -> color
       result -> Color.to_hex(result)
     end
   end
@@ -191,13 +216,21 @@ defmodule Raxol.Style.Colors.Utilities do
       iex> Utilities.lighten_until_contrast("#777777", "#000000", 4.5)
       "#CCCCCC"
   """
-  def lighten_until_contrast(color, background, target_ratio) when is_binary(color) or is_binary(background) do
+  def lighten_until_contrast(color, background, target_ratio)
+      when is_binary(color) or is_binary(background) do
     color = if is_binary(color), do: Color.from_hex(color), else: color
-    background = if is_binary(background), do: Color.from_hex(background), else: background
+
+    background =
+      if is_binary(background), do: Color.from_hex(background), else: background
+
     lighten_until_contrast(color, background, target_ratio)
   end
 
-  def lighten_until_contrast(%Color{} = color, %Color{} = background, target_ratio) do
+  def lighten_until_contrast(
+        %Color{} = color,
+        %Color{} = background,
+        target_ratio
+      ) do
     # Start with the original color
     current = color
 
@@ -209,7 +242,8 @@ defmodule Raxol.Style.Colors.Utilities do
       ratio >= target_ratio
     end)
     |> case do
-      nil -> color  # If we couldn't find a suitable color, return the original
+      # If we couldn't find a suitable color, return the original
+      nil -> color
       result -> Color.to_hex(result)
     end
   end
@@ -278,7 +312,8 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Returns
   - `{h, s, l}` tuple: Hue (0-360), Saturation (0.0-1.0), Lightness (0.0-1.0)
   """
-  @spec rgb_to_hsl(integer(), integer(), integer()) :: {float(), float(), float()}
+  @spec rgb_to_hsl(integer(), integer(), integer()) ::
+          {float(), float(), float()}
   def rgb_to_hsl(r, g, b) do
     r_norm = r / 255
     g_norm = g / 255
@@ -300,7 +335,8 @@ defmodule Raxol.Style.Colors.Utilities do
       delta == 0 -> 0
       max == r -> 60 * rem(round((g - b) / delta), 6)
       max == g -> 60 * ((b - r) / delta + 2)
-      true -> 60 * ((r - g) / delta + 4) # max == b
+      # max == b
+      true -> 60 * ((r - g) / delta + 4)
     end
   end
 
@@ -313,7 +349,8 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Returns
   - `{r, g, b}` tuple: Red, Green, Blue values (0-255)
   """
-  @spec hsl_to_rgb(number(), float(), float()) :: {integer(), integer(), integer()}
+  @spec hsl_to_rgb(number(), float(), float()) ::
+          {integer(), integer(), integer()}
   def hsl_to_rgb(h, s, l) when is_number(h) and is_float(s) and is_float(l) do
     l_ = l / 100.0
 
@@ -323,15 +360,17 @@ defmodule Raxol.Style.Colors.Utilities do
     m = l_ - c / 2.0
 
     # Determine RGB based on hue segment
-    {r_prime, g_prime, b_prime} = case trunc(h / 60.0) do
-      0 -> {c, x, 0.0}
-      1 -> {x, c, 0.0}
-      2 -> {0.0, c, x}
-      3 -> {0.0, x, c}
-      4 -> {x, 0.0, c}
-      5 -> {c, 0.0, x}
-      _ -> {0.0, 0.0, 0.0} # Should not happen for valid HSL
-    end
+    {r_prime, g_prime, b_prime} =
+      case trunc(h / 60.0) do
+        0 -> {c, x, 0.0}
+        1 -> {x, c, 0.0}
+        2 -> {0.0, c, x}
+        3 -> {0.0, x, c}
+        4 -> {x, 0.0, c}
+        5 -> {c, 0.0, x}
+        # Should not happen for valid HSL
+        _ -> {0.0, 0.0, 0.0}
+      end
 
     # Adjust RGB values and scale to 0-255
     r = round((r_prime + m) * 255)
@@ -362,16 +401,18 @@ defmodule Raxol.Style.Colors.Utilities do
       iex> Raxol.Style.Colors.Utilities.readable?(bg, fg, :aaa)
       false
   """
-  @spec readable?(Color.t(), Color.t(), :aa | :aaa | :aa_large | :aaa_large) :: boolean()
+  @spec readable?(Color.t(), Color.t(), :aa | :aaa | :aa_large | :aaa_large) ::
+          boolean()
   def readable?(%Color{} = background, %Color{} = foreground, level \\ :aa) do
     ratio = contrast_ratio(background, foreground)
 
-    threshold = case level do
-      :aa -> @contrast_aa
-      :aaa -> @contrast_aaa
-      :aa_large -> @contrast_aa_large
-      :aaa_large -> @contrast_aaa_large
-    end
+    threshold =
+      case level do
+        :aa -> @contrast_aa
+        :aaa -> @contrast_aaa
+        :aa_large -> @contrast_aa_large
+        :aaa_large -> @contrast_aaa_large
+      end
 
     ratio >= threshold
   end
@@ -444,7 +485,7 @@ defmodule Raxol.Style.Colors.Utilities do
   def suggest_text_color(%Color{} = background) do
     # Use white text for dark backgrounds, black text for light backgrounds
     # Using the YIQ formula for perceived brightness
-    yiq = ((background.r * 299) + (background.g * 587) + (background.b * 114)) / 1000
+    yiq = (background.r * 299 + background.g * 587 + background.b * 114) / 1000
 
     if yiq >= 128 do
       # Dark text on light background

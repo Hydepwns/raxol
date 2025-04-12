@@ -1,6 +1,6 @@
 # Configure the test environment
 Application.put_env(:raxol, :database_enabled, false)
-Application.put_env(:raxol, Raxol.Repo, [enabled: false])
+Application.put_env(:raxol, Raxol.Repo, enabled: false)
 
 # Ensure database is not started (redundant with above?)
 Application.put_env(:phoenix, :serve_endpoints, false)

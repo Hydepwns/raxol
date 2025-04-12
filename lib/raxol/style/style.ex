@@ -4,23 +4,26 @@ defmodule Raxol.Style do
   """
 
   @type t :: %__MODULE__{
-    layout: Raxol.Style.Layout.t(),
-    border: Raxol.Style.Borders.t(),
-    color: Raxol.Style.Colors.Color.t() | nil,
-    background: Raxol.Style.Colors.Color.t() | nil,
-    text_decoration: list(:underline | :strikethrough | :bold | :italic),
-    decorations: list(atom)
-  }
+          layout: Raxol.Style.Layout.t(),
+          border: Raxol.Style.Borders.t(),
+          color: Raxol.Style.Colors.Color.t() | nil,
+          background: Raxol.Style.Colors.Color.t() | nil,
+          text_decoration: list(:underline | :strikethrough | :bold | :italic),
+          decorations: list(atom)
+        }
 
   defstruct layout: Raxol.Style.Layout.new(),
             border: Raxol.Style.Borders.new(),
-            color: nil, # Default color handled by renderer
-            background: nil, # Default background handled by renderer
+            # Default color handled by renderer
+            color: nil,
+            # Default background handled by renderer
+            background: nil,
             text_decoration: [],
             decorations: []
 
   alias Raxol.Style.{Layout, Borders}
-  alias Raxol.Style.Colors # Alias the parent module
+  # Alias the parent module
+  alias Raxol.Style.Colors
 
   @ansi_codes %{
     underline: 4,
@@ -58,8 +61,9 @@ defmodule Raxol.Style do
       border: Borders.merge(base.border, override.border),
       color: override.color || base.color,
       background: override.background || base.background,
-      text_decoration: base.text_decoration ++ override.text_decoration |> Enum.uniq(),
-      decorations: base.decorations ++ override.decorations |> Enum.uniq()
+      text_decoration:
+        (base.text_decoration ++ override.text_decoration) |> Enum.uniq(),
+      decorations: (base.decorations ++ override.decorations) |> Enum.uniq()
     }
   end
 
@@ -67,12 +71,20 @@ defmodule Raxol.Style do
   Converts style properties to ANSI escape sequences (currently just numeric codes).
   """
   def to_ansi(style) do
-    fg_ansi = if style.color, do: Colors.Color.to_ansi(style.color, :foreground), else: nil
-    bg_ansi = if style.background, do: Colors.Color.to_ansi(style.background, :background), else: nil
+    fg_ansi =
+      if style.color,
+        do: Colors.Color.to_ansi(style.color, :foreground),
+        else: nil
 
-    decoration_ansi = Enum.map(style.decorations, fn dec ->
-      Map.get(@ansi_codes, dec)
-    end)
+    bg_ansi =
+      if style.background,
+        do: Colors.Color.to_ansi(style.background, :background),
+        else: nil
+
+    decoration_ansi =
+      Enum.map(style.decorations, fn dec ->
+        Map.get(@ansi_codes, dec)
+      end)
 
     [
       fg_ansi,
@@ -80,6 +92,7 @@ defmodule Raxol.Style do
       | decoration_ansi
     ]
     |> Enum.reject(&is_nil/1)
+
     # Actual sequence generation (e.g., IO.ANSI...) should happen closer to rendering
   end
 
@@ -89,13 +102,23 @@ defmodule Raxol.Style do
   def resolve(style_def, theme \\ nil) do
     theme = theme || Raxol.Style.Theme.current()
 
-    resolved_style = case style_def do
-      %__MODULE__{} = style -> style
-      atom when is_atom(atom) -> theme.styles[atom] || new()
-      string when is_binary(string) -> theme.styles[String.to_atom(string)] || new()
-      map when is_map(map) -> new(map)
-      _ -> new()
-    end
+    resolved_style =
+      case style_def do
+        %__MODULE__{} = style ->
+          style
+
+        atom when is_atom(atom) ->
+          theme.styles[atom] || new()
+
+        string when is_binary(string) ->
+          theme.styles[String.to_atom(string)] || new()
+
+        map when is_map(map) ->
+          new(map)
+
+        _ ->
+          new()
+      end
 
     # Apply theme variants if applicable
     apply_theme_variant(resolved_style, theme)
@@ -105,11 +128,12 @@ defmodule Raxol.Style do
   Apply responsive styling based on terminal dimensions.
   """
   def apply_responsive(style, width, height) do
-    responsive_rules = style.responsive
-    |> Enum.filter(fn {constraint, _} ->
-      evaluate_constraint(constraint, width, height)
-    end)
-    |> Enum.map(fn {_, style_override} -> style_override end)
+    responsive_rules =
+      style.responsive
+      |> Enum.filter(fn {constraint, _} ->
+        evaluate_constraint(constraint, width, height)
+      end)
+      |> Enum.map(fn {_, style_override} -> style_override end)
 
     Enum.reduce(responsive_rules, style, &merge/2)
   end

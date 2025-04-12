@@ -46,15 +46,27 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     GenServer.call(__MODULE__, :get_and_clear_render_queue)
   end
 
+  @doc """
+  Retrieves a specific component's data by its ID.
+  """
+  @spec get_component(String.t()) :: map() | nil
+  def get_component(component_id) do
+    GenServer.call(__MODULE__, {:get_component, component_id})
+  end
+
   # Server Callbacks
 
   @impl true
   def init(_opts) do
-    {:ok, %{
-      components: %{},  # component_id => component_state
-      subscriptions: %{},  # subscription_id => component_id
-      render_queue: []  # list of component_ids needing render
-    }}
+    {:ok,
+     %{
+       # component_id => component_state
+       components: %{},
+       # subscription_id => component_id
+       subscriptions: %{},
+       # list of component_ids needing render
+       render_queue: []
+     }}
   end
 
   @impl true
@@ -68,11 +80,12 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     {mounted_state, commands} = component_module.mount(initial_state)
 
     # Store component state
-    new_state = put_in(state.components[component_id], %{
-      module: component_module,
-      state: mounted_state,
-      props: props
-    })
+    new_state =
+      put_in(state.components[component_id], %{
+        module: component_module,
+        state: mounted_state,
+        props: props
+      })
 
     # Process any commands from mounting
     process_commands(commands, component_id, new_state)
@@ -132,24 +145,32 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   end
 
   @impl true
+  def handle_call({:get_component, component_id}, _from, state) do
+    component_data = Map.get(state.components, component_id)
+    {:reply, component_data, state}
+  end
+
+  @impl true
   def handle_cast({:dispatch_event, event}, state) do
     # Dispatch event to all components
-    state = Enum.reduce(state.components, state, fn {component_id, component}, acc ->
-      {new_state, commands} = component.module.handle_event(event, component.state)
+    state =
+      Enum.reduce(state.components, state, fn {component_id, component}, acc ->
+        {new_state, commands} =
+          component.module.handle_event(event, component.state)
 
-      # Update component state
-      acc = put_in(acc.components[component_id].state, new_state)
+        # Update component state
+        acc = put_in(acc.components[component_id].state, new_state)
 
-      # Process any commands from event handling
-      process_commands(commands, component_id, acc)
+        # Process any commands from event handling
+        process_commands(commands, component_id, acc)
 
-      # Queue re-render if state changed
-      if new_state != component.state do
-        update_in(acc.render_queue, &[component_id | &1])
-      else
-        acc
-      end
-    end)
+        # Queue re-render if state changed
+        if new_state != component.state do
+          update_in(acc.render_queue, &[component_id | &1])
+        else
+          acc
+        end
+      end)
 
     {:noreply, state}
   end
@@ -173,6 +194,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
           Enum.each(acc.components, fn {id, _} ->
             update(id, msg)
           end)
+
           acc
 
         _ ->
@@ -185,7 +207,12 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     case command do
       {:subscribe, events} when is_list(events) ->
         # Set up event subscription using aliased Subscription module
-        {:ok, sub_id} = Subscription.start(%Subscription{type: :events, data: events}, %{pid: self()}) # Assuming start/2 is the correct function
+        # Assuming start/2 is the correct function
+        {:ok, sub_id} =
+          Subscription.start(%Subscription{type: :events, data: events}, %{
+            pid: self()
+          })
+
         state = put_in(state.subscriptions[sub_id], component_id)
         state
 
@@ -201,9 +228,10 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   defp cleanup_subscriptions(component_id, state) do
     # Find and remove all subscriptions for this component
-    {to_remove, remaining} = Enum.split_with(state.subscriptions, fn {_, cid} ->
-      cid == component_id
-    end)
+    {to_remove, remaining} =
+      Enum.split_with(state.subscriptions, fn {_, cid} ->
+        cid == component_id
+      end)
 
     # Unsubscribe from each using aliased Subscription module
     Enum.each(to_remove, fn {sub_id, _} ->

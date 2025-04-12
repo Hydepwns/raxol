@@ -15,10 +15,10 @@ defmodule Raxol.Core.Events.Event do
   @type event_type :: atom()
 
   @type t :: %__MODULE__{
-    type: event_type(),
-    timestamp: integer(),
-    data: term()
-  }
+          type: event_type(),
+          timestamp: integer(),
+          data: term()
+        }
 
   defstruct [:type, :timestamp, :data]
 
@@ -44,10 +44,10 @@ defmodule Raxol.Core.Events.Event do
   @type modifiers :: [atom()]
 
   @type key_event :: %{
-    key: key(),
-    state: key_state(),
-    modifiers: modifiers()
-  }
+          key: key(),
+          state: key_state(),
+          modifiers: modifiers()
+        }
 
   @doc """
   Creates a keyboard event.
@@ -80,11 +80,11 @@ defmodule Raxol.Core.Events.Event do
   @type mouse_position :: {non_neg_integer(), non_neg_integer()}
 
   @type mouse_event :: %{
-    button: mouse_button() | nil,
-    state: mouse_state() | nil,
-    position: mouse_position(),
-    modifiers: modifiers()
-  }
+          button: mouse_button() | nil,
+          state: mouse_state() | nil,
+          position: mouse_position(),
+          modifiers: modifiers()
+        }
 
   @doc """
   Creates a mouse event.
@@ -97,9 +97,9 @@ defmodule Raxol.Core.Events.Event do
   """
   def mouse_event(button, position, state \\ :pressed, modifiers \\ [])
       when button in [:left, :right, :middle] and
-           state in [:pressed, :released, :double_click] and
-           is_tuple(position) and
-           is_list(modifiers) do
+             state in [:pressed, :released, :double_click] and
+             is_tuple(position) and
+             is_list(modifiers) do
     new(:mouse, %{
       button: button,
       position: position,
@@ -118,7 +118,8 @@ defmodule Raxol.Core.Events.Event do
   @doc """
   Creates a mouse event with drag state.
   """
-  def mouse(button, position, drag: true) when button in [:left, :right, :middle] do
+  def mouse(button, position, drag: true)
+      when button in [:left, :right, :middle] do
     new(:mouse, %{
       button: button,
       position: position,
@@ -131,10 +132,10 @@ defmodule Raxol.Core.Events.Event do
   # Window Events
 
   @type window_event :: %{
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    action: :resize | :focus | :blur
-  }
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          action: :resize | :focus | :blur
+        }
 
   @doc """
   Creates a window event.
@@ -146,7 +147,7 @@ defmodule Raxol.Core.Events.Event do
   """
   def window_event(width, height, action)
       when is_integer(width) and is_integer(height) and
-           action in [:resize, :focus, :blur] do
+             action in [:resize, :focus, :blur] do
     new(:window, %{
       width: width,
       height: height,
@@ -203,9 +204,9 @@ defmodule Raxol.Core.Events.Event do
 
   @type focus_target :: :component | :window | :application
   @type focus_event :: %{
-    target: focus_target(),
-    focused: boolean()
-  }
+          target: focus_target(),
+          focused: boolean()
+        }
 
   @doc """
   Creates a focus event.
@@ -214,7 +215,8 @@ defmodule Raxol.Core.Events.Event do
     * `target` - What received/lost focus
     * `focused` - Whether focus was gained (true) or lost (false)
   """
-  def focus_event(target, focused) when target in [:component, :window, :application] do
+  def focus_event(target, focused)
+      when target in [:component, :window, :application] do
     new(:focus, %{
       target: target,
       focused: focused
@@ -223,10 +225,10 @@ defmodule Raxol.Core.Events.Event do
 
   @type scroll_direction :: :vertical | :horizontal
   @type scroll_event :: %{
-    direction: scroll_direction(),
-    delta: integer(),
-    position: {non_neg_integer(), non_neg_integer()}
-  }
+          direction: scroll_direction(),
+          delta: integer(),
+          position: {non_neg_integer(), non_neg_integer()}
+        }
 
   @doc """
   Creates a scroll event.
@@ -246,11 +248,11 @@ defmodule Raxol.Core.Events.Event do
   end
 
   @type cursor_event :: %{
-    visible: boolean(),
-    style: :block | :line | :underscore,
-    blink: boolean(),
-    position: {non_neg_integer(), non_neg_integer()}
-  }
+          visible: boolean(),
+          style: :block | :line | :underscore,
+          blink: boolean(),
+          position: {non_neg_integer(), non_neg_integer()}
+        }
 
   @doc """
   Creates a cursor event.
@@ -263,7 +265,7 @@ defmodule Raxol.Core.Events.Event do
   """
   def cursor_event(visible, style, blink, position)
       when is_boolean(visible) and style in [:block, :line, :underscore] and
-           is_boolean(blink) and is_tuple(position) do
+             is_boolean(blink) and is_tuple(position) do
     new(:cursor, %{
       visible: visible,
       style: style,
@@ -273,10 +275,10 @@ defmodule Raxol.Core.Events.Event do
   end
 
   @type selection_event :: %{
-    start_pos: {non_neg_integer(), non_neg_integer()},
-    end_pos: {non_neg_integer(), non_neg_integer()},
-    text: String.t()
-  }
+          start_pos: {non_neg_integer(), non_neg_integer()},
+          end_pos: {non_neg_integer(), non_neg_integer()},
+          text: String.t()
+        }
 
   @doc """
   Creates a selection event.
@@ -296,9 +298,9 @@ defmodule Raxol.Core.Events.Event do
   end
 
   @type paste_event :: %{
-    text: String.t(),
-    position: {non_neg_integer(), non_neg_integer()}
-  }
+          text: String.t(),
+          position: {non_neg_integer(), non_neg_integer()}
+        }
 
   @doc """
   Creates a paste event.
@@ -320,7 +322,12 @@ defmodule Raxol.Core.Events.Event do
   Converts a raw event (e.g., from ExTermbox) into a Raxol event.
   """
   @spec convert(ExTermboxEvent.t()) :: t()
-  def convert(%ExTermboxEvent{type: :key, mod: mod, key: key_code, ch: char_code}) do
+  def convert(%ExTermboxEvent{
+        type: :key,
+        mod: mod,
+        key: key_code,
+        ch: char_code
+      }) do
     # TODO: Refine mapping of ExTermbox key/char/mod codes
     key = if key_code != 0, do: map_key_code(key_code), else: <<char_code>>
     modifiers = map_modifiers(mod)
@@ -331,7 +338,13 @@ defmodule Raxol.Core.Events.Event do
     window_event(width, height, :resize)
   end
 
-  def convert(%ExTermboxEvent{type: :mouse, key: button_code, x: x, y: y, mod: mod}) do
+  def convert(%ExTermboxEvent{
+        type: :mouse,
+        key: button_code,
+        x: x,
+        y: y,
+        mod: mod
+      }) do
     # TODO: Refine mapping of ExTermbox mouse button/mod codes
     button = map_button_code(button_code)
     modifiers = map_modifiers(mod)
@@ -371,7 +384,8 @@ defmodule Raxol.Core.Events.Event do
       code == ExTermboxConstants.key(:esc) -> :escape
       code == ExTermboxConstants.key(:enter) -> :enter
       code == ExTermboxConstants.key(:space) -> :space
-      code == ExTermboxConstants.key(:backspace2) -> :backspace # Or KEY_BACKSPACE?
+      # Or KEY_BACKSPACE?
+      code == ExTermboxConstants.key(:backspace2) -> :backspace
       code == ExTermboxConstants.key(:tab) -> :tab
       true -> {:unknown_key, code}
     end
@@ -386,9 +400,12 @@ defmodule Raxol.Core.Events.Event do
     # mod_alt = ExTermboxConstants.attribute(:reverse) # Placeholder - incorrect!
 
     mods = []
-    mods = if Bitwise.band(mod, 4) != 0, do: [:shift | mods], else: mods # 0x4 for Shift
-    mods = if Bitwise.band(mod, 8) != 0, do: [:alt | mods], else: mods # 0x8 for Alt
-    mods = if Bitwise.band(mod, 16) != 0, do: [:ctrl | mods], else: mods # 0x10 for Ctrl
+    # 0x4 for Shift
+    mods = if Bitwise.band(mod, 4) != 0, do: [:shift | mods], else: mods
+    # 0x8 for Alt
+    mods = if Bitwise.band(mod, 8) != 0, do: [:alt | mods], else: mods
+    # 0x10 for Ctrl
+    mods = if Bitwise.band(mod, 16) != 0, do: [:ctrl | mods], else: mods
     Enum.reverse(mods)
   end
 
@@ -400,7 +417,8 @@ defmodule Raxol.Core.Events.Event do
       code == ExTermboxConstants.key(:mouse_middle) -> :middle
       code == ExTermboxConstants.key(:mouse_wheel_up) -> :wheel_up
       code == ExTermboxConstants.key(:mouse_wheel_down) -> :wheel_down
-      code == ExTermboxConstants.key(:mouse_release) -> :release # This is a key, not a button state
+      # This is a key, not a button state
+      code == ExTermboxConstants.key(:mouse_release) -> :release
       true -> nil
     end
   end

@@ -14,6 +14,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   describe "save_state/2" do
     test "saves terminal state to the stack" do
       stack = TerminalState.new()
+
       state = %{
         cursor: {10, 5},
         attributes: %{foreground: :red, background: :black},
@@ -36,6 +37,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
     test "saves multiple states to the stack" do
       stack = TerminalState.new()
+
       state1 = %{
         cursor: {10, 5},
         attributes: %{foreground: :red},
@@ -43,6 +45,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
         mode_state: ScreenModes.new(),
         scroll_region: {5, 15}
       }
+
       state2 = %{
         cursor: {20, 10},
         attributes: %{foreground: :blue},
@@ -66,6 +69,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   describe "restore_state/1" do
     test "restores the most recently saved state" do
       stack = TerminalState.new()
+
       state = %{
         cursor: {10, 5},
         attributes: %{foreground: :red},
@@ -93,6 +97,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
     test "restores states in LIFO order" do
       stack = TerminalState.new()
+
       state1 = %{
         cursor: {10, 5},
         attributes: %{foreground: :red},
@@ -100,6 +105,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
         mode_state: ScreenModes.new(),
         scroll_region: {5, 15}
       }
+
       state2 = %{
         cursor: {20, 10},
         attributes: %{foreground: :blue},
@@ -126,6 +132,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   describe "clear_state/1" do
     test "clears the terminal state stack" do
       stack = TerminalState.new()
+
       state = %{
         cursor: {10, 5},
         attributes: %{foreground: :red},
@@ -146,6 +153,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   describe "get_state_stack/1" do
     test "returns the current terminal state stack" do
       stack = TerminalState.new()
+
       state = %{
         cursor: {10, 5},
         attributes: %{foreground: :red},
@@ -161,4 +169,4 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       assert length(retrieved_stack) == 1
     end
   end
-end 
+end

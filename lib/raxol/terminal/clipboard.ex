@@ -9,10 +9,10 @@ defmodule Raxol.Terminal.Clipboard do
   """
 
   @type t :: %__MODULE__{
-    history: list(String.t()),
-    history_limit: non_neg_integer(),
-    enabled: boolean()
-  }
+          history: list(String.t()),
+          history_limit: non_neg_integer(),
+          enabled: boolean()
+        }
 
   defstruct [
     :history,
@@ -40,10 +40,12 @@ defmodule Raxol.Terminal.Clipboard do
     if clipboard.enabled do
       case set_system_clipboard(text) do
         :ok ->
-          new_history = [text | clipboard.history]
+          new_history =
+            [text | clipboard.history]
             |> Enum.take(clipboard.history_limit)
 
           {:ok, %{clipboard | history: new_history}}
+
         error ->
           error
       end
@@ -61,6 +63,7 @@ defmodule Raxol.Terminal.Clipboard do
       case get_system_clipboard() do
         {:ok, text} ->
           {:ok, text, clipboard}
+
         error ->
           error
       end
@@ -89,7 +92,8 @@ defmodule Raxol.Terminal.Clipboard do
   Enables or disables clipboard operations.
   """
   @spec set_enabled(t(), boolean()) :: t()
-  def set_enabled(%__MODULE__{} = clipboard, enabled) when is_boolean(enabled) do
+  def set_enabled(%__MODULE__{} = clipboard, enabled)
+      when is_boolean(enabled) do
     %{clipboard | enabled: enabled}
   end
 
@@ -110,11 +114,13 @@ defmodule Raxol.Terminal.Clipboard do
           {_, 0} -> :ok
           {error, _} -> {:error, "Failed to copy to clipboard: #{error}"}
         end
+
       {:unix, _} ->
         case System.cmd("xclip", ["-selection", "clipboard"], input: text) do
           {_, 0} -> :ok
           {error, _} -> {:error, "Failed to copy to clipboard: #{error}"}
         end
+
       {:win32, _} ->
         case System.cmd("clip", [], input: text) do
           {_, 0} -> :ok
@@ -130,11 +136,13 @@ defmodule Raxol.Terminal.Clipboard do
           {output, 0} -> {:ok, output}
           {error, _} -> {:error, "Failed to paste from clipboard: #{error}"}
         end
+
       {:unix, _} ->
         case System.cmd("xclip", ["-selection", "clipboard", "-o"]) do
           {output, 0} -> {:ok, output}
           {error, _} -> {:error, "Failed to paste from clipboard: #{error}"}
         end
+
       {:win32, _} ->
         # Windows doesn't have a direct paste command, so we can't implement this
         {:error, "Paste from clipboard not supported on Windows"}

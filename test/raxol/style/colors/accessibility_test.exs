@@ -9,20 +9,27 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
     end
 
     test "check_contrast returns insufficient for low contrast combinations" do
-      assert {:insufficient, ratio} = Accessibility.check_contrast("#777777", "#999999")
+      assert {:insufficient, ratio} =
+               Accessibility.check_contrast("#777777", "#999999")
+
       assert ratio < 4.5
     end
 
     test "check_contrast respects WCAG level parameter" do
       # This combination passes AA but fails AAA
       assert {:ok, _} = Accessibility.check_contrast("#000000", "#FFFFFF", :aa)
-      assert {:insufficient, _} = Accessibility.check_contrast("#777777", "#999999", :aaa)
+
+      assert {:insufficient, _} =
+               Accessibility.check_contrast("#777777", "#999999", :aaa)
     end
 
     test "check_contrast respects text size parameter" do
       # This combination passes for large text but fails for normal text
-      assert {:insufficient, _} = Accessibility.check_contrast("#777777", "#999999", :aa, :normal)
-      assert {:ok, _} = Accessibility.check_contrast("#777777", "#999999", :aa, :large)
+      assert {:insufficient, _} =
+               Accessibility.check_contrast("#777777", "#999999", :aa, :normal)
+
+      assert {:ok, _} =
+               Accessibility.check_contrast("#777777", "#999999", :aa, :large)
     end
   end
 
@@ -58,6 +65,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
 
     test "generate_accessible_palette ensures all colors are accessible" do
       palette = Accessibility.generate_accessible_palette("#0077CC", "#FFFFFF")
+
       Enum.each(palette, fn {_name, color} ->
         assert {:ok, _} = Accessibility.check_contrast(color, "#FFFFFF")
       end)
@@ -65,6 +73,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
 
     test "generate_accessible_palette adapts to dark backgrounds" do
       palette = Accessibility.generate_accessible_palette("#0077CC", "#000000")
+
       Enum.each(palette, fn {_name, color} ->
         assert {:ok, _} = Accessibility.check_contrast(color, "#000000")
       end)
@@ -77,6 +86,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
         text: "#000000",
         link: "#0066CC"
       }
+
       assert {:ok, ^colors} = Accessibility.validate_colors(colors, "#FFFFFF")
     end
 
@@ -85,6 +95,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
         text: "#777777",
         link: "#999999"
       }
+
       assert {:error, issues} = Accessibility.validate_colors(colors, "#FFFFFF")
       assert length(issues) == 2
     end
@@ -96,6 +107,7 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
         text: "#777777",
         link: "#999999"
       }
+
       adjusted = Accessibility.adjust_palette(colors, "#FFFFFF")
       assert adjusted.text != colors.text
       assert adjusted.link != colors.link
@@ -128,4 +140,4 @@ defmodule Raxol.Style.Colors.AccessibilityTest do
       assert {:ok, _} = Accessibility.check_contrast(color, "#808080")
     end
   end
-end 
+end

@@ -36,11 +36,12 @@ defmodule Raxol.AI.PerformanceOptimization do
         resource_allocation: %{},
         prediction_models: %{},
         optimization_level: :balanced,
-        enabled_features: MapSet.new([
-          :predictive_rendering,
-          :component_caching,
-          :adaptive_throttling
-        ])
+        enabled_features:
+          MapSet.new([
+            :predictive_rendering,
+            :component_caching,
+            :adaptive_throttling
+          ])
       }
     end
   end
@@ -65,9 +66,17 @@ defmodule Raxol.AI.PerformanceOptimization do
     if UXRefinement.feature_enabled?(:ai_performance_optimization) do
       state = State.new()
 
-      state = %{state |
-        optimization_level: Keyword.get(opts, :optimization_level, :balanced),
-        enabled_features: MapSet.new(Keyword.get(opts, :features, MapSet.to_list(state.enabled_features)))
+      state = %{
+        state
+        | optimization_level: Keyword.get(opts, :optimization_level, :balanced),
+          enabled_features:
+            MapSet.new(
+              Keyword.get(
+                opts,
+                :features,
+                MapSet.to_list(state.enabled_features)
+              )
+            )
       }
 
       _ = Process.put(@state_key, state)
@@ -90,26 +99,34 @@ defmodule Raxol.AI.PerformanceOptimization do
       :ok
   """
   def record_render_time(component_name, time_ms) do
-    _ = with_state(fn state ->
-      render_metrics = Map.update(
-        state.render_metrics,
-        component_name,
-        %{count: 1, total_time: time_ms, avg_time: time_ms, samples: [time_ms]},
-        fn metrics ->
-          samples = [time_ms | metrics.samples] |> Enum.take(10)
-          count = metrics.count + 1
-          total_time = metrics.total_time + time_ms
-          %{
-            count: count,
-            total_time: total_time,
-            avg_time: total_time / count,
-            samples: samples
-          }
-        end
-      )
+    _ =
+      with_state(fn state ->
+        render_metrics =
+          Map.update(
+            state.render_metrics,
+            component_name,
+            %{
+              count: 1,
+              total_time: time_ms,
+              avg_time: time_ms,
+              samples: [time_ms]
+            },
+            fn metrics ->
+              samples = [time_ms | metrics.samples] |> Enum.take(10)
+              count = metrics.count + 1
+              total_time = metrics.total_time + time_ms
 
-      %{state | render_metrics: render_metrics}
-    end)
+              %{
+                count: count,
+                total_time: total_time,
+                avg_time: total_time / count,
+                samples: samples
+              }
+            end
+          )
+
+        %{state | render_metrics: render_metrics}
+      end)
 
     :ok
   end
@@ -123,18 +140,24 @@ defmodule Raxol.AI.PerformanceOptimization do
       :ok
   """
   def record_component_usage(component_name) do
-    _ = with_state(fn state ->
-      component_usage = Map.update(
-        state.component_usage,
-        component_name,
-        %{count: 1, last_used: System.monotonic_time()},
-        fn usage ->
-          %{usage | count: usage.count + 1, last_used: System.monotonic_time()}
-        end
-      )
+    _ =
+      with_state(fn state ->
+        component_usage =
+          Map.update(
+            state.component_usage,
+            component_name,
+            %{count: 1, last_used: System.monotonic_time()},
+            fn usage ->
+              %{
+                usage
+                | count: usage.count + 1,
+                  last_used: System.monotonic_time()
+              }
+            end
+          )
 
-      %{state | component_usage: component_usage}
-    end)
+        %{state | component_usage: component_usage}
+      end)
 
     :ok
   end
@@ -162,26 +185,31 @@ defmodule Raxol.AI.PerformanceOptimization do
           metrics = Map.get(state.render_metrics, component_name)
 
           # Default result when we don't have enough data
-          result = if metrics == nil or metrics.count < 5 do
-            true
-          else
-            # Simple visibility check - this would be more sophisticated in a real implementation
-            Map.get(context, :visible, true) and
-              (Map.get(context, :in_viewport, true) or is_important_component?(component_name, state))
-          end
+          result =
+            if metrics == nil or metrics.count < 5 do
+              true
+            else
+              # Simple visibility check - this would be more sophisticated in a real implementation
+              Map.get(context, :visible, true) and
+                (Map.get(context, :in_viewport, true) or
+                   is_important_component?(component_name, state))
+            end
 
           # Track the decision in usage patterns for future optimization
-          usage_patterns = Map.update(
-            state.usage_patterns,
-            component_name,
-            %{render_decisions: [result], context_history: [context]},
-            fn patterns ->
-              %{
-                render_decisions: [result | patterns.render_decisions] |> Enum.take(20),
-                context_history: [context | patterns.context_history] |> Enum.take(5)
-              }
-            end
-          )
+          usage_patterns =
+            Map.update(
+              state.usage_patterns,
+              component_name,
+              %{render_decisions: [result], context_history: [context]},
+              fn patterns ->
+                %{
+                  render_decisions:
+                    [result | patterns.render_decisions] |> Enum.take(20),
+                  context_history:
+                    [context | patterns.context_history] |> Enum.take(5)
+                }
+              end
+            )
 
           {%{state | usage_patterns: usage_patterns}, result}
         end
@@ -213,25 +241,34 @@ defmodule Raxol.AI.PerformanceOptimization do
 
           # Default rates
           default_rates = %{
-            high: 16,      # ~60fps
-            medium: 33,    # ~30fps
-            low: 100,      # 10fps
-            idle: 250      # 4fps
+            # ~60fps
+            high: 16,
+            # ~30fps
+            medium: 33,
+            # 10fps
+            low: 100,
+            # 4fps
+            idle: 250
           }
 
           # Calculate refresh rate based on metrics and usage
-          refresh_rate = cond do
-            metrics == nil or metrics.count < 5 ->
-              default_rates.high
-            usage == :idle ->
-              default_rates.idle
-            usage == :low ->
-              default_rates.low
-            usage == :medium ->
-              default_rates.medium
-            true ->
-              default_rates.high
-          end
+          refresh_rate =
+            cond do
+              metrics == nil or metrics.count < 5 ->
+                default_rates.high
+
+              usage == :idle ->
+                default_rates.idle
+
+              usage == :low ->
+                default_rates.low
+
+              usage == :medium ->
+                default_rates.medium
+
+              true ->
+                default_rates.high
+            end
 
           {state, refresh_rate}
         end
@@ -286,7 +323,9 @@ defmodule Raxol.AI.PerformanceOptimization do
         # Identify slow components
         slow_components =
           state.render_metrics
-          |> Enum.filter(fn {_, metrics} -> metrics.avg_time > 50 and metrics.count > 5 end)
+          |> Enum.filter(fn {_, metrics} ->
+            metrics.avg_time > 50 and metrics.count > 5
+          end)
           |> Enum.map(fn {name, metrics} ->
             %{
               type: :component,
@@ -313,15 +352,17 @@ defmodule Raxol.AI.PerformanceOptimization do
       :ok
   """
   def toggle_feature(feature, enabled) do
-    _ = with_state(fn state ->
-      enabled_features = if enabled do
-        MapSet.put(state.enabled_features, feature)
-      else
-        MapSet.delete(state.enabled_features, feature)
-      end
+    _ =
+      with_state(fn state ->
+        enabled_features =
+          if enabled do
+            MapSet.put(state.enabled_features, feature)
+          else
+            MapSet.delete(state.enabled_features, feature)
+          end
 
-      %{state | enabled_features: enabled_features}
-    end)
+        %{state | enabled_features: enabled_features}
+      end)
 
     :ok
   end
@@ -334,7 +375,8 @@ defmodule Raxol.AI.PerformanceOptimization do
       iex> set_optimization_level(:aggressive)
       :ok
   """
-  def set_optimization_level(level) when level in [:minimal, :balanced, :aggressive] do
+  def set_optimization_level(level)
+      when level in [:minimal, :balanced, :aggressive] do
     with_state(fn state ->
       %{state | optimization_level: level}
     end)
@@ -351,6 +393,7 @@ defmodule Raxol.AI.PerformanceOptimization do
       {new_state, result} ->
         Process.put(@state_key, new_state)
         result
+
       new_state ->
         Process.put(@state_key, new_state)
         nil
@@ -364,8 +407,8 @@ defmodule Raxol.AI.PerformanceOptimization do
   defp is_important_component?(component_name, _state) do
     # This would be more sophisticated in a real implementation
     String.contains?(component_name, "header") or
-    String.contains?(component_name, "navigation") or
-    String.contains?(component_name, "menu")
+      String.contains?(component_name, "navigation") or
+      String.contains?(component_name, "menu")
   end
 
   defp collect_baseline_metrics do
@@ -376,12 +419,17 @@ defmodule Raxol.AI.PerformanceOptimization do
 
   defp get_optimization_suggestion(component_name, metrics) do
     cond do
-      String.contains?(component_name, "table") or String.contains?(component_name, "list") ->
+      String.contains?(component_name, "table") or
+          String.contains?(component_name, "list") ->
         "Consider implementing virtual scrolling or pagination"
-      String.contains?(component_name, "image") or String.contains?(component_name, "avatar") ->
+
+      String.contains?(component_name, "image") or
+          String.contains?(component_name, "avatar") ->
         "Consider implementing lazy loading and optimizing image size"
+
       metrics.avg_time > 100 ->
         "Consider breaking component into smaller parts or implement memoization"
+
       true ->
         "Review component implementation for optimization opportunities"
     end

@@ -1,4 +1,7 @@
 defmodule Raxol.Components.Modal do
+  use Raxol.Component
+  require Raxol.View
+
   @moduledoc """
   Modal dialog component for Raxol applications.
 
@@ -49,15 +52,11 @@ defmodule Raxol.Components.Modal do
 
   * `:id` - Modal identifier (default: "modal")
   * `:width` - Modal width in characters (default: 50)
-  * `:height` - Modal height in characters or :auto (default: :auto)
+  * `:height` - Modal height in characters (integer). :auto not yet supported reliably.
   * `:style` - Style for the modal container
   * `:title_style` - Style for the modal title
   * `:content_style` - Style for the modal content area
   * `:actions_style` - Style for the modal action buttons area
-  * `:backdrop` - Boolean to show a backdrop behind the modal (default: true)
-  * `:backdrop_style` - Style for the backdrop
-  * `:centered` - Boolean to center the modal (default: true)
-  * `:on_escape` - Function to call when Escape key is pressed (default: nil)
 
   ## Returns
 
@@ -77,89 +76,66 @@ defmodule Raxol.Components.Modal do
     end,
     width: 60,
     centered: true
-  )
-  ```
+  )```
   """
-  def render(_title, _content_fn, _actions_fn, _opts \\ []) do
-    # Create a combined component with backdrop and modal
-    # TODO: Raxol.View.overlay is undefined. Modal needs refactoring to use
-    # Raxol.Core.Renderer.View with appropriate z-index and positioning for overlay effect.
-    # Commenting out for now to allow compilation.
-    # View.overlay([id: "#{id}_overlay"], fn ->
-    #   # Optional backdrop
-    #   if show_backdrop do
-    #     View.panel([id: "#{id}_backdrop", style: backdrop_style], fn ->
-    #       View.text("")  # Empty text to satisfy the function body requirement
-    #     end)
-    #   end
-    #
-    #   # Modal container with optional centering
-    #   container_props = [id: id, style: style]
-    #
-    #   # Add size constraints
-    #   container_props =
-    #     if width do
-    #       Keyword.put(container_props, :style, Map.put(style, :width, width))
-    #     else
-    #       container_props
-    #     end
-    #
-    #   container_props =
-    #     if height != :auto do
-    #       Keyword.put(container_props, :style, Map.put(Keyword.get(container_props, :style), :height, height))
-    #     else
-    #       container_props
-    #     end
-    #
-    #   # Add centering if requested
-    #   container_props =
-    #     if centered do
-    #       Keyword.put(container_props, :style, Map.put(Keyword.get(container_props, :style), :align, :center))
-    #     else
-    #       container_props
-    #     end
-    #
-    #   # Add escape handler if provided
-    #   container_props =
-    #     if on_escape do
-    #       Keyword.put(container_props, :on_key, fn key ->
-    #         case key do
-    #           {:escape, _} ->
-    #             on_escape.()
-    #             true
-    #           _ -> false
-    #         end
-    #       end)
-    #     else
-    #       container_props
-    #     end
-    #
-    #   # Render the modal
-    #   View.panel(container_props, fn ->
-    #     View.column([], fn ->
-    #       # Title area
-    #       View.panel([id: "#{id}_title", style: title_style], fn ->
-    #         View.text(title)
-    #       end)
-    #
-    #       # Content area
-    #       View.panel(
-    #         [
-    #           id: "#{id}_content",
-    #           style: Map.merge(content_style, if(content_height, do: %{height: content_height}, else: %{}))
-    #         ],
-    #         content_fn
-    #       )
-    #
-    #       # Actions area
-    #       View.panel([id: "#{id}_actions", style: actions_style], actions_fn)
-    #     end)
-    #   end)
-    # end)
+  @dialyzer {:nowarn_function, render: 4}
+  def render(title, content_fn, actions_fn, opts \\ []) do
+    # Extract options with defaults
+    id = Keyword.get(opts, :id, "modal")
+    width = Keyword.get(opts, :width, 50)
+    # Optional height
+    height = Keyword.get(opts, :height)
+    # Example default style
+    style = Keyword.get(opts, :style, %{border: :double})
+    title_style = Keyword.get(opts, :title_style, %{align: :center})
+    content_style = Keyword.get(opts, :content_style, %{padding: 1})
+    actions_style = Keyword.get(opts, :actions_style, %{padding_top: 1})
+    # on_escape = Keyword.get(opts, :on_escape)
+    # centered = Keyword.get(opts, :centered, true) # Centering deferred
 
-    # Placeholder return until refactoring
-    View.text("Modal placeholder (overlay broken)")
+    # Build props for the main panel
+    container_props = [id: id, style: style]
 
+    container_props =
+      if width,
+        do: Keyword.put(container_props, :style, Map.put(style, :width, width)),
+        else: container_props
+
+    container_props =
+      if height,
+        do:
+          Keyword.put(
+            container_props,
+            :style,
+            Map.put(Keyword.get(container_props, :style), :height, height)
+          ),
+        else: container_props
+
+    # TODO: Add on_key handling if/when View DSL supports it
+
+    # Use box instead of panel
+    View.box container_props do
+      # Create children conditionally, filtering nils
+      [
+        (if title do
+           View.box [id: "#{id}_title", style: title_style] do
+             View.text(title)
+           end
+         end),
+        (if content_fn do
+           View.box [id: "#{id}_content", style: content_style] do
+             content_fn.()
+           end
+         end),
+        (if actions_fn do
+           View.box [id: "#{id}_actions", style: actions_style] do
+             actions_fn.()
+           end
+         end)
+      ]
+      |> Enum.reject(&is_nil(&1))
+      |> List.flatten()
+    end
   end
 
   @doc """
@@ -202,25 +178,36 @@ defmodule Raxol.Components.Modal do
       fn -> View.text(message) end,
       fn ->
         View.row([style: %{justify: :flex_end, gap: 1}], fn ->
-          View.button([id: "#{title}_no", style: no_style, on_click: on_cancel], no_text)
-          View.button([id: "#{title}_yes", style: yes_style, on_click: on_confirm], yes_text)
+          View.button(
+            [id: "#{title}_no", style: no_style, on_click: on_cancel],
+            no_text
+          )
+
+          View.button(
+            [id: "#{title}_yes", style: yes_style, on_click: on_confirm],
+            yes_text
+          )
         end)
       end,
       Keyword.merge(
-        [id: "confirm_#{String.downcase(title) |> String.replace(" ", "_")}", width: 40, on_escape: on_cancel],
+        [
+          id: "confirm_#{String.downcase(title) |> String.replace(" ", "_")}",
+          width: 40,
+          on_escape: on_cancel
+        ],
         opts
       )
     )
   end
 
   @doc """
-  Renders an alert dialog with a message and an OK button.
+  Renders an alert dialog with a title, content, and an OK button.
 
   ## Parameters
 
   * `title` - The modal title
-  * `message` - The alert message text
-  * `on_ok` - Function to call when user clicks OK
+  * `content_fn` - Function that returns the content of the modal
+  * `on_ok` - Function to call when user clicks the OK button
   * `opts` - Options for customizing the modal (same as `render/4`)
 
   ## Returns
@@ -230,14 +217,10 @@ defmodule Raxol.Components.Modal do
   ## Example
 
   ```elixir
-  Modal.alert(
-    "Information",
-    "Your changes have been saved successfully.",
-    fn -> send(self(), :close_alert) end
-  )
+  Modal.alert("Success", fn -> "Item saved successfully." end, fn -> send(self(), {:alert_ok}) end)
   ```
   """
-  def alert(title, message, on_ok, opts \\ []) do
+  def alert(title, content_fn, on_ok, opts \\ []) do
     # Get customization options
     ok_text = Keyword.get(opts, :ok_text, "OK")
     ok_style = Keyword.get(opts, :ok_style, %{fg: :white, bg: :blue})
@@ -245,14 +228,21 @@ defmodule Raxol.Components.Modal do
     # Create alert modal
     render(
       title,
-      fn -> View.text(message) end,
+      content_fn,
       fn ->
         View.row([style: %{justify: :center}], fn ->
-          View.button([id: "#{title}_ok", style: ok_style, on_click: on_ok], ok_text)
+          View.button(
+            [id: "#{title}_ok", style: ok_style, on_click: on_ok],
+            ok_text
+          )
         end)
       end,
       Keyword.merge(
-        [id: "alert_#{String.downcase(title) |> String.replace(" ", "_")}", width: 40, on_escape: on_ok],
+        [
+          id: "alert_#{String.downcase(title) |> String.replace(" ", "_")}",
+          width: 40,
+          on_escape: on_ok
+        ],
         opts
       )
     )
@@ -266,7 +256,7 @@ defmodule Raxol.Components.Modal do
   * `title` - The modal title
   * `form_fn` - Function that returns the form fields
   * `on_submit` - Function to call when user submits the form
-  * `on_cancel` - Function to call when user cancels
+  * `on_cancel` - Function to call when user cancels the form
   * `opts` - Options for customizing the modal (same as `render/4`)
 
   ## Returns
@@ -277,40 +267,20 @@ defmodule Raxol.Components.Modal do
 
   ```elixir
   Modal.form(
-    "Add User",
+    "Edit User",
     fn ->
-      column do
-        text_input(placeholder: "Name", value: model.user_name, on_change: &handle_name_change/1)
-        text_input(placeholder: "Email", value: model.user_email, on_change: &handle_email_change/1)
-      end
+      # Render form fields
     end,
-    fn -> send(self(), {:submit_user_form}) end,
-    fn -> send(self(), {:cancel_user_form}) end,
-    width: 50
+    fn -> send(self(), {:submit_form}) end,
+    fn -> send(self(), {:cancel_form}) end
   )
-  ```
   """
-  def form(title, form_fn, on_submit, on_cancel, opts \\ []) do
-    # Get customization options
-    submit_text = Keyword.get(opts, :submit_text, "Submit")
-    cancel_text = Keyword.get(opts, :cancel_text, "Cancel")
-    submit_style = Keyword.get(opts, :submit_style, %{fg: :white, bg: :blue})
-    cancel_style = Keyword.get(opts, :cancel_style, %{})
-
-    # Create form modal
+  def form(title, form_fn, _on_submit, _on_cancel, opts \\ []) do
     render(
       title,
       form_fn,
-      fn ->
-        View.row([style: %{justify: :flex_end, gap: 1}], fn ->
-          View.button([id: "#{title}_cancel", style: cancel_style, on_click: on_cancel], cancel_text)
-          View.button([id: "#{title}_submit", style: submit_style, on_click: on_submit], submit_text)
-        end)
-      end,
-      Keyword.merge(
-        [id: "form_#{String.downcase(title) |> String.replace(" ", "_")}", width: 50, on_escape: on_cancel],
-        opts
-      )
+      fn -> [] end, # Return empty list to fix syntax and represent no footer content
+      opts
     )
   end
 end

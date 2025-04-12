@@ -14,14 +14,18 @@ defmodule Raxol.Terminal.Buffer.Manager do
   alias Raxol.Terminal.ScreenBuffer
 
   @type t :: %__MODULE__{
-    active_buffer: ScreenBuffer.t(),
-    back_buffer: ScreenBuffer.t(),
-    damage_regions: list({non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()}),
-    memory_limit: non_neg_integer(),
-    memory_usage: non_neg_integer(),
-    cursor_position: {non_neg_integer(), non_neg_integer()},
-    scrollback_buffer: list(ScreenBuffer.t())
-  }
+          active_buffer: ScreenBuffer.t(),
+          back_buffer: ScreenBuffer.t(),
+          damage_regions:
+            list(
+              {non_neg_integer(), non_neg_integer(), non_neg_integer(),
+               non_neg_integer()}
+            ),
+          memory_limit: non_neg_integer(),
+          memory_usage: non_neg_integer(),
+          cursor_position: {non_neg_integer(), non_neg_integer()},
+          scrollback_buffer: list(ScreenBuffer.t())
+        }
 
   defstruct [
     :active_buffer,
@@ -76,15 +80,16 @@ defmodule Raxol.Terminal.Buffer.Manager do
     active_buffer = ScreenBuffer.new(width, height, scrollback_height)
     back_buffer = ScreenBuffer.new(width, height, scrollback_height)
 
-    {:ok, %__MODULE__{
-      active_buffer: active_buffer,
-      back_buffer: back_buffer,
-      damage_regions: [],
-      memory_limit: memory_limit,
-      memory_usage: 0,
-      cursor_position: {0, 0},
-      scrollback_buffer: []
-    }}
+    {:ok,
+     %__MODULE__{
+       active_buffer: active_buffer,
+       back_buffer: back_buffer,
+       damage_regions: [],
+       memory_limit: memory_limit,
+       memory_usage: 0,
+       cursor_position: {0, 0},
+       scrollback_buffer: []
+     }}
   end
 
   @doc """
@@ -98,10 +103,11 @@ defmodule Raxol.Terminal.Buffer.Manager do
       false
   """
   def switch_buffers(%__MODULE__{} = manager) do
-    %{manager |
-      active_buffer: manager.back_buffer,
-      back_buffer: manager.active_buffer,
-      damage_regions: []
+    %{
+      manager
+      | active_buffer: manager.back_buffer,
+        back_buffer: manager.active_buffer,
+        damage_regions: []
     }
   end
 
@@ -232,10 +238,14 @@ defmodule Raxol.Terminal.Buffer.Manager do
     manager = mark_damaged(manager, 0, 0, x, y)
 
     # Clear the cells in the active buffer
-    new_active_buffer = ScreenBuffer.clear_region(
-      manager.active_buffer,
-      0, 0, x, y
-    )
+    new_active_buffer =
+      ScreenBuffer.clear_region(
+        manager.active_buffer,
+        0,
+        0,
+        x,
+        y
+      )
 
     %{manager | active_buffer: new_active_buffer}
   end
@@ -260,10 +270,14 @@ defmodule Raxol.Terminal.Buffer.Manager do
     manager = mark_damaged(manager, 0, 0, width - 1, height - 1)
 
     # Clear the cells in the active buffer's viewport
-    new_active_buffer = ScreenBuffer.clear_region(
-      buffer,
-      0, 0, width - 1, height - 1
-    )
+    new_active_buffer =
+      ScreenBuffer.clear_region(
+        buffer,
+        0,
+        0,
+        width - 1,
+        height - 1
+      )
 
     %{manager | active_buffer: new_active_buffer}
   end
@@ -288,13 +302,17 @@ defmodule Raxol.Terminal.Buffer.Manager do
     manager = mark_damaged(manager, 0, 0, width - 1, height - 1)
 
     # Clear the cells in the active buffer
-    active_buffer = ScreenBuffer.clear_region(manager.active_buffer, 0, 0, width - 1, height - 1)
+    active_buffer =
+      ScreenBuffer.clear_region(
+        manager.active_buffer,
+        0,
+        0,
+        width - 1,
+        height - 1
+      )
 
     # Clear the scrollback buffer
-    %{manager |
-      active_buffer: active_buffer,
-      scrollback_buffer: []
-    }
+    %{manager | active_buffer: active_buffer, scrollback_buffer: []}
   end
 
   @doc """
@@ -316,7 +334,9 @@ defmodule Raxol.Terminal.Buffer.Manager do
     manager = mark_damaged(manager, x, y, width - 1, y)
 
     # Clear the cells in the active buffer
-    active_buffer = ScreenBuffer.clear_region(manager.active_buffer, x, y, width - 1, y)
+    active_buffer =
+      ScreenBuffer.clear_region(manager.active_buffer, x, y, width - 1, y)
+
     %{manager | active_buffer: active_buffer}
   end
 
@@ -361,7 +381,9 @@ defmodule Raxol.Terminal.Buffer.Manager do
     manager = mark_damaged(manager, 0, y, width - 1, y)
 
     # Clear the cells in the active buffer
-    active_buffer = ScreenBuffer.clear_region(manager.active_buffer, 0, y, width - 1, y)
+    active_buffer =
+      ScreenBuffer.clear_region(manager.active_buffer, 0, y, width - 1, y)
+
     %{manager | active_buffer: active_buffer}
   end
 
@@ -385,7 +407,15 @@ defmodule Raxol.Terminal.Buffer.Manager do
     manager = mark_damaged(manager, x, y, width - 1, height - 1)
 
     # Clear the cells in the active buffer
-    active_buffer = ScreenBuffer.clear_region(manager.active_buffer, x, y, width - 1, height - 1)
+    active_buffer =
+      ScreenBuffer.clear_region(
+        manager.active_buffer,
+        x,
+        y,
+        width - 1,
+        height - 1
+      )
+
     %{manager | active_buffer: active_buffer}
   end
 
@@ -399,15 +429,22 @@ defmodule Raxol.Terminal.Buffer.Manager do
     # TODO: Re-evaluate scrollback handling between Manager and ScreenBuffer.
     active_buffer = ScreenBuffer.scroll_up(manager.active_buffer, lines)
 
-    manager = %{manager |
-      active_buffer: active_buffer
-      # scrollback_buffer: scrollback ++ manager.scrollback_buffer # Cannot get scrollback this way
+    manager = %{
+      manager
+      | active_buffer: active_buffer
+        # scrollback_buffer: scrollback ++ manager.scrollback_buffer # Cannot get scrollback this way
     }
 
     # Trim scrollback buffer if it exceeds the limit
-    scrollback_limit = manager.active_buffer.scrollback_limit # Use limit from buffer struct
+    # Use limit from buffer struct
+    scrollback_limit = manager.active_buffer.scrollback_limit
+
     if length(manager.scrollback_buffer) > scrollback_limit do
-      %{manager | scrollback_buffer: Enum.take(manager.scrollback_buffer, scrollback_limit)}
+      %{
+        manager
+        | scrollback_buffer:
+            Enum.take(manager.scrollback_buffer, scrollback_limit)
+      }
     else
       manager
     end
@@ -423,9 +460,10 @@ defmodule Raxol.Terminal.Buffer.Manager do
     # TODO: Re-evaluate scrollback handling between Manager and ScreenBuffer.
     active_buffer = ScreenBuffer.scroll_down(manager.active_buffer, lines)
 
-    %{manager |
-      active_buffer: active_buffer
-      # scrollback_buffer: remaining_scrollback # Cannot get remaining_scrollback this way
+    %{
+      manager
+      | active_buffer: active_buffer
+        # scrollback_buffer: remaining_scrollback # Cannot get remaining_scrollback this way
     }
   end
 
@@ -434,7 +472,13 @@ defmodule Raxol.Terminal.Buffer.Manager do
   The region is specified by start and end line numbers (inclusive).
   """
   def set_scroll_region(manager, start_line, end_line) do
-    active_buffer = ScreenBuffer.set_scroll_region(manager.active_buffer, start_line, end_line)
+    active_buffer =
+      ScreenBuffer.set_scroll_region(
+        manager.active_buffer,
+        start_line,
+        end_line
+      )
+
     %{manager | active_buffer: active_buffer}
   end
 
@@ -521,7 +565,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
   defp calculate_buffer_memory_usage(buffer) do
     # Rough estimation of memory usage based on buffer size and content
     buffer_size = buffer.width * buffer.height
-    cell_size = 100  # Estimated bytes per cell
+    # Estimated bytes per cell
+    cell_size = 100
     buffer_size * cell_size
   end
 end

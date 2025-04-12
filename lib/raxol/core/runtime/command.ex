@@ -44,9 +44,9 @@ defmodule Raxol.Core.Runtime.Command do
   """
 
   @type t :: %__MODULE__{
-    type: :none | :task | :batch | :delay | :broadcast | :system,
-    data: term()
-  }
+          type: :none | :task | :batch | :delay | :broadcast | :system,
+          data: term()
+        }
 
   defstruct [:type, :data]
 
@@ -113,10 +113,12 @@ defmodule Raxol.Core.Runtime.Command do
       Command.task(fn -> {:data, fetch_data()} end)
       |> Command.map(fn {:data, result} -> {:processed_data, process(result)} end)
   """
-  def map(%__MODULE__{type: :task, data: fun} = cmd, mapper) when is_function(mapper, 1) do
+  def map(%__MODULE__{type: :task, data: fun} = cmd, mapper)
+      when is_function(mapper, 1) do
     mapped_fun = fn ->
       fun.() |> mapper.()
     end
+
     %{cmd | data: mapped_fun}
   end
 
@@ -172,8 +174,11 @@ defmodule Raxol.Core.Runtime.Command do
 
       :file_read ->
         case File.read(opts[:path]) do
-          {:ok, content} -> send(context.pid, {:command_result, {:file_read, content}})
-          {:error, reason} -> send(context.pid, {:command_result, {:file_read_error, reason}})
+          {:ok, content} ->
+            send(context.pid, {:command_result, {:file_read, content}})
+
+          {:error, reason} ->
+            send(context.pid, {:command_result, {:file_read_error, reason}})
         end
 
       # Add more system operations as needed
@@ -181,4 +186,4 @@ defmodule Raxol.Core.Runtime.Command do
         {:error, :unknown_operation}
     end
   end
-end 
+end

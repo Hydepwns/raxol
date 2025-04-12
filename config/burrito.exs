@@ -5,7 +5,7 @@ config :burrito,
   app_name: "raxol",
   base_output_dir: "burrito_out",
   base_path: "",
-  
+
   # Development profile
   dev: [
     steps: [
@@ -27,7 +27,8 @@ config :burrito,
           strip: false,
           executable: "raxol_dev",
           identifier: "io.github.hydepwns.raxol-dev",
-          signing_identity: nil # No signing for dev builds
+          # No signing for dev builds
+          signing_identity: nil
         ]
       ],
       linux: [
@@ -46,12 +47,13 @@ config :burrito,
         config: [
           # Windows-specific configuration values
           executable: "raxol_dev.exe",
-          console_app: true # Shows console window for development
+          # Shows console window for development
+          console_app: true
         ]
       ]
     ]
   ],
-  
+
   # Production profile
   prod: [
     steps: [
@@ -74,8 +76,10 @@ config :burrito,
           strip: true,
           executable: "raxol",
           identifier: "io.github.hydepwns.raxol",
-          signing_identity: "Developer ID Application", # Will be used if available
-          notarize: true # Notarize app for distribution (requires valid credentials)
+          # Will be used if available
+          signing_identity: "Developer ID Application",
+          # Notarize app for distribution (requires valid credentials)
+          notarize: true
         ]
       ],
       linux: [
@@ -106,7 +110,8 @@ config :burrito,
         config: [
           # Windows-specific configuration values for production
           executable: "raxol.exe",
-          console_app: false, # Hide console window for production builds
+          # Hide console window for production builds
+          console_app: false,
           # Installer configuration
           inno_setup: [
             app_name: "Raxol",
@@ -118,4 +123,4 @@ config :burrito,
         ]
       ]
     ]
-  ] 
+  ]

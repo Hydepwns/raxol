@@ -24,7 +24,9 @@ defmodule Raxol.Plugins.ClipboardPlugin do
       {:ok, text} ->
         set_clipboard_content(text)
         {:ok, state}
-      _ -> {:ok, state}
+
+      _ ->
+        {:ok, state}
     end
   end
 
@@ -32,15 +34,20 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     case get_selected_text(state) do
       {:ok, _text} ->
         {:ok, clear_selection(state)}
-      _ -> {:ok, state}
+
+      _ ->
+        {:ok, state}
     end
   end
 
   defp get_selected_text(%{selection: nil}), do: {:error, :no_selection}
+
   defp get_selected_text(%{selection: {start_pos, end_pos}, buffer: buffer}) do
-    text = buffer
-    |> Enum.slice(start_pos..end_pos)
-    |> Enum.join("\n")
+    text =
+      buffer
+      |> Enum.slice(start_pos..end_pos)
+      |> Enum.join("\n")
+
     {:ok, text}
   end
 
@@ -48,11 +55,14 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     case :os.type() do
       {:unix, :darwin} ->
         _ = System.cmd("pbcopy", [], input: text)
+
       {:unix, _} ->
         _ = System.cmd("xclip", ["-selection", "clipboard"], input: text)
+
       {:win32, _} ->
         _ = System.cmd("clip", [], input: text)
     end
+
     :ok
   end
 

@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Display.AsciiArt do
   @moduledoc """
   ASCII art rendering system for the Raxol terminal emulator.
-  
+
   This module provides functionality for:
   - Rendering ASCII art templates
   - Creating custom ASCII art
@@ -111,14 +111,15 @@ defmodule Raxol.Terminal.Display.AsciiArt do
   @doc """
   Returns an ASCII art progress bar with the given percentage.
   """
-  def progress_bar(percentage) when is_integer(percentage) and percentage >= 0 and percentage <= 100 do
+  def progress_bar(percentage)
+      when is_integer(percentage) and percentage >= 0 and percentage <= 100 do
     width = 50
     filled = div(width * percentage, 100)
     empty = width - filled
-    
+
     filled_bar = String.duplicate("█", filled)
     empty_bar = String.duplicate("░", empty)
-    
+
     """
     ╭──────────────────────────────────────────────────╮
     │  [#{String.pad_leading(filled_bar <> empty_bar, width)}] #{String.pad_leading(Integer.to_string(percentage), 3)}% │
@@ -132,15 +133,18 @@ defmodule Raxol.Terminal.Display.AsciiArt do
   def box(text) do
     lines = String.split(text, "\n")
     max_length = Enum.max(Enum.map(lines, &String.length/1))
-    
+
     top_bottom = "╭" <> String.duplicate("─", max_length + 2) <> "╮"
-    middle = Enum.map(lines, fn line ->
-      padding = String.duplicate(" ", max_length - String.length(line))
-      "│ #{line}#{padding} │"
-    end)
+
+    middle =
+      Enum.map(lines, fn line ->
+        padding = String.duplicate(" ", max_length - String.length(line))
+        "│ #{line}#{padding} │"
+      end)
+
     bottom = "╰" <> String.duplicate("─", max_length + 2) <> "╯"
-    
-    [top_bottom] ++ middle ++ [bottom]
+
+    ([top_bottom] ++ middle ++ [bottom])
     |> Enum.join("\n")
   end
 
@@ -150,40 +154,45 @@ defmodule Raxol.Terminal.Display.AsciiArt do
   def table(headers, rows) do
     # Calculate column widths
     all_rows = [headers | rows]
-    col_widths = headers
-    |> Enum.with_index()
-    |> Enum.map(fn {_, i} ->
-      all_rows
-      |> Enum.map(fn row -> String.length(Enum.at(row, i)) end)
-      |> Enum.max()
-    end)
-    
-    # Create header row
-    header_row = headers
-    |> Enum.with_index()
-    |> Enum.map(fn {header, i} ->
-      String.pad_trailing(header, col_widths[i])
-    end)
-    |> Enum.join(" │ ")
-    
-    # Create separator
-    separator = col_widths
-    |> Enum.map(fn width -> String.duplicate("─", width) end)
-    |> Enum.join("─┼─")
-    
-    # Create data rows
-    data_rows = rows
-    |> Enum.map(fn row ->
-      row
+
+    col_widths =
+      headers
       |> Enum.with_index()
-      |> Enum.map(fn {cell, i} ->
-        String.pad_trailing(cell, col_widths[i])
+      |> Enum.map(fn {_, i} ->
+        all_rows
+        |> Enum.map(fn row -> String.length(Enum.at(row, i)) end)
+        |> Enum.max()
+      end)
+
+    # Create header row
+    header_row =
+      headers
+      |> Enum.with_index()
+      |> Enum.map(fn {header, i} ->
+        String.pad_trailing(header, col_widths[i])
       end)
       |> Enum.join(" │ ")
-    end)
-    
+
+    # Create separator
+    separator =
+      col_widths
+      |> Enum.map(fn width -> String.duplicate("─", width) end)
+      |> Enum.join("─┼─")
+
+    # Create data rows
+    data_rows =
+      rows
+      |> Enum.map(fn row ->
+        row
+        |> Enum.with_index()
+        |> Enum.map(fn {cell, i} ->
+          String.pad_trailing(cell, col_widths[i])
+        end)
+        |> Enum.join(" │ ")
+      end)
+
     # Combine all parts
-    [header_row, separator] ++ data_rows
+    ([header_row, separator] ++ data_rows)
     |> Enum.join("\n")
   end
 
@@ -203,4 +212,4 @@ defmodule Raxol.Terminal.Display.AsciiArt do
     dots = String.duplicate(".", rem(step, 4))
     "#{text}#{dots}"
   end
-end 
+end

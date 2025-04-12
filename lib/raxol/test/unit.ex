@@ -75,12 +75,13 @@ defmodule Raxol.Test.Unit do
     end
 
     # Set up the component with mocked dependencies
-    {:ok, %{
-      module: component,
-      state: state,
-      subscriptions: [],
-      event_handler: mock_event_system
-    }}
+    {:ok,
+     %{
+       module: component,
+       state: state,
+       subscriptions: [],
+       event_handler: mock_event_system
+     }}
   end
 
   @doc """
@@ -89,7 +90,8 @@ defmodule Raxol.Test.Unit do
   Returns the updated state and any emitted commands.
   """
   def simulate_event(component, %Event{} = event) do
-    {new_state, commands} = component.module.handle_event(event, component.state)
+    {new_state, commands} =
+      component.module.handle_event(event, component.state)
 
     # Update component state
     updated_component = %{component | state: new_state}
@@ -109,15 +111,6 @@ defmodule Raxol.Test.Unit do
 
   def keyboard_event(char) when is_integer(char) do
     Event.key_event({:char, char}, :pressed)
-  end
-
-  @doc """
-  Creates a mouse event for testing.
-  """
-  def mouse_event(_button, _position, _opts \\ []) do
-    # TODO: Fix call to Event.mouse_event - Dialyzer reports incorrect second argument type.
-    # Event.mouse_event(button, :pressed, position, opts)
-    nil # Return nil for now
   end
 
   @doc """
@@ -155,8 +148,10 @@ defmodule Raxol.Test.Unit do
   """
   def assert_event_handled(component, event, expected_result) do
     {updated_component, commands} = simulate_event(component, event)
+
     assert updated_component.state == expected_result,
            "Expected state to be #{inspect(expected_result)}, but got: #{inspect(updated_component.state)}"
+
     {updated_component, commands}
   end
 end

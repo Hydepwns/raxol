@@ -17,28 +17,33 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
 
   describe "new/1" do
     test "creates a basic table" do
-      view = Table.new(
-        columns: @sample_columns,
-        data: @sample_data
-      )
+      view =
+        Table.new(
+          columns: @sample_columns,
+          data: @sample_data
+        )
 
       assert view.type == :border
       assert view.border == :single
       [header | rows] = get_in(view, [:children, Access.at(0)])
-      
+
       # Check header
       assert header.type == :flex
       assert length(header.children) == 3
-      assert Enum.at(header.children, 0).content == "   1"  # right-aligned
-      assert Enum.at(header.children, 1).content == "ID       "  # left-aligned
-      assert Enum.at(header.children, 2).content == " Age "  # center-aligned
+      # right-aligned
+      assert Enum.at(header.children, 0).content == "   1"
+      # left-aligned
+      assert Enum.at(header.children, 1).content == "ID       "
+      # center-aligned
+      assert Enum.at(header.children, 2).content == " Age "
     end
 
     test "handles empty data" do
-      view = Table.new(
-        columns: @sample_columns,
-        data: []
-      )
+      view =
+        Table.new(
+          columns: @sample_columns,
+          data: []
+        )
 
       assert view.type == :border
       [header | rows] = get_in(view, [:children, Access.at(0)])
@@ -46,14 +51,15 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
     end
 
     test "applies striping to rows" do
-      view = Table.new(
-        columns: @sample_columns,
-        data: @sample_data,
-        striped: true
-      )
+      view =
+        Table.new(
+          columns: @sample_columns,
+          data: @sample_data,
+          striped: true
+        )
 
       [_header | rows] = get_in(view, [:children, Access.at(0)])
-      
+
       # Even rows should have no background
       assert Enum.at(rows, 0).style == []
       # Odd rows should have bright_black background
@@ -61,46 +67,50 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
     end
 
     test "handles row selection" do
-      view = Table.new(
-        columns: @sample_columns,
-        data: @sample_data,
-        selectable: true,
-        selected: 1
-      )
+      view =
+        Table.new(
+          columns: @sample_columns,
+          data: @sample_data,
+          selectable: true,
+          selected: 1
+        )
 
       [_header | rows] = get_in(view, [:children, Access.at(0)])
-      
+
       # Selected row should have blue background and white text
       assert Enum.at(rows, 1).style == [bg: :blue, fg: :white]
     end
 
     test "applies custom border style" do
-      view = Table.new(
-        columns: @sample_columns,
-        data: @sample_data,
-        border: :double
-      )
+      view =
+        Table.new(
+          columns: @sample_columns,
+          data: @sample_data,
+          border: :double
+        )
 
       assert view.border == :double
     end
 
     test "applies custom header style" do
-      view = Table.new(
-        columns: @sample_columns,
-        data: @sample_data,
-        header_style: [:bold, :underline]
-      )
+      view =
+        Table.new(
+          columns: @sample_columns,
+          data: @sample_data,
+          header_style: [:bold, :underline]
+        )
 
       [header | _] = get_in(view, [:children, Access.at(0)])
       assert Enum.all?(header.children, &([:bold, :underline] == &1.style))
     end
 
     test "applies custom row style" do
-      view = Table.new(
-        columns: @sample_columns,
-        data: @sample_data,
-        row_style: [:dim]
-      )
+      view =
+        Table.new(
+          columns: @sample_columns,
+          data: @sample_data,
+          row_style: [:dim]
+        )
 
       [_header | rows] = get_in(view, [:children, Access.at(0)])
       assert Enum.all?(rows, &([:dim] == &1.style))
@@ -113,11 +123,12 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
         %{header: "Short", key: :name, width: :auto, align: :left},
         %{header: "Very Long Header", key: :age, width: :auto, align: :left}
       ]
+
       data = [%{name: "A", age: 1}, %{name: "B", age: 2}]
 
       view = Table.new(columns: columns, data: data)
       [header | _] = get_in(view, [:children, Access.at(0)])
-      
+
       # First column should be width of "Short"
       assert String.length(Enum.at(header.children, 0).content) == 5
       # Second column should be width of "Very Long Header"
@@ -131,15 +142,16 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
           key: :amount,
           width: 10,
           align: :right,
-          format: &("$#{&1}")
+          format: &"$#{&1}"
         }
       ]
+
       data = [%{amount: 1000}]
 
       view = Table.new(columns: columns, data: data)
       [_header | rows] = get_in(view, [:children, Access.at(0)])
       row = Enum.at(rows, 0)
-      
+
       assert Enum.at(row.children, 0).content == "    $1000"
     end
 
@@ -152,12 +164,13 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
           align: :left
         }
       ]
+
       data = [%{first: "John", last: "Doe"}]
 
       view = Table.new(columns: columns, data: data)
       [_header | rows] = get_in(view, [:children, Access.at(0)])
       row = Enum.at(rows, 0)
-      
+
       assert Enum.at(row.children, 0).content == "John Doe            "
     end
   end
@@ -184,4 +197,4 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       assert text == "very lon"
     end
   end
-end 
+end

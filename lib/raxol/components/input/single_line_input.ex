@@ -47,11 +47,12 @@ defmodule Raxol.Components.Input.SingleLineInput do
 
   @impl true
   def update({:set_value, value}, state) do
-    %{state |
-      value: value,
-      cursor_pos: String.length(value),
-      selection_start: nil,
-      selection_end: nil
+    %{
+      state
+      | value: value,
+        cursor_pos: String.length(value),
+        selection_start: nil,
+        selection_end: nil
     }
   end
 
@@ -65,10 +66,11 @@ defmodule Raxol.Components.Input.SingleLineInput do
     start_pos = clamp(start_pos, 0, value_length)
     end_pos = clamp(end_pos, 0, value_length)
 
-    %{state |
-      selection_start: start_pos,
-      selection_end: end_pos,
-      cursor_pos: end_pos
+    %{
+      state
+      | selection_start: start_pos,
+        selection_end: end_pos,
+        cursor_pos: end_pos
     }
   end
 
@@ -108,7 +110,8 @@ defmodule Raxol.Components.Input.SingleLineInput do
   # end
 
   @impl true
-  def handle_event(%Event{type: :key, data: key_data} = _event, state) when state.focused do
+  def handle_event(%Event{type: :key, data: key_data} = _event, state)
+      when state.focused do
     case key_data do
       %{key: key} when is_binary(key) and byte_size(key) == 1 ->
         # Regular character input
@@ -149,13 +152,19 @@ defmodule Raxol.Components.Input.SingleLineInput do
           new_state =
             if has_selection?(state) do
               {_, selected, _} = split_text_for_selection(state)
+
               case Clipboard.copy(state.clipboard, selected) do
-                {:ok, new_clipboard_state} -> %{state | clipboard: new_clipboard_state}
-                {:error, _reason} -> state # TODO: Log error?
+                {:ok, new_clipboard_state} ->
+                  %{state | clipboard: new_clipboard_state}
+
+                # TODO: Log error?
+                {:error, _reason} ->
+                  state
               end
             else
               state
             end
+
           {new_state, []}
         else
           {insert_text(state, "c"), []}
@@ -165,10 +174,16 @@ defmodule Raxol.Components.Input.SingleLineInput do
         if :ctrl in mods do
           case Clipboard.paste(state.clipboard) do
             {:ok, text, new_clipboard_state} ->
-              state_with_new_clipboard = %{state | clipboard: new_clipboard_state}
+              state_with_new_clipboard = %{
+                state
+                | clipboard: new_clipboard_state
+              }
+
               {insert_text(state_with_new_clipboard, text), []}
+
             {:error, _reason} ->
-              {state, []} # TODO: Log error?
+              # TODO: Log error?
+              {state, []}
           end
         else
           {insert_text(state, "v"), []}
@@ -179,15 +194,24 @@ defmodule Raxol.Components.Input.SingleLineInput do
           new_state =
             if has_selection?(state) do
               {_, selected, _} = split_text_for_selection(state)
+
               case Clipboard.copy(state.clipboard, selected) do
                 {:ok, new_clipboard_state} ->
-                  state_with_new_clipboard = %{state | clipboard: new_clipboard_state}
+                  state_with_new_clipboard = %{
+                    state
+                    | clipboard: new_clipboard_state
+                  }
+
                   delete_selection(state_with_new_clipboard)
-                {:error, _reason} -> state # TODO: Log error?
+
+                # TODO: Log error?
+                {:error, _reason} ->
+                  state
               end
             else
               state
             end
+
           {new_state, []}
         else
           {insert_text(state, "x"), []}
@@ -228,14 +252,19 @@ defmodule Raxol.Components.Input.SingleLineInput do
 
   defp do_insert_text(state, text) do
     %{value: value, cursor_pos: pos} = state
-    new_value = String.slice(value, 0, pos) <> text <> String.slice(value, pos, String.length(value))
+
+    new_value =
+      String.slice(value, 0, pos) <>
+        text <> String.slice(value, pos, String.length(value))
+
     new_pos = pos + String.length(text)
 
-    new_state = %{state |
-      value: new_value,
-      cursor_pos: new_pos,
-      selection_start: nil,
-      selection_end: nil
+    new_state = %{
+      state
+      | value: new_value,
+        cursor_pos: new_pos,
+        selection_start: nil,
+        selection_end: nil
     }
 
     if state.on_change, do: state.on_change.(new_value)
@@ -246,11 +275,12 @@ defmodule Raxol.Components.Input.SingleLineInput do
     {before_selection, _, after_selection} = split_text_for_selection(state)
     new_value = before_selection <> after_selection
 
-    new_state = %{state |
-      value: new_value,
-      cursor_pos: state.selection_start,
-      selection_start: nil,
-      selection_end: nil
+    new_state = %{
+      state
+      | value: new_value,
+        cursor_pos: state.selection_start,
+        selection_start: nil,
+        selection_end: nil
     }
 
     if state.on_change, do: state.on_change.(new_value)
@@ -262,12 +292,18 @@ defmodule Raxol.Components.Input.SingleLineInput do
       delete_selection(state)
     else
       if state.cursor_pos > 0 do
-        new_value = String.slice(state.value, 0, state.cursor_pos - 1) <>
-                   String.slice(state.value, state.cursor_pos, String.length(state.value))
+        new_value =
+          String.slice(state.value, 0, state.cursor_pos - 1) <>
+            String.slice(
+              state.value,
+              state.cursor_pos,
+              String.length(state.value)
+            )
 
-        new_state = %{state |
-          value: new_value,
-          cursor_pos: state.cursor_pos - 1
+        new_state = %{
+          state
+          | value: new_value,
+            cursor_pos: state.cursor_pos - 1
         }
 
         if state.on_change, do: state.on_change.(new_value)
@@ -283,8 +319,13 @@ defmodule Raxol.Components.Input.SingleLineInput do
       delete_selection(state)
     else
       if state.cursor_pos < String.length(state.value) do
-        new_value = String.slice(state.value, 0, state.cursor_pos) <>
-                   String.slice(state.value, state.cursor_pos + 1, String.length(state.value))
+        new_value =
+          String.slice(state.value, 0, state.cursor_pos) <>
+            String.slice(
+              state.value,
+              state.cursor_pos + 1,
+              String.length(state.value)
+            )
 
         new_state = %{state | value: new_value}
 
@@ -328,7 +369,11 @@ defmodule Raxol.Components.Input.SingleLineInput do
     end
   end
 
-  defp split_text_for_selection(%{value: value, selection_start: start, selection_end: end_pos}) do
+  defp split_text_for_selection(%{
+         value: value,
+         selection_start: start,
+         selection_end: end_pos
+       }) do
     before_selection = String.slice(value, 0, start)
     selected = String.slice(value, start, end_pos - start)
     after_selection = String.slice(value, end_pos, String.length(value))

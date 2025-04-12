@@ -92,4 +92,4 @@ defmodule Raxol.Examples.Button do
     [top, middle, bottom]
     |> Enum.join("\n")
   end
-end 
+end

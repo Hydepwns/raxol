@@ -7,19 +7,20 @@ defmodule Raxol.Plugins.SearchPlugin do
   # alias Raxol.Plugins.Plugin # Unused
 
   @type t :: %__MODULE__{
-    # Plugin behaviour fields
-    name: String.t(),
-    version: String.t(),
-    description: String.t(),
-    enabled: boolean(),
-    config: map(),
-    dependencies: list(map()),
-    api_version: String.t(),
-    # Plugin specific state
-    search_term: String.t() | nil,
-    search_results: list(any()), # TODO: Define a proper result type
-    current_result_index: integer()
-  }
+          # Plugin behaviour fields
+          name: String.t(),
+          version: String.t(),
+          description: String.t(),
+          enabled: boolean(),
+          config: map(),
+          dependencies: list(map()),
+          api_version: String.t(),
+          # Plugin specific state
+          search_term: String.t() | nil,
+          # TODO: Define a proper result type
+          search_results: list(any()),
+          current_result_index: integer()
+        }
 
   defstruct [
     # Plugin behaviour fields
@@ -38,7 +39,8 @@ defmodule Raxol.Plugins.SearchPlugin do
 
   @impl true
   def init(config \\ %{}) do
-    plugin_state = struct(__MODULE__, config) # Merges config with defaults in struct
+    # Merges config with defaults in struct
+    plugin_state = struct(__MODULE__, config)
     {:ok, plugin_state}
   end
 
@@ -47,29 +49,38 @@ defmodule Raxol.Plugins.SearchPlugin do
     case input do
       "/" <> search_term ->
         start_search(plugin, search_term)
+
       "n" when plugin.search_term != nil ->
         next_result(plugin)
+
       "N" when plugin.search_term != nil ->
         prev_result(plugin)
-      "\e" ->  # Escape key
+
+      # Escape key
+      "\e" ->
         clear_search(plugin)
-      _ -> {:ok, plugin} # Return the full plugin state
+
+      # Return the full plugin state
+      _ ->
+        {:ok, plugin}
     end
   end
 
-  @impl true
-  def handle_mouse(%__MODULE__{} = plugin, _event) do
-    {:ok, plugin} # Return the full plugin state
+  @impl Raxol.Plugins.Plugin
+  def handle_mouse(%__MODULE__{} = plugin, _event, _emulator_state) do
+    # This plugin might handle clicks within its search results display
+    # TODO: Implement mouse handling for search interaction
+    {:ok, plugin}
   end
 
-  @impl true
-  def handle_output(%__MODULE__{} = plugin, _output) do
-    {:ok, plugin} # Return the full plugin state
-  end
+  @impl Raxol.Plugins.Plugin
+  def handle_output(state, _output), do: {:ok, state}
 
-  @impl true
+  @impl Raxol.Plugins.Plugin
   def handle_resize(%__MODULE__{} = plugin, _width, _height) do
-    {:ok, plugin} # Return the full plugin state
+    # This plugin might need to adjust layout on resize
+    # TODO: Implement resize handling if needed
+    {:ok, plugin}
   end
 
   @impl true
@@ -93,16 +104,25 @@ defmodule Raxol.Plugins.SearchPlugin do
 
   defp start_search(%__MODULE__{} = plugin, search_term) do
     if search_term == "" do
-      {:ok, %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
+      {:ok,
+       %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
     else
       # TODO: Implement actual search functionality
-      {:ok, %{plugin | search_term: search_term, search_results: [], current_result_index: 0}}
+      {:ok,
+       %{
+         plugin
+         | search_term: search_term,
+           search_results: [],
+           current_result_index: 0
+       }}
     end
   end
 
   defp next_result(%__MODULE__{} = plugin) do
     if plugin.search_term && length(plugin.search_results) > 0 do
-      new_index = rem(plugin.current_result_index + 1, length(plugin.search_results))
+      new_index =
+        rem(plugin.current_result_index + 1, length(plugin.search_results))
+
       {:ok, %{plugin | current_result_index: new_index}}
     else
       {:ok, plugin}
@@ -111,11 +131,13 @@ defmodule Raxol.Plugins.SearchPlugin do
 
   defp prev_result(%__MODULE__{} = plugin) do
     if plugin.search_term && length(plugin.search_results) > 0 do
-      new_index = if plugin.current_result_index == 0 do
-        length(plugin.search_results) - 1
-      else
-        plugin.current_result_index - 1
-      end
+      new_index =
+        if plugin.current_result_index == 0 do
+          length(plugin.search_results) - 1
+        else
+          plugin.current_result_index - 1
+        end
+
       {:ok, %{plugin | current_result_index: new_index}}
     else
       {:ok, plugin}
@@ -123,13 +145,15 @@ defmodule Raxol.Plugins.SearchPlugin do
   end
 
   defp clear_search(%__MODULE__{} = plugin) do
-    {:ok, %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
+    {:ok,
+     %{plugin | search_term: nil, search_results: [], current_result_index: 0}}
   end
 
   @doc """
   Highlights the search term in the given text.
   """
-  def highlight_search_term(text, search_term) when is_binary(text) and is_binary(search_term) and search_term != "" do
+  def highlight_search_term(text, search_term)
+      when is_binary(text) and is_binary(search_term) and search_term != "" do
     # ANSI escape sequence for highlighting: \e[43m (yellow background)
     String.replace(text, search_term, "\e[43m#{search_term}\e[0m")
   end

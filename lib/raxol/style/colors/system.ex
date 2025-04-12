@@ -69,10 +69,18 @@ defmodule Raxol.Style.Colors.System do
     initial_theme = Keyword.get(opts, :theme, @default_theme)
 
     # Get high contrast setting from accessibility or options
-    high_contrast = case Process.get(:accessibility_options) do
-      nil -> Keyword.get(opts, :high_contrast, false)
-      accessibility_options -> Keyword.get(opts, :high_contrast, accessibility_options[:high_contrast])
-    end
+    high_contrast =
+      case Process.get(:accessibility_options) do
+        nil ->
+          Keyword.get(opts, :high_contrast, false)
+
+        accessibility_options ->
+          Keyword.get(
+            opts,
+            :high_contrast,
+            accessibility_options[:high_contrast]
+          )
+      end
 
     # Initialize color palettes registry
     Process.put(:color_system_palettes, %{})
@@ -90,7 +98,11 @@ defmodule Raxol.Style.Colors.System do
     register_standard_themes()
 
     # Register event handlers for accessibility changes
-    EventManager.register_handler(:accessibility_high_contrast, __MODULE__, :handle_high_contrast)
+    EventManager.register_handler(
+      :accessibility_high_contrast,
+      __MODULE__,
+      :handle_high_contrast
+    )
 
     # Apply the initial theme
     apply_theme(initial_theme, high_contrast: high_contrast)
@@ -159,8 +171,9 @@ defmodule Raxol.Style.Colors.System do
   """
   def register_theme(theme_name, colors, opts \\ []) do
     # Get high contrast colors or generate them automatically
-    high_contrast_colors = Keyword.get(opts, :high_contrast_colors) ||
-                          generate_high_contrast_colors(colors)
+    high_contrast_colors =
+      Keyword.get(opts, :high_contrast_colors) ||
+        generate_high_contrast_colors(colors)
 
     # Get variants or use defaults
     variants = Keyword.get(opts, :variants) || %{}
@@ -196,7 +209,12 @@ defmodule Raxol.Style.Colors.System do
   """
   def apply_theme(theme, opts \\ []) do
     # Get high contrast setting from options or current state
-    high_contrast = Keyword.get(opts, :high_contrast, Process.get(:color_system_high_contrast, false))
+    high_contrast =
+      Keyword.get(
+        opts,
+        :high_contrast,
+        Process.get(:color_system_high_contrast, false)
+      )
 
     # Update current theme
     Process.put(:color_system_current_theme, theme)
@@ -205,7 +223,9 @@ defmodule Raxol.Style.Colors.System do
     Process.put(:color_system_high_contrast, high_contrast)
 
     # Emit theme change event
-    EventManager.dispatch({:theme_changed, %{theme: theme, high_contrast: high_contrast}})
+    EventManager.dispatch(
+      {:theme_changed, %{theme: theme, high_contrast: high_contrast}}
+    )
 
     :ok
   end
@@ -238,7 +258,10 @@ defmodule Raxol.Style.Colors.System do
     themes = Process.get(:color_system_themes, %{})
 
     case Map.get(themes, theme_name) do
-      nil -> "#000000" # Default to black if theme not found
+      # Default to black if theme not found
+      nil ->
+        "#000000"
+
       theme ->
         base_color = get_in(theme, [:colors, color_name])
 
@@ -262,7 +285,10 @@ defmodule Raxol.Style.Colors.System do
     themes = Process.get(:color_system_themes, %{})
 
     case Map.get(themes, theme_name) do
-      nil -> "#FFFFFF" # Default to white if theme not found
+      # Default to white if theme not found
+      nil ->
+        "#FFFFFF"
+
       theme ->
         base_color = get_in(theme, [:high_contrast_colors, color_name])
 
@@ -270,7 +296,12 @@ defmodule Raxol.Style.Colors.System do
           base_color
         else
           # Get variant-specific high contrast color if available
-          variant_color = get_in(theme, [:variants, String.to_atom("high_contrast_#{color_name}"), variant])
+          variant_color =
+            get_in(theme, [
+              :variants,
+              String.to_atom("high_contrast_#{color_name}"),
+              variant
+            ])
 
           if variant_color do
             variant_color
@@ -312,6 +343,7 @@ defmodule Raxol.Style.Colors.System do
 
   defp make_high_contrast(color) do
     is_dark = Utilities.dark_color?(color)
+
     if is_dark do
       Utilities.lighten(color, 0.5)
     else

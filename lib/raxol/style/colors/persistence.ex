@@ -57,9 +57,11 @@ defmodule Raxol.Style.Colors.Persistence do
         case Jason.decode(theme_json) do
           {:ok, theme_data} ->
             {:ok, struct(Theme, theme_data)}
+
           error ->
             error
         end
+
       error ->
         error
     end
@@ -79,9 +81,11 @@ defmodule Raxol.Style.Colors.Persistence do
         case Map.get(preferences, "theme") do
           nil ->
             {:ok, Theme.standard_theme()}
+
           theme_name ->
             load_theme(theme_name)
         end
+
       error ->
         error
     end
@@ -102,9 +106,11 @@ defmodule Raxol.Style.Colors.Persistence do
           {:ok, preferences} -> {:ok, preferences}
           error -> error
         end
+
       {:error, :enoent} ->
         # File doesn't exist, return default preferences
         {:ok, %{"theme" => "Default"}}
+
       error ->
         error
     end
