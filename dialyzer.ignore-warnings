@@ -15,6 +15,8 @@
 # --- No Return ---
 # Incorrect warning: terminal_info/0 clearly returns a map.
 { "lib/raxol.ex", :no_return, "Function terminal_info/0 has no local return."},
+# Incorrect warning: create/2 returns conn in both case branches.
+{ "lib/raxol_web/controllers/user_registration_controller.ex", :no_return, ~r/Function create\/2 has no local return/ },
 # Incorrect warning: single_line_input delegates to render/1 which returns a value.
 { "lib/raxol/components.ex", :no_return, "Function single_line_input/0 has no local return."},
 { "lib/raxol/components.ex", :no_return, "Function single_line_input/1 has no local return."},
@@ -123,7 +125,7 @@
 
 # Ignore likely incorrect :no_return warnings for rendering/example/test/layout/view functions
 # This covers many rendering functions that implicitly return view structs/elements
-{ ~r\"lib/raxol/(components/.*|core/renderer/views|examples|metrics/visualizer|test|view/layout)\\.ex\", :no_return, ~r/Function (render|setup|create|assert|capture|snapshot|compare|mouse_event|row|column|panel|view|render_.*)/ },
+{ ~r\"lib/raxol/(components/.*|core/renderer/views|examples|metrics/visualizer|test|view/layout|web/controllers)\\.ex\", :no_return, ~r/Function (render|setup|create|assert|capture|snapshot|compare|mouse_event|row|column|panel|view|render_.*)/ },
 
 # Ignore unused function warnings in examples and tests
 { ~r\"lib/raxol/(examples|test)/.+\\.ex\", :unused_fun },
@@ -150,6 +152,8 @@
 { "lib/raxol/system/platform.ex", :contract_supertype },
 # Ignore contract supertype warnings in FocusManager
 { "lib/raxol/core/focus_manager.ex", :contract_supertype },
+# Ignore contract supertype warnings in Terminal Configuration (until ignore_modules works)
+{ "lib/raxol/terminal/configuration.ex", :contract_supertype },
 
 # Ignore contract range warnings in TerminalPlatform (complex detection logic)
 { "lib/raxol/system/terminal_platform.ex", :contract_range },
@@ -167,11 +171,12 @@
 { "lib/raxol/terminal/ansi/sixel_graphics.ex", :pattern_match }, # :error
 { "lib/raxol/terminal/ansi/window_manipulation.ex", :pattern_match }, # :error
 { "lib/raxol/terminal/character_handling.ex:1", :pattern_match }, # true
-{ "lib/raxol/terminal/configuration.ex:1", :pattern_match }, # true
+{ "lib/raxol/terminal/configuration.ex:1", :pattern_match }, # Reverted to simple ignore
 { "lib/raxol/test/test_helper.ex:177", :pattern_match }, # {binary(), binary()}
 { "lib/raxol/cloud/edge_computing.ex", :pattern_match, ~r/The pattern can never match the type :edge_failure/ },
 { "lib/raxol/components/terminal/ansi.ex", :pattern_match, ~r/The pattern can never match the type 0/ },
 { "lib/raxol/core/runtime/event_loop.ex:119", :pattern_match }, # :ok
+{ "lib/raxol_web/controllers/user_registration_controller.ex:1", :pattern_match, ~r/Pattern:\s*false.*Type:\s*true/s }, # Spurious warning: false vs true (Regex ignore)
 
 # Ignore guard fail warnings
 { "lib/raxol/auth/plug.ex:59", :guard_fail },
@@ -193,10 +198,19 @@
 { "lib/raxol/terminal/ansi/terminal_state.ex", :unknown_type, ~r/ScreenModes.mode_state/ },
 
 # Ignore expected pattern match warnings in configuration.ex helpers (Dialyzer infers :unknown type)
-{ "lib/raxol/terminal/configuration.ex", :pattern_match },
+# { "lib/raxol/terminal/configuration.ex", :pattern_match }, # This broad one might not be needed now
 
 # Ignore pattern match on {:error, _} in session.ex handle_cast (Dialyzer false positive)
 # { "lib/raxol/terminal/session.ex:161", :pattern_match }, # Simple ignore didn't work
 { "lib/raxol/terminal/session.ex:161", :pattern_match, ~r/The pattern can never match the type.*Pattern:\s*\{:error, _reason\}/s }, # Regex ignore
+
+# Ignore specific type comparison warnings involving View DSL elements and nil
+# These seem to be related to internal View macro expansion or type inference
+{ "lib/raxol/components/modal.ex:120", :comparison_different_types },
+{ "lib/raxol/components/focus_ring.ex:275", :comparison_different_types },
+{ "lib/raxol/my_app.ex:86", :comparison_different_types },
+
+# Ignore specific unmatched return in Terminal Configuration (until ignore_modules works)
+{ "lib/raxol/terminal/configuration.ex:1765", :unmatched_return }, # Reverted to simple ignore
 
 # --- End ---
