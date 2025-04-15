@@ -69,6 +69,7 @@ defmodule Raxol.MixProject do
       {:ex_termbox, "~> 1.0"},
       {:phoenix, "~> 1.7.20"},
       {:phoenix_live_view, "~> 1.0.0"},
+      {:surface, "~> 0.12"},
       {:phoenix_live_dashboard, "~> 0.8.0"},
       {:jason, "~> 1.4"},
 
