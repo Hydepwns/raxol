@@ -3,23 +3,93 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   Plugin for clipboard operations in Raxol.
   """
 
-  use Raxol.Plugin
+  @behaviour Raxol.Plugins.Plugin
+  require Logger
+
+  @type t :: %__MODULE__{
+          # Standard Plugin fields
+          name: String.t(),
+          version: String.t(),
+          description: String.t(),
+          enabled: boolean(),
+          config: map(),
+          dependencies: list(map()),
+          api_version: String.t(),
+          # Clipboard-specific state
+          selection_active: boolean(),
+          selection_start: {integer(), integer()} | nil, # {x, y}
+          selection_end: {integer(), integer()} | nil, # {x, y}
+          last_cells_at_selection: map() | nil
+        }
+
+  defstruct [
+    # Standard fields
+    name: "clipboard",
+    version: "0.1.0",
+    description: "Handles clipboard copy and paste.",
+    enabled: true,
+    config: %{},
+    dependencies: [],
+    api_version: "1.0.0",
+    # Clipboard-specific state
+    selection_active: false,
+    selection_start: nil,
+    selection_end: nil,
+    last_cells_at_selection: nil
+  ]
 
   @impl true
-  def init(_opts) do
-    {:ok, %{}}
+  def init(config \\ %{}) do
+    # Initialize the plugin struct, merging provided config
+    plugin_state = struct(__MODULE__, config)
+    {:ok, plugin_state}
   end
 
   @impl true
-  def handle_event({:key, key}, state) do
-    case key do
-      "y" -> yank_selection(state)
-      "d" -> delete_selection(state)
-      _ -> {:ok, state}
+  def handle_input(%__MODULE__{} = state, %{type: :key, modifiers: mods, key: ?c} = _event) do
+    if :ctrl in mods do
+      Logger.debug("[Clipboard] Ctrl+C detected.")
+      # Check for finalized selection and stored cells
+      if is_tuple(state.selection_start) and is_tuple(state.selection_end) and is_map(state.last_cells_at_selection) do
+        Logger.debug("[Clipboard] Triggering yank_selection.")
+        yank_selection(state)
+        new_state = clear_selection(state)
+        {:ok, new_state}
+      else
+        Logger.debug("[Clipboard] No complete selection available for copy.")
+        {:ok, state}
+      end
+    else
+      # Not Ctrl+C, just 'c' key or other modifiers
+      {:ok, state}
     end
   end
 
-  defp yank_selection(state) do
+  def handle_input(%__MODULE__{} = state, %{type: :key, modifiers: mods, key: ?v} = _event) do
+    if :ctrl in mods do
+      Logger.debug("[Clipboard] Ctrl+V detected.")
+      case get_clipboard_content() do
+        {:ok, content} when content != "" ->
+          Logger.debug("[Clipboard] Pasting content: #{content}")
+          # Return command for Runtime to handle
+          {:ok, state, {:command, {:paste, content}}}
+        {:ok, ""} ->
+          Logger.debug("[Clipboard] Clipboard is empty, nothing to paste.")
+          {:ok, state}
+        {:error, reason} ->
+          Logger.error("[Clipboard] Failed to get clipboard content: #{inspect(reason)}")
+          {:ok, state}
+      end
+    else
+      # Not Ctrl+V, just 'v' key or other modifiers
+      {:ok, state}
+    end
+  end
+
+  # Catch-all for other map events or non-map events
+  def handle_input(state, _event), do: {:ok, state}
+
+  defp yank_selection(%__MODULE__{} = state) do
     case get_selected_text(state) do
       {:ok, text} ->
         set_clipboard_content(text)
@@ -30,26 +100,31 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     end
   end
 
-  defp delete_selection(state) do
-    case get_selected_text(state) do
-      {:ok, _text} ->
-        {:ok, clear_selection(state)}
+  defp get_selected_text(%__MODULE__{selection_start: start_pos, selection_end: end_pos, last_cells_at_selection: cells} = _state)
+    when is_tuple(start_pos) and is_tuple(end_pos) and is_map(cells) do
+    # Determine top-left and bottom-right corners
+    {sx, sy} = start_pos
+    {ex, ey} = end_pos
+    {min_x, max_x} = {min(sx, ex), max(sx, ex)}
+    {min_y, max_y} = {min(sy, ey), max(sy, ey)}
 
-      _ ->
-        {:ok, state}
-    end
+    selected_lines =
+      for y <- min_y..max_y do
+        line_cells =
+          for x <- min_x..max_x,
+              cell = Map.get(cells, {x, y}),
+              not is_nil(cell) and is_integer(cell.char) do
+            <<cell.char::utf8>>
+          end
+        # Filter out nils and join the characters for the line
+        line_cells |> Enum.join()
+      end
+
+    # Join all selected lines with newline
+    {:ok, Enum.join(selected_lines, "\n")}
   end
-
-  defp get_selected_text(%{selection: nil}), do: {:error, :no_selection}
-
-  defp get_selected_text(%{selection: {start_pos, end_pos}, buffer: buffer}) do
-    text =
-      buffer
-      |> Enum.slice(start_pos..end_pos)
-      |> Enum.join("\n")
-
-    {:ok, text}
-  end
+  # Catch-all if selection or cells are not ready
+  defp get_selected_text(_state), do: {:error, :no_selection}
 
   defp set_clipboard_content(text) do
     case :os.type() do
@@ -67,6 +142,40 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   end
 
   defp clear_selection(state) do
-    %{state | selection: nil}
+    %{state | selection_active: false, selection_start: nil, selection_end: nil}
   end
+
+  # Reads content from the system clipboard.
+  defp get_clipboard_content() do
+    case :os.type() do
+      {:unix, :darwin} ->
+        System.cmd("pbpaste", [])
+        |> handle_cmd_result()
+      {:unix, _} ->
+        # Try xclip first, then xsel
+        case System.cmd("xclip", ["-selection", "clipboard", "-o"]) do
+          {output, 0} -> handle_cmd_result({output, 0})
+          _ ->
+            # xclip failed or not found, try xsel
+            System.cmd("xsel", ["--clipboard", "--output"])
+            |> handle_cmd_result()
+        end
+      {:win32, _} ->
+        # Use PowerShell for potentially better Unicode handling
+        System.cmd("powershell", ["-Command", "Get-Clipboard"])
+        |> handle_cmd_result()
+    end
+  end
+
+  # Helper to process System.cmd result for clipboard content
+  defp handle_cmd_result({output, 0}), do: {:ok, output |> String.trim()}
+  defp handle_cmd_result({output, exit_code}) do
+    {:error, "Command failed (exit code: #{exit_code}): #{output}"}
+  end
+
+  @impl true
+  def get_dependencies, do: []
+
+  @impl true
+  def get_api_version, do: "1.0.0"
 end

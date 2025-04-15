@@ -9,8 +9,6 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   # Require Logger for logging macros
   require Logger
 
-  @url_pattern ~r/https?:\/\/[^\s<>"]+|www\.[^\s<>"]+/i
-
   # Define the struct type matching the Plugin behaviour
   @type t :: %Plugin{
           name: String.t(),
@@ -41,22 +39,6 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl true
-  def handle_output(%__MODULE__{} = plugin, output) when is_binary(output) do
-    case Regex.scan(@url_pattern, output) do
-      [] ->
-        {:ok, plugin}
-
-      urls ->
-        new_output =
-          Enum.reduce(urls, output, fn [url], acc ->
-            String.replace(acc, url, create_hyperlink(url))
-          end)
-
-        {:ok, plugin, new_output}
-    end
-  end
-
-  @impl true
   def handle_input(%__MODULE__{} = plugin, input) do
     # Process input for hyperlink-related commands
     case input do
@@ -71,27 +53,32 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_mouse(%__MODULE__{} = plugin, event, _emulator_state) do
+  def handle_mouse(%__MODULE__{} = plugin_state, event, rendered_cells) do
     # Only handle left clicks for now
     case event do
       %{type: :mouse, button: :left, x: click_x, y: click_y, modifiers: []} ->
-        # TODO: Resolve how to get the Cell at (click_x, click_y) from _emulator_state.
-        # The Cell's style map should contain the hyperlink URL if the renderer
-        # correctly processes OSC 8 sequences.
-        # Once cell data is available, extract the URL and call open_url(url).
-        # Example placeholder logic:
-        # case get_cell_at(_emulator_state, click_x, click_y) do
-        #   %Raxol.Terminal.Cell{style: %{hyperlink: url}} when is_binary(url) ->
-        #     open_url(url)
-        #   _ ->
-        #     :ok # Click was not on a hyperlink
-        # end
-        Logger.debug("[HyperlinkPlugin] Mouse click detected at (#{click_x}, #{click_y}). URL opening disabled until cell data retrieval is fixed.")
-        {:ok, plugin}
+        # Look up cell data using the passed rendered_cells map
+        case Map.get(rendered_cells, {click_x, click_y}) do
+          %{style: %{hyperlink: url}} when is_binary(url) and url != "" ->
+            Logger.debug("[HyperlinkPlugin] Clicked on hyperlink: #{url}")
+            # Attempt to open the URL
+            case open_url(url) do
+              :ok ->
+                # URL opened successfully, halt event propagation
+                {:ok, plugin_state, :halt}
+              {:error, _reason} ->
+                # Failed to open, propagate event (maybe app wants to handle it?)
+                {:ok, plugin_state, :propagate}
+            end
+
+          _ ->
+            # Click was not on a cell with a hyperlink style
+            {:ok, plugin_state, :propagate}
+        end
 
       _ ->
         # Ignore other mouse events (right click, wheel, etc.)
-        {:ok, plugin}
+        {:ok, plugin_state, :propagate}
     end
   end
 
@@ -126,7 +113,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     "\e]8;;#{url}\e\\#{url}\e]8;;\e\\"
   end
 
-  # credo:disable-for-next-line UnusedFunction
+  # Opens the given URL using the OS-specific command.
   defp open_url(url) do
     command =
       case :os.type() do

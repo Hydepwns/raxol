@@ -4,6 +4,8 @@ defmodule Raxol.Plugins.PluginManager do
   Handles plugin loading, lifecycle management, and event dispatching.
   """
 
+  require Logger
+
   alias Raxol.Plugins.{Plugin, PluginConfig, PluginDependency}
 
   @type t :: %__MODULE__{
@@ -444,11 +446,11 @@ defmodule Raxol.Plugins.PluginManager do
       if plugin.enabled and function_exported?(plugin.__struct__, :handle_render, 1) do
         case plugin.handle_render() do
           {:ok, updated_plugin, command} when not is_nil(command) ->
-            updated_manager = %{ acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin) }
+            updated_manager = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin)}
             {:ok, updated_manager, [command | acc_commands]}
 
           {:ok, updated_plugin} -> # No command returned
-            updated_manager = %{ acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin) }
+            updated_manager = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin) }
             {:ok, updated_manager, acc_commands}
 
           # Allow plugins to just return the command if state doesn't change
@@ -499,9 +501,52 @@ defmodule Raxol.Plugins.PluginManager do
   end
 
   @doc """
+  Processes a mouse event through all enabled plugins, providing cell context.
+  Plugins can choose to halt propagation if they handle the event.
+  Returns {:ok, updated_manager, :propagate | :halt} or {:error, reason}.
+  """
+  def handle_mouse_event(%__MODULE__{} = manager, event, rendered_cells) when is_map(event) do
+    # Reduce over enabled plugins, stopping if one halts
+    Enum.reduce_while(manager.plugins, {:ok, manager, :propagate}, fn
+      {_name, plugin}, {:ok, acc_manager, _propagation_state} ->
+        if plugin.enabled and function_exported?(plugin.__struct__, :handle_mouse, 3) do
+          # Pass the current plugin state, the event map, and the rendered cell context
+          current_plugin_state = Map.get(acc_manager.plugins, plugin.name)
+          module = plugin.__struct__
+
+          case module.handle_mouse(current_plugin_state, event, rendered_cells) do
+            {:ok, updated_plugin_state, :propagate} ->
+              new_manager_state = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)}
+              # Continue processing other plugins
+              {:cont, {:ok, new_manager_state, :propagate}}
+
+            {:ok, updated_plugin_state, :halt} ->
+              new_manager_state = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)}
+              # Halt processing, this plugin handled it
+              {:halt, {:ok, new_manager_state, :halt}}
+
+            {:error, reason} ->
+              Logger.error("Error from plugin #{plugin.name} in handle_mouse: #{inspect(reason)}")
+              # Halt with an error
+              {:halt, {:error, reason}}
+
+            _ -> # Invalid return from plugin
+              Logger.warning("Invalid return from #{plugin.name}.handle_mouse/3. Propagating.")
+              # Continue, assuming propagate
+              {:cont, {:ok, acc_manager, :propagate}}
+          end
+        else
+          # Plugin disabled or doesn't implement handle_mouse/3, continue
+          {:cont, {:ok, acc_manager, :propagate}}
+        end
+    end)
+  end
+
+  @doc """
   Processes renderable cells through all enabled plugins.
-  Plugins can modify cells or generate commands (e.g., escape sequences).
+  Plugins can modify cell maps or generate commands (e.g., escape sequences).
   Returns {:ok, updated_manager, processed_cells, list_of_commands, list_of_messages}
+  where processed_cells is a list of cell maps.
   """
   def process_cells(%__MODULE__{} = manager, cells) when is_list(cells) do
     initial_acc = {manager, cells, [], []} # {manager, processed_cells, commands, messages}
@@ -542,5 +587,64 @@ defmodule Raxol.Plugins.PluginManager do
     {final_manager, final_cells, final_commands, final_messages} = final_acc
     # Reverse messages so they are in plugin processing order (though maybe not critical)
     {:ok, final_manager, final_cells, final_commands, Enum.reverse(final_messages)}
+  end
+
+  @doc """
+  Processes a keyboard event through all enabled plugins.
+  Plugins can return commands and choose to halt propagation.
+  Returns {:ok, updated_manager, list_of_commands, :propagate | :halt} or {:error, reason}.
+  """
+  def handle_key_event(%__MODULE__{} = manager, event, _rendered_cells) when is_map(event) and event.type == :key do
+    # Reduce over enabled plugins, collecting commands and stopping if one halts
+    initial_acc = {:ok, manager, [], :propagate} # {status, manager, commands, propagation}
+
+    Enum.reduce_while(manager.plugins, initial_acc, fn
+      {_name, plugin}, {:ok, acc_manager, acc_commands, _propagation_state} ->
+        if plugin.enabled and function_exported?(plugin.__struct__, :handle_input, 2) do
+          # Pass the current plugin state and the event map
+          # NOTE: We are passing the *event map* to handle_input, which expects a string.
+          # This is a temporary adaptation. Ideally, a new callback like handle_key_event
+          # should be defined in the Plugin behaviour.
+          current_plugin_state = Map.get(acc_manager.plugins, plugin.name)
+          module = plugin.__struct__
+
+          case module.handle_input(current_plugin_state, event) do
+            # Plugin returns {:ok, state, command}
+            {:ok, updated_plugin_state, {:command, command_data}} ->
+              new_manager_state = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)}
+              # Continue processing, add command, assume propagation (plugin didn't explicitly halt)
+              {:cont, {:ok, new_manager_state, [command_data | acc_commands], :propagate}}
+
+            # Plugin returns {:ok, state} (no command)
+            {:ok, updated_plugin_state} ->
+              new_manager_state = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)}
+              # Continue processing, no command added
+              {:cont, {:ok, new_manager_state, acc_commands, :propagate}}
+
+             # TODO: Add support for explicit :halt if needed
+             # {:ok, updated_plugin_state, :halt} -> ...
+             # {:ok, updated_plugin_state, {:command, cmd}, :halt} -> ...
+
+            {:error, reason} ->
+              Logger.error("Error from plugin #{plugin.name} in handle_input: #{inspect(reason)}")
+              # Halt with an error
+              {:halt, {:error, reason}}
+
+            _ -> # Invalid return from plugin
+              Logger.warning("Invalid return from #{plugin.name}.handle_input/2. Propagating.")
+              # Continue, assuming propagate
+              {:cont, {:ok, acc_manager, acc_commands, :propagate}}
+          end
+        else
+          # Plugin disabled or doesn't implement handle_input/2, continue
+          {:cont, {:ok, acc_manager, acc_commands, :propagate}}
+        end
+    end)
+    # Reverse commands to maintain order? Depends on processing logic.
+    |> case do
+         {:ok, final_manager, final_commands, propagation_state} ->
+           {:ok, final_manager, Enum.reverse(final_commands), propagation_state}
+         error -> error # Pass through {:error, reason}
+       end
   end
 end
