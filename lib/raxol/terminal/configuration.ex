@@ -1,17 +1,13 @@
 defmodule Raxol.Terminal.Configuration do
   @moduledoc """
-  Terminal configuration module that provides optimal settings based on terminal capabilities.
-
-  This module:
-  - Detects terminal type and capabilities
-  - Sets appropriate default configurations
-  - Provides configuration presets for different terminal types
-  - Handles feature-specific settings
-  - Manages color and style configurations
-  - Configures input/output behavior
-  - Supports terminal transparency and background images
-  - Supports animated backgrounds with caching, preloading, and compression
+  Handles terminal configuration, detection, and application.
   """
+
+  require Logger
+
+  # alias Raxol.Terminal.Capabilities
+  # alias Raxol.Terminal.Theme
+  # alias Raxol.Terminal.ThemeLoader
 
   alias Raxol.System.TerminalPlatform
   alias Raxol.Core.UserPreferences
@@ -782,7 +778,7 @@ defmodule Raxol.Terminal.Configuration do
       line_height: 1.2,
       cursor_style: :block,
       cursor_blink: true,
-      scrollback_limit: 10000,
+      scrollback_limit: 10_000,
       batch_size: 200,
       virtual_scroll: true,
       visible_rows: 24,
@@ -861,7 +857,7 @@ defmodule Raxol.Terminal.Configuration do
       bracketed_paste: true,
       focus_support: false,
       title_support: true,
-      font_family: "DejaVu Sans Mono",
+      font_family: "Monospace Argon",
       font_size: 12,
       line_height: 1.0,
       cursor_style: :underline,
@@ -903,12 +899,12 @@ defmodule Raxol.Terminal.Configuration do
       bracketed_paste: false,
       focus_support: false,
       title_support: false,
-      font_family: "DejaVu Sans Mono",
+      font_family: "Monospace Argon",
       font_size: 12,
       line_height: 1.0,
       cursor_style: :underline,
       cursor_blink: false,
-      scrollback_limit: 1000,
+      scrollback_limit: 1_000,
       batch_size: 100,
       virtual_scroll: false,
       visible_rows: 24,
@@ -950,7 +946,7 @@ defmodule Raxol.Terminal.Configuration do
       line_height: 1.1,
       cursor_style: :block,
       cursor_blink: true,
-      scrollback_limit: 10000,
+      scrollback_limit: 10_000,
       batch_size: 200,
       virtual_scroll: true,
       visible_rows: 24,
@@ -992,7 +988,7 @@ defmodule Raxol.Terminal.Configuration do
       line_height: 1.1,
       cursor_style: :block,
       cursor_blink: true,
-      scrollback_limit: 10000,
+      scrollback_limit: 10_000,
       batch_size: 200,
       virtual_scroll: true,
       visible_rows: 24,
@@ -1034,7 +1030,7 @@ defmodule Raxol.Terminal.Configuration do
       line_height: 1.1,
       cursor_style: :block,
       cursor_blink: true,
-      scrollback_limit: 5000,
+      scrollback_limit: 5_000,
       batch_size: 150,
       virtual_scroll: true,
       visible_rows: 24,
@@ -1076,7 +1072,7 @@ defmodule Raxol.Terminal.Configuration do
       line_height: 1.1,
       cursor_style: :block,
       cursor_blink: true,
-      scrollback_limit: 5000,
+      scrollback_limit: 5_000,
       batch_size: 150,
       virtual_scroll: true,
       visible_rows: 24,
@@ -1118,7 +1114,7 @@ defmodule Raxol.Terminal.Configuration do
       line_height: 1.1,
       cursor_style: :block,
       cursor_blink: true,
-      scrollback_limit: 5000,
+      scrollback_limit: 5_000,
       batch_size: 150,
       virtual_scroll: true,
       visible_rows: 24,
@@ -1160,7 +1156,7 @@ defmodule Raxol.Terminal.Configuration do
       line_height: 1.0,
       cursor_style: :block,
       cursor_blink: true,
-      scrollback_limit: 1000,
+      scrollback_limit: 1_000,
       batch_size: 100,
       virtual_scroll: false,
       visible_rows: 24,
@@ -2191,84 +2187,85 @@ defmodule Raxol.Terminal.Configuration do
   end
 
   @spec convert_to_palette(map()) :: map()
-  defp convert_to_palette(theme) do
+  def convert_to_palette(theme) do
+    Logger.debug("[Config] Converting theme to 256-color palette.")
     # Convert true color theme to 256-color palette
-    # This uses a more sophisticated color mapping algorithm
-    # that maps RGB colors to the closest 256-color palette entry
-    Map.new(theme, fn {key, color} ->
+    Enum.into(theme, %{}, fn {key, color} ->
       {key, rgb_to_256color(color)}
     end)
   end
 
   @spec convert_to_basic(map()) :: map()
-  defp convert_to_basic(theme) do
+  def convert_to_basic(theme) do
+    Logger.debug("[Config] Converting theme to basic 16-color palette.")
     # Convert theme to basic 8 colors
     # This uses a more sophisticated color mapping algorithm
-    # that maps RGB colors to the closest basic color
-    Map.new(theme, fn {key, color} ->
+    Enum.into(theme, %{}, fn {key, color} ->
       {key, rgb_to_basic_color(color)}
     end)
   end
 
   @spec rgb_to_256color(String.t()) :: String.t()
-  defp rgb_to_256color(hex_color) do
-    {r, g, b} = hex_to_rgb(hex_color)
+  def rgb_to_256color(hex_color) do
+    case hex_to_rgb(hex_color) do
+      {r, g, b} ->
+        # First check if it's a grayscale color
+        if r == g && g == b do
+          # Map to grayscale palette (232-255)
+          gray_index = round(r / 255 * 23) + 232
+          "\e[38;5;#{gray_index}m"
+        else
+          # Map to RGB cube (16-231)
+          # The RGB cube uses 6 levels for each channel (0-5)
+          r_index = round(r / 255 * 5)
+          g_index = round(g / 255 * 5)
+          b_index = round(b / 255 * 5)
 
-    # First check if it's a grayscale color
-    if r == g && g == b do
-      # Map to grayscale palette (232-255)
-      gray_index = round(r / 255 * 23) + 232
-      "\e[38;5;#{gray_index}m"
-    else
-      # Map to RGB cube (16-231)
-      # The RGB cube uses 6 levels for each channel (0-5)
-      r_index = round(r / 255 * 5)
-      g_index = round(g / 255 * 5)
-      b_index = round(b / 255 * 5)
-
-      # Calculate the index in the RGB cube
-      # Formula: 16 + (36 * r) + (6 * g) + b
-      color_index = 16 + 36 * r_index + 6 * g_index + b_index
-      "\e[38;5;#{color_index}m"
+          # Calculate the index in the RGB cube
+          # Formula: 16 + (36 * r) + (6 * g) + b
+          color_index = 16 + 36 * r_index + 6 * g_index + b_index
+          "\e[38;5;#{color_index}m"
+        end
     end
   end
 
   @spec rgb_to_basic_color(String.t()) :: String.t()
-  defp rgb_to_basic_color(hex_color) do
-    {r, g, b} = hex_to_rgb(hex_color)
+  def rgb_to_basic_color(hex_color) do
+    case hex_to_rgb(hex_color) do
+      {r, g, b} ->
+        # Calculate the closest basic color
+        # Basic colors are:
+        # 0: Black (0, 0, 0)
+        # 1: Red (255, 0, 0)
+        # 2: Green (0, 255, 0)
+        # 3: Yellow (255, 255, 0)
+        # 4: Blue (0, 0, 255)
+        # 5: Magenta (255, 0, 255)
+        # 6: Cyan (0, 255, 255)
+        # 7: White (255, 255, 255)
 
-    # Calculate the closest basic color
-    # Basic colors are:
-    # 0: Black (0, 0, 0)
-    # 1: Red (255, 0, 0)
-    # 2: Green (0, 255, 0)
-    # 3: Yellow (255, 255, 0)
-    # 4: Blue (0, 0, 255)
-    # 5: Magenta (255, 0, 255)
-    # 6: Cyan (0, 255, 255)
-    # 7: White (255, 255, 255)
+        # Calculate Euclidean distance to each basic color
+        distances = [
+          {0, :black, distance({r, g, b}, {0, 0, 0})},
+          {1, :red, distance({r, g, b}, {255, 0, 0})},
+          {2, :green, distance({r, g, b}, {0, 255, 0})},
+          {3, :yellow, distance({r, g, b}, {255, 255, 0})},
+          {4, :blue, distance({r, g, b}, {0, 0, 255})},
+          {5, :magenta, distance({r, g, b}, {255, 0, 255})},
+          {6, :cyan, distance({r, g, b}, {0, 255, 255})},
+          {7, :white, distance({r, g, b}, {255, 255, 255})}
+        ]
 
-    # Calculate Euclidean distance to each basic color
-    distances = [
-      {0, :black, distance({r, g, b}, {0, 0, 0})},
-      {1, :red, distance({r, g, b}, {255, 0, 0})},
-      {2, :green, distance({r, g, b}, {0, 255, 0})},
-      {3, :yellow, distance({r, g, b}, {255, 255, 0})},
-      {4, :blue, distance({r, g, b}, {0, 0, 255})},
-      {5, :magenta, distance({r, g, b}, {255, 0, 255})},
-      {6, :cyan, distance({r, g, b}, {0, 255, 255})},
-      {7, :white, distance({r, g, b}, {255, 255, 255})}
-    ]
+        # Find the closest color
+        {index, _name, _dist} = Enum.min_by(distances, fn {_i, _n, d} -> d end)
 
-    # Find the closest color
-    {index, _name, _dist} = Enum.min_by(distances, fn {_i, _n, d} -> d end)
-
-    # Return the ANSI escape code for the closest color
-    "\e[#{index + 30}m"
+        # Return the ANSI escape code for the closest color
+        "\e[#{index + 30}m"
+    end
   end
 
   @spec hex_to_rgb(String.t()) :: {0..255, 0..255, 0..255}
-  defp hex_to_rgb(hex_color) do
+  def hex_to_rgb(hex_color) do
     # Remove the # if present
     hex = String.replace(hex_color, "#", "")
 
@@ -2280,10 +2277,10 @@ defmodule Raxol.Terminal.Configuration do
     {r, g, b}
   end
 
-  @spec distance({byte(), byte(), byte()}, {0 | 255, 0 | 255, 0 | 255}) ::
-          float()
-  # Helper function to calculate Euclidean distance between two RGB colors
-  defp distance({r1, g1, b1}, {r2, g2, b2}) do
+  @dialyzer {:nowarn_function, distance: 2}
+  @spec distance({non_neg_integer(), non_neg_integer(), non_neg_integer()},
+                 {non_neg_integer(), non_neg_integer(), non_neg_integer()}) :: float()
+  def distance({r1, g1, b1}, {r2, g2, b2}) do
     :math.sqrt(
       :math.pow(r1 - r2, 2) +
         :math.pow(g1 - g2, 2) +
@@ -2291,155 +2288,4 @@ defmodule Raxol.Terminal.Configuration do
     )
   end
 
-  @dialyzer {:nowarn_function, get_background_type: 1}
-  @spec get_background_type(terminal_type()) :: :transparent | :solid
-  defp get_background_type(terminal_type) do
-    case terminal_type do
-      :iterm2 -> :transparent
-      :windows_terminal -> :transparent
-      :kitty -> :transparent
-      :alacritty -> :transparent
-      :konsole -> :transparent
-      :gnome_terminal -> :transparent
-      :vscode -> :transparent
-      _ -> :solid
-    end
-  end
-
-  @dialyzer {:nowarn_function, get_background_opacity: 1}
-  @spec get_background_opacity(terminal_type()) :: float()
-  defp get_background_opacity(terminal_type) do
-    case terminal_type do
-      :iterm2 -> 0.85
-      :windows_terminal -> 0.85
-      :kitty -> 0.85
-      :alacritty -> 0.85
-      :konsole -> 0.85
-      :gnome_terminal -> 0.85
-      :vscode -> 0.85
-      _ -> 1.0
-    end
-  end
-
-  @dialyzer {:nowarn_function, get_background_image: 1}
-  @spec get_background_image(terminal_type()) :: nil
-  defp get_background_image(terminal_type) do
-    case terminal_type do
-      :iterm2 -> nil
-      :windows_terminal -> nil
-      :kitty -> nil
-      :alacritty -> nil
-      :konsole -> nil
-      :gnome_terminal -> nil
-      :vscode -> nil
-      _ -> nil
-    end
-  end
-
-  @dialyzer {:nowarn_function, get_background_blur: 1}
-  @spec get_background_blur(terminal_type()) :: float()
-  defp get_background_blur(terminal_type) do
-    case terminal_type do
-      :iterm2 -> 0.0
-      :windows_terminal -> 0.0
-      :kitty -> 0.0
-      :alacritty -> 0.0
-      :konsole -> 0.0
-      :gnome_terminal -> 0.0
-      :vscode -> 0.0
-      _ -> 0.0
-    end
-  end
-
-  @dialyzer {:nowarn_function, get_background_scale: 1}
-  # Updated spec based on code
-  @spec get_background_scale(terminal_type()) :: :fit
-  defp get_background_scale(terminal_type) do
-    case terminal_type do
-      :iterm2 -> :fit
-      :windows_terminal -> :fit
-      :kitty -> :fit
-      :alacritty -> :fit
-      :konsole -> :fit
-      :gnome_terminal -> :fit
-      :vscode -> :fit
-      _ -> :fit
-    end
-  end
-
-  @dialyzer {:nowarn_function, get_animation_type: 1}
-  # Updated spec based on code
-  @spec get_animation_type(terminal_type()) :: :gif | nil
-  defp get_animation_type(terminal_type) do
-    case terminal_type do
-      :iterm2 -> :gif
-      :windows_terminal -> :gif
-      :kitty -> :gif
-      :alacritty -> nil
-      :konsole -> :gif
-      :gnome_terminal -> :gif
-      :vscode -> :gif
-      _ -> nil
-    end
-  end
-
-  @dialyzer {:nowarn_function, get_animation_path: 1}
-  @spec get_animation_path(terminal_type()) :: nil
-  defp get_animation_path(terminal_type) do
-    case terminal_type do
-      :iterm2 -> nil
-      :windows_terminal -> nil
-      :kitty -> nil
-      :alacritty -> nil
-      :konsole -> nil
-      :gnome_terminal -> nil
-      :vscode -> nil
-      _ -> nil
-    end
-  end
-
-  @dialyzer {:nowarn_function, get_animation_fps: 1}
-  @spec get_animation_fps(terminal_type()) :: pos_integer()
-  defp get_animation_fps(terminal_type) do
-    case terminal_type do
-      :iterm2 -> 30
-      :windows_terminal -> 30
-      :kitty -> 30
-      :alacritty -> 30
-      :konsole -> 30
-      :gnome_terminal -> 30
-      :vscode -> 30
-      _ -> 30
-    end
-  end
-
-  @dialyzer {:nowarn_function, get_animation_loop: 1}
-  @spec get_animation_loop(terminal_type()) :: boolean()
-  defp get_animation_loop(terminal_type) do
-    case terminal_type do
-      :iterm2 -> true
-      :windows_terminal -> true
-      :kitty -> true
-      :alacritty -> true
-      :konsole -> true
-      :gnome_terminal -> true
-      :vscode -> true
-      _ -> true
-    end
-  end
-
-  @dialyzer {:nowarn_function, get_animation_blend: 1}
-  @spec get_animation_blend(terminal_type()) :: float()
-  defp get_animation_blend(terminal_type) do
-    case terminal_type do
-      :iterm2 -> 0.8
-      :windows_terminal -> 0.8
-      :kitty -> 0.8
-      :alacritty -> 0.8
-      :konsole -> 0.8
-      :gnome_terminal -> 0.8
-      :vscode -> 0.8
-      _ -> 0.8
-    end
-  end
-end
+end # Ensure this is the final line for the module

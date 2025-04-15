@@ -68,9 +68,6 @@ defmodule Raxol.App do
 
       # Allow overriding the defaults
       defoverridable init: 1, update: 2, render: 1
-
-      # Import View functions for use in the specific app's render
-      import Raxol.View
     end
   end
 

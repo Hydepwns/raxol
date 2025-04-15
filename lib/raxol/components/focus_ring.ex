@@ -159,7 +159,6 @@ defmodule Raxol.Components.FocusRing do
       iex> FocusRing.render(model)
       # Renders a focus ring around the currently focused element
   """
-  @dialyzer {:nowarn_function, render: 2}
   def render(model, _opts \\ []) do
     if model.visible && model.focused_element && model.position do
       # Render transition effect if applicable
