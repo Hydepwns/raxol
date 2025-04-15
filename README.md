@@ -40,7 +40,7 @@
 1. Clone the repository:
 
    ```bash
-   git clone https://github.com/yourusername/raxol.git
+   git clone https://github.com/Hydepwns/raxol.git
    cd raxol
    ```
 

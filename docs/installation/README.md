@@ -20,17 +20,20 @@ This directory contains documentation for installing and setting up the Raxol Te
 ## Quick Installation
 
 1. Clone the repository:
+
    ```bash
-   git clone https://github.com/yourusername/raxol.git
+   git clone https://github.com/Hydepwns/raxol.git
    cd raxol
    ```
 
 2. Install dependencies:
+
    ```bash
    mix deps.get
    ```
 
 3. Build the project:
+
    ```bash
    mix compile
    ```
@@ -61,7 +64,7 @@ curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
 sudo apt-get install -y nodejs
 
 # Clone and build Raxol
-git clone https://github.com/yourusername/raxol.git
+git clone https://github.com/Hydepwns/raxol.git
 cd raxol
 mix deps.get
 mix compile
@@ -77,7 +80,7 @@ brew install elixir
 brew install node
 
 # Clone and build Raxol
-git clone https://github.com/yourusername/raxol.git
+git clone https://github.com/Hydepwns/raxol.git
 cd raxol
 mix deps.get
 mix compile
@@ -89,7 +92,7 @@ mix compile
 2. Install [Node.js](https://nodejs.org/en/download/)
 3. Clone and build Raxol:
    ```bash
-   git clone https://github.com/yourusername/raxol.git
+   git clone https://github.com/Hydepwns/raxol.git
    cd raxol
    mix deps.get
    mix compile
@@ -97,4 +100,4 @@ mix compile
 
 ## Troubleshooting
 
-If you encounter any issues during installation, please check the [Installation Guide](Installation.md) for detailed troubleshooting steps. 
+If you encounter any issues during installation, please check the [Installation Guide](Installation.md) for detailed troubleshooting steps.

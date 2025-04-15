@@ -14,12 +14,14 @@ This guide will help you get started with Raxol Terminal Emulator quickly.
 ## Installation
 
 1. Clone the repository:
+
    ```bash
-   git clone https://github.com/yourusername/raxol.git
+   git clone https://github.com/Hydepwns/raxol.git
    cd raxol
    ```
 
 2. Install dependencies:
+
    ```bash
    mix deps.get
    ```
@@ -71,4 +73,4 @@ terminal = Raxol.Terminal.Emulator.set_attribute(terminal, :underline)
 
 - Check out the [Installation Guide](../installation/Installation.md) for detailed installation instructions
 - Explore the [Components Documentation](../components/README.md) to learn about available components
-- Read the [Contributing Guide](../../CONTRIBUTING.md) to learn how to contribute to the project 
+- Read the [Contributing Guide](../../CONTRIBUTING.md) to learn how to contribute to the project
