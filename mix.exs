@@ -155,7 +155,7 @@ defmodule Raxol.MixProject do
       maintainers: ["Your Name"],
       licenses: ["Apache-2.0"],
       links: %{
-        "GitHub" => "https://github.com/yourusername/raxol"
+        "GitHub" => "https://github.com/Hydepwns/raxol"
       }
     ]
   end
@@ -164,7 +164,7 @@ defmodule Raxol.MixProject do
     [
       main: "readme",
       extras: ["README.md", "CHANGELOG.md", "docs/development.md"],
-      source_url: "https://github.com/yourusername/raxol",
+      source_url: "https://github.com/Hydepwns/raxol",
       source_ref: "v#{@version}",
       formatters: ["html"]
     ]
