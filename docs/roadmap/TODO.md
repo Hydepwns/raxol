@@ -106,50 +106,58 @@ tags: [roadmap, todo, tasks]
 - Accessibility-friendly UI components
 - Box drawing and layout primitives
 
-### Data Visualization (Recently Completed)
+### Data Visualization
 
 - Chart component supporting multiple chart types (line, bar, pie, area, scatter, bubble, radar, candlestick)
 - TreeMap component for hierarchical data visualization
 - Visualization demo application
 - Accessibility integration for all visualization components
 - Performance monitoring for visualization components
+- Dependency compilation fix for `ex_termbox`
+
+### Compilation & Basic Integrations (Recently Completed / Stabilized)
+
+- Resolved `HEEx.Sigil is not loaded` errors by refactoring Chart/TreeMap widgets.
+- Resolved associated compiler warnings (unused variables/imports/functions).
+- Added basic data/option passing to `ChartWidget` and `TreeMapWidget`.
+- Refined Dashboard persistence to save widget options and save on change.
+- Fixed `ImagePlugin` rendering interference by adjusting command output order.
+- Implemented OSC 8 parsing in Runtime for hyperlink data.
+- Implemented Clipboard paste injection via Runtime messaging.
+- Confirmed Hyperlink click detection and OS `open_url` logic is present.
+- Cleaned up Plugin behaviour implementation in `VisualizationPlugin`.
 
 ## In Progress 🚧
 
+### Dashboard Layout System Refinements
+
+- [ ] **Implement Chart/TreeMap Rendering:** Implement actual rendering logic in `VisualizationPlugin.render_chart_to_cells/3` and `render_treemap_to_cells/3`, replacing current placeholders. (Requires integrating with a TUI charting library or custom drawing).
+- [ ] **Widget Configuration Panel:** Implement UI for configuring widget properties (e.g., chart type, data source) at runtime.
+- [ ] **Data Source Connection:** Define and implement how widgets (especially Chart/TreeMap) connect to and receive real data, moving beyond hardcoded data in `MyApp`.
+- [ ] **Real-time Data Updating:** Implement mechanisms for widgets to subscribe to and display real-time data updates.
+- [ ] **Layout Persistence Config:** Make save location configurable, improve error handling.
+- [ ] **Accessibility:** Review and implement accessibility considerations for grid layout and widget interactions.
+- [ ] **User Customization:** Allow users to add/remove/configure widgets beyond the defaults.
+
+### Plugin System Enhancements
+
+- [ ] **Hyperlink OS Interaction:** Verify/test `HyperlinkPlugin.open_url/1` across different OSes.
+- [ ] **ImagePlugin Stability:** Further test `ImagePlugin` rendering fix. Consider alternative rendering mechanisms if direct `IO.write` remains problematic.
+
 ### Performance Optimization
 
-- Event batching implementation
-  - Event queue management system ✅
-  - UI update batching ✅
-  - Custom event batch processing
-- Memory usage monitoring
-  - Memory profiling tools ✅
-  - Resource usage dashboards ✅
-  - Garbage collection optimization
-- Performance benchmarking tools
-  - Rendering performance metrics ✅
-  - Interaction metrics ✅
-  - Responsiveness scoring system
-- Load testing infrastructure
-  - Automated performance testing ✅
-  - Performance regression detection ✅
-  - Animation performance analysis
+- [ ] **Responsiveness Scoring System:** Define metrics, create algorithm, visualize data.
+- [ ] **Performance Regression Alerting:** Configure thresholds, notification system, CI integration.
+- [ ] **Animation Performance Analysis:** Monitor frame rates, identify bottlenecks.
 
 ### Documentation
 
-- API documentation updates
-- Performance tuning guidelines
-- Component lifecycle documentation
-- Event system best practices
-- Integration examples and tutorials
-- Accessibility and internationalization integration guides
-
-### Dashboard Layout System
-
-- Responsive grid layout
-- Draggable and resizable widgets
-- Dashboard configuration and persistence
-- Integration with existing visualization components
+- [ ] API documentation updates (reflect widget refactoring, new plugin).
+- [ ] Performance tuning guidelines.
+- [ ] Component lifecycle documentation.
+- [ ] Event system best practices.
+- [ ] Integration examples and tutorials (Dashboard, Plugins).
+- [ ] Accessibility and internationalization integration guides.
 
 ## Upcoming Features 🎯
 
@@ -239,12 +247,17 @@ tags: [roadmap, todo, tasks]
 
 ## Known Issues 🐛
 
+- **Placeholder Visualization Rendering:** Charts and TreeMaps currently render as placeholder boxes via `VisualizationPlugin`.
 - Need to optimize memory usage for long-running processes
 - Event batching needs performance improvements
 - Documentation gaps in advanced usage scenarios
 - Some edge cases in event filtering need handling
 - RTL layout needs additional testing with complex components
 - Cognitive accessibility features need more comprehensive testing
+- `HyperlinkPlugin.open_url/1` needs cross-platform testing
+- Windows clipboard paste may need specific handling/testing
+- Clipboard operations may need additional error handling
+- `:ex_termbox` build patch might still be needed
 
 ## Contributing
 

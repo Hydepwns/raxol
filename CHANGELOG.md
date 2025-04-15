@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- Initial project structure
+- Basic documentation framework
+- Development roadmap
+- Architecture documentation
 - Initial project structure and configuration
 - Terminal and web supervisors
 - CI/CD pipeline setup
@@ -80,6 +84,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Restructured for modular architecture
+- Updated documentation style
 - Consolidated repository structure
 - Updated dependencies
 - Improved configuration management
@@ -101,37 +107,110 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Improved screen mode state management
 - Enhanced text style handling
 
+### Deprecated
+
+- None
+
 ### Removed
 
 - Outdated configuration files
 - Unused dependencies
 - Redundant documentation
 - Legacy terminal handling code
+- None
+
+### Fixed
+
+- None
+
+### Security
+
+- Input validation
+- Resource access controls
+- Event sanitization
+- Security vulnerabilities (Note: Item moved from root file's Fixed section)
 
 ## [0.1.0] - YYYY-MM-DD
 
 ### Added
 
+- Core runtime system
+  - BEAM integration
+  - Process supervision
+  - Hot code reloading
+- Basic rendering engine
+  - Terminal buffer management
+  - Double buffering support
+  - Frame rate control
+- Event system foundation
+  - Event handling
+  - Input processing
+  - Event delegation
+- Style system basics
+  - Color support
+  - Layout engine
+  - Border system
+- Initial component library
+  - Text input
+  - Selection components
+  - Progress indicators
+- Testing infrastructure
+  - Unit testing setup
+  - Integration testing framework
+  - Visual testing tools
+- Documentation
+  - Architecture overview
+  - Component guides
+  - Style system documentation
+- Burrito integration
+  - Basic packaging
+  - Distribution setup
 - Terminal emulation layer
 - ANSI processing module
 - Web interface components
 - Authentication system
 - Session management
 - Performance monitoring
-- Documentation
 
 ### Changed
 
+- Refactored from Ratatouille base
+- Enhanced event handling system
+- Improved rendering performance
+- Updated component architecture
 - Improved error handling
 - Enhanced configuration options
 - Optimized performance
 
+### Deprecated
+
+- Old event system
+- Legacy rendering approach
+- Previous styling methods
+
+### Removed
+
+- Unused Ratatouille components
+- Outdated documentation
+- Legacy test framework
+
 ### Fixed
 
+- Event handling issues
+- Rendering glitches
+- Style inconsistencies
 - Various bugs and issues
-- Security vulnerabilities
 - Performance bottlenecks
-
 - Screen mode transition edge cases
 - Character set switching issues
 - Text formatting state persistence
+
+### Security
+
+- Input validation
+- Resource access controls
+- Event sanitization
+- Security vulnerabilities (Note: Item moved from root file's Fixed section)
+
+[Unreleased]: https://github.com/Hydepwns/raxol/compare/v0.1.0...HEAD
+[0.1.0]: https://github.com/Hydepwns/raxol/releases/tag/v0.1.0

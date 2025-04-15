@@ -13,8 +13,6 @@ This document outlines the current status of the Raxol framework and provides cl
 
 ## Current Status Overview
 
-The Raxol framework has made significant progress across multiple phases of development:
-
 ### Completed Features
 
 - **Core Architecture**: Runtime system, event handling, TEA implementation
@@ -23,43 +21,47 @@ The Raxol framework has made significant progress across multiple phases of deve
 - **Form System**: Complete form handling with validation and accessibility
 - **Internationalization**: Multi-language support with RTL handling
 - **Accessibility**: Screen reader support, high contrast mode, keyboard navigation
-- **Data Visualization**: Chart system with multiple chart types, TreeMap component
+- **Data Visualization**: Basic Chart/TreeMap components exist (TS source?), Dashboard integration via widgets.
+- **Dependency Fixes**: Resolved compilation issues with `ex_termbox` dependency.
+- **Compilation Stabilization**: Resolved `HEEx.Sigil not loaded` errors and various compiler warnings.
+- **Plugin System Basics**: Basic mouse event handling, OSC 8 parsing, Clipboard paste injection, ImagePlugin rendering fix (needs testing).
+- **Dashboard Layout Basics**: Grid layout, widget container, drag/resize, basic persistence (including options).
 
 ### Features in Progress
 
-- **Dashboard Layout System**: Building a flexible system for creating dashboards with widgets
-- **Performance Monitoring**: Completing the performance scoring and alerting tools
+- **Dashboard Layout System**: Implementing actual visualization rendering via `VisualizationPlugin`.
+- **Performance Monitoring & Cleanup**: Completing the performance scoring/alerting tools & resolving minor existing analysis warnings.
 - **Advanced Documentation**: Creating debugging guides and optimization case studies
 - **AI Integration**: Beginning implementation of AI-assisted development tools
 
-## Immediate Development Priorities
+## Tactical Pre-computation (Very Next Steps)
 
-### 1. Dashboard Layout System (Highest Priority)
+**COMPLETED:** Compilation is stable.
 
-Building on our recently completed visualization components, we need to finalize the dashboard system:
+**CURRENT FOCUS:** Implement actual Chart/TreeMap rendering within the `VisualizationPlugin`.
 
-- [ ] Responsive grid layout implementation
-  - [ ] Container component with grid system
-  - [ ] Responsive breakpoint handling
-  - [ ] Accessibility considerations for layout
-- [ ] Widget container components
-  - [ ] Draggable widget implementation
-  - [ ] Resizable widget controls
-  - [ ] Widget configuration panel
-  - [ ] Widget state persistence
-- [ ] Dashboard configuration
-  - [ ] Layout saving and loading
-  - [ ] Default configurations
-  - [ ] User customization options
-- [ ] Integration with visualization components
-  - [ ] Chart widget implementation
-  - [ ] TreeMap widget implementation
-  - [ ] Data source connection utilities
-  - [ ] Real-time data updating
+1.  **Implement Rendering Logic:** Enhance `VisualizationPlugin.render_chart_to_cells/3` and `render_treemap_to_cells/3` to draw actual visualizations using the provided `data`, `opts`, and `bounds`. This likely involves:
+    - Choosing a TUI rendering strategy (e.g., direct character manipulation, integrating with a library like `Contex`).
+    - Translating `data` and `opts` into the chosen strategy's format.
+    - Generating the list of cell maps `%{x, y, char, fg, bg, style}` within the given `bounds`.
+2.  **Test Visualization Rendering:** Verify that charts and treemaps render correctly within their widget containers.
+3.  **Verify Hyperlink OS Interaction:** Test `HyperlinkPlugin.open_url/1` on different operating systems (macOS, Linux, Windows).
+4.  **Run Static Analysis:** Run `mix dialyzer` and `mix credo` to catch any remaining type or style issues.
 
-### 2. Performance Tools Finalization
+## Immediate Development Priorities (Post-Visualization Rendering)
 
-Complete the remaining performance tools to ensure robust monitoring:
+### 1. Dashboard Layout System Refinements
+
+- [ ] Widget Configuration Panel
+- [ ] Data Source Connection / Real Configuration
+- [ ] Real-time Data Updating
+- [ ] Layout Persistence Configuration
+- [ ] Accessibility Review
+- [ ] User Customization (Add/Remove Widgets)
+
+### 2. Performance Tools Finalization (New Tooling)
+
+Complete the remaining performance tools to ensure robust monitoring. (Note: This focuses on building _new_ tools, separate from fixing existing analysis warnings.)
 
 - [ ] Responsiveness scoring system
   - [ ] Define metrics for input responsiveness
@@ -106,27 +108,37 @@ Continue developing AI capabilities:
 
 ## Technical Implementation Plan
 
-### Dashboard Layout System Implementation
+### Visualization Rendering Implementation (Current Focus)
+
+1.  **Week X**: Research/Choose TUI rendering strategy (Contex integration? Custom drawing?).
+2.  **Week X**: Implement `VisualizationPlugin.render_chart_to_cells/3`.
+3.  **Week X**: Implement `VisualizationPlugin.render_treemap_to_cells/3`.
+4.  **Week Y**: Test rendering, fix layout/clipping issues, test hyperlink interaction.
+
+### Dashboard Layout System Refinements (Next)
 
 1. **Week 1-2**: Create responsive grid layout foundation
+
    - Implement grid container component
    - Add responsive breakpoint system
    - Create layout configuration API
 
 2. **Week 3-4**: Develop widget container implementation
+
    - Build draggable functionality
    - Implement resize controls
    - Create widget configuration panel
 
 3. **Week 5-6**: Build dashboard persistence and configuration
+
    - Implement saving/loading system
    - Create default templates
    - Develop user configuration UI
 
 4. **Week 7-8**: Visualization component integration
-   - Create specialized widget types for charts and TreeMaps
-   - Build data binding system
-   - Implement real-time updates
+   - [x] Create specialized widget types for charts and TreeMaps (`ChartWidget`, `TreeMapWidget`)
+   - [ ] Build data binding / configuration system (TODO)
+   - [ ] Implement real-time updates (TODO)
 
 ### Testing Strategy
 
@@ -157,55 +169,45 @@ For developers interested in contributing, these are areas where help would be v
 
 ## Next Team Sync Focus
 
-During our next team sync, we should focus on:
-
-1. Dashboard system architecture review
-2. Progress on performance tool completion
-3. Planning for animation system development
-4. Roadmap update for AI integration priorities
+1. Review visualization rendering implementation.
+2. Plan next steps for Dashboard Refinements (Config Panel, Data Sources).
+3. Discuss priorities for Performance Tools / Animation / AI.
 
 ## Prompt for Next AI Developer
 
 ```
-You are an AI assistant helping to develop the Raxol framework, a modern web framework focused on performance, accessibility, and developer experience. The team has recently completed implementing data visualization components (Chart and TreeMap) with a strong focus on accessibility and performance monitoring.
+You are an AI assistant helping to develop the Raxol framework. The team has recently refactored the visualization widget rendering pipeline to resolve compilation issues. Charts and TreeMaps are now represented as data structures (`%{type: :chart, ...}`) processed by the Runtime, which calls rendering functions in a new `VisualizationPlugin`, passing the calculated layout bounds.
 
-Your task is to help design and implement the next priority: a flexible dashboard layout system that works with the existing visualization components. This system should allow developers to create responsive dashboards with draggable/resizable widgets, configuration persistence, and seamless integration with the Chart and TreeMap components.
+**Current Status:**
+- Compilation is stable (`mix compile --warnings-as-errors` passes).
+- `ChartWidget` and `TreeMapWidget` return data maps.
+- `Dashboard` renders widgets, passing data maps to `WidgetContainer`.
+- `Runtime.process_view_element` identifies `:chart`/`:treemap` maps and calls `VisualizationPlugin.render_*_to_cells(data, opts, bounds)`.
+- `VisualizationPlugin` exists and is loaded, but `render_*_to_cells` currently draws simple placeholder boxes.
+- Hyperlink click detection and OS interaction code exists but needs testing.
+- ImagePlugin rendering fix implemented (needs testing).
 
-Specifically, you should:
+**Your Task:**
+Implement the actual rendering logic within `VisualizationPlugin.render_chart_to_cells/3` and `VisualizationPlugin.render_treemap_to_cells/3`.
 
-1. Design the architecture for the dashboard layout system, considering:
-   - Component structure and hierarchy
-   - State management for widget positioning and sizing
-   - Responsiveness across device sizes
-   - Accessibility requirements
-   - Performance considerations
+**Specifically, you should:**
+1.  **Choose/Implement Rendering Strategy:** Decide how to render charts/treemaps in the terminal (e.g., integrate `Contex`, use TUI drawing primitives). Implement this strategy within the plugin functions.
+2.  **Use Provided Data:** Utilize the `data`, `opts`, and `bounds` arguments passed by the Runtime to generate the correct visualization within the allocated space.
+3.  **Return Cell List:** Ensure the functions return a flat list of cell maps (`%{x: _, y: _, char: _, fg: _, bg: _, style: %{}}`) suitable for the Runtime's `ExTermbox.Bindings.change_cell` loop.
+4.  **Test Rendering:** Verify that basic charts and treemaps render correctly within their widget containers.
+5.  **(Optional/Next)** Test `HyperlinkPlugin.open_url/1` cross-platform.
+6.  **(Optional/Next)** Run `mix dialyzer` and `mix credo`.
 
-2. Implement core components of the dashboard system:
-   - Dashboard container
-   - Grid layout system
-   - Widget container with resize/drag capabilities
-   - Configuration persistence system
-
-3. Create integration examples showing how to use Charts and TreeMaps within the dashboard
-
-4. Ensure all implementations maintain the framework's commitment to:
-   - TypeScript type safety
-   - Comprehensive accessibility
-   - Performance optimization
-   - Clean, maintainable code
-
-5. Update documentation and create demo applications showcasing the dashboard system
-
-You can explore the codebase to understand the existing patterns and components. The visualization components in src/components/visualization/ will be particularly relevant to understand how to integrate with them.
+You should focus on `lib/raxol/plugins/visualization_plugin.ex`. Review the `data` and `opts` structure passed from `lib/raxol/my_app.ex` via the widgets.
 ```
 
 ## Resources and References
 
-- Visualization components: `src/components/visualization/`
-- Accessibility framework: `src/accessibility/`
-- Performance tools: `src/core/performance/`
-- Example implementations: `src/examples/`
-- Documentation: `docs/`
+- Visualization Plugin: `lib/raxol/plugins/visualization_plugin.ex`
+- Runtime Rendering: `lib/raxol/runtime.ex` (`process_view_element`)
+- Widget Data Structure: `lib/raxol/components/dashboard/widgets/`
+- Initial Data Config: `lib/raxol/my_app.ex` (`init/1`)
+- Contex Library (Dependency): [Check mix.exs or Hexdocs]
 
 ## Contribution Guidelines
 
@@ -217,4 +219,4 @@ When implementing new features:
 4. Write comprehensive documentation
 5. Create example implementations and demos
 6. Follow existing code patterns and standards
-7. Update the roadmap with progress 
+7. Update the roadmap with progress
