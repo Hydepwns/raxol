@@ -103,15 +103,16 @@ defmodule Raxol.Plugins.ImagePlugin do
     # Use debug level for normal operation
     Logger.debug("[ImagePlugin.handle_cells] Received cells. Count: #{length(cells)}, Just generated: #{just_generated}")
 
+    # Find the placeholder map
     placeholder_cell = Enum.find(cells, fn
-      {:placeholder, :image} -> true
+      %{type: :placeholder, value: :image} -> true
       _ -> false
     end)
 
     if placeholder_cell do
       if just_generated do
         Logger.debug("[ImagePlugin.handle_cells] Placeholder found, but sequence generated last frame. Resetting flag.")
-        { %{state | sequence_just_generated: false}, cells, [], nil }
+        {%{state | sequence_just_generated: false}, cells, [], nil }
       else
         image_path = "logo.png"
         Logger.debug("[ImagePlugin.handle_cells] Found placeholder: #{inspect(placeholder_cell)} for path: #{image_path}")
@@ -119,16 +120,16 @@ defmodule Raxol.Plugins.ImagePlugin do
         case generate_sequence_from_path(image_path) do
           {:ok, sequence} ->
             Logger.debug("[ImagePlugin.handle_cells] Generated sequence successfully. Setting flag and sending message.")
-            { %{state | sequence_just_generated: true}, cells, [sequence], {:image_rendered, :ok} }
+            {%{state | sequence_just_generated: true}, cells, [sequence], {:image_rendered, :ok} }
 
           {:error, reason} ->
             Logger.error("[ImagePlugin.handle_cells] Failed to generate sequence for #{image_path}: #{reason}")
-            { %{state | sequence_just_generated: false}, cells, [], nil }
+            {%{state | sequence_just_generated: false}, cells, [], nil }
         end
       end
     else
       Logger.debug("[ImagePlugin.handle_cells] No :image placeholder found. Ensuring flag is false.")
-      { %{state | sequence_just_generated: false}, cells, [], nil }
+      {%{state | sequence_just_generated: false}, cells, [], nil }
     end
   end
 

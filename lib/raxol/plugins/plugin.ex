@@ -72,26 +72,19 @@ defmodule Raxol.Plugins.Plugin do
   ## Parameters
 
   - `state` - The current plugin state.
-  - `cells` - A list of cell tuples, typically `{x, y, char_codepoint, fg_attr, bg_attr}`
-              or special marker tuples like `{:placeholder, type}`.
+  - `cells` - A list of cell maps, typically `%{x: _, y: _, char: _, fg: _, bg: _, style: %{}}`
+              or special marker maps like `%{type: :placeholder, value: _}`.
 
   ## Returns
 
-  A tuple `{updated_cells, commands}` where:
-  - `updated_cells` is the potentially modified list of cells.
-  - `commands` is a list of binaries (e.g., escape sequences) to be written
-    to the terminal before the buffer is presented.
-
-  **DEPRECATED:** The return format `{updated_cells, commands}` is deprecated.
-
-  Plugins should now return a tuple `{updated_plugin_state, updated_cells, commands}`:
+  A tuple `{updated_plugin_state, updated_cells, commands}` where:
   - `updated_plugin_state` is the plugin's state after processing the cells.
   - `updated_cells` is the potentially modified list of cells.
   - `commands` is a list of binaries (e.g., escape sequences) to be written
     to the terminal before the buffer is presented.
   """
-  @callback handle_cells(plugin_state :: t(), cells :: list()) ::
-              {updated_plugin_state :: t(), updated_cells :: list(), commands :: [binary()]}
+  @callback handle_cells(plugin_state :: t(), cells :: list(map())) ::
+              {updated_plugin_state :: t(), updated_cells :: list(map()), commands :: [binary()]}
 
   @optional_callbacks handle_input: 2,
                        handle_output: 2,
