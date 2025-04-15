@@ -29,7 +29,7 @@ defmodule Raxol.Core.Events.Clipboard do
               {_output, 0} -> {:ok, text}
               {output, exit_code} ->
                 Logger.error("Failed to copy to clipboard using xclip. Exit code: #{exit_code}, Output: #{output}")
-                {:error, "xclip command failed: #{output}"}
+                {:error, {:xclip_failed, output}}
             end
         end
 
@@ -39,7 +39,7 @@ defmodule Raxol.Core.Events.Clipboard do
            {_output, 0} -> {:ok, text}
            {output, exit_code} ->
              Logger.error("Failed to copy to clipboard using clip. Exit code: #{exit_code}, Output: #{output}")
-             {:error, "clip command failed: #{output}"}
+             {:error, {:clip_failed, output}}
          end
 
       {os_type, os_name} ->
@@ -61,7 +61,7 @@ defmodule Raxol.Core.Events.Clipboard do
           {output, 0} -> {:ok, String.trim(output)}
           {output, exit_code} ->
             Logger.error("Failed to paste from clipboard using pbpaste. Exit code: #{exit_code}, Output: #{output}")
-            {:error, "pbpaste command failed: #{output}"}
+            {:error, {:pbpaste_failed, output}}
         end
 
       {:unix, _} ->
@@ -79,7 +79,7 @@ defmodule Raxol.Core.Events.Clipboard do
                    {:ok, ""}
                  else
                    Logger.error("Failed to paste from clipboard using xclip. Exit code: #{exit_code}, Output: #{output}")
-                   {:error, "xclip command failed: #{output}"}
+                   {:error, {:xclip_failed, output}}
                  end
             end
          end
@@ -91,7 +91,7 @@ defmodule Raxol.Core.Events.Clipboard do
            {output, 0} -> {:ok, String.trim_trailing(output, "\r\n")} # Windows newlines
            {output, exit_code} ->
              Logger.error("Failed to paste from clipboard using PowerShell. Exit code: #{exit_code}, Output: #{output}")
-             {:error, "PowerShell Get-Clipboard failed: #{output}"}
+             {:error, {:powershell_get_clipboard_failed, output}}
          end
 
       {os_type, os_name} ->

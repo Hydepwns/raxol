@@ -70,14 +70,8 @@ defmodule Raxol.View do
   defmacro panel(opts \\ [], do: block) do
     quote do
       panel_opts = unquote(opts)
-
-      panel_children =
-        if is_nil(unquote(block)) do
-          []
-        else
-          List.wrap(unquote(block)) |> List.flatten() |> Enum.reject(&is_nil(&1))
-        end
-
+      # Directly process the block result, handling lists/nils/elements
+      panel_children = List.wrap(unquote(block)) |> List.flatten() |> Enum.reject(&is_nil(&1))
       %{type: :panel, opts: panel_opts, children: panel_children}
     end
   end
@@ -146,14 +140,8 @@ defmodule Raxol.View do
   defmacro box(opts \\ [], do: block) do
     quote do
       box_opts = unquote(opts)
-
-      box_children =
-        if is_nil(unquote(block)) do
-          []
-        else
-          List.wrap(unquote(block)) |> List.flatten() |> Enum.reject(&is_nil(&1))
-        end
-
+      # Directly process the block result, handling lists/nils/elements
+      box_children = List.wrap(unquote(block)) |> List.flatten() |> Enum.reject(&is_nil(&1))
       %{type: :box, opts: box_opts, children: box_children}
     end
   end

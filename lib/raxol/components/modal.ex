@@ -78,7 +78,6 @@ defmodule Raxol.Components.Modal do
     centered: true
   )```
   """
-  @dialyzer {:nowarn_function, render: 4}
   def render(title, content_fn, actions_fn, opts \\ []) do
     # Extract options with defaults
     id = Keyword.get(opts, :id, "modal")

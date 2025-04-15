@@ -60,13 +60,8 @@ defmodule Raxol.Test.MockDB do
     {:ok, []}
   end
 
-  def child_spec(opts) do
-    %{
-      id: __MODULE__,
-      start: {Task, :start_link, [fn -> :ok end]},
-      restart: :permanent,
-      type: :worker
-    }
+  def child_spec(_opts) do
+    %{id: __MODULE__, start: {__MODULE__, :start_link, [[]]}}
   end
 
   def start_link(config) do
