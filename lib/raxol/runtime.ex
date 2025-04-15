@@ -99,15 +99,22 @@ defmodule Raxol.Runtime do
     {:ok, _comp_manager_pid} = ComponentManager.start_link()
     Raxol.Core.Events.Manager.init()
 
-    case Bindings.init() do
-      :ok ->
-        Logger.debug("Termbox initialized successfully.")
-        # Polling will start *after* successful app init
-      {:error, init_reason} ->
-        Logger.error("Failed to initialize Termbox: #{inspect(init_reason)}")
-        # If Termbox fails to init, we cannot proceed
-        throw({:error, :termbox_init_failed, init_reason})
-    end
+    termbox_initialized =
+      if Mix.env() != :test do
+        case Bindings.init() do
+          :ok ->
+            Logger.debug("Termbox initialized successfully.")
+            # Polling will start *after* successful app init
+            true # Mark termbox as initialized
+          {:error, init_reason} ->
+            Logger.error("Failed to initialize Termbox: #{inspect(init_reason)}")
+            # If Termbox fails to init, we cannot proceed
+            throw({:error, :termbox_init_failed, init_reason})
+        end
+      else
+        Logger.info("Skipping Termbox initialization in test environment.")
+        false # Mark termbox as not initialized in test
+      end
 
     # Initialize Plugin Manager and load plugins
     plugin_manager = PluginManager.new()
@@ -125,8 +132,8 @@ defmodule Raxol.Runtime do
       options: options,
       quit_keys: quit_keys,
       shutdown_requested: false,
-      # Mark as initialized
-      termbox_initialized: true,
+      # Mark as initialized based on the conditional check
+      termbox_initialized: termbox_initialized,
       plugin_manager: plugin_manager,
       last_rendered_cells: %{} # Initialize map to store last rendered cells
     }
@@ -147,9 +154,11 @@ defmodule Raxol.Runtime do
         initial_state
       end
 
-    # Start polling *after* successful app init
-    ExTermbox.Bindings.start_polling(self())
-    Logger.debug("Termbox event polling started.")
+    # Start polling *after* successful app init and only if termbox was initialized
+    if final_state.termbox_initialized do
+      ExTermbox.Bindings.start_polling(self())
+      Logger.debug("Termbox event polling started.")
+    end
 
     _ = schedule_render()
     Logger.debug("Raxol Runtime initialized successfully for #{app_name}.")
@@ -184,164 +193,176 @@ defmodule Raxol.Runtime do
 
   @impl true
   def handle_info(:render, state) do
-    # 1. Render the application UI into a View structure
-    view = state.app_module.render(state.model)
-    # Log the raw view structure received
-    Logger.debug("[Runtime.render] View structure received from app: #{inspect(view)}")
+    # Skip rendering if termbox isn't initialized (e.g., in test)
+    if not state.termbox_initialized do
+      _ = schedule_render() # Still schedule next tick
+      {:noreply, state}
+    else
+      # 1. Render the application UI into a View structure
+      view = state.app_module.render(state.model)
+      # Log the raw view structure received
+      Logger.debug("[Runtime.render] View structure received from app: #{inspect(view)}")
 
-    # 2. Get terminal dimensions (needed for rendering/layout)
-    dimensions = get_terminal_dimensions()
+      # 2. Get terminal dimensions (needed for rendering/layout)
+      dimensions = get_terminal_dimensions()
 
-    # 3. Process the View structure into a list of cells {x, y, char, fg, bg} or placeholders
-    cells_from_view = render_view_to_cells(view, dimensions)
-    # Re-add logging immediately before passing cells to the manager
-    Logger.debug("[Runtime.render] Cells GENERATED before plugin processing: #{inspect(cells_from_view)}")
+      # 3. Process the View structure into a list of cells {x, y, char, fg, bg} or placeholders
+      cells_from_view = render_view_to_cells(view, dimensions)
+      # Re-add logging immediately before passing cells to the manager
+      Logger.debug("[Runtime.render] Cells GENERATED before plugin processing: #{inspect(cells_from_view)}")
 
-    # 4. Pass cells through PluginManager for processing
-    # 7. Process Cells through Plugins
-    # This allows plugins like ImagePlugin to modify cells or inject commands
-    # based on the rendered view.
-    {:ok, updated_manager, processed_cells, plugin_commands, _plugin_messages} =
-      Raxol.Plugins.PluginManager.process_cells(state.plugin_manager, cells_from_view)
+      # 4. Pass cells through PluginManager for processing
+      # 7. Process Cells through Plugins
+      # This allows plugins like ImagePlugin to modify cells or inject commands
+      # based on the rendered view.
+      {:ok, updated_manager, processed_cells, plugin_commands, _plugin_messages} =
+        Raxol.Plugins.PluginManager.process_cells(state.plugin_manager, cells_from_view)
 
-    # Convert processed_cells list to a map for easier lookup by plugins
-    # Build the map of cells for plugin lookup, preserving the full cell map
-    # Note: processed_cells now contains maps, including placeholder markers.
-    cells_map =
-      Enum.reduce(processed_cells, %{}, fn
-        # Match regular cell maps
-        %{x: x, y: y} = cell_map, acc -> Map.put(acc, {x, y}, cell_map)
-        # Ignore placeholders or other non-renderable markers for the map
-        _, acc -> acc
+      # Convert processed_cells list to a map for easier lookup by plugins
+      # Build the map of cells for plugin lookup, preserving the full cell map
+      # Note: processed_cells now contains maps, including placeholder markers.
+      cells_map =
+        Enum.reduce(processed_cells, %{}, fn
+          # Match regular cell maps
+          %{x: x, y: y} = cell_map, acc -> Map.put(acc, {x, y}, cell_map)
+          # Ignore placeholders or other non-renderable markers for the map
+          _, acc -> acc
+        end)
+
+      # Update manager state immediately
+      state = %{state | plugin_manager: updated_manager, last_rendered_cells: cells_map}
+
+      # 8. Update the :ex_termbox state with processed cells
+      # Replace the incorrect set_buffer_cells with iteration using change_cell
+      Enum.each(processed_cells, fn
+        # Match regular cell maps and render them
+        %{x: x, y: y, char: char, fg: fg, bg: bg} ->
+          ExTermbox.Bindings.change_cell(x, y, char, fg, bg)
+
+        # Ignore placeholders or other markers - they don't render directly
+        _other_marker ->
+          :ok
       end)
 
-    # Update manager state immediately
-    state = %{state | plugin_manager: updated_manager, last_rendered_cells: cells_map}
+      # 9. Present the buffer (flush changes to the screen)
+      :ok = ExTermbox.Bindings.present()
 
-    # 8. Update the :ex_termbox state with processed cells
-    # Replace the incorrect set_buffer_cells with iteration using change_cell
-    Enum.each(processed_cells, fn
-      # Match regular cell maps and render them
-      %{x: x, y: y, char: char, fg: fg, bg: bg} ->
-        ExTermbox.Bindings.change_cell(x, y, char, fg, bg)
+      # 9.1 Send plugin commands AFTER presenting the termbox buffer
+      send_plugin_commands(plugin_commands)
 
-      # Ignore placeholders or other markers - they don't render directly
-      _other_marker ->
-        :ok
-    end)
-
-    # 9. Present the buffer (flush changes to the screen)
-    :ok = ExTermbox.Bindings.present()
-
-    # 9.1 Send plugin commands AFTER presenting the termbox buffer
-    send_plugin_commands(plugin_commands)
-
-    # 10. Schedule next render
-    _ = schedule_render()
-    {:noreply, state}
+      # 10. Schedule next render
+      _ = schedule_render()
+      {:noreply, state}
+    end
   end
 
   @impl true
   def handle_info({:event, raw_event_tuple}, state) do
-    try do
-      # Decode the raw tuple from the NIF poller
-      {type_int, mod, key, ch, w, h, x, y} = raw_event_tuple
+    # Skip event processing if termbox isn't initialized
+    if not state.termbox_initialized do
+      Logger.debug("Skipping termbox event processing in non-interactive environment.")
+      {:noreply, state}
+    else
+      try do
+        # Decode the raw tuple from the NIF poller
+        {type_int, mod, key, ch, w, h, x, y} = raw_event_tuple
 
-      # Convert raw data to the standard ex_termbox event tuple format
-      event_tuple =
-        case type_int do
-          # Key event
-          1 ->
-            # Pass the original modifier integer `mod` directly.
-            # The atom conversion (:alt/:none) was incorrect here.
-            # Event.convert/1 expects the integer.
-            actual_key = if ch > 0, do: ch, else: key
-            {:key, mod, actual_key}
+        # Convert raw data to the standard ex_termbox event tuple format
+        event_tuple =
+          case type_int do
+            # Key event
+            1 ->
+              # Pass the original modifier integer `mod` directly.
+              # The atom conversion (:alt/:none) was incorrect here.
+              # Event.convert/1 expects the integer.
+              actual_key = if ch > 0, do: ch, else: key
+              {:key, mod, actual_key}
 
-          # Resize event
-          2 ->
-            {:resize, w, h}
+            # Resize event
+            2 ->
+              {:resize, w, h}
 
-          # Mouse event
-          3 ->
-            # Convert modifier integer to a *list* of modifier atoms
-            modifiers =
-              case mod do
-                0 ->
-                  []
+            # Mouse event
+            3 ->
+              # Convert modifier integer to a *list* of modifier atoms
+              modifiers =
+                case mod do
+                  0 ->
+                    []
 
-                1 ->
-                  [:alt]
+                  1 ->
+                    [:alt]
 
-                2 ->
-                  [:ctrl]
+                  2 ->
+                    [:ctrl]
 
-                3 ->
-                  [:alt, :ctrl]
+                  3 ->
+                    [:alt, :ctrl]
 
-                4 ->
-                  [:shift]
+                  4 ->
+                    [:shift]
 
-                5 ->
-                  [:alt, :shift]
+                  5 ->
+                    [:alt, :shift]
 
-                6 ->
-                  [:ctrl, :shift]
+                  6 ->
+                    [:ctrl, :shift]
 
-                7 ->
-                  [:alt, :ctrl, :shift]
+                  7 ->
+                    [:alt, :ctrl, :shift]
 
-                _ ->
-                  Logger.warning(
-                    "Unknown mouse modifier integer: #{mod} for button: #{key} at (#{x}, #{y})"
-                  )
+                  _ ->
+                    Logger.warning(
+                      "Unknown mouse modifier integer: #{mod} for button: #{key} at (#{x}, #{y})"
+                    )
 
-                  [:unknown]
-              end
+                    [:unknown]
+                end
 
-            button =
-              case key do
-                1 -> :left
-                2 -> :middle
-                3 -> :right
-                4 -> :wheel_up
-                5 -> :wheel_down
-                _ -> :unknown_button
-              end
+              button =
+                case key do
+                  1 -> :left
+                  2 -> :middle
+                  3 -> :right
+                  4 -> :wheel_up
+                  5 -> :wheel_down
+                  _ -> :unknown_button
+                end
 
-            # Pass the modifiers list instead of the old meta atom
-            {:mouse, button, x, y, modifiers}
+              # Pass the modifiers list instead of the old meta atom
+              {:mouse, button, x, y, modifiers}
 
-          # Unknown event type
-          _ ->
-            {:unknown, raw_event_tuple}
+            # Unknown event type
+            _ ->
+              {:unknown, raw_event_tuple}
+          end
+
+        # Pass the standard ex_termbox tuple to appropriate handler
+        case event_tuple do
+          {:mouse, _, _, _, _} = mouse_event ->
+            p_handle_mouse_event(mouse_event, state)
+
+          {:key, _, _} = key_event ->
+            p_handle_key_event(key_event, state)
+
+          # Handle other event types directly (resize, unknown)
+          other_event ->
+            case handle_event(other_event, state) do
+               {:continue, updated_state} -> {:noreply, updated_state}
+               {:stop, updated_state} ->
+                 cleanup(updated_state) # Ensure cleanup happens on stop
+                 {:stop, :normal, updated_state}
+             end
         end
+      rescue
+        e in FunctionClauseError ->
+          Logger.error("FunctionClauseError processing event tuple #{inspect(raw_event_tuple)}: #{inspect(e)}")
+          {:noreply, state} # Continue running even if one event fails
 
-      # Pass the standard ex_termbox tuple to appropriate handler
-      case event_tuple do
-        {:mouse, _, _, _, _} = mouse_event ->
-          p_handle_mouse_event(mouse_event, state)
-
-        {:key, _, _} = key_event ->
-          p_handle_key_event(key_event, state)
-
-        # Handle other event types directly (resize, unknown)
-        other_event ->
-          case handle_event(other_event, state) do
-             {:continue, updated_state} -> {:noreply, updated_state}
-             {:stop, updated_state} ->
-               cleanup(updated_state) # Ensure cleanup happens on stop
-               {:stop, :normal, updated_state}
-           end
+        e ->
+          Logger.error("Failed to process event tuple #{inspect(raw_event_tuple)}: #{inspect(e)}")
+          {:noreply, state} # Continue running even if one event fails
       end
-    rescue
-      e in FunctionClauseError ->
-        Logger.error("FunctionClauseError processing event tuple #{inspect(raw_event_tuple)}: #{inspect(e)}")
-        {:noreply, state} # Continue running even if one event fails
-
-      e ->
-        Logger.error("Failed to process event tuple #{inspect(raw_event_tuple)}: #{inspect(e)}")
-        {:noreply, state} # Continue running even if one event fails
     end
   end
 
@@ -442,17 +463,15 @@ defmodule Raxol.Runtime do
   end
 
   defp cleanup(state) do
-    # Check if termbox was initialized before trying to shut down
-    # Note: This check is now mainly handled in terminate/2, but kept here for safety
     if state.termbox_initialized do
-      Logger.debug("Shutting down Termbox...")
-      ExTermbox.Bindings.stop_polling()
       ExTermbox.Bindings.shutdown()
-      Logger.debug("Termbox shut down.")
     end
-
-    # Perform other cleanup tasks
-    :ok
+    # Unregister the application name from the registry
+    # Ensure app_name is fetched correctly if needed, or assumed from init arg
+    # For simplicity, let's assume app_module gives us the context
+    app_name = get_app_name(state.app_module)
+    AppRegistry.unregister(app_name)
+    Logger.debug("Raxol Runtime for #{app_name} cleaned up.")
   end
 
   # --- Actual View Rendering Logic (Basic) ---
@@ -698,10 +717,15 @@ defmodule Raxol.Runtime do
   # --- End Private View Rendering Helpers ---
 
   # --- Helper to get terminal dimensions ---
-  defp get_terminal_dimensions() do
-    width = ExTermbox.Bindings.width()
-    height = ExTermbox.Bindings.height()
-    %{width: width, height: height}
+  defp get_terminal_dimensions do
+    if Mix.env() == :test do
+      # Return fixed dimensions for tests if termbox isn't active
+      {80, 24}
+    else
+      width = ExTermbox.Bindings.width()
+      height = ExTermbox.Bindings.height()
+      {width, height}
+    end
   end
 
   # --- Private Event Handling Helpers ---
