@@ -9,140 +9,31 @@ tags: [roadmap, todo, tasks]
 
 # Raxol Project Roadmap
 
-## Completed Features ✅
-
-### Core Event System
-
-- Event Manager implementation with GenServer-based architecture
-- Comprehensive event subscription system with filtering capabilities
-- Basic event types (keyboard, mouse, window, timer)
-- Event validation and error handling
-- Performance metrics collection and visualization
-- Event system documentation and examples
-
-### Testing Infrastructure
-
-- Unit testing framework for components
-- Event simulation utilities
-- Component lifecycle testing
-- Integration test helpers
-- Test assertions for events and state
-- Accessibility testing tools and WCAG compliance test helpers
-- Color contrast testing utilities
-- Screen reader announcement testing
-- Internationalization testing helpers
-
-### UX Refinement & Accessibility
-
-- Focus management system with keyboard navigation
-- Focus Ring component with customizable styles and animations
-- Hint Display with multi-level hints and shortcut highlighting
-- Keyboard Shortcuts system with global and context-specific shortcuts
-- Accessibility module with screen reader announcements
-- High contrast mode and reduced motion support
-- Large text accessibility support
-- Theme integration with accessibility settings
-- Component metadata for screen readers
-- Comprehensive documentation and guides
-- Example demos for accessibility and keyboard shortcuts
-- Cognitive accessibility features
-- Integrated accessibility demo showcasing all features working together
-
-### Color System Integration
-
-- Comprehensive color system with semantic naming
-- Accessible color alternatives for high contrast mode
-- Theme customization and management
-- Color palette management system
-- User preferences for colors and themes
-- Contrast ratio calculation for accessibility
-- WCAG compliance checking
-- Color system demo with accessibility features
-- Color transformation for accessibility
-- Color scale generation with accessibility constraints
-
-### Animation System
-
-- General-purpose animation framework
-- Support for various animation types (easing, physics-based)
-- Reduced motion accessibility support
-- Smooth transitions between UI states
-- Standard animation patterns for common interactions
-- Animation timing and rendering management
-- Screen reader announcements for important animations
-- Cognitive accessibility timing adjustments
-- Alternative non-animated experiences
-
-### User Preferences System
-
-- Persistent storage for user preferences
-- Preference management APIs
-- Settings for accessibility features
-- Theme and color preferences
-- Focus and navigation preferences
-- Keyboard shortcut customization
-- Integration with color system and animations
-- Preference migration and versioning
-
-### Internationalization Framework
-
-- Support for multiple languages
-- Right-to-left (RTL) language support
-- Integration with accessibility features
-- Language detection and selection
-- Translation fallbacks
-- Dynamic language switching
-- Screen reader announcements in multiple languages
-- Locale-specific accessibility considerations
-- CJK language support
-- Diacritical mark handling
-
-### Terminal UI Utilities
-
-- Basic terminal rendering capabilities
-- Color and styling support
-- Input handling with keyboard shortcuts
-- RTL text rendering
-- Accessibility-friendly UI components
-- Box drawing and layout primitives
-
-### Data Visualization
-
-- Chart component supporting multiple chart types (line, bar, pie, area, scatter, bubble, radar, candlestick)
-- TreeMap component for hierarchical data visualization
-- Visualization demo application
-- Accessibility integration for all visualization components
-- Performance monitoring for visualization components
-- Dependency compilation fix for `ex_termbox`
-
-### Compilation & Basic Integrations (Recently Completed / Stabilized)
-
-- Resolved `HEEx.Sigil is not loaded` errors by refactoring Chart/TreeMap widgets.
-- Resolved associated compiler warnings (unused variables/imports/functions).
-- Added basic data/option passing to `ChartWidget` and `TreeMapWidget`.
-- Refined Dashboard persistence to save widget options and save on change.
-- Fixed `ImagePlugin` rendering interference by adjusting command output order.
-- Implemented OSC 8 parsing in Runtime for hyperlink data.
-- Implemented Clipboard paste injection via Runtime messaging.
-- Confirmed Hyperlink click detection and OS `open_url` logic is present.
-- Cleaned up Plugin behaviour implementation in `VisualizationPlugin`.
-
 ## In Progress 🚧
+
+### Runtime Stability
+
+- [ ] **Debug State Loss CRASH (`KeyError: :dashboard_model`)**: Determine why `RuntimeDebug` state loses the `:model` between `handle_continue/2` and `handle_info(:render)`. State confirmed correct up to `handle_continue` return. **CURRENT BLOCKER.**
+- [ ] **Investigate `ex_termbox` Dimension Reporting:** Root cause of incorrect height/width reporting still needs investigation. (Workaround applied).
+- [ ] **Verify Infinite Loop Fix:** Status unknown, previously blocked by other errors. Needs verification once app runs.
+
+### Runtime Rendering Pipeline
+
+- [ ] **Verify TUI Rendering:** Check visual output after fixes (GridContainer, ScreenBuffer). **BLOCKED by state loss crash.**
+- [ ] **Verify `Unhandled view element type` Status:** Needs verification via logging (**BLOCKED by state loss crash**).
+- [ ] **Verify `Skipping invalid cell change` Status:** Needs verification via logging (**BLOCKED by state loss crash**).
 
 ### Dashboard Layout System Refinements
 
-- [ ] **Implement Chart/TreeMap Rendering:** Implement actual rendering logic in `VisualizationPlugin.render_chart_to_cells/3` and `render_treemap_to_cells/3`, replacing current placeholders. (Requires integrating with a TUI charting library or custom drawing).
-- [ ] **Widget Configuration Panel:** Implement UI for configuring widget properties (e.g., chart type, data source) at runtime.
-- [ ] **Data Source Connection:** Define and implement how widgets (especially Chart/TreeMap) connect to and receive real data, moving beyond hardcoded data in `MyApp`.
-- [ ] **Real-time Data Updating:** Implement mechanisms for widgets to subscribe to and display real-time data updates.
-- [ ] **Layout Persistence Config:** Make save location configurable, improve error handling.
-- [ ] **Accessibility:** Review and implement accessibility considerations for grid layout and widget interactions.
-- [ ] **User Customization:** Allow users to add/remove/configure widgets beyond the defaults.
+- [x] **~~Investigate `GridContainer` Calculation:~~** **FIXED** (using rounding + fixed Runtime crash loop).
+- [ ] **Refine Chart/TreeMap TUI Rendering:** Improve accuracy, layout, labeling, and aesthetics of `VisualizationPlugin` (**BLOCKED by state loss crash**).
+- [ ] **Test Layout Persistence:** Verify `save_layout/1` and `load_layout/0` work correctly. (**Blocked by state loss crash**)
 
 ### Plugin System Enhancements
 
-- [ ] **Hyperlink OS Interaction:** Verify/test `HyperlinkPlugin.open_url/1` across different OSes.
-- [ ] **ImagePlugin Stability:** Further test `ImagePlugin` rendering fix. Consider alternative rendering mechanisms if direct `IO.write` remains problematic.
+- [ ] **ImagePlugin Stability/Visual Testing:** Verify image (`assets/static/images/logo.png`) rendering visually (**BLOCKED by state loss crash**).
+- [ ] **Hyperlink OS Interaction Testing:** Verify/test `HyperlinkPlugin.open_url/1` across different OSes. (**Blocked by state loss crash**)
+- [ ] **Investigate alternative rendering mechanisms if needed (ImagePlugin).**
 
 ### Performance Optimization
 
@@ -245,32 +136,15 @@ tags: [roadmap, todo, tasks]
 - Advanced accessibility profiles
 - AI-assisted accessibility adaptations
 
-## Known Issues 🐛
+## Known Issues 🐞
 
-- **Placeholder Visualization Rendering:** Charts and TreeMaps currently render as placeholder boxes via `VisualizationPlugin`.
-- Need to optimize memory usage for long-running processes
-- Event batching needs performance improvements
-- Documentation gaps in advanced usage scenarios
-- Some edge cases in event filtering need handling
-- RTL layout needs additional testing with complex components
-- Cognitive accessibility features need more comprehensive testing
-- `HyperlinkPlugin.open_url/1` needs cross-platform testing
-- Windows clipboard paste may need specific handling/testing
-- Clipboard operations may need additional error handling
-- `:ex_termbox` build patch might still be needed
-
-## Contributing
-
-Please see CONTRIBUTING.md for guidelines on how to contribute to this project.
-
-## Contribution Guidelines
-
-When implementing new features:
-
-1. Maintain TypeScript type safety throughout
-2. Ensure accessibility is considered from the beginning
-3. Integrate with performance monitoring tools
-4. Write comprehensive documentation
-5. Create example implementations and demos
-6. Follow existing code patterns and standards
-7. Update the roadmap with progress
+- **RUNTIME CRASH:** **`(KeyError) key :dashboard_model not found in: %{}` in `handle_info(:render)`**: The `:model` data within the `RuntimeDebug` state is lost between `handle_continue/2` completing successfully and `handle_info(:render)` starting. State is confirmed correct up until `handle_continue` returns. **CURRENT BLOCKER**.
+- **RUNTIME:** **`ex_termbox` reporting incorrect terminal dimensions:** Underlying issue masked by hardcoding workaround. Needs future investigation.
+- **RUNTIME:** Potential infinite loop **needs verification** (once app runs).
+- **RUNTIME:** Status of other runtime warnings (`Unhandled view element type`, `Skipping invalid cell change`) **unknown**. Needs verification (once app runs).
+- **RUNTIME:** Compiler warnings exist for type mismatches in `handle_event` return clauses and many undefined function calls (see logs).
+- **VISUALIZATION:** TUI Charts/TreeMaps rendering **needs visual verification and refinement** (blocked by crash).
+- **IMAGE:** Image rendering (`assets/static/images/logo.png`) **needs visual verification** (blocked by crash).
+- **LAYOUT:** Layout saving/loading (`~/.raxol/dashboard_layout.bin`) needs testing (blocked by crash).
+- **TESTING:** `HyperlinkPlugin.open_url/1` needs cross-platform testing (blocked by crash).
+- **DIALYZER:** ~86 warnings remain.
