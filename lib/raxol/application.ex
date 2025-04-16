@@ -12,8 +12,8 @@ defmodule Raxol.Application do
 
   @compile_env Mix.env()
 
-  alias Raxol.Style.Colors.{Theme, Persistence, HotReload}
   alias Raxol.Core.UserPreferences
+  alias Raxol.Style.Colors.{HotReload, Persistence, Theme}
 
   @impl true
   def start(_type, _args) do
@@ -35,13 +35,11 @@ defmodule Raxol.Application do
         # Initialize color system
         {Task, &init_color_system/0},
         # Start hot-reload server
-        {HotReload, []}
+        {HotReload, []},
+        # Add Raxol.Runtime to the children list, passing the desired App module
+        {Raxol.RuntimeDebug, [app_module: Raxol.MyApp]}
       ]
       |> Enum.reject(&is_nil/1)
-
-    # Add Raxol.Runtime to the children list, passing the desired App module
-    runtime_child = {Raxol.Runtime, [app_module: Raxol.MyApp]}
-    children = children ++ [runtime_child]
 
     # Transform children into full specs if needed
     children =

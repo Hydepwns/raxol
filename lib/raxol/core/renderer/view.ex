@@ -110,34 +110,22 @@ defmodule Raxol.Core.Renderer.View do
   @doc """
   Creates a text view.
   """
-  def text(content, opts \\ []) do
+  def text(content, opts \\ []) when is_binary(content) do
     new(:text, Keyword.merge([content: content], opts))
   end
 
   @doc """
   Creates a box view for layout.
   """
-  def box(opts \\ [], do: block) do
-    new(:box, Keyword.merge([children: block], opts))
+  def box(opts \\ []) do
+    new(:box, opts)
   end
 
   @doc """
   Creates a flex container.
   """
-  def flex(opts \\ [], do: block) do
-    new(
-      :flex,
-      Keyword.merge(
-        [
-          children: block,
-          direction: Keyword.get(opts, :direction, :row),
-          justify: Keyword.get(opts, :justify, :start),
-          align: Keyword.get(opts, :align, :start),
-          wrap: Keyword.get(opts, :wrap, false)
-        ],
-        opts
-      )
-    )
+  def flex(opts \\ []) do
+    new(:flex, opts)
   end
 
   @doc """
@@ -302,12 +290,8 @@ defmodule Raxol.Core.Renderer.View do
             {inner_width, inner_height}
           )
 
-        if child_pos do
-          {[{child, child_pos} | acc],
-           advance_position(pos, child_size, direction)}
-        else
-          {acc, pos}
-        end
+        {[{child, child_pos} | acc],
+         advance_position(pos, child_size, direction)}
       end)
 
     # Apply justification and alignment
