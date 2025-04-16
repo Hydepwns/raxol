@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.CharacterHandling
   alias Raxol.Terminal.ANSI.TextFormatting
+  require Logger
 
   defstruct [
     :cells,
@@ -48,21 +49,32 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Handles wide characters by taking up two cells when necessary.
   Accepts an optional style to apply to the cell.
   """
-  @spec write_char(t(), non_neg_integer(), non_neg_integer(), String.t(), TextFormatting.text_style() | nil) :: t()
-  def write_char(%__MODULE__{} = buffer, x, y, char, style \\ nil) when x >= 0 and y >= 0 do
+  # Suppress spurious exact_eq warning (0 == 2)
+  @dialyzer {:nowarn_function, write_char: 5}
+  @spec write_char(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t(),
+          TextFormatting.text_style() | nil
+        ) :: t()
+  def write_char(%__MODULE__{} = buffer, x, y, char, style \\ nil)
+      when x >= 0 and y >= 0 do
     if y < buffer.height and x < buffer.width do
       width = CharacterHandling.get_char_width(char)
-      cell_style = style || %{} # Placeholder
+      # Placeholder
+      cell_style = style || %{}
 
       cells =
         List.update_at(buffer.cells, y, fn row ->
           new_cell = Cell.new(char, cell_style)
+
           if width == 2 and x + 1 < buffer.width do
-            # For wide characters, ensure the next cell is empty (placeholder)
-            # The placeholder cell doesn't inherit the style intentionally.
+            # For wide characters, mark the next cell as a placeholder
+            # inheriting the style from the primary cell.
             row
             |> List.update_at(x, fn _ -> new_cell end)
-            |> List.update_at(x + 1, fn _ -> Cell.new() end) # Placeholder uses default style
+            |> List.update_at(x + 1, fn _ -> Cell.new_wide_placeholder(cell_style) end)
           else
             List.update_at(row, x, fn _ -> new_cell end)
           end
@@ -92,8 +104,10 @@ defmodule Raxol.Terminal.ScreenBuffer do
     |> elem(0)
   end
 
-  @dialyzer {:nowarn_function, write_segment: 4} # Silence potential spurious no_return warning
-  @spec write_segment(t(), non_neg_integer(), non_neg_integer(), String.t()) :: {t(), non_neg_integer()}
+  # Silence potential spurious no_return warning
+  @dialyzer {:nowarn_function, write_segment: 4}
+  @spec write_segment(t(), non_neg_integer(), non_neg_integer(), String.t()) ::
+          {t(), non_neg_integer()}
   defp write_segment(buffer, x, y, segment) do
     Enum.reduce(String.graphemes(segment), {buffer, x}, fn char,
                                                            {acc_buffer, acc_x} ->
@@ -537,5 +551,73 @@ defmodule Raxol.Terminal.ScreenBuffer do
     else
       nil
     end
+  end
+
+  @doc """
+  Calculates the difference between the current buffer state and a list of desired cell changes.
+
+  Returns a list of cell tuples `{x, y, cell_map}` representing only the cells that need to be updated.
+  """
+  @spec diff(t(), list({non_neg_integer(), non_neg_integer(), map()})) ::
+          list({non_neg_integer(), non_neg_integer(), map()})
+  def diff(%__MODULE__{} = current_buffer, desired_cells) when is_list(desired_cells) do
+    Enum.filter(desired_cells, fn {x, y, desired_cell_map} ->
+      # Convert desired map to a Cell struct for proper comparison
+      desired_cell_struct = Cell.from_map(desired_cell_map)
+      current_cell_struct = get_cell_at(current_buffer, x, y)
+
+      # Compare if the desired cell struct is valid and different from the current one
+      # Use Cell.equals?/2 for comparison
+      case {desired_cell_struct, current_cell_struct} do
+        {nil, _} ->
+          # Invalid desired cell map, skip
+          false
+        {_desired, nil} ->
+          # Current cell is outside buffer (shouldn't happen if called correctly), or buffer uninitialized?
+          # Treat as different if desired is valid.
+          true
+        {desired, current} ->
+          # Compare the structs directly
+          not Cell.equals?(current, desired)
+      end
+    end)
+  end
+
+  @doc """
+  Updates the buffer state by applying a list of cell changes.
+
+  Returns a new buffer `t()` with the changes applied.
+  """
+  @spec update(t(), list({non_neg_integer(), non_neg_integer(), map()})) :: t()
+  def update(%__MODULE__{} = current_buffer, changes) when is_list(changes) do
+    Enum.reduce(changes, current_buffer, fn {x, y, cell_map}, acc_buffer ->
+      if y >= 0 and y < acc_buffer.height and x >= 0 and x < acc_buffer.width do
+        # Convert the cell map from Runtime into a Cell struct
+        new_cell_struct = Cell.from_map(cell_map)
+
+        # Check if conversion was successful and cell is not nil
+        if new_cell_struct do
+          is_wide = CharacterHandling.get_char_width(new_cell_struct.char) == 2 and !new_cell_struct.is_wide_placeholder
+
+          new_rows = List.update_at(acc_buffer.cells, y, fn row ->
+            row_with_primary = List.replace_at(row, x, new_cell_struct)
+            # Handle wide character placeholder if needed and space allows
+            if is_wide and x + 1 < acc_buffer.width do
+              List.replace_at(row_with_primary, x + 1, Cell.new_wide_placeholder(new_cell_struct.style))
+            else
+              row_with_primary
+            end
+          end)
+          %{acc_buffer | cells: new_rows}
+        else
+          # Failed to convert cell map, ignore this change
+          Logger.warning("[ScreenBuffer.update] Failed to convert cell map, skipping change: #{inspect(cell_map)} at (#{x}, #{y})")
+          acc_buffer
+        end
+      else
+        # Ignore changes outside buffer bounds
+        acc_buffer
+      end
+    end)
   end
 end

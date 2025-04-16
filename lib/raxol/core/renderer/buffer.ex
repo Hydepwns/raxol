@@ -136,17 +136,38 @@ defmodule Raxol.Core.Renderer.Buffer do
       damage: MapSet.new()
     }
 
-    # Copy existing cells that are still in bounds
-    {new_cells, damage} =
+    # 1. Copy existing cells into a list-of-lists grid format
+    new_cells_grid =
       copy_cells(buffer.back_buffer.cells, old_size, new_size)
 
-    new_back_buffer = %{new_back_buffer | cells: new_cells, damage: damage}
+    # 2. Convert the grid into the expected cell map format: %{{x, y} => cell}
+    new_cells_map =
+      new_cells_grid
+      |> Enum.with_index()
+      |> Enum.reduce(%{}, fn {row_cells, y}, acc_map ->
+        row_cells
+        |> Enum.with_index()
+        |> Enum.reduce(acc_map, fn {cell, x}, inner_acc_map ->
+          Map.put(inner_acc_map, {x, y}, cell)
+        end)
+      end)
 
-    %{
+    # 3. Calculate damage: all cells in the new dimensions are damaged
+    damage =
+      for x <- 0..(new_width - 1), y <- 0..(new_height - 1), into: MapSet.new() do
+        {x, y}
+      end
+
+    # 4. Update the back buffer
+    new_back_buffer = %{new_back_buffer | cells: new_cells_map, damage: damage}
+
+    updated_buffer = %{
       buffer
       | back_buffer: new_back_buffer,
         front_buffer: %{buffer.front_buffer | size: new_size}
     }
+
+    updated_buffer
   end
 
   # Private Helpers

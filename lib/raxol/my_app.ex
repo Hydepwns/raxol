@@ -20,33 +20,58 @@ defmodule Raxol.MyApp do
 
   @impl Raxol.App
   def init(_opts) do
+    # Use fixed initial dimensions for now
     initial_width = 80
     initial_height = 24
 
-    # Load saved layout or use default
+    # Load layout, or use defaults
     loaded_widgets = Dashboard.load_layout()
+
+    Logger.debug(
+      "[MyApp.init] Result of Dashboard.load_layout(): #{inspect(loaded_widgets)}"
+    )
+
+    # Use loaded layout if available, otherwise defaults
     initial_widgets =
-      if loaded_widgets == [] do
-        # Define default layout if load failed or no file exists
-        Logger.debug("[MyApp.init] Using default widget layout.")
+      if loaded_widgets != [] and is_list(loaded_widgets) do # Check if list and not empty
+        Logger.debug(
+          "[MyApp.init] Saved layout found, using #{length(loaded_widgets)} widgets."
+        )
+        loaded_widgets
+      else
+        Logger.debug(
+          "[MyApp.init] No saved layout found or layout was invalid, using default widgets."
+        )
+        # Define default widgets if no layout is loaded
         [
-          %{id: :w1, type: :info, title: "Widget 1", grid_spec: %{col: 1, row: 1, col_span: 6, row_span: 3}},
-          %{id: :w2, type: :text_input, title: "Text Input", grid_spec: %{col: 1, row: 4, col_span: 12, row_span: 6}},
+          %{
+            id: :w1,
+            type: :info,
+            title: "Widget 1",
+            grid_spec: %{row: 1, col: 1, col_span: 6, row_span: 3}
+          },
+          %{
+            id: :w2,
+            type: :text_input,
+            title: "Text Input",
+            grid_spec: %{row: 4, col: 1, col_span: 12, row_span: 6}
+          },
           %{
             id: :chart1,
             type: :chart,
-            title: "Sales Data (Q1)", # Keep title for WidgetContainer
-            grid_spec: %{col: 7, row: 1, col_span: 6, row_span: 3},
+            title: "Sales Data (Q1)",
+            grid_spec: %{row: 1, col: 7, col_span: 6, row_span: 3},
             # Add data for the chart
             data: [
-              {"Jan", 120},
-              {"Feb", 210},
-              {"Mar", 180}
+              %{label: "Jan", value: 12},
+              %{label: "Feb", value: 19},
+              %{label: "Mar", value: 3}
             ],
             # Add component-specific options
             component_opts: %{
               type: :bar,
-              title: "Quarterly Sales", # Title for the chart itself
+              # Title for the chart itself
+              title: "Quarterly Sales",
               x_axis_label: "Month",
               y_axis_label: "Revenue (k)"
             }
@@ -54,26 +79,53 @@ defmodule Raxol.MyApp do
           %{
             id: :tree1,
             type: :treemap,
-            title: "Project Categories", # Keep title for WidgetContainer
-            grid_spec: %{col: 1, row: 10, col_span: 12, row_span: 3},
+            # Keep title for WidgetContainer
+            title: "Project Categories",
+            grid_spec: %{row: 10, col: 1, col_span: 12, row_span: 3},
             # Add data for the treemap
             data: %{
               name: "Projects",
               children: [
-                %{name: "Frontend", value: 45, children: [%{name: "UI/UX", value: 20}, %{name: "Components", value: 25}]},
-                %{name: "Backend", value: 55, children: [%{name: "API", value: 30}, %{name: "Database", value: 15}, %{name: "Infra", value: 10}]}
+                %{
+                  name: "Frontend",
+                  value: 45,
+                  children: [
+                    %{name: "UI/UX", value: 20},
+                    %{name: "Components", value: 25}
+                  ]
+                },
+                %{
+                  name: "Backend",
+                  value: 55,
+                  children: [
+                    %{name: "API", value: 30},
+                    %{name: "Database", value: 15},
+                    %{name: "Infra", value: 10}
+                  ]
+                }
               ]
             },
             # Add component-specific options
             component_opts: %{
-              title: "Project Breakdown", # Title for the treemap itself
-              color_scheme: :category10 # Example option
+              # Title for the treemap itself
+              title: "Project Breakdown",
+              # Example option
+              color_scheme: :category10
+            }
+          },
+          # Add an image widget for testing
+          %{
+            id: :img1,
+            # Assuming :image is the correct type
+            type: :image,
+            title: "Test Image",
+            grid_spec: %{row: 14, col: 1, col_span: 6, row_span: 4},
+            component_opts: %{
+              # Corrected path
+              path: "assets/static/images/logo.png"
             }
           }
         ]
-      else
-        Logger.debug("[MyApp.init] Using loaded widget layout.")
-        loaded_widgets
       end
 
     # Define initial grid config for the dashboard, including breakpoints
@@ -81,22 +133,32 @@ defmodule Raxol.MyApp do
       parent_bounds: %{x: 0, y: 0, width: initial_width, height: initial_height},
       gap: 1,
       breakpoints: %{
-        small:  %{max_width: 59, cols: 4, rows: 12}, # Example: 4 columns for small screens
-        medium: %{max_width: 99, cols: 8, rows: 12}, # Example: 8 columns for medium screens
-        large:  %{cols: 12, rows: 12}                # Default/Fallback for large screens
+        # Example: 4 columns for small screens
+        small: %{max_width: 59, cols: 4, rows: 12},
+        # Example: 8 columns for medium screens
+        medium: %{max_width: 99, cols: 8, rows: 12},
+        # Default/Fallback for large screens
+        large: %{cols: 12, rows: 12}
       }
       # Note: Explicit cols/rows here will be ignored if breakpoints are used
     }
 
     # Initialize the Dashboard component's state
-    {:ok, dashboard_model} = Dashboard.init(initial_widgets, initial_grid_config)
+    Logger.debug("[MyApp.init] Calling Dashboard.init with widgets: #{inspect(initial_widgets)} and config: #{inspect(initial_grid_config)}")
+    {:ok, dashboard_model} =
+      Dashboard.init(initial_widgets, initial_grid_config)
+    Logger.debug("[MyApp.init] Dashboard.init returned: {:ok, #{inspect(dashboard_model)}}") # Assuming success
 
-    {:ok,
-     %Model{
-       width: initial_width,
-       height: initial_height,
-       dashboard_model: dashboard_model
-     }}
+    model = %Model{
+      width: initial_width,
+      height: initial_height,
+      text: "",
+      dashboard_model: dashboard_model
+    }
+
+    Logger.debug("[MyApp.init] Initialization complete. Returning model: #{inspect(model)}")
+
+    {:ok, model}
   end
 
   @impl Raxol.App
@@ -110,7 +172,8 @@ defmodule Raxol.MyApp do
         # Pass the event and the *current* dashboard model
         Dashboard.update(event, model.dashboard_model)
       else
-        model.dashboard_model # No update function yet
+        # No update function yet
+        model.dashboard_model
       end
 
     # Update the app model with the potentially updated dashboard model
@@ -131,21 +194,24 @@ defmodule Raxol.MyApp do
           else
             ""
           end
+
         # App-specific logic: update text field
         %{model | text: new_text}
-
-      # Handle 'q' key to quit
-      %{type: :key, key: :q} ->
-        {:stop, :normal, model}
 
       # Handle resize events - Update both app model and dashboard grid config
       %{type: :resize, width: w, height: h} ->
         Logger.debug("[MyApp] Received resize event: #{w}x#{h}")
         # Update grid config within the dashboard model
-        updated_grid_config = %{model.dashboard_model.grid_config |
-          parent_bounds: %{x: 0, y: 0, width: w, height: h}
+        updated_grid_config = %{
+          model.dashboard_model.grid_config
+          | parent_bounds: %{x: 0, y: 0, width: w, height: h}
         }
-        updated_dashboard_model = %{model.dashboard_model | grid_config: updated_grid_config}
+
+        updated_dashboard_model = %{
+          model.dashboard_model
+          | grid_config: updated_grid_config
+        }
+
         %{model | width: w, height: h, dashboard_model: updated_dashboard_model}
 
       # Handle paste message from Runtime
@@ -162,9 +228,17 @@ defmodule Raxol.MyApp do
   end
 
   @impl Raxol.App
-  def render(model) do
-    # Delegate rendering to the Dashboard component, passing the necessary app state
-    Dashboard.render(%{dashboard_model: model.dashboard_model, app_text: model.text})
+  def render(props) do
+    Logger.debug("[MyApp.render] Starting render... Props received: #{inspect(props)}")
+    # Extract model and grid_config from props
+    %{model: model, grid_config: grid_config} = props
+
+    # Delegate rendering to the Dashboard component, passing the necessary state
+    Dashboard.render(%{
+      dashboard_model: model.dashboard_model,
+      grid_config: grid_config, # Pass grid_config down
+      app_text: model.text
+    })
   end
 
   # Remove widget rendering helpers, now handled by Dashboard
