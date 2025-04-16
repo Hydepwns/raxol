@@ -1,5 +1,5 @@
 defmodule Raxol.Components.TabBar do
-  use Raxol.Component
+  # Removed: use Raxol.Component
   require Raxol.View
 
   # alias Raxol.Components.FocusManager # Removed - Unused
@@ -42,7 +42,7 @@ defmodule Raxol.Components.TabBar do
 
   @behaviour Raxol.ComponentBehaviour
 
-  @doc """
+  @doc \"""
   Renders a tab bar with the given tabs, highlighting the active tab.
 
   ## Parameters
@@ -160,44 +160,33 @@ defmodule Raxol.Components.TabBar do
     style = Keyword.get(opts, :style, %{})
     tab_bar_style = Keyword.get(opts, :tab_bar_style, %{})
     tab_style = Keyword.get(opts, :tab_style, %{})
-
-    active_tab_style =
-      Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
-
+    active_tab_style = Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
     content_style = Keyword.get(opts, :content_style, %{})
 
-    # Extract tab details for the tab bar
-    bar_tabs =
-      Enum.map(tabs, fn %{id: id, label: label} = tab ->
-        # Pass through tooltip if present
-        tooltip = Map.get(tab, :tooltip, "")
-        %{id: id, label: label, tooltip: tooltip}
+    View.row([style: style, id: focus_key], fn ->
+      View.row([style: tab_bar_style], fn ->
+        render(tabs, active_tab, on_change, [
+          focus_key: focus_key,
+          style: tab_bar_style,
+          tab_style: tab_style,
+          active_tab_style: active_tab_style
+        ])
       end)
 
-    # Find the active tab content
-    active_content =
-      case Enum.find(tabs, fn %{id: id} -> id == active_tab end) do
-        %{content: content_fn} when is_function(content_fn, 0) -> content_fn.()
-        %{content: content} -> content
-        _ -> View.text("No content for tab #{active_tab}")
-      end
+      View.row([style: content_style], fn ->
+        # Find and render the content for the active tab
+        active_tab_content =
+          case Enum.find(tabs, fn %{id: id} -> id == active_tab end) do
+            %{content: content_fn} when is_function(content_fn, 0) ->
+              content_fn.()
+            %{content: content} ->
+              content # Assume content is already a View element/map
+            _ ->
+              View.text("Content not found for tab: #{active_tab}")
+          end
 
-    View.column([style: style, id: focus_key], fn ->
-      # Render the tab bar
-      render(
-        bar_tabs,
-        active_tab,
-        on_change,
-        focus_key: "#{focus_key}_bar",
-        style: tab_bar_style,
-        tab_style: tab_style,
-        active_tab_style: active_tab_style
-      )
-
-      # Render the content area using macro syntax
-      View.box style: content_style, id: "#{focus_key}_content" do
-        active_content
-      end
+        active_tab_content # Return the content to be rendered in the row
+      end)
     end)
   end
 end

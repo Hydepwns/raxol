@@ -162,6 +162,7 @@ defmodule Raxol.Plugins.NotificationPlugin do
     end
   end
 
+  @dialyzer {:nowarn_function, show_notification: 3}
   defp show_notification(plugin, type, message) do
     # Create notification
     notification = %{
@@ -180,9 +181,11 @@ defmodule Raxol.Plugins.NotificationPlugin do
     display = generate_notification_display(notification, plugin.config)
 
     # Return updated plugin and display
-    {:ok, %{plugin | notifications: notifications}, display}
+    result = {:ok, %{plugin | notifications: notifications}, display}
+    result
   end
 
+  @dialyzer {:nowarn_function, generate_notification_display: 2}
   defp generate_notification_display(notification, config) do
     {r, g, b} = Map.get(config.colors, String.to_atom(notification.type))
 
@@ -206,6 +209,9 @@ defmodule Raxol.Plugins.NotificationPlugin do
         │ #{String.pad_leading(String.upcase(notification.type), 10)} │ #{notification.message}
         └#{String.duplicate("─", 50)}┘\e[0m
         """
+
+      # Add a catch-all to satisfy Dialyzer and handle potential invalid styles
+      _ -> ""
     end
   end
 

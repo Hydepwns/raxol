@@ -20,8 +20,6 @@ defmodule Raxol.Components.Selection.Dropdown do
   """
 
   use Raxol.Component
-  alias Raxol.View.Components
-  alias Raxol.View.Layout
   alias Raxol.Components.Selection.List
   alias Raxol.Core.Events.Event
 
@@ -102,44 +100,62 @@ defmodule Raxol.Components.Selection.Dropdown do
   def update(_msg, state), do: state
 
   @impl true
+  @spec render(map()) :: Raxol.Core.Renderer.Element.t() | nil
+  @dialyzer {:nowarn_function, render: 1}
   def render(state) do
-    Layout.column do
-      render_trigger(state)
-
-      if state.is_open do
-        render_list(state)
-      end
+    if state.expanded do
+      dsl_result_expanded = render_expanded(state)
+      Raxol.View.to_element(dsl_result_expanded)
+    else
+      dsl_result_collapsed = render_collapsed(state)
+      Raxol.View.to_element(dsl_result_collapsed)
     end
   end
 
-  defp render_trigger(state) do
-    display_text =
-      if state.selected_item do
-        state.render_item.(state.selected_item)
-      else
-        Components.text(
-          content: state.placeholder,
-          color: state.style.placeholder_color
-        )
-      end
-
-    Layout.box style: %{border_color: state.style.border_color} do
-      Layout.row do
-        Components.text(content: display_text, color: state.style.text_color)
-        # Dropdown arrow
-        Components.text(content: " ▼", color: state.style.text_color)
-      end
+  @dialyzer {:nowarn_function, render_collapsed: 1}
+  @spec render_collapsed(map()) :: map()
+  defp render_collapsed(state) do
+    selected_label = get_selected_label(state)
+    # Render a box that looks like a closed dropdown
+    Raxol.View.box style: %{border: :single, width: state.width} do
+      [
+        Raxol.View.row style: %{width: :fill} do
+          [
+            Raxol.View.text(selected_label, style: %{width: :fill}),
+            Raxol.View.text(" ▼") # Down arrow indicator
+          ]
+        end
+      ]
     end
   end
 
-  defp render_list(state) do
-    Layout.box style: %{border_color: state.style.border_color} do
-      List.render(%{
-        state.list_state
-        | focused: state.focused,
-          on_select: fn item -> update({:select_item, item}, state) end,
-          on_submit: fn item -> update({:select_item, item}, state) end
-      })
+  @dialyzer {:nowarn_function, render_expanded: 1}
+  @spec render_expanded(map()) :: map()
+  defp render_expanded(state) do
+    Raxol.View.column do
+      [ # Explicitly return a list for the column's children
+        render_collapsed(state), # Show the collapsed view first
+        # Then render the list of options below
+        Raxol.View.box style: %{border: :single, width: state.width} do
+          # Assuming List.render returns an element or list of elements
+          List.render(%{
+            items: state.items,
+            render_item: state.render_item,
+            selected_index: state.focused_index,
+            width: state.width - 2, # Adjust for border
+            height: Enum.count(state.items) # Or a max height
+          })
+        end
+      ]
+    end
+  end
+
+  defp get_selected_label(state) do
+    if state.selected_index do
+      selected_item = Enum.at(state.items, state.selected_index)
+      if selected_item, do: state.render_item.(selected_item), else: state.placeholder
+    else
+      state.placeholder
     end
   end
 

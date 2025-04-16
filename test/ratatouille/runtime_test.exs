@@ -18,7 +18,8 @@ defmodule Ratatouille.RuntimeTest do
     deftracked(height, do: {:ok, 42})
     deftracked(width, do: {:ok, 81})
     deftracked(info, do: {:width, 81, :height, 42})
-    deftracked(put_string(_, _, _, _, _), do: :ok)
+    @track true
+    def put_string(_, _, _, _, _), do: :ok
   end
 
   defmodule AppStub do

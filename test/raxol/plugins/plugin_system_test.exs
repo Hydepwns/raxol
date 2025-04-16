@@ -1,14 +1,11 @@
 defmodule Raxol.Plugins.PluginSystemTest do
   use ExUnit.Case
 
-  alias Raxol.Plugins.{
-    PluginManager,
-    HyperlinkPlugin,
-    ImagePlugin,
-    ThemePlugin,
-    SearchPlugin
-  }
-
+  alias Raxol.Plugins.HyperlinkPlugin
+  alias Raxol.Plugins.ImagePlugin
+  alias Raxol.Plugins.PluginManager
+  alias Raxol.Plugins.SearchPlugin
+  alias Raxol.Plugins.ThemePlugin
   alias Raxol.Terminal.Emulator
 
   describe "Plugin Manager" do

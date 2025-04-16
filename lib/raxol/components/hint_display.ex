@@ -58,26 +58,19 @@ defmodule Raxol.Components.HintDisplay do
       iex> HintDisplay.render(model.focused_component, style: :minimal, position: :float)
       # Renders a minimal floating hint display
   """
-  def render(focused_component, opts \\ []) do
-    style = Keyword.get(opts, :style, :standard)
-    position = Keyword.get(opts, :position, :bottom)
-    always_show = Keyword.get(opts, :always_show, false)
-    max_width = Keyword.get(opts, :max_width, nil)
-    help_level = Keyword.get(opts, :help_level, :basic)
-    highlight_shortcuts = Keyword.get(opts, :highlight_shortcuts, true)
+  @impl true
+  def render(state) do
+    dsl_result =
+      if state.visible and state.current_hint do
+        render_hint_panel(state)
+      else
+        nil # Render nothing if not visible or no hint
+      end
 
-    hint_info = UXRefinement.get_component_hint(focused_component, help_level)
-
-    if hint_info || always_show do
-      render_hint_display(
-        hint_info,
-        style,
-        position,
-        max_width,
-        highlight_shortcuts
-      )
+    # Convert result (nil or panel map) to Element or nil
+    if dsl_result do
+      Raxol.View.to_element(dsl_result)
     else
-      # Return empty element when no hint and not always_show
       nil
     end
   end
@@ -143,6 +136,30 @@ defmodule Raxol.Components.HintDisplay do
   end
 
   # Private functions
+
+  defp render_hint_panel(state) do
+    style = state.style
+    position = state.position
+    always_show = state.always_show
+    max_width = state.max_width
+    help_level = state.help_level
+    highlight_shortcuts = state.highlight_shortcuts
+
+    hint_info = UXRefinement.get_component_hint(state.current_hint, help_level)
+
+    if hint_info || always_show do
+      render_hint_display(
+        hint_info,
+        style,
+        position,
+        max_width,
+        highlight_shortcuts
+      )
+    else
+      # Return empty element when no hint and not always_show
+      nil
+    end
+  end
 
   defp render_hint_display(
          hint_info,
@@ -260,7 +277,8 @@ defmodule Raxol.Components.HintDisplay do
       end
 
     case style do
-      :minimal -> nil # Minimal doesn't show main content
+      # Minimal doesn't show main content
+      :minimal -> nil
       _ -> Components.text(processed_content)
     end
   end
@@ -337,40 +355,25 @@ defmodule Raxol.Components.HintDisplay do
     end
   end
 
-  @doc """
-  Initialize the hint display component.
-
-  This function is called when the component is first created.
-
-  ## Options
-
-  * `:visible` - Whether the hint display is initially visible (default: `true`)
-  * `:style` - Style of the hint display (default: `:standard`)
-  * `:position` - Position of the hint display (default: `:bottom`)
-  * `:always_show` - Always show hint display (default: `false`)
-  * `:max_width` - Maximum width (default: `nil`)
-  * `:help_level` - Initial help detail level (default: `:basic`)
-  """
-  def init(opts \\ []) do
+  @impl true
+  def init(opts) when is_map(opts) do
     # Initialize the help level
     Process.put(
       :hint_display_help_level,
-      Keyword.get(opts, :help_level, :basic)
+      Map.get(opts, :help_level, :basic)
     )
 
     %{
-      visible: Keyword.get(opts, :visible, true),
-      style: Keyword.get(opts, :style, :standard),
-      position: Keyword.get(opts, :position, :bottom),
-      always_show: Keyword.get(opts, :always_show, false),
-      max_width: Keyword.get(opts, :max_width, nil),
-      help_level: Keyword.get(opts, :help_level, :basic)
+      visible: Map.get(opts, :visible, true),
+      style: Map.get(opts, :style, :standard),
+      position: Map.get(opts, :position, :bottom),
+      always_show: Map.get(opts, :always_show, false),
+      max_width: Map.get(opts, :max_width, nil),
+      help_level: Map.get(opts, :help_level, :basic)
     }
   end
 
-  @doc """
-  Update the hint display component state based on events.
-  """
+  @impl true
   def update(model, msg) do
     case msg do
       {:toggle_visibility} ->

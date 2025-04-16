@@ -995,7 +995,7 @@ defmodule Raxol.Cloud.Monitoring.Alerts do
 
   # Private helpers
 
-  defp get_alerts_state() do
+  defp get_alerts_state do
     Process.get(@alerts_key) || %{config: %{}}
   end
 

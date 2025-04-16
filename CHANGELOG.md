@@ -81,6 +81,22 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - `ScreenModes` for screen mode transitions
   - `DeviceStatus` for terminal state queries
 - Comprehensive test coverage for new ANSI features
+- Enhanced text style handling
+- Refactored View DSL macros (`box`/`panel`) to flatten children and reject `nil`.
+- Introduced `Raxol.View.to_element/1` for component type consistency.
+- Refactored `Raxol.View` DSL (`box`/`flex`) to use keyword arguments and updated call sites.
+- Implemented initial `Dashboard` layout component, moving logic from `MyApp`.
+- Created `WidgetContainer` and dedicated widget components (`InfoWidget`, `TextInputWidget`, `ChartWidget`, `TreeMapWidget`).
+- Integrated `ChartWidget` and `TreeMapWidget` into `Dashboard`.
+- Refactored `ChartWidget` and `TreeMapWidget` to return data maps instead of using `Raxol.App`.
+- Created `VisualizationPlugin` to handle rendering of visualization data maps.
+- Updated `Runtime` to parse OSC 8 hyperlink sequences and call `VisualizationPlugin`.
+- Implemented clipboard paste injection via `ClipboardPlugin`, `PluginManager`, `Runtime`, and `MyApp`.
+- Implemented basic TUI bar chart and treemap rendering in `VisualizationPlugin`.
+- Refined TUI visualization rendering (colors, fractional blocks, text handling).
+- Updated dashboard persistence to save widget options and trigger on change.
+- Refactored `Runtime` event handling logic.
+- Adjusted `Runtime` render loop to send plugin commands after presenting buffer.
 
 ### Changed
 
@@ -109,7 +125,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Deprecated
 
-- None
+- Old event system
+- Legacy rendering approach
+- Previous styling methods
 
 ### Removed
 
@@ -117,10 +135,36 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Unused dependencies
 - Redundant documentation
 - Legacy terminal handling code
+- `use Raxol.Component` from helper modules (`Modal`, `TabBar`, `Table`).
 - None
 
 ### Fixed
 
+- `ex_termbox` compilation failure due to invalid file mode in `waf` scripts (patched dependency).
+- Infinite loop in `ImagePlugin` by ensuring state updates are persisted.
+- Runtime startup crashes (`:already_running` Termbox error, `FunctionClauseError` in `MyApp.init`).
+- Distinct type comparison compiler warning.
+- Duplicate private function definitions in `lib/raxol/terminal/configuration.ex`.
+- Incorrect `ex_termbox` function call (`set_buffer_cells/1` -> `change_cell/5`) in `lib/raxol/runtime.ex`.
+- `HEEx.Sigil is not loaded` compilation errors in visualization widgets.
+- `no_return` Dialyzer warning in `UserRegistrationController` via `Accounts` fix.
+- `call` error for `Enum.sort_by/3` in `Table` component.
+- Various compiler warnings (unused imports/variables, invalid aliases, etc.) after refactoring.
+- Various Dialyzer warnings through suppression (`@dialyzer {:nowarn_function, ...}`) or fixes (spec updates, type definitions like `theme_map()`, contract adjustments).
+- Manual fix for missing `end` keyword in `Button` component (acknowledged).
+- Initial set of `callback_type_mismatch` / `callback_arg_type_mismatch` Dialyzer warnings in various components.
+- `FunctionClauseError` in `Dashboard.render/1` (widget init).
+- `KeyError` in `Runtime` rendering logic (dimension map).
+- `:image` placeholder creation bug in `Runtime` (missing `:opts` copy).
+- `ArgumentError` in `VisualizationPlugin` chart rendering (incorrect data handling).
+- `IO.write` protocol error in `Runtime.send_plugin_commands`.
+- `GridContainer` calculation logic (used `div`, switched to `round`).
+- `Runtime` crash loop (`KeyError: :parent_bounds`).
+- `ScreenBuffer` diff/update logic (full comparison, wide char handling).
+- `Runtime` usage of `ScreenBuffer` diff.
+- Immediate quit-on-start issue (adjusted default `quit_keys`).
+- `ArgumentError` (`:parent_bounds` on nil) by correcting `RuntimeDebug.init` return value handling.
+- `UndefinedFunctionError` (`Access` behaviour) by using struct access in `RuntimeDebug` render logic.
 - None
 
 ### Security

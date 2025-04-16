@@ -39,6 +39,7 @@ This directory contains documentation for installing and setting up the Raxol Te
    ```
 
 4. Run the tests:
+
    ```bash
    mix test
    ```
@@ -91,6 +92,7 @@ mix compile
 1. Install [Elixir](https://elixir-lang.org/install.html#windows)
 2. Install [Node.js](https://nodejs.org/en/download/)
 3. Clone and build Raxol:
+
    ```bash
    git clone https://github.com/Hydepwns/raxol.git
    cd raxol

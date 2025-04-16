@@ -133,11 +133,15 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
   @impl true
   def render(state) do
-    if state.value == "" and not state.focused do
-      render_placeholder(state)
-    else
-      render_content(state)
-    end
+    dsl_result =
+      if state.value == "" and not state.focused do
+        render_placeholder(state)
+      else
+        render_content(state)
+      end
+
+    # Convert the DSL map structure to the expected Element struct
+    Raxol.View.to_element(dsl_result)
   end
 
   defp render_placeholder(state) do

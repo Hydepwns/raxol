@@ -13,12 +13,14 @@ defmodule Raxol.Terminal.Cell do
 
   @type t :: %__MODULE__{
           char: String.t(),
-          style: TextFormatting.text_style()
+          style: TextFormatting.text_style(),
+          is_wide_placeholder: boolean()
         }
 
   defstruct [
     :char,
-    :style
+    :style,
+    is_wide_placeholder: false
   ]
 
   @doc """
@@ -44,7 +46,8 @@ defmodule Raxol.Terminal.Cell do
     %__MODULE__{
       # Use a space character for empty cells
       char: " ",
-      style: TextFormatting.new()
+      style: TextFormatting.new(),
+      is_wide_placeholder: false
     }
   end
 
@@ -52,21 +55,36 @@ defmodule Raxol.Terminal.Cell do
     %__MODULE__{
       # Use a space character for empty cells
       char: " ",
-      style: style
+      style: style,
+      is_wide_placeholder: false
     }
   end
 
   def new(char) when is_binary(char) do
     %__MODULE__{
       char: char,
-      style: TextFormatting.new()
+      style: TextFormatting.new(),
+      is_wide_placeholder: false
     }
   end
 
   def new(char, style) when is_binary(char) do
     %__MODULE__{
       char: char,
-      style: style
+      style: style,
+      is_wide_placeholder: false
+    }
+  end
+
+  @doc """
+  Creates a new cell representing the second half of a wide character.
+  Inherits the style from the primary cell.
+  """
+  def new_wide_placeholder(style) do
+    %__MODULE__{
+      char: " ", # Placeholder has no visible char
+      style: style,
+      is_wide_placeholder: true
     }
   end
 
@@ -270,5 +288,30 @@ defmodule Raxol.Terminal.Cell do
   """
   def equals?(%__MODULE__{} = cell1, %__MODULE__{} = cell2) do
     cell1.char == cell2.char && cell1.style == cell2.style
+  end
+
+  @doc """
+  Creates a Cell struct from a map representation, typically from rendering.
+  Expects a map like %{char: integer_codepoint, style: map, is_wide_placeholder: boolean | nil}.
+  Returns nil if the map is invalid.
+  """
+  @spec from_map(map()) :: t() | nil
+  def from_map(%{char: char_code, style: style} = map) when is_integer(char_code) and is_map(style) do
+    # Convert integer code point back to string for storing in the struct
+    char_str = <<char_code::utf8>>
+    is_wide = Map.get(map, :is_wide_placeholder, false)
+
+    %__MODULE__{
+      char: char_str,
+      # Assign style directly, assuming it's valid from renderer
+      # style: TextFormatting.normalize_style(style),
+      style: style,
+      is_wide_placeholder: is_wide
+    }
+  end
+
+  def from_map(_other_map) do
+    # Log warning or handle error? For now, return nil.
+    nil
   end
 end

@@ -29,9 +29,17 @@ defmodule Raxol.Plugins.Plugin do
               {:ok, term()} | {:error, String.t()}
   @callback handle_output(plugin_state :: term(), output :: String.t()) ::
               {:ok, term()} | {:error, String.t()}
-  @callback handle_mouse(plugin_state :: term(), event :: tuple(), emulator_state :: map()) ::
+  @callback handle_mouse(
+              plugin_state :: term(),
+              event :: tuple(),
+              emulator_state :: map()
+            ) ::
               {:ok, struct()} | {:error, reason :: term()}
-  @callback handle_resize(plugin_state :: term(), width :: non_neg_integer(), height :: non_neg_integer()) ::
+  @callback handle_resize(
+              plugin_state :: term(),
+              width :: non_neg_integer(),
+              height :: non_neg_integer()
+            ) ::
               {:ok, struct()} | {:error, reason :: term()}
   @callback cleanup(plugin_state :: term()) :: :ok | {:error, String.t()}
 
@@ -45,7 +53,8 @@ defmodule Raxol.Plugins.Plugin do
   - `command_to_write` - If only a command is output (state unchanged).
   - `:ok` - If nothing needs to be done.
   """
-  @callback handle_render(plugin_state :: struct()) :: {:ok, struct(), binary() | nil} | {:ok, struct()} | binary() | :ok
+  @callback handle_render(plugin_state :: struct()) ::
+              {:ok, struct(), binary() | nil} | {:ok, struct()} | binary() | :ok
 
   @doc """
   Returns the plugin's dependencies.
@@ -63,51 +72,57 @@ defmodule Raxol.Plugins.Plugin do
   @callback get_api_version() :: String.t()
 
   @doc """
-  (Optional) Processes the list of rendered cells before drawing.
+  (Optional) Processes a cell, potentially a placeholder, before drawing.
 
-  Allows plugins to modify the cells that will be drawn to the screen or
-  to generate commands (like escape sequences) to be executed before drawing
-  the final buffer.
+  Allows plugins to identify specific cells (like placeholders) and replace them
+  with actual content (a list of cells) or generate commands (like escape sequences).
 
   ## Parameters
 
-  - `state` - The current plugin state.
-  - `cells` - A list of cell maps, typically `%{x: _, y: _, char: _, fg: _, bg: _, style: %{}}`
-              or special marker maps like `%{type: :placeholder, value: _}`.
+  - `cell` - The specific cell being processed. Can be a regular cell map
+             `%{x: _, y: _, char: _, ...}` or a special map like
+             `%{type: :placeholder, value: :image, bounds: ...}`.
+  - `emulator_state` - The current state map of the `Runtime` GenServer.
+  - `plugin_state` - The current internal state of the plugin itself.
 
   ## Returns
 
-  A tuple `{updated_plugin_state, updated_cells, commands}` where:
-  - `updated_plugin_state` is the plugin's state after processing the cells.
-  - `updated_cells` is the potentially modified list of cells.
-  - `commands` is a list of binaries (e.g., escape sequences) to be written
-    to the terminal before the buffer is presented.
+  - `{:ok, updated_plugin_state, replacement_cells, commands}`:
+    The plugin handled the cell. `replacement_cells` (a list of `{x,y,map}` tuples)
+    will replace the original `cell` in the render list. `commands` are executed.
+    `updated_plugin_state` is stored.
+  - `{:cont, updated_plugin_state}`:
+    The plugin declined to handle this cell or handled it internally without replacing it.
+    The original cell is kept. `updated_plugin_state` is stored.
+    Allows other plugins to potentially process the same cell.
   """
-  @callback handle_cells(plugin_state :: t(), cells :: list(map())) ::
-              {updated_plugin_state :: t(), updated_cells :: list(map()), commands :: [binary()]}
+  @callback handle_cells(cell :: map(), emulator_state :: map(), plugin_state :: t()) ::
+              {:ok, updated_plugin_state :: t(), replacement_cells :: list(), commands :: [binary()]} |
+              {:cont, updated_plugin_state :: t()}
 
   @optional_callbacks handle_input: 2,
-                       handle_output: 2,
-                       handle_mouse: 3,
-                       handle_resize: 3,
-                       handle_render: 1,
-                       cleanup: 1,
-                       handle_cells: 2
+                      handle_output: 2,
+                      handle_mouse: 3,
+                      handle_resize: 3,
+                      handle_render: 1,
+                      cleanup: 1,
+                      handle_cells: 3
 
   defmacro __using__(_opts) do
     quote do
-      import Raxol.Plugins.Plugin, only: [
-        init: 1,
-        handle_input: 2,
-        handle_output: 2,
-        handle_mouse: 3,
-        handle_resize: 3,
-        cleanup: 1,
-        get_dependencies: 0,
-        get_api_version: 0,
-        handle_render: 1,
-        handle_cells: 2
-      ]
+      import Raxol.Plugins.Plugin,
+        only: [
+          init: 1,
+          handle_input: 2,
+          handle_output: 2,
+          handle_mouse: 3,
+          handle_resize: 3,
+          cleanup: 1,
+          get_dependencies: 0,
+          get_api_version: 0,
+          handle_render: 1,
+          handle_cells: 3
+        ]
     end
   end
 end

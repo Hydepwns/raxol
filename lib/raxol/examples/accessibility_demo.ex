@@ -312,14 +312,7 @@ defmodule Raxol.Examples.AccessibilityDemo do
     case color do
       :black -> "black"
       :white -> "white"
-      :red -> "red"
-      :green -> "green"
-      :blue -> "blue"
-      :yellow -> "yellow"
-      :cyan -> "cyan"
-      :magenta -> "magenta"
       {:rgb, r, g, b} -> "RGB color #{r}, #{g}, #{b}"
-      _ -> "custom color"
     end
   end
 end

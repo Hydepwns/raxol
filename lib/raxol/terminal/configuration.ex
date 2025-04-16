@@ -5,10 +5,6 @@ defmodule Raxol.Terminal.Configuration do
 
   require Logger
 
-  # alias Raxol.Terminal.Capabilities
-  # alias Raxol.Terminal.Theme
-  # alias Raxol.Terminal.ThemeLoader
-
   alias Raxol.System.TerminalPlatform
   alias Raxol.Core.UserPreferences
 
@@ -24,6 +20,8 @@ defmodule Raxol.Terminal.Configuration do
 
   # Preload directory for animations
   @preload_dir "./priv/animations"
+
+  @typep theme_map :: %{atom() => String.t()}
 
   @type terminal_type ::
           :iterm2
@@ -57,7 +55,7 @@ defmodule Raxol.Terminal.Configuration do
           batch_size: integer(),
           virtual_scroll: boolean(),
           visible_rows: integer(),
-          theme: map(),
+          theme: theme_map(),
           ligatures: boolean(),
           font_rendering: :normal | :subpixel | :grayscale,
           cursor_color: String.t(),
@@ -86,7 +84,7 @@ defmodule Raxol.Terminal.Configuration do
           cleanup_interval: non_neg_integer(),
           prompt: String.t(),
           welcome_message: String.t(),
-          theme: String.t(),
+          theme: theme_map(),
           command_history_size: non_neg_integer(),
           enable_command_history: boolean(),
           enable_syntax_highlighting: boolean(),
@@ -135,6 +133,7 @@ defmodule Raxol.Terminal.Configuration do
       iex> config.terminal_type
       :iterm2
   """
+  @dialyzer {:nowarn_function, detect_and_configure: 0}
   @spec detect_and_configure() :: config()
   def detect_and_configure do
     # Initialize animation cache if not already initialized
@@ -198,8 +197,9 @@ defmodule Raxol.Terminal.Configuration do
       iex> Configuration.apply(config)
       :ok
   """
+  # Suppress persistent invalid_contract warning
+  @dialyzer {:nowarn_function, apply: 1}
   @spec apply(config()) :: :ok
-  @dialyzer {:nowarn_function, apply: 1} # Suppress persistent invalid_contract warning
   def apply(config) do
     # Set terminal title if supported
     if config.title_support do
@@ -288,6 +288,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_font_family: 1}
   @spec get_font_family(terminal_type()) :: String.t()
   defp get_font_family(terminal_type) do
@@ -305,6 +306,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_font_size: 1}
   @spec get_font_size(terminal_type()) :: pos_integer()
   defp get_font_size(terminal_type) do
@@ -322,6 +324,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_line_height: 1}
   @spec get_line_height(terminal_type()) :: float()
   defp get_line_height(terminal_type) do
@@ -339,6 +342,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_cursor_style: 1}
   @spec get_cursor_style(terminal_type()) :: :block | :underline | :bar
   defp get_cursor_style(terminal_type) do
@@ -356,6 +360,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_cursor_blink: 1}
   @spec get_cursor_blink(terminal_type()) :: boolean()
   defp get_cursor_blink(terminal_type) do
@@ -373,6 +378,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_scrollback_limit: 1}
   @spec get_scrollback_limit(terminal_type()) :: pos_integer()
   defp get_scrollback_limit(terminal_type) do
@@ -390,6 +396,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_batch_size: 1}
   @spec get_batch_size(terminal_type()) :: pos_integer()
   defp get_batch_size(terminal_type) do
@@ -407,6 +414,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_virtual_scroll: 1}
   @spec get_virtual_scroll(terminal_type()) :: boolean()
   defp get_virtual_scroll(terminal_type) do
@@ -424,6 +432,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_visible_rows: 1}
   @spec get_visible_rows(terminal_type()) :: pos_integer()
   defp get_visible_rows(terminal_type) do
@@ -441,21 +450,53 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_theme: 2}
-  @spec get_theme(terminal_type(), color_mode()) :: map()
+  @spec get_theme(terminal_type(), color_mode()) :: theme_map()
   defp get_theme(terminal_type, color_mode) do
     base_theme =
       case terminal_type do
-        :iterm2 -> %{name: "iTerm Default", background: "#000000", foreground: "#ffffff"}
-        :windows_terminal -> %{name: "Campbell", background: "#0c0c0c", foreground: "#cccccc"}
-        :xterm -> %{name: "XTerm Default", background: "#000000", foreground: "#ffffff"}
-        :screen -> %{name: "Screen Default", background: "#000000", foreground: "#ffffff"}
-        :kitty -> %{name: "Kitty Default", background: "#000000", foreground: "#dddddd"}
-        :alacritty -> %{name: "Alacritty Default", background: "#1e1e1e", foreground: "#dcdccc"}
-        :konsole -> %{name: "Konsole Default", background: "#232627", foreground: "#eff0f1"}
-        :gnome_terminal -> %{name: "Gnome Default", background: "#300a24", foreground: "#ffffff"}
-        :vscode -> %{name: "VSCode Dark+", background: "#1e1e1e", foreground: "#d4d4d4"}
-        :unknown -> %{name: "Basic", background: "#000000", foreground: "#ffffff"}
+        :iterm2 ->
+          %{name: "iTerm Default", background: "#000000", foreground: "#ffffff"}
+
+        :windows_terminal ->
+          %{name: "Campbell", background: "#0c0c0c", foreground: "#cccccc"}
+
+        :xterm ->
+          %{name: "XTerm Default", background: "#000000", foreground: "#ffffff"}
+
+        :screen ->
+          %{
+            name: "Screen Default",
+            background: "#000000",
+            foreground: "#ffffff"
+          }
+
+        :kitty ->
+          %{name: "Kitty Default", background: "#000000", foreground: "#dddddd"}
+
+        :alacritty ->
+          %{
+            name: "Alacritty Default",
+            background: "#1e1e1e",
+            foreground: "#dcdccc"
+          }
+
+        :konsole ->
+          %{
+            name: "Konsole Default",
+            background: "#232627",
+            foreground: "#eff0f1"
+          }
+
+        :gnome_terminal ->
+          %{name: "Gnome Default", background: "#300a24", foreground: "#ffffff"}
+
+        :vscode ->
+          %{name: "VSCode Dark+", background: "#1e1e1e", foreground: "#d4d4d4"}
+
+        :unknown ->
+          %{name: "Basic", background: "#000000", foreground: "#ffffff"}
       end
 
     # Adjust theme based on color mode
@@ -474,6 +515,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_ligatures: 1}
   @spec get_ligatures(terminal_type()) :: boolean()
   defp get_ligatures(terminal_type) do
@@ -491,6 +533,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_font_rendering: 1}
   @spec get_font_rendering(terminal_type()) :: :subpixel | :normal
   defp get_font_rendering(terminal_type) do
@@ -508,6 +551,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_cursor_color: 1}
   @spec get_cursor_color(terminal_type()) :: String.t()
   defp get_cursor_color(terminal_type) do
@@ -525,6 +569,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_selection_color: 1}
   @spec get_selection_color(terminal_type()) :: String.t()
   defp get_selection_color(terminal_type) do
@@ -542,6 +587,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_hyperlinks: 1}
   @spec get_hyperlinks(terminal_type()) :: boolean()
   defp get_hyperlinks(terminal_type) do
@@ -559,6 +605,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_sixel_support: 1}
   @spec get_sixel_support(terminal_type()) :: boolean()
   defp get_sixel_support(terminal_type) do
@@ -576,6 +623,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_image_support: 1}
   @spec get_image_support(terminal_type()) :: boolean()
   defp get_image_support(terminal_type) do
@@ -593,6 +641,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_sound_support: 1}
   @spec get_sound_support(terminal_type()) :: boolean()
   defp get_sound_support(terminal_type) do
@@ -610,6 +659,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_background_type: 1}
   @spec get_background_type(terminal_type()) :: background_type()
   defp get_background_type(terminal_type) do
@@ -625,6 +675,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_background_opacity: 1}
   @spec get_background_opacity(terminal_type()) :: float()
   defp get_background_opacity(terminal_type) do
@@ -640,6 +691,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_background_image: 1}
   @spec get_background_image(terminal_type()) :: String.t() | nil
   defp get_background_image(terminal_type) do
@@ -655,6 +707,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_background_blur: 1}
   @spec get_background_blur(terminal_type()) :: float()
   defp get_background_blur(terminal_type) do
@@ -670,8 +723,8 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_background_scale: 1}
-  # Updated spec based on code
   @spec get_background_scale(terminal_type()) :: :fit
   defp get_background_scale(terminal_type) do
     case terminal_type do
@@ -686,8 +739,8 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_animation_type: 1}
-  # Updated spec based on code
   @spec get_animation_type(terminal_type()) :: :gif | nil
   defp get_animation_type(terminal_type) do
     case terminal_type do
@@ -702,6 +755,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_animation_path: 1}
   @spec get_animation_path(terminal_type()) :: nil
   defp get_animation_path(terminal_type) do
@@ -717,6 +771,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_animation_fps: 1}
   @spec get_animation_fps(terminal_type()) :: pos_integer()
   defp get_animation_fps(terminal_type) do
@@ -732,6 +787,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_animation_loop: 1}
   @spec get_animation_loop(terminal_type()) :: boolean()
   defp get_animation_loop(terminal_type) do
@@ -747,6 +803,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
+  # Suppress pattern_match due to detect_terminal_type returning :unknown
   @dialyzer {:nowarn_function, get_animation_blend: 1}
   @spec get_animation_blend(terminal_type()) :: float()
   defp get_animation_blend(terminal_type) do
@@ -762,7 +819,7 @@ defmodule Raxol.Terminal.Configuration do
     end
   end
 
-  @spec iterm2_preset() :: map()
+  @spec iterm2_preset() :: config()
   defp iterm2_preset do
     %{
       terminal_type: :iterm2,
@@ -804,7 +861,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec windows_terminal_preset() :: map()
+  @spec windows_terminal_preset() :: config()
   defp windows_terminal_preset do
     %{
       terminal_type: :windows_terminal,
@@ -846,7 +903,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec xterm_preset() :: map()
+  @spec xterm_preset() :: config()
   defp xterm_preset do
     %{
       terminal_type: :xterm,
@@ -888,7 +945,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec screen_preset() :: map()
+  @spec screen_preset() :: config()
   defp screen_preset do
     %{
       terminal_type: :screen,
@@ -930,7 +987,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec kitty_preset() :: map()
+  @spec kitty_preset() :: config()
   defp kitty_preset do
     %{
       terminal_type: :kitty,
@@ -972,7 +1029,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec alacritty_preset() :: map()
+  @spec alacritty_preset() :: config()
   defp alacritty_preset do
     %{
       terminal_type: :alacritty,
@@ -1014,7 +1071,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec konsole_preset() :: map()
+  @spec konsole_preset() :: config()
   defp konsole_preset do
     %{
       terminal_type: :konsole,
@@ -1056,7 +1113,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec gnome_terminal_preset() :: map()
+  @spec gnome_terminal_preset() :: config()
   defp gnome_terminal_preset do
     %{
       terminal_type: :gnome_terminal,
@@ -1098,7 +1155,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec vscode_preset() :: map()
+  @spec vscode_preset() :: config()
   defp vscode_preset do
     %{
       terminal_type: :vscode,
@@ -1140,7 +1197,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec default_preset() :: map()
+  @spec default_preset() :: config()
   defp default_preset do
     %{
       terminal_type: :unknown,
@@ -1182,7 +1239,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec iterm2_theme() :: map()
+  @spec iterm2_theme() :: theme_map()
   defp iterm2_theme do
     %{
       background: "#000000",
@@ -1206,7 +1263,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec windows_terminal_theme() :: map()
+  @spec windows_terminal_theme() :: theme_map()
   defp windows_terminal_theme do
     %{
       background: "#0C0C0C",
@@ -1230,7 +1287,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec xterm_theme() :: map()
+  @spec xterm_theme() :: theme_map()
   defp xterm_theme do
     %{
       background: "#000000",
@@ -1254,7 +1311,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec kitty_theme() :: map()
+  @spec kitty_theme() :: theme_map()
   defp kitty_theme do
     %{
       background: "#1E1E1E",
@@ -1278,7 +1335,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec alacritty_theme() :: map()
+  @spec alacritty_theme() :: theme_map()
   defp alacritty_theme do
     %{
       background: "#1E1E1E",
@@ -1302,7 +1359,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec konsole_theme() :: map()
+  @spec konsole_theme() :: theme_map()
   defp konsole_theme do
     %{
       background: "#1E1E1E",
@@ -1326,7 +1383,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec gnome_terminal_theme() :: map()
+  @spec gnome_terminal_theme() :: theme_map()
   defp gnome_terminal_theme do
     %{
       background: "#300A24",
@@ -1350,7 +1407,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec vscode_theme() :: map()
+  @spec vscode_theme() :: theme_map()
   defp vscode_theme do
     %{
       background: "#1E1E1E",
@@ -1374,7 +1431,7 @@ defmodule Raxol.Terminal.Configuration do
     }
   end
 
-  @spec default_theme() :: map()
+  @spec default_theme() :: theme_map()
   defp default_theme do
     %{
       background: "#000000",
@@ -1757,21 +1814,24 @@ defmodule Raxol.Terminal.Configuration do
     # Expand the preload directory path
     preload_path = Path.expand(@preload_dir)
 
-    # Create the directory if it doesn't exist
-    unless File.dir?(preload_path) do
-      File.mkdir_p(preload_path)
+    # Create the directory if it doesn't exist, handle potential errors
+    case File.mkdir_p(preload_path) do
+      :ok ->
+        # Find all animation files in the preload directory
+        animation_files = find_animation_files(preload_path)
+
+        # Cache each animation
+        Enum.each(animation_files, fn {path, type} ->
+          cache_animation(path, type)
+        end)
+
+        # Log preload results
+        IO.puts("Preloaded #{length(animation_files)} animations")
+        :ok # Explicitly return :ok on success
+      {:error, reason} ->
+        IO.warn("Could not create preload directory '#{preload_path}': #{inspect(reason)}")
+        :ok # Still return :ok as per spec, but log the warning
     end
-
-    # Find all animation files in the preload directory
-    animation_files = find_animation_files(preload_path)
-
-    # Cache each animation
-    Enum.each(animation_files, fn {path, type} ->
-      cache_animation(path, type)
-    end)
-
-    # Log preload results
-    IO.puts("Preloaded #{length(animation_files)} animations")
   end
 
   @spec find_animation_files(String.t()) :: [{String.t(), atom()}]
@@ -1921,31 +1981,31 @@ defmodule Raxol.Terminal.Configuration do
   end
 
   @spec save_to_preferences(t()) :: :ok
-  @dialyzer {:nowarn_function, save_to_preferences: 1} # Suppress persistent unmatched_return warning
   defp save_to_preferences(config) do
     # Save relevant configuration to user preferences
-    pref_data = Map.take(config, [
-      :font_family,
-      :font_size,
-      :line_height,
-      :cursor_style,
-      :cursor_blink,
-      :theme,
-      :ligatures,
-      :font_rendering,
-      :cursor_color,
-      :selection_color,
-      :background_type,
-      :background_opacity,
-      :background_image,
-      :background_blur,
-      :background_scale,
-      :animation_type,
-      :animation_path,
-      :animation_fps,
-      :animation_loop,
-      :animation_blend
-    ])
+    pref_data =
+      Map.take(config, [
+        :font_family,
+        :font_size,
+        :line_height,
+        :cursor_style,
+        :cursor_blink,
+        :theme,
+        :ligatures,
+        :font_rendering,
+        :cursor_color,
+        :selection_color,
+        :background_type,
+        :background_opacity,
+        :background_image,
+        :background_blur,
+        :background_scale,
+        :animation_type,
+        :animation_path,
+        :animation_fps,
+        :animation_loop,
+        :animation_blend
+      ])
 
     # Call UserPreferences.set and return its result, which is guaranteed :ok by its spec.
     UserPreferences.set(:terminal_config, pref_data)
@@ -2186,7 +2246,7 @@ defmodule Raxol.Terminal.Configuration do
     :ok
   end
 
-  @spec convert_to_palette(map()) :: map()
+  @spec convert_to_palette(theme_map()) :: theme_map()
   def convert_to_palette(theme) do
     Logger.debug("[Config] Converting theme to 256-color palette.")
     # Convert true color theme to 256-color palette
@@ -2195,7 +2255,7 @@ defmodule Raxol.Terminal.Configuration do
     end)
   end
 
-  @spec convert_to_basic(map()) :: map()
+  @spec convert_to_basic(theme_map()) :: theme_map()
   def convert_to_basic(theme) do
     Logger.debug("[Config] Converting theme to basic 16-color palette.")
     # Convert theme to basic 8 colors
@@ -2277,9 +2337,10 @@ defmodule Raxol.Terminal.Configuration do
     {r, g, b}
   end
 
-  @dialyzer {:nowarn_function, distance: 2}
-  @spec distance({non_neg_integer(), non_neg_integer(), non_neg_integer()},
-                 {non_neg_integer(), non_neg_integer(), non_neg_integer()}) :: float()
+  @spec distance(
+          {non_neg_integer(), non_neg_integer(), non_neg_integer()},
+          {non_neg_integer(), non_neg_integer(), non_neg_integer()}
+        ) :: float()
   def distance({r1, g1, b1}, {r2, g2, b2}) do
     :math.sqrt(
       :math.pow(r1 - r2, 2) +
@@ -2287,5 +2348,5 @@ defmodule Raxol.Terminal.Configuration do
         :math.pow(b1 - b2, 2)
     )
   end
+end
 
-end # Ensure this is the final line for the module

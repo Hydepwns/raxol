@@ -75,7 +75,7 @@ defmodule Raxol.Metrics do
   end
 
   def get_cpu_usage do
-    pid_string = :erlang.pid_to_list(System.pid())
+    pid_string = :os.getpid()
 
     case :os.cmd(~c"ps -p #{pid_string} -o %cpu=") do
       [] ->
@@ -90,7 +90,7 @@ defmodule Raxol.Metrics do
   end
 
   def get_memory_usage do
-    pid_string = :erlang.pid_to_list(System.pid())
+    pid_string = :os.getpid()
 
     case :os.cmd(~c"ps -p #{pid_string} -o %mem=") do
       [] ->

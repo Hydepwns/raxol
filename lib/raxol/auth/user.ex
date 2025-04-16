@@ -6,7 +6,8 @@ defmodule Raxol.Auth.User do
   use Ecto.Schema
   import Ecto.Changeset
 
-  alias Raxol.Auth.{Role, Permission}
+  alias Raxol.Auth.Permission
+  alias Raxol.Auth.Role
 
   schema "users" do
     field :email, :string

@@ -1,8 +1,13 @@
 defmodule Raxol.Examples.ButtonPerformanceTest do
   use ExUnit.Case
   use Raxol.Test.Performance
+  alias Raxol.Test.Visual
 
   alias Raxol.Examples.Button
+
+  def setup_benchmark_environment(context \\ %{}) do
+    Map.put(context, :benchmark_start_time, System.monotonic_time())
+  end
 
   describe "render performance" do
     test "renders quickly for simple button" do
@@ -140,13 +145,13 @@ defmodule Raxol.Examples.ButtonPerformanceTest do
 
   defp render_iterations(component, count) do
     Enum.each(1..count, fn _ ->
-      capture_render(component)
+      Visual.capture_render(component)
     end)
   end
 
   defp render_with_dataset(component) do
     Enum.each(1..10, fn _ ->
-      capture_render(component)
+      Visual.capture_render(component)
       # Simulate some processing
       Process.sleep(10)
     end)

@@ -19,13 +19,17 @@ defmodule Raxol.Components.Dashboard.Widgets.ChartWidget do
 
     id = Map.fetch!(widget_config, :id)
     # Extract data and component_opts, providing defaults if missing
-    data = Map.get(widget_config, :data, placeholder_data()) # Use placeholder if no data provided
-    component_opts = Map.get(widget_config, :component_opts, default_component_opts()) # Use defaults if no opts provided
+    # Use placeholder if no data provided
+    data = Map.get(widget_config, :data, placeholder_data())
+    # Use defaults if no opts provided
+    component_opts =
+      Map.get(widget_config, :component_opts, default_component_opts())
 
     # Keep the original config map for potential future use (e.g., title in WidgetContainer)
     %__MODULE__{
       id: id,
-      config: widget_config, # Store the whole original config
+      # Store the whole original config
+      config: widget_config,
       data: data,
       component_opts: component_opts
     }
@@ -37,7 +41,8 @@ defmodule Raxol.Components.Dashboard.Widgets.ChartWidget do
     %{
       type: :chart,
       data: assigns.data,
-      opts: chart_opts(assigns.component_opts) # Pass the component_opts map
+      # Pass the component_opts map
+      opts: chart_opts(assigns.component_opts)
     }
   end
 
@@ -46,6 +51,7 @@ defmodule Raxol.Components.Dashboard.Widgets.ChartWidget do
   defp chart_opts(component_opts_map) when is_map(component_opts_map) do
     Keyword.new(component_opts_map)
   end
+
   defp chart_opts(component_opts_list) when is_list(component_opts_list) do
     component_opts_list
   end

@@ -11,7 +11,6 @@ defmodule Raxol.Components.Terminal do
   """
 
   use Raxol.Component
-  alias Raxol.Components.Base
   alias Raxol.Components.Terminal.ANSI
   # alias Raxol.Style # Unused
   # alias Raxol.Terminal.Buffer # Unused
@@ -41,25 +40,30 @@ defmodule Raxol.Components.Terminal do
   * `:style` - Terminal style options
   """
   @impl Raxol.Component
-  def init(opts \\ []) do
-    rows = Keyword.get(opts, :rows, 24)
-    cols = Keyword.get(opts, :cols, 80)
-    prompt = Keyword.get(opts, :prompt, "$ ")
+  def init(opts) when is_map(opts) do
+    rows = Map.get(opts, :rows, 24)
+    cols = Map.get(opts, :cols, 80)
+    prompt = Map.get(opts, :prompt, "$ ")
 
     %{
       buffer: [prompt],
+      buffer_content: prompt,
       cursor: {String.length(prompt), 0},
-      dimensions: {cols, rows},
+      width: cols,
+      height: rows,
       mode: :normal,
       history: [],
       history_index: 0,
       scroll_offset: 0,
       style:
-        Base.base_style(
-          padding: [1, 1],
-          border: :rounded,
-          background: :black,
-          color: :white
+        Map.merge(
+          %{
+            padding: [1, 1],
+            border: :rounded,
+            background: :black,
+            color: :white
+          },
+          Map.get(opts, :style, %{})
         ),
       ansi_state: %{
         cursor: {String.length(prompt), 0},
@@ -106,23 +110,19 @@ defmodule Raxol.Components.Terminal do
   @doc """
   Renders the terminal component.
   """
-  @impl Raxol.Component
+  @impl true
   def render(state) do
-    # Render the visible portion of the buffer
-    visible_lines =
-      Enum.slice(state.buffer, state.scroll_offset, elem(state.dimensions, 1))
-
-    # Create terminal content
-    content = Enum.join(visible_lines, "\n")
-
-    # Return a map representing the terminal view
-    %{
-      type: :terminal,
-      content: content,
+    # Generate the DSL map structure for the terminal
+    dsl_result = %{
+      type: :terminal, # Special type handled by Runtime
+      content: state.buffer_content, # Pass raw content
+      dimensions: {state.width, state.height},
       cursor: state.cursor,
-      dimensions: state.dimensions,
-      style: state.style
+      style: state.style # Pass base style
     }
+
+    # Convert to Element struct
+    Raxol.View.to_element(dsl_result)
   end
 
   # Private functions

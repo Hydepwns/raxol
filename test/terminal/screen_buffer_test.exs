@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ScreenBufferTest do
   use ExUnit.Case
-  alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ScreenBuffer
 
   describe "initialization" do
     test "creates a new buffer with correct dimensions" do

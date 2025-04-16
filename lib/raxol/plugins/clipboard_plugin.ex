@@ -17,8 +17,10 @@ defmodule Raxol.Plugins.ClipboardPlugin do
           api_version: String.t(),
           # Clipboard-specific state
           selection_active: boolean(),
-          selection_start: {integer(), integer()} | nil, # {x, y}
-          selection_end: {integer(), integer()} | nil, # {x, y}
+          # {x, y}
+          selection_start: {integer(), integer()} | nil,
+          # {x, y}
+          selection_end: {integer(), integer()} | nil,
           last_cells_at_selection: map() | nil
         }
 
@@ -46,11 +48,15 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   end
 
   @impl true
-  def handle_input(%__MODULE__{} = state, %{type: :key, modifiers: mods, key: ?c} = _event) do
+  def handle_input(
+        %__MODULE__{} = state,
+        %{type: :key, modifiers: mods, key: ?c} = _event
+      ) do
     if :ctrl in mods do
       Logger.debug("[Clipboard] Ctrl+C detected.")
       # Check for finalized selection and stored cells
-      if is_tuple(state.selection_start) and is_tuple(state.selection_end) and is_map(state.last_cells_at_selection) do
+      if is_tuple(state.selection_start) and is_tuple(state.selection_end) and
+           is_map(state.last_cells_at_selection) do
         Logger.debug("[Clipboard] Triggering yank_selection.")
         yank_selection(state)
         new_state = clear_selection(state)
@@ -65,19 +71,28 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     end
   end
 
-  def handle_input(%__MODULE__{} = state, %{type: :key, modifiers: mods, key: ?v} = _event) do
+  def handle_input(
+        %__MODULE__{} = state,
+        %{type: :key, modifiers: mods, key: ?v} = _event
+      ) do
     if :ctrl in mods do
       Logger.debug("[Clipboard] Ctrl+V detected.")
+
       case get_clipboard_content() do
         {:ok, content} when content != "" ->
           Logger.debug("[Clipboard] Pasting content: #{content}")
           # Return command for Runtime to handle
           {:ok, state, {:command, {:paste, content}}}
+
         {:ok, ""} ->
           Logger.debug("[Clipboard] Clipboard is empty, nothing to paste.")
           {:ok, state}
+
         {:error, reason} ->
-          Logger.error("[Clipboard] Failed to get clipboard content: #{inspect(reason)}")
+          Logger.error(
+            "[Clipboard] Failed to get clipboard content: #{inspect(reason)}"
+          )
+
           {:ok, state}
       end
     else
@@ -100,8 +115,14 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     end
   end
 
-  defp get_selected_text(%__MODULE__{selection_start: start_pos, selection_end: end_pos, last_cells_at_selection: cells} = _state)
-    when is_tuple(start_pos) and is_tuple(end_pos) and is_map(cells) do
+  defp get_selected_text(
+         %__MODULE__{
+           selection_start: start_pos,
+           selection_end: end_pos,
+           last_cells_at_selection: cells
+         } = _state
+       )
+       when is_tuple(start_pos) and is_tuple(end_pos) and is_map(cells) do
     # Determine top-left and bottom-right corners
     {sx, sy} = start_pos
     {ex, ey} = end_pos
@@ -116,6 +137,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
               not is_nil(cell) and is_integer(cell.char) do
             <<cell.char::utf8>>
           end
+
         # Filter out nils and join the characters for the line
         line_cells |> Enum.join()
       end
@@ -123,6 +145,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     # Join all selected lines with newline
     {:ok, Enum.join(selected_lines, "\n")}
   end
+
   # Catch-all if selection or cells are not ready
   defp get_selected_text(_state), do: {:error, :no_selection}
 
@@ -151,15 +174,19 @@ defmodule Raxol.Plugins.ClipboardPlugin do
       {:unix, :darwin} ->
         System.cmd("pbpaste", [])
         |> handle_cmd_result()
+
       {:unix, _} ->
         # Try xclip first, then xsel
         case System.cmd("xclip", ["-selection", "clipboard", "-o"]) do
-          {output, 0} -> handle_cmd_result({output, 0})
+          {output, 0} ->
+            handle_cmd_result({output, 0})
+
           _ ->
             # xclip failed or not found, try xsel
             System.cmd("xsel", ["--clipboard", "--output"])
             |> handle_cmd_result()
         end
+
       {:win32, _} ->
         # Use PowerShell for potentially better Unicode handling
         System.cmd("powershell", ["-Command", "Get-Clipboard"])
@@ -169,6 +196,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
 
   # Helper to process System.cmd result for clipboard content
   defp handle_cmd_result({output, 0}), do: {:ok, output |> String.trim()}
+
   defp handle_cmd_result({output, exit_code}) do
     {:error, "Command failed (exit code: #{exit_code}): #{output}"}
   end

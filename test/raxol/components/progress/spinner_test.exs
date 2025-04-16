@@ -134,7 +134,7 @@ defmodule Raxol.Components.Progress.SpinnerTest do
 
     test "ignores other events" do
       state = Spinner.init(%{})
-      event = %Event{type: :key, key: "x"}
+      event = Event.key("x")
 
       {new_state, _} = Spinner.handle_event(event, state)
       assert new_state == state

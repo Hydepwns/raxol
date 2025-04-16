@@ -18,10 +18,10 @@ defmodule Raxol.Test.Integration do
         test_scenario "parent-child communication", %{parent: Parent, child: Child} do
           # Set up component hierarchy
           {:ok, parent, child} = setup_component_hierarchy(Parent, Child)
-          
+
           # Simulate user interaction
           simulate_user_action(parent, {:click, {10, 10}})
-          
+
           # Verify component interaction
           assert_child_received(child, :parent_clicked)
           assert_parent_updated(parent, :child_responded)
@@ -31,21 +31,16 @@ defmodule Raxol.Test.Integration do
 
   import ExUnit.Assertions
   alias Raxol.Core.Events.{Event, Subscription}
-  alias Raxol.Test.TestHelper
+  # Removed unused aliases
+  # alias Raxol.Terminal.Cell
+  # alias Raxol.Terminal.ScreenBuffer
+  # alias Raxol.View
+  # alias Raxol.Widget
 
   defmacro __using__(_opts) do
     quote do
       import Raxol.Test.Integration
       import Raxol.Test.Integration.Assertions
-
-      setup do
-        context = TestHelper.setup_test_env()
-        {:ok, context}
-      end
-
-      teardown do
-        TestHelper.cleanup_test_env(context)
-      end
     end
   end
 

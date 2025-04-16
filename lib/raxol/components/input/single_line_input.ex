@@ -17,7 +17,6 @@ defmodule Raxol.Components.Input.SingleLineInput do
 
   use Raxol.Component
   alias Raxol.View.Components
-  alias Raxol.View.Layout
   alias Raxol.Terminal.Clipboard
 
   @default_width 20
@@ -86,9 +85,25 @@ defmodule Raxol.Components.Input.SingleLineInput do
 
   @impl true
   def render(state) do
-    Layout.column do
-      Components.text(content: state.value, color: state.style.text_color)
-    end
+    # Use the View DSL to create the map representation
+    dsl_result =
+      if state.value == "" and not state.focused and state.placeholder != "" do
+        # Render placeholder if value is empty, not focused, and placeholder exists
+        Components.text(
+          content: state.placeholder,
+          color: state.style.placeholder_color
+        )
+      else
+        # Otherwise, render the actual content
+        Components.text(
+          content: state.value,
+          color: state.style.text_color
+          # We might need cursor rendering logic here similar to MultiLineInput
+        )
+      end
+
+    # Convert the DSL map to the Element struct required by the behaviour
+    Raxol.View.to_element(dsl_result)
   end
 
   # defp render_text_with_selection(state) do

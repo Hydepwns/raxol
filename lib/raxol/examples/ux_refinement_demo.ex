@@ -53,7 +53,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
       password: "",
       focused_component: "username_input",
       show_help: false,
-      focus_ring_model: FocusRing.init(animation: :pulse)
+      focus_ring_model: FocusRing.init(%{animation: :pulse})
     }
 
     # Enable UX refinement features
@@ -151,7 +151,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
       password: "",
       focused_component: "username_input",
       show_help: false,
-      focus_ring_model: FocusRing.init(animation: :pulse)
+      focus_ring_model: FocusRing.init(%{animation: :pulse})
     }
 
     # Return state directly or {state, commands}
@@ -162,22 +162,21 @@ defmodule Raxol.Examples.UXRefinementDemo do
   @doc """
   Render the application UI.
   """
+  @dialyzer {:nowarn_function, view: 1}
   def view(model) do
     # Call the local render helper function
-    render(model, [])
-    # %{
-    #   type: :placeholder_view,
-    #   children: [%{type: :text, content: "View for UXRefinementDemo"}]
-    # }
+    rendered_view = render(model, [])
+    rendered_view
   end
 
   # This is a local helper function, not part of the Application behaviour
+  @dialyzer {:nowarn_function, render: 2}
   def render(model, _opts) do
     focused = FocusManager.get_focused_element()
 
     # Main layout
     # Use View.panel macro directly
-    View.panel background: :default, height: "100%", width: "100%" do
+    rendered_panel = View.panel background: :default, height: "100%", width: "100%" do
       # Layout the three main sections
       Layout.row height: "100%" do
         Layout.column padding: 1 do
@@ -248,11 +247,12 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
           # Hint display at the bottom
           row(bottom: 0, left: 0, width: "100%") do
-            HintDisplay.render(focused, position: :bottom, always_show: true)
+            HintDisplay.render(focused)
           end
         end
       end
     end
+    rendered_panel
   end
 
   @doc """
@@ -310,16 +310,20 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
   # Private functions
 
+  @dialyzer {:nowarn_function, render_help_dialog: 0}
   defp render_help_dialog do
     # Use View.panel macro directly
-    View.panel(
-      title: "Help",
-      padding: 1,
-      height: 12,
-      width: 40,
-      border: true,
-      style: %{position: :absolute, top: "50%", left: "50%", transform: "translate(-50%, -50%)"}
-    ) do
+    rendered_dialog = View.panel title: "Help",
+               padding: 1,
+               height: 12,
+               width: 40,
+               border: true,
+               style: %{
+                 position: :absolute,
+                 top: "50%",
+                 left: "50%",
+                 transform: "translate(-50%, -50%)"
+               } do
       Layout.column do
         text("This is a demo of the UX Refinement features in Raxol.")
         text("Use Tab and Shift+Tab to navigate between form fields.")
@@ -336,5 +340,6 @@ defmodule Raxol.Examples.UXRefinementDemo do
         end
       end
     end
+    rendered_dialog
   end
 end

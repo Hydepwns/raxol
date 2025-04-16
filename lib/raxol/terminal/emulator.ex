@@ -198,7 +198,11 @@ defmodule Raxol.Terminal.Emulator do
   """
   def process_mouse(%__MODULE__{} = emulator, event) do
     # Process mouse event through plugins first
-    case Raxol.Plugins.PluginManager.process_mouse(emulator.plugin_manager, event, emulator) do
+    case Raxol.Plugins.PluginManager.process_mouse(
+           emulator.plugin_manager,
+           event,
+           emulator
+         ) do
       {:ok, updated_manager} ->
         emulator = %{emulator | plugin_manager: updated_manager}
         # TODO: Where should the result of Input.process_mouse be stored?
@@ -402,7 +406,10 @@ defmodule Raxol.Terminal.Emulator do
     }
 
     updated_stack =
-      Raxol.Terminal.ANSI.TerminalState.save_state(emulator.state_stack, current_state_map)
+      Raxol.Terminal.ANSI.TerminalState.save_state(
+        emulator.state_stack,
+        current_state_map
+      )
 
     %{emulator | state_stack: updated_stack}
   end
@@ -414,22 +421,32 @@ defmodule Raxol.Terminal.Emulator do
   def pop_state(%__MODULE__{state_stack: stack} = emulator) do
     # Call restore_state with the current stack
     case Raxol.Terminal.ANSI.TerminalState.restore_state(stack) do
-      {updated_stack, %{} = restored_state} -> # Match {new_stack, state_map}
+      # Match {new_stack, state_map}
+      {updated_stack, %{} = restored_state} ->
         Logger.debug("Popped and restoring state: #{inspect(restored_state)}")
         # Apply the restored state components to the emulator
         %{
           emulator
           | state_stack: updated_stack,
             # Assuming restored_state map contains these keys from push_state
-            cursor: Map.get(restored_state, :cursor, emulator.cursor), # Add restore logic
-            text_style: Map.get(restored_state, :text_style, emulator.text_style),
-            charset_state: Map.get(restored_state, :charset_state, emulator.charset_state),
-            mode_state: Map.get(restored_state, :mode_state, emulator.mode_state),
-            scroll_region: Map.get(restored_state, :scroll_region, emulator.scroll_region)
+            # Add restore logic
+            cursor: Map.get(restored_state, :cursor, emulator.cursor),
+            text_style:
+              Map.get(restored_state, :text_style, emulator.text_style),
+            charset_state:
+              Map.get(restored_state, :charset_state, emulator.charset_state),
+            mode_state:
+              Map.get(restored_state, :mode_state, emulator.mode_state),
+            scroll_region:
+              Map.get(restored_state, :scroll_region, emulator.scroll_region)
         }
 
-      {updated_stack, nil} -> # Handle case where state couldn't be popped/restored
-        Logger.warning("pop_state called, but no state was restored (stack might be empty).")
+      # Handle case where state couldn't be popped/restored
+      {updated_stack, nil} ->
+        Logger.warning(
+          "pop_state called, but no state was restored (stack might be empty)."
+        )
+
         %{emulator | state_stack: updated_stack}
     end
   end
@@ -811,7 +828,8 @@ defmodule Raxol.Terminal.Emulator do
   @spec clear_screen(t()) :: t()
   def clear_screen(%__MODULE__{} = emulator) do
     # TODO: Determine correct arguments for ScreenBuffer.clear_region/5 or fix ScreenBuffer.clear/1
-    updated_buffer = emulator.screen_buffer # Placeholder
+    # Placeholder
+    updated_buffer = emulator.screen_buffer
     # Move cursor to 0,0 using the Cursor Manager
     updated_cursor = Movement.move_to_position(emulator.cursor, 0, 0)
     %{emulator | screen_buffer: updated_buffer, cursor: updated_cursor}
@@ -962,7 +980,8 @@ defmodule Raxol.Terminal.Emulator do
   Gets the cell at the specified coordinates from the screen buffer.
   Returns nil if coordinates are out of bounds.
   """
-  @spec get_cell_at(t(), non_neg_integer(), non_neg_integer()) :: Raxol.Terminal.Cell.t() | nil
+  @spec get_cell_at(t(), non_neg_integer(), non_neg_integer()) ::
+          Raxol.Terminal.Cell.t() | nil
   def get_cell_at(%__MODULE__{} = emulator, x, y) when x >= 0 and y >= 0 do
     ScreenBuffer.get_cell_at(emulator.screen_buffer, x, y)
   end
@@ -983,9 +1002,13 @@ defmodule Raxol.Terminal.Emulator do
 
           # Combine current text style with hyperlink if active
           current_style = current_emulator.text_style
+
           style_with_link =
             if current_emulator.current_hyperlink_url do
-              %{current_style | hyperlink: current_emulator.current_hyperlink_url}
+              %{
+                current_style
+                | hyperlink: current_emulator.current_hyperlink_url
+              }
             else
               current_style
             end
@@ -996,12 +1019,15 @@ defmodule Raxol.Terminal.Emulator do
               x,
               y,
               grapheme,
-              style_with_link # Pass style here
+              # Pass style here
+              style_with_link
             )
 
           # Move cursor forward
           # TODO: Handle wrapping and scrolling
-          new_x = x + 1 # Placeholder
+          # Placeholder
+          new_x = x + 1
+
           new_cursor =
             Movement.move_to_position(current_emulator.cursor, new_x, y)
 
@@ -1011,22 +1037,26 @@ defmodule Raxol.Terminal.Emulator do
               cursor: new_cursor
           }
 
-          {updated_emulator, ""} # Continue reduction
+          # Continue reduction
+          {updated_emulator, ""}
         end
       )
 
     final_emulator
   end
 
-  @spec handle_escape_sequence(t(), atom(), [non_neg_integer()], String.t()) :: t()
+  @spec handle_escape_sequence(t(), atom(), [non_neg_integer()], String.t()) ::
+          t()
   def handle_escape_sequence(emulator, command, _params, _intermediate) do
     case command do
       # ... other cases ...
       :restore_state ->
         # TODO: Ensure state_stack is handled correctly
-        {restored_state, _popped_value} = Raxol.Terminal.ANSI.TerminalState.restore_state(emulator.state_stack)
+        {restored_state, _popped_value} =
+          Raxol.Terminal.ANSI.TerminalState.restore_state(emulator.state_stack)
+
         %{emulator | state_stack: restored_state}
-      # ... other cases ...
+        # ... other cases ...
     end
   end
 end

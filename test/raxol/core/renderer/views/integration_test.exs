@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Renderer.Views.IntegrationTest do
   use ExUnit.Case, async: true
-  alias Raxol.Core.Renderer.Views.{Table, Chart}
   alias Raxol.Core.Renderer.View
+  alias Raxol.Core.Renderer.Views.{Chart, Table}
 
   @sample_data [
     %{id: 1, name: "Product A", sales: [100, 120, 90, 150, 130], trend: :up},

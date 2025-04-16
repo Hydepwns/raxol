@@ -1,7 +1,7 @@
 defmodule Raxol.Components.TerminalTest do
   use ExUnit.Case
-  alias Raxol.Components.Terminal
   alias Raxol.ComponentHelpers
+  alias Raxol.Components.Terminal
 
   describe "Terminal component" do
     test "initializes with default values" do

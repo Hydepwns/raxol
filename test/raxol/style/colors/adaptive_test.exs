@@ -1,7 +1,10 @@
 defmodule Raxol.Style.Colors.AdaptiveTest do
   use ExUnit.Case
 
-  alias Raxol.Style.Colors.{Color, Palette, Theme, Adaptive}
+  alias Raxol.Style.Colors.Adaptive
+  alias Raxol.Style.Colors.Color
+  alias Raxol.Style.Colors.Palette
+  alias Raxol.Style.Colors.Theme
 
   setup do
     # Initialize the capabilities cache for each test

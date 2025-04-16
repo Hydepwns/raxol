@@ -3,10 +3,10 @@ defmodule Raxol.ColorSystemTest do
 
   import Raxol.AccessibilityTestHelpers
 
-  alias Raxol.Style.Colors.System, as: ColorSystem
-  alias Raxol.Style.Colors.PaletteManager
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
+  alias Raxol.Style.Colors.PaletteManager
+  alias Raxol.Style.Colors.System, as: ColorSystem
 
   setup do
     # Initialize required systems for testing

@@ -1,14 +1,25 @@
 # Configure the test environment
 Application.put_env(:raxol, :database_enabled, false)
-Application.put_env(:raxol, Raxol.Repo, enabled: false)
+# Application.put_env(:raxol, Raxol.Repo, enabled: false)
 
 # Ensure database is not started (redundant with above?)
 Application.put_env(:phoenix, :serve_endpoints, false)
 # Application.put_env(:raxol, :start_db, false)
 
+# Start necessary applications before ExUnit
+{:ok, _} = Application.ensure_all_started(:ecto_sql)
+# {:ok, _} = Application.ensure_all_started(:raxol) # Removed this
+
+# Define global mocks *before* ExUnit starts
+Mox.defmock(HTTPoison.Base, for: HTTPoison.Base)
+
 # Start ExUnit without starting the full application explicitly here
 # Applications needed by tests should be started in their respective setup blocks
-ExUnit.start()
+# Set max_cases to 1 to disable parallel test execution
+ExUnit.start(max_cases: 1)
+
+# Start the Repo supervisor for tests
+{:ok, _pid} = Raxol.Repo.start_link()
 
 # Setup Ecto sandbox
 # Note: Raxol.Repo might not be the correct Repo module name if using Phoenix default

@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Renderer.Views.ChartTest do
   use ExUnit.Case, async: true
-  alias Raxol.Core.Renderer.Views.Chart
   alias Raxol.Core.Renderer.View
+  alias Raxol.Core.Renderer.Views.Chart
 
   @sample_series [
     %{

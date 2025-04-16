@@ -1,6 +1,8 @@
 defmodule Raxol.Terminal.IntegrationTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{Input, ScreenBuffer, ANSI}
+  alias Raxol.Terminal.ANSI
+  alias Raxol.Terminal.Input
+  alias Raxol.Terminal.ScreenBuffer
 
   describe "input to screen buffer integration" do
     test "processes keyboard input and updates screen buffer" do

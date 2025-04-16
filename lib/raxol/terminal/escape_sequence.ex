@@ -245,6 +245,7 @@ defmodule Raxol.Terminal.EscapeSequence do
         case parse_osc_sequence(rest) do
           {:ok, type, data} ->
             {:osc, type, data}
+
           {:error, _reason} ->
             {:unknown, sequence}
         end
@@ -284,7 +285,8 @@ defmodule Raxol.Terminal.EscapeSequence do
 
       {:osc, type, data} ->
         updated_emulator = process_osc_sequence(type, data, modes)
-        message = nil # No message generated for OSC in this impl
+        # No message generated for OSC in this impl
+        message = nil
         {cursor, updated_emulator, message}
 
       {:unknown, rest} ->
@@ -305,9 +307,11 @@ defmodule Raxol.Terminal.EscapeSequence do
           [_params, url] ->
             # Set the active hyperlink URL
             %{emulator | current_hyperlink_url: url}
+
           [""] ->
             # Empty data means end of hyperlink
             %{emulator | current_hyperlink_url: nil}
+
           _ ->
             # Invalid OSC 8 format
             emulator
@@ -334,9 +338,13 @@ defmodule Raxol.Terminal.EscapeSequence do
               {type_int, ""} -> {:ok, type_int, data}
               _ -> {:error, "Invalid OSC type: #{type_str}"}
             end
-          _ -> {:error, "Invalid OSC content format: #{osc_content}"}
+
+          _ ->
+            {:error, "Invalid OSC content format: #{osc_content}"}
         end
-      _ -> {:error, "Unterminated OSC sequence: #{rest}"}
+
+      _ ->
+        {:error, "Unterminated OSC sequence: #{rest}"}
     end
   end
 end

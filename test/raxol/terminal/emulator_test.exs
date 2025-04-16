@@ -1,10 +1,10 @@
 defmodule Raxol.Terminal.EmulatorTest do
   use ExUnit.Case
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ANSI.{CharacterSets, ScreenModes}
   alias Raxol.Terminal.Cursor.{Manager, Movement, Style}
-  alias Raxol.Terminal.Modes
+  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.EscapeSequence
+  alias Raxol.Terminal.Modes
 
   # ... existing tests ...
 

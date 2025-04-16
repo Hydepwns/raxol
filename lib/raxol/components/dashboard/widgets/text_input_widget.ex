@@ -18,7 +18,8 @@ defmodule Raxol.Components.Dashboard.Widgets.TextInputWidget do
     [
       # text(title), # Title is rendered by the container
       text("Input:"),
-      text(app_text <> "_") # Display current text with a cursor placeholder
+      # Display current text with a cursor placeholder
+      text(app_text <> "_")
     ]
   end
 end

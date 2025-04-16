@@ -1,6 +1,8 @@
 defmodule Raxol.Core.Renderer.ManagerTest do
   use ExUnit.Case, async: true
-  alias Raxol.Core.Renderer.{Manager, View, Buffer}
+  alias Raxol.Core.Renderer.Buffer
+  alias Raxol.Core.Renderer.Manager
+  alias Raxol.Core.Renderer.View
 
   setup do
     {:ok, manager} = Manager.start_link([])

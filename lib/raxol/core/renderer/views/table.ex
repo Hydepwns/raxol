@@ -147,11 +147,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
           View.text(value)
         end)
 
-      View.flex(
-        direction: :row,
-        style: row_style,
-        children: cells
-      )
+      View.flex(direction: :row, style: row_style, children: cells)
     end)
   end
 

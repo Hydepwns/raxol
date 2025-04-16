@@ -396,7 +396,8 @@ defmodule Raxol.Terminal.CharacterSets do
   defp translate_uk(char) do
     case char do
       # Add specific UK translations
-      _ -> <<char>> # Default case returns string
+      # Default case returns string
+      _ -> <<char>>
     end
   end
 
@@ -461,7 +462,8 @@ defmodule Raxol.Terminal.CharacterSets do
   defp translate_japanese(char) do
     case char do
       # Add specific Japanese translations
-      _ -> <<char>> # Default case returns string
+      # Default case returns string
+      _ -> <<char>>
     end
   end
 
@@ -470,7 +472,8 @@ defmodule Raxol.Terminal.CharacterSets do
   defp translate_korean(char) do
     case char do
       # Add specific Korean translations
-      _ -> <<char>> # Default case returns string
+      # Default case returns string
+      _ -> <<char>>
     end
   end
 end

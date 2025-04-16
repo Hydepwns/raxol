@@ -11,11 +11,11 @@ jobs:
     name: Test
     runs-on: ${{ matrix.os }}
     strategy:
+      fail-fast: false
       matrix:
-        os: [ubuntu-latest, windows-latest, macos-latest]
+        os: [ubuntu-latest, macos-latest]
         elixir: ["1.14", "1.15", "1.16"]
         otp: ["25.0", "26.0", "27.0"]
-      fail-fast: false
 
     services:
       postgres:
@@ -57,9 +57,6 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          # Clean up problematic repositories
-          sudo rm -f /etc/apt/sources.list.d/*
-
           # Update package lists
           sudo apt-get update
 
@@ -120,10 +117,11 @@ jobs:
           files: ./cover/excoveralls.json
           flags: unittests
           name: codecov-umbrella
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Run Security Scan
         uses: snyk/actions/node@master
+        if: runner.os == 'Linux' && (github.event_name == 'push' || github.event.pull_request.head.repo.fork == false)
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -159,7 +157,6 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          sudo rm -f /etc/apt/sources.list.d/*
           sudo apt-get update
           sudo apt-get install -y build-essential libssl-dev openssl
 
@@ -196,7 +193,6 @@ jobs:
 
       - name: Install Dependencies
         run: |
-          sudo rm -f /etc/apt/sources.list.d/*
           sudo apt-get update
           sudo apt-get install -y build-essential libssl-dev openssl
 

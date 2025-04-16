@@ -139,34 +139,34 @@ defmodule Raxol.Components.Selection.ListTest do
 
     test "handles arrow keys", %{state: state} do
       # Up
-      event = %Event{type: :key, key: "ArrowUp"}
+      event = Event.key("ArrowUp")
       {new_state, _} = List.handle_event(event, state)
       assert new_state.selected_index == 0
 
       # Down
-      event = %Event{type: :key, key: "ArrowDown"}
+      event = Event.key("ArrowDown")
       {new_state, _} = List.handle_event(event, state)
       assert new_state.selected_index == 2
     end
 
     test "handles page navigation", %{state: state} do
       # PageUp
-      event = %Event{type: :key, key: "PageUp"}
+      event = Event.key("PageUp")
       {new_state, _} = List.handle_event(event, state)
       assert new_state.selected_index == 0
 
       # PageDown
-      event = %Event{type: :key, key: "PageDown"}
+      event = Event.key("PageDown")
       {new_state, _} = List.handle_event(event, state)
       assert new_state.selected_index == 2
 
       # Home
-      event = %Event{type: :key, key: "Home"}
+      event = Event.key("Home")
       {new_state, _} = List.handle_event(event, state)
       assert new_state.selected_index == 0
 
       # End
-      event = %Event{type: :key, key: "End"}
+      event = Event.key("End")
       {new_state, _} = List.handle_event(event, state)
       assert new_state.selected_index == 2
     end
@@ -179,7 +179,7 @@ defmodule Raxol.Components.Selection.ListTest do
         | on_submit: fn item -> send(test_pid, {:submitted, item}) end
       }
 
-      event = %Event{type: :key, key: "Enter"}
+      event = Event.key("Enter")
       List.handle_event(event, state)
 
       assert_received {:submitted, "two"}
@@ -187,14 +187,14 @@ defmodule Raxol.Components.Selection.ListTest do
 
     test "handles type-ahead search", %{state: state} do
       # Type 't'
-      event = %Event{type: :key, key: "t"}
+      event = Event.key("t")
       {new_state, _} = List.handle_event(event, state)
       assert new_state.filter == "t"
       assert new_state.filtered_items == ["two", "three"]
       assert new_state.selected_index == 0
 
       # Backspace
-      event = %Event{type: :key, key: "Backspace"}
+      event = Event.key("Backspace")
       {new_state, _} = List.handle_event(event, new_state)
       assert new_state.filter == ""
       assert new_state.filtered_items == ["one", "two", "three"]
@@ -203,12 +203,12 @@ defmodule Raxol.Components.Selection.ListTest do
 
     test "handles scroll events", %{state: state} do
       # Scroll up
-      event = %Event{type: :scroll, direction: :up}
+      event = Event.scroll_event(:up, -1, {0,0})
       {new_state, _} = List.handle_event(event, %{state | scroll_offset: 1})
       assert new_state.scroll_offset == 0
 
       # Scroll down
-      event = %Event{type: :scroll, direction: :down}
+      event = Event.scroll_event(:down, 1, {0,0})
       {new_state, _} = List.handle_event(event, state)
       assert new_state.scroll_offset == 1
     end

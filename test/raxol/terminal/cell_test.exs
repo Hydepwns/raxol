@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.CellTest do
   use ExUnit.Case
-  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Cell
 
   describe "new/2" do
     test "creates a new cell with default values" do

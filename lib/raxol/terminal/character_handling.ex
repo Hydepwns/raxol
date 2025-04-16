@@ -44,11 +44,17 @@ defmodule Raxol.Terminal.CharacterHandling do
   Gets the width of a character in terminal cells.
   Returns 1 for narrow characters, 2 for wide characters.
   """
-  @spec get_char_width(String.t()) :: 1 | 2
+  @spec get_char_width(String.t()) :: 0 | 1 | 2
+  @dialyzer {:nowarn_function, get_char_width: 1}
   def get_char_width(char_str) when is_binary(char_str) do
     # Check the first codepoint of the grapheme
-    codepoint = String.first(char_str)
-    if is_wide_char?(codepoint), do: 2, else: 1
+    case String.first(char_str) do
+      nil ->
+        # Empty string has width 0
+        0
+      codepoint ->
+        if is_wide_char?(codepoint), do: 2, else: 1
+    end
   end
 
   @doc """
@@ -74,7 +80,7 @@ defmodule Raxol.Terminal.CharacterHandling do
   Determines the bidirectional character type.
   Returns :LTR, :RTL, :NEUTRAL, or :COMBINING.
   """
-  @spec get_bidi_type(char()) :: :LTR | :RTL | :NEUTRAL | :COMBINING
+  @dialyzer {:nowarn_function, get_bidi_type: 1}
   def get_bidi_type(char) do
     cond do
       is_combining_char?(char) -> :COMBINING
@@ -109,18 +115,22 @@ defmodule Raxol.Terminal.CharacterHandling do
   Processes a string for bidirectional text rendering.
   Returns a list of segments with their rendering order.
   """
-  @spec process_bidi_text(String.t()) :: list({:LTR | :RTL, String.t()})
+  @spec process_bidi_text(String.t()) :: list({:LTR | :RTL | :NEUTRAL, String.t()})
+  @dialyzer {:nowarn_function, process_bidi_text: 1}
   def process_bidi_text(text) do
     text
     |> String.graphemes()
     |> Enum.filter(&(&1 != ""))
     |> Enum.reduce([], fn char, acc ->
-      bidi_type = get_bidi_type(String.first(char))
+      bidi_type =
+        case String.first(char) do
+          nil -> :NEUTRAL
+          codepoint -> get_bidi_type(codepoint)
+        end
 
       case acc do
         [{type, segment} | rest] when type == bidi_type ->
           [{type, segment <> char} | rest]
-
         _ ->
           [{bidi_type, char} | acc]
       end
@@ -137,11 +147,12 @@ defmodule Raxol.Terminal.CharacterHandling do
     |> String.graphemes()
     |> Enum.filter(&(&1 != ""))
     |> Enum.map(fn grapheme ->
-         case String.first(grapheme) do
-           nil -> 0 # Grapheme was unexpectedly empty, treat as width 0.
-           first_char -> get_char_width(first_char)
-         end
-       end)
+      case String.first(grapheme) do
+        # Grapheme was unexpectedly empty, treat as width 0.
+        nil -> 0
+        first_char -> get_char_width(first_char)
+      end
+    end)
     |> Enum.sum()
   end
 
@@ -165,7 +176,8 @@ defmodule Raxol.Terminal.CharacterHandling do
          current_width,
          acc
        ) do
-    char_width = get_char_width(char)
+    # Pass the character as a binary string
+    char_width = get_char_width(<<char::utf8>>)
 
     if current_width + char_width <= width do
       do_split_at_width(

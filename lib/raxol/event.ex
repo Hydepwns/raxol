@@ -60,6 +60,7 @@ defmodule Raxol.Event do
         # Ctrl is implied, convert code back to letter
         modifiers = [:ctrl]
         converted_key = key + ?a - 1
+
         %{
           type: :key,
           modifiers: modifiers,
@@ -70,6 +71,7 @@ defmodule Raxol.Event do
       meta_int == 0 and key == 8 ->
         modifiers = [:ctrl]
         converted_key = :backspace
+
         %{
           type: :key,
           modifiers: modifiers,
@@ -80,6 +82,7 @@ defmodule Raxol.Event do
       true ->
         modifiers = convert_modifiers(meta_int)
         converted_key = convert_key(key)
+
         %{
           type: :key,
           modifiers: modifiers,
@@ -98,6 +101,7 @@ defmodule Raxol.Event do
 
   def convert({:mouse, button, x, y, meta}) do
     modifiers = if is_integer(meta), do: convert_modifiers(meta), else: [meta]
+
     %{
       type: :mouse,
       button: button,
@@ -118,18 +122,31 @@ defmodule Raxol.Event do
   Checks if an event is a key press matching the given key and *any* of the specified modifiers.
   """
   def key_match?(event, key, modifiers \\ [])
-  def key_match?(%{type: :key, modifiers: event_mods, key: event_key}, key, modifiers) do
+
+  def key_match?(
+        %{type: :key, modifiers: event_mods, key: event_key},
+        key,
+        modifiers
+      ) do
     event_key == key && Enum.all?(modifiers, fn mod -> mod in event_mods end)
   end
+
   def key_match?(_, _, _), do: false
 
   @doc """
   Checks if an event is a specific key press with *exact* modifiers.
   """
   def key_exact_match?(event, key, modifiers \\ [])
-  def key_exact_match?(%{type: :key, modifiers: event_mods, key: event_key}, key, modifiers) do
-    event_key == key && MapSet.equal?(MapSet.new(event_mods), MapSet.new(modifiers))
+
+  def key_exact_match?(
+        %{type: :key, modifiers: event_mods, key: event_key},
+        key,
+        modifiers
+      ) do
+    event_key == key &&
+      MapSet.equal?(MapSet.new(event_mods), MapSet.new(modifiers))
   end
+
   def key_exact_match?(_, _, _), do: false
 
   @doc "Checks if an event is a specific key press (ignoring modifiers)."
@@ -137,19 +154,27 @@ defmodule Raxol.Event do
   def key_is?(_, _), do: false
 
   @doc "Checks if an event has the Ctrl modifier and matches the given key."
-  def ctrl_key?(%{type: :key, modifiers: mods, key: event_key}, key), do: :ctrl in mods && event_key == key
+  def ctrl_key?(%{type: :key, modifiers: mods, key: event_key}, key),
+    do: :ctrl in mods && event_key == key
+
   def ctrl_key?(_, _), do: false
 
   @doc "Checks if an event has the Shift modifier and matches the given key."
-  def shift_key?(%{type: :key, modifiers: mods, key: event_key}, key), do: :shift in mods && event_key == key
+  def shift_key?(%{type: :key, modifiers: mods, key: event_key}, key),
+    do: :shift in mods && event_key == key
+
   def shift_key?(_, _), do: false
 
   @doc "Checks if an event has the Alt modifier and matches the given key."
-  def alt_key?(%{type: :key, modifiers: mods, key: event_key}, key), do: :alt in mods && event_key == key
+  def alt_key?(%{type: :key, modifiers: mods, key: event_key}, key),
+    do: :alt in mods && event_key == key
+
   def alt_key?(_, _), do: false
 
   @doc "Checks if an event is a mouse click."
-  def mouse_click?(%{type: :mouse, button: event_button}, button), do: event_button == button
+  def mouse_click?(%{type: :mouse, button: event_button}, button),
+    do: event_button == button
+
   def mouse_click?(%{type: :mouse}, :any), do: true
   def mouse_click?(_, _), do: false
 
@@ -167,6 +192,7 @@ defmodule Raxol.Event do
   defp convert_modifiers(5), do: [:alt, :shift]
   defp convert_modifiers(6), do: [:ctrl, :shift]
   defp convert_modifiers(7), do: [:alt, :ctrl, :shift]
+
   defp convert_modifiers(meta_int) do
     Logger.warning("Unknown key modifier integer: #{meta_int}")
     [:unknown]
@@ -178,7 +204,8 @@ defmodule Raxol.Event do
   defp convert_key(27), do: :escape
   defp convert_key(32), do: :space
   defp convert_key(127), do: :backspace
-  defp convert_key(263), do: :backspace # NCurses backspace
+  # NCurses backspace
+  defp convert_key(263), do: :backspace
   defp convert_key(330), do: :delete
   defp convert_key(259), do: :arrow_up
   defp convert_key(258), do: :arrow_down

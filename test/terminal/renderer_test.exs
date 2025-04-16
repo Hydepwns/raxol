@@ -1,6 +1,8 @@
 defmodule Raxol.Terminal.RendererTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{Renderer, ScreenBuffer, Cell}
+  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.Renderer
+  alias Raxol.Terminal.ScreenBuffer
 
   describe "new/1" do
     test "creates a new renderer with default options" do

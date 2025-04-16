@@ -1,9 +1,9 @@
 defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   use ExUnit.Case, async: true
 
+  alias Raxol.Components.FocusRing
   alias Raxol.Core.Accessibility.ThemeIntegration
   alias Raxol.Core.Events.Manager, as: EventManager
-  alias Raxol.Components.FocusRing
 
   setup do
     # Initialize dependencies

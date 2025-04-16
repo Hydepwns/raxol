@@ -19,8 +19,11 @@ defmodule Raxol.Components.Dashboard.Widgets.TreeMapWidget do
 
     id = Map.fetch!(widget_config, :id)
     # Extract data and component_opts, providing defaults if missing
-    data = Map.get(widget_config, :data, placeholder_data()) # Use placeholder if no data provided
-    component_opts = Map.get(widget_config, :component_opts, default_component_opts()) # Use defaults if no opts provided
+    # Use placeholder if no data provided
+    data = Map.get(widget_config, :data, placeholder_data())
+    # Use defaults if no opts provided
+    component_opts =
+      Map.get(widget_config, :component_opts, default_component_opts())
 
     # Keep the original config map
     %__MODULE__{
@@ -37,7 +40,8 @@ defmodule Raxol.Components.Dashboard.Widgets.TreeMapWidget do
     %{
       type: :treemap,
       data: assigns.data,
-      opts: treemap_opts(assigns.component_opts) # Pass the component_opts map
+      # Pass the component_opts map
+      opts: treemap_opts(assigns.component_opts)
     }
   end
 
@@ -46,6 +50,7 @@ defmodule Raxol.Components.Dashboard.Widgets.TreeMapWidget do
   defp treemap_opts(component_opts_map) when is_map(component_opts_map) do
     Keyword.new(component_opts_map)
   end
+
   defp treemap_opts(component_opts_list) when is_list(component_opts_list) do
     component_opts_list
   end

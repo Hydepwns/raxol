@@ -45,8 +45,10 @@ defmodule Raxol.MixProject do
           # Example:
           # Raxol.ExampleModule,
           # Phoenix.HTML.Form, # Ignore specific modules if needed
-          Raxol.Runtime.Termbox, # Ignore NIF module wrappers
-          Raxol.Terminal.Configuration # Suppress persistent spurious warnings
+          # Ignore NIF module wrappers
+          Raxol.Runtime.Termbox,
+          # Suppress persistent spurious warnings
+          Raxol.Terminal.Configuration
         ]
       ]
     ]
@@ -59,7 +61,9 @@ defmodule Raxol.MixProject do
     ]
   end
 
-  defp elixirc_paths(:test), do: ["lib", "test/support"]
+  defp elixirc_paths(:test),
+    do: ["lib", "test/support", "test/raxol", "test/raxol_web"]
+
   defp elixirc_paths(_), do: ["lib"]
 
   defp deps do
@@ -67,6 +71,7 @@ defmodule Raxol.MixProject do
       # Core dependencies
       # Terminal rendering library
       {:ex_termbox, "~> 1.0"},
+      {:ratatouille, "~> 0.3"},
       {:phoenix, "~> 1.7.20"},
       {:phoenix_live_view, "~> 1.0.0"},
       {:surface, "~> 0.12"},

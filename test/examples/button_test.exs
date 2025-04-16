@@ -1,10 +1,23 @@
 defmodule Raxol.Examples.ButtonTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   use Raxol.Test.Unit
   use Raxol.Test.Integration
   use Raxol.Test.Visual
+  import ExUnit.Callbacks
 
   alias Raxol.Examples.Button
+  alias Raxol.Test.TestHelper # Alias TestHelper for setup/teardown
+
+  setup do
+    context = TestHelper.setup_test_env()
+    context = Map.put(context, :snapshots_dir, "test/snapshots")
+    {:ok, context}
+  end
+
+  teardown context do
+    TestHelper.cleanup_test_env(context)
+    :ok
+  end
 
   describe "unit tests" do
     test "initializes with default state" do

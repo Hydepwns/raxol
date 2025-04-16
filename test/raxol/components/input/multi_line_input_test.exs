@@ -110,14 +110,14 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
     end
 
     test "handles character input", %{state: state} do
-      event = %Event{type: :key, key: "a"}
+      event = Event.key("a")
       {new_state, _} = MultiLineInput.handle_event(event, state)
       assert new_state.value == "testa\ntext"
       assert new_state.cursor_col == 5
     end
 
     test "handles Enter key", %{state: state} do
-      event = %Event{type: :key, key: "Enter"}
+      event = Event.key("Enter")
       {new_state, _} = MultiLineInput.handle_event(event, state)
       assert new_state.value == "test\n\ntext"
       assert new_state.cursor_row == 1
@@ -125,7 +125,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
     end
 
     test "handles backspace", %{state: state} do
-      event = %Event{type: :key, key: "Backspace"}
+      event = Event.key("Backspace")
 
       {new_state, _} =
         MultiLineInput.handle_event(event, %{
@@ -140,7 +140,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
     end
 
     test "handles delete", %{state: state} do
-      event = %Event{type: :key, key: "Delete"}
+      event = Event.key("Delete")
 
       {new_state, _} =
         MultiLineInput.handle_event(event, %{
@@ -156,7 +156,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
 
     test "handles cursor movement", %{state: state} do
       # Up
-      event = %Event{type: :key, key: "Up"}
+      event = Event.key("Up")
 
       {new_state, _} =
         MultiLineInput.handle_event(event, %{state | cursor_row: 1})
@@ -164,12 +164,12 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
       assert new_state.cursor_row == 0
 
       # Down
-      event = %Event{type: :key, key: "Down"}
+      event = Event.key("Down")
       {new_state, _} = MultiLineInput.handle_event(event, state)
       assert new_state.cursor_row == 1
 
       # Left at line start
-      event = %Event{type: :key, key: "Left"}
+      event = Event.key("Left")
 
       {new_state, _} =
         MultiLineInput.handle_event(event, %{
@@ -182,7 +182,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
       assert new_state.cursor_col == 4
 
       # Right at line end
-      event = %Event{type: :key, key: "Right"}
+      event = Event.key("Right")
 
       {new_state, _} =
         MultiLineInput.handle_event(event, %{
@@ -199,7 +199,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
       state = %{state | value: "hello world\ntest text"}
 
       # Left by word
-      event = %Event{type: :key, key: "Left", ctrl?: true}
+      event = Event.key_event("Left", :pressed, [:ctrl])
 
       {new_state, _} =
         MultiLineInput.handle_event(event, %{
@@ -211,7 +211,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
       assert new_state.cursor_col == 6
 
       # Right by word
-      event = %Event{type: :key, key: "Right", ctrl?: true}
+      event = Event.key_event("Right", :pressed, [:ctrl])
 
       {new_state, _} =
         MultiLineInput.handle_event(event, %{
@@ -226,7 +226,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
     test "handles selection deletion", %{state: state} do
       state = %{state | selection_start: {0, 1}, selection_end: {1, 2}}
 
-      event = %Event{type: :key, key: "Backspace"}
+      event = Event.key("Backspace")
       {new_state, _} = MultiLineInput.handle_event(event, state)
       assert new_state.value == "txt"
       assert new_state.cursor_row == 0
@@ -243,7 +243,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
         | on_change: fn value -> send(test_pid, {:changed, value}) end
       }
 
-      event = %Event{type: :key, key: "a"}
+      event = Event.key("a")
       MultiLineInput.handle_event(event, state)
 
       assert_received {:changed, "testa\ntext"}

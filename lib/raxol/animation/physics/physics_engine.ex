@@ -14,7 +14,8 @@ defmodule Raxol.Animation.Physics.PhysicsEngine do
   to user interactions in a physically plausible way.
   """
 
-  alias Raxol.Animation.Physics.{Vector, ForceField}
+  alias Raxol.Animation.Physics.ForceField
+  alias Raxol.Animation.Physics.Vector
 
   @type physics_object :: %{
           id: String.t(),

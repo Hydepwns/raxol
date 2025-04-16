@@ -66,22 +66,6 @@ defmodule Raxol.Components do
     to: Raxol.Components.Modal,
     as: :form
 
-  # Dropdown/Select
-  defdelegate dropdown(options, selected, on_change, opts \\ []),
-    to: Raxol.Components.Dropdown,
-    as: :render
-
-  defdelegate filterable_dropdown(
-                options,
-                selected,
-                filter_text,
-                on_change,
-                on_filter_change,
-                opts \\ []
-              ),
-              to: Raxol.Components.Dropdown,
-              as: :filterable
-
   # Tab Bar
   defdelegate tab_bar(tabs, active_tab, on_change, opts \\ []),
     to: Raxol.Components.TabBar,
@@ -128,15 +112,15 @@ defmodule Raxol.Components do
               to: Raxol.Components.Table,
               as: :paginated
 
-  # Focus Ring
-  defdelegate focus_ring(children, opts \\ []),
+  # Focus Ring - Delegates to init/1 as render/1 takes only state
+  defdelegate focus_ring(opts \\ []),
     to: Raxol.Components.FocusRing,
-    as: :render
+    as: :init
 
-  # Hint Display
-  defdelegate hint_display(hints, opts \\ []),
+  # Hint Display - Delegates to init/1 as render/1 takes only state
+  defdelegate hint_display(opts \\ []),
     to: Raxol.Components.HintDisplay,
-    as: :render
+    as: :init
 
   # Accessibility
   defdelegate accessibility_new(opts \\ []), to: Raxol.Accessibility, as: :new

@@ -1,6 +1,7 @@
 defmodule Raxol.Style.Colors.AdvancedTest do
   use ExUnit.Case
-  alias Raxol.Style.Colors.{Color, Advanced}
+  alias Raxol.Style.Colors.Advanced
+  alias Raxol.Style.Colors.Color
 
   describe "blend_colors/3" do
     test "blends red and blue to purple" do

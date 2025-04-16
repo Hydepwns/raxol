@@ -71,7 +71,9 @@ defmodule Raxol.View do
     quote do
       panel_opts = unquote(opts)
       # Directly process the block result, handling lists/nils/elements
-      panel_children = List.wrap(unquote(block)) |> List.flatten() |> Enum.reject(&is_nil(&1))
+      panel_children =
+        List.wrap(unquote(block)) |> List.flatten() |> Enum.reject(&is_nil(&1))
+
       %{type: :panel, opts: panel_opts, children: panel_children}
     end
   end
@@ -141,7 +143,9 @@ defmodule Raxol.View do
     quote do
       box_opts = unquote(opts)
       # Directly process the block result, handling lists/nils/elements
-      box_children = List.wrap(unquote(block)) |> List.flatten() |> Enum.reject(&is_nil(&1))
+      box_children =
+        List.wrap(unquote(block)) |> List.flatten() |> Enum.reject(&is_nil(&1))
+
       %{type: :box, opts: box_opts, children: box_children}
     end
   end
@@ -160,4 +164,53 @@ defmodule Raxol.View do
     # Placeholders don't have children or standard attributes like text/panel
     %{type: :placeholder, placeholder_type: type}
   end
+
+  @doc """
+  Recursively converts a Raxol.View DSL map representation into a
+  Raxol.Core.Renderer.Element struct tree.
+  Handles maps, elements, strings, lists, and nil.
+  """
+  def to_element(dsl_map) when is_map(dsl_map) and not is_struct(dsl_map) do
+    tag = Map.get(dsl_map, :type)
+    # Map attributes/opts based on DSL type conventions
+    attributes = Map.get(dsl_map, :opts, Map.get(dsl_map, :attrs, []))
+    # Map content based on DSL type conventions
+    content = Map.get(dsl_map, :text, Map.get(dsl_map, :label, nil))
+
+    children_dsl = Map.get(dsl_map, :children, [])
+    # Recursively convert children, filtering out nils
+    children_elements =
+      children_dsl
+      |> Enum.map(&to_element/1) # Recursive call
+      |> Enum.reject(&is_nil(&1)) # Remove any nils returned
+
+    %Raxol.Core.Renderer.Element{
+      tag: tag,
+      attributes: attributes,
+      content: content,
+      children: children_elements, # Assign cleaned list
+      ref: make_ref(), # Ensure each element gets a unique ref
+      # Style needs to be extracted/handled appropriately if needed here
+      style: Map.get(dsl_map, :style, %{}) # Basic style passing
+    }
+  end
+
+  # Handle cases where the input is already an Element
+  def to_element(%Raxol.Core.Renderer.Element{} = element), do: element
+  # Handle raw strings by converting them to text elements
+  def to_element(text) when is_binary(text), do: to_element(%{type: :text, text: text})
+  # Handle nil explicitly
+  def to_element(nil), do: nil
+  # Handle lists by converting each item and wrapping in a fragment
+  def to_element(list) when is_list(list) do
+    list
+    |> Enum.map(&to_element/1)
+    |> Enum.reject(&is_nil(&1))
+    |> case do
+         [] -> nil # Return nil if list becomes empty after conversion
+         elements -> to_element(%{type: :fragment, children: elements}) # Wrap list in fragment
+       end
+  end
+  # Catch-all for unexpected types - return nil
+  def to_element(_other), do: nil
 end
