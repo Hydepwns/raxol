@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Renderer.Views.TableTest do
   use ExUnit.Case, async: true
-  alias Raxol.Core.Renderer.Views.Table
   alias Raxol.Core.Renderer.View
+  alias Raxol.Core.Renderer.Views.Table
 
   @sample_data [
     %{id: 1, name: "Alice", age: 30},

@@ -1,6 +1,8 @@
 defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   use ExUnit.Case
-  alias Raxol.Terminal.ANSI.{TerminalState, CharacterSets, ScreenModes}
+  alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ANSI.ScreenModes
+  alias Raxol.Terminal.ANSI.TerminalState
 
   describe "new/0" do
     test "creates a new empty terminal state stack" do

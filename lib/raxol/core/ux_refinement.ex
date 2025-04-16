@@ -108,7 +108,7 @@ defmodule Raxol.Core.UXRefinement do
 
   def enable_feature(:hints, _opts) do
     # Initialize hint display
-    HintDisplay.init()
+    HintDisplay.init(%{})
 
     # Initialize hint registry if not already done
     Process.put(:ux_refinement_hints, %{})

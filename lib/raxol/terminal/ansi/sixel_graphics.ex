@@ -131,7 +131,13 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   def parse_sequence(<<params::binary-size(1), operation::binary>>) do
     case parse_params(params) do
       {:ok, parsed_params} ->
-        {:ok, decode_operation(operation), parsed_params}
+        # Extract the character code from the operation binary
+        operation_char = if byte_size(operation) > 0, do: :binary.first(operation), else: nil
+        if operation_char do
+          {:ok, decode_operation(operation_char), parsed_params}
+        else
+          :error # Or handle empty operation differently
+        end
 
       :error ->
         :error

@@ -4,8 +4,8 @@ defmodule Raxol.I18nAccessibilityTest do
   import Raxol.AccessibilityTestHelpers
   import Raxol.I18nTestHelpers
 
-  alias Raxol.Core.I18n
   alias Raxol.Core.Accessibility
+  alias Raxol.Core.I18n
   alias Raxol.Core.UserPreferences
 
   setup do

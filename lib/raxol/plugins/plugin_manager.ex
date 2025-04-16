@@ -26,10 +26,12 @@ defmodule Raxol.Plugins.PluginManager do
   def new(_config \\ %{}) do
     # Initialize with a default PluginConfig
     initial_config = PluginConfig.new()
+
     %__MODULE__{
       plugins: %{},
       config: initial_config,
-      api_version: "1.0" # Set a default API version
+      # Set a default API version
+      api_version: "1.0"
     }
   end
 
@@ -368,7 +370,8 @@ defmodule Raxol.Plugins.PluginManager do
   @doc """
   Processes mouse events through all enabled plugins.
   """
-  def process_mouse(%__MODULE__{} = manager, event, emulator_state) when is_tuple(event) do
+  def process_mouse(%__MODULE__{} = manager, event, emulator_state)
+      when is_tuple(event) do
     Enum.reduce_while(manager.plugins, {:ok, manager}, fn {_name, plugin},
                                                           {:ok, acc_manager} ->
       if plugin.enabled do
@@ -442,20 +445,34 @@ defmodule Raxol.Plugins.PluginManager do
   Returns {:ok, updated_manager, list_of_output_commands}
   """
   def run_render_hooks(%__MODULE__{} = manager) do
-    Enum.reduce(manager.plugins, {:ok, manager, []}, fn {_name, plugin}, {:ok, acc_manager, acc_commands} ->
-      if plugin.enabled and function_exported?(plugin.__struct__, :handle_render, 1) do
+    Enum.reduce(manager.plugins, {:ok, manager, []}, fn {_name, plugin},
+                                                        {:ok, acc_manager,
+                                                         acc_commands} ->
+      if plugin.enabled and
+           function_exported?(plugin.__struct__, :handle_render, 1) do
         case plugin.handle_render() do
           {:ok, updated_plugin, command} when not is_nil(command) ->
-            updated_manager = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin)}
+            updated_manager = %{
+              acc_manager
+              | plugins:
+                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+            }
+
             {:ok, updated_manager, [command | acc_commands]}
 
-          {:ok, updated_plugin} -> # No command returned
-            updated_manager = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin) }
+          # No command returned
+          {:ok, updated_plugin} ->
+            updated_manager = %{
+              acc_manager
+              | plugins:
+                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+            }
+
             {:ok, updated_manager, acc_commands}
 
           # Allow plugins to just return the command if state doesn't change
           command when is_binary(command) ->
-             {:ok, acc_manager, [command | acc_commands]}
+            {:ok, acc_manager, [command | acc_commands]}
 
           # Ignore other return values or errors for now
           _ ->
@@ -479,7 +496,8 @@ defmodule Raxol.Plugins.PluginManager do
   Updates the state of a specific plugin within the manager.
   The `update_fun` receives the current plugin state and should return the new state.
   """
-  def update_plugin(%__MODULE__{} = manager, name, update_fun) when is_binary(name) and is_function(update_fun, 1) do
+  def update_plugin(%__MODULE__{} = manager, name, update_fun)
+      when is_binary(name) and is_function(update_fun, 1) do
     case Map.get(manager.plugins, name) do
       nil ->
         {:error, "Plugin #{name} not found"}
@@ -489,10 +507,15 @@ defmodule Raxol.Plugins.PluginManager do
           new_plugin_state = update_fun.(plugin)
           # Basic validation: ensure it's still the same struct type
           if is_struct(new_plugin_state, plugin.__struct__) do
-            updated_manager = %{manager | plugins: Map.put(manager.plugins, name, new_plugin_state)}
+            updated_manager = %{
+              manager
+              | plugins: Map.put(manager.plugins, name, new_plugin_state)
+            }
+
             {:ok, updated_manager}
           else
-            {:error, "Update function returned invalid state for plugin #{name}"}
+            {:error,
+             "Update function returned invalid state for plugin #{name}"}
           end
         rescue
           e -> {:error, "Error updating plugin #{name}: #{inspect(e)}"}
@@ -505,33 +528,60 @@ defmodule Raxol.Plugins.PluginManager do
   Plugins can choose to halt propagation if they handle the event.
   Returns {:ok, updated_manager, :propagate | :halt} or {:error, reason}.
   """
-  def handle_mouse_event(%__MODULE__{} = manager, event, rendered_cells) when is_map(event) do
+  def handle_mouse_event(%__MODULE__{} = manager, event, rendered_cells)
+      when is_map(event) do
     # Reduce over enabled plugins, stopping if one halts
     Enum.reduce_while(manager.plugins, {:ok, manager, :propagate}, fn
       {_name, plugin}, {:ok, acc_manager, _propagation_state} ->
-        if plugin.enabled and function_exported?(plugin.__struct__, :handle_mouse, 3) do
+        if plugin.enabled and
+             function_exported?(plugin.__struct__, :handle_mouse, 3) do
           # Pass the current plugin state, the event map, and the rendered cell context
           current_plugin_state = Map.get(acc_manager.plugins, plugin.name)
           module = plugin.__struct__
 
           case module.handle_mouse(current_plugin_state, event, rendered_cells) do
             {:ok, updated_plugin_state, :propagate} ->
-              new_manager_state = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)}
+              new_manager_state = %{
+                acc_manager
+                | plugins:
+                    Map.put(
+                      acc_manager.plugins,
+                      plugin.name,
+                      updated_plugin_state
+                    )
+              }
+
               # Continue processing other plugins
               {:cont, {:ok, new_manager_state, :propagate}}
 
             {:ok, updated_plugin_state, :halt} ->
-              new_manager_state = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)}
+              new_manager_state = %{
+                acc_manager
+                | plugins:
+                    Map.put(
+                      acc_manager.plugins,
+                      plugin.name,
+                      updated_plugin_state
+                    )
+              }
+
               # Halt processing, this plugin handled it
               {:halt, {:ok, new_manager_state, :halt}}
 
             {:error, reason} ->
-              Logger.error("Error from plugin #{plugin.name} in handle_mouse: #{inspect(reason)}")
+              Logger.error(
+                "Error from plugin #{plugin.name} in handle_mouse: #{inspect(reason)}"
+              )
+
               # Halt with an error
               {:halt, {:error, reason}}
 
-            _ -> # Invalid return from plugin
-              Logger.warning("Invalid return from #{plugin.name}.handle_mouse/3. Propagating.")
+            # Invalid return from plugin
+            _ ->
+              Logger.warning(
+                "Invalid return from #{plugin.name}.handle_mouse/3. Propagating."
+              )
+
               # Continue, assuming propagate
               {:cont, {:ok, acc_manager, :propagate}}
           end
@@ -543,50 +593,132 @@ defmodule Raxol.Plugins.PluginManager do
   end
 
   @doc """
-  Processes renderable cells through all enabled plugins.
-  Plugins can modify cell maps or generate commands (e.g., escape sequences).
-  Returns {:ok, updated_manager, processed_cells, list_of_commands, list_of_messages}
-  where processed_cells is a list of cell maps.
+  Allows plugins to process or replace cells generated by the renderer.
+  Iterates through enabled plugins that implement `handle_cells/3`.
+  The callback should return `{:ok, updated_plugin_state, cells_to_render, commands}`.
+
+  Returns `{:ok, updated_manager, processed_cells, collected_commands}`.
   """
-  def process_cells(%__MODULE__{} = manager, cells) when is_list(cells) do
-    initial_acc = {manager, cells, [], []} # {manager, processed_cells, commands, messages}
+  def handle_cells(%__MODULE__{} = manager, cells, emulator_state) when is_list(cells) do
+    Logger.debug("[PluginManager.handle_cells] Processing #{length(cells)} cells...")
 
-    final_acc = Enum.reduce(manager.plugins, initial_acc, fn
-      {_name, plugin}, {acc_manager, acc_cells, acc_commands, acc_messages} ->
-        if plugin.enabled and function_exported?(plugin.__struct__, :handle_cells, 2) do
-          # Pass the current plugin state from acc_manager
-          current_plugin_state = Map.get(acc_manager.plugins, plugin.name)
-          module = plugin.__struct__ # Get the module atom
+    # Accumulator: {updated_manager, processed_cells_list_reversed, collected_commands_list}
+    initial_acc = {manager, [], []}
 
-          # Call handle_cells using the module atom
-          case module.handle_cells(current_plugin_state, acc_cells) do
-            # Match the new 4-tuple return
-            {updated_plugin_state, processed_cells, new_commands, msg} ->
-              # Update the plugin state within the manager accumulator
-              new_manager_state = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)}
-              new_messages = if is_nil(msg), do: acc_messages, else: [msg | acc_messages]
-              {new_manager_state, processed_cells, acc_commands ++ new_commands, new_messages}
+    {final_manager, final_cells_rev, final_commands} =
+      Enum.reduce(cells, initial_acc, fn cell, {acc_manager, processed_cells_rev, acc_commands} ->
+        # Check if the cell is a placeholder potentially handled by a plugin
+        case cell do
+          %{type: :placeholder, value: placeholder_value} = placeholder_cell ->
+            Logger.debug("[PluginManager.handle_cells] Found placeholder: #{inspect(placeholder_value)}")
+            # Find plugins that might handle this placeholder type
+            # Inner accumulator: {handled_flag, manager_state, list_of_replacement_cells, list_of_new_commands}
+            # Default replacement_cells to an empty list, signifying removal if not handled.
+            inner_initial_acc = {false, acc_manager, [], []} # Start inner loop with current outer loop manager state
 
-            # Handle potential errors or unexpected returns gracefully (assume 3-tuple if 4-tuple fails)
-            # TODO: Log this properly
-            {updated_plugin_state, processed_cells, new_commands} ->
-              new_manager_state = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)}
-              {new_manager_state, processed_cells, acc_commands ++ new_commands, acc_messages} # No message added
+            # Result of inner loop: {handled_flag, manager_state_after_inner_loop, replacement_cells_list, new_commands_list}
+            # Find the specific plugin based on the placeholder value
+            plugin_name = case placeholder_value do
+              :image -> "image"
+              :chart -> "visualization"
+              :treemap -> "visualization"
+              _ -> nil # Unknown placeholder type
+            end
 
-            _other ->
-              # Log error or warning?
-              {acc_manager, acc_cells, acc_commands, acc_messages} # Pass through unchanged
-          end
-        else
-          # Plugin disabled or doesn't implement handle_cells
-          {acc_manager, acc_cells, acc_commands, acc_messages}
+            {_plugin_handled, manager_after_inner_loop, replacement_cells, new_commands} =
+              if plugin_name do
+                 # Get the specific plugin state
+                case Map.get(acc_manager.plugins, plugin_name) do
+                  nil ->
+                    Logger.warning("[PluginManager.handle_cells] Plugin '#{plugin_name}' not loaded for placeholder '#{placeholder_value}'. Skipping.")
+                    # Return default accumulator if plugin not found
+                    inner_initial_acc
+
+                  plugin ->
+                    # Call only the relevant plugin's handle_cells
+                    if plugin.enabled and function_exported?(plugin.__struct__, :handle_cells, 3) do
+                      # Log state *before* calling plugin, especially for ImagePlugin
+                      if plugin_name == "image" do
+                        Logger.debug("[PluginManager.handle_cells] Before calling ImagePlugin.handle_cells. sequence_just_generated: #{inspect Map.get(plugin, :sequence_just_generated)}")
+                      end
+                      # Log the opts specifically
+                      Logger.debug("[PluginManager.handle_cells] Placeholder opts: #{inspect Map.get(placeholder_cell, :opts)}")
+                      Logger.debug("[PluginManager.handle_cells] Calling #{plugin_name}.handle_cells for placeholder...\nCELL DATA: #{inspect(placeholder_cell)}")
+                      try do
+                        # Assign result to variable first
+                        handle_cells_result = plugin.__struct__.handle_cells(placeholder_cell, emulator_state, plugin)
+
+                        # Now match on the result variable
+                        case handle_cells_result do
+                          # Plugin handled it, returning cells and commands
+                          {:ok, updated_plugin_state, plugin_cells, plugin_commands} when is_list(plugin_cells) ->
+                            if plugin_name == "image" do
+                              Logger.debug("[PluginManager.handle_cells] After ImagePlugin.handle_cells returned {:ok, ...}. sequence_just_generated: #{inspect Map.get(updated_plugin_state, :sequence_just_generated)}")
+                            end
+                            Logger.debug("[PluginManager.handle_cells] Plugin #{plugin_name} handled placeholder. Cells: #{length(plugin_cells)}, Commands: #{length(plugin_commands)}")
+                            # Update manager state
+                            updated_inner_manager = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin_name, updated_plugin_state)}
+                            # Return the result for the outer loop (handled = true)
+                            {true, updated_inner_manager, plugin_cells, plugin_commands}
+
+                          # Plugin declined or returned unexpected success format
+                          {:ok, updated_plugin_state, _invalid_cells, plugin_commands} ->
+                            Logger.warning("[PluginManager.handle_cells] Plugin #{plugin_name} handled placeholder but returned invalid cell format. Treating as decline.")
+                            # Update manager state
+                            updated_inner_manager = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin_name, updated_plugin_state)}
+                            # Return default accumulator (handled = false), but with updated manager and commands
+                            {false, updated_inner_manager, [], plugin_commands}
+
+                          # Handle cases where plugin declines (:cont)
+                          {:cont, updated_plugin_state} ->
+                            Logger.debug("[PluginManager.handle_cells] Plugin #{plugin_name} returned :cont. State Flag: #{inspect Map.get(updated_plugin_state, :sequence_just_generated)}")
+                            if plugin_name == "image" do
+                              Logger.debug("[PluginManager.handle_cells] After ImagePlugin.handle_cells returned {:cont, ...}. sequence_just_generated: #{inspect Map.get(updated_plugin_state, :sequence_just_generated)}")
+                            end
+                            Logger.debug("[PluginManager.handle_cells] Plugin #{plugin_name} declined placeholder.")
+                            # Update manager state
+                            updated_inner_manager = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin_name, updated_plugin_state)}
+                            # Return default accumulator (handled = false), but with updated manager
+                            {false, updated_inner_manager, [], []}
+
+                          _ -> # {:error, _} or other unexpected return
+                            Logger.warning("[PluginManager.handle_cells] Plugin #{plugin_name} returned unexpected value from handle_cells. Skipping.")
+                            # Return default accumulator
+                            inner_initial_acc
+                        end
+                      rescue
+                        e ->
+                          Logger.error("[PluginManager.handle_cells] RESCUED Error calling #{plugin_name}.handle_cells: #{inspect(e)}. Placeholder was: #{inspect(placeholder_cell)}")
+                          # Return default accumulator
+                          inner_initial_acc
+                      end # End try/rescue
+                    else
+                       # Plugin exists but is disabled or doesn't implement handle_cells
+                       Logger.debug("[PluginManager.handle_cells] Plugin '#{plugin_name}' disabled or does not implement handle_cells/3. Skipping.")
+                       inner_initial_acc
+                    end # End if plugin enabled/implements
+                end # End case Map.get plugin
+              else
+                 # No plugin name determined for this placeholder value
+                 Logger.warning("[PluginManager.handle_cells] Unknown placeholder value: #{placeholder_value}. Skipping.")
+                 inner_initial_acc
+              end # End if plugin_name
+
+            # Return the accumulator for the NEXT outer loop iteration.
+            # Use the manager state resulting from the inner processing.
+            {manager_after_inner_loop, replacement_cells ++ processed_cells_rev, acc_commands ++ new_commands}
+
+          # Original cell was not a placeholder, assume it's {x, y, map}
+          valid_cell ->
+            # Prepend to the reversed list, pass original acc_manager forward
+            {acc_manager, [valid_cell | processed_cells_rev], acc_commands}
         end
-    end)
+      end) # End of outer Enum.reduce
 
-    # Return the final state including messages
-    {final_manager, final_cells, final_commands, final_messages} = final_acc
-    # Reverse messages so they are in plugin processing order (though maybe not critical)
-    {:ok, final_manager, final_cells, final_commands, Enum.reverse(final_messages)}
+    final_cells = Enum.reverse(final_cells_rev)
+    Logger.debug("[PluginManager.handle_cells] Finished. Final Cells: #{length(final_cells)}, Commands: #{length(final_commands)}")
+    # Return the final manager state accumulated through the outer loop
+    {:ok, final_manager, final_cells, final_commands}
   end
 
   @doc """
@@ -594,13 +726,16 @@ defmodule Raxol.Plugins.PluginManager do
   Plugins can return commands and choose to halt propagation.
   Returns {:ok, updated_manager, list_of_commands, :propagate | :halt} or {:error, reason}.
   """
-  def handle_key_event(%__MODULE__{} = manager, event, _rendered_cells) when is_map(event) and event.type == :key do
+  def handle_key_event(%__MODULE__{} = manager, event, _rendered_cells)
+      when is_map(event) and event.type == :key do
     # Reduce over enabled plugins, collecting commands and stopping if one halts
-    initial_acc = {:ok, manager, [], :propagate} # {status, manager, commands, propagation}
+    # {status, manager, commands, propagation}
+    initial_acc = {:ok, manager, [], :propagate}
 
     Enum.reduce_while(manager.plugins, initial_acc, fn
       {_name, plugin}, {:ok, acc_manager, acc_commands, _propagation_state} ->
-        if plugin.enabled and function_exported?(plugin.__struct__, :handle_input, 2) do
+        if plugin.enabled and
+             function_exported?(plugin.__struct__, :handle_input, 2) do
           # Pass the current plugin state and the event map
           # NOTE: We are passing the *event map* to handle_input, which expects a string.
           # This is a temporary adaptation. Ideally, a new callback like handle_key_event
@@ -611,27 +746,54 @@ defmodule Raxol.Plugins.PluginManager do
           case module.handle_input(current_plugin_state, event) do
             # Plugin returns {:ok, state, command}
             {:ok, updated_plugin_state, {:command, command_data}} ->
-              new_manager_state = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)}
+              new_manager_state = %{
+                acc_manager
+                | plugins:
+                    Map.put(
+                      acc_manager.plugins,
+                      plugin.name,
+                      updated_plugin_state
+                    )
+              }
+
               # Continue processing, add command, assume propagation (plugin didn't explicitly halt)
-              {:cont, {:ok, new_manager_state, [command_data | acc_commands], :propagate}}
+              {:cont,
+               {:ok, new_manager_state, [command_data | acc_commands],
+                :propagate}}
 
             # Plugin returns {:ok, state} (no command)
             {:ok, updated_plugin_state} ->
-              new_manager_state = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin.name, updated_plugin_state)}
+              new_manager_state = %{
+                acc_manager
+                | plugins:
+                    Map.put(
+                      acc_manager.plugins,
+                      plugin.name,
+                      updated_plugin_state
+                    )
+              }
+
               # Continue processing, no command added
               {:cont, {:ok, new_manager_state, acc_commands, :propagate}}
 
-             # TODO: Add support for explicit :halt if needed
-             # {:ok, updated_plugin_state, :halt} -> ...
-             # {:ok, updated_plugin_state, {:command, cmd}, :halt} -> ...
+            # TODO: Add support for explicit :halt if needed
+            # {:ok, updated_plugin_state, :halt} -> ...
+            # {:ok, updated_plugin_state, {:command, cmd}, :halt} -> ...
 
             {:error, reason} ->
-              Logger.error("Error from plugin #{plugin.name} in handle_input: #{inspect(reason)}")
+              Logger.error(
+                "Error from plugin #{plugin.name} in handle_input: #{inspect(reason)}"
+              )
+
               # Halt with an error
               {:halt, {:error, reason}}
 
-            _ -> # Invalid return from plugin
-              Logger.warning("Invalid return from #{plugin.name}.handle_input/2. Propagating.")
+            # Invalid return from plugin
+            _ ->
+              Logger.warning(
+                "Invalid return from #{plugin.name}.handle_input/2. Propagating."
+              )
+
               # Continue, assuming propagate
               {:cont, {:ok, acc_manager, acc_commands, :propagate}}
           end
@@ -642,9 +804,12 @@ defmodule Raxol.Plugins.PluginManager do
     end)
     # Reverse commands to maintain order? Depends on processing logic.
     |> case do
-         {:ok, final_manager, final_commands, propagation_state} ->
-           {:ok, final_manager, Enum.reverse(final_commands), propagation_state}
-         error -> error # Pass through {:error, reason}
-       end
+      {:ok, final_manager, final_commands, propagation_state} ->
+        {:ok, final_manager, Enum.reverse(final_commands), propagation_state}
+
+      # Pass through {:error, reason}
+      error ->
+        error
+    end
   end
 end

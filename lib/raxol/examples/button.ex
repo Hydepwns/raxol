@@ -12,7 +12,7 @@ defmodule Raxol.Examples.Button do
 
   use Raxol.Component
 
-  alias Raxol.Core.Renderer.Element
+  alias Raxol.View
 
   @default_theme %{
     normal: %{fg: :blue, bg: :white, style: :bold},
@@ -20,6 +20,7 @@ defmodule Raxol.Examples.Button do
     pressed: %{fg: :blue, bg: :white, style: :reverse}
   }
 
+  @impl true
   def init(props) do
     state = %{
       label: Map.get(props, :label, "Button"),
@@ -32,6 +33,7 @@ defmodule Raxol.Examples.Button do
     {:ok, state}
   end
 
+  @impl true
   def handle_event({:click, _pos} = _event, state) do
     # TODO: Implement click handling
     state
@@ -54,42 +56,22 @@ defmodule Raxol.Examples.Button do
     raise "Simulated error for testing"
   end
 
+  @impl Raxol.Component
   def render(state) do
-    style = get_style(state)
-    content = render_content(state)
-
-    %Element{
-      tag: :button,
-      content: content,
-      style: style,
-      attributes: %{
+    # Generate the DSL representation
+    dsl_result =
+      View.button [
+        id: state.id,
+        style: state.style,
+        on_click: state.on_click,
         disabled: state.disabled,
         pressed: state.pressed
-      }
-    }
+      ],
+      state.label
+
+    # Convert to Element struct
+    Raxol.View.to_element(dsl_result)
   end
 
   # Private Helpers
-
-  defp get_style(%{disabled: true} = state) do
-    state.theme.disabled
-  end
-
-  defp get_style(%{pressed: true} = state) do
-    state.theme.pressed
-  end
-
-  defp get_style(state) do
-    state.theme.normal
-  end
-
-  defp render_content(state) do
-    # Add box drawing characters for borders
-    top = "┌" <> String.duplicate("─", String.length(state.label) + 2) <> "┐"
-    middle = "│ " <> state.label <> " │"
-    bottom = "└" <> String.duplicate("─", String.length(state.label) + 2) <> "┘"
-
-    [top, middle, bottom]
-    |> Enum.join("\n")
-  end
 end

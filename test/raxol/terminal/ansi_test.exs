@@ -1,7 +1,8 @@
 defmodule Raxol.Terminal.ANSITest do
   use ExUnit.Case
-  alias Raxol.Terminal.{ANSI, Emulator}
-  alias Raxol.Style.Colors.{Color, Advanced}
+  alias Raxol.Style.Colors.{Advanced, Color}
+  alias Raxol.Terminal.ANSI
+  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Integration
 
   setup do

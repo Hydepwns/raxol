@@ -42,6 +42,9 @@ config :raxol, :terminal,
   debug_mode: false,
   log_level: :warn
 
+# Flag to control compilation of AI-related tests
+config :raxol, :compile_ai_tests, false
+
 # Configure web interface settings for testing
 config :raxol, :web,
   default_theme: "light",

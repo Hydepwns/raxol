@@ -25,11 +25,18 @@ defmodule Raxol.Components.Dashboard.WidgetContainer do
     title = Map.get(widget_config, :title, "Widget")
 
     # Use a box for the main frame
-    box([x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, border: :rounded], do:
+    box(
       [
+        x: bounds.x,
+        y: bounds.y,
+        width: bounds.width,
+        height: bounds.height,
+        border: :rounded
+      ],
+      do: [
         # Optional: Render a title bar within the frame
-        box([x: 0, y: 0, width: :fill, height: 1, style: %{bg: :blue}], do:
-          text(title, align: :center)
+        box([x: 0, y: 0, width: :fill, height: 1, style: %{bg: :blue}],
+          do: text(title, align: :center)
         ),
 
         # Render the actual widget content, offset below the title bar
@@ -45,14 +52,18 @@ defmodule Raxol.Components.Dashboard.WidgetContainer do
 
   # Renders the resize handle at the bottom-right corner if bounds allow.
   defp render_resize_handle(bounds)
-    when is_map(bounds) and bounds.width > 0 and bounds.height > 1 do
-      handle_x = bounds.width - 1 # Relative X within the container box
-      handle_y = bounds.height - 1 # Relative Y
-      # Position the handle character using View.at or similar DSL primitive if available
-      # For now, using a nested box as a simple positioning mechanism
-      box([x: handle_x, y: handle_y, width: 1, height: 1], do: text("\u21F2")) # Corner arrow
+       when is_map(bounds) and bounds.width > 0 and bounds.height > 1 do
+    # Relative X within the container box
+    handle_x = bounds.width - 1
+    # Relative Y
+    handle_y = bounds.height - 1
+
+    # Position the handle character using View.at or similar DSL primitive if available
+    # For now, using a nested box as a simple positioning mechanism
+    # Corner arrow
+    box([x: handle_x, y: handle_y, width: 1, height: 1], do: text("\u21F2"))
   end
+
   # Don't render handle if widget is too small
   defp render_resize_handle(_bounds), do: nil
-
 end

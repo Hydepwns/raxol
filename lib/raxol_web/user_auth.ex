@@ -31,28 +31,35 @@ defmodule RaxolWeb.UserAuth do
     case Raxol.Auth.create_user_session(user.id, user.role) do
       # Temporary handling for the placeholder :ok return
       :ok ->
-        Logger.warning("[UserAuth] Using placeholder session data due to Auth.create_user_session returning :ok.")
-        session_data = %{session_id: "placeholder_id_#{user.id}", user_id: user.id}
+        Logger.warning(
+          "[UserAuth] Using placeholder session data due to Auth.create_user_session returning :ok."
+        )
+
+        session_data = %{
+          session_id: "placeholder_id_#{user.id}",
+          user_id: user.id
+        }
+
         conn
         |> put_session(:user_token, session_data.session_id)
         |> configure_session(renew: true)
 
-      # Original clause (Keep commented for reference)
-      # {:ok, session_data} ->
-      #   conn
-      #   |> put_session(:user_token, session_data.session_id)
-      #   |> configure_session(renew: true)
+        # Original clause (Keep commented for reference)
+        # {:ok, session_data} ->
+        #   conn
+        #   |> put_session(:user_token, session_data.session_id)
+        #   |> configure_session(renew: true)
 
-      # Original clause (Keep commented for reference)
-      # {:error, reason} ->
-      #   Logger.error("Failed to create session for user #{user.id}: #{inspect(reason)}")
+        # Original clause (Keep commented for reference)
+        # {:error, reason} ->
+        #   Logger.error("Failed to create session for user #{user.id}: #{inspect(reason)}")
 
-      # Catch-all for unexpected returns (like the temporary :ok)
-      # The following clause is unreachable because create_user_session always returns :ok currently.
-      # other ->
-      #   Logger.error("Unexpected return from Auth.create_user_session: #{inspect(other)}")
-      #   conn
-      #   |> put_flash(:error, "Internal error during login.")
+        # Catch-all for unexpected returns (like the temporary :ok)
+        # The following clause is unreachable because create_user_session always returns :ok currently.
+        # other ->
+        #   Logger.error("Unexpected return from Auth.create_user_session: #{inspect(other)}")
+        #   conn
+        #   |> put_flash(:error, "Internal error during login.")
     end
   end
 
@@ -110,9 +117,11 @@ defmodule RaxolWeb.UserAuth do
     user =
       if session_id && user_token do
         case Auth.validate_token(session_id, user_token) do
-          {:ok, user_id} -> Auth.get_user(user_id)
-          # The following clause is unreachable because validate_token always returns {:ok, _} currently.
-          # _ -> nil
+          {:ok, user_id} ->
+            Auth.get_user(user_id)
+
+            # The following clause is unreachable because validate_token always returns {:ok, _} currently.
+            # _ -> nil
         end
       else
         nil

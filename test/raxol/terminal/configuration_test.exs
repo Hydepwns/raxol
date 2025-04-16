@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ConfigurationTest do
   use ExUnit.Case
-  alias Raxol.Terminal.Configuration
   alias Raxol.System.TerminalPlatform
+  alias Raxol.Terminal.Configuration
 
   describe "new/0" do
     test "creates a configuration with detected terminal type" do

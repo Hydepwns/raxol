@@ -88,14 +88,14 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
     end
 
     test "handles character input", %{state: state} do
-      event = %Event{type: :key, key: "a"}
+      event = Event.key("a")
       {new_state, _} = SingleLineInput.handle_event(event, state)
       assert new_state.value == "testa"
       assert new_state.cursor_pos == 5
     end
 
     test "handles backspace", %{state: state} do
-      event = %Event{type: :key, key: "Backspace"}
+      event = Event.key("Backspace")
       {new_state, _} = SingleLineInput.handle_event(event, state)
       assert new_state.value == "tes"
       assert new_state.cursor_pos == 3
@@ -103,7 +103,7 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
 
     test "handles delete", %{state: state} do
       state = %{state | cursor_pos: 1}
-      event = %Event{type: :key, key: "Delete"}
+      event = Event.key("Delete")
       {new_state, _} = SingleLineInput.handle_event(event, state)
       assert new_state.value == "tst"
       assert new_state.cursor_pos == 1
@@ -111,22 +111,22 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
 
     test "handles cursor movement", %{state: state} do
       # Left
-      event = %Event{type: :key, key: "Left"}
+      event = Event.key("Left")
       {new_state, _} = SingleLineInput.handle_event(event, state)
       assert new_state.cursor_pos == 3
 
       # Right
-      event = %Event{type: :key, key: "Right"}
+      event = Event.key("Right")
       {new_state, _} = SingleLineInput.handle_event(event, state)
       assert new_state.cursor_pos == 4
 
       # Home
-      event = %Event{type: :key, key: "Home"}
+      event = Event.key("Home")
       {new_state, _} = SingleLineInput.handle_event(event, state)
       assert new_state.cursor_pos == 0
 
       # End
-      event = %Event{type: :key, key: "End"}
+      event = Event.key("End")
       {new_state, _} = SingleLineInput.handle_event(event, state)
       assert new_state.cursor_pos == 4
     end
@@ -135,7 +135,7 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
       state = %{state | value: "hello world"}
 
       # Left by word
-      event = %Event{type: :key, key: "Left", ctrl?: true}
+      event = Event.key_event("Left", :pressed, [:ctrl])
 
       {new_state, _} =
         SingleLineInput.handle_event(event, %{state | cursor_pos: 8})
@@ -143,7 +143,7 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
       assert new_state.cursor_pos == 6
 
       # Right by word
-      event = %Event{type: :key, key: "Right", ctrl?: true}
+      event = Event.key_event("Right", :pressed, [:ctrl])
 
       {new_state, _} =
         SingleLineInput.handle_event(event, %{state | cursor_pos: 2})
@@ -153,7 +153,7 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
 
     test "handles selection deletion", %{state: state} do
       state = %{state | selection_start: 1, selection_end: 3}
-      event = %Event{type: :key, key: "Backspace"}
+      event = Event.key("Backspace")
       {new_state, _} = SingleLineInput.handle_event(event, state)
       assert new_state.value == "tt"
       assert new_state.cursor_pos == 1
@@ -169,7 +169,7 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
         | on_submit: fn value -> send(test_pid, {:submitted, value}) end
       }
 
-      event = %Event{type: :key, key: "Enter"}
+      event = Event.key("Enter")
       SingleLineInput.handle_event(event, state)
 
       assert_received {:submitted, "test"}
@@ -183,7 +183,7 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
         | on_change: fn value -> send(test_pid, {:changed, value}) end
       }
 
-      event = %Event{type: :key, key: "a"}
+      event = Event.key("a")
       SingleLineInput.handle_event(event, state)
 
       assert_received {:changed, "testa"}

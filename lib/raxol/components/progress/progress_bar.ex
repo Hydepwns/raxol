@@ -17,10 +17,10 @@ defmodule Raxol.Components.Progress.ProgressBar do
   """
 
   use Raxol.Component
-  alias Raxol.View.Components
-  alias Raxol.View.Layout
 
-  @default_width 20
+  alias Raxol.View
+
+  @default_width 40
   @default_style :basic
   @default_color :blue
 
@@ -63,27 +63,69 @@ defmodule Raxol.Components.Progress.ProgressBar do
   def update(_msg, state), do: state
 
   @impl true
+  @spec render(map()) :: Raxol.Core.Renderer.Element.t() | nil
+  @dialyzer {:nowarn_function, render: 1}
   def render(state) do
-    Layout.column do
-      _label =
-        Components.text(content: state.label, color: state.style.text_color)
+    # Determine bar characters based on style
+    {filled_char, empty_char} =
+      case state.style.type do
+        :block -> {"█", "░"}
+        :ascii -> {"#", "-"}
+        :custom -> {state.style.custom_chars.filled, state.style.custom_chars.empty}
+        _ -> {"█", "░"} # Default to block
+      end
 
-      bar =
-        Layout.box style: %{border_color: state.style.border_color} do
-          _filled =
-            Components.text(
-              content: String.duplicate("█", state.filled_width),
-              color: state.style.fill_color
-            )
+    # Calculate filled/empty segments
+    percentage = state.value / state.total
+    filled_width = round(percentage * state.width)
+    empty_width = state.width - filled_width
 
-          Components.text(
-            content: String.duplicate("░", state.empty_width),
-            color: state.style.empty_color
-          )
-        end
+    # Build the bar text
+    bar_text = String.duplicate(filled_char, filled_width) <> String.duplicate(empty_char, empty_width)
 
-      [bar]
-    end
+    # Determine colors
+    bar_fg = Map.get(state.style, :fg, :green) # Example default
+    bar_bg = Map.get(state.style, :bg, nil)
+
+    # Generate the DSL map AND convert to element in one step
+    dsl_result =
+      # Layout: [Label] [Progress Bar] [Percentage Text]
+      View.column do
+        label_element =
+          if state.label do
+            View.text(state.label, style: state.style.label_style)
+          else
+            nil
+          end
+
+        bar_row =
+          View.row style: %{width: :auto} do
+            percentage_element =
+              if state.show_percentage do
+                percentage_text = format_percentage(state.value, state.total)
+                View.text(" #{percentage_text}", style: state.style.percentage_style)
+              else
+                nil
+              end
+
+            # Explicitly return list for row's children, filtering nil
+            [
+              # Progress Bar Segment
+              View.box style: %{width: state.width, bg: bar_bg} do
+                # Explicitly return list for box's children
+                [View.text(bar_text, style: %{fg: bar_fg})]
+              end,
+              # Percentage Text Segment (if enabled)
+              percentage_element
+            ] |> Enum.reject(&is_nil(&1))
+          end
+
+        # Explicitly return list for column's children, filtering nil
+        [label_element, bar_row] |> Enum.reject(&is_nil(&1))
+      end
+
+    # Convert DSL map to Element struct
+    Raxol.View.to_element(dsl_result)
   end
 
   @impl true
@@ -95,31 +137,22 @@ defmodule Raxol.Components.Progress.ProgressBar do
     {update(:set_value, state, value), []}
   end
 
+  # Default clause for other events
   def handle_event(_event, state), do: {state, []}
 
-  # Public API for controlling the progress bar
-  def set_progress(value)
-      when is_number(value) and value >= 0 and value <= 100 do
-    {:progress_update, value}
+  # Update function (internal)
+  defp update(:set_value, state, value) do
+    new_value = clamp(value, state.total)
+    %{state | value: new_value}
   end
 
-  def set_style(style) when style in [:basic, :block, :custom] do
-    {:set_style, style}
+  # Helper functions (clamp, format_percentage, etc.)
+  defp clamp(value, max, min \\ 0) do
+    value |> Kernel.max(min) |> Kernel.min(max)
   end
 
-  def set_color(color) do
-    {:set_color, color}
-  end
-
-  def set_gradient(colors) when is_list(colors) do
-    {:set_gradient, colors}
-  end
-
-  def set_characters(filled, empty) do
-    {:set_characters, %{filled: filled, empty: empty}}
-  end
-
-  defp update(:set_value, state, value) when is_number(value) do
-    %{state | value: value}
+  defp format_percentage(value, total) do
+    percentage = round(value / total * 100)
+    "#{percentage}%"
   end
 end

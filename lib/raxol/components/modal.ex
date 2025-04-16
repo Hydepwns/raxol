@@ -1,5 +1,4 @@
 defmodule Raxol.Components.Modal do
-  use Raxol.Component
   require Raxol.View
 
   @moduledoc """
@@ -116,21 +115,21 @@ defmodule Raxol.Components.Modal do
     View.box container_props do
       # Create children conditionally, filtering nils
       [
-        (if title do
-           View.box [id: "#{id}_title", style: title_style] do
-             View.text(title)
-           end
-         end),
-        (if content_fn do
-           View.box [id: "#{id}_content", style: content_style] do
-             content_fn.()
-           end
-         end),
-        (if actions_fn do
-           View.box [id: "#{id}_actions", style: actions_style] do
-             actions_fn.()
-           end
-         end)
+        if title do
+          View.box id: "#{id}_title", style: title_style do
+            View.text(title)
+          end
+        end,
+        if content_fn do
+          View.box id: "#{id}_content", style: content_style do
+            content_fn.()
+          end
+        end,
+        if actions_fn do
+          View.box id: "#{id}_actions", style: actions_style do
+            actions_fn.()
+          end
+        end
       ]
       |> Enum.reject(&is_nil(&1))
       |> List.flatten()
@@ -278,7 +277,8 @@ defmodule Raxol.Components.Modal do
     render(
       title,
       form_fn,
-      fn -> [] end, # Return empty list to fix syntax and represent no footer content
+      # Return empty list to fix syntax and represent no footer content
+      fn -> [] end,
       opts
     )
   end

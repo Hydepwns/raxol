@@ -18,8 +18,7 @@ defmodule Raxol.Components.Progress.Spinner do
 
   use Raxol.Component
 
-  alias Raxol.View.Components
-  alias Raxol.View.Layout
+  alias Raxol.View
 
   @default_speed 80
   @default_style :dots
@@ -103,29 +102,24 @@ defmodule Raxol.Components.Progress.Spinner do
 
   @impl true
   def render(state) do
-    current_frame = Enum.at(state.frames, state.frame_index)
-    current_color = Enum.at(state.colors, state.color_index)
+    spinner_char = Enum.at(state.style.chars, state.frame)
 
-    spinner = Components.text(content: current_frame, color: current_color)
-
-    text_element =
-      if state.text do
-        Components.text(content: state.text)
-      end
-
-    Layout.box do
-      Layout.row do
-        if state.text_position == :left and text_element do
-          [text_element, Components.text(content: " "), spinner]
+    # Generate DSL map
+    dsl_result =
+      View.box style: %{width: state.width, height: 1} do
+        if state.label do
+          View.text("#{state.label} #{spinner_char}", style: state.style.label_style)
         else
-          [spinner, text_element && Components.text(content: " "), text_element]
+          View.text(spinner_char, style: state.style.spinner_style)
         end
       end
-    end
+
+    # Convert to Element struct
+    to_element(dsl_result)
   end
 
   @impl true
-  def handle_event(%Event{type: :frame}, state) do
+  def handle_event(%Event{type: :timer, data: %{id: _timer_id}}, state) do
     {update(:tick, state), []}
   end
 

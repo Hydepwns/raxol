@@ -9,7 +9,8 @@ defmodule RaxolWeb.SettingsLive do
     # Example: Adapt to actual session key
     # Get session data passed from connect_info
     connect_params = get_connect_params(socket)
-    user_id = connect_params["user_id"] # Adjust key if needed
+    # Adjust key if needed
+    user_id = connect_params["user_id"]
 
     case user_id && Accounts.get_user(user_id) do
       user when not is_nil(user) ->
@@ -20,6 +21,7 @@ defmodule RaxolWeb.SettingsLive do
         socket = assign(socket, :changeset, %{})
         socket = assign(socket, :page_title, "Account Settings")
         {:ok, socket, temporary_assigns: [changeset: nil]}
+
       nil ->
         # Handle case where user_id is missing or user not found
         updated_socket =

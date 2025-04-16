@@ -2,8 +2,8 @@ defmodule Raxol.Core.AccessibilityTest do
   use ExUnit.Case, async: true
 
   alias Raxol.Core.Accessibility
-  alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.Accessibility.ThemeIntegration
+  alias Raxol.Core.Events.Manager, as: EventManager
 
   setup do
     # Initialize event manager for tests

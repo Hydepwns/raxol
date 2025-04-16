@@ -279,7 +279,7 @@ defmodule Raxol.Docs.ComponentCatalog do
             preview_fn: fn props ->
               Raxol.Components.Button.new(
                 props[:label] || "Click me",
-                Map.drop(props, [:label])
+                Map.drop(props, [:label]) |> Enum.to_list()
               )
             end,
             customizable_props: [
@@ -329,6 +329,7 @@ defmodule Raxol.Docs.ComponentCatalog do
                   %{icon: props[:icon] || :save},
                   Map.drop(props, [:label, :icon])
                 )
+                |> Enum.to_list()
               )
             end,
             customizable_props: [

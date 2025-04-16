@@ -1,8 +1,8 @@
 defmodule Raxol.Core.KeyboardShortcutsTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.KeyboardShortcuts
   alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.KeyboardShortcuts
 
   setup do
     # Initialize event manager for tests

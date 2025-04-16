@@ -4,7 +4,11 @@ defmodule Raxol.Metrics.Visualizer do
   Uses Contex to generate charts and graphs for various performance indicators.
   """
 
-  alias Contex.{Plot, BarChart, Dataset, PointPlot, LinePlot}
+  alias Contex.BarChart
+  alias Contex.Dataset
+  alias Contex.LinePlot
+  alias Contex.Plot
+  alias Contex.PointPlot
 
   @doc """
   Creates a bar chart visualization for event processing times.
@@ -18,9 +22,11 @@ defmodule Raxol.Metrics.Visualizer do
 
     chart = BarChart.new(dataset)
 
+    labels = [x: "Event Types", y: "Processing Time (ms)"]
+
     Plot.new(options[:width] || 600, options[:height] || 400, chart)
     |> Plot.titles("Event Processing Times", nil)
-    |> Plot.axis_labels([x: "Event Types", y: "Processing Time (ms)"], nil)
+    |> Plot.axis_labels(labels[:x], labels[:y])
     |> Plot.to_svg()
   end
 
@@ -36,9 +42,11 @@ defmodule Raxol.Metrics.Visualizer do
 
     chart = PointPlot.new(dataset)
 
+    labels = [x: "Time", y: "Events/sec"]
+
     Plot.new(options[:width] || 600, options[:height] || 400, chart)
     |> Plot.titles("Event Throughput", nil)
-    |> Plot.axis_labels([x: "Time", y: "Events/sec"], nil)
+    |> Plot.axis_labels(labels[:x], labels[:y])
     |> Plot.to_svg()
   end
 
@@ -54,9 +62,11 @@ defmodule Raxol.Metrics.Visualizer do
 
     chart = LinePlot.new(dataset)
 
+    labels = [x: "Time", y: "Memory Usage (MB)"]
+
     Plot.new(options[:width] || 600, options[:height] || 400, chart)
     |> Plot.titles("Memory Usage Over Time", nil)
-    |> Plot.axis_labels([x: "Time", y: "Memory Usage (MB)"], nil)
+    |> Plot.axis_labels(labels[:x], labels[:y])
     |> Plot.to_svg()
   end
 end

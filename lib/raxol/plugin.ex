@@ -74,7 +74,11 @@ defmodule Raxol.Plugin do
   @doc """
   Handles mouse events. Requires the emulator state for context.
   """
-  @callback handle_mouse(event :: term(), state :: term(), emulator_state :: term()) ::
+  @callback handle_mouse(
+              event :: term(),
+              state :: term(),
+              emulator_state :: term()
+            ) ::
               {:ok, state :: term()} | {:error, reason :: String.t()}
 
   @doc """

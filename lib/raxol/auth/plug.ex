@@ -34,9 +34,11 @@ defmodule Raxol.Auth.Plug do
   """
   def authenticate_user(conn, email, password) do
     Logger.debug("Authenticating user: #{email}")
+
     case Accounts.authenticate_user(email, password) do
       {:ok, user} ->
         Logger.debug("Authentication successful for user ID: #{user.id}")
+
         conn
         |> put_session(:user_id, user.id)
         |> configure_session(renew: true)
@@ -59,7 +61,11 @@ defmodule Raxol.Auth.Plug do
 
   defguard is_admin?(conn) when conn.assigns.current_user.role == :admin
 
-  @spec require_permission(Plug.Conn.t(), atom() | list(atom()), atom() | list(atom())) ::
+  @spec require_permission(
+          Plug.Conn.t(),
+          atom() | list(atom()),
+          atom() | list(atom())
+        ) ::
           Plug.Conn.t()
   def require_permission(conn, module, action) do
     _user = conn.assigns.current_user
@@ -74,7 +80,10 @@ defmodule Raxol.Auth.Plug do
     #   |> text("Forbidden")
     #   |> halt()
     # end
-    Logger.debug("Skipping permission check for #{inspect(module)}.#{action} - has_permission? not implemented.")
+    Logger.debug(
+      "Skipping permission check for #{inspect(module)}.#{action} - has_permission? not implemented."
+    )
+
     conn
   end
 

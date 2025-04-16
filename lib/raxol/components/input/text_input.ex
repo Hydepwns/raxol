@@ -80,7 +80,8 @@ defmodule Raxol.Components.Input.TextInput do
     # TODO: Implement visual cursor rendering (e.g., underscore or inverse)
     # This is complex due to character widths and terminal capabilities.
     # For now, just render the text content with focus style.
-    Raxol.View.text(display, style: style)
+    dsl_result = Raxol.View.text(display, style: style)
+    Raxol.View.to_element(dsl_result)
   end
 
   @impl true

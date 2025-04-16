@@ -12,8 +12,8 @@ defmodule Raxol.AI.PerformanceOptimization do
   * Runtime profiling - Continuously monitor and analyze performance patterns
   """
 
-  alias Raxol.Core.UXRefinement
   alias Raxol.Benchmarks.Performance, as: Benchmarks
+  alias Raxol.Core.UXRefinement
 
   # State for the optimization system
   defmodule State do

@@ -12,7 +12,8 @@ defmodule Raxol.Auth do
   alias Raxol.Accounts
   # alias Raxol.Auth.Session # Removed - Session module undefined
 
-  require Logger # Add require Logger
+  # Add require Logger
+  require Logger
 
   @doc """
   Validates a session token and returns the associated user ID.
@@ -44,8 +45,9 @@ defmodule Raxol.Auth do
 
   @doc """
   Creates a new session for an authenticated user.
+  (Session logic currently commented out, returns :ok)
   """
-  @spec create_user_session(integer(), map()) :: {:ok, Session.t()} | {:error, any()}
+  @spec create_user_session(integer(), map()) :: :ok
   def create_user_session(user_id, _metadata \\ %{}) do
     Logger.debug("Creating session for user ID: #{user_id}")
     # case Session.create_session(user_id, metadata) do
@@ -108,7 +110,10 @@ defmodule Raxol.Auth do
   def get_user_by_session(_session_id) do
     # Raxol.Auth.Session is undefined, comment out for now
     # case Session.get_session(session_id) do
-    Logger.warning("get_user_by_session called, but Raxol.Auth.Session is undefined.")
+    Logger.warning(
+      "get_user_by_session called, but Raxol.Auth.Session is undefined."
+    )
+
     nil
   end
 

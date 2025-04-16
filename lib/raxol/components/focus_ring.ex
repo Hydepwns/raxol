@@ -35,10 +35,6 @@ defmodule Raxol.Components.FocusRing do
   ```
   """
 
-  # Define module attributes for colors
-  @focus_color :cyan
-  @idle_color :gray
-
   @doc """
   Configure the appearance of the focus ring.
 
@@ -73,34 +69,39 @@ defmodule Raxol.Components.FocusRing do
 
   This function is called when the component is first created.
   """
-  def init(opts \\ []) do
-    # Register for focus events
-    EventManager.register_handler(
-      :focus_change,
-      __MODULE__,
-      :handle_focus_change
-    )
+  @impl true
+  def init(opts) when is_map(opts) do # Expect map
+    # Extract options using Map.get
+    visible = Map.get(opts, :visible, true)
+    color = Map.get(opts, :color, :yellow)
+    thickness = Map.get(opts, :thickness, 1)
+    style = Map.get(opts, :style, [:dashed])
+    high_contrast = Map.get(opts, :high_contrast, false)
+    animation = Map.get(opts, :animation, :pulse) # :pulse, :blink, :none
+    animation_duration = Map.get(opts, :animation_duration, 500) # milliseconds
+    transition_effect = Map.get(opts, :transition_effect, :fade) # :fade, :slide, :none
 
     %{
-      visible: Keyword.get(opts, :visible, true),
-      style: Keyword.get(opts, :style, :solid),
-      color: Keyword.get(opts, :color, :blue),
-      thickness: Keyword.get(opts, :thickness, 1),
-      offset: Keyword.get(opts, :offset, 0),
-      animation: Keyword.get(opts, :animation, :none),
-      high_contrast: Keyword.get(opts, :high_contrast, false),
-      animation_duration: Keyword.get(opts, :animation_duration, 1000),
-      transition_effect: Keyword.get(opts, :transition_effect, :none),
-      animation_phase: 0,
-      focused_element: nil,
+      visible: visible,
       position: nil,
-      prev_position: nil
+      prev_position: nil,
+      focused_element: nil,
+      color: color,
+      thickness: thickness,
+      style: style,
+      high_contrast: high_contrast,
+      animation: animation,
+      animation_duration: animation_duration,
+      animation_phase: 0,
+      transition_effect: transition_effect,
+      offset: {0, 0} # Offset for rendering
     }
   end
 
   @doc """
   Update focus ring state based on events.
   """
+  @impl true
   def update(model, msg) do
     case msg do
       {:focus_change, _old_focus, new_focus} ->
@@ -159,21 +160,19 @@ defmodule Raxol.Components.FocusRing do
       iex> FocusRing.render(model)
       # Renders a focus ring around the currently focused element
   """
-  def render(model, _opts \\ []) do
-    if model.visible && model.focused_element && model.position do
-      # Render transition effect if applicable
-      if model.transition_effect != :none && model.prev_position != nil &&
-           model.prev_position != model.position do
-        [
-          render_transition_effect(model),
-          render_focus_ring(model)
-        ]
-      else
-        render_focus_ring(model)
-      end
-    else
-      # Return empty element when no focus or not visible
-      []
+  @impl true
+  def render(state) do
+    dsl_result = render_focus_ring(state)
+    # Result can be nil or a list containing nil/box, flatten and convert
+    dsl_result
+    |> List.wrap()
+    |> List.flatten()
+    |> Enum.reject(&is_nil(&1))
+    |> Enum.map(&Raxol.View.to_element/1)
+    |> case do
+      [] -> nil # Return nil if nothing to render
+      [element] -> element # Return single element if one exists
+      elements -> Raxol.View.to_element(%{type: :fragment, children: elements}) # Wrap multiple in fragment
     end
   end
 
@@ -266,48 +265,17 @@ defmodule Raxol.Components.FocusRing do
   end
 
   @dialyzer {:nowarn_function, render_focus_ring: 1}
-  def render_focus_ring(state) do
+  defp render_focus_ring(state) do
     # TODO: Add documentation for render_focus_ring/1
     # Define the visual representation of the focus ring
     shape = Map.get(state, :shape)
     text = if shape, do: "Focus Ring (#{shape})", else: nil
 
-    box [
-      width: state.width,
-      height: state.height,
-      style: %{border: state.border_style}
-    ] do
+    box width: state.width,
+        height: state.height,
+        style: %{border: state.border_style} do
       if text do
         View.text(text)
-      end
-    end
-  end
-
-  # Renders the transition effect based on the animation state
-  defp render_transition_effect(%{progress: progress, style: style} = _state) do
-    if progress > 0.0 and progress < 1.0 do
-      # Calculate interpolated color based on progress
-      # In a real animation system, progress would be managed
-      _start_color = @idle_color
-      _end_color = Map.get(style, :end_color, @focus_color) # Use attribute
-
-      color =
-        if progress == 1.0 do
-          @focus_color # Use attribute
-        else
-          # start_color = @idle_color
-          # end_color = @focus_color
-          # Raxol.Animation.interpolate_color(start_color, end_color, progress)
-          # TODO: Re-enable when Animation module exists
-          @focus_color # Temporary: Use focus color immediately
-        end
-
-      box [
-        id: "focus_transition",
-        style: %{color: color},
-        border_color: color
-      ] do
-        # No children needed here
       end
     end
   end

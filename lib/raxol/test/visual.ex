@@ -33,11 +33,6 @@ defmodule Raxol.Test.Visual do
     quote do
       import Raxol.Test.Visual
       import Raxol.Test.Visual.Matchers
-
-      setup do
-        context = TestHelper.setup_test_env()
-        {:ok, Map.put(context, :snapshots_dir, "test/snapshots")}
-      end
     end
   end
 

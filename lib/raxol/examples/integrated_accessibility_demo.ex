@@ -57,7 +57,7 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
     _ = UserPreferences.init()
     _ = ColorSystem.init()
     _ = PaletteManager.init()
-    _ = AnimationFramework.init([])
+    _ = AnimationFramework.init(%{})
     _ = I18n.init(default_locale: "en", available_locales: @available_locales)
     _ = KeyboardShortcuts.init()
   end

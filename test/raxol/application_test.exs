@@ -1,7 +1,8 @@
 defmodule Raxol.ApplicationTest do
   use ExUnit.Case
   alias Raxol.Application
-  alias Raxol.Style.Colors.{Persistence, Accessibility}
+  alias Raxol.Style.Colors.Accessibility
+  alias Raxol.Style.Colors.Persistence
 
   describe "color system initialization" do
     setup do

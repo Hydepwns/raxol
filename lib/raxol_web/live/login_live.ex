@@ -23,8 +23,7 @@ defmodule RaxolWeb.LoginLive do
         {:noreply,
          socket
          |> put_flash(:info, "Login attempt successful. Redirecting...")
-         |> redirect(to: "/")
-        }
+         |> redirect(to: "/")}
 
       {:error, _reason} ->
         {:noreply,

@@ -86,7 +86,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
         content
       end
 
-    View.box([style: style], do: content)
+    View.box(style: style, children: content)
   end
 
   # Private Helpers
@@ -115,7 +115,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
       |> Enum.flat_map(fn %{data: data, color: color} ->
         data
         |> Enum.map(fn value ->
-          bar_height = scale_value(value, min, max, 1, height)
+          bar_height = scale_value(value, min, max, 1, height) |> round()
           chars = create_vertical_bar(bar_height, height)
 
           View.text(chars,
@@ -136,7 +136,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
       |> Enum.flat_map(fn %{data: data, color: color} ->
         data
         |> Enum.map(fn value ->
-          bar_width = scale_value(value, min, max, 1, width)
+          bar_width = scale_value(value, min, max, 1, width) |> round()
           chars = create_horizontal_bar(bar_width, width)
 
           View.text(chars,
@@ -178,7 +178,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     )
   end
 
-  defp create_vertical_bar(height, total_height) do
+  defp create_vertical_bar(height, total_height) when is_integer(height) do
     full = div(height, 1)
     remainder = height - full
 
@@ -197,7 +197,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     padding <> partial_block <> full_blocks
   end
 
-  defp create_horizontal_bar(width, total_width) do
+  defp create_horizontal_bar(width, total_width) when is_integer(width) do
     full = div(width, 1)
     remainder = width - full
 

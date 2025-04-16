@@ -124,17 +124,27 @@ defmodule Raxol.Test.Platform.ComponentRenderingTest do
         assert output =~ "#"
       end
 
+      # Check if true color is supported before the case statement
+      has_true_color = Platform.supports_feature?(:true_color)
+
       # Additional platform-specific checks
       case platform do
-        :windows when not Platform.supports_feature?(:true_color) ->
+        :windows when not has_true_color ->
           # Ensure Windows without true color falls back to basic colors
           # No RGB color codes
           refute output =~ "\e[38;2;"
 
-        _ when Platform.supports_feature?(:true_color) ->
+        _ when has_true_color ->
           # Platforms with true color should use RGB gradient
           # RGB color codes
           assert output =~ "\e[38;2;"
+
+        # Add a default case to handle platforms without true color if needed
+        _ ->
+          # Add assertions for platforms without true color, if applicable
+          # For example, assert that basic colors are used
+          # Assuming no RGB if no true color
+          refute output =~ "\e[38;2;"
       end
     end
   end

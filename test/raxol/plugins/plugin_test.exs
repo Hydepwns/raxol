@@ -1,7 +1,8 @@
 defmodule Raxol.Plugins.PluginTest do
   use ExUnit.Case
-  alias Raxol.Plugins.{Plugin, PluginManager}
   alias Raxol.Plugins.HyperlinkPlugin
+  alias Raxol.Plugins.Plugin
+  alias Raxol.Plugins.PluginManager
 
   describe "plugin manager" do
     test "creates a new plugin manager" do

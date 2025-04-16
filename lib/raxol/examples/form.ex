@@ -12,7 +12,9 @@ defmodule Raxol.Examples.Form do
   use Raxol.Component
 
   alias Raxol.Core.Renderer.Element
+  alias Raxol.View
 
+  @impl true
   def init(props) do
     state = %{
       title: Map.get(props, :title, "Sample Form"),
@@ -24,6 +26,7 @@ defmodule Raxol.Examples.Form do
     {:ok, state}
   end
 
+  @impl true
   def handle_event(:button_clicked, state) do
     {
       %{state | submitted: true},
@@ -42,70 +45,42 @@ defmodule Raxol.Examples.Form do
     {state, []}
   end
 
+  @impl true
+  @spec render(map()) :: Raxol.Core.Renderer.Element.t() | nil
+  @dialyzer {:nowarn_function, render: 1}
   def render(state) do
-    content = render_content(state)
+    dsl_result =
+      View.column [style: %{border: :single, padding: 1}] do
+        # Form Title (optional)
+        if state.title do
+          View.text(state.title, style: %{bold: true, align: :center})
+        end
 
-    %Element{
-      tag: :form,
-      content: content,
-      style: %{
-        fg: :white,
-        bg: :black
-      },
-      attributes: %{
-        submitted: state.submitted,
-        error: state.error
-      }
-    }
+        # Render form fields
+        Enum.map(state.fields, fn field -> render_field(field, state) end)
+
+        # Render error message (if any)
+        if state.error do
+          View.text(state.error, style: %{color: :red})
+        end
+
+        # Render submit button
+        View.button([style: %{margin_top: 1}, on_click: :submit], state.submit_label)
+      end
+
+    Raxol.View.to_element(dsl_result)
   end
 
-  # Private Helpers
-
-  defp render_content(state) do
-    [
-      render_title(state),
-      render_error(state),
-      render_children(state),
-      render_status(state)
-    ]
-    |> Enum.reject(&is_nil/1)
-    |> Enum.join("\n")
-  end
-
-  defp render_title(state) do
-    "=== #{state.title} ==="
-  end
-
-  defp render_error(%{error: nil}), do: nil
-
-  defp render_error(%{error: error}) do
-    "[ERROR] #{error}"
-  end
-
-  defp render_children(state) do
-    state.children
-    |> Enum.map(&render_child/1)
-    |> Enum.join("\n")
-  end
-
-  defp render_child(child) do
-    case child.module.render(child.state) do
+  defp render_field(field, _state) do
+    case field.module.render(field.state) do
       %Element{content: content} when not is_nil(content) ->
-        "  " <> content
+        View.text(content, style: %{bold: true})
 
       %Element{} = element ->
-        "  " <> (element |> Map.get(:content, ""))
+        View.text(element |> Map.get(:content, ""), style: %{bold: true})
 
       _ ->
         ""
     end
-  end
-
-  defp render_status(%{submitted: true}) do
-    "Status: Submitted"
-  end
-
-  defp render_status(_) do
-    "Status: Not submitted"
   end
 end

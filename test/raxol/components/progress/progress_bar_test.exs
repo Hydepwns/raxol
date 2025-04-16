@@ -86,7 +86,7 @@ defmodule Raxol.Components.Progress.ProgressBarTest do
     end
 
     test "handles progress update events", %{state: state} do
-      event = %Raxol.Core.Events.Event{type: :progress_update, value: 60}
+      event = Raxol.Core.Events.Event.new(:progress_update, %{value: 60})
       {new_state, _commands} = ProgressBar.handle_event(event, state)
       assert new_state.value == 60
     end

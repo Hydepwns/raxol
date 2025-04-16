@@ -211,7 +211,7 @@ defmodule Raxol.Cloud.EdgeComputing do
   @doc """
   Checks if the system is currently operating in offline mode.
   """
-  def offline?() do
+  def offline? do
     state = get_state()
     state.cloud_status != :connected
   end
@@ -219,7 +219,7 @@ defmodule Raxol.Cloud.EdgeComputing do
   @doc """
   Gets the current status of the edge computing system.
   """
-  def status() do
+  def status do
     state = get_state()
 
     %{
@@ -237,7 +237,7 @@ defmodule Raxol.Cloud.EdgeComputing do
   @doc """
   Manually checks the cloud connection status and updates the system state.
   """
-  def check_connection() do
+  def check_connection do
     state = get_state()
 
     # Skip if in edge-only mode
@@ -283,7 +283,7 @@ defmodule Raxol.Cloud.EdgeComputing do
   @doc """
   Gets metrics for the edge computing system.
   """
-  def get_metrics() do
+  def get_metrics do
     state = get_state()
     state.metrics
   end
@@ -291,7 +291,7 @@ defmodule Raxol.Cloud.EdgeComputing do
   @doc """
   Clears the edge cache.
   """
-  def clear_cache() do
+  def clear_cache do
     Cache.clear()
     :ok
   end
@@ -318,7 +318,7 @@ defmodule Raxol.Cloud.EdgeComputing do
     end
   end
 
-  defp get_state() do
+  defp get_state do
     Process.get(@edge_key) || State.new()
   end
 
@@ -416,12 +416,12 @@ defmodule Raxol.Cloud.EdgeComputing do
     end
   end
 
-  defp process_pending_operations() do
+  defp process_pending_operations do
     # Process operations in the queue
     Queue.process_pending()
   end
 
-  defp perform_connection_check() do
+  defp perform_connection_check do
     # In a real implementation, this would check actual network connectivity
     # For now, just simulate with a high success rate
     :rand.uniform(100) <= 95
@@ -436,7 +436,7 @@ defmodule Raxol.Cloud.EdgeComputing do
     end)
   end
 
-  defp get_resource_info() do
+  defp get_resource_info do
     # In a real implementation, this would check actual system resources
     %{
       # percentage
@@ -568,7 +568,7 @@ defmodule Raxol.Cloud.EdgeComputing.Cache do
     end
   end
 
-  def clear() do
+  def clear do
     cache = get_cache()
 
     # Reset cache
@@ -577,7 +577,7 @@ defmodule Raxol.Cloud.EdgeComputing.Cache do
     :ok
   end
 
-  def usage() do
+  def usage do
     cache = get_cache()
 
     %{
@@ -590,7 +590,7 @@ defmodule Raxol.Cloud.EdgeComputing.Cache do
 
   # Private helpers
 
-  defp get_cache() do
+  defp get_cache do
     Process.get(@cache_key) || %{items: %{}, size: 0, max_size: 100_000_000}
   end
 
@@ -683,7 +683,7 @@ defmodule Raxol.Cloud.EdgeComputing.Queue do
     operation.id
   end
 
-  def process_pending() do
+  def process_pending do
     queue = get_queue()
 
     # Process each pending operation
@@ -712,14 +712,14 @@ defmodule Raxol.Cloud.EdgeComputing.Queue do
     }
   end
 
-  def pending_count() do
+  def pending_count do
     queue = get_queue()
     length(queue.operations)
   end
 
   # Private helpers
 
-  defp get_queue() do
+  defp get_queue do
     Process.get(@queue_key) || %{operations: [], next_id: 1}
   end
 
@@ -797,7 +797,7 @@ defmodule Raxol.Cloud.EdgeComputing.SyncManager do
 
   # Private helpers
 
-  defp get_sync_state() do
+  defp get_sync_state do
     Process.get(@sync_key) ||
       %{
         last_sync: nil,

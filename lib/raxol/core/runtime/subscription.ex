@@ -143,8 +143,8 @@ defmodule Raxol.Core.Runtime.Subscription do
       {:interval, timer_ref} ->
         :timer.cancel(timer_ref)
 
-      {:events, _} ->
-        Raxol.Core.Events.Manager.unsubscribe(subscription_id)
+      {:events, actual_id} ->
+        Raxol.Core.Events.Manager.unsubscribe(actual_id)
 
       {:file_watch, watcher_pid} ->
         Process.exit(watcher_pid, :normal)

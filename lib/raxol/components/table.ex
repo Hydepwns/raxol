@@ -1,5 +1,4 @@
 defmodule Raxol.Components.Table do
-  use Raxol.Component
   alias Raxol.View
 
   @moduledoc """
@@ -148,7 +147,7 @@ defmodule Raxol.Components.Table do
     # Sort data if sort parameters are provided
     sorted_data =
       if sort_by do
-        Enum.sort_by(data, &Map.get(&1, sort_by), sort_ordering(sort_dir))
+        Enum.sort_by(data, &Map.get(&1, sort_by), sort_dir)
       else
         data
       end
@@ -164,6 +163,7 @@ defmodule Raxol.Components.Table do
 
     # Render the table by constructing the map directly (bypassing box macro)
     table_opts = [id: id, style: table_style]
+
     table_children = fn ->
       View.column([], fn ->
         # Render table header
@@ -185,60 +185,61 @@ defmodule Raxol.Components.Table do
 
         # Construct body map directly
         body_children = fn ->
-            View.column([], fn ->
-              # Render each row
-              sorted_data
-              |> Enum.with_index()
-              |> Enum.map(fn {row_data, index} ->
-                # Determine if this row is selected
-                is_selected =
-                  selected && Map.get(row_data, select_key) == selected
+          View.column([], fn ->
+            # Render each row
+            sorted_data
+            |> Enum.with_index()
+            |> Enum.map(fn {row_data, index} ->
+              # Determine if this row is selected
+              is_selected =
+                selected && Map.get(row_data, select_key) == selected
 
-                # Determine row style based on zebra striping and selection
-                row_final_style =
-                  cond do
-                    is_selected ->
-                      Map.merge(row_style, selected_style)
+              # Determine row style based on zebra striping and selection
+              row_final_style =
+                cond do
+                  is_selected ->
+                    Map.merge(row_style, selected_style)
 
-                    zebra_stripe && rem(index, 2) == 1 ->
-                      Map.merge(row_style, zebra_style)
+                  zebra_stripe && rem(index, 2) == 1 ->
+                    Map.merge(row_style, zebra_style)
 
-                    true ->
-                      row_style
-                  end
+                  true ->
+                    row_style
+                end
 
-                # Create click handler for row selection
-                row_click_handler =
-                  if on_select do
-                    fn -> on_select.(Map.get(row_data, select_key)) end
-                  else
-                    nil
-                  end
+              # Create click handler for row selection
+              row_click_handler =
+                if on_select do
+                  fn -> on_select.(Map.get(row_data, select_key)) end
+                else
+                  nil
+                end
 
-                # Render the row
-                row_props = [
-                  id: "#{id}_row_#{index}",
-                  style: row_final_style
-                ]
+              # Render the row
+              row_props = [
+                id: "#{id}_row_#{index}",
+                style: row_final_style
+              ]
 
-                # Add click handler if provided
-                row_props =
-                  if row_click_handler do
-                    Keyword.put(row_props, :on_click, row_click_handler)
-                  else
-                    row_props
-                  end
+              # Add click handler if provided
+              row_props =
+                if row_click_handler do
+                  Keyword.put(row_props, :on_click, row_click_handler)
+                else
+                  row_props
+                end
 
-                View.row(row_props, fn ->
-                  # Render each cell in the row
-                  normalized_columns
-                  |> Enum.map(fn column ->
-                    render_cell(row_data, column, index)
-                  end)
+              View.row(row_props, fn ->
+                # Render each cell in the row
+                normalized_columns
+                |> Enum.map(fn column ->
+                  render_cell(row_data, column, index)
                 end)
               end)
             end)
+          end)
         end
+
         %{type: :box, opts: body_props, children: List.wrap(body_children.())}
 
         # Render footer if provided
@@ -247,6 +248,7 @@ defmodule Raxol.Components.Table do
         end
       end)
     end
+
     %{type: :box, opts: table_opts, children: List.wrap(table_children.())}
   end
 
@@ -322,7 +324,11 @@ defmodule Raxol.Components.Table do
         end
 
         # Spacer - construct map directly
-        %{type: :box, opts: [style: %{width: :flex}], children: List.wrap(View.text(""))}
+        %{
+          type: :box,
+          opts: [style: %{width: :flex}],
+          children: List.wrap(View.text(""))
+        }
 
         # Pagination buttons
         View.row([style: %{gap: 1}], fn ->
@@ -403,24 +409,26 @@ defmodule Raxol.Components.Table do
 
   # Normalize columns to map format
   defp normalize_columns(columns) do
-    Enum.map(columns, fn
-      column when is_atom(column) ->
-        %{
-          key: column,
-          label: to_string(column) |> String.capitalize(),
-          alignment: :left,
-          sortable: true
-        }
+    Enum.map(columns, &normalize_column/1)
+  end
 
-      %{key: _} = column ->
-        defaults = %{
-          alignment: :left,
-          sortable: true,
-          label: to_string(column.key) |> String.capitalize()
-        }
+  defp normalize_column(col) when is_atom(col) do
+    %{
+      key: col,
+      label: to_string(col) |> String.capitalize(),
+      alignment: :left,
+      sortable: true
+    }
+  end
 
-        Map.merge(defaults, column)
-    end)
+  defp normalize_column(%{key: _} = column) do
+    defaults = %{
+      alignment: :left,
+      sortable: true,
+      label: to_string(column.key) |> String.capitalize()
+    }
+
+    Map.merge(defaults, column)
   end
 
   # Render table header row
@@ -445,13 +453,34 @@ defmodule Raxol.Components.Table do
 
         # Add style constraints
         style_constraints = %{}
-        style_constraints = if Map.has_key?(column, :width), do: Map.put(style_constraints, :width, column.width), else: style_constraints
-        style_constraints = if Map.has_key?(column, :min_width), do: Map.put(style_constraints, :min_width, column.min_width), else: style_constraints
-        style_constraints = if Map.has_key?(column, :max_width), do: Map.put(style_constraints, :max_width, column.max_width), else: style_constraints
-        header_props_map = Map.put(header_props_map, :style, Map.merge(header_props_map.style, style_constraints))
+
+        style_constraints =
+          if Map.has_key?(column, :width),
+            do: Map.put(style_constraints, :width, column.width),
+            else: style_constraints
+
+        style_constraints =
+          if Map.has_key?(column, :min_width),
+            do: Map.put(style_constraints, :min_width, column.min_width),
+            else: style_constraints
+
+        style_constraints =
+          if Map.has_key?(column, :max_width),
+            do: Map.put(style_constraints, :max_width, column.max_width),
+            else: style_constraints
+
+        header_props_map =
+          Map.put(
+            header_props_map,
+            :style,
+            Map.merge(header_props_map.style, style_constraints)
+          )
 
         # Add click handler
-        header_props_map = if header_click, do: Map.put(header_props_map, :on_click, header_click), else: header_props_map
+        header_props_map =
+          if header_click,
+            do: Map.put(header_props_map, :on_click, header_click),
+            else: header_props_map
 
         # Calculate sort indicator label
         sort_indicator_label =
@@ -539,17 +568,14 @@ defmodule Raxol.Components.Table do
       case column do
         %{render: render_fun} when is_function(render_fun, 1) ->
           render_fun.(row_data)
+
         _ ->
           View.text(display_value, style: cell_style)
       end
     end
+
     %{type: :box, opts: cell_props, children: List.wrap(cell_children.())}
   end
-
-  # Get sort ordering function based on direction
-  defp sort_ordering(:asc), do: & &1
-  defp sort_ordering(:desc), do: &(&1 |> Enum.reverse())
-  defp sort_ordering(_), do: & &1
 
   # Calculate which page numbers to show in pagination
   defp calculate_page_numbers(current_page, total_pages) do

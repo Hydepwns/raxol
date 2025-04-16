@@ -1,11 +1,11 @@
 defmodule Raxol.Core.UXRefinementKeyboardTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.UXRefinement
-  alias Raxol.Core.KeyboardShortcuts
-  alias Raxol.Core.FocusManager
-  alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.Accessibility
+  alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.FocusManager
+  alias Raxol.Core.KeyboardShortcuts
+  alias Raxol.Core.UXRefinement
 
   setup do
     # Initialize UX refinement

@@ -1,6 +1,6 @@
 defmodule Ratatouille.Renderer.CellsTest do
   use ExUnit.Case, async: true
-  use Bitwise
+  import Bitwise
 
   alias Ratatouille.{Constants, Renderer.Cells}
 

@@ -124,7 +124,6 @@ defmodule Raxol.Components.Terminal.ANSI do
       74 -> erase_display(state, [0])
       # Clear from cursor to end of line
       75 -> erase_line(state, [0])
-      _ -> state
     end
   end
 
@@ -150,6 +149,7 @@ defmodule Raxol.Components.Terminal.ANSI do
     %{state | cursor: {max(0, x - n), y}}
   end
 
+  @dialyzer {:nowarn_function, erase_display: 2}
   defp erase_display(state, [n]) do
     case n do
       # Clear from cursor to end
@@ -162,6 +162,7 @@ defmodule Raxol.Components.Terminal.ANSI do
     end
   end
 
+  @dialyzer {:nowarn_function, erase_line: 2}
   defp erase_line(state, [n]) do
     case n do
       # Clear from cursor to end of line

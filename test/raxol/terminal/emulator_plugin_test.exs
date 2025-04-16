@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.EmulatorPluginTest do
   use ExUnit.Case
-  alias Raxol.Terminal.Emulator
   alias Raxol.Plugins.HyperlinkPlugin
+  alias Raxol.Terminal.Emulator
 
   describe "terminal emulator with plugins" do
     test "loads and uses plugins" do

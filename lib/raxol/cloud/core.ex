@@ -6,7 +6,10 @@ defmodule Raxol.Cloud.Core do
   providing a unified interface for cloud operations.
   """
 
-  alias Raxol.Cloud.{EdgeComputing, Monitoring, Integrations, StateManager}
+  alias Raxol.Cloud.EdgeComputing
+  alias Raxol.Cloud.Integrations
+  alias Raxol.Cloud.Monitoring
+  alias Raxol.Cloud.StateManager
 
   # Central state manager process name
   @state_name :raxol_cloud_state

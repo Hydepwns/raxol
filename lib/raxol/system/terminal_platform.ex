@@ -59,6 +59,7 @@ defmodule Raxol.System.TerminalPlatform do
         }
       }
   """
+  @dialyzer {:nowarn_function, get_terminal_capabilities: 0}
   @spec get_terminal_capabilities() :: none()
   def get_terminal_capabilities do
     # Function is unused, returning :none as per Dialyzer
@@ -92,6 +93,7 @@ defmodule Raxol.System.TerminalPlatform do
       iex> TerminalPlatform.supports_feature?(:true_color)
       true
   """
+  @dialyzer {:nowarn_function, supports_feature?: 1}
   @spec supports_feature?(terminal_feature()) :: none()
   def supports_feature?(_feature) do
     # Function is unused, returning :none as per Dialyzer
@@ -112,7 +114,7 @@ defmodule Raxol.System.TerminalPlatform do
       iex> TerminalPlatform.get_supported_features()
       [:true_color, :unicode, :mouse, :clipboard]
   """
-  @spec get_supported_features() :: map()
+  @spec get_supported_features() :: %{(:colors_256 | :mouse | :title | :true_color) => true}
   def get_supported_features do
     term = System.get_env("TERM") || ""
     term_program = System.get_env("TERM_PROGRAM") || ""

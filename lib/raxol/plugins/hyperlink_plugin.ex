@@ -65,20 +65,21 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
             case open_url(url) do
               :ok ->
                 # URL opened successfully, halt event propagation
-                {:ok, plugin_state, :halt}
+                {:ok, plugin_state}
+
               {:error, _reason} ->
                 # Failed to open, propagate event (maybe app wants to handle it?)
-                {:ok, plugin_state, :propagate}
+                {:ok, plugin_state}
             end
 
           _ ->
             # Click was not on a cell with a hyperlink style
-            {:ok, plugin_state, :propagate}
+            {:ok, plugin_state}
         end
 
       _ ->
         # Ignore other mouse events (right click, wheel, etc.)
-        {:ok, plugin_state, :propagate}
+        {:ok, plugin_state}
     end
   end
 
@@ -118,7 +119,8 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
     command =
       case :os.type() do
         {:unix, :darwin} -> "open"
-        {:unix, _} -> "xdg-open" # Covers Linux and other Unix-like
+        # Covers Linux and other Unix-like
+        {:unix, _} -> "xdg-open"
         {:win32, _} -> "start"
       end
 
@@ -126,8 +128,12 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
       {_output, 0} ->
         Logger.info("[HyperlinkPlugin] Opened URL: #{url}")
         :ok
+
       {output, exit_code} ->
-        Logger.error("[HyperlinkPlugin] Failed to open URL '#{url}' with command '#{command}'. Exit code: #{exit_code}, Output: #{output}")
+        Logger.error(
+          "[HyperlinkPlugin] Failed to open URL '#{url}' with command '#{command}'. Exit code: #{exit_code}, Output: #{output}"
+        )
+
         {:error, :command_failed}
     end
   end

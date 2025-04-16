@@ -22,8 +22,7 @@ defmodule Raxol.Components.Selection.List do
 
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Events.Subscription
-  alias Raxol.View.Components
-  alias Raxol.View.Layout
+  alias Raxol.View
 
   @default_height 10
   @default_width 40
@@ -109,29 +108,35 @@ defmodule Raxol.Components.Selection.List do
 
   @impl true
   def render(state) do
-    visible_items =
-      Enum.slice(state.filtered_items, state.scroll_offset, state.height)
-
-    Layout.column do
-      for {item, index} <- Enum.with_index(visible_items) do
-        actual_index = index + state.scroll_offset
-        render_item(item, actual_index == state.selected_index, state)
+    dsl_result =
+      View.box style: %{width: state.width, height: state.height} do
+        state.items
+        |> Enum.slice(state.scroll_offset, state.height)
+        |> Enum.with_index(state.scroll_offset)
+        |> Enum.map(fn {item, index} ->
+          render_item(item, index, state)
+        end)
       end
-    end
+
+    Raxol.View.to_element(dsl_result)
   end
 
-  defp render_item(item, selected?, state) do
-    padded_text = String.pad_trailing(item, state.width)
+  defp render_item(item, index, state) do
+    content = state.render_item.(item)
+    is_selected = index == state.selected_index
+    is_focused = is_selected and state.focused # Use component's focused state
 
-    if selected? do
-      Components.text(
-        content: padded_text,
-        color: state.style.selected_text_color,
-        background: state.style.selected_color
-      )
-    else
-      Components.text(content: padded_text, color: state.style.text_color)
-    end
+    style =
+      cond do
+        is_focused -> state.style.focused_item_style
+        is_selected -> state.style.selected_item_style
+        true -> state.style.item_style
+      end
+
+    # Prepend cursor if focused
+    display_content = if is_focused, do: "> " <> content, else: "  " <> content
+
+    View.text(display_content, style: style)
   end
 
   @impl true

@@ -134,7 +134,7 @@ defmodule Raxol.Components.Selection.DropdownTest do
     end
 
     test "toggles on space key", %{state: state} do
-      event = %Event{type: :key, key: " "}
+      event = Event.key(" ")
       {new_state, _} = Dropdown.handle_event(event, state)
       assert new_state.is_open == true
 
@@ -147,7 +147,7 @@ defmodule Raxol.Components.Selection.DropdownTest do
 
     test "closes on escape key", %{state: state} do
       state = %{state | is_open: true}
-      event = %Event{type: :key, key: "Escape"}
+      event = Event.key("Escape")
       {new_state, _} = Dropdown.handle_event(event, state)
       assert new_state.is_open == false
     end
@@ -156,13 +156,13 @@ defmodule Raxol.Components.Selection.DropdownTest do
       state = %{state | is_open: true}
 
       # Type 't'
-      event = %Event{type: :key, key: "t"}
+      event = Event.key("t")
       {new_state, _} = Dropdown.handle_event(event, state)
       assert new_state.filter == "t"
       assert new_state.list_state.filter == "t"
 
       # Backspace
-      event = %Event{type: :key, key: "Backspace"}
+      event = Event.key("Backspace")
       {new_state, _} = Dropdown.handle_event(event, new_state)
       assert new_state.filter == ""
       assert new_state.list_state.filter == ""
@@ -172,13 +172,13 @@ defmodule Raxol.Components.Selection.DropdownTest do
       state = %{state | is_open: true}
 
       # Arrow down should be handled by list component
-      event = %Event{type: :key, key: "ArrowDown"}
+      event = Event.key("ArrowDown")
       {new_state, _} = Dropdown.handle_event(event, state)
       assert new_state.list_state.selected_index == 1
     end
 
     test "handles click events", %{state: state} do
-      event = %Event{type: :click}
+      event = Event.new(:click, %{})
       {new_state, _} = Dropdown.handle_event(event, state)
       assert new_state.is_open == true
       assert new_state.focused == true

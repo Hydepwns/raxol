@@ -8,18 +8,21 @@ defmodule Raxol.Examples.ColorSystemDemo do
   @doc """
   Renders a demo of the color system capabilities.
   """
+  @dialyzer {:nowarn_function, render: 0}
   def render do
     # Create a demo theme
     theme = create_demo_theme()
 
     # Render different views
-    [
+    rendered_output = [
       render_theme_info(theme),
       render_palette_view(theme.palette),
       render_color_adaptation_view(theme),
       render_accessibility_view(theme)
     ]
     |> Enum.join("\n\n")
+
+    rendered_output
   end
 
   defp create_demo_theme do
@@ -67,6 +70,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
     |> Enum.join("\n")
   end
 
+  @dialyzer {:nowarn_function, render_color_adaptation_view: 1}
   defp render_color_adaptation_view(theme) do
     """
     Color Adaptation:
@@ -78,6 +82,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
     """
   end
 
+  @dialyzer {:nowarn_function, render_accessibility_view: 1}
   defp render_accessibility_view(theme) do
     """
     Accessibility:
@@ -88,6 +93,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
     """
   end
 
+  @dialyzer {:nowarn_function, check_contrast: 2}
   defp check_contrast(color1, color2) do
     ratio = Utilities.contrast_ratio(color1, color2)
 

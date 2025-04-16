@@ -1,13 +1,24 @@
 defmodule Raxol.Cloud do
   @moduledoc "Cloud integration system for Raxol applications."
 
-  alias Raxol.Cloud.{Core, Config}
+  alias Raxol.Cloud.Config
+  alias Raxol.Cloud.Core
+  alias Raxol.Cloud.EdgeComputing
 
   # Lifecycle functions
   def init(opts \\ []), do: Core.init(opts)
-  def start(), do: Core.start()
-  def stop(), do: Core.stop()
-  def status(), do: Core.status()
+  def start do
+    # Logic to start cloud services
+    Core.start()
+    EdgeComputing.init([])
+  end
+  def stop do
+    # Logic to stop cloud services
+    Core.stop()
+  end
+  def status do
+    %{core: Core.status(), edge: EdgeComputing.status()}
+  end
 
   # Core operations
   def execute(fun, opts \\ []), do: Core.execute(fun, opts)

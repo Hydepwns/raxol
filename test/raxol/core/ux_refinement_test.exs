@@ -1,8 +1,8 @@
 defmodule Raxol.Core.UXRefinementTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.UXRefinement
   alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Core.UXRefinement
 
   setup do
     # Initialize dependencies
