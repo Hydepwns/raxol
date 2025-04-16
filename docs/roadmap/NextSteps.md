@@ -13,42 +13,45 @@ This document outlines the current status of the Raxol framework and provides cl
 
 ## Current Status Overview
 
-### Completed Features
+### Features in Progress / Blocked
 
-- **Core Architecture**: Runtime system, event handling, TEA implementation
-- **UI Components**: Comprehensive component library with accessibility support
-- **Styling System**: Advanced color management, layout system, typography
-- **Form System**: Complete form handling with validation and accessibility
-- **Internationalization**: Multi-language support with RTL handling
-- **Accessibility**: Screen reader support, high contrast mode, keyboard navigation
-- **Data Visualization**: Basic Chart/TreeMap components exist (TS source?), Dashboard integration via widgets.
-- **Dependency Fixes**: Resolved compilation issues with `ex_termbox` dependency.
-- **Compilation Stabilization**: Resolved `HEEx.Sigil not loaded` errors and various compiler warnings.
-- **Plugin System Basics**: Basic mouse event handling, OSC 8 parsing, Clipboard paste injection, ImagePlugin rendering fix (needs testing).
-- **Dashboard Layout Basics**: Grid layout, widget container, drag/resize, basic persistence (including options).
+- **Runtime Stability:** Application starts but crashes immediately during the first render cycle due to unexplained state loss (`KeyError: :dashboard_model`). Underlying state loss mechanism **unknown**. Dimension reporting workaround applied.
+- **Runtime Rendering Pipeline:** **BLOCKED** by runtime crash. Visual verification of widgets, chart, treemap, and image rendering is pending.
+- **Dashboard Layout System**: Logic believed fixed, but verification is **BLOCKED**. Layout saving/loading needs testing.
+- **Performance Monitoring & Cleanup**: (Lower Priority) Completing the performance scoring/alerting tools & resolving minor existing analysis warnings.
+- **Plugin System Testing**: Image/Visualization rendering **BLOCKED**. `HyperlinkPlugin` cross-platform OS interaction **needs testing**.
+- **Advanced Documentation**: (Lower Priority) Creating debugging guides and optimization case studies.
+- **Screen Buffer Logic**: `ScreenBuffer.diff/2` and `update/2` implemented, integrated, and fixed.
 
-### Features in Progress
+## Tactical Next Steps
 
-- **Dashboard Layout System**: Implementing actual visualization rendering via `VisualizationPlugin`.
-- **Performance Monitoring & Cleanup**: Completing the performance scoring/alerting tools & resolving minor existing analysis warnings.
-- **Advanced Documentation**: Creating debugging guides and optimization case studies
-- **AI Integration**: Beginning implementation of AI-assisted development tools
+**CURRENT FOCUS:** Debug State Loss
 
-## Tactical Pre-computation (Very Next Steps)
+1. [ ] **Investigate State Loss:** Determine _why_ the `RuntimeDebug` state's `:model` is reset to `%{}%` between `handle_continue/2` returning and `handle_info(:render, state)` executing.
+   - Logs confirm state is correct after `init/1` and during `handle_continue/2`.
+   - Hypothesis: Unexpected message interaction, NIF interaction, or GenServer lifecycle issue.
+   - _Next Test:_ Add logging _immediately after_ the `GenServer.start_link` call in `start_link/1` to further pinpoint the timing of the state loss.
 
-**COMPLETED:** Compilation is stable.
+**NEXT FOCUS (Post-State-Loss-Fix):** Run & Verify Rendering
 
-**CURRENT FOCUS:** Implement actual Chart/TreeMap rendering within the `VisualizationPlugin`.
+2. [ ] **Run & Verify Rendering:** Execute `mix run --no-halt` (prefer foreground without redirection for visual check).
+   - Visually verify if TUI rendering is correct for all widgets (Chart, Image, TreeMap, Text Input) (**Pending**).
+   - Check logs (`[GridContainer.calculate_widget_bounds]` debug logs) for correct bounds calculations (**Pending Visual Confirmation**).
+   - Address previously observed runtime warnings (`Unhandled view element type`, `Skipping invalid cell change`) if they appear.
 
-1.  **Implement Rendering Logic:** Enhance `VisualizationPlugin.render_chart_to_cells/3` and `render_treemap_to_cells/3` to draw actual visualizations using the provided `data`, `opts`, and `bounds`. This likely involves:
-    - Choosing a TUI rendering strategy (e.g., direct character manipulation, integrating with a library like `Contex`).
-    - Translating `data` and `opts` into the chosen strategy's format.
-    - Generating the list of cell maps `%{x, y, char, fg, bg, style}` within the given `bounds`.
-2.  **Test Visualization Rendering:** Verify that charts and treemaps render correctly within their widget containers.
-3.  **Verify Hyperlink OS Interaction:** Test `HyperlinkPlugin.open_url/1` on different operating systems (macOS, Linux, Windows).
-4.  **Run Static Analysis:** Run `mix dialyzer` and `mix credo` to catch any remaining type or style issues.
+**FURTHER NEXT STEPS (Post-Visual Verification):** Address Plugins, Layout, Hacks.
 
-## Immediate Development Priorities (Post-Visualization Rendering)
+3. [ ] **Test Plugin Functionality:**
+   - Test `HyperlinkPlugin.open_url/1` on different operating systems.
+4. [ ] **Test Layout Persistence:**
+   - Verify `Dashboard.save_layout/1` saves the correct data.
+   - Verify `Dashboard.load_layout/0` loads the saved layout correctly.
+5. [ ] **Refine Rendering Logic:** Enhance `VisualizationPlugin` TUI rendering (Chart and TreeMap) for better accuracy, layout, and aesthetics.
+6. [ ] **Address Type Warnings:** Fix compiler warnings for type mismatches in `Runtime` event handling.
+7. [ ] **Investigate `ex_termbox` Dimension Issue:** Research the root cause of the incorrect dimension reporting (remove hardcoding).
+8. [ ] **Run Static Analysis (Lower Priority):** Run `mix dialyzer` and `mix credo`.
+
+## Immediate Development Priorities (Post-Crash-Fix & Visualization Rendering)
 
 ### 1. Dashboard Layout System Refinements
 
@@ -108,12 +111,17 @@ Continue developing AI capabilities:
 
 ## Technical Implementation Plan
 
-### Visualization Rendering Implementation (Current Focus)
+### State Loss Debugging (Current Focus)
 
-1.  **Week X**: Research/Choose TUI rendering strategy (Contex integration? Custom drawing?).
-2.  **Week X**: Implement `VisualizationPlugin.render_chart_to_cells/3`.
-3.  **Week X**: Implement `VisualizationPlugin.render_treemap_to_cells/3`.
-4.  **Week Y**: Test rendering, fix layout/clipping issues, test hyperlink interaction.
+1. **Immediate:** Add logging after `GenServer.start_link` in `start_link/1`.
+2. **Follow-up:** Based on logs, investigate potential causes (message interference, NIF issues, GenServer lifecycle).
+
+### Visualization Rendering Implementation (Blocked)
+
+1. **Week X**: Research/Choose TUI rendering strategy (Contex integration? Custom drawing?).
+2. **Week X**: Implement `VisualizationPlugin.render_chart_to_cells/3`.
+3. **Week X**: Implement `VisualizationPlugin.render_treemap_to_cells/3`.
+4. **Week Y**: Test rendering, fix layout/clipping issues, test hyperlink interaction.
 
 ### Dashboard Layout System Refinements (Next)
 
@@ -169,54 +177,10 @@ For developers interested in contributing, these are areas where help would be v
 
 ## Next Team Sync Focus
 
-1. Review visualization rendering implementation.
-2. Plan next steps for Dashboard Refinements (Config Panel, Data Sources).
-3. Discuss priorities for Performance Tools / Animation / AI.
-
-## Prompt for Next AI Developer
-
-```
-You are an AI assistant helping to develop the Raxol framework. The team has recently refactored the visualization widget rendering pipeline to resolve compilation issues. Charts and TreeMaps are now represented as data structures (`%{type: :chart, ...}`) processed by the Runtime, which calls rendering functions in a new `VisualizationPlugin`, passing the calculated layout bounds.
-
-**Current Status:**
-- Compilation is stable (`mix compile --warnings-as-errors` passes).
-- `ChartWidget` and `TreeMapWidget` return data maps.
-- `Dashboard` renders widgets, passing data maps to `WidgetContainer`.
-- `Runtime.process_view_element` identifies `:chart`/`:treemap` maps and calls `VisualizationPlugin.render_*_to_cells(data, opts, bounds)`.
-- `VisualizationPlugin` exists and is loaded, but `render_*_to_cells` currently draws simple placeholder boxes.
-- Hyperlink click detection and OS interaction code exists but needs testing.
-- ImagePlugin rendering fix implemented (needs testing).
-
-**Your Task:**
-Implement the actual rendering logic within `VisualizationPlugin.render_chart_to_cells/3` and `VisualizationPlugin.render_treemap_to_cells/3`.
-
-**Specifically, you should:**
-1.  **Choose/Implement Rendering Strategy:** Decide how to render charts/treemaps in the terminal (e.g., integrate `Contex`, use TUI drawing primitives). Implement this strategy within the plugin functions.
-2.  **Use Provided Data:** Utilize the `data`, `opts`, and `bounds` arguments passed by the Runtime to generate the correct visualization within the allocated space.
-3.  **Return Cell List:** Ensure the functions return a flat list of cell maps (`%{x: _, y: _, char: _, fg: _, bg: _, style: %{}}`) suitable for the Runtime's `ExTermbox.Bindings.change_cell` loop.
-4.  **Test Rendering:** Verify that basic charts and treemaps render correctly within their widget containers.
-5.  **(Optional/Next)** Test `HyperlinkPlugin.open_url/1` cross-platform.
-6.  **(Optional/Next)** Run `mix dialyzer` and `mix credo`.
-
-You should focus on `lib/raxol/plugins/visualization_plugin.ex`. Review the `data` and `opts` structure passed from `lib/raxol/my_app.ex` via the widgets.
-```
+1. Review state loss debugging progress.
+2. Discuss potential causes and next debugging steps.
+3. Tentatively plan for visual verification once crash is resolved.
 
 ## Resources and References
 
-- Visualization Plugin: `lib/raxol/plugins/visualization_plugin.ex`
-- Runtime Rendering: `lib/raxol/runtime.ex` (`process_view_element`)
-- Widget Data Structure: `lib/raxol/components/dashboard/widgets/`
-- Initial Data Config: `lib/raxol/my_app.ex` (`init/1`)
-- Contex Library (Dependency): [Check mix.exs or Hexdocs]
-
-## Contribution Guidelines
-
-When implementing new features:
-
-1. Maintain TypeScript type safety throughout
-2. Ensure accessibility is considered from the beginning
-3. Integrate with performance monitoring tools
-4. Write comprehensive documentation
-5. Create example implementations and demos
-6. Follow existing code patterns and standards
-7. Update the roadmap with progress
+- Visualization Plugin: `VisualizationPlugin`
