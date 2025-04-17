@@ -82,42 +82,83 @@ defmodule Raxol.Components.Dashboard.Dashboard do
 
     if File.exists?(layout_file) do
       try do
-        case File.read(layout_file) do
-          {:ok, binary_data} ->
-            layout_data = :erlang.binary_to_term(binary_data)
-            # Basic validation: check if it's a list
-            if is_list(layout_data) do
-              Logger.info("Dashboard layout loaded from #{layout_file}")
-              layout_data
-            else
-              Logger.warning(
-                "Invalid layout data format in #{layout_file}, using default."
-              )
+        # Read binary data
+        {:ok, binary_data} = File.read(layout_file)
+        # Deserialize
+        layout_data = :erlang.binary_to_term(binary_data)
 
-              # Return empty list on invalid format
-              []
-            end
-
-          {:error, reason} ->
-            Logger.error("Failed to read layout file #{layout_file}: #{reason}")
-            # Return empty list on read error
-            []
-        end
+        Logger.info("Dashboard layout loaded from #{layout_file}")
+        layout_data
       rescue
         e ->
           Logger.error(
-            "Failed to deserialize layout data from #{layout_file}: #{inspect(e)}"
+            "Failed to load dashboard layout from #{layout_file}: #{inspect(e)}"
           )
 
-          # Return empty list on deserialization error
           []
       end
     else
-      Logger.info("Layout file #{layout_file} not found, using default layout.")
-      # Return empty list if file doesn't exist
+      Logger.info("No saved dashboard layout found at #{layout_file}")
       []
     end
   end
+
+  @doc """
+  Initializes the Dashboard state from a saved layout.
+  If no saved layout exists, returns default widgets with the given grid configuration.
+
+  This function loads widget configurations using load_layout/0 and initializes
+  the dashboard model with those widgets and the provided grid_config.
+
+  Returns {:ok, model} on success, or {:error, reason} on failure.
+  """
+  def init_from_saved_layout(default_widgets, grid_config)
+      when is_list(default_widgets) and is_map(grid_config) do
+    # Try to load saved widgets from file
+    loaded_widgets = load_layout()
+
+    # If we have loaded widgets, use them - otherwise use defaults
+    widgets =
+      if loaded_widgets && length(loaded_widgets) > 0 do
+        Logger.info("Initializing dashboard from saved layout with #{length(loaded_widgets)} widgets")
+        loaded_widgets
+      else
+        Logger.info("No saved layout found, initializing dashboard with #{length(default_widgets)} default widgets")
+        default_widgets
+      end
+
+    # Verify widgets are valid before initializing
+    if validate_widgets(widgets) do
+      {:ok, %Model{widgets: widgets, grid_config: grid_config}}
+    else
+      Logger.error("Invalid widget configurations in saved layout, using defaults")
+      {:ok, %Model{widgets: default_widgets, grid_config: grid_config}}
+    end
+  end
+
+  @doc """
+  Validates a list of widget configurations to ensure they can be properly rendered.
+  Returns true if widgets are valid, false otherwise.
+  """
+  def validate_widgets(widgets) when is_list(widgets) do
+    # Check that all widgets have required fields
+    Enum.all?(widgets, fn widget ->
+      required_fields = [:id, :type, :title, :grid_spec]
+      required_grid_fields = [:col, :row, :width, :height]
+
+      has_required_fields = Enum.all?(required_fields, &Map.has_key?(widget, &1))
+      has_grid_fields = widget[:grid_spec] && Enum.all?(required_grid_fields, &Map.has_key?(widget.grid_spec, &1))
+
+      valid_type = widget[:type] in [:chart, :treemap, :info, :text_input, :image]
+
+      has_required_fields && has_grid_fields && valid_type
+    end)
+  end
+
+  # Default implementation for empty list
+  def validate_widgets([]), do: true
+  # Handle nil case
+  def validate_widgets(nil), do: false
 
   @doc """
   Renders the dashboard based on the current state.
@@ -252,23 +293,31 @@ defmodule Raxol.Components.Dashboard.Dashboard do
 
       %{type: :mouse, event_type: :mouse_drag, x: x, y: y} ->
         cond do
+          # Resizing a widget
           model.resizing ->
-            %{widget_id: widget_id, start_spec: start_spec} = model.resizing
-            {target_col, target_row} = coords_to_grid_cell(x, y, grid_config)
-            new_col_span = max(1, target_col - start_spec.col + 1)
-            new_row_span = max(1, target_row - start_spec.row + 1)
+            %{widget_id: widget_id, start_mouse: start_mouse, start_spec: start_spec} = model.resizing
 
-            new_spec = %{
-              start_spec
-              | col_span: new_col_span,
-                row_span: new_row_span
-            }
+            # Calculate delta movement in pixels
+            delta_x = x - start_mouse.x
+            delta_y = y - start_mouse.y
 
+            # Resize logic
+            {cell_width, cell_height} = GridContainer.get_cell_dimensions(grid_config)
+
+            # Convert pixel delta to grid units (with minimum sizes)
+            delta_col = max(0, round(delta_x / cell_width))
+            delta_row = max(0, round(delta_y / cell_height))
+
+            # Calculate new width/height (clamped to grid bounds)
+            new_width = min(grid_config.cols, max(1, start_spec.width + delta_col))
+            new_height = min(grid_config.rows, max(1, start_spec.height + delta_row))
+
+            new_spec = %{start_spec | width: new_width, height: new_height}
             current_widget = Enum.find(model.widgets, &(&1.id == widget_id))
 
             if new_spec != current_widget.grid_spec do
               Logger.debug(
-                "[Dashboard] Resizing widget #{widget_id} to span=(#{new_col_span}, #{new_row_span})"
+                "[Dashboard] Resizing widget #{widget_id} to width=#{new_width}, height=#{new_height}"
               )
 
               new_widgets =
@@ -278,10 +327,11 @@ defmodule Raxol.Components.Dashboard.Dashboard do
 
               %{model | widgets: new_widgets}
             else
-              # No change in grid spec
+              # No change in grid dimensions
               model
             end
 
+          # Dragging a widget
           model.dragging ->
             %{widget_id: widget_id, start_spec: start_spec, offset: offset} =
               model.dragging
@@ -346,6 +396,68 @@ defmodule Raxol.Components.Dashboard.Dashboard do
       # Ignore other event types for now
       _ ->
         model
+    end
+  end
+
+  @doc """
+  Handles updates to the dashboard and ensures layout persistence.
+  This is a wrapper around update/2 that will save the layout when significant changes occur.
+  Returns both the updated model and a boolean indicating if a layout save was triggered.
+
+  Use this function in preference to update/2 when automatic layout persistence is desired.
+  """
+  def handle_update(event, %Model{} = model) do
+    # Track if this is a resize or drag completion event
+    save_needed = case event do
+      # Mouse up after drag or resize should trigger save
+      %{type: :mouse, event_type: :mouse_up} ->
+        model.dragging != nil || model.resizing != nil
+
+      # Other significant events could be added here
+      _ -> false
+    end
+
+    # Call the regular update function to perform the actual update
+    updated_model = update(event, model)
+
+    # If this was a significant change, save the layout
+    if save_needed do
+      Logger.debug("[Dashboard] Saving layout after significant change (drag/resize completed)")
+      save_layout(updated_model.widgets)
+      {updated_model, true}
+    else
+      {updated_model, false}
+    end
+  end
+
+  @doc """
+  Updates a specific widget's configuration and persists the change to layout.
+  This function is used for programmatic widget updates (not from mouse events).
+
+  Returns {:ok, updated_model} on success, or {:error, reason} on failure.
+  """
+  def update_widget(%Model{} = model, widget_id, update_fn) when is_function(update_fn, 1) do
+    # Find the widget to update
+    case Enum.find_index(model.widgets, fn w -> w.id == widget_id end) do
+      nil ->
+        {:error, "Widget with ID #{widget_id} not found"}
+
+      index ->
+        # Apply the update function to the widget
+        updated_widgets = List.update_at(model.widgets, index, update_fn)
+
+        # Create updated model
+        updated_model = %{model | widgets: updated_widgets}
+
+        # Save the layout
+        case save_layout(updated_widgets) do
+          :ok ->
+            {:ok, updated_model}
+
+          error ->
+            Logger.error("[Dashboard] Failed to save layout after widget update: #{inspect(error)}")
+            {:ok, updated_model} # Still return updated model even if save failed
+        end
     end
   end
 
