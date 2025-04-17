@@ -82,7 +82,8 @@ defmodule Raxol.Terminal.Cell do
   """
   def new_wide_placeholder(style) do
     %__MODULE__{
-      char: " ", # Placeholder has no visible char
+      # Placeholder has no visible char
+      char: " ",
       style: style,
       is_wide_placeholder: true
     }
@@ -296,7 +297,8 @@ defmodule Raxol.Terminal.Cell do
   Returns nil if the map is invalid.
   """
   @spec from_map(map()) :: t() | nil
-  def from_map(%{char: char_code, style: style} = map) when is_integer(char_code) and is_map(style) do
+  def from_map(%{char: char_code, style: style} = map)
+      when is_integer(char_code) and is_map(style) do
     # Convert integer code point back to string for storing in the struct
     char_str = <<char_code::utf8>>
     is_wide = Map.get(map, :is_wide_placeholder, false)

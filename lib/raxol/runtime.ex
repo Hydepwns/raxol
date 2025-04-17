@@ -123,14 +123,23 @@ defmodule Raxol.Runtime do
   end
 
   @impl true
-  def handle_cast({:stdio_message, %{type: :initialize, payload: payload}}, state) do
-    Logger.info("[Runtime] Received :initialize message via stdio: #{inspect(payload)}")
+  def handle_cast(
+        {:stdio_message, %{type: :initialize, payload: payload}},
+        state
+      ) do
+    Logger.info(
+      "[Runtime] Received :initialize message via stdio: #{inspect(payload)}"
+    )
 
     # TODO: Process initialization payload if needed (e.g., workspaceRoot, initial dimensions)
     # For now, just acknowledge and send back the 'initialized' message
 
     if state.stdio_interface_pid do
-      StdioInterface.send_message(%{type: "initialized", payload: %{status: "Backend ready"}})
+      StdioInterface.send_message(%{
+        type: "initialized",
+        payload: %{status: "Backend ready"}
+      })
+
       Logger.info("[Runtime] Sent :initialized confirmation via stdio.")
 
       # Trigger an initial render now that the frontend is ready
@@ -141,8 +150,13 @@ defmodule Raxol.Runtime do
   end
 
   @impl true
-  def handle_cast({:stdio_message, %{type: :user_input, payload: payload}}, state) do
-    Logger.debug("[Runtime] Received :user_input message via stdio: #{inspect(payload)}")
+  def handle_cast(
+        {:stdio_message, %{type: :user_input, payload: payload}},
+        state
+      ) do
+    Logger.debug(
+      "[Runtime] Received :user_input message via stdio: #{inspect(payload)}"
+    )
 
     # Extract key and modifiers from the payload
     key = payload["key"]
@@ -163,13 +177,18 @@ defmodule Raxol.Runtime do
 
     # Check for quit keys
     quit_triggered = is_quit_key?(event, state.quit_keys)
+
     if quit_triggered do
-      Logger.info("[Runtime] User input matched quit key combination, initiating shutdown")
+      Logger.info(
+        "[Runtime] User input matched quit key combination, initiating shutdown"
+      )
+
       cleanup(state)
       {:stop, :normal, state}
     else
       # Handle the event through the existing event handling pipeline
-      if Code.ensure_loaded?(state.app_module) and function_exported?(state.app_module, :update, 2) do
+      if Code.ensure_loaded?(state.app_module) and
+           function_exported?(state.app_module, :update, 2) do
         try do
           new_model = state.app_module.update(event, state.model)
           # Send render trigger to update the UI
@@ -183,7 +202,10 @@ defmodule Raxol.Runtime do
             {:noreply, state}
         end
       else
-        Logger.warning("[Runtime] app_module doesn't implement update/2, ignoring user input")
+        Logger.warning(
+          "[Runtime] app_module doesn't implement update/2, ignoring user input"
+        )
+
         # Just trigger a re-render to maintain responsiveness
         send(self(), :render)
         {:noreply, state}
@@ -192,9 +214,15 @@ defmodule Raxol.Runtime do
   end
 
   @impl true
-  def handle_cast({:stdio_message, %{type: :resize_panel, payload: %{"cols" => cols, "rows" => rows}}}, state)
+  def handle_cast(
+        {:stdio_message,
+         %{type: :resize_panel, payload: %{"cols" => cols, "rows" => rows}}},
+        state
+      )
       when is_integer(cols) and is_integer(rows) do
-    Logger.info("[Runtime] Received :resize_panel message via stdio: #{cols}x#{rows}")
+    Logger.info(
+      "[Runtime] Received :resize_panel message via stdio: #{cols}x#{rows}"
+    )
 
     # Create a resize event to pass to the application
     resize_event = %{
@@ -208,13 +236,17 @@ defmodule Raxol.Runtime do
 
     # Update dimensions in model and dashboard grid config if they exist
     updated_model =
-      if Code.ensure_loaded?(state.app_module) and function_exported?(state.app_module, :update, 2) do
+      if Code.ensure_loaded?(state.app_module) and
+           function_exported?(state.app_module, :update, 2) do
         # Let the app handle the resize through its update function
         try do
           state.app_module.update(resize_event, state.model)
         rescue
           e ->
-            Logger.error("[Runtime] Error in app_module.update for resize: #{inspect(e)}")
+            Logger.error(
+              "[Runtime] Error in app_module.update for resize: #{inspect(e)}"
+            )
+
             update_dimensions_in_model(state.model, cols, rows)
         end
       else
@@ -232,7 +264,10 @@ defmodule Raxol.Runtime do
 
   @impl true
   def handle_cast({:stdio_message, unknown_message}, state) do
-    Logger.warning("[Runtime] Received unknown message via stdio: #{inspect(unknown_message)}")
+    Logger.warning(
+      "[Runtime] Received unknown message via stdio: #{inspect(unknown_message)}"
+    )
+
     {:noreply, state}
   end
 
@@ -252,18 +287,26 @@ defmodule Raxol.Runtime do
       # Update model with current dimensions before rendering
       # This follows the same pattern as the TTY mode but simplified
       dashboard_model = Map.get(state.model, :dashboard_model, nil)
-      updated_model = if dashboard_model do
-        grid_conf = dashboard_model.grid_config
-        updated_grid_config = %{grid_conf | parent_bounds: dims}
-        updated_dashboard_model = %{dashboard_model | grid_config: updated_grid_config}
-        %{state.model | dashboard_model: updated_dashboard_model}
-      else
-        state.model
-      end
+
+      updated_model =
+        if dashboard_model do
+          grid_conf = dashboard_model.grid_config
+          updated_grid_config = %{grid_conf | parent_bounds: dims}
+
+          updated_dashboard_model = %{
+            dashboard_model
+            | grid_config: updated_grid_config
+          }
+
+          %{state.model | dashboard_model: updated_dashboard_model}
+        else
+          state.model
+        end
 
       # Call the app_module's render function to get updated view
       rendered_view =
-        if Code.ensure_loaded?(state.app_module) and function_exported?(state.app_module, :render, 1) do
+        if Code.ensure_loaded?(state.app_module) and
+             function_exported?(state.app_module, :render, 1) do
           state.app_module.render(updated_model)
         else
           []
@@ -280,17 +323,19 @@ defmodule Raxol.Runtime do
 
       # Prepare a simplified version of the cells for JSON transmission
       # This converts complex cell data to a more transport-friendly format
-      simplified_cells = Enum.map(cells, fn %{x: x, y: y, ch: ch, fg: fg, bg: bg} ->
-        # Convert ch (might be integer) to string
-        char = if is_integer(ch), do: <<ch::utf8>>, else: to_string(ch)
-        %{
-          x: x,
-          y: y,
-          char: char,
-          fg: fg,
-          bg: bg
-        }
-      end)
+      simplified_cells =
+        Enum.map(cells, fn %{x: x, y: y, ch: ch, fg: fg, bg: bg} ->
+          # Convert ch (might be integer) to string
+          char = if is_integer(ch), do: <<ch::utf8>>, else: to_string(ch)
+
+          %{
+            x: x,
+            y: y,
+            char: char,
+            fg: fg,
+            bg: bg
+          }
+        end)
 
       # Send UI update via StdioInterface
       if state.stdio_interface_pid do
@@ -300,12 +345,18 @@ defmodule Raxol.Runtime do
             width: width,
             height: height,
             cells: simplified_cells,
-            cursor: %{x: 0, y: 0} # Default cursor position
+            # Default cursor position
+            cursor: %{x: 0, y: 0}
           }
         })
-        Logger.debug("[Runtime.handle_info(:render)] Sent UI update via StdioInterface")
+
+        Logger.debug(
+          "[Runtime.handle_info(:render)] Sent UI update via StdioInterface"
+        )
       else
-        Logger.warning("[Runtime.handle_info(:render)] Cannot send UI update - StdioInterface not initialized")
+        Logger.warning(
+          "[Runtime.handle_info(:render)] Cannot send UI update - StdioInterface not initialized"
+        )
       end
 
       # Schedule next render based on fps
@@ -320,12 +371,16 @@ defmodule Raxol.Runtime do
       # TTY mode - ExTermbox-based rendering (existing code)
       # Check if Termbox is initialized before proceeding
       unless state.termbox_initialized do
-        Logger.warning("[Runtime.handle_info(:render)] Skipping render: Termbox not initialized.")
+        Logger.warning(
+          "[Runtime.handle_info(:render)] Skipping render: Termbox not initialized."
+        )
+
         # Reschedule for later
         if state.fps > 0 do
           interval_ms = round(1000 / state.fps)
           Process.send_after(self(), :render, interval_ms)
         end
+
         {:noreply, state}
       else
         # Original ExTermbox rendering path
@@ -334,12 +389,17 @@ defmodule Raxol.Runtime do
           case Bindings.width() do
             {:ok, {:ok, w}} -> w
             {:ok, w} when is_integer(w) -> w
-            _ -> state.width # Fallback or handle error
+            # Fallback or handle error
+            _ -> state.width
           end
 
         # --- Workaround: Hardcode dimensions due to ex_termbox issue ---
         height_val = 30
-        Logger.warning("[Runtime.handle_info(:render)] Using HARDCODED dimensions: #{width}x#{height_val}")
+
+        Logger.warning(
+          "[Runtime.handle_info(:render)] Using HARDCODED dimensions: #{width}x#{height_val}"
+        )
+
         # --- End Workaround ---
 
         # Original dimension calculation (commented out)
@@ -388,9 +448,22 @@ defmodule Raxol.Runtime do
         # This assumes the model structure is nested like state.model.dashboard_model.grid_config.parent_bounds
         # Adjust the path if necessary based on your actual MyApp.Model structure.
         # Corrected put_in syntax: access [:parent_bounds] within the grid_config map
-        updated_grid_config = put_in(state.model.dashboard_model.grid_config, [:parent_bounds], dims)
-        updated_dashboard_model = %{state.model.dashboard_model | grid_config: updated_grid_config}
-        updated_app_model = %{state.model | dashboard_model: updated_dashboard_model}
+        updated_grid_config =
+          put_in(
+            state.model.dashboard_model.grid_config,
+            [:parent_bounds],
+            dims
+          )
+
+        updated_dashboard_model = %{
+          state.model.dashboard_model
+          | grid_config: updated_grid_config
+        }
+
+        updated_app_model = %{
+          state.model
+          | dashboard_model: updated_dashboard_model
+        }
 
         Logger.debug(
           "[Runtime.handle_info(:render)] Rendering view with updated dimensions: #{inspect(dims)}"
@@ -399,7 +472,11 @@ defmodule Raxol.Runtime do
         # --- DEBUG: Check render condition ---
         app_module_loaded = Code.ensure_loaded?(state.app_module)
         render_exported = function_exported?(state.app_module, :render, 1)
-        Logger.debug("[Runtime DEBUG] Checking render condition: app_module=#{inspect(state.app_module)}, loaded?=#{app_module_loaded}, exported?=#{render_exported}")
+
+        Logger.debug(
+          "[Runtime DEBUG] Checking render condition: app_module=#{inspect(state.app_module)}, loaded?=#{app_module_loaded}, exported?=#{render_exported}"
+        )
+
         # --- END DEBUG ---
 
         # Render the application view using the UPDATED application's state
@@ -407,15 +484,22 @@ defmodule Raxol.Runtime do
           if app_module_loaded and render_exported do
             # Pass the current app model and grid config in a props map
             state.app_module.render(%{
-              model: state.model, # Pass the App Model
-              grid_config: updated_grid_config # Pass the resolved grid config
+              # Pass the App Model
+              model: state.model,
+              # Pass the resolved grid config
+              grid_config: updated_grid_config
             })
           else
-            Logger.error("[Runtime DEBUG] Render condition FAILED. Skipping app_module.render call.")
-            [] # No render function available
+            Logger.error(
+              "[Runtime DEBUG] Render condition FAILED. Skipping app_module.render call."
+            )
+
+            # No render function available
+            []
           end
 
-        {new_cells, _plugin_commands_render} = render_view_to_cells(view_elements, dims)
+        {new_cells, _plugin_commands_render} =
+          render_view_to_cells(view_elements, dims)
 
         # === Process cells through plugins ===
         Logger.debug(
@@ -431,7 +515,10 @@ defmodule Raxol.Runtime do
           {:ok, updated_manager, final_cells, plugin_commands} ->
             # Calculate the difference based on the final processed cells
             changes = ScreenBuffer.diff(state.cell_buffer, final_cells)
-            Logger.debug("[Runtime.handle_info(:render)] Calculated #{length(changes)} cell changes to apply.")
+
+            Logger.debug(
+              "[Runtime.handle_info(:render)] Calculated #{length(changes)} cell changes to apply."
+            )
 
             # Apply changes to the buffer state *using the diff*
             new_buffer = ScreenBuffer.update(state.cell_buffer, changes)
@@ -442,13 +529,17 @@ defmodule Raxol.Runtime do
               char_code = Map.get(cell_map, :char)
               # Extract style and then fg/bg (handle potential nil style)
               style_map = Map.get(cell_map, :style, %{})
-              fg = Map.get(style_map, :foreground, 7) # Default fg=7
-              bg = Map.get(style_map, :background, 0) # Default bg=0
+              # Default fg=7
+              fg = Map.get(style_map, :foreground, 7)
+              # Default bg=0
+              bg = Map.get(style_map, :background, 0)
               # Ensure char_code is valid before sending
               if is_integer(char_code) do
                 ExTermbox.Bindings.change_cell(x, y, char_code, fg, bg)
               else
-                Logger.warning("[Runtime] Skipping invalid char_code in change_cell: #{inspect(char_code)} at (#{x},#{y})")
+                Logger.warning(
+                  "[Runtime] Skipping invalid char_code in change_cell: #{inspect(char_code)} at (#{x},#{y})"
+                )
               end
             end)
 
@@ -462,7 +553,10 @@ defmodule Raxol.Runtime do
                 plugin_manager: updated_manager
             }
 
-            Logger.debug("[Runtime.handle_info(:render)] Finished render cycle.")
+            Logger.debug(
+              "[Runtime.handle_info(:render)] Finished render cycle."
+            )
+
             {:noreply, new_state}
         end
       end
@@ -605,7 +699,9 @@ defmodule Raxol.Runtime do
 
   @impl true
   def terminate(reason, state) do
-    Logger.info("[Runtime] Terminate callback started. Reason: #{inspect(reason)}")
+    Logger.info(
+      "[Runtime] Terminate callback started. Reason: #{inspect(reason)}"
+    )
 
     # Save dashboard layout if possible
     dashboard_model = Map.get(state.model, :dashboard_model)
@@ -622,7 +718,9 @@ defmodule Raxol.Runtime do
           dashboard_model.widgets
         )
       else
-        Logger.warning("[Runtime] Dashboard.save_layout/1 not found, cannot save layout.")
+        Logger.warning(
+          "[Runtime] Dashboard.save_layout/1 not found, cannot save layout."
+        )
       end
     end
 
@@ -633,8 +731,15 @@ defmodule Raxol.Runtime do
 
       # Ensure StdioInterface is notified if needed
       if state.stdio_interface_pid && Process.alive?(state.stdio_interface_pid) do
-        Logger.info("[Runtime] Sending shutdown notification via StdioInterface...")
-        StdioInterface.send_message(%{type: "shutdown", payload: %{reason: "normal"}})
+        Logger.info(
+          "[Runtime] Sending shutdown notification via StdioInterface..."
+        )
+
+        StdioInterface.send_message(%{
+          type: "shutdown",
+          payload: %{reason: "normal"}
+        })
+
         # Give StdioInterface time to flush messages
         Process.sleep(100)
       end
@@ -719,30 +824,44 @@ defmodule Raxol.Runtime do
   defp is_quit_key?(%{type: :key, modifiers: mods, key: key}, quit_keys) do
     Enum.any?(quit_keys, fn quit_key ->
       # Log which quit_key from the list is being checked and the event details
-      Logger.debug("[is_quit_key?] Checking event key '#{inspect(key)}' (mods: #{inspect(mods)}) against quit key '#{inspect(quit_key)}'")
-      match_result = case quit_key do
-        # Check for Ctrl+C
-        :ctrl_c ->
-          :ctrl in mods && key == ?c
-        # Check for generic Ctrl + character
-        {:ctrl, char} ->
-          :ctrl in mods && key == char
-        # Check for generic Alt + character
-        {:alt, char} ->
-          :alt in mods && key == char
-        # Check for simple 'q' key (no modifiers)
-        :q ->
-          mods == [] && key == ?q
-        # Check for other simple keys (atoms like :escape, or chars) without modifiers
-        simple_key when is_atom(simple_key) or is_integer(simple_key) ->
-          mods == [] && key == simple_key
-        _ ->
-          # Default: does not match
-          false
-      end
+      Logger.debug(
+        "[is_quit_key?] Checking event key '#{inspect(key)}' (mods: #{inspect(mods)}) against quit key '#{inspect(quit_key)}'"
+      )
+
+      match_result =
+        case quit_key do
+          # Check for Ctrl+C
+          :ctrl_c ->
+            :ctrl in mods && key == ?c
+
+          # Check for generic Ctrl + character
+          {:ctrl, char} ->
+            :ctrl in mods && key == char
+
+          # Check for generic Alt + character
+          {:alt, char} ->
+            :alt in mods && key == char
+
+          # Check for simple 'q' key (no modifiers)
+          :q ->
+            mods == [] && key == ?q
+
+          # Check for other simple keys (atoms like :escape, or chars) without modifiers
+          simple_key when is_atom(simple_key) or is_integer(simple_key) ->
+            mods == [] && key == simple_key
+
+          _ ->
+            # Default: does not match
+            false
+        end
+
       # Log the result of this specific check
-      Logger.debug("[is_quit_key?] Match result for '#{inspect(quit_key)}': #{match_result}")
-      match_result # Return result for Enum.any?
+      Logger.debug(
+        "[is_quit_key?] Match result for '#{inspect(quit_key)}': #{match_result}"
+      )
+
+      # Return result for Enum.any?
+      match_result
     end)
   end
 
@@ -835,11 +954,13 @@ defmodule Raxol.Runtime do
         "ctrl" -> :ctrl
         "alt" -> :alt
         "shift" -> :shift
-        "meta" -> :meta  # Command key on Mac
+        # Command key on Mac
+        "meta" -> :meta
         _ -> :unknown
       end
     end)
   end
+
   defp convert_webview_modifiers(_), do: []
 
   # --- Private helper for app event delegation ---
@@ -865,7 +986,10 @@ defmodule Raxol.Runtime do
 
         # Renamed _reason to reason as it's used
         {:stop, reason, new_model} ->
-          Logger.error("[Runtime] Terminate callback started. Reason: #{inspect(reason)}")
+          Logger.error(
+            "[Runtime] Terminate callback started. Reason: #{inspect(reason)}"
+          )
+
           # Replaced undefined function call
           if new_model.termbox_initialized, do: ExTermbox.Bindings.shutdown()
           {:stop, reason, new_model}
@@ -907,6 +1031,7 @@ defmodule Raxol.Runtime do
       Logger.debug(
         "[Runtime.p_handle_key_event] Processing event: #{inspect(converted_event)}. Is Ctrl+C: #{is_ctrl_c}"
       )
+
       quit_triggered = is_quit_key?(converted_event, state.quit_keys)
 
       Logger.debug(
@@ -1004,7 +1129,7 @@ defmodule Raxol.Runtime do
 
       # Handle potential errors from plugin manager
       {:error, reason} ->
-          Logger.error(
+        Logger.error(
           "[Runtime] Error during plugin mouse handling: #{inspect(reason)}. Propagating event to app."
         )
 
@@ -1047,7 +1172,9 @@ defmodule Raxol.Runtime do
   defp send_plugin_commands(commands) when is_list(commands) do
     # TODO: This IO.write might still interfere with ex_termbox. Proper solution needed.
     # Enum.each(commands, &IO.write/1) # Old version causing crash
-    Logger.debug("[Runtime.send_plugin_commands] Sending commands: #{inspect commands}")
+    Logger.debug(
+      "[Runtime.send_plugin_commands] Sending commands: #{inspect(commands)}"
+    )
 
     Enum.each(commands, fn
       # Match the tuple from ImagePlugin
@@ -1067,32 +1194,44 @@ defmodule Raxol.Runtime do
   defp render_view_to_cells(view_tree_list, dims)
        when is_list(view_tree_list) do
     # For simplicity, just create an empty result to get compilation working
-    Logger.debug("[Runtime.render_view_to_cells] Called with view_tree_list and dims: #{inspect(dims)}")
+    Logger.debug(
+      "[Runtime.render_view_to_cells] Called with view_tree_list and dims: #{inspect(dims)}"
+    )
+
     {[], []}
   end
 
   # Add fallback for non-list input
   defp render_view_to_cells(single_element, dims) do
-    Logger.warning("[Runtime.render_view_to_cells] Called with single element, wrapping in list.")
+    Logger.warning(
+      "[Runtime.render_view_to_cells] Called with single element, wrapping in list."
+    )
+
     render_view_to_cells([single_element], dims)
   end
 
   # Helper function to update dimensions in model structure
   defp update_dimensions_in_model(model, cols, rows) do
     # Update top-level dimensions if they exist
-    model = model
+    model =
+      model
       |> Map.put(:width, cols)
       |> Map.put(:height, rows)
 
     # Update dashboard model's grid config if it exists
     dashboard_model = Map.get(model, :dashboard_model)
+
     if dashboard_model do
       grid_config = Map.get(dashboard_model, :grid_config)
+
       if grid_config do
         # Update parent_bounds in grid_config
         dims = %{x: 0, y: 0, width: cols, height: rows}
         updated_grid_config = Map.put(grid_config, :parent_bounds, dims)
-        updated_dashboard = Map.put(dashboard_model, :grid_config, updated_grid_config)
+
+        updated_dashboard =
+          Map.put(dashboard_model, :grid_config, updated_grid_config)
+
         Map.put(model, :dashboard_model, updated_dashboard)
       else
         model

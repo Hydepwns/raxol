@@ -160,17 +160,20 @@ defmodule Raxol.Components.TabBar do
     style = Keyword.get(opts, :style, %{})
     tab_bar_style = Keyword.get(opts, :tab_bar_style, %{})
     tab_style = Keyword.get(opts, :tab_style, %{})
-    active_tab_style = Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
+
+    active_tab_style =
+      Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
+
     content_style = Keyword.get(opts, :content_style, %{})
 
     View.row([style: style, id: focus_key], fn ->
       View.row([style: tab_bar_style], fn ->
-        render(tabs, active_tab, on_change, [
+        render(tabs, active_tab, on_change,
           focus_key: focus_key,
           style: tab_bar_style,
           tab_style: tab_style,
           active_tab_style: active_tab_style
-        ])
+        )
       end)
 
       View.row([style: content_style], fn ->
@@ -179,13 +182,17 @@ defmodule Raxol.Components.TabBar do
           case Enum.find(tabs, fn %{id: id} -> id == active_tab end) do
             %{content: content_fn} when is_function(content_fn, 0) ->
               content_fn.()
+
             %{content: content} ->
-              content # Assume content is already a View element/map
+              # Assume content is already a View element/map
+              content
+
             _ ->
               View.text("Content not found for tab: #{active_tab}")
           end
 
-        active_tab_content # Return the content to be rendered in the row
+        # Return the content to be rendered in the row
+        active_tab_content
       end)
     end)
   end

@@ -599,124 +599,231 @@ defmodule Raxol.Plugins.PluginManager do
 
   Returns `{:ok, updated_manager, processed_cells, collected_commands}`.
   """
-  def handle_cells(%__MODULE__{} = manager, cells, emulator_state) when is_list(cells) do
-    Logger.debug("[PluginManager.handle_cells] Processing #{length(cells)} cells...")
+  def handle_cells(%__MODULE__{} = manager, cells, emulator_state)
+      when is_list(cells) do
+    Logger.debug(
+      "[PluginManager.handle_cells] Processing #{length(cells)} cells..."
+    )
 
     # Accumulator: {updated_manager, processed_cells_list_reversed, collected_commands_list}
     initial_acc = {manager, [], []}
 
     {final_manager, final_cells_rev, final_commands} =
-      Enum.reduce(cells, initial_acc, fn cell, {acc_manager, processed_cells_rev, acc_commands} ->
+      Enum.reduce(cells, initial_acc, fn cell,
+                                         {acc_manager, processed_cells_rev,
+                                          acc_commands} ->
         # Check if the cell is a placeholder potentially handled by a plugin
         case cell do
           %{type: :placeholder, value: placeholder_value} = placeholder_cell ->
-            Logger.debug("[PluginManager.handle_cells] Found placeholder: #{inspect(placeholder_value)}")
+            Logger.debug(
+              "[PluginManager.handle_cells] Found placeholder: #{inspect(placeholder_value)}"
+            )
+
             # Find plugins that might handle this placeholder type
             # Inner accumulator: {handled_flag, manager_state, list_of_replacement_cells, list_of_new_commands}
             # Default replacement_cells to an empty list, signifying removal if not handled.
-            inner_initial_acc = {false, acc_manager, [], []} # Start inner loop with current outer loop manager state
+            # Start inner loop with current outer loop manager state
+            inner_initial_acc = {false, acc_manager, [], []}
 
             # Result of inner loop: {handled_flag, manager_state_after_inner_loop, replacement_cells_list, new_commands_list}
             # Find the specific plugin based on the placeholder value
-            plugin_name = case placeholder_value do
-              :image -> "image"
-              :chart -> "visualization"
-              :treemap -> "visualization"
-              _ -> nil # Unknown placeholder type
-            end
+            plugin_name =
+              case placeholder_value do
+                :image -> "image"
+                :chart -> "visualization"
+                :treemap -> "visualization"
+                # Unknown placeholder type
+                _ -> nil
+              end
 
-            {_plugin_handled, manager_after_inner_loop, replacement_cells, new_commands} =
+            {_plugin_handled, manager_after_inner_loop, replacement_cells,
+             new_commands} =
               if plugin_name do
-                 # Get the specific plugin state
+                # Get the specific plugin state
                 case Map.get(acc_manager.plugins, plugin_name) do
                   nil ->
-                    Logger.warning("[PluginManager.handle_cells] Plugin '#{plugin_name}' not loaded for placeholder '#{placeholder_value}'. Skipping.")
+                    Logger.warning(
+                      "[PluginManager.handle_cells] Plugin '#{plugin_name}' not loaded for placeholder '#{placeholder_value}'. Skipping."
+                    )
+
                     # Return default accumulator if plugin not found
                     inner_initial_acc
 
                   plugin ->
                     # Call only the relevant plugin's handle_cells
-                    if plugin.enabled and function_exported?(plugin.__struct__, :handle_cells, 3) do
+                    if plugin.enabled and
+                         function_exported?(plugin.__struct__, :handle_cells, 3) do
                       # Log state *before* calling plugin, especially for ImagePlugin
                       if plugin_name == "image" do
-                        Logger.debug("[PluginManager.handle_cells] Before calling ImagePlugin.handle_cells. sequence_just_generated: #{inspect Map.get(plugin, :sequence_just_generated)}")
+                        Logger.debug(
+                          "[PluginManager.handle_cells] Before calling ImagePlugin.handle_cells. sequence_just_generated: #{inspect(Map.get(plugin, :sequence_just_generated))}"
+                        )
                       end
+
                       # Log the opts specifically
-                      Logger.debug("[PluginManager.handle_cells] Placeholder opts: #{inspect Map.get(placeholder_cell, :opts)}")
-                      Logger.debug("[PluginManager.handle_cells] Calling #{plugin_name}.handle_cells for placeholder...\nCELL DATA: #{inspect(placeholder_cell)}")
+                      Logger.debug(
+                        "[PluginManager.handle_cells] Placeholder opts: #{inspect(Map.get(placeholder_cell, :opts))}"
+                      )
+
+                      Logger.debug(
+                        "[PluginManager.handle_cells] Calling #{plugin_name}.handle_cells for placeholder...\nCELL DATA: #{inspect(placeholder_cell)}"
+                      )
+
                       try do
                         # Assign result to variable first
-                        handle_cells_result = plugin.__struct__.handle_cells(placeholder_cell, emulator_state, plugin)
+                        handle_cells_result =
+                          plugin.__struct__.handle_cells(
+                            placeholder_cell,
+                            emulator_state,
+                            plugin
+                          )
 
                         # Now match on the result variable
                         case handle_cells_result do
                           # Plugin handled it, returning cells and commands
-                          {:ok, updated_plugin_state, plugin_cells, plugin_commands} when is_list(plugin_cells) ->
+                          {:ok, updated_plugin_state, plugin_cells,
+                           plugin_commands}
+                          when is_list(plugin_cells) ->
                             if plugin_name == "image" do
-                              Logger.debug("[PluginManager.handle_cells] After ImagePlugin.handle_cells returned {:ok, ...}. sequence_just_generated: #{inspect Map.get(updated_plugin_state, :sequence_just_generated)}")
+                              Logger.debug(
+                                "[PluginManager.handle_cells] After ImagePlugin.handle_cells returned {:ok, ...}. sequence_just_generated: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
+                              )
                             end
-                            Logger.debug("[PluginManager.handle_cells] Plugin #{plugin_name} handled placeholder. Cells: #{length(plugin_cells)}, Commands: #{length(plugin_commands)}")
+
+                            Logger.debug(
+                              "[PluginManager.handle_cells] Plugin #{plugin_name} handled placeholder. Cells: #{length(plugin_cells)}, Commands: #{length(plugin_commands)}"
+                            )
+
                             # Update manager state
-                            updated_inner_manager = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin_name, updated_plugin_state)}
+                            updated_inner_manager = %{
+                              acc_manager
+                              | plugins:
+                                  Map.put(
+                                    acc_manager.plugins,
+                                    plugin_name,
+                                    updated_plugin_state
+                                  )
+                            }
+
                             # Return the result for the outer loop (handled = true)
-                            {true, updated_inner_manager, plugin_cells, plugin_commands}
+                            {true, updated_inner_manager, plugin_cells,
+                             plugin_commands}
 
                           # Plugin declined or returned unexpected success format
-                          {:ok, updated_plugin_state, _invalid_cells, plugin_commands} ->
-                            Logger.warning("[PluginManager.handle_cells] Plugin #{plugin_name} handled placeholder but returned invalid cell format. Treating as decline.")
+                          {:ok, updated_plugin_state, _invalid_cells,
+                           plugin_commands} ->
+                            Logger.warning(
+                              "[PluginManager.handle_cells] Plugin #{plugin_name} handled placeholder but returned invalid cell format. Treating as decline."
+                            )
+
                             # Update manager state
-                            updated_inner_manager = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin_name, updated_plugin_state)}
+                            updated_inner_manager = %{
+                              acc_manager
+                              | plugins:
+                                  Map.put(
+                                    acc_manager.plugins,
+                                    plugin_name,
+                                    updated_plugin_state
+                                  )
+                            }
+
                             # Return default accumulator (handled = false), but with updated manager and commands
                             {false, updated_inner_manager, [], plugin_commands}
 
                           # Handle cases where plugin declines (:cont)
                           {:cont, updated_plugin_state} ->
-                            Logger.debug("[PluginManager.handle_cells] Plugin #{plugin_name} returned :cont. State Flag: #{inspect Map.get(updated_plugin_state, :sequence_just_generated)}")
+                            Logger.debug(
+                              "[PluginManager.handle_cells] Plugin #{plugin_name} returned :cont. State Flag: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
+                            )
+
                             if plugin_name == "image" do
-                              Logger.debug("[PluginManager.handle_cells] After ImagePlugin.handle_cells returned {:cont, ...}. sequence_just_generated: #{inspect Map.get(updated_plugin_state, :sequence_just_generated)}")
+                              Logger.debug(
+                                "[PluginManager.handle_cells] After ImagePlugin.handle_cells returned {:cont, ...}. sequence_just_generated: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
+                              )
                             end
-                            Logger.debug("[PluginManager.handle_cells] Plugin #{plugin_name} declined placeholder.")
+
+                            Logger.debug(
+                              "[PluginManager.handle_cells] Plugin #{plugin_name} declined placeholder."
+                            )
+
                             # Update manager state
-                            updated_inner_manager = %{acc_manager | plugins: Map.put(acc_manager.plugins, plugin_name, updated_plugin_state)}
+                            updated_inner_manager = %{
+                              acc_manager
+                              | plugins:
+                                  Map.put(
+                                    acc_manager.plugins,
+                                    plugin_name,
+                                    updated_plugin_state
+                                  )
+                            }
+
                             # Return default accumulator (handled = false), but with updated manager
                             {false, updated_inner_manager, [], []}
 
-                          _ -> # {:error, _} or other unexpected return
-                            Logger.warning("[PluginManager.handle_cells] Plugin #{plugin_name} returned unexpected value from handle_cells. Skipping.")
+                          # {:error, _} or other unexpected return
+                          _ ->
+                            Logger.warning(
+                              "[PluginManager.handle_cells] Plugin #{plugin_name} returned unexpected value from handle_cells. Skipping."
+                            )
+
                             # Return default accumulator
                             inner_initial_acc
                         end
                       rescue
                         e ->
-                          Logger.error("[PluginManager.handle_cells] RESCUED Error calling #{plugin_name}.handle_cells: #{inspect(e)}. Placeholder was: #{inspect(placeholder_cell)}")
+                          Logger.error(
+                            "[PluginManager.handle_cells] RESCUED Error calling #{plugin_name}.handle_cells: #{inspect(e)}. Placeholder was: #{inspect(placeholder_cell)}"
+                          )
+
                           # Return default accumulator
                           inner_initial_acc
-                      end # End try/rescue
+                      end
+
+                      # End try/rescue
                     else
-                       # Plugin exists but is disabled or doesn't implement handle_cells
-                       Logger.debug("[PluginManager.handle_cells] Plugin '#{plugin_name}' disabled or does not implement handle_cells/3. Skipping.")
-                       inner_initial_acc
-                    end # End if plugin enabled/implements
-                end # End case Map.get plugin
+                      # Plugin exists but is disabled or doesn't implement handle_cells
+                      Logger.debug(
+                        "[PluginManager.handle_cells] Plugin '#{plugin_name}' disabled or does not implement handle_cells/3. Skipping."
+                      )
+
+                      inner_initial_acc
+                    end
+
+                    # End if plugin enabled/implements
+                end
+
+                # End case Map.get plugin
               else
-                 # No plugin name determined for this placeholder value
-                 Logger.warning("[PluginManager.handle_cells] Unknown placeholder value: #{placeholder_value}. Skipping.")
-                 inner_initial_acc
-              end # End if plugin_name
+                # No plugin name determined for this placeholder value
+                Logger.warning(
+                  "[PluginManager.handle_cells] Unknown placeholder value: #{placeholder_value}. Skipping."
+                )
+
+                inner_initial_acc
+              end
+
+            # End if plugin_name
 
             # Return the accumulator for the NEXT outer loop iteration.
             # Use the manager state resulting from the inner processing.
-            {manager_after_inner_loop, replacement_cells ++ processed_cells_rev, acc_commands ++ new_commands}
+            {manager_after_inner_loop, replacement_cells ++ processed_cells_rev,
+             acc_commands ++ new_commands}
 
           # Original cell was not a placeholder, assume it's {x, y, map}
           valid_cell ->
             # Prepend to the reversed list, pass original acc_manager forward
             {acc_manager, [valid_cell | processed_cells_rev], acc_commands}
         end
-      end) # End of outer Enum.reduce
+      end)
+
+    # End of outer Enum.reduce
 
     final_cells = Enum.reverse(final_cells_rev)
-    Logger.debug("[PluginManager.handle_cells] Finished. Final Cells: #{length(final_cells)}, Commands: #{length(final_commands)}")
+
+    Logger.debug(
+      "[PluginManager.handle_cells] Finished. Final Cells: #{length(final_cells)}, Commands: #{length(final_commands)}"
+    )
+
     # Return the final manager state accumulated through the outer loop
     {:ok, final_manager, final_cells, final_commands}
   end

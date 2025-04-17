@@ -211,7 +211,8 @@ defmodule Raxol.Plugins.NotificationPlugin do
         """
 
       # Add a catch-all to satisfy Dialyzer and handle potential invalid styles
-      _ -> ""
+      _ ->
+        ""
     end
   end
 

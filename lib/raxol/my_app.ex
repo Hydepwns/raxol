@@ -32,16 +32,19 @@ defmodule Raxol.MyApp do
     )
 
     # Use loaded layout if available, otherwise defaults
+    # Check if list and not empty
     initial_widgets =
-      if loaded_widgets != [] and is_list(loaded_widgets) do # Check if list and not empty
+      if loaded_widgets != [] and is_list(loaded_widgets) do
         Logger.debug(
           "[MyApp.init] Saved layout found, using #{length(loaded_widgets)} widgets."
         )
+
         loaded_widgets
       else
         Logger.debug(
           "[MyApp.init] No saved layout found or layout was invalid, using default widgets."
         )
+
         # Define default widgets if no layout is loaded
         [
           %{
@@ -144,10 +147,17 @@ defmodule Raxol.MyApp do
     }
 
     # Initialize the Dashboard component's state
-    Logger.debug("[MyApp.init] Calling Dashboard.init with widgets: #{inspect(initial_widgets)} and config: #{inspect(initial_grid_config)}")
+    Logger.debug(
+      "[MyApp.init] Calling Dashboard.init with widgets: #{inspect(initial_widgets)} and config: #{inspect(initial_grid_config)}"
+    )
+
     {:ok, dashboard_model} =
       Dashboard.init(initial_widgets, initial_grid_config)
-    Logger.debug("[MyApp.init] Dashboard.init returned: {:ok, #{inspect(dashboard_model)}}") # Assuming success
+
+    # Assuming success
+    Logger.debug(
+      "[MyApp.init] Dashboard.init returned: {:ok, #{inspect(dashboard_model)}}"
+    )
 
     model = %Model{
       width: initial_width,
@@ -156,7 +166,9 @@ defmodule Raxol.MyApp do
       dashboard_model: dashboard_model
     }
 
-    Logger.debug("[MyApp.init] Initialization complete. Returning model: #{inspect(model)}")
+    Logger.debug(
+      "[MyApp.init] Initialization complete. Returning model: #{inspect(model)}"
+    )
 
     {:ok, model}
   end
@@ -229,14 +241,18 @@ defmodule Raxol.MyApp do
 
   @impl Raxol.App
   def render(props) do
-    Logger.debug("[MyApp.render] Starting render... Props received: #{inspect(props)}")
+    Logger.debug(
+      "[MyApp.render] Starting render... Props received: #{inspect(props)}"
+    )
+
     # Extract model and grid_config from props
     %{model: model, grid_config: grid_config} = props
 
     # Delegate rendering to the Dashboard component, passing the necessary state
     Dashboard.render(%{
       dashboard_model: model.dashboard_model,
-      grid_config: grid_config, # Pass grid_config down
+      # Pass grid_config down
+      grid_config: grid_config,
       app_text: model.text
     })
   end

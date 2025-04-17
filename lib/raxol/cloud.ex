@@ -7,15 +7,18 @@ defmodule Raxol.Cloud do
 
   # Lifecycle functions
   def init(opts \\ []), do: Core.init(opts)
+
   def start do
     # Logic to start cloud services
     Core.start()
     EdgeComputing.init([])
   end
+
   def stop do
     # Logic to stop cloud services
     Core.stop()
   end
+
   def status do
     %{core: Core.status(), edge: EdgeComputing.status()}
   end

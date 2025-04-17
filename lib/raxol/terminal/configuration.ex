@@ -1827,10 +1827,16 @@ defmodule Raxol.Terminal.Configuration do
 
         # Log preload results
         IO.puts("Preloaded #{length(animation_files)} animations")
-        :ok # Explicitly return :ok on success
+        # Explicitly return :ok on success
+        :ok
+
       {:error, reason} ->
-        IO.warn("Could not create preload directory '#{preload_path}': #{inspect(reason)}")
-        :ok # Still return :ok as per spec, but log the warning
+        IO.warn(
+          "Could not create preload directory '#{preload_path}': #{inspect(reason)}"
+        )
+
+        # Still return :ok as per spec, but log the warning
+        :ok
     end
   end
 
@@ -2349,4 +2355,3 @@ defmodule Raxol.Terminal.Configuration do
     )
   end
 end
-

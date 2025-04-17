@@ -50,7 +50,7 @@ defmodule Raxol.Examples.Form do
   @dialyzer {:nowarn_function, render: 1}
   def render(state) do
     dsl_result =
-      View.column [style: %{border: :single, padding: 1}] do
+      View.column style: %{border: :single, padding: 1} do
         # Form Title (optional)
         if state.title do
           View.text(state.title, style: %{bold: true, align: :center})
@@ -65,7 +65,10 @@ defmodule Raxol.Examples.Form do
         end
 
         # Render submit button
-        View.button([style: %{margin_top: 1}, on_click: :submit], state.submit_label)
+        View.button(
+          [style: %{margin_top: 1}, on_click: :submit],
+          state.submit_label
+        )
       end
 
     Raxol.View.to_element(dsl_result)

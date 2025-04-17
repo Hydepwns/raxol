@@ -114,7 +114,9 @@ defmodule Raxol.System.TerminalPlatform do
       iex> TerminalPlatform.get_supported_features()
       [:true_color, :unicode, :mouse, :clipboard]
   """
-  @spec get_supported_features() :: %{(:colors_256 | :mouse | :title | :true_color) => true}
+  @spec get_supported_features() :: %{
+          (:colors_256 | :mouse | :title | :true_color) => true
+        }
   def get_supported_features do
     term = System.get_env("TERM") || ""
     term_program = System.get_env("TERM_PROGRAM") || ""

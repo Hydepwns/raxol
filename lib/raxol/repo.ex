@@ -19,7 +19,10 @@ defmodule Raxol.Repo do
 
     # Log database connection info (hide sensitive data)
     safe_config = Keyword.drop(config, [:password])
-    Logger.info("Starting database connection with config: #{inspect(safe_config)}")
+
+    Logger.info(
+      "Starting database connection with config: #{inspect(safe_config)}"
+    )
 
     # Set better default timeouts
     config =
@@ -66,6 +69,7 @@ defmodule Raxol.Repo do
       case result do
         {:ok, _} ->
           Logger.debug("SQL executed successfully in #{execution_time}ms")
+
         {:error, error} ->
           Logger.error("SQL error after #{execution_time}ms: #{inspect(error)}")
       end

@@ -37,13 +37,18 @@ defmodule Raxol.Application do
         # Start the buffer manager
         {Raxol.Terminal.Buffer.Manager, %{}},
         # Initialize color system with a unique ID
-        Supervisor.child_spec({Task, &init_color_system/0}, id: :color_system_task),
+        Supervisor.child_spec({Task, &init_color_system/0},
+          id: :color_system_task
+        ),
         # Check database connection health with a unique ID
-        Supervisor.child_spec({Task, &ensure_database_connection/0}, id: :database_connection_task),
+        Supervisor.child_spec({Task, &ensure_database_connection/0},
+          id: :database_connection_task
+        ),
         # Start hot-reload server
         {HotReload, []},
         # Add DynamicSupervisor for Raxol.Runtime
-        {DynamicSupervisor, name: Raxol.DynamicSupervisor, strategy: :one_for_one},
+        {DynamicSupervisor,
+         name: Raxol.DynamicSupervisor, strategy: :one_for_one},
         # Add Raxol.Runtime to the children list, passing the desired App module
         {Raxol.RuntimeDebug, [app_module: Raxol.MyApp]}
       ]

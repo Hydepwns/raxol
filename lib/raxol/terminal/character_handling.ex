@@ -52,6 +52,7 @@ defmodule Raxol.Terminal.CharacterHandling do
       nil ->
         # Empty string has width 0
         0
+
       codepoint ->
         if is_wide_char?(codepoint), do: 2, else: 1
     end
@@ -115,7 +116,8 @@ defmodule Raxol.Terminal.CharacterHandling do
   Processes a string for bidirectional text rendering.
   Returns a list of segments with their rendering order.
   """
-  @spec process_bidi_text(String.t()) :: list({:LTR | :RTL | :NEUTRAL, String.t()})
+  @spec process_bidi_text(String.t()) ::
+          list({:LTR | :RTL | :NEUTRAL, String.t()})
   @dialyzer {:nowarn_function, process_bidi_text: 1}
   def process_bidi_text(text) do
     text
@@ -131,6 +133,7 @@ defmodule Raxol.Terminal.CharacterHandling do
       case acc do
         [{type, segment} | rest] when type == bidi_type ->
           [{type, segment <> char} | rest]
+
         _ ->
           [{bidi_type, char} | acc]
       end

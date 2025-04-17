@@ -176,82 +176,84 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
     # Main layout
     # Use View.panel macro directly
-    rendered_panel = View.panel background: :default, height: "100%", width: "100%" do
-      # Layout the three main sections
-      Layout.row height: "100%" do
-        Layout.column padding: 1 do
-          if model.show_help do
-            render_help_dialog()
-          else
-            # Form elements
-            row(padding_bottom: 1) do
-              label("Username:", width: 10)
+    rendered_panel =
+      View.panel background: :default, height: "100%", width: "100%" do
+        # Layout the three main sections
+        Layout.row height: "100%" do
+          Layout.column padding: 1 do
+            if model.show_help do
+              render_help_dialog()
+            else
+              # Form elements
+              row(padding_bottom: 1) do
+                label("Username:", width: 10)
 
-              text_input(
-                id: "username_input",
-                value: model.username,
-                width: 30,
-                focus: focused == "username_input"
+                text_input(
+                  id: "username_input",
+                  value: model.username,
+                  width: 30,
+                  focus: focused == "username_input"
+                )
+              end
+
+              row(padding_bottom: 1) do
+                label("Password:", width: 10)
+
+                text_input(
+                  id: "password_input",
+                  value: model.password,
+                  width: 30,
+                  password: true,
+                  focus: focused == "password_input"
+                )
+              end
+
+              row(padding_top: 1) do
+                button(
+                  id: "login_button",
+                  label: "Login",
+                  width: 10,
+                  focus: focused == "login_button"
+                )
+
+                space(width: 2)
+
+                button(
+                  id: "reset_button",
+                  label: "Reset",
+                  width: 10,
+                  focus: focused == "reset_button"
+                )
+
+                space(width: 2)
+
+                button(
+                  id: "help_button",
+                  label: "Help",
+                  width: 10,
+                  focus: focused == "help_button"
+                )
+              end
+            end
+
+            # Render the focus ring for the focused element
+            FocusRing.render(model.focus_ring_model)
+
+            # Keyboard shortcut info
+            row(padding_top: 2) do
+              text("Tab: Next field | Shift+Tab: Previous field | Esc: Exit",
+                align: :center
               )
             end
 
-            row(padding_bottom: 1) do
-              label("Password:", width: 10)
-
-              text_input(
-                id: "password_input",
-                value: model.password,
-                width: 30,
-                password: true,
-                focus: focused == "password_input"
-              )
+            # Hint display at the bottom
+            row(bottom: 0, left: 0, width: "100%") do
+              HintDisplay.render(focused)
             end
-
-            row(padding_top: 1) do
-              button(
-                id: "login_button",
-                label: "Login",
-                width: 10,
-                focus: focused == "login_button"
-              )
-
-              space(width: 2)
-
-              button(
-                id: "reset_button",
-                label: "Reset",
-                width: 10,
-                focus: focused == "reset_button"
-              )
-
-              space(width: 2)
-
-              button(
-                id: "help_button",
-                label: "Help",
-                width: 10,
-                focus: focused == "help_button"
-              )
-            end
-          end
-
-          # Render the focus ring for the focused element
-          FocusRing.render(model.focus_ring_model)
-
-          # Keyboard shortcut info
-          row(padding_top: 2) do
-            text("Tab: Next field | Shift+Tab: Previous field | Esc: Exit",
-              align: :center
-            )
-          end
-
-          # Hint display at the bottom
-          row(bottom: 0, left: 0, width: "100%") do
-            HintDisplay.render(focused)
           end
         end
       end
-    end
+
     rendered_panel
   end
 
@@ -313,33 +315,35 @@ defmodule Raxol.Examples.UXRefinementDemo do
   @dialyzer {:nowarn_function, render_help_dialog: 0}
   defp render_help_dialog do
     # Use View.panel macro directly
-    rendered_dialog = View.panel title: "Help",
-               padding: 1,
-               height: 12,
-               width: 40,
-               border: true,
-               style: %{
-                 position: :absolute,
-                 top: "50%",
-                 left: "50%",
-                 transform: "translate(-50%, -50%)"
-               } do
-      Layout.column do
-        text("This is a demo of the UX Refinement features in Raxol.")
-        text("Use Tab and Shift+Tab to navigate between form fields.")
-        text("The focus ring indicates which element is focused.")
-        text("Hints at the bottom provide context for each element.")
+    rendered_dialog =
+      View.panel title: "Help",
+                 padding: 1,
+                 height: 12,
+                 width: 40,
+                 border: true,
+                 style: %{
+                   position: :absolute,
+                   top: "50%",
+                   left: "50%",
+                   transform: "translate(-50%, -50%)"
+                 } do
+        Layout.column do
+          text("This is a demo of the UX Refinement features in Raxol.")
+          text("Use Tab and Shift+Tab to navigate between form fields.")
+          text("The focus ring indicates which element is focused.")
+          text("Hints at the bottom provide context for each element.")
 
-        row(padding_top: 2) do
-          button(
-            id: "close_help",
-            label: "Close",
-            width: 10,
-            on_click: {:close_help}
-          )
+          row(padding_top: 2) do
+            button(
+              id: "close_help",
+              label: "Close",
+              width: 10,
+              on_click: {:close_help}
+            )
+          end
         end
       end
-    end
+
     rendered_dialog
   end
 end

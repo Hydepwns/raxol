@@ -108,7 +108,9 @@ defmodule Raxol.Components.Progress.Spinner do
     dsl_result =
       View.box style: %{width: state.width, height: 1} do
         if state.label do
-          View.text("#{state.label} #{spinner_char}", style: state.style.label_style)
+          View.text("#{state.label} #{spinner_char}",
+            style: state.style.label_style
+          )
         else
           View.text(spinner_char, style: state.style.spinner_style)
         end

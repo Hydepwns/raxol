@@ -74,7 +74,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
             # inheriting the style from the primary cell.
             row
             |> List.update_at(x, fn _ -> new_cell end)
-            |> List.update_at(x + 1, fn _ -> Cell.new_wide_placeholder(cell_style) end)
+            |> List.update_at(x + 1, fn _ ->
+              Cell.new_wide_placeholder(cell_style)
+            end)
           else
             List.update_at(row, x, fn _ -> new_cell end)
           end
@@ -560,7 +562,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
   @spec diff(t(), list({non_neg_integer(), non_neg_integer(), map()})) ::
           list({non_neg_integer(), non_neg_integer(), map()})
-  def diff(%__MODULE__{} = current_buffer, desired_cells) when is_list(desired_cells) do
+  def diff(%__MODULE__{} = current_buffer, desired_cells)
+      when is_list(desired_cells) do
     Enum.filter(desired_cells, fn {x, y, desired_cell_map} ->
       # Convert desired map to a Cell struct for proper comparison
       desired_cell_struct = Cell.from_map(desired_cell_map)
@@ -572,10 +575,12 @@ defmodule Raxol.Terminal.ScreenBuffer do
         {nil, _} ->
           # Invalid desired cell map, skip
           false
+
         {_desired, nil} ->
           # Current cell is outside buffer (shouldn't happen if called correctly), or buffer uninitialized?
           # Treat as different if desired is valid.
           true
+
         {desired, current} ->
           # Compare the structs directly
           not Cell.equals?(current, desired)
@@ -597,21 +602,32 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
         # Check if conversion was successful and cell is not nil
         if new_cell_struct do
-          is_wide = CharacterHandling.get_char_width(new_cell_struct.char) == 2 and !new_cell_struct.is_wide_placeholder
+          is_wide =
+            CharacterHandling.get_char_width(new_cell_struct.char) == 2 and
+              !new_cell_struct.is_wide_placeholder
 
-          new_rows = List.update_at(acc_buffer.cells, y, fn row ->
-            row_with_primary = List.replace_at(row, x, new_cell_struct)
-            # Handle wide character placeholder if needed and space allows
-            if is_wide and x + 1 < acc_buffer.width do
-              List.replace_at(row_with_primary, x + 1, Cell.new_wide_placeholder(new_cell_struct.style))
-            else
-              row_with_primary
-            end
-          end)
+          new_rows =
+            List.update_at(acc_buffer.cells, y, fn row ->
+              row_with_primary = List.replace_at(row, x, new_cell_struct)
+              # Handle wide character placeholder if needed and space allows
+              if is_wide and x + 1 < acc_buffer.width do
+                List.replace_at(
+                  row_with_primary,
+                  x + 1,
+                  Cell.new_wide_placeholder(new_cell_struct.style)
+                )
+              else
+                row_with_primary
+              end
+            end)
+
           %{acc_buffer | cells: new_rows}
         else
           # Failed to convert cell map, ignore this change
-          Logger.warning("[ScreenBuffer.update] Failed to convert cell map, skipping change: #{inspect(cell_map)} at (#{x}, #{y})")
+          Logger.warning(
+            "[ScreenBuffer.update] Failed to convert cell map, skipping change: #{inspect(cell_map)} at (#{x}, #{y})"
+          )
+
           acc_buffer
         end
       else

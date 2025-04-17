@@ -181,24 +181,31 @@ defmodule Raxol.View do
     # Recursively convert children, filtering out nils
     children_elements =
       children_dsl
-      |> Enum.map(&to_element/1) # Recursive call
-      |> Enum.reject(&is_nil(&1)) # Remove any nils returned
+      # Recursive call
+      |> Enum.map(&to_element/1)
+      # Remove any nils returned
+      |> Enum.reject(&is_nil(&1))
 
     %Raxol.Core.Renderer.Element{
       tag: tag,
       attributes: attributes,
       content: content,
-      children: children_elements, # Assign cleaned list
-      ref: make_ref(), # Ensure each element gets a unique ref
+      # Assign cleaned list
+      children: children_elements,
+      # Ensure each element gets a unique ref
+      ref: make_ref(),
       # Style needs to be extracted/handled appropriately if needed here
-      style: Map.get(dsl_map, :style, %{}) # Basic style passing
+      # Basic style passing
+      style: Map.get(dsl_map, :style, %{})
     }
   end
 
   # Handle cases where the input is already an Element
   def to_element(%Raxol.Core.Renderer.Element{} = element), do: element
   # Handle raw strings by converting them to text elements
-  def to_element(text) when is_binary(text), do: to_element(%{type: :text, text: text})
+  def to_element(text) when is_binary(text),
+    do: to_element(%{type: :text, text: text})
+
   # Handle nil explicitly
   def to_element(nil), do: nil
   # Handle lists by converting each item and wrapping in a fragment
@@ -207,10 +214,13 @@ defmodule Raxol.View do
     |> Enum.map(&to_element/1)
     |> Enum.reject(&is_nil(&1))
     |> case do
-         [] -> nil # Return nil if list becomes empty after conversion
-         elements -> to_element(%{type: :fragment, children: elements}) # Wrap list in fragment
-       end
+      # Return nil if list becomes empty after conversion
+      [] -> nil
+      # Wrap list in fragment
+      elements -> to_element(%{type: :fragment, children: elements})
+    end
   end
+
   # Catch-all for unexpected types - return nil
   def to_element(_other), do: nil
 end

@@ -6,7 +6,8 @@ defmodule Raxol.Examples.ButtonTest do
   import ExUnit.Callbacks
 
   alias Raxol.Examples.Button
-  alias Raxol.Test.TestHelper # Alias TestHelper for setup/teardown
+  # Alias TestHelper for setup/teardown
+  alias Raxol.Test.TestHelper
 
   setup do
     context = TestHelper.setup_test_env()

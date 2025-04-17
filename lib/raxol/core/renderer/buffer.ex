@@ -154,7 +154,9 @@ defmodule Raxol.Core.Renderer.Buffer do
 
     # 3. Calculate damage: all cells in the new dimensions are damaged
     damage =
-      for x <- 0..(new_width - 1), y <- 0..(new_height - 1), into: MapSet.new() do
+      for x <- 0..(new_width - 1),
+          y <- 0..(new_height - 1),
+          into: MapSet.new() do
         {x, y}
       end
 
