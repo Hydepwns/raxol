@@ -15,41 +15,38 @@ This document outlines the current status of the Raxol framework and provides cl
 
 ### Features in Progress / Blocked
 
-- **Runtime Stability:** Application starts but crashes immediately during the first render cycle due to unexplained state loss (`KeyError: :dashboard_model`). Underlying state loss mechanism **unknown**. Dimension reporting workaround applied.
-- **Runtime Rendering Pipeline:** **BLOCKED** by runtime crash. Visual verification of widgets, chart, treemap, and image rendering is pending.
-- **Dashboard Layout System**: Logic believed fixed, but verification is **BLOCKED**. Layout saving/loading needs testing.
+- **Runtime Stability:** Application **RUNS** successfully, `ex_termbox` initializes, NIF loads. Input works. `Ctrl+C` leads to **unclean exit** (BEAM break menu) after termination sequence. Dimension reporting workaround applied.
+- **Runtime Rendering Pipeline:** Active, processes view elements, calculates cell diffs. Image plugin generates escape sequence. **VISUAL OUTPUT UNVERIFIED**. Needs interactive testing.
+- **Dashboard Layout System**: Logic believed fixed. Saving confirmed working. Loading **NEEDS TESTING**. Visual verification pending.
 - **Performance Monitoring & Cleanup**: (Lower Priority) Completing the performance scoring/alerting tools & resolving minor existing analysis warnings.
-- **Plugin System Testing**: Image/Visualization rendering **BLOCKED**. `HyperlinkPlugin` cross-platform OS interaction **needs testing**.
+- **Plugin System Testing**: Image plugin sends escape sequence (**NEEDS VISUAL VERIFICATION**). Visualization plugin rendering **NEEDS IMPLEMENTATION & VISUAL VERIFICATION**. `HyperlinkPlugin` cross-platform OS interaction **NEEDS TESTING**.
 - **Advanced Documentation**: (Lower Priority) Creating debugging guides and optimization case studies.
 - **Screen Buffer Logic**: `ScreenBuffer.diff/2` and `update/2` implemented, integrated, and fixed.
 
 ## Tactical Next Steps
 
-**CURRENT FOCUS:** Debug State Loss
+**CURRENT FOCUS:** Verify Visual Output & Investigate Unclean Exit
 
-1. [ ] **Investigate State Loss:** Determine _why_ the `RuntimeDebug` state's `:model` is reset to `%{}%` between `handle_continue/2` returning and `handle_info(:render, state)` executing.
-   - Logs confirm state is correct after `init/1` and during `handle_continue/2`.
-   - Hypothesis: Unexpected message interaction, NIF interaction, or GenServer lifecycle issue.
-   - _Next Test:_ Add logging _immediately after_ the `GenServer.start_link` call in `start_link/1` to further pinpoint the timing of the state loss.
-
-**NEXT FOCUS (Post-State-Loss-Fix):** Run & Verify Rendering
-
-2. [ ] **Run & Verify Rendering:** Execute `mix run --no-halt` (prefer foreground without redirection for visual check).
-   - Visually verify if TUI rendering is correct for all widgets (Chart, Image, TreeMap, Text Input) (**Pending**).
-   - Check logs (`[GridContainer.calculate_widget_bounds]` debug logs) for correct bounds calculations (**Pending Visual Confirmation**).
+1. [x] **~~Investigate `termbox` Initialization Failure:~~** **FIXED** (Resolved `:nif_not_loaded` by recompiling `ex_termbox`).
+2. [ ] **Run & Verify Rendering (Interactive):** Execute `mix run --no-halt` interactively.
+   - Visually verify if _any_ TUI rendering appears (borders, text widgets, image).
+   - Check logs (`[GridContainer.calculate_widget_bounds]` debug logs) for correct bounds calculations.
    - Address previously observed runtime warnings (`Unhandled view element type`, `Skipping invalid cell change`) if they appear.
+   - **Note:** Confirm if the ImagePlugin's escape sequence actually displays the image.
+3. [ ] **Investigate Unclean Exit:** Determine why `Ctrl+C` leads to the BEAM break menu instead of a clean exit to the shell.
+   - _Next Test:_ Add logging in `RuntimeDebug.terminate/2`; review supervision & `ex_termbox` shutdown interaction.
 
-**FURTHER NEXT STEPS (Post-Visual Verification):** Address Plugins, Layout, Hacks.
+**FURTHER NEXT STEPS (Post-Visual Verification & Clean Exit):** Address Plugins, Layout, Hacks.
 
-3. [ ] **Test Plugin Functionality:**
+4. [ ] **Test Plugin Functionality:**
    - Test `HyperlinkPlugin.open_url/1` on different operating systems.
-4. [ ] **Test Layout Persistence:**
+5. [ ] **Test Layout Persistence:**
    - Verify `Dashboard.save_layout/1` saves the correct data.
    - Verify `Dashboard.load_layout/0` loads the saved layout correctly.
-5. [ ] **Refine Rendering Logic:** Enhance `VisualizationPlugin` TUI rendering (Chart and TreeMap) for better accuracy, layout, and aesthetics.
-6. [ ] **Address Type Warnings:** Fix compiler warnings for type mismatches in `Runtime` event handling.
-7. [ ] **Investigate `ex_termbox` Dimension Issue:** Research the root cause of the incorrect dimension reporting (remove hardcoding).
-8. [ ] **Run Static Analysis (Lower Priority):** Run `mix dialyzer` and `mix credo`.
+6. [ ] **Implement & Refine Rendering Logic:** Enhance `VisualizationPlugin` TUI rendering (Chart and TreeMap) for better accuracy, layout, and aesthetics.
+7. [ ] **Address Type Warnings:** Fix compiler warnings for type mismatches in `Runtime` event handling.
+8. [ ] **Investigate `ex_termbox` Dimension Issue:** Research the root cause of the incorrect dimension reporting (remove hardcoding).
+9. [ ] **Run Static Analysis (Lower Priority):** Run `mix dialyzer` and `mix credo`.
 
 ## Immediate Development Priorities (Post-Crash-Fix & Visualization Rendering)
 
@@ -111,12 +108,7 @@ Continue developing AI capabilities:
 
 ## Technical Implementation Plan
 
-### State Loss Debugging (Current Focus)
-
-1. **Immediate:** Add logging after `GenServer.start_link` in `start_link/1`.
-2. **Follow-up:** Based on logs, investigate potential causes (message interference, NIF issues, GenServer lifecycle).
-
-### Visualization Rendering Implementation (Blocked)
+### Visualization Rendering Implementation (Ready after verification)
 
 1. **Week X**: Research/Choose TUI rendering strategy (Contex integration? Custom drawing?).
 2. **Week X**: Implement `VisualizationPlugin.render_chart_to_cells/3`.
@@ -177,9 +169,9 @@ For developers interested in contributing, these are areas where help would be v
 
 ## Next Team Sync Focus
 
-1. Review state loss debugging progress.
-2. Discuss potential causes and next debugging steps.
-3. Tentatively plan for visual verification once crash is resolved.
+1. Review results of interactive visual verification.
+2. Discuss findings from unclean exit investigation.
+3. Plan next steps based on verification (implement visualization vs. debug rendering/exit issues).
 
 ## Resources and References
 
