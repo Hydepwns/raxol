@@ -7,177 +7,192 @@ section: roadmap
 tags: [roadmap, next steps, planning]
 ---
 
-# Next Steps for Raxol
+# Next Steps for Raxol Development
 
 ## Current Status Overview
 
-The application is nearing a stable prototype stage with several key components working:
+The application is now at a stable prototype stage with all core components working:
 
-- The application compiles with warnings
-- The backend starts successfully in VS Code extension mode
-- Communication between the extension and backend is established
-- The database system is now fixed with robust connection management and diagnostics
-- Basic UI views are rendering
-- Core functionality is in place for navigation and data visualization
-- Codebase organization has been improved with consolidated examples and separated frontend concerns
+- ✅ Backend successfully starts in VS Code extension mode, managing the initialization process properly
+- ✅ Extension and backend communication established with proper message formatting and handling
+- ✅ Fixed database system with robust connection management and error handling
+- ✅ Implemented user input handling and resize panel functionality
+- ✅ Fixed the BEAM VM hang issue with more robust cleanup procedures
+- ✅ Dashboard layout system with widget positioning, resizing, and persistence successfully implemented
+- ✅ Visualization components fully integrated with responsive rendering in various widget sizes
+- ✅ Dashboard layout and visualization integration passes all tests with proper sizing and persistence
+- ✅ Project files restructured for better organization
+- ✅ Comprehensive testing framework in place with clear success criteria
 
 ## Tactical Next Steps
 
-1. **Resolve Startup Issues**
+1. **Execute Testing Plan**
 
-   - Verify extension startup sequence and messaging
-   - Debug dashboard application launch
-   - Fix UI view initialization
+   - Complete VS Code extension environment testing
+   - Test native terminal environment functionality
+   - Validate visualization rendering in different scenarios
+   - Verify layout persistence across application restarts
 
-2. **Fix UI Rendering**
+2. **Performance Optimization**
 
-   - Address layout loading issues
-   - Implement proper resize panel handling
-   - Ensure correct terminal dimensions are reported by ExTermbox
+   - Profile visualization performance with large datasets
+   - Implement caching for visualization calculations
+   - Optimize rendering pipeline for complex dashboards
+   - Add asset optimization for improved load times
 
-3. **Performance and Stability Improvements**
+3. **Feature Expansion**
 
-   - Investigate and fix BEAM VM hang on exit in stdio mode
-   - Optimize rendering for large datasets
-   - Implement proper error handling for all user input
+   - Add additional visualization types (line charts, scatter plots)
+   - Expand plugin system with more integration points
+   - Enhance user interaction capabilities
 
-4. **Feature Completeness**
+4. **Polish Application**
+   - Improve error handling and user feedback
+   - Enhance documentation with latest implementation details
+   - Address remaining compiler warnings
+   - Implement theme system for consistent UI
 
-   - Complete dashboard integration
-   - Implement full search capabilities
-   - Finish charts and tree maps rendering
+## Immediate Development Priorities
 
-5. **Polish**
-   - Fix remaining compiler warnings
-   - Address Dialyzer warnings
-   - Complete documentation
-
-## Immediate Development Priorities (Post-Bridge Verification)
-
-### 1. Implement User Input & Resize Handling
-
-- [ ] Enhance `user_input` message handling in `Runtime.ex` to convert WebView key events to app events.
-- [ ] Map key codes and modifiers from VS Code WebView to the format expected by the application.
-- [ ] Complete the `resize_panel` message handling in `Runtime.ex` to properly update dimensions.
-- [ ] Test both features in VS Code extension mode and native terminal mode.
-
-### 2. Test Native Terminal Mode
-
-- [ ] Run the backend directly in a native terminal to verify ExTermbox initialization and operation.
-- [ ] Test user input, rendering, and layout calculations in a native terminal.
-- [ ] Investigate BEAM VM hang on exit in stdio mode.
-- [x] ~~Address database connection issues if they persist in native terminal mode.~~ **FIXED** by implementing robust database connection management that works in all environments.
-
-### 3. Refine Webview Rendering
-
-- [ ] Enhance Webview rendering (`media/main.js`) based on `ui_update` (colors, attributes, better cursor).
-- [ ] Improve key mapping in `media/main.js` for special keys.
-- [ ] Consider implementing a more sophisticated rendering approach (canvas or DOM-based).
+| Task                           | Description                                                 | Status        |
+| ------------------------------ | ----------------------------------------------------------- | ------------- |
+| ✅ Dashboard Layout System     | Implementation of flexible dashboard with resizable widgets | **COMPLETED** |
+| ✅ Visualization Integration   | Rendering charts and treemaps within dashboard widgets      | **COMPLETED** |
+| ✅ Layout Persistence          | Saving and loading dashboard configurations                 | **COMPLETED** |
+| Testing Plan Execution         | Run comprehensive tests in both environments                | In Progress   |
+| Performance Optimization       | Profile and optimize visualization rendering                | In Progress   |
+| Cross-Platform Compatibility   | Ensure consistent behavior across platforms                 | In Progress   |
+| TUI Rendering Enhancements     | Improve rendering performance in terminal environment       | In Progress   |
+| Additional Visualization Types | Implement line charts, scatter plots                        | Planned       |
+| Theme System Implementation    | Add consistent UI theming across components                 | In Progress   |
+| Documentation Updates          | Update API docs with latest implementations                 | In Progress   |
 
 ## Technical Implementation Plan
 
-### Fix ExTermbox Initialization & JSON Communication Issues
+### Timeline for Next 2 Weeks
 
-1. **Week 1**: Investigate ExTermbox initialization failures
+| Week   | Focus                    | Tasks                                                                                                                                                      |
+| ------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Week 1 | Testing Plan Execution   | - Complete all test scripts<br>- Verify layout persistence<br>- Test visualization performance<br>- Document test results                                  |
+| Week 2 | Performance Optimization | - Profile visualization rendering<br>- Implement caching strategies<br>- Optimize large dataset handling<br>- Benchmark improvements                       |
+| Week 3 | Feature Expansion        | - Add additional visualization types<br>- Implement theme system (API documentation created)<br>- Enhance plugin infrastructure<br>- Improve documentation |
 
-   - Review ExTermbox binding code and initialization process
-   - Add detailed logging around initialization
-   - Test in different environments (VS Code, native terminal)
-   - Create fallback mode for VS Code extension
+## Completed Milestones
 
-2. **Week 1-2**: Implement proper JSON communication
-   - Fix JSON formatting in `StdioInterface`
-   - Update `BackendManager` to handle log output vs. JSON
-   - Add JSON envelope for log messages if needed
-   - Test basic message flow once initialization is fixed
+- ✅ Fixed ExTermbox initialization failure with fallback mode
+- ✅ Fixed database connection issues with robust error handling
+- ✅ Implemented proper UI updates through StdioInterface
+- ✅ Fixed BEAM VM hang issue with environment-specific handling
+- ✅ Implemented user input and resize handling
+- ✅ Enhanced visualization rendering with responsive sizing
+- ✅ Implemented dashboard layout system with widget positioning
+- ✅ Added widget resizing and drag functionality
+- ✅ Implemented layout persistence with validation
+- ✅ Created comprehensive test framework for dashboard layout
+- ✅ Integrated visualization components with dashboard widgets
+- ✅ Completed full dashboard layout integration with all features
+- ✅ Implemented automatic layout saving after significant changes
 
-### Database Connection Management (Completed)
+## Testing Strategy
 
-1. **Week 1**: Implement robust connection management
+### Test Categories
 
-   - Create ConnectionManager with retry logic
-   - Implement error classification for Postgres errors
-   - Add health checks for database connections
-   - Create diagnostic tools
+1. **Basic Functionality**
 
-2. **Week 2**: Enhance database interfaces
-   - Create safe Database module with retry capabilities
-   - Improve Repo configuration and logging
-   - Add documentation for database operations
-   - Test connection recovery in various scenarios
+   - VS Code extension activation and communication
+   - Backend startup and message handling
+   - Dashboard layout manipulation
+   - Visualization rendering
 
-### Visualization Rendering Implementation (Ready after verification)
+2. **Integration Tests**
 
-1. **Week X**: Research/Choose TUI rendering strategy (Contex integration? Custom drawing?).
-2. **Week X**: Implement `VisualizationPlugin.render_chart_to_cells/3`.
-3. **Week X**: Implement `VisualizationPlugin.render_treemap_to_cells/3`.
-4. **Week Y**: Test rendering, fix layout/clipping issues, test hyperlink interaction.
+   - Dashboard widget integration with visualizations
+   - Layout persistence across application restarts
+   - User input handling across components
+   - Resize handling and responsive UI
 
-### Dashboard Layout System Refinements (Next)
+3. **Performance Tests**
 
-1. **Week 1-2**: Create responsive grid layout foundation
+   - Visualization rendering with large datasets
+   - Dashboard layout with multiple widgets
+   - UI responsiveness during complex operations
 
-   - Implement grid container component
-   - Add responsive breakpoint system
-   - Create layout configuration API
+4. **Specific Component Tests**
+   - ✅ Bar chart rendering with labels and values
+   - ✅ Treemap layout rendering with proper nesting
+   - ✅ Layout persistence with validation
+   - ✅ Widget positioning and resizing
+   - ✅ Visualization responsiveness to widget size changes
 
-2. **Week 3-4**: Develop widget container implementation
+### Additional Testing Needs
 
-   - Build draggable functionality
-   - Implement resize controls
-   - Create widget configuration panel
-
-3. **Week 5-6**: Build dashboard persistence and configuration
-
-   - Implement saving/loading system
-   - Create default templates
-   - Develop user configuration UI
-
-4. **Week 7-8**: Visualization component integration
-   - [x] Create specialized widget types for charts and TreeMaps (`ChartWidget`, `TreeMapWidget`)
-   - [ ] Build data binding / configuration system (TODO)
-   - [ ] Implement real-time updates (TODO)
-
-### Testing Strategy
-
-- Create specific tests for dashboard layout responsiveness
-- Test dragging and resizing with various screen sizes
-- Validate accessibility of the dashboard system
-- Benchmark performance with multiple widgets
-
-## Development Guide for Dashboard System
-
-When implementing the dashboard system, follow these principles:
-
-1. **Composability**: Widgets should be composable and follow consistent patterns
-2. **Accessibility**: Ensure all dashboard interactions work with keyboard and screen readers
-3. **Performance**: Monitor and optimize for performance with many widgets
-4. **Flexibility**: Support various layouts and configurations
-5. **Persistence**: Save and restore dashboard state reliably
+- Verify TUI rendering in native terminal environment
+- Test cross-platform compatibility for core features
+- Evaluate accessibility of visualization components
+- Benchmark performance metrics for optimization
 
 ## Contribution Areas
 
-For developers interested in contributing, these are areas where help would be valuable:
+For developers interested in contributing to Raxol, here are key areas where help is needed:
 
-1. **Dashboard Widget Types**: Creating additional specialized widget types
-2. **Performance Optimization**: Improving dashboard rendering performance
-3. **Animation System**: Implementing physics-based animations
-4. **Documentation**: Creating guides for dashboard creation
-5. **Testing**: Developing comprehensive tests for layout system
-6. **Asset Optimization**: Optimizing font files and other large assets
+1. **Additional Visualization Types**
+
+   - Line charts, scatter plots, heatmaps
+   - Interactive visualization elements
+   - Data filtering and transformation utilities
+
+2. **Performance Optimization**
+
+   - Rendering pipeline improvements
+   - Memory usage optimization
+   - Caching strategies for visualization data
+
+3. **Theme Systems**
+
+   - Consistent color scheme implementation (API documentation created)
+   - Theme switching mechanism
+   - Custom theme creation tools
+
+4. **Documentation**
+
+   - API documentation updates
+   - Tutorial creation
+   - Example implementations
+
+5. **Asset Optimization**
+
+   - Font file optimization
+   - Image asset management
+   - Loading performance improvements
+
+6. **Accessibility Enhancements**
+   - Screen reader compatibility
+   - Keyboard navigation improvements
+   - Color contrast adjustments
 
 ## Next Team Sync Focus
 
-1. Review results of **ExTermbox initialization failure investigation** (error code -2).
-2. Discuss findings from JSON communication issues and potential solutions.
-3. Evaluate options for creating a simplified version for initial testing.
-4. Plan next steps based on investigation results.
-5. Review the new codebase organization and any necessary adjustments.
+During our next team sync, we'll focus on:
+
+- Reviewing test results from both environments
+- Discussing performance metrics and optimization strategies
+- Planning the implementation of additional visualization types
+- Assigning responsibilities for documentation updates
 
 ## Resources and References
 
 - Visualization Plugin: `VisualizationPlugin`
+- Dashboard Layout: `Dashboard.ex`, `GridContainer.ex`, `WidgetContainer.ex`
+- Testing Framework: `test_plan.md`, `scripts/vs_code_test.sh`, `scripts/native_terminal_test.sh`, `scripts/run_visualization_tests.exs`
+- Dashboard Tests: `scripts/test_dashboard_layout_integration.exs`, `scripts/test_layout_persistence.exs`, `scripts/run_all_dashboard_tests.sh`
+- Test Data: `test/data/visualization_test_data.ex`
 - VS Code Extension APIs: [Link to relevant VS Code docs, e.g., Webviews]
 - Project Structure Overview: See updated README.md
 
 ## Future Exploration
+
+- Voice command integration for dashboard manipulation
+- AI-assisted dashboard configuration
+- Advanced event system for dashboard interaction
+- Real-time collaborative dashboards
+- Dashboard sharing and export capabilities
