@@ -78,6 +78,15 @@ tags: [roadmap, todo, tasks]
 - [ ] **Responsiveness Scoring System:** Define metrics, create algorithm, visualize data.
 - [ ] **Performance Regression Alerting:** Configure thresholds, notification system, CI integration.
 - [ ] **Animation Performance Analysis:** Monitor frame rates, identify bottlenecks.
+- [ ] **Asset Optimization:** Optimize large font files in `priv/static/fonts` directory.
+
+### Codebase Organization (Completed) ✅
+
+- [x] **Consolidate Example Directories:** Merged `/src/examples` into `/examples/typescript` to have examples in a single location.
+- [x] **Frontend & Backend Separation:** Created a dedicated `/frontend` directory for JavaScript/TypeScript configuration files.
+- [x] **Normalize Extension Structure:** Cleaned up the nested directory structure in `/extensions/vscode`.
+- [x] **Improve Security Management:** Created `.secrets.example` file and better .gitignore patterns.
+- [x] **Update Documentation:** Added project structure section to README.md.
 
 ### Documentation (Lower Priority)
 
@@ -87,6 +96,7 @@ tags: [roadmap, todo, tasks]
 - [ ] Event system best practices.
 - [ ] Integration examples and tutorials (Dashboard, Plugins).
 - [ ] Accessibility and internationalization integration guides.
+- [x] Project structure documentation (added to README.md).
 
 ## Upcoming Features 🎯 (Adjust based on Extension Focus)
 
@@ -192,6 +202,10 @@ tags: [roadmap, todo, tasks]
 - [x] Fix JSON message formatting
 - [x] Implement basic UI updates through StdioInterface
 - [x] Fix database connection system with robust error handling
+- [x] Improve codebase organization and structure
+- [x] Consolidate example directories
+- [x] Create dedicated frontend directory
+- [x] Normalize extension directory structure
 
 ## Backlog
 
