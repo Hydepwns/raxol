@@ -14,17 +14,21 @@ defmodule Raxol.Application do
 
   alias Raxol.Core.UserPreferences
   alias Raxol.Style.Colors.{HotReload, Persistence, Theme}
+  alias Raxol.Database.ConnectionManager
 
   @impl true
   def start(_type, _args) do
     children =
       [
         # Start the Terminal Registry first (takes no args)
-        Raxol.Terminal.Registry,
+        %{
+          id: Raxol.Terminal.Registry,
+          start: {Raxol.Terminal.Registry, :start_link, []}
+        },
         # Start the database if enabled and not in test environment
         if Application.get_env(:raxol, :database_enabled, true) &&
              @compile_env != :test do
-          {Raxol.Repo, []}
+          Raxol.Repo
         end,
         # Start user preferences
         {UserPreferences, []},
@@ -32,41 +36,35 @@ defmodule Raxol.Application do
         {Raxol.Terminal.ANSI.Processor, %{}},
         # Start the buffer manager
         {Raxol.Terminal.Buffer.Manager, %{}},
-        # Initialize color system
-        {Task, &init_color_system/0},
+        # Initialize color system with a unique ID
+        Supervisor.child_spec({Task, &init_color_system/0}, id: :color_system_task),
+        # Check database connection health with a unique ID
+        Supervisor.child_spec({Task, &ensure_database_connection/0}, id: :database_connection_task),
         # Start hot-reload server
         {HotReload, []},
+        # Add DynamicSupervisor for Raxol.Runtime
+        {DynamicSupervisor, name: Raxol.DynamicSupervisor, strategy: :one_for_one},
         # Add Raxol.Runtime to the children list, passing the desired App module
         {Raxol.RuntimeDebug, [app_module: Raxol.MyApp]}
       ]
       |> Enum.reject(&is_nil/1)
 
-    # Transform children into full specs if needed
-    children =
-      Enum.map(children, fn
-        # Special case for Repo (which is a supervisor)
-        {Raxol.Repo, _} = _child ->
-          %{
-            id: Raxol.Repo,
-            start: {Raxol.Repo, :start_link, [[]]},
-            restart: :permanent,
-            type: :supervisor
-          }
-
-        # Explicitly define how to start the Registry (using start_link/0)
-        Raxol.Terminal.Registry ->
-          %{
-            id: Raxol.Terminal.Registry,
-            start: {Raxol.Terminal.Registry, :start_link, []}
-          }
-
-        # Pass other children (like `{Raxol.Runtime, [...]}`) through unchanged (Supervisor handles them)
-        child ->
-          child
-      end)
-
+    # See https://hexdocs.pm/elixir/Supervisor.html
+    # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Raxol.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  @doc """
+  Ensures database connection is healthy during startup.
+  """
+  def ensure_database_connection do
+    if Application.get_env(:raxol, :database_enabled, true) &&
+         @compile_env != :test do
+      # Wait a moment for the Repo to start
+      Process.sleep(500)
+      ConnectionManager.ensure_connection()
+    end
   end
 
   @doc """

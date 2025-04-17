@@ -333,18 +333,14 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     end
 
     # Extract values and labels
-    values = Enum.map(data, &Map.get(&1, :value, 0))
-    labels = Enum.map(data, &Map.get(&1, :label, "?"))
-
-    # Basic calculations (adjust if needed)
-    max_value = Enum.max([0 | values]) # Handle empty/all-zero values
-    num_bars = Enum.count(data)
-    chart_width = bounds.width - 2 # Inner width for bars
+    _labels = Enum.map(data, &Map.get(&1, :label, "?"))
+    max_value = Enum.map(data, &Map.get(&1, :value, 0)) |> Enum.max(fn -> 0 end)
+    chart_width = bounds.width - 2 # Account for borders/padding
     chart_height = bounds.height - 2 # Inner height for bars
-    bar_width = max(1, div(chart_width, num_bars))
-    bar_spacing = max(0, div(chart_width - num_bars * bar_width, max(1, num_bars - 1)))
+    bar_width = max(1, div(chart_width, Enum.count(data)))
+    bar_spacing = max(0, div(chart_width - Enum.count(data) * bar_width, max(1, Enum.count(data) - 1)))
 
-    if chart_width < num_bars or chart_height < 1 do
+    if chart_width < Enum.count(data) or chart_height < 1 do
       draw_box_with_text("[Too Small]", bounds)
     end
 
