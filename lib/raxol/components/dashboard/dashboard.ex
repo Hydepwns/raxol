@@ -153,13 +153,19 @@ defmodule Raxol.Components.Dashboard.Dashboard do
         case widget_config.type do
           # Plugin widgets: Return the config map directly with bounds included
           :chart ->
-            Map.put(widget_config, :bounds, bounds)
+            box widget_config: Map.put(widget_config, :bounds, bounds) do
+              []
+            end
 
           :treemap ->
-            Map.put(widget_config, :bounds, bounds)
+            box widget_config: Map.put(widget_config, :bounds, bounds) do
+              []
+            end
 
           :image ->
-            Map.put(widget_config, :bounds, bounds)
+            box widget_config: Map.put(widget_config, :bounds, bounds) do
+              []
+            end
 
           # Standard widgets: Render content and wrap in WidgetContainer
           :info ->
