@@ -7,106 +7,103 @@ section: roadmap
 tags: [roadmap, next steps, planning]
 ---
 
-# Next Steps for Raxol Framework Development
-
-This document outlines the current status of the Raxol framework and provides clear direction for immediate next steps in development.
+# Next Steps for Raxol
 
 ## Current Status Overview
 
-### Features in Progress / Blocked
+The application is nearing a stable prototype stage with several key components working:
 
-- **Runtime Stability:** Application **RUNS** successfully, `ex_termbox` initializes, NIF loads. Input works. `Ctrl+C` leads to **unclean exit** (BEAM break menu) after termination sequence. Dimension reporting workaround applied.
-- **Runtime Rendering Pipeline:** Active, processes view elements, calculates cell diffs. Image plugin generates escape sequence. **VISUAL OUTPUT UNVERIFIED**. Needs interactive testing.
-- **Dashboard Layout System**: Logic believed fixed. Saving confirmed working. Loading **NEEDS TESTING**. Visual verification pending.
-- **Performance Monitoring & Cleanup**: (Lower Priority) Completing the performance scoring/alerting tools & resolving minor existing analysis warnings.
-- **Plugin System Testing**: Image plugin sends escape sequence (**NEEDS VISUAL VERIFICATION**). Visualization plugin rendering **NEEDS IMPLEMENTATION & VISUAL VERIFICATION**. `HyperlinkPlugin` cross-platform OS interaction **NEEDS TESTING**.
-- **Advanced Documentation**: (Lower Priority) Creating debugging guides and optimization case studies.
-- **Screen Buffer Logic**: `ScreenBuffer.diff/2` and `update/2` implemented, integrated, and fixed.
+- The application compiles with warnings
+- The backend starts successfully in VS Code extension mode
+- Communication between the extension and backend is established
+- The database system is now fixed with robust connection management and diagnostics
+- Basic UI views are rendering
+- Core functionality is in place for navigation and data visualization
 
 ## Tactical Next Steps
 
-**CURRENT FOCUS:** Verify Visual Output & Investigate Unclean Exit
+1. **Resolve Startup Issues**
 
-1. [x] **~~Investigate `termbox` Initialization Failure:~~** **FIXED** (Resolved `:nif_not_loaded` by recompiling `ex_termbox`).
-2. [ ] **Run & Verify Rendering (Interactive):** Execute `mix run --no-halt` interactively.
-   - Visually verify if _any_ TUI rendering appears (borders, text widgets, image).
-   - Check logs (`[GridContainer.calculate_widget_bounds]` debug logs) for correct bounds calculations.
-   - Address previously observed runtime warnings (`Unhandled view element type`, `Skipping invalid cell change`) if they appear.
-   - **Note:** Confirm if the ImagePlugin's escape sequence actually displays the image.
-3. [ ] **Investigate Unclean Exit:** Determine why `Ctrl+C` leads to the BEAM break menu instead of a clean exit to the shell.
-   - _Next Test:_ Add logging in `RuntimeDebug.terminate/2`; review supervision & `ex_termbox` shutdown interaction.
+   - Verify extension startup sequence and messaging
+   - Debug dashboard application launch
+   - Fix UI view initialization
 
-**FURTHER NEXT STEPS (Post-Visual Verification & Clean Exit):** Address Plugins, Layout, Hacks.
+2. **Fix UI Rendering**
 
-4. [ ] **Test Plugin Functionality:**
-   - Test `HyperlinkPlugin.open_url/1` on different operating systems.
-5. [ ] **Test Layout Persistence:**
-   - Verify `Dashboard.save_layout/1` saves the correct data.
-   - Verify `Dashboard.load_layout/0` loads the saved layout correctly.
-6. [ ] **Implement & Refine Rendering Logic:** Enhance `VisualizationPlugin` TUI rendering (Chart and TreeMap) for better accuracy, layout, and aesthetics.
-7. [ ] **Address Type Warnings:** Fix compiler warnings for type mismatches in `Runtime` event handling.
-8. [ ] **Investigate `ex_termbox` Dimension Issue:** Research the root cause of the incorrect dimension reporting (remove hardcoding).
-9. [ ] **Run Static Analysis (Lower Priority):** Run `mix dialyzer` and `mix credo`.
+   - Address layout loading issues
+   - Implement proper resize panel handling
+   - Ensure correct terminal dimensions are reported by ExTermbox
 
-## Immediate Development Priorities (Post-Crash-Fix & Visualization Rendering)
+3. **Performance and Stability Improvements**
 
-### 1. Dashboard Layout System Refinements
+   - Investigate and fix BEAM VM hang on exit in stdio mode
+   - Optimize rendering for large datasets
+   - Implement proper error handling for all user input
 
-- [ ] Widget Configuration Panel
-- [ ] Data Source Connection / Real Configuration
-- [ ] Real-time Data Updating
-- [ ] Layout Persistence Configuration
-- [ ] Accessibility Review
-- [ ] User Customization (Add/Remove Widgets)
+4. **Feature Completeness**
 
-### 2. Performance Tools Finalization (New Tooling)
+   - Complete dashboard integration
+   - Implement full search capabilities
+   - Finish charts and tree maps rendering
 
-Complete the remaining performance tools to ensure robust monitoring. (Note: This focuses on building _new_ tools, separate from fixing existing analysis warnings.)
+5. **Polish**
+   - Fix remaining compiler warnings
+   - Address Dialyzer warnings
+   - Complete documentation
 
-- [ ] Responsiveness scoring system
-  - [ ] Define metrics for input responsiveness
-  - [ ] Create scoring algorithm
-  - [ ] Visualization of responsiveness data
-- [ ] Performance regression alerting
-  - [ ] Threshold configuration
-  - [ ] Notification system
-  - [ ] Integration with CI/CD pipeline
-- [ ] Animation performance analysis
-  - [ ] Frame rate monitoring for animations
-  - [ ] Animation performance optimization tools
-  - [ ] Animation bottleneck identification
+## Immediate Development Priorities (Post-Bridge Verification)
 
-### 3. Advanced Animation System
+### 1. Implement User Input & Resize Handling
 
-Begin implementation of more advanced animation capabilities:
+- [ ] Enhance `user_input` message handling in `Runtime.ex` to convert WebView key events to app events.
+- [ ] Map key codes and modifiers from VS Code WebView to the format expected by the application.
+- [ ] Complete the `resize_panel` message handling in `Runtime.ex` to properly update dimensions.
+- [ ] Test both features in VS Code extension mode and native terminal mode.
 
-- [ ] Physics-based animations
-  - [ ] Spring physics implementation
-  - [ ] Inertia effects
-  - [ ] Bounce and elasticity controls
-- [ ] Gesture-driven interactions
-  - [ ] Drag interactions with physics
-  - [ ] Swipe gesture recognition
-  - [ ] Multi-touch gesture support
-- [ ] Animation sequencing
-  - [ ] Timeline-based animation system
-  - [ ] Keyframe animation support
-  - [ ] Animation grouping and coordination
+### 2. Test Native Terminal Mode
 
-### 4. AI Integration Development
+- [ ] Run the backend directly in a native terminal to verify ExTermbox initialization and operation.
+- [ ] Test user input, rendering, and layout calculations in a native terminal.
+- [ ] Investigate BEAM VM hang on exit in stdio mode.
+- [x] ~~Address database connection issues if they persist in native terminal mode.~~ **FIXED** by implementing robust database connection management that works in all environments.
 
-Continue developing AI capabilities:
+### 3. Refine Webview Rendering
 
-- [ ] Content generation
-  - [ ] Component template generation
-  - [ ] Placeholder content generation
-  - [ ] Documentation generation assistance
-- [ ] UI design suggestions
-  - [ ] Layout recommendations
-  - [ ] Color scheme optimization
-  - [ ] Accessibility improvements
+- [ ] Enhance Webview rendering (`media/main.js`) based on `ui_update` (colors, attributes, better cursor).
+- [ ] Improve key mapping in `media/main.js` for special keys.
+- [ ] Consider implementing a more sophisticated rendering approach (canvas or DOM-based).
 
 ## Technical Implementation Plan
+
+### Fix ExTermbox Initialization & JSON Communication Issues
+
+1. **Week 1**: Investigate ExTermbox initialization failures
+
+   - Review ExTermbox binding code and initialization process
+   - Add detailed logging around initialization
+   - Test in different environments (VS Code, native terminal)
+   - Create fallback mode for VS Code extension
+
+2. **Week 1-2**: Implement proper JSON communication
+   - Fix JSON formatting in `StdioInterface`
+   - Update `BackendManager` to handle log output vs. JSON
+   - Add JSON envelope for log messages if needed
+   - Test basic message flow once initialization is fixed
+
+### Database Connection Management (Completed)
+
+1. **Week 1**: Implement robust connection management
+
+   - Create ConnectionManager with retry logic
+   - Implement error classification for Postgres errors
+   - Add health checks for database connections
+   - Create diagnostic tools
+
+2. **Week 2**: Enhance database interfaces
+   - Create safe Database module with retry capabilities
+   - Improve Repo configuration and logging
+   - Add documentation for database operations
+   - Test connection recovery in various scenarios
 
 ### Visualization Rendering Implementation (Ready after verification)
 
@@ -169,10 +166,14 @@ For developers interested in contributing, these are areas where help would be v
 
 ## Next Team Sync Focus
 
-1. Review results of interactive visual verification.
-2. Discuss findings from unclean exit investigation.
-3. Plan next steps based on verification (implement visualization vs. debug rendering/exit issues).
+1. Review results of **ExTermbox initialization failure investigation** (error code -2).
+2. Discuss findings from JSON communication issues and potential solutions.
+3. Evaluate options for creating a simplified version for initial testing.
+4. Plan next steps based on investigation results.
 
 ## Resources and References
 
 - Visualization Plugin: `VisualizationPlugin`
+- VS Code Extension APIs: [Link to relevant VS Code docs, e.g., Webviews]
+
+## Future Exploration
