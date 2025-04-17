@@ -1181,4 +1181,76 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
     Process.send_after(self(), :render, render_interval_ms)
   end
 
+  # Performance and memory monitoring functions
+
+  @doc """
+  Logs the performance of an operation by measuring elapsed time.
+
+  ## Parameters
+    * `operation` - Name/description of the operation being measured
+    * `start_time` - Start time captured using System.monotonic_time()
+
+  ## Example
+      start_time = System.monotonic_time()
+      # ... code to measure ...
+      RuntimeDebug.log_performance("render_operation", start_time)
+  """
+  def log_performance(operation, start_time) do
+    elapsed = System.monotonic_time() - start_time
+    ms = System.convert_time_unit(elapsed, :native, :millisecond)
+    Logger.debug("Performance: #{operation} completed in #{ms}ms")
+  end
+
+  @doc """
+  Logs the memory usage of the current process.
+
+  ## Parameters
+    * `label` - Label to identify the memory usage measurement point
+
+  ## Example
+      RuntimeDebug.log_memory_usage("before_render")
+      # ... rendering code ...
+      RuntimeDebug.log_memory_usage("after_render")
+  """
+  def log_memory_usage(label) do
+    {:memory, memory} = :erlang.process_info(self(), :memory)
+    Logger.debug("Memory: #{label} - #{memory} bytes")
+  end
+
+  @doc """
+  Logs comprehensive system stats including memory, reduction count, and message queue length.
+
+  ## Parameters
+    * `label` - Label to identify the stats measurement point
+  """
+  def log_system_stats(label) do
+    process_info = :erlang.process_info(self())
+    memory = Keyword.get(process_info, :memory, 0)
+    reductions = Keyword.get(process_info, :reductions, 0)
+    message_queue_len = Keyword.get(process_info, :message_queue_len, 0)
+
+    Logger.debug("SystemStats [#{label}]: " <>
+      "Memory: #{memory} bytes, " <>
+      "Reductions: #{reductions}, " <>
+      "Message Queue: #{message_queue_len}")
+  end
+
+  @doc """
+  Creates a timer and returns a function that, when called, will log the elapsed time.
+
+  ## Parameters
+    * `operation` - Name/description of the operation being measured
+
+  ## Example
+      end_timer = RuntimeDebug.start_timer("complex_operation")
+      # ... code to measure ...
+      end_timer.()  # This will log the elapsed time
+  """
+  def start_timer(operation) do
+    start_time = System.monotonic_time()
+    fn ->
+      log_performance(operation, start_time)
+    end
+  end
+
 end
