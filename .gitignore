@@ -30,6 +30,7 @@ raxol-*.tar
 .env
 .env.*
 .secrets
+# Use .secrets.example as a template instead
 
 # Database files
 *.sqlite3
@@ -38,7 +39,7 @@ raxol-*.tar
 # Node.js dependencies
 /node_modules/
 **/node_modules/
-extensions/vscode/node_modules/
+/frontend/node_modules/
 npm-debug.log
 yarn-debug.log
 yarn-error.log
@@ -47,24 +48,26 @@ yarn-error.log
 /priv/static/
 /assets/node_modules/
 **/dist/
-extensions/vscode/dist/
+/extensions/vscode/dist/
 
 # Phoenix
 /priv/static/assets/
 /priv/static/cache_manifest.json
 
 # Elixir
-/priv/static/assets/
-/priv/static/cache_manifest.json
 .elixir_ls/
 
 # VS Code Extension
-extensions/vscode/out/
-extensions/vscode/*.js
-extensions/vscode/package-lock.json
+/extensions/vscode/out/
+/extensions/vscode/*.js
+
+# Dialyzer Persistent Lookup Tables
+/priv/plts/*.plt
+/priv/plts/*.plt.hash
 
 # Misc
 .DS_Store
+**/.DS_Store
 *.swp
 *.swo
 *~
@@ -73,14 +76,10 @@ extensions/vscode/package-lock.json
 *.beam
 *.dump
 *.ez
-*.lock
 *.iml
-*.idea/
+.idea/
 .vscode/
 NEXT_AGENT_PROMPT.md
 
 # Editor / Development Artifacts
 preferences.json
-
-# Dialyzer Persistent Lookup Tables
-priv/plts/
