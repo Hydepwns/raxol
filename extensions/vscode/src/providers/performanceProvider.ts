@@ -1,5 +1,6 @@
 import * as vscode from 'vscode';
-import * as path from 'path';
+// import * as path from 'path'; // Unused
+// import { EventEmitter } from 'events'; // Unused
 
 export class PerformanceTreeItem extends vscode.TreeItem {
   constructor(
@@ -10,7 +11,7 @@ export class PerformanceTreeItem extends vscode.TreeItem {
     public readonly filePath?: string
   ) {
     super(label, collapsibleState);
-    
+
     if (filePath) {
       this.tooltip = `${label}: ${value || 'N/A'}`;
       this.command = {
@@ -19,7 +20,7 @@ export class PerformanceTreeItem extends vscode.TreeItem {
         title: 'Open File'
       };
     }
-    
+
     // Set icon based on type
     switch (type) {
       case 'file':
@@ -32,7 +33,7 @@ export class PerformanceTreeItem extends vscode.TreeItem {
         this.iconPath = new vscode.ThemeIcon('folder');
         break;
     }
-    
+
     // Add performance value if available
     if (value !== undefined) {
       this.description = value;
@@ -43,7 +44,7 @@ export class PerformanceTreeItem extends vscode.TreeItem {
 export class PerformanceProvider implements vscode.TreeDataProvider<PerformanceTreeItem> {
   private _onDidChangeTreeData: vscode.EventEmitter<PerformanceTreeItem | undefined | null | void> = new vscode.EventEmitter<PerformanceTreeItem | undefined | null | void>();
   readonly onDidChangeTreeData: vscode.Event<PerformanceTreeItem | undefined | null | void> = this._onDidChangeTreeData.event;
-  
+
   private performanceData: Map<string, any> = new Map();
 
   constructor() {
@@ -94,7 +95,7 @@ export class PerformanceProvider implements vscode.TreeDataProvider<PerformanceT
 
   private async getComponentPerformanceItems(): Promise<PerformanceTreeItem[]> {
     const items: PerformanceTreeItem[] = [];
-    
+
     // This would be replaced with actual performance data in a real implementation
     // For now, we'll use mock data
     const mockPerformanceData = [
@@ -102,7 +103,7 @@ export class PerformanceProvider implements vscode.TreeDataProvider<PerformanceT
       { component: 'Chart', render: '28ms', update: '15ms', path: 'src/components/Chart.ts' },
       { component: 'Table', render: '18ms', update: '10ms', path: 'src/components/Table.ts' }
     ];
-    
+
     for (const data of mockPerformanceData) {
       items.push(
         new PerformanceTreeItem(
@@ -114,32 +115,32 @@ export class PerformanceProvider implements vscode.TreeDataProvider<PerformanceT
         )
       );
     }
-    
+
     return items;
   }
-  
+
   private loadPerformanceData(): void {
     // In a real implementation, this would load performance data from project files
     // For now, we'll use mock data
     this.performanceData.clear();
-    
+
     // Mock data
     this.performanceData.set('Dashboard', {
       renderTime: '12ms',
       updateTime: '8ms',
       memoryUsage: '2.4MB'
     });
-    
+
     this.performanceData.set('Chart', {
       renderTime: '28ms',
       updateTime: '15ms',
       memoryUsage: '5.8MB'
     });
-    
+
     this.performanceData.set('Table', {
       renderTime: '18ms',
       updateTime: '10ms',
       memoryUsage: '3.2MB'
     });
   }
-} 
+}

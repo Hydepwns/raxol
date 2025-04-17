@@ -1,6 +1,6 @@
 /**
  * State Inspector Feature
- * 
+ *
  * This feature allows for real-time inspection of Raxol component state.
  * It provides a WebView-based panel that can display and track state changes.
  */
@@ -16,46 +16,41 @@ export class StateInspector {
    * Current inspector panel
    */
   private static currentPanel: StateInspector | undefined;
-  
+
   /**
    * VS Code webview panel
    */
   private readonly panel: vscode.WebviewPanel;
-  
-  /**
-   * Extension context
-   */
-  private readonly extensionContext: vscode.ExtensionContext;
-  
+
   /**
    * Disposables for cleanup
    */
   private disposables: vscode.Disposable[] = [];
-  
+
   /**
    * State history
    */
   private stateHistory: { timestamp: number; state: any }[] = [];
-  
+
   /**
    * The maximum number of state entries to keep
    */
   private readonly maxHistoryEntries = 50;
-  
+
   /**
    * Create and show the inspector panel
    */
-  public static createOrShow(extensionContext: vscode.ExtensionContext): void {
+  public static createOrShow(context: vscode.ExtensionContext): void {
     const column = vscode.window.activeTextEditor
       ? vscode.ViewColumn.Beside
       : undefined;
-      
+
     // If we already have a panel, show it
     if (StateInspector.currentPanel) {
       StateInspector.currentPanel.panel.reveal(column);
       return;
     }
-    
+
     // Otherwise, create a new panel
     const panel = vscode.window.createWebviewPanel(
       'raxolStateInspector',
@@ -65,28 +60,27 @@ export class StateInspector {
         enableScripts: true,
         retainContextWhenHidden: true,
         localResourceRoots: [
-          vscode.Uri.file(path.join(extensionContext.extensionPath, 'media')),
-          vscode.Uri.file(path.join(extensionContext.extensionPath, 'node_modules'))
+          vscode.Uri.file(path.join(context.extensionPath, 'media')),
+          vscode.Uri.file(path.join(context.extensionPath, 'node_modules'))
         ]
       }
     );
-    
-    StateInspector.currentPanel = new StateInspector(panel, extensionContext);
+
+    StateInspector.currentPanel = new StateInspector(panel);
   }
-  
+
   /**
    * Constructor
    */
-  private constructor(panel: vscode.WebviewPanel, extensionContext: vscode.ExtensionContext) {
+  private constructor(panel: vscode.WebviewPanel) {
     this.panel = panel;
-    this.extensionContext = extensionContext;
-    
+
     // Set the webview's initial html content
     this.updateContent();
-    
+
     // Listen for when the panel is disposed
     this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
-    
+
     // Handle messages from the webview
     this.panel.webview.onDidReceiveMessage(
       message => {
@@ -106,7 +100,7 @@ export class StateInspector {
       this.disposables
     );
   }
-  
+
   /**
    * Add a new state entry to the history
    */
@@ -116,19 +110,19 @@ export class StateInspector {
       timestamp: Date.now(),
       state: JSON.parse(JSON.stringify(state)) // Deep clone to avoid reference issues
     };
-    
+
     // Add to history
     this.stateHistory.unshift(entry);
-    
+
     // Trim history if needed
     if (this.stateHistory.length > this.maxHistoryEntries) {
       this.stateHistory = this.stateHistory.slice(0, this.maxHistoryEntries);
     }
-    
+
     // Update the panel
     this.updateContent();
   }
-  
+
   /**
    * Clear the state history
    */
@@ -136,7 +130,7 @@ export class StateInspector {
     this.stateHistory = [];
     this.updateContent();
   }
-  
+
   /**
    * Export state history to a JSON file
    */
@@ -149,41 +143,41 @@ export class StateInspector {
           'JSON Files': ['json']
         }
       });
-      
+
       if (uri) {
         // Convert state history to JSON
         const stateJson = JSON.stringify(this.stateHistory, null, 2);
-        
+
         // Write to file using VS Code API
         await vscode.workspace.fs.writeFile(uri, Buffer.from(stateJson, 'utf8'));
-        
+
         vscode.window.showInformationMessage('State history exported successfully');
       }
     } catch (error) {
       vscode.window.showErrorMessage(`Failed to export state history: ${(error as Error).message}`);
     }
   }
-  
+
   /**
    * Update the panel content
    */
   private updateContent(filter?: string): void {
     // Apply filter if provided
     const filteredHistory = filter
-      ? this.stateHistory.filter(entry => 
+      ? this.stateHistory.filter(entry =>
           JSON.stringify(entry.state).toLowerCase().includes(filter.toLowerCase())
         )
       : this.stateHistory;
-      
+
     this.panel.webview.html = this.getWebviewContent(filteredHistory, filter);
   }
-  
+
   /**
    * Generate the HTML content for the webview
    */
   private getWebviewContent(stateHistory: { timestamp: number; state: any }[], filter?: string): string {
     const historyJson = JSON.stringify(stateHistory);
-    
+
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -291,10 +285,10 @@ export class StateInspector {
       </head>
       <body>
         <div class="toolbar">
-          <input 
-            type="text" 
-            id="filterInput" 
-            placeholder="Filter state..." 
+          <input
+            type="text"
+            id="filterInput"
+            placeholder="Filter state..."
             value="${filter || ''}"
           >
           <button id="clearBtn">Clear History</button>
@@ -308,12 +302,12 @@ export class StateInspector {
             <div class="placeholder">Select a state entry to view details</div>
           </div>
         </div>
-        
+
         <script>
           const vscode = acquireVsCodeApi();
           const stateHistory = ${historyJson};
           let selectedIndex = -1;
-          
+
           // Initialize the UI
           function initialize() {
             // Set up filter input
@@ -323,17 +317,17 @@ export class StateInspector {
                 filter: e.target.value
               });
             });
-            
+
             // Set up clear button
             document.getElementById('clearBtn').addEventListener('click', () => {
               vscode.postMessage({ command: 'clearHistory' });
             });
-            
+
             // Set up export button
             document.getElementById('exportBtn').addEventListener('click', () => {
               vscode.postMessage({ command: 'exportState' });
             });
-            
+
             // Set up history item selection
             const historyItems = document.querySelectorAll('.history-item');
             historyItems.forEach((item, index) => {
@@ -341,19 +335,19 @@ export class StateInspector {
                 selectHistoryItem(index);
               });
             });
-            
+
             // Select the first item if available
             if (historyItems.length > 0) {
               selectHistoryItem(0);
             }
           }
-          
+
           // Format JSON with syntax highlighting
           function formatJson(json) {
             if (typeof json !== 'string') {
               json = JSON.stringify(json, null, 2);
             }
-            
+
             return json.replace(/("(\\\\u[a-zA-Z0-9]{4}|\\\\[^u]|[^\\\\"])*"(\\s*:)?|\\b(true|false|null)\\b|-?\\d+(?:\\.\\d*)?(?:[eE][+\\-]?\\d+)?)/g, function (match) {
               let cls = 'json-number';
               if (/^"/.test(match)) {
@@ -370,7 +364,7 @@ export class StateInspector {
               return '<span class="' + cls + '">' + match + '</span>';
             });
           }
-          
+
           // Select a history item
           function selectHistoryItem(index) {
             // Remove selection from previous item
@@ -380,26 +374,26 @@ export class StateInspector {
                 previousItem.classList.remove('selected');
               }
             }
-            
+
             selectedIndex = index;
-            
+
             // Add selection to new item
             const selectedItem = document.getElementById('history-item-' + index);
             if (selectedItem) {
               selectedItem.classList.add('selected');
-              
+
               // Show state details
               const stateViewer = document.getElementById('stateViewer');
               const stateData = stateHistory[index].state;
               const formattedJson = formatJson(JSON.stringify(stateData, null, 2));
-              
+
               stateViewer.innerHTML = '<pre>' + formattedJson + '</pre>';
             }
           }
-          
+
           // Initialize when the document is ready
           document.addEventListener('DOMContentLoaded', initialize);
-          
+
           // Call initialize immediately as well (in case DOMContentLoaded already fired)
           initialize();
         </script>
@@ -407,7 +401,7 @@ export class StateInspector {
       </html>
     `;
   }
-  
+
   /**
    * Render the history list
    */
@@ -415,11 +409,11 @@ export class StateInspector {
     if (stateHistory.length === 0) {
       return '<div class="placeholder">No state changes recorded yet</div>';
     }
-    
+
     return stateHistory.map((entry, index) => {
       const date = new Date(entry.timestamp);
       const timeString = date.toLocaleTimeString();
-      
+
       return `
         <div class="history-item" id="history-item-${index}">
           <div>State Update #${stateHistory.length - index}</div>
@@ -428,16 +422,16 @@ export class StateInspector {
       `;
     }).join('');
   }
-  
+
   /**
    * Dispose of resources
    */
   private dispose(): void {
     StateInspector.currentPanel = undefined;
-    
+
     // Clean up resources
     this.panel.dispose();
-    
+
     while (this.disposables.length) {
       const disposable = this.disposables.pop();
       if (disposable) {
