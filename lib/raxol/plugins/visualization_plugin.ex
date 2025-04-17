@@ -241,10 +241,14 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   defp layout_treemap_nodes(node, bounds, depth, _total_value) do
     # Base case: return current node if no children or area too small
     children = Map.get(node, :children, [])
+
     if Enum.empty?(children) or bounds.width < 1 or bounds.height < 1 do
       # Filter out nodes with zero area
       if bounds.width > 0 and bounds.height > 0 do
-        [%{x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, name: node.name, value: node.value, depth: depth}]
+        [%{x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height,
+           name: Map.get(node, :name, "Unknown"),
+           value: Map.get(node, :value, 0),
+           depth: depth}]
       else
         []
       end
@@ -281,35 +285,40 @@ defmodule Raxol.Plugins.VisualizationPlugin do
       rest_children = tl(children)
       child_value = Map.get(child, :value, 0)
 
-      # Calculate proportion and dimension for this child
-      proportion = child_value / remaining_value
-
-      if split_vertically do
-        # Split vertically: calculate width, height stays the same
-        child_width = max(1, round(current_bounds.width * proportion))
-        child_bounds = %{current_bounds | width: child_width}
-        # Calculate remaining bounds for next children
-        next_bounds = %{current_bounds |
-          x: current_bounds.x + child_width,
-          width: max(0, current_bounds.width - child_width)
-        }
-        # Recursively layout this child
-        child_nodes = layout_treemap_nodes(child, child_bounds, depth, child_value)
-        # Layout remaining children in the adjusted bounds
-        child_nodes ++ layout_children_recursive(rest_children, remaining_value - child_value, next_bounds, depth, split_vertically)
+      # Skip children with zero value to avoid errors
+      if child_value <= 0 do
+        layout_children_recursive(rest_children, remaining_value, current_bounds, depth, split_vertically)
       else
-        # Split horizontally: calculate height, width stays the same
-        child_height = max(1, round(current_bounds.height * proportion))
-        child_bounds = %{current_bounds | height: child_height}
-        # Calculate remaining bounds for next children
-        next_bounds = %{current_bounds |
-          y: current_bounds.y + child_height,
-          height: max(0, current_bounds.height - child_height)
-        }
-        # Recursively layout this child
-        child_nodes = layout_treemap_nodes(child, child_bounds, depth, child_value)
-        # Layout remaining children in the adjusted bounds
-        child_nodes ++ layout_children_recursive(rest_children, remaining_value - child_value, next_bounds, depth, split_vertically)
+        # Calculate proportion and dimension for this child
+        proportion = child_value / remaining_value
+
+        if split_vertically do
+          # Split vertically: calculate width, height stays the same
+          child_width = max(1, round(current_bounds.width * proportion))
+          child_bounds = %{current_bounds | width: child_width}
+          # Calculate remaining bounds for next children
+          next_bounds = %{current_bounds |
+            x: current_bounds.x + child_width,
+            width: max(0, current_bounds.width - child_width)
+          }
+          # Recursively layout this child
+          child_nodes = layout_treemap_nodes(child, child_bounds, depth, child_value)
+          # Layout remaining children in the adjusted bounds
+          child_nodes ++ layout_children_recursive(rest_children, remaining_value - child_value, next_bounds, depth, split_vertically)
+        else
+          # Split horizontally: calculate height, width stays the same
+          child_height = max(1, round(current_bounds.height * proportion))
+          child_bounds = %{current_bounds | height: child_height}
+          # Calculate remaining bounds for next children
+          next_bounds = %{current_bounds |
+            y: current_bounds.y + child_height,
+            height: max(0, current_bounds.height - child_height)
+          }
+          # Recursively layout this child
+          child_nodes = layout_treemap_nodes(child, child_bounds, depth, child_value)
+          # Layout remaining children in the adjusted bounds
+          child_nodes ++ layout_children_recursive(rest_children, remaining_value - child_value, next_bounds, depth, split_vertically)
+        end
       end
     end
   end # End of layout_children_recursive
@@ -329,87 +338,125 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     end) |> Enum.reject(&is_nil(&1))
 
     if Enum.empty?(data) do
+      Logger.warning("[VisualizationPlugin] No valid data for bar chart")
       draw_box_with_text("[No Data]", bounds)
-    end
+    else
+      # Extract values and labels
+      labels = Enum.map(data, &Map.get(&1, :label, "?"))
+      values = Enum.map(data, &Map.get(&1, :value, 0))
+      max_value = Enum.max(values, fn -> 0 end)
+      chart_width = bounds.width - 2 # Account for borders/padding
+      chart_height = bounds.height - 4 # Inner height for bars, leave space for title and labels
+      bar_width = max(1, div(chart_width, Enum.count(data)))
+      bar_spacing = max(0, div(chart_width - Enum.count(data) * bar_width, max(1, Enum.count(data) - 1)))
 
-    # Extract values and labels
-    _labels = Enum.map(data, &Map.get(&1, :label, "?"))
-    max_value = Enum.map(data, &Map.get(&1, :value, 0)) |> Enum.max(fn -> 0 end)
-    chart_width = bounds.width - 2 # Account for borders/padding
-    chart_height = bounds.height - 2 # Inner height for bars
-    bar_width = max(1, div(chart_width, Enum.count(data)))
-    bar_spacing = max(0, div(chart_width - Enum.count(data) * bar_width, max(1, Enum.count(data) - 1)))
+      if chart_width < Enum.count(data) or chart_height < 1 do
+        Logger.warning("[VisualizationPlugin] Chart area too small: #{chart_width}x#{chart_height}")
+        draw_box_with_text("[Too Small]", bounds)
+      else
+        # Define fractional block characters for height
+        fractional_blocks = ~c" \"▂▃▄▅▆▇█" # 8 levels + space
+        num_fractions = length(fractional_blocks) - 1 # = 8
 
-    if chart_width < Enum.count(data) or chart_height < 1 do
-      draw_box_with_text("[Too Small]", bounds)
-    end
+        # Color palette for bars
+        color_palette = [2, 3, 4, 5, 6, 1] # e.g., Red, Green, Yellow, Blue, Magenta, Cyan
+        num_colors = Enum.count(color_palette)
 
-    # Define fractional block characters for height
-    fractional_blocks = ~c" \"▂▃▄▅▆▇█" # 8 levels + space
-    num_fractions = length(fractional_blocks) - 1 # = 8
+        # Draw the outer box (frame) first
+        box_cells = draw_box_with_text(title, bounds) # Draw box with title
 
-    # Color palette for bars
-    color_palette = [2, 3, 4, 5, 6, 1] # e.g., Red, Green, Yellow, Blue, Magenta, Cyan
-    num_colors = Enum.count(color_palette)
+        # Draw bars inside the box
+        bar_cells = Enum.with_index(data) |> Enum.flat_map(fn {item, index} ->
+          value = Map.get(item, :value, 0)
+          label = Map.get(item, :label, "")
 
-    # Draw the outer box (frame) first
-    box_cells = draw_box_with_text(title, bounds) # Draw box with title
+          bar_x_start = bounds.x + 1 + index * (bar_width + bar_spacing)
+          # Calculate bar height in fractional steps
+          fractional_height = if max_value == 0, do: 0, else: (value / max_value) * chart_height * num_fractions
+          full_blocks = floor(fractional_height / num_fractions)
+          remainder_fraction = round(rem(fractional_height, num_fractions))
+          fraction_char = Enum.at(fractional_blocks, remainder_fraction)
 
-    # Draw bars inside the box
-    bar_cells = Enum.with_index(data) |> Enum.flat_map(fn {%{value: value}, index} ->
-      bar_x_start = bounds.x + 1 + index * (bar_width + bar_spacing)
-      # Calculate bar height in fractional steps
-      fractional_height = if max_value == 0, do: 0, else: (value / max_value) * chart_height * num_fractions
-      full_blocks = floor(fractional_height / num_fractions)
-      remainder_fraction = round(rem(fractional_height, num_fractions))
-      fraction_char = Enum.at(fractional_blocks, remainder_fraction)
+          fg_color = Enum.at(color_palette, rem(index, num_colors))
 
-      fg_color = Enum.at(color_palette, rem(index, num_colors))
+          # Generate bar cells
+          bar_cells = for y_offset <- 0..(chart_height - 1),
+                      x_offset <- 0..(bar_width - 1),
+                      current_y = bounds.y + 1 + chart_height - 1 - y_offset, # Y grows downwards
+                      current_x = bar_x_start + x_offset do
+            char = cond do
+              y_offset < full_blocks -> ~c"█"
+              y_offset == full_blocks -> fraction_char
+              true -> ~c" " # Empty space above bar
+            end
 
-      cells = for y_offset <- 0..(chart_height - 1),
-                  x_offset <- 0..(bar_width - 1),
-                  current_y = bounds.y + 1 + chart_height - 1 - y_offset, # Y grows downwards
-                  current_x = bar_x_start + x_offset do
-        char = cond do
-          y_offset < full_blocks -> ~c"█"
-          y_offset == full_blocks -> fraction_char
-          true -> ~c" " # Empty space above bar
+            # Return tuple format only if char is not space
+            if char != ~c" " do
+              {current_x, current_y, %{char: char, fg: fg_color, bg: 0, style: %{}}}
+            else
+              nil # Will be filtered out
+            end
+          end
+          |> Enum.reject(&is_nil(&1))
+
+          # Add label below bar
+          label_y = bounds.y + bounds.height - 2 # Position at bottom of chart area
+          label_cells = if String.length(label || "") > 0 do
+            # Truncate label if needed
+            display_label = if String.length(label) > bar_width do
+              String.slice(label, 0, bar_width - 1) <> "…"
+            else
+              label
+            end
+
+            # Center the label under the bar
+            label_x_offset = div(bar_width - String.length(display_label), 2)
+
+            String.graphemes(display_label)
+            |> Enum.with_index()
+            |> Enum.map(fn {char, char_index} ->
+              x = bar_x_start + label_x_offset + char_index
+              {x, label_y, %{char: String.to_charlist(char) |> hd(), fg: 7, bg: 0, style: %{}}}
+            end)
+          else
+            []
+          end
+
+          # Add value above bar (if space allows)
+          value_str = Integer.to_string(round(value))
+          value_y = bounds.y + 1 + chart_height - 1 - full_blocks - 1
+          value_cells = if full_blocks > 1 and String.length(value_str) <= bar_width do
+            # Center the value above the bar
+            value_x_offset = div(bar_width - String.length(value_str), 2)
+
+            String.graphemes(value_str)
+            |> Enum.with_index()
+            |> Enum.map(fn {char, char_index} ->
+              x = bar_x_start + value_x_offset + char_index
+              {x, value_y, %{char: String.to_charlist(char) |> hd(), fg: 7, bg: 0, style: %{}}}
+            end)
+          else
+            []
+          end
+
+          # Combine all cell types
+          bar_cells ++ label_cells ++ value_cells
+        end)
+
+        # Add axis line at bottom (optional)
+        axis_y = bounds.y + bounds.height - 3
+        axis_cells = for x <- (bounds.x + 1)..(bounds.x + bounds.width - 2) do
+          {x, axis_y, %{char: ?─, fg: 7, bg: 0, style: %{}}}
         end
 
-        # Return tuple format only if char is not space
-        if char != ~c" " do
-          {current_x, current_y, %{char: char, fg: fg_color, bg: 0, style: %{}}}
-        else
-          nil # Will be filtered out
-        end
+        # Combine all cells, prioritizing content over box
+        all_cells = box_cells ++ bar_cells ++ axis_cells
+
+        # Use Map to ensure cells at same position don't duplicate
+        cell_map = Map.new(all_cells, fn {x, y, cell} -> {{x, y}, {x, y, cell}} end)
+        Map.values(cell_map)
       end
-      |> Enum.reject(&is_nil(&1))
-
-      # Add Labels (basic implementation below bars) - needs refinement
-      # label_y = bounds.y + bounds.height # Position below the box
-      # label = Enum.at(labels, index)
-      # label_cells = if label_y <= bounds.y + bounds.height + 1 and String.length(label) <= bar_width do # Check space
-      #   Enum.with_index(String.graphemes(label)) |> Enum.map(fn {grapheme, char_index} ->
-      #     {bar_x_start + char_index, label_y, %{char: grapheme, fg: 7, bg: 0, style: %{}}}
-      #   end)
-      # else
-      #   [] # No space for label
-      # end
-
-      # cells ++ label_cells # Combine bar cells and label cells
-      cells # Return only bar cells for now
-    end)
-
-    # Combine box and bar cells (bars overwrite inner box content)
-    # A simple merge might work, or a more careful replacement
-    # Let's just return bars + box for now, assuming box is background
-    # Need a way to prioritize bar cells over box cells in the same position
-    Map.merge(
-      Map.new(box_cells),
-      Map.new(bar_cells, fn {k, v} -> {k, v} end) # Ensure bars overwrite box cells
-    )
-    |> Map.to_list()
-    |> Enum.map(fn {{x,y}, cell} -> {x, y, cell} end) # Convert back to list of tuples
+    end
   end
 
   # Placeholder for image rendering
