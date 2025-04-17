@@ -149,24 +149,45 @@ defmodule Raxol.Runtime do
     modifiers = payload["modifiers"] || []
 
     # Convert the WebView key format to the internal event format
-    converted_event = %{
+    key_code = convert_webview_key(key)
+    mod_list = convert_webview_modifiers(modifiers)
+
+    # Create an app-compatible event that mimics the format from handle_event
+    event = %{
       type: :key,
-      key: convert_webview_key(key),
-      modifiers: convert_webview_modifiers(modifiers)
+      key: key_code,
+      modifiers: mod_list
     }
 
-    Logger.info("[Runtime] Converted user input: #{inspect(converted_event)}")
+    Logger.info("[Runtime] Converted user input: #{inspect(event)}")
 
-    # Handle the event through the existing event handling pipeline
-    if Code.ensure_loaded?(state.app_module) and function_exported?(state.app_module, :update, 2) do
-      new_model = state.app_module.update(converted_event, state.model)
-      # Send render trigger to update the UI
-      send(self(), :render)
-      {:noreply, %{state | model: new_model}}
+    # Check for quit keys
+    quit_triggered = is_quit_key?(event, state.quit_keys)
+    if quit_triggered do
+      Logger.info("[Runtime] User input matched quit key combination, initiating shutdown")
+      cleanup(state)
+      {:stop, :normal, state}
     else
-      # Just trigger a re-render to show potential changes
-      send(self(), :render)
-      {:noreply, state}
+      # Handle the event through the existing event handling pipeline
+      if Code.ensure_loaded?(state.app_module) and function_exported?(state.app_module, :update, 2) do
+        try do
+          new_model = state.app_module.update(event, state.model)
+          # Send render trigger to update the UI
+          send(self(), :render)
+          {:noreply, %{state | model: new_model}}
+        rescue
+          e ->
+            Logger.error("[Runtime] Error in app_module.update: #{inspect(e)}")
+            # Trigger a re-render to show potential changes
+            send(self(), :render)
+            {:noreply, state}
+        end
+      else
+        Logger.warning("[Runtime] app_module doesn't implement update/2, ignoring user input")
+        # Just trigger a re-render to maintain responsiveness
+        send(self(), :render)
+        {:noreply, state}
+      end
     end
   end
 
@@ -182,26 +203,31 @@ defmodule Raxol.Runtime do
       height: rows
     }
 
-    # Update model dimensions through the app's update function
-    updated_model = if Code.ensure_loaded?(state.app_module) and function_exported?(state.app_module, :update, 2) do
-      state.app_module.update(resize_event, state.model)
-    else
-      # If app doesn't handle resize, update width/height in model directly if they exist
-      state.model
-      |> Map.put(:width, cols)
-      |> Map.put(:height, rows)
-    end
+    # Update internal dimensions tracking
+    updated_state = %{state | width: cols, height: rows}
 
-    # Update internal width/height in state
-    updated_state = %{state |
-      model: updated_model,
-      width: cols,
-      height: rows
-    }
+    # Update dimensions in model and dashboard grid config if they exist
+    updated_model =
+      if Code.ensure_loaded?(state.app_module) and function_exported?(state.app_module, :update, 2) do
+        # Let the app handle the resize through its update function
+        try do
+          state.app_module.update(resize_event, state.model)
+        rescue
+          e ->
+            Logger.error("[Runtime] Error in app_module.update for resize: #{inspect(e)}")
+            update_dimensions_in_model(state.model, cols, rows)
+        end
+      else
+        # Fallback: Update dimensions directly in the model structure
+        update_dimensions_in_model(state.model, cols, rows)
+      end
+
+    # Set the updated model in state
+    final_state = %{updated_state | model: updated_model}
 
     # Trigger a re-render with the new dimensions
     send(self(), :render)
-    {:noreply, updated_state}
+    {:noreply, final_state}
   end
 
   @impl true
@@ -579,17 +605,13 @@ defmodule Raxol.Runtime do
 
   @impl true
   def terminate(reason, state) do
-    Logger.info(
-      "[Runtime] Terminate callback started. Reason: #{inspect(reason)}"
-    )
-
-    # Logger.debug("Raxol.Runtime terminating. Reason: #{inspect(reason)}")
+    Logger.info("[Runtime] Terminate callback started. Reason: #{inspect(reason)}")
 
     # Save dashboard layout if possible
     dashboard_model = Map.get(state.model, :dashboard_model)
 
     if reason == :normal and dashboard_model do
-      Logger.info("Saving dashboard layout...")
+      Logger.info("[Runtime] Saving dashboard layout...")
       # Call a function in Dashboard to handle saving
       if function_exported?(
            Raxol.Components.Dashboard.Dashboard,
@@ -600,23 +622,64 @@ defmodule Raxol.Runtime do
           dashboard_model.widgets
         )
       else
-        Logger.warning("Dashboard.save_layout/1 not found, cannot save layout.")
+        Logger.warning("[Runtime] Dashboard.save_layout/1 not found, cannot save layout.")
       end
     end
 
-    # Ensure Termbox is shut down if it was initialized
-    if Map.get(state, :termbox_initialized, false) do
-      Logger.info("Shutting down Termbox during termination...")
-      # Should be safe even if not polling
-      ExTermbox.Bindings.stop_polling()
-      ExTermbox.Bindings.shutdown()
-      Logger.info("Termbox shut down during termination.")
+    # Different cleanup based on environment mode
+    if state.is_vscode_extension_env do
+      # VS Code extension mode - no ExTermbox to clean up
+      Logger.info("[Runtime] Cleaning up in VS Code extension mode...")
+
+      # Ensure StdioInterface is notified if needed
+      if state.stdio_interface_pid && Process.alive?(state.stdio_interface_pid) do
+        Logger.info("[Runtime] Sending shutdown notification via StdioInterface...")
+        StdioInterface.send_message(%{type: "shutdown", payload: %{reason: "normal"}})
+        # Give StdioInterface time to flush messages
+        Process.sleep(100)
+      end
     else
-      Logger.info(
-        "Skipping Termbox cleanup during termination (not initialized)."
-      )
+      # TTY mode - ExTermbox cleanup
+      Logger.info("[Runtime] Cleaning up in TTY mode...")
+
+      # Ensure Termbox is shut down if it was initialized
+      if Map.get(state, :termbox_initialized, false) do
+        Logger.info("[Runtime] Shutting down Termbox...")
+
+        # IMPORTANT: Order of operations matters
+        # First stop the polling task
+        try do
+          Logger.debug("[Runtime] Calling stop_polling...")
+          ExTermbox.Bindings.stop_polling()
+          Logger.debug("[Runtime] stop_polling completed")
+        rescue
+          e ->
+            Logger.error("[Runtime] Error during stop_polling: #{inspect(e)}")
+        end
+
+        # Then shut down the terminal
+        try do
+          Logger.debug("[Runtime] Calling shutdown...")
+          ExTermbox.Bindings.shutdown()
+          Logger.debug("[Runtime] shutdown completed")
+        rescue
+          e ->
+            Logger.error("[Runtime] Error during shutdown: #{inspect(e)}")
+        end
+
+        Logger.info("[Runtime] Termbox cleanup complete")
+      else
+        Logger.info("[Runtime] Skipping Termbox cleanup (not initialized)")
+      end
     end
 
+    # Unregister from AppRegistry
+    app_name = get_app_name(state.app_module)
+    AppRegistry.unregister(app_name)
+    Logger.info("[Runtime] Runtime for #{app_name} cleaned up.")
+
+    # Final log to verify terminate completes
+    Logger.info("[Runtime] Terminate callback completed")
     :ok
   end
 
@@ -1012,5 +1075,30 @@ defmodule Raxol.Runtime do
   defp render_view_to_cells(single_element, dims) do
     Logger.warning("[Runtime.render_view_to_cells] Called with single element, wrapping in list.")
     render_view_to_cells([single_element], dims)
+  end
+
+  # Helper function to update dimensions in model structure
+  defp update_dimensions_in_model(model, cols, rows) do
+    # Update top-level dimensions if they exist
+    model = model
+      |> Map.put(:width, cols)
+      |> Map.put(:height, rows)
+
+    # Update dashboard model's grid config if it exists
+    dashboard_model = Map.get(model, :dashboard_model)
+    if dashboard_model do
+      grid_config = Map.get(dashboard_model, :grid_config)
+      if grid_config do
+        # Update parent_bounds in grid_config
+        dims = %{x: 0, y: 0, width: cols, height: rows}
+        updated_grid_config = Map.put(grid_config, :parent_bounds, dims)
+        updated_dashboard = Map.put(dashboard_model, :grid_config, updated_grid_config)
+        Map.put(model, :dashboard_model, updated_dashboard)
+      else
+        model
+      end
+    else
+      model
+    end
   end
 end
