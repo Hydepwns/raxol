@@ -37,13 +37,17 @@ raxol-*.tar
 
 # Node.js dependencies
 /node_modules/
+**/node_modules/
+extensions/vscode/node_modules/
 npm-debug.log
 yarn-debug.log
 yarn-error.log
 
-# Generated files
+# Build output and generated files
 /priv/static/
 /assets/node_modules/
+**/dist/
+extensions/vscode/dist/
 
 # Phoenix
 /priv/static/assets/
@@ -52,6 +56,12 @@ yarn-error.log
 # Elixir
 /priv/static/assets/
 /priv/static/cache_manifest.json
+.elixir_ls/
+
+# VS Code Extension
+extensions/vscode/out/
+extensions/vscode/*.js
+extensions/vscode/package-lock.json
 
 # Misc
 .DS_Store
@@ -67,9 +77,6 @@ yarn-error.log
 *.iml
 *.idea/
 .vscode/
-*.elixir_ls/
-*.elixir_ls/*
-!.elixir_ls/.gitkeep
 NEXT_AGENT_PROMPT.md
 
 # Editor / Development Artifacts

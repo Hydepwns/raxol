@@ -1,0 +1,63 @@
+body,
+html {
+  margin: 0;
+  padding: 0;
+  height: 100%;
+  overflow: hidden;
+  background-color: #1e1e1e;
+  color: #d4d4d4;
+  font-family: monospace;
+}
+
+#app {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-start;
+  align-items: stretch;
+}
+
+#status {
+  padding: 10px;
+  text-align: center;
+  font-size: 1.1em;
+  background-color: #252526;
+  border-bottom: 1px solid #333;
+  /* Default state is visible */
+  display: block;
+}
+
+#status.error {
+  color: red;
+  font-weight: bold;
+}
+
+#terminal-output {
+  flex-grow: 1;
+  overflow: auto;
+  padding: 5px;
+  box-sizing: border-box;
+  line-height: 1.2;
+  font-size: 14px;
+}
+
+.terminal-row {
+  display: flex;
+}
+
+.terminal-cell {
+  white-space: pre;
+}
+
+.term-fg-default {
+  color: #d4d4d4;
+}
+.term-bg-default {
+  background-color: #1e1e1e;
+}
+
+.cursor {
+  background-color: #d4d4d4;
+  color: #1e1e1e;
+  outline: 1px solid #d4d4d4;
+}
