@@ -462,15 +462,21 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
     if Map.get(state, :termbox_initialized, false) do
       Logger.info("[RuntimeDebug] Shutting down Termbox during termination...") # <<< MODULE NAME
-      ExTermbox.Bindings.stop_polling()
-      ExTermbox.Bindings.shutdown()
-      Logger.info("[RuntimeDebug] Termbox shut down during termination.") # <<< MODULE NAME
+      # Call shutdown() BEFORE stop_polling()
+      Logger.info("[RuntimeDebug.terminate] >>> Calling ExTermbox.Bindings.shutdown()...")
+      ExTermbox.Bindings.shutdown() # <<< RESTORED
+      Logger.info("[RuntimeDebug.terminate] <<< ExTermbox.Bindings.shutdown() returned.") # <<< RESTORED
+      Logger.info("[RuntimeDebug.terminate] >>> Calling ExTermbox.Bindings.stop_polling()...")
+      # ExTermbox.Bindings.stop_polling() # <<< REMAINS COMMENTED OUT
+      # Logger.info("[RuntimeDebug.terminate] <<< ExTermbox.Bindings.stop_polling() returned.") # <<< REMAINS COMMENTED OUT
+      Logger.info("[RuntimeDebug] Termbox shut down during termination.") # <<< RESTORED ORIGINAL LOG
     else
       Logger.info(
         "[RuntimeDebug] Skipping Termbox cleanup during termination (not initialized)." # <<< MODULE NAME
       )
     end
 
+    Logger.info("[RuntimeDebug.terminate] END. Returning :ok.") # <<< ADDED LOG AT END
     :ok
   end
 
