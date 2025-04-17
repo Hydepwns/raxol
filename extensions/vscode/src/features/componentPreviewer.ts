@@ -1,6 +1,6 @@
 /**
  * Component Previewer Feature
- * 
+ *
  * This feature allows for real-time preview of Raxol components directly in VS Code.
  * It provides a WebView-based preview panel that can render components with mock props.
  */
@@ -16,28 +16,18 @@ export class ComponentPreviewer {
   /**
    * Current preview panel
    */
-  private static currentPanel: ComponentPreviewer | undefined;
-  
+  private static currentPanel: vscode.WebviewPanel | undefined;
+
   /**
    * VS Code webview panel
    */
   private readonly panel: vscode.WebviewPanel;
-  
-  /**
-   * Extension context
-   */
-  private readonly extensionContext: vscode.ExtensionContext;
-  
+
   /**
    * The currently viewed component file
    */
   private componentFile: string | undefined;
-  
-  /**
-   * Disposables for cleanup
-   */
-  private disposables: vscode.Disposable[] = [];
-  
+
   /**
    * Create and show the preview panel
    */
@@ -45,13 +35,13 @@ export class ComponentPreviewer {
     const column = vscode.window.activeTextEditor
       ? vscode.window.activeTextEditor.viewColumn
       : undefined;
-      
+
     // If we already have a panel, show it
     if (ComponentPreviewer.currentPanel) {
-      ComponentPreviewer.currentPanel.panel.reveal(column);
+      ComponentPreviewer.currentPanel.reveal(column);
       return;
     }
-    
+
     // Otherwise, create a new panel
     const panel = vscode.window.createWebviewPanel(
       'raxolComponentPreview',
@@ -66,45 +56,44 @@ export class ComponentPreviewer {
         ]
       }
     );
-    
-    ComponentPreviewer.currentPanel = new ComponentPreviewer(panel, extensionContext);
+
+    ComponentPreviewer.currentPanel = panel;
   }
-  
+
   /**
    * Preview a specific component file
    */
   public static previewComponent(extensionContext: vscode.ExtensionContext, filePath: string): void {
     ComponentPreviewer.createOrShow(extensionContext);
-    
+
     if (ComponentPreviewer.currentPanel) {
-      ComponentPreviewer.currentPanel.update(filePath);
+      ComponentPreviewer.currentPanel.webview.postMessage({ command: 'getInitialData', filePath });
     }
   }
-  
+
   /**
    * Constructor
    */
   private constructor(panel: vscode.WebviewPanel, extensionContext: vscode.ExtensionContext) {
     this.panel = panel;
-    this.extensionContext = extensionContext;
-    
+
     // Set the webview's initial html content
     this.updateHtml();
-    
+
     // Listen for when the panel is disposed
-    this.panel.onDidDispose(() => this.dispose(), null, this.disposables);
-    
+    this.panel.onDidDispose(() => this.dispose(), null, extensionContext.subscriptions);
+
     // Update the content based on view changes
     this.panel.onDidChangeViewState(
-      e => {
+      () => {
         if (this.panel.visible) {
           this.updateHtml();
         }
       },
       null,
-      this.disposables
+      extensionContext.subscriptions
     );
-    
+
     // Handle messages from the webview
     this.panel.webview.onDidReceiveMessage(
       message => {
@@ -118,13 +107,16 @@ export class ComponentPreviewer {
           case 'updateProps':
             this.updateHtml(message.props);
             return;
+          case 'getInitialData':
+            this.update(message.filePath);
+            return;
         }
       },
-      null,
-      this.disposables
+      undefined,
+      extensionContext.subscriptions
     );
   }
-  
+
   /**
    * Update the preview for a specific file
    */
@@ -132,16 +124,16 @@ export class ComponentPreviewer {
     if (filePath) {
       this.componentFile = filePath;
     }
-    
+
     // Update the panel title if we have a component file
     if (this.componentFile) {
       const fileName = path.basename(this.componentFile);
       this.panel.title = `Preview: ${fileName}`;
     }
-    
+
     this.updateHtml();
   }
-  
+
   /**
    * Update the HTML content of the preview
    */
@@ -150,29 +142,29 @@ export class ComponentPreviewer {
       this.panel.webview.html = this.getPlaceholderHtml();
       return;
     }
-    
+
     try {
       // Read the component file
       const fileContent = fs.readFileSync(this.componentFile, 'utf8');
-      
+
       // Extract component class name
       const componentMatch = fileContent.match(/class\s+([^\s]+)\s+extends\s+RaxolComponent/);
       const componentName = componentMatch ? componentMatch[1] : 'UnknownComponent';
-      
+
       // Extract props interface
       const propsMatch = fileContent.match(/interface\s+([^\s]+Props)\s*\{([^}]+)\}/);
       const propsInterface = propsMatch ? { name: propsMatch[1], content: propsMatch[2] } : null;
-      
+
       // Generate mock props based on props interface
       const mockProps = props || this.generateMockProps(propsInterface?.content);
-      
+
       // Update the webview content
-      this.panel.webview.html = this.getWebviewContent(componentName, mockProps, fileContent);
+      this.panel.webview.html = this.getWebviewContent(componentName, mockProps);
     } catch (error) {
       this.panel.webview.html = this.getErrorHtml(error as Error);
     }
   }
-  
+
   /**
    * Generate simple placeholder HTML
    */
@@ -208,7 +200,7 @@ export class ComponentPreviewer {
       </html>
     `;
   }
-  
+
   /**
    * Generate HTML content for an error
    */
@@ -255,7 +247,7 @@ export class ComponentPreviewer {
       </html>
     `;
   }
-  
+
   /**
    * Generate mock props based on a props interface
    */
@@ -263,21 +255,21 @@ export class ComponentPreviewer {
     if (!propsInterface) {
       return {};
     }
-    
+
     const mockProps: any = {};
-    
+
     // Extract property definitions
     const propRegex = /(\w+)(\??):\s*([^;]+);/g;
     let match: RegExpExecArray | null;
-    
+
     while ((match = propRegex.exec(propsInterface)) !== null) {
       const [_, propName, optional, propType] = match;
-      
+
       // Skip optional props half the time to simulate variation
       if (optional && Math.random() > 0.5) {
         continue;
       }
-      
+
       // Generate mock value based on type
       if (propType.includes('string')) {
         mockProps[propName] = `Sample ${propName}`;
@@ -293,21 +285,21 @@ export class ComponentPreviewer {
         mockProps[propName] = () => console.log(`${propName} called`);
       }
     }
-    
+
     return mockProps;
   }
-  
+
   /**
    * Generate the HTML content for the webview
    */
-  private getWebviewContent(componentName: string, mockProps: any, sourceCode: string): string {
-    const mockPropsJson = JSON.stringify(mockProps, (key, value) => {
+  private getWebviewContent(componentName: string, mockProps: any): string {
+    const mockPropsJson = JSON.stringify(mockProps, (_key, value) => {
       if (typeof value === 'function') {
-        return '() => {}';
+        return '[Function]';
       }
       return value;
     }, 2);
-    
+
     return `
       <!DOCTYPE html>
       <html lang="en">
@@ -410,34 +402,34 @@ export class ComponentPreviewer {
           <textarea id="props-editor" class="props-editor">${mockPropsJson}</textarea>
           <button id="applyPropsBtn">Apply Props</button>
         </div>
-        
+
         <script>
           const vscode = acquireVsCodeApi();
-          
+
           // Handle refresh button
           document.getElementById('refreshBtn').addEventListener('click', () => {
             vscode.postMessage({ command: 'refresh' });
           });
-          
+
           // Handle props panel toggle
           document.getElementById('togglePropsBtn').addEventListener('click', () => {
             const panel = document.getElementById('props-panel');
             panel.style.display = panel.style.display === 'none' ? 'block' : 'none';
           });
-          
+
           // Handle apply props button
           document.getElementById('applyPropsBtn').addEventListener('click', () => {
             try {
               const propsText = document.getElementById('props-editor').value;
               const props = JSON.parse(propsText);
-              vscode.postMessage({ 
-                command: 'updateProps', 
-                props: props 
+              vscode.postMessage({
+                command: 'updateProps',
+                props: props
               });
             } catch (error) {
-              vscode.postMessage({ 
-                command: 'alert', 
-                text: 'Invalid JSON: ' + error.message 
+              vscode.postMessage({
+                command: 'alert',
+                text: 'Invalid JSON: ' + error.message
               });
             }
           });
@@ -446,21 +438,14 @@ export class ComponentPreviewer {
       </html>
     `;
   }
-  
+
   /**
    * Dispose of resources
    */
   private dispose(): void {
     ComponentPreviewer.currentPanel = undefined;
-    
+
     // Clean up resources
     this.panel.dispose();
-    
-    while (this.disposables.length) {
-      const disposable = this.disposables.pop();
-      if (disposable) {
-        disposable.dispose();
-      }
-    }
   }
 }
