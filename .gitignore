@@ -80,6 +80,10 @@ yarn-error.log
 .idea/
 .vscode/
 NEXT_AGENT_PROMPT.md
+test_plan.md
+TODO.md
+working_version.json
+staged_version.json
 
 # Editor / Development Artifacts
 preferences.json
