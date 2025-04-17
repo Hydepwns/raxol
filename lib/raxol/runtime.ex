@@ -1360,12 +1360,23 @@ defmodule Raxol.Runtime do
 
         # Trigger the Termbox event loop (blocks within Termbox.run/1)
         Logger.debug("[Runtime.init] Calling Termbox.run(self())...")
-        Termbox.run(self())
-        Logger.debug("[Runtime.init] Termbox.run(self()) returned.") # This might not be reached if Termbox blocks indefinitely
+        case Termbox.run(self()) do
+          :ok ->
+            # This case might indicate unexpected success if it's supposed to block
+            Logger.warn("[Runtime.init] Termbox.run returned :ok unexpectedly. Proceeding with initialization...")
+            # Continue with initialization if Termbox.run returns :ok
+            {:ok, initial_state, {:continue, :after_init}}
 
-        # This message is sent after Termbox initialization to kick off the first render cycle.
-        # We use handle_continue for this initialization pattern.
-        {:ok, initial_state, {:continue, :after_init}}
+          {:error, reason} ->
+            Logger.error("[Runtime.init] Termbox.run failed: #{inspect(reason)}")
+            # Stop the GenServer initialization if Termbox fails
+            {:stop, {:termbox_init_failed, reason}}
+
+          other ->
+            # Handle any other unexpected return values
+            Logger.error("[Runtime.init] Termbox.run returned unexpected value: #{inspect(other)}")
+            {:stop, {:termbox_unexpected_return, other}}
+        end
 
       {:error, reason} ->
         Logger.error("[Runtime.init] Failed to start PluginManager: #{inspect(reason)}")

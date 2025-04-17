@@ -109,40 +109,20 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
     Bindings.select_output_mode(256) # Use 256 color mode
 
     # Initialize application state by calling the app_module's init function
-    initial_model =
-      try do
-        if function_exported?(app_module, :init, 1) do
-          case app_module.init(opts) do
-            {:ok, model_data} when is_map(model_data) -> # <<< CHANGED: Expect {:ok, model_data}
-              Logger.debug("[RuntimeDebug.init] app_module.init returned model successfully.")
-              model_data # Return the actual model data
-            {:error, reason} ->
-              Logger.error("[RuntimeDebug.init] app_module.init returned error: #{inspect(reason)}")
-              %{error: {:app_init_failed, reason}} # Return an error indicator
-            other -> # <<< This clause might now catch unexpected returns if {:ok, non_map} happens
-               Logger.warning("[RuntimeDebug.init] app_module.init returned unexpected value: #{inspect(other)}")
-               %{error: {:app_init_unexpected_return, other}} # Return an error indicator
-          end
-        else
-          Logger.debug("[RuntimeDebug.init] app_module.init/1 not exported. Using empty model.")
-          %{} # Default empty model if init/1 is not defined
-        end
-      rescue
-        e ->
-          Logger.error("[RuntimeDebug.init] CRASH during app_module.init: #{inspect(e)}")
-          %{error: {:app_init_crashed, e}} # Return an error indicator
-      end
+    # --- SIMPLIFIED MODEL INITIALIZATION ---
+    Logger.debug("[RuntimeDebug.init] Directly calling #{inspect(app_module)}.init/1...")
+    # Directly call and assume success with {:ok, model_map} format
+    {:ok, initial_model_data} = app_module.init(opts)
+    initial_model = initial_model_data # Assign the unwrapped map
+    Logger.debug("[RuntimeDebug.init] Result of direct call (initial_model): #{inspect(initial_model)}")
+    # --- END SIMPLIFIED ---
 
-    # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ADD LOG HERE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-    Logger.debug("[RuntimeDebug.init] Value of initial_model AFTER try/case/rescue: #{inspect(initial_model)}")
-
-    # Check if app init failed
-    if Map.get(initial_model, :error) do
-      exit({:shutdown, Map.get(initial_model, :error)})
-    end
-
+    # <<< Log before register check >>>
+    Logger.debug("[RuntimeDebug.init] Attempting to register app_name: #{inspect(app_name)} with pid: #{inspect(self())}")
     # Register the runtime process using the unique app_name
     AppRegistry.register(app_name, self())
+    # <<< ADD LOG AFTER >>>
+    Logger.debug("[RuntimeDebug.init] Successfully registered app_name: #{inspect(app_name)}")
 
     # Extract options or set defaults
     title = Keyword.get(opts, :title, "Raxol Application")
@@ -331,24 +311,17 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
     # Render the application view using the UPDATED application's state
     view_elements =
-      # Original logic restored - Render based on app_model_for_render
-      # if app_model_for_render == %{} do
-      #   [] # Render nothing
-      # else
-      app_module_loaded = Code.ensure_loaded?(state.app_module)
-      render_exported = function_exported?(state.app_module, :render, 1)
-      Logger.debug("[RuntimeDebug DEBUG] Checking render condition: app_module=#{inspect(state.app_module)}, loaded?=#{app_module_loaded}, exported?=#{render_exported}")
-      if app_module_loaded and render_exported do
-        state.app_module.render(%{\
-          # Pass the potentially updated model and grid_config
-          model: app_model_for_render,\
+      # Check for render/1 again
+      if Code.ensure_loaded?(state.app_module) and function_exported?(state.app_module, :render, 1) do
+        # Call render/1 with the props map
+        state.app_module.render(%{
+          model: app_model_for_render,
           grid_config: updated_grid_config
         })
       else
-        Logger.error("[RuntimeDebug DEBUG] Render condition FAILED. Skipping app_module.render call.")
+        Logger.error("[RuntimeDebug] #{inspect state.app_module} does not export render/1. Rendering empty list.")
         []
       end
-      # end
 
     {new_cells, _plugin_commands_render} = render_view_to_cells(view_elements, dims)
 
@@ -477,7 +450,7 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
     dashboard_model = Map.get(state.model, :dashboard_model)
 
-    if reason == :normal and dashboard_model and
+    if reason == :normal and not is_nil(dashboard_model) and
          function_exported?(Raxol.Components.Dashboard.Dashboard, :save_layout, 1) do
       Logger.info("[RuntimeDebug] Saving dashboard layout...") # <<< MODULE NAME
       Raxol.Components.Dashboard.Dashboard.save_layout(dashboard_model.widgets)
@@ -585,6 +558,7 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
   end
 
   defp is_quit_key?(%{type: :key, modifiers: mods, key: key}, quit_keys) do
+    Logger.debug("[RuntimeDebug.is_quit_key?] ENTER. Event: #{inspect(%{type: :key, modifiers: mods, key: key})}, Quit Keys: #{inspect(quit_keys)}") # <<< ADDED LOG
     Enum.any?(quit_keys, fn quit_key ->
       Logger.debug("[RuntimeDebug.is_quit_key?] Checking event key '#{inspect(key)}' (mods: #{inspect(mods)}) against quit key '#{inspect(quit_key)}'") # <<< MODULE NAME
       match_result =
@@ -664,6 +638,7 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
           if propagation_state == :propagate do
             if quit_triggered do
               Logger.debug("[RuntimeDebug.p_handle_key_event] Quit key detected after plugins.") # <<< MODULE NAME
+              Logger.debug("[RuntimeDebug.p_handle_key_event] TRIGGERING STOP (after plugins, propagate)") # <<< ADDED LOG
               cleanup(state_after_commands)
               {:stop, :normal, state_after_commands}
             else
@@ -681,6 +656,7 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
            Logger.error("[RuntimeDebug] Error during plugin key event handling: #{inspect(reason)}. Propagating.") # <<< MODULE NAME
            if quit_triggered do
               Logger.debug("[RuntimeDebug.p_handle_key_event] Quit key detected after plugin error.") # <<< MODULE NAME
+              Logger.debug("[RuntimeDebug.p_handle_key_event] TRIGGERING STOP (after plugin error)") # <<< ADDED LOG
               cleanup(state)
               {:stop, :normal, state}
            else
@@ -872,145 +848,162 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
         {next_y, %{acc | cells: acc.cells ++ text_cells}}
 
       # Handle :box
-      %{type: :box, opts: opts, children: children} when is_list(children) ->
-        # ... (bounds calculation same as before) ...
-        box_rel_x = Keyword.get(opts, :x, 0)
-        box_rel_y = Keyword.get(opts, :y, 0)
-        box_abs_x = bounds.x + box_rel_x
-        box_abs_y = bounds.y + box_rel_y
-        box_width = Keyword.get(opts, :width, bounds.width - box_rel_x)
-        box_height = Keyword.get(opts, :height, bounds.height - box_rel_y)
-        clipped_x = max(bounds.x, box_abs_x)
-        clipped_y = max(bounds.y, box_abs_y)
+      %{type: :box, opts: opts, children: children} ->
+        # Check if this box represents a plugin widget placeholder
+        case Keyword.get(opts, :widget_config) do
+          # This box IS a plugin widget placeholder
+          %{
+            type: :chart,
+            data: data,
+            component_opts: component_opts,
+            bounds: element_bounds
+          } ->
+            Logger.debug(
+              "[RuntimeDebug.process_view_element] Matched :image widget inside :box. Incoming component_opts: #{inspect(component_opts)}"
+            )
+            placeholder_cell = %{
+              type: :placeholder,
+              value: :chart,
+              data: data,
+              opts: component_opts,
+              bounds: element_bounds
+            }
+            Logger.debug(
+              "[RuntimeDebug.process_view_element] Created :image placeholder cell from :box: #{inspect(placeholder_cell)}"
+            )
+            updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
+            # Use the bounds from the placeholder config for the next y
+            {element_bounds.y + element_bounds.height, updated_acc}
 
-        clipped_width =
-          max(0, min(box_width, bounds.x + bounds.width - clipped_x))
+          %{
+            type: :treemap,
+            data: data,
+            component_opts: component_opts,
+            bounds: element_bounds
+          } ->
+            placeholder_cell = %{
+              type: :placeholder,
+              value: :treemap,
+              data: data,
+              opts: component_opts,
+              bounds: element_bounds
+            }
+            updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
+            {element_bounds.y, updated_acc}
 
-        clipped_height =
-          max(0, min(box_height, bounds.y + bounds.height - clipped_y))
+          %{
+            type: :image,
+            component_opts: component_opts,
+            bounds: element_bounds
+          } ->
+            Logger.debug(
+              "[RuntimeDebug.process_view_element] Matched :image widget inside :box. Incoming component_opts: #{inspect(component_opts)}"
+            )
+            placeholder_cell = %{
+              type: :placeholder,
+              value: :image,
+              opts: component_opts,
+              bounds: element_bounds
+            }
+            Logger.debug(
+              "[RuntimeDebug.process_view_element] Created :image placeholder cell from :box: #{inspect(placeholder_cell)}"
+            )
+            updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
+            {element_bounds.y, updated_acc}
 
-        child_bounds = %{
-          x: clipped_x,
-          y: clipped_y,
-          width: clipped_width,
-          height: clipped_height
-        }
+          # This box is NOT a plugin widget placeholder, process children
+          nil ->
+            # Extract box positioning/sizing from the :opts keyword list
+            box_rel_x = Keyword.get(opts, :x, 0)
+            box_rel_y = Keyword.get(opts, :y, 0)
+            # Bounds passed in are the parent bounds
+            box_abs_x = bounds.x + box_rel_x
+            box_abs_y = bounds.y + box_rel_y
 
-        valid_children = Enum.reject(children, &is_nil/1)
-
-        # Process children within box bounds, accumulating results in box_acc
-        {_final_y_within_box, box_acc} =
-          Enum.reduce(
-            valid_children,
-            {child_bounds.y, %{cells: [], commands: []}},
-            fn child, {current_y, accumulated_acc} ->
-              if current_y < child_bounds.y + child_bounds.height do
-                current_child_bounds = %{
-                  child_bounds
-                  | y: current_y,
-                    height:
-                      max(0, child_bounds.height - (current_y - child_bounds.y))
-                }
-
-                # Pass inner acc
-                {y_after_child, child_acc} =
-                  process_view_element(child, current_child_bounds, %{
-                    accumulated_acc
-                    | cells: [],
-                      commands: []
-                  })
-
-                # Merge results
-                merged_acc = %{
-                  cells: accumulated_acc.cells ++ child_acc.cells,
-                  commands: accumulated_acc.commands ++ child_acc.commands
-                }
-
-                next_y =
-                  min(y_after_child, child_bounds.y + child_bounds.height)
-
-                {next_y, merged_acc}
-              else
-                {current_y, accumulated_acc}
+            # Calculate width/height based on opts or fill parent bounds
+            box_width =
+              case Keyword.get(opts, :width) do
+                :fill -> bounds.width - box_rel_x
+                val when is_integer(val) -> val
+                _ -> bounds.width - box_rel_x # Default to fill
               end
-            end
-          )
 
-        # Merge box's accumulated results with the outer accumulator
-        final_acc = %{
-          cells: acc.cells ++ box_acc.cells,
-          commands: acc.commands ++ box_acc.commands
-        }
+            box_height =
+              case Keyword.get(opts, :height) do
+                :fill -> bounds.height - box_rel_y
+                val when is_integer(val) -> val
+                _ -> bounds.height - box_rel_y # Default to fill
+              end
 
-        next_y_after_box =
-          min(bounds.y + bounds.height, child_bounds.y + child_bounds.height)
+            # Clip the box to the parent bounds
+            clipped_x = max(bounds.x, box_abs_x)
+            clipped_y = max(bounds.y, box_abs_y)
 
-        {next_y_after_box, final_acc}
+            clipped_width =
+              max(0, min(box_width, bounds.x + bounds.width - clipped_x))
 
-      # Handle :chart data map by creating a placeholder cell
-      %{
-        type: :chart,
-        id: _id,
-        title: _title,
-        grid_spec: _grid_spec,
-        data: data,
-        component_opts: component_opts,
-        bounds: element_bounds
-      } = _widget_config ->
+            clipped_height =
+              max(0, min(box_height, bounds.y + bounds.height - clipped_y))
 
-        placeholder_cell = %{
-          type: :placeholder,
-          value: :chart,
-          data: data,
-          opts: component_opts,
-          bounds: element_bounds
-        }
-        updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
-        {element_bounds.y, updated_acc}
+            # Define the bounds for children within this box
+            child_bounds = %{
+              x: clipped_x,
+              y: clipped_y,
+              width: clipped_width,
+              height: clipped_height
+            }
 
-      # Handle :treemap data map by creating a placeholder cell
-      %{
-        type: :treemap,
-        id: _id,
-        title: _title,
-        grid_spec: _grid_spec,
-        data: data,
-        component_opts: component_opts,
-        bounds: element_bounds
-      } = _widget_config ->
-        placeholder_cell = %{
-          type: :placeholder,
-          value: :treemap,
-          data: data,
-          opts: component_opts,
-          bounds: element_bounds
-        }
-        updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
-        {element_bounds.y, updated_acc}
+            valid_children = Enum.reject(children, &is_nil/1)
 
-      # Handle :image data map by creating a placeholder cell
-      %{
-        type: :image,
-        id: _id,
-        title: _title,
-        grid_spec: _grid_spec,
-        component_opts: component_opts,
-        bounds: element_bounds
-      } = _widget_config ->
-        Logger.debug(
-          "[RuntimeDebug.process_view_element] Matched :image widget. Incoming component_opts: #{inspect(component_opts)}"
-        )
-        placeholder_cell = %{
-          type: :placeholder,
-          value: :image,
-          opts: component_opts,
-          bounds: element_bounds
-        }
-        Logger.debug(
-          "[RuntimeDebug.process_view_element] Created :image placeholder cell: #{inspect(placeholder_cell)}"
-        )
-        updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
-        {element_bounds.y, updated_acc}
+            # Process children within box bounds, accumulating results in box_acc
+            {_final_y_within_box, box_acc} =
+              Enum.reduce(
+                valid_children,
+                {child_bounds.y, %{cells: [], commands: []}},
+                fn child, {current_y, accumulated_acc} ->
+                  if current_y < child_bounds.y + child_bounds.height do
+                    current_child_bounds = %{
+                      child_bounds
+                      | y: current_y,
+                        height:
+                          max(0, child_bounds.height - (current_y - child_bounds.y))
+                    }
+
+                    # Pass inner acc
+                    {y_after_child, child_acc} =
+                      process_view_element(child, current_child_bounds, %{
+                        accumulated_acc
+                        | cells: [],
+                          commands: []
+                      })
+
+                    # Merge results
+                    merged_acc = %{
+                      cells: accumulated_acc.cells ++ child_acc.cells,
+                      commands: accumulated_acc.commands ++ child_acc.commands
+                    }
+
+                    next_y =
+                      min(y_after_child, child_bounds.y + child_bounds.height)
+
+                    {next_y, merged_acc}
+                  else
+                    {current_y, accumulated_acc}
+                  end
+                end
+              )
+
+            # Merge box's accumulated results with the outer accumulator
+            final_acc = %{
+              cells: acc.cells ++ box_acc.cells,
+              commands: acc.commands ++ box_acc.commands
+            }
+
+            next_y_after_box =
+              min(bounds.y + bounds.height, child_bounds.y + child_bounds.height)
+
+            {next_y_after_box, final_acc}
+        end # End case Map.get(opts, :widget_config)
 
       # Handle :placeholder (Should not be generated by view, but maybe by plugin?)
       %{type: :placeholder} = placeholder ->
