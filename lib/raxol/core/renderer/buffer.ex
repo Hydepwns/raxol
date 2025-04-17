@@ -137,8 +137,7 @@ defmodule Raxol.Core.Renderer.Buffer do
     }
 
     # 1. Copy existing cells into a list-of-lists grid format
-    new_cells_grid =
-      copy_cells(buffer.back_buffer.cells, old_size, new_size)
+    new_cells_grid = copy_cells(buffer.back_buffer.cells, old_size, new_size)
 
     # 2. Convert the grid into the expected cell map format: %{{x, y} => cell}
     new_cells_map =
