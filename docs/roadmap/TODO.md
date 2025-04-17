@@ -13,26 +13,27 @@ tags: [roadmap, todo, tasks]
 
 ### Runtime Stability
 
-- [ ] **Debug State Loss CRASH (`KeyError: :dashboard_model`)**: Determine why `RuntimeDebug` state loses the `:model` between `handle_continue/2` and `handle_info(:render)`. State confirmed correct up to `handle_continue` return. **CURRENT BLOCKER.**
+- [x] **~~Debug `termbox` Initialization Failure (`{:failed_to_init_termbox, -2}`)~~**: **FIXED** (Resolved `:nif_not_loaded` by recompiling `ex_termbox`).
 - [ ] **Investigate `ex_termbox` Dimension Reporting:** Root cause of incorrect height/width reporting still needs investigation. (Workaround applied).
+- [ ] **Investigate Unclean Exit (BEAM Break Menu on Ctrl+C):** Determine why termination isn't clean.
 - [ ] **Verify Infinite Loop Fix:** Status unknown, previously blocked by other errors. Needs verification once app runs.
 
 ### Runtime Rendering Pipeline
 
-- [ ] **Verify TUI Rendering:** Check visual output after fixes (GridContainer, ScreenBuffer). **BLOCKED by state loss crash.**
-- [ ] **Verify `Unhandled view element type` Status:** Needs verification via logging (**BLOCKED by state loss crash**).
-- [ ] **Verify `Skipping invalid cell change` Status:** Needs verification via logging (**BLOCKED by state loss crash**).
+- [ ] **Verify TUI Rendering:** Check visual output interactively. **NEEDS VISUAL VERIFICATION**. Note unclean exit.
+- [ ] **Verify `Unhandled view element type` Status:** Needs verification via logging (**UNKNOWN, Pending Visual Verification**).
+- [ ] **Verify `Skipping invalid cell change` Status:** Needs verification via logging (**UNKNOWN, Pending Visual Verification**).
 
 ### Dashboard Layout System Refinements
 
 - [x] **~~Investigate `GridContainer` Calculation:~~** **FIXED** (using rounding + fixed Runtime crash loop).
-- [ ] **Refine Chart/TreeMap TUI Rendering:** Improve accuracy, layout, labeling, and aesthetics of `VisualizationPlugin` (**BLOCKED by state loss crash**).
-- [ ] **Test Layout Persistence:** Verify `save_layout/1` and `load_layout/0` work correctly. (**Blocked by state loss crash**)
+- [ ] **Refine Chart/TreeMap TUI Rendering:** Improve accuracy, layout, labeling, and aesthetics of `VisualizationPlugin` (**NEEDS VISUAL VERIFICATION / IMPLEMENTATION**).
+- [ ] **Test Layout Persistence:** Verify `save_layout/1` and `load_layout/0` work correctly. (**NEEDS TESTING (App Runs)**)
 
 ### Plugin System Enhancements
 
-- [ ] **ImagePlugin Stability/Visual Testing:** Verify image (`assets/static/images/logo.png`) rendering visually (**BLOCKED by state loss crash**).
-- [ ] **Hyperlink OS Interaction Testing:** Verify/test `HyperlinkPlugin.open_url/1` across different OSes. (**Blocked by state loss crash**)
+- [ ] **ImagePlugin Stability/Visual Testing:** Verify image (`assets/static/images/logo.png`) rendering visually (**NEEDS VISUAL VERIFICATION (Escape Sequence Sent)**).
+- [ ] **Hyperlink OS Interaction Testing:** Verify/test `HyperlinkPlugin.open_url/1` across different OSes. (**NEEDS TESTING (App Runs)**)
 - [ ] **Investigate alternative rendering mechanisms if needed (ImagePlugin).**
 
 ### Performance Optimization
@@ -138,13 +139,14 @@ tags: [roadmap, todo, tasks]
 
 ## Known Issues 🐞
 
-- **RUNTIME CRASH:** **`(KeyError) key :dashboard_model not found in: %{}` in `handle_info(:render)`**: The `:model` data within the `RuntimeDebug` state is lost between `handle_continue/2` completing successfully and `handle_info(:render)` starting. State is confirmed correct up until `handle_continue` returns. **CURRENT BLOCKER**.
+- **RUNTIME:** **Unclean exit (BEAM break menu)** on `Ctrl+C` despite normal termination logic running. **CURRENT BLOCKER for usability.**
+- **RUNTIME:** **Visual rendering output unconfirmed**. Need to verify if `change_cell`/`present` and image escape sequences produce output.
 - **RUNTIME:** **`ex_termbox` reporting incorrect terminal dimensions:** Underlying issue masked by hardcoding workaround. Needs future investigation.
-- **RUNTIME:** Potential infinite loop **needs verification** (once app runs).
-- **RUNTIME:** Status of other runtime warnings (`Unhandled view element type`, `Skipping invalid cell change`) **unknown**. Needs verification (once app runs).
+- **RUNTIME:** Potential infinite loop **needs verification** (seems unlikely now, but verify visually).
+- **RUNTIME:** Status of other runtime warnings (`Unhandled view element type`, `Skipping invalid cell change`) **unknown (Pending Visual Verification)**.
 - **RUNTIME:** Compiler warnings exist for type mismatches in `handle_event` return clauses and many undefined function calls (see logs).
-- **VISUALIZATION:** TUI Charts/TreeMaps rendering **needs visual verification and refinement** (blocked by crash).
-- **IMAGE:** Image rendering (`assets/static/images/logo.png`) **needs visual verification** (blocked by crash).
-- **LAYOUT:** Layout saving/loading (`~/.raxol/dashboard_layout.bin`) needs testing (blocked by crash).
-- **TESTING:** `HyperlinkPlugin.open_url/1` needs cross-platform testing (blocked by crash).
+- **VISUALIZATION:** TUI Charts/TreeMaps rendering **needs implementation and visual verification**.
+- **IMAGE:** Image rendering (`assets/static/images/logo.png`) **needs visual verification** (escape sequence sent, but result unknown).
+- **LAYOUT:** Layout saving confirmed working. Layout loading (`~/.raxol/dashboard_layout.bin`) **needs testing**.
+- **TESTING:** `HyperlinkPlugin.open_url/1` needs cross-platform **testing**.
 - **DIALYZER:** ~86 warnings remain.
