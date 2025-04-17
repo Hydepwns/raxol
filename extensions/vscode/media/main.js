@@ -139,42 +139,114 @@
     // --- Input Handling ---
 
     // Listen for keyboard events on the whole window
-    // Using window allows capturing keys even if focus isn't specifically on the terminal output div
     window.addEventListener(
       "keydown",
       (event) => {
-        // Basic key mapping
-        let key = event.key;
+        // Build modifiers list
         const modifiers = [];
         if (event.ctrlKey) modifiers.push("ctrl");
         if (event.altKey) modifiers.push("alt");
         if (event.shiftKey) modifiers.push("shift");
         if (event.metaKey) modifiers.push("meta"); // Command key on Mac
 
-        // TODO: Need more sophisticated mapping for special keys (Arrows, Function keys, Enter, Tab, Backspace, Delete, Escape etc.)
-        // This requires mapping event.key or event.code to the expected backend format (potentially ANSI escape codes or specific names)
-        // Example basic mapping:
-        if (key.length > 1) {
-          // Check if it's a special key like "ArrowUp", "Enter", "Backspace"
-          // Simple conversion for now, backend might expect different format
-          switch (key) {
-            case "ArrowUp":
-              key = "up";
-              break;
-            case "ArrowDown":
-              key = "down";
-              break;
-            case "ArrowLeft":
-              key = "left";
-              break;
-            case "ArrowRight":
-              key = "right";
-              break;
-            // Add mappings for Enter, Backspace, Tab, Delete, Escape, F1-F12 etc.
-            // case "Enter": key = "\r"; break; // Or "enter"?
-            // case "Backspace": key = "backspace"; break;
-            // case "Tab": key = "\t"; break; // Or "tab"?
-          }
+        // Handle key mapping from browser keys to backend format
+        let key = event.key;
+
+        // More comprehensive special key mapping
+        switch (key) {
+          // Arrow keys
+          case "ArrowUp":
+            key = "up";
+            break;
+          case "ArrowDown":
+            key = "down";
+            break;
+          case "ArrowLeft":
+            key = "left";
+            break;
+          case "ArrowRight":
+            key = "right";
+            break;
+
+          // Control keys
+          case "Enter":
+            key = "Enter";
+            break;
+          case "Tab":
+            key = "Tab";
+            break;
+          case "Escape":
+            key = "Escape";
+            break;
+          case " ":
+            key = " ";
+            break; // Space
+          case "Backspace":
+            key = "Backspace";
+            break;
+          case "Delete":
+            key = "Delete";
+            break;
+          case "Home":
+            key = "Home";
+            break;
+          case "End":
+            key = "End";
+            break;
+          case "PageUp":
+            key = "PageUp";
+            break;
+          case "PageDown":
+            key = "PageDown";
+            break;
+
+          // Function keys
+          case "F1":
+          case "F2":
+          case "F3":
+          case "F4":
+          case "F5":
+          case "F6":
+          case "F7":
+          case "F8":
+          case "F9":
+          case "F10":
+          case "F11":
+          case "F12":
+            // Keep function keys as-is
+            break;
+
+          // Default case - use key as-is if it's a single character
+          default:
+            // For single character keys, we leave them as-is
+            break;
+        }
+
+        // Prevent default browser actions for terminal control keys
+        if (
+          (event.ctrlKey &&
+            ["c", "x", "v", "a", "z"].includes(key.toLowerCase())) || // Ctrl+C, Ctrl+X, etc.
+          [
+            "Tab",
+            "ArrowUp",
+            "ArrowDown",
+            "ArrowLeft",
+            "ArrowRight",
+            "F1",
+            "F2",
+            "F3",
+            "F4",
+            "F5",
+            "F6",
+            "F7",
+            "F8",
+            "F9",
+            "F10",
+            "F11",
+            "F12",
+          ].includes(key)
+        ) {
+          event.preventDefault();
         }
 
         // Format message according to protocol
@@ -188,23 +260,14 @@
         };
 
         console.log(
-          `[Webview] Sending message: ${message.command}`,
-          JSON.stringify(message.payload)
+          `[Webview] Sending key input: ${key}${
+            modifiers.length ? " with modifiers: " + modifiers.join("+") : ""
+          }`
         );
         vscode.postMessage(message);
-
-        // Prevent default browser action for certain keys if needed
-        // Example: Prevent Ctrl+C from copying text, let backend handle it
-        // if (event.ctrlKey && event.key === 'c') {
-        //     event.preventDefault();
-        // }
-        // Example: Prevent Tab from changing focus
-        // if (event.key === 'Tab') {
-        //     event.preventDefault();
-        // }
       },
       true
-    ); // Use capture phase to potentially intercept keys earlier
+    ); // Use capture phase to intercept keys earlier
 
     // --- Resize Handling ---
 
