@@ -119,9 +119,10 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
 
+      # Run security scan only on Linux runners
       - name: Run Security Scan
         uses: snyk/actions/node@master
-        if: runner.os == 'Linux' && (github.event_name == 'push' || github.event.pull_request.head.repo.fork == false)
+        if: runner.os == 'Linux'
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
