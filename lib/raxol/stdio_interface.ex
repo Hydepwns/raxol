@@ -8,7 +8,8 @@ defmodule Raxol.StdioInterface do
   use GenServer
   require Logger
 
-  alias Jason # Make sure Jason is added to deps
+  # Make sure Jason is added to deps
+  alias Jason
 
   @type target_pid :: pid()
   @type state :: %{target_pid: target_pid()}
@@ -32,8 +33,10 @@ defmodule Raxol.StdioInterface do
   Sends a log message to the extension with proper JSON formatting.
   This prevents raw log messages from being interpreted as JSON by the extension.
   """
-  @spec send_log(level :: atom(), message :: String.t()) :: :ok | {:error, any()}
-  def send_log(level, message) when level in [:debug, :info, :warning, :error] and is_binary(message) do
+  @spec send_log(level :: atom(), message :: String.t()) ::
+          :ok | {:error, any()}
+  def send_log(level, message)
+      when level in [:debug, :info, :warning, :error] and is_binary(message) do
     log_message = %{
       type: "log",
       payload: %{
@@ -41,6 +44,7 @@ defmodule Raxol.StdioInterface do
         message: message
       }
     }
+
     send_message(log_message)
   end
 
@@ -56,7 +60,10 @@ defmodule Raxol.StdioInterface do
         read_stdin_loop(self())
       catch
         kind, reason ->
-          Logger.error("[StdioInterface] Error in stdin reader: #{inspect(kind)}, #{inspect(reason)}")
+          Logger.error(
+            "[StdioInterface] Error in stdin reader: #{inspect(kind)}, #{inspect(reason)}"
+          )
+
           Process.exit(self(), {:stdin_reader_error, reason})
       end
     end)
@@ -67,18 +74,21 @@ defmodule Raxol.StdioInterface do
 
   @impl true
   def handle_cast({:send_message, message}, state) do
-    Logger.debug("[StdioInterface] Received message to send: #{inspect(message)}")
+    Logger.debug(
+      "[StdioInterface] Received message to send: #{inspect(message)}"
+    )
 
     # Make sure message has the right shape (type and payload)
-    message = if Map.has_key?(message, :type) and Map.has_key?(message, :payload) do
-      message
-    else
-      # Convert any non-standard message to a structured format
-      %{
-        type: Map.get(message, :type, "unknown"),
-        payload: Map.get(message, :payload, message)
-      }
-    end
+    message =
+      if Map.has_key?(message, :type) and Map.has_key?(message, :payload) do
+        message
+      else
+        # Convert any non-standard message to a structured format
+        %{
+          type: Map.get(message, :type, "unknown"),
+          payload: Map.get(message, :payload, message)
+        }
+      end
 
     # Convert any atom keys to strings before encoding
     message_with_string_keys = stringify_keys(message)
@@ -92,8 +102,11 @@ defmodule Raxol.StdioInterface do
         Logger.debug("[StdioInterface] Wrote message to stdout: #{json_string}")
 
       {:error, reason} ->
-        Logger.error("[StdioInterface] Failed to encode message to JSON: #{inspect(reason)}. Message: #{inspect(message)}")
+        Logger.error(
+          "[StdioInterface] Failed to encode message to JSON: #{inspect(reason)}. Message: #{inspect(message)}"
+        )
     end
+
     {:noreply, state}
   end
 
@@ -111,29 +124,47 @@ defmodule Raxol.StdioInterface do
       # Attempt to decode the JSON line
       case Jason.decode(line) do
         {:ok, decoded_message} when is_map(decoded_message) ->
-          Logger.debug("[StdioInterface] Decoded message: #{inspect(decoded_message)}")
+          Logger.debug(
+            "[StdioInterface] Decoded message: #{inspect(decoded_message)}"
+          )
+
           # Basic validation (expecting 'type' and 'payload')
-          if Map.has_key?(decoded_message, "type") and Map.has_key?(decoded_message, "payload") do
+          if Map.has_key?(decoded_message, "type") and
+               Map.has_key?(decoded_message, "payload") do
             # Convert keys to atoms for easier handling in Elixir
             message_with_atom_keys = %{
               type: String.to_atom(decoded_message["type"]),
               payload: decoded_message["payload"]
             }
 
-            Logger.debug("[StdioInterface] Forwarding message to target: #{inspect(message_with_atom_keys)}")
+            Logger.debug(
+              "[StdioInterface] Forwarding message to target: #{inspect(message_with_atom_keys)}"
+            )
+
             # Forward the decoded message to the target process (Runtime)
-            GenServer.cast(state.target_pid, {:stdio_message, message_with_atom_keys})
+            GenServer.cast(
+              state.target_pid,
+              {:stdio_message, message_with_atom_keys}
+            )
           else
-             Logger.warning("[StdioInterface] Received invalid message format (missing type/payload): #{inspect(decoded_message)}")
+            Logger.warning(
+              "[StdioInterface] Received invalid message format (missing type/payload): #{inspect(decoded_message)}"
+            )
           end
 
         {:error, reason} ->
-          Logger.warning("[StdioInterface] Failed to decode JSON from stdin: #{inspect(reason)}. Line: #{inspect(line)}")
-          # This is likely just logging output from another source, so don't treat it as an error
+          Logger.warning(
+            "[StdioInterface] Failed to decode JSON from stdin: #{inspect(reason)}. Line: #{inspect(line)}"
+          )
 
-         _other ->
-           Logger.warning("[StdioInterface] Received non-map JSON from stdin: #{inspect(line)}")
+        # This is likely just logging output from another source, so don't treat it as an error
+
+        _other ->
+          Logger.warning(
+            "[StdioInterface] Received non-map JSON from stdin: #{inspect(line)}"
+          )
       end
+
       {:noreply, state}
     end
   end
@@ -154,14 +185,18 @@ defmodule Raxol.StdioInterface do
     |> Stream.each(fn line ->
       send(server_pid, {:stdin_line, line})
     end)
-    |> Stream.run() # Consume the stream
+    # Consume the stream
+    |> Stream.run()
 
     # Send a message indicating stdin closed when the stream ends
     send(server_pid, {:stdin_closed})
     Logger.info("[StdioInterface] read_stdin_loop finished.")
   rescue
     e ->
-      Logger.error("[StdioInterface] Error in read_stdin_loop: #{inspect(e)}\n#{inspect(System.stacktrace())}")
+      Logger.error(
+        "[StdioInterface] Error in read_stdin_loop: #{inspect(e)}\n#{inspect(System.stacktrace())}"
+      )
+
       send(server_pid, {:stdin_error, e})
   end
 

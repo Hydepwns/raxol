@@ -34,22 +34,49 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   def handle_cells(cell, _emulator_state, plugin_state) do
     case cell do
       # Handle Chart Placeholder
-      %{type: :placeholder, value: :chart, data: data, opts: opts, bounds: bounds} ->
-        Logger.debug("[VisualizationPlugin] Handling :chart placeholder. Bounds: #{inspect(bounds)}")
+      %{
+        type: :placeholder,
+        value: :chart,
+        data: data,
+        opts: opts,
+        bounds: bounds
+      } ->
+        Logger.debug(
+          "[VisualizationPlugin] Handling :chart placeholder. Bounds: #{inspect(bounds)}"
+        )
+
         chart_cells = render_chart_content(data, opts, bounds)
         # Return :ok, state (unchanged), replacement cells, empty commands
         {:ok, plugin_state, chart_cells, []}
 
       # Handle TreeMap Placeholder
-      %{type: :placeholder, value: :treemap, data: data, opts: opts, bounds: bounds} ->
-        Logger.debug("[VisualizationPlugin] Handling :treemap placeholder. Bounds: #{inspect(bounds)}")
+      %{
+        type: :placeholder,
+        value: :treemap,
+        data: data,
+        opts: opts,
+        bounds: bounds
+      } ->
+        Logger.debug(
+          "[VisualizationPlugin] Handling :treemap placeholder. Bounds: #{inspect(bounds)}"
+        )
+
         treemap_cells = render_treemap_content(data, opts, bounds)
         # Return :ok, state (unchanged), replacement cells, empty commands
         {:ok, plugin_state, treemap_cells, []}
 
       # Handle Image Placeholder
-      %{type: :placeholder, value: :image, data: data, opts: opts, bounds: bounds} ->
-        Logger.debug("[VisualizationPlugin] Handling :image placeholder. Bounds: #{inspect(bounds)}")
+      %{
+        type: :placeholder,
+        value: :image,
+        data: data,
+        opts: opts,
+        bounds: bounds
+      } ->
+        Logger.debug(
+          "[VisualizationPlugin] Handling :image placeholder. Bounds: #{inspect(bounds)}"
+        )
+
         image_cells = render_image_content(data, opts, bounds)
         # Return :ok, state (unchanged), replacement cells, empty commands
         {:ok, plugin_state, image_cells, []}
@@ -75,19 +102,27 @@ defmodule Raxol.Plugins.VisualizationPlugin do
 
     # Ensure bounds are valid for rendering
     if bounds.width < 5 or bounds.height < 3 do
-      Logger.warning("[VisualizationPlugin] Bounds too small for chart rendering: #{inspect(bounds)}")
-      draw_box_with_text("!", bounds) # Wrap in list for consistency removed, function does it
+      Logger.warning(
+        "[VisualizationPlugin] Bounds too small for chart rendering: #{inspect(bounds)}"
+      )
+
+      # Wrap in list for consistency removed, function does it
+      draw_box_with_text("!", bounds)
     else
       try do
         # --- Simplified: Directly call manual TUI rendering ---
         # Remove Contex.Dataset, Contex.BarChart, Contex.Plot creation
         # Pass the original data list directly
-        draw_tui_bar_chart(data, title, bounds) # Pass title instead of chart struct
-
+        # Pass title instead of chart struct
+        draw_tui_bar_chart(data, title, bounds)
       rescue
         e ->
-          Logger.error("[VisualizationPlugin] Error rendering chart: #{inspect(e)}")
-          draw_box_with_text("[Render Error]", bounds) # Wrap in list for consistency removed
+          Logger.error(
+            "[VisualizationPlugin] Error rendering chart: #{inspect(e)}"
+          )
+
+          # Wrap in list for consistency removed
+          draw_box_with_text("[Render Error]", bounds)
       end
     end
   end
@@ -98,8 +133,12 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     # Assuming data is like: %{name: "Root", value: 100, children: [...]}
     _title = Map.get(opts, :title, "TreeMap")
 
-    if is_nil(data) or map_size(data) == 0 or bounds.width < 1 or bounds.height < 1 do
-      Logger.warning("[VisualizationPlugin] Invalid data or bounds for treemap: #{inspect(bounds)}, data: #{inspect(data)}")
+    if is_nil(data) or map_size(data) == 0 or bounds.width < 1 or
+         bounds.height < 1 do
+      Logger.warning(
+        "[VisualizationPlugin] Invalid data or bounds for treemap: #{inspect(bounds)}, data: #{inspect(data)}"
+      )
+
       # Use simplified placeholder for very small areas
       if bounds.width > 0 and bounds.height > 0 do
         # Wrap in list, return tuple format
@@ -110,11 +149,13 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     else
       try do
         # Calculate layout
-        total_value = Map.get(data, :value, 1) # Default to 1 if value missing
+        # Default to 1 if value missing
+        total_value = Map.get(data, :value, 1)
         node_rects = layout_treemap_nodes(data, bounds, 0, total_value)
 
         # Color palette for treemap depths
-        color_palette = [2, 3, 4, 5, 6, 1] # Same as bars, could be different
+        # Same as bars, could be different
+        color_palette = [2, 3, 4, 5, 6, 1]
         num_colors = Enum.count(color_palette)
 
         # Draw node boxes
@@ -129,7 +170,10 @@ defmodule Raxol.Plugins.VisualizationPlugin do
         end)
       rescue
         e ->
-          Logger.error("[VisualizationPlugin] Error rendering treemap: #{inspect(e)}")
+          Logger.error(
+            "[VisualizationPlugin] Error rendering treemap: #{inspect(e)}"
+          )
+
           # Optionally log stacktrace: :erlang.get_stacktrace()
           # Wrap in list for consistency
           draw_box_with_text("[TreeMap Render Error]", bounds)
@@ -160,19 +204,25 @@ defmodule Raxol.Plugins.VisualizationPlugin do
       # Only draw border if width >= 2 and height >= 2
       width < 2 or height < 2 ->
         # Fill area with shade if no border
-        shade_char = Enum.at([?·, ?░, ?▒, ?▓], rem(fg, 4)) # Use color to pick shade
+        # Use color to pick shade
+        shade_char = Enum.at([?·, ?░, ?▒, ?▓], rem(fg, 4))
         # Return tuple format
         for x <- x_start..(x_start + width - 1),
             y <- y_start..(y_start + height - 1) do
           {x, y, %{char: shade_char, fg: fg, bg: bg, style: %{}}}
         end
 
-      true -> # Draw box with border
+      # Draw box with border
+      true ->
         # Top/Bottom borders
         top_bottom =
           for x <- x_start..(x_start + width - 1) do
             # Return tuple format
-            [{x, y_start, %{char: ?─, fg: fg, bg: bg, style: %{}}}, {x, y_start + height - 1, %{char: ?─, fg: fg, bg: bg, style: %{}}}]
+            [
+              {x, y_start, %{char: ?─, fg: fg, bg: bg, style: %{}}},
+              {x, y_start + height - 1,
+               %{char: ?─, fg: fg, bg: bg, style: %{}}}
+            ]
           end
           |> List.flatten()
 
@@ -180,7 +230,11 @@ defmodule Raxol.Plugins.VisualizationPlugin do
         sides =
           for y <- (y_start + 1)..(y_start + height - 2) do
             # Return tuple format
-            [{x_start, y, %{char: ?│, fg: fg, bg: bg, style: %{}}}, {x_start + width - 1, y, %{char: ?│, fg: fg, bg: bg, style: %{}}}]
+            [
+              {x_start, y, %{char: ?│, fg: fg, bg: bg, style: %{}}},
+              {x_start + width - 1, y,
+               %{char: ?│, fg: fg, bg: bg, style: %{}}}
+            ]
           end
           |> List.flatten()
 
@@ -188,17 +242,20 @@ defmodule Raxol.Plugins.VisualizationPlugin do
         corners = [
           # Return tuple format
           {x_start, y_start, %{char: ?┌, fg: fg, bg: bg, style: %{}}},
-          {x_start + width - 1, y_start, %{char: ?┐, fg: fg, bg: bg, style: %{}}},
-          {x_start, y_start + height - 1, %{char: ?└, fg: fg, bg: bg, style: %{}}},
-          {x_start + width - 1, y_start + height - 1, %{char: ?┘, fg: fg, bg: bg, style: %{}}}
+          {x_start + width - 1, y_start,
+           %{char: ?┐, fg: fg, bg: bg, style: %{}}},
+          {x_start, y_start + height - 1,
+           %{char: ?└, fg: fg, bg: bg, style: %{}}},
+          {x_start + width - 1, y_start + height - 1,
+           %{char: ?┘, fg: fg, bg: bg, style: %{}}}
         ]
 
         # Text Handling (centered, clipped)
         max_text_width = width - 2
         max_text_height = height - 2
 
+        # Only draw text if space allows (at least 3x3 box)
         text_cells =
-          # Only draw text if space allows (at least 3x3 box)
           if max_text_width >= 1 and max_text_height >= 1 do
             clipped_text =
               if String.length(text) > max_text_width do
@@ -209,8 +266,12 @@ defmodule Raxol.Plugins.VisualizationPlugin do
               end
 
             # Calculate centered position
-            text_y = y_start + 1 + max(0, div(max_text_height - 1, 2)) # Center vertically
-            text_x_offset = max(0, div(max_text_width - String.length(clipped_text), 2)) # Center horizontally
+            # Center vertically
+            text_y = y_start + 1 + max(0, div(max_text_height - 1, 2))
+            # Center horizontally
+            text_x_offset =
+              max(0, div(max_text_width - String.length(clipped_text), 2))
+
             text_x = x_start + 1 + text_x_offset
 
             clipped_text
@@ -219,7 +280,8 @@ defmodule Raxol.Plugins.VisualizationPlugin do
             |> Enum.map(fn {grapheme, i} ->
               [char_code | _] = String.to_charlist(grapheme)
               # Return tuple format
-              {text_x + i, text_y, %{char: char_code, fg: fg, bg: bg, style: %{}}}
+              {text_x + i, text_y,
+               %{char: char_code, fg: fg, bg: bg, style: %{}}}
             end)
           else
             # No space for text
@@ -228,8 +290,14 @@ defmodule Raxol.Plugins.VisualizationPlugin do
 
         # Combine, ensuring corners overwrite borders
         # Use Map for efficient overwrite based on {x, y} key
-        initial_map = Map.new(top_bottom ++ sides, fn {x,y,c} -> {{x,y}, {x,y,c}} end)
-        final_map = Enum.reduce(corners ++ text_cells, initial_map, fn {x,y,c}, map -> Map.put(map, {x,y}, {x,y,c}) end)
+        initial_map =
+          Map.new(top_bottom ++ sides, fn {x, y, c} -> {{x, y}, {x, y, c}} end)
+
+        final_map =
+          Enum.reduce(corners ++ text_cells, initial_map, fn {x, y, c}, map ->
+            Map.put(map, {x, y}, {x, y, c})
+          end)
+
         Map.values(final_map)
     end
   end
@@ -245,24 +313,45 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     if Enum.empty?(children) or bounds.width < 1 or bounds.height < 1 do
       # Filter out nodes with zero area
       if bounds.width > 0 and bounds.height > 0 do
-        [%{x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height,
-           name: Map.get(node, :name, "Unknown"),
-           value: Map.get(node, :value, 0),
-           depth: depth}]
+        [
+          %{
+            x: bounds.x,
+            y: bounds.y,
+            width: bounds.width,
+            height: bounds.height,
+            name: Map.get(node, :name, "Unknown"),
+            value: Map.get(node, :value, 0),
+            depth: depth
+          }
+        ]
       else
         []
       end
     else
       # --- Recursive Squarified-like Layout (Alternating Split) --- #
       # 1. Calculate total value of direct children & sort
-      children_total_value = Enum.reduce(children, 0, fn child, acc -> acc + Map.get(child, :value, 0) end)
+      children_total_value =
+        Enum.reduce(children, 0, fn child, acc ->
+          acc + Map.get(child, :value, 0)
+        end)
+
       sorted_children = Enum.sort_by(children, &Map.get(&1, :value, 0), :desc)
 
       # Avoid division by zero if total value is 0
       if children_total_value <= 0 do
         # Cannot partition based on value, just draw parent
         if bounds.width > 0 and bounds.height > 0 do
-          [%{x: bounds.x, y: bounds.y, width: bounds.width, height: bounds.height, name: node.name <> " (No Child Values)", value: node.value, depth: depth}]
+          [
+            %{
+              x: bounds.x,
+              y: bounds.y,
+              width: bounds.width,
+              height: bounds.height,
+              name: node.name <> " (No Child Values)",
+              value: node.value,
+              depth: depth
+            }
+          ]
         else
           []
         end
@@ -271,14 +360,27 @@ defmodule Raxol.Plugins.VisualizationPlugin do
         split_vertically = bounds.width >= bounds.height
 
         # 3. Iterate through children and layout recursively
-        layout_children_recursive(sorted_children, children_total_value, bounds, depth + 1, split_vertically)
+        layout_children_recursive(
+          sorted_children,
+          children_total_value,
+          bounds,
+          depth + 1,
+          split_vertically
+        )
       end
     end
   end
 
   # Helper for recursive layout partitioning
-  defp layout_children_recursive(children, remaining_value, current_bounds, depth, split_vertically) do
-    if Enum.empty?(children) or remaining_value <= 0 or current_bounds.width < 1 or current_bounds.height < 1 do
+  defp layout_children_recursive(
+         children,
+         remaining_value,
+         current_bounds,
+         depth,
+         split_vertically
+       ) do
+    if Enum.empty?(children) or remaining_value <= 0 or current_bounds.width < 1 or
+         current_bounds.height < 1 do
       []
     else
       child = hd(children)
@@ -287,7 +389,13 @@ defmodule Raxol.Plugins.VisualizationPlugin do
 
       # Skip children with zero value to avoid errors
       if child_value <= 0 do
-        layout_children_recursive(rest_children, remaining_value, current_bounds, depth, split_vertically)
+        layout_children_recursive(
+          rest_children,
+          remaining_value,
+          current_bounds,
+          depth,
+          split_vertically
+        )
       else
         # Calculate proportion and dimension for this child
         proportion = child_value / remaining_value
@@ -297,31 +405,55 @@ defmodule Raxol.Plugins.VisualizationPlugin do
           child_width = max(1, round(current_bounds.width * proportion))
           child_bounds = %{current_bounds | width: child_width}
           # Calculate remaining bounds for next children
-          next_bounds = %{current_bounds |
-            x: current_bounds.x + child_width,
-            width: max(0, current_bounds.width - child_width)
+          next_bounds = %{
+            current_bounds
+            | x: current_bounds.x + child_width,
+              width: max(0, current_bounds.width - child_width)
           }
+
           # Recursively layout this child
-          child_nodes = layout_treemap_nodes(child, child_bounds, depth, child_value)
+          child_nodes =
+            layout_treemap_nodes(child, child_bounds, depth, child_value)
+
           # Layout remaining children in the adjusted bounds
-          child_nodes ++ layout_children_recursive(rest_children, remaining_value - child_value, next_bounds, depth, split_vertically)
+          child_nodes ++
+            layout_children_recursive(
+              rest_children,
+              remaining_value - child_value,
+              next_bounds,
+              depth,
+              split_vertically
+            )
         else
           # Split horizontally: calculate height, width stays the same
           child_height = max(1, round(current_bounds.height * proportion))
           child_bounds = %{current_bounds | height: child_height}
           # Calculate remaining bounds for next children
-          next_bounds = %{current_bounds |
-            y: current_bounds.y + child_height,
-            height: max(0, current_bounds.height - child_height)
+          next_bounds = %{
+            current_bounds
+            | y: current_bounds.y + child_height,
+              height: max(0, current_bounds.height - child_height)
           }
+
           # Recursively layout this child
-          child_nodes = layout_treemap_nodes(child, child_bounds, depth, child_value)
+          child_nodes =
+            layout_treemap_nodes(child, child_bounds, depth, child_value)
+
           # Layout remaining children in the adjusted bounds
-          child_nodes ++ layout_children_recursive(rest_children, remaining_value - child_value, next_bounds, depth, split_vertically)
+          child_nodes ++
+            layout_children_recursive(
+              rest_children,
+              remaining_value - child_value,
+              next_bounds,
+              depth,
+              split_vertically
+            )
         end
       end
     end
-  end # End of layout_children_recursive
+  end
+
+  # End of layout_children_recursive
 
   # --- Manual TUI Rendering Functions ---
 
@@ -331,11 +463,16 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     # Or handle tuple list: [{"Jan", 12}, ...]
     # Let's standardize on the map format for clarity.
 
-    data = Enum.map(data, fn
-      %{label: l, value: v} -> %{label: l, value: v} # Keep map format
-      {l, v} when is_binary(l) and is_number(v) -> %{label: l, value: v} # Convert tuples
-      _ -> nil # Ignore invalid entries
-    end) |> Enum.reject(&is_nil(&1))
+    data =
+      Enum.map(data, fn
+        # Keep map format
+        %{label: l, value: v} -> %{label: l, value: v}
+        # Convert tuples
+        {l, v} when is_binary(l) and is_number(v) -> %{label: l, value: v}
+        # Ignore invalid entries
+        _ -> nil
+      end)
+      |> Enum.reject(&is_nil(&1))
 
     if Enum.empty?(data) do
       Logger.warning("[VisualizationPlugin] No valid data for bar chart")
@@ -345,115 +482,169 @@ defmodule Raxol.Plugins.VisualizationPlugin do
       labels = Enum.map(data, &Map.get(&1, :label, "?"))
       values = Enum.map(data, &Map.get(&1, :value, 0))
       max_value = Enum.max(values, fn -> 0 end)
-      chart_width = bounds.width - 2 # Account for borders/padding
-      chart_height = bounds.height - 4 # Inner height for bars, leave space for title and labels
+      # Account for borders/padding
+      chart_width = bounds.width - 2
+      # Inner height for bars, leave space for title and labels
+      chart_height = bounds.height - 4
       bar_width = max(1, div(chart_width, Enum.count(data)))
-      bar_spacing = max(0, div(chart_width - Enum.count(data) * bar_width, max(1, Enum.count(data) - 1)))
+
+      bar_spacing =
+        max(
+          0,
+          div(
+            chart_width - Enum.count(data) * bar_width,
+            max(1, Enum.count(data) - 1)
+          )
+        )
 
       if chart_width < Enum.count(data) or chart_height < 1 do
-        Logger.warning("[VisualizationPlugin] Chart area too small: #{chart_width}x#{chart_height}")
+        Logger.warning(
+          "[VisualizationPlugin] Chart area too small: #{chart_width}x#{chart_height}"
+        )
+
         draw_box_with_text("[Too Small]", bounds)
       else
         # Define fractional block characters for height
-        fractional_blocks = ~c" \"▂▃▄▅▆▇█" # 8 levels + space
-        num_fractions = length(fractional_blocks) - 1 # = 8
+        # 8 levels + space
+        fractional_blocks = ~c" \"▂▃▄▅▆▇█"
+        # = 8
+        num_fractions = length(fractional_blocks) - 1
 
         # Color palette for bars
-        color_palette = [2, 3, 4, 5, 6, 1] # e.g., Red, Green, Yellow, Blue, Magenta, Cyan
+        # e.g., Red, Green, Yellow, Blue, Magenta, Cyan
+        color_palette = [2, 3, 4, 5, 6, 1]
         num_colors = Enum.count(color_palette)
 
         # Draw the outer box (frame) first
-        box_cells = draw_box_with_text(title, bounds) # Draw box with title
+        # Draw box with title
+        box_cells = draw_box_with_text(title, bounds)
 
         # Draw bars inside the box
-        bar_cells = Enum.with_index(data) |> Enum.flat_map(fn {item, index} ->
-          value = Map.get(item, :value, 0)
-          label = Map.get(item, :label, "")
+        bar_cells =
+          Enum.with_index(data)
+          |> Enum.flat_map(fn {item, index} ->
+            value = Map.get(item, :value, 0)
+            label = Map.get(item, :label, "")
 
-          bar_x_start = bounds.x + 1 + index * (bar_width + bar_spacing)
-          # Calculate bar height in fractional steps
-          fractional_height = if max_value == 0, do: 0, else: (value / max_value) * chart_height * num_fractions
-          full_blocks = floor(fractional_height / num_fractions)
-          remainder_fraction = round(rem(fractional_height, num_fractions))
-          fraction_char = Enum.at(fractional_blocks, remainder_fraction)
+            bar_x_start = bounds.x + 1 + index * (bar_width + bar_spacing)
+            # Calculate bar height in fractional steps
+            fractional_height =
+              if max_value == 0,
+                do: 0,
+                else: value / max_value * chart_height * num_fractions
 
-          fg_color = Enum.at(color_palette, rem(index, num_colors))
+            full_blocks = floor(fractional_height / num_fractions)
+            remainder_fraction = round(rem(fractional_height, num_fractions))
+            fraction_char = Enum.at(fractional_blocks, remainder_fraction)
 
-          # Generate bar cells
-          bar_cells = for y_offset <- 0..(chart_height - 1),
-                      x_offset <- 0..(bar_width - 1),
-                      current_y = bounds.y + 1 + chart_height - 1 - y_offset, # Y grows downwards
-                      current_x = bar_x_start + x_offset do
-            char = cond do
-              y_offset < full_blocks -> ~c"█"
-              y_offset == full_blocks -> fraction_char
-              true -> ~c" " # Empty space above bar
-            end
+            fg_color = Enum.at(color_palette, rem(index, num_colors))
 
-            # Return tuple format only if char is not space
-            if char != ~c" " do
-              {current_x, current_y, %{char: char, fg: fg_color, bg: 0, style: %{}}}
-            else
-              nil # Will be filtered out
-            end
-          end
-          |> Enum.reject(&is_nil(&1))
+            # Generate bar cells
+            bar_cells =
+              for y_offset <- 0..(chart_height - 1),
+                  x_offset <- 0..(bar_width - 1),
+                  # Y grows downwards
+                  current_y = bounds.y + 1 + chart_height - 1 - y_offset,
+                  current_x = bar_x_start + x_offset do
+                char =
+                  cond do
+                    y_offset < full_blocks -> ~c"█"
+                    y_offset == full_blocks -> fraction_char
+                    # Empty space above bar
+                    true -> ~c" "
+                  end
 
-          # Add label below bar
-          label_y = bounds.y + bounds.height - 2 # Position at bottom of chart area
-          label_cells = if String.length(label || "") > 0 do
-            # Truncate label if needed
-            display_label = if String.length(label) > bar_width do
-              String.slice(label, 0, bar_width - 1) <> "…"
-            else
-              label
-            end
+                # Return tuple format only if char is not space
+                if char != ~c" " do
+                  {current_x, current_y,
+                   %{char: char, fg: fg_color, bg: 0, style: %{}}}
+                else
+                  # Will be filtered out
+                  nil
+                end
+              end
+              |> Enum.reject(&is_nil(&1))
 
-            # Center the label under the bar
-            label_x_offset = div(bar_width - String.length(display_label), 2)
+            # Add label below bar
+            # Position at bottom of chart area
+            label_y = bounds.y + bounds.height - 2
 
-            String.graphemes(display_label)
-            |> Enum.with_index()
-            |> Enum.map(fn {char, char_index} ->
-              x = bar_x_start + label_x_offset + char_index
-              {x, label_y, %{char: String.to_charlist(char) |> hd(), fg: 7, bg: 0, style: %{}}}
-            end)
-          else
-            []
-          end
+            label_cells =
+              if String.length(label || "") > 0 do
+                # Truncate label if needed
+                display_label =
+                  if String.length(label) > bar_width do
+                    String.slice(label, 0, bar_width - 1) <> "…"
+                  else
+                    label
+                  end
 
-          # Add value above bar (if space allows)
-          value_str = Integer.to_string(round(value))
-          value_y = bounds.y + 1 + chart_height - 1 - full_blocks - 1
-          value_cells = if full_blocks > 1 and String.length(value_str) <= bar_width do
-            # Center the value above the bar
-            value_x_offset = div(bar_width - String.length(value_str), 2)
+                # Center the label under the bar
+                label_x_offset =
+                  div(bar_width - String.length(display_label), 2)
 
-            String.graphemes(value_str)
-            |> Enum.with_index()
-            |> Enum.map(fn {char, char_index} ->
-              x = bar_x_start + value_x_offset + char_index
-              {x, value_y, %{char: String.to_charlist(char) |> hd(), fg: 7, bg: 0, style: %{}}}
-            end)
-          else
-            []
-          end
+                String.graphemes(display_label)
+                |> Enum.with_index()
+                |> Enum.map(fn {char, char_index} ->
+                  x = bar_x_start + label_x_offset + char_index
 
-          # Combine all cell types
-          bar_cells ++ label_cells ++ value_cells
-        end)
+                  {x, label_y,
+                   %{
+                     char: String.to_charlist(char) |> hd(),
+                     fg: 7,
+                     bg: 0,
+                     style: %{}
+                   }}
+                end)
+              else
+                []
+              end
+
+            # Add value above bar (if space allows)
+            value_str = Integer.to_string(round(value))
+            value_y = bounds.y + 1 + chart_height - 1 - full_blocks - 1
+
+            value_cells =
+              if full_blocks > 1 and String.length(value_str) <= bar_width do
+                # Center the value above the bar
+                value_x_offset = div(bar_width - String.length(value_str), 2)
+
+                String.graphemes(value_str)
+                |> Enum.with_index()
+                |> Enum.map(fn {char, char_index} ->
+                  x = bar_x_start + value_x_offset + char_index
+
+                  {x, value_y,
+                   %{
+                     char: String.to_charlist(char) |> hd(),
+                     fg: 7,
+                     bg: 0,
+                     style: %{}
+                   }}
+                end)
+              else
+                []
+              end
+
+            # Combine all cell types
+            bar_cells ++ label_cells ++ value_cells
+          end)
 
         # Add axis line at bottom (optional)
         axis_y = bounds.y + bounds.height - 3
-        axis_cells = for x <- (bounds.x + 1)..(bounds.x + bounds.width - 2) do
-          {x, axis_y, %{char: ?─, fg: 7, bg: 0, style: %{}}}
-        end
+
+        axis_cells =
+          for x <- (bounds.x + 1)..(bounds.x + bounds.width - 2) do
+            {x, axis_y, %{char: ?─, fg: 7, bg: 0, style: %{}}}
+          end
 
         # Combine all cells, prioritizing content over box
         all_cells = box_cells ++ bar_cells ++ axis_cells
 
         # Use Map to ensure cells at same position don't duplicate
-        cell_map = Map.new(all_cells, fn {x, y, cell} -> {{x, y}, {x, y, cell}} end)
+        cell_map =
+          Map.new(all_cells, fn {x, y, cell} -> {{x, y}, {x, y, cell}} end)
+
         Map.values(cell_map)
       end
     end
@@ -461,9 +652,15 @@ defmodule Raxol.Plugins.VisualizationPlugin do
 
   # Placeholder for image rendering
   defp render_image_content(_data, _opts, bounds) do
-    Logger.debug("[VisualizationPlugin] Rendering placeholder for image at #{inspect(bounds)}")
+    Logger.debug(
+      "[VisualizationPlugin] Rendering placeholder for image at #{inspect(bounds)}"
+    )
+
     # Use the existing box drawing helper
-    draw_box_with_text("[Image: #{bounds.width}x#{bounds.height}]", bounds, fg: 5) # Use a different color (e.g., magenta)
+    # Use a different color (e.g., magenta)
+    draw_box_with_text("[Image: #{bounds.width}x#{bounds.height}]", bounds,
+      fg: 5
+    )
   end
 
   # Other callbacks (can be minimal for now)

@@ -69,7 +69,8 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
           retry_delay: 100
         })
 
-        assert {:error, :invalid_retry_attempts} = AIIntegration.validate_config()
+        assert {:error, :invalid_retry_attempts} =
+                 AIIntegration.validate_config()
 
         Application.put_env(:raxol, :ai_integration, %{
           endpoint: "https://api.ai-agent.com/v1",
@@ -147,18 +148,18 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
           assert url == "https://api.ai-agent.com/v1/analyze"
 
           assert headers == [
-                  {"Authorization", "Bearer test-api-key"},
-                  {"Content-Type", "application/json"}
-                ]
+                   {"Authorization", "Bearer test-api-key"},
+                   {"Content-Type", "application/json"}
+                 ]
 
           assert opts[:timeout] == 5000
           assert opts[:recv_timeout] == 5000
 
           {:ok,
-          %{
-            status_code: 200,
-            body: Jason.encode!(expected_response)
-          }}
+           %{
+             status_code: 200,
+             body: Jason.encode!(expected_response)
+           }}
         end)
 
         assert {:ok, analysis} = AIIntegration.analyze(data)
@@ -168,7 +169,7 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         assert analysis.risk_assessment == expected_response.risk_assessment
 
         assert analysis.optimization_impact ==
-                expected_response.optimization_impact
+                 expected_response.optimization_impact
 
         assert analysis.ai_confidence == expected_response.ai_confidence
         assert Map.has_key?(analysis.metadata, :analyzed_at)
@@ -185,10 +186,10 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         # Mock HTTPoison for failed request
         expect(HTTPoison, :request, fn _method, _url, _body, _headers, _opts ->
           {:ok,
-          %{
-            status_code: 500,
-            body: "Internal Server Error"
-          }}
+           %{
+             status_code: 500,
+             body: "Internal Server Error"
+           }}
         end)
 
         assert {:error, :max_retries_exceeded} = AIIntegration.analyze(data)
@@ -219,10 +220,10 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
         # Mock HTTPoison for invalid response
         expect(HTTPoison, :request, fn _method, _url, _body, _headers, _opts ->
           {:ok,
-          %{
-            status_code: 200,
-            body: Jason.encode!(%{invalid: "format"})
-          }}
+           %{
+             status_code: 200,
+             body: Jason.encode!(%{invalid: "format"})
+           }}
         end)
 
         assert {:error, :invalid_analysis_format} = AIIntegration.analyze(data)
@@ -247,14 +248,14 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
           assert opts[:recv_timeout] == 10000
 
           {:ok,
-          %{
-            status_code: 500,
-            body: "Internal Server Error"
-          }}
+           %{
+             status_code: 500,
+             body: "Internal Server Error"
+           }}
         end)
 
         assert {:error, :max_retries_exceeded} =
-                AIIntegration.analyze(data, options)
+                 AIIntegration.analyze(data, options)
       end
     end
   end

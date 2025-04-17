@@ -64,7 +64,8 @@ defmodule Raxol.Components.HintDisplay do
       if state.visible and state.current_hint do
         render_hint_panel(state)
       else
-        nil # Render nothing if not visible or no hint
+        # Render nothing if not visible or no hint
+        nil
       end
 
     # Convert result (nil or panel map) to Element or nil

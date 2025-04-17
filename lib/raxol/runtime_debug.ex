@@ -1,4 +1,5 @@
-defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
+# <<< CHANGED MODULE NAME
+defmodule Raxol.RuntimeDebug do
   @moduledoc """
   DEBUG VERSION of Raxol.Runtime.
   Manages the core runtime processes for a Raxol application.
@@ -79,7 +80,8 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
   # Accepts options as a keyword list from the supervisor
   def start_link(opts) when is_list(opts) do
-    Logger.debug("[RuntimeDebug.start_link] Starting runtime...") # <<< ADDED LOG + MODULE NAME
+    # <<< ADDED LOG + MODULE NAME
+    Logger.debug("[RuntimeDebug.start_link] Starting runtime...")
     # Extract app_module and determine app_name
     app_module = Keyword.fetch!(opts, :app_module)
     # Prefixed as it's no longer used for registration
@@ -91,38 +93,67 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
   @impl true
   def init({app_module, opts}) do
-    Logger.debug("[RuntimeDebug.init] Initializing runtime for #{inspect(app_module)}...") # <<< ADDED LOG + MODULE NAME
+    # <<< ADDED LOG + MODULE NAME
+    Logger.debug(
+      "[RuntimeDebug.init] Initializing runtime for #{inspect(app_module)}..."
+    )
+
     # Determine app name for registration
     app_name = get_app_name(app_module)
 
     # Initialize ExTermbox - Important: MUST happen before most other actions
     case Bindings.init() do
-      {:ok, :ok} -> Logger.debug("[RuntimeDebug.init] ExTermbox initialized successfully.") # <<< MODULE NAME
+      # <<< MODULE NAME
+      {:ok, :ok} ->
+        Logger.debug("[RuntimeDebug.init] ExTermbox initialized successfully.")
+
       {:error, reason} ->
-        Logger.error("[RuntimeDebug.init] Failed to initialize ExTermbox: #{inspect(reason)}") # <<< MODULE NAME
+        # <<< MODULE NAME
+        Logger.error(
+          "[RuntimeDebug.init] Failed to initialize ExTermbox: #{inspect(reason)}"
+        )
+
         # If Termbox fails, we probably can't continue.
         exit({:shutdown, {:failed_to_init_termbox, reason}})
+
       other ->
-        Logger.warning("[RuntimeDebug.init] Unexpected result from Bindings.init(): #{inspect(other)}") # <<< MODULE NAME
+        # <<< MODULE NAME
+        Logger.warning(
+          "[RuntimeDebug.init] Unexpected result from Bindings.init(): #{inspect(other)}"
+        )
     end
 
-    Bindings.select_output_mode(256) # Use 256 color mode
+    # Use 256 color mode
+    Bindings.select_output_mode(256)
 
     # Initialize application state by calling the app_module's init function
     # --- SIMPLIFIED MODEL INITIALIZATION ---
-    Logger.debug("[RuntimeDebug.init] Directly calling #{inspect(app_module)}.init/1...")
+    Logger.debug(
+      "[RuntimeDebug.init] Directly calling #{inspect(app_module)}.init/1..."
+    )
+
     # Directly call and assume success with {:ok, model_map} format
     {:ok, initial_model_data} = app_module.init(opts)
-    initial_model = initial_model_data # Assign the unwrapped map
-    Logger.debug("[RuntimeDebug.init] Result of direct call (initial_model): #{inspect(initial_model)}")
+    # Assign the unwrapped map
+    initial_model = initial_model_data
+
+    Logger.debug(
+      "[RuntimeDebug.init] Result of direct call (initial_model): #{inspect(initial_model)}"
+    )
+
     # --- END SIMPLIFIED ---
 
     # <<< Log before register check >>>
-    Logger.debug("[RuntimeDebug.init] Attempting to register app_name: #{inspect(app_name)} with pid: #{inspect(self())}")
+    Logger.debug(
+      "[RuntimeDebug.init] Attempting to register app_name: #{inspect(app_name)} with pid: #{inspect(self())}"
+    )
+
     # Register the runtime process using the unique app_name
     AppRegistry.register(app_name, self())
     # <<< ADD LOG AFTER >>>
-    Logger.debug("[RuntimeDebug.init] Successfully registered app_name: #{inspect(app_name)}")
+    Logger.debug(
+      "[RuntimeDebug.init] Successfully registered app_name: #{inspect(app_name)}"
+    )
 
     # Extract options or set defaults
     title = Keyword.get(opts, :title, "Raxol Application")
@@ -132,13 +163,16 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
     # Convert quit keys to standardized internal format
     # processed_quit_keys = Enum.map(quit_keys, &Event.parse_key_event/1) # Removed - format is already correct
-    Logger.debug("[RuntimeDebug.init] Using quit_keys: #{inspect(quit_keys)}") # <<< MODULE NAME - Log raw quit_keys
+    # <<< MODULE NAME - Log raw quit_keys
+    Logger.debug("[RuntimeDebug.init] Using quit_keys: #{inspect(quit_keys)}")
 
     # --- Initialize Plugin System ---
     # Define default plugins and their initial states/config
     plugins = [
-      {ImagePlugin, %{config: %{}, state: %{image_escape_sequence: nil}}}, # Example config/state
-      {VisualizationPlugin, %{config: %{}, state: %{}}} # Example
+      # Example config/state
+      {ImagePlugin, %{config: %{}, state: %{image_escape_sequence: nil}}},
+      # Example
+      {VisualizationPlugin, %{config: %{}, state: %{}}}
       # Add other plugins here
     ]
 
@@ -154,16 +188,26 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
               # On success, load_plugin returns the updated manager struct directly
               updated_manager when is_struct(updated_manager, PluginManager) ->
                 {:ok, updated_manager}
+
               # On failure, it returns an error tuple
               {:error, reason} ->
-                Logger.error("[RuntimeDebug.init] Failed to load plugin #{inspect module}: #{inspect reason}")
+                Logger.error(
+                  "[RuntimeDebug.init] Failed to load plugin #{inspect(module)}: #{inspect(reason)}"
+                )
+
                 # Halt reduction on first plugin load error
                 {:error, {:failed_to_load_plugin, module, reason}}
+
               # Handle unexpected return values
               unexpected ->
-                Logger.error("[RuntimeDebug.init] Unexpected return from PluginManager.load_plugin for #{inspect module}: #{inspect unexpected}")
-                {:error, {:unexpected_return_from_load_plugin, module, unexpected}}
+                Logger.error(
+                  "[RuntimeDebug.init] Unexpected return from PluginManager.load_plugin for #{inspect(module)}: #{inspect(unexpected)}"
+                )
+
+                {:error,
+                 {:unexpected_return_from_load_plugin, module, unexpected}}
             end
+
           error ->
             # Propagate previous error
             error
@@ -173,30 +217,43 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
     # Check if plugin loading succeeded
     case loaded_manager_result do
       {:ok, plugin_manager} ->
-        Logger.debug("[RuntimeDebug.init] PluginManager created and plugins loaded successfully.") # <<< MODULE NAME
+        # <<< MODULE NAME
+        Logger.debug(
+          "[RuntimeDebug.init] PluginManager created and plugins loaded successfully."
+        )
 
         # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< ADD LOG HERE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        Logger.debug("[RuntimeDebug.init] Value of initial_model BEFORE building initial_state: #{inspect(initial_model)}")
+        Logger.debug(
+          "[RuntimeDebug.init] Value of initial_model BEFORE building initial_state: #{inspect(initial_model)}"
+        )
 
         # --- Prepare initial state ---
         initial_state = %{
           title: title,
-          width: 0, # Initialized later
-          height: 0, # Initialized later
+          # Initialized later
+          width: 0,
+          # Initialized later
+          height: 0,
           app_module: app_module,
           app_name: app_name,
           fps: fps,
-          quit_keys: quit_keys, # Using the raw keys now
+          # Using the raw keys now
+          quit_keys: quit_keys,
           plugin_manager: plugin_manager,
-          model: initial_model, # <<< CORRECTLY STORE THE INITIAL MODEL
-          cell_buffer: ScreenBuffer.new(0, 0), # Initialized with 0,0
+          # <<< CORRECTLY STORE THE INITIAL MODEL
+          model: initial_model,
+          # Initialized with 0,0
+          cell_buffer: ScreenBuffer.new(0, 0),
           mouse_enabled: false,
-          termbox_initialized: true, # Set after successful Bindings.init()
+          # Set after successful Bindings.init()
+          termbox_initialized: true,
           last_rendered_cells: []
         }
 
         # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< LOG FINAL INITIAL STATE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
-        Logger.debug("[RuntimeDebug.init] Final constructed initial_state: #{inspect(initial_state)}")
+        Logger.debug(
+          "[RuntimeDebug.init] Final constructed initial_state: #{inspect(initial_state)}"
+        )
 
         # DEFER POLLING START TO handle_continue
         # case ExTermbox.Bindings.start_polling(self()) do
@@ -207,10 +264,20 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
         # end
 
         # Log state just before returning from init
-        Logger.debug("[RuntimeDebug.init] State before returning {:ok, state, :continue}: #{inspect(initial_state)}") # <<< MODULE NAME
-        {:ok, initial_state, {:continue, :after_init}} # Use handle_continue for post-init setup
+        # <<< MODULE NAME
+        Logger.debug(
+          "[RuntimeDebug.init] State before returning {:ok, state, :continue}: #{inspect(initial_state)}"
+        )
+
+        # Use handle_continue for post-init setup
+        {:ok, initial_state, {:continue, :after_init}}
+
       {:error, reason} ->
-        Logger.error("[RuntimeDebug.init] Failed during plugin loading: #{inspect(reason)}") # <<< MODULE NAME
+        # <<< MODULE NAME
+        Logger.error(
+          "[RuntimeDebug.init] Failed during plugin loading: #{inspect(reason)}"
+        )
+
         exit({:shutdown, reason})
     end
   end
@@ -242,7 +309,8 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
       {:error, reason} ->
         Logger.error(
-          "[RuntimeDebug] Failed to set image sequence in ImagePlugin: #{inspect(reason)}" # <<< MODULE NAME
+          # <<< MODULE NAME
+          "[RuntimeDebug] Failed to set image sequence in ImagePlugin: #{inspect(reason)}"
         )
 
         {:noreply, state}
@@ -252,12 +320,19 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
   @impl true
   def handle_info(:render, state) do
     # <<< ADD LOGGING AT THE VERY BEGINNING >>>
-    Logger.debug("[RuntimeDebug.handle_info(:render)] START. Received state: #{inspect(state)}")
+    Logger.debug(
+      "[RuntimeDebug.handle_info(:render)] START. Received state: #{inspect(state)}"
+    )
 
     # Check if Termbox is initialized before proceeding
     unless state.termbox_initialized do
-      Logger.warning("[RuntimeDebug.handle_info(:render)] Skipping render: Termbox not initialized.") # <<< MODULE NAME
-      schedule_render(state) # Reschedule for later
+      # <<< MODULE NAME
+      Logger.warning(
+        "[RuntimeDebug.handle_info(:render)] Skipping render: Termbox not initialized."
+      )
+
+      # Reschedule for later
+      schedule_render(state)
       {:noreply, state}
     end
 
@@ -266,12 +341,17 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
       case Bindings.width() do
         {:ok, {:ok, w}} -> w
         {:ok, w} when is_integer(w) -> w
-        _ -> state.width # Fallback or handle error
+        # Fallback or handle error
+        _ -> state.width
       end
 
     # --- Workaround: Hardcode dimensions due to ex_termbox issue ---
     height_val = 30
-    Logger.warning("[RuntimeDebug.handle_info(:render)] Using HARDCODED dimensions: #{width}x#{height_val}") # <<< MODULE NAME
+    # <<< MODULE NAME
+    Logger.warning(
+      "[RuntimeDebug.handle_info(:render)] Using HARDCODED dimensions: #{width}x#{height_val}"
+    )
+
     # --- End Workaround ---\
 
     dims = %{x: 0, y: 0, width: width, height: height_val}
@@ -281,11 +361,19 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
     # Use dot notation for struct access and struct update syntax
     dashboard_model = state.model.dashboard_model
     grid_conf = dashboard_model.grid_config
-    updated_grid_config = %{grid_conf | parent_bounds: dims} # Use struct update syntax
+    # Use struct update syntax
+    updated_grid_config = %{grid_conf | parent_bounds: dims}
 
     # Re-associate the updated grid_config back into the model structure needed for rendering
-    updated_dashboard_model = %{dashboard_model | grid_config: updated_grid_config}
-    app_model_for_render = %{state.model | dashboard_model: updated_dashboard_model}
+    updated_dashboard_model = %{
+      dashboard_model
+      | grid_config: updated_grid_config
+    }
+
+    app_model_for_render = %{
+      state.model
+      | dashboard_model: updated_dashboard_model
+    }
 
     # {updated_grid_config, app_model_for_render} =
     #   if state.model == %{} do
@@ -306,41 +394,57 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
     # --- DEBUG: Check render condition ---
     app_module_loaded = Code.ensure_loaded?(state.app_module)
     render_exported = function_exported?(state.app_module, :render, 1)
-    Logger.debug("[RuntimeDebug DEBUG] Checking render condition: app_module=#{inspect(state.app_module)}, loaded?=#{app_module_loaded}, exported?=#{render_exported}") # <<< MODULE NAME
+    # <<< MODULE NAME
+    Logger.debug(
+      "[RuntimeDebug DEBUG] Checking render condition: app_module=#{inspect(state.app_module)}, loaded?=#{app_module_loaded}, exported?=#{render_exported}"
+    )
+
     # --- END DEBUG ---\
 
     # Render the application view using the UPDATED application's state
+    # Check for render/1 again
     view_elements =
-      # Check for render/1 again
-      if Code.ensure_loaded?(state.app_module) and function_exported?(state.app_module, :render, 1) do
+      if Code.ensure_loaded?(state.app_module) and
+           function_exported?(state.app_module, :render, 1) do
         # Call render/1 with the props map
         state.app_module.render(%{
           model: app_model_for_render,
           grid_config: updated_grid_config
         })
       else
-        Logger.error("[RuntimeDebug] #{inspect state.app_module} does not export render/1. Rendering empty list.")
+        Logger.error(
+          "[RuntimeDebug] #{inspect(state.app_module)} does not export render/1. Rendering empty list."
+        )
+
         []
       end
 
-    {new_cells, _plugin_commands_render} = render_view_to_cells(view_elements, dims)
+    {new_cells, _plugin_commands_render} =
+      render_view_to_cells(view_elements, dims)
 
     # === Process cells through plugins ===
     Logger.debug(
-      "[RuntimeDebug.handle_info(:render)] Processing #{length(new_cells)} cells through PluginManager..." # <<< MODULE NAME
+      # <<< MODULE NAME
+      "[RuntimeDebug.handle_info(:render)] Processing #{length(new_cells)} cells through PluginManager..."
     )
 
     Logger.debug(
-      ~s|[RuntimeDebug PRE] ImagePlugin state: #{inspect(Map.get(state.plugin_manager.plugins, "image"))}| # <<< MODULE NAME - Using ~s sigil
+      # <<< MODULE NAME - Using ~s sigil
+      ~s|[RuntimeDebug PRE] ImagePlugin state: #{inspect(Map.get(state.plugin_manager.plugins, "image"))}|
     )
 
     case PluginManager.handle_cells(state.plugin_manager, new_cells, state) do
       {:ok, updated_manager, final_cells, plugin_commands} ->
         changes = ScreenBuffer.diff(state.cell_buffer, final_cells)
-        Logger.debug("[RuntimeDebug.handle_info(:render)] Calculated #{length(changes)} cell changes to apply.") # <<< MODULE NAME
+        # <<< MODULE NAME
+        Logger.debug(
+          "[RuntimeDebug.handle_info(:render)] Calculated #{length(changes)} cell changes to apply."
+        )
 
         # --- Create new buffer with correct dimensions BEFORE updating ---
-        new_buffer = ScreenBuffer.new(width, height_val) |> ScreenBuffer.update(changes)
+        new_buffer =
+          ScreenBuffer.new(width, height_val) |> ScreenBuffer.update(changes)
+
         # new_buffer = ScreenBuffer.update(state.cell_buffer, changes) # OLD
 
         Enum.each(changes, fn {x, y, cell_map} ->
@@ -348,10 +452,14 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
           style_map = Map.get(cell_map, :style, %{})
           fg = Map.get(style_map, :foreground, 7)
           bg = Map.get(style_map, :background, 0)
+
           if is_integer(char_code) do
             ExTermbox.Bindings.change_cell(x, y, char_code, fg, bg)
           else
-            Logger.warning("[RuntimeDebug] Skipping invalid char_code in change_cell: #{inspect(char_code)} at (#{x},#{y})") # <<< MODULE NAME
+            # <<< MODULE NAME
+            Logger.warning(
+              "[RuntimeDebug] Skipping invalid char_code in change_cell: #{inspect(char_code)} at (#{x},#{y})"
+            )
           end
         end)
 
@@ -364,20 +472,30 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
           | cell_buffer: new_buffer,
             last_rendered_cells: final_cells,
             plugin_manager: updated_manager,
-            width: width, # <<< STORE ACTUAL WIDTH
-            height: height_val # <<< STORE ACTUAL HEIGHT (workaround)
+            # <<< STORE ACTUAL WIDTH
+            width: width,
+            # <<< STORE ACTUAL HEIGHT (workaround)
+            height: height_val
         }
 
-        Logger.debug("[RuntimeDebug.handle_info(:render)] Finished render cycle.") # <<< MODULE NAME
+        # <<< MODULE NAME
+        Logger.debug(
+          "[RuntimeDebug.handle_info(:render)] Finished render cycle."
+        )
+
         # Schedule the next render based on FPS
         schedule_render(new_state)
         {:noreply, new_state}
 
-      {:error, reason} -> # Added error handling based on original code structure
+      # Added error handling based on original code structure
+      {:error, reason} ->
         Logger.error(
-          "[RuntimeDebug.handle_info(:render)] Error processing cells through plugins: #{inspect(reason)}" # <<< MODULE NAME
+          # <<< MODULE NAME
+          "[RuntimeDebug.handle_info(:render)] Error processing cells through plugins: #{inspect(reason)}"
         )
-        schedule_render(state) # Still schedule next render even on error
+
+        # Still schedule next render even on error
+        schedule_render(state)
         {:noreply, state}
     end
   end
@@ -392,15 +510,22 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
         event_tuple = convert_raw_event(type_int, mod, key, ch, w, h, x, y)
 
         case event_tuple do
-          {:mouse, _, _, _, _} = mouse_event -> p_handle_mouse_event(mouse_event, state)
-          {:key, _, _} = key_event -> p_handle_key_event(key_event, state)
-          other_event -> handle_other_event(other_event, state)
+          {:mouse, _, _, _, _} = mouse_event ->
+            p_handle_mouse_event(mouse_event, state)
+
+          {:key, _, _} = key_event ->
+            p_handle_key_event(key_event, state)
+
+          other_event ->
+            handle_other_event(other_event, state)
         end
       rescue
         e ->
           Logger.error(
-            "[RuntimeDebug] Failed to process event tuple #{inspect(raw_event_tuple)}: #{inspect(e)}" # <<< MODULE NAME
+            # <<< MODULE NAME
+            "[RuntimeDebug] Failed to process event tuple #{inspect(raw_event_tuple)}: #{inspect(e)}"
           )
+
           {:noreply, state}
       end
     end
@@ -409,7 +534,11 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
   # Catch-all for unexpected messages
   @impl true
   def handle_info(message, state) do
-    Logger.warning("[RuntimeDebug] Received unexpected message: #{inspect(message)}") # <<< MODULE NAME
+    # <<< MODULE NAME
+    Logger.warning(
+      "[RuntimeDebug] Received unexpected message: #{inspect(message)}"
+    )
+
     {:noreply, state}
   end
 
@@ -417,26 +546,44 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
   @impl true
   def handle_continue(:after_init, state) do
-    Logger.debug("[RuntimeDebug.handle_continue(:after_init)] Received state: #{inspect(state)}") # <<< ADDED LOG
+    # <<< ADDED LOG
+    Logger.debug(
+      "[RuntimeDebug.handle_continue(:after_init)] Received state: #{inspect(state)}"
+    )
 
     # Start Termbox polling HERE
     case ExTermbox.Bindings.start_polling(self()) do
-      {:ok, _ref} -> # Match {:ok, reference} on success
-        Logger.debug("[RuntimeDebug.handle_continue] Termbox polling started successfully.")
+      # Match {:ok, reference} on success
+      {:ok, _ref} ->
+        Logger.debug(
+          "[RuntimeDebug.handle_continue] Termbox polling started successfully."
+        )
+
         # Start the timer loop for rendering ONLY if polling started successfully
-        schedule_render(state) # Schedule the first immediate render
+        # Schedule the first immediate render
+        schedule_render(state)
         # Log state before returning (should be same as received state)
-        Logger.debug("[RuntimeDebug.handle_continue(:after_init)] State before returning: #{inspect(state)}") # <<< ADDED LOG
+        # <<< ADDED LOG
+        Logger.debug(
+          "[RuntimeDebug.handle_continue(:after_init)] State before returning: #{inspect(state)}"
+        )
+
         {:noreply, state}
 
       {:error, reason} ->
-        Logger.error("[RuntimeDebug.handle_continue] Failed to start Termbox polling: #{inspect(reason)}")
+        Logger.error(
+          "[RuntimeDebug.handle_continue] Failed to start Termbox polling: #{inspect(reason)}"
+        )
+
         # Stop the GenServer if polling fails to start
         {:stop, {:shutdown, {:failed_to_start_polling, reason}}, state}
 
       # Optional: Handle unexpected return values
       other ->
-        Logger.error("[RuntimeDebug.handle_continue] Unexpected return from start_polling: #{inspect(other)}")
+        Logger.error(
+          "[RuntimeDebug.handle_continue] Unexpected return from start_polling: #{inspect(other)}"
+        )
+
         {:stop, {:shutdown, {:unexpected_polling_return, other}}, state}
     end
   end
@@ -451,39 +598,63 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
     dashboard_model = Map.get(state.model, :dashboard_model)
 
     if reason == :normal and not is_nil(dashboard_model) and
-         function_exported?(Raxol.Components.Dashboard.Dashboard, :save_layout, 1) do
-      Logger.info("[RuntimeDebug] Saving dashboard layout...") # <<< MODULE NAME
+         function_exported?(
+           Raxol.Components.Dashboard.Dashboard,
+           :save_layout,
+           1
+         ) do
+      # <<< MODULE NAME
+      Logger.info("[RuntimeDebug] Saving dashboard layout...")
       Raxol.Components.Dashboard.Dashboard.save_layout(dashboard_model.widgets)
     else
       if reason == :normal and dashboard_model do
-        Logger.warning("[RuntimeDebug] Dashboard.save_layout/1 not found, cannot save layout.") # <<< MODULE NAME
+        # <<< MODULE NAME
+        Logger.warning(
+          "[RuntimeDebug] Dashboard.save_layout/1 not found, cannot save layout."
+        )
       end
     end
 
     if Map.get(state, :termbox_initialized, false) do
-      Logger.info("[RuntimeDebug] Shutting down Termbox during termination...") # <<< MODULE NAME
+      # <<< MODULE NAME
+      Logger.info("[RuntimeDebug] Shutting down Termbox during termination...")
       # Call shutdown() BEFORE stop_polling()
-      Logger.info("[RuntimeDebug.terminate] >>> Calling ExTermbox.Bindings.shutdown()...")
-      ExTermbox.Bindings.shutdown() # <<< RESTORED
-      Logger.info("[RuntimeDebug.terminate] <<< ExTermbox.Bindings.shutdown() returned.") # <<< RESTORED
-      Logger.info("[RuntimeDebug.terminate] >>> Calling ExTermbox.Bindings.stop_polling()...")
+      Logger.info(
+        "[RuntimeDebug.terminate] >>> Calling ExTermbox.Bindings.shutdown()..."
+      )
+
+      # <<< RESTORED
+      ExTermbox.Bindings.shutdown()
+      # <<< RESTORED
+      Logger.info(
+        "[RuntimeDebug.terminate] <<< ExTermbox.Bindings.shutdown() returned."
+      )
+
+      Logger.info(
+        "[RuntimeDebug.terminate] >>> Calling ExTermbox.Bindings.stop_polling()..."
+      )
+
       # ExTermbox.Bindings.stop_polling() # <<< REMAINS COMMENTED OUT
       # Logger.info("[RuntimeDebug.terminate] <<< ExTermbox.Bindings.stop_polling() returned.") # <<< REMAINS COMMENTED OUT
-      Logger.info("[RuntimeDebug] Termbox shut down during termination.") # <<< RESTORED ORIGINAL LOG
+      # <<< RESTORED ORIGINAL LOG
+      Logger.info("[RuntimeDebug] Termbox shut down during termination.")
     else
       Logger.info(
-        "[RuntimeDebug] Skipping Termbox cleanup during termination (not initialized)." # <<< MODULE NAME
+        # <<< MODULE NAME
+        "[RuntimeDebug] Skipping Termbox cleanup during termination (not initialized)."
       )
     end
 
-    Logger.info("[RuntimeDebug.terminate] END. Returning :ok.") # <<< ADDED LOG AT END
+    # <<< ADDED LOG AT END
+    Logger.info("[RuntimeDebug.terminate] END. Returning :ok.")
     :ok
   end
 
   # === Core Rendering Logic ===
 
   def render(state) do
-    Logger.debug("[RuntimeDebug.render] Rendering frame...") # <<< ADDED LOG + MODULE NAME
+    # <<< ADDED LOG + MODULE NAME
+    Logger.debug("[RuntimeDebug.render] Rendering frame...")
     # ... Placeholder logic ...
     {:noreply, state}
   end
@@ -492,27 +663,44 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
   defp convert_raw_event(type_int, mod, key, ch, w, h, x, y) do
     case type_int do
-      1 -> {:key, mod, if(ch > 0, do: ch, else: key)}
-      2 -> {:resize, w, h}
+      1 ->
+        {:key, mod, if(ch > 0, do: ch, else: key)}
+
+      2 ->
+        {:resize, w, h}
+
       3 ->
         modifiers = convert_mouse_modifiers(mod)
         button = convert_mouse_button(key)
         {:mouse, button, x, y, modifiers}
-      _ -> {:unknown, {type_int, mod, key, ch, w, h, x, y}}
+
+      _ ->
+        {:unknown, {type_int, mod, key, ch, w, h, x, y}}
     end
   end
 
   defp convert_mouse_modifiers(mod) do
-     # Simplified based on common usage, adjust if more combinations needed
+    # Simplified based on common usage, adjust if more combinations needed
     cond do
-      mod == 0 -> []
-      mod == 1 -> [:alt]
-      mod == 2 -> [:ctrl]
-      mod == 3 -> [:alt, :ctrl]
-      mod == 4 -> [:shift]
+      mod == 0 ->
+        []
+
+      mod == 1 ->
+        [:alt]
+
+      mod == 2 ->
+        [:ctrl]
+
+      mod == 3 ->
+        [:alt, :ctrl]
+
+      mod == 4 ->
+        [:shift]
+
       # Add more combinations if necessary (e.g., 5 -> [:alt, :shift])
       true ->
-        Logger.warning("[RuntimeDebug] Unknown mouse modifier integer: #{mod}") # <<< MODULE NAME
+        # <<< MODULE NAME
+        Logger.warning("[RuntimeDebug] Unknown mouse modifier integer: #{mod}")
         [:unknown]
     end
   end
@@ -530,21 +718,30 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
   defp handle_other_event(other_event, state) do
     case handle_event(other_event, state) do
-      {:continue, updated_state} -> {:noreply, updated_state}
+      {:continue, updated_state} ->
+        {:noreply, updated_state}
+
       {:stop, updated_state} ->
         cleanup(updated_state)
         {:stop, :normal, updated_state}
-      other -> # Added case to handle unexpected returns from handle_event
-        Logger.error("[RuntimeDebug] Unexpected return from handle_event: #{inspect other}") # <<< MODULE NAME
-        {:noreply, state} # Default to continuing
+
+      # Added case to handle unexpected returns from handle_event
+      other ->
+        # <<< MODULE NAME
+        Logger.error(
+          "[RuntimeDebug] Unexpected return from handle_event: #{inspect(other)}"
+        )
+
+        # Default to continuing
+        {:noreply, state}
     end
   end
-
 
   defp get_app_name(app_module) when is_atom(app_module) do
     Module.split(app_module) |> List.last() |> String.to_atom()
   rescue
-    _ -> :default # Keep default name consistent
+    # Keep default name consistent
+    _ -> :default
   end
 
   defp lookup_app(app_name) do
@@ -556,43 +753,74 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
   end
 
   defp update_model(app_module, model, msg) do
-    if Code.ensure_loaded?(app_module) and function_exported?(app_module, :update, 2) do
+    if Code.ensure_loaded?(app_module) and
+         function_exported?(app_module, :update, 2) do
       app_module.update(model, msg)
     else
-      model # Return original model if update/2 not found
+      # Return original model if update/2 not found
+      model
     end
   end
 
   defp is_quit_key?(%{type: :key, modifiers: mods, key: key}, quit_keys) do
-    Logger.debug("[RuntimeDebug.is_quit_key?] ENTER. Event: #{inspect(%{type: :key, modifiers: mods, key: key})}, Quit Keys: #{inspect(quit_keys)}") # <<< ADDED LOG
+    # <<< ADDED LOG
+    Logger.debug(
+      "[RuntimeDebug.is_quit_key?] ENTER. Event: #{inspect(%{type: :key, modifiers: mods, key: key})}, Quit Keys: #{inspect(quit_keys)}"
+    )
+
     Enum.any?(quit_keys, fn quit_key ->
-      Logger.debug("[RuntimeDebug.is_quit_key?] Checking event key '#{inspect(key)}' (mods: #{inspect(mods)}) against quit key '#{inspect(quit_key)}'") # <<< MODULE NAME
+      # <<< MODULE NAME
+      Logger.debug(
+        "[RuntimeDebug.is_quit_key?] Checking event key '#{inspect(key)}' (mods: #{inspect(mods)}) against quit key '#{inspect(quit_key)}'"
+      )
+
       match_result =
         case quit_key do
-          :ctrl_c -> :ctrl in mods && key == ?c
-          {:ctrl, char} -> :ctrl in mods && key == char
-          {:alt, char} -> :alt in mods && key == char
-          :q -> mods == [] && key == ?q
-          simple_key when is_atom(simple_key) or is_integer(simple_key) -> mods == [] && key == simple_key
-          _ -> false
+          :ctrl_c ->
+            :ctrl in mods && key == ?c
+
+          {:ctrl, char} ->
+            :ctrl in mods && key == char
+
+          {:alt, char} ->
+            :alt in mods && key == char
+
+          :q ->
+            mods == [] && key == ?q
+
+          simple_key when is_atom(simple_key) or is_integer(simple_key) ->
+            mods == [] && key == simple_key
+
+          _ ->
+            false
         end
-      Logger.debug("[RuntimeDebug.is_quit_key?] Match result for '#{inspect(quit_key)}': #{match_result}") # <<< MODULE NAME
+
+      # <<< MODULE NAME
+      Logger.debug(
+        "[RuntimeDebug.is_quit_key?] Match result for '#{inspect(quit_key)}': #{match_result}"
+      )
+
       match_result
     end)
   end
+
   defp is_quit_key?(_event, _quit_keys), do: false
 
   defp cleanup(state) do
     if Map.get(state, :termbox_initialized, false) do
       ExTermbox.Bindings.shutdown()
     end
+
     app_name = get_app_name(state.app_module)
     AppRegistry.unregister(app_name)
-    Logger.debug("[RuntimeDebug] Raxol Runtime for #{app_name} cleaned up.") # <<< MODULE NAME
+    # <<< MODULE NAME
+    Logger.debug("[RuntimeDebug] Raxol Runtime for #{app_name} cleaned up.")
   end
 
   defp p_handle_mouse_event({:mouse, _, _, _, _} = event_tuple, state) do
-    converted_event = Event.convert(event_tuple) # Assuming Event.convert exists and works
+    # Assuming Event.convert exists and works
+    converted_event = Event.convert(event_tuple)
+
     case PluginManager.handle_mouse_event(
            state.plugin_manager,
            converted_event,
@@ -600,25 +828,51 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
          ) do
       {:ok, updated_manager, :propagate} ->
         new_state = %{state | plugin_manager: updated_manager}
+
         case handle_event(event_tuple, new_state) do
-          {:continue, final_state} -> {:noreply, final_state}
-          {:stop, _reason, final_state} -> {:stop, :normal, final_state} # Adjusted stop tuple
-          other -> Logger.error("[RuntimeDebug] Unexpected return from app handle_event: #{inspect other}"); {:noreply, state} # <<< MODULE NAME
+          {:continue, final_state} ->
+            {:noreply, final_state}
+
+          # Adjusted stop tuple
+          {:stop, _reason, final_state} ->
+            {:stop, :normal, final_state}
+
+          # <<< MODULE NAME
+          other ->
+            Logger.error(
+              "[RuntimeDebug] Unexpected return from app handle_event: #{inspect(other)}"
+            )
+
+            {:noreply, state}
         end
+
       {:ok, updated_manager, :halt} ->
         {:noreply, %{state | plugin_manager: updated_manager}}
+
       {:error, reason} ->
         Logger.error(
-          "[RuntimeDebug] Error during plugin mouse handling: #{inspect(reason)}. Propagating." # <<< MODULE NAME
+          # <<< MODULE NAME
+          "[RuntimeDebug] Error during plugin mouse handling: #{inspect(reason)}. Propagating."
         )
+
         case handle_event(event_tuple, state) do
-          {:continue, final_state} -> {:noreply, final_state}
-          {:stop, _reason, final_state} -> {:stop, :normal, final_state} # Adjusted stop tuple
-          other -> Logger.error("[RuntimeDebug] Unexpected return from app handle_event: #{inspect other}"); {:noreply, state} # <<< MODULE NAME
+          {:continue, final_state} ->
+            {:noreply, final_state}
+
+          # Adjusted stop tuple
+          {:stop, _reason, final_state} ->
+            {:stop, :normal, final_state}
+
+          # <<< MODULE NAME
+          other ->
+            Logger.error(
+              "[RuntimeDebug] Unexpected return from app handle_event: #{inspect(other)}"
+            )
+
+            {:noreply, state}
         end
     end
   end
-
 
   defp p_handle_key_event({:key, _, _} = event_tuple, state) do
     converted_event = Event.convert(event_tuple)
@@ -626,11 +880,18 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
     # Simplified initial Ctrl+C handling check (assuming state has `initial_ctrl_c_ignored`)
     if is_ctrl_c and not Map.get(state, :initial_ctrl_c_ignored, false) do
-       Logger.debug("[RuntimeDebug.p_handle_key_event] Ignoring initial Ctrl+C event.") # <<< MODULE NAME
-       {:noreply, Map.put(state, :initial_ctrl_c_ignored, true)}
+      # <<< MODULE NAME
+      Logger.debug(
+        "[RuntimeDebug.p_handle_key_event] Ignoring initial Ctrl+C event."
+      )
+
+      {:noreply, Map.put(state, :initial_ctrl_c_ignored, true)}
     else
       quit_triggered = is_quit_key?(converted_event, state.quit_keys)
-      Logger.debug("[RuntimeDebug.p_handle_key_event] is_quit_key? returned: #{quit_triggered}") # <<< MODULE NAME
+      # <<< MODULE NAME
+      Logger.debug(
+        "[RuntimeDebug.p_handle_key_event] is_quit_key? returned: #{quit_triggered}"
+      )
 
       case PluginManager.handle_key_event(
              state.plugin_manager,
@@ -641,64 +902,141 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
           new_state = %{state | plugin_manager: updated_manager}
           state_after_commands = process_plugin_commands(new_state, commands)
 
+          # :halt
           if propagation_state == :propagate do
             if quit_triggered do
-              Logger.debug("[RuntimeDebug.p_handle_key_event] Quit key detected after plugins.") # <<< MODULE NAME
-              Logger.debug("[RuntimeDebug.p_handle_key_event] TRIGGERING STOP (after plugins, propagate)") # <<< ADDED LOG
+              # <<< MODULE NAME
+              Logger.debug(
+                "[RuntimeDebug.p_handle_key_event] Quit key detected after plugins."
+              )
+
+              # <<< ADDED LOG
+              Logger.debug(
+                "[RuntimeDebug.p_handle_key_event] TRIGGERING STOP (after plugins, propagate)"
+              )
+
               cleanup(state_after_commands)
               {:stop, :normal, state_after_commands}
             else
               case handle_event(event_tuple, state_after_commands) do
-                {:continue, final_state} -> {:noreply, final_state}
-                {:stop, _reason, final_state} -> cleanup(final_state); {:stop, :normal, final_state} # Adjusted stop tuple + cleanup
-                other -> Logger.error("[RuntimeDebug] Unexpected return from app handle_event: #{inspect other}"); {:noreply, state_after_commands} # <<< MODULE NAME
+                {:continue, final_state} ->
+                  {:noreply, final_state}
+
+                # Adjusted stop tuple + cleanup
+                {:stop, _reason, final_state} ->
+                  cleanup(final_state)
+                  {:stop, :normal, final_state}
+
+                # <<< MODULE NAME
+                other ->
+                  Logger.error(
+                    "[RuntimeDebug] Unexpected return from app handle_event: #{inspect(other)}"
+                  )
+
+                  {:noreply, state_after_commands}
               end
             end
-          else # :halt
-            Logger.debug("[RuntimeDebug.p_handle_key_event] Plugin halted event propagation.") # <<< MODULE NAME
+          else
+            # <<< MODULE NAME
+            Logger.debug(
+              "[RuntimeDebug.p_handle_key_event] Plugin halted event propagation."
+            )
+
             {:noreply, state_after_commands}
           end
+
         {:error, reason} ->
-           Logger.error("[RuntimeDebug] Error during plugin key event handling: #{inspect(reason)}. Propagating.") # <<< MODULE NAME
-           if quit_triggered do
-              Logger.debug("[RuntimeDebug.p_handle_key_event] Quit key detected after plugin error.") # <<< MODULE NAME
-              Logger.debug("[RuntimeDebug.p_handle_key_event] TRIGGERING STOP (after plugin error)") # <<< ADDED LOG
-              cleanup(state)
-              {:stop, :normal, state}
-           else
-              case handle_event(event_tuple, state) do
-                {:continue, final_state} -> {:noreply, final_state}
-                {:stop, _reason, final_state} -> cleanup(final_state); {:stop, :normal, final_state} # Adjusted stop tuple + cleanup
-                other -> Logger.error("[RuntimeDebug] Unexpected return from app handle_event: #{inspect other}"); {:noreply, state} # <<< MODULE NAME
-              end
-           end
+          # <<< MODULE NAME
+          Logger.error(
+            "[RuntimeDebug] Error during plugin key event handling: #{inspect(reason)}. Propagating."
+          )
+
+          if quit_triggered do
+            # <<< MODULE NAME
+            Logger.debug(
+              "[RuntimeDebug.p_handle_key_event] Quit key detected after plugin error."
+            )
+
+            # <<< ADDED LOG
+            Logger.debug(
+              "[RuntimeDebug.p_handle_key_event] TRIGGERING STOP (after plugin error)"
+            )
+
+            cleanup(state)
+            {:stop, :normal, state}
+          else
+            case handle_event(event_tuple, state) do
+              {:continue, final_state} ->
+                {:noreply, final_state}
+
+              # Adjusted stop tuple + cleanup
+              {:stop, _reason, final_state} ->
+                cleanup(final_state)
+                {:stop, :normal, final_state}
+
+              # <<< MODULE NAME
+              other ->
+                Logger.error(
+                  "[RuntimeDebug] Unexpected return from app handle_event: #{inspect(other)}"
+                )
+
+                {:noreply, state}
+            end
+          end
       end
     end
   end
 
   defp handle_event(event_tuple, state) do
-    app_event = Event.convert(event_tuple) # Assuming Event.convert works
-    if Code.ensure_loaded?(state.app_module) and function_exported?(state.app_module, :update, 2) do
+    # Assuming Event.convert works
+    app_event = Event.convert(event_tuple)
+
+    if Code.ensure_loaded?(state.app_module) and
+         function_exported?(state.app_module, :update, 2) do
       case state.app_module.update(app_event, state.model) do
-        new_model when is_map(new_model) -> {:continue, %{state | model: new_model}}
+        new_model when is_map(new_model) ->
+          {:continue, %{state | model: new_model}}
+
         # Adjusted expected stop tuples based on previous code context
-        {:stop, :normal, new_model} -> {:stop, :normal, %{state | model: new_model}}
-        {:stop, reason, new_model} -> {:stop, reason, %{state | model: new_model}}
+        {:stop, :normal, new_model} ->
+          {:stop, :normal, %{state | model: new_model}}
+
+        {:stop, reason, new_model} ->
+          {:stop, reason, %{state | model: new_model}}
+
         other ->
-          Logger.error("[RuntimeDebug] Invalid return from #{state.app_module}.update/2: #{inspect(other)}.") # <<< MODULE NAME
+          # <<< MODULE NAME
+          Logger.error(
+            "[RuntimeDebug] Invalid return from #{state.app_module}.update/2: #{inspect(other)}."
+          )
+
           {:continue, state}
       end
     else
-      Logger.warning("[RuntimeDebug] Application #{state.app_module} does not implement update/2.") # <<< MODULE NAME
+      # <<< MODULE NAME
+      Logger.warning(
+        "[RuntimeDebug] Application #{state.app_module} does not implement update/2."
+      )
+
       {:continue, state}
     end
   end
 
   defp send_plugin_commands(commands) when is_list(commands) do
-    Logger.debug("[RuntimeDebug.send_plugin_commands] Sending commands: #{inspect commands}") # <<< MODULE NAME
+    # <<< MODULE NAME
+    Logger.debug(
+      "[RuntimeDebug.send_plugin_commands] Sending commands: #{inspect(commands)}"
+    )
+
     Enum.each(commands, fn
-      {:direct_output, content} when is_binary(content) -> IO.write(content)
-      other -> Logger.warning("[RuntimeDebug] Unhandled plugin command: #{inspect other}") # <<< MODULE NAME
+      {:direct_output, content} when is_binary(content) ->
+        IO.write(content)
+
+      # <<< MODULE NAME
+      other ->
+        Logger.warning(
+          "[RuntimeDebug] Unhandled plugin command: #{inspect(other)}"
+        )
     end)
   end
 
@@ -706,11 +1044,24 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
     Enum.reduce(commands, state, fn command, acc_state ->
       case command do
         {:paste, content} ->
-          Logger.debug("[RuntimeDebug] Processing :paste command.") # <<< MODULE NAME
-          updated_model = update_model(acc_state.app_module, acc_state.model, {:paste_text, content})
+          # <<< MODULE NAME
+          Logger.debug("[RuntimeDebug] Processing :paste command.")
+
+          updated_model =
+            update_model(
+              acc_state.app_module,
+              acc_state.model,
+              {:paste_text, content}
+            )
+
           %{acc_state | model: updated_model}
+
         _other ->
-          Logger.warning("[RuntimeDebug] Unknown plugin command: #{inspect command}") # <<< MODULE NAME
+          # <<< MODULE NAME
+          Logger.warning(
+            "[RuntimeDebug] Unknown plugin command: #{inspect(command)}"
+          )
+
           acc_state
       end
     end)
@@ -867,6 +1218,7 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
             Logger.debug(
               "[RuntimeDebug.process_view_element] Matched :image widget inside :box. Incoming component_opts: #{inspect(component_opts)}"
             )
+
             placeholder_cell = %{
               type: :placeholder,
               value: :chart,
@@ -874,9 +1226,11 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
               opts: component_opts,
               bounds: element_bounds
             }
+
             Logger.debug(
               "[RuntimeDebug.process_view_element] Created :image placeholder cell from :box: #{inspect(placeholder_cell)}"
             )
+
             updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
             # Use the bounds from the placeholder config for the next y
             {element_bounds.y + element_bounds.height, updated_acc}
@@ -894,6 +1248,7 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
               opts: component_opts,
               bounds: element_bounds
             }
+
             updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
             {element_bounds.y, updated_acc}
 
@@ -905,15 +1260,18 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
             Logger.debug(
               "[RuntimeDebug.process_view_element] Matched :image widget inside :box. Incoming component_opts: #{inspect(component_opts)}"
             )
+
             placeholder_cell = %{
               type: :placeholder,
               value: :image,
               opts: component_opts,
               bounds: element_bounds
             }
+
             Logger.debug(
               "[RuntimeDebug.process_view_element] Created :image placeholder cell from :box: #{inspect(placeholder_cell)}"
             )
+
             updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
             {element_bounds.y, updated_acc}
 
@@ -931,14 +1289,16 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
               case Keyword.get(opts, :width) do
                 :fill -> bounds.width - box_rel_x
                 val when is_integer(val) -> val
-                _ -> bounds.width - box_rel_x # Default to fill
+                # Default to fill
+                _ -> bounds.width - box_rel_x
               end
 
             box_height =
               case Keyword.get(opts, :height) do
                 :fill -> bounds.height - box_rel_y
                 val when is_integer(val) -> val
-                _ -> bounds.height - box_rel_y # Default to fill
+                # Default to fill
+                _ -> bounds.height - box_rel_y
               end
 
             # Clip the box to the parent bounds
@@ -972,7 +1332,10 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
                       child_bounds
                       | y: current_y,
                         height:
-                          max(0, child_bounds.height - (current_y - child_bounds.y))
+                          max(
+                            0,
+                            child_bounds.height - (current_y - child_bounds.y)
+                          )
                     }
 
                     # Pass inner acc
@@ -1006,16 +1369,22 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
             }
 
             next_y_after_box =
-              min(bounds.y + bounds.height, child_bounds.y + child_bounds.height)
+              min(
+                bounds.y + bounds.height,
+                child_bounds.y + child_bounds.height
+              )
 
             {next_y_after_box, final_acc}
-        end # End case Map.get(opts, :widget_config)
+        end
+
+      # End case Map.get(opts, :widget_config)
 
       # Handle :placeholder (Should not be generated by view, but maybe by plugin?)
       %{type: :placeholder} = placeholder ->
         Logger.debug(
           "[RuntimeDebug.process_view_element] Passing through existing placeholder: #{inspect(placeholder)}"
         )
+
         updated_acc = %{acc | cells: acc.cells ++ [placeholder]}
         {bounds.y, updated_acc}
 
@@ -1024,6 +1393,7 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
         Logger.warning(
           "[RuntimeDebug.process_view_element] Unhandled view element type: #{inspect(element)}"
         )
+
         {bounds.y, acc}
 
       # Handle strings directly (assuming they are meant as simple text)
@@ -1031,6 +1401,7 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
         Logger.debug(
           "[RuntimeDebug.process_view_element] Handling raw string: \"#{element}\""
         )
+
         {next_y, text_cells} = p_render_text_content(element, bounds)
         {next_y, %{acc | cells: acc.cells ++ text_cells}}
 
@@ -1039,6 +1410,7 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
         Logger.warning(
           "[RuntimeDebug.process_view_element] Encountered unexpected element type: #{inspect(element)}"
         )
+
         {bounds.y, acc}
     end
   end
@@ -1153,12 +1525,14 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
       if current_col >= bounds.x and current_col < bounds.x + bounds.width do
         if bounds.y < bounds.y + bounds.height do
           [char_code | _] = String.to_charlist(grapheme)
+
           cell_map = %{
             char: char_code,
             fg: 7,
             bg: 0,
             style: base_style
           }
+
           cell_tuple = {current_col, bounds.y, cell_map}
           {[cell_tuple | inner_cells_acc], current_col + 1}
         else
@@ -1176,7 +1550,8 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
 
   # Helper to schedule the next render frame
   defp schedule_render(state) do
-    Logger.debug("[RuntimeDebug.schedule_render] Scheduling :render message.") # <<< ADDED LOG
+    # <<< ADDED LOG
+    Logger.debug("[RuntimeDebug.schedule_render] Scheduling :render message.")
     render_interval_ms = round(1000 / state.fps)
     Process.send_after(self(), :render, render_interval_ms)
   end
@@ -1229,10 +1604,12 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
     reductions = Keyword.get(process_info, :reductions, 0)
     message_queue_len = Keyword.get(process_info, :message_queue_len, 0)
 
-    Logger.debug("SystemStats [#{label}]: " <>
-      "Memory: #{memory} bytes, " <>
-      "Reductions: #{reductions}, " <>
-      "Message Queue: #{message_queue_len}")
+    Logger.debug(
+      "SystemStats [#{label}]: " <>
+        "Memory: #{memory} bytes, " <>
+        "Reductions: #{reductions}, " <>
+        "Message Queue: #{message_queue_len}"
+    )
   end
 
   @doc """
@@ -1248,9 +1625,9 @@ defmodule Raxol.RuntimeDebug do # <<< CHANGED MODULE NAME
   """
   def start_timer(operation) do
     start_time = System.monotonic_time()
+
     fn ->
       log_performance(operation, start_time)
     end
   end
-
 end

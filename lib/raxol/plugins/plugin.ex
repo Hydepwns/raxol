@@ -96,9 +96,14 @@ defmodule Raxol.Plugins.Plugin do
     The original cell is kept. `updated_plugin_state` is stored.
     Allows other plugins to potentially process the same cell.
   """
-  @callback handle_cells(cell :: map(), emulator_state :: map(), plugin_state :: t()) ::
-              {:ok, updated_plugin_state :: t(), replacement_cells :: list(), commands :: [binary()]} |
-              {:cont, updated_plugin_state :: t()}
+  @callback handle_cells(
+              cell :: map(),
+              emulator_state :: map(),
+              plugin_state :: t()
+            ) ::
+              {:ok, updated_plugin_state :: t(), replacement_cells :: list(),
+               commands :: [binary()]}
+              | {:cont, updated_plugin_state :: t()}
 
   @optional_callbacks handle_input: 2,
                       handle_output: 2,

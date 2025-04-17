@@ -102,33 +102,54 @@ defmodule Raxol.Plugins.ImagePlugin do
 
   @impl Plugin
   def handle_cells(placeholder_cell, _emulator_state, %__MODULE__{} = plugin) do
-    Logger.debug("[ImagePlugin.handle_cells START] Received placeholder: #{inspect placeholder_cell}, plugin state: #{inspect plugin}")
+    Logger.debug(
+      "[ImagePlugin.handle_cells START] Received placeholder: #{inspect(placeholder_cell)}, plugin state: #{inspect(plugin)}"
+    )
+
     case placeholder_cell do
       %{type: :placeholder, value: :image} ->
-        Logger.debug("[ImagePlugin.handle_cells] Matched :image placeholder. sequence_just_generated: #{inspect plugin.sequence_just_generated}")
+        Logger.debug(
+          "[ImagePlugin.handle_cells] Matched :image placeholder. sequence_just_generated: #{inspect(plugin.sequence_just_generated)}"
+        )
+
         # If we just generated the sequence in the *last* call for *this same placeholder*,
         # reset the flag and return {:cont, state} to avoid re-generating/re-sending.
         if plugin.sequence_just_generated do
-          Logger.debug("[ImagePlugin.handle_cells] sequence_just_generated=true. Resetting flag and declining.")
+          Logger.debug(
+            "[ImagePlugin.handle_cells] sequence_just_generated=true. Resetting flag and declining."
+          )
+
           {:cont, %{plugin | sequence_just_generated: false}}
         else
           # Attempt to generate the sequence
-          Logger.debug("[ImagePlugin.handle_cells] sequence_just_generated=false. BEFORE generate_sequence_from_path for path: assets/static/images/logo.png")
+          Logger.debug(
+            "[ImagePlugin.handle_cells] sequence_just_generated=false. BEFORE generate_sequence_from_path for path: assets/static/images/logo.png"
+          )
+
           case generate_sequence_from_path("assets/static/images/logo.png") do
             {:ok, sequence} ->
-              Logger.debug("[ImagePlugin.handle_cells] Sequence generated successfully.")
+              Logger.debug(
+                "[ImagePlugin.handle_cells] Sequence generated successfully."
+              )
+
               # Return {:ok, state_with_flag_set, cells_to_render, command_to_send}
               # Cells to render is empty because the command handles the display.
               # Mark sequence_just_generated as true for the *next* call.
               # Wrap command in a list as expected by PluginManager
-              {:ok, %{plugin | sequence_just_generated: true}, [], [{:direct_output, sequence}]}
+              {:ok, %{plugin | sequence_just_generated: true}, [],
+               [{:direct_output, sequence}]}
 
             {:error, reason} ->
-              Logger.error("[ImagePlugin.handle_cells] Failed to generate sequence for assets/static/images/logo.png: #{inspect reason}")
+              Logger.error(
+                "[ImagePlugin.handle_cells] Failed to generate sequence for assets/static/images/logo.png: #{inspect(reason)}"
+              )
+
               # Failed to generate, decline to handle the placeholder
-              {:cont, plugin} # Return original state
+              # Return original state
+              {:cont, plugin}
           end
         end
+
       _ ->
         # Not an image placeholder, decline
         {:cont, plugin}

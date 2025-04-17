@@ -203,12 +203,12 @@ defmodule Raxol.Components.Selection.ListTest do
 
     test "handles scroll events", %{state: state} do
       # Scroll up
-      event = Event.scroll_event(:up, -1, {0,0})
+      event = Event.scroll_event(:up, -1, {0, 0})
       {new_state, _} = List.handle_event(event, %{state | scroll_offset: 1})
       assert new_state.scroll_offset == 0
 
       # Scroll down
-      event = Event.scroll_event(:down, 1, {0,0})
+      event = Event.scroll_event(:down, 1, {0, 0})
       {new_state, _} = List.handle_event(event, state)
       assert new_state.scroll_offset == 1
     end

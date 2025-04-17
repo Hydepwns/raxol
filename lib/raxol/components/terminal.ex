@@ -114,11 +114,14 @@ defmodule Raxol.Components.Terminal do
   def render(state) do
     # Generate the DSL map structure for the terminal
     dsl_result = %{
-      type: :terminal, # Special type handled by Runtime
-      content: state.buffer_content, # Pass raw content
+      # Special type handled by Runtime
+      type: :terminal,
+      # Pass raw content
+      content: state.buffer_content,
       dimensions: {state.width, state.height},
       cursor: state.cursor,
-      style: state.style # Pass base style
+      # Pass base style
+      style: state.style
     }
 
     # Convert to Element struct

@@ -69,10 +69,18 @@ defmodule Raxol.Components.Progress.ProgressBar do
     # Determine bar characters based on style
     {filled_char, empty_char} =
       case state.style.type do
-        :block -> {"█", "░"}
-        :ascii -> {"#", "-"}
-        :custom -> {state.style.custom_chars.filled, state.style.custom_chars.empty}
-        _ -> {"█", "░"} # Default to block
+        :block ->
+          {"█", "░"}
+
+        :ascii ->
+          {"#", "-"}
+
+        :custom ->
+          {state.style.custom_chars.filled, state.style.custom_chars.empty}
+
+        # Default to block
+        _ ->
+          {"█", "░"}
       end
 
     # Calculate filled/empty segments
@@ -81,15 +89,18 @@ defmodule Raxol.Components.Progress.ProgressBar do
     empty_width = state.width - filled_width
 
     # Build the bar text
-    bar_text = String.duplicate(filled_char, filled_width) <> String.duplicate(empty_char, empty_width)
+    bar_text =
+      String.duplicate(filled_char, filled_width) <>
+        String.duplicate(empty_char, empty_width)
 
     # Determine colors
-    bar_fg = Map.get(state.style, :fg, :green) # Example default
+    # Example default
+    bar_fg = Map.get(state.style, :fg, :green)
     bar_bg = Map.get(state.style, :bg, nil)
 
     # Generate the DSL map AND convert to element in one step
+    # Layout: [Label] [Progress Bar] [Percentage Text]
     dsl_result =
-      # Layout: [Label] [Progress Bar] [Percentage Text]
       View.column do
         label_element =
           if state.label do
@@ -103,7 +114,10 @@ defmodule Raxol.Components.Progress.ProgressBar do
             percentage_element =
               if state.show_percentage do
                 percentage_text = format_percentage(state.value, state.total)
-                View.text(" #{percentage_text}", style: state.style.percentage_style)
+
+                View.text(" #{percentage_text}",
+                  style: state.style.percentage_style
+                )
               else
                 nil
               end
@@ -117,7 +131,8 @@ defmodule Raxol.Components.Progress.ProgressBar do
               end,
               # Percentage Text Segment (if enabled)
               percentage_element
-            ] |> Enum.reject(&is_nil(&1))
+            ]
+            |> Enum.reject(&is_nil(&1))
           end
 
         # Explicitly return list for column's children, filtering nil

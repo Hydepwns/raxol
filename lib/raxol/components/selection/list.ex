@@ -124,7 +124,8 @@ defmodule Raxol.Components.Selection.List do
   defp render_item(item, index, state) do
     content = state.render_item.(item)
     is_selected = index == state.selected_index
-    is_focused = is_selected and state.focused # Use component's focused state
+    # Use component's focused state
+    is_focused = is_selected and state.focused
 
     style =
       cond do

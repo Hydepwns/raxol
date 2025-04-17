@@ -14,13 +14,14 @@ defmodule Raxol.Examples.ColorSystemDemo do
     theme = create_demo_theme()
 
     # Render different views
-    rendered_output = [
-      render_theme_info(theme),
-      render_palette_view(theme.palette),
-      render_color_adaptation_view(theme),
-      render_accessibility_view(theme)
-    ]
-    |> Enum.join("\n\n")
+    rendered_output =
+      [
+        render_theme_info(theme),
+        render_palette_view(theme.palette),
+        render_color_adaptation_view(theme),
+        render_accessibility_view(theme)
+      ]
+      |> Enum.join("\n\n")
 
     rendered_output
   end

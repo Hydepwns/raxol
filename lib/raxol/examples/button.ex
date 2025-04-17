@@ -60,14 +60,16 @@ defmodule Raxol.Examples.Button do
   def render(state) do
     # Generate the DSL representation
     dsl_result =
-      View.button [
-        id: state.id,
-        style: state.style,
-        on_click: state.on_click,
-        disabled: state.disabled,
-        pressed: state.pressed
-      ],
-      state.label
+      View.button(
+        [
+          id: state.id,
+          style: state.style,
+          on_click: state.on_click,
+          disabled: state.disabled,
+          pressed: state.pressed
+        ],
+        state.label
+      )
 
     # Convert to Element struct
     Raxol.View.to_element(dsl_result)

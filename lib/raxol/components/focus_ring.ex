@@ -70,16 +70,20 @@ defmodule Raxol.Components.FocusRing do
   This function is called when the component is first created.
   """
   @impl true
-  def init(opts) when is_map(opts) do # Expect map
+  # Expect map
+  def init(opts) when is_map(opts) do
     # Extract options using Map.get
     visible = Map.get(opts, :visible, true)
     color = Map.get(opts, :color, :yellow)
     thickness = Map.get(opts, :thickness, 1)
     style = Map.get(opts, :style, [:dashed])
     high_contrast = Map.get(opts, :high_contrast, false)
-    animation = Map.get(opts, :animation, :pulse) # :pulse, :blink, :none
-    animation_duration = Map.get(opts, :animation_duration, 500) # milliseconds
-    transition_effect = Map.get(opts, :transition_effect, :fade) # :fade, :slide, :none
+    # :pulse, :blink, :none
+    animation = Map.get(opts, :animation, :pulse)
+    # milliseconds
+    animation_duration = Map.get(opts, :animation_duration, 500)
+    # :fade, :slide, :none
+    transition_effect = Map.get(opts, :transition_effect, :fade)
 
     %{
       visible: visible,
@@ -94,7 +98,8 @@ defmodule Raxol.Components.FocusRing do
       animation_duration: animation_duration,
       animation_phase: 0,
       transition_effect: transition_effect,
-      offset: {0, 0} # Offset for rendering
+      # Offset for rendering
+      offset: {0, 0}
     }
   end
 
@@ -170,9 +175,12 @@ defmodule Raxol.Components.FocusRing do
     |> Enum.reject(&is_nil(&1))
     |> Enum.map(&Raxol.View.to_element/1)
     |> case do
-      [] -> nil # Return nil if nothing to render
-      [element] -> element # Return single element if one exists
-      elements -> Raxol.View.to_element(%{type: :fragment, children: elements}) # Wrap multiple in fragment
+      # Return nil if nothing to render
+      [] -> nil
+      # Return single element if one exists
+      [element] -> element
+      # Wrap multiple in fragment
+      elements -> Raxol.View.to_element(%{type: :fragment, children: elements})
     end
   end
 

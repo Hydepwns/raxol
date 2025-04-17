@@ -122,7 +122,8 @@ defmodule Raxol.Components.Selection.Dropdown do
         Raxol.View.row style: %{width: :fill} do
           [
             Raxol.View.text(selected_label, style: %{width: :fill}),
-            Raxol.View.text(" ▼") # Down arrow indicator
+            # Down arrow indicator
+            Raxol.View.text(" ▼")
           ]
         end
       ]
@@ -133,8 +134,10 @@ defmodule Raxol.Components.Selection.Dropdown do
   @spec render_expanded(map()) :: map()
   defp render_expanded(state) do
     Raxol.View.column do
-      [ # Explicitly return a list for the column's children
-        render_collapsed(state), # Show the collapsed view first
+      # Explicitly return a list for the column's children
+      [
+        # Show the collapsed view first
+        render_collapsed(state),
         # Then render the list of options below
         Raxol.View.box style: %{border: :single, width: state.width} do
           # Assuming List.render returns an element or list of elements
@@ -142,8 +145,10 @@ defmodule Raxol.Components.Selection.Dropdown do
             items: state.items,
             render_item: state.render_item,
             selected_index: state.focused_index,
-            width: state.width - 2, # Adjust for border
-            height: Enum.count(state.items) # Or a max height
+            # Adjust for border
+            width: state.width - 2,
+            # Or a max height
+            height: Enum.count(state.items)
           })
         end
       ]
@@ -153,7 +158,10 @@ defmodule Raxol.Components.Selection.Dropdown do
   defp get_selected_label(state) do
     if state.selected_index do
       selected_item = Enum.at(state.items, state.selected_index)
-      if selected_item, do: state.render_item.(selected_item), else: state.placeholder
+
+      if selected_item,
+        do: state.render_item.(selected_item),
+        else: state.placeholder
     else
       state.placeholder
     end

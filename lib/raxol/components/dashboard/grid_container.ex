@@ -46,8 +46,8 @@ defmodule Raxol.Components.Dashboard.GridContainer do
         breakpoints
         |> Enum.map(fn {_key, value} -> value end)
         |> Enum.map(fn bpconfig ->
-          {Map.get(bpconfig, :max_width, :infinity), Map.get(bpconfig, :cols, cols),
-           Map.get(bpconfig, :rows, rows)}
+          {Map.get(bpconfig, :max_width, :infinity),
+           Map.get(bpconfig, :cols, cols), Map.get(bpconfig, :rows, rows)}
         end)
         # Sort by max_width (putting :infinity last)
         |> Enum.sort_by(fn {max_width, _c, _r} ->
@@ -55,16 +55,19 @@ defmodule Raxol.Components.Dashboard.GridContainer do
         end)
 
       # Find the first breakpoint where width <= max_width or the last one if none match
-      Enum.reduce_while(breakpoint_values, %{cols: cols, rows: rows}, fn {max_width, bp_cols, bp_rows},
-                                                                      acc ->
-        if max_width == :infinity or current_width <= max_width do
-          # We found a matching breakpoint, use its values
-          {:halt, %{cols: bp_cols, rows: bp_rows}}
-        else
-          # Keep looking
-          {:cont, acc}
+      Enum.reduce_while(
+        breakpoint_values,
+        %{cols: cols, rows: rows},
+        fn {max_width, bp_cols, bp_rows}, acc ->
+          if max_width == :infinity or current_width <= max_width do
+            # We found a matching breakpoint, use its values
+            {:halt, %{cols: bp_cols, rows: bp_rows}}
+          else
+            # Keep looking
+            {:cont, acc}
+          end
         end
-      end)
+      )
     else
       # No breakpoints, return default
       %{cols: cols, rows: rows}
@@ -87,6 +90,7 @@ defmodule Raxol.Components.Dashboard.GridContainer do
     Logger.debug(
       "[GridContainer.calculate_widget_bounds] Received: widget_id=#{Map.get(widget_config, :id, :unknown)}, grid_config=#{inspect(grid_config)}"
     )
+
     # --- End Log ---
 
     # Extract grid parameters with defaults
@@ -110,6 +114,7 @@ defmodule Raxol.Components.Dashboard.GridContainer do
       Container WxH: #{container_width}x#{container_height}
       Cell WxH: #{cell_width}x#{cell_height}
     """)
+
     # --- End Debug Logging ---
 
     # Extract widget grid spec with defaults
