@@ -44,14 +44,20 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
     # Run chart benchmarks
     IO.puts("\nRunning chart benchmarks...")
-    chart_results = benchmark_charts(chart_datasets, iterations, test_cache, test_memory)
+
+    chart_results =
+      benchmark_charts(chart_datasets, iterations, test_cache, test_memory)
 
     # Run treemap benchmarks
     IO.puts("\nRunning treemap benchmarks...")
-    treemap_results = benchmark_treemaps(treemap_datasets, iterations, test_cache, test_memory)
+
+    treemap_results =
+      benchmark_treemaps(treemap_datasets, iterations, test_cache, test_memory)
 
     # Write results
-    results_file = Path.join(output_path, "visualization_benchmark_#{timestamp()}.md")
+    results_file =
+      Path.join(output_path, "visualization_benchmark_#{timestamp()}.md")
+
     write_results(results_file, chart_results, treemap_results, opts)
 
     IO.puts("\nBenchmark completed. Results written to #{results_file}")
@@ -89,22 +95,23 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
           end
 
           # Measure chart rendering time
-          {time, _result} = :timer.tc(fn ->
-            plugin_state = %Raxol.Plugins.VisualizationPlugin.State{
-              cache_timeout: :timer.minutes(5),
-              layout_cache: %{},
-              last_chart_hash: nil,
-              last_treemap_hash: nil,
-              cleanup_ref: nil
-            }
+          {time, _result} =
+            :timer.tc(fn ->
+              plugin_state = %Raxol.Plugins.VisualizationPlugin.State{
+                cache_timeout: :timer.minutes(5),
+                layout_cache: %{},
+                last_chart_hash: nil,
+                last_treemap_hash: nil,
+                cleanup_ref: nil
+              }
 
-            Raxol.Plugins.VisualizationPlugin.render_chart_content(
-              data,
-              %{title: "Benchmark Chart"},
-              bounds,
-              plugin_state
-            )
-          end)
+              Raxol.Plugins.VisualizationPlugin.render_chart_content(
+                data,
+                %{title: "Benchmark Chart"},
+                bounds,
+                plugin_state
+              )
+            end)
 
           # Convert to milliseconds
           time_ms = time / 1000
@@ -169,22 +176,23 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
           end
 
           # Measure treemap rendering time
-          {time, _result} = :timer.tc(fn ->
-            plugin_state = %Raxol.Plugins.VisualizationPlugin.State{
-              cache_timeout: :timer.minutes(5),
-              layout_cache: %{},
-              last_chart_hash: nil,
-              last_treemap_hash: nil,
-              cleanup_ref: nil
-            }
+          {time, _result} =
+            :timer.tc(fn ->
+              plugin_state = %Raxol.Plugins.VisualizationPlugin.State{
+                cache_timeout: :timer.minutes(5),
+                layout_cache: %{},
+                last_chart_hash: nil,
+                last_treemap_hash: nil,
+                cleanup_ref: nil
+              }
 
-            Raxol.Plugins.VisualizationPlugin.render_treemap_content(
-              data,
-              %{title: "Benchmark TreeMap"},
-              bounds,
-              plugin_state
-            )
-          end)
+              Raxol.Plugins.VisualizationPlugin.render_treemap_content(
+                data,
+                %{title: "Benchmark TreeMap"},
+                bounds,
+                plugin_state
+              )
+            end)
 
           # Convert to milliseconds
           time_ms = time / 1000
@@ -232,9 +240,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
   defp generate_chart_datasets(sizes) do
     Enum.map(sizes, fn size ->
-      data = for i <- 1..size do
-        {"Item #{i}", :rand.uniform(100)}
-      end
+      data =
+        for i <- 1..size do
+          {"Item #{i}", :rand.uniform(100)}
+        end
 
       {size, data}
     end)
@@ -263,12 +272,13 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
         %{
           name: "Root",
           value: size * 10,
-          children: for i <- 1..size do
-            %{
-              name: "Item #{i}",
-              value: :rand.uniform(100)
-            }
-          end
+          children:
+            for i <- 1..size do
+              %{
+                name: "Item #{i}",
+                value: :rand.uniform(100)
+              }
+            end
         }
 
       # Medium dataset - two levels
@@ -280,21 +290,23 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
         %{
           name: "Root",
           value: size * 10,
-          children: for g <- 1..num_groups do
-            # Add an extra item to early groups if there's a remainder
-            actual_items = items_per_group + if g <= remainder, do: 1, else: 0
+          children:
+            for g <- 1..num_groups do
+              # Add an extra item to early groups if there's a remainder
+              actual_items = items_per_group + if g <= remainder, do: 1, else: 0
 
-            %{
-              name: "Group #{g}",
-              value: actual_items * 10,
-              children: for i <- 1..actual_items do
-                %{
-                  name: "Item #{g}.#{i}",
-                  value: :rand.uniform(100)
-                }
-              end
-            }
-          end
+              %{
+                name: "Group #{g}",
+                value: actual_items * 10,
+                children:
+                  for i <- 1..actual_items do
+                    %{
+                      name: "Item #{g}.#{i}",
+                      value: :rand.uniform(100)
+                    }
+                  end
+              }
+            end
         }
 
       # Large dataset - three levels
@@ -302,29 +314,32 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
         # Create a three-level hierarchy
         num_sections = min(10, div(size, 100))
         num_groups_per_section = min(10, div(size, 50))
-        items_per_group = div(size, (num_sections * num_groups_per_section))
+        items_per_group = div(size, num_sections * num_groups_per_section)
 
         %{
           name: "Root",
           value: size * 10,
-          children: for s <- 1..num_sections do
-            %{
-              name: "Section #{s}",
-              value: div(size, num_sections) * 10,
-              children: for g <- 1..num_groups_per_section do
-                %{
-                  name: "Group #{s}.#{g}",
-                  value: items_per_group * 10,
-                  children: for i <- 1..items_per_group do
+          children:
+            for s <- 1..num_sections do
+              %{
+                name: "Section #{s}",
+                value: div(size, num_sections) * 10,
+                children:
+                  for g <- 1..num_groups_per_section do
                     %{
-                      name: "Item #{s}.#{g}.#{i}",
-                      value: :rand.uniform(100)
+                      name: "Group #{s}.#{g}",
+                      value: items_per_group * 10,
+                      children:
+                        for i <- 1..items_per_group do
+                          %{
+                            name: "Item #{s}.#{g}.#{i}",
+                            value: :rand.uniform(100)
+                          }
+                        end
                     }
                   end
-                }
-              end
-            }
-          end
+              }
+            end
         }
     end
   end
@@ -332,9 +347,11 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   defp count_nodes(nil), do: 0
   defp count_nodes(%{children: nil}), do: 1
   defp count_nodes(%{children: []}), do: 1
+
   defp count_nodes(%{children: children}) when is_list(children) do
     1 + Enum.sum(Enum.map(children, &count_nodes/1))
   end
+
   defp count_nodes(_), do: 1
 
   defp calculate_stddev(values, mean) do
@@ -349,6 +366,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
   defp timestamp do
     {{year, month, day}, {hour, minute, _}} = :calendar.local_time()
+
     "#{year}#{zero_pad(month)}#{zero_pad(day)}_#{zero_pad(hour)}#{zero_pad(minute)}"
   end
 
@@ -398,6 +416,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
 
   defp format_timestamp do
     {{year, month, day}, {hour, minute, second}} = :calendar.local_time()
+
     "#{year}-#{zero_pad(month)}-#{zero_pad(day)} #{zero_pad(hour)}:#{zero_pad(minute)}:#{zero_pad(second)}"
   end
 

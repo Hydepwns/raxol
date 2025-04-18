@@ -56,13 +56,15 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     schedule_cache_cleanup()
 
     plugin_state = struct(__MODULE__, config)
-    {:ok, %State{
-      cache_timeout: :timer.minutes(5),
-      layout_cache: %{},
-      last_chart_hash: nil,
-      last_treemap_hash: nil,
-      cleanup_ref: nil
-    }}
+
+    {:ok,
+     %State{
+       cache_timeout: :timer.minutes(5),
+       layout_cache: %{},
+       last_chart_hash: nil,
+       last_treemap_hash: nil,
+       cleanup_ref: nil
+     }}
   end
 
   @impl true
@@ -181,7 +183,12 @@ defmodule Raxol.Plugins.VisualizationPlugin do
             updated_cache =
               if map_size(state.layout_cache) >= @layout_cache_size do
                 # Remove oldest entry if cache is full
-                {_, trimmed_cache} = Map.pop(state.layout_cache, Enum.at(Map.keys(state.layout_cache), 0))
+                {_, trimmed_cache} =
+                  Map.pop(
+                    state.layout_cache,
+                    Enum.at(Map.keys(state.layout_cache), 0)
+                  )
+
                 Map.put(trimmed_cache, cache_key, chart_cells)
               else
                 Map.put(state.layout_cache, cache_key, chart_cells)
@@ -236,7 +243,8 @@ defmodule Raxol.Plugins.VisualizationPlugin do
         # For very large datasets, use a window-based reduction approach
 
         # Group data into windows of approximately even size
-        window_size = Float.ceil(data_length / @max_chart_data_points) |> trunc()
+        window_size =
+          Float.ceil(data_length / @max_chart_data_points) |> trunc()
 
         data
         |> Enum.chunk_every(window_size)
@@ -256,7 +264,8 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     end
   end
 
-  defp sample_chart_data(data), do: data  # Handle non-list data
+  # Handle non-list data
+  defp sample_chart_data(data), do: data
 
   # Add private helper to compute cache key
   defp compute_cache_key(data, bounds) do
@@ -302,7 +311,12 @@ defmodule Raxol.Plugins.VisualizationPlugin do
             updated_cache =
               if map_size(state.layout_cache) >= @layout_cache_size do
                 # Remove oldest entry if cache is full
-                {_, trimmed_cache} = Map.pop(state.layout_cache, Enum.at(Map.keys(state.layout_cache), 0))
+                {_, trimmed_cache} =
+                  Map.pop(
+                    state.layout_cache,
+                    Enum.at(Map.keys(state.layout_cache), 0)
+                  )
+
                 Map.put(trimmed_cache, cache_key, node_rects)
               else
                 Map.put(state.layout_cache, cache_key, node_rects)
@@ -325,7 +339,9 @@ defmodule Raxol.Plugins.VisualizationPlugin do
             # Draw node boxes
             Enum.flat_map(node_rects, fn node_rect ->
               # Use depth for color variation, cycle through palette
-              fg_color = Enum.at(color_palette, rem(node_rect.depth, num_colors))
+              fg_color =
+                Enum.at(color_palette, rem(node_rect.depth, num_colors))
+
               # Combine name and value for the label
               label = "#{node_rect.name} (#{node_rect.value})"
               # Pass color to draw_box_with_text
@@ -344,7 +360,9 @@ defmodule Raxol.Plugins.VisualizationPlugin do
             # Draw node boxes from cached layout
             Enum.flat_map(cached_rects, fn node_rect ->
               # Use depth for color variation, cycle through palette
-              fg_color = Enum.at(color_palette, rem(node_rect.depth, num_colors))
+              fg_color =
+                Enum.at(color_palette, rem(node_rect.depth, num_colors))
+
               # Combine name and value for the label
               label = "#{node_rect.name} (#{node_rect.value})"
               # Pass color to draw_box_with_text
@@ -880,7 +898,10 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   def handle_info(:cleanup_cache, state) do
     # Clean up old cache entries
     new_cleanup_ref = schedule_cache_cleanup()
-    Logger.debug("[VisualizationPlugin] Cleaning visualization cache. Size before: #{map_size(state.layout_cache)}")
+
+    Logger.debug(
+      "[VisualizationPlugin] Cleaning visualization cache. Size before: #{map_size(state.layout_cache)}"
+    )
 
     # Reset cache
     {:noreply, %{state | layout_cache: %{}, cleanup_ref: new_cleanup_ref}}

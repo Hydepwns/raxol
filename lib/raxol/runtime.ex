@@ -442,12 +442,14 @@ defmodule Raxol.Runtime do
           {:ok, updated_manager, final_cells, plugin_commands} ->
             # Calculate changes for rendering
             changes = ScreenBuffer.diff(cell_buffer, final_cells)
+
             Logger.debug(
               "[Runtime.handle_info(:render)] Calculated #{length(changes)} cell changes to apply."
             )
 
             # Create new buffer with correct dimensions
-            new_buffer = ScreenBuffer.new(width, height) |> ScreenBuffer.update(changes)
+            new_buffer =
+              ScreenBuffer.new(width, height) |> ScreenBuffer.update(changes)
 
             # Render changes to terminal
             Enum.each(changes, fn {x, y, cell_map} ->

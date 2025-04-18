@@ -41,7 +41,12 @@ defmodule Raxol.Terminal.TerminalUtils do
   @doc """
   Creates a bounds map with dimensions, starting at origin (0,0)
   """
-  @spec get_bounds_map() :: %{x: 0, y: 0, width: pos_integer(), height: pos_integer()}
+  @spec get_bounds_map() :: %{
+          x: 0,
+          y: 0,
+          width: pos_integer(),
+          height: pos_integer()
+        }
   def get_bounds_map do
     {width, height} = get_terminal_dimensions()
     %{x: 0, y: 0, width: width, height: height}
@@ -54,7 +59,10 @@ defmodule Raxol.Terminal.TerminalUtils do
     try do
       with {:ok, width} when is_integer(width) <- :io.columns(),
            {:ok, height} when is_integer(height) <- :io.rows() do
-        Logger.debug("Got terminal dimensions via :io module: #{width}x#{height}")
+        Logger.debug(
+          "Got terminal dimensions via :io module: #{width}x#{height}"
+        )
+
         {width, height}
       else
         _ -> {:error, :io_method_failed}
@@ -73,7 +81,10 @@ defmodule Raxol.Terminal.TerminalUtils do
       case {width_result, height_result} do
         # Handle potential double nesting from Bindings
         {{:ok, {:ok, w}}, {:ok, {:ok, h}}} when is_integer(w) and is_integer(h) ->
-          Logger.debug("Got terminal dimensions via ExTermbox (double-nested): #{w}x#{h}")
+          Logger.debug(
+            "Got terminal dimensions via ExTermbox (double-nested): #{w}x#{h}"
+          )
+
           {w, h}
 
         # Handle standard response format
@@ -86,7 +97,11 @@ defmodule Raxol.Terminal.TerminalUtils do
           # Estimate height based on typical terminal aspect ratios
           # Most terminals have aspect ratios where height is roughly 1/2 to 1/3 of width
           h = max(24, div(w * 2, 5))
-          Logger.warning("Using estimated height (#{h}) with actual width (#{w})")
+
+          Logger.warning(
+            "Using estimated height (#{h}) with actual width (#{w})"
+          )
+
           {w, h}
 
         # Any other response format is considered an error
@@ -116,6 +131,7 @@ defmodule Raxol.Terminal.TerminalUtils do
         case System.cmd("sh", ["-c", command], stderr_to_stdout: true) do
           {output, 0} ->
             parse_command_output(output, command)
+
           _ ->
             {:error, :command_failed}
         end
@@ -139,6 +155,7 @@ defmodule Raxol.Terminal.TerminalUtils do
         rescue
           _ -> {:error, :parse_error}
         end
+
       _ ->
         {:error, :invalid_output_format}
     end
@@ -156,7 +173,10 @@ defmodule Raxol.Terminal.TerminalUtils do
            [_, height_str] <- Regex.run(height_pattern, output, capture: :all),
            {width, _} <- Integer.parse(width_str),
            {height, _} <- Integer.parse(height_str) do
-        Logger.debug("Got terminal dimensions via PowerShell: #{width}x#{height}")
+        Logger.debug(
+          "Got terminal dimensions via PowerShell: #{width}x#{height}"
+        )
+
         {width, height}
       else
         _ -> {:error, :parse_error}

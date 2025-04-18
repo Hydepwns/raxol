@@ -46,7 +46,10 @@ defmodule Raxol.Metrics do
     rescue
       ArgumentError ->
         # Handle the case where GenServer is not started (e.g., in tests)
-        Logger.debug("Metrics service not available, ignoring gauge: #{name}=#{value}")
+        Logger.debug(
+          "Metrics service not available, ignoring gauge: #{name}=#{value}"
+        )
+
         :ok
     end
   end
@@ -68,7 +71,10 @@ defmodule Raxol.Metrics do
     rescue
       ArgumentError ->
         # Handle the case where GenServer is not started (e.g., in tests)
-        Logger.debug("Metrics service not available, ignoring increment: #{name}")
+        Logger.debug(
+          "Metrics service not available, ignoring increment: #{name}"
+        )
+
         :ok
     end
   end
