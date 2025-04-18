@@ -371,32 +371,32 @@ defmodule Raxol.RuntimeDebug do
       {:noreply, state}
     end
 
-    # Get dimensions using TerminalUtils instead of hardcoding height
-    term_dims_result = TerminalUtils.get_terminal_dimensions()
+    # --- Use dimensions FROM STATE --- >
+    # {width, height} = TerminalUtils.get_terminal_dimensions()
+    width = state.width
+    height = state.height
 
-    # <<< ADDED DETAILED LOGGING FOR DIMENSIONS >>>
-    Logger.debug(
-      "[RuntimeDebug.handle_info(:render)] TerminalUtils.get_terminal_dimensions() returned: #{inspect(term_dims_result)}"
-    )
+    # Logger.debug(
+    #   "[RuntimeDebug.handle_info(:render)] TerminalUtils.get_terminal_dimensions() returned: #{inspect(term_dims_result)}"
+    # )
 
-    # Ensure dimensions are valid numbers, default if not
-    {width, height} =
-      case term_dims_result do
-        {w, h} when is_integer(w) and w > 0 and is_integer(h) and h > 0 ->
-          {w, h}
+    # # Ensure dimensions are valid numbers, default if not
+    # {width, height} =
+    #   case term_dims_result do
+    #     {w, h} when is_integer(w) and w > 0 and is_integer(h) and h > 0 ->
+    #       {w, h}
+    #     invalid_dims ->
+    #       # Logger.warning(
+    #       #   "[RuntimeDebug.handle_info(:render)] Invalid dimensions received: #{inspect(invalid_dims)}. Using defaults (80x24)."
+    #       # )
+    #       # Default dimensions
+    #       {80, 24}
+    #   end
 
-        invalid_dims ->
-          Logger.warning(
-            "[RuntimeDebug.handle_info(:render)] Invalid dimensions received: #{inspect(invalid_dims)}. Using defaults (80x24)."
-          )
-
-          # Default dimensions
-          {80, 24}
-      end
-
-    Logger.debug(
-      "[RuntimeDebug.handle_info(:render)] Using dimensions: #{width}x#{height}"
-    )
+    # Logger.debug(
+    #   "[RuntimeDebug.handle_info(:render)] Using dimensions: #{width}x#{height}"
+    # )
+    # --- End Use dimensions FROM STATE --- >
 
     dims = %{x: 0, y: 0, width: width, height: height}
 
@@ -542,7 +542,23 @@ defmodule Raxol.RuntimeDebug do
         {type_int, mod, key, ch, w, h, x, y} = raw_event_tuple
         event_tuple = convert_raw_event(type_int, mod, key, ch, w, h, x, y)
 
+        # --- Handle resize event directly ---
         case event_tuple do
+          {:resize, new_width, new_height} ->
+            Logger.info(
+              "[RuntimeDebug] Resize event detected: #{new_width}x#{new_height}"
+            )
+
+            updated_state = %{state | width: new_width, height: new_height}
+            # Trigger an immediate re-render with new dimensions
+            # Cancel any pending :render timer first
+            # (Need a helper to cancel Process.send_after timers, or manage timer ref)
+            # For now, just schedule a new one, potentially leading to quick double render
+            schedule_render(updated_state)
+            {:noreply, updated_state}
+
+          # --- End resize handling ---
+
           {:mouse, _, _, _, _} = mouse_event ->
             p_handle_mouse_event(mouse_event, state)
 
