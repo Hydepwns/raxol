@@ -100,8 +100,25 @@ jobs:
           mix deps.get
           mix deps.compile
 
-      - name: Install npm dependencies
-        run: npm install
+      - name: Install npm dependencies in subfolders
+        run: |
+          # Install npm dependencies in extensions/vscode if package.json exists
+          if [ -f "extensions/vscode/package.json" ]; then
+            echo "Installing npm dependencies in extensions/vscode"
+            cd extensions/vscode && npm install && cd ../..
+          fi
+
+          # Install npm dependencies in frontend if package.json exists
+          if [ -f "frontend/package.json" ]; then
+            echo "Installing npm dependencies in frontend"
+            cd frontend && npm install && cd ..
+          fi
+
+          # Install npm dependencies in assets if package.json exists
+          if [ -f "assets/package.json" ]; then
+            echo "Installing npm dependencies in assets"
+            cd assets && npm install && cd ..
+          fi
 
       - name: Run Tests
         run: |
