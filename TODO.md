@@ -4,7 +4,6 @@
 
 - Verify TUI rendering in native terminal environment
 - Profile visualization performance with large datasets
-- Implement caching for visualization calculations
 - Optimize rendering pipeline for complex dashboards
 - Ensure cross-platform compatibility for core features
 - Enhance TUI rendering with advanced styling techniques
@@ -58,6 +57,7 @@
 - Create dedicated frontend directory for JavaScript/TypeScript files ✅
 - Normalize extension organization ✅
 - Improve secrets handling with example templates ✅
+- Implement caching for visualization calculations ✅
 
 ## Backlog
 

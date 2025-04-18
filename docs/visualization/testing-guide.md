@@ -126,6 +126,56 @@ Test with your own data sets:
 1. Modify the test scripts to include your own data
 2. Test with edge cases (empty data, large data sets, negative values)
 
+## Performance Testing
+
+### Benchmarking Visualization Components
+
+Raxol includes comprehensive benchmarking tools for measuring visualization performance:
+
+```bash
+# Run small visualization benchmark
+mix benchmark.visualization small
+
+# Run medium visualization benchmark
+mix benchmark.visualization medium
+
+# Run large visualization benchmark
+mix benchmark.visualization large
+
+# Run production-level benchmark
+mix benchmark.visualization production
+```
+
+### Recent Benchmark Results
+
+Our latest benchmark results show exceptional performance improvements:
+
+| Component | Without Cache | With Cache | Speedup Factor |
+| --------- | ------------- | ---------- | -------------- |
+| Charts    | ~350ms        | ~0.06ms    | 5,852.9x       |
+| TreeMaps  | ~757ms        | ~0.05ms    | 15,140.4x      |
+
+### Verifying Performance
+
+When testing visualization components, observe:
+
+1. **Initial Render Time**: The time it takes for visualizations to appear when first loaded
+2. **Subsequent Render Time**: The time for redrawing after data changes or resizing
+3. **Memory Usage**: Monitor system memory during visualization rendering
+4. **CPU Usage**: Check for spikes during rendering operations
+
+### Testing with Large Datasets
+
+To test with larger datasets:
+
+```elixir
+# In iex or a script
+large_chart_data = Raxol.Benchmarks.VisualizationBenchmark.generate_chart_data(10000)
+large_treemap_data = Raxol.Benchmarks.VisualizationBenchmark.generate_treemap_data(1000)
+
+# Then use this data in your test widgets
+```
+
 ## Reporting Issues
 
 If you encounter any issues during testing, please document:

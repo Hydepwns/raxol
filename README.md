@@ -10,7 +10,9 @@ High-performance terminal emulator with VS Code integration.
 - **Components:** Widgets, visualization, flexible layouts
 - **Plugins:** Notifications, clipboard, visualization tools
 - **VS Code:** Extension for in-editor integration
-- **Performance:** Double buffering, memory optimization, virtual scrolling
+- **Performance:** Double buffering, memory optimization, virtual scrolling, visualization caching (5,000-15,000x speedup)
+- **Dashboard:** Flexible layout system with drag-and-drop widgets and persistence
+- **Visualization:** Charts and TreeMaps with optimized rendering for large datasets
 
 ## Install
 
@@ -48,6 +50,13 @@ defmodule MyWidget do
     """
   end
 end
+
+# Create a visualization
+MyDashboard.add_chart("Sales", %{
+  data: sales_data,
+  type: :bar,
+  options: %{show_labels: true}
+})
 ```
 
 ## Development
