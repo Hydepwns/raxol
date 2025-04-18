@@ -119,8 +119,8 @@ jobs:
           name: codecov-umbrella
           fail_ci_if_error: false
 
-      # Run security scan only on Linux runners
-      - name: Run Security Scan
+      # Run security scan only for Linux runners (using container action)
+      - name: Run Security Scan on Linux
         uses: snyk/actions/node@master
         if: runner.os == 'Linux'
         env:
@@ -128,11 +128,11 @@ jobs:
         with:
           args: --severity-threshold=high
 
-      # On macOS, use the setup action which doesn't require Docker
-      - name: Setup Snyk CLI on macOS
+      # For macOS, install and run Snyk directly without container
+      - name: Install Snyk CLI on macOS using npm
         if: runner.os == 'macOS'
         run: |
-          # Install Snyk CLI using npm instead of container action
+          echo "Installing Snyk CLI via npm..."
           npm install -g snyk
           echo "Installed Snyk CLI version: $(snyk --version)"
 
@@ -140,13 +140,8 @@ jobs:
       - name: Run Security Scan on macOS
         if: runner.os == 'macOS'
         run: |
-          # Check if snyk is available and run the scan
-          if command -v snyk &> /dev/null; then
-            echo "Running Snyk scan with severity threshold high"
-            snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
-          else
-            echo "Skipping Snyk test on macOS due to setup issues"
-          fi
+          echo "Running macOS security scan using npm-installed Snyk..."
+          snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
