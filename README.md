@@ -70,6 +70,16 @@ mix ecto.setup            # Setup database
 ./scripts/run-local-tests.sh  # Run tests locally without GitHub Actions
 ```
 
+### Code Formatting
+
+To ensure your code is properly formatted before committing, run the following script:
+
+```bash
+./scripts/format_before_commit.sh
+```
+
+This will run `mix format` on all Elixir files in the project, ensuring that your code passes the CI format check.
+
 ### GitHub Actions
 
 To run GitHub Actions workflows locally for testing:
