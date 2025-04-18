@@ -1,0 +1,5 @@
+-P ubuntu-latest=elixir-arm64:latest
+-P elixir:1.14=elixir-arm64:latest
+-P elixir:1.15=elixir-arm64:latest
+-P elixir:1.16=elixir-arm64:latest
+--container-architecture linux/arm64

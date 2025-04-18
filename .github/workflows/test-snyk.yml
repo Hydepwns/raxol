@@ -1,0 +1,56 @@
+name: Test Snyk Security Scan
+
+on: [workflow_dispatch]
+
+jobs:
+  test:
+    name: Test Snyk
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: "20"
+
+      # Run security scan only on Linux runners
+      - name: Run Security Scan on Linux
+        uses: snyk/actions/node@master
+        if: runner.os == 'Linux'
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
+        with:
+          args: --severity-threshold=high
+
+      # On macOS, use the setup action which doesn't require Docker
+      - name: Setup Snyk CLI on macOS
+        if: runner.os == 'macOS'
+        uses: snyk/actions/setup@master
+
+      # Run simplified Snyk scan on macOS (no container scanning)
+      - name: Run Security Scan on macOS
+        if: runner.os == 'macOS'
+        run: |
+          # Check if Docker is available (should not be on macOS runners)
+          if command -v docker &> /dev/null; then
+            echo "Docker is installed on macOS runner"
+            docker --version
+          else
+            echo "Docker is NOT installed on macOS runner as expected"
+          fi
+
+          # Skip if snyk isn't available (will happen if setup step fails)
+          if command -v snyk &> /dev/null; then
+            echo "Running Snyk without Docker dependencies"
+            snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
+          else
+            echo "Skipping Snyk test on macOS due to setup issues"
+          fi
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
