@@ -1,0 +1,29 @@
+name: "Cache"
+description: "Cache dependencies and build outputs"
+author: "Mock GitHub"
+
+inputs:
+  path:
+    description: "A list of files, directories, and wildcard patterns to cache and restore"
+    required: true
+  key:
+    description: "An explicit key for restoring and saving the cache"
+    required: true
+  restore-keys:
+    description: "An ordered list of keys to use for restoring stale cache if no cache hit occurred for key"
+    required: false
+
+outputs:
+  cache-hit:
+    description: "A boolean value to indicate an exact match was found for the key"
+    value: "true"
+
+runs:
+  using: "composite"
+  steps:
+    - name: Mock Cache
+      shell: bash
+      run: |
+        echo "Mock: Caching with key '${{ inputs.key }}'"
+        echo "Path: ${{ inputs.path }}"
+        echo "Cache hit: true"
