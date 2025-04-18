@@ -1725,7 +1725,10 @@ defmodule Raxol.RuntimeDebug do
   Start tracking memory usage for benchmarking.
   """
   def start_memory_tracking do
-    Logger.debug("[RuntimeDebug.start_memory_tracking] Starting memory tracking")
+    Logger.debug(
+      "[RuntimeDebug.start_memory_tracking] Starting memory tracking"
+    )
+
     Process.put(:memory_tracking_start, :erlang.memory())
     :ok
   end
@@ -1738,9 +1741,10 @@ defmodule Raxol.RuntimeDebug do
     current_memory = :erlang.memory()
 
     # Calculate difference
-    diff = Enum.map(current_memory, fn {key, value} ->
-      {key, value - Keyword.get(start_memory, key, 0)}
-    end)
+    diff =
+      Enum.map(current_memory, fn {key, value} ->
+        {key, value - Keyword.get(start_memory, key, 0)}
+      end)
 
     %{
       start: start_memory,
