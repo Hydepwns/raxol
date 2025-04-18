@@ -29,6 +29,19 @@ defmodule Raxol.Components.Dashboard.GridContainer do
   Returns:
     - `%{cols: integer(), rows: integer()}`
   """
+  # Handle when an :ok atom is passed
+  def resolve_grid_params(:ok) do
+    Logger.warning("resolve_grid_params received :ok atom instead of grid_config map")
+    %{cols: @default_cols, rows: @default_rows}
+  end
+
+  # Handle other non-map inputs
+  def resolve_grid_params(invalid_input) when not is_map(invalid_input) do
+    Logger.warning("Invalid input to resolve_grid_params: #{inspect(invalid_input)}")
+    %{cols: @default_cols, rows: @default_rows}
+  end
+
+  # Original function
   def resolve_grid_params(grid_config) do
     # Extract defined cols and rows (or use defaults)
     cols = grid_config[:cols] || @default_cols
@@ -85,7 +98,32 @@ defmodule Raxol.Components.Dashboard.GridContainer do
   Returns:
     - `%{x: integer(), y: integer(), width: integer(), height: integer()}` representing the absolute bounds.
   """
-  def calculate_widget_bounds(widget_config, grid_config) do
+  # Handle cases where grid_config is :ok or not a map
+  def calculate_widget_bounds(_widget_config, :ok) do
+    Logger.error("calculate_widget_bounds received :ok atom instead of grid_config map")
+    # Return a safe default bounds
+    %{x: 0, y: 0, width: 10, height: 10}
+  end
+
+  def calculate_widget_bounds(_widget_config, invalid_grid_config) when not is_map(invalid_grid_config) do
+    Logger.error("Invalid grid_config in calculate_widget_bounds: #{inspect(invalid_grid_config)}")
+    # Return a safe default bounds
+    %{x: 0, y: 0, width: 10, height: 10}
+  end
+
+  # Handle maps without parent_bounds
+  def calculate_widget_bounds(_widget_config, %{parent_bounds: nil} = grid_config) do
+    Logger.warning("calculate_widget_bounds received grid_config with nil parent_bounds: #{inspect(grid_config)}")
+    %{x: 0, y: 0, width: 10, height: 10}
+  end
+
+  def calculate_widget_bounds(_widget_config, %{} = grid_config) when not is_map_key(grid_config, :parent_bounds) do
+    Logger.warning("calculate_widget_bounds received grid_config without parent_bounds: #{inspect(grid_config)}")
+    %{x: 0, y: 0, width: 10, height: 10}
+  end
+
+  # Original function with guard
+  def calculate_widget_bounds(widget_config, %{parent_bounds: parent_bounds} = grid_config) when is_map(parent_bounds) do
     # --- Log the grid_config RECEIVED --- >
     Logger.debug(
       "[GridContainer.calculate_widget_bounds] Received: widget_id=#{Map.get(widget_config, :id, :unknown)}, grid_config=#{inspect(grid_config)}"
@@ -94,70 +132,93 @@ defmodule Raxol.Components.Dashboard.GridContainer do
     # --- End Log ---
 
     # Extract grid parameters with defaults
-    parent_bounds = grid_config.parent_bounds
     # Resolve cols/rows based on breakpoints and parent width
     %{cols: cols, rows: rows} = resolve_grid_params(grid_config)
     gap = grid_config[:gap] || @default_gap
 
-    container_width = parent_bounds.width
-    container_height = parent_bounds.height
+    # Check if width or height are invalid (non-numeric values like :ok)
+    if not is_number(parent_bounds[:width]) or not is_number(parent_bounds[:height]) do
+      Logger.error("Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(parent_bounds[:width])}, container_height=#{inspect(parent_bounds[:height])}")
+      %{x: 0, y: 0, width: 10, height: 10}
+    else
+      container_width = parent_bounds.width
+      container_height = parent_bounds.height
 
-    # Calculate cell dimensions using the helper function
-    {cell_width, cell_height} = get_cell_dimensions(grid_config)
+      # Calculate cell dimensions using the helper function
+      {cell_width, cell_height} = get_cell_dimensions(grid_config)
 
-    # --- Added Debug Logging ---
-    Logger.debug("""
-    [GridContainer.calculate_widget_bounds] Debug Values:
-      Widget ID: #{widget_config.id}
-      Grid Spec: #{inspect(widget_config.grid_spec)}
-      Cols: #{cols}, Rows: #{rows}, Gap: #{gap}
-      Container WxH: #{container_width}x#{container_height}
-      Cell WxH: #{cell_width}x#{cell_height}
-    """)
+      # --- Added Debug Logging ---
+      Logger.debug("""
+      [GridContainer.calculate_widget_bounds] Debug Values:
+        Widget ID: #{widget_config.id}
+        Grid Spec: #{inspect(widget_config.grid_spec)}
+        Cols: #{cols}, Rows: #{rows}, Gap: #{gap}
+        Container WxH: #{container_width}x#{container_height}
+        Cell WxH: #{cell_width}x#{cell_height}
+      """)
 
-    # --- End Debug Logging ---
+      # --- End Debug Logging ---
 
-    # Extract widget grid spec with defaults
-    grid_spec =
-      widget_config.grid_spec || %{col: 1, row: 1, width: 1, height: 1}
+      # Validate parent_bounds values
+      unless is_map(parent_bounds) and
+            is_number(Map.get(parent_bounds, :x)) and
+            is_number(Map.get(parent_bounds, :y)) and
+            is_number(container_width) and
+            is_number(container_height) do
+        Logger.error("Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(container_width)}, container_height=#{inspect(container_height)}")
+        return_default = %{x: 0, y: 0, width: 10, height: 10}
+        return_default
+      else
+        # Extract widget grid spec with defaults
+        grid_spec =
+          widget_config.grid_spec || %{col: 1, row: 1, width: 1, height: 1}
 
-    # Calculate position and size including gaps
-    col_start = max(1, grid_spec.col)
-    row_start = max(1, grid_spec.row)
+        # Calculate position and size including gaps
+        col_start = max(1, grid_spec.col)
+        row_start = max(1, grid_spec.row)
 
-    # Handle both width/height and col_span/row_span naming conventions
-    width_cells =
-      cond do
-        Map.has_key?(grid_spec, :width) -> max(1, grid_spec.width)
-        Map.has_key?(grid_spec, :col_span) -> max(1, grid_spec.col_span)
-        true -> 1
+        # Handle both width/height and col_span/row_span naming conventions
+        width_cells =
+          cond do
+            Map.has_key?(grid_spec, :width) -> max(1, grid_spec.width)
+            Map.has_key?(grid_spec, :col_span) -> max(1, grid_spec.col_span)
+            true -> 1
+          end
+
+        height_cells =
+          cond do
+            Map.has_key?(grid_spec, :height) -> max(1, grid_spec.height)
+            Map.has_key?(grid_spec, :row_span) -> max(1, grid_spec.row_span)
+            true -> 1
+          end
+
+        # Validate cell dimensions
+        unless is_number(cell_width) and is_number(cell_height) do
+          Logger.error("Invalid cell dimensions in calculate_widget_bounds: width=#{inspect(cell_width)}, height=#{inspect(cell_height)}")
+          return_default = %{x: 0, y: 0, width: 10, height: 10}
+          return_default
+        else
+          x_pos =
+            parent_bounds.x + (col_start - 1) * cell_width + (col_start - 1) * gap
+
+          y_pos =
+            parent_bounds.y + (row_start - 1) * cell_height + (row_start - 1) * gap
+
+          width = width_cells * cell_width + (width_cells - 1) * gap
+          height = height_cells * cell_height + (height_cells - 1) * gap
+
+          # Clamp size to container bounds just in case
+          final_width = max(0, min(width, parent_bounds.x + container_width - x_pos))
+
+          final_height =
+            max(0, min(height, parent_bounds.y + container_height - y_pos))
+
+          # --- End of calculation logic ---
+
+          %{x: x_pos, y: y_pos, width: final_width, height: final_height}
+        end
       end
-
-    height_cells =
-      cond do
-        Map.has_key?(grid_spec, :height) -> max(1, grid_spec.height)
-        Map.has_key?(grid_spec, :row_span) -> max(1, grid_spec.row_span)
-        true -> 1
-      end
-
-    x_pos =
-      parent_bounds.x + (col_start - 1) * cell_width + (col_start - 1) * gap
-
-    y_pos =
-      parent_bounds.y + (row_start - 1) * cell_height + (row_start - 1) * gap
-
-    width = width_cells * cell_width + (width_cells - 1) * gap
-    height = height_cells * cell_height + (height_cells - 1) * gap
-
-    # Clamp size to container bounds just in case
-    final_width = max(0, min(width, parent_bounds.x + container_width - x_pos))
-
-    final_height =
-      max(0, min(height, parent_bounds.y + container_height - y_pos))
-
-    # --- End of calculation logic ---
-
-    %{x: x_pos, y: y_pos, width: final_width, height: final_height}
+    end
   end
 
   @doc """
@@ -170,31 +231,63 @@ defmodule Raxol.Components.Dashboard.GridContainer do
   Returns:
     - `{cell_width, cell_height}` tuple with the dimensions of a single cell.
   """
-  def get_cell_dimensions(grid_config) do
+  # Handle when an :ok atom is passed (which causes the ArithmeticError)
+  def get_cell_dimensions(:ok) do
+    Logger.error("get_cell_dimensions received :ok atom instead of grid_config map")
+    {10, 10} # Return sensible defaults
+  end
+
+  # Handle other non-map inputs
+  def get_cell_dimensions(invalid_input) when not is_map(invalid_input) do
+    Logger.error("Invalid input to get_cell_dimensions: #{inspect(invalid_input)}")
+    {10, 10} # Return sensible defaults
+  end
+
+  # Handle maps without parent_bounds
+  def get_cell_dimensions(%{parent_bounds: nil} = grid_config) do
+    Logger.warning("get_cell_dimensions received grid_config with nil parent_bounds: #{inspect(grid_config)}")
+    {10, 10} # Return sensible defaults
+  end
+
+  def get_cell_dimensions(%{} = grid_config) when not is_map_key(grid_config, :parent_bounds) do
+    Logger.warning("get_cell_dimensions received grid_config without parent_bounds: #{inspect(grid_config)}")
+    {10, 10} # Return sensible defaults
+  end
+
+  # Original function with guard to ensure parent_bounds exists and is a map
+  def get_cell_dimensions(%{parent_bounds: parent_bounds} = grid_config) when is_map(parent_bounds) do
     # Extract grid parameters with defaults
-    parent_bounds = grid_config.parent_bounds
     # Resolve cols/rows based on breakpoints and parent width
     %{cols: cols, rows: rows} = resolve_grid_params(grid_config)
     gap = grid_config[:gap] || @default_gap
 
-    container_width = parent_bounds.width
-    container_height = parent_bounds.height
+    # Check for required width/height fields in parent_bounds
+    with true <- is_map_key(parent_bounds, :width) and is_map_key(parent_bounds, :height),
+         true <- is_number(parent_bounds.width) and is_number(parent_bounds.height) do
 
-    # Calculate total gap space
-    total_horizontal_gap = max(0, cols - 1) * gap
-    total_vertical_gap = max(0, rows - 1) * gap
+      container_width = parent_bounds.width
+      container_height = parent_bounds.height
 
-    # Calculate available space for cells
-    available_width = max(0, container_width - total_horizontal_gap)
-    available_height = max(0, container_height - total_vertical_gap)
+      # Calculate total gap space
+      total_horizontal_gap = max(0, cols - 1) * gap
+      total_vertical_gap = max(0, rows - 1) * gap
 
-    # Calculate base cell dimensions (use floating-point division and round)
-    cell_width =
-      if cols > 0, do: round(available_width / cols), else: available_width
+      # Calculate available space for cells
+      available_width = max(0, container_width - total_horizontal_gap)
+      available_height = max(0, container_height - total_vertical_gap)
 
-    cell_height =
-      if rows > 0, do: round(available_height / rows), else: available_height
+      # Calculate base cell dimensions (use floating-point division and round)
+      cell_width =
+        if cols > 0, do: round(available_width / cols), else: available_width
 
-    {cell_width, cell_height}
+      cell_height =
+        if rows > 0, do: round(available_height / rows), else: available_height
+
+      {cell_width, cell_height}
+    else
+      _ ->
+        Logger.warning("Invalid parent_bounds structure in get_cell_dimensions: #{inspect(parent_bounds)}")
+        {10, 10} # Return sensible defaults
+    end
   end
 end
