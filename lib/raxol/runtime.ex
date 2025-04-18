@@ -9,11 +9,8 @@ defmodule Raxol.Runtime do
   require Logger
 
   alias Raxol.Event
-  alias ExTermbox.Bindings
   alias Raxol.Terminal.Registry, as: AppRegistry
   alias Raxol.Plugins.PluginManager
-  alias Raxol.Plugins.ImagePlugin
-  alias Raxol.Plugins.VisualizationPlugin
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.StdioInterface
   alias Raxol.Terminal.TerminalUtils
@@ -87,6 +84,25 @@ defmodule Raxol.Runtime do
 
     # Pass {app_module, opts} to init/1
     GenServer.start_link(__MODULE__, {app_module, opts})
+  end
+
+  @impl true
+  def init({app_module, opts}) do
+    # Parse options
+    app_name = get_app_name(app_module)
+    options = Keyword.drop(opts, [:app_module])
+
+    # Initialize the runtime state
+    initial_state = %{
+      app_module: app_module,
+      app_name: app_name,
+      model: nil,
+      plugin_manager: nil,
+      quit_keys: Keyword.get(options, :quit_keys, [:ctrl_c]),
+      stdio_interface_pid: nil
+    }
+
+    {:ok, initial_state}
   end
 
   @impl true

@@ -148,7 +148,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmarkSimple do
   end
 
   # Simplified chart rendering
-  defp render_chart_content(data, opts, bounds, state) do
+  defp render_chart_content(data, _opts, bounds, state) do
     # Check if we have a cached result
     cache_key = compute_cache_key(data, bounds)
 
@@ -167,7 +167,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmarkSimple do
   end
 
   # Simplified treemap rendering
-  defp render_treemap_content(data, opts, bounds, state) do
+  defp render_treemap_content(data, _opts, bounds, state) do
     # Check if we have a cached result
     cache_key = compute_cache_key(data, bounds)
 
