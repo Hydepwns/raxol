@@ -41,3 +41,75 @@ jobs:
         run: |
           . /opt/asdf/asdf.sh
           mix format --check-formatted
+
+  test:
+    name: Test Local
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Cache Mix dependencies
+        uses: actions/cache@v3
+        with:
+          path: |
+            deps
+            _build
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-mix-
+
+      - name: Setup asdf environment
+        run: |
+          . /opt/asdf/asdf.sh
+          asdf reshim
+          elixir --version
+          mix --version
+
+      - name: Install Mix Dependencies
+        run: |
+          . /opt/asdf/asdf.sh
+          mix local.hex --force
+          mix local.rebar --force
+          mix deps.get
+
+      # Install build dependencies on Linux
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf m4 libncurses5-dev \
+            libssl-dev libwxgtk3.2-dev libgl1-mesa-dev libglu1-mesa-dev \
+            libpng-dev openssl
+
+      # For Linux, use the container action
+      - name: Run Security Scan on Linux
+        if: runner.os == 'Linux'
+        run: |
+          echo "Would run Snyk container action here (skipped in local testing)"
+          # In actual CI, this would use: snyk/actions/node@master
+
+      # For macOS, use npm installation
+      - name: Install Snyk CLI on macOS using npm
+        if: runner.os == 'macOS'
+        run: |
+          echo "Installing Snyk CLI via npm..."
+          npm install -g snyk
+          echo "Installed Snyk CLI version: $(snyk --version || echo 'installation failed')"
+
+      # Run simplified test for macOS
+      - name: Run Security Scan on macOS
+        if: runner.os == 'macOS'
+        run: |
+          echo "Running macOS security scan using npm-installed Snyk..."
+          # In actual CI, this would run the Snyk test
+          if command -v snyk &> /dev/null; then
+            echo "Snyk is available"
+          else
+            echo "Snyk installation failed"
+            exit 1
+          fi

@@ -13,9 +13,39 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, macos-latest]
-        elixir: ["1.14", "1.15", "1.16"]
-        otp: ["25.0", "26.0", "27.0"]
+        include:
+          # Elixir 1.14 with compatible OTP versions
+          - os: ubuntu-latest
+            elixir: "1.14"
+            otp: "25.0"
+          - os: macos-latest
+            elixir: "1.14"
+            otp: "25.0"
+
+          # Elixir 1.15 with compatible OTP versions
+          - os: ubuntu-latest
+            elixir: "1.15"
+            otp: "25.0"
+          - os: ubuntu-latest
+            elixir: "1.15"
+            otp: "26.0"
+          - os: macos-latest
+            elixir: "1.15"
+            otp: "26.0"
+
+          # Elixir 1.16 with compatible OTP versions
+          - os: ubuntu-latest
+            elixir: "1.16"
+            otp: "26.0"
+          - os: ubuntu-latest
+            elixir: "1.16"
+            otp: "27.0"
+          - os: macos-latest
+            elixir: "1.16"
+            otp: "26.0"
+          - os: macos-latest
+            elixir: "1.16"
+            otp: "27.0"
 
     services:
       postgres:
