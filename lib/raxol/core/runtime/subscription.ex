@@ -144,14 +144,16 @@ defmodule Raxol.Core.Runtime.Subscription do
         case :timer.cancel(timer_ref) do
           {:ok, :cancel} -> :ok
           {:error, reason} -> {:error, {:timer_cancel_error, reason}}
-          _ -> :ok  # Handle any other return values
+          # Handle any other return values
+          _ -> :ok
         end
 
       {:events, actual_id} ->
         case Raxol.Core.Events.Manager.unsubscribe(actual_id) do
           :ok -> :ok
           {:error, reason} -> {:error, {:event_unsubscribe_error, reason}}
-          result -> {:ok, result}  # Handle any other return values
+          # Handle any other return values
+          result -> {:ok, result}
         end
 
       {:file_watch, watcher_pid} ->
@@ -191,12 +193,13 @@ defmodule Raxol.Core.Runtime.Subscription do
 
     # Add error handling for timer creation
     case :timer.send_interval(
-      interval + :rand.uniform(jitter),
-      context.pid,
-      {:subscription, msg}
-    ) do
+           interval + :rand.uniform(jitter),
+           context.pid,
+           {:subscription, msg}
+         ) do
       {:ok, timer_ref} ->
         {:ok, {:interval, timer_ref}}
+
       {:error, reason} ->
         {:error, {:timer_creation_error, reason}}
     end
@@ -238,22 +241,32 @@ defmodule Raxol.Core.Runtime.Subscription do
             receive do
               {_watcher_pid, {:file_event, path, file_events}} ->
                 if Enum.any?(file_events, &(&1 in events)) do
-                  send(target_pid, {:subscription, {:file_change, path, file_events}})
+                  send(
+                    target_pid,
+                    {:subscription, {:file_change, path, file_events}}
+                  )
                 end
             after
               5000 ->
                 # Timeout after 5 seconds if no file events are received
                 send(target_pid, {:subscription, {:file_watch_timeout, path}})
             end
-            
+
             # Continue watching
             watch_file(path, events, target_pid)
-            
+
           error ->
-            send(target_pid, {:subscription, {:file_watch_error, {:subscribe_error, error}}})
+            send(
+              target_pid,
+              {:subscription, {:file_watch_error, {:subscribe_error, error}}}
+            )
         end
+
       {:error, reason} ->
-        send(target_pid, {:subscription, {:file_watch_error, {:start_error, reason}}})
+        send(
+          target_pid,
+          {:subscription, {:file_watch_error, {:start_error, reason}}}
+        )
     end
   end
 end

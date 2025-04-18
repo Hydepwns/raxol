@@ -83,7 +83,7 @@ defmodule Raxol.Core.I18n do
 
     # Load translations for default locale
     case load_translations(default_locale) do
-      :ok -> 
+      :ok ->
         # Register event handlers
         _ =
           EventManager.register_handler(
@@ -91,9 +91,14 @@ defmodule Raxol.Core.I18n do
             __MODULE__,
             :handle_locale_changed
           )
+
         :ok
+
       {:error, reason} ->
-        Logger.warning("Failed to load translations for default locale: #{inspect(reason)}")
+        Logger.warning(
+          "Failed to load translations for default locale: #{inspect(reason)}"
+        )
+
         :ok
     end
   end
@@ -214,11 +219,14 @@ defmodule Raxol.Core.I18n do
 
       # Load translations for new locale
       case load_translations(locale) do
-        :ok -> 
+        :ok ->
           # Broadcast event
           EventManager.broadcast({:locale_changed, previous_locale, locale})
+
         {:error, reason} ->
-          Logger.warning("Failed to load translations for locale #{locale}: #{inspect(reason)}")
+          Logger.warning(
+            "Failed to load translations for locale #{locale}: #{inspect(reason)}"
+          )
       end
 
       :ok

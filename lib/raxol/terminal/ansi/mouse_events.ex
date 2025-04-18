@@ -308,7 +308,8 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
   @doc """
   Decodes button state for URXVT mouse events.
   """
-  @spec decode_urxvt_button(integer()) :: :left | :middle | :right | :release | :unknown
+  @spec decode_urxvt_button(integer()) ::
+          :left | :middle | :right | :release | :unknown
   def decode_urxvt_button(button) do
     case button &&& 0x3 do
       0 ->
@@ -322,9 +323,10 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
 
       3 ->
         :right
-        
+
       _ ->
-        :unknown  # Handle unexpected button values
+        # Handle unexpected button values
+        :unknown
     end
   end
 
