@@ -28,29 +28,18 @@ jobs:
         with:
           args: --severity-threshold=high
 
-      # On macOS, use the setup action which doesn't require Docker
+      # On macOS, use the CLI installation instead of the Docker-based action
       - name: Setup Snyk CLI on macOS
         if: runner.os == 'macOS'
-        uses: snyk/actions/setup@master
+        run: |
+          npm install -g snyk
+          snyk auth ${{ secrets.SNYK_TOKEN }}
 
-      # Run simplified Snyk scan on macOS (no container scanning)
+      # Run simplified Snyk scan on macOS without container
       - name: Run Security Scan on macOS
         if: runner.os == 'macOS'
         run: |
-          # Check if Docker is available (should not be on macOS runners)
-          if command -v docker &> /dev/null; then
-            echo "Docker is installed on macOS runner"
-            docker --version
-          else
-            echo "Docker is NOT installed on macOS runner as expected"
-          fi
-
-          # Skip if snyk isn't available (will happen if setup step fails)
-          if command -v snyk &> /dev/null; then
-            echo "Running Snyk without Docker dependencies"
-            snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
-          else
-            echo "Skipping Snyk test on macOS due to setup issues"
-          fi
+          echo "Running Snyk without Docker dependencies"
+          snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
