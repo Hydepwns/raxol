@@ -412,12 +412,6 @@ defmodule Raxol.Core.KeyboardNavigator do
     end
   end
 
-  # For backward compatibility
-  @doc false
-  @deprecated "Use in_direction?/3 instead"
-  defp is_in_direction?(from, to, direction),
-    do: in_direction?(from, to, direction)
-
   defp distance_in_direction(from, to, direction) do
     # Calculate a weighted distance that prioritizes alignment
     case direction do

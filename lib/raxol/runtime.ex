@@ -11,6 +11,9 @@ defmodule Raxol.Runtime do
   alias Raxol.Event
   alias Raxol.Terminal.Registry, as: AppRegistry
   alias Raxol.Plugins.PluginManager
+  # alias ExTermbox.Bindings  # Unused alias - removed
+  # alias Raxol.Plugins.ImagePlugin  # Unused alias - removed
+  # alias Raxol.Plugins.VisualizationPlugin  # Unused alias - removed
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.StdioInterface
   alias Raxol.Terminal.TerminalUtils
@@ -88,17 +91,37 @@ defmodule Raxol.Runtime do
 
   @impl true
   def init({app_module, opts}) do
+    Logger.debug(
+      "[Runtime.init] Initializing runtime with app_module: #{inspect(app_module)}"
+    )
+
     # Parse options
     app_name = get_app_name(app_module)
     options = Keyword.drop(opts, [:app_module])
+
+    # Extract options with defaults
+    width = Keyword.get(opts, :width, 80)
+    height = Keyword.get(opts, :height, 24)
+    title = Keyword.get(opts, :title, "Raxol Application")
+    fps = Keyword.get(opts, :fps, 60)
+    quit_keys = Keyword.get(opts, :quit_keys, [:ctrl_c])
+    debug_mode = Keyword.get(opts, :debug, false)
 
     # Initialize the runtime state
     initial_state = %{
       app_module: app_module,
       app_name: app_name,
+      width: width,
+      height: height,
+      title: title,
+      fps: fps,
+      quit_keys: quit_keys,
+      debug_mode: debug_mode,
+      termbox_initialized: false,
       model: nil,
       plugin_manager: nil,
-      quit_keys: Keyword.get(options, :quit_keys, [:ctrl_c]),
+      components: %{},
+      plugins: %{},
       stdio_interface_pid: nil
     }
 
@@ -768,16 +791,6 @@ defmodule Raxol.Runtime do
 
   # Private functions
 
-  defp runtime_env do
-    Application.get_env(:raxol, :env, :prod)
-  end
-
-  defp get_app_name(app_module) when is_atom(app_module) do
-    Module.split(app_module) |> List.last() |> String.to_atom()
-  rescue
-    _ -> :default
-  end
-
   defp lookup_app(app_name) do
     # Use the GenServer API and handle its specific return value
     case AppRegistry.lookup(app_name) do
@@ -787,6 +800,18 @@ defmodule Raxol.Runtime do
       # Handle any other unexpected return
       _ -> :error
     end
+  end
+
+  # Remove these unused functions
+  # @deprecated "Use Application.get_env(:raxol, :env) instead"
+  # defp _runtime_env do
+  #   Application.get_env(:raxol, :env, :dev)
+  # end
+
+  defp get_app_name(app_module) when is_atom(app_module) do
+    Module.split(app_module) |> List.last() |> String.to_atom()
+  rescue
+    _ -> :default
   end
 
   defp update_model(app_module, model, msg) do
@@ -846,10 +871,12 @@ defmodule Raxol.Runtime do
   # Catch clause for non-key events or mismatched maps
   defp is_quit_key?(_event, _quit_keys), do: false
 
-  defp schedule_render do
-    # Schedule next render based on FPS
-    Process.send_after(self(), :render, trunc(1000 / 60))
-  end
+  # Remove unused function
+  # @deprecated "No longer used - scheduling is now done elsewhere"
+  # defp _schedule_render do
+  #   # Schedule next render based on FPS
+  #   Process.send_after(self(), :render, trunc(1000 / 60))
+  # end
 
   defp cleanup(state) do
     if state.termbox_initialized do

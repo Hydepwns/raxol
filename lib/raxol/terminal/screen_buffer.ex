@@ -554,84 +554,55 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   @doc """
   Calculates the difference between the current buffer state and a list of desired cell changes.
+  Can handle both a list of lists (cells) or a list of tuples with cell maps.
 
-  Returns a list of cell tuples `{x, y, cell_map}` representing only the cells that need to be updated.
+  Returns a list of cell tuples representing only the cells that need to be updated.
   """
-  @spec diff(t(), list({non_neg_integer(), non_neg_integer(), map()})) ::
-          list({non_neg_integer(), non_neg_integer(), map()})
-  def diff(%__MODULE__{} = current_buffer, desired_cells)
-      when is_list(desired_cells) do
-    Enum.filter(desired_cells, fn {x, y, desired_cell_map} ->
-      # Convert desired map to a Cell struct for proper comparison
-      desired_cell_struct = Cell.from_map(desired_cell_map)
-      current_cell_struct = get_cell_at(current_buffer, x, y)
+  @spec diff(
+          t(),
+          list(list(Cell.t()))
+          | list({non_neg_integer(), non_neg_integer(), map()})
+        ) ::
+          list({integer(), integer(), Cell.t() | map()})
+  def diff(%__MODULE__{} = buffer, changes) when is_list(changes) do
+    cond do
+      # Empty list case
+      Enum.empty?(changes) ->
+        []
 
-      # Compare if the desired cell struct is valid and different from the current one
-      # Use Cell.equals?/2 for comparison
-      case {desired_cell_struct, current_cell_struct} do
-        {nil, _} ->
-          # Invalid desired cell map, skip
-          false
+      # Handle case where changes is a list of lists (old format)
+      is_list(hd(changes)) ->
+        get_changes(buffer, changes)
 
-        {_desired, nil} ->
-          # Current cell is outside buffer (shouldn't happen if called correctly), or buffer uninitialized?
-          # Treat as different if desired is valid.
-          true
+      # Handle case where changes is a list of {x, y, cell_map} tuples
+      match?({_, _, _}, hd(changes)) ->
+        Enum.filter(changes, fn {x, y, desired_cell_map} ->
+          # Convert desired map to a Cell struct for proper comparison
+          desired_cell_struct = Cell.from_map(desired_cell_map)
+          current_cell_struct = get_cell_at(buffer, x, y)
 
-        {desired, current} ->
-          # Compare the structs directly
-          not Cell.equals?(current, desired)
-      end
-    end)
-  end
+          # Compare if the desired cell struct is valid and different from the current one
+          # Use Cell.equals?/2 for comparison
+          case {desired_cell_struct, current_cell_struct} do
+            {nil, _} ->
+              # Invalid desired cell map, skip
+              false
 
-  @doc """
-  Updates the buffer state by applying a list of cell changes.
+            {_desired, nil} ->
+              # Current cell is outside buffer (shouldn't happen if called correctly), or buffer uninitialized?
+              # Treat as different if desired is valid.
+              true
 
-  Returns a new buffer `t()` with the changes applied.
-  """
-  @spec update(t(), list({non_neg_integer(), non_neg_integer(), map()})) :: t()
-  def update(%__MODULE__{} = current_buffer, changes) when is_list(changes) do
-    Enum.reduce(changes, current_buffer, fn {x, y, cell_map}, acc_buffer ->
-      if y >= 0 and y < acc_buffer.height and x >= 0 and x < acc_buffer.width do
-        # Convert the cell map from Runtime into a Cell struct
-        new_cell_struct = Cell.from_map(cell_map)
+            {desired, current} ->
+              # Compare the structs directly
+              not Cell.equals?(current, desired)
+          end
+        end)
 
-        # Check if conversion was successful and cell is not nil
-        if new_cell_struct do
-          is_wide =
-            CharacterHandling.get_char_width(new_cell_struct.char) == 2 and
-              !new_cell_struct.is_wide_placeholder
-
-          new_rows =
-            List.update_at(acc_buffer.cells, y, fn row ->
-              row_with_primary = List.replace_at(row, x, new_cell_struct)
-              # Handle wide character placeholder if needed and space allows
-              if is_wide and x + 1 < acc_buffer.width do
-                List.replace_at(
-                  row_with_primary,
-                  x + 1,
-                  Cell.new_wide_placeholder(new_cell_struct.style)
-                )
-              else
-                row_with_primary
-              end
-            end)
-
-          %{acc_buffer | cells: new_rows}
-        else
-          # Failed to convert cell map, ignore this change
-          Logger.warning(
-            "[ScreenBuffer.update] Failed to convert cell map, skipping change: #{inspect(cell_map)} at (#{x}, #{y})"
-          )
-
-          acc_buffer
-        end
-      else
-        # Ignore changes outside buffer bounds
-        acc_buffer
-      end
-    end)
+      # Default case for other formats
+      true ->
+        []
+    end
   end
 
   @doc """
@@ -675,27 +646,75 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   @doc """
-  Compares two buffers and returns the differences as a list of {x, y, cell} tuples.
-  This is an alias for get_changes for backward compatibility.
-  """
-  @spec diff(t(), list(list(Cell.t()))) ::
-          list({integer(), integer(), Cell.t()})
-  def diff(buffer, new_cells) do
-    get_changes(buffer, new_cells)
-  end
+  Updates the buffer state by applying a list of cell changes.
+  Can handle both cell structs and cell maps formats.
 
-  @doc """
-  Updates the buffer with the provided changes.
+  Returns a new buffer `t()` with the changes applied.
   """
-  @spec update(t(), list({integer(), integer(), Cell.t()})) :: t()
-  def update(%__MODULE__{} = buffer, changes) do
-    Enum.reduce(changes, buffer, fn {x, y, cell}, acc_buffer ->
-      cells =
-        List.update_at(acc_buffer.cells, y, fn row ->
-          List.update_at(row, x, fn _ -> cell end)
-        end)
+  @spec update(
+          t(),
+          list({non_neg_integer(), non_neg_integer(), Cell.t() | map()})
+        ) :: t()
+  def update(%__MODULE__{} = buffer, changes) when is_list(changes) do
+    Enum.reduce(changes, buffer, fn
+      # When the third element is a Cell struct
+      {x, y, %Cell{} = cell}, acc_buffer when is_integer(x) and is_integer(y) ->
+        if y >= 0 and y < acc_buffer.height and x >= 0 and x < acc_buffer.width do
+          cells =
+            List.update_at(acc_buffer.cells, y, fn row ->
+              List.update_at(row, x, fn _ -> cell end)
+            end)
 
-      %{acc_buffer | cells: cells}
+          %{acc_buffer | cells: cells}
+        else
+          acc_buffer
+        end
+
+      # When the third element is a map that needs conversion to Cell struct
+      {x, y, cell_map}, acc_buffer
+      when is_integer(x) and is_integer(y) and is_map(cell_map) ->
+        if y >= 0 and y < acc_buffer.height and x >= 0 and x < acc_buffer.width do
+          # Convert the cell map from Runtime into a Cell struct
+          new_cell_struct = Cell.from_map(cell_map)
+
+          # Check if conversion was successful and cell is not nil
+          if new_cell_struct do
+            is_wide =
+              CharacterHandling.get_char_width(new_cell_struct.char) == 2 and
+                !new_cell_struct.is_wide_placeholder
+
+            new_rows =
+              List.update_at(acc_buffer.cells, y, fn row ->
+                row_with_primary = List.replace_at(row, x, new_cell_struct)
+                # Handle wide character placeholder if needed and space allows
+                if is_wide and x + 1 < acc_buffer.width do
+                  List.replace_at(
+                    row_with_primary,
+                    x + 1,
+                    Cell.new_wide_placeholder(new_cell_struct.style)
+                  )
+                else
+                  row_with_primary
+                end
+              end)
+
+            %{acc_buffer | cells: new_rows}
+          else
+            # Failed to convert cell map, ignore this change
+            Logger.warning(
+              "[ScreenBuffer.update] Failed to convert cell map, skipping change: #{inspect(cell_map)} at (#{x}, #{y})"
+            )
+
+            acc_buffer
+          end
+        else
+          # Ignore changes outside buffer bounds
+          acc_buffer
+        end
+
+      # Default case for unexpected format
+      _, acc_buffer ->
+        acc_buffer
     end)
   end
 

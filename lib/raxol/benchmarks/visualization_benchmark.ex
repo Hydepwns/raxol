@@ -461,7 +461,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       |> Enum.map(fn result ->
         if length(result.times) > 1 do
           first_time = Enum.at(result.times, 0)
-          rest_times = Enum.slice(result.times, 1..-1)
+          rest_times = Enum.slice(result.times, 1..-1//-1)
           avg_rest_time = Enum.sum(rest_times) / length(rest_times)
 
           if avg_rest_time > 0, do: first_time / avg_rest_time, else: 1.0
