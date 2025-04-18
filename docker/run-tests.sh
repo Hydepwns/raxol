@@ -3,7 +3,7 @@
 # Build the Docker image if it doesn't exist
 if ! docker image inspect elixir-arm64:latest &> /dev/null; then
   echo "Building Docker image..."
-  ./build-docker-image.sh
+  ./docker/build-docker-image.sh
 fi
 
 # Start PostgreSQL and the app container

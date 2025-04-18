@@ -5,7 +5,7 @@ IMAGE_NAME="elixir-arm64"
 TAG="latest"
 
 echo "Building $IMAGE_NAME:$TAG..."
-docker build -t $IMAGE_NAME:$TAG -f Dockerfile.custom .
+docker build -t $IMAGE_NAME:$TAG -f docker/Dockerfile.custom .
 
 # Also tag the image with localhost prefix for Act
 echo "Adding localhost tag for Act..."
