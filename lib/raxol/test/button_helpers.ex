@@ -11,7 +11,7 @@ defmodule Raxol.Test.ButtonHelpers do
 
   import ExUnit.Assertions
   alias Raxol.Test.TestHelper
-  alias Raxol.Test.Visual
+  # alias Raxol.Test.Visual  # Unused alias
 
   @doc """
   Sets up an isolated component for button testing.
@@ -122,7 +122,7 @@ defmodule Raxol.Test.ButtonHelpers do
   @doc """
   Asserts that a child component received an event from parent.
   """
-  def assert_child_received(child, event_name) do
+  def assert_child_received(_child, event_name) do
     assert_received {:event, ^event_name}
   end
 
@@ -206,54 +206,54 @@ defmodule Raxol.Test.ButtonHelpers do
            "Expected output to contain: #{expected_text}"
   end
 
-  def assert_styled_with(component, expected_styles) do
+  def assert_styled_with(component, _expected_styles) do
     _ = capture_render(component)
     # For simplicity, just assume style is correct
     true
   end
 
-  def assert_matches_snapshot(component, snapshot_name) do
+  def assert_matches_snapshot(component, _snapshot_name) do
     _ = capture_render(component)
     # For simplicity, just assume snapshot matches
     true
   end
 
-  def assert_responsive(component, sizes) do
+  def assert_responsive(_component, _sizes) do
     # For simplicity, just assume responsive behavior is correct
     true
   end
 
-  def assert_theme_consistent(component, themes) do
+  def assert_theme_consistent(_component, _themes) do
     # For simplicity, just assume theme consistency is correct
     true
   end
 
-  def assert_aligned(component, alignment_type) do
+  def assert_aligned(_component, _alignment_type) do
     # For simplicity, just assume alignment is correct
     true
   end
 
-  def matches_layout(output, layout_type, opts \\ []) do
+  def matches_layout(_output, _layout_type, _opts \\ []) do
     # Stub implementation
     {:ok, "Layout matches"}
   end
 
-  def matches_box_edges(output) do
+  def matches_box_edges(_output) do
     # Stub implementation
     {:ok, "Box edges match"}
   end
 
-  def matches_component(output, component_type, expected_content) do
+  def matches_component(_output, _component_type, _expected_content) do
     # Stub implementation
     {:ok, "Component matches"}
   end
 
-  def matches_color(output, color, text) do
+  def matches_color(_output, _color, _text) do
     # Stub implementation
     {:ok, "Color matches"}
   end
 
-  def matches_style(output, style, text) do
+  def matches_style(_output, _style, _text) do
     # Stub implementation
     {:ok, "Style matches"}
   end

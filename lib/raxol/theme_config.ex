@@ -31,7 +31,7 @@ defmodule Raxol.ThemeConfig do
   ```
   """
 
-  alias Raxol.Style.Theme
+  # alias Raxol.Style.Theme  # Unused alias
 
   @themes_dir "themes"
   @default_theme "Default"
