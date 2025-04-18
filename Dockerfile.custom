@@ -1,0 +1,124 @@
+FROM arm64v8/ubuntu:22.04
+
+# Set noninteractive installation
+ENV DEBIAN_FRONTEND=noninteractive
+
+# Install dependencies
+RUN apt-get update && apt-get install -y \
+  build-essential \
+  autoconf \
+  libncurses5-dev \
+  libssl-dev \
+  curl \
+  git \
+  wget \
+  unzip \
+  libwxgtk3.0-gtk3-dev \
+  libgl1-mesa-dev \
+  libglu1-mesa-dev \
+  libpng-dev \
+  m4 \
+  inotify-tools \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install Erlang and Elixir using the asdf version manager
+RUN apt-get update && apt-get install -y \
+  git \
+  && apt-get clean \
+  && rm -rf /var/lib/apt/lists/*
+
+# Install asdf
+RUN git clone https://github.com/asdf-vm/asdf.git /opt/asdf --branch v0.12.0
+
+# Set up asdf in environment
+ENV ASDF_DIR="/opt/asdf"
+ENV PATH="${ASDF_DIR}/bin:${ASDF_DIR}/shims:${PATH}"
+
+# Configure bash to load asdf
+RUN echo '. /opt/asdf/asdf.sh' >> /root/.bashrc
+RUN echo '. /opt/asdf/asdf.sh' >> /root/.profile
+RUN echo '. /opt/asdf/completions/asdf.bash' >> /root/.bashrc
+
+# Use login shell for all RUN commands to ensure asdf is loaded
+SHELL ["/bin/bash", "--login", "-c"]
+
+# Add asdf plugins for Erlang and Elixir
+RUN asdf plugin add erlang
+RUN asdf plugin add elixir
+
+# Install Erlang 25.0, 26.0, and 27.0 (the versions specified in your GitHub workflow)
+RUN asdf install erlang 25.0
+RUN asdf install erlang 26.0
+RUN asdf install erlang 27.0
+
+# Install Elixir versions 1.14, 1.15, 1.16
+RUN asdf install elixir 1.14.5-otp-25
+RUN asdf install elixir 1.15.7-otp-26
+RUN asdf install elixir 1.16.1-otp-26
+
+# Set global versions
+RUN asdf global erlang 26.0
+RUN asdf global elixir 1.15.7-otp-26
+RUN asdf reshim
+
+# Verify Elixir is available
+RUN elixir --version && mix --version
+
+# Install Hex and Rebar
+RUN mix local.hex --force && mix local.rebar --force
+
+# Set up PostgreSQL client tools
+RUN apt-get update && apt-get install -y postgresql-client && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Install Node.js 20
+RUN apt-get update && apt-get install -y ca-certificates gnupg && \
+  mkdir -p /etc/apt/keyrings && \
+  curl -fsSL https://deb.nodesource.com/gpgkey/nodesource-repo.gpg.key | gpg --dearmor -o /etc/apt/keyrings/nodesource.gpg && \
+  echo "deb [signed-by=/etc/apt/keyrings/nodesource.gpg] https://deb.nodesource.com/node_20.x nodistro main" | tee /etc/apt/sources.list.d/nodesource.list && \
+  apt-get update && apt-get install -y nodejs && \
+  apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Create a workspace directory
+WORKDIR /workspace
+
+# Add a script to switch between Erlang/Elixir versions
+RUN echo '#!/bin/bash\n\
+  case "$1" in\n\
+  "1.14")\n\
+  asdf global erlang 25.0\n\
+  asdf global elixir 1.14.5-otp-25\n\
+  ;;\n\
+  "1.15")\n\
+  asdf global erlang 26.0\n\
+  asdf global elixir 1.15.7-otp-26\n\
+  ;;\n\
+  "1.16")\n\
+  asdf global erlang 27.0\n\
+  asdf global elixir 1.16.1-otp-26\n\
+  ;;\n\
+  *)\n\
+  echo "Usage: switch-elixir {1.14|1.15|1.16}"\n\
+  exit 1\n\
+  ;;\n\
+  esac\n\
+  asdf reshim\n\
+  echo "Switched to Elixir $1"\n\
+  elixir --version\n\
+  erl -version' > /usr/local/bin/switch-elixir && \
+  chmod +x /usr/local/bin/switch-elixir
+
+# Configure entrypoint to source asdf
+RUN echo '#!/bin/bash\n\
+  if [[ -f /opt/asdf/asdf.sh ]]; then\n\
+  . /opt/asdf/asdf.sh\n\
+  fi\n\
+  exec "$@"' > /usr/local/bin/entrypoint.sh && \
+  chmod +x /usr/local/bin/entrypoint.sh
+
+# Set entrypoint to ensure asdf is loaded
+ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]
+
+# Default command
+CMD ["/bin/bash"]
