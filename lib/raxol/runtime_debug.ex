@@ -372,10 +372,30 @@ defmodule Raxol.RuntimeDebug do
     end
 
     # Get dimensions using TerminalUtils instead of hardcoding height
-    {width, height} = TerminalUtils.get_terminal_dimensions()
+    term_dims_result = TerminalUtils.get_terminal_dimensions()
+
+    # <<< ADDED DETAILED LOGGING FOR DIMENSIONS >>>
+    Logger.debug(
+      "[RuntimeDebug.handle_info(:render)] TerminalUtils.get_terminal_dimensions() returned: #{inspect(term_dims_result)}"
+    )
+
+    # Ensure dimensions are valid numbers, default if not
+    {width, height} =
+      case term_dims_result do
+        {w, h} when is_integer(w) and w > 0 and is_integer(h) and h > 0 ->
+          {w, h}
+
+        invalid_dims ->
+          Logger.warning(
+            "[RuntimeDebug.handle_info(:render)] Invalid dimensions received: #{inspect(invalid_dims)}. Using defaults (80x24)."
+          )
+
+          # Default dimensions
+          {80, 24}
+      end
 
     Logger.debug(
-      "[RuntimeDebug.handle_info(:render)] Using dimensions from TerminalUtils: #{width}x#{height}"
+      "[RuntimeDebug.handle_info(:render)] Using dimensions: #{width}x#{height}"
     )
 
     dims = %{x: 0, y: 0, width: width, height: height}
