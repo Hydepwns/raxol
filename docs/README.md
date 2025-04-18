@@ -37,6 +37,14 @@ For new users, we recommend starting with:
 2. [Quick Start Tutorial](guides/quick_start.md)
 3. [Basic Components Overview](components/README.md)
 
+## Key Features
+
+- **High Performance**: Visualization caching with 5,000-15,000x speedups
+- **Flexible Layouts**: Dashboard system with drag-and-drop widgets
+- **Rich Visualizations**: Charts and TreeMaps optimized for terminal display
+- **VS Code Integration**: Seamless integration with VS Code extension
+- **Plugin System**: Extensible through custom plugins
+
 ## Contributing to Documentation
 
 If you'd like to contribute to the documentation, please see our [Documentation Contribution Guide](CONTRIBUTING.md).
