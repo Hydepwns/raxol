@@ -181,13 +181,13 @@ jobs:
         with:
           args: --severity-threshold=high
 
-      # For macOS, use Snyk CLI setup action instead of Docker-based action
-      - name: Setup Snyk CLI on macOS
-        uses: snyk/actions/setup@master
+      # For macOS, install Snyk CLI via npm instead of using Docker-based action
+      - name: Install Snyk CLI on macOS
         if: runner.os == 'macOS'
+        run: |
+          npm install -g snyk
+          snyk --version
         continue-on-error: true
-        env:
-          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       # Run simplified Snyk scan on macOS
       - name: Run Security Scan on macOS
