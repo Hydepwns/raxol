@@ -66,19 +66,10 @@ jobs:
           path: |
             deps
             _build
-            node_modules
-          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}-${{ hashFiles('**/package-lock.json') }}
+          key: ${{ runner.os }}-mix-${{ hashFiles('**/mix.lock') }}
           restore-keys: |
             ${{ runner.os }}-mix-
             ${{ runner.os }}-
-
-      - name: Cache npm dependencies
-        uses: actions/cache@v3
-        with:
-          path: node_modules
-          key: ${{ runner.os }}-npm-${{ hashFiles('**/package-lock.json') }}
-          restore-keys: |
-            ${{ runner.os }}-npm-
 
       - name: Install Dependencies
         run: |
@@ -101,7 +92,6 @@ jobs:
         uses: actions/setup-node@v3
         with:
           node-version: "20"
-          cache: "npm"
 
       - name: Install Mix Dependencies
         run: |
@@ -111,7 +101,7 @@ jobs:
           mix deps.compile
 
       - name: Install npm dependencies
-        run: npm ci
+        run: npm install
 
       - name: Run Tests
         run: |
