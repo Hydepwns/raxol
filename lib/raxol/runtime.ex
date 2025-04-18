@@ -16,6 +16,7 @@ defmodule Raxol.Runtime do
   alias Raxol.Plugins.VisualizationPlugin
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.StdioInterface
+  alias Raxol.Terminal.TerminalUtils
 
   # Client API
 
@@ -323,50 +324,35 @@ defmodule Raxol.Runtime do
 
       # Prepare a simplified version of the cells for JSON transmission
       # This converts complex cell data to a more transport-friendly format
-      simplified_cells =
-        Enum.map(cells, fn %{x: x, y: y, ch: ch, fg: fg, bg: bg} ->
-          # Convert ch (might be integer) to string
-          char = if is_integer(ch), do: <<ch::utf8>>, else: to_string(ch)
-
+      # Simplified to just send minimal data for each cell change
+      simplified_changes =
+        Enum.map(changes, fn {x, y, cell} ->
           %{
             x: x,
             y: y,
-            char: char,
-            fg: fg,
-            bg: bg
+            char: get_char_representation(cell.char),
+            fg: cell.style.foreground,
+            bg: cell.style.background
           }
         end)
 
-      # Send UI update via StdioInterface
-      if state.stdio_interface_pid do
-        StdioInterface.send_message(%{
-          type: "ui_update",
-          payload: %{
-            width: width,
-            height: height,
-            cells: simplified_cells,
-            # Default cursor position
-            cursor: %{x: 0, y: 0}
-          }
-        })
+      # Send update to VS Code via StdioInterface
+      StdioInterface.send_ui_update(%{
+        type: "ui_update",
+        changes: simplified_changes,
+        dimensions: %{width: width, height: height}
+      })
 
-        Logger.debug(
-          "[Runtime.handle_info(:render)] Sent UI update via StdioInterface"
-        )
-      else
-        Logger.warning(
-          "[Runtime.handle_info(:render)] Cannot send UI update - StdioInterface not initialized"
-        )
-      end
+      # Update state with new buffer
+      new_buffer = ScreenBuffer.update(cell_buffer, changes)
 
-      # Schedule next render based on fps
+      # Schedule next render (if fps > 0)
       if state.fps > 0 do
         interval_ms = round(1000 / state.fps)
         Process.send_after(self(), :render, interval_ms)
       end
 
-      # Return updated state with the new cell buffer
-      {:noreply, %{state | model: updated_model, cell_buffer: cell_buffer}}
+      {:noreply, %{state | cell_buffer: new_buffer}}
     else
       # TTY mode - ExTermbox-based rendering (existing code)
       # Check if Termbox is initialized before proceeding
@@ -384,156 +370,92 @@ defmodule Raxol.Runtime do
         {:noreply, state}
       else
         # Original ExTermbox rendering path
-        # Ensure width and height are correctly fetched (handle potential {:ok, {:ok, val}})
-        width =
-          case Bindings.width() do
-            {:ok, {:ok, w}} -> w
-            {:ok, w} when is_integer(w) -> w
-            # Fallback or handle error
-            _ -> state.width
-          end
+        # Get terminal dimensions using TerminalUtils for reliable dimensions
+        # This replaces the previous hardcoded height workaround
+        {width, height} = TerminalUtils.get_terminal_dimensions()
 
-        # --- Workaround: Hardcode dimensions due to ex_termbox issue ---
-        height_val = 30
-
-        Logger.warning(
-          "[Runtime.handle_info(:render)] Using HARDCODED dimensions: #{width}x#{height_val}"
+        Logger.debug(
+          "[Runtime.handle_info(:render)] Using dimensions from TerminalUtils: #{width}x#{height}"
         )
 
-        # --- End Workaround ---
-
-        # Original dimension calculation (commented out)
-        # dims_tuple =
-        #   {{:ok, ExTermbox.Bindings.width()}, {:ok, ExTermbox.Bindings.height()}}
-        # # Calculate cell diff and unwrap dimensions
-        # {width_val, height_val} =
-        #   case dims_tuple do
-        #     # Handle potential double nesting from Bindings
-        #     {{:ok, {:ok, w}}, {:ok, {:ok, h}}} when is_integer(w) and is_integer(h) ->
-        #       Logger.debug(
-        #         "[Runtime.handle_info(:render)] Correctly unwrapped double-nested dimensions: #{w}x#{h}"
-        #       )
-        #
-        #       {w, h}
-        #
-        #     # Original success case: Single nesting
-        #     {{:ok, w}, {:ok, h}} when is_integer(w) and is_integer(h) ->
-        #       Logger.debug(
-        #         "[Runtime.handle_info(:render)] Correctly unwrapped single-nested dimensions: #{w}x#{h}"
-        #       )
-        #
-        #       {w, h}
-        #
-        #     # Test environment or direct integers (fallback)
-        #     {w, h} when is_integer(w) and is_integer(h) ->
-        #       Logger.warning(
-        #         "[Runtime.handle_info(:render)] Got raw integer dimensions: #{w}x#{h}"
-        #       )
-        #
-        #       {w, h}
-        #
-        #     # Error case or unexpected format: Use defaults
-        #     error_or_unexpected ->
-        #       Logger.error(
-        #         "[Runtime.handle_info(:render)] Failed to get terminal dimensions: #{inspect(error_or_unexpected)}. Using defaults 80x24."
-        #       )
-        #
-        #       {80, 24}
-        #   end
-
         # Create dims map with correct values
-        dims = %{x: 0, y: 0, width: width, height: height_val}
+        dims = %{x: 0, y: 0, width: width, height: height}
 
         # --- Update Model with Correct Dimensions BEFORE Rendering ---
         # This assumes the model structure is nested like state.model.dashboard_model.grid_config.parent_bounds
         # Adjust the path if necessary based on your actual MyApp.Model structure.
         # Corrected put_in syntax: access [:parent_bounds] within the grid_config map
-        updated_grid_config =
-          put_in(
-            state.model.dashboard_model.grid_config,
-            [:parent_bounds],
-            dims
-          )
+        dashboard_model = get_in(state.model, [:dashboard_model])
 
-        updated_dashboard_model = %{
-          state.model.dashboard_model
-          | grid_config: updated_grid_config
-        }
+        updated_model =
+          if dashboard_model do
+            grid_conf = dashboard_model.grid_config
+            updated_grid_config = %{grid_conf | parent_bounds: dims}
 
-        updated_app_model = %{
-          state.model
-          | dashboard_model: updated_dashboard_model
-        }
+            # Re-associate the updated grid_config back into the model structure
+            updated_dashboard_model = %{
+              dashboard_model
+              | grid_config: updated_grid_config
+            }
 
-        Logger.debug(
-          "[Runtime.handle_info(:render)] Rendering view with updated dimensions: #{inspect(dims)}"
-        )
+            %{state.model | dashboard_model: updated_dashboard_model}
+          else
+            state.model
+          end
 
-        # --- DEBUG: Check render condition ---
-        app_module_loaded = Code.ensure_loaded?(state.app_module)
-        render_exported = function_exported?(state.app_module, :render, 1)
-
-        Logger.debug(
-          "[Runtime DEBUG] Checking render condition: app_module=#{inspect(state.app_module)}, loaded?=#{app_module_loaded}, exported?=#{render_exported}"
-        )
-
-        # --- END DEBUG ---
-
-        # Render the application view using the UPDATED application's state
-        view_elements =
-          if app_module_loaded and render_exported do
-            # Pass the current app model and grid config in a props map
-            state.app_module.render(%{
-              # Pass the App Model
-              model: state.model,
-              # Pass the resolved grid config
-              grid_config: updated_grid_config
-            })
+        # Call render on app_module
+        # This is generally calling MyApp.render(model)
+        rendered_view =
+          if function_exported?(state.app_module, :render, 1) do
+            state.app_module.render(updated_model)
           else
             Logger.error(
-              "[Runtime DEBUG] Render condition FAILED. Skipping app_module.render call."
+              "[Runtime.handle_info(:render)] #{inspect(state.app_module)} doesn't export render/1"
             )
 
-            # No render function available
             []
           end
 
-        {new_cells, _plugin_commands_render} =
-          render_view_to_cells(view_elements, dims)
+        # Convert the returned view to a list of cells for rendering
+        cells = render_view_to_cells(rendered_view, dims)
 
-        # === Process cells through plugins ===
-        Logger.debug(
-          "[Runtime.handle_info(:render)] Processing #{length(new_cells)} cells through PluginManager..."
-        )
+        # Calculate cell diff and perform rendering
+        # First ensure a buffer exists with correct dimensions
+        cell_buffer =
+          if !state.cell_buffer do
+            ScreenBuffer.new(width, height)
+          else
+            # Ensure dimensions are correct
+            current_width = ScreenBuffer.width(state.cell_buffer)
+            current_height = ScreenBuffer.height(state.cell_buffer)
 
-        # Log ImagePlugin state *before* calling handle_cells
-        Logger.debug(
-          "[Runtime PRE] ImagePlugin state: #{inspect(Map.get(state.plugin_manager.plugins, "image"))}"
-        )
+            if current_width != width || current_height != height do
+              ScreenBuffer.resize(state.cell_buffer, width, height)
+            else
+              state.cell_buffer
+            end
+          end
 
-        case PluginManager.handle_cells(state.plugin_manager, new_cells, state) do
+        # --- Handle plugins for pre-processing cells ---
+        # This allows plugins to modify the cell buffer before rendering
+        case PluginManager.handle_cells(state.plugin_manager, cells, state) do
           {:ok, updated_manager, final_cells, plugin_commands} ->
-            # Calculate the difference based on the final processed cells
-            changes = ScreenBuffer.diff(state.cell_buffer, final_cells)
-
+            # Calculate changes for rendering
+            changes = ScreenBuffer.diff(cell_buffer, final_cells)
             Logger.debug(
               "[Runtime.handle_info(:render)] Calculated #{length(changes)} cell changes to apply."
             )
 
-            # Apply changes to the buffer state *using the diff*
-            new_buffer = ScreenBuffer.update(state.cell_buffer, changes)
+            # Create new buffer with correct dimensions
+            new_buffer = ScreenBuffer.new(width, height) |> ScreenBuffer.update(changes)
 
-            # Draw only changed cells to the terminal *using the diff*
+            # Render changes to terminal
             Enum.each(changes, fn {x, y, cell_map} ->
-              # Extract char, fg, bg directly from the cell_map used in the diff
               char_code = Map.get(cell_map, :char)
-              # Extract style and then fg/bg (handle potential nil style)
               style_map = Map.get(cell_map, :style, %{})
-              # Default fg=7
               fg = Map.get(style_map, :foreground, 7)
-              # Default bg=0
               bg = Map.get(style_map, :background, 0)
-              # Ensure char_code is valid before sending
+
               if is_integer(char_code) do
                 ExTermbox.Bindings.change_cell(x, y, char_code, fg, bg)
               else
@@ -543,19 +465,43 @@ defmodule Raxol.Runtime do
               end
             end)
 
+            # Present the changes
             ExTermbox.Bindings.present()
+
+            # Handle plugin commands
             send_plugin_commands(plugin_commands)
 
+            # Update state
             new_state = %{
               state
               | cell_buffer: new_buffer,
                 last_rendered_cells: final_cells,
-                plugin_manager: updated_manager
+                plugin_manager: updated_manager,
+                width: width,
+                height: height
             }
 
-            Logger.debug(
-              "[Runtime.handle_info(:render)] Finished render cycle."
+            # Schedule next render
+            if state.fps > 0 do
+              interval_ms = round(1000 / state.fps)
+              Process.send_after(self(), :render, interval_ms)
+            end
+
+            {:noreply, new_state}
+
+          # Handle error case from plugin manager
+          {:error, reason, updated_manager} ->
+            Logger.error(
+              "[Runtime.handle_info(:render)] Plugin manager error: #{inspect(reason)}"
             )
+
+            new_state = %{state | plugin_manager: updated_manager}
+
+            # Schedule next render despite error
+            if state.fps > 0 do
+              interval_ms = round(1000 / state.fps)
+              Process.send_after(self(), :render, interval_ms)
+            end
 
             {:noreply, new_state}
         end
@@ -1238,6 +1184,15 @@ defmodule Raxol.Runtime do
       end
     else
       model
+    end
+  end
+
+  defp get_char_representation(char) when is_integer(char) do
+    case char do
+      0..31 -> "Control"
+      32..126 -> <<char::utf8>>
+      127 -> "DEL"
+      _ -> "Unknown"
     end
   end
 end

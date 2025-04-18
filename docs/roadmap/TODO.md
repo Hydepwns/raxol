@@ -38,6 +38,7 @@ tags: [roadmap, todo, tasks]
 - [x] Complete visualization testing in both environments
 - [x] Implement TUI rendering enhancements for better display quality
 - [x] Create layout persistence system with auto-recovery
+- [x] Implement custom theme support with configurability (API documentation created)
 
 ## In Progress
 
@@ -47,7 +48,6 @@ tags: [roadmap, todo, tasks]
 - [ ] Profile visualization rendering with large datasets
 - [ ] Implement caching for visualization calculations
 - [ ] Complete cross-platform testing
-- [ ] Implement custom theme support with configurability (API documentation created)
 - [ ] Create comprehensive user documentation and guides
 - [ ] Test native terminal environment functionality
 - [ ] Benchmark performance metrics in both environments

@@ -15,6 +15,13 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   # Corrected: Suppress Dialyzer warning for handle_cells/3
   @dialyzer {:nowarn_function, handle_cells: 3}
 
+  # Add a module attribute for the cache
+  @layout_cache_size 50
+
+  # Add a module attribute for chart thresholds
+  @max_chart_data_points 100
+  @chart_sampling_threshold 500
+
   defstruct name: "visualization",
             version: "0.1.0",
             description: "Renders chart and treemap visualizations.",
@@ -24,10 +31,38 @@ defmodule Raxol.Plugins.VisualizationPlugin do
             # Match manager API
             api_version: "1.0.0"
 
+  # Add to the state structure
+  defmodule State do
+    defstruct [
+      :cache_timeout,
+      :layout_cache,
+      :last_chart_hash,
+      :last_treemap_hash,
+      :cleanup_ref,
+      # Add the standard plugin fields
+      name: "visualization",
+      version: "0.1.0",
+      description: "Renders chart and treemap visualizations.",
+      enabled: true,
+      config: %{},
+      dependencies: [],
+      api_version: "1.0.0"
+    ]
+  end
+
   @impl true
   def init(config \\ %{}) do
+    # Initialize state with cache structures
+    schedule_cache_cleanup()
+
     plugin_state = struct(__MODULE__, config)
-    {:ok, plugin_state}
+    {:ok, %State{
+      cache_timeout: :timer.minutes(5),
+      layout_cache: %{},
+      last_chart_hash: nil,
+      last_treemap_hash: nil,
+      cleanup_ref: nil
+    }}
   end
 
   @impl true
@@ -45,7 +80,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
           "[VisualizationPlugin] Handling :chart placeholder. Bounds: #{inspect(bounds)}"
         )
 
-        chart_cells = render_chart_content(data, opts, bounds)
+        chart_cells = render_chart_content(data, opts, bounds, plugin_state)
         # Return :ok, state (unchanged), replacement cells, empty commands
         {:ok, plugin_state, chart_cells, []}
 
@@ -61,7 +96,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
           "[VisualizationPlugin] Handling :treemap placeholder. Bounds: #{inspect(bounds)}"
         )
 
-        treemap_cells = render_treemap_content(data, opts, bounds)
+        treemap_cells = render_treemap_content(data, opts, bounds, plugin_state)
         # Return :ok, state (unchanged), replacement cells, empty commands
         {:ok, plugin_state, treemap_cells, []}
 
@@ -90,7 +125,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   # --- Private Helpers ---
 
   # Renamed from render_chart_to_cells
-  defp render_chart_content(data, opts, bounds) do
+  defp render_chart_content(data, opts, bounds, state) do
     # Default to :bar chart if type is not specified or unknown
     # chart_type = Map.get(opts, :type, :bar) # Keep for future use if supporting other types
     title = Map.get(opts, :title, "Chart")
@@ -110,11 +145,60 @@ defmodule Raxol.Plugins.VisualizationPlugin do
       draw_box_with_text("!", bounds)
     else
       try do
-        # --- Simplified: Directly call manual TUI rendering ---
-        # Remove Contex.Dataset, Contex.BarChart, Contex.Plot creation
-        # Pass the original data list directly
-        # Pass title instead of chart struct
-        draw_tui_bar_chart(data, title, bounds)
+        # Compute cache key
+        cache_key = compute_cache_key(data, bounds)
+
+        # Check if we have a cached result
+        case Map.get(state.layout_cache, cache_key) do
+          nil ->
+            # No cache hit, perform the rendering
+            # First, sample the data if it's too large
+            sampled_data = sample_chart_data(data)
+
+            # Store metrics about this operation
+            data_length = length(data)
+            sampled_length = length(sampled_data)
+
+            if data_length != sampled_length do
+              # Log that we sampled the data
+              Logger.debug(
+                "[VisualizationPlugin] Data sampled for chart: #{data_length} -> #{sampled_length} points"
+              )
+            end
+
+            # Record metrics
+            start_time = System.monotonic_time(:millisecond)
+
+            # Draw the chart with sampled data
+            chart_cells = draw_tui_bar_chart(sampled_data, title, bounds)
+
+            # Calculate rendering time
+            render_time = System.monotonic_time(:millisecond) - start_time
+            Raxol.Metrics.gauge("raxol.chart_render_time", render_time)
+            Raxol.Metrics.increment("raxol.chart_cache_misses")
+
+            # Update cache with the new result
+            updated_cache =
+              if map_size(state.layout_cache) >= @layout_cache_size do
+                # Remove oldest entry if cache is full
+                {_, trimmed_cache} = Map.pop(state.layout_cache, Enum.at(Map.keys(state.layout_cache), 0))
+                Map.put(trimmed_cache, cache_key, chart_cells)
+              else
+                Map.put(state.layout_cache, cache_key, chart_cells)
+              end
+
+            # Update state with the new cache
+            new_state = %{state | layout_cache: updated_cache}
+            GenServer.cast(self(), {:update_state, new_state})
+
+            # Return the cells
+            chart_cells
+
+          cached_cells ->
+            # Cache hit! Use the cached cells
+            Raxol.Metrics.increment("raxol.chart_cache_hits")
+            cached_cells
+        end
       rescue
         e ->
           Logger.error(
@@ -127,8 +211,62 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     end
   end
 
-  # Renamed from render_treemap_to_cells
-  defp render_treemap_content(data, opts, bounds) do
+  # Add a function to sample chart data for large datasets
+  defp sample_chart_data(data) when is_list(data) do
+    data_length = length(data)
+
+    cond do
+      # If data is empty, return it as is
+      data_length == 0 ->
+        data
+
+      # If data is small enough, return it as is
+      data_length <= @max_chart_data_points ->
+        data
+
+      # If data is large but not huge, use simple sub-sampling
+      data_length <= @chart_sampling_threshold ->
+        # Calculate the step size to reduce to max_data_points
+        step = Float.ceil(data_length / @max_chart_data_points) |> trunc()
+        # Take every nth element
+        Enum.take_every(data, step)
+
+      # If data is very large, use more sophisticated sampling
+      true ->
+        # For very large datasets, use a window-based reduction approach
+
+        # Group data into windows of approximately even size
+        window_size = Float.ceil(data_length / @max_chart_data_points) |> trunc()
+
+        data
+        |> Enum.chunk_every(window_size)
+        |> Enum.map(fn window ->
+          # For each window, calculate representative value (e.g., mean, min, max)
+          # Here we choose the maximum value in each window for better visual representation
+          # but you could also use average or other statistics
+
+          # Extract the y-values (assuming data is in {label, value} tuples)
+          {label, _} = List.first(window)
+          values = Enum.map(window, fn {_, value} -> value end)
+
+          # Use the max value with the first label
+          max_value = Enum.max(values)
+          {label, max_value}
+        end)
+    end
+  end
+
+  defp sample_chart_data(data), do: data  # Handle non-list data
+
+  # Add private helper to compute cache key
+  defp compute_cache_key(data, bounds) do
+    data_hash = :erlang.phash2(data)
+    bounds_hash = :erlang.phash2(bounds)
+    {data_hash, bounds_hash}
+  end
+
+  # Update the render_treemap_content function to use caching
+  defp render_treemap_content(data, opts, bounds, state) do
     # TODO: Refine data structure assumption if needed
     # Assuming data is like: %{name: "Root", value: 100, children: [...]}
     _title = Map.get(opts, :title, "TreeMap")
@@ -148,26 +286,71 @@ defmodule Raxol.Plugins.VisualizationPlugin do
       end
     else
       try do
-        # Calculate layout
-        # Default to 1 if value missing
-        total_value = Map.get(data, :value, 1)
-        node_rects = layout_treemap_nodes(data, bounds, 0, total_value)
+        # Compute cache key
+        cache_key = compute_cache_key(data, bounds)
 
-        # Color palette for treemap depths
-        # Same as bars, could be different
-        color_palette = [2, 3, 4, 5, 6, 1]
-        num_colors = Enum.count(color_palette)
+        # Check if we have a cached result
+        case Map.get(state.layout_cache, cache_key) do
+          nil ->
+            # No cache hit, calculate layout
+            # Calculate layout
+            # Default to 1 if value missing
+            total_value = Map.get(data, :value, 1)
+            node_rects = layout_treemap_nodes(data, bounds, 0, total_value)
 
-        # Draw node boxes
-        Enum.flat_map(node_rects, fn node_rect ->
-          # Use depth for color variation, cycle through palette
-          fg_color = Enum.at(color_palette, rem(node_rect.depth, num_colors))
-          # Combine name and value for the label
-          label = "#{node_rect.name} (#{node_rect.value})"
-          # Pass color to draw_box_with_text
-          # draw_box_with_text already returns a list of cell tuples
-          draw_box_with_text(label, node_rect, fg: fg_color)
-        end)
+            # Update cache with the new result - limit cache size
+            updated_cache =
+              if map_size(state.layout_cache) >= @layout_cache_size do
+                # Remove oldest entry if cache is full
+                {_, trimmed_cache} = Map.pop(state.layout_cache, Enum.at(Map.keys(state.layout_cache), 0))
+                Map.put(trimmed_cache, cache_key, node_rects)
+              else
+                Map.put(state.layout_cache, cache_key, node_rects)
+              end
+
+            # Store metrics for this calculation
+            layout_time = System.monotonic_time(:millisecond)
+            Raxol.Metrics.gauge("raxol.treemap_layout_time", layout_time)
+            Raxol.Metrics.increment("raxol.treemap_cache_misses")
+
+            # Update state with the new cache
+            new_state = %{state | layout_cache: updated_cache}
+            GenServer.cast(self(), {:update_state, new_state})
+
+            # Color palette for treemap depths
+            # Same as bars, could be different
+            color_palette = [2, 3, 4, 5, 6, 1]
+            num_colors = Enum.count(color_palette)
+
+            # Draw node boxes
+            Enum.flat_map(node_rects, fn node_rect ->
+              # Use depth for color variation, cycle through palette
+              fg_color = Enum.at(color_palette, rem(node_rect.depth, num_colors))
+              # Combine name and value for the label
+              label = "#{node_rect.name} (#{node_rect.value})"
+              # Pass color to draw_box_with_text
+              # draw_box_with_text already returns a list of cell tuples
+              draw_box_with_text(label, node_rect, fg: fg_color)
+            end)
+
+          cached_rects ->
+            # Cache hit! Use the cached rectangles
+            Raxol.Metrics.increment("raxol.treemap_cache_hits")
+
+            # Color palette for treemap depths
+            color_palette = [2, 3, 4, 5, 6, 1]
+            num_colors = Enum.count(color_palette)
+
+            # Draw node boxes from cached layout
+            Enum.flat_map(cached_rects, fn node_rect ->
+              # Use depth for color variation, cycle through palette
+              fg_color = Enum.at(color_palette, rem(node_rect.depth, num_colors))
+              # Combine name and value for the label
+              label = "#{node_rect.name} (#{node_rect.value})"
+              # Pass color to draw_box_with_text
+              draw_box_with_text(label, node_rect, fg: fg_color)
+            end)
+        end
       rescue
         e ->
           Logger.error(
@@ -681,4 +864,25 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   def get_api_version, do: "1.0.0"
   @impl true
   def get_dependencies, do: []
+
+  # Add a function to handle state updates asynchronously
+  def handle_cast({:update_state, new_state}, _state) do
+    {:noreply, new_state}
+  end
+
+  # Add a function to clean up the cache periodically
+  defp schedule_cache_cleanup do
+    # Clean up every 10 minutes
+    cleanup_ref = Process.send_after(self(), :cleanup_cache, :timer.minutes(10))
+    cleanup_ref
+  end
+
+  def handle_info(:cleanup_cache, state) do
+    # Clean up old cache entries
+    new_cleanup_ref = schedule_cache_cleanup()
+    Logger.debug("[VisualizationPlugin] Cleaning visualization cache. Size before: #{map_size(state.layout_cache)}")
+
+    # Reset cache
+    {:noreply, %{state | layout_cache: %{}, cleanup_ref: new_cleanup_ref}}
+  end
 end

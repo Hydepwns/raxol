@@ -7,8 +7,6 @@
 - Optimize rendering pipeline for complex dashboards
 - Ensure cross-platform compatibility for core features
 - Enhance TUI rendering with advanced styling techniques
-- Fix `ex_termbox` dimension reporting inconsistencies
-- Implement custom theme support with configurability (API documentation created)
 - Create comprehensive user documentation and guides
 - Test and benchmark performance metrics
 
@@ -58,6 +56,8 @@
 - Normalize extension organization ✅
 - Improve secrets handling with example templates ✅
 - Implement caching for visualization calculations ✅
+- Fix `ex_termbox` dimension reporting inconsistencies ✅
+- Implement custom theme support with configurability ✅
 
 ## Backlog
 

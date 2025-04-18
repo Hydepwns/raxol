@@ -1,14 +1,12 @@
 /**
  * ThemeSelector.ts
- * 
+ *
  * Component for selecting and switching between dashboard themes.
  */
 
-import { RaxolComponent } from '../../core/component';
-import { View } from '../../core/renderer/view';
-import { ThemeManager, ThemeConfig } from './ThemeManager';
-import { defaultTheme } from './themes/default';
-import { darkTheme } from './themes/dark';
+import { RaxolComponent } from "../../core/component";
+import { View } from "../../core/renderer/view";
+import { ThemeManager, ThemeConfig } from "./ThemeManager";
 
 /**
  * Theme selector configuration
@@ -18,21 +16,36 @@ export interface ThemeSelectorConfig {
    * Theme manager instance
    */
   themeManager: ThemeManager;
-  
-  /**
-   * Available themes
-   */
-  themes?: ThemeConfig[];
-  
+
   /**
    * Whether to show theme preview
    */
   showPreview?: boolean;
-  
+
   /**
    * Whether to show theme description
    */
   showDescription?: boolean;
+
+  /**
+   * Change handler
+   */
+  onChange?: (theme: ThemeConfig) => void;
+
+  /**
+   * Component ID
+   */
+  id?: string;
+
+  /**
+   * CSS class names
+   */
+  className?: string[];
+
+  /**
+   * Custom styles
+   */
+  style?: Record<string, any>;
 }
 
 /**
@@ -40,242 +53,200 @@ export interface ThemeSelectorConfig {
  */
 interface ThemeSelectorState {
   /**
-   * Whether the selector is expanded
+   * Selected theme name
    */
-  isExpanded: boolean;
-  
-  /**
-   * Current theme
-   */
-  currentTheme: ThemeConfig;
+  selectedThemeName: string;
 }
 
 /**
  * Theme selector component
  */
-export class ThemeSelector extends RaxolComponent<ThemeSelectorConfig, ThemeSelectorState> {
+export class ThemeSelector extends RaxolComponent<
+  ThemeSelectorConfig,
+  ThemeSelectorState
+> {
+  /**
+   * Component name
+   */
+  public static readonly componentName = "ThemeSelector";
+
+  /**
+   * Theme manager
+   */
+  private themeManager: ThemeManager;
+
   /**
    * Constructor
    */
   constructor(props: ThemeSelectorConfig) {
     super(props);
-    
+
+    this.themeManager = this.props.themeManager;
+
     this.state = {
-      isExpanded: false,
-      currentTheme: props.themeManager.getTheme()
+      selectedThemeName: this.themeManager.getTheme().name,
     };
   }
-  
+
   /**
-   * Component did mount
+   * Render component
    */
-  componentDidMount(): void {
-    // Add theme change listener
-    this.props.themeManager.addThemeChangeListener(this.handleThemeChange.bind(this));
+  render(): View {
+    const themes = this.themeManager.getAllThemes();
+
+    // Create dropdown options
+    const options = themes.map((theme) => ({
+      value: theme.name,
+      label: theme.name,
+      selected: theme.name === this.state.selectedThemeName,
+    }));
+
+    // Create theme previews if enabled
+    const previews = this.props.showPreview
+      ? themes.map((theme) => this.createThemePreview(theme))
+      : [];
+
+    // Create theme selector
+    return {
+      type: "container",
+      attributes: {
+        id: this.props.id || "theme-selector",
+        class: ["theme-selector", ...(this.props.className || [])],
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          gap: "8px",
+          ...this.props.style,
+        },
+      },
+      children: [
+        {
+          type: "dropdown",
+          attributes: {
+            id: `${this.props.id || "theme-selector"}-dropdown`,
+            class: ["theme-selector-dropdown"],
+            style: {
+              width: "100%",
+            },
+            onChange: (e: any) => this.handleThemeChange(e.target.value),
+          },
+          children: options.map((option) => ({
+            type: "option",
+            attributes: {
+              value: option.value,
+              selected: option.selected,
+            },
+            children: [{ type: "text", value: option.label }],
+          })),
+        },
+        ...(previews.length > 0
+          ? [
+              {
+                type: "container",
+                attributes: {
+                  class: ["theme-previews"],
+                  style: {
+                    display: "flex",
+                    flexWrap: "wrap",
+                    gap: "8px",
+                  },
+                },
+                children: previews,
+              },
+            ]
+          : []),
+      ],
+    };
   }
-  
-  /**
-   * Component will unmount
-   */
-  componentWillUnmount(): void {
-    // Remove theme change listener
-    this.props.themeManager.removeThemeChangeListener(this.handleThemeChange.bind(this));
-  }
-  
+
   /**
    * Handle theme change
    */
-  private handleThemeChange(theme: ThemeConfig): void {
-    this.setState({ currentTheme: theme });
-  }
-  
-  /**
-   * Toggle selector
-   */
-  private toggleSelector(): void {
-    this.setState({
-      isExpanded: !this.state.isExpanded
-    });
-  }
-  
-  /**
-   * Set theme
-   */
-  private setTheme(theme: ThemeConfig): void {
-    this.props.themeManager.setTheme(theme);
-  }
-  
-  /**
-   * Get available themes
-   */
-  private getAvailableThemes(): ThemeConfig[] {
-    return this.props.themes || [defaultTheme, darkTheme];
-  }
-  
-  /**
-   * Render theme preview
-   */
-  private renderThemePreview(theme: ThemeConfig): ViewElement {
-    if (!this.props.showPreview) {
-      return null;
+  private handleThemeChange(themeName: string): void {
+    if (this.themeManager.setThemeByName(themeName)) {
+      this.setState({ selectedThemeName: themeName });
+
+      // Call change handler if provided
+      if (this.props.onChange) {
+        const theme = this.themeManager.getThemeByName(themeName);
+        if (theme) {
+          this.props.onChange(theme);
+        }
+      }
     }
-    
-    const { colors, typography, spacing, borders } = theme;
-    
-    return View.box({
-      style: {
-        width: '100%',
-        height: '60px',
-        backgroundColor: colors.background,
-        border: `${borders.width.regular} solid ${colors.border}`,
-        borderRadius: borders.radius.small,
-        padding: spacing.sm,
-        marginTop: spacing.sm
-      },
-      children: [
-        View.flex({
-          direction: 'column',
-          children: [
-            View.text('Preview', {
-              style: {
-                color: colors.text,
-                fontFamily: typography.fontFamily,
-                fontSize: typography.fontSize.small,
-                fontWeight: typography.fontWeight.bold
-              }
-            }),
-            View.flex({
-              direction: 'row',
-              style: {
-                marginTop: spacing.xs
-              },
-              children: [
-                View.box({
-                  style: {
-                    width: '20px',
-                    height: '20px',
-                    backgroundColor: colors.primary,
-                    borderRadius: borders.radius.small,
-                    marginRight: spacing.xs
-                  }
-                }),
-                View.box({
-                  style: {
-                    width: '20px',
-                    height: '20px',
-                    backgroundColor: colors.secondary,
-                    borderRadius: borders.radius.small,
-                    marginRight: spacing.xs
-                  }
-                }),
-                View.box({
-                  style: {
-                    width: '20px',
-                    height: '20px',
-                    backgroundColor: colors.success,
-                    borderRadius: borders.radius.small
-                  }
-                })
-              ]
-            })
-          ]
-        })
-      ]
-    });
   }
-  
+
   /**
-   * Render theme option
+   * Create theme preview
    */
-  private renderThemeOption(theme: ThemeConfig): ViewElement {
-    const { currentTheme } = this.state;
-    const isSelected = theme.name === currentTheme.name;
-    
-    return View.box({
-      style: {
-        padding: '10px',
-        border: 'single',
-        marginBottom: '5px',
-        cursor: 'pointer',
-        backgroundColor: isSelected ? currentTheme.colors.primary : 'transparent'
+  private createThemePreview(theme: ThemeConfig): View {
+    return {
+      type: "container",
+      attributes: {
+        class: ["theme-preview"],
+        style: {
+          display: "flex",
+          flexDirection: "column",
+          width: "120px",
+          height: "80px",
+          padding: "8px",
+          borderRadius: theme.borders.radius.small,
+          backgroundColor: theme.colors.background,
+          border: `${theme.borders.width.thin} solid ${theme.colors.border}`,
+          cursor: "pointer",
+        },
+        onClick: () => this.handleThemeChange(theme.name),
       },
-      onClick: () => this.setTheme(theme),
       children: [
-        View.flex({
-          direction: 'column',
+        {
+          type: "text",
+          attributes: {
+            style: {
+              color: theme.colors.text,
+              fontFamily: theme.typography.fontFamily,
+              fontSize: theme.typography.fontSize.small,
+              fontWeight: String(theme.typography.fontWeight.bold),
+            },
+          },
+          value: theme.name,
+        },
+        {
+          type: "container",
+          attributes: {
+            style: {
+              display: "flex",
+              gap: "4px",
+              marginTop: "8px",
+            },
+          },
           children: [
-            View.flex({
-              direction: 'row',
-              justify: 'space-between',
-              children: [
-                View.text(theme.name, {
-                  style: {
-                    fontWeight: 'bold',
-                    color: isSelected ? currentTheme.colors.background : currentTheme.colors.text
-                  }
-                }),
-                isSelected ? View.text('✓', {
-                  style: {
-                    color: currentTheme.colors.background
-                  }
-                }) : null
-              ]
-            }),
-            this.props.showDescription ? View.text(theme.description || '', {
-              style: {
-                fontSize: '12px',
-                color: isSelected ? currentTheme.colors.background : currentTheme.colors.text,
-                marginTop: '5px'
-              }
-            }) : null,
-            this.renderThemePreview(theme)
-          ]
-        })
-      ]
-    });
+            // Color swatches
+            this.createColorSwatch(theme.colors.primary),
+            this.createColorSwatch(theme.colors.secondary),
+            this.createColorSwatch(theme.colors.success),
+            this.createColorSwatch(theme.colors.warning),
+            this.createColorSwatch(theme.colors.error),
+          ],
+        },
+      ],
+    };
   }
-  
+
   /**
-   * Render the selector
+   * Create color swatch
    */
-  render(): ViewElement {
-    const { currentTheme, isExpanded } = this.state;
-    const availableThemes = this.getAvailableThemes();
-    
-    return View.box({
-      style: {
-        position: 'relative'
+  private createColorSwatch(color: string): View {
+    return {
+      type: "container",
+      attributes: {
+        style: {
+          width: "16px",
+          height: "16px",
+          backgroundColor: color,
+          borderRadius: "2px",
+        },
       },
-      children: [
-        View.box({
-          style: {
-            padding: '10px',
-            border: 'single',
-            cursor: 'pointer',
-            display: 'flex',
-            alignItems: 'center',
-            justifyContent: 'space-between'
-          },
-          onClick: () => this.toggleSelector(),
-          children: [
-            View.text('Theme', { style: { fontWeight: 'bold' } }),
-            View.text(isExpanded ? '▼' : '▶')
-          ]
-        }),
-        isExpanded ? View.box({
-          style: {
-            position: 'absolute',
-            top: '100%',
-            left: 0,
-            right: 0,
-            backgroundColor: currentTheme.colors.background,
-            border: 'single',
-            padding: '10px',
-            zIndex: 1000
-          },
-          children: availableThemes.map(theme => this.renderThemeOption(theme))
-        }) : null
-      ]
-    });
+      children: [],
+    };
   }
-} 
+}

@@ -18,6 +18,7 @@ defmodule Raxol.RuntimeDebug do
   alias Raxol.Plugins.ImagePlugin
   alias Raxol.Plugins.VisualizationPlugin
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.TerminalUtils
 
   # Client API
 
@@ -336,25 +337,14 @@ defmodule Raxol.RuntimeDebug do
       {:noreply, state}
     end
 
-    # Fetch current dimensions
-    width =
-      case Bindings.width() do
-        {:ok, {:ok, w}} -> w
-        {:ok, w} when is_integer(w) -> w
-        # Fallback or handle error
-        _ -> state.width
-      end
+    # Get dimensions using TerminalUtils instead of hardcoding height
+    {width, height} = TerminalUtils.get_terminal_dimensions()
 
-    # --- Workaround: Hardcode dimensions due to ex_termbox issue ---
-    height_val = 30
-    # <<< MODULE NAME
-    Logger.warning(
-      "[RuntimeDebug.handle_info(:render)] Using HARDCODED dimensions: #{width}x#{height_val}"
+    Logger.debug(
+      "[RuntimeDebug.handle_info(:render)] Using dimensions from TerminalUtils: #{width}x#{height}"
     )
 
-    # --- End Workaround ---\
-
-    dims = %{x: 0, y: 0, width: width, height: height_val}
+    dims = %{x: 0, y: 0, width: width, height: height}
 
     # --- Update Model with Correct Dimensions BEFORE Rendering ---\
     # Original logic restored - Assumes state.model is populated by MyApp.init
@@ -443,7 +433,7 @@ defmodule Raxol.RuntimeDebug do
 
         # --- Create new buffer with correct dimensions BEFORE updating ---
         new_buffer =
-          ScreenBuffer.new(width, height_val) |> ScreenBuffer.update(changes)
+          ScreenBuffer.new(width, height) |> ScreenBuffer.update(changes)
 
         # new_buffer = ScreenBuffer.update(state.cell_buffer, changes) # OLD
 
@@ -474,8 +464,8 @@ defmodule Raxol.RuntimeDebug do
             plugin_manager: updated_manager,
             # <<< STORE ACTUAL WIDTH
             width: width,
-            # <<< STORE ACTUAL HEIGHT (workaround)
-            height: height_val
+            # <<< STORE ACTUAL HEIGHT (using value from TerminalUtils)
+            height: height
         }
 
         # <<< MODULE NAME
@@ -1629,5 +1619,17 @@ defmodule Raxol.RuntimeDebug do
     fn ->
       log_performance(operation, start_time)
     end
+  end
+
+  # ----- Function to handle terminal resize event -----
+  def handle_info({:event, %ExTermbox.Event{type: :resize, w: width, h: height}}, state) do
+    # <<< MODULE NAME
+    Logger.info(
+      "[RuntimeDebug.handle_info(:resize)] Terminal resize event: #{width}x#{height}."
+    )
+
+    # Store the new dimensions
+    # Here we could trigger a re-layout based on the new dimensions
+    {:noreply, %{state | width: width, height: height}}
   end
 end

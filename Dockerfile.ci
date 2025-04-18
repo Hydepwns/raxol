@@ -1,0 +1,32 @@
+FROM elixir:1.16-otp-26
+
+# Install basic dependencies
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  build-essential \
+  autoconf \
+  m4 \
+  libncurses5-dev \
+  libssl-dev \
+  libgl1-mesa-dev \
+  libglu1-mesa-dev \
+  libpng-dev \
+  openssl \
+  git \
+  curl \
+  wget \
+  unzip \
+  nodejs \
+  npm \
+  && rm -rf /var/lib/apt/lists/*
+
+# Set up environment
+ENV MIX_HOME=/root/.mix
+ENV HEX_HOME=/root/.hex
+
+# Install Hex and Rebar
+RUN mix local.hex --force && \
+  mix local.rebar --force
+
+WORKDIR /app
+
+CMD ["tail", "-f", "/dev/null"]

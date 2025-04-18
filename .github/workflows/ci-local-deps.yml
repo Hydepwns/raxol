@@ -1,29 +1,20 @@
-name: CI-Local
+name: CI-Local-Dependencies
 
 on:
   workflow_dispatch:
 
 jobs:
   test-deps:
-    name: Test Dependencies
+    name: Test Ranch Dependency
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Erlang and Elixir
-        uses: erlef/setup-beam@v1
-        with:
-          otp-version: "26.0"
-          elixir-version: "1.16"
-
       - name: Setup Mix and Rebar
         run: |
+          echo "Elixir version: $(elixir --version)"
           mix local.hex --force
           mix local.rebar --force
-          # Show versions for debugging
-          echo "Elixir version: $(elixir --version)"
-          echo "Mix version: $(mix --version)"
-          echo "Rebar3 version: $(~/.mix/elixir/*/rebar3 --version || echo 'rebar3 not found')"
 
       - name: Install Mix Dependencies with improved error handling
         run: |
