@@ -99,4 +99,4 @@ See [GitHub Actions README](.github/workflows/README.md) for detailed instructio
 
 ## License
 
-MIT License - see [LICENSE](LICENSE) file for details.
+MIT License - see [LICENSE](LICENSE.md) file for details.

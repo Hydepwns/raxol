@@ -168,7 +168,7 @@ defmodule Raxol.MixProject do
   defp docs do
     [
       main: "readme",
-      extras: ["README.md", "CHANGELOG.md", "docs/development.md"],
+      extras: ["README.md", "CHANGELOG.md", "LICENSE.md", "docs/development.md"],
       source_url: "https://github.com/Hydepwns/raxol",
       source_ref: "v#{@version}",
       formatters: ["html"]
