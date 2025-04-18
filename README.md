@@ -33,6 +33,7 @@ cd extensions/vscode
 npm install
 npm run build
 # Press F5 in VS Code or run: code --install-extension raxol-*.vsix
+# Or press Command + Shift + P -> Install from VSIX -> raxol-*.vsix
 ```
 
 ## Usage
@@ -66,7 +67,27 @@ mix test                  # Run tests
 mix credo                 # Code quality
 mix dialyzer              # Type checking
 mix ecto.setup            # Setup database
+./scripts/run-local-tests.sh  # Run tests locally without GitHub Actions
 ```
+
+### GitHub Actions
+
+To run GitHub Actions workflows locally for testing:
+
+```bash
+# Run with default settings (CI workflow)
+./scripts/run-local-actions.sh
+
+# Run a specific workflow (e.g., simplified dummy test)
+./scripts/run-local-actions.sh -w dummy-test.yml -j test
+```
+
+See [GitHub Actions README](.github/workflows/README.md) for detailed instructions on:
+
+- Running workflows locally with `act`
+- Troubleshooting common issues
+- Testing on different platforms
+- Setting up custom Docker images for ARM Macs
 
 ## Project Structure
 
