@@ -67,6 +67,20 @@ defmodule Raxol.Plugins.VisualizationPlugin do
      }}
   end
 
+  @doc """
+  Render chart content to terminal cells. Used for benchmarking and testing.
+  """
+  def render_chart_content(data, opts, bounds, state) do
+    render_chart_content_internal(data, opts, bounds, state)
+  end
+
+  @doc """
+  Render treemap content to terminal cells. Used for benchmarking and testing.
+  """
+  def render_treemap_content(data, opts, bounds, state) do
+    render_treemap_content_internal(data, opts, bounds, state)
+  end
+
   @impl true
   def handle_cells(cell, _emulator_state, plugin_state) do
     case cell do
@@ -82,7 +96,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
           "[VisualizationPlugin] Handling :chart placeholder. Bounds: #{inspect(bounds)}"
         )
 
-        chart_cells = render_chart_content(data, opts, bounds, plugin_state)
+        chart_cells = render_chart_content_internal(data, opts, bounds, plugin_state)
         # Return :ok, state (unchanged), replacement cells, empty commands
         {:ok, plugin_state, chart_cells, []}
 
@@ -98,7 +112,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
           "[VisualizationPlugin] Handling :treemap placeholder. Bounds: #{inspect(bounds)}"
         )
 
-        treemap_cells = render_treemap_content(data, opts, bounds, plugin_state)
+        treemap_cells = render_treemap_content_internal(data, opts, bounds, plugin_state)
         # Return :ok, state (unchanged), replacement cells, empty commands
         {:ok, plugin_state, treemap_cells, []}
 
@@ -127,7 +141,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   # --- Private Helpers ---
 
   # Renamed from render_chart_to_cells
-  defp render_chart_content(data, opts, bounds, state) do
+  defp render_chart_content_internal(data, opts, bounds, state) do
     # Default to :bar chart if type is not specified or unknown
     # chart_type = Map.get(opts, :type, :bar) # Keep for future use if supporting other types
     title = Map.get(opts, :title, "Chart")
@@ -275,7 +289,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
   end
 
   # Update the render_treemap_content function to use caching
-  defp render_treemap_content(data, opts, bounds, state) do
+  defp render_treemap_content_internal(data, opts, bounds, state) do
     # TODO: Refine data structure assumption if needed
     # Assuming data is like: %{name: "Root", value: 100, children: [...]}
     _title = Map.get(opts, :title, "TreeMap")
