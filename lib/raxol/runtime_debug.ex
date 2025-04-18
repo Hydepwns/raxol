@@ -10,7 +10,6 @@ defmodule Raxol.RuntimeDebug do
 
   require Logger
 
-  alias Raxol.Core.Runtime.ComponentManager
   alias Raxol.Event
   alias ExTermbox.Bindings
   alias Raxol.Terminal.Registry, as: AppRegistry
@@ -545,6 +544,10 @@ defmodule Raxol.RuntimeDebug do
     end
   end
 
+  # This clause was removed because it conflicts with the more general
+  # handle_info({:event, raw_event_tuple}, state) clause above
+  # The resize event is now handled in the general event handler
+
   # Catch-all for unexpected messages
   @impl true
   def handle_info(message, state) do
@@ -604,12 +607,14 @@ defmodule Raxol.RuntimeDebug do
 
         {:noreply, state}
 
-      {:ok, :skipped} ->
-        Logger.info(
-          "[RuntimeDebug.handle_continue] Termbox polling skipped as configured."
-        )
-
-        schedule_render(state)
+        # This case is now handled in the catch-all clause below
+        # {:ok, :skipped} ->
+        #   Logger.info(
+        #     "[RuntimeDebug.handle_continue] Termbox polling skipped as configured."
+        #   )
+        # 
+        #   schedule_render(state)
+        #   {:noreply, state}
         {:noreply, state}
 
       {:error, reason} ->
@@ -1707,19 +1712,8 @@ defmodule Raxol.RuntimeDebug do
   end
 
   # ----- Function to handle terminal resize event -----
-  def handle_info(
-        {:event, %ExTermbox.Event{type: :resize, w: width, h: height}},
-        state
-      ) do
-    # <<< MODULE NAME
-    Logger.info(
-      "[RuntimeDebug.handle_info(:resize)] Terminal resize event: #{width}x#{height}."
-    )
-
-    # Store the new dimensions
-    # Here we could trigger a re-layout based on the new dimensions
-    {:noreply, %{state | width: width, height: height}}
-  end
+  # This handle_info clause was moved to be with the other handle_info clauses
+  # to avoid the "clauses with the same name and arity should be grouped together" warning
 
   @doc """
   Start tracking memory usage for benchmarking.

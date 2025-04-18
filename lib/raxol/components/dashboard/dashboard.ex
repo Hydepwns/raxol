@@ -558,10 +558,10 @@ defmodule Raxol.Components.Dashboard.Dashboard do
     x == handle_x && y == handle_y
   end
 
-  # For backward compatibility
-  @doc false
-  @deprecated "Use in_resize_handle?/3 instead"
-  defp is_in_resize_handle?(x, y, bounds), do: in_resize_handle?(x, y, bounds)
+  # For backward compatibility - commented out as unused
+  # @doc false
+  # @deprecated "Use in_resize_handle?/3 instead"
+  # defp is_in_resize_handle?(x, y, bounds), do: in_resize_handle?(x, y, bounds)
 
   defp coords_to_grid_cell(x, y, grid_config) do
     parent_bounds = grid_config.parent_bounds
