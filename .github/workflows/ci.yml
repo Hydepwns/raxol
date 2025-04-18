@@ -158,10 +158,13 @@ jobs:
         with:
           args: --severity-threshold=high
 
-      # For macOS, use the setup action which doesn't require Docker
-      - name: Setup Snyk CLI on macOS
+      # For macOS, use npm installation instead of Docker-based action
+      - name: Install Snyk CLI on macOS using npm
         if: runner.os == 'macOS'
-        uses: snyk/actions/setup@master
+        run: |
+          echo "Installing Snyk CLI via npm..."
+          npm install -g snyk
+          echo "Installed Snyk CLI version: $(snyk --version || echo 'installation failed')"
 
       # Run simplified Snyk scan on macOS (no container scanning)
       - name: Run Security Scan on macOS
