@@ -117,7 +117,11 @@ defmodule Raxol.Plugins.ClipboardPlugin do
 
   defp get_selected_text(%__MODULE__{} = state) do
     case state do
-      %{selection_start: start_pos, selection_end: end_pos, last_cells_at_selection: cells}
+      %{
+        selection_start: start_pos,
+        selection_end: end_pos,
+        last_cells_at_selection: cells
+      }
       when is_tuple(start_pos) and is_tuple(end_pos) and is_map(cells) ->
         # Determine top-left and bottom-right corners
         {sx, sy} = start_pos
