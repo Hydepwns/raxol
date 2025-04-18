@@ -29,16 +29,80 @@ defmodule Raxol.Metrics do
   end
 
   @doc """
+  Records a gauge metric value.
+
+  ## Parameters
+
+  - name: The name of the metric
+  - value: The value to record for the metric
+
+  ## Examples
+
+      Raxol.Metrics.gauge("raxol.chart_render_time", 42.5)
+  """
+  def gauge(name, value) when is_binary(name) do
+    try do
+      GenServer.cast(__MODULE__, {:gauge, name, value})
+    rescue
+      ArgumentError ->
+        # Handle the case where GenServer is not started (e.g., in tests)
+        Logger.debug("Metrics service not available, ignoring gauge: #{name}=#{value}")
+        :ok
+    end
+  end
+
+  @doc """
+  Increments a counter metric.
+
+  ## Parameters
+
+  - name: The name of the metric to increment
+
+  ## Examples
+
+      Raxol.Metrics.increment("raxol.chart_cache_hits")
+  """
+  def increment(name) when is_binary(name) do
+    try do
+      GenServer.cast(__MODULE__, {:increment, name})
+    rescue
+      ArgumentError ->
+        # Handle the case where GenServer is not started (e.g., in tests)
+        Logger.debug("Metrics service not available, ignoring increment: #{name}")
+        :ok
+    end
+  end
+
+  @doc """
   Returns the current metrics.
 
   Returns a map containing the current system metrics.
   """
   def get_current_metrics do
-    GenServer.call(__MODULE__, :get_metrics)
+    try do
+      GenServer.call(__MODULE__, :get_metrics)
+    rescue
+      ArgumentError ->
+        # Return empty metrics if GenServer not available
+        %{}
+    end
   end
 
   def handle_call(:get_metrics, _from, state) do
     {:reply, state, state}
+  end
+
+  def handle_cast({:gauge, name, value}, state) do
+    gauges = Map.get(state, :gauges, %{})
+    updated_gauges = Map.put(gauges, name, value)
+    {:noreply, Map.put(state, :gauges, updated_gauges)}
+  end
+
+  def handle_cast({:increment, name}, state) do
+    counters = Map.get(state, :counters, %{})
+    current_value = Map.get(counters, name, 0)
+    updated_counters = Map.put(counters, name, current_value + 1)
+    {:noreply, Map.put(state, :counters, updated_counters)}
   end
 
   def handle_info(:collect_metrics, state) do
@@ -49,6 +113,9 @@ defmodule Raxol.Metrics do
       database_connections: get_db_connections(),
       response_times: update_response_times(state.response_times),
       error_rates: update_error_rates(state.error_rates),
+      # Preserve existing gauges and counters
+      gauges: Map.get(state, :gauges, %{}),
+      counters: Map.get(state, :counters, %{}),
       last_updated: DateTime.utc_now()
     }
 
@@ -66,6 +133,8 @@ defmodule Raxol.Metrics do
       database_connections: 0,
       response_times: [],
       error_rates: %{},
+      gauges: %{},
+      counters: %{},
       last_updated: DateTime.utc_now()
     }
   end
