@@ -60,13 +60,13 @@ config :raxol, :terminal,
   scrollback_lines: 1000,
   enable_ansi: true,
   enable_mouse: true,
-  debug_mode: true,
-  log_level: :debug
+  debug_mode: false,
+  log_level: :info
 
 # Configure web interface settings for development
 config :raxol, :web,
   default_theme: "light",
   enable_websockets: true,
   session_timeout: 3600,
-  debug_mode: true,
+  debug_mode: false,
   enable_hot_reload: true

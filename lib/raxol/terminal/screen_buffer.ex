@@ -3,10 +3,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Manages the terminal's screen buffer, including operations for resizing, scrolling, and selection handling.
   """
 
+  require Logger
+
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.CharacterHandling
   alias Raxol.Terminal.ANSI.TextFormatting
-  require Logger
 
   defstruct [
     :cells,
@@ -33,14 +34,23 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
   @spec new(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: t()
   def new(width, height, scrollback_limit \\ 1000) do
+    # Validate width and height are valid numbers
+    actual_width = if is_number(width) and width > 0, do: width, else: 80
+    actual_height = if is_number(height) and height > 0, do: height, else: 24
+
+    # Log warning if invalid dimensions provided
+    unless is_number(width) and is_number(height) do
+      Logger.warning("Invalid dimensions provided to ScreenBuffer.new: width=#{inspect(width)}, height=#{inspect(height)}. Using defaults.")
+    end
+
     %__MODULE__{
-      cells: List.duplicate(List.duplicate(Cell.new(), width), height),
+      cells: List.duplicate(List.duplicate(Cell.new(), actual_width), actual_height),
       scrollback: [],
       scrollback_limit: scrollback_limit,
       selection: nil,
       scroll_region: nil,
-      width: width,
-      height: height
+      width: actual_width,
+      height: actual_height
     }
   end
 

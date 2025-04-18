@@ -612,7 +612,7 @@ defmodule Raxol.RuntimeDebug do
         #   Logger.info(
         #     "[RuntimeDebug.handle_continue] Termbox polling skipped as configured."
         #   )
-        # 
+        #
         #   schedule_render(state)
         #   {:noreply, state}
         {:noreply, state}
@@ -1190,308 +1190,329 @@ defmodule Raxol.RuntimeDebug do
   # Takes the element, its drawing bounds %{x, y, width, height}, and accumulator map %{cells: list, commands: list}.
   # Returns {next_y_within_bounds, updated_acc_map}
   defp process_view_element(element, bounds, acc) do
-    case element do
-      # Handle nil child
-      nil ->
-        {bounds.y, acc}
+    # Validate bounds first - handle invalid bounds structures or values
+    if not is_map(bounds) or
+       not is_number(Map.get(bounds, :width)) or
+       not is_number(Map.get(bounds, :height)) or
+       not is_number(Map.get(bounds, :x)) or
+       not is_number(Map.get(bounds, :y)) do
+      Logger.error("Invalid bounds structure in process_view_element: #{inspect(bounds)}")
+      # Return safe values and don't process the element
+      {0, acc}
+    else
+      case element do
+        # Handle nil child
+        nil ->
+          {bounds.y, acc}
 
-      # Handle empty list child
-      [] ->
-        {bounds.y, acc}
+        # Handle empty list child
+        [] ->
+          {bounds.y, acc}
 
-      # Handle :view
-      %{type: :view, children: children} when is_list(children) ->
-        valid_children = Enum.reject(children, &is_nil/1)
+        # Handle :view
+        %{type: :view, children: children} when is_list(children) ->
+          valid_children = Enum.reject(children, &is_nil/1)
 
-        Enum.reduce(valid_children, {bounds.y, acc}, fn child,
-                                                        {current_y,
-                                                         accumulated_acc} ->
+          Enum.reduce(valid_children, {bounds.y, acc}, fn child,
+                                                          {current_y,
+                                                           accumulated_acc} ->
+            child_bounds = %{
+              bounds
+              | y: current_y,
+                height: max(0, bounds.height - (current_y - bounds.y))
+            }
+
+            # Reset inner acc?
+            {y_after_child, child_acc} =
+              process_view_element(child, child_bounds, %{
+                accumulated_acc
+                | cells: [],
+                  commands: []
+              })
+
+            # Merge results
+            merged_acc = %{
+              cells: accumulated_acc.cells ++ child_acc.cells,
+              commands: accumulated_acc.commands ++ child_acc.commands
+            }
+
+            {y_after_child, merged_acc}
+          end)
+
+        # Handle :panel
+        %{type: :panel, children: children} when is_list(children) ->
           child_bounds = %{
-            bounds
-            | y: current_y,
-              height: max(0, bounds.height - (current_y - bounds.y))
+            x: bounds.x + 1,
+            y: bounds.y + 1,
+            width: max(0, bounds.width - 2),
+            height: max(0, bounds.height - 2)
           }
 
-          # Reset inner acc?
-          {y_after_child, child_acc} =
-            process_view_element(child, child_bounds, %{
-              accumulated_acc
-              | cells: [],
-                commands: []
-            })
+          valid_children = Enum.reject(children, &is_nil/1)
 
-          # Merge results
-          merged_acc = %{
-            cells: accumulated_acc.cells ++ child_acc.cells,
-            commands: accumulated_acc.commands ++ child_acc.commands
+          # Process children within panel bounds, accumulating results in panel_acc
+          {_final_y, panel_acc} =
+            Enum.reduce(
+              valid_children,
+              {child_bounds.y, %{cells: [], commands: []}},
+              fn child, {current_y, accumulated_acc} ->
+                current_child_bounds = %{
+                  child_bounds
+                  | y: current_y,
+                    height:
+                      max(0, child_bounds.height - (current_y - child_bounds.y))
+                }
+
+                {next_y_after_child, child_acc} =
+                  process_view_element(child, current_child_bounds, %{
+                    accumulated_acc
+                    | cells: [],
+                      commands: []
+                  })
+
+                # Merge results
+                merged_acc = %{
+                  cells: accumulated_acc.cells ++ child_acc.cells,
+                  commands: accumulated_acc.commands ++ child_acc.commands
+                }
+
+                {next_y_after_child, merged_acc}
+              end
+            )
+
+          # Merge panel's accumulated results with the outer accumulator
+          final_acc = %{
+            cells: acc.cells ++ panel_acc.cells,
+            commands: acc.commands ++ panel_acc.commands
           }
 
-          {y_after_child, merged_acc}
-        end)
+          {bounds.y + bounds.height, final_acc}
 
-      # Handle :panel
-      %{type: :panel, children: children} when is_list(children) ->
-        child_bounds = %{
-          x: bounds.x + 1,
-          y: bounds.y + 1,
-          width: max(0, bounds.width - 2),
-          height: max(0, bounds.height - 2)
-        }
+        # Handle :text
+        %{type: :text, text: text_content} when is_binary(text_content) ->
+          {next_y, text_cells} = p_render_text_content(text_content, bounds)
+          # Text doesn't generate commands directly
+          {next_y, %{acc | cells: acc.cells ++ text_cells}}
 
-        valid_children = Enum.reject(children, &is_nil/1)
+        # Handle :box
+        %{type: :box, opts: opts, children: children} ->
+          # Check if this box represents a plugin widget placeholder
+          case Keyword.get(opts, :widget_config) do
+            # This box IS a plugin widget placeholder
+            %{
+              type: :chart,
+              data: data,
+              component_opts: component_opts,
+              bounds: element_bounds
+            } ->
+              Logger.debug(
+                "[RuntimeDebug.process_view_element] Matched :image widget inside :box. Incoming component_opts: #{inspect(component_opts)}"
+              )
 
-        # Process children within panel bounds, accumulating results in panel_acc
-        {_final_y, panel_acc} =
-          Enum.reduce(
-            valid_children,
-            {child_bounds.y, %{cells: [], commands: []}},
-            fn child, {current_y, accumulated_acc} ->
-              current_child_bounds = %{
-                child_bounds
-                | y: current_y,
-                  height:
-                    max(0, child_bounds.height - (current_y - child_bounds.y))
+              placeholder_cell = %{
+                type: :placeholder,
+                value: :chart,
+                data: data,
+                opts: component_opts,
+                bounds: element_bounds
               }
 
-              {next_y_after_child, child_acc} =
-                process_view_element(child, current_child_bounds, %{
-                  accumulated_acc
-                  | cells: [],
-                    commands: []
-                })
+              Logger.debug(
+                "[RuntimeDebug.process_view_element] Created :image placeholder cell from :box: #{inspect(placeholder_cell)}"
+              )
 
-              # Merge results
-              merged_acc = %{
-                cells: accumulated_acc.cells ++ child_acc.cells,
-                commands: accumulated_acc.commands ++ child_acc.commands
+              updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
+              # Use the bounds from the placeholder config for the next y
+              {element_bounds.y + element_bounds.height, updated_acc}
+
+            %{
+              type: :treemap,
+              data: data,
+              component_opts: component_opts,
+              bounds: element_bounds
+            } ->
+              placeholder_cell = %{
+                type: :placeholder,
+                value: :treemap,
+                data: data,
+                opts: component_opts,
+                bounds: element_bounds
               }
 
-              {next_y_after_child, merged_acc}
-            end
+              updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
+              {element_bounds.y, updated_acc}
+
+            %{
+              type: :image,
+              component_opts: component_opts,
+              bounds: element_bounds
+            } ->
+              Logger.debug(
+                "[RuntimeDebug.process_view_element] Matched :image widget inside :box. Incoming component_opts: #{inspect(component_opts)}"
+              )
+
+              placeholder_cell = %{
+                type: :placeholder,
+                value: :image,
+                opts: component_opts,
+                bounds: element_bounds
+              }
+
+              Logger.debug(
+                "[RuntimeDebug.process_view_element] Created :image placeholder cell from :box: #{inspect(placeholder_cell)}"
+              )
+
+              updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
+              {element_bounds.y, updated_acc}
+
+            # This box is NOT a plugin widget placeholder, process children
+            nil ->
+              # Extract box positioning/sizing from the :opts keyword list
+              box_rel_x = Keyword.get(opts, :x, 0)
+              box_rel_y = Keyword.get(opts, :y, 0)
+              # Bounds passed in are the parent bounds
+              box_abs_x = bounds.x + box_rel_x
+              box_abs_y = bounds.y + box_rel_y
+
+              # Calculate width/height based on opts or fill parent bounds
+              box_width =
+                case Keyword.get(opts, :width) do
+                  :fill -> bounds.width - box_rel_x
+                  val when is_integer(val) -> val
+                  # Default to fill
+                  _ -> bounds.width - box_rel_x
+                end
+
+              box_height =
+                case Keyword.get(opts, :height) do
+                  :fill -> bounds.height - box_rel_y
+                  val when is_integer(val) -> val
+                  # Default to fill
+                  _ -> bounds.height - box_rel_y
+                end
+
+              # Clip the box to the parent bounds
+              clipped_x = max(bounds.x, box_abs_x)
+              clipped_y = max(bounds.y, box_abs_y)
+
+              # Validate bounds before arithmetic operations
+              bounds_valid = is_number(bounds.x) and is_number(bounds.width) and
+                            is_number(bounds.y) and is_number(bounds.height) and
+                            is_number(clipped_x) and is_number(clipped_y)
+
+              # Use safe default values if bounds are invalid
+              {clipped_width, clipped_height} =
+                if bounds_valid do
+                  width = max(0, min(box_width, bounds.x + bounds.width - clipped_x))
+                  height = max(0, min(box_height, bounds.y + bounds.height - clipped_y))
+                  {width, height}
+                else
+                  Logger.error("Invalid bounds values in process_view_element: bounds=#{inspect(bounds)}, box_abs_x=#{inspect(box_abs_x)}, box_abs_y=#{inspect(box_abs_y)}")
+                  {10, 10}  # Safe default values
+                end
+
+              # Define the bounds for children within this box
+              child_bounds = %{
+                x: clipped_x,
+                y: clipped_y,
+                width: clipped_width,
+                height: clipped_height
+              }
+
+              valid_children = Enum.reject(children, &is_nil/1)
+
+              # Process children within box bounds, accumulating results in box_acc
+              {_final_y_within_box, box_acc} =
+                Enum.reduce(
+                  valid_children,
+                  {child_bounds.y, %{cells: [], commands: []}},
+                  fn child, {current_y, accumulated_acc} ->
+                    if current_y < child_bounds.y + child_bounds.height do
+                      current_child_bounds = %{
+                        child_bounds
+                        | y: current_y,
+                          height:
+                            max(
+                              0,
+                              child_bounds.height - (current_y - child_bounds.y)
+                            )
+                      }
+
+                      # Pass inner acc
+                      {y_after_child, child_acc} =
+                        process_view_element(child, current_child_bounds, %{
+                          accumulated_acc
+                          | cells: [],
+                            commands: []
+                        })
+
+                      # Merge results
+                      merged_acc = %{
+                        cells: accumulated_acc.cells ++ child_acc.cells,
+                        commands: accumulated_acc.commands ++ child_acc.commands
+                      }
+
+                      next_y =
+                        min(y_after_child, child_bounds.y + child_bounds.height)
+
+                      {next_y, merged_acc}
+                    else
+                      {current_y, accumulated_acc}
+                    end
+                  end
+                )
+
+              # Merge box's accumulated results with the outer accumulator
+              final_acc = %{
+                cells: acc.cells ++ box_acc.cells,
+                commands: acc.commands ++ box_acc.commands
+              }
+
+              next_y_after_box =
+                min(
+                  bounds.y + bounds.height,
+                  child_bounds.y + child_bounds.height
+                )
+
+              {next_y_after_box, final_acc}
+          end
+
+        # End case Map.get(opts, :widget_config)
+
+        # Handle :placeholder (Should not be generated by view, but maybe by plugin?)
+        %{type: :placeholder} = placeholder ->
+          Logger.debug(
+            "[RuntimeDebug.process_view_element] Passing through existing placeholder: #{inspect(placeholder)}"
           )
 
-        # Merge panel's accumulated results with the outer accumulator
-        final_acc = %{
-          cells: acc.cells ++ panel_acc.cells,
-          commands: acc.commands ++ panel_acc.commands
-        }
+          updated_acc = %{acc | cells: acc.cells ++ [placeholder]}
+          {bounds.y, updated_acc}
 
-        {bounds.y + bounds.height, final_acc}
+        # Catch-all for other map types (log warning)
+        element when is_map(element) ->
+          Logger.warning(
+            "[RuntimeDebug.process_view_element] Unhandled view element type: #{inspect(element)}"
+          )
 
-      # Handle :text
-      %{type: :text, text: text_content} when is_binary(text_content) ->
-        {next_y, text_cells} = p_render_text_content(text_content, bounds)
-        # Text doesn't generate commands directly
-        {next_y, %{acc | cells: acc.cells ++ text_cells}}
+          {bounds.y, acc}
 
-      # Handle :box
-      %{type: :box, opts: opts, children: children} ->
-        # Check if this box represents a plugin widget placeholder
-        case Keyword.get(opts, :widget_config) do
-          # This box IS a plugin widget placeholder
-          %{
-            type: :chart,
-            data: data,
-            component_opts: component_opts,
-            bounds: element_bounds
-          } ->
-            Logger.debug(
-              "[RuntimeDebug.process_view_element] Matched :image widget inside :box. Incoming component_opts: #{inspect(component_opts)}"
-            )
+        # Handle strings directly (assuming they are meant as simple text)
+        element when is_binary(element) ->
+          Logger.debug(
+            "[RuntimeDebug.process_view_element] Handling raw string: \"#{element}\""
+          )
 
-            placeholder_cell = %{
-              type: :placeholder,
-              value: :chart,
-              data: data,
-              opts: component_opts,
-              bounds: element_bounds
-            }
+          {next_y, text_cells} = p_render_text_content(element, bounds)
+          {next_y, %{acc | cells: acc.cells ++ text_cells}}
 
-            Logger.debug(
-              "[RuntimeDebug.process_view_element] Created :image placeholder cell from :box: #{inspect(placeholder_cell)}"
-            )
+        # Catch-all for other unexpected element types
+        _other ->
+          Logger.warning(
+            "[RuntimeDebug.process_view_element] Encountered unexpected element type: #{inspect(element)}"
+          )
 
-            updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
-            # Use the bounds from the placeholder config for the next y
-            {element_bounds.y + element_bounds.height, updated_acc}
-
-          %{
-            type: :treemap,
-            data: data,
-            component_opts: component_opts,
-            bounds: element_bounds
-          } ->
-            placeholder_cell = %{
-              type: :placeholder,
-              value: :treemap,
-              data: data,
-              opts: component_opts,
-              bounds: element_bounds
-            }
-
-            updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
-            {element_bounds.y, updated_acc}
-
-          %{
-            type: :image,
-            component_opts: component_opts,
-            bounds: element_bounds
-          } ->
-            Logger.debug(
-              "[RuntimeDebug.process_view_element] Matched :image widget inside :box. Incoming component_opts: #{inspect(component_opts)}"
-            )
-
-            placeholder_cell = %{
-              type: :placeholder,
-              value: :image,
-              opts: component_opts,
-              bounds: element_bounds
-            }
-
-            Logger.debug(
-              "[RuntimeDebug.process_view_element] Created :image placeholder cell from :box: #{inspect(placeholder_cell)}"
-            )
-
-            updated_acc = %{acc | cells: acc.cells ++ [placeholder_cell]}
-            {element_bounds.y, updated_acc}
-
-          # This box is NOT a plugin widget placeholder, process children
-          nil ->
-            # Extract box positioning/sizing from the :opts keyword list
-            box_rel_x = Keyword.get(opts, :x, 0)
-            box_rel_y = Keyword.get(opts, :y, 0)
-            # Bounds passed in are the parent bounds
-            box_abs_x = bounds.x + box_rel_x
-            box_abs_y = bounds.y + box_rel_y
-
-            # Calculate width/height based on opts or fill parent bounds
-            box_width =
-              case Keyword.get(opts, :width) do
-                :fill -> bounds.width - box_rel_x
-                val when is_integer(val) -> val
-                # Default to fill
-                _ -> bounds.width - box_rel_x
-              end
-
-            box_height =
-              case Keyword.get(opts, :height) do
-                :fill -> bounds.height - box_rel_y
-                val when is_integer(val) -> val
-                # Default to fill
-                _ -> bounds.height - box_rel_y
-              end
-
-            # Clip the box to the parent bounds
-            clipped_x = max(bounds.x, box_abs_x)
-            clipped_y = max(bounds.y, box_abs_y)
-
-            clipped_width =
-              max(0, min(box_width, bounds.x + bounds.width - clipped_x))
-
-            clipped_height =
-              max(0, min(box_height, bounds.y + bounds.height - clipped_y))
-
-            # Define the bounds for children within this box
-            child_bounds = %{
-              x: clipped_x,
-              y: clipped_y,
-              width: clipped_width,
-              height: clipped_height
-            }
-
-            valid_children = Enum.reject(children, &is_nil/1)
-
-            # Process children within box bounds, accumulating results in box_acc
-            {_final_y_within_box, box_acc} =
-              Enum.reduce(
-                valid_children,
-                {child_bounds.y, %{cells: [], commands: []}},
-                fn child, {current_y, accumulated_acc} ->
-                  if current_y < child_bounds.y + child_bounds.height do
-                    current_child_bounds = %{
-                      child_bounds
-                      | y: current_y,
-                        height:
-                          max(
-                            0,
-                            child_bounds.height - (current_y - child_bounds.y)
-                          )
-                    }
-
-                    # Pass inner acc
-                    {y_after_child, child_acc} =
-                      process_view_element(child, current_child_bounds, %{
-                        accumulated_acc
-                        | cells: [],
-                          commands: []
-                      })
-
-                    # Merge results
-                    merged_acc = %{
-                      cells: accumulated_acc.cells ++ child_acc.cells,
-                      commands: accumulated_acc.commands ++ child_acc.commands
-                    }
-
-                    next_y =
-                      min(y_after_child, child_bounds.y + child_bounds.height)
-
-                    {next_y, merged_acc}
-                  else
-                    {current_y, accumulated_acc}
-                  end
-                end
-              )
-
-            # Merge box's accumulated results with the outer accumulator
-            final_acc = %{
-              cells: acc.cells ++ box_acc.cells,
-              commands: acc.commands ++ box_acc.commands
-            }
-
-            next_y_after_box =
-              min(
-                bounds.y + bounds.height,
-                child_bounds.y + child_bounds.height
-              )
-
-            {next_y_after_box, final_acc}
-        end
-
-      # End case Map.get(opts, :widget_config)
-
-      # Handle :placeholder (Should not be generated by view, but maybe by plugin?)
-      %{type: :placeholder} = placeholder ->
-        Logger.debug(
-          "[RuntimeDebug.process_view_element] Passing through existing placeholder: #{inspect(placeholder)}"
-        )
-
-        updated_acc = %{acc | cells: acc.cells ++ [placeholder]}
-        {bounds.y, updated_acc}
-
-      # Catch-all for other map types (log warning)
-      element when is_map(element) ->
-        Logger.warning(
-          "[RuntimeDebug.process_view_element] Unhandled view element type: #{inspect(element)}"
-        )
-
-        {bounds.y, acc}
-
-      # Handle strings directly (assuming they are meant as simple text)
-      element when is_binary(element) ->
-        Logger.debug(
-          "[RuntimeDebug.process_view_element] Handling raw string: \"#{element}\""
-        )
-
-        {next_y, text_cells} = p_render_text_content(element, bounds)
-        {next_y, %{acc | cells: acc.cells ++ text_cells}}
-
-      # Catch-all for other unexpected element types
-      _other ->
-        Logger.warning(
-          "[RuntimeDebug.process_view_element] Encountered unexpected element type: #{inspect(element)}"
-        )
-
-        {bounds.y, acc}
+          {bounds.y, acc}
+      end
     end
   end
 
