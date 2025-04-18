@@ -8,7 +8,6 @@ defmodule Raxol.Test.MockDB do
   @behaviour Ecto.Adapter.Queryable
   @behaviour Ecto.Adapter.Schema
   @behaviour Ecto.Adapter.Migration
-  @behaviour Ecto.Adapter.Prepare
 
   defmacro __before_compile__(_env) do
     quote do
@@ -44,6 +43,8 @@ defmodule Raxol.Test.MockDB do
     {:ok, child_spec, meta}
   end
 
+  def checked_out?(_meta), do: true
+
   def checkout(_, _, _) do
     {:ok, nil}
   end
@@ -70,15 +71,15 @@ defmodule Raxol.Test.MockDB do
   end
 
   # Ecto.Adapter.Queryable callbacks
-  def prepare(operation, query) do
-    {:nocache, {operation, query}}
+  def prepare(:explain, query), do: {:nocache, query}
+  def prepare(_operation, query), do: {:cache, query, query}
+
+  def execute(_meta, _query_cache, _query_params, _log) do
+    # Return {:ok, num_rows, result}
+    {:ok, 0, []}
   end
 
-  def execute(_, _, _, _) do
-    {:ok, %{rows: [], columns: []}}
-  end
-
-  def stream(_, _, _, _) do
+  def stream(_meta, _query_cache, _query_params, _log) do
     Stream.resource(
       fn -> [] end,
       fn
@@ -90,24 +91,43 @@ defmodule Raxol.Test.MockDB do
   end
 
   # Ecto.Adapter.Schema callbacks
-  def autogenerate(_) do
-    {:ok, 1}
+  def autogenerate(type) when type in [:id, :binary_id] do
+    {:ok, Ecto.UUID.generate()}
   end
 
-  def insert(_, _, _, _) do
-    {:ok, %{}}
+  def autogenerate(_other) do
+    nil
   end
 
-  def insert_all(_, _, _, _, _, _) do
-    {1, []}
+  def insert(_meta, _schema_meta, fields, on_conflict, returning, _log) do
+    {:ok, Enum.map(returning, fn {_key, index} -> {index, nil} end)}
   end
 
-  def update(_, _, _, _, _) do
-    {:ok, %{}}
+  def insert_all(
+        _meta,
+        _schema_meta,
+        header,
+        rows,
+        on_conflict,
+        returning,
+        _placeholders,
+        _log
+      ) do
+    returned_rows =
+      Enum.map(rows, fn _row ->
+        Enum.map(returning, fn {_key, index} -> {index, nil} end)
+      end)
+
+    # Return {:ok, num_inserted, returned_values}
+    {:ok, length(rows), returned_rows}
   end
 
-  def delete(_, _, _, _) do
-    {:ok, %{}}
+  def update(_meta, _schema_meta, fields, filters, returning, _log) do
+    {:ok, Enum.map(returning, fn {_key, index} -> {index, nil} end)}
+  end
+
+  def delete(_meta, _schema_meta, filters, returning, _log) do
+    {:ok, Enum.map(returning, fn {_key, index} -> {index, nil} end)}
   end
 
   # Ecto.Adapter.Migration callbacks
@@ -115,8 +135,13 @@ defmodule Raxol.Test.MockDB do
     true
   end
 
-  def execute_ddl(_, _) do
+  def execute_ddl(command, opts, log) do
     :ok
+  end
+
+  def lock_for_migrations(meta, config, lock) do
+    # Mock success
+    {:ok, nil}
   end
 
   def transaction(_, _, _) do
@@ -125,10 +150,5 @@ defmodule Raxol.Test.MockDB do
 
   def rollback(_, _) do
     {:ok, :mock_rollback}
-  end
-
-  # Ecto.Adapter.Prepare callbacks
-  def prepare(operation, query, _adapter) do
-    {:nocache, {operation, query}}
   end
 end

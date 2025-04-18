@@ -27,7 +27,7 @@ config :raxol, RaxolWeb.Endpoint,
 config :raxol, Raxol.Mailer, adapter: Swoosh.Adapters.Test
 
 # Print only warnings and errors during test
-config :logger, level: :warn
+config :logger, level: :warning
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
@@ -70,3 +70,10 @@ config :raxol, :ansi_processor_test,
     :hot_reload,
     :color_system
   ]
+
+# Configure Swoosh API Client adapter
+config :swoosh, :api_client, Raxol.Finch
+
+config :swoosh,
+  log_level: :warning,
+  api_client: Raxol.Finch
