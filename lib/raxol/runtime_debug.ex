@@ -596,16 +596,32 @@ defmodule Raxol.RuntimeDebug do
           "[RuntimeDebug.handle_continue] Termbox polling started successfully."
         )
 
+        # --- Get initial dimensions AFTER polling starts ---
+        {width, height} = TerminalUtils.get_terminal_dimensions()
+
+        Logger.debug(
+          "[RuntimeDebug.handle_continue] Fetched initial dimensions: #{width}x#{height}"
+        )
+
+        updated_state = %{
+          state
+          | width: width,
+            height: height,
+            termbox_initialized: true
+        }
+
+        # ---------------------------------------------------
+
         # Start the timer loop for rendering ONLY if polling started successfully
-        # Schedule the first immediate render
-        schedule_render(state)
+        # Schedule the first immediate render using the UPDATED state
+        schedule_render(updated_state)
         # Log state before returning (should be same as received state)
         # <<< ADDED LOG
         Logger.debug(
-          "[RuntimeDebug.handle_continue(:after_init)] State before returning: #{inspect(state)}"
+          "[RuntimeDebug.handle_continue(:after_init)] State before returning: #{inspect(updated_state)}"
         )
 
-        {:noreply, state}
+        {:noreply, updated_state}
 
         # This case is now handled in the catch-all clause below
         # {:ok, :skipped} ->
@@ -615,7 +631,7 @@ defmodule Raxol.RuntimeDebug do
         #
         #   schedule_render(state)
         #   {:noreply, state}
-        {:noreply, state}
+        {:noreply, updated_state}
 
       {:error, reason} ->
         Logger.error(
