@@ -97,7 +97,7 @@ defmodule Raxol.Runtime do
 
     # Parse options
     app_name = get_app_name(app_module)
-    options = Keyword.drop(opts, [:app_module])
+    _options = Keyword.drop(opts, [:app_module])
 
     # Extract options with defaults
     width = Keyword.get(opts, :width, 80)

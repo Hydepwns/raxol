@@ -1192,11 +1192,14 @@ defmodule Raxol.RuntimeDebug do
   defp process_view_element(element, bounds, acc) do
     # Validate bounds first - handle invalid bounds structures or values
     if not is_map(bounds) or
-       not is_number(Map.get(bounds, :width)) or
-       not is_number(Map.get(bounds, :height)) or
-       not is_number(Map.get(bounds, :x)) or
-       not is_number(Map.get(bounds, :y)) do
-      Logger.error("Invalid bounds structure in process_view_element: #{inspect(bounds)}")
+         not is_number(Map.get(bounds, :width)) or
+         not is_number(Map.get(bounds, :height)) or
+         not is_number(Map.get(bounds, :x)) or
+         not is_number(Map.get(bounds, :y)) do
+      Logger.error(
+        "Invalid bounds structure in process_view_element: #{inspect(bounds)}"
+      )
+
       # Return safe values and don't process the element
       {0, acc}
     else
@@ -1396,19 +1399,31 @@ defmodule Raxol.RuntimeDebug do
               clipped_y = max(bounds.y, box_abs_y)
 
               # Validate bounds before arithmetic operations
-              bounds_valid = is_number(bounds.x) and is_number(bounds.width) and
-                            is_number(bounds.y) and is_number(bounds.height) and
-                            is_number(clipped_x) and is_number(clipped_y)
+              bounds_valid =
+                is_number(bounds.x) and is_number(bounds.width) and
+                  is_number(bounds.y) and is_number(bounds.height) and
+                  is_number(clipped_x) and is_number(clipped_y)
 
               # Use safe default values if bounds are invalid
               {clipped_width, clipped_height} =
                 if bounds_valid do
-                  width = max(0, min(box_width, bounds.x + bounds.width - clipped_x))
-                  height = max(0, min(box_height, bounds.y + bounds.height - clipped_y))
+                  width =
+                    max(0, min(box_width, bounds.x + bounds.width - clipped_x))
+
+                  height =
+                    max(
+                      0,
+                      min(box_height, bounds.y + bounds.height - clipped_y)
+                    )
+
                   {width, height}
                 else
-                  Logger.error("Invalid bounds values in process_view_element: bounds=#{inspect(bounds)}, box_abs_x=#{inspect(box_abs_x)}, box_abs_y=#{inspect(box_abs_y)}")
-                  {10, 10}  # Safe default values
+                  Logger.error(
+                    "Invalid bounds values in process_view_element: bounds=#{inspect(bounds)}, box_abs_x=#{inspect(box_abs_x)}, box_abs_y=#{inspect(box_abs_y)}"
+                  )
+
+                  # Safe default values
+                  {10, 10}
                 end
 
               # Define the bounds for children within this box

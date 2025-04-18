@@ -331,6 +331,42 @@ defmodule Raxol.Core.FocusManager do
   end
 
   @doc """
+  Get the previous focusable element before the given one.
+  Mirrors the logic of `get_next_focusable/1` but searches backwards.
+  """
+  @spec get_previous_focusable(String.t() | nil) :: String.t() | nil
+  def get_previous_focusable(current_focus_id) do
+    focus_state = get_focus_state()
+
+    # Determine the group to navigate within (use default if needed)
+    group = focus_state[:last_group] || :default
+
+    focusables = get_focusables()
+    group_components = Map.get(focusables, group, [])
+
+    # Find the index of the current component
+    current_index =
+      if current_focus_id do
+        Enum.find_index(group_components, fn c -> c.id == current_focus_id end) ||
+          -1
+      else
+        # Start from end if current_focus_id is nil (or not found)
+        # Use length to indicate starting search from the wrap-around point
+        length(group_components)
+      end
+
+    # Find the previous enabled component (wrapping)
+    prev_component =
+      find_prev_enabled_component(group_components, current_index, true)
+
+    if prev_component do
+      prev_component.id
+    else
+      nil
+    end
+  end
+
+  @doc """
   Check if a component has focus.
 
   ## Examples

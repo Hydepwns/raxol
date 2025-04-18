@@ -31,13 +31,19 @@ defmodule Raxol.Components.Dashboard.GridContainer do
   """
   # Handle when an :ok atom is passed
   def resolve_grid_params(:ok) do
-    Logger.warning("resolve_grid_params received :ok atom instead of grid_config map")
+    Logger.warning(
+      "resolve_grid_params received :ok atom instead of grid_config map"
+    )
+
     %{cols: @default_cols, rows: @default_rows}
   end
 
   # Handle other non-map inputs
   def resolve_grid_params(invalid_input) when not is_map(invalid_input) do
-    Logger.warning("Invalid input to resolve_grid_params: #{inspect(invalid_input)}")
+    Logger.warning(
+      "Invalid input to resolve_grid_params: #{inspect(invalid_input)}"
+    )
+
     %{cols: @default_cols, rows: @default_rows}
   end
 
@@ -100,30 +106,51 @@ defmodule Raxol.Components.Dashboard.GridContainer do
   """
   # Handle cases where grid_config is :ok or not a map
   def calculate_widget_bounds(_widget_config, :ok) do
-    Logger.error("calculate_widget_bounds received :ok atom instead of grid_config map")
+    Logger.error(
+      "calculate_widget_bounds received :ok atom instead of grid_config map"
+    )
+
     # Return a safe default bounds
     %{x: 0, y: 0, width: 10, height: 10}
   end
 
-  def calculate_widget_bounds(_widget_config, invalid_grid_config) when not is_map(invalid_grid_config) do
-    Logger.error("Invalid grid_config in calculate_widget_bounds: #{inspect(invalid_grid_config)}")
+  def calculate_widget_bounds(_widget_config, invalid_grid_config)
+      when not is_map(invalid_grid_config) do
+    Logger.error(
+      "Invalid grid_config in calculate_widget_bounds: #{inspect(invalid_grid_config)}"
+    )
+
     # Return a safe default bounds
     %{x: 0, y: 0, width: 10, height: 10}
   end
 
   # Handle maps without parent_bounds
-  def calculate_widget_bounds(_widget_config, %{parent_bounds: nil} = grid_config) do
-    Logger.warning("calculate_widget_bounds received grid_config with nil parent_bounds: #{inspect(grid_config)}")
+  def calculate_widget_bounds(
+        _widget_config,
+        %{parent_bounds: nil} = grid_config
+      ) do
+    Logger.warning(
+      "calculate_widget_bounds received grid_config with nil parent_bounds: #{inspect(grid_config)}"
+    )
+
     %{x: 0, y: 0, width: 10, height: 10}
   end
 
-  def calculate_widget_bounds(_widget_config, %{} = grid_config) when not is_map_key(grid_config, :parent_bounds) do
-    Logger.warning("calculate_widget_bounds received grid_config without parent_bounds: #{inspect(grid_config)}")
+  def calculate_widget_bounds(_widget_config, %{} = grid_config)
+      when not is_map_key(grid_config, :parent_bounds) do
+    Logger.warning(
+      "calculate_widget_bounds received grid_config without parent_bounds: #{inspect(grid_config)}"
+    )
+
     %{x: 0, y: 0, width: 10, height: 10}
   end
 
   # Original function with guard
-  def calculate_widget_bounds(widget_config, %{parent_bounds: parent_bounds} = grid_config) when is_map(parent_bounds) do
+  def calculate_widget_bounds(
+        widget_config,
+        %{parent_bounds: parent_bounds} = grid_config
+      )
+      when is_map(parent_bounds) do
     # --- Log the grid_config RECEIVED --- >
     Logger.debug(
       "[GridContainer.calculate_widget_bounds] Received: widget_id=#{Map.get(widget_config, :id, :unknown)}, grid_config=#{inspect(grid_config)}"
@@ -137,8 +164,12 @@ defmodule Raxol.Components.Dashboard.GridContainer do
     gap = grid_config[:gap] || @default_gap
 
     # Check if width or height are invalid (non-numeric values like :ok)
-    if not is_number(parent_bounds[:width]) or not is_number(parent_bounds[:height]) do
-      Logger.error("Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(parent_bounds[:width])}, container_height=#{inspect(parent_bounds[:height])}")
+    if not is_number(parent_bounds[:width]) or
+         not is_number(parent_bounds[:height]) do
+      Logger.error(
+        "Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(parent_bounds[:width])}, container_height=#{inspect(parent_bounds[:height])}"
+      )
+
       %{x: 0, y: 0, width: 10, height: 10}
     else
       container_width = parent_bounds.width
@@ -161,11 +192,14 @@ defmodule Raxol.Components.Dashboard.GridContainer do
 
       # Validate parent_bounds values
       unless is_map(parent_bounds) and
-            is_number(Map.get(parent_bounds, :x)) and
-            is_number(Map.get(parent_bounds, :y)) and
-            is_number(container_width) and
-            is_number(container_height) do
-        Logger.error("Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(container_width)}, container_height=#{inspect(container_height)}")
+               is_number(Map.get(parent_bounds, :x)) and
+               is_number(Map.get(parent_bounds, :y)) and
+               is_number(container_width) and
+               is_number(container_height) do
+        Logger.error(
+          "Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(container_width)}, container_height=#{inspect(container_height)}"
+        )
+
         return_default = %{x: 0, y: 0, width: 10, height: 10}
         return_default
       else
@@ -194,21 +228,27 @@ defmodule Raxol.Components.Dashboard.GridContainer do
 
         # Validate cell dimensions
         unless is_number(cell_width) and is_number(cell_height) do
-          Logger.error("Invalid cell dimensions in calculate_widget_bounds: width=#{inspect(cell_width)}, height=#{inspect(cell_height)}")
+          Logger.error(
+            "Invalid cell dimensions in calculate_widget_bounds: width=#{inspect(cell_width)}, height=#{inspect(cell_height)}"
+          )
+
           return_default = %{x: 0, y: 0, width: 10, height: 10}
           return_default
         else
           x_pos =
-            parent_bounds.x + (col_start - 1) * cell_width + (col_start - 1) * gap
+            parent_bounds.x + (col_start - 1) * cell_width +
+              (col_start - 1) * gap
 
           y_pos =
-            parent_bounds.y + (row_start - 1) * cell_height + (row_start - 1) * gap
+            parent_bounds.y + (row_start - 1) * cell_height +
+              (row_start - 1) * gap
 
           width = width_cells * cell_width + (width_cells - 1) * gap
           height = height_cells * cell_height + (height_cells - 1) * gap
 
           # Clamp size to container bounds just in case
-          final_width = max(0, min(width, parent_bounds.x + container_width - x_pos))
+          final_width =
+            max(0, min(width, parent_bounds.x + container_width - x_pos))
 
           final_height =
             max(0, min(height, parent_bounds.y + container_height - y_pos))
@@ -233,38 +273,58 @@ defmodule Raxol.Components.Dashboard.GridContainer do
   """
   # Handle when an :ok atom is passed (which causes the ArithmeticError)
   def get_cell_dimensions(:ok) do
-    Logger.error("get_cell_dimensions received :ok atom instead of grid_config map")
-    {10, 10} # Return sensible defaults
+    Logger.error(
+      "get_cell_dimensions received :ok atom instead of grid_config map"
+    )
+
+    # Return sensible defaults
+    {10, 10}
   end
 
   # Handle other non-map inputs
   def get_cell_dimensions(invalid_input) when not is_map(invalid_input) do
-    Logger.error("Invalid input to get_cell_dimensions: #{inspect(invalid_input)}")
-    {10, 10} # Return sensible defaults
+    Logger.error(
+      "Invalid input to get_cell_dimensions: #{inspect(invalid_input)}"
+    )
+
+    # Return sensible defaults
+    {10, 10}
   end
 
   # Handle maps without parent_bounds
   def get_cell_dimensions(%{parent_bounds: nil} = grid_config) do
-    Logger.warning("get_cell_dimensions received grid_config with nil parent_bounds: #{inspect(grid_config)}")
-    {10, 10} # Return sensible defaults
+    Logger.warning(
+      "get_cell_dimensions received grid_config with nil parent_bounds: #{inspect(grid_config)}"
+    )
+
+    # Return sensible defaults
+    {10, 10}
   end
 
-  def get_cell_dimensions(%{} = grid_config) when not is_map_key(grid_config, :parent_bounds) do
-    Logger.warning("get_cell_dimensions received grid_config without parent_bounds: #{inspect(grid_config)}")
-    {10, 10} # Return sensible defaults
+  def get_cell_dimensions(%{} = grid_config)
+      when not is_map_key(grid_config, :parent_bounds) do
+    Logger.warning(
+      "get_cell_dimensions received grid_config without parent_bounds: #{inspect(grid_config)}"
+    )
+
+    # Return sensible defaults
+    {10, 10}
   end
 
   # Original function with guard to ensure parent_bounds exists and is a map
-  def get_cell_dimensions(%{parent_bounds: parent_bounds} = grid_config) when is_map(parent_bounds) do
+  def get_cell_dimensions(%{parent_bounds: parent_bounds} = grid_config)
+      when is_map(parent_bounds) do
     # Extract grid parameters with defaults
     # Resolve cols/rows based on breakpoints and parent width
     %{cols: cols, rows: rows} = resolve_grid_params(grid_config)
     gap = grid_config[:gap] || @default_gap
 
     # Check for required width/height fields in parent_bounds
-    with true <- is_map_key(parent_bounds, :width) and is_map_key(parent_bounds, :height),
-         true <- is_number(parent_bounds.width) and is_number(parent_bounds.height) do
-
+    with true <-
+           is_map_key(parent_bounds, :width) and
+             is_map_key(parent_bounds, :height),
+         true <-
+           is_number(parent_bounds.width) and is_number(parent_bounds.height) do
       container_width = parent_bounds.width
       container_height = parent_bounds.height
 
@@ -286,8 +346,12 @@ defmodule Raxol.Components.Dashboard.GridContainer do
       {cell_width, cell_height}
     else
       _ ->
-        Logger.warning("Invalid parent_bounds structure in get_cell_dimensions: #{inspect(parent_bounds)}")
-        {10, 10} # Return sensible defaults
+        Logger.warning(
+          "Invalid parent_bounds structure in get_cell_dimensions: #{inspect(parent_bounds)}"
+        )
+
+        # Return sensible defaults
+        {10, 10}
     end
   end
 end

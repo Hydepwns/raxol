@@ -124,7 +124,9 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         selection_end: end_pos,
         last_cells_at_selection: cells
       }
-      when is_tuple(start_pos) and is_tuple(end_pos) and is_map(cells) ->
+      when is_tuple(start_pos) and tuple_size(start_pos) == 2 and
+             is_tuple(end_pos) and tuple_size(end_pos) == 2 and
+             is_map(cells) ->
         # Determine top-left and bottom-right corners
         {sx, sy} = start_pos
         {ex, ey} = end_pos

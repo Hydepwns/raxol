@@ -29,7 +29,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     with_screen_reader_spy fn ->
       # Perform action that should trigger announcement
       click_button("Save")
-      
+
       # Assert announcement was made
       assert_announced("File saved successfully")
     end
@@ -54,7 +54,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       with_screen_reader_spy fn ->
         # Perform action
         click_button("Save")
-        
+
         # Assert announcement
         assert_announced("File saved successfully")
       end
@@ -99,7 +99,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   ## Examples
 
       assert_announced("File saved")
-      
+
       assert_announced(~r/File .* saved/, exact: false)
   """
   def assert_announced(expected, opts \\ []) do
@@ -180,7 +180,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   ## Examples
 
       assert_sufficient_contrast("#000000", "#FFFFFF")
-      
+
       assert_sufficient_contrast("#777777", "#FFFFFF", :aaa, :large)
   """
   def assert_sufficient_contrast(
@@ -229,9 +229,9 @@ defmodule Raxol.AccessibilityTestHelpers do
   ## Examples
 
       simulate_keyboard_navigation(3)
-      
+
       simulate_keyboard_navigation(2, shift: true)
-      
+
       simulate_keyboard_navigation(1, starting_element: "search_field")
   """
   def simulate_keyboard_navigation(count, opts \\ []) do
@@ -311,7 +311,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   ## Examples
 
       test_keyboard_shortcut("Ctrl+S")
-      
+
       test_keyboard_shortcut("Ctrl+F", in_context: :editor)
   """
   def test_keyboard_shortcut(shortcut, opts \\ []) do
@@ -330,14 +330,19 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     # Register spy handler
     EventManager.register_handler(
+      # Assuming KeyboardShortcuts dispatches this event type
+      # Verify this event type if tests fail
       :shortcut_executed,
       __MODULE__,
       :handle_shortcut_spy
     )
 
     try do
-      # Simulate shortcut
-      KeyboardShortcuts.handle_shortcut(shortcut)
+      # Parse the shortcut string into an event tuple
+      event_tuple = parse_shortcut_string(shortcut)
+
+      # Dispatch the keyboard event to simulate pressing the keys
+      EventManager.dispatch({:keyboard_event, event_tuple})
 
       # Check if action was executed
       executed = Process.get(:shortcut_action_executed, false)
@@ -440,5 +445,32 @@ defmodule Raxol.AccessibilityTestHelpers do
     Process.put(:shortcut_action_id, shortcut_id)
 
     :ok
+  end
+
+  # Helper function to parse shortcut string (e.g., "Ctrl+Shift+A") into event tuple
+  defp parse_shortcut_string(shortcut_string) when is_binary(shortcut_string) do
+    parts = String.split(shortcut_string, "+")
+    key_str = List.last(parts)
+    modifier_strs = Enum.take(parts, length(parts) - 1)
+
+    key =
+      case key_str do
+        k when byte_size(k) == 1 -> String.to_charlist(k) |> hd()
+        # Add more special key mappings if needed (e.g., "Enter", "Tab")
+        # Assume atom for F-keys, etc.
+        _ -> String.to_atom(String.downcase(key_str))
+      end
+
+    modifiers =
+      Enum.map(modifier_strs, fn
+        "Ctrl" -> :ctrl
+        "Alt" -> :alt
+        "Shift" -> :shift
+        # Ignore unknown modifiers
+        _ -> nil
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    {:key, key, modifiers}
   end
 end

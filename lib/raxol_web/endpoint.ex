@@ -25,8 +25,11 @@ defmodule RaxolWeb.Endpoint do
   # Code reloading can be explicitly enabled under the
   # :code_reloader configuration of your endpoint.
   if code_reloading? do
-    socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
-    plug Phoenix.LiveReloader
+    if Mix.env() == :dev do
+      socket "/phoenix/live_reload/socket", Phoenix.LiveReloader.Socket
+      plug Phoenix.LiveReloader
+    end
+
     plug Phoenix.CodeReloader
 
     # TODO: Commenting out CheckRepoStatus as DB is not configured/running reliably
