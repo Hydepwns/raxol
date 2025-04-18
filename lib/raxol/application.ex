@@ -74,7 +74,9 @@ defmodule Raxol.Application do
     test_env = System.get_env("RAXOL_ENV") == "test" || @compile_env == :test
 
     if headless || test_env || use_mock do
-      Logger.info("Running in headless/test mode - configuring for CI environment")
+      Logger.info(
+        "Running in headless/test mode - configuring for CI environment"
+      )
 
       # Configure terminal settings for headless/test environment
       Application.put_env(:raxol, :terminal,

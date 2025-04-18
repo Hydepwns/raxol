@@ -103,20 +103,29 @@ defmodule Raxol.RuntimeDebug do
     app_name = get_app_name(app_module)
 
     # Check if we should use mock termbox in test environment
-    use_termbox = Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
-    mock_termbox = Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
+    use_termbox =
+      Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
+
+    mock_termbox =
+      Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
 
     # Initialize ExTermbox or use mock - Important: MUST happen before most other actions
-    termbox_result = cond do
-      mock_termbox ->
-        Logger.debug("[RuntimeDebug.init] Using mock termbox implementation")
-        Raxol.Test.MockTermbox.init()
-      use_termbox ->
-        Bindings.init()
-      true ->
-        Logger.debug("[RuntimeDebug.init] Skipping termbox initialization as configured")
-        {:ok, :skipped}
-    end
+    termbox_result =
+      cond do
+        mock_termbox ->
+          Logger.debug("[RuntimeDebug.init] Using mock termbox implementation")
+          Raxol.Test.MockTermbox.init()
+
+        use_termbox ->
+          Bindings.init()
+
+        true ->
+          Logger.debug(
+            "[RuntimeDebug.init] Skipping termbox initialization as configured"
+          )
+
+          {:ok, :skipped}
+      end
 
     case termbox_result do
       # <<< MODULE NAME
@@ -124,7 +133,9 @@ defmodule Raxol.RuntimeDebug do
         Logger.debug("[RuntimeDebug.init] ExTermbox initialized successfully.")
 
       {:ok, :skipped} ->
-        Logger.info("[RuntimeDebug.init] ExTermbox initialization skipped as configured.")
+        Logger.info(
+          "[RuntimeDebug.init] ExTermbox initialization skipped as configured."
+        )
 
       {:error, reason} ->
         # <<< MODULE NAME
@@ -566,18 +577,25 @@ defmodule Raxol.RuntimeDebug do
     )
 
     # Check if we should use mock termbox in test environment
-    use_termbox = Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
-    mock_termbox = Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
+    use_termbox =
+      Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
+
+    mock_termbox =
+      Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
 
     # Start Termbox polling HERE
-    polling_result = cond do
-      mock_termbox ->
-        Raxol.Test.MockTermbox.start_polling(self())
-      use_termbox ->
-        ExTermbox.Bindings.start_polling(self())
-      true ->
-        {:ok, :skipped}  # Skip polling if termbox is disabled
-    end
+    polling_result =
+      cond do
+        mock_termbox ->
+          Raxol.Test.MockTermbox.start_polling(self())
+
+        use_termbox ->
+          ExTermbox.Bindings.start_polling(self())
+
+        true ->
+          # Skip polling if termbox is disabled
+          {:ok, :skipped}
+      end
 
     case polling_result do
       # Match {:ok, reference} on success
@@ -598,7 +616,10 @@ defmodule Raxol.RuntimeDebug do
         {:noreply, state}
 
       {:ok, :skipped} ->
-        Logger.info("[RuntimeDebug.handle_continue] Termbox polling skipped as configured.")
+        Logger.info(
+          "[RuntimeDebug.handle_continue] Termbox polling skipped as configured."
+        )
+
         schedule_render(state)
         {:noreply, state}
 
@@ -628,8 +649,11 @@ defmodule Raxol.RuntimeDebug do
     )
 
     # Check if we should use mock termbox in test environment
-    use_termbox = Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
-    mock_termbox = Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
+    use_termbox =
+      Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
+
+    mock_termbox =
+      Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
 
     dashboard_model = Map.get(state.model, :dashboard_model)
 
@@ -857,8 +881,11 @@ defmodule Raxol.RuntimeDebug do
 
   defp cleanup(state) do
     # Check if we should use mock termbox in test environment
-    use_termbox = Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
-    mock_termbox = Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
+    use_termbox =
+      Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
+
+    mock_termbox =
+      Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
 
     if Map.get(state, :termbox_initialized, false) do
       if mock_termbox do

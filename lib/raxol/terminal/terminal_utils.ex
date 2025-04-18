@@ -74,34 +74,42 @@ defmodule Raxol.Terminal.TerminalUtils do
   # Try to get dimensions using ExTermbox
   defp try_termbox_dimensions do
     # Check if we should use mock termbox in test environment
-    use_termbox = Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
-    mock_termbox = Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
+    use_termbox =
+      Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
+
+    mock_termbox =
+      Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
 
     try do
       # Initialize ExTermbox if not already initialized
-      init_result = cond do
-        mock_termbox ->
-          Raxol.Test.MockTermbox.init()
-        use_termbox ->
-          ExTermbox.Bindings.init()
-        true ->
-          {:ok, :skipped}
-      end
+      init_result =
+        cond do
+          mock_termbox ->
+            Raxol.Test.MockTermbox.init()
+
+          use_termbox ->
+            ExTermbox.Bindings.init()
+
+          true ->
+            {:ok, :skipped}
+        end
 
       case init_result do
         {:ok, _} ->
           # Get dimensions
-          width_result = if mock_termbox do
-            Raxol.Test.MockTermbox.width()
-          else
-            if use_termbox, do: ExTermbox.Bindings.width(), else: {:ok, 80}
-          end
+          width_result =
+            if mock_termbox do
+              Raxol.Test.MockTermbox.width()
+            else
+              if use_termbox, do: ExTermbox.Bindings.width(), else: {:ok, 80}
+            end
 
-          height_result = if mock_termbox do
-            Raxol.Test.MockTermbox.height()
-          else
-            if use_termbox, do: ExTermbox.Bindings.height(), else: {:ok, 24}
-          end
+          height_result =
+            if mock_termbox do
+              Raxol.Test.MockTermbox.height()
+            else
+              if use_termbox, do: ExTermbox.Bindings.height(), else: {:ok, 24}
+            end
 
           # Clean up if we had to initialize
           if mock_termbox do
