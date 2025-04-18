@@ -36,12 +36,13 @@ defmodule Raxol.Test.ButtonHelpers do
     end
 
     # Set up component structure
-    {:ok, %{
-      module: module,
-      state: state,
-      subscriptions: [],
-      event_handler: mock_event_handler
-    }}
+    {:ok,
+     %{
+       module: module,
+       state: state,
+       subscriptions: [],
+       event_handler: mock_event_handler
+     }}
   end
 
   @doc """
@@ -61,6 +62,7 @@ defmodule Raxol.Test.ButtonHelpers do
         {:click, pos} ->
           # Convert click to appropriate event format
           button.module.handle_event({:click, pos}, button.state)
+
         other ->
           # Pass through other events
           button.module.handle_event(other, button.state)
@@ -105,10 +107,13 @@ defmodule Raxol.Test.ButtonHelpers do
     case action do
       {:click, pos} ->
         simulate_event(button, {:click, pos})
+
       :focus ->
         simulate_event(button, %{type: :focus})
+
       :blur ->
         simulate_event(button, %{type: :blur})
+
       other ->
         simulate_event(button, other)
     end
@@ -142,7 +147,9 @@ defmodule Raxol.Test.ButtonHelpers do
   def assert_system_events_handled(component, events) do
     Enum.each(events, fn event ->
       {updated, _} = simulate_event(component, event)
-      assert updated.state != nil, "Component failed to handle event: #{inspect(event)}"
+
+      assert updated.state != nil,
+             "Component failed to handle event: #{inspect(event)}"
     end)
   end
 
@@ -194,7 +201,9 @@ defmodule Raxol.Test.ButtonHelpers do
 
   def assert_renders_with(component, expected_text) do
     output = capture_render(component)
-    assert output =~ expected_text, "Expected output to contain: #{expected_text}"
+
+    assert output =~ expected_text,
+           "Expected output to contain: #{expected_text}"
   end
 
   def assert_styled_with(component, expected_styles) do

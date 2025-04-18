@@ -136,6 +136,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
             line_cells =
               for x <- min_x..max_x do
                 cell = Map.get(cells, {x, y})
+
                 cond do
                   is_nil(cell) -> nil
                   not is_integer(cell.char) -> nil
@@ -157,21 +158,27 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   end
 
   defp set_clipboard_content(text) do
-    result = case :os.type() do
-      {:unix, :darwin} ->
-        System.cmd("pbcopy", [], input: text)
+    result =
+      case :os.type() do
+        {:unix, :darwin} ->
+          System.cmd("pbcopy", [], input: text)
 
-      {:unix, _} ->
-        System.cmd("xclip", ["-selection", "clipboard"], input: text)
+        {:unix, _} ->
+          System.cmd("xclip", ["-selection", "clipboard"], input: text)
 
-      {:win32, _} ->
-        System.cmd("clip", [], input: text)
-    end
+        {:win32, _} ->
+          System.cmd("clip", [], input: text)
+      end
 
     case result do
-      {_, 0} -> :ok
-      {error_output, exit_code} -> 
-        Logger.warning("Clipboard operation failed with exit code #{exit_code}: #{inspect(error_output)}")
+      {_, 0} ->
+        :ok
+
+      {error_output, exit_code} ->
+        Logger.warning(
+          "Clipboard operation failed with exit code #{exit_code}: #{inspect(error_output)}"
+        )
+
         {:error, {:clipboard_error, exit_code, error_output}}
     end
   end

@@ -321,7 +321,11 @@ defmodule Raxol.Runtime do
 
       # Get changes (if cell_buffer is tracking)
       # Fix for Dialyzer warning - ensure cells is a list of lists
-      cells_list = if is_list(cells) and length(cells) > 0 and is_list(hd(cells)), do: cells, else: [[]]
+      cells_list =
+        if is_list(cells) and length(cells) > 0 and is_list(hd(cells)),
+          do: cells,
+          else: [[]]
+
       changes = ScreenBuffer.get_changes(cell_buffer, cells_list)
 
       # Prepare a simplified version of the cells for JSON transmission
@@ -474,9 +478,13 @@ defmodule Raxol.Runtime do
 
             # Handle plugin commands
             case send_plugin_commands(plugin_commands) do
-              :ok -> :ok
+              :ok ->
+                :ok
+
               {:error, reason} ->
-                Logger.error("Failed to send plugin commands: #{inspect(reason)}")
+                Logger.error(
+                  "Failed to send plugin commands: #{inspect(reason)}"
+                )
             end
 
             # Update state
@@ -693,9 +701,15 @@ defmodule Raxol.Runtime do
         # First stop the polling task
         try do
           Logger.debug("[Runtime] Calling stop_polling...")
+
           case ExTermbox.Bindings.stop_polling() do
-            :ok -> Logger.debug("[Runtime] stop_polling completed successfully")
-            {:error, reason} -> Logger.warning("[Runtime] stop_polling returned error: #{inspect(reason)}")
+            :ok ->
+              Logger.debug("[Runtime] stop_polling completed successfully")
+
+            {:error, reason} ->
+              Logger.warning(
+                "[Runtime] stop_polling returned error: #{inspect(reason)}"
+              )
           end
         rescue
           e ->
@@ -705,9 +719,15 @@ defmodule Raxol.Runtime do
         # Then shut down the terminal
         try do
           Logger.debug("[Runtime] Calling shutdown...")
+
           case ExTermbox.Bindings.shutdown() do
-            :ok -> Logger.debug("[Runtime] shutdown completed successfully")
-            {:error, reason} -> Logger.warning("[Runtime] shutdown returned error: #{inspect(reason)}")
+            :ok ->
+              Logger.debug("[Runtime] shutdown completed successfully")
+
+            {:error, reason} ->
+              Logger.warning(
+                "[Runtime] shutdown returned error: #{inspect(reason)}"
+              )
           end
         rescue
           e ->
@@ -1038,7 +1058,8 @@ defmodule Raxol.Runtime do
                 {:noreply, final_state}
 
               # Match stop with reason and state (only valid pattern)
-              {:stop, _reason, final_state} -> {:stop, :normal, final_state}
+              {:stop, _reason, final_state} ->
+                {:stop, :normal, final_state}
             end
           end
       end
@@ -1060,7 +1081,6 @@ defmodule Raxol.Runtime do
 
         case handle_event(event_tuple, new_state) do
           {:continue, final_state} -> {:noreply, final_state}
-
           # Match stop with reason and state (only valid pattern)
           {:stop, _reason, final_state} -> {:stop, :normal, final_state}
         end
@@ -1077,7 +1097,6 @@ defmodule Raxol.Runtime do
 
         case handle_event(event_tuple, state) do
           {:continue, final_state} -> {:noreply, final_state}
-
           # Match stop with reason and state (only valid pattern)
           {:stop, _reason, final_state} -> {:stop, :normal, final_state}
         end

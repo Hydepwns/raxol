@@ -219,14 +219,20 @@ defmodule Raxol.Core.Runtime.ComponentManager do
       {:unsubscribe, sub_id} ->
         # Remove subscription using aliased Subscription module
         case Subscription.stop(sub_id) do
-          :ok -> 
+          :ok ->
             update_in(state.subscriptions, &Map.delete(&1, sub_id))
+
           {:error, reason} ->
-            Logger.warning("Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}")
+            Logger.warning(
+              "Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}"
+            )
+
             update_in(state.subscriptions, &Map.delete(&1, sub_id))
+
           true ->
             # Handle boolean return value case
             update_in(state.subscriptions, &Map.delete(&1, sub_id))
+
           {:ok, :cancel} ->
             update_in(state.subscriptions, &Map.delete(&1, sub_id))
         end
@@ -246,13 +252,19 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     # Unsubscribe from each using aliased Subscription module
     Enum.each(to_remove, fn {sub_id, _} ->
       case Subscription.stop(sub_id) do
-        :ok -> 
+        :ok ->
           :ok
+
         {:error, reason} ->
           require Logger
-          Logger.warning("Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}")
+
+          Logger.warning(
+            "Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}"
+          )
+
         _ ->
-          :ok  # Handle any other return values
+          # Handle any other return values
+          :ok
       end
     end)
 

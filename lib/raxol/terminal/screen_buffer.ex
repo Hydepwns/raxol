@@ -152,7 +152,13 @@ defmodule Raxol.Terminal.ScreenBuffer do
       # Construct the new cells array by replacing the scroll region
       new_region_content = remaining_lines ++ empty_lines
 
-      replace_scroll_region(buffer, scroll_start, scroll_end, new_region_content, new_scrollback)
+      replace_scroll_region(
+        buffer,
+        scroll_start,
+        scroll_end,
+        new_region_content,
+        new_scrollback
+      )
     end
   end
 
@@ -180,7 +186,13 @@ defmodule Raxol.Terminal.ScreenBuffer do
         # Construct the new cells array by replacing the scroll region
         new_region_content = scroll_lines ++ shifted_lines
 
-        replace_scroll_region(buffer, scroll_start, scroll_end, new_region_content, new_scrollback)
+        replace_scroll_region(
+          buffer,
+          scroll_start,
+          scroll_end,
+          new_region_content,
+          new_scrollback
+        )
       else
         buffer
       end
@@ -194,10 +206,22 @@ defmodule Raxol.Terminal.ScreenBuffer do
       List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
 
     # Replace the scroll region with empty cells
-    replace_scroll_region(buffer, scroll_start, scroll_end, empty_region, buffer.scrollback)
+    replace_scroll_region(
+      buffer,
+      scroll_start,
+      scroll_end,
+      empty_region,
+      buffer.scrollback
+    )
   end
 
-  defp replace_scroll_region(buffer, scroll_start, scroll_end, new_content, new_scrollback) do
+  defp replace_scroll_region(
+         buffer,
+         scroll_start,
+         scroll_end,
+         new_content,
+         new_scrollback
+       ) do
     # Construct the new cells array by replacing the scroll region
     new_cells =
       Enum.slice(buffer.cells, 0, scroll_start) ++
@@ -614,7 +638,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Gets the changes between the current buffer and the provided new cells.
   Returns a list of tuple {x, y, cell} for each changed cell.
   """
-  @spec get_changes(t(), list(list(Cell.t()))) :: list({integer(), integer(), Cell.t()})
+  @spec get_changes(t(), list(list(Cell.t()))) ::
+          list({integer(), integer(), Cell.t()})
   def get_changes(%__MODULE__{} = buffer, new_cells) do
     changes = []
 
@@ -653,7 +678,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Compares two buffers and returns the differences as a list of {x, y, cell} tuples.
   This is an alias for get_changes for backward compatibility.
   """
-  @spec diff(t(), list(list(Cell.t()))) :: list({integer(), integer(), Cell.t()})
+  @spec diff(t(), list(list(Cell.t()))) ::
+          list({integer(), integer(), Cell.t()})
   def diff(buffer, new_cells) do
     get_changes(buffer, new_cells)
   end

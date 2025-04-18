@@ -16,6 +16,7 @@ defmodule Raxol.Core.Events.Clipboard do
       {:unix, :darwin} ->
         # macOS uses pbcopy
         {_output, exit_status} = System.cmd("pbcopy", [], input: text)
+
         if exit_status == 0 do
           {:ok, text}
         else

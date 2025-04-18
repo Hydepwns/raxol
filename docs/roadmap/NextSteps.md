@@ -41,11 +41,19 @@ The application is now at a stable prototype stage with most core components wor
    - Ensure proper terminal cleanup across platforms
 
 4. **Documentation Expansion**
+
    - Create comprehensive user guides
    - Update API documentation with latest implementations
    - Create tutorials for common workflows
    - Document theme customization process
    - Document component testing approach for contributors
+
+5. **CI/CD and GitHub Actions Improvements**
+   - Updated cross-platform testing matrix for Linux, macOS and Windows
+   - Streamlined Docker images for testing environment
+   - Local workflow testing with act for debugging GitHub Actions
+   - ARM support for macOS developers using Orbstack
+   - Consistent environment variables across all test platforms
 
 ## Immediate Development Priorities
 
@@ -56,6 +64,7 @@ The application is now at a stable prototype stage with most core components wor
 | Cross-Platform Compatibility | Ensure consistent behavior across platforms           | In Progress |
 | TUI Rendering Enhancements   | Improve rendering performance in terminal environment | In Progress |
 | Documentation Updates        | Update API docs and create user guides                | In Progress |
+| GitHub Actions Improvements  | Fix workflow testing matrix for cross-platform runs   | Completed   |
 
 ## Technical Implementation Plan
 
@@ -111,6 +120,14 @@ After completing the current priorities, we plan to implement additional visuali
 - Implement CI pipeline for terminal-specific tests
 - Add performance regression detection
 
+### GitHub Actions Testing
+
+- Using `act` for local testing and debugging GitHub Actions workflows
+- Docker images optimized for ARM MacOS developers (via Orbstack)
+- Environment parity between local dev and CI environments
+- Testing across multiple Erlang/Elixir versions and platforms
+- Robust database setup for both Linux (via services) and macOS (local install)
+
 ## Contribution Areas
 
 For developers interested in contributing to Raxol, here are key areas where help is needed:
@@ -158,6 +175,7 @@ For developers interested in contributing to Raxol, here are key areas where hel
 - Theme System Implementation: `ThemeManager.ts`, `ThemeSelector.ts`, `theme_config.ex`, `ThemeConfigPage.ts`
 - Button Component Implementation: `button.ex`, `button_test.exs`
 - Project Structure: See updated README.md
+- CI/CD: `.github/workflows/`, `docker/`, `scripts/run-local-actions.sh`
 
 ## Future Roadmap
 

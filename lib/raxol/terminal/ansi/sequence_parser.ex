@@ -46,8 +46,12 @@ defmodule Raxol.Terminal.ANSI.SequenceParser do
   * `{:ok, operation, params}` - Successfully parsed sequence
   * `:error` - Failed to parse sequence
   """
-  @spec parse_sequence(binary(), function()) :: {:ok, atom(), list(integer())} | :error
-  def parse_sequence(<<params::binary-size(1), operation::binary>>, operation_decoder) do
+  @spec parse_sequence(binary(), function()) ::
+          {:ok, atom(), list(integer())} | :error
+  def parse_sequence(
+        <<params::binary-size(1), operation::binary>>,
+        operation_decoder
+      ) do
     case parse_params(params) do
       {:ok, parsed_params} ->
         # Extract the character code from the operation binary

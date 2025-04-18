@@ -64,8 +64,12 @@ defmodule Raxol.Components.Dashboard.Dashboard do
         :ok ->
           Logger.info("Dashboard layout saved to #{layout_file}")
           :ok
+
         {:error, reason} ->
-          Logger.error("Failed to save dashboard layout to #{layout_file}: #{inspect(reason)}")
+          Logger.error(
+            "Failed to save dashboard layout to #{layout_file}: #{inspect(reason)}"
+          )
+
           {:error, reason}
       end
     rescue
@@ -73,6 +77,7 @@ defmodule Raxol.Components.Dashboard.Dashboard do
         Logger.error(
           "Failed to save dashboard layout to #{layout_file}: #{inspect(e)}"
         )
+
         {:error, :exception}
 
         {:error, e}
@@ -412,9 +417,11 @@ defmodule Raxol.Components.Dashboard.Dashboard do
 
             # Save layout after resize
             new_model = %{model | resizing: nil}
+
             case save_layout(new_model.widgets) do
               :ok -> new_model
-              {:error, _reason} -> new_model # Still return the model even if save fails
+              # Still return the model even if save fails
+              {:error, _reason} -> new_model
             end
 
           model.dragging ->
@@ -424,9 +431,11 @@ defmodule Raxol.Components.Dashboard.Dashboard do
 
             # Save layout after drag
             new_model = %{model | dragging: nil}
+
             case save_layout(new_model.widgets) do
               :ok -> new_model
-              {:error, _reason} -> new_model # Still return the model even if save fails
+              # Still return the model even if save fails
+              {:error, _reason} -> new_model
             end
 
           # No drag/resize was active
@@ -470,8 +479,10 @@ defmodule Raxol.Components.Dashboard.Dashboard do
       )
 
       case save_layout(updated_model.widgets) do
-        :ok -> {updated_model, true}
-        {:error, reason} -> 
+        :ok ->
+          {updated_model, true}
+
+        {:error, reason} ->
           Logger.error("Failed to save layout: #{inspect(reason)}")
           {updated_model, false}
       end
