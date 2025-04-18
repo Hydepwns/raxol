@@ -460,18 +460,19 @@ defmodule Raxol.RuntimeDebug do
 
     case PluginManager.handle_cells(state.plugin_manager, new_cells, state) do
       {:ok, updated_manager, final_cells, plugin_commands} ->
-        changes = ScreenBuffer.diff(state.cell_buffer, final_cells)
-        # <<< MODULE NAME
+        # Log cells received
         Logger.debug(
-          "[RuntimeDebug.handle_info(:render)] Calculated #{length(changes)} cell changes to apply."
+          "[RuntimeDebug.handle_info(:render)] Received #{length(final_cells)} cells from plugins, #{length(plugin_commands)} commands"
         )
 
-        # --- Create new buffer with correct dimensions BEFORE updating ---
+        # Calculate changes for rendering
+        changes = ScreenBuffer.diff(state.cell_buffer, final_cells)
+
+        # Calculate new buffer
         new_buffer =
           ScreenBuffer.new(width, height) |> ScreenBuffer.update(changes)
 
-        # new_buffer = ScreenBuffer.update(state.cell_buffer, changes) # OLD
-
+        # Render changes to screen
         Enum.each(changes, fn {x, y, cell_map} ->
           char_code = Map.get(cell_map, :char)
           style_map = Map.get(cell_map, :style, %{})
@@ -481,7 +482,6 @@ defmodule Raxol.RuntimeDebug do
           if is_integer(char_code) do
             ExTermbox.Bindings.change_cell(x, y, char_code, fg, bg)
           else
-            # <<< MODULE NAME
             Logger.warning(
               "[RuntimeDebug] Skipping invalid char_code in change_cell: #{inspect(char_code)} at (#{x},#{y})"
             )
@@ -511,17 +511,6 @@ defmodule Raxol.RuntimeDebug do
         # Schedule the next render based on FPS
         schedule_render(new_state)
         {:noreply, new_state}
-
-      # Added error handling based on original code structure
-      {:error, reason} ->
-        Logger.error(
-          # <<< MODULE NAME
-          "[RuntimeDebug.handle_info(:render)] Error processing cells through plugins: #{inspect(reason)}"
-        )
-
-        # Still schedule next render even on error
-        schedule_render(state)
-        {:noreply, state}
     end
   end
 
@@ -794,7 +783,7 @@ defmodule Raxol.RuntimeDebug do
       {:continue, updated_state} ->
         {:noreply, updated_state}
 
-      {:stop, updated_state} ->
+      {:stop, _reason, updated_state} ->
         cleanup(updated_state)
         {:stop, :normal, updated_state}
 

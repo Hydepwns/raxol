@@ -518,9 +518,14 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Checks if the given position is within the current selection.
   Returns false if there is no selection.
   """
-  def is_in_selection?(manager, x, y) do
-    ScreenBuffer.is_in_selection?(manager.active_buffer, x, y)
+  def in_selection?(manager, x, y) do
+    ScreenBuffer.in_selection?(manager.active_buffer, x, y)
   end
+
+  # For backward compatibility
+  @doc false
+  @deprecated "Use in_selection?/2 instead"
+  def is_in_selection?(manager, x, y), do: in_selection?(manager, x, y)
 
   @doc """
   Gets the boundaries of the current selection.

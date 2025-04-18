@@ -141,16 +141,34 @@ defmodule Raxol.Core.Runtime.Subscription do
   def stop(subscription_id) do
     case subscription_id do
       {:interval, timer_ref} ->
-        :timer.cancel(timer_ref)
+        case :timer.cancel(timer_ref) do
+          {:ok, :cancel} -> :ok
+          {:error, reason} -> {:error, {:timer_cancel_error, reason}}
+          _ -> :ok  # Handle any other return values
+        end
 
       {:events, actual_id} ->
-        Raxol.Core.Events.Manager.unsubscribe(actual_id)
+        case Raxol.Core.Events.Manager.unsubscribe(actual_id) do
+          :ok -> :ok
+          {:error, reason} -> {:error, {:event_unsubscribe_error, reason}}
+          result -> {:ok, result}  # Handle any other return values
+        end
 
       {:file_watch, watcher_pid} ->
-        Process.exit(watcher_pid, :normal)
+        if Process.alive?(watcher_pid) do
+          Process.exit(watcher_pid, :normal)
+          :ok
+        else
+          {:error, :process_not_alive}
+        end
 
       {:custom, source_pid} ->
-        Process.exit(source_pid, :normal)
+        if Process.alive?(source_pid) do
+          Process.exit(source_pid, :normal)
+          :ok
+        else
+          {:error, :process_not_alive}
+        end
 
       _ ->
         {:error, :invalid_subscription}
@@ -171,14 +189,17 @@ defmodule Raxol.Core.Runtime.Subscription do
       send(context.pid, {:subscription, msg})
     end
 
-    {:ok, timer_ref} =
-      :timer.send_interval(
-        interval + :rand.uniform(jitter),
-        context.pid,
-        {:subscription, msg}
-      )
-
-    {:ok, {:interval, timer_ref}}
+    # Add error handling for timer creation
+    case :timer.send_interval(
+      interval + :rand.uniform(jitter),
+      context.pid,
+      {:subscription, msg}
+    ) do
+      {:ok, timer_ref} ->
+        {:ok, {:interval, timer_ref}}
+      {:error, reason} ->
+        {:error, {:timer_creation_error, reason}}
+    end
   end
 
   defp start_event_subscription(event_types, context) do
@@ -210,19 +231,29 @@ defmodule Raxol.Core.Runtime.Subscription do
 
   # File watching helper
   defp watch_file(path, events, target_pid) do
-    {:ok, watcher_pid} = FileSystem.start_link(dirs: [path])
-    FileSystem.subscribe(watcher_pid)
-
-    receive do
-      {_watcher_pid, {:file_event, path, file_events}} ->
-        if Enum.any?(file_events, &(&1 in events)) do
-          send(target_pid, {:subscription, {:file_change, path, file_events}})
+    case FileSystem.start_link(dirs: [path]) do
+      {:ok, watcher_pid} ->
+        case FileSystem.subscribe(watcher_pid) do
+          :ok ->
+            receive do
+              {_watcher_pid, {:file_event, path, file_events}} ->
+                if Enum.any?(file_events, &(&1 in events)) do
+                  send(target_pid, {:subscription, {:file_change, path, file_events}})
+                end
+            after
+              5000 ->
+                # Timeout after 5 seconds if no file events are received
+                send(target_pid, {:subscription, {:file_watch_timeout, path}})
+            end
+            
+            # Continue watching
+            watch_file(path, events, target_pid)
+            
+          error ->
+            send(target_pid, {:subscription, {:file_watch_error, {:subscribe_error, error}}})
         end
-
-        watch_file(path, events, target_pid)
-
-      _ ->
-        watch_file(path, events, target_pid)
+      {:error, reason} ->
+        send(target_pid, {:subscription, {:file_watch_error, {:start_error, reason}}})
     end
   end
 end

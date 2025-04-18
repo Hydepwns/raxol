@@ -320,7 +320,9 @@ defmodule Raxol.Runtime do
       cell_buffer = state.cell_buffer || ScreenBuffer.new(width, height)
 
       # Get changes (if cell_buffer is tracking)
-      changes = ScreenBuffer.get_changes(cell_buffer, cells)
+      # Fix for Dialyzer warning - ensure cells is a list of lists
+      cells_list = if is_list(cells) and length(cells) > 0 and is_list(hd(cells)), do: cells, else: [[]]
+      changes = ScreenBuffer.get_changes(cell_buffer, cells_list)
 
       # Prepare a simplified version of the cells for JSON transmission
       # This converts complex cell data to a more transport-friendly format
@@ -349,7 +351,7 @@ defmodule Raxol.Runtime do
       # Schedule next render (if fps > 0)
       if state.fps > 0 do
         interval_ms = round(1000 / state.fps)
-        Process.send_after(self(), :render, interval_ms)
+        _timer_ref = Process.send_after(self(), :render, interval_ms)
       end
 
       {:noreply, %{state | cell_buffer: new_buffer}}
@@ -364,7 +366,7 @@ defmodule Raxol.Runtime do
         # Reschedule for later
         if state.fps > 0 do
           interval_ms = round(1000 / state.fps)
-          Process.send_after(self(), :render, interval_ms)
+          _timer_ref = Process.send_after(self(), :render, interval_ms)
         end
 
         {:noreply, state}
@@ -471,7 +473,11 @@ defmodule Raxol.Runtime do
             ExTermbox.Bindings.present()
 
             # Handle plugin commands
-            send_plugin_commands(plugin_commands)
+            case send_plugin_commands(plugin_commands) do
+              :ok -> :ok
+              {:error, reason} ->
+                Logger.error("Failed to send plugin commands: #{inspect(reason)}")
+            end
 
             # Update state
             new_state = %{
@@ -484,22 +490,6 @@ defmodule Raxol.Runtime do
             }
 
             # Schedule next render
-            if state.fps > 0 do
-              interval_ms = round(1000 / state.fps)
-              Process.send_after(self(), :render, interval_ms)
-            end
-
-            {:noreply, new_state}
-
-          # Handle error case from plugin manager
-          {:error, reason, updated_manager} ->
-            Logger.error(
-              "[Runtime.handle_info(:render)] Plugin manager error: #{inspect(reason)}"
-            )
-
-            new_state = %{state | plugin_manager: updated_manager}
-
-            # Schedule next render despite error
             if state.fps > 0 do
               interval_ms = round(1000 / state.fps)
               Process.send_after(self(), :render, interval_ms)
@@ -613,8 +603,8 @@ defmodule Raxol.Runtime do
               {:continue, updated_state} ->
                 {:noreply, updated_state}
 
-              {:stop, updated_state} ->
-                # Ensure cleanup happens on stop
+              # Match with reason and state (only valid pattern)
+              {:stop, _reason, updated_state} ->
                 cleanup(updated_state)
                 {:stop, :normal, updated_state}
             end
@@ -703,8 +693,10 @@ defmodule Raxol.Runtime do
         # First stop the polling task
         try do
           Logger.debug("[Runtime] Calling stop_polling...")
-          ExTermbox.Bindings.stop_polling()
-          Logger.debug("[Runtime] stop_polling completed")
+          case ExTermbox.Bindings.stop_polling() do
+            :ok -> Logger.debug("[Runtime] stop_polling completed successfully")
+            {:error, reason} -> Logger.warning("[Runtime] stop_polling returned error: #{inspect(reason)}")
+          end
         rescue
           e ->
             Logger.error("[Runtime] Error during stop_polling: #{inspect(e)}")
@@ -713,8 +705,10 @@ defmodule Raxol.Runtime do
         # Then shut down the terminal
         try do
           Logger.debug("[Runtime] Calling shutdown...")
-          ExTermbox.Bindings.shutdown()
-          Logger.debug("[Runtime] shutdown completed")
+          case ExTermbox.Bindings.shutdown() do
+            :ok -> Logger.debug("[Runtime] shutdown completed successfully")
+            {:error, reason} -> Logger.warning("[Runtime] shutdown returned error: #{inspect(reason)}")
+          end
         rescue
           e ->
             Logger.error("[Runtime] Error during shutdown: #{inspect(e)}")
@@ -1011,8 +1005,8 @@ defmodule Raxol.Runtime do
                 {:continue, final_state} ->
                   {:noreply, final_state}
 
-                # If app returns stop, ensure cleanup happens
-                {:stop, final_state} ->
+                # If app returns stop with reason and state (only valid pattern)
+                {:stop, _reason, final_state} ->
                   cleanup(final_state)
                   {:stop, :normal, final_state}
               end
@@ -1043,9 +1037,8 @@ defmodule Raxol.Runtime do
               {:continue, final_state} ->
                 {:noreply, final_state}
 
-              {:stop, final_state} ->
-                cleanup(final_state)
-                {:stop, :normal, final_state}
+              # Match stop with reason and state (only valid pattern)
+              {:stop, _reason, final_state} -> {:stop, :normal, final_state}
             end
           end
       end
@@ -1067,8 +1060,9 @@ defmodule Raxol.Runtime do
 
         case handle_event(event_tuple, new_state) do
           {:continue, final_state} -> {:noreply, final_state}
-          # Propagate stop too
-          {:stop, final_state} -> {:stop, :normal, final_state}
+
+          # Match stop with reason and state (only valid pattern)
+          {:stop, _reason, final_state} -> {:stop, :normal, final_state}
         end
 
       {:ok, updated_manager, :halt} ->
@@ -1083,7 +1077,9 @@ defmodule Raxol.Runtime do
 
         case handle_event(event_tuple, state) do
           {:continue, final_state} -> {:noreply, final_state}
-          {:stop, final_state} -> {:stop, :normal, final_state}
+
+          # Match stop with reason and state (only valid pattern)
+          {:stop, _reason, final_state} -> {:stop, :normal, final_state}
         end
     end
   end
@@ -1190,11 +1186,11 @@ defmodule Raxol.Runtime do
   end
 
   defp get_char_representation(char) when is_integer(char) do
-    case char do
-      0..31 -> "Control"
-      32..126 -> <<char::utf8>>
-      127 -> "DEL"
-      _ -> "Unknown"
+    cond do
+      char >= 0 and char <= 31 -> "Control"
+      char >= 32 and char <= 126 -> <<char::utf8>>
+      char == 127 -> "DEL"
+      true -> "Unknown"
     end
   end
 end

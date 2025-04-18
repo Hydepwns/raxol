@@ -85,7 +85,7 @@ defmodule Raxol.Components.Selection.List do
     new_state = %{state | selected_index: new_index, scroll_offset: new_scroll}
 
     if state.on_select do
-      state.on_select.(Enum.at(state.filtered_items, new_index))
+      _ = state.on_select.(Enum.at(state.filtered_items, new_index))
     end
 
     new_state

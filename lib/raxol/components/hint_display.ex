@@ -177,7 +177,7 @@ defmodule Raxol.Components.HintDisplay do
       end
 
     # Process shortcuts in content if highlighting is enabled
-    _processed_content =
+    processed_content =
       if highlight_shortcuts do
         highlight_shortcuts_in_text(content)
       else
@@ -195,7 +195,7 @@ defmodule Raxol.Components.HintDisplay do
 
     # Define view elements
     title_view = render_title(hint_info)
-    hints_view = render_hints(content, style, highlight_shortcuts)
+    hints_view = render_hints(processed_content, style, highlight_shortcuts)
     footer_view = render_footer(shortcuts, style)
 
     container_attrs = [

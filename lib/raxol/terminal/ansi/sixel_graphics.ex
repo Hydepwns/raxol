@@ -9,6 +9,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   - Sixel image attributes
   """
 
+  alias Raxol.Terminal.ANSI.SequenceParser
+
   @type sixel_state :: %{
           palette: map(),
           current_color: integer(),
@@ -125,63 +127,26 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   end
 
   @doc """
-  Parses a Sixel sequence.
+  Parses a Sixel graphics sequence.
   """
   @spec parse_sequence(binary()) :: {:ok, atom(), list(integer())} | :error
-  def parse_sequence(<<params::binary-size(1), operation::binary>>) do
-    case parse_params(params) do
-      {:ok, parsed_params} ->
-        # Extract the character code from the operation binary
-        operation_char =
-          if byte_size(operation) > 0, do: :binary.first(operation), else: nil
-
-        if operation_char do
-          {:ok, decode_operation(operation_char), parsed_params}
-        else
-          # Or handle empty operation differently
-          :error
-        end
-
-      :error ->
-        :error
-    end
-  end
-
-  def parse_sequence(_), do: :error
-
-  @doc """
-  Parses parameters from a Sixel sequence.
-  """
-  @spec parse_params(binary()) :: {:ok, list(integer())} | :error
-  def parse_params(params) do
-    case String.split(params, ";", trim: true) do
-      [] ->
-        {:ok, []}
-
-      param_strings ->
-        case Enum.map(param_strings, &Integer.parse/1) do
-          list when length(list) == length(param_strings) ->
-            {:ok, Enum.map(list, fn {num, _} -> num end)}
-
-          _ ->
-            :error
-        end
-    end
+  def parse_sequence(sequence) do
+    SequenceParser.parse_sequence(sequence, &decode_operation/1)
   end
 
   @doc """
-  Decodes a Sixel operation from its character code.
+  Decodes a Sixel graphics operation from its character code.
   """
   @spec decode_operation(integer()) :: atom()
-  def decode_operation(?q), do: :set_color
-  def decode_operation(?p), do: :set_position
-  def decode_operation(?r), do: :set_repeat
-  def decode_operation(?a), do: :set_attribute
-  def decode_operation(?b), do: :set_background
-  def decode_operation(?c), do: :set_foreground
-  def decode_operation(?d), do: :set_dimension
-  def decode_operation(?s), do: :set_scale
-  def decode_operation(?t), do: :set_transparency
+  def decode_operation(?P), do: :set_color
+  def decode_operation(?Q), do: :set_position
+  def decode_operation(?R), do: :set_repeat
+  def decode_operation(?S), do: :set_attribute
+  def decode_operation(?T), do: :set_background
+  def decode_operation(?V), do: :set_foreground
+  def decode_operation(?X), do: :set_dimension
+  def decode_operation(?Y), do: :set_scale
+  def decode_operation(?Z), do: :set_transparency
   def decode_operation(_), do: :unknown
 
   @doc """
@@ -372,9 +337,9 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
         # Create SVG elements for each pixel in the Sixel pattern
         Enum.with_index(pattern)
-        |> Enum.map(fn {pixel, pixel_y} ->
+        |> Enum.map_join("", fn {pixel, pixel_y} ->
           Enum.with_index(pixel)
-          |> Enum.map(fn {pixel_value, pixel_x} ->
+          |> Enum.map_join("", fn {pixel_value, pixel_x} ->
             if pixel_value == 1 do
               """
               <rect x="#{x + pixel_x * scale_x}" y="#{y + pixel_y * scale_y}"
@@ -384,13 +349,11 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
               ""
             end
           end)
-          |> Enum.join("")
         end)
-        |> Enum.join("")
       end)
-      |> Enum.join("")
+      |> Enum.map_join("")
     end)
-    |> Enum.join("")
+    |> Enum.map_join("")
   end
 
   @doc """

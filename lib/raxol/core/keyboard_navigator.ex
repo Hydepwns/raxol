@@ -387,7 +387,7 @@ defmodule Raxol.Core.KeyboardNavigator do
       |> Map.values()
       |> Enum.filter(fn pos ->
         pos.id != current_pos.id &&
-          is_in_direction?(current_pos, pos, direction)
+          in_direction?(current_pos, pos, direction)
       end)
 
     # Find the closest one
@@ -403,7 +403,7 @@ defmodule Raxol.Core.KeyboardNavigator do
     end
   end
 
-  defp is_in_direction?(from, to, direction) do
+  defp in_direction?(from, to, direction) do
     case direction do
       :up -> to.center_y < from.center_y
       :down -> to.center_y > from.center_y
@@ -411,6 +411,11 @@ defmodule Raxol.Core.KeyboardNavigator do
       :right -> to.center_x > from.center_x
     end
   end
+
+  # For backward compatibility
+  @doc false
+  @deprecated "Use in_direction?/3 instead"
+  defp is_in_direction?(from, to, direction), do: in_direction?(from, to, direction)
 
   defp distance_in_direction(from, to, direction) do
     # Calculate a weighted distance that prioritizes alignment

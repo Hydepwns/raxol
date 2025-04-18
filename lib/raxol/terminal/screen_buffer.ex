@@ -133,21 +133,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
     if lines >= visible_lines do
       # If scrolling more than the visible region, clear it
-      empty_region =
-        List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
-
-      # Replace the slice using List functions
-      new_cells =
-        Enum.slice(buffer.cells, 0, scroll_start) ++
-          empty_region ++
-          Enum.slice(
-            buffer.cells,
-            scroll_end + 1,
-            buffer.height - (scroll_end + 1)
-          )
-
-      # List.update_slice(buffer.cells, scroll_start, visible_lines, empty_region) # Old call
-      %{buffer | cells: new_cells}
+      clear_scroll_region(buffer, scroll_start, scroll_end, visible_lines)
     else
       # Get the lines within the scroll region
       scroll_region_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
@@ -166,18 +152,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
       # Construct the new cells array by replacing the scroll region
       new_region_content = remaining_lines ++ empty_lines
 
-      new_cells =
-        Enum.slice(buffer.cells, 0, scroll_start) ++
-          new_region_content ++
-          Enum.slice(
-            buffer.cells,
-            scroll_end + 1,
-            buffer.height - (scroll_end + 1)
-          )
-
-      # List.update_slice(buffer.cells, scroll_start, visible_lines, new_region_content) # Old call
-
-      %{buffer | cells: new_cells, scrollback: new_scrollback}
+      replace_scroll_region(buffer, scroll_start, scroll_end, new_region_content, new_scrollback)
     end
   end
 
@@ -191,21 +166,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
     if lines >= visible_lines do
       # If scrolling more than the visible region, clear it
-      empty_region =
-        List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
-
-      # Replace the slice using List functions
-      new_cells =
-        Enum.slice(buffer.cells, 0, scroll_start) ++
-          empty_region ++
-          Enum.slice(
-            buffer.cells,
-            scroll_end + 1,
-            buffer.height - (scroll_end + 1)
-          )
-
-      # List.update_slice(buffer.cells, scroll_start, visible_lines, empty_region) # Old call
-      %{buffer | cells: new_cells}
+      clear_scroll_region(buffer, scroll_start, scroll_end, visible_lines)
     else
       if length(buffer.scrollback) >= lines do
         # Get lines from scrollback
@@ -219,22 +180,36 @@ defmodule Raxol.Terminal.ScreenBuffer do
         # Construct the new cells array by replacing the scroll region
         new_region_content = scroll_lines ++ shifted_lines
 
-        new_cells =
-          Enum.slice(buffer.cells, 0, scroll_start) ++
-            new_region_content ++
-            Enum.slice(
-              buffer.cells,
-              scroll_end + 1,
-              buffer.height - (scroll_end + 1)
-            )
-
-        # List.update_slice(buffer.cells, scroll_start, visible_lines, new_region_content) # Old call
-
-        %{buffer | cells: new_cells, scrollback: new_scrollback}
+        replace_scroll_region(buffer, scroll_start, scroll_end, new_region_content, new_scrollback)
       else
         buffer
       end
     end
+  end
+
+  # Helper functions for scrolling
+  defp clear_scroll_region(buffer, scroll_start, scroll_end, visible_lines) do
+    # Create empty region
+    empty_region =
+      List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
+
+    # Replace the scroll region with empty cells
+    replace_scroll_region(buffer, scroll_start, scroll_end, empty_region, buffer.scrollback)
+  end
+
+  defp replace_scroll_region(buffer, scroll_start, scroll_end, new_content, new_scrollback) do
+    # Construct the new cells array by replacing the scroll region
+    new_cells =
+      Enum.slice(buffer.cells, 0, scroll_start) ++
+        new_content ++
+        Enum.slice(
+          buffer.cells,
+          scroll_end + 1,
+          buffer.height - (scroll_end + 1)
+        )
+
+    # Return updated buffer
+    %{buffer | cells: new_cells, scrollback: new_scrollback}
   end
 
   @doc """
@@ -313,8 +288,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Checks if a position is within the current selection.
   """
-  @spec is_in_selection?(t(), non_neg_integer(), non_neg_integer()) :: boolean()
-  def is_in_selection?(%__MODULE__{} = buffer, x, y) do
+  @spec in_selection?(t(), non_neg_integer(), non_neg_integer()) :: boolean()
+  def in_selection?(%__MODULE__{} = buffer, x, y) do
     case buffer.selection do
       {start_x, start_y, end_x, end_y} ->
         min_x = min(start_x, end_x)
@@ -357,13 +332,11 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
     buffer.cells
     |> Enum.slice(min_y..max_y)
-    |> Enum.map(fn row ->
+    |> Enum.map_join("\n", fn row ->
       row
       |> Enum.slice(min_x..max_x)
-      |> Enum.map(&Cell.get_char/1)
-      |> Enum.join("")
+      |> Enum.map_join("", &Cell.get_char/1)
     end)
-    |> Enum.join("\n")
   end
 
   @doc """
@@ -636,4 +609,72 @@ defmodule Raxol.Terminal.ScreenBuffer do
       end
     end)
   end
+
+  @doc """
+  Gets the changes between the current buffer and the provided new cells.
+  Returns a list of tuple {x, y, cell} for each changed cell.
+  """
+  @spec get_changes(t(), list(list(Cell.t()))) :: list({integer(), integer(), Cell.t()})
+  def get_changes(%__MODULE__{} = buffer, new_cells) do
+    changes = []
+
+    # Iterate through the cells and find differences
+    Enum.with_index(new_cells)
+    |> Enum.reduce(changes, fn {row, y}, acc ->
+      Enum.with_index(row)
+      |> Enum.reduce(acc, fn {cell, x}, inner_acc ->
+        # Get the current cell at this position
+        current_cell = get_cell(buffer, x, y)
+
+        # If cells are different, add to changes
+        if !Cell.equals?(current_cell, cell) do
+          [{x, y, cell} | inner_acc]
+        else
+          inner_acc
+        end
+      end)
+    end)
+  end
+
+  @doc """
+  Gets a cell at the specified position.
+  Returns a default cell if coordinates are out of bounds.
+  """
+  @spec get_cell(t(), integer(), integer()) :: Cell.t()
+  def get_cell(%__MODULE__{} = buffer, x, y) when x >= 0 and y >= 0 do
+    if y < buffer.height and x < buffer.width do
+      Enum.at(buffer.cells, y) |> Enum.at(x)
+    else
+      Cell.new()
+    end
+  end
+
+  @doc """
+  Compares two buffers and returns the differences as a list of {x, y, cell} tuples.
+  This is an alias for get_changes for backward compatibility.
+  """
+  @spec diff(t(), list(list(Cell.t()))) :: list({integer(), integer(), Cell.t()})
+  def diff(buffer, new_cells) do
+    get_changes(buffer, new_cells)
+  end
+
+  @doc """
+  Updates the buffer with the provided changes.
+  """
+  @spec update(t(), list({integer(), integer(), Cell.t()})) :: t()
+  def update(%__MODULE__{} = buffer, changes) do
+    Enum.reduce(changes, buffer, fn {x, y, cell}, acc_buffer ->
+      cells =
+        List.update_at(acc_buffer.cells, y, fn row ->
+          List.update_at(row, x, fn _ -> cell end)
+        end)
+
+      %{acc_buffer | cells: cells}
+    end)
+  end
+
+  # For backward compatibility
+  @doc false
+  @deprecated "Use in_selection?/3 instead"
+  def is_in_selection?(buffer, x, y), do: in_selection?(buffer, x, y)
 end

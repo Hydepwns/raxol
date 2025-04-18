@@ -15,9 +15,12 @@ defmodule Raxol.Core.Events.Clipboard do
     case :os.type() do
       {:unix, :darwin} ->
         # macOS uses pbcopy
-        System.cmd("pbcopy", [], input: text)
-        # pbcopy doesn't provide useful stdout/stderr for success check easily
-        {:ok, text}
+        {_output, exit_status} = System.cmd("pbcopy", [], input: text)
+        if exit_status == 0 do
+          {:ok, text}
+        else
+          {:error, :clipboard_command_failed}
+        end
 
       {:unix, _} ->
         # Linux/Unix - Try xclip for X11 clipboard

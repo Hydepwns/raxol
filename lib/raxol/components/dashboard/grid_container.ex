@@ -124,8 +124,21 @@ defmodule Raxol.Components.Dashboard.GridContainer do
     # Calculate position and size including gaps
     col_start = max(1, grid_spec.col)
     row_start = max(1, grid_spec.row)
-    width_cells = max(1, grid_spec.width)
-    height_cells = max(1, grid_spec.height)
+
+    # Handle both width/height and col_span/row_span naming conventions
+    width_cells =
+      cond do
+        Map.has_key?(grid_spec, :width) -> max(1, grid_spec.width)
+        Map.has_key?(grid_spec, :col_span) -> max(1, grid_spec.col_span)
+        true -> 1
+      end
+
+    height_cells =
+      cond do
+        Map.has_key?(grid_spec, :height) -> max(1, grid_spec.height)
+        Map.has_key?(grid_spec, :row_span) -> max(1, grid_spec.row_span)
+        true -> 1
+      end
 
     x_pos =
       parent_bounds.x + (col_start - 1) * cell_width + (col_start - 1) * gap
