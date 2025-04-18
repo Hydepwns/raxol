@@ -11,6 +11,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   """
 
   use GenServer
+  require Logger
 
   # alias Raxol.Core.Events.EventManager # Unused
   # alias Raxol.Core.Renderer.Manager, as: RendererManager # Unused
@@ -227,13 +228,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
               "Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}"
             )
 
-            update_in(state.subscriptions, &Map.delete(&1, sub_id))
-
-          true ->
-            # Handle boolean return value case
-            update_in(state.subscriptions, &Map.delete(&1, sub_id))
-
-          {:ok, :cancel} ->
             update_in(state.subscriptions, &Map.delete(&1, sub_id))
         end
 

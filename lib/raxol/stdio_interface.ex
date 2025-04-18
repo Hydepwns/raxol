@@ -207,7 +207,7 @@ defmodule Raxol.StdioInterface do
   rescue
     e ->
       Logger.error(
-        "[StdioInterface] Error in read_stdin_loop: #{inspect(e)}\n#{inspect(System.stacktrace())}"
+        "[StdioInterface] Error in read_stdin_loop: #{inspect(e)}\n#{inspect(__STACKTRACE__)}"
       )
 
       send(server_pid, {:stdin_error, e})

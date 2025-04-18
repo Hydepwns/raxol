@@ -33,6 +33,8 @@ defmodule Raxol.Core.I18n do
   ```
   """
 
+  require Logger
+
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.Accessibility
 
