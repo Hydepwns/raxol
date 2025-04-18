@@ -59,13 +59,13 @@
   },
   "ui_mappings": {
     "app_background": "background",
-    "accent_button": "accent",
-    "error_text": "error",
     "info_text": "info",
+    "surface_background": "surface",
     "primary_button": "primary",
     "secondary_button": "secondary",
+    "accent_button": "accent",
+    "error_text": "error",
     "success_text": "success",
-    "surface_background": "surface",
     "warning_text": "warning"
   },
   "dark_mode": false
