@@ -40,7 +40,10 @@ config :raxol, :terminal,
   enable_ansi: true,
   enable_mouse: false,
   debug_mode: false,
-  log_level: :warn
+  log_level: :warn,
+  # Disable real termbox for CI/testing
+  use_termbox: false,
+  mock_termbox: true
 
 # Flag to control compilation of AI-related tests
 config :raxol, :compile_ai_tests, false

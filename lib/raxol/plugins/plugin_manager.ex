@@ -448,38 +448,47 @@ defmodule Raxol.Plugins.PluginManager do
     Enum.reduce(manager.plugins, {:ok, manager, []}, fn {_name, plugin},
                                                         {:ok, acc_manager,
                                                          acc_commands} ->
-      if plugin.enabled and
-           function_exported?(plugin.__struct__, :handle_render, 1) do
-        case plugin.handle_render() do
-          {:ok, updated_plugin, command} when not is_nil(command) ->
-            updated_manager = %{
-              acc_manager
-              | plugins:
-                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-            }
+      if plugin.enabled do
+        # Get the module from the struct
+        module = plugin.__struct__
 
-            {:ok, updated_manager, [command | acc_commands]}
+        # Check if module implements handle_render
+        if function_exported?(module, :handle_render, 1) do
+          # Call using the module with plugin state as first argument
+          case module.handle_render(plugin) do
+            {:ok, updated_plugin, command} when not is_nil(command) ->
+              updated_manager = %{
+                acc_manager
+                | plugins:
+                    Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+              }
 
-          # No command returned
-          {:ok, updated_plugin} ->
-            updated_manager = %{
-              acc_manager
-              | plugins:
-                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-            }
+              {:ok, updated_manager, [command | acc_commands]}
 
-            {:ok, updated_manager, acc_commands}
+            # No command returned
+            {:ok, updated_plugin} ->
+              updated_manager = %{
+                acc_manager
+                | plugins:
+                    Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+              }
 
-          # Allow plugins to just return the command if state doesn't change
-          command when is_binary(command) ->
-            {:ok, acc_manager, [command | acc_commands]}
+              {:ok, updated_manager, acc_commands}
 
-          # Ignore other return values or errors for now
-          _ ->
-            {:ok, acc_manager, acc_commands}
+            # Allow plugins to just return the command if state doesn't change
+            command when is_binary(command) ->
+              {:ok, acc_manager, [command | acc_commands]}
+
+            # Ignore other return values or errors for now
+            _ ->
+              {:ok, acc_manager, acc_commands}
+          end
+        else
+          # Plugin doesn't implement hook
+          {:ok, acc_manager, acc_commands}
         end
       else
-        # Plugin disabled or doesn't implement hook
+        # Plugin disabled
         {:ok, acc_manager, acc_commands}
       end
     end)

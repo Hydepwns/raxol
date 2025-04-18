@@ -54,64 +54,77 @@ defmodule Raxol.Terminal.TerminalUtils do
 
   # Private helper functions
 
-  # Try using Erlang's built-in :io module
+  # Try to get dimensions using :io module
   defp try_io_dimensions do
     try do
-      with {:ok, width} when is_integer(width) <- :io.columns(),
-           {:ok, height} when is_integer(height) <- :io.rows() do
-        Logger.debug(
-          "Got terminal dimensions via :io module: #{width}x#{height}"
-        )
+      {cols, rows} = :io.columns()
 
-        {width, height}
+      if cols > 0 and rows > 0 do
+        {cols, rows}
       else
-        _ -> {:error, :io_method_failed}
+        {:error, :invalid_dimensions}
       end
     rescue
-      _ -> {:error, :io_method_error}
+      _ -> {:error, :io_failure}
+    catch
+      _, _ -> {:error, :io_failure}
     end
   end
 
-  # Try using ExTermbox.Bindings
+  # Try to get dimensions using ExTermbox
   defp try_termbox_dimensions do
+    # Check if we should use mock termbox in test environment
+    use_termbox = Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
+    mock_termbox = Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
+
     try do
-      width_result = Bindings.width()
-      height_result = Bindings.height()
+      # Initialize ExTermbox if not already initialized
+      init_result = cond do
+        mock_termbox ->
+          Raxol.Test.MockTermbox.init()
+        use_termbox ->
+          ExTermbox.Bindings.init()
+        true ->
+          {:ok, :skipped}
+      end
 
-      case {width_result, height_result} do
-        # Handle potential double nesting from Bindings
-        {{:ok, {:ok, w}}, {:ok, {:ok, h}}} when is_integer(w) and is_integer(h) ->
-          Logger.debug(
-            "Got terminal dimensions via ExTermbox (double-nested): #{w}x#{h}"
-          )
+      case init_result do
+        {:ok, _} ->
+          # Get dimensions
+          width_result = if mock_termbox do
+            Raxol.Test.MockTermbox.width()
+          else
+            if use_termbox, do: ExTermbox.Bindings.width(), else: {:ok, 80}
+          end
 
-          {w, h}
+          height_result = if mock_termbox do
+            Raxol.Test.MockTermbox.height()
+          else
+            if use_termbox, do: ExTermbox.Bindings.height(), else: {:ok, 24}
+          end
 
-        # Handle standard response format
-        {{:ok, w}, {:ok, h}} when is_integer(w) and is_integer(h) ->
-          Logger.debug("Got terminal dimensions via ExTermbox: #{w}x#{h}")
-          {w, h}
+          # Clean up if we had to initialize
+          if mock_termbox do
+            Raxol.Test.MockTermbox.shutdown()
+          else
+            if use_termbox, do: ExTermbox.Bindings.shutdown()
+          end
 
-        # If only width is available, try to estimate a reasonable height
-        {{:ok, w}, _} when is_integer(w) ->
-          # Estimate height based on typical terminal aspect ratios
-          # Most terminals have aspect ratios where height is roughly 1/2 to 1/3 of width
-          h = max(24, div(w * 2, 5))
+          # Extract dimensions
+          with {:ok, width} when is_integer(width) <- width_result,
+               {:ok, height} when is_integer(height) <- height_result do
+            {width, height}
+          else
+            _ -> {:error, :invalid_termbox_dimensions}
+          end
 
-          Logger.warning(
-            "Using estimated height (#{h}) with actual width (#{w})"
-          )
-
-          {w, h}
-
-        # Any other response format is considered an error
         _ ->
-          {:error, :termbox_method_failed}
+          {:error, :termbox_init_failed}
       end
     rescue
-      e ->
-        Logger.warning("Error getting dimensions via ExTermbox: #{inspect(e)}")
-        {:error, :termbox_method_error}
+      e -> {:error, {:termbox_exception, e}}
+    catch
+      type, value -> {:error, {:termbox_error, {type, value}}}
     end
   end
 

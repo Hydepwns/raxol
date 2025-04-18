@@ -12,12 +12,12 @@ defmodule Raxol.Examples.ButtonTest do
   setup do
     context = TestHelper.setup_test_env()
     context = Map.put(context, :snapshots_dir, "test/snapshots")
-    {:ok, context}
-  end
 
-  teardown context do
-    TestHelper.cleanup_test_env(context)
-    :ok
+    on_exit(fn ->
+      TestHelper.cleanup_test_env(context)
+    end)
+
+    {:ok, context}
   end
 
   describe "unit tests" do
