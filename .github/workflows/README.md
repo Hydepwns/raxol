@@ -121,5 +121,8 @@ Common issues:
 
 5. **Architecture issues**:
    - If running on ARM Mac, ensure `--container-architecture linux/arm64` is in `.actrc`
+   - Our CI workflows test on both Linux and macOS for cross-platform compatibility
+   - For macOS, PostgreSQL is set up locally since GitHub Actions service containers only work on Linux
+   - When testing locally on ARM chips, use the custom Docker images with ARM64 support
 
 For more help, see the full [GitHub Actions documentation](https://docs.github.com/en/actions).
