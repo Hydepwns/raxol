@@ -37,7 +37,8 @@ defmodule Raxol.System.DeltaUpdaterTest do
           """
 
           {:ok,
-           {{:http, 200, 'OK'}, [{'content-type', 'application/json'}], body}}
+           {{:http, 200, ~c"OK"}, [{~c"content-type", ~c"application/json"}],
+            body}}
 
         String.contains?(url, "releases/tags/v1.3.0") ->
           # Return successful response with no delta assets
@@ -59,13 +60,14 @@ defmodule Raxol.System.DeltaUpdaterTest do
           """
 
           {:ok,
-           {{:http, 200, 'OK'}, [{'content-type', 'application/json'}], body}}
+           {{:http, 200, ~c"OK"}, [{~c"content-type", ~c"application/json"}],
+            body}}
 
         String.contains?(url, "releases/download") ->
           # Simulate download
           {:ok,
-           {{:http, 200, 'OK'}, [{'content-type', 'application/octet-stream'}],
-            "BINARY_DATA"}}
+           {{:http, 200, ~c"OK"},
+            [{~c"content-type", ~c"application/octet-stream"}], "BINARY_DATA"}}
 
         true ->
           # Return error for any other URL

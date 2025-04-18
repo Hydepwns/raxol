@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.InputTest do
       {events, processor} = Input.process_input("Hello", processor)
 
       assert length(events) == 5
-      assert Enum.all?(events, fn {:key, char} -> char in 'Hello' end)
+      assert Enum.all?(events, fn {:key, char} -> char in ~c"Hello" end)
     end
 
     test "processes escape sequences" do
