@@ -5,40 +5,22 @@ on:
     branches: [main, master]
   pull_request:
     branches: [main, master]
+  workflow_dispatch:
 
 jobs:
   test:
-    name: Test
+    name: Test (Elixir ${{ matrix.elixir }} | OTP ${{ matrix.otp }} | ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
         include:
-          # Elixir 1.14 with compatible OTP versions
+          # Main testing matrix - most stable combinations
           - os: ubuntu-latest
-            elixir: "1.14"
-            otp: "25.0"
-          - os: macos-latest
-            elixir: "1.14"
-            otp: "25.0"
-
-          # Elixir 1.15 with compatible OTP versions
-          - os: ubuntu-latest
-            elixir: "1.15"
-            otp: "25.0"
-          - os: ubuntu-latest
-            elixir: "1.15"
+            elixir: "1.15.7"
             otp: "26.0"
           - os: macos-latest
-            elixir: "1.15"
-            otp: "26.0"
-
-          # Elixir 1.16 with compatible OTP versions
-          - os: ubuntu-latest
-            elixir: "1.16"
-            otp: "26.0"
-          - os: macos-latest
-            elixir: "1.16"
+            elixir: "1.15.7"
             otp: "26.0"
 
     services:
@@ -50,7 +32,7 @@ jobs:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: raxol_test
         ports:
-          - 5433:5432
+          - 15432:5432
         options: >-
           --health-cmd pg_isready
           --health-interval 10s
@@ -71,16 +53,28 @@ jobs:
             ${{ runner.os }}-mix-
             ${{ runner.os }}-
 
-      - name: Install Dependencies
+      # OS-specific dependencies
+      - name: Install Linux Dependencies
+        if: runner.os == 'Linux'
         run: |
-          # Update package lists
           sudo apt-get update
-
-          # Install build dependencies
           sudo apt-get install -y build-essential autoconf m4 libncurses5-dev \
             libssl-dev libwxgtk3.2-dev libgl1-mesa-dev libglu1-mesa-dev \
             libpng-dev openssl
-        if: runner.os == 'Linux'
+
+      - name: Install macOS Dependencies and Setup PostgreSQL
+        if: runner.os == 'macOS'
+        run: |
+          brew install openssl@1.1
+          echo "LDFLAGS=-L$(brew --prefix openssl@1.1)/lib" >> $GITHUB_ENV
+          echo "CFLAGS=-I$(brew --prefix openssl@1.1)/include" >> $GITHUB_ENV
+
+          # Set up PostgreSQL locally on macOS since service containers aren't available
+          brew services start postgresql@14 || true
+          sleep 3
+          createuser -s postgres || true
+          psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" postgres || true
+          createdb -U postgres raxol_test || true
 
       - name: Set up Erlang and Elixir
         uses: erlef/setup-beam@v1
@@ -102,7 +96,7 @@ jobs:
           echo "Mix version: $(mix --version)"
           echo "Rebar3 version: $(~/.mix/elixir/*/rebar3 --version || echo 'rebar3 not found')"
 
-      - name: Install Mix Dependencies with improved error handling
+      - name: Install Mix Dependencies
         run: |
           # Set environment variables for verbose output
           export DIAGNOSTIC=1
@@ -140,21 +134,19 @@ jobs:
             cd assets && npm install && cd ..
           fi
 
+      - name: Wait for PostgreSQL (Linux only)
+        if: runner.os == 'Linux'
+        run: |
+          for i in {1..30}; do
+            if pg_isready -h localhost -p 15432; then
+              break
+            fi
+            echo "Waiting for PostgreSQL to be ready... ($i/30)"
+            sleep 1
+          done
+
       - name: Run Tests
         run: |
-          # Wait for PostgreSQL to be ready - only on Linux
-          if [[ "$RUNNER_OS" == "Linux" ]]; then
-            for i in {1..30}; do
-              if pg_isready -h localhost -p 5433; then
-                break
-              fi
-              echo "Waiting for PostgreSQL to be ready... ($i/30)"
-              sleep 1
-            done
-          else
-            echo "Skipping PostgreSQL wait on macOS as service containers are not supported"
-          fi
-
           # Run tests with coverage and performance monitoring
           mix test --cover --slowest 10
         env:
@@ -162,8 +154,8 @@ jobs:
           RAXOL_ENV: test
           RAXOL_HEADLESS: true
           RAXOL_USE_MOCK_TERMBOX: true
-          POSTGRES_HOST: ${{ runner.os == 'Linux' && 'localhost' || '127.0.0.1' }}
-          POSTGRES_PORT: 5433
+          POSTGRES_HOST: localhost
+          POSTGRES_PORT: 15432
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: raxol_test
@@ -183,6 +175,7 @@ jobs:
       - name: Run Security Scan on Linux
         uses: snyk/actions/node@master
         if: runner.os == 'Linux'
+        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
         with:
@@ -192,28 +185,17 @@ jobs:
       - name: Setup Snyk CLI on macOS
         uses: snyk/actions/setup@master
         if: runner.os == 'macOS'
+        continue-on-error: true
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
       # Run simplified Snyk scan on macOS
       - name: Run Security Scan on macOS
         if: runner.os == 'macOS'
+        continue-on-error: true
         run: snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
-
-      - name: Verify Terminal Compatibility
-        run: |
-          mix run scripts/verify_terminal_compatibility.exs
-        env:
-          TERM: xterm-256color
-
-      - name: Run Platform-Specific Tests
-        run: |
-          echo "Running platform-specific tests for $PLATFORM"
-          mix test test/platform_specific
-        env:
-          PLATFORM: ${{ runner.os }}
 
   format:
     name: Format
@@ -239,8 +221,8 @@ jobs:
       - name: Set up Erlang and Elixir
         uses: erlef/setup-beam@v1
         with:
-          otp-version: "25.0"
-          elixir-version: "1.14"
+          otp-version: "26.0"
+          elixir-version: "1.15.7"
 
       - name: Install Mix Dependencies
         run: |

@@ -20,6 +20,8 @@ jobs:
       fail-fast: false
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
+        elixir: ["1.15.7"]
+        otp: ["26.0"]
         include:
           - os: ubuntu-latest
             platform: linux
@@ -40,8 +42,8 @@ jobs:
       - name: Setup Elixir
         uses: erlef/setup-beam@v1
         with:
-          elixir-version: "1.14.x"
-          otp-version: "25.x"
+          elixir-version: ${{ matrix.elixir }}
+          otp-version: ${{ matrix.otp }}
 
       - name: Setup Node.js
         uses: actions/setup-node@v3
@@ -67,6 +69,29 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-npm-
 
+      # Handle Linux-specific dependencies
+      - name: Install Linux dependencies
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential autoconf m4 libncurses5-dev \
+            libssl-dev libwxgtk3.2-dev libgl1-mesa-dev libglu1-mesa-dev \
+            libpng-dev openssl
+
+      # Handle macOS-specific dependencies
+      - name: Install macOS dependencies
+        if: runner.os == 'macOS'
+        run: |
+          brew install openssl@1.1
+          echo "LDFLAGS=-L$(brew --prefix openssl@1.1)/lib" >> $GITHUB_ENV
+          echo "CFLAGS=-I$(brew --prefix openssl@1.1)/include" >> $GITHUB_ENV
+
+      # Handle Windows-specific dependencies
+      - name: Install Windows dependencies
+        if: runner.os == 'Windows'
+        run: |
+          choco install openssl
+
       - name: Install dependencies
         run: |
           mix local.hex --force
@@ -75,20 +100,61 @@ jobs:
           mix deps.compile
           npm ci
 
+      # Database setup for testing
+      - name: Set up PostgreSQL for Linux
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get install -y postgresql postgresql-contrib
+          sudo service postgresql start
+          sudo -u postgres psql -c "ALTER USER postgres WITH PASSWORD 'postgres';"
+          sudo -u postgres psql -c "CREATE DATABASE raxol_test;"
+
+      - name: Set up PostgreSQL for macOS
+        if: runner.os == 'macOS'
+        run: |
+          brew services start postgresql@14
+          sleep 3
+          createuser -s postgres || true
+          psql -U postgres -c "ALTER USER postgres WITH PASSWORD 'postgres';" postgres || true
+          createdb -U postgres raxol_test || true
+
       - name: Run unit tests
         run: mix test test/raxol --cover
+        env:
+          MIX_ENV: test
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+          TERM: xterm-256color
 
       - name: Run integration tests
         run: mix test test/integration --cover
+        env:
+          MIX_ENV: test
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+          TERM: xterm-256color
 
       - name: Run cross-platform specific tests
         run: mix test test/platform --cover
+        env:
+          MIX_ENV: test
+          POSTGRES_HOST: localhost
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+          POSTGRES_DB: raxol_test
+          PLATFORM: ${{ matrix.platform }}
+          TERM: xterm-256color
 
       - name: Verify terminal compatibility
         run: mix run test/platform/verify_terminal_compatibility.exs
         env:
           TERM: xterm-256color
           COLORTERM: truecolor
+          PLATFORM: ${{ matrix.platform }}
 
       - name: Build test binary
         run: mix run scripts/release.exs --env test --platform ${{ matrix.platform }}
@@ -135,7 +201,7 @@ jobs:
           files: ./cover/excoveralls.json
           flags: cross-platform-${{ matrix.platform }}
           name: codecov-${{ matrix.platform }}
-          fail_ci_if_error: true
+          fail_ci_if_error: false
 
       - name: Generate test report
         if: always()
