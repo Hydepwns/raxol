@@ -1720,4 +1720,41 @@ defmodule Raxol.RuntimeDebug do
     # Here we could trigger a re-layout based on the new dimensions
     {:noreply, %{state | width: width, height: height}}
   end
+
+  @doc """
+  Start tracking memory usage for benchmarking.
+  """
+  def start_memory_tracking do
+    Logger.debug("[RuntimeDebug.start_memory_tracking] Starting memory tracking")
+    Process.put(:memory_tracking_start, :erlang.memory())
+    :ok
+  end
+
+  @doc """
+  Get a snapshot of memory usage since tracking started.
+  """
+  def get_memory_snapshot do
+    start_memory = Process.get(:memory_tracking_start)
+    current_memory = :erlang.memory()
+
+    # Calculate difference
+    diff = Enum.map(current_memory, fn {key, value} ->
+      {key, value - Keyword.get(start_memory, key, 0)}
+    end)
+
+    %{
+      start: start_memory,
+      current: current_memory,
+      diff: diff
+    }
+  end
+
+  @doc """
+  Stop tracking memory usage.
+  """
+  def stop_memory_tracking do
+    Logger.debug("[RuntimeDebug.stop_memory_tracking] Stopping memory tracking")
+    Process.delete(:memory_tracking_start)
+    :ok
+  end
 end
