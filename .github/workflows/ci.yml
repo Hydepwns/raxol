@@ -93,12 +93,32 @@ jobs:
         with:
           node-version: "20"
 
-      - name: Install Mix Dependencies
+      - name: Setup Mix and Rebar
         run: |
           mix local.hex --force
           mix local.rebar --force
+          # Show versions for debugging
+          echo "Elixir version: $(elixir --version)"
+          echo "Mix version: $(mix --version)"
+          echo "Rebar3 version: $(~/.mix/elixir/*/rebar3 --version || echo 'rebar3 not found')"
+
+      - name: Install Mix Dependencies with improved error handling
+        run: |
+          # Set environment variables for verbose output
+          export DIAGNOSTIC=1
+          export ERL_COMPILER_OPTIONS=bin_opt_info
+
+          # Get dependencies
           mix deps.get
+
+          # Handle problematic dependencies
+          echo "Explicitly compiling ranch with --force"
+          mix deps.compile ranch --force
+
+          # Compile other dependencies
           mix deps.compile
+        env:
+          MIX_ENV: test
 
       - name: Install npm dependencies in subfolders
         run: |
