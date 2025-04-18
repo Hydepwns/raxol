@@ -209,14 +209,27 @@ jobs:
           TERM: xterm-256color
           PLATFORM: ${{ runner.os }}
 
-      - name: Upload coverage reports
+      # Only run codecov on Linux runners to avoid Docker issues on macOS
+      - name: Upload coverage reports (Linux)
         uses: codecov/codecov-action@v3
+        if: runner.os == 'Linux'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./cover/excoveralls.json
           flags: unittests
           name: codecov-umbrella
           fail_ci_if_error: false
+
+      # Alternative for macOS - generate and save coverage data
+      - name: Process coverage (macOS)
+        if: runner.os == 'macOS'
+        run: |
+          echo "Generating coverage report summary..."
+          if [ -f "./cover/excoveralls.json" ]; then
+            echo "Coverage data available. Skipping uploading to codecov from macOS."
+          else
+            echo "No coverage data found."
+          fi
 
       # Run security scan only for Linux runners (using container action)
       - name: Run Security Scan on Linux
@@ -228,19 +241,18 @@ jobs:
         with:
           args: --severity-threshold=high
 
-      # For macOS, install Snyk CLI via npm instead of using Docker-based action
-      - name: Install Snyk CLI on macOS
+      # For macOS, directly use npm-installed Snyk CLI to avoid Docker entirely
+      - name: Security Scan on macOS
         if: runner.os == 'macOS'
         run: |
+          # Install Snyk CLI via npm
+          echo "Installing Snyk CLI via npm..."
           npm install -g snyk
-          snyk --version
-        continue-on-error: true
 
-      # Run simplified Snyk scan on macOS
-      - name: Run Security Scan on macOS
-        if: runner.os == 'macOS'
+          # Run the security scan
+          echo "Running Snyk without Docker dependencies..."
+          snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
         continue-on-error: true
-        run: snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 

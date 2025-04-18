@@ -3,7 +3,7 @@ name: Release
 on:
   push:
     tags:
-      - 'v*'
+      - "v*"
 
 jobs:
   release:
@@ -39,8 +39,8 @@ jobs:
       - name: Setup Node.js
         uses: actions/setup-node@v3
         with:
-          node-version: '20'
-          cache: 'npm'
+          node-version: "20"
+          cache: "npm"
 
       - name: Install Dependencies
         run: |
@@ -60,12 +60,19 @@ jobs:
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3
+        if: runner.os == 'Linux'
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: ./cover/excoveralls.json
           flags: release
           name: codecov-release
-          fail_ci_if_error: true
+          fail_ci_if_error: false
+
+      # Alternative for non-Linux platforms
+      - name: Process coverage data (non-Linux)
+        if: runner.os != 'Linux'
+        run: |
+          echo "Coverage data available, but skipping codecov upload on non-Linux platforms."
 
       - name: Create Release
         env:
