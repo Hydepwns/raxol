@@ -149,12 +149,9 @@ defmodule Raxol.Core.Runtime.Subscription do
         end
 
       {:events, actual_id} ->
-        case Raxol.Core.Events.Manager.unsubscribe(actual_id) do
-          :ok -> :ok
-          {:error, reason} -> {:error, {:event_unsubscribe_error, reason}}
-          # Handle any other return values
-          result -> {:ok, result}
-        end
+        # Raxol.Core.Events.Manager.unsubscribe only returns :ok
+        Raxol.Core.Events.Manager.unsubscribe(actual_id)
+        :ok
 
       {:file_watch, watcher_pid} ->
         if Process.alive?(watcher_pid) do
