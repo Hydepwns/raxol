@@ -62,7 +62,7 @@ jobs:
 
           # Install build dependencies
           sudo apt-get install -y build-essential autoconf m4 libncurses5-dev \
-            libssl-dev libwxgtk3.0-gtk3-dev libgl1-mesa-dev libglu1-mesa-dev \
+            libssl-dev libwxgtk3.2-dev libgl1-mesa-dev libglu1-mesa-dev \
             libpng-dev openssl
         if: runner.os == 'Linux'
 
