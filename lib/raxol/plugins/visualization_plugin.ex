@@ -55,7 +55,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     # Initialize state with cache structures
     schedule_cache_cleanup()
 
-    plugin_state = struct(__MODULE__, config)
+    _plugin_state = struct(__MODULE__, config)
 
     {:ok,
      %State{
@@ -96,7 +96,9 @@ defmodule Raxol.Plugins.VisualizationPlugin do
           "[VisualizationPlugin] Handling :chart placeholder. Bounds: #{inspect(bounds)}"
         )
 
-        chart_cells = render_chart_content_internal(data, opts, bounds, plugin_state)
+        chart_cells =
+          render_chart_content_internal(data, opts, bounds, plugin_state)
+
         # Return :ok, state (unchanged), replacement cells, empty commands
         {:ok, plugin_state, chart_cells, []}
 
@@ -112,7 +114,9 @@ defmodule Raxol.Plugins.VisualizationPlugin do
           "[VisualizationPlugin] Handling :treemap placeholder. Bounds: #{inspect(bounds)}"
         )
 
-        treemap_cells = render_treemap_content_internal(data, opts, bounds, plugin_state)
+        treemap_cells =
+          render_treemap_content_internal(data, opts, bounds, plugin_state)
+
         # Return :ok, state (unchanged), replacement cells, empty commands
         {:ok, plugin_state, treemap_cells, []}
 
@@ -694,7 +698,7 @@ defmodule Raxol.Plugins.VisualizationPlugin do
       draw_box_with_text("[No Data]", bounds)
     else
       # Extract values and labels
-      labels = Enum.map(data, &Map.get(&1, :label, "?"))
+      _labels = Enum.map(data, &Map.get(&1, :label, "?"))
       values = Enum.map(data, &Map.get(&1, :value, 0))
       max_value = Enum.max(values, fn -> 0 end)
       # Account for borders/padding
