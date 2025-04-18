@@ -115,39 +115,37 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     end
   end
 
-  defp get_selected_text(
-         %__MODULE__{
-           selection_start: start_pos,
-           selection_end: end_pos,
-           last_cells_at_selection: cells
-         } = _state
-       )
-       when is_tuple(start_pos) and is_tuple(end_pos) and is_map(cells) do
-    # Determine top-left and bottom-right corners
-    {sx, sy} = start_pos
-    {ex, ey} = end_pos
-    {min_x, max_x} = {min(sx, ex), max(sx, ex)}
-    {min_y, max_y} = {min(sy, ey), max(sy, ey)}
+  defp get_selected_text(%__MODULE__{} = state) do
+    case state do
+      %{selection_start: start_pos, selection_end: end_pos, last_cells_at_selection: cells}
+      when is_tuple(start_pos) and is_tuple(end_pos) and is_map(cells) ->
+        # Determine top-left and bottom-right corners
+        {sx, sy} = start_pos
+        {ex, ey} = end_pos
+        {min_x, max_x} = {min(sx, ex), max(sx, ex)}
+        {min_y, max_y} = {min(sy, ey), max(sy, ey)}
 
-    selected_lines =
-      for y <- min_y..max_y do
-        line_cells =
-          for x <- min_x..max_x,
-              cell = Map.get(cells, {x, y}),
-              not is_nil(cell) and is_integer(cell.char) do
-            <<cell.char::utf8>>
+        selected_lines =
+          for y <- min_y..max_y do
+            line_cells =
+              for x <- min_x..max_x,
+                  cell = Map.get(cells, {x, y}),
+                  not is_nil(cell) and is_integer(cell.char) do
+                <<cell.char::utf8>>
+              end
+
+            # Filter out nils and join the characters for the line
+            line_cells |> Enum.join()
           end
 
-        # Filter out nils and join the characters for the line
-        line_cells |> Enum.join()
-      end
+        # Join all selected lines with newline
+        {:ok, Enum.join(selected_lines, "\n")}
 
-    # Join all selected lines with newline
-    {:ok, Enum.join(selected_lines, "\n")}
+      _ ->
+        # Catch-all if selection or cells are not ready
+        {:error, :no_selection}
+    end
   end
-
-  # Catch-all if selection or cells are not ready
-  defp get_selected_text(_state), do: {:error, :no_selection}
 
   defp set_clipboard_content(text) do
     case :os.type() do
