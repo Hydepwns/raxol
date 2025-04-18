@@ -60,15 +60,28 @@ defmodule Raxol.Terminal.TerminalUtilsTest do
       # testing private functions directly.
       with_mock_functions = fn test_function ->
         original_try_io = :erlang.make_fun(TerminalUtils, :try_io_dimensions, 0)
-        original_try_termbox = :erlang.make_fun(TerminalUtils, :try_termbox_dimensions, 0)
-        original_try_system = :erlang.make_fun(TerminalUtils, :try_system_command, 0)
+
+        original_try_termbox =
+          :erlang.make_fun(TerminalUtils, :try_termbox_dimensions, 0)
+
+        original_try_system =
+          :erlang.make_fun(TerminalUtils, :try_system_command, 0)
 
         try do
           # Patch the module to always return errors from the helper functions
           :meck.new(TerminalUtils, [:passthrough])
-          :meck.expect(TerminalUtils, :try_io_dimensions, fn -> {:error, :test_mock} end)
-          :meck.expect(TerminalUtils, :try_termbox_dimensions, fn -> {:error, :test_mock} end)
-          :meck.expect(TerminalUtils, :try_system_command, fn -> {:error, :test_mock} end)
+
+          :meck.expect(TerminalUtils, :try_io_dimensions, fn ->
+            {:error, :test_mock}
+          end)
+
+          :meck.expect(TerminalUtils, :try_termbox_dimensions, fn ->
+            {:error, :test_mock}
+          end)
+
+          :meck.expect(TerminalUtils, :try_system_command, fn ->
+            {:error, :test_mock}
+          end)
 
           # Run the test function
           test_function.()
@@ -79,13 +92,14 @@ defmodule Raxol.Terminal.TerminalUtilsTest do
       end
 
       # Test if fallback to default dimensions happens correctly
-      log = capture_log(fn ->
-        with_mock_functions.(fn ->
-          {width, height} = TerminalUtils.get_terminal_dimensions()
-          assert width == 80
-          assert height == 24
+      log =
+        capture_log(fn ->
+          with_mock_functions.(fn ->
+            {width, height} = TerminalUtils.get_terminal_dimensions()
+            assert width == 80
+            assert height == 24
+          end)
         end)
-      end)
 
       # We're not testing the exact log content here to keep the test simpler
       # and less brittle, but you could add assertions on the log output if needed

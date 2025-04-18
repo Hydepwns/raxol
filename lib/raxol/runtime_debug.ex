@@ -1622,7 +1622,10 @@ defmodule Raxol.RuntimeDebug do
   end
 
   # ----- Function to handle terminal resize event -----
-  def handle_info({:event, %ExTermbox.Event{type: :resize, w: width, h: height}}, state) do
+  def handle_info(
+        {:event, %ExTermbox.Event{type: :resize, w: width, h: height}},
+        state
+      ) do
     # <<< MODULE NAME
     Logger.info(
       "[RuntimeDebug.handle_info(:resize)] Terminal resize event: #{width}x#{height}."

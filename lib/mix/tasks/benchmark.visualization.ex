@@ -47,7 +47,8 @@ defmodule Mix.Tasks.Benchmark.Visualization do
         "--medium" in args -> :medium
         "--large" in args -> :large
         "--production" in args -> :production
-        true -> :small  # Default to small
+        # Default to small
+        true -> :small
       end
 
     # Configure dataset sizes and iterations based on test size
@@ -55,10 +56,13 @@ defmodule Mix.Tasks.Benchmark.Visualization do
       case test_size do
         :small ->
           {[10, 50, 100], 3, "Small Test"}
+
         :medium ->
           {[10, 100, 500, 1000], 5, "Medium Test"}
+
         :large ->
           {[10, 100, 1000, 5000, 10000], 3, "Large Test"}
+
         :production ->
           {[10, 100, 1000, 5000, 10000, 50000], 10, "Production Benchmark"}
       end
@@ -67,7 +71,7 @@ defmodule Mix.Tasks.Benchmark.Visualization do
     output_dir = "benchmark_results/visualization/#{Atom.to_string(test_size)}"
 
     # Print header
-    IO.puts """
+    IO.puts("""
     =================================================
     Raxol Visualization Performance Benchmark
     #{title}
@@ -77,7 +81,7 @@ defmodule Mix.Tasks.Benchmark.Visualization do
       Dataset sizes: #{inspect(datasets)}
       Iterations: #{iterations}
       Output: #{output_dir}
-    """
+    """)
 
     # Run benchmark
     benchmark_opts = [
@@ -89,15 +93,16 @@ defmodule Mix.Tasks.Benchmark.Visualization do
     ]
 
     # Time the entire benchmark
-    {benchmark_time, results} = :timer.tc(fn ->
-      VisualizationBenchmark.run_benchmark(benchmark_opts)
-    end)
+    {benchmark_time, results} =
+      :timer.tc(fn ->
+        VisualizationBenchmark.run_benchmark(benchmark_opts)
+      end)
 
     # Convert to seconds
     total_time_s = benchmark_time / 1_000_000
 
     # Print summary
-    IO.puts """
+    IO.puts("""
     =================================================
     Benchmark Completed in #{Float.round(total_time_s, 2)} seconds
     =================================================
@@ -112,6 +117,6 @@ defmodule Mix.Tasks.Benchmark.Visualization do
 
     To view full results, open:
     #{Path.expand(results.output_file)}
-    """
+    """)
   end
 end

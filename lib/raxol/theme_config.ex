@@ -140,7 +140,6 @@ defmodule Raxol.ThemeConfig do
     with {:ok, validated} <- validate_theme(theme),
          :ok <- ensure_themes_dir(),
          {:ok, json} <- Jason.encode(validated, pretty: true) do
-
       file_name = get_theme_filename(validated["name"])
       File.write(file_name, json)
     else
@@ -176,11 +175,16 @@ defmodule Raxol.ThemeConfig do
     # Create new theme with merged options
     %{
       "name" => name,
-      "colors" => Map.merge(base_theme["colors"] || %{}, stringify_keys(colors)),
-      "typography" => Map.merge(base_theme["typography"] || %{}, stringify_keys(typography)),
-      "spacing" => Map.merge(base_theme["spacing"] || %{}, stringify_keys(spacing)),
-      "borders" => Map.merge(base_theme["borders"] || %{}, stringify_keys(borders)),
-      "shadows" => Map.merge(base_theme["shadows"] || %{}, stringify_keys(shadows)),
+      "colors" =>
+        Map.merge(base_theme["colors"] || %{}, stringify_keys(colors)),
+      "typography" =>
+        Map.merge(base_theme["typography"] || %{}, stringify_keys(typography)),
+      "spacing" =>
+        Map.merge(base_theme["spacing"] || %{}, stringify_keys(spacing)),
+      "borders" =>
+        Map.merge(base_theme["borders"] || %{}, stringify_keys(borders)),
+      "shadows" =>
+        Map.merge(base_theme["shadows"] || %{}, stringify_keys(shadows)),
       "high_contrast" => high_contrast
     }
   end
@@ -205,8 +209,11 @@ defmodule Raxol.ThemeConfig do
       file_name = get_theme_filename(name)
 
       case File.rm(file_name) do
-        :ok -> :ok
-        {:error, reason} -> {:error, "Failed to delete theme: #{inspect(reason)}"}
+        :ok ->
+          :ok
+
+        {:error, reason} ->
+          {:error, "Failed to delete theme: #{inspect(reason)}"}
       end
     end
   end
@@ -325,7 +332,8 @@ defmodule Raxol.ThemeConfig do
         "info" => "#2196f3"
       },
       "typography" => %{
-        "fontFamily" => "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+        "fontFamily" =>
+          "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
         "fontSize" => %{
           "small" => "12px",
           "medium" => "14px",
@@ -383,7 +391,8 @@ defmodule Raxol.ThemeConfig do
         "info" => "#64b5f6"
       },
       "typography" => %{
-        "fontFamily" => "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+        "fontFamily" =>
+          "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
         "fontSize" => %{
           "small" => "12px",
           "medium" => "14px",
@@ -441,7 +450,8 @@ defmodule Raxol.ThemeConfig do
         "info" => "#00ffff"
       },
       "typography" => %{
-        "fontFamily" => "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
+        "fontFamily" =>
+          "-apple-system, BlinkMacSystemFont, \"Segoe UI\", Roboto, \"Helvetica Neue\", Arial, sans-serif",
         "fontSize" => %{
           "small" => "14px",
           "medium" => "16px",
@@ -489,10 +499,14 @@ defmodule Raxol.ThemeConfig do
     |> Enum.map(fn {k, v} -> {to_string(k), stringify_value(v)} end)
     |> Map.new()
   end
+
   defp stringify_keys(value), do: value
 
   # Helper to recursively stringify map values
   defp stringify_value(value) when is_map(value), do: stringify_keys(value)
-  defp stringify_value(value) when is_list(value), do: Enum.map(value, &stringify_value/1)
+
+  defp stringify_value(value) when is_list(value),
+    do: Enum.map(value, &stringify_value/1)
+
   defp stringify_value(value), do: value
 end
