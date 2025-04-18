@@ -48,17 +48,23 @@ tags: [roadmap, todo, tasks]
 - [ ] Implement caching for visualization calculations
 - [ ] Complete cross-platform testing
 - [ ] Implement custom theme support with configurability (API documentation created)
+- [ ] Create comprehensive user documentation and guides
+- [ ] Test native terminal environment functionality
+- [ ] Benchmark performance metrics in both environments
 
 ## Backlog
 
-- [ ] Implement full-text search functionality
-- [ ] Add additional visualization types (line charts, scatter plots)
-- [ ] Create user-friendly dashboard customization interface
-- [ ] Add additional keyboard shortcuts for improved navigation
-- [ ] Create comprehensive user documentation and guides
-- [ ] Implement memory usage optimization
+- [ ] Implement additional visualization types (line charts, scatter plots)
+- [ ] Add data filtering and selection capabilities to visualizations
+- [ ] Create drill-down functionality for interactive visualizations
+- [ ] Implement customizable tooltips and legends
 - [ ] Add asset optimization for improved load times
 - [ ] Enhance accessibility with screen reader support
+- [ ] Create user-friendly dashboard customization interface
+- [ ] Implement real-time collaborative features
+- [ ] Add dashboard sharing and export functionality
+- [ ] Implement AI-assisted dashboard configuration
+- [ ] Add multi-language support for UI elements
 
 ## Issues to Investigate
 

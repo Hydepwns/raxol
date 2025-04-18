@@ -23,15 +23,17 @@ The application is now at a stable prototype stage with all core components work
 - ✅ Dashboard layout and visualization integration passes all tests with proper sizing and persistence
 - ✅ Project files restructured for better organization
 - ✅ Comprehensive testing framework in place with clear success criteria
+- ✅ Fixed GitHub Actions CI workflow for cross-platform compatibility
+- ✅ Implemented platform-specific approach for security scanning
 
 ## Tactical Next Steps
 
-1. **Execute Testing Plan**
+1. **Complete Testing in Native Terminal Environment**
 
-   - Complete VS Code extension environment testing
-   - Test native terminal environment functionality
-   - Validate visualization rendering in different scenarios
-   - Verify layout persistence across application restarts
+   - Verify TUI rendering in native terminal
+   - Test cross-platform compatibility for core features
+   - Test visualization components in terminal mode
+   - Ensure proper window resizing and layout management
 
 2. **Performance Optimization**
 
@@ -39,97 +41,95 @@ The application is now at a stable prototype stage with all core components work
    - Implement caching for visualization calculations
    - Optimize rendering pipeline for complex dashboards
    - Add asset optimization for improved load times
+   - Benchmark performance metrics in both environments
 
-3. **Feature Expansion**
+3. **Fix Remaining Technical Issues**
 
-   - Add additional visualization types (line charts, scatter plots)
-   - Expand plugin system with more integration points
-   - Enhance user interaction capabilities
+   - Address `ex_termbox` dimension reporting inconsistencies
+   - Verify image rendering with visual confirmation
+   - Ensure proper terminal cleanup across platforms
 
-4. **Polish Application**
-   - Improve error handling and user feedback
-   - Enhance documentation with latest implementation details
-   - Address remaining compiler warnings
-   - Implement theme system for consistent UI
+4. **Theme System Implementation**
+
+   - Build on existing API documentation for theme system
+   - Implement consistent color schemes across components
+   - Add theme switching functionality
+   - Create custom theme creation tools
+
+5. **Documentation Expansion**
+   - Create comprehensive user guides
+   - Update API documentation with latest implementations
+   - Create tutorials for common workflows
+   - Document theme customization process
 
 ## Immediate Development Priorities
 
-| Task                           | Description                                                 | Status        |
-| ------------------------------ | ----------------------------------------------------------- | ------------- |
-| ✅ Dashboard Layout System     | Implementation of flexible dashboard with resizable widgets | **COMPLETED** |
-| ✅ Visualization Integration   | Rendering charts and treemaps within dashboard widgets      | **COMPLETED** |
-| ✅ Layout Persistence          | Saving and loading dashboard configurations                 | **COMPLETED** |
-| Testing Plan Execution         | Run comprehensive tests in both environments                | In Progress   |
-| Performance Optimization       | Profile and optimize visualization rendering                | In Progress   |
-| Cross-Platform Compatibility   | Ensure consistent behavior across platforms                 | In Progress   |
-| TUI Rendering Enhancements     | Improve rendering performance in terminal environment       | In Progress   |
-| Additional Visualization Types | Implement line charts, scatter plots                        | Planned       |
-| Theme System Implementation    | Add consistent UI theming across components                 | In Progress   |
-| Documentation Updates          | Update API docs with latest implementations                 | In Progress   |
+| Task                         | Description                                                 | Status        |
+| ---------------------------- | ----------------------------------------------------------- | ------------- |
+| ✅ Dashboard Layout System   | Implementation of flexible dashboard with resizable widgets | **COMPLETED** |
+| ✅ Visualization Integration | Rendering charts and treemaps within dashboard widgets      | **COMPLETED** |
+| ✅ Layout Persistence        | Saving and loading dashboard configurations                 | **COMPLETED** |
+| ✅ VS Code Extension Testing | Testing in VS Code extension environment                    | **COMPLETED** |
+| ✅ CI/CD Improvements        | Cross-platform workflow compatibility                       | **COMPLETED** |
+| Native Terminal Testing      | Test functionality in terminal environment                  | In Progress   |
+| Performance Optimization     | Profile and optimize visualization rendering                | In Progress   |
+| Cross-Platform Compatibility | Ensure consistent behavior across platforms                 | In Progress   |
+| TUI Rendering Enhancements   | Improve rendering performance in terminal environment       | In Progress   |
+| Theme System Implementation  | Add consistent UI theming across components                 | In Progress   |
+| Documentation Updates        | Update API docs and create user guides                      | In Progress   |
 
 ## Technical Implementation Plan
 
 ### Timeline for Next 2 Weeks
 
-| Week   | Focus                    | Tasks                                                                                                                                                      |
-| ------ | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Week 1 | Testing Plan Execution   | - Complete all test scripts<br>- Verify layout persistence<br>- Test visualization performance<br>- Document test results                                  |
-| Week 2 | Performance Optimization | - Profile visualization rendering<br>- Implement caching strategies<br>- Optimize large dataset handling<br>- Benchmark improvements                       |
-| Week 3 | Feature Expansion        | - Add additional visualization types<br>- Implement theme system (API documentation created)<br>- Enhance plugin infrastructure<br>- Improve documentation |
+| Week   | Focus                        | Tasks                                                                                                                                                    |
+| ------ | ---------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Week 1 | Native Terminal Environment  | - Complete native terminal testing<br>- Verify TUI rendering<br>- Test cross-platform compatibility<br>- Document issues and solutions                   |
+| Week 2 | Performance Optimization     | - Profile visualization rendering<br>- Implement caching strategies<br>- Optimize large dataset handling<br>- Benchmark improvements                     |
+| Week 3 | Theme System & Documentation | - Implement theme system based on API docs<br>- Create user documentation<br>- Add tutorials for common workflows<br>- Theme customization documentation |
 
-## Completed Milestones
+## Additional Visualization Types
 
-- ✅ Fixed ExTermbox initialization failure with fallback mode
-- ✅ Fixed database connection issues with robust error handling
-- ✅ Implemented proper UI updates through StdioInterface
-- ✅ Fixed BEAM VM hang issue with environment-specific handling
-- ✅ Implemented user input and resize handling
-- ✅ Enhanced visualization rendering with responsive sizing
-- ✅ Implemented dashboard layout system with widget positioning
-- ✅ Added widget resizing and drag functionality
-- ✅ Implemented layout persistence with validation
-- ✅ Created comprehensive test framework for dashboard layout
-- ✅ Integrated visualization components with dashboard widgets
-- ✅ Completed full dashboard layout integration with all features
-- ✅ Implemented automatic layout saving after significant changes
+After completing the current priorities, we plan to implement additional visualization types:
 
-## Testing Strategy
+1. **Line Charts**
 
-### Test Categories
+   - Time series data representation
+   - Multi-line comparison
+   - Customizable line styles and markers
 
-1. **Basic Functionality**
+2. **Scatter Plots**
 
-   - VS Code extension activation and communication
-   - Backend startup and message handling
-   - Dashboard layout manipulation
-   - Visualization rendering
+   - Data point distribution visualization
+   - Correlation analysis
+   - Customizable point styles and sizes
 
-2. **Integration Tests**
+3. **Heatmaps**
+   - Density visualization
+   - Color-coded data representation
+   - Configurable color schemes
 
-   - Dashboard widget integration with visualizations
-   - Layout persistence across application restarts
-   - User input handling across components
-   - Resize handling and responsive UI
+## Testing Strategy Updates
 
-3. **Performance Tests**
+### Test Categories for Native Terminal
 
-   - Visualization rendering with large datasets
-   - Dashboard layout with multiple widgets
-   - UI responsiveness during complex operations
+1. **Environment Specific Tests**
 
-4. **Specific Component Tests**
-   - ✅ Bar chart rendering with labels and values
-   - ✅ Treemap layout rendering with proper nesting
-   - ✅ Layout persistence with validation
-   - ✅ Widget positioning and resizing
-   - ✅ Visualization responsiveness to widget size changes
+   - Terminal initialization and cleanup
+   - Window resizing and content adjustment
+   - Keyboard navigation and shortcuts
+   - Terminal-specific features (cursor styles, etc.)
 
-### Additional Testing Needs
+2. **Performance Benchmarks**
+   - Rendering speed with various terminal emulators
+   - Memory usage patterns
+   - CPU utilization during complex operations
 
-- Verify TUI rendering in native terminal environment
-- Test cross-platform compatibility for core features
-- Evaluate accessibility of visualization components
-- Benchmark performance metrics for optimization
+### Test Automation
+
+- Create automated test scripts for terminal environment
+- Implement CI pipeline for terminal-specific tests
+- Add performance regression detection
 
 ## Contribution Areas
 
@@ -137,9 +137,9 @@ For developers interested in contributing to Raxol, here are key areas where hel
 
 1. **Additional Visualization Types**
 
-   - Line charts, scatter plots, heatmaps
+   - Implementation of new chart types
+   - Data transformation utilities
    - Interactive visualization elements
-   - Data filtering and transformation utilities
 
 2. **Performance Optimization**
 
@@ -149,50 +149,46 @@ For developers interested in contributing to Raxol, here are key areas where hel
 
 3. **Theme Systems**
 
-   - Consistent color scheme implementation (API documentation created)
+   - Theme implementation based on API documentation
    - Theme switching mechanism
    - Custom theme creation tools
 
 4. **Documentation**
 
+   - User guide creation
    - API documentation updates
-   - Tutorial creation
-   - Example implementations
+   - Tutorial development
 
-5. **Asset Optimization**
-
-   - Font file optimization
-   - Image asset management
-   - Loading performance improvements
-
-6. **Accessibility Enhancements**
+5. **Accessibility Enhancements**
    - Screen reader compatibility
    - Keyboard navigation improvements
    - Color contrast adjustments
-
-## Next Team Sync Focus
-
-During our next team sync, we'll focus on:
-
-- Reviewing test results from both environments
-- Discussing performance metrics and optimization strategies
-- Planning the implementation of additional visualization types
-- Assigning responsibilities for documentation updates
 
 ## Resources and References
 
 - Visualization Plugin: `VisualizationPlugin`
 - Dashboard Layout: `Dashboard.ex`, `GridContainer.ex`, `WidgetContainer.ex`
-- Testing Framework: `test_plan.md`, `scripts/vs_code_test.sh`, `scripts/native_terminal_test.sh`, `scripts/run_visualization_tests.exs`
-- Dashboard Tests: `scripts/test_dashboard_layout_integration.exs`, `scripts/test_layout_persistence.exs`, `scripts/run_all_dashboard_tests.sh`
-- Test Data: `test/data/visualization_test_data.ex`
-- VS Code Extension APIs: [Link to relevant VS Code docs, e.g., Webviews]
-- Project Structure Overview: See updated README.md
+- Testing Framework: `test_plan.md`, `scripts/vs_code_test.sh`, `scripts/native_terminal_test.sh`
+- Theme System API Documentation: `docs/api/theme_system.md`
+- Project Structure: See updated README.md
 
-## Future Exploration
+## Future Roadmap
 
-- Voice command integration for dashboard manipulation
-- AI-assisted dashboard configuration
-- Advanced event system for dashboard interaction
-- Real-time collaborative dashboards
-- Dashboard sharing and export capabilities
+After completing the current priorities, we'll focus on:
+
+1. **Advanced Visualization Interactive Features**
+
+   - Data filtering and selection
+   - Drill-down capabilities
+   - Customizable tooltips and legends
+
+2. **Real-time Collaboration Features**
+
+   - Shared dashboard sessions
+   - Collaborative editing
+   - User presence indicators
+
+3. **AI-assisted Configuration**
+   - Smart layout suggestions
+   - Data visualization recommendations
+   - Automated dashboard generation

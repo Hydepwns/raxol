@@ -62,10 +62,33 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Extension-specific rendering path
 
 - Database improvements
+
   - Connection management with retry logic
   - Error handling and logging
   - Diagnostic tools
   - Enhanced repository configuration
+
+- Testing Framework
+
+  - Comprehensive test plan with clear success criteria
+  - Testing scripts for both VS Code and native terminal environments
+  - Visualization test data generators
+  - Performance monitoring utilities
+
+- Dashboard and Visualization System
+
+  - Widget positioning and resizing capabilities
+  - Layout persistence with validation
+  - Responsive visualization components
+  - Automatic layout saving after changes
+  - Widget drag-and-drop functionality
+  - Comprehensive integration test suite
+
+- CI/CD Improvements
+  - Platform-specific security scanning approach
+  - Local workflow testing with custom Docker images
+  - Cross-platform compatibility enhancements
+  - Character list syntax modernization
 
 ### Changed
 
@@ -91,10 +114,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Refactored for better maintainability
 
 - Runtime system
+
   - Dual-mode operation (native terminal and VS Code extension)
   - Conditional initialization based on environment
   - Improved startup sequence and error handling
   - Environment-specific output targets
+
+- Project structure
+  - Consolidated examples into a single location
+  - Created dedicated frontend directory
+  - Normalized extension organization
+  - Improved secrets handling with templates
 
 ### Deprecated
 
@@ -135,6 +165,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Extension activation and environment detection
   - Communication protocol implementation
   - UI rendering through proper interface integration
+  - User input and resize handling
+  - JSON message formatting with markers
+
+- Runtime issues
+
+  - BEAM VM hang on exit in stdio mode
+  - Layout saving and loading functionality
+  - ExTermbox initialization failure
+  - Resize handling with proper model updates
+  - User input handling with quit key detection
+
+- CI/CD workflow
+
+  - GitHub Actions workflow for cross-platform compatibility
+  - Security scanning on macOS without Docker
+  - Test workflow verification
+  - Local CI testing with custom Docker images
 
 - Code quality
   - Compiler warnings and type issues
@@ -147,6 +194,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Resource access controls
 - Event sanitization
 - Security vulnerabilities
+- Platform-specific security scanning approach
 
 ## [0.1.0] - YYYY-MM-DD
 
