@@ -15,9 +15,13 @@ defmodule Raxol.Application do
   alias Raxol.Core.UserPreferences
   alias Raxol.Style.Colors.{HotReload, Persistence, Theme}
   alias Raxol.Database.ConnectionManager
+  require Logger
 
   @impl true
   def start(_type, _args) do
+    # Set up terminal configuration based on environment
+    setup_terminal_config()
+
     children =
       [
         # Start the Terminal Registry first (takes no args)
@@ -58,6 +62,31 @@ defmodule Raxol.Application do
     # for other strategies and supported options
     opts = [strategy: :one_for_one, name: Raxol.Supervisor]
     Supervisor.start_link(children, opts)
+  end
+
+  @doc """
+  Sets up terminal configuration based on environment variables and Mix environment.
+  """
+  def setup_terminal_config do
+    # Check for headless mode from environment variables
+    headless = System.get_env("RAXOL_HEADLESS") == "true"
+    use_mock = System.get_env("RAXOL_USE_MOCK_TERMBOX") == "true"
+    test_env = System.get_env("RAXOL_ENV") == "test" || @compile_env == :test
+
+    if headless || test_env || use_mock do
+      Logger.info("Running in headless/test mode - configuring for CI environment")
+
+      # Configure terminal settings for headless/test environment
+      Application.put_env(:raxol, :terminal,
+        use_termbox: false,
+        mock_termbox: use_mock,
+        default_width: 80,
+        default_height: 24,
+        enable_ansi: true,
+        enable_mouse: false,
+        debug_mode: false
+      )
+    end
   end
 
   @doc """
