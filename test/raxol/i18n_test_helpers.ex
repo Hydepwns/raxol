@@ -221,6 +221,8 @@ defmodule Raxol.I18nTestHelpers do
           else
             # If default label is nil, we can't compare, but the translated label exists (checked above)
             # This might indicate an issue with the test setup or default translations
+            require Logger
+
             Logger.debug(
               "Could not compare label for '#{component_id}' '#{label_type}' as default label was nil"
             )

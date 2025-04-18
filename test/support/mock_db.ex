@@ -74,12 +74,12 @@ defmodule Raxol.Test.MockDB do
   def prepare(:explain, query), do: {:nocache, query}
   def prepare(_operation, query), do: {:cache, query, query}
 
-  def execute(_meta, _query_cache, _query_params, _log) do
+  def execute(_meta, _query_cache, _query_params, _opts, _log) do
     # Return {:ok, num_rows, result}
     {:ok, 0, []}
   end
 
-  def stream(_meta, _query_cache, _query_params, _log) do
+  def stream(_meta, _query_cache, _query_params, _opts, _log) do
     Stream.resource(
       fn -> [] end,
       fn
@@ -99,16 +99,16 @@ defmodule Raxol.Test.MockDB do
     nil
   end
 
-  def insert(_meta, _schema_meta, fields, on_conflict, returning, _log) do
+  def insert(_meta, _schema_meta, _fields, _on_conflict, returning, _log) do
     {:ok, Enum.map(returning, fn {_key, index} -> {index, nil} end)}
   end
 
   def insert_all(
         _meta,
         _schema_meta,
-        header,
+        _header,
         rows,
-        on_conflict,
+        _on_conflict,
         returning,
         _placeholders,
         _log
@@ -122,11 +122,11 @@ defmodule Raxol.Test.MockDB do
     {:ok, length(rows), returned_rows}
   end
 
-  def update(_meta, _schema_meta, fields, filters, returning, _log) do
+  def update(_meta, _schema_meta, _fields, _filters, returning, _log) do
     {:ok, Enum.map(returning, fn {_key, index} -> {index, nil} end)}
   end
 
-  def delete(_meta, _schema_meta, filters, returning, _log) do
+  def delete(_meta, _schema_meta, _filters, returning, _log) do
     {:ok, Enum.map(returning, fn {_key, index} -> {index, nil} end)}
   end
 
@@ -135,11 +135,11 @@ defmodule Raxol.Test.MockDB do
     true
   end
 
-  def execute_ddl(command, opts, log) do
+  def execute_ddl(_command, _opts, _log) do
     :ok
   end
 
-  def lock_for_migrations(meta, config, lock) do
+  def lock_for_migrations(_meta, _config, _lock) do
     # Mock success
     {:ok, nil}
   end

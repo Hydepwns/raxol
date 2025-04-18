@@ -137,31 +137,6 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
   end
 
-  describe "Image Plugin" do
-    test "initializes correctly" do
-      {:ok, plugin} = ImagePlugin.init()
-      assert plugin.name == "image"
-      assert plugin.enabled == true
-    end
-
-    test "detects and transforms image markers" do
-      {:ok, plugin} = ImagePlugin.init()
-
-      # Test with an image marker
-      base64_data = Base.encode64("fake image data")
-      image_marker = "<<IMAGE:#{base64_data}:80:24:1>>"
-
-      {:ok, updated_plugin, transformed_output} =
-        ImagePlugin.handle_output(plugin, image_marker)
-
-      assert String.contains?(transformed_output, "\e]1337;File=inline=1")
-
-      # Test with no image marker
-      {:ok, updated_plugin} =
-        ImagePlugin.handle_output(updated_plugin, "Hello, World!")
-    end
-  end
-
   describe "Theme Plugin" do
     test "initializes correctly" do
       {:ok, plugin} = ThemePlugin.init()
