@@ -148,25 +148,17 @@ jobs:
         with:
           args: --severity-threshold=high
 
-      # For macOS, use npm installation instead of Docker-based action
-      - name: Install Snyk CLI on macOS using npm
+      # For macOS, use Snyk CLI setup action instead of Docker-based action
+      - name: Setup Snyk CLI on macOS
+        uses: snyk/actions/setup@master
         if: runner.os == 'macOS'
-        run: |
-          echo "Installing Snyk CLI via npm..."
-          npm install -g snyk
-          echo "Installed Snyk CLI version: $(snyk --version || echo 'installation failed')"
+        env:
+          SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
-      # Run simplified Snyk scan on macOS (no container scanning)
+      # Run simplified Snyk scan on macOS
       - name: Run Security Scan on macOS
         if: runner.os == 'macOS'
-        run: |
-          # Skip if snyk isn't available (will happen if setup step fails)
-          if command -v snyk &> /dev/null; then
-            echo "Running Snyk without Docker dependencies"
-            snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
-          else
-            echo "Skipping Snyk test on macOS due to setup issues"
-          fi
+        run: snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -251,11 +243,6 @@ jobs:
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
-          mix deps.compile
 
-      - name: Build Docs
-        run: |
-          mix compile
-          mix docs
-        env:
-          MIX_ENV: test
+      - name: Generate Docs
+        run: mix docs
