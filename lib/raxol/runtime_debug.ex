@@ -102,11 +102,29 @@ defmodule Raxol.RuntimeDebug do
     # Determine app name for registration
     app_name = get_app_name(app_module)
 
-    # Initialize ExTermbox - Important: MUST happen before most other actions
-    case Bindings.init() do
+    # Check if we should use mock termbox in test environment
+    use_termbox = Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
+    mock_termbox = Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
+
+    # Initialize ExTermbox or use mock - Important: MUST happen before most other actions
+    termbox_result = cond do
+      mock_termbox ->
+        Logger.debug("[RuntimeDebug.init] Using mock termbox implementation")
+        Raxol.Test.MockTermbox.init()
+      use_termbox ->
+        Bindings.init()
+      true ->
+        Logger.debug("[RuntimeDebug.init] Skipping termbox initialization as configured")
+        {:ok, :skipped}
+    end
+
+    case termbox_result do
       # <<< MODULE NAME
       {:ok, :ok} ->
         Logger.debug("[RuntimeDebug.init] ExTermbox initialized successfully.")
+
+      {:ok, :skipped} ->
+        Logger.info("[RuntimeDebug.init] ExTermbox initialization skipped as configured.")
 
       {:error, reason} ->
         # <<< MODULE NAME
@@ -124,8 +142,14 @@ defmodule Raxol.RuntimeDebug do
         )
     end
 
-    # Use 256 color mode
-    Bindings.select_output_mode(256)
+    # Use 256 color mode if not using mock
+    if mock_termbox do
+      Raxol.Test.MockTermbox.select_output_mode(256)
+    else
+      if use_termbox do
+        Bindings.select_output_mode(256)
+      end
+    end
 
     # Initialize application state by calling the app_module's init function
     # --- SIMPLIFIED MODEL INITIALIZATION ---
@@ -541,8 +565,21 @@ defmodule Raxol.RuntimeDebug do
       "[RuntimeDebug.handle_continue(:after_init)] Received state: #{inspect(state)}"
     )
 
+    # Check if we should use mock termbox in test environment
+    use_termbox = Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
+    mock_termbox = Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
+
     # Start Termbox polling HERE
-    case ExTermbox.Bindings.start_polling(self()) do
+    polling_result = cond do
+      mock_termbox ->
+        Raxol.Test.MockTermbox.start_polling(self())
+      use_termbox ->
+        ExTermbox.Bindings.start_polling(self())
+      true ->
+        {:ok, :skipped}  # Skip polling if termbox is disabled
+    end
+
+    case polling_result do
       # Match {:ok, reference} on success
       {:ok, _ref} ->
         Logger.debug(
@@ -558,6 +595,11 @@ defmodule Raxol.RuntimeDebug do
           "[RuntimeDebug.handle_continue(:after_init)] State before returning: #{inspect(state)}"
         )
 
+        {:noreply, state}
+
+      {:ok, :skipped} ->
+        Logger.info("[RuntimeDebug.handle_continue] Termbox polling skipped as configured.")
+        schedule_render(state)
         {:noreply, state}
 
       {:error, reason} ->
@@ -584,6 +626,10 @@ defmodule Raxol.RuntimeDebug do
     Logger.info(
       "[RuntimeDebug.terminate] START. Reason: #{inspect(reason)}, State: #{inspect(state)}"
     )
+
+    # Check if we should use mock termbox in test environment
+    use_termbox = Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
+    mock_termbox = Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
 
     dashboard_model = Map.get(state.model, :dashboard_model)
 
@@ -613,9 +659,15 @@ defmodule Raxol.RuntimeDebug do
         "[RuntimeDebug.terminate] >>> Calling ExTermbox.Bindings.shutdown()..."
       )
 
-      # <<< RESTORED
-      ExTermbox.Bindings.shutdown()
-      # <<< RESTORED
+      # Shutdown termbox based on configuration
+      if mock_termbox do
+        Raxol.Test.MockTermbox.shutdown()
+      else
+        if use_termbox do
+          ExTermbox.Bindings.shutdown()
+        end
+      end
+
       Logger.info(
         "[RuntimeDebug.terminate] <<< ExTermbox.Bindings.shutdown() returned."
       )
@@ -624,8 +676,15 @@ defmodule Raxol.RuntimeDebug do
         "[RuntimeDebug.terminate] >>> Calling ExTermbox.Bindings.stop_polling()..."
       )
 
-      # ExTermbox.Bindings.stop_polling() # <<< REMAINS COMMENTED OUT
-      # Logger.info("[RuntimeDebug.terminate] <<< ExTermbox.Bindings.stop_polling() returned.") # <<< REMAINS COMMENTED OUT
+      # Stop polling based on configuration
+      if mock_termbox do
+        Raxol.Test.MockTermbox.stop_polling()
+      else
+        if use_termbox do
+          # ExTermbox.Bindings.stop_polling() # <<< REMAINS COMMENTED OUT
+        end
+      end
+
       # <<< RESTORED ORIGINAL LOG
       Logger.info("[RuntimeDebug] Termbox shut down during termination.")
     else
@@ -797,8 +856,18 @@ defmodule Raxol.RuntimeDebug do
   defp is_quit_key?(_event, _quit_keys), do: false
 
   defp cleanup(state) do
+    # Check if we should use mock termbox in test environment
+    use_termbox = Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
+    mock_termbox = Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
+
     if Map.get(state, :termbox_initialized, false) do
-      ExTermbox.Bindings.shutdown()
+      if mock_termbox do
+        Raxol.Test.MockTermbox.shutdown()
+      else
+        if use_termbox do
+          ExTermbox.Bindings.shutdown()
+        end
+      end
     end
 
     app_name = get_app_name(state.app_module)
