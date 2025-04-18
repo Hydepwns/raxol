@@ -180,7 +180,8 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
   end
 
   defp render_navigation(state, _direction) do
-    Enum.with_index(state.sections, fn section, index ->
+    Enum.with_index(state.sections)
+    |> Enum.each(fn {section, index} ->
       is_focused = index == state.focus_index
       is_active = section == state.active_section
 

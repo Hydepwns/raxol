@@ -48,6 +48,19 @@ defmodule Raxol.StdioInterface do
     send_message(log_message)
   end
 
+  @doc """
+  Sends a UI update message to the extension with changes to render.
+  """
+  @spec send_ui_update(update :: map()) :: :ok | {:error, any()}
+  def send_ui_update(update) when is_map(update) do
+    ui_message = %{
+      type: "ui_update",
+      payload: update
+    }
+
+    send_message(ui_message)
+  end
+
   # --- Server Callbacks ---
 
   @impl true

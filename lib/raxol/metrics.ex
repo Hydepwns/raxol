@@ -152,13 +152,14 @@ defmodule Raxol.Metrics do
   def get_cpu_usage do
     pid_string = :os.getpid()
 
-    case :os.cmd(~c"ps -p #{pid_string} -o %cpu=") do
-      [] ->
+    {output, 0} = System.cmd("ps", ["-p", "#{pid_string}", "-o", "%cpu="])
+
+    case output do
+      "" ->
         0.0
 
       output ->
         output
-        |> List.to_string()
         |> String.trim()
         |> String.to_float()
     end
@@ -167,13 +168,14 @@ defmodule Raxol.Metrics do
   def get_memory_usage do
     pid_string = :os.getpid()
 
-    case :os.cmd(~c"ps -p #{pid_string} -o %mem=") do
-      [] ->
+    {output, 0} = System.cmd("ps", ["-p", "#{pid_string}", "-o", "%mem="])
+
+    case output do
+      "" ->
         0.0
 
       output ->
         output
-        |> List.to_string()
         |> String.trim()
         |> String.to_float()
     end

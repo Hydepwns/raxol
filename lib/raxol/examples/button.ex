@@ -35,8 +35,19 @@ defmodule Raxol.Examples.Button do
 
   @impl true
   def handle_event({:click, _pos} = _event, state) do
-    # TODO: Implement click handling
-    state
+    # Don't process clicks if disabled
+    if state.disabled do
+      {state, []}
+    else
+      # Update the state to reflect pressed state
+      updated_state = %{state | pressed: true}
+
+      # Get the on_click function from state and call it
+      command = state.on_click.()
+
+      # Return updated state and commands
+      {updated_state, [command]}
+    end
   end
 
   def handle_event({:resize, _} = _event, state) do

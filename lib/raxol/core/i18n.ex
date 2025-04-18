@@ -82,17 +82,20 @@ defmodule Raxol.Core.I18n do
     Process.put(:i18n_rtl_locales, rtl_locales)
 
     # Load translations for default locale
-    load_translations(default_locale)
-
-    # Register event handlers
-    _ =
-      EventManager.register_handler(
-        :locale_changed,
-        __MODULE__,
-        :handle_locale_changed
-      )
-
-    :ok
+    case load_translations(default_locale) do
+      :ok -> 
+        # Register event handlers
+        _ =
+          EventManager.register_handler(
+            :locale_changed,
+            __MODULE__,
+            :handle_locale_changed
+          )
+        :ok
+      {:error, reason} ->
+        Logger.warning("Failed to load translations for default locale: #{inspect(reason)}")
+        :ok
+    end
   end
 
   @doc """
@@ -210,10 +213,13 @@ defmodule Raxol.Core.I18n do
       Process.put(:i18n_current_locale, locale)
 
       # Load translations for new locale
-      load_translations(locale)
-
-      # Broadcast event
-      EventManager.broadcast({:locale_changed, previous_locale, locale})
+      case load_translations(locale) do
+        :ok -> 
+          # Broadcast event
+          EventManager.broadcast({:locale_changed, previous_locale, locale})
+        {:error, reason} ->
+          Logger.warning("Failed to load translations for locale #{locale}: #{inspect(reason)}")
+      end
 
       :ok
     else

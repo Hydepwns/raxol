@@ -9,6 +9,8 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   - Window stacking order
   """
 
+  alias Raxol.Terminal.ANSI.SequenceParser
+
   @type window_state :: %{
           title: String.t(),
           icon_name: String.t(),
@@ -52,45 +54,8 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   Parses a window manipulation sequence.
   """
   @spec parse_sequence(binary()) :: {:ok, atom(), list(integer())} | :error
-  def parse_sequence(<<params::binary-size(1), operation::binary>>) do
-    case parse_params(params) do
-      {:ok, parsed_params} ->
-        # Extract the character code from the operation binary
-        operation_char =
-          if byte_size(operation) > 0, do: :binary.first(operation), else: nil
-
-        if operation_char do
-          {:ok, decode_operation(operation_char), parsed_params}
-        else
-          # Or handle empty operation differently
-          :error
-        end
-
-      :error ->
-        :error
-    end
-  end
-
-  def parse_sequence(_), do: :error
-
-  @doc """
-  Parses parameters from a window manipulation sequence.
-  """
-  @spec parse_params(binary()) :: {:ok, list(integer())} | :error
-  def parse_params(params) do
-    case String.split(params, ";", trim: true) do
-      [] ->
-        {:ok, []}
-
-      param_strings ->
-        case Enum.map(param_strings, &Integer.parse/1) do
-          list when length(list) == length(param_strings) ->
-            {:ok, Enum.map(list, fn {num, _} -> num end)}
-
-          _ ->
-            :error
-        end
-    end
+  def parse_sequence(sequence) do
+    SequenceParser.parse_sequence(sequence, &decode_operation/1)
   end
 
   @doc """

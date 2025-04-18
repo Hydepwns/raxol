@@ -58,8 +58,10 @@ defmodule Raxol.Plugins.ClipboardPlugin do
       if is_tuple(state.selection_start) and is_tuple(state.selection_end) and
            is_map(state.last_cells_at_selection) do
         Logger.debug("[Clipboard] Triggering yank_selection.")
-        yank_selection(state)
+        result = yank_selection(state)
         new_state = clear_selection(state)
+        # Store the yank result for debugging if needed
+        new_state = Map.put(new_state, :last_yank_result, result)
         {:ok, new_state}
       else
         Logger.debug("[Clipboard] No complete selection available for copy.")
@@ -132,14 +134,17 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         selected_lines =
           for y <- min_y..max_y do
             line_cells =
-              for x <- min_x..max_x,
-                  cell = Map.get(cells, {x, y}),
-                  not is_nil(cell) and is_integer(cell.char) do
-                <<cell.char::utf8>>
+              for x <- min_x..max_x do
+                cell = Map.get(cells, {x, y})
+                cond do
+                  is_nil(cell) -> nil
+                  not is_integer(cell.char) -> nil
+                  true -> <<cell.char::utf8>>
+                end
               end
 
             # Filter out nils and join the characters for the line
-            line_cells |> Enum.join()
+            line_cells |> Enum.reject(&is_nil/1) |> Enum.join()
           end
 
         # Join all selected lines with newline
@@ -152,18 +157,23 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   end
 
   defp set_clipboard_content(text) do
-    case :os.type() do
+    result = case :os.type() do
       {:unix, :darwin} ->
-        _ = System.cmd("pbcopy", [], input: text)
+        System.cmd("pbcopy", [], input: text)
 
       {:unix, _} ->
-        _ = System.cmd("xclip", ["-selection", "clipboard"], input: text)
+        System.cmd("xclip", ["-selection", "clipboard"], input: text)
 
       {:win32, _} ->
-        _ = System.cmd("clip", [], input: text)
+        System.cmd("clip", [], input: text)
     end
 
-    :ok
+    case result do
+      {_, 0} -> :ok
+      {error_output, exit_code} -> 
+        Logger.warning("Clipboard operation failed with exit code #{exit_code}: #{inspect(error_output)}")
+        {:error, {:clipboard_error, exit_code, error_output}}
+    end
   end
 
   defp clear_selection(state) do

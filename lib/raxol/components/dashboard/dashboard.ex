@@ -60,14 +60,20 @@ defmodule Raxol.Components.Dashboard.Dashboard do
       # Serialize the layout data
       binary_data = :erlang.term_to_binary(layout_data)
       # Write to file
-      File.write(layout_file, binary_data)
-      Logger.info("Dashboard layout saved to #{layout_file}")
-      :ok
+      case File.write(layout_file, binary_data) do
+        :ok ->
+          Logger.info("Dashboard layout saved to #{layout_file}")
+          :ok
+        {:error, reason} ->
+          Logger.error("Failed to save dashboard layout to #{layout_file}: #{inspect(reason)}")
+          {:error, reason}
+      end
     rescue
       e ->
         Logger.error(
           "Failed to save dashboard layout to #{layout_file}: #{inspect(e)}"
         )
+        {:error, :exception}
 
         {:error, e}
     end
@@ -280,7 +286,7 @@ defmodule Raxol.Components.Dashboard.Dashboard do
       %{type: :mouse, event_type: :mouse_down, x: x, y: y} ->
         case find_widget_and_bounds_at(x, y, model.widgets, grid_config) do
           {widget, bounds} ->
-            if is_in_resize_handle?(x, y, bounds) do
+            if in_resize_handle?(x, y, bounds) do
               Logger.debug(
                 "[Dashboard] Mouse Down on resize handle for widget #{widget.id} at (#{x}, #{y})"
               )
@@ -406,8 +412,10 @@ defmodule Raxol.Components.Dashboard.Dashboard do
 
             # Save layout after resize
             new_model = %{model | resizing: nil}
-            save_layout(new_model.widgets)
-            new_model
+            case save_layout(new_model.widgets) do
+              :ok -> new_model
+              {:error, _reason} -> new_model # Still return the model even if save fails
+            end
 
           model.dragging ->
             Logger.debug(
@@ -416,8 +424,10 @@ defmodule Raxol.Components.Dashboard.Dashboard do
 
             # Save layout after drag
             new_model = %{model | dragging: nil}
-            save_layout(new_model.widgets)
-            new_model
+            case save_layout(new_model.widgets) do
+              :ok -> new_model
+              {:error, _reason} -> new_model # Still return the model even if save fails
+            end
 
           # No drag/resize was active
           true ->
@@ -459,8 +469,12 @@ defmodule Raxol.Components.Dashboard.Dashboard do
         "[Dashboard] Saving layout after significant change (drag/resize completed)"
       )
 
-      save_layout(updated_model.widgets)
-      {updated_model, true}
+      case save_layout(updated_model.widgets) do
+        :ok -> {updated_model, true}
+        {:error, reason} -> 
+          Logger.error("Failed to save layout: #{inspect(reason)}")
+          {updated_model, false}
+      end
     else
       {updated_model, false}
     end
@@ -522,16 +536,21 @@ defmodule Raxol.Components.Dashboard.Dashboard do
     end)
   end
 
-  defp is_in_resize_handle?(_x, _y, bounds)
+  defp in_resize_handle?(_x, _y, bounds)
        when bounds.width < 1 or bounds.height < 1 do
     false
   end
 
-  defp is_in_resize_handle?(x, y, bounds) do
+  defp in_resize_handle?(x, y, bounds) do
     handle_x = bounds.x + bounds.width - 1
     handle_y = bounds.y + bounds.height - 1
     x == handle_x && y == handle_y
   end
+
+  # For backward compatibility
+  @doc false
+  @deprecated "Use in_resize_handle?/3 instead"
+  defp is_in_resize_handle?(x, y, bounds), do: in_resize_handle?(x, y, bounds)
 
   defp coords_to_grid_cell(x, y, grid_config) do
     parent_bounds = grid_config.parent_bounds

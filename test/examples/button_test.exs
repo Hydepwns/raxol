@@ -4,10 +4,13 @@ defmodule Raxol.Examples.ButtonTest do
   use Raxol.Test.Integration
   use Raxol.Test.Visual
   import ExUnit.Callbacks
+  import Raxol.Test.ButtonHelpers
 
   alias Raxol.Examples.Button
   # Alias TestHelper for setup/teardown
   alias Raxol.Test.TestHelper
+  # Alias the Form mock for testing
+  alias Form
 
   setup do
     context = TestHelper.setup_test_env()
@@ -46,7 +49,7 @@ defmodule Raxol.Examples.ButtonTest do
   end
 
   describe "integration tests" do
-    test_scenario "button in form interaction", %{form: Form, button: Button} do
+    test "button in form interaction" do
       {:ok, form, button} = setup_component_hierarchy(Form, Button)
 
       # Simulate button click

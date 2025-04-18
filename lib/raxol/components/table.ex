@@ -189,7 +189,7 @@ defmodule Raxol.Components.Table do
             # Render each row
             sorted_data
             |> Enum.with_index()
-            |> Enum.map(fn {row_data, index} ->
+            |> Enum.each(fn {row_data, index} ->
               # Determine if this row is selected
               is_selected =
                 selected && Map.get(row_data, select_key) == selected
@@ -232,7 +232,7 @@ defmodule Raxol.Components.Table do
               View.row(row_props, fn ->
                 # Render each cell in the row
                 normalized_columns
-                |> Enum.map(fn column ->
+                |> Enum.each(fn column ->
                   render_cell(row_data, column, index)
                 end)
               end)

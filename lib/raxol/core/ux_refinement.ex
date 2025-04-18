@@ -108,7 +108,9 @@ defmodule Raxol.Core.UXRefinement do
 
   def enable_feature(:hints, _opts) do
     # Initialize hint display
-    HintDisplay.init(%{})
+    hint_config = HintDisplay.init(%{})
+    # Store the hint config for later use if needed
+    Process.put(:ux_refinement_hint_config, hint_config)
 
     # Initialize hint registry if not already done
     Process.put(:ux_refinement_hints, %{})
@@ -124,7 +126,9 @@ defmodule Raxol.Core.UXRefinement do
     ensure_feature_enabled(:focus_management)
 
     # Initialize focus ring with options
-    FocusRing.init(opts)
+    focus_ring_config = FocusRing.init(opts)
+    # Store the focus ring config for later use if needed
+    Process.put(:ux_refinement_focus_ring_config, focus_ring_config)
 
     # Register the feature as enabled
     _ = register_enabled_feature(:focus_ring)

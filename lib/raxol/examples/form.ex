@@ -57,7 +57,7 @@ defmodule Raxol.Examples.Form do
         end
 
         # Render form fields
-        Enum.map(state.fields, fn field -> render_field(field, state) end)
+        Enum.each(state.fields, fn field -> render_field(field, state) end)
 
         # Render error message (if any)
         if state.error do

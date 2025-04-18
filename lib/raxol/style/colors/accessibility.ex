@@ -254,17 +254,24 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   ## Examples
 
-      iex> Accessibility.is_suitable_for_text?("#000000", "#FFFFFF")
+      iex> Accessibility.suitable_for_text?("#000000", "#FFFFFF")
       true
 
-      iex> Accessibility.is_suitable_for_text?("#777777", "#999999")
+      iex> Accessibility.suitable_for_text?("#777777", "#999999")
       false
   """
-  def is_suitable_for_text?(color, background, level \\ :aa, size \\ :normal) do
+  def suitable_for_text?(color, background, level \\ :aa, size \\ :normal) do
     case check_contrast(color, background, level, size) do
       {:ok, _ratio} -> true
       {:insufficient, _ratio} -> false
     end
+  end
+
+  # For backward compatibility
+  @doc false
+  @deprecated "Use suitable_for_text?/4 instead"
+  def is_suitable_for_text?(color, background, level \\ :aa, size \\ :normal) do
+    suitable_for_text?(color, background, level, size)
   end
 
   @doc """
@@ -294,7 +301,7 @@ defmodule Raxol.Style.Colors.Accessibility do
       end
 
     # Check if suggested color is suitable for text
-    if is_suitable_for_text?(suggested_color, background, level, size) do
+    if suitable_for_text?(suggested_color, background, level, size) do
       suggested_color
     else
       # If suggested color is not suitable, adjust the background color

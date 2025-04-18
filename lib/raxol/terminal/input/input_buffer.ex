@@ -56,41 +56,14 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   """
   def prepend(%__MODULE__{} = buffer, data) when is_binary(data) do
     new_contents = data <> buffer.contents
-
-    if String.length(new_contents) <= buffer.max_size do
-      %{buffer | contents: new_contents}
-    else
-      case buffer.overflow_mode do
-        :truncate ->
-          %{buffer | contents: String.slice(new_contents, 0, buffer.max_size)}
-
-        :error ->
-          buffer
-
-        :wrap ->
-          %{buffer | contents: String.slice(new_contents, -buffer.max_size..-1)}
-      end
-    end
+    handle_overflow(buffer, new_contents)
   end
 
   @doc """
   Sets the buffer contents.
   """
   def set_contents(%__MODULE__{} = buffer, contents) when is_binary(contents) do
-    if String.length(contents) <= buffer.max_size do
-      %{buffer | contents: contents}
-    else
-      case buffer.overflow_mode do
-        :truncate ->
-          %{buffer | contents: String.slice(contents, 0, buffer.max_size)}
-
-        :error ->
-          buffer
-
-        :wrap ->
-          %{buffer | contents: String.slice(contents, -buffer.max_size..-1)}
-      end
-    end
+    handle_overflow(buffer, contents)
   end
 
   @doc """
@@ -229,7 +202,11 @@ defmodule Raxol.Terminal.Input.InputBuffer do
 
   defp append_to_contents(%__MODULE__{} = buffer, data) do
     new_contents = buffer.contents <> data
+    handle_overflow(buffer, new_contents)
+  end
 
+  @doc false
+  defp handle_overflow(%__MODULE__{} = buffer, new_contents) do
     if String.length(new_contents) <= buffer.max_size do
       %{buffer | contents: new_contents}
     else
