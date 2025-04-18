@@ -82,8 +82,8 @@ yarn-error.log
 NEXT_AGENT_PROMPT.md
 test_plan.md
 TODO.md
-working_version.json
-staged_version.json
+themes/working_version.json
+themes/staged_version.json
 
 # Editor / Development Artifacts
 preferences.json
