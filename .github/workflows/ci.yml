@@ -101,18 +101,55 @@ jobs:
           # Set environment variables for verbose output
           export DIAGNOSTIC=1
           export ERL_COMPILER_OPTIONS=bin_opt_info
+          export REBAR_COLOR=true
+          export REBAR_CRASH_DUMP_FILE=rebar3_crash.dump
 
           # Get dependencies
           mix deps.get
 
-          # Handle problematic dependencies
-          echo "Explicitly compiling ranch with --force"
+          # Special handling for problematic dependencies
+          echo "Cleaning cowlib and related dependencies..."
+          mix deps.clean cowlib --build
+          mix deps.clean ranch --build
+          mix deps.clean cowboy --build
+
+          echo "Compiling cowlib and dependencies with extra debugging..."
+          mix deps.compile cowlib --force --verbose
           mix deps.compile ranch --force
+          mix deps.compile cowboy --force
+
+          # Check if cowlib was properly compiled
+          if [ ! -f "deps/cowlib/ebin/cowlib.app" ]; then
+            echo "WARNING: cowlib.app not generated, creating manually"
+            mkdir -p deps/cowlib/ebin
+            cp deps/cowlib/src/cowlib.app.src deps/cowlib/ebin/cowlib.app || true
+          fi
 
           # Compile other dependencies
           mix deps.compile
         env:
           MIX_ENV: test
+          DEBUG: 1
+          REBAR_DEBUG_INFO: 1
+
+      - name: Debug Dependency Status
+        if: always()
+        run: |
+          echo "Checking dependency status..."
+          echo "Listing cowlib directory contents:"
+          ls -la deps/cowlib || echo "No cowlib directory"
+
+          echo "Listing cowlib ebin contents:"
+          ls -la deps/cowlib/ebin || echo "No cowlib/ebin directory"
+
+          echo "Checking mix dependency status:"
+          mix deps || echo "Mix deps command failed"
+
+          echo "Checking cowlib.app file content:"
+          cat deps/cowlib/ebin/cowlib.app 2>/dev/null || echo "cowlib.app file not found or empty"
+
+          echo "Checking for rebar crash dump:"
+          cat rebar3_crash.dump 2>/dev/null || echo "No rebar crash dump found"
 
       - name: Install npm dependencies in subfolders
         run: |
@@ -144,6 +181,16 @@ jobs:
             echo "Waiting for PostgreSQL to be ready... ($i/30)"
             sleep 1
           done
+
+      - name: Ensure Cowlib App File
+        run: |
+          if [ ! -f "deps/cowlib/ebin/cowlib.app" ] && [ -f "deps/cowlib/src/cowlib.app.src" ]; then
+            echo "Manually copying cowlib.app.src to cowlib.app as a fallback"
+            mkdir -p deps/cowlib/ebin
+            cp deps/cowlib/src/cowlib.app.src deps/cowlib/ebin/cowlib.app
+            echo "Modified cowlib.app content:"
+            cat deps/cowlib/ebin/cowlib.app
+          fi
 
       - name: Run Tests
         run: |
