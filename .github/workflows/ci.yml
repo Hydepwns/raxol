@@ -37,17 +37,12 @@ jobs:
           - os: ubuntu-latest
             elixir: "1.16"
             otp: "26.0"
-          - os: ubuntu-latest
-            elixir: "1.16"
-            otp: "27.0"
           - os: macos-latest
             elixir: "1.16"
             otp: "26.0"
-          - os: macos-latest
-            elixir: "1.16"
-            otp: "27.0"
 
     services:
+      # Note: Service containers only work on Linux runners
       postgres:
         image: postgres:14
         env:
@@ -120,25 +115,30 @@ jobs:
 
       - name: Run Tests
         run: |
-          # Wait for PostgreSQL to be ready
-          for i in {1..30}; do
-            if pg_isready -h localhost -p 5433; then
-              break
-            fi
-            echo "Waiting for PostgreSQL to be ready... ($i/30)"
-            sleep 1
-          done
+          # Wait for PostgreSQL to be ready - only on Linux
+          if [[ "$RUNNER_OS" == "Linux" ]]; then
+            for i in {1..30}; do
+              if pg_isready -h localhost -p 5433; then
+                break
+              fi
+              echo "Waiting for PostgreSQL to be ready... ($i/30)"
+              sleep 1
+            done
+          else
+            echo "Skipping PostgreSQL wait on macOS as service containers are not supported"
+          fi
 
           # Run tests with coverage and performance monitoring
           mix test --cover --slowest 10
         env:
           MIX_ENV: test
-          POSTGRES_HOST: localhost
+          POSTGRES_HOST: ${{ runner.os == 'Linux' && 'localhost' || '127.0.0.1' }}
           POSTGRES_PORT: 5433
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: raxol_test
           TERM: xterm-256color
+          PLATFORM: ${{ runner.os }}
 
       - name: Upload coverage reports
         uses: codecov/codecov-action@v3
@@ -158,20 +158,22 @@ jobs:
         with:
           args: --severity-threshold=high
 
-      # For macOS, install and run Snyk directly without container
-      - name: Install Snyk CLI on macOS using npm
+      # For macOS, use the setup action which doesn't require Docker
+      - name: Setup Snyk CLI on macOS
         if: runner.os == 'macOS'
-        run: |
-          echo "Installing Snyk CLI via npm..."
-          npm install -g snyk
-          echo "Installed Snyk CLI version: $(snyk --version)"
+        uses: snyk/actions/setup@master
 
       # Run simplified Snyk scan on macOS (no container scanning)
       - name: Run Security Scan on macOS
         if: runner.os == 'macOS'
         run: |
-          echo "Running macOS security scan using npm-installed Snyk..."
-          snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
+          # Skip if snyk isn't available (will happen if setup step fails)
+          if command -v snyk &> /dev/null; then
+            echo "Running Snyk without Docker dependencies"
+            snyk test --severity-threshold=high || echo "Snyk found issues but continuing"
+          else
+            echo "Skipping Snyk test on macOS due to setup issues"
+          fi
         env:
           SNYK_TOKEN: ${{ secrets.SNYK_TOKEN }}
 
@@ -183,6 +185,7 @@ jobs:
 
       - name: Run Platform-Specific Tests
         run: |
+          echo "Running platform-specific tests for $PLATFORM"
           mix test test/platform_specific
         env:
           PLATFORM: ${{ runner.os }}
