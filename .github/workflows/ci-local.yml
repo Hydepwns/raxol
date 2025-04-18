@@ -1,10 +1,13 @@
 name: CI-Local
 
 on:
-  push:
-    branches: [main, master]
-  pull_request:
-    branches: [main, master]
+  workflow_dispatch:
+    inputs:
+      debug_enabled:
+        type: boolean
+        description: "Run with debugging enabled"
+        required: false
+        default: false
 
 jobs:
   format:
@@ -24,23 +27,19 @@ jobs:
             ${{ runner.os }}-mix-
 
       - name: Setup asdf environment
-        run: |
-          . /opt/asdf/asdf.sh
-          asdf reshim
-          elixir --version
-          mix --version
+        uses: asdf-vm/actions/setup@v2
+
+      - name: Install runtimes from asdf config
+        uses: asdf-vm/actions/install@v2
 
       - name: Install Mix Dependencies
         run: |
-          . /opt/asdf/asdf.sh
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
 
       - name: Check Formatting
-        run: |
-          . /opt/asdf/asdf.sh
-          mix format --check-formatted
+        run: mix format --check-formatted
 
   test:
     name: Test Local
@@ -64,15 +63,13 @@ jobs:
             ${{ runner.os }}-mix-
 
       - name: Setup asdf environment
-        run: |
-          . /opt/asdf/asdf.sh
-          asdf reshim
-          elixir --version
-          mix --version
+        uses: asdf-vm/actions/setup@v2
+
+      - name: Install runtimes from asdf config
+        uses: asdf-vm/actions/install@v2
 
       - name: Install Mix Dependencies
         run: |
-          . /opt/asdf/asdf.sh
           mix local.hex --force
           mix local.rebar --force
           mix deps.get
