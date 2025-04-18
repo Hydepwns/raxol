@@ -57,7 +57,7 @@ defmodule Raxol.MixProject do
   def application do
     [
       mod: {Raxol.Application, []},
-      extra_applications: [:logger, :runtime_tools, :ex_termbox]
+      extra_applications: [:logger, :runtime_tools, :ex_termbox, :swoosh]
     ]
   end
 
@@ -87,6 +87,9 @@ defmodule Raxol.MixProject do
       # Visualization
       # For charts and plots
       {:contex, "~> 0.5.0"},
+
+      # Email
+      {:swoosh, "~> 1.17"},
 
       # Web interface
       {:plug_cowboy, "~> 2.7"},
@@ -125,7 +128,8 @@ defmodule Raxol.MixProject do
       {:gettext, "~> 0.26"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
-      {:excoveralls, "~> 0.18", only: :test}
+      {:excoveralls, "~> 0.18", only: :test},
+      {:hackney, "~> 1.9"}
     ]
   end
 

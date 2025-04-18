@@ -222,6 +222,12 @@ jobs:
           TERM: xterm-256color
           PLATFORM: ${{ runner.os }}
 
+      - name: Run Credo
+        run: |
+          mix credo --strict
+        env:
+          MIX_ENV: test
+
       # Only run codecov on Linux runners to avoid Docker issues on macOS
       - name: Upload coverage reports (Linux)
         uses: codecov/codecov-action@v3
