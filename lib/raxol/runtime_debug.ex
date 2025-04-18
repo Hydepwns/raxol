@@ -282,7 +282,8 @@ defmodule Raxol.RuntimeDebug do
           mouse_enabled: false,
           # Set after successful Bindings.init()
           termbox_initialized: true,
-          last_rendered_cells: []
+          last_rendered_cells: [],
+          render_timer_ref: nil
         }
 
         # <<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<<< LOG FINAL INITIAL STATE >>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>
@@ -354,6 +355,9 @@ defmodule Raxol.RuntimeDebug do
 
   @impl true
   def handle_info(:render, state) do
+    # Clear the timer reference as this render is happening
+    state = %{state | render_timer_ref: nil}
+
     # <<< ADD LOGGING AT THE VERY BEGINNING >>>
     Logger.debug(
       "[RuntimeDebug.handle_info(:render)] START. Received state: #{inspect(state)}"
@@ -528,8 +532,9 @@ defmodule Raxol.RuntimeDebug do
         )
 
         # Schedule the next render based on FPS
-        schedule_render(new_state)
-        {:noreply, new_state}
+        # schedule_render now returns the state with the new timer ref
+        final_state = schedule_render(new_state)
+        {:noreply, final_state}
     end
   end
 
@@ -554,7 +559,11 @@ defmodule Raxol.RuntimeDebug do
             # Cancel any pending :render timer first
             # (Need a helper to cancel Process.send_after timers, or manage timer ref)
             # For now, just schedule a new one, potentially leading to quick double render
-            schedule_render(updated_state)
+            # schedule_render(updated_state)
+            # NO LONGER NEEDED: Just updating state is sufficient.
+            # The existing render loop will pick up the new dimensions.
+            # We might want to trigger an *immediate* render, but let's
+            # keep it simple first and rely on the timed loop.
             {:noreply, updated_state}
 
           # --- End resize handling ---
@@ -1718,10 +1727,18 @@ defmodule Raxol.RuntimeDebug do
 
   # Helper to schedule the next render frame
   defp schedule_render(state) do
+    # Cancel existing timer if present
+    if state.render_timer_ref do
+      Process.cancel_timer(state.render_timer_ref)
+    end
+
     # <<< ADDED LOG
     Logger.debug("[RuntimeDebug.schedule_render] Scheduling :render message.")
     render_interval_ms = round(1000 / state.fps)
-    Process.send_after(self(), :render, render_interval_ms)
+    # Schedule and store the new timer reference
+    timer_ref = Process.send_after(self(), :render, render_interval_ms)
+    # Return state with the new timer ref
+    %{state | render_timer_ref: timer_ref}
   end
 
   # Performance and memory monitoring functions
