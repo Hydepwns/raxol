@@ -69,6 +69,12 @@ defmodule Raxol.Core.Renderer.Color do
     "\e[38;2;#{r};#{g};#{b}m"
   end
 
+  def to_ansi("#" <> _ = hex) do
+    hex
+    |> hex_to_rgb()
+    |> to_ansi()
+  end
+
   @doc """
   Converts a color value to background ANSI escape codes.
   """
@@ -88,6 +94,12 @@ defmodule Raxol.Core.Renderer.Color do
     "\e[48;2;#{r};#{g};#{b}m"
   end
 
+  def to_bg_ansi("#" <> _ = hex) do
+    hex
+    |> hex_to_rgb()
+    |> to_bg_ansi()
+  end
+
   @doc """
   Detects the terminal's background color.
   Returns :light or :dark.
@@ -103,7 +115,15 @@ defmodule Raxol.Core.Renderer.Color do
   Creates a color theme map.
   """
   def create_theme(colors) when is_map(colors) do
-    Map.merge(default_theme(), colors)
+    processed_colors =
+      colors
+      |> Enum.map(fn
+        {key, "#" <> _ = hex} -> {key, hex_to_rgb(hex)}
+        {key, value} -> {key, value}
+      end)
+      |> Map.new()
+
+    Map.merge(default_theme(), processed_colors)
   end
 
   @doc """
