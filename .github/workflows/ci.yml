@@ -159,6 +159,9 @@ jobs:
           mix test --cover --slowest 10
         env:
           MIX_ENV: test
+          RAXOL_ENV: test
+          RAXOL_HEADLESS: true
+          RAXOL_USE_MOCK_TERMBOX: true
           POSTGRES_HOST: ${{ runner.os == 'Linux' && 'localhost' || '127.0.0.1' }}
           POSTGRES_PORT: 5433
           POSTGRES_USER: postgres
