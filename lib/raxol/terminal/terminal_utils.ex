@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   """
 
   require Logger
-  alias ExTermbox.Bindings
+  # alias ExTermbox.Bindings  # Unused alias
 
   @doc """
   Gets the terminal dimensions using the most reliable method available.
