@@ -271,23 +271,23 @@ defmodule Raxol.I18nTestHelpers do
     end)
   end
 
-  # TODO: Commenting out this test helper as the underlying
-  # I18n.get_locale_accessibility_settings/0 function is undefined.
-  # Need to revisit how locale-specific accessibility settings are managed and tested.
-  # @doc """
-  # Tests that locale-specific accessibility settings are properly applied.
-  #
-  # ## Examples
-  #
-  #     assert_locale_accessibility_settings("ja", fn settings ->
-  #       assert settings.font_size_adjustment == 1.2
-  #     end)
-  # """
-  # def assert_locale_accessibility_settings(locale, assertion_fn)
-  #     when is_function(assertion_fn, 1) do
-  #   with_locale(locale, fn ->
-  #     settings = I18n.get_locale_accessibility_settings()
-  #     assertion_fn.(settings)
-  #   end)
-  # end
+  @doc """
+  Tests that locale-specific accessibility settings are properly applied.
+
+  ## Examples
+
+      assert_locale_accessibility_settings("ja", fn settings ->
+        assert settings.font_size_adjustment == 1.2
+      end)
+  """
+  def assert_locale_accessibility_settings(locale, assertion_fn) do
+    # Set the locale
+    Raxol.I18n.set_locale(locale)
+
+    # Apply accessibility settings based on locale
+    settings = Raxol.Accessibility.apply_locale_settings()
+
+    # Run the provided assertion function
+    assertion_fn.(settings)
+  end
 end

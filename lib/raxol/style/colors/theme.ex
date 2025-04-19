@@ -9,7 +9,7 @@ defmodule Raxol.Style.Colors.Theme do
   - Updating theme colors
   """
 
-  alias Raxol.Style.Colors.{System, Persistence}
+  alias Raxol.Style.Colors.{System, Persistence, Color}
 
   @type color :: %{
           r: integer(),
@@ -44,15 +44,16 @@ defmodule Raxol.Style.Colors.Theme do
     %__MODULE__{
       name: "Default",
       palette: %{
-        "primary" => %{r: 0, g: 119, b: 204, a: 1.0},
-        "secondary" => %{r: 102, g: 102, b: 102, a: 1.0},
-        "accent" => %{r: 255, g: 153, b: 0, a: 1.0},
-        "background" => %{r: 255, g: 255, b: 255, a: 1.0},
-        "surface" => %{r: 245, g: 245, b: 245, a: 1.0},
-        "error" => %{r: 204, g: 0, b: 0, a: 1.0},
-        "success" => %{r: 0, g: 153, b: 0, a: 1.0},
-        "warning" => %{r: 255, g: 153, b: 0, a: 1.0},
-        "info" => %{r: 0, g: 153, b: 204, a: 1.0}
+        "primary" => Color.from_rgb(0, 119, 204),
+        "secondary" => Color.from_rgb(102, 102, 102),
+        "accent" => Color.from_rgb(255, 153, 0),
+        "background" => Color.from_rgb(255, 255, 255),
+        "surface" => Color.from_rgb(245, 245, 245),
+        "error" => Color.from_rgb(204, 0, 0),
+        "success" => Color.from_rgb(0, 153, 0),
+        "warning" => Color.from_rgb(255, 153, 0),
+        "info" => Color.from_rgb(0, 153, 204),
+        "text" => Color.from_rgb(51, 51, 51)
       },
       ui_mappings: %{
         app_background: "background",
@@ -63,7 +64,8 @@ defmodule Raxol.Style.Colors.Theme do
         error_text: "error",
         success_text: "success",
         warning_text: "warning",
-        info_text: "info"
+        info_text: "info",
+        text: "text"
       },
       dark_mode: false,
       high_contrast: false
@@ -73,7 +75,7 @@ defmodule Raxol.Style.Colors.Theme do
   @doc """
   Creates a new theme from a given palette map and optional name.
 
-  Uses default UI mappings.
+  Assumes the input palette map contains Color structs or maps convertible to Color structs.
 
   ## Parameters
 
@@ -95,18 +97,30 @@ defmodule Raxol.Style.Colors.Theme do
   """
   @spec from_palette(map(), String.t()) :: theme()
   def from_palette(palette, name \\ "Custom") when is_map(palette) do
-    # Use the standard theme to get default UI mappings and structure
     default_theme = standard_theme()
+    # Ensure input palette values are Color structs
+    processed_palette =
+      Enum.into(palette, %{}, fn {key, val} ->
+        color_struct =
+          case val do
+            %Color{} = c -> c
+            # Ensure :a for struct!
+            map when is_map(map) -> struct!(Color, Map.put_new(map, :a, 1.0))
+            hex when is_binary(hex) -> Color.from_hex(hex)
+            # Or raise error?
+            _ -> nil
+          end
+
+        {key, color_struct}
+      end)
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Map.new()
 
     %__MODULE__{
       name: name,
-      # Use the provided palette
-      palette: palette,
-      # Keep default mappings
+      palette: processed_palette,
       ui_mappings: default_theme.ui_mappings,
-      # Default dark mode setting
       dark_mode: default_theme.dark_mode,
-      # Default contrast setting
       high_contrast: default_theme.high_contrast
     }
   end

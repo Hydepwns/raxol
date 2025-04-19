@@ -1,63 +1,69 @@
 {
   "name": "Default",
-  "high_contrast": false,
   "palette": {
     "accent": {
-      "a": 1.0,
+      "r": 190,
+      "g": 88,
       "b": 0,
-      "r": 229,
-      "g": 127
+      "a": 1.0
     },
     "background": {
-      "a": 1.0,
-      "b": 229,
-      "r": 229,
-      "g": 229
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "a": 1.0
     },
     "error": {
-      "a": 1.0,
-      "b": 0,
       "r": 204,
-      "g": 0
+      "g": 0,
+      "b": 0,
+      "a": 1.0
     },
     "info": {
-      "a": 1.0,
-      "b": 178,
       "r": 0,
-      "g": 127
+      "g": 114,
+      "b": 165,
+      "a": 1.0
     },
     "primary": {
-      "a": 1.0,
-      "b": 204,
       "r": 0,
-      "g": 119
+      "g": 119,
+      "b": 204,
+      "a": 1.0
     },
     "secondary": {
-      "a": 1.0,
-      "b": 102,
       "r": 102,
-      "g": 102
+      "g": 102,
+      "b": 102,
+      "a": 1.0
     },
     "success": {
-      "a": 1.0,
-      "b": 0,
       "r": 0,
-      "g": 127
+      "g": 127,
+      "b": 0,
+      "a": 1.0
     },
     "surface": {
-      "a": 1.0,
-      "b": 219,
-      "r": 219,
-      "g": 219
+      "r": 115,
+      "g": 115,
+      "b": 115,
+      "a": 1.0
+    },
+    "text": {
+      "r": 51,
+      "g": 51,
+      "b": 51,
+      "a": 1.0
     },
     "warning": {
-      "a": 1.0,
+      "r": 190,
+      "g": 88,
       "b": 0,
-      "r": 229,
-      "g": 127
+      "a": 1.0
     }
   },
   "ui_mappings": {
+    "text": "text",
     "app_background": "background",
     "accent_button": "accent",
     "error_text": "error",
@@ -68,5 +74,6 @@
     "surface_background": "surface",
     "warning_text": "warning"
   },
-  "dark_mode": false
+  "dark_mode": false,
+  "high_contrast": false
 }

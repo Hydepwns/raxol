@@ -1,84 +1,112 @@
 defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{ANSI, Emulator, ScreenBuffer}
+  alias Raxol.Terminal.{ANSI, Emulator, ScreenBuffer, Cell}
 
   setup do
     # Create a terminal emulator with default dimensions (80x24)
-    terminal = Emulator.new(80, 24)
-    %{terminal: terminal}
+    # Use process_escape_sequence directly for clarity
+    emulator = Emulator.new(80, 24)
+    %{emulator: emulator}
   end
 
   describe "column width changes" do
-    test "switching to 132-column mode", %{terminal: terminal} do
+    test "switching to 132-column mode", %{emulator: emulator} do
       # Process the CSI sequence for 132-column mode
-      new_terminal = ANSI.process_escape_sequence(terminal, "\x1b[?3h")
+      {new_emulator, _rest} =
+        Emulator.process_escape_sequence(emulator, "\x1b[?3h")
 
-      # Check that the width has been updated to 132
-      assert new_terminal.width == 132
+      # Check that the screen buffer width has been updated to 132
+      assert new_emulator.screen_buffer.width == 132
 
-      # Check that the screen buffer has been resized
-      assert length(List.first(new_terminal.screen_buffer)) == 132
-
-      # Check that the column width mode is set to wide
-      assert Raxol.Terminal.ANSI.ScreenModes.get_column_width_mode(
-               new_terminal.mode_state
-             ) == :wide
+      # Check that the mode_state reflects the change
+      # Using ScreenModes alias
+      assert ScreenModes.mode_enabled?(new_emulator.mode_state, :wide_column)
     end
 
-    test "switching back to 80-column mode", %{terminal: terminal} do
+    test "switching back to 80-column mode", %{emulator: emulator} do
       # First switch to 132-column mode
-      terminal = ANSI.process_escape_sequence(terminal, "\x1b[?3h")
+      {emulator_132, _rest1} =
+        Emulator.process_escape_sequence(emulator, "\x1b[?3h")
+
+      # Verify intermediate state
+      assert emulator_132.screen_buffer.width == 132
 
       # Then switch back to 80-column mode
-      new_terminal = ANSI.process_escape_sequence(terminal, "\x1b[?3l")
+      {new_emulator, _rest2} =
+        Emulator.process_escape_sequence(emulator_132, "\x1b[?3l")
 
       # Check that the width has been updated back to 80
-      assert new_terminal.width == 80
-
-      # Check that the screen buffer has been resized
-      assert length(List.first(new_terminal.screen_buffer)) == 80
+      assert new_emulator.screen_buffer.width == 80
 
       # Check that the column width mode is set back to normal
-      assert Raxol.Terminal.ANSI.ScreenModes.get_column_width_mode(
-               new_terminal.mode_state
-             ) == :normal
+      refute ScreenModes.mode_enabled?(new_emulator.mode_state, :wide_column)
     end
 
-    test "content preservation during column width changes", %{
-      terminal: terminal
-    } do
-      # Write some content to the terminal
-      terminal = write_content(terminal, "Hello, World!")
+    test "screen clearing on column width change", %{emulator: emulator} do
+      # Write some content initially to ensure it gets cleared
+      emulator = write_content(emulator, "Initial content")
+      assert get_content(emulator, 0) =~ "Initial content"
 
       # Switch to 132-column mode
-      terminal = ANSI.process_escape_sequence(terminal, "\x1b[?3h")
+      {emulator_132, _rest1} =
+        Emulator.process_escape_sequence(emulator, "\x1b[?3h")
 
-      # Check that the content is preserved
-      assert get_content(terminal) =~ "Hello, World!"
+      # Verify screen is cleared and cursor is home
+      assert is_screen_clear?(emulator_132)
+      assert emulator_132.cursor.position == {0, 0}
+      assert emulator_132.screen_buffer.width == 132 # Verify width still changes
 
       # Switch back to 80-column mode
-      terminal = ANSI.process_escape_sequence(terminal, "\x1b[?3l")
+      {emulator_80, _rest2} =
+        Emulator.process_escape_sequence(emulator_132, "\x1b[?3l")
 
-      # Check that the content is still preserved
-      assert get_content(terminal) =~ "Hello, World!"
+      # Verify screen is cleared again and cursor is home
+      assert is_screen_clear?(emulator_80)
+      assert emulator_80.cursor.position == {0, 0}
+      assert emulator_80.screen_buffer.width == 80 # Verify width changes back
     end
   end
 
   # Helper functions
 
-  defp write_content(terminal, content) do
-    Enum.reduce(String.graphemes(content), terminal, fn char, acc ->
-      ANSI.process_char(acc, char)
+  # Updated to use Emulator.process_input
+  defp write_content(emulator, content) do
+    Enum.reduce(String.graphemes(content), emulator, fn char, acc ->
+      {new_acc, _rest} = Emulator.process_input(acc, char)
+      new_acc
     end)
   end
 
-  defp get_content(terminal) do
-    terminal.screen_buffer
-    |> Enum.map(fn row ->
-      row
-      |> Enum.map(fn cell -> cell.char end)
-      |> Enum.join("")
-    end)
-    |> Enum.join("\n")
+  # Updated to extract content from ScreenBuffer struct
+  defp get_content(emulator, line_index) do
+    case ScreenBuffer.get_line(emulator.screen_buffer, line_index) do
+      nil ->
+        ""
+
+      line_cells ->
+        line_cells
+        |> Enum.map(& &1.char)
+        |> Enum.join()
+    end
   end
+
+  # Helper to check if the screen is clear (all cells are default)
+  defp is_screen_clear?(emulator) do
+    default_cell = Cell.new() # Assumes Cell.new() creates the default empty cell
+
+    Enum.all?(emulator.screen_buffer.cells, fn row ->
+      Enum.all?(row, fn cell ->
+        # Compare relevant fields, ignore style for simplicity if needed
+        cell.char == default_cell.char # && cell.style == default_cell.style
+      end)
+    end)
+  end
+
+  # Overload for getting all lines (optional, but useful for debugging)
+  # defp get_content(emulator) do
+  #   height = emulator.screen_buffer.height
+  #   0..(height - 1)
+  #   |> Enum.map(&get_content(emulator, &1))
+  #   |> Enum.join("\n")
+  # end
 end

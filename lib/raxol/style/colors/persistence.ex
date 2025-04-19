@@ -8,10 +8,17 @@ defmodule Raxol.Style.Colors.Persistence do
   - Handling theme file storage
   """
 
-  alias Raxol.Style.Colors.Theme
+  alias Raxol.Style.Colors.Theme, as: Theme
+  alias Raxol.Style.Colors.Color
 
   @themes_dir "themes"
   @preferences_file "preferences.json"
+
+  # Helper to get the configured base directory
+  defp config_dir do
+    # Default to current dir
+    Application.get_env(:raxol, :config_dir, ".")
+  end
 
   @doc """
   Saves a theme to a file.
@@ -26,14 +33,16 @@ defmodule Raxol.Style.Colors.Persistence do
   - `{:error, reason}` on failure
   """
   def save_theme(theme) do
+    # Construct full path using config_dir
+    full_themes_dir = Path.join(config_dir(), @themes_dir)
     # Ensure themes directory exists
-    File.mkdir_p!(@themes_dir)
+    File.mkdir_p!(full_themes_dir)
 
     # Convert theme to JSON
     theme_json = Jason.encode!(theme, pretty: true)
 
     # Save theme to file
-    theme_path = Path.join(@themes_dir, "#{theme.name}.json")
+    theme_path = Path.join(full_themes_dir, "#{theme.name}.json")
     File.write(theme_path, theme_json)
   end
 
@@ -50,16 +59,26 @@ defmodule Raxol.Style.Colors.Persistence do
   - `{:error, reason}` on failure
   """
   def load_theme(theme_name) do
-    theme_path = Path.join(@themes_dir, "#{theme_name}.json")
+    theme_path =
+      Path.join(Path.join(config_dir(), @themes_dir), "#{theme_name}.json")
 
     case File.read(theme_path) do
       {:ok, theme_json} ->
-        case Jason.decode(theme_json) do
+        # Decode with atom keys first
+        case Jason.decode(theme_json, keys: :atoms!) do
           {:ok, theme_data} ->
-            {:ok, struct(Theme, theme_data)}
+            # Manually convert palette maps back to Color structs
+            palette_structs =
+              Enum.into(theme_data.palette, %{}, fn {key, color_map} ->
+                # Assume color_map is %{r: ..., g: ..., b: ..., a: ...}
+                {key, struct!(Color, color_map)}
+              end)
 
-          error ->
-            error
+            # Create final theme struct with processed palette
+            {:ok, %{theme_data | palette: palette_structs}}
+
+          {:error, reason} ->
+            {:error, reason}
         end
 
       error ->
@@ -100,7 +119,9 @@ defmodule Raxol.Style.Colors.Persistence do
   - `{:error, reason}` on failure
   """
   def load_user_preferences do
-    case File.read(@preferences_file) do
+    prefs_path = Path.join(config_dir(), @preferences_file)
+
+    case File.read(prefs_path) do
       {:ok, json} ->
         case Jason.decode(json) do
           {:ok, preferences} -> {:ok, preferences}
@@ -129,8 +150,10 @@ defmodule Raxol.Style.Colors.Persistence do
   - `{:error, reason}` on failure
   """
   def save_user_preferences(preferences) do
+    prefs_path = Path.join(config_dir(), @preferences_file)
+
     case Jason.encode(preferences, pretty: true) do
-      {:ok, json} -> File.write(@preferences_file, json)
+      {:ok, json} -> File.write(prefs_path, json)
       error -> error
     end
   end
@@ -143,11 +166,12 @@ defmodule Raxol.Style.Colors.Persistence do
   - A list of theme names
   """
   def list_themes do
+    full_themes_dir = Path.join(config_dir(), @themes_dir)
     # Ensure themes directory exists
-    File.mkdir_p!(@themes_dir)
+    File.mkdir_p!(full_themes_dir)
 
     # List all theme files
-    @themes_dir
+    full_themes_dir
     |> File.ls!()
     |> Enum.filter(&String.ends_with?(&1, ".json"))
     |> Enum.map(&String.replace(&1, ".json", ""))
@@ -166,7 +190,9 @@ defmodule Raxol.Style.Colors.Persistence do
   - `{:error, reason}` on failure
   """
   def delete_theme(theme_name) do
-    theme_path = Path.join(@themes_dir, "#{theme_name}.json")
+    theme_path =
+      Path.join(Path.join(config_dir(), @themes_dir), "#{theme_name}.json")
+
     File.rm(theme_path)
   end
 end

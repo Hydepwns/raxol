@@ -27,8 +27,8 @@ defmodule Raxol.Components.Terminal.Emulator do
   @type emulator_state :: %{
           dimensions: {integer(), integer()},
           screen: screen(),
-          history: [String.t()],
-          ansi_state: ANSI.ansi_state()
+          history: [String.t()]
+          # ansi_state is no longer needed here, state managed directly
         }
 
   @default_dimensions {80, 24}
@@ -37,11 +37,13 @@ defmodule Raxol.Components.Terminal.Emulator do
   Initializes a new terminal emulator state.
   """
   def init do
+    dimensions = @default_dimensions
+    screen = init_screen(dimensions)
+
     %{
       dimensions: @default_dimensions,
-      screen: init_screen(@default_dimensions),
-      history: [],
-      ansi_state: %{}
+      screen: screen,
+      history: []
     }
   end
 
@@ -49,8 +51,25 @@ defmodule Raxol.Components.Terminal.Emulator do
   Processes input and updates terminal state.
   """
   def process_input(input, state) do
-    ansi_state = ANSI.process(input, state.ansi_state)
-    %{state | ansi_state: ansi_state}
+    # Pass current screen state to ANSI processor
+    {updated_cells, updated_cursor, updated_style} =
+      ANSI.process(
+        input,
+        state.screen.cells,
+        state.screen.cursor,
+        Map.get(state.screen, :attributes, %{}),
+        state.dimensions
+      )
+
+    # Update screen with results from ANSI processor
+    updated_screen = %{
+      state.screen
+      | cells: updated_cells,
+        cursor: updated_cursor,
+        attributes: updated_style
+    }
+
+    %{state | screen: updated_screen}
   end
 
   @doc """

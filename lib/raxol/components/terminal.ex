@@ -29,6 +29,13 @@ defmodule Raxol.Components.Terminal do
           ansi_state: ANSI.ansi_state()
         }
 
+  # Helper to create initial empty cells grid
+  defp initial_cells(cols, rows) do
+    # Assuming default cell structure from ANSI module
+    default_cell = %{char: " ", style: %{}, dirty: true}
+    List.duplicate(List.duplicate(default_cell, cols), rows)
+  end
+
   @doc """
   Initializes a new terminal component.
 
@@ -44,11 +51,19 @@ defmodule Raxol.Components.Terminal do
     rows = Map.get(opts, :rows, 24)
     cols = Map.get(opts, :cols, 80)
     prompt = Map.get(opts, :prompt, "$ ")
+    # Initial cursor position might need adjustment if prompt is written
+    # Start at top-left for now
+    initial_cursor = {0, 0}
+    initial_cells = initial_cells(cols, rows)
+
+    # Note: Prompt is not written to initial cells here, needs separate handling if required at init.
 
     %{
+      # Keep existing buffer for now, might need later refactoring
       buffer: [prompt],
       buffer_content: prompt,
-      cursor: {String.length(prompt), 0},
+      # Main cursor, might diverge from ansi_state.cursor
+      cursor: initial_cursor,
       width: cols,
       height: rows,
       mode: :normal,
@@ -66,10 +81,13 @@ defmodule Raxol.Components.Terminal do
           Map.get(opts, :style, %{})
         ),
       ansi_state: %{
-        cursor: {String.length(prompt), 0},
+        cursor: initial_cursor,
+        # Initial ANSI style\
         style: %{},
-        screen: %{},
-        buffer: [prompt]
+        # Correctly structured cells\
+        cells: initial_cells,
+        # Dimensions needed by ANSI.process/5\
+        dimensions: {cols, rows}
       }
     }
   end
@@ -87,25 +105,50 @@ defmodule Raxol.Components.Terminal do
   end
 
   def handle_event(%Event{type: :output, data: output}, state) do
-    # Process ANSI codes in the output
-    new_ansi_state = ANSI.process(output, state.ansi_state)
+    # Extract arguments for ANSI.process/5
+    %{
+      cells: current_cells,
+      cursor: current_cursor,
+      style: current_style,
+      dimensions: dims
+    } = state.ansi_state
 
-    # Update terminal state based on ANSI processing
+    # Process ANSI codes in the output
+    {new_cells, new_cursor, new_style} =
+      ANSI.process(output, current_cells, current_cursor, current_style, dims)
+
+    # Update terminal ansi_state
+    new_ansi_state = %{
+      state.ansi_state
+      | cells: new_cells,
+        cursor: new_cursor,
+        style: new_style
+    }
+
+    # Update main state. Note: we now primarily use ansi_state for buffer/cursor/style.
+    # The top-level state.cursor/style might become redundant or serve a different purpose.
     %{
       state
-      | buffer: new_ansi_state.buffer,
-        cursor: new_ansi_state.cursor,
-        style: Map.merge(state.style, new_ansi_state.style),
+      | # | buffer: ... # Buffer update logic needs review; ANSI.process returns cells, not lines\
+        # Update main cursor from ANSI state\
+        cursor: new_cursor,
+        # Merge styles\
+        style: Map.merge(state.style, new_style),
         ansi_state: new_ansi_state
     }
   end
 
-  def handle_event(%Event{type: :resize} = event, state) do
-    {cols, rows} = event.data
-    %{state | dimensions: {cols, rows}}
+  def handle_event(%Event{type: :resize, data: {cols, rows}} = _event, state) do
+    # Update dimensions in both main state and ansi_state
+    # TODO: Need a way to resize the ansi_state.cells grid in ANSI module or here.
+    # For now, just update the dimensions value.
+    new_dims = {cols, rows}
+    updated_ansi_state = %{state.ansi_state | dimensions: new_dims}
+    %{state | width: cols, height: rows, ansi_state: updated_ansi_state}
   end
 
-  def handle_event(_event, state), do: state
+  # Ensure handle_event returns {state, commands}
+  def handle_event(_event, state), do: {state, []}
 
   @doc """
   Renders the terminal component.

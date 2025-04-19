@@ -50,6 +50,29 @@ defmodule Raxol.Terminal.Modes do
   end
 
   @doc """
+  Resets a specific terminal mode to its default value.
+
+  ## Examples
+
+      iex> modes = Modes.new() |> Modes.set_mode(:insert)
+      iex> modes.insert
+      true
+      iex> modes = Modes.reset_mode(modes, :insert)
+      iex> modes.insert
+      false
+      iex> modes = Modes.reset_mode(modes, :replace) # replace defaults to true
+      iex> modes.replace
+      true
+  """
+  @spec reset_mode(mode_state(), atom()) :: mode_state()
+  def reset_mode(%{} = modes, mode) when is_atom(mode) do
+    default_modes = new()
+    # Default to false if mode unknown
+    default_value = Map.get(default_modes, mode, false)
+    Map.put(modes, mode, default_value)
+  end
+
+  @doc """
   Checks if a terminal mode is active.
 
   ## Examples

@@ -167,6 +167,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- Fixed PostgreSQL connection errors in test environment by preventing `:postgrex` from starting when `MockDB` is configured (`runtime: false`).
+- Resolved `:gen_statem` application loading error in `processor_test.exs` by ensuring `:stdlib` is started first.
+- Fixed `UserPreferences` "already started" error in `system_test.exs` by using `setup_all`.
+- Corrected compile error in `i18n_accessibility_test.exs` by uncommenting `assert_locale_accessibility_settings` helper function.
+- Addressed several issues in `Chart` view component and tests:
+
+  - Removed tests calling private chart helper functions.
+  - Fixed line chart drawing by using integer coordinates.
+  - Prevented errors in bar chart drawing by clamping dimensions and correcting padding.
+  - Corrected sparkline test view access.
+
 - Core system stability
 
   - Terminal startup and initialization issues

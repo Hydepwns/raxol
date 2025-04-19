@@ -55,6 +55,26 @@ defmodule Raxol.Style.Colors.Adaptive do
   ]
 
   @doc """
+  Initializes the terminal capabilities cache.
+
+  This should be called once, usually during application startup.
+  It creates the ETS table used for caching detected capabilities.
+  """
+  def init do
+    # Create the ETS table if it doesn't already exist
+    unless :ets.info(@capabilities_cache_name) != :undefined do
+      :ets.new(@capabilities_cache_name, [
+        :set,
+        :public,
+        :named_table,
+        read_concurrency: true
+      ])
+    end
+
+    :ok
+  end
+
+  @doc """
   Detects the color support level of the current terminal.
 
   Returns one of:
@@ -234,11 +254,21 @@ defmodule Raxol.Style.Colors.Adaptive do
     # Adapt the palette
     adapted_palette = adapt_palette(theme.palette)
 
-    # Create a new theme with adapted palette
+    # Determine the target dark_mode based on terminal background
+    target_dark_mode =
+      case terminal_background() do
+        :dark -> true
+        :light -> false
+        # Keep original if unknown
+        :unknown -> theme.dark_mode
+      end
+
+    # Create a new theme with adapted palette and potentially flipped dark_mode
     %Theme{
       theme
       | name: "#{theme.name} (Adapted)",
-        palette: adapted_palette
+        palette: adapted_palette,
+        dark_mode: target_dark_mode
     }
   end
 
@@ -260,34 +290,99 @@ defmodule Raxol.Style.Colors.Adaptive do
     detect_color_support()
   end
 
+  @doc """
+  Resets the cached terminal capabilities.
+
+  This forces the next call to detection functions to re-evaluate
+  the terminal environment.
+  """
+  def reset_detection do
+    # Only delete if the table exists
+    if :ets.info(@capabilities_cache_name) != :undefined do
+      :ets.delete(@capabilities_cache_name)
+    end
+
+    # Re-create the table after deleting it (or ensure it exists)
+    init()
+    :ok
+  end
+
+  @doc """
+  Gets the optimal color format for the current terminal.
+
+  Returns one of:
+  - `:true_color` - 24-bit color (16 million colors)
+  - `:ansi_256` - 256 colors
+  - `:ansi_16` - 16 colors
+  - `:no_color` - No color support
+
+  This is currently an alias for `detect_color_support/0`.
+  """
+  def get_optimal_format do
+    detect_color_support()
+  end
+
   # Private Helpers
 
   defp detect_color_support_impl do
     cond do
-      # Check for true color support
-      check_if_true_color_supported() ->
+      # Highest priority: NO_COLOR environment variable or TERM=dumb
+      System.get_env("NO_COLOR") != nil or System.get_env("TERM") == "dumb" ->
+        :no_color
+
+      # Check COLORTERM explicitly first
+      System.get_env("COLORTERM") in ["truecolor", "24bit"] ->
         :true_color
 
-      # Check for 256 color support
+      # Then check TERM for 256 colors
       check_if_256_colors_supported() ->
         :ansi_256
 
-      # Check for basic color support
+      # Then check TERM for 16 colors
       check_if_16_colors_supported() ->
         :ansi_16
 
-      # No color support
+      # Finally, check other indicators for true color (TERM_PROGRAM, etc.)
+      # This acts as a fallback if COLORTERM wasn't set but other hints exist.
+      check_if_other_true_color_indicators() ->
+        :true_color
+
+      # Default: Assume no color support if none of the above match
       true ->
         :no_color
     end
   end
 
-  defp check_if_true_color_supported do
-    # Check COLORTERM environment variable
-    case System.get_env("COLORTERM") do
-      "truecolor" -> true
-      "24bit" -> true
-      _ -> false
+  # Renamed from check_if_true_color_supported
+  defp check_if_other_true_color_indicators do
+    # Check TERM_PROGRAM (e.g., iTerm.app, vscode)
+    case System.get_env("TERM_PROGRAM") do
+      "iTerm.app" ->
+        # Check version for older iTerm that might not support truecolor reliably
+        case System.get_env("TERM_PROGRAM_VERSION") do
+          version when is_binary(version) ->
+            compare_versions(version, "3.0.0") != :lt
+
+          # Assume truecolor if version is missing
+          _ ->
+            true
+        end
+
+      "vscode" ->
+        true
+
+      # macOS Terminal.app supports truecolor
+      "Apple_Terminal" ->
+        true
+
+      # Add other known truecolor TERM_PROGRAM values here
+      _ ->
+        # Fallback: Check specific TERM values known for truecolor
+        case System.get_env("TERM") do
+          "xterm-kitty" -> true
+          # Add other known truecolor TERM values here
+          _ -> false
+        end
     end
   end
 
@@ -336,5 +431,20 @@ defmodule Raxol.Style.Colors.Adaptive do
 
   defp cache_capability(key, value) do
     :ets.insert(@capabilities_cache_name, {key, value})
+  end
+
+  defp compare_versions(v1, v2) do
+    v1_parts = String.split(v1, ".") |> Enum.map(&String.to_integer/1)
+    v2_parts = String.split(v2, ".") |> Enum.map(&String.to_integer/1)
+
+    # Simple lexicographical comparison for this example
+    cond do
+      v1_parts > v2_parts -> :gt
+      v1_parts < v2_parts -> :lt
+      true -> :eq
+    end
+  rescue
+    # Treat parse errors as equal (or handle more robustly)
+    _ -> :eq
   end
 end

@@ -10,6 +10,14 @@ defmodule Raxol.Application do
 
   use Application
 
+  @doc """
+  Sets an application environment variable.
+
+  This is a public wrapper around `Application.put_env/3` to allow setting
+  test-specific configurations.
+  """
+  def put_env(app, key, value), do: Application.put_env(app, key, value)
+
   @compile_env Mix.env()
 
   alias Raxol.Core.UserPreferences
@@ -198,16 +206,22 @@ defmodule Raxol.Application do
   """
   def apply_theme(theme) do
     # Save theme for persistence
-    _ = Persistence.save_theme(theme)
+    case Persistence.save_theme(theme) do
+      :ok ->
+        # Apply theme to color system
+        Theme.apply_theme(theme)
 
-    # Apply theme to color system
-    Theme.apply_theme(theme)
+        # Update user preferences
+        _ = UserPreferences.set(:theme, theme.name)
+        _ = UserPreferences.save()
 
-    # Update user preferences
-    _ = UserPreferences.set(:theme, theme.name)
-    _ = UserPreferences.save()
+        :ok
 
-    :ok
+      {:error, reason} ->
+        Logger.error("Failed to save theme '#{theme.name}': #{inspect(reason)}")
+        # Propagate the error
+        {:error, reason}
+    end
   end
 
   # Private functions
@@ -270,10 +284,13 @@ defmodule Raxol.Application do
   end
 
   defp adjust_theme_colors(theme, background) do
-    # Get all UI colors
-    ui_colors = Theme.get_all_ui_colors(theme)
+    # Get all UI colors, excluding the background itself
+    ui_colors =
+      Theme.get_all_ui_colors(theme)
+      # Exclude background from adjustment
+      |> Map.delete(:app_background)
 
-    # Adjust each color for better contrast
+    # Adjust each remaining color for better contrast
     adjusted_colors =
       Enum.map(ui_colors, fn {element, color} ->
         adjusted_color = adjust_color_for_contrast(color, background)
@@ -295,14 +312,40 @@ defmodule Raxol.Application do
       # Determine if we need to lighten or darken
       bg_luminance = calculate_relative_luminance(background)
 
-      if bg_luminance > 0.5 do
-        # Dark text on light background
-        darken_color(color, 0.1)
-      else
-        # Light text on dark background
-        lighten_color(color, 0.1)
-      end
+      adjust_func =
+        if bg_luminance > 0.5, do: &darken_color/2, else: &lighten_color/2
+
+      # Smaller step for iteration
+      step = 0.05
+
+      # Create the stream of adjusted colors
+      stream =
+        Stream.iterate(color, fn current_color ->
+          adjust_func.(current_color, step)
+        end)
+        # Drop the first element (original color)
+        |> Stream.drop(1)
+        # Stop if black/white is reached (to prevent infinite loops)
+        |> Stream.take_while(&(!is_black_or_white?(&1)))
+
+      # Find the first color in the stream that meets the contrast ratio
+      target_ratio = 4.5
+
+      found_color =
+        Enum.find(stream, color, fn c ->
+          calculate_contrast_ratio(c, background) >= target_ratio
+        end)
+
+      # Use the found color, or default back to the original if Enum.find returns nil/stream ends
+      found_color
     end
+  end
+
+  # Helper to check if a color map represents black or white
+  defp is_black_or_white?(color) do
+    # Check if all RGB values are either 0 or 255
+    (color.r == 0 && color.g == 0 && color.b == 0) ||
+      (color.r == 255 && color.g == 255 && color.b == 255)
   end
 
   defp darken_color(color, amount) do
@@ -311,7 +354,8 @@ defmodule Raxol.Application do
     g = max(0, color.g - round(255 * amount))
     b = max(0, color.b - round(255 * amount))
 
-    %{color | r: r, g: g, b: b}
+    # Ensure 'a' is preserved
+    %{color | r: r, g: g, b: b, a: color.a}
   end
 
   defp lighten_color(color, amount) do
@@ -320,6 +364,7 @@ defmodule Raxol.Application do
     g = min(255, color.g + round(255 * amount))
     b = min(255, color.b + round(255 * amount))
 
-    %{color | r: r, g: g, b: b}
+    # Ensure 'a' is preserved
+    %{color | r: r, g: g, b: b, a: color.a}
   end
 end

@@ -80,7 +80,7 @@ defmodule Raxol.MixProject do
 
       # Database and persistence
       {:ecto_sql, "~> 3.10"},
-      {:postgrex, ">= 0.0.0"},
+      {:postgrex, ">= 0.0.0", runtime: false},
       # For password hashing
       {:bcrypt_elixir, "~> 3.0"},
 

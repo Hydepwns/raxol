@@ -33,13 +33,14 @@ defmodule Raxol.Style.Colors.SystemTest do
     high_contrast: false
   }
 
-  setup do
-    # Start the UserPreferences server
-    start_supervised!(Raxol.Core.UserPreferences)
+  setup_all do
+    # Start the UserPreferences server once for all tests in this module
+    {:ok, _pid} = start_supervised(Raxol.Core.UserPreferences)
 
-    # Clean up any existing theme files
+    # Clean up any existing theme files before starting
     File.rm_rf!("themes")
 
+    # Return :ok or any shared state needed
     :ok
   end
 

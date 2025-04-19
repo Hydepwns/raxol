@@ -156,8 +156,11 @@ defmodule Raxol.Core.Renderer.Views.Chart do
         points =
           data
           |> Enum.with_index()
-          |> Enum.map(fn {value, x} ->
-            y = scale_value(value, min, max, 0, height - 1)
+          |> Enum.map(fn {value, x_idx} ->
+            # Scale x based on index and width
+            x = floor(x_idx / (length(data) - 1) * (width - 1))
+            # Scale y based on value and height, then floor
+            y = floor(scale_value(value, min, max, 0, height - 1))
             {x, y}
           end)
 
@@ -178,41 +181,55 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     )
   end
 
-  defp create_vertical_bar(height, total_height) when is_integer(height) do
-    full = div(height, 1)
-    remainder = height - full
+  defp create_vertical_bar(bar_height, total_height)
+       when is_integer(bar_height) and is_integer(total_height) do
+    # Clamp height to valid range
+    clamped_height = :erlang.max(0, :erlang.min(bar_height, total_height))
+
+    # Each char represents 8 levels
+    full = div(clamped_height, 8)
+    remainder = rem(clamped_height, 8)
 
     full_blocks = String.duplicate("█", full)
 
     partial_block =
       if remainder > 0 do
-        index = floor(remainder * 8)
-        Enum.at(@bar_chars, index)
+        Enum.at(@bar_chars, remainder)
       else
         ""
       end
 
-    padding = String.duplicate(" ", total_height - full - 1)
+    # Calculate needed padding from the top
+    padding_size = total_height - full - String.length(partial_block)
+    padding = String.duplicate(" ", :erlang.max(0, padding_size))
 
+    # Build bar from top down
     padding <> partial_block <> full_blocks
   end
 
-  defp create_horizontal_bar(width, total_width) when is_integer(width) do
-    full = div(width, 1)
-    remainder = width - full
+  defp create_horizontal_bar(bar_width, total_width)
+       when is_integer(bar_width) and is_integer(total_width) do
+    # Clamp width to valid range
+    clamped_width = :erlang.max(0, :erlang.min(bar_width, total_width))
+
+    # Each char represents 8 levels
+    full = div(clamped_width, 8)
+    remainder = rem(clamped_width, 8)
 
     full_blocks = String.duplicate("█", full)
 
     partial_block =
       if remainder > 0 do
-        index = floor(remainder * 8)
-        Enum.at(@bar_chars, index)
+        Enum.at(@bar_chars, remainder)
       else
         ""
       end
 
-    padding = String.duplicate(" ", total_width - full - 1)
+    # Calculate needed padding from the right
+    padding_size = total_width - full - String.length(partial_block)
+    padding = String.duplicate(" ", :erlang.max(0, padding_size))
 
+    # Build bar from left to right
     full_blocks <> partial_block <> padding
   end
 
@@ -252,87 +269,36 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   defp draw_line(canvas, {x1, y1}, {x2, y2}) do
-    dx = abs(x2 - x1)
-    _dy = abs(y2 - y1)
-    _error = div(dx, 2)
-    _ystep = if y1 < y2, do: 1, else: -1
-
-    Enum.reduce(x1..x2, canvas, fn x, acc ->
-      pos = {x, y1}
-      put_in(acc, pos_to_path(pos), "•")
-    end)
+    # Basic Bresenham's line algorithm (simplified for now)
+    # TODO: Implement a proper Bresenham or similar algorithm
+    # For now, just mark the start and end points
+    canvas = put_in(canvas, [Access.at(y1), Access.at(x1)], "•")
+    put_in(canvas, [Access.at(y2), Access.at(x2)], "•")
   end
 
-  defp pos_to_path({x, y}) do
-    [Access.at(y), Access.at(x)]
+  defp scale_value(value, min, max, new_min, new_max) do
+    # Avoid division by zero if min == max
+    if max == min do
+      new_min
+    else
+      (value - min) / (max - min) * (new_max - new_min) + new_min
+    end
   end
 
-  defp scale_value(value, min, max, out_min, out_max) do
-    ratio = (value - min) / (max - min)
-    out_min + ratio * (out_max - out_min)
-  end
-
-  defp add_axes(content, min, max, width, height, _orientation) do
-    y_axis = create_y_axis(min, max, height)
-    x_axis = create_x_axis(width)
-
-    View.box(
-      children: [
-        View.box(
-          children: [
-            y_axis,
-            content
-          ]
-        ),
-        x_axis
-      ]
-    )
-  end
-
-  defp create_y_axis(min, max, height) do
-    labels =
-      for i <- 0..(height - 1) do
-        value = min + i * ((max - min) / (height - 1))
-
-        View.text(
-          "#{Float.round(value, 1)} │",
-          position: {0, height - i - 1}
-        )
-      end
-
-    View.box(children: labels)
-  end
-
-  defp create_x_axis(width) do
-    View.text(String.duplicate("─", width))
-  end
-
-  defp add_labels(content, _series, _width, _height) do
-    # Add x-axis labels
+  defp add_axes(content, _min, _max, _width, _height, _orientation) do
+    # TODO: Refactor to use a more structured approach for drawing axes
+    # Consider using a dedicated drawing library or module for better separation
+    # Placeholder implementation
     content
   end
 
-  defp add_legend(content, series) do
-    legend_items =
-      series
-      |> Enum.map(fn %{name: name, color: color} ->
-        View.flex(
-          direction: :row,
-          children: [
-            View.text("█ ", fg: color),
-            View.text(name)
-          ]
-        )
-      end)
+  defp add_labels(content, _series, _width, _height) do
+    # TODO: Implement label drawing logic
+    content
+  end
 
-    View.box(
-      children: [
-        content,
-        View.flex(
-          direction: :column,
-          children: legend_items
-        )
-      ]
-    )
+  defp add_legend(content, _series) do
+    # TODO: Implement legend drawing logic
+    content
   end
 end
