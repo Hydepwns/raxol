@@ -57,6 +57,7 @@ defmodule Raxol.Style.Colors.Color do
     15 => {255, 255, 255}
   }
 
+  @derive {Jason.Encoder, only: [:r, :g, :b, :a]}
   defstruct [
     # RGB components (0-255)
     :r,
@@ -67,13 +68,17 @@ defmodule Raxol.Style.Colors.Color do
     # Hex representation
     :hex,
     # Optional name for predefined colors
-    :name
+    :name,
+    # Alpha component (0.0-1.0)
+    a: 1.0
   ]
 
   @type t :: %__MODULE__{
           r: integer(),
           g: integer(),
           b: integer(),
+          # Alpha component (0.0-1.0)
+          a: float(),
           ansi_code: integer() | nil,
           hex: String.t(),
           name: String.t() | nil
@@ -88,12 +93,14 @@ defmodule Raxol.Style.Colors.Color do
   - "RGB"
   - "RRGGBB"
 
+  Returns `{:error, :invalid_hex}` if the string is invalid.
+
   ## Examples
 
       iex> Raxol.Style.Colors.Color.from_hex("#FF0000")
       %Raxol.Style.Colors.Color{r: 255, g: 0, b: 0, hex: "#FF0000"}
 
-      iex> Raxol.Style.Colors.Color.from_hex("00FF00")
+      iex> Raxol.Style.Colors.Color.from_hex("0F0")
       %Raxol.Style.Colors.Color{r: 0, g: 255, b: 0, hex: "#00FF00"}
   """
   @spec from_hex(binary()) :: t() | {:error, :invalid_hex}
@@ -102,28 +109,30 @@ defmodule Raxol.Style.Colors.Color do
 
     case String.length(hex) do
       6 ->
-        {r, g, b} =
-          String.split_at(hex, 2)
-          |> then(fn {r, rest} -> {r, String.split_at(rest, 2)} end)
-          |> then(fn {r, {g, b}} -> {r, g, b} end)
-          |> then(fn {r, g, b} ->
-            {
-              String.to_integer(r, 16),
-              String.to_integer(g, 16),
-              String.to_integer(b, 16)
-            }
-          end)
+        try do
+          <<r_h::binary-size(2), g_h::binary-size(2), b_h::binary-size(2)>> =
+            hex
 
-        from_rgb(r, g, b)
+          r = String.to_integer(r_h, 16)
+          g = String.to_integer(g_h, 16)
+          b = String.to_integer(b_h, 16)
+          from_rgb(r, g, b)
+        rescue
+          _ -> {:error, :invalid_hex}
+        end
 
       3 ->
-        [r, g, b] = String.graphemes(hex)
+        try do
+          <<r_h::binary-size(1), g_h::binary-size(1), b_h::binary-size(1)>> =
+            hex
 
-        from_rgb(
-          String.to_integer(r <> r, 16),
-          String.to_integer(g <> g, 16),
-          String.to_integer(b <> b, 16)
-        )
+          r = String.to_integer(r_h <> r_h, 16)
+          g = String.to_integer(g_h <> g_h, 16)
+          b = String.to_integer(b_h <> b_h, 16)
+          from_rgb(r, g, b)
+        rescue
+          _ -> {:error, :invalid_hex}
+        end
 
       _ ->
         {:error, :invalid_hex}
@@ -156,11 +165,15 @@ defmodule Raxol.Style.Colors.Color do
   """
   @spec from_rgb(0..255, 0..255, 0..255) :: t()
   def from_rgb(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
-    r_hex = Integer.to_string(r, 16) |> String.pad_leading(2, "0")
-    g_hex = Integer.to_string(g, 16) |> String.pad_leading(2, "0")
-    b_hex = Integer.to_string(b, 16) |> String.pad_leading(2, "0")
-    hex = "#" <> String.upcase(r_hex <> g_hex <> b_hex)
-    %__MODULE__{r: r, g: g, b: b, hex: hex}
+    hex =
+      "#" <>
+        ([r, g, b]
+         |> Enum.map(&Integer.to_string(&1, 16))
+         |> Enum.map(&String.pad_leading(&1, 2, "0"))
+         |> Enum.join()
+         |> String.upcase())
+
+    %__MODULE__{r: r, g: g, b: b, a: 1.0, hex: hex}
   end
 
   @doc """
@@ -252,9 +265,9 @@ defmodule Raxol.Style.Colors.Color do
   """
   def darken(%__MODULE__{r: r, g: g, b: b} = _color, amount)
       when amount >= 0 and amount <= 1 do
-    new_r = max(round(r * (1 - amount)), 0)
-    new_g = max(round(g * (1 - amount)), 0)
-    new_b = max(round(b * (1 - amount)), 0)
+    new_r = max(trunc(r * (1 - amount)), 0)
+    new_g = max(trunc(g * (1 - amount)), 0)
+    new_b = max(trunc(b * (1 - amount)), 0)
 
     from_rgb(new_r, new_g, new_b)
   end
@@ -276,9 +289,9 @@ defmodule Raxol.Style.Colors.Color do
         alpha
       )
       when alpha >= 0 and alpha <= 1 do
-    new_r = round(r1 * (1 - alpha) + r2 * alpha)
-    new_g = round(g1 * (1 - alpha) + g2 * alpha)
-    new_b = round(b1 * (1 - alpha) + b2 * alpha)
+    new_r = trunc(r1 * (1 - alpha) + r2 * alpha)
+    new_g = trunc(g1 * (1 - alpha) + g2 * alpha)
+    new_b = trunc(b1 * (1 - alpha) + b2 * alpha)
 
     from_rgb(new_r, new_g, new_b)
   end
@@ -314,9 +327,9 @@ defmodule Raxol.Style.Colors.Color do
         weight \\ 0.5
       )
       when weight >= 0 and weight <= 1 do
-    new_r = round(r1 * (1 - weight) + r2 * weight)
-    new_g = round(g1 * (1 - weight) + g2 * weight)
-    new_b = round(b1 * (1 - weight) + b2 * weight)
+    new_r = trunc(r1 * (1 - weight) + r2 * weight)
+    new_g = trunc(g1 * (1 - weight) + g2 * weight)
+    new_b = trunc(b1 * (1 - weight) + b2 * weight)
 
     from_rgb(new_r, new_g, new_b)
   end

@@ -3,6 +3,7 @@ defmodule Raxol.Style.Colors.UtilitiesTest do
   doctest Raxol.Style.Colors.Utilities
 
   alias Raxol.Style.Colors.{Color, Utilities}
+  alias Raxol.Style.Colors.Accessibility
 
   describe "contrast_ratio/2" do
     test "calculates contrast ratio between colors" do
@@ -36,22 +37,22 @@ defmodule Raxol.Style.Colors.UtilitiesTest do
     end
   end
 
-  describe "is_readable?/3" do
+  describe "readable?/3" do
     test "correctly identifies readable text" do
       # Dark background, light text (should be readable)
       dark_bg = Color.from_hex("#333333")
       light_text = Color.from_hex("#FFFFFF")
-      assert Utilities.is_readable?(dark_bg, light_text)
+      assert Utilities.readable?(dark_bg, light_text)
 
       # Light background, dark text (should be readable)
       light_bg = Color.from_hex("#FFFFFF")
       dark_text = Color.from_hex("#000000")
-      assert Utilities.is_readable?(light_bg, dark_text)
+      assert Utilities.readable?(light_bg, dark_text)
 
       # Low contrast (should not be readable)
       light_gray = Color.from_hex("#CCCCCC")
       medium_gray = Color.from_hex("#999999")
-      refute Utilities.is_readable?(light_gray, medium_gray)
+      refute Utilities.readable?(light_gray, medium_gray)
     end
 
     test "respects accessibility levels" do
@@ -60,9 +61,9 @@ defmodule Raxol.Style.Colors.UtilitiesTest do
 
       # Test different accessibility levels
       # Lower requirement
-      assert Utilities.is_readable?(bg, fg, :aa_large)
+      assert Utilities.readable?(bg, fg, :aa_large)
       # Higher requirement
-      refute Utilities.is_readable?(bg, fg, :aaa)
+      refute Utilities.readable?(bg, fg, :aaa)
     end
   end
 
@@ -165,7 +166,7 @@ defmodule Raxol.Style.Colors.UtilitiesTest do
   end
 
   describe "accessible_color_pair/2" do
-    test "creates color pairs that meet accessibility standards" do
+    test "accessible_color_pair creates color pairs that meet accessibility standards" do
       colors = [
         # Blue
         Color.from_hex("#336699"),
@@ -179,7 +180,7 @@ defmodule Raxol.Style.Colors.UtilitiesTest do
         {bg, fg} = Utilities.accessible_color_pair(color)
 
         # The pair should be readable
-        assert Utilities.is_readable?(bg, fg)
+        assert Utilities.readable?(bg, fg)
       end
     end
 
@@ -187,10 +188,10 @@ defmodule Raxol.Style.Colors.UtilitiesTest do
       color = Color.from_hex("#777777")
 
       {bg, fg} = Utilities.accessible_color_pair(color, :aa)
-      assert Utilities.is_readable?(bg, fg, :aa)
+      assert Utilities.readable?(bg, fg, :aa)
 
       {bg, fg} = Utilities.accessible_color_pair(color, :aaa)
-      assert Utilities.is_readable?(bg, fg, :aaa)
+      assert Utilities.readable?(bg, fg, :aaa)
     end
   end
 
@@ -293,33 +294,36 @@ defmodule Raxol.Style.Colors.UtilitiesTest do
   end
 
   describe "color darkness" do
-    test "is_dark_color? returns true for dark colors" do
-      assert Utilities.is_dark_color?("#000000")
-      assert Utilities.is_dark_color?("#333333")
+    test "dark_color? returns true for dark colors" do
+      assert Utilities.dark_color?("#000000")
+      assert Utilities.dark_color?("#333333")
     end
 
-    test "is_dark_color? returns false for light colors" do
-      refute Utilities.is_dark_color?("#FFFFFF")
-      refute Utilities.is_dark_color?("#CCCCCC")
+    test "dark_color? returns false for light colors" do
+      refute Utilities.dark_color?("#FFFFFF")
+      refute Utilities.dark_color?("#CCCCCC")
     end
 
-    test "is_dark_color? works with Color struct" do
+    test "dark_color? works with Color struct" do
       color = Color.from_hex("#000000")
-      assert Utilities.is_dark_color?(color)
+      assert Utilities.dark_color?(color)
     end
   end
 
   describe "color darkening" do
     test "darken_until_contrast returns original color if already sufficient" do
       color = "#000000"
-      assert ^color = Utilities.darken_until_contrast(color, "#FFFFFF", 4.5)
+      result = Utilities.darken_until_contrast(color, "#FFFFFF", 4.5)
+      assert result == color
     end
 
     test "darken_until_contrast darkens color until contrast is sufficient" do
       original = "#777777"
       result = Utilities.darken_until_contrast(original, "#FFFFFF", 4.5)
       assert result != original
-      assert {:ok, _} = Accessibility.check_contrast(result, "#FFFFFF")
+
+      assert {:ok, _} =
+               Accessibility.check_contrast(result, "#FFFFFF", :aa, :normal)
     end
 
     test "darken_until_contrast works with Color structs" do
@@ -327,21 +331,26 @@ defmodule Raxol.Style.Colors.UtilitiesTest do
       background = Color.from_hex("#FFFFFF")
       result = Utilities.darken_until_contrast(color, background, 4.5)
       assert result != Color.to_hex(color)
-      assert {:ok, _} = Accessibility.check_contrast(result, "#FFFFFF")
+
+      assert {:ok, _} =
+               Accessibility.check_contrast(result, "#FFFFFF", :aa, :normal)
     end
   end
 
   describe "color lightening" do
     test "lighten_until_contrast returns original color if already sufficient" do
       color = "#FFFFFF"
-      assert ^color = Utilities.lighten_until_contrast(color, "#000000", 4.5)
+      result = Utilities.lighten_until_contrast(color, "#000000", 4.5)
+      assert result == color
     end
 
     test "lighten_until_contrast lightens color until contrast is sufficient" do
       original = "#777777"
       result = Utilities.lighten_until_contrast(original, "#000000", 4.5)
       assert result != original
-      assert {:ok, _} = Accessibility.check_contrast(result, "#000000")
+
+      assert {:ok, _} =
+               Accessibility.check_contrast(result, "#000000", :aa, :normal)
     end
 
     test "lighten_until_contrast works with Color structs" do
@@ -349,7 +358,9 @@ defmodule Raxol.Style.Colors.UtilitiesTest do
       background = Color.from_hex("#000000")
       result = Utilities.lighten_until_contrast(color, background, 4.5)
       assert result != Color.to_hex(color)
-      assert {:ok, _} = Accessibility.check_contrast(result, "#000000")
+
+      assert {:ok, _} =
+               Accessibility.check_contrast(result, "#000000", :aa, :normal)
     end
   end
 

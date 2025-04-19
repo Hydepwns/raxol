@@ -57,6 +57,7 @@ defmodule Raxol.Core.Renderer.Color do
 
   def to_ansi(color) when is_atom(color) do
     if code = Keyword.get(@ansi_16_colors, color) do
+      # Original logic
       "\e[#{30 + code}m"
     end
   end
@@ -82,6 +83,7 @@ defmodule Raxol.Core.Renderer.Color do
 
   def to_bg_ansi(color) when is_atom(color) do
     if code = Keyword.get(@ansi_16_colors, color) do
+      # Original logic
       "\e[#{40 + code}m"
     end
   end

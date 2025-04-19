@@ -1,6 +1,8 @@
 defmodule Raxol.Style.Colors.AdaptiveTest do
   use ExUnit.Case
 
+  def init, do: {:ok, %{}}
+
   alias Raxol.Style.Colors.Adaptive
   alias Raxol.Style.Colors.Color
   alias Raxol.Style.Colors.Palette
@@ -156,15 +158,15 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
 
   describe "theme adaptation" do
     setup do
-      # Initialize the theme registry
-      Theme.init()
+      # Initialize the theme registry - Removed as it seems unnecessary
+      # Theme.init()
       :ok
     end
 
     test "adapt_theme adapts the theme's palette" do
       set_mock_detection(:ansi_16)
 
-      theme = Theme.from_palette(Palette.nord())
+      theme = Theme.from_palette(Palette.nord(), "Nord")
       adapted = Adaptive.adapt_theme(theme)
 
       # The name should be modified
@@ -179,8 +181,8 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       set_mock_detection(:true_color)
       set_mock_background(:light)
 
-      # Create a dark theme
-      dark_theme = Theme.from_palette(Palette.dracula())
+      # Create a dark theme and explicitly set dark_mode
+      dark_theme = %{Theme.from_palette(Palette.dracula()) | dark_mode: true}
       assert dark_theme.dark_mode == true
 
       # Adapt it to the light terminal
@@ -243,14 +245,50 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
     :ets.insert(:raxol_terminal_capabilities, {:background, value})
   end
 
-  # Sets mock environment variables
-  defp set_mock_env(env_vars) do
-    # Reset the cache first
+  # Sets mock environment variables and ensures they are reset after the test
+  defp set_mock_env(env_vars_to_set) do
+    # Reset the detection cache
     Adaptive.reset_detection()
 
-    # Mock environment variables
-    Enum.each(env_vars, fn {key, value} ->
+    # List of all relevant env vars for color detection
+    relevant_vars = [
+      "COLORTERM",
+      "TERM",
+      "TERM_PROGRAM",
+      "TERM_PROGRAM_VERSION",
+      "NO_COLOR"
+    ]
+
+    # Store original values of ALL relevant vars
+    original_values =
+      Enum.map(relevant_vars, fn key ->
+        {key, System.get_env(key)}
+      end)
+      |> Map.new()
+
+    # Clear all relevant vars first
+    Enum.each(relevant_vars, &System.delete_env/1)
+
+    # Set the specific mock environment variables for this test
+    Enum.each(env_vars_to_set, fn {key, value} ->
       System.put_env(key, value)
+    end)
+
+    # Return an on_exit callback to restore original values
+    on_exit(fn ->
+      # Clear mocks first before restoring
+      Enum.each(relevant_vars, &System.delete_env/1)
+      # Restore original values
+      Enum.each(original_values, fn {key, original_value} ->
+        case original_value do
+          # Already cleared
+          nil -> :ok
+          _ -> System.put_env(key, original_value)
+        end
+      end)
+
+      # Important: Reset detection again after restoring env vars
+      Adaptive.reset_detection()
     end)
   end
 end

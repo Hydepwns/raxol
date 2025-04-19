@@ -27,7 +27,7 @@ config :raxol, RaxolWeb.Endpoint,
 config :raxol, Raxol.Mailer, adapter: Swoosh.Adapters.Test
 
 # Print only warnings and errors during test
-config :logger, level: :warning
+config :logger, level: :debug
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime

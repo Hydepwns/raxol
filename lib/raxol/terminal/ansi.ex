@@ -12,6 +12,7 @@ defmodule Raxol.Terminal.ANSI do
   alias Raxol.Terminal.ANSI.SixelGraphics
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.ANSI.ScreenModes
   # alias Raxol.Terminal.Input.Processor, as: InputProcessor -- Removed unused
   # alias Raxol.Terminal.Cursor.Manager, as: CursorManager -- Removed unused
   require Logger
@@ -502,6 +503,10 @@ defmodule Raxol.Terminal.ANSI do
         # Send event to application layer?
         # event = Raxol.Core.Events.new(:mouse, %{type: type, button: button, x: x, y: y})
         {emulator, nil}
+
+      {:mode_change, action, mode_str} ->
+        # Call the new function to handle the mode change
+        handle_mode_change(emulator, action, mode_str)
 
       {:error, :unknown_sequence, seq} ->
         Logger.warning("Unknown ANSI sequence received: #{inspect(seq)}")
@@ -1312,5 +1317,113 @@ defmodule Raxol.Terminal.ANSI do
     g_index = div(g, 51)
     b_index = div(b, 51)
     16 + 36 * r_index + 6 * g_index + b_index
+  end
+
+  # Map DEC Private Mode codes to ScreenModes atoms
+  @dec_mode_map %{
+    # DECCKM - Cursor Keys Mode (Application vs. Normal)
+    "1" => :cursor_keys,
+    # DECCOLM - Column Mode (132 vs. 80)
+    "3" => :wide_column,
+    # DECSCNM - Screen Mode (Reverse Video)
+    "5" => :screen,
+    # DECOM - Origin Mode (Relative vs. Absolute)
+    "6" => :origin,
+    # DECAWM - Autowrap Mode
+    "7" => :auto_wrap,
+    # DECARM - Auto-repeat Keys Mode
+    "8" => :auto_repeat,
+    # DECX10MOUSE - X10 Mouse Reporting
+    "9" => :mouse_x10,
+    # ATT610 - Start/Stop Blinking Cursor (xterm)
+    "12" => :cursor_blink,
+    # DECTCEM - Text Cursor Enable Mode
+    "25" => :cursor_visible,
+    # Use Alternate Screen Buffer
+    "47" => :alternate_screen,
+    # VT200 Mouse Reporting
+    "1000" => :mouse_vt200,
+    # Button-event tracking
+    "1002" => :mouse_button_event,
+    # Any-event tracking
+    "1003" => :mouse_any_event,
+    # FocusIn/FocusOut events
+    "1004" => :mouse_focus_event,
+    # UTF8 mouse coordinates
+    "1005" => :mouse_utf8,
+    # SGR mouse coordinates
+    "1006" => :mouse_sgr,
+    # Alternate Scroll Mode (xterm)
+    "1007" => :mouse_alternate_scroll,
+    # urxvt mouse mode
+    "1015" => :mouse_urxvt,
+    # SGR Pixels mouse coordinates
+    "1016" => :mouse_sgr_pixels,
+    # 8-Bit Meta Key
+    "1034" => :interpret_meta,
+    # Num Lock Modifier
+    "1035" => :num_lock_mod,
+    # Meta Key sends ESC prefix
+    "1036" => :meta_esc_prefix,
+    # Delete key sends DEL
+    "1037" => :delete_del,
+    # Alt key sends ESC prefix
+    "1039" => :alt_esc_prefix,
+    # Use Alternate Screen Buffer (and clear)
+    "1047" => :alternate_screen,
+    # Save cursor as in DECSC
+    "1048" => :save_cursor,
+    # Combines 1047 and 1048
+    "1049" => :alternate_screen_and_cursor
+    # Add more mappings as needed
+  }
+
+  defp handle_mode_change(emulator, action, mode_str) do
+    # Mode lookup and state update remain the same
+    case Map.get(@dec_mode_map, mode_str) do
+      nil ->
+        Logger.warning("Unsupported DEC Private Mode: ?#{mode_str}")
+        emulator
+
+      mode_atom ->
+        new_mode_state =
+          case action do
+            :set_screen_mode ->
+              ScreenModes.set_mode(emulator.mode_state, mode_atom)
+
+            :reset_screen_mode ->
+              ScreenModes.reset_mode(emulator.mode_state, mode_atom)
+          end
+
+        emulator_with_state = %{emulator | mode_state: new_mode_state}
+
+        # Side effects are now handled in Emulator.set/reset_screen_mode
+        # We just return the emulator with the updated mode_state here.
+        # TODO: Re-evaluate if other modes handled here (like alternate screen)
+        #       also need their side-effect logic moved to Emulator.
+        case mode_atom do
+          :alternate_screen ->
+            Logger.debug(
+              "[ANSI] Alternate screen mode change - Handled by Emulator"
+            )
+
+            emulator_with_state
+
+          :alternate_screen_and_cursor ->
+            Logger.debug(
+              "[ANSI] Alternate screen + cursor mode change - Handled by Emulator"
+            )
+
+            emulator_with_state
+
+          :save_cursor ->
+            Logger.debug("[ANSI] Save cursor mode change - Handled by Emulator")
+            emulator_with_state
+
+          # Includes :wide_column, which no longer needs specific handling here
+          _ ->
+            emulator_with_state
+        end
+    end
   end
 end

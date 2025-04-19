@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
 
   setup do
     # Only start required applications
+    {:ok, _} = Application.ensure_all_started(:stdlib)
     {:ok, _} = Application.ensure_all_started(:logger)
     {:ok, _} = Application.ensure_all_started(:gen_statem)
 

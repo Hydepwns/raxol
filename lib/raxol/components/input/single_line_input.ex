@@ -125,41 +125,42 @@ defmodule Raxol.Components.Input.SingleLineInput do
   # end
 
   @impl true
-  def handle_event(%Event{type: :key, data: key_data} = _event, state)
+  def handle_event(%Event{type: :key, data: key_data} = event, state)
       when state.focused do
     case key_data do
       %{key: key} when is_binary(key) and byte_size(key) == 1 ->
         # Regular character input
         {insert_text(state, key), []}
 
-      %{key: :enter} ->
+      %{key: "Enter"} ->
         if state.on_submit, do: state.on_submit.(state.value)
         {state, []}
 
-      %{key: :backspace} ->
+      %{key: "Backspace"} ->
         {handle_backspace(state), []}
 
-      %{key: :delete} ->
+      %{key: "Delete"} ->
         {handle_delete(state), []}
 
-      %{key: :left, modifiers: mods} ->
+      %{key: "Left", modifiers: mods} ->
         if :ctrl in mods do
           {move_cursor_word_left(state), []}
         else
-          {update({:move_cursor, state.cursor_pos - 1}, state), []}
+          new_state = update({:move_cursor, state.cursor_pos - 1}, state)
+          {new_state, []}
         end
 
-      %{key: :right, modifiers: mods} ->
+      %{key: "Right", modifiers: mods} ->
         if :ctrl in mods do
           {move_cursor_word_right(state), []}
         else
           {update({:move_cursor, state.cursor_pos + 1}, state), []}
         end
 
-      %{key: :home} ->
+      %{key: "Home"} ->
         {update({:move_cursor, 0}, state), []}
 
-      %{key: :end} ->
+      %{key: "End"} ->
         {update({:move_cursor, String.length(state.value)}, state), []}
 
       %{key: "c", modifiers: mods} ->
@@ -245,7 +246,9 @@ defmodule Raxol.Components.Input.SingleLineInput do
     {update(:blur, state), []}
   end
 
-  def handle_event(_event, state), do: {state, []}
+  def handle_event(event, state) do
+    {state, []}
+  end
 
   # Helper functions
   defp clamp(value, min, max) do
@@ -309,11 +312,7 @@ defmodule Raxol.Components.Input.SingleLineInput do
       if state.cursor_pos > 0 do
         new_value =
           String.slice(state.value, 0, state.cursor_pos - 1) <>
-            String.slice(
-              state.value,
-              state.cursor_pos,
-              String.length(state.value)
-            )
+            String.slice(state.value, state.cursor_pos..-1//1)
 
         new_state = %{
           state
@@ -333,20 +332,19 @@ defmodule Raxol.Components.Input.SingleLineInput do
     if has_selection?(state) do
       delete_selection(state)
     else
+      # Check if cursor is not at the end of the string
       if state.cursor_pos < String.length(state.value) do
         new_value =
           String.slice(state.value, 0, state.cursor_pos) <>
-            String.slice(
-              state.value,
-              state.cursor_pos + 1,
-              String.length(state.value)
-            )
+            String.slice(state.value, (state.cursor_pos + 1)..-1//1)
 
-        new_state = %{state | value: new_value}
+        # Update value but keep cursor_pos the same
+        new_state = %{state | value: new_value, cursor_pos: state.cursor_pos}
 
         if state.on_change, do: state.on_change.(new_value)
         new_state
       else
+        # Cursor is at the end, nothing to delete
         state
       end
     end
@@ -362,25 +360,73 @@ defmodule Raxol.Components.Input.SingleLineInput do
     update({:move_cursor, new_pos}, state)
   end
 
+  # Recursive implementation for finding word boundaries
   defp find_word_boundary_left(text, pos) do
-    text
-    |> String.slice(0, pos)
-    |> String.reverse()
-    |> find_word_boundary()
-    |> then(&(pos - &1))
+    if pos == 0, do: 0, else: skip_whitespace_left(text, pos - 1)
+  end
+
+  defp skip_whitespace_left(text, current_index) do
+    cond do
+      # Reached beginning
+      current_index < 0 ->
+        0
+
+      String.at(text, current_index) == " " ->
+        skip_whitespace_left(text, current_index - 1)
+
+      # Found non-whitespace, start finding word start
+      true ->
+        find_word_start_left(text, current_index)
+    end
+  end
+
+  defp find_word_start_left(text, current_index) do
+    cond do
+      # Reached beginning
+      current_index < 0 ->
+        0
+
+      String.at(text, current_index) != " " ->
+        find_word_start_left(text, current_index - 1)
+
+      # Found space, word starts after it
+      true ->
+        current_index + 1
+    end
   end
 
   defp find_word_boundary_right(text, pos) do
-    text
-    |> String.slice(pos, String.length(text))
-    |> find_word_boundary()
-    |> Kernel.+(pos)
+    len = String.length(text)
+    if pos >= len, do: len, else: skip_whitespace_right(text, pos, len)
   end
 
-  defp find_word_boundary(text) do
-    case Regex.run(~r/\b\w/, text, return: :index) do
-      [{index, _}] -> index
-      nil -> String.length(text)
+  defp skip_whitespace_right(text, current_index, len) do
+    cond do
+      # Reached end
+      current_index >= len ->
+        len
+
+      String.at(text, current_index) == " " ->
+        skip_whitespace_right(text, current_index + 1, len)
+
+      # Found non-whitespace, start finding word end
+      true ->
+        find_word_end_right(text, current_index, len)
+    end
+  end
+
+  defp find_word_end_right(text, current_index, len) do
+    cond do
+      # Reached end
+      current_index >= len ->
+        len
+
+      String.at(text, current_index) != " " ->
+        find_word_end_right(text, current_index + 1, len)
+
+      # Found space, word ends before it
+      true ->
+        current_index
     end
   end
 
@@ -389,9 +435,13 @@ defmodule Raxol.Components.Input.SingleLineInput do
          selection_start: start,
          selection_end: end_pos
        }) do
+    # Ensure start is always less than end_pos
+    {start, end_pos} = {min(start, end_pos), max(start, end_pos)}
+
+    # Use range slicing with explicit step
     before_selection = String.slice(value, 0, start)
     selected = String.slice(value, start, end_pos - start)
-    after_selection = String.slice(value, end_pos, String.length(value))
+    after_selection = String.slice(value, end_pos..-1//1)
     {before_selection, selected, after_selection}
   end
 end

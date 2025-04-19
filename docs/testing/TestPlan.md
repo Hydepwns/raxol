@@ -70,6 +70,23 @@ config :logger,
 
 ## Test Categories
 
+### Current Major Test Failures (as of 2025-04-19 - Please Update Date)
+
+Based on the test run on [Insert Date Here], the following modules have significant failures:
+
+- `Raxol.Style.Colors.UtilitiesTest` (Multiple failures, investigation details below):
+  - **Doctest `UndefinedFunctionError`**: Likely due to missing `alias Raxol.Style.Colors.Utilities` _before_ examples in the main `@moduledoc` of `utilities.ex`. Attempted fix was unsuccessful due to apply errors (the automated edit tool had difficulty inserting the `alias` correctly within the multi-line `@moduledoc` block).
+  - **`readable?/3` (vs `is_readable?`)**: The function is public and named `readable?`. The plan's note about potential privacy (`is_readable?`) was incorrect.
+  - **`Accessibility.check_contrast`**: Was called with incorrect arity (2 vs 4, although defaults exist) in `darken/lighten_until_contrast` tests. Added missing `alias Raxol.Style.Colors.Accessibility` and corrected calls in `utilities_test.exs`.
+  - \*\*Specific Test/Doctest Failures (9 total from `mix test test/raxol/style/colors/utilities_test.exs` run):
+    - `lighten_until_contrast`: Fails to lighten color (returns original hex `#777777` instead of expected `#CCCCCC`), both in tests and doctest. Potentially due to stream/Enum.find logic needing adjustment (e.g., `Stream.drop(1)`).
+    - `relative_luminance`: Fails for gray (`#808080`) due to minor floating-point differences. Suggest using `assert_in_delta`.
+    - `contrast_ratio`: Doctest fails for `#777777`/`#999999` (expected `1.3`, got `~1.57`). Test for mixed types (`String`/`Color` struct) fails (expected `21.0`, got `1.0`), suggesting input normalization issue.
+    - `darken_until_contrast`: Doctest fails (expected `"#595959"`, got `"#6D6D6D"`), indicating calculation might be slightly off.
+    - `lighten/darken_until_contrast` (Return Type): Tests checking return type when contrast is already sufficient failed initially (expecting hex string, got `%Color{}` struct). Automated fixes _may_ have resolved this by adding `Color.to_hex()` calls, but subsequent compilation errors prevented confirmation.
+  - **File State**: Encountered significant issues applying automated edits to `lib/raxol/style/colors/utilities.ex`. The file might be in an inconsistent state. Recommend `git restore` before resuming work on this module.
+- `Raxol.ApplicationTest` (missing `put_env/3`, theme validation errors)
+
 ### 1. Basic Functionality Tests
 
 - Application startup

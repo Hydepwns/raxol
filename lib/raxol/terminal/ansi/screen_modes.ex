@@ -20,6 +20,31 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
           interlacing_mode: boolean(),
           saved_state: map() | nil
         }
+        
+  # DEC Private Mode codes and their corresponding mode atoms
+  @dec_private_modes %{
+    1 => :decckm,        # Cursor Keys Mode
+    3 => :deccolm_132,   # 132 Column Mode
+    5 => :decscnm,       # Screen Mode (reverse)
+    6 => :decom,         # Origin Mode
+    7 => :decawm,        # Auto Wrap Mode
+    8 => :decarm,        # Auto Repeat Mode
+    9 => :decinlm,       # Interlace Mode
+    12 => :att_blink,    # Start Blinking Cursor
+    25 => :dectcem,      # Text Cursor Enable Mode
+    47 => :dec_alt_screen, # Use Alternate Screen Buffer
+    1000 => :mouse_report, # Send Mouse X & Y on button press
+    1002 => :mouse_motion, # Use Cell Motion Mouse Tracking
+    1004 => :focus_events, # Send FocusIn/FocusOut events
+    1006 => :sgr_mouse,    # SGR Mouse Mode
+    1049 => :alt_screen_buffer # Save cursor and use Alternate Screen Buffer
+  }
+  
+  # Standard Mode codes and their corresponding mode atoms
+  @standard_modes %{
+    4 => :insert_mode,   # Insert Mode
+    20 => :line_feed_mode # Line Feed Mode
+  }
 
   @doc """
   Creates a new screen state with default values.
@@ -153,6 +178,22 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
   """
   @spec get_interlacing_mode(screen_state()) :: boolean()
   def get_interlacing_mode(state), do: state.interlacing_mode
+  
+  @doc """
+  Looks up a DEC private mode code and returns the corresponding mode atom.
+  """
+  @spec lookup_private(integer()) :: atom() | nil
+  def lookup_private(code) when is_integer(code) do
+    Map.get(@dec_private_modes, code)
+  end
+  
+  @doc """
+  Looks up a standard mode code and returns the corresponding mode atom.
+  """
+  @spec lookup_standard(integer()) :: atom() | nil
+  def lookup_standard(code) when is_integer(code) do
+    Map.get(@standard_modes, code)
+  end
 
   # Private helper functions
 

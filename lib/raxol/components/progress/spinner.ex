@@ -125,6 +125,11 @@ defmodule Raxol.Components.Progress.Spinner do
     {update(:tick, state), []}
   end
 
+  # Also handle :frame events for ticking the animation
+  def handle_event(%Event{type: :frame}, state) do
+    {update(:tick, state), []}
+  end
+
   def handle_event(_event, state), do: {state, []}
 
   # Helper functions for common spinner configurations

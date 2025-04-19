@@ -377,49 +377,48 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   @doc """
-  Resizes the screen buffer to the specified dimensions.
-  Handles content preservation and truncation based on the new size.
+  Resizes the screen buffer to the new dimensions.
+  Preserves content that fits within the new bounds.
   """
   @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
   def resize(%__MODULE__{} = buffer, new_width, new_height)
       when new_width > 0 and new_height > 0 do
-    # Create a new buffer with the new dimensions
-    new_buffer = %{
-      buffer
-      | width: new_width,
-        height: new_height,
-        cells: List.duplicate(List.duplicate(Cell.new(), new_width), new_height)
-    }
+    # Create a new empty buffer of the target size
+    new_cells =
+      List.duplicate(List.duplicate(Cell.new(), new_width), new_height)
+
+    # Determine the bounds to copy from the old buffer
+    max_y_copy = min(buffer.height - 1, new_height - 1)
+    max_x_copy = min(buffer.width - 1, new_width - 1)
 
     # Copy content from the old buffer to the new buffer
-    # Handle both expansion and shrinking
-    old_cells = buffer.cells
+    copied_cells =
+      Enum.reduce(0..max_y_copy, new_cells, fn y, acc_new_cells ->
+        old_row = Enum.at(buffer.cells, y)
+        new_row = Enum.at(acc_new_cells, y)
 
-    new_cells =
-      Enum.with_index(new_buffer.cells)
-      |> Enum.map(fn {row, y} ->
-        if y < length(old_cells) do
-          # Copy content from the old row
-          old_row = Enum.at(old_cells, y)
-
-          Enum.with_index(row)
-          |> Enum.map(fn {_cell, x} ->
-            if x < length(old_row) do
-              # Copy the cell from the old buffer
-              Enum.at(old_row, x)
-            else
-              # Create a new empty cell for expanded width
-              Cell.new()
-            end
+        updated_new_row =
+          Enum.reduce(0..max_x_copy, new_row, fn x, acc_new_row ->
+            old_cell = Enum.at(old_row, x)
+            List.replace_at(acc_new_row, x, old_cell)
           end)
-        else
-          # Create a new empty row for expanded height
-          row
-        end
+
+        List.replace_at(acc_new_cells, y, updated_new_row)
       end)
 
-    # Update the buffer with the new cells
-    %{new_buffer | cells: new_cells}
+    # Return a new buffer struct with updated dimensions and copied cells
+    # Keep scrollback, limit, region, selection for now (might need adjustment)
+    %{
+      buffer
+      | cells: copied_cells,
+        width: new_width,
+        height: new_height,
+        # Reset scroll region and selection on resize?
+        # Reset scroll region
+        scroll_region: nil,
+        # Clear selection
+        selection: nil
+    }
   end
 
   @doc """
@@ -447,16 +446,28 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   @doc """
-  Gets the width of the screen buffer.
+  Gets a specific line from the buffer.
   """
-  @spec width(t()) :: non_neg_integer()
-  def width(%__MODULE__{width: width}), do: width
-
+  @spec get_line(t(), non_neg_integer()) :: list(Cell.t()) | nil
+  def get_line(%__MODULE__{} = buffer, line_index) when line_index >= 0 do
+    if line_index < buffer.height do
+      Enum.at(buffer.cells, line_index)
+    else
+      nil
+    end
+  end
+  
   @doc """
-  Gets the height of the screen buffer.
+  Gets a specific cell from the buffer.
   """
-  @spec height(t()) :: non_neg_integer()
-  def height(%__MODULE__{height: height}), do: height
+  @spec get_cell(t(), non_neg_integer(), non_neg_integer()) :: Cell.t() | nil
+  def get_cell(%__MODULE__{} = buffer, x, y) when x >= 0 and y >= 0 do
+    if y < buffer.height and x < buffer.width do
+      buffer.cells |> Enum.at(y) |> Enum.at(x)
+    else
+      nil
+    end
+  end
 
   @doc """
   Clears a rectangular region of the buffer.

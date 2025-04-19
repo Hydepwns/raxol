@@ -1,350 +1,455 @@
 defmodule Raxol.Terminal.EscapeSequence do
   @moduledoc """
-  Handles escape sequence processing for the terminal emulator.
+  Handles parsing of ANSI escape sequences and other control sequences.
 
-  This module provides functions for parsing and processing ANSI escape sequences
-  for cursor movement, terminal modes, and other terminal operations.
+  This module provides functions for parsing ANSI escape sequences
+  into structured data representing terminal commands.
   """
 
-  alias Raxol.Terminal.Cursor.{Manager, Movement, Style}
-  alias Raxol.Terminal.Modes
+  require Logger
+
+  # --- Public API ---
 
   @doc """
-  Processes an escape sequence for cursor movement.
+  Parses an input string, potentially containing an escape sequence.
 
-  ## Examples
+  Returns:
+    * `{:ok, command_data, remaining_input}` if a complete sequence is parsed.
+    * `{:incomplete, remaining_input}` if the input is potentially part of a sequence but incomplete.
+    * `{:error, :invalid_sequence, remaining_input}` if the sequence is malformed.
+    * `{:error, :not_escape_sequence, input}` if the input doesn't start with ESC.
 
-      iex> cursor = Cursor.Manager.new()
-      iex> {cursor, _} = EscapeSequence.process_cursor_movement(cursor, "10;5H")
-      iex> cursor.position
-      {4, 9}  # 0-based indexing
+  `command_data` is a tuple representing the parsed command, e.g.:
+    * `{:cursor_position, {row, col}}`
+    * `{:cursor_move, :up, count}`
+    * `{:set_mode, :dec_private, mode_code, boolean_value}`
+    * `{:set_mode, :standard, mode_code, boolean_value}`
+    * `{:designate_charset, target_g_set, charset_atom}`
+    * `{:invoke_charset, target_g_set}`
+    * etc.
   """
-  def process_cursor_movement(%Manager{} = cursor, sequence) do
-    case sequence do
-      # Cursor Position (H)
-      <<n1::binary-size(1), ";", n2::binary-size(1), "H">> ->
-        {row, _} = Integer.parse(n1)
-        {col, _} = Integer.parse(n2)
+  @spec parse(String.t()) ::
+          {:ok, term(), String.t()}
+          | {:incomplete, String.t()}
+          | {:error, atom(), String.t()}
+  def parse(<<"\e", rest::binary>>) do
+    parse_after_esc(rest)
+  end
 
-        {Movement.move_to_position(cursor, col - 1, row - 1),
-         "Moved cursor to row #{row}, column #{col}"}
+  def parse(input) do
+    {:error, :not_escape_sequence, input}
+  end
 
-      # Cursor Up (A)
-      <<n::binary-size(1), "A">> ->
-        {count, _} = Integer.parse(n)
-        {Movement.move_up(cursor, count), "Moved cursor up #{count} lines"}
+  # --- Private Parsing Logic ---
 
-      # Cursor Down (B)
-      <<n::binary-size(1), "B">> ->
-        {count, _} = Integer.parse(n)
-        {Movement.move_down(cursor, count), "Moved cursor down #{count} lines"}
+  # After initial ESC
+  defp parse_after_esc(<<"[", rest::binary>>) do
+    # Control Sequence Introducer
+    parse_csi(rest)
+  end
 
-      # Cursor Forward (C)
-      <<n::binary-size(1), "C">> ->
-        {count, _} = Integer.parse(n)
+  defp parse_after_esc(<<char, rest::binary>>) when char in [?(, ?), ?*, ?+] do
+    # Select Character Set (Designate G0-G3)
+    parse_scs(char, rest)
+  end
 
-        {Movement.move_right(cursor, count),
-         "Moved cursor right #{count} columns"}
+  defp parse_after_esc(<<"~", rest::binary>>) do
+    # LS1R - Invoke G1 into GR
+    {:ok, {:invoke_charset_gr, :g1}, rest}
+  end
 
-      # Cursor Backward (D)
-      <<n::binary-size(1), "D">> ->
-        {count, _} = Integer.parse(n)
+  defp parse_after_esc(<<"}", rest::binary>>) do
+    # LS2R - Invoke G2 into GR
+    {:ok, {:invoke_charset_gr, :g2}, rest}
+  end
 
-        {Movement.move_left(cursor, count),
-         "Moved cursor left #{count} columns"}
+  defp parse_after_esc(<<"|", rest::binary>>) do
+    # LS3R - Invoke G3 into GR
+    {:ok, {:invoke_charset_gr, :g3}, rest}
+  end
 
-      # Cursor Next Line (E)
-      <<n::binary-size(1), "E">> ->
-        {count, _} = Integer.parse(n)
-        cursor = Movement.move_down(cursor, count)
+  defp parse_after_esc(<<"n", rest::binary>>) do
+    # LS2 - Invoke G2 into GL
+    {:ok, {:invoke_charset_gl, :g2}, rest}
+  end
 
-        {Movement.move_to_line_start(cursor),
-         "Moved cursor to beginning of next line #{count} times"}
+  defp parse_after_esc(<<"o", rest::binary>>) do
+    # LS3 - Invoke G3 into GL
+    {:ok, {:invoke_charset_gl, :g3}, rest}
+  end
 
-      # Cursor Previous Line (F)
-      <<n::binary-size(1), "F">> ->
-        {count, _} = Integer.parse(n)
-        cursor = Movement.move_up(cursor, count)
+  # TODO: Add other ESC sequences (RIS, OSC, etc.)
+  defp parse_after_esc(<<_c, _rest::binary>> = unknown) do
+    # Consider single char ESC sequences like ESC D, E, M, 7, 8 etc.
+    Logger.debug("Unknown sequence after ESC: \\e#{unknown}")
+    {:error, :unknown_sequence, unknown}
+  end
 
-        {Movement.move_to_line_start(cursor),
-         "Moved cursor to beginning of previous line #{count} times"}
+  defp parse_after_esc("") do
+    {:incomplete, ""}
+  end
 
-      # Cursor Horizontal Absolute (G)
-      <<n::binary-size(1), "G">> ->
-        {col, _} = Integer.parse(n)
-        # Convert from 1-based to 0-based indexing
-        {Movement.move_to_column(cursor, col - 1),
-         "Moved cursor to column #{col}"}
+  # Parses SCS sequences (Designate Character Set)
+  # ESC ( C -> Designate G0 as Charset C
+  # ESC ) C -> Designate G1 as Charset C
+  # ESC * C -> Designate G2 as Charset C
+  # ESC + C -> Designate G3 as Charset C
+  defp parse_scs(designator_char, <<charset_code, rest::binary>>) do
+    target_g_set = designate_char_to_gset(designator_char)
+    charset_atom = charset_code_to_atom(charset_code)
 
-      # Save Cursor Position (s)
-      "s" ->
-        {Manager.save_position(cursor), "Saved cursor position"}
+    if charset_atom do
+      {:ok, {:designate_charset, target_g_set, charset_atom}, rest}
+    else
+      Logger.debug("Unknown charset code in SCS: #{charset_code}")
+      {:error, :invalid_sequence, <<charset_code, rest::binary>>}
+    end
+  end
 
-      # Restore Cursor Position (u)
-      "u" ->
-        {Manager.restore_position(cursor), "Restored cursor position"}
+  defp parse_scs(_designator_char, "") do
+    {:incomplete, ""}
+  end
 
-      # Unknown sequence
+  # Helper for SCS
+  defp designate_char_to_gset(?() do
+    :g0
+  end
+
+  defp designate_char_to_gset(?)) do
+    :g1
+  end
+
+  defp designate_char_to_gset(?*) do
+    :g2
+  end
+
+  defp designate_char_to_gset(?+) do
+    :g3
+  end
+
+  # Default case for unknown
+  defp designate_char_to_gset(_) do
+    nil
+  end
+
+  # Helper for SCS - Map character code byte to charset atom
+  # Reference: https://vt100.net/docs/vt510-rm/SCS.html
+  defp charset_code_to_atom(?B) do
+    :us_ascii
+  end
+
+  defp charset_code_to_atom(?0) do
+    :dec_special_graphics
+  end
+
+  # UK National
+  defp charset_code_to_atom(?A) do
+    :uk
+  end
+
+  # Not DEC Special Graphics
+  defp charset_code_to_atom(?<) do
+    :dec_supplemental
+  end
+
+  defp charset_code_to_atom(?>) do
+    :dec_technical
+  end
+
+  # Add other national/standard charsets as needed (French, German, etc.)
+  # Unknown/unsupported
+  defp charset_code_to_atom(_) do
+    nil
+  end
+
+  # Parses CSI sequences (Control Sequence Introducer)
+  # Format: CSI P... I... F
+  # P: Parameters (numeric, separated by ;)
+  # I: Intermediate bytes (optional)
+  # F: Final byte (determines command)
+  defp parse_csi(data) do
+    # First try DEC private format: CSI ? P... F
+    case Regex.run(~r/^\?([\d;]*)([hl])/, data, capture: :all_but_first) do
+      [params_str, final_byte] ->
+        params = parse_params(params_str)
+
+        # Calculate the length of the matched prefix ('?' + params + final byte)
+        prefix_len =
+          1 + String.length(params_str) + String.length(final_byte)
+
+        remaining = String.slice(data, prefix_len..-1)
+        dispatch_csi_dec_private(params, final_byte, remaining)
+        
+      # If DEC private fails, try standard CSI format: CSI P... F
       _ ->
-        {cursor, "Unknown cursor movement sequence: #{sequence}"}
-    end
-  end
+        # Regex captures: 1=params, 2=final byte
+        case Regex.run(~r/^([\d;]*)((?:[@A-Z]|[\[\^_`a-z{}~]))/, data,
+               capture: :all_but_first
+             ) do
+          [params_str, final_byte] when final_byte != "" ->
+            params = parse_params(params_str)
+            # Calculate the length of the matched prefix (params + final byte)
+            prefix_len = String.length(params_str) + String.length(final_byte)
+            remaining = String.slice(data, prefix_len..-1)
+            dispatch_csi(params, final_byte, remaining)
 
-  @doc """
-  Processes an escape sequence for cursor style and visibility.
-
-  ## Examples
-
-      iex> cursor = Cursor.Manager.new()
-      iex> {cursor, _} = EscapeSequence.process_cursor_style(cursor, "?25h")
-      iex> cursor.state
-      :visible
-  """
-  def process_cursor_style(%Manager{} = cursor, sequence) do
-    case sequence do
-      # Cursor Visible (h)
-      "?25h" ->
-        {Style.show(cursor), "Cursor visible"}
-
-      # Cursor Hidden (l)
-      "?25l" ->
-        {Style.hide(cursor), "Cursor hidden"}
-
-      # Cursor Blinking (h)
-      "?12h" ->
-        {Style.blink(cursor), "Cursor blinking"}
-
-      # Cursor Steady (l)
-      "?12l" ->
-        {Style.show(cursor), "Cursor steady"}
-
-      # Block Cursor (h)
-      "?1h" ->
-        {Style.set_block(cursor), "Block cursor"}
-
-      # Underline Cursor (l)
-      "?1l" ->
-        {Style.set_underline(cursor), "Underline cursor"}
-
-      # Bar Cursor (h)
-      "?5h" ->
-        {Style.set_bar(cursor), "Bar cursor"}
-
-      # Unknown sequence
-      _ ->
-        {cursor, "Unknown cursor style sequence: #{sequence}"}
-    end
-  end
-
-  @doc """
-  Processes an escape sequence for terminal modes.
-
-  ## Examples
-
-      iex> modes = Modes.new()
-      iex> {modes, _} = EscapeSequence.process_terminal_mode(modes, "?1049h")
-      iex> Modes.active?(modes, :alternate_screen)
-      true
-  """
-  def process_terminal_mode(%{} = modes, sequence) do
-    Modes.process_escape(modes, sequence)
-  end
-
-  @doc """
-  Parses an escape sequence and determines its type.
-
-  ## Examples
-
-      iex> EscapeSequence.parse_sequence("\e[10;5H")
-      {:cursor_movement, "10;5H"}
-
-      iex> EscapeSequence.parse_sequence("\e[?25h")
-      {:cursor_style, "?25h"}
-
-      iex> EscapeSequence.parse_sequence("\e[?1049h")
-      {:terminal_mode, "?1049h"}
-  """
-  def parse_sequence(sequence) do
-    case sequence do
-      # Check for specific known CSI sequences first
-      "\e[?25h" ->
-        {:cursor_style, "?25h"}
-
-      "\e[?25l" ->
-        {:cursor_style, "?25l"}
-
-      "\e[?12h" ->
-        {:cursor_style, "?12h"}
-
-      "\e[?12l" ->
-        {:cursor_style, "?12l"}
-
-      "\e[?1h" ->
-        {:cursor_style, "?1h"}
-
-      "\e[?1l" ->
-        {:cursor_style, "?1l"}
-
-      "\e[?5h" ->
-        {:cursor_style, "?5h"}
-
-      "\e[?1049h" ->
-        {:terminal_mode, "?1049h"}
-
-      "\e[?1049l" ->
-        {:terminal_mode, "?1049l"}
-
-      "\e[?7h" ->
-        {:terminal_mode, "?7h"}
-
-      "\e[?7l" ->
-        {:terminal_mode, "?7l"}
-
-      "\e[?8h" ->
-        {:terminal_mode, "?8h"}
-
-      "\e[?8l" ->
-        {:terminal_mode, "?8l"}
-
-      "\e[4h" ->
-        {:terminal_mode, "4h"}
-
-      "\e[4l" ->
-        {:terminal_mode, "4l"}
-
-      "\e[?1000h" ->
-        {:terminal_mode, "?1000h"}
-
-      "\e[?1000l" ->
-        {:terminal_mode, "?1000l"}
-
-      "\e[?1001h" ->
-        {:terminal_mode, "?1001h"}
-
-      "\e[?1001l" ->
-        {:terminal_mode, "?1001l"}
-
-      "\e[?1002h" ->
-        {:terminal_mode, "?1002h"}
-
-      "\e[?1002l" ->
-        {:terminal_mode, "?1002l"}
-
-      # General Cursor movement CSI sequences
-      <<"\e[", rest::binary>> ->
-        # Basic check to identify common cursor movement patterns
-        # This is simplified; a robust parser would analyze 'rest' further
-        if Regex.match?(~r/^[\d;]*[A-HJKST]/, rest) do
-          {:cursor_movement, rest}
-        else
-          {:unknown, sequence}
-        end
-
-      # Operating System Command (OSC)
-      <<"\e]", rest::binary>> ->
-        case parse_osc_sequence(rest) do
-          {:ok, type, data} ->
-            {:osc, type, data}
-
-          {:error, _reason} ->
-            {:unknown, sequence}
-        end
-
-      # Other escape sequences (OSC, etc.) - can be added here if needed
-
-      # Unknown sequence
-      _ ->
-        {:unknown, sequence}
-    end
-  end
-
-  @doc """
-  Processes an escape sequence and returns the updated state.
-
-  ## Examples
-
-      iex> cursor = Cursor.Manager.new()
-      iex> modes = Modes.new()
-      iex> {cursor, modes, _} = EscapeSequence.process_sequence(cursor, modes, "\e[10;5H")
-      iex> cursor.position
-      {4, 9}  # 0-based indexing
-  """
-  def process_sequence(%Manager{} = cursor, %{} = modes, sequence) do
-    case parse_sequence(sequence) do
-      {:cursor_movement, rest} ->
-        {updated_cursor, message} = process_cursor_movement(cursor, rest)
-        {updated_cursor, modes, message}
-
-      {:cursor_style, rest} ->
-        {updated_cursor, message} = process_cursor_style(cursor, rest)
-        {updated_cursor, modes, message}
-
-      {:terminal_mode, rest} ->
-        {updated_modes, message} = process_terminal_mode(modes, rest)
-        {cursor, updated_modes, message}
-
-      {:osc, type, data} ->
-        updated_emulator = process_osc_sequence(type, data, modes)
-        # No message generated for OSC in this impl
-        message = nil
-        {cursor, updated_emulator, message}
-
-      {:unknown, rest} ->
-        {cursor, modes, "Unknown escape sequence: #{rest}"}
-    end
-  end
-
-  @doc """
-  Processes an Operating System Command (OSC) sequence.
-  Currently handles OSC 8 for hyperlinks.
-  """
-  def process_osc_sequence(osc_type, data, %{} = emulator) do
-    case osc_type do
-      8 ->
-        # OSC 8: Hyperlink
-        # Format: <params>;<url>
-        case String.split(data, ";", parts: 2) do
-          [_params, url] ->
-            # Set the active hyperlink URL
-            %{emulator | current_hyperlink_url: url}
-
-          [""] ->
-            # Empty data means end of hyperlink
-            %{emulator | current_hyperlink_url: nil}
-
+          # If DEC private also fails, check for incompleteness or invalid sequence
           _ ->
-            # Invalid OSC 8 format
-            emulator
-        end
+            # TODO: Consider other potential intermediate characters or formats here if needed
 
-      _ ->
-        # Ignore other OSC sequences for now
-        emulator
-    end
-  end
+            # Check if it *could* be a valid sequence start (numeric/param chars, optional ?, optional final)
+            if String.match?(data, ~r/^[\d;?]*[@A-Za-z~]?$/) do
+              # Return empty string as remaining for incomplete
+              {:incomplete, ""}
+            else
+              Logger.debug(
+                "Invalid or unsupported CSI sequence fragment: #{inspect(data)}"
+              )
 
-  # --- Private Helper Functions ---
-
-  # Parses the content of an OSC sequence (after \e])
-  # Returns {:ok, type, data} or {:error, reason}
-  defp parse_osc_sequence(rest) do
-    # OSC sequence ends with BEL (\a) or ST (\e\\)
-    case String.split(rest, ["\a", "\e\\"]) do
-      [osc_content, _] ->
-        # Content is typically <type>;<data>
-        case String.split(osc_content, ";", parts: 2) do
-          [type_str, data] ->
-            case Integer.parse(type_str) do
-              {type_int, ""} -> {:ok, type_int, data}
-              _ -> {:error, "Invalid OSC type: #{type_str}"}
+              {:error, :invalid_sequence, data}
             end
-
-          _ ->
-            {:error, "Invalid OSC content format: #{osc_content}"}
         end
-
-      _ ->
-        {:error, "Unterminated OSC sequence: #{rest}"}
     end
   end
+
+  # Parse numeric parameters, defaulting to nil for empty strings
+  defp parse_params(""), do: []
+
+  defp parse_params(params_str) do
+    params_str
+    |> String.split(";", trim: true)
+    |> Enum.map(fn
+      # Empty param means default (often 1, depends on command)
+      "" -> nil
+      num_str -> elem(Integer.parse(num_str), 0)
+    end)
+  end
+
+  # Helper to get a parameter value or default
+  # Adjusted to handle potential nil from parse_params
+  defp param_at(params, index, default) do
+    case Enum.at(params, index) do
+      # Covers both out-of-bounds and explicitly parsed nil ("")
+      nil -> default
+      val -> val
+    end
+  end
+
+  # Dispatch based on final byte for standard CSI sequences
+  # CUP - Cursor Position
+  defp dispatch_csi(params, "H", rest) do
+    row = param_at(params, 0, 1)
+    col = param_at(params, 1, 1)
+    # Adjust to 0-based index for internal use
+    {:ok, {:cursor_position, {max(0, row - 1), max(0, col - 1)}}, rest}
+  end
+
+  # HVP - Horizontal Vertical Position (same as CUP)
+  defp dispatch_csi(params, "f", rest) do
+    row = param_at(params, 0, 1)
+    col = param_at(params, 1, 1)
+    {:ok, {:cursor_position, {max(0, row - 1), max(0, col - 1)}}, rest}
+  end
+
+  # CUU - Cursor Up
+  defp dispatch_csi(params, "A", rest) do
+    count = param_at(params, 0, 1)
+    {:ok, {:cursor_move, :up, count}, rest}
+  end
+
+  # CUD - Cursor Down
+  defp dispatch_csi(params, "B", rest) do
+    count = param_at(params, 0, 1)
+    {:ok, {:cursor_move, :down, count}, rest}
+  end
+
+  # CUF - Cursor Forward
+  defp dispatch_csi(params, "C", rest) do
+    count = param_at(params, 0, 1)
+    {:ok, {:cursor_move, :right, count}, rest}
+  end
+
+  # CUB - Cursor Backward
+  defp dispatch_csi(params, "D", rest) do
+    count = param_at(params, 0, 1)
+    {:ok, {:cursor_move, :left, count}, rest}
+  end
+
+  # CNL - Cursor Next Line
+  defp dispatch_csi(params, "E", rest) do
+    count = param_at(params, 0, 1)
+    {:ok, {:cursor_next_line, count}, rest}
+  end
+
+  # CPL - Cursor Previous Line
+  defp dispatch_csi(params, "F", rest) do
+    count = param_at(params, 0, 1)
+    {:ok, {:cursor_prev_line, count}, rest}
+  end
+
+  # CHA - Cursor Horizontal Absolute
+  defp dispatch_csi(params, "G", rest) do
+    col = param_at(params, 0, 1)
+    {:ok, {:cursor_col_abs, max(0, col - 1)}, rest}
+  end
+
+  # ED - Erase in Display
+  defp dispatch_csi(params, "J", rest) do
+    n = param_at(params, 0, 0)
+    # 0: End, 1: Beginning, 2: All, 3: All+Scrollback
+    mode =
+      case n do
+        0 -> :to_end
+        1 -> :to_beginning
+        2 -> :all
+        3 -> :all_with_scrollback
+        # Default
+        _ -> :to_end
+      end
+
+    {:ok, {:erase_display, mode}, rest}
+  end
+
+  # EL - Erase in Line
+  defp dispatch_csi(params, "K", rest) do
+    n = param_at(params, 0, 0)
+    # 0: End, 1: Beginning, 2: All
+    mode =
+      case n do
+        0 -> :to_end
+        1 -> :to_beginning
+        2 -> :all
+        # Default
+        _ -> :to_end
+      end
+
+    {:ok, {:erase_line, mode}, rest}
+  end
+
+  # SU - Scroll Up
+  defp dispatch_csi(params, "S", rest) do
+    count = param_at(params, 0, 1)
+    {:ok, {:scroll, :up, count}, rest}
+  end
+
+  # SD - Scroll Down
+  defp dispatch_csi(params, "T", rest) do
+    count = param_at(params, 0, 1)
+    {:ok, {:scroll, :down, count}, rest}
+  end
+
+  # SGR - Select Graphic Rendition
+  defp dispatch_csi(params, "m", rest) do
+    {:ok, {:set_graphic_rendition, params}, rest}
+  end
+
+  # DSR - Device Status Report (excluding DEC Private)
+  defp dispatch_csi(params, "n", rest) do
+    code = param_at(params, 0, 0)
+
+    case code do
+      5 -> {:ok, {:device_status_report, :status}, rest}
+      6 -> {:ok, {:device_status_report, :cursor_position}, rest}
+      _ -> {:error, :invalid_sequence, rest}
+    end
+  end
+
+  # DECSTBM - Set Top and Bottom Margins (Scroll Region)
+  defp dispatch_csi(params, "r", rest) do
+    top = param_at(params, 0, 1)
+    # Default depends on terminal height usually
+    bottom = param_at(params, 1, nil)
+    # Adjust to 0-based, handle potential nil bottom
+    top_0 = max(0, top - 1)
+
+    case bottom do
+      # Reset scroll region
+      nil ->
+        {:ok, {:set_scroll_region, nil}, rest}
+
+      b ->
+        {:ok, {:set_scroll_region, {top_0, max(top_0, b - 1)}}, rest}
+    end
+  end
+
+  # SM - Set Mode
+  defp dispatch_csi(params, "h", rest) do
+    Enum.reduce(params, {:ok, [], rest}, fn
+      # Default param?
+      nil, {:ok, cmds, r} ->
+        {:ok, [{:set_mode, :standard, 0, true} | cmds], r}
+
+      code, {:ok, cmds, r} ->
+        {:ok, [{:set_mode, :standard, code, true} | cmds], r}
+
+      # Propagate errors
+      _, acc ->
+        acc
+    end)
+    # Reverse commands to apply in order
+    |> case do
+      {:ok, cmds, r} -> {:ok, {:batch, Enum.reverse(cmds)}, r}
+      error -> error
+    end
+  end
+
+  # RM - Reset Mode
+  defp dispatch_csi(params, "l", rest) do
+    Enum.reduce(params, {:ok, [], rest}, fn
+      nil, {:ok, cmds, r} ->
+        {:ok, [{:set_mode, :standard, 0, false} | cmds], r}
+
+      code, {:ok, cmds, r} ->
+        {:ok, [{:set_mode, :standard, code, false} | cmds], r}
+
+      # Propagate errors
+      _, acc ->
+        acc
+    end)
+    |> case do
+      {:ok, cmds, r} -> {:ok, {:batch, Enum.reverse(cmds)}, r}
+      error -> error
+    end
+  end
+
+  # DECSC - Save Cursor Position (DEC specific)
+  defp dispatch_csi([], "s", rest) do
+    {:ok, {:dec_save_cursor, nil}, rest}
+  end
+
+  # DECRC - Restore Cursor Position (DEC specific)
+  defp dispatch_csi([], "u", rest) do
+    {:ok, {:dec_restore_cursor, nil}, rest}
+  end
+
+  # Unknown standard CSI
+  defp dispatch_csi(_params, final_byte, rest) do
+    Logger.debug("Unknown standard CSI sequence: CSI ... #{final_byte}")
+    {:error, :unknown_sequence, rest}
+  end
+
+  # Dispatch based on final byte for DEC private sequences (?...)
+  defp dispatch_csi_dec_private(params, final_byte, rest) do
+    # Get the first param as mode code
+    mode_code = param_at(params, 0, nil)
+    # 'h' = true (set), 'l' = false (reset)
+    value = final_byte == "h"
+
+    if mode_code do
+      {:ok, {:set_mode, :dec_private, mode_code, value}, rest}
+    else
+      Logger.debug(
+        "Missing mode code in DEC private sequence: ?#{params |> Enum.map_join(";", &to_string/1)}#{final_byte}"
+      )
+
+      # Treat as invalid if no mode specified
+      {:error, :invalid_sequence, rest}
+    end
+  end
+
+  # --- Removed old process_* functions ---
+  # def process_cursor_movement(...)
+  # def process_cursor_style(...)
+  # def process_terminal_mode(...)
+  # def parse_sequence(...) # Replaced by parse/1
 end
