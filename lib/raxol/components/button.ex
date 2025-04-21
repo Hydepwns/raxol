@@ -15,6 +15,7 @@ defmodule Raxol.Components.Button do
   """
 
   alias Raxol.Style
+  alias Raxol.Style.Borders
 
   @type t :: map()
 
@@ -102,7 +103,7 @@ defmodule Raxol.Components.Button do
         padding: get_padding_for_size(size),
         align: :center,
         width: if(full_width, do: :fill, else: :auto),
-        border: :rounded
+        border: Borders.new(%{style: :rounded})
       )
 
     color_style = get_color_style(style_type)
@@ -128,7 +129,7 @@ defmodule Raxol.Components.Button do
         padding: get_padding_for_size(size),
         align: :center,
         width: if(full_width, do: :fill, else: :auto),
-        border: :rounded
+        border: Borders.new(%{style: :rounded})
       )
 
     combined_style = Style.merge(base_style, custom_style)

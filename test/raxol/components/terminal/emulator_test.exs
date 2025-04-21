@@ -62,7 +62,7 @@ defmodule Raxol.Components.Terminal.EmulatorTest do
     # Check cell attributes
     [first_row | _] = state.screen.cells
     [first_cell | _] = first_row
-    assert first_cell.style == %{bold: true, color: :red}
+    assert first_cell.style == %{bold: true, fg: :red}
   end
 
   test "handles scroll region" do

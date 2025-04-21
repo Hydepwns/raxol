@@ -125,8 +125,10 @@ defmodule Raxol.Core.UXRefinement do
     # Ensure focus management is enabled
     ensure_feature_enabled(:focus_management)
 
-    # Initialize focus ring with options
-    focus_ring_config = FocusRing.init(opts)
+    # Initialize focus ring with options - Handle the default [] case
+    focus_ring_opts = if is_list(opts) and opts == [], do: %{}, else: opts
+
+    focus_ring_config = FocusRing.init(focus_ring_opts)
     # Store the focus ring config for later use if needed
     Process.put(:ux_refinement_focus_ring_config, focus_ring_config)
 

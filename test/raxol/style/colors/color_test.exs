@@ -4,7 +4,7 @@ defmodule Raxol.Style.Colors.ColorTest do
 
   describe "from_hex/1" do
     test "creates a color from a 6-digit hex string with #" do
-      color = Color.from_hex!("#FF0000")
+      color = Color.from_hex("#FF0000")
       assert color.r == 255
       assert color.g == 0
       assert color.b == 0
@@ -13,7 +13,7 @@ defmodule Raxol.Style.Colors.ColorTest do
     end
 
     test "creates a color from a 6-digit hex string without #" do
-      color = Color.from_hex!("00FF00")
+      color = Color.from_hex("00FF00")
       assert color.r == 0
       assert color.g == 255
       assert color.b == 0
@@ -22,7 +22,7 @@ defmodule Raxol.Style.Colors.ColorTest do
     end
 
     test "creates a color from a 3-digit hex string with #" do
-      color = Color.from_hex!("#F00")
+      color = Color.from_hex("#F00")
       assert color.r == 255
       assert color.g == 0
       assert color.b == 0
@@ -31,7 +31,7 @@ defmodule Raxol.Style.Colors.ColorTest do
     end
 
     test "creates a color from a 3-digit hex string without #" do
-      color = Color.from_hex!("0F0")
+      color = Color.from_hex("0F0")
       assert color.r == 0
       assert color.g == 255
       assert color.b == 0
@@ -40,9 +40,9 @@ defmodule Raxol.Style.Colors.ColorTest do
     end
 
     test "raises error for invalid hex formats" do
-      assert_raise ArgumentError, fn -> Color.from_hex!("#12") end
-      assert_raise ArgumentError, fn -> Color.from_hex!("#12345") end
-      assert_raise ArgumentError, fn -> Color.from_hex!("#GGGGGG") end
+      assert Color.from_hex("#12") == {:error, :invalid_hex_format}
+      assert Color.from_hex("12345") == {:error, :invalid_hex_format}
+      assert Color.from_hex("#GGHHII") == {:error, :invalid_hex_format}
     end
   end
 

@@ -13,8 +13,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Movement.move_up(cursor, 2)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Movement.move_up(cursor, 2)
       iex> cursor.position
       {0, 0}  # Already at top, no change
   """
@@ -29,8 +30,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Movement.move_down(cursor, 2)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Movement.move_down(cursor, 2)
       iex> cursor.position
       {0, 2}
   """
@@ -45,9 +47,10 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Manager.move_to(cursor, 5, 0)
-      iex> cursor = Cursor.Movement.move_left(cursor, 2)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Manager.move_to(cursor, 5, 0)
+      iex> cursor = Movement.move_left(cursor, 2)
       iex> cursor.position
       {3, 0}
   """
@@ -62,8 +65,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Movement.move_right(cursor, 2)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Movement.move_right(cursor, 2)
       iex> cursor.position
       {2, 0}
   """
@@ -78,9 +82,10 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Manager.move_to(cursor, 10, 0)
-      iex> cursor = Cursor.Movement.move_to_line_start(cursor)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Manager.move_to(cursor, 10, 0)
+      iex> cursor = Movement.move_to_line_start(cursor)
       iex> cursor.position
       {0, 0}
   """
@@ -94,8 +99,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Movement.move_to_line_end(cursor, 80)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Movement.move_to_line_end(cursor, 80)
       iex> cursor.position
       {79, 0}
   """
@@ -109,8 +115,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Movement.move_to_column(cursor, 10)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Movement.move_to_column(cursor, 10)
       iex> cursor.position
       {10, 0}
   """
@@ -124,8 +131,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Movement.move_to_line(cursor, 5)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Movement.move_to_line(cursor, 5)
       iex> cursor.position
       {0, 5}
   """
@@ -139,8 +147,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Movement.move_to_position(cursor, 10, 5)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Movement.move_to_position(cursor, 10, 5)
       iex> cursor.position
       {10, 5}
   """
@@ -153,9 +162,10 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Manager.move_to(cursor, 10, 5)
-      iex> cursor = Cursor.Movement.move_home(cursor)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Manager.move_to(cursor, 10, 5)
+      iex> cursor = Movement.move_home(cursor)
       iex> cursor.position
       {0, 0}
   """
@@ -168,8 +178,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Movement.move_to_next_tab(cursor, 8)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Movement.move_to_next_tab(cursor, 8)
       iex> cursor.position
       {8, 0}
   """
@@ -184,9 +195,10 @@ defmodule Raxol.Terminal.Cursor.Movement do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Manager.move_to(cursor, 10, 0)
-      iex> cursor = Cursor.Movement.move_to_prev_tab(cursor, 8)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Movement}
+      iex> cursor = Manager.new()
+      iex> cursor = Manager.move_to(cursor, 10, 0)
+      iex> cursor = Movement.move_to_prev_tab(cursor, 8)
       iex> cursor.position
       {8, 0}
   """

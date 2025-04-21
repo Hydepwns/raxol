@@ -14,10 +14,10 @@ defmodule Raxol.Terminal.Display.AsciiArt do
   """
   def logo do
     """
-       ██████╗  █████╗ ██╗  ██╗ ██████╗ ██╗     
-       ██╔══██╗██╔══██╗██║ ██╔╝██╔═══██╗██║     
-       ██████╔╝███████║█████╔╝ ██║   ██║██║     
-       ██╔══██╗██╔══██║██╔═██╗ ██║   ██║██║     
+       ██████╗  █████╗ ██╗  ██╗ ██████╗ ██╗
+       ██╔══██╗██╔══██╗██║ ██╔╝██╔═══██╗██║
+       ██████╔╝███████║█████╔╝ ██║   ██║██║
+       ██╔══██╗██╔══██║██╔═██╗ ██║   ██║██║
        ██║  ██║██║  ██║██║  ██╗╚██████╔╝███████╗
        ╚═╝  ╚═╝╚═╝  ╚═╝╚═╝  ╚═╝ ╚═════╝ ╚══════╝
     =====================================================
@@ -169,7 +169,7 @@ defmodule Raxol.Terminal.Display.AsciiArt do
       headers
       |> Enum.with_index()
       |> Enum.map(fn {header, i} ->
-        String.pad_trailing(header, col_widths[i])
+        String.pad_trailing(header, Enum.at(col_widths, i))
       end)
       |> Enum.join(" │ ")
 
@@ -186,7 +186,7 @@ defmodule Raxol.Terminal.Display.AsciiArt do
         row
         |> Enum.with_index()
         |> Enum.map(fn {cell, i} ->
-          String.pad_trailing(cell, col_widths[i])
+          String.pad_trailing(cell, Enum.at(col_widths, i))
         end)
         |> Enum.join(" │ ")
       end)

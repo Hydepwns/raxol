@@ -8,7 +8,6 @@ defmodule Raxol.Runtime do
 
   require Logger
 
-  alias Raxol.Event
   alias Raxol.Terminal.Registry, as: AppRegistry
   alias Raxol.Plugins.PluginManager
   # alias ExTermbox.Bindings  # Unused alias - removed
@@ -17,6 +16,8 @@ defmodule Raxol.Runtime do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.StdioInterface
   alias Raxol.Terminal.TerminalUtils
+  alias Raxol.Core.Events.Event, as: RaxolEvent
+  alias Raxol.Core.Events.TermboxConverter
 
   # Client API
 
@@ -401,7 +402,7 @@ defmodule Raxol.Runtime do
     else
       # TTY mode - ExTermbox-based rendering (existing code)
       # Check if Termbox is initialized before proceeding
-      unless state.termbox_initialized do
+      if !state.termbox_initialized do
         Logger.warning(
           "[Runtime.handle_info(:render)] Skipping render: Termbox not initialized."
         )
@@ -471,8 +472,8 @@ defmodule Raxol.Runtime do
             ScreenBuffer.new(width, height)
           else
             # Ensure dimensions are correct
-            current_width = ScreenBuffer.width(state.cell_buffer)
-            current_height = ScreenBuffer.height(state.cell_buffer)
+            current_width = ScreenBuffer.get_width(state.cell_buffer)
+            current_height = ScreenBuffer.get_height(state.cell_buffer)
 
             if current_width != width || current_height != height do
               ScreenBuffer.resize(state.cell_buffer, width, height)
@@ -563,89 +564,23 @@ defmodule Raxol.Runtime do
       {:noreply, state}
     else
       try do
-        # Decode the raw tuple from the NIF poller
+        # Convert raw event data to Raxol event
         {type_int, mod, key, ch, w, h, x, y} = raw_event_tuple
+        app_event = TermboxConverter.convert(type_int, mod, key, ch, w, h, x, y)
 
-        # Convert raw data to the standard ex_termbox event tuple format
-        event_tuple =
-          case type_int do
-            # Key event
-            1 ->
-              # Pass the original modifier integer `mod` directly.
-              # The atom conversion (:alt/:none) was incorrect here.
-              # Event.convert/1 expects the integer.
-              actual_key = if ch > 0, do: ch, else: key
-              {:key, mod, actual_key}
+        # Pass the Raxol event struct to appropriate handler
+        # TODO: Update the handler logic below to use raxol_event properly
+        case app_event do
+          # Pass RaxolEvent directly to private handlers
+          %RaxolEvent{type: :mouse} = event ->
+            p_handle_mouse_event(event, state)
 
-            # Resize event
-            2 ->
-              {:resize, w, h}
+          %RaxolEvent{type: :key} = event ->
+            p_handle_key_event(event, state)
 
-            # Mouse event
-            3 ->
-              # Convert modifier integer to a *list* of modifier atoms
-              modifiers =
-                case mod do
-                  0 ->
-                    []
-
-                  1 ->
-                    [:alt]
-
-                  2 ->
-                    [:ctrl]
-
-                  3 ->
-                    [:alt, :ctrl]
-
-                  4 ->
-                    [:shift]
-
-                  5 ->
-                    [:alt, :shift]
-
-                  6 ->
-                    [:ctrl, :shift]
-
-                  7 ->
-                    [:alt, :ctrl, :shift]
-
-                  _ ->
-                    Logger.warning(
-                      "Unknown mouse modifier integer: #{mod} for button: #{key} at (#{x}, #{y})"
-                    )
-
-                    [:unknown]
-                end
-
-              button =
-                case key do
-                  1 -> :left
-                  2 -> :middle
-                  3 -> :right
-                  4 -> :wheel_up
-                  5 -> :wheel_down
-                  _ -> :unknown_button
-                end
-
-              # Pass the modifiers list instead of the old meta atom
-              {:mouse, button, x, y, modifiers}
-
-            # Unknown event type
-            _ ->
-              {:unknown, raw_event_tuple}
-          end
-
-        # Pass the standard ex_termbox tuple to appropriate handler
-        case event_tuple do
-          {:mouse, _, _, _, _} = mouse_event ->
-            p_handle_mouse_event(mouse_event, state)
-
-          {:key, _, _} = key_event ->
-            p_handle_key_event(key_event, state)
-
-          # Handle other event types directly (resize, unknown)
-          other_event ->
+          # Handle other RaxolEvent types directly (resize, unknown)
+          # The handle_event function below might need updating to accept RaxolEvent struct
+          %RaxolEvent{} = other_event -> # Matches any other RaxolEvent struct
             case handle_event(other_event, state) do
               {:continue, updated_state} ->
                 {:noreply, updated_state}
@@ -971,7 +906,8 @@ defmodule Raxol.Runtime do
   # --- Private helper for app event delegation ---
   defp handle_event(event_tuple, state) do
     # Convert the raw event tuple/map to the application event format
-    app_event = Event.convert(event_tuple)
+    {type_int, mod, key, ch, w, h, x, y} = event_tuple # Destructure
+    app_event = TermboxConverter.convert(type_int, mod, key, ch, w, h, x, y) # Call convert/8
 
     if Code.ensure_loaded?(state.app_module) and
          function_exported?(state.app_module, :update, 2) do
@@ -1017,166 +953,40 @@ defmodule Raxol.Runtime do
     end
   end
 
-  # Handles key events, including plugin interaction and quit key check
-  defp p_handle_key_event({:key, _, _} = event_tuple, state) do
-    converted_event = Event.convert(event_tuple)
-    # Explicit check
-    is_ctrl_c = converted_event == %{type: :key, modifiers: [:ctrl], key: ?c}
+  # Private Event Handlers
 
-    # Ignore the very first Ctrl+C event
-    if is_ctrl_c and not state.initial_ctrl_c_ignored do
-      Logger.debug(
-        "[Runtime.p_handle_key_event] Ignoring initial Ctrl+C event."
-      )
+  # Handles key events, checks for quit keys, then delegates
+  defp p_handle_key_event(%RaxolEvent{data: key_data} = raxol_event, state) do
+    # Logger.debug(
+    #   "[Runtime.p_handle_key_event] Received Raxol key event: #{inspect(raxol_event)}"
+    # )
 
-      # Set the flag and continue without treating it as a quit key
-      {:noreply, %{state | initial_ctrl_c_ignored: true}}
+    # Use key_data directly for quit key check
+    is_quit = is_quit_key?(%{type: :key, key: key_data.key, modifiers: key_data.modifiers}, state.quit_keys)
+
+    if is_quit do
+      Logger.info("[Runtime] Quit key detected, stopping...")
+      cleanup(state)
+      {:stop, :normal, state}
     else
-      # Original logic (nested inside else)
-      Logger.debug(
-        "[Runtime.p_handle_key_event] Processing event: #{inspect(converted_event)}. Is Ctrl+C: #{is_ctrl_c}"
-      )
-
-      quit_triggered = is_quit_key?(converted_event, state.quit_keys)
-
-      Logger.debug(
-        "[Runtime.p_handle_key_event] is_quit_key? returned: #{quit_triggered}"
-      )
-
-      case PluginManager.handle_key_event(
-             state.plugin_manager,
-             converted_event,
-             state.last_rendered_cells
-           ) do
-        {:ok, updated_manager, commands, propagation_state} ->
-          new_state = %{state | plugin_manager: updated_manager}
-          state_after_commands = process_plugin_commands(new_state, commands)
-          # propagation_state == :halt
-          # Plugin halted propagation
-          if propagation_state == :propagate do
-            # Check quit keys (using the result we calculated earlier)
-            if quit_triggered do
-              Logger.debug(
-                "[Runtime.p_handle_key_event] Quit key detected after plugins."
-              )
-
-              cleanup(state_after_commands)
-              {:stop, :normal, state_after_commands}
-            else
-              # Propagate to application's main handle_event
-              case handle_event(event_tuple, state_after_commands) do
-                {:continue, final_state} ->
-                  {:noreply, final_state}
-
-                # If app returns stop with reason and state (only valid pattern)
-                {:stop, _reason, final_state} ->
-                  cleanup(final_state)
-                  {:stop, :normal, final_state}
-              end
-            end
-          else
-            Logger.debug(
-              "[Runtime.p_handle_key_event] Plugin halted event propagation."
-            )
-
-            {:noreply, state_after_commands}
-          end
-
-        {:error, reason} ->
-          Logger.error(
-            "[Runtime] Error during plugin key event handling: #{inspect(reason)}. Propagating event to app."
-          )
-
-          # If plugin fails, still check for quit key and pass to app
-          if quit_triggered do
-            Logger.debug(
-              "[Runtime.p_handle_key_event] Quit key detected after plugin error."
-            )
-
-            cleanup(state)
-            {:stop, :normal, state}
-          else
-            case handle_event(event_tuple, state) do
-              {:continue, final_state} ->
-                {:noreply, final_state}
-
-              # Match stop with reason and state (only valid pattern)
-              {:stop, _reason, final_state} ->
-                {:stop, :normal, final_state}
-            end
-          end
-      end
+      # Pass the RaxolEvent struct to the main handle_event
+      handle_event(raxol_event, state)
     end
   end
 
-  # Handles mouse events, including plugin interaction
-  defp p_handle_mouse_event({:mouse, _, _, _, _} = event_tuple, state) do
-    converted_event = Event.convert(event_tuple)
+  # Handles mouse events, delegates to main handle_event
+  defp p_handle_mouse_event(%RaxolEvent{type: :mouse} = raxol_event, state) do
+    # Logger.debug(
+    #   "[Runtime.p_handle_mouse_event] Received Raxol mouse event: #{inspect(raxol_event)}"
+    # )
 
-    case PluginManager.handle_mouse_event(
-           state.plugin_manager,
-           converted_event,
-           state.last_rendered_cells
-         ) do
-      {:ok, updated_manager, :propagate} ->
-        # Plugin didn't handle it, propagate to the application
-        new_state = %{state | plugin_manager: updated_manager}
-
-        case handle_event(event_tuple, new_state) do
-          {:continue, final_state} -> {:noreply, final_state}
-          # Match stop with reason and state (only valid pattern)
-          {:stop, _reason, final_state} -> {:stop, :normal, final_state}
-        end
-
-      {:ok, updated_manager, :halt} ->
-        # Plugin handled the event, stop propagation
-        {:noreply, %{state | plugin_manager: updated_manager}}
-
-      # Handle potential errors from plugin manager
-      {:error, reason} ->
-        Logger.error(
-          "[Runtime] Error during plugin mouse handling: #{inspect(reason)}. Propagating event to app."
-        )
-
-        case handle_event(event_tuple, state) do
-          {:continue, final_state} -> {:noreply, final_state}
-          # Match stop with reason and state (only valid pattern)
-          {:stop, _reason, final_state} -> {:stop, :normal, final_state}
-        end
-    end
+    # Delegate the RaxolEvent struct to the main handle_event
+    handle_event(raxol_event, state)
   end
 
   # --- Helper to Process Plugin Commands ---
-  defp process_plugin_commands(state, commands) when is_list(commands) do
-    Enum.reduce(commands, state, fn command, acc_state ->
-      case command do
-        {:paste, content} ->
-          Logger.debug("[Runtime] Processing :paste command from plugin.")
-          # Send the paste content as a message to the application
-          updated_model =
-            update_model(
-              acc_state.app_module,
-              acc_state.model,
-              {:paste_text, content}
-            )
-
-          %{acc_state | model: updated_model}
-
-        # Handle other command types here in the future
-        _other_command ->
-          Logger.warning(
-            "[Runtime] Received unknown plugin command: #{inspect(command)}"
-          )
-
-          # Ignore unknown commands for now
-          acc_state
-      end
-    end)
-  end
-
-  # --- Private helper for sending plugin commands ---
   defp send_plugin_commands(commands) when is_list(commands) do
-    # TODO: This IO.write might still interfere with ex_termbox. Proper solution needed.
+    # TODO: This IO.write might still interfere with rex_termbox. Proper solution needed.
     # Enum.each(commands, &IO.write/1) # Old version causing crash
     Logger.debug(
       "[Runtime.send_plugin_commands] Sending commands: #{inspect(commands)}"

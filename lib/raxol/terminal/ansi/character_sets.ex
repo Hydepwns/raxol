@@ -112,7 +112,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   def get_active_charset(state) do
     cond do
       state.locked_shift ->
-        Map.get(state, state.gl)
+        Map.get(state, state.gr)
 
       state.single_shift != nil ->
         Map.get(state, state.single_shift)

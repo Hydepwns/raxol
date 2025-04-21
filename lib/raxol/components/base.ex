@@ -6,8 +6,12 @@ defmodule Raxol.Components.Base do
   including common validation, styling, and event handling patterns.
   """
 
-  alias Raxol.Style
+  use Raxol.Component
+
   alias Raxol.Core.Events.Event
+  alias Raxol.Style
+
+  @type state :: map()
 
   @doc """
   Validates component props against a schema.

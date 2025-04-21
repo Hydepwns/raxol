@@ -1,5 +1,11 @@
 defmodule Raxol.Components.Table do
-  alias Raxol.View
+  use Raxol.Component
+
+  require Raxol.View
+  alias Raxol.View.Layout
+  alias Raxol.View.Components
+
+  require Raxol.Core.Renderer.Element
 
   @moduledoc """
   Table component for displaying tabular data in terminal UI applications.
@@ -165,7 +171,7 @@ defmodule Raxol.Components.Table do
     table_opts = [id: id, style: table_style]
 
     table_children = fn ->
-      View.column([], fn ->
+      Layout.column([], fn ->
         # Render table header
         render_header(
           normalized_columns,
@@ -185,7 +191,7 @@ defmodule Raxol.Components.Table do
 
         # Construct body map directly
         body_children = fn ->
-          View.column([], fn ->
+          Layout.column([], fn ->
             # Render each row
             sorted_data
             |> Enum.with_index()
@@ -229,7 +235,7 @@ defmodule Raxol.Components.Table do
                   row_props
                 end
 
-              View.row(row_props, fn ->
+              Layout.row(row_props, fn ->
                 # Render each cell in the row
                 normalized_columns
                 |> Enum.each(fn column ->
@@ -307,7 +313,7 @@ defmodule Raxol.Components.Table do
 
     # Create footer function for pagination controls
     footer_fn = fn ->
-      View.row([id: "#{id}_pagination", style: pagination_style], fn ->
+      Layout.row([id: "#{id}_pagination", style: pagination_style], fn ->
         # Page info display
         if show_page_info do
           info_text = "Page #{page} of #{total_pages}"
@@ -320,38 +326,36 @@ defmodule Raxol.Components.Table do
               "#{info_text} (#{start_item}-#{end_item} of #{total_items})"
           end
 
-          View.text(info_text, style: %{marginRight: "1rem"})
+          Components.text(info_text, style: %{marginRight: "1rem"})
         end
 
         # Spacer - construct map directly
         %{
           type: :box,
           opts: [style: %{width: :flex}],
-          children: List.wrap(View.text(""))
+          children: List.wrap(Components.text(""))
         }
 
         # Pagination buttons
-        View.row([style: %{gap: 1}], fn ->
+        Layout.row([style: %{gap: 1}], fn ->
           # First page button
-          View.button(
+          Components.button("<<",
             [
               id: "#{id}_first_page",
               style: %{},
               disabled: page <= 1,
               on_click: fn -> on_page_change.(1) end
-            ],
-            "<<"
+            ]
           )
 
           # Previous page button
-          View.button(
+          Components.button("<",
             [
               id: "#{id}_prev_page",
               style: %{},
               disabled: page <= 1,
               on_click: fn -> on_page_change.(page - 1) end
-            ],
-            "<"
+            ]
           )
 
           # Page number buttons
@@ -361,41 +365,38 @@ defmodule Raxol.Components.Table do
             is_current = p == page
 
             if p == :ellipsis do
-              View.text("...")
+              Components.text("...")
             else
-              View.button(
+              Components.button(to_string(p),
                 [
                   id: "#{id}_page_#{p}",
                   style:
                     if(is_current, do: %{bg: :blue, fg: :white}, else: %{}),
                   disabled: is_current,
                   on_click: fn -> on_page_change.(p) end
-                ],
-                to_string(p)
+                ]
               )
             end
           end)
 
           # Next page button
-          View.button(
+          Components.button(">",
             [
               id: "#{id}_next_page",
               style: %{},
               disabled: page >= total_pages,
               on_click: fn -> on_page_change.(page + 1) end
-            ],
-            ">"
+            ]
           )
 
           # Last page button
-          View.button(
+          Components.button(">>",
             [
               id: "#{id}_last_page",
               style: %{},
               disabled: page >= total_pages,
               on_click: fn -> on_page_change.(total_pages) end
-            ],
-            ">>"
+            ]
           )
         end)
       end)
@@ -433,7 +434,7 @@ defmodule Raxol.Components.Table do
 
   # Render table header row
   defp render_header(columns, style, sort_by, sort_dir, on_sort) do
-    View.row([style: style], fn ->
+    Layout.row([style: style], fn ->
       columns
       |> Enum.map(fn column ->
         is_sorted = column.key == sort_by
@@ -570,7 +571,7 @@ defmodule Raxol.Components.Table do
           render_fun.(row_data)
 
         _ ->
-          View.text(display_value, style: cell_style)
+          Components.text(display_value, style: cell_style)
       end
     end
 

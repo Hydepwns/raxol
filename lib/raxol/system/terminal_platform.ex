@@ -59,21 +59,17 @@ defmodule Raxol.System.TerminalPlatform do
         }
       }
   """
-  @dialyzer {:nowarn_function, get_terminal_capabilities: 0}
-  @spec get_terminal_capabilities() :: none()
+  @spec get_terminal_capabilities() :: map()
   def get_terminal_capabilities do
-    # Function is unused, returning :none as per Dialyzer
-    # %{
-    #   name: get_terminal_name(),
-    #   version: get_terminal_version(),
-    #   features: get_supported_features(),
-    #   colors: get_color_capabilities(),
-    #   unicode: get_unicode_capabilities(),
-    #   input: get_input_capabilities(),
-    #   output: get_output_capabilities()
-    # }
-    # Explicitly return :none to satisfy Dialyzer for unused function
-    :none
+    %{
+      name: get_terminal_name(),
+      version: get_terminal_version(),
+      features: get_supported_features(),
+      colors: get_color_capabilities(),
+      unicode: get_unicode_capabilities(),
+      input: get_input_capabilities(),
+      output: get_output_capabilities()
+    }
   end
 
   @doc """
@@ -93,13 +89,9 @@ defmodule Raxol.System.TerminalPlatform do
       iex> TerminalPlatform.supports_feature?(:true_color)
       true
   """
-  @dialyzer {:nowarn_function, supports_feature?: 1}
-  @spec supports_feature?(terminal_feature()) :: none()
-  def supports_feature?(_feature) do
-    # Function is unused, returning :none as per Dialyzer
-    # feature in get_supported_features()
-    # Explicitly return :none to satisfy Dialyzer for unused function
-    :none
+  @spec supports_feature?(terminal_feature()) :: boolean()
+  def supports_feature?(feature) do
+    feature in get_supported_features()
   end
 
   @doc """
@@ -114,9 +106,7 @@ defmodule Raxol.System.TerminalPlatform do
       iex> TerminalPlatform.get_supported_features()
       [:true_color, :unicode, :mouse, :clipboard]
   """
-  @spec get_supported_features() :: %{
-          (:colors_256 | :mouse | :title | :true_color) => true
-        }
+  @spec get_supported_features() :: list(terminal_feature())
   def get_supported_features do
     term = System.get_env("TERM") || ""
     term_program = System.get_env("TERM_PROGRAM") || ""
@@ -137,151 +127,160 @@ defmodule Raxol.System.TerminalPlatform do
       term_program in ["iTerm.app", "vscode", "Apple_Terminal"] ||
         term_emulator == "JetBrains-JediTerm"
 
-    %{}
-    |> maybe_add_feature(:colors_256, supports_256_colors?)
-    |> maybe_add_feature(:true_color, supports_true_color?)
-    |> maybe_add_feature(:mouse, supports_mouse?)
-    |> maybe_add_feature(:title, supports_title?)
-  end
+    features = []
 
-  defp maybe_add_feature(features, feature, supported?) do
-    if supported? do
-      Map.put(features, feature, true)
-    else
-      features
-    end
+    features =
+      if supports_256_colors?, do: [:colors_256 | features], else: features
+
+    features =
+      if supports_true_color?, do: [:true_color | features], else: features
+
+    features = if supports_mouse?, do: [:mouse | features], else: features
+    features = if supports_title?, do: [:title | features], else: features
+
+    # TODO: Need to add checks for other features like :unicode, :clipboard, :bracketed_paste, :focus
+    # Example placeholder:
+    features = if supports_unicode?(), do: [:unicode | features], else: features
+
+    features =
+      if supports_clipboard?(), do: [:clipboard | features], else: features
+
+    features =
+      if supports_bracketed_paste?(),
+        do: [:bracketed_paste | features],
+        else: features
+
+    features = if supports_focus?(), do: [:focus | features], else: features
+
+    features
   end
 
   # Private helper functions
 
-  # defp get_terminal_name do
-  #   cond do
-  #     System.get_env("TERM_PROGRAM") == "iTerm.app" -> "iTerm2"
-  #     System.get_env("TERM_PROGRAM") == "Apple_Terminal" -> "Terminal.app"
-  #     System.get_env("WT_SESSION") != nil -> "Windows Terminal"
-  #     System.get_env("TERM") == "xterm-256color" -> "xterm"
-  #     System.get_env("TERM") == "screen-256color" -> "screen"
-  #     true -> System.get_env("TERM") || "unknown"
-  #   end
-  # end
+  defp get_terminal_name do
+    cond do
+      System.get_env("TERM_PROGRAM") == "iTerm.app" -> "iTerm2"
+      System.get_env("TERM_PROGRAM") == "Apple_Terminal" -> "Terminal.app"
+      System.get_env("WT_SESSION") != nil -> "Windows Terminal"
+      System.get_env("TERM") == "xterm-256color" -> "xterm"
+      System.get_env("TERM") == "screen-256color" -> "screen"
+      true -> System.get_env("TERM") || "unknown"
+    end
+  end
 
-  # defp get_terminal_version do
-  #   case get_terminal_name() do
-  #     "iTerm2" -> get_iterm_version()
-  #     "Windows Terminal" -> get_windows_terminal_version()
-  #     _ -> "unknown"
-  #   end
-  # end
+  defp get_terminal_version do
+    case get_terminal_name() do
+      "iTerm2" -> get_iterm_version()
+      "Windows Terminal" -> get_windows_terminal_version()
+      _ -> "unknown"
+    end
+  end
 
-  # defp get_color_capabilities do
-  #   %{
-  #     basic: true,
-  #     true_color: supports_true_color?(),
-  #     palette: get_color_palette()
-  #   }
-  # end
+  defp get_color_capabilities do
+    %{
+      basic: true,
+      true_color: supports_true_color?(),
+      palette: if(supports_256_colors?(), do: "xterm-256color", else: "default")
+    }
+  end
 
-  # defp get_unicode_capabilities do
-  #   %{
-  #     support: supports_unicode?(),
-  #     width: detect_unicode_width(),
-  #     emoji: supports_emoji?()
-  #   }
-  # end
+  defp get_unicode_capabilities do
+    %{
+      support: supports_unicode?(),
+      width: :ambiguous,
+      emoji: supports_emoji?()
+    }
+  end
 
-  # defp get_input_capabilities do
-  #   %{
-  #     mouse: supports_mouse?(),
-  #     bracketed_paste: supports_bracketed_paste?(),
-  #     focus: supports_focus?()
-  #   }
-  # end
+  defp get_input_capabilities do
+    %{
+      mouse: supports_mouse?(),
+      bracketed_paste: supports_bracketed_paste?(),
+      focus: supports_focus?()
+    }
+  end
 
-  # defp get_output_capabilities do
-  #   %{
-  #     title: supports_title?(),
-  #     bell: true,
-  #     alternate_screen: true
-  #   }
-  # end
+  defp get_output_capabilities do
+    %{
+      title: supports_title?(),
+      bell: true,
+      alternate_screen: true
+    }
+  end
 
-  # defp get_iterm_version do
-  #   case System.cmd("osascript", ["-e", "tell application \"iTerm\" to version"]) do
-  #     {version, 0} -> String.trim(version)
-  #     _ -> "unknown"
-  #   end
-  # end
+  defp get_iterm_version do
+    case System.cmd("osascript", ["-e", "tell application \"iTerm\" to version"]) do
+      {version, 0} -> String.trim(version)
+      _ -> "unknown"
+    end
+  end
 
-  # defp get_windows_terminal_version do
-  #   case System.cmd("wt", ["--version"]) do
-  #     {version, 0} -> String.trim(version)
-  #     _ -> "unknown"
-  #   end
-  # end
+  defp get_windows_terminal_version do
+    case System.cmd("wt", ["--version"]) do
+      {version, 0} -> String.trim(version)
+      _ -> "unknown"
+    end
+  end
 
-  # defp supports_true_color? do
-  #   cond do
-  #     System.get_env("COLORTERM") == "truecolor" -> true
-  #     System.get_env("TERM") == "xterm-24bit" -> true
-  #     get_terminal_name() == "iTerm2" -> true
-  #     get_terminal_name() == "Windows Terminal" -> true
-  #     true -> false
-  #   end
-  # end
+  defp supports_true_color? do
+    cond do
+      System.get_env("COLORTERM") in ["truecolor", "24bit"] -> true
+      System.get_env("TERM") in ["xterm-24bit", "iterm", "iTerm.app"] -> true
+      System.get_env("TERM_PROGRAM") == "iTerm.app" -> true
+      System.get_env("TERM_EMULATOR") == "JetBrains-JediTerm" -> true
+      true -> false
+    end
+  end
 
-  # defp supports_unicode? do
-  #   case System.get_env("LANG") do
-  #     nil -> false
-  #     lang -> String.contains?(lang, "UTF-8")
-  #   end
-  # end
+  defp supports_unicode? do
+    case System.get_env("LANG") do
+      nil -> false
+      lang -> String.contains?(lang, "UTF-8")
+    end
+  end
 
-  # defp supports_mouse? do
-  #   case get_terminal_name() do
-  #     name when name in ["iTerm2", "Windows Terminal", "xterm"] -> true
-  #     _ -> false
-  #   end
-  # end
+  defp supports_emoji? do
+    supports_unicode?()
+  end
 
-  # defp supports_bracketed_paste? do
-  #   case get_terminal_name() do
-  #     name when name in ["iTerm2", "Windows Terminal", "xterm"] -> true
-  #     _ -> false
-  #   end
-  # end
+  defp supports_mouse? do
+    term = System.get_env("TERM") || ""
+    term_program = System.get_env("TERM_PROGRAM") || ""
+    term_emulator = System.get_env("TERM_EMULATOR") || ""
 
-  # defp supports_focus? do
-  #   case get_terminal_name() do
-  #     name when name in ["iTerm2", "Windows Terminal"] -> true
-  #     _ -> false
-  #   end
-  # end
+    String.contains?(term, "xterm") ||
+      term_program in ["iTerm.app", "vscode", "Apple_Terminal"] ||
+      term_emulator == "JetBrains-JediTerm"
+  end
 
-  # defp supports_title? do
-  #   case get_terminal_name() do
-  #     name when name in ["iTerm2", "Windows Terminal", "xterm"] -> true
-  #     _ -> false
-  #   end
-  # end
+  defp supports_bracketed_paste? do
+    supports_mouse?()
+  end
 
-  # defp get_color_palette do
-  #   case get_terminal_name() do
-  #     "iTerm2" -> "default"
-  #     "Windows Terminal" -> "default"
-  #     _ -> "xterm-256color"
-  #   end
-  # end
+  defp supports_focus? do
+    term = System.get_env("TERM") || ""
+    term_program = System.get_env("TERM_PROGRAM") || ""
 
-  # defp detect_unicode_width do
-  #   # This is a simplified check - in reality, we'd need to test
-  #   # specific characters and their rendering
-  #   :ambiguous
-  # end
+    String.contains?(term, "xterm") || term_program == "iTerm.app"
+  end
 
-  # defp supports_emoji? do
-  #   case get_terminal_name() do
-  #     name when name in ["iTerm2", "Windows Terminal"] -> true
-  #     _ -> false
-  #   end
-  # end
+  defp supports_title? do
+    term_program = System.get_env("TERM_PROGRAM") || ""
+    term_emulator = System.get_env("TERM_EMULATOR") || ""
+
+    term_program in ["iTerm.app", "vscode", "Apple_Terminal"] ||
+      term_emulator == "JetBrains-JediTerm"
+  end
+
+  defp supports_256_colors? do
+    term = System.get_env("TERM") || ""
+    term_program = System.get_env("TERM_PROGRAM") || ""
+
+    String.contains?(term, "256") || term_program in ["iTerm.app", "vscode"]
+  end
+
+  defp supports_clipboard? do
+    term_program = System.get_env("TERM_PROGRAM") || ""
+    term_program in ["iTerm.app", "vscode"]
+  end
 end

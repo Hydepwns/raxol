@@ -20,7 +20,6 @@ defmodule Raxol.Components.Selection.List do
 
   use Raxol.Component
 
-  alias Raxol.Core.Events.Event
   alias Raxol.Core.Events.Subscription
   alias Raxol.View
 

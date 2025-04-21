@@ -173,12 +173,12 @@ defmodule Raxol.AI.PerformanceOptimization do
   """
   def should_render?(component_name, context \\ %{}) do
     # Default to rendering everything if optimization is off
-    unless UXRefinement.feature_enabled?(:ai_performance_optimization) do
+    if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
       true
     else
       with_state(fn state ->
         # Skip if predictive rendering is disabled
-        unless feature_enabled?(:predictive_rendering, state) do
+        if !feature_enabled?(:predictive_rendering, state) do
           {state, true}
         else
           # Get component's render history
@@ -227,12 +227,12 @@ defmodule Raxol.AI.PerformanceOptimization do
   """
   def get_refresh_rate(component_name) do
     # Default to 60fps if optimization is off
-    unless UXRefinement.feature_enabled?(:ai_performance_optimization) do
+    if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
       16
     else
       with_state(fn state ->
         # Skip if adaptive throttling is disabled
-        unless feature_enabled?(:adaptive_throttling, state) do
+        if !feature_enabled?(:adaptive_throttling, state) do
           {state, 16}
         else
           # Get component's usage patterns
@@ -286,7 +286,7 @@ defmodule Raxol.AI.PerformanceOptimization do
   """
   def get_prefetch_recommendations(current_component) do
     # Default to empty list if optimization is off
-    unless UXRefinement.feature_enabled?(:ai_performance_optimization) do
+    if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
       []
     else
       with_state(fn state ->
@@ -316,7 +316,7 @@ defmodule Raxol.AI.PerformanceOptimization do
       ]
   """
   def analyze_performance do
-    unless UXRefinement.feature_enabled?(:ai_performance_optimization) do
+    if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
       []
     else
       with_state(fn state ->

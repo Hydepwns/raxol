@@ -11,6 +11,7 @@ defmodule Raxol.Core.UserPreferences do
   use GenServer
 
   alias Raxol.Style.Colors.Persistence
+  # alias Raxol.Core.Events.Manager, as: EventManager # Unused
 
   # Client API
 
@@ -74,9 +75,12 @@ defmodule Raxol.Core.UserPreferences do
   - `:ok` on success
   - `{:error, reason}` on failure
   """
-  @spec set(any(), any()) :: :ok
+  @spec set(any(), any()) :: {:ok, any()} | {:error, any()}
   def set(key, value) do
-    GenServer.call(__MODULE__, {:set, key, value})
+    case GenServer.call(__MODULE__, {:set, key, value}) do
+      {:ok, old_value} -> {:ok, old_value}
+      error -> error
+    end
   end
 
   @doc """
@@ -108,13 +112,17 @@ defmodule Raxol.Core.UserPreferences do
 
   @impl true
   def handle_call({:get, key}, _from, state) do
-    {:reply, Map.get(state, key), state}
+    # Check for atom key first, then string key
+    value = Map.get(state, key, Map.get(state, to_string(key)))
+    {:reply, value, state}
   end
 
   @impl true
   def handle_call({:set, key, value}, _from, state) do
+    old_value = Map.get(state, key)
     new_state = Map.put(state, key, value)
-    {:reply, :ok, new_state}
+
+    {:reply, {:ok, old_value}, new_state}
   end
 
   @impl true

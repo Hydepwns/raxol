@@ -3,8 +3,10 @@ defmodule Raxol.Components.HintDisplay do
   alias Raxol.View.Components
   alias Raxol.View.Layout
   alias Raxol.Core.UXRefinement
-  alias Raxol.View
-  require Raxol.View
+  # alias Raxol.View # Unused
+  require Raxol.View # Keep require for to_element?
+  # alias Raxol.Core.Events.Event # Unused
+  import Raxol.View.Elements, only: [panel: 2]
 
   @moduledoc """
   A component for displaying hints and tooltips.
@@ -227,8 +229,8 @@ defmodule Raxol.Components.HintDisplay do
       end
 
     # Apply container style and layout
-    # Use View.panel macro directly
-    View.panel container_attrs do
+    # Use the panel macro directly (imported via `use Raxol.Component` -> `use Raxol.View`)
+    panel container_attrs do
       # Combine title, hints, and footer
       [title_view, hints_view, footer_view]
       |> Enum.reject(&is_nil/1)

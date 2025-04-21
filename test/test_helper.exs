@@ -8,10 +8,16 @@ Application.put_env(:phoenix, :serve_endpoints, false)
 
 # Start necessary applications before ExUnit
 {:ok, _} = Application.ensure_all_started(:ecto_sql)
-# {:ok, _} = Application.ensure_all_started(:raxol) # Removed this
+
+# Re-enabled this for testing component behaviour - Commenting out to prevent conflicts
+# {:ok, _} = Application.ensure_all_started(:raxol)
+
+# Start Mox before ExUnit compiles tests that use it
+{:ok, _} = Application.ensure_all_started(:mox)
 
 # Define global mocks *before* ExUnit starts
-Mox.defmock(HTTPoison.Base, for: HTTPoison.Base)
+# Mox.defmock(HTTPoison.Base, for: HTTPoison.Base) # Commented out global mock
+# Mox.defmock(Raxol.Core.AccessibilityMock, for: Raxol.Core.Accessibility) # Removed - Will use stub_with
 
 # Start ExUnit without starting the full application explicitly here
 # Applications needed by tests should be started in their respective setup blocks

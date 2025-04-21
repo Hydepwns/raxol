@@ -56,16 +56,16 @@ defmodule Raxol.Style.Colors.Theme do
         "text" => Color.from_rgb(51, 51, 51)
       },
       ui_mappings: %{
-        app_background: "background",
-        surface_background: "surface",
-        primary_button: "primary",
-        secondary_button: "secondary",
-        accent_button: "accent",
-        error_text: "error",
-        success_text: "success",
-        warning_text: "warning",
-        info_text: "info",
-        text: "text"
+        :app_background => "background",
+        :surface_background => "surface",
+        :primary_button => "primary",
+        :secondary_button => "secondary",
+        :accent_button => "accent",
+        :error_text => "error",
+        :success_text => "success",
+        :warning_text => "warning",
+        :info_text => "info",
+        :text => "text"
       },
       dark_mode: false,
       high_contrast: false

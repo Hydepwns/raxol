@@ -8,10 +8,9 @@
 
 defmodule Subscriptions do
   @behaviour Raxol.App
+  use Raxol.View
 
   alias Raxol.Runtime.Subscription
-
-  import Raxol.View
 
   def init(_context), do: {0, 0}
 
@@ -35,10 +34,14 @@ defmodule Subscriptions do
     ])
   end
 
-  def render({little_ticks, big_ticks}) do
+  def render(%{little_ticks: little_ticks, big_ticks: big_ticks}) do
     view do
-      label(content: "Little ticks: #{little_ticks}")
-      label(content: "Big ticks:    #{big_ticks}")
+      panel title: "Subscriptions Example" do
+        column do
+          text(content: "Little ticks: #{little_ticks}")
+          text(content: "Big ticks:    #{big_ticks}")
+        end
+      end
     end
   end
 end

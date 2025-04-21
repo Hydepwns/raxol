@@ -28,7 +28,9 @@ defmodule Raxol.Style.Colors.Utilities do
   """
 
   alias Raxol.Style.Colors.Color
-  alias Raxol.Style.Colors.Utilities
+  # alias Raxol.Style.Colors # Unused
+  # alias Raxol.Style.Colors.ColorConversion # Unused
+  # alias Raxol.Style.Colors.Utilities # Unused
 
   # WCAG contrast ratio thresholds
   # AA level for normal text

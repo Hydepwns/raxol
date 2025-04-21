@@ -11,11 +11,11 @@ tags: [terminal, dimensions, rendering]
 
 ## Overview
 
-Getting accurate terminal dimensions is critical for proper rendering of UI elements in a terminal-based application. Raxol previously faced challenges with inconsistent terminal height reporting from the `ex_termbox` library, which led to using hardcoded dimensions. This document explains how terminal dimensions are now handled reliably across different environments.
+Getting accurate terminal dimensions is critical for proper rendering of UI elements in a terminal-based application. Raxol previously faced challenges with inconsistent terminal height reporting from the `rex_termbox` library, which led to using hardcoded dimensions. This document explains how terminal dimensions are now handled reliably across different environments.
 
 ## The Challenge
 
-The `ex_termbox` library was found to report terminal width correctly but had issues with reporting the terminal height in some environments. This inconsistent behavior caused:
+The `rex_termbox` library was found to report terminal width correctly but had issues with reporting the terminal height in some environments. This inconsistent behavior caused:
 
 1. Inaccurate UI rendering
 2. Layout issues with elements positioned incorrectly
@@ -109,6 +109,6 @@ With accurate terminal dimensions, the following improvements have been achieved
 
 ## Conclusion
 
-The implementation of `TerminalUtils` has successfully addressed the terminal dimension reporting inconsistencies in the `ex_termbox` library. By using a multi-layered approach with multiple fallback methods, Raxol now reliably determines terminal dimensions across different environments, improving UI rendering and user experience.
+The implementation of `TerminalUtils` has successfully addressed the terminal dimension reporting inconsistencies in the `rex_termbox` library. By using a multi-layered approach with multiple fallback methods, Raxol now reliably determines terminal dimensions across different environments, improving UI rendering and user experience.
 
 This approach demonstrates the value of defensive programming and graceful fallbacks when dealing with external dependencies that may have limitations or inconsistencies.

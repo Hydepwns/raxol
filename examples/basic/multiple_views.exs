@@ -6,55 +6,46 @@
 
 defmodule MultipleViewsDemo do
   @behaviour Raxol.App
+  use Raxol.View
 
-  import Raxol.View
+  def init(_context), do: %{selected_tab: 1}
 
-  def init(_context) do
-    %{selected_tab: 1}
-  end
+  def update(model, msg) do
+    case msg do
+      {:event, %{type: :key, key: key}} when key in [?1, ?2, ?3] ->
+        %{model | selected_tab: key - ?0}
 
-  def update(model, message) do
-    case message do
-      {:event, %{ch: ?1}} -> %{model | selected_tab: 1}
-      {:event, %{ch: ?2}} -> %{model | selected_tab: 2}
-      {:event, %{ch: ?3}} -> %{model | selected_tab: 3}
-      _ -> model
+      _ ->
+        model
     end
   end
 
   def render(model) do
-    view top_bar: title_bar(), bottom_bar: status_bar(model.selected_tab) do
+    view do
       case model.selected_tab do
-        1 -> panel(title: "View 1", height: :fill)
-        2 -> panel(title: "View 2", height: :fill)
-        3 -> panel(title: "View 3", height: :fill)
+        1 -> panel [title: "View 1", height: :fill], do: nil
+        2 -> panel [title: "View 2", height: :fill], do: nil
+        3 -> panel [title: "View 3", height: :fill], do: nil
       end
     end
   end
 
-  def title_bar do
-    bar do
-      label(content: "Multiple Views Demo (Press 1, 2 or 3, or q to quit)")
+  defp title_bar do
+    row do
+      text(content: "Multiple Views Demo (Press 1, 2 or 3, or q to quit)")
     end
   end
 
-  def status_bar(selected) do
-    bar do
-      label do
-        for item <- 1..3 do
-          if item == selected do
-            text(
-              background: :white,
-              color: :black,
-              content: " View #{item} "
-            )
-          else
-            text(content: " View #{item} ")
-          end
-        end
-      end
+  defp status_bar(selected_tab) do
+    row do
+      text(content: "Selected: #{selected_tab}")
     end
   end
 end
 
-Raxol.run(MultipleViewsDemo)
+Raxol.run(
+  MultipleViewsDemo,
+  quit_keys: [?q]
+)
+
+

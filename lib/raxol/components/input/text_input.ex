@@ -12,7 +12,6 @@ defmodule Raxol.Components.Input.TextInput do
 
   use Raxol.Component
   # alias Raxol.Style # Unused
-  alias Raxol.Core.Events.Event
 
   @type state :: %{
           value: String.t(),

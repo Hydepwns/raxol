@@ -5,7 +5,6 @@
 alias Raxol.{EventManager, Window}
 
 import Raxol.View
-import Raxol.Constants
 
 # Start the window and subscribe to events
 {:ok, _pid} = Window.start_link()
@@ -13,7 +12,9 @@ import Raxol.Constants
 :ok = EventManager.subscribe(self())
 
 defmodule EventViewer do
-  import Raxol.View
+  use Raxol.View
+
+  alias Raxol.{EventManager, Window, View}
 
   @line_count 30
 
@@ -118,6 +119,28 @@ defmodule EventViewer do
   end
 
   def reverse_lookup(map, val) do
+    map |> Enum.find(fn {_, v} -> v == val end) |> elem(0)
+  end
+
+  # Converts the event history to a view definition.
+  defp render(events) do
+    view do
+      panel title: "Event Viewer", height: :fill do
+        # Table needs component
+        # table headers: ["Type", "Data"] do
+        #   for event <- events do
+        #     table_row do
+        #       table_cell(content: to_string(event.type))
+        #       table_cell(content: inspect(event.data))
+        #     end
+        #   end
+        # end
+        text(content: "[Events table placeholder]")
+      end
+    end
+  end
+
+  defp key_from_val(map, val) do
     map |> Enum.find(fn {_, v} -> v == val end) |> elem(0)
   end
 end

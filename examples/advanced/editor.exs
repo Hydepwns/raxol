@@ -13,14 +13,12 @@ defmodule Editor do
   @behaviour Raxol.App
 
   import Raxol.View
-  import Raxol.Constants, only: [key: 1]
 
-  @spacebar key(:space)
+  @spacebar :space
 
   @delete_keys [
-    key(:delete),
-    key(:backspace),
-    key(:backspace2)
+    :delete,
+    :backspace
   ]
 
   def init(_context) do
@@ -29,14 +27,14 @@ defmodule Editor do
 
   def update(model, message) do
     case message do
-      {:event, %{key: key}} when key in @delete_keys ->
+      %{type: :key, key: key, modifiers: []} when key in @delete_keys ->
         String.slice(model, 0..-2)
 
-      {:event, %{key: @spacebar}} ->
+      %{type: :key, key: @spacebar, modifiers: []} ->
         model <> " "
 
-      {:event, %{ch: ch}} when ch > 0 ->
-        model <> <<ch::utf8>>
+      %{type: :key, key: char_code, modifiers: []} when is_integer(char_code) and char_code >= 32 ->
+        model <> <<char_code::utf8>>
 
       _ ->
         model
@@ -54,7 +52,7 @@ end
 
 Raxol.run(
   Editor,
-  quit_events: [
-    {:key, Raxol.Constants.key(:ctrl_d)}
+  quit_keys: [
+    %{type: :key, key: ?d, modifiers: [:ctrl]}
   ]
 )

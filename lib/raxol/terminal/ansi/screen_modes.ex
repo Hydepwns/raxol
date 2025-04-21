@@ -20,30 +20,47 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
           interlacing_mode: boolean(),
           saved_state: map() | nil
         }
-        
+
   # DEC Private Mode codes and their corresponding mode atoms
   @dec_private_modes %{
-    1 => :decckm,        # Cursor Keys Mode
-    3 => :deccolm_132,   # 132 Column Mode
-    5 => :decscnm,       # Screen Mode (reverse)
-    6 => :decom,         # Origin Mode
-    7 => :decawm,        # Auto Wrap Mode
-    8 => :decarm,        # Auto Repeat Mode
-    9 => :decinlm,       # Interlace Mode
-    12 => :att_blink,    # Start Blinking Cursor
-    25 => :dectcem,      # Text Cursor Enable Mode
-    47 => :dec_alt_screen, # Use Alternate Screen Buffer
-    1000 => :mouse_report, # Send Mouse X & Y on button press
-    1002 => :mouse_motion, # Use Cell Motion Mouse Tracking
-    1004 => :focus_events, # Send FocusIn/FocusOut events
-    1006 => :sgr_mouse,    # SGR Mouse Mode
-    1049 => :alt_screen_buffer # Save cursor and use Alternate Screen Buffer
+    # Cursor Keys Mode
+    1 => :decckm,
+    # 132 Column Mode
+    3 => :deccolm_132,
+    # Screen Mode (reverse)
+    5 => :decscnm,
+    # Origin Mode
+    6 => :decom,
+    # Auto Wrap Mode
+    7 => :decawm,
+    # Auto Repeat Mode
+    8 => :decarm,
+    # Interlace Mode
+    9 => :decinlm,
+    # Start Blinking Cursor
+    12 => :att_blink,
+    # Text Cursor Enable Mode
+    25 => :dectcem,
+    # Use Alternate Screen Buffer
+    47 => :dec_alt_screen,
+    # Send Mouse X & Y on button press
+    1000 => :mouse_report,
+    # Use Cell Motion Mouse Tracking
+    1002 => :mouse_motion,
+    # Send FocusIn/FocusOut events
+    1004 => :focus_events,
+    # SGR Mouse Mode
+    1006 => :sgr_mouse,
+    # Save cursor and use Alternate Screen Buffer
+    1049 => :alt_screen_buffer
   }
-  
+
   # Standard Mode codes and their corresponding mode atoms
   @standard_modes %{
-    4 => :insert_mode,   # Insert Mode
-    20 => :line_feed_mode # Line Feed Mode
+    # Insert Mode
+    4 => :insert_mode,
+    # Line Feed Mode
+    20 => :line_feed_mode
   }
 
   @doc """
@@ -74,6 +91,18 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
       interlacing_mode: false,
       saved_state: nil
     }
+  end
+
+  @doc """
+  Switches a specific mode on or off.
+  """
+  @spec switch_mode(screen_state(), atom(), boolean()) :: screen_state()
+  def switch_mode(state, mode_flag, enable) do
+    if enable do
+      set_mode(state, mode_flag)
+    else
+      reset_mode(state, mode_flag)
+    end
   end
 
   @doc """
@@ -113,6 +142,8 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
       :insert_mode -> %{state | insert_mode: true}
       :line_feed_mode -> %{state | line_feed_mode: true}
       :wide_column -> %{state | column_width_mode: :wide}
+      # Map DECCOLM to wide column mode
+      :deccolm_132 -> %{state | column_width_mode: :wide}
       :auto_repeat -> %{state | auto_repeat_mode: true}
       :interlacing -> %{state | interlacing_mode: true}
       _ -> state
@@ -131,6 +162,8 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
       :insert_mode -> %{state | insert_mode: false}
       :line_feed_mode -> %{state | line_feed_mode: false}
       :wide_column -> %{state | column_width_mode: :normal}
+      # Map DECCOLM to normal column mode
+      :deccolm_132 -> %{state | column_width_mode: :normal}
       :auto_repeat -> %{state | auto_repeat_mode: false}
       :interlacing -> %{state | interlacing_mode: false}
       _ -> state
@@ -149,6 +182,8 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
       :insert_mode -> state.insert_mode
       :line_feed_mode -> state.line_feed_mode
       :wide_column -> state.column_width_mode == :wide
+      # Map DECCOLM to wide column check
+      :deccolm_132 -> state.column_width_mode == :wide
       :auto_repeat -> state.auto_repeat_mode
       :interlacing -> state.interlacing_mode
       _ -> false
@@ -178,7 +213,7 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
   """
   @spec get_interlacing_mode(screen_state()) :: boolean()
   def get_interlacing_mode(state), do: state.interlacing_mode
-  
+
   @doc """
   Looks up a DEC private mode code and returns the corresponding mode atom.
   """
@@ -186,7 +221,7 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
   def lookup_private(code) when is_integer(code) do
     Map.get(@dec_private_modes, code)
   end
-  
+
   @doc """
   Looks up a standard mode code and returns the corresponding mode atom.
   """

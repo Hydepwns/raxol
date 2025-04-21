@@ -31,7 +31,26 @@ defmodule Raxol.Core.Renderer.Color do
   @type ansi_256 :: 0..255
   @type true_color :: {0..255, 0..255, 0..255}
 
-  @ansi_16_colors [
+  @ansi_16_atoms [
+    :black,
+    :red,
+    :green,
+    :yellow,
+    :blue,
+    :magenta,
+    :cyan,
+    :white,
+    :bright_black,
+    :bright_red,
+    :bright_green,
+    :bright_yellow,
+    :bright_blue,
+    :bright_magenta,
+    :bright_cyan,
+    :bright_white
+  ]
+
+  @ansi_16_map %{
     black: 0,
     red: 1,
     green: 2,
@@ -48,17 +67,31 @@ defmodule Raxol.Core.Renderer.Color do
     bright_magenta: 13,
     bright_cyan: 14,
     bright_white: 15
-  ]
+  }
 
   @doc """
-  Converts a color value to ANSI escape codes.
+  Converts a color representation to its ANSI foreground escape code.
   """
   def to_ansi(color)
 
+  def to_ansi(:default), do: "\e[39m"
+
   def to_ansi(color) when is_atom(color) do
-    if code = Keyword.get(@ansi_16_colors, color) do
-      # Original logic
-      "\e[#{30 + code}m"
+    with true <- Enum.member?(@ansi_16_atoms, color),
+         code = @ansi_16_map[color] do
+      cond do
+        # Bright colors (90-97)
+        code >= 8 ->
+          "\e[#{90 + (code - 8)}m"
+
+        # Standard colors (30-37)
+        true ->
+          "\e[#{30 + code}m"
+      end
+    else
+      _ ->
+        # Default foreground
+        "\e[39m"
     end
   end
 
@@ -77,14 +110,28 @@ defmodule Raxol.Core.Renderer.Color do
   end
 
   @doc """
-  Converts a color value to background ANSI escape codes.
+  Converts a color representation to its ANSI background escape code.
   """
   def to_bg_ansi(color)
 
+  def to_bg_ansi(:default), do: "\e[49m"
+
   def to_bg_ansi(color) when is_atom(color) do
-    if code = Keyword.get(@ansi_16_colors, color) do
-      # Original logic
-      "\e[#{40 + code}m"
+    with true <- Enum.member?(@ansi_16_atoms, color),
+         code = @ansi_16_map[color] do
+      cond do
+        # Bright colors (100-107)
+        code >= 8 ->
+          "\e[#{100 + (code - 8)}m"
+
+        # Standard colors (40-47)
+        true ->
+          "\e[#{40 + code}m"
+      end
+    else
+      _ ->
+        # Default background
+        "\e[49m"
     end
   end
 
@@ -143,7 +190,8 @@ defmodule Raxol.Core.Renderer.Color do
       foreground: :white,
       border: :bright_black,
       highlight: :bright_blue,
-      muted: :bright_black
+      muted: :bright_black,
+      accent: :bright_magenta
     }
   end
 

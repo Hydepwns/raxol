@@ -38,11 +38,25 @@ defmodule RaxolWeb.ConnCase do
     # Setup Ecto sandbox
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
 
-    unless tags[:async] do
+    if !tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
     end
 
     {:ok, conn: Phoenix.ConnTest.build_conn()}
+  end
+
+  @doc """
+  Starts the endpoint server for tests requiring it.
+  """
+  def start_endpoint(_) do
+    # Start applications necessary for the endpoint
+    Application.ensure_all_started(:phoenix)
+    Application.ensure_all_started(:plug_cowboy)
+    # If your endpoint relies on other applications, start them here
+
+    # Start the endpoint itself
+    RaxolWeb.Endpoint.start_link()
+    :ok
   end
 
   @doc """
@@ -51,7 +65,7 @@ defmodule RaxolWeb.ConnCase do
   def setup_sandbox(tags) do
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
 
-    unless tags[:async] do
+    if !tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
     end
   end

@@ -233,7 +233,7 @@ defmodule Raxol.Terminal.ANSI.Processor do
 
     # Update cursor position
     {x, y} = state.buffer_manager.cursor_position
-    height = ScreenBuffer.height(state.buffer_manager.active_buffer)
+    height = ScreenBuffer.get_height(state.buffer_manager.active_buffer)
     new_y = min(height - 1, y + count)
 
     # Update state using helper function
@@ -247,7 +247,7 @@ defmodule Raxol.Terminal.ANSI.Processor do
 
     # Update cursor position
     {x, y} = state.buffer_manager.cursor_position
-    width = ScreenBuffer.width(state.buffer_manager.active_buffer)
+    width = ScreenBuffer.get_width(state.buffer_manager.active_buffer)
     new_x = min(width - 1, x + count)
 
     # Update state using helper function

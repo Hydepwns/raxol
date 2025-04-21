@@ -37,7 +37,7 @@ defmodule RaxolWeb.ChannelCase do
     # Setup Ecto sandbox
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
 
-    unless tags[:async] do
+    if !tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
     end
 

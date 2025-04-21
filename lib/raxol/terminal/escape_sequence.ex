@@ -168,30 +168,62 @@ defmodule Raxol.Terminal.EscapeSequence do
   # I: Intermediate bytes (optional)
   # F: Final byte (determines command)
   defp parse_csi(data) do
+    Logger.debug("Parsing CSI data: #{inspect(data)}")
     # First try DEC private format: CSI ? P... F
-    case Regex.run(~r/^\?([\d;]*)([hl])/, data, capture: :all_but_first) do
+    case Regex.run(~r/^\\?([\\d;]*)([hl])/, data, capture: :all_but_first) do
       [params_str, final_byte] ->
+        # --- DEBUGGING: Force error return for ?3h ---
+        # if params_str == "3" and final_byte == "h" do
+        #   params = parse_params(params_str)
+        #   prefix_len = 1 + String.length(params_str) + String.length(final_byte)
+        #   remaining = String.slice(data, prefix_len..-1)
+        #   dispatch_result = dispatch_csi_dec_private(params, final_byte, remaining)
+        #
+        #   {:error,
+        #    :debug_dec_private_match,
+        #    %{input: data, params_str: params_str, final_byte: final_byte, parsed_params: params, dispatch_result: dispatch_result}
+        #   }
+        # else
+        # --- Original Logic ---
+        Logger.debug(
+          "Matched DEC Private: params_str=#{inspect(params_str)}, final_byte=#{inspect(final_byte)}"
+        )
+
         params = parse_params(params_str)
+        Logger.debug("Parsed DEC Private params: #{inspect(params)}")
 
         # Calculate the length of the matched prefix ('?' + params + final byte)
         prefix_len =
           1 + String.length(params_str) + String.length(final_byte)
 
         remaining = String.slice(data, prefix_len..-1)
-        dispatch_csi_dec_private(params, final_byte, remaining)
-        
+        result = dispatch_csi_dec_private(params, final_byte, remaining)
+        Logger.debug("Result from dispatch_csi_dec_private: #{inspect(result)}")
+        # Return the result
+        result
+
+      # --- End Original Logic ---
+      # end
+
       # If DEC private fails, try standard CSI format: CSI P... F
       _ ->
+        Logger.debug("DEC Private did not match, trying standard CSI.")
         # Regex captures: 1=params, 2=final byte
-        case Regex.run(~r/^([\d;]*)((?:[@A-Z]|[\[\^_`a-z{}~]))/, data,
+        case Regex.run(~r/^([\\d;]*)((?:[@A-Z]|[\\[\\^_`a-z{}~]))/, data,
                capture: :all_but_first
              ) do
           [params_str, final_byte] when final_byte != "" ->
+            Logger.debug(
+              "Matched Standard CSI: params_str=#{inspect(params_str)}, final_byte=#{inspect(final_byte)}"
+            )
+
             params = parse_params(params_str)
             # Calculate the length of the matched prefix (params + final byte)
             prefix_len = String.length(params_str) + String.length(final_byte)
             remaining = String.slice(data, prefix_len..-1)
-            dispatch_csi(params, final_byte, remaining)
+            result = dispatch_csi(params, final_byte, remaining)
+            Logger.debug("Result from dispatch_csi: #{inspect(result)}")
+            result
 
           # If DEC private also fails, check for incompleteness or invalid sequence
           _ ->
@@ -428,21 +460,23 @@ defmodule Raxol.Terminal.EscapeSequence do
     {:error, :unknown_sequence, rest}
   end
 
-  # Dispatch based on final byte for DEC private sequences (?...)
+  # Dispatch based on final byte for DEC private CSI sequences
   defp dispatch_csi_dec_private(params, final_byte, rest) do
-    # Get the first param as mode code
+    # Get the first parameter
     mode_code = param_at(params, 0, nil)
-    # 'h' = true (set), 'l' = false (reset)
-    value = final_byte == "h"
+
+    # Determine if it's setting (h) or resetting (l)
+    set? = final_byte == "h"
 
     if mode_code do
-      {:ok, {:set_mode, :dec_private, mode_code, value}, rest}
+      # Return a structured command data tuple
+      {:ok, {:set_mode, :dec_private, mode_code, set?}, rest}
     else
-      Logger.debug(
-        "Missing mode code in DEC private sequence: ?#{params |> Enum.map_join(";", &to_string/1)}#{final_byte}"
+      Logger.warning(
+        "DEC Private Mode sequence missing mode code: ?#{Enum.join(params, ";")}#{final_byte}"
       )
 
-      # Treat as invalid if no mode specified
+      # Consider the sequence invalid if no code
       {:error, :invalid_sequence, rest}
     end
   end

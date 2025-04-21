@@ -7,7 +7,7 @@
 
 alias Raxol.{EventManager, Window}
 
-import Raxol.View
+use Raxol.View
 
 # First, we initialize the terminal window.
 {:ok, _pid} = Window.start_link()
@@ -23,7 +23,7 @@ import Raxol.View
 hello_world_view =
   view do
     panel title: "Hello, World!", height: :fill do
-      label(content: "Press 'q' to quit.")
+      text(content: "Press 'q' to quit.")
     end
   end
 

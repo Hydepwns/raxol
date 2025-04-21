@@ -62,7 +62,7 @@ defmodule Raxol.Style.Colors.Adaptive do
   """
   def init do
     # Create the ETS table if it doesn't already exist
-    unless :ets.info(@capabilities_cache_name) != :undefined do
+    if :ets.info(@capabilities_cache_name) == :undefined do
       :ets.new(@capabilities_cache_name, [
         :set,
         :public,

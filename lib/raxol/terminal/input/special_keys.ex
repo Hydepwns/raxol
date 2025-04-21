@@ -66,18 +66,12 @@ defmodule Raxol.Terminal.Input.SpecialKeys do
       key when byte_size(key) == 1 ->
         <<code::utf8>> = key
 
-        if state.ctrl do
-          # Handle Ctrl+key combinations
-          case code do
-            c when c >= ?a and c <= ?z -> "\e[#{modifiers}#{c - ?a + 1}"
-            c when c >= ?A and c <= ?Z -> "\e[#{modifiers}#{c - ?A + 1}"
-            _ -> "\e[#{modifiers}#{code}"
-          end
-        else
-          "\e[#{modifiers}#{code}"
-        end
+        # Always send the standard character code along with the calculated modifiers
+        # The modifiers string already encodes if Ctrl is pressed.
+        "\e[#{modifiers}#{code}"
 
       key when is_binary(key) ->
+        # Keep existing special key handling (Arrows, F-keys, etc.)
         case key do
           "ArrowUp" -> "\e[#{modifiers}A"
           "ArrowDown" -> "\e[#{modifiers}B"

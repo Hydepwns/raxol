@@ -1,0 +1,26 @@
+{
+  "name": "Standard",
+  "author": "Raxol",
+  "description": "Standard default theme",
+  "palette": {
+    "black": "#000000",
+    "white": "#FFFFFF",
+    "grey": "#808080",
+    "red": "#FF0000",
+    "green": "#00FF00",
+    "blue": "#0000FF",
+    "yellow": "#FFFF00"
+  },
+  "ui_mappings": {
+    "app_background": "white",
+    "surface_background": "grey",
+    "text": "black",
+    "primary_button": "blue",
+    "secondary_button": "grey",
+    "accent_button": "green",
+    "error_text": "red",
+    "warning_text": "yellow",
+    "info_text": "blue",
+    "success_text": "green"
+  }
+}
