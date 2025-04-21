@@ -629,7 +629,9 @@ defmodule Raxol.Terminal.Integration do
     # Assuming type is :screen and code corresponds to mode atom
     # Convert mode atom back to code if necessary, or update handle_mode_change
     # For now, assume mode is the code (integer)
-    emulator = Emulator.handle_mode_change(integration.emulator, :screen, mode, true)
+    emulator =
+      Emulator.handle_mode_change(integration.emulator, :screen, mode, true)
+
     %{integration | emulator: emulator}
   end
 
@@ -638,7 +640,9 @@ defmodule Raxol.Terminal.Integration do
   """
   def reset_screen_mode(%__MODULE__{} = integration, mode) do
     # Assuming type is :screen and code corresponds to mode atom
-    emulator = Emulator.handle_mode_change(integration.emulator, :screen, mode, false)
+    emulator =
+      Emulator.handle_mode_change(integration.emulator, :screen, mode, false)
+
     %{integration | emulator: emulator}
   end
 

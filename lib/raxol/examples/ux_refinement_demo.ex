@@ -30,6 +30,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
   alias Raxol.Components.HintDisplay
   alias Raxol.Components.FocusRing
   alias Raxol.View.Layout
+
   # alias Raxol.View.Components # Removed alias, use explicit imports or direct macros
   require Logger
 
@@ -184,7 +185,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
               render_help_dialog()
             else
               # Form elements
-              Layout.row(padding_bottom: 1) do
+              Layout.row padding_bottom: 1 do
                 label("Username:", width: 10)
 
                 text_input(
@@ -195,7 +196,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
                 )
               end
 
-              Layout.row(padding_bottom: 1) do
+              Layout.row padding_bottom: 1 do
                 label("Password:", width: 10)
 
                 text_input(
@@ -207,7 +208,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
                 )
               end
 
-              Layout.row(padding_top: 1) do
+              Layout.row padding_top: 1 do
                 button(
                   id: "login_button",
                   label: "Login",
@@ -239,14 +240,14 @@ defmodule Raxol.Examples.UXRefinementDemo do
             FocusRing.render(model.focus_ring_model)
 
             # Keyboard shortcut info
-            Layout.row(padding_top: 2) do
+            Layout.row padding_top: 2 do
               text("Tab: Next field | Shift+Tab: Previous field | Esc: Exit",
                 align: :center
               )
             end
 
             # Hint display at the bottom
-            Layout.row(bottom: 0, left: 0, width: "100%") do
+            Layout.row bottom: 0, left: 0, width: "100%" do
               HintDisplay.render(focused)
             end
           end
@@ -316,23 +317,23 @@ defmodule Raxol.Examples.UXRefinementDemo do
     # Use the panel macro directly
     rendered_dialog =
       panel title: "Help",
-                 padding: 1,
-                 height: 12,
-                 width: 40,
-                 border: true,
-                 style: %{
-                   position: :absolute,
-                   top: "50%",
-                   left: "50%",
-                   transform: "translate(-50%, -50%)"
-                 } do
+            padding: 1,
+            height: 12,
+            width: 40,
+            border: true,
+            style: %{
+              position: :absolute,
+              top: "50%",
+              left: "50%",
+              transform: "translate(-50%, -50%)"
+            } do
         Layout.column do
           text("This is a demo of the UX Refinement features in Raxol.")
           text("Use Tab and Shift+Tab to navigate between form fields.")
           text("The focus ring indicates which element is focused.")
           text("Hints at the bottom provide context for each element.")
 
-          Layout.row(padding_top: 2) do
+          Layout.row padding_top: 2 do
             button(
               id: "close_help",
               label: "Close",

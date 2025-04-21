@@ -126,15 +126,17 @@ defmodule Raxol.Components.Progress do
     empty_portion = String.duplicate(empty_char, empty_width)
 
     # Create the progress bar
-    Layout.row [id: id, style: style], do: fn ->
-      if filled_width > 0 do
-        Components.text(filled_portion, style: filled_style)
-      end
+    Layout.row([id: id, style: style],
+      do: fn ->
+        if filled_width > 0 do
+          Components.text(filled_portion, style: filled_style)
+        end
 
-      if empty_width > 0 do
-        Components.text(empty_portion, style: empty_style)
+        if empty_width > 0 do
+          Components.text(empty_portion, style: empty_style)
+        end
       end
-    end
+    )
   end
 
   @doc """
@@ -295,13 +297,15 @@ defmodule Raxol.Components.Progress do
     current_frame = Enum.at(frames, frame_index)
 
     # Create the spinner with optional message
-    Layout.row [id: id, style: style], do: fn ->
-      Components.text(current_frame, style: spinner_style)
+    Layout.row([id: id, style: style],
+      do: fn ->
+        Components.text(current_frame, style: spinner_style)
 
-      if message do
-        Components.text(" #{message}", style: message_style)
+        if message do
+          Components.text(" #{message}", style: message_style)
+        end
       end
-    end
+    )
   end
 
   @doc """
@@ -373,17 +377,23 @@ defmodule Raxol.Components.Progress do
     right_width = width - bar_width - left_width
 
     # Create the indeterminate progress bar
-    Layout.row [id: id, style: style], do: fn ->
-      if left_width > 0 do
-        Components.text(String.duplicate(" ", left_width), style: background_style)
-      end
+    Layout.row([id: id, style: style],
+      do: fn ->
+        if left_width > 0 do
+          Components.text(String.duplicate(" ", left_width),
+            style: background_style
+          )
+        end
 
-      Components.text(String.duplicate(" ", bar_width), style: bar_style)
+        Components.text(String.duplicate(" ", bar_width), style: bar_style)
 
-      if right_width > 0 do
-        Components.text(String.duplicate(" ", right_width), style: background_style)
+        if right_width > 0 do
+          Components.text(String.duplicate(" ", right_width),
+            style: background_style
+          )
+        end
       end
-    end
+    )
   end
 
   @doc """
@@ -440,12 +450,14 @@ defmodule Raxol.Components.Progress do
       end
 
     # Create the circular progress indicator
-    Layout.row [id: id], do: fn ->
-      Components.text(progress_char, style: style)
+    Layout.row([id: id],
+      do: fn ->
+        Components.text(progress_char, style: style)
 
-      if show_percentage do
-        Components.text(percentage_text, style: percentage_style)
+        if show_percentage do
+          Components.text(percentage_text, style: percentage_style)
+        end
       end
-    end
+    )
   end
 end

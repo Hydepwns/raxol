@@ -192,7 +192,8 @@ defmodule Raxol.Terminal.Input.InputBuffer do
     # Calculate slices carefully
     prefix = String.slice(buffer.contents, 0, position)
     # Ensure positive step
-    suffix = String.slice(buffer.contents, (position + String.length(char))..-1//1)
+    suffix =
+      String.slice(buffer.contents, (position + String.length(char))..-1//1)
 
     new_contents = prefix <> char <> suffix
 

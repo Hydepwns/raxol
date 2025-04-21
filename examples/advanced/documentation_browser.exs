@@ -54,7 +54,8 @@ defmodule DocumentationBrowser do
       %{type: :key, key: ?j, modifiers: []} ->
         %{model | content_cursor: content_cursor + 1}
 
-      %{type: :key, key: key, modifiers: []} when key in [@arrow_up, @arrow_down] ->
+      %{type: :key, key: key, modifiers: []}
+      when key in [@arrow_up, @arrow_down] ->
         new_cursor =
           case key do
             @arrow_up -> max(module_cursor - 1, 0)

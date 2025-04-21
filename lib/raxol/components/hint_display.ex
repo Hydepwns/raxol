@@ -4,7 +4,8 @@ defmodule Raxol.Components.HintDisplay do
   alias Raxol.View.Layout
   alias Raxol.Core.UXRefinement
   # alias Raxol.View # Unused
-  require Raxol.View # Keep require for to_element?
+  # Keep require for to_element?
+  require Raxol.View
   # alias Raxol.Core.Events.Event # Unused
   import Raxol.View.Elements, only: [panel: 2]
 

@@ -74,14 +74,16 @@ defmodule Raxol.Components.Input.MultiLineInput do
       # Rows are equal, compare columns
       c1 < c2 -> -1
       c1 > c2 -> 1
-      true -> 0 # Positions are identical
+      # Positions are identical
+      true -> 0
     end
   end
 
   # Helper to convert position tuple or map to tuple {r, c}
   defp pos_to_tuple({row, col}), do: {row, col}
   defp pos_to_tuple(%{row: row, col: col}), do: {row, col}
-  defp pos_to_tuple(_), do: {0, 0} # Default/Error case
+  # Default/Error case
+  defp pos_to_tuple(_), do: {0, 0}
 
   # --- Update Function Clauses ---
 
@@ -124,6 +126,7 @@ defmodule Raxol.Components.Input.MultiLineInput do
   def update({:backspace}, state) do
     if state.selection_start != nil do
       new_state_after_delete = delete_selection(state)
+
       # IO.inspect(new_state_after_delete.value, label: "update(:backspace) received value") # DEBUG
       new_state_after_delete
     else
@@ -264,16 +267,26 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
     # Ensure selection start is always before or equal to selection end
     {norm_start_row, norm_start_col, norm_end_row, norm_end_col} =
-      case compare_positions({clamped_start_row, clamped_start_col}, {clamped_end_row, clamped_end_col}) do
-        1 -> {clamped_end_row, clamped_end_col, clamped_start_row, clamped_start_col} # Swap if start > end
-        _ -> {clamped_start_row, clamped_start_col, clamped_end_row, clamped_end_col} # Keep order otherwise
+      case compare_positions(
+             {clamped_start_row, clamped_start_col},
+             {clamped_end_row, clamped_end_col}
+           ) do
+        # Swap if start > end
+        1 ->
+          {clamped_end_row, clamped_end_col, clamped_start_row,
+           clamped_start_col}
+
+        # Keep order otherwise
+        _ ->
+          {clamped_start_row, clamped_start_col, clamped_end_row,
+           clamped_end_col}
       end
 
     # Use struct syntax
     %Raxol.Components.Input.MultiLineInput{
       state
-      # Store selection as tuples for consistency with other parts
-      | selection_start: {norm_start_row, norm_start_col},
+      | # Store selection as tuples for consistency with other parts
+        selection_start: {norm_start_row, norm_start_col},
         selection_end: {norm_end_row, norm_end_col},
         # Cursor moves to the *requested* end position before normalization
         cursor_row: clamped_end_row,
@@ -395,22 +408,24 @@ defmodule Raxol.Components.Input.MultiLineInput do
       for {line, index} <- Enum.with_index(visible_lines) do
         row_index = index + state.scroll_offset
 
-        Layout.row [], do: fn ->
-          if state.style.line_numbers do
-            Components.text(
-              content:
-                String.pad_leading(
-                  Integer.to_string(row_index + 1),
-                  line_number_width
-                ),
-              color: state.style.line_number_color
-            )
+        Layout.row([],
+          do: fn ->
+            if state.style.line_numbers do
+              Components.text(
+                content:
+                  String.pad_leading(
+                    Integer.to_string(row_index + 1),
+                    line_number_width
+                  ),
+                color: state.style.line_number_color
+              )
 
-            Components.text(content: " ")
+              Components.text(content: " ")
+            end
+
+            render_line(line, row_index, state)
           end
-
-          render_line(line, row_index, state)
-        end
+        )
       end
     end
   end
@@ -592,7 +607,7 @@ defmodule Raxol.Components.Input.MultiLineInput do
   @impl true
   def handle_event(%Event{type: :blur}, state) do
     # IO.inspect("MultiLineInput received blur", label: "EVENT") # DEBUG REMOVED
-    { %{state | focused: false, selection_start: nil, selection_end: nil}, []}
+    {%{state | focused: false, selection_start: nil, selection_end: nil}, []}
   end
 
   @impl true
@@ -722,11 +737,15 @@ defmodule Raxol.Components.Input.MultiLineInput do
   # Normalize selection ensuring start is before end.
   # Accepts either {r, c} tuples or %{row: r, col: c} maps in state.
   # Returns updated state with selection_start <= selection_end.
-  defp normalize_selection(%{selection_start: start, selection_end: end_pos} = state) do
+  defp normalize_selection(
+         %{selection_start: start, selection_end: end_pos} = state
+       ) do
     # Use the new compare_positions helper
     case compare_positions(start, end_pos) do
-      1 -> %{state | selection_start: end_pos, selection_end: start} # Swap if start > end
-      _ -> state # Keep order otherwise (0 or -1)
+      # Swap if start > end
+      1 -> %{state | selection_start: end_pos, selection_end: start}
+      # Keep order otherwise (0 or -1)
+      _ -> state
     end
   end
 
@@ -736,16 +755,20 @@ defmodule Raxol.Components.Input.MultiLineInput do
     # Ensure inputs are maps before comparing
     start_map = pos_to_map(start_pos)
     end_map = pos_to_map(end_pos)
+
     case compare_positions(start_map, end_map) do
-      1 -> {end_map, start_map} # Swap if start > end
-      _ -> {start_map, end_map} # Keep order otherwise
+      # Swap if start > end
+      1 -> {end_map, start_map}
+      # Keep order otherwise
+      _ -> {start_map, end_map}
     end
   end
 
   # Helper to convert position tuple or map to map %{row: r, col: c}
   defp pos_to_map({row, col}), do: %{row: row, col: col}
   defp pos_to_map(%{row: _, col: _} = map), do: map
-  defp pos_to_map(_), do: %{row: 0, col: 0} # Default/Error case
+  # Default/Error case
+  defp pos_to_map(_), do: %{row: 0, col: 0}
 
   # Calculates the new cursor position after inserting text (handles newlines)
   defp calculate_new_position(row, col, inserted_text) do
@@ -770,22 +793,28 @@ defmodule Raxol.Components.Input.MultiLineInput do
   # Replaces text within a range with new text, returns {new_full_text, replaced_text}
   defp replace_text_range(original_value, start_pos, end_pos, replacement_text) do
     # Ensure start is before end (use the helper that works with maps)
-    {norm_start_pos, norm_end_pos} = normalize_selection_positions(start_pos, end_pos)
+    {norm_start_pos, norm_end_pos} =
+      normalize_selection_positions(start_pos, end_pos)
 
     # Split lines WITHOUT keeping newlines for simpler index calculation relative to string start
     lines = String.split(original_value, "\n")
 
     # Convert row/col positions to flat string indices
     # Ensure we use the normalized map positions here
-    start_index = pos_to_index_simple(lines, norm_start_pos.row, norm_start_pos.col)
+    start_index =
+      pos_to_index_simple(lines, norm_start_pos.row, norm_start_pos.col)
+
     end_index = pos_to_index_simple(lines, norm_end_pos.row, norm_end_pos.col)
 
     # Extract the text to be replaced (before modification)
-    replaced_text = String.slice(original_value, start_index, end_index - start_index)
+    replaced_text =
+      String.slice(original_value, start_index, end_index - start_index)
 
     # Perform the replacement using string slicing and concatenation
     before_range = String.slice(original_value, 0, start_index)
-    after_range = String.slice(original_value, end_index, String.length(original_value))
+
+    after_range =
+      String.slice(original_value, end_index, String.length(original_value))
 
     new_full_text = before_range <> replacement_text <> after_range
 
@@ -798,19 +827,20 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
     line_length =
       if safe_row >= 0 do
-         String.length(Enum.at(lines, safe_row))
+        String.length(Enum.at(lines, safe_row))
       else
         0
       end
+
     safe_col = clamp(col, 0, line_length)
 
     Enum.slice(lines, 0, safe_row)
     |> Enum.map(&String.length/1)
     |> Enum.sum()
-    |> Kernel.+(max(0, safe_row)) # Add newlines count
+    # Add newlines count
+    |> Kernel.+(max(0, safe_row))
     |> Kernel.+(safe_col)
   end
-
 
   # --- Word Navigation Helpers ---
 

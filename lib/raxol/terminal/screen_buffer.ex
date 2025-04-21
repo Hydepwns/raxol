@@ -382,12 +382,14 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
   @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
   def resize(%__MODULE__{} = buffer, new_width, new_height)
-      when is_integer(new_width) and new_width > 0 and is_integer(new_height) and new_height > 0 do
+      when is_integer(new_width) and new_width > 0 and is_integer(new_height) and
+             new_height > 0 do
     old_width = buffer.width
     old_height = buffer.height
 
     # Create a new empty cell grid with the new dimensions
-    new_cells = List.duplicate(List.duplicate(Cell.new(), new_width), new_height)
+    new_cells =
+      List.duplicate(List.duplicate(Cell.new(), new_width), new_height)
 
     # Determine the range of rows and columns to copy
     max_y_copy = min(old_height, new_height)
@@ -400,7 +402,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
         # If shrinking height, copy from the bottom up
         old_row_index =
           if new_height < old_height do
-            y # New logic: Keep top content
+            # New logic: Keep top content
+            y
           else
             y
           end

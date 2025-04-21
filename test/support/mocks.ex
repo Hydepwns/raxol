@@ -12,6 +12,7 @@ end
 defmodule Raxol.Core.Accessibility.Mock do
   @moduledoc false
   require Mox
+
   # use Mox # <-- Temporarily commented out due to persistent UndefinedFunctionError
 
   # Assuming this signature based on usage

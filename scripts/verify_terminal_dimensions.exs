@@ -27,6 +27,7 @@ defmodule TerminalDimensionVerifier do
     case {width_result, height_result} do
       {{:ok, w}, {:ok, h}} ->
         IO.puts("  SUCCESS: Terminal dimensions via :io module: #{w}x#{h}")
+
       _ ->
         IO.puts("  FAILED: Unable to get terminal dimensions via :io module")
     end
@@ -48,17 +49,23 @@ defmodule TerminalDimensionVerifier do
 
     if command do
       IO.puts("  Using command: #{command}")
+
       try do
         case System.cmd("sh", ["-c", command], stderr_to_stdout: true) do
           {output, 0} ->
             IO.puts("  Raw output: #{inspect(output)}")
             dimensions = parse_command_output(output, command)
+
             case dimensions do
               {width, height} ->
-                IO.puts("  SUCCESS: Terminal dimensions via system command: #{width}x#{height}")
+                IO.puts(
+                  "  SUCCESS: Terminal dimensions via system command: #{width}x#{height}"
+                )
+
               {:error, reason} ->
                 IO.puts("  FAILED: Unable to parse dimensions: #{reason}")
             end
+
           {error, code} ->
             IO.puts("  FAILED: Command failed with exit code #{code}: #{error}")
         end
@@ -76,13 +83,22 @@ defmodule TerminalDimensionVerifier do
     IO.puts("Checking dimensions using Raxol.Terminal.TerminalUtils:")
 
     {width, height} = Raxol.Terminal.TerminalUtils.get_terminal_dimensions()
-    IO.puts("  Raxol.Terminal.TerminalUtils.get_terminal_dimensions() = {#{width}, #{height}}")
+
+    IO.puts(
+      "  Raxol.Terminal.TerminalUtils.get_terminal_dimensions() = {#{width}, #{height}}"
+    )
 
     dims_map = Raxol.Terminal.TerminalUtils.get_dimensions_map()
-    IO.puts("  Raxol.Terminal.TerminalUtils.get_dimensions_map() = #{inspect(dims_map)}")
+
+    IO.puts(
+      "  Raxol.Terminal.TerminalUtils.get_dimensions_map() = #{inspect(dims_map)}"
+    )
 
     bounds_map = Raxol.Terminal.TerminalUtils.get_bounds_map()
-    IO.puts("  Raxol.Terminal.TerminalUtils.get_bounds_map() = #{inspect(bounds_map)}")
+
+    IO.puts(
+      "  Raxol.Terminal.TerminalUtils.get_bounds_map() = #{inspect(bounds_map)}"
+    )
 
     IO.puts("")
   end
@@ -98,12 +114,14 @@ defmodule TerminalDimensionVerifier do
         rescue
           _ -> {:error, :parse_error}
         end
+
       _ ->
         {:error, :invalid_output_format}
     end
   end
 
-  defp parse_command_output(output, cmd) when is_binary(cmd) and cmd =~ "powershell" do
+  defp parse_command_output(output, cmd)
+       when is_binary(cmd) and cmd =~ "powershell" do
     # Parse PowerShell output which typically looks like:
     # Width : 120
     # Height: 30
