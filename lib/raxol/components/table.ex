@@ -340,22 +340,18 @@ defmodule Raxol.Components.Table do
         Layout.row([style: %{gap: 1}], fn ->
           # First page button
           Components.button("<<",
-            [
-              id: "#{id}_first_page",
-              style: %{},
-              disabled: page <= 1,
-              on_click: fn -> on_page_change.(1) end
-            ]
+            id: "#{id}_first_page",
+            style: %{},
+            disabled: page <= 1,
+            on_click: fn -> on_page_change.(1) end
           )
 
           # Previous page button
           Components.button("<",
-            [
-              id: "#{id}_prev_page",
-              style: %{},
-              disabled: page <= 1,
-              on_click: fn -> on_page_change.(page - 1) end
-            ]
+            id: "#{id}_prev_page",
+            style: %{},
+            disabled: page <= 1,
+            on_click: fn -> on_page_change.(page - 1) end
           )
 
           # Page number buttons
@@ -368,35 +364,28 @@ defmodule Raxol.Components.Table do
               Components.text("...")
             else
               Components.button(to_string(p),
-                [
-                  id: "#{id}_page_#{p}",
-                  style:
-                    if(is_current, do: %{bg: :blue, fg: :white}, else: %{}),
-                  disabled: is_current,
-                  on_click: fn -> on_page_change.(p) end
-                ]
+                id: "#{id}_page_#{p}",
+                style: if(is_current, do: %{bg: :blue, fg: :white}, else: %{}),
+                disabled: is_current,
+                on_click: fn -> on_page_change.(p) end
               )
             end
           end)
 
           # Next page button
           Components.button(">",
-            [
-              id: "#{id}_next_page",
-              style: %{},
-              disabled: page >= total_pages,
-              on_click: fn -> on_page_change.(page + 1) end
-            ]
+            id: "#{id}_next_page",
+            style: %{},
+            disabled: page >= total_pages,
+            on_click: fn -> on_page_change.(page + 1) end
           )
 
           # Last page button
           Components.button(">>",
-            [
-              id: "#{id}_last_page",
-              style: %{},
-              disabled: page >= total_pages,
-              on_click: fn -> on_page_change.(total_pages) end
-            ]
+            id: "#{id}_last_page",
+            style: %{},
+            disabled: page >= total_pages,
+            on_click: fn -> on_page_change.(total_pages) end
           )
         end)
       end)

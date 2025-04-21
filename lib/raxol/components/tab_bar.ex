@@ -109,12 +109,10 @@ defmodule Raxol.Components.TabBar do
         tab_focus_key = "#{focus_key}_#{id}"
 
         Components.button(label,
-          [
-            id: tab_focus_key,
-            style: final_style,
-            on_click: fn -> on_change.(id) end,
-            tooltip: tooltip
-          ]
+          id: tab_focus_key,
+          style: final_style,
+          on_click: fn -> on_change.(id) end,
+          tooltip: tooltip
         )
       end)
     end)

@@ -179,11 +179,15 @@ defmodule Raxol.Components.Modal do
       fn ->
         Layout.row([style: %{justify: :flex_end, gap: 1}], fn ->
           Components.button(no_text,
-            [id: "#{title}_no", style: no_style, on_click: on_cancel]
+            id: "#{title}_no",
+            style: no_style,
+            on_click: on_cancel
           )
 
           Components.button(yes_text,
-            [id: "#{title}_yes", style: yes_style, on_click: on_confirm]
+            id: "#{title}_yes",
+            style: yes_style,
+            on_click: on_confirm
           )
         end)
       end,
@@ -230,7 +234,9 @@ defmodule Raxol.Components.Modal do
       fn ->
         Layout.row([style: %{justify: :center}], fn ->
           Components.button(ok_text,
-            [id: "#{title}_ok", style: ok_style, on_click: on_ok]
+            id: "#{title}_ok",
+            style: ok_style,
+            on_click: on_ok
           )
         end)
       end,

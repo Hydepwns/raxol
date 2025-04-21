@@ -16,8 +16,7 @@ This directory contains comprehensive documentation for the Raxol framework, a t
 - **accessibility/** - Guides and documentation for implementing accessible terminal UIs
 - **api/** - API reference and documentation
 - **architecture/** - System architecture and design documentation
-- **changelog/** - Version history and release notes
-- **comparison/** - Comparisons with other terminal UI frameworks
+- **CHANGELOG.md** - Version history and release notes (See also `../TEST_PLAN.md` for recent refactoring details)
 - **components/** - Documentation for built-in UI components
 - **examples/** - Example applications and code snippets
 - **guides/** - User guides and tutorials

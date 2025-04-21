@@ -66,7 +66,6 @@ MyDashboard.add_chart("Sales", %{
 mix test                  # Run tests
 mix credo                 # Code quality
 mix dialyzer              # Type checking
-mix ecto.setup            # Setup database
 ./scripts/run-local-tests.sh  # Run tests locally without GitHub Actions
 ```
 

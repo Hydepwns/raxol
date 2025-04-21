@@ -453,12 +453,14 @@ defmodule Raxol.Terminal.ANSI do
         set_background_256(emulator, index)
 
       {:foreground_basic, color_code} ->
-        color_name = Map.get(@colors, color_code) # Map code (0-7) to color name
+        # Map code (0-7) to color name
+        color_name = Map.get(@colors, color_code)
         new_style = TextFormatting.set_foreground(emulator.style, color_name)
         %{emulator | style: new_style}
 
       {:background_basic, color_code} ->
-        color_name = Map.get(@colors, color_code) # Map code (0-7) to color name
+        # Map code (0-7) to color name
+        color_name = Map.get(@colors, color_code)
         new_style = TextFormatting.set_background(emulator.style, color_name)
         %{emulator | style: new_style}
 
@@ -948,13 +950,15 @@ defmodule Raxol.Terminal.ANSI do
   end
 
   defp set_foreground_basic(emulator, color_code) do
-    color_name = Map.get(@colors, color_code) # Map code (0-7) to color name
+    # Map code (0-7) to color name
+    color_name = Map.get(@colors, color_code)
     new_style = TextFormatting.set_foreground(emulator.style, color_name)
     %{emulator | style: new_style}
   end
 
   defp set_background_basic(emulator, color_code) do
-    color_name = Map.get(@colors, color_code) # Map code (0-7) to color name
+    # Map code (0-7) to color name
+    color_name = Map.get(@colors, color_code)
     new_style = TextFormatting.set_background(emulator.style, color_name)
     %{emulator | style: new_style}
   end

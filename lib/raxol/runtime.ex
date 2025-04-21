@@ -580,7 +580,8 @@ defmodule Raxol.Runtime do
 
           # Handle other RaxolEvent types directly (resize, unknown)
           # The handle_event function below might need updating to accept RaxolEvent struct
-          %RaxolEvent{} = other_event -> # Matches any other RaxolEvent struct
+          # Matches any other RaxolEvent struct
+          %RaxolEvent{} = other_event ->
             case handle_event(other_event, state) do
               {:continue, updated_state} ->
                 {:noreply, updated_state}
@@ -906,8 +907,10 @@ defmodule Raxol.Runtime do
   # --- Private helper for app event delegation ---
   defp handle_event(event_tuple, state) do
     # Convert the raw event tuple/map to the application event format
-    {type_int, mod, key, ch, w, h, x, y} = event_tuple # Destructure
-    app_event = TermboxConverter.convert(type_int, mod, key, ch, w, h, x, y) # Call convert/8
+    # Destructure
+    {type_int, mod, key, ch, w, h, x, y} = event_tuple
+    # Call convert/8
+    app_event = TermboxConverter.convert(type_int, mod, key, ch, w, h, x, y)
 
     if Code.ensure_loaded?(state.app_module) and
          function_exported?(state.app_module, :update, 2) do
@@ -962,7 +965,11 @@ defmodule Raxol.Runtime do
     # )
 
     # Use key_data directly for quit key check
-    is_quit = is_quit_key?(%{type: :key, key: key_data.key, modifiers: key_data.modifiers}, state.quit_keys)
+    is_quit =
+      is_quit_key?(
+        %{type: :key, key: key_data.key, modifiers: key_data.modifiers},
+        state.quit_keys
+      )
 
     if is_quit do
       Logger.info("[Runtime] Quit key detected, stopping...")

@@ -14,7 +14,16 @@ defmodule Raxol.Core.Events.TermboxConverter do
   Converts raw termbox event data into a Raxol event.
   Accepts the decoded tuple elements from the poller.
   """
-  @spec convert(integer(), integer(), integer(), integer(), integer(), integer(), integer(), integer()) ::
+  @spec convert(
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer(),
+          integer()
+        ) ::
           Event.t()
   def convert(type_int, mod, key, ch, w, h, x, y) do
     case type_int do
@@ -32,7 +41,8 @@ defmodule Raxol.Core.Events.TermboxConverter do
       # Mouse event
       3 ->
         # Pass mod, key, x, y to helpers
-        button = map_button_code(key) # key is button code for mouse
+        # key is button code for mouse
+        button = map_button_code(key)
         modifiers = map_modifiers(mod)
         Event.mouse_event(button, {x, y}, :pressed, modifiers)
 
@@ -75,12 +85,14 @@ defmodule Raxol.Core.Events.TermboxConverter do
         key_code == ExTermboxConstants.key(:arrow_down) -> :down
         key_code == ExTermboxConstants.key(:arrow_left) -> :left
         key_code == ExTermboxConstants.key(:arrow_right) -> :right
-        key_code == ExTermboxConstants.key(:ctrl_tilde) -> {:ctrl, :tilde} # May need adjustment
+        # May need adjustment
+        key_code == ExTermboxConstants.key(:ctrl_tilde) -> {:ctrl, :tilde}
         # ... map other special keys ...
         key_code == ExTermboxConstants.key(:esc) -> :escape
         key_code == ExTermboxConstants.key(:enter) -> :enter
         key_code == ExTermboxConstants.key(:space) -> :space
-        key_code == ExTermboxConstants.key(:backspace2) -> :backspace # Or KEY_BACKSPACE?
+        # Or KEY_BACKSPACE?
+        key_code == ExTermboxConstants.key(:backspace2) -> :backspace
         key_code == ExTermboxConstants.key(:tab) -> :tab
         true -> {:unknown_key, key_code}
       end
@@ -110,7 +122,8 @@ defmodule Raxol.Core.Events.TermboxConverter do
       button_code == ExTermboxConstants.key(:mouse_wheel_down) -> :wheel_down
       # Termbox might send release as a separate key event, not button code
       # button_code == ExTermboxConstants.key(:mouse_release) -> :release
-      true -> :unknown_button # Return atom instead of nil
+      # Return atom instead of nil
+      true -> :unknown_button
     end
   end
 end

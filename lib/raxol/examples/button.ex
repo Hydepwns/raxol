@@ -59,13 +59,11 @@ defmodule Raxol.Examples.Button do
     # Generate the DSL representation
     dsl_result =
       Components.button(state.label,
-        [
-          id: state.id,
-          style: state.style,
-          on_click: state.on_click,
-          disabled: state.disabled,
-          pressed: state.pressed
-        ]
+        id: state.id,
+        style: state.style,
+        on_click: state.on_click,
+        disabled: state.disabled,
+        pressed: state.pressed
       )
 
     # Convert to Element struct

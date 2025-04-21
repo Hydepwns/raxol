@@ -33,7 +33,8 @@ defmodule Editor do
       %{type: :key, key: @spacebar, modifiers: []} ->
         model <> " "
 
-      %{type: :key, key: char_code, modifiers: []} when is_integer(char_code) and char_code >= 32 ->
+      %{type: :key, key: char_code, modifiers: []}
+      when is_integer(char_code) and char_code >= 32 ->
         model <> <<char_code::utf8>>
 
       _ ->

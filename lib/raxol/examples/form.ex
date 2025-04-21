@@ -60,7 +60,8 @@ defmodule Raxol.Examples.Form do
 
     # Use Layout.column, Components.text, etc.
     Layout.column style: %{border: :single, padding: 1} do
-      [ # Wrap children in a list
+      # Wrap children in a list
+      [
         Components.text(state.title, style: %{bold: true, align: :center}),
         # Display error message if present
         if state.error do
@@ -79,7 +80,8 @@ defmodule Raxol.Examples.Form do
           style: %{marginTop: 1}
         )
       ]
-      |> Enum.reject(&is_nil(&1)) # Filter out nil error message
+      # Filter out nil error message
+      |> Enum.reject(&is_nil(&1))
     end
   end
 

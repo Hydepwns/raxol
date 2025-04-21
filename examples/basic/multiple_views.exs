@@ -23,9 +23,9 @@ defmodule MultipleViewsDemo do
   def render(model) do
     view do
       case model.selected_tab do
-        1 -> panel [title: "View 1", height: :fill], do: nil
-        2 -> panel [title: "View 2", height: :fill], do: nil
-        3 -> panel [title: "View 3", height: :fill], do: nil
+        1 -> panel([title: "View 1", height: :fill], do: nil)
+        2 -> panel([title: "View 2", height: :fill], do: nil)
+        3 -> panel([title: "View 3", height: :fill], do: nil)
       end
     end
   end
@@ -47,5 +47,3 @@ Raxol.run(
   MultipleViewsDemo,
   quit_keys: [?q]
 )
-
-
