@@ -98,15 +98,12 @@ defmodule Raxol.Core.Renderer.Views.Table do
   end
 
   defp create_header_row(columns, widths, style) do
-    cells =
+    View.flex direction: :row, style: style do
       Enum.zip(columns, widths)
       |> Enum.map(fn {column, width} ->
-        View.text(pad_text(column.header, width, column.align),
-          style: style
-        )
+        View.text(pad_text(column.header, width, column.align))
       end)
-
-    View.flex(direction: :row, children: cells)
+    end
   end
 
   defp create_data_rows(
@@ -121,9 +118,21 @@ defmodule Raxol.Core.Renderer.Views.Table do
     data
     |> Enum.with_index()
     |> Enum.map(fn {row, index} ->
-      # Calculate row style
+      # Calculate base style by evaluating the style function if it is one
+      # Default to empty list if function returns nil
+      base_style =
+        if is_function(style, 2) do
+          # Call the function with index and row data
+          style.(index, row)
+        else
+          # Assume it's already a list of styles
+          style
+        end || []
+
+      # Calculate row style by combining base, striping, and selection
+      # Result from function or the original list
       row_style =
-        style ++
+        base_style ++
           if striped and rem(index, 2) == 1 do
             [bg: :bright_black]
           else
@@ -139,15 +148,32 @@ defmodule Raxol.Core.Renderer.Views.Table do
       cells =
         Enum.zip(columns, widths)
         |> Enum.map(fn {column, width} ->
-          value =
+          formatted_value =
             get_column_value(row, column)
             |> format_value(column.format)
-            |> pad_text(width, column.align)
 
-          View.text(value)
+          cell_content =
+            case formatted_value do
+              text when is_binary(text) ->
+                View.text(pad_text(text, width, column.align))
+
+              # Assuming map means a View struct
+              view when is_map(view) ->
+                # TODO: How to handle width/alignment for nested views?
+                # For now, just pass the view directly.
+                view
+
+              # Fallback for other types
+              other ->
+                View.text(pad_text(to_string(other), width, column.align))
+            end
+
+          cell_content
         end)
 
-      View.flex(direction: :row, style: row_style, children: cells)
+      View.flex direction: :row, style: row_style do
+        cells
+      end
     end)
   end
 

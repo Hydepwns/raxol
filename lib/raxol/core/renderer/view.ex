@@ -90,7 +90,7 @@ defmodule Raxol.Core.Renderer.View do
   Creates a new view with the given type and options.
   """
   def new(type, opts \\ []) do
-    %{
+    base = %{
       type: type,
       position: Keyword.get(opts, :position),
       position_type: Keyword.get(opts, :position_type, :relative),
@@ -105,6 +105,8 @@ defmodule Raxol.Core.Renderer.View do
       children: Keyword.get(opts, :children, []),
       content: Keyword.get(opts, :content)
     }
+
+    Map.merge(base, Map.new(opts))
   end
 
   @doc """
@@ -124,8 +126,20 @@ defmodule Raxol.Core.Renderer.View do
   @doc """
   Creates a flex container.
   """
-  def flex(opts \\ []) do
-    new(:flex, opts)
+  def flex(opts \\ [], do: block) do
+    new(
+      :flex,
+      Keyword.merge(
+        [
+          children: block,
+          direction: Keyword.get(opts, :direction, :row),
+          justify: Keyword.get(opts, :justify, :start),
+          align: Keyword.get(opts, :align, :start),
+          wrap: Keyword.get(opts, :wrap, false)
+        ],
+        opts
+      )
+    )
   end
 
   @doc """
@@ -260,7 +274,7 @@ defmodule Raxol.Core.Renderer.View do
   end
 
   defp normalize_spacing({h, v}) when is_integer(h) and is_integer(v) do
-    {v, h, v, h}
+    {h, v, h, v}
   end
 
   defp normalize_spacing({top, right, bottom, left}) do
@@ -307,6 +321,7 @@ defmodule Raxol.Core.Renderer.View do
   end
 
   defp layout_grid(view, {width, height} = _size) do
+    # Default rows to :auto if not provided
     _rows = view.rows || :auto
     columns = view.columns || 1
     gap = view.gap || {0, 0, 0, 0}
@@ -373,9 +388,14 @@ defmodule Raxol.Core.Renderer.View do
     child = List.first(view.children)
     {offset_x, offset_y} = view.offset || {0, 0}
 
-    if child do
-      %{child | position: {-offset_x, -offset_y}, size: size}
-    end
+    laid_out_children =
+      if child do
+        [%{child | position: {-offset_x, -offset_y}, size: size}]
+      else
+        []
+      end
+
+    %{view | children: laid_out_children}
   end
 
   defp layout_shadow(view, {width, height} = _size) do
@@ -383,24 +403,25 @@ defmodule Raxol.Core.Renderer.View do
     {offset_x, offset_y} = view.offset || {1, 1}
     shadow_color = view.color || :bright_black
 
-    [
-      # Shadow
-      for x <- offset_x..(width - 1),
-          y <- offset_y..(height - 1) do
-        text(" ",
-          position: {x, y},
-          bg: shadow_color,
-          style: [:dim]
-        )
-      end,
-
-      # Main content
-      if child do
-        %{child | position: {0, 0}, size: {width - offset_x, height - offset_y}}
+    shadow_views =
+      for x <- offset_x..(width - 1), y <- offset_y..(height - 1) do
+        text(" ", position: {x, y}, bg: shadow_color, style: [:dim])
       end
-    ]
-    |> List.flatten()
-    |> Enum.reject(&is_nil/1)
+
+    content_view =
+      if child do
+        [
+          %{
+            child
+            | position: {0, 0},
+              size: {width - offset_x, height - offset_y}
+          }
+        ]
+      else
+        []
+      end
+
+    %{view | children: shadow_views ++ content_view}
   end
 
   defp layout_basic(view, size) do

@@ -9,7 +9,6 @@ defmodule TerminalDimensionVerifier do
     IO.puts("==============================\n")
 
     verify_io_module()
-    verify_extermbox()
     verify_system_command()
     verify_terminal_utils()
 
@@ -30,60 +29,6 @@ defmodule TerminalDimensionVerifier do
         IO.puts("  SUCCESS: Terminal dimensions via :io module: #{w}x#{h}")
       _ ->
         IO.puts("  FAILED: Unable to get terminal dimensions via :io module")
-    end
-
-    IO.puts("")
-  end
-
-  defp verify_extermbox do
-    IO.puts("Checking dimensions using ExTermbox.Bindings:")
-
-    # Try to initialize ExTermbox - handle potential errors
-    init_result = try do
-      ExTermbox.Bindings.init()
-    rescue
-      e -> {:error, e}
-    end
-
-    case init_result do
-      :ok ->
-        width_result = ExTermbox.Bindings.width()
-        height_result = ExTermbox.Bindings.height()
-
-        IO.puts("  ExTermbox.Bindings.width() = #{inspect(width_result)}")
-        IO.puts("  ExTermbox.Bindings.height() = #{inspect(height_result)}")
-
-        # Attempt to unwrap results properly
-        width = case width_result do
-          {:ok, {:ok, w}} -> w
-          {:ok, w} when is_integer(w) -> w
-          _ -> nil
-        end
-
-        height = case height_result do
-          {:ok, {:ok, h}} -> h
-          {:ok, h} when is_integer(h) -> h
-          _ -> nil
-        end
-
-        if width && height do
-          IO.puts("  SUCCESS: Terminal dimensions via ExTermbox: #{width}x#{height}")
-        else
-          IO.puts("  PARTIAL FAILURE: Unable to get both dimensions via ExTermbox")
-          if width, do: IO.puts("    Width only: #{width}")
-          if height, do: IO.puts("    Height only: #{height}")
-        end
-
-        # Clean up ExTermbox
-        try do
-          ExTermbox.Bindings.stop_polling()
-          ExTermbox.Bindings.shutdown()
-        rescue
-          _ -> IO.puts("  WARNING: Error during ExTermbox cleanup")
-        end
-
-      {:error, reason} ->
-        IO.puts("  FAILED: Unable to initialize ExTermbox: #{inspect(reason)}")
     end
 
     IO.puts("")

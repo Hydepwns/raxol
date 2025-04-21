@@ -452,17 +452,25 @@ defmodule Raxol.Terminal.ANSI do
       {:background_256, index} ->
         set_background_256(emulator, index)
 
-      {:foreground_basic, color} ->
-        set_foreground_basic(emulator, color)
+      {:foreground_basic, color_code} ->
+        color_name = Map.get(@colors, color_code) # Map code (0-7) to color name
+        new_style = TextFormatting.set_foreground(emulator.style, color_name)
+        %{emulator | style: new_style}
 
-      {:background_basic, color} ->
-        set_background_basic(emulator, color)
+      {:background_basic, color_code} ->
+        color_name = Map.get(@colors, color_code) # Map code (0-7) to color name
+        new_style = TextFormatting.set_background(emulator.style, color_name)
+        %{emulator | style: new_style}
 
       {:text_attribute, attr} ->
-        set_text_attribute(emulator, attr)
+        # Use TextFormatting to update the style map
+        new_style = TextFormatting.apply_attribute(emulator.style, attr)
+        %{emulator | style: new_style}
 
       {:reset_attributes} ->
-        reset_attributes(emulator)
+        # Use TextFormatting to reset the style map
+        new_style = TextFormatting.reset(emulator.style)
+        %{emulator | style: new_style}
 
       {:clear_screen, n} ->
         clear_screen(emulator, n)
@@ -939,40 +947,16 @@ defmodule Raxol.Terminal.ANSI do
     %{emulator | attributes: %{emulator.attributes | background_256: index}}
   end
 
-  defp set_foreground_basic(emulator, color) do
-    case get_color_name(color) do
-      nil ->
-        emulator
-
-      color_name ->
-        color_code = basic_color_code(color_name)
-        "\e[#{color_code}m"
-    end
+  defp set_foreground_basic(emulator, color_code) do
+    color_name = Map.get(@colors, color_code) # Map code (0-7) to color name
+    new_style = TextFormatting.set_foreground(emulator.style, color_name)
+    %{emulator | style: new_style}
   end
 
-  defp set_background_basic(emulator, color) do
-    case get_color_name(color) do
-      nil ->
-        emulator
-
-      color_name ->
-        color_code = basic_color_code(color_name)
-        "\e[#{color_code + 10}m"
-    end
-  end
-
-  defp basic_color_code(color_name) do
-    case color_name do
-      :black -> 30
-      :red -> 31
-      :green -> 32
-      :yellow -> 33
-      :blue -> 34
-      :magenta -> 35
-      :cyan -> 36
-      :white -> 37
-      _ -> 0
-    end
+  defp set_background_basic(emulator, color_code) do
+    color_name = Map.get(@colors, color_code) # Map code (0-7) to color name
+    new_style = TextFormatting.set_background(emulator.style, color_name)
+    %{emulator | style: new_style}
   end
 
   defp color_code(%Raxol.Style.Colors.Color{r: r, g: g, b: b}, :foreground) do
@@ -1147,7 +1131,7 @@ defmodule Raxol.Terminal.ANSI do
   defp clear_line(emulator, n) do
     buffer = Emulator.get_buffer(emulator)
     {cursor_x, cursor_y} = Emulator.get_cursor_position(emulator)
-    buffer_width = ScreenBuffer.width(buffer)
+    buffer_width = ScreenBuffer.get_width(buffer)
 
     new_buffer =
       case n do

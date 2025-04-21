@@ -10,9 +10,11 @@ defmodule Raxol.Examples.Button do
   - Theme support
   """
 
+  use GenServer
   use Raxol.Component
+  alias Raxol.Core.Events.Event
 
-  alias Raxol.View
+  @behaviour Raxol.App
 
   @default_theme %{
     normal: %{fg: :blue, bg: :white, style: :bold},
@@ -20,37 +22,22 @@ defmodule Raxol.Examples.Button do
     pressed: %{fg: :blue, bg: :white, style: :reverse}
   }
 
-  @impl true
-  def init(props) do
-    state = %{
-      label: Map.get(props, :label, "Button"),
-      disabled: Map.get(props, :disabled, false),
-      pressed: false,
-      on_click: Map.get(props, :on_click, fn -> :ok end),
-      theme: Map.get(props, :theme, @default_theme)
-    }
+  @type state :: map()
 
-    {:ok, state}
+  @impl true
+  def init(_opts) do
+    {:ok, %{count: 0, theme: @default_theme}}
   end
 
   @impl true
-  def handle_event({:click, _pos} = _event, state) do
-    # Don't process clicks if disabled
-    if state.disabled do
-      {state, []}
-    else
-      # Update the state to reflect pressed state
-      updated_state = %{state | pressed: true}
-
-      # Get the on_click function from state and call it
-      command = state.on_click.()
-
-      # Return updated state and commands
-      {updated_state, [command]}
-    end
+  def update(%Event{type: :mouse, data: %{state: :pressed}} = _event, state) do
+    {:noreply, %{state | count: state.count + 1}}
   end
 
-  def handle_event({:resize, _} = _event, state) do
+  @impl true
+  def update(_msg, state), do: {:noreply, state}
+
+  def handle_event(%Event{type: :resize} = _event, state) do
     # TODO: Implement resize handling
     state
   end
@@ -67,19 +54,18 @@ defmodule Raxol.Examples.Button do
     raise "Simulated error for testing"
   end
 
-  @impl Raxol.Component
+  @impl true
   def render(state) do
     # Generate the DSL representation
     dsl_result =
-      View.button(
+      Components.button(state.label,
         [
           id: state.id,
           style: state.style,
           on_click: state.on_click,
           disabled: state.disabled,
           pressed: state.pressed
-        ],
-        state.label
+        ]
       )
 
     # Convert to Element struct

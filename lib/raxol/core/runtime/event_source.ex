@@ -80,19 +80,19 @@ defmodule Raxol.Core.Runtime.EventSource do
 
       def init({args, context}) do
         case __MODULE__.init(args, context) do
-          {:ok, state} -> {:ok, {context, state}}
+          {:ok, state} -> {:ok, state}
           error -> error
         end
       end
 
-      def handle_info(msg, {context, state}) do
+      def handle_info(msg, state) do
         case __MODULE__.handle_info(msg, state) do
-          {:noreply, new_state} -> {:noreply, {context, new_state}}
-          {:stop, reason, new_state} -> {:stop, reason, {context, new_state}}
+          {:noreply, new_state} -> {:noreply, new_state}
+          {:stop, reason, new_state} -> {:stop, reason, new_state}
         end
       end
 
-      def terminate(reason, {_context, state}) do
+      def terminate(reason, state) do
         if function_exported?(__MODULE__, :terminate, 2) do
           __MODULE__.terminate(reason, state)
         else

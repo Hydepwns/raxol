@@ -21,7 +21,8 @@ defmodule Raxol.Components.Selection.Dropdown do
 
   use Raxol.Component
   alias Raxol.Components.Selection.List
-  alias Raxol.Core.Events.Event
+  alias Raxol.View.Layout
+  alias Raxol.View.Components
 
   @default_width 30
   @default_max_height 10
@@ -117,13 +118,13 @@ defmodule Raxol.Components.Selection.Dropdown do
   defp render_collapsed(state) do
     selected_label = get_selected_label(state)
     # Render a box that looks like a closed dropdown
-    Raxol.View.box style: %{border: :single, width: state.width} do
+    Layout.box style: %{border: :single, width: state.width} do
       [
-        Raxol.View.row style: %{width: :fill} do
+        Layout.row style: %{width: :fill} do
           [
-            Raxol.View.text(selected_label, style: %{width: :fill}),
+            Components.text(selected_label, style: %{width: :fill}),
             # Down arrow indicator
-            Raxol.View.text(" ▼")
+            Components.text(" ▼")
           ]
         end
       ]
@@ -133,13 +134,13 @@ defmodule Raxol.Components.Selection.Dropdown do
   @dialyzer {:nowarn_function, render_expanded: 1}
   @spec render_expanded(map()) :: map()
   defp render_expanded(state) do
-    Raxol.View.column do
+    Layout.column do
       # Explicitly return a list for the column's children
       [
         # Show the collapsed view first
         render_collapsed(state),
         # Then render the list of options below
-        Raxol.View.box style: %{border: :single, width: state.width} do
+        Layout.box style: %{border: :single, width: state.width} do
           # Assuming List.render returns an element or list of elements
           List.render(%{
             items: state.items,

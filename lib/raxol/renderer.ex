@@ -3,7 +3,7 @@ defmodule Raxol.Renderer do
   The Renderer module handles drawing UI elements to the terminal.
 
   This module translates the virtual DOM representation of the UI
-  into actual terminal output using ex_termbox.
+  into actual terminal output using rex_termbox.
   """
 
   use GenServer

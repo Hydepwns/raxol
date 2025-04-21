@@ -10,6 +10,7 @@ defmodule Raxol.MixProject do
       version: @version,
       elixir: "~> 1.14",
       elixirc_paths: elixirc_paths(Mix.env()),
+      compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -57,7 +58,7 @@ defmodule Raxol.MixProject do
   def application do
     [
       mod: {Raxol.Application, []},
-      extra_applications: [:logger, :runtime_tools, :ex_termbox, :swoosh]
+      extra_applications: [:logger, :runtime_tools, :swoosh]
     ]
   end
 
@@ -70,8 +71,7 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library
-      {:ex_termbox, "~> 1.0"},
-      {:ratatouille, "~> 0.3"},
+      {:rrex_termbox, path: "../rex_termbox", only: [:prod, :test]},
       {:phoenix, "~> 1.7.20"},
       {:phoenix_live_view, "~> 1.0.0"},
       {:surface, "~> 0.12"},
@@ -117,6 +117,7 @@ defmodule Raxol.MixProject do
       # Testing
       {:mox, "~> 1.0", only: :test},
       {:meck, "~> 0.9.2", only: :test},
+      {:elixir_make, "~> 0.6", runtime: false},
       {:wallaby, "~> 0.30.0", only: :test, runtime: false},
       {:floki, ">= 0.30.0", only: :test},
 

@@ -191,11 +191,11 @@ defmodule Raxol.Components.Dashboard.GridContainer do
       # --- End Debug Logging ---
 
       # Validate parent_bounds values
-      unless is_map(parent_bounds) and
-               is_number(Map.get(parent_bounds, :x)) and
-               is_number(Map.get(parent_bounds, :y)) and
-               is_number(container_width) and
-               is_number(container_height) do
+      if !(is_map(parent_bounds) and
+             is_number(Map.get(parent_bounds, :x)) and
+             is_number(Map.get(parent_bounds, :y)) and
+             is_number(container_width) and
+             is_number(container_height)) do
         Logger.error(
           "Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(container_width)}, container_height=#{inspect(container_height)}"
         )
@@ -227,7 +227,7 @@ defmodule Raxol.Components.Dashboard.GridContainer do
           end
 
         # Validate cell dimensions
-        unless is_number(cell_width) and is_number(cell_height) do
+        if !(is_number(cell_width) and is_number(cell_height)) do
           Logger.error(
             "Invalid cell dimensions in calculate_widget_bounds: width=#{inspect(cell_width)}, height=#{inspect(cell_height)}"
           )

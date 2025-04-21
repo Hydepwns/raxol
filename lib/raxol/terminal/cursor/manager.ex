@@ -47,6 +47,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   ## Examples
 
+      iex> alias Raxol.Terminal.Cursor.Manager
       iex> cursor = Cursor.Manager.new()
       iex> cursor.position
       {0, 0}
@@ -75,6 +76,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   ## Examples
 
+      iex> alias Raxol.Terminal.Cursor.Manager
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.move_to(cursor, 10, 5)
       iex> cursor.position
@@ -89,6 +91,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   ## Examples
 
+      iex> alias Raxol.Terminal.Cursor.Manager
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.move_to(cursor, 10, 5)
       iex> cursor = Cursor.Manager.save_position(cursor)
@@ -104,6 +107,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   ## Examples
 
+      iex> alias Raxol.Terminal.Cursor.Manager
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.move_to(cursor, 10, 5)
       iex> cursor = Cursor.Manager.save_position(cursor)
@@ -124,6 +128,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   ## Examples
 
+      iex> alias Raxol.Terminal.Cursor.Manager
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.set_style(cursor, :underline)
       iex> cursor.style
@@ -146,6 +151,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   ## Examples
 
+      iex> alias Raxol.Terminal.Cursor.Manager
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.set_custom_shape(cursor, "█", {2, 1})
       iex> cursor.style
@@ -162,6 +168,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   ## Examples
 
+      iex> alias Raxol.Terminal.Cursor.Manager
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.set_state(cursor, :hidden)
       iex> cursor.state
@@ -177,6 +184,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   ## Examples
 
+      iex> alias Raxol.Terminal.Cursor.Manager
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.set_state(cursor, :blinking)
       iex> {cursor, visible} = Cursor.Manager.update_blink(cursor)
@@ -202,6 +210,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   ## Examples
 
+      iex> alias Raxol.Terminal.Cursor.Manager
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.add_to_history(cursor)
       iex> length(cursor.history)
@@ -230,6 +239,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   ## Examples
 
+      iex> alias Raxol.Terminal.Cursor.Manager
       iex> cursor = Cursor.Manager.new()
       iex> cursor = Cursor.Manager.add_to_history(cursor)
       iex> cursor = Cursor.Manager.move_to(cursor, 10, 5)

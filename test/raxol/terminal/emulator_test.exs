@@ -476,4 +476,14 @@ defmodule Raxol.Terminal.EmulatorTest do
   end
 
   # Removed outdated helper functions process_escape, get_char_at, get_string_at
+
+  test "handles terminal modes" do
+    # Insert mode (Standard Mode 4)
+    state = Emulator.process_input("\e[4h", @initial_state)
+    assert state.mode_state.insert_mode == true
+
+    # Normal mode (Reset Standard Mode 4)
+    state = Emulator.process_input("\e[4l", state)
+    assert state.mode_state.insert_mode == false
+  end
 end

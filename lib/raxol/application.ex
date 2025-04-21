@@ -227,14 +227,50 @@ defmodule Raxol.Application do
   # Private functions
 
   defp validate_colors(theme, background) do
+    Logger.debug(
+      "Validating theme colors against background: #{inspect(background)}"
+    )
+
+    # --- BEGIN ADDED LOGGING ---
+    # require Logger
+    # Logger.debug("validate_colors - Received theme struct: #{inspect(theme)}")
+    # Logger.debug("validate_colors - Theme Palette: #{inspect(Map.get(theme, :palette))}")
+    # Logger.debug("validate_colors - Theme UI Mappings: #{inspect(Map.get(theme, :ui_mappings))}")
+    # --- END ADDED LOGGING ---
+
     # Get all UI colors
     ui_colors = Theme.get_all_ui_colors(theme)
+    Logger.debug("UI Colors map: #{inspect(ui_colors)}")
 
     # Check contrast ratios
-    Enum.reduce_while(ui_colors, {:ok, []}, fn {_element, color}, {:ok, acc} ->
-      case check_contrast_ratio(color, background) do
-        :ok -> {:cont, {:ok, acc}}
-        {:error, reason} -> {:halt, {:error, reason}}
+    Enum.reduce_while(ui_colors, {:ok, []}, fn {element, color}, {:ok, acc} ->
+      # Check if the color value is nil (missing from palette)
+      if is_nil(color) do
+        Logger.warning(
+          "UI element '#{element}' has a missing color definition in the theme palette. Skipping contrast check."
+        )
+
+        # Continue without erroring, but log it
+        {:cont, {:ok, acc}}
+      else
+        case check_contrast_ratio(color, background) do
+          :ok ->
+            Logger.debug("Contrast check OK for element '#{element}'")
+            {:cont, {:ok, acc}}
+
+          {:error, reason} ->
+            Logger.warning(
+              "Contrast check FAILED for element '#{element}': #{reason}"
+            )
+
+            # Instead of halting, maybe we should just log and continue?
+            # For now, let's keep halting to see the first failure clearly.
+            # If we want to collect all failures, change to:
+            # {:cont, {:error, [{element, reason} | acc]}}
+            # And adjust the return value handling in validate_and_adjust_theme
+            # Halt on first error for now
+            {:halt, {:error, reason}}
+        end
       end
     end)
   end
@@ -261,6 +297,16 @@ defmodule Raxol.Application do
     darker = min(color_luminance, bg_luminance)
 
     (lighter + 0.05) / (darker + 0.05)
+  end
+
+  defp calculate_relative_luminance(nil) do
+    # Handle case where color is missing (e.g., background not defined)
+    Logger.warning(
+      "Calculating relative luminance for nil color. Defaulting to 0 (black)."
+    )
+
+    # Default luminance for black
+    0.0
   end
 
   defp calculate_relative_luminance(color) do

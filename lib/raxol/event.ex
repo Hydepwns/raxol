@@ -2,7 +2,7 @@ defmodule Raxol.Event do
   @moduledoc """
   Event handling and conversion utilities.
 
-  This module handles conversion between ex_termbox events and Raxol
+  This module handles conversion between rex_termbox events and Raxol
   events, as well as providing utilities for event handling.
   """
 
@@ -29,11 +29,11 @@ defmodule Raxol.Event do
         }
 
   @doc """
-  Converts an ex_termbox event to a Raxol event.
+  Converts an rex_termbox event to a Raxol event.
 
   ## Parameters
 
-  * `event` - An ex_termbox event tuple
+  * `event` - An rex_termbox event tuple
 
   ## Returns
 
@@ -52,7 +52,7 @@ defmodule Raxol.Event do
           | {:mouse, atom(), integer(), integer(), integer() | atom()}
           | term()
         ) :: event_map()
-  # Takes the standard ex_termbox tuple like {:key, meta_int, key_code_or_char}
+  # Takes the standard rex_termbox tuple like {:key, meta_int, key_code_or_char}
   def convert({:key, meta_int, key}) when is_integer(meta_int) do
     # Handle Ctrl + Letter combinations (ASCII codes 1-26)
     cond do

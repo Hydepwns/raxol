@@ -17,14 +17,12 @@
 
 defmodule DocumentationBrowser do
   @behaviour Raxol.App
-
-  import Raxol.Constants, only: [key: 1]
-  import Raxol.View
+  use Raxol.View
 
   alias Raxol.Runtime.Command
 
-  @arrow_up key(:arrow_up)
-  @arrow_down key(:arrow_down)
+  @arrow_up :arrow_up
+  @arrow_down :arrow_down
 
   @header "Documentation Browser Example (UP/DOWN to select module, j/k to scroll content)"
 
@@ -50,13 +48,13 @@ defmodule DocumentationBrowser do
         msg
       ) do
     case msg do
-      {:event, %{ch: ?k}} ->
+      %{type: :key, key: ?k, modifiers: []} ->
         %{model | content_cursor: max(content_cursor - 1, 0)}
 
-      {:event, %{ch: ?j}} ->
+      %{type: :key, key: ?j, modifiers: []} ->
         %{model | content_cursor: content_cursor + 1}
 
-      {:event, %{key: key}} when key in [@arrow_up, @arrow_down] ->
+      %{type: :key, key: key, modifiers: []} when key in [@arrow_up, @arrow_down] ->
         new_cursor =
           case key do
             @arrow_up -> max(module_cursor - 1, 0)
@@ -75,34 +73,30 @@ defmodule DocumentationBrowser do
   end
 
   def render(model) do
-    selected = Enum.at(model.modules, model.module_cursor)
-
     menu_bar =
-      bar do
-        label(content: @header, color: :blue)
+      row do
+        text(content: @header, color: :blue)
       end
 
-    view(top_bar: menu_bar) do
+    view do
       row do
-        column(size: 3) do
+        column size: 4 do
           panel(title: "Modules", height: :fill) do
-            viewport(offset_y: model.module_cursor) do
-              for {module, idx} <- Enum.with_index(model.modules) do
-                if idx == model.module_cursor do
-                  label(content: "> " <> inspect(module), attributes: [:bold])
-                else
-                  label(content: inspect(module))
-                end
+            for {module, idx} <- Enum.with_index(model.modules) do
+              if idx == model.module_cursor do
+                text(content: "> " <> inspect(module), attributes: [:bold])
+              else
+                text(content: inspect(module))
               end
             end
           end
         end
 
-        column(size: 9) do
+        column size: 8 do
+          selected = Enum.at(model.modules, model.module_cursor)
+
           panel(title: inspect(selected), height: :fill) do
-            viewport(offset_y: model.content_cursor) do
-              label(content: model.content)
-            end
+            text(content: model.content)
           end
         end
       end
@@ -126,4 +120,4 @@ defmodule DocumentationBrowser do
   end
 end
 
-Raxol.run(DocumentationBrowser)
+Raxol.run(DocumentationBrowser, quit_keys: [?q])

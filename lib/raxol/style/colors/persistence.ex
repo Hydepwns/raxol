@@ -64,18 +64,63 @@ defmodule Raxol.Style.Colors.Persistence do
 
     case File.read(theme_path) do
       {:ok, theme_json} ->
-        # Decode with atom keys first
-        case Jason.decode(theme_json, keys: :atoms!) do
-          {:ok, theme_data} ->
-            # Manually convert palette maps back to Color structs
-            palette_structs =
-              Enum.into(theme_data.palette, %{}, fn {key, color_map} ->
-                # Assume color_map is %{r: ..., g: ..., b: ..., a: ...}
-                {key, struct!(Color, color_map)}
+        # Decode with default string keys
+        case Jason.decode(theme_json) do
+          {:ok, theme_data_map} ->
+            # Process palette: Keep string keys, convert values to Color structs (handling hex)
+            processed_palette =
+              case Map.get(theme_data_map, "palette") do
+                nil ->
+                  %{}
+
+                palette_map when is_map(palette_map) ->
+                  Enum.into(palette_map, %{}, fn {key_str, color_value} ->
+                    # Keep key as string
+                    color_struct =
+                      case color_value do
+                        map when is_map(map) ->
+                          # Convert inner map keys for struct! call if needed, but key_str remains outer key
+                          atom_keyed_color_map =
+                            Enum.into(map, %{}, fn {k, v} ->
+                              {String.to_atom(k), v}
+                            end)
+
+                          struct!(Color, atom_keyed_color_map)
+
+                        hex when is_binary(hex) ->
+                          Color.from_hex(hex)
+
+                        _ ->
+                          nil
+                      end
+
+                    # Use string key
+                    {key_str, color_struct}
+                  end)
+                  |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+                  |> Map.new()
+
+                # Handle unexpected palette type
+                _ ->
+                  %{}
+              end
+
+            # Convert top-level string keys to atoms
+            theme_data_atoms =
+              Enum.into(theme_data_map, %{}, fn {k, v} ->
+                {String.to_atom(k), v}
               end)
 
-            # Create final theme struct with processed palette
-            {:ok, %{theme_data | palette: palette_structs}}
+            # Get ui_mappings (should have atom keys from theme_data_atoms conversion, keep string values)
+            processed_ui_mappings = Map.get(theme_data_atoms, :ui_mappings, %{})
+
+            # Create final theme struct data, ensuring correct map structures
+            final_theme_data =
+              theme_data_atoms
+              |> Map.put(:palette, processed_palette)
+              |> Map.put(:ui_mappings, processed_ui_mappings)
+
+            {:ok, struct!(Theme, final_theme_data)}
 
           {:error, reason} ->
             {:error, reason}
@@ -123,16 +168,19 @@ defmodule Raxol.Style.Colors.Persistence do
 
     case File.read(prefs_path) do
       {:ok, json} ->
+        # Decode with default string keys
         case Jason.decode(json) do
           {:ok, preferences} -> {:ok, preferences}
+          # Propagate decoding errors
           error -> error
         end
 
       {:error, :enoent} ->
-        # File doesn't exist, return default preferences
+        # File doesn't exist, return default preferences (use string key)
         {:ok, %{"theme" => "Default"}}
 
       error ->
+        # Propagate other file read errors
         error
     end
   end

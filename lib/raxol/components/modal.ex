@@ -1,5 +1,9 @@
 defmodule Raxol.Components.Modal do
+  use Raxol.Component
+
   require Raxol.View
+  alias Raxol.View.Layout
+  alias Raxol.View.Components
 
   @moduledoc """
   Modal dialog component for Raxol applications.
@@ -31,8 +35,6 @@ defmodule Raxol.Components.Modal do
     end
   end
   """
-
-  alias Raxol.View
 
   @doc """
   Renders a modal dialog.
@@ -112,21 +114,21 @@ defmodule Raxol.Components.Modal do
     # TODO: Add on_key handling if/when View DSL supports it
 
     # Use box instead of panel
-    View.box container_props do
+    Layout.box container_props do
       # Create children conditionally, filtering nils
       [
         if title do
-          View.box id: "#{id}_title", style: title_style do
-            View.text(title)
+          Layout.box id: "#{id}_title", style: title_style do
+            Components.text(title)
           end
         end,
         if content_fn do
-          View.box id: "#{id}_content", style: content_style do
+          Layout.box id: "#{id}_content", style: content_style do
             content_fn.()
           end
         end,
         if actions_fn do
-          View.box id: "#{id}_actions", style: actions_style do
+          Layout.box id: "#{id}_actions", style: actions_style do
             actions_fn.()
           end
         end
@@ -173,17 +175,15 @@ defmodule Raxol.Components.Modal do
     # Create confirmation modal
     render(
       title,
-      fn -> View.text(message) end,
+      fn -> Components.text(message) end,
       fn ->
-        View.row([style: %{justify: :flex_end, gap: 1}], fn ->
-          View.button(
-            [id: "#{title}_no", style: no_style, on_click: on_cancel],
-            no_text
+        Layout.row([style: %{justify: :flex_end, gap: 1}], fn ->
+          Components.button(no_text,
+            [id: "#{title}_no", style: no_style, on_click: on_cancel]
           )
 
-          View.button(
-            [id: "#{title}_yes", style: yes_style, on_click: on_confirm],
-            yes_text
+          Components.button(yes_text,
+            [id: "#{title}_yes", style: yes_style, on_click: on_confirm]
           )
         end)
       end,
@@ -228,10 +228,9 @@ defmodule Raxol.Components.Modal do
       title,
       content_fn,
       fn ->
-        View.row([style: %{justify: :center}], fn ->
-          View.button(
-            [id: "#{title}_ok", style: ok_style, on_click: on_ok],
-            ok_text
+        Layout.row([style: %{justify: :center}], fn ->
+          Components.button(ok_text,
+            [id: "#{title}_ok", style: ok_style, on_click: on_ok]
           )
         end)
       end,
@@ -272,6 +271,7 @@ defmodule Raxol.Components.Modal do
     fn -> send(self(), {:submit_form}) end,
     fn -> send(self(), {:cancel_form}) end
   )
+  ```
   """
   def form(title, form_fn, _on_submit, _on_cancel, opts \\ []) do
     render(

@@ -1,5 +1,6 @@
 {
   "name": "Default",
+  "high_contrast": false,
   "palette": {
     "accent": {
       "r": 190,
@@ -62,18 +63,17 @@
       "a": 1.0
     }
   },
+  "dark_mode": false,
   "ui_mappings": {
-    "text": "text",
-    "app_background": "background",
     "accent_button": "accent",
+    "app_background": "background",
     "error_text": "error",
     "info_text": "info",
     "primary_button": "primary",
     "secondary_button": "secondary",
     "success_text": "success",
     "surface_background": "surface",
+    "text": "text",
     "warning_text": "warning"
-  },
-  "dark_mode": false,
-  "high_contrast": false
+  }
 }

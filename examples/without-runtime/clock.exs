@@ -1,9 +1,9 @@
 # An example of how to create application loops.
 
 defmodule Clock do
-  alias Raxol.{EventManager, Window}
+  use Raxol.View
 
-  import Raxol.View
+  alias Raxol.{EventManager, Window}
 
   def start do
     {:ok, _pid} = Window.start_link()
@@ -26,9 +26,11 @@ defmodule Clock do
   end
 
   def render(now) do
+    time_str = DateTime.to_string(now)
+
     view do
-      panel title: "Clock Example ('q' to quit)" do
-        label(content: "The time is: " <> DateTime.to_string(now))
+      panel title: "Clock Example ('q' to quit)", height: :fill do
+        text(content: time_str)
       end
     end
   end

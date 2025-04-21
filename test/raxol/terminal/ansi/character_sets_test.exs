@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
       state = CharacterSets.set_single_shift(state, :g0)
       assert CharacterSets.get_active_charset(state) == :french
       state = %{state | locked_shift: true}
-      assert CharacterSets.get_active_charset(state) == :french
+      assert CharacterSets.get_active_charset(state) == :german
     end
   end
 

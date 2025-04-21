@@ -11,6 +11,7 @@ defmodule Raxol.Examples.ButtonTest do
   alias Raxol.Test.TestHelper
   # Alias the Form mock for testing
   alias Form
+  alias Raxol.Core.Events.Manager
 
   setup do
     context = TestHelper.setup_test_env()

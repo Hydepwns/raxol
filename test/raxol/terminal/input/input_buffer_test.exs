@@ -6,8 +6,8 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
     test "creates a new input buffer with default values" do
       buffer = InputBuffer.new()
       assert InputBuffer.get_contents(buffer) == ""
-      assert InputBuffer.get_max_size(buffer) == 1024
-      assert InputBuffer.get_overflow_mode(buffer) == :truncate
+      assert InputBuffer.max_size(buffer) == 1024
+      assert InputBuffer.overflow_mode(buffer) == :truncate
     end
   end
 
@@ -15,8 +15,8 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
     test "creates a new input buffer with custom values" do
       buffer = InputBuffer.new(100, :error)
       assert InputBuffer.get_contents(buffer) == ""
-      assert InputBuffer.get_max_size(buffer) == 100
-      assert InputBuffer.get_overflow_mode(buffer) == :error
+      assert InputBuffer.max_size(buffer) == 100
+      assert InputBuffer.overflow_mode(buffer) == :error
     end
   end
 
@@ -166,7 +166,7 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
     test "sets the maximum buffer size" do
       buffer = InputBuffer.new()
       buffer = InputBuffer.set_max_size(buffer, 100)
-      assert InputBuffer.get_max_size(buffer) == 100
+      assert InputBuffer.max_size(buffer) == 100
     end
 
     test "truncates content when reducing max size in truncate mode" do
@@ -181,7 +181,7 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
     test "sets the overflow mode" do
       buffer = InputBuffer.new()
       buffer = InputBuffer.set_overflow_mode(buffer, :error)
-      assert InputBuffer.get_overflow_mode(buffer) == :error
+      assert InputBuffer.overflow_mode(buffer) == :error
     end
   end
 

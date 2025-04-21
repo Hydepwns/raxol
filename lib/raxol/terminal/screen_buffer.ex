@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
     actual_height = if is_number(height) and height > 0, do: height, else: 24
 
     # Log warning if invalid dimensions provided
-    unless is_number(width) and is_number(height) do
+    if !(is_number(width) and is_number(height)) do
       Logger.warning(
         "Invalid dimensions provided to ScreenBuffer.new: width=#{inspect(width)}, height=#{inspect(height)}. Using defaults."
       )
@@ -382,28 +382,52 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
   @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
   def resize(%__MODULE__{} = buffer, new_width, new_height)
-      when new_width > 0 and new_height > 0 do
-    # Create a new empty buffer of the target size
-    new_cells =
-      List.duplicate(List.duplicate(Cell.new(), new_width), new_height)
+      when is_integer(new_width) and new_width > 0 and is_integer(new_height) and new_height > 0 do
+    old_width = buffer.width
+    old_height = buffer.height
 
-    # Determine the bounds to copy from the old buffer
-    max_y_copy = min(buffer.height - 1, new_height - 1)
-    max_x_copy = min(buffer.width - 1, new_width - 1)
+    # Create a new empty cell grid with the new dimensions
+    new_cells = List.duplicate(List.duplicate(Cell.new(), new_width), new_height)
+
+    # Determine the range of rows and columns to copy
+    max_y_copy = min(old_height, new_height)
+    max_x_copy = min(old_width, new_width)
 
     # Copy content from the old buffer to the new buffer
     copied_cells =
-      Enum.reduce(0..max_y_copy, new_cells, fn y, acc_new_cells ->
-        old_row = Enum.at(buffer.cells, y)
-        new_row = Enum.at(acc_new_cells, y)
+      Enum.reduce(0..(max_y_copy - 1), new_cells, fn y, acc_new_cells ->
+        # Calculate the corresponding row index in the old buffer
+        # If shrinking height, copy from the bottom up
+        old_row_index =
+          if new_height < old_height do
+            y # New logic: Keep top content
+          else
+            y
+          end
 
-        updated_new_row =
-          Enum.reduce(0..max_x_copy, new_row, fn x, acc_new_row ->
-            old_cell = Enum.at(old_row, x)
-            List.replace_at(acc_new_row, x, old_cell)
-          end)
+        # Ensure old_row_index is within bounds (should be, but belt and suspenders)
+        if old_row_index >= 0 and old_row_index < old_height do
+          old_row = Enum.at(buffer.cells, old_row_index)
+          new_row = Enum.at(acc_new_cells, y)
 
-        List.replace_at(acc_new_cells, y, updated_new_row)
+          # Copy cells within the column range
+          updated_new_row =
+            Enum.reduce(0..(max_x_copy - 1), new_row, fn x, acc_new_row ->
+              # Ensure old_row is not nil before accessing Enum.at/2
+              if old_row do
+                old_cell = Enum.at(old_row, x)
+                List.replace_at(acc_new_row, x, old_cell)
+              else
+                # Should not happen if old_row_index logic is correct
+                acc_new_row
+              end
+            end)
+
+          List.replace_at(acc_new_cells, y, updated_new_row)
+        else
+          # Row index out of bounds, shouldn't happen with correct logic
+          acc_new_cells
+        end
       end)
 
     # Return a new buffer struct with updated dimensions and copied cells
@@ -456,7 +480,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
       nil
     end
   end
-  
+
   @doc """
   Gets a specific cell from the buffer.
   """
@@ -657,19 +681,6 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   @doc """
-  Gets a cell at the specified position.
-  Returns a default cell if coordinates are out of bounds.
-  """
-  @spec get_cell(t(), integer(), integer()) :: Cell.t()
-  def get_cell(%__MODULE__{} = buffer, x, y) when x >= 0 and y >= 0 do
-    if y < buffer.height and x < buffer.width do
-      Enum.at(buffer.cells, y) |> Enum.at(x)
-    else
-      Cell.new()
-    end
-  end
-
-  @doc """
   Updates the buffer state by applying a list of cell changes.
   Can handle both cell structs and cell maps formats.
 
@@ -746,4 +757,128 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc false
   @deprecated "Use in_selection?/3 instead"
   def is_in_selection?(buffer, x, y), do: in_selection?(buffer, x, y)
+
+  @doc """
+  Erases parts of the display based on the cursor position.
+  Type can be :to_end, :to_beginning, or :all.
+  Requires the cursor state for positioning.
+  """
+  @spec erase_in_display(t(), Raxol.Terminal.Cursor.Manager.t(), atom()) :: t()
+  def erase_in_display(%__MODULE__{} = buffer, cursor, type) do
+    # Access position directly from cursor struct
+    {cursor_x, cursor_y} = cursor.position
+    blank_cell = Cell.new()
+
+    case type do
+      :to_end ->
+        # Erase from cursor to end of the line
+        buffer_after_line_erase =
+          erase_line_part(
+            buffer,
+            cursor_y,
+            cursor_x,
+            buffer.width - 1,
+            blank_cell
+          )
+
+        # Erase lines below the cursor
+        Enum.reduce(
+          (cursor_y + 1)..(buffer.height - 1),
+          buffer_after_line_erase,
+          fn y, acc_buffer ->
+            erase_line_part(acc_buffer, y, 0, buffer.width - 1, blank_cell)
+          end
+        )
+
+      :to_beginning ->
+        # Erase from beginning of line to cursor
+        buffer_after_line_erase =
+          erase_line_part(buffer, cursor_y, 0, cursor_x, blank_cell)
+
+        # Erase lines above the cursor
+        Enum.reduce(0..(cursor_y - 1), buffer_after_line_erase, fn y,
+                                                                   acc_buffer ->
+          erase_line_part(acc_buffer, y, 0, buffer.width - 1, blank_cell)
+        end)
+
+      :all ->
+        # Erase the entire screen
+        %{
+          buffer
+          | cells:
+              List.duplicate(
+                List.duplicate(blank_cell, buffer.width),
+                buffer.height
+              )
+        }
+
+      # ED 3: Erase All + Scrollback (Optional)
+      # :all_with_scrollback ->
+      #   %{
+      #     buffer
+      #     | cells: List.duplicate(List.duplicate(blank_cell, buffer.width), buffer.height),
+      #       scrollback: []
+      #   }
+
+      _ ->
+        buffer
+    end
+  end
+
+  @doc """
+  Erases parts of the current line based on the cursor position.
+  Type can be :to_end, :to_beginning, or :all.
+  Requires the cursor state for positioning.
+  """
+  @spec erase_in_line(t(), Raxol.Terminal.Cursor.Manager.t(), atom()) :: t()
+  def erase_in_line(%__MODULE__{} = buffer, cursor, type) do
+    # Access position directly from cursor struct
+    {cursor_x, cursor_y} = cursor.position
+    blank_cell = Cell.new()
+
+    case type do
+      :to_end ->
+        erase_line_part(
+          buffer,
+          cursor_y,
+          cursor_x,
+          buffer.width - 1,
+          blank_cell
+        )
+
+      :to_beginning ->
+        erase_line_part(buffer, cursor_y, 0, cursor_x, blank_cell)
+
+      :all ->
+        erase_line_part(buffer, cursor_y, 0, buffer.width - 1, blank_cell)
+
+      _ ->
+        buffer
+    end
+  end
+
+  # Helper to erase part of a single line
+  defp erase_line_part(%__MODULE__{} = buffer, y, start_x, end_x, fill_cell) do
+    if y >= 0 and y < buffer.height do
+      start_col = max(0, start_x)
+      end_col = min(buffer.width - 1, end_x)
+
+      if start_col <= end_col do
+        new_cells =
+          List.update_at(buffer.cells, y, fn row ->
+            Enum.reduce(start_col..end_col, row, fn x, acc_row ->
+              List.replace_at(acc_row, x, fill_cell)
+            end)
+          end)
+
+        %{buffer | cells: new_cells}
+      else
+        # Start is after end, do nothing
+        buffer
+      end
+    else
+      # Y out of bounds
+      buffer
+    end
+  end
 end

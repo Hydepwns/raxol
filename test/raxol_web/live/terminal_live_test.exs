@@ -3,6 +3,8 @@ defmodule RaxolWeb.TerminalLiveTest do
   import Phoenix.LiveViewTest
   alias RaxolWeb.TerminalLive
 
+  setup :start_endpoint
+
   describe "mount/3" do
     test "mounts successfully when disconnected", %{conn: conn} do
       {:ok, view, _html} = live(conn, "/terminal")

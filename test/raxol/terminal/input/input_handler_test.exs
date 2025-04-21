@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
       assert handler.mouse_buttons == MapSet.new()
       assert handler.mouse_position == {0, 0}
       assert handler.input_history == []
-      assert handler.history_index == 0
+      assert handler.history_index == nil
       assert handler.modifier_state.ctrl == false
       assert handler.modifier_state.alt == false
       assert handler.modifier_state.shift == false
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
     test "processes function keys" do
       handler = InputHandler.new()
       handler = InputHandler.process_special_key(handler, :f1)
-      assert InputHandler.get_buffer_contents(handler) == "\e[P"
+      assert InputHandler.get_buffer_contents(handler) == "\eOP"
     end
   end
 
@@ -132,7 +132,7 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
         |> InputHandler.set_mouse_enabled(true)
         |> InputHandler.process_mouse({:press, 0, 10, 20})
 
-      assert InputHandler.get_buffer_contents(handler) == "\e[M0*4"
+      assert InputHandler.get_buffer_contents(handler) == "\e[<0;11;21M"
       assert handler.mouse_position == {10, 20}
       assert MapSet.member?(handler.mouse_buttons, 0)
     end
@@ -216,20 +216,45 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
   end
 
   describe "next_history_entry/1" do
-    test "moves to next history entry" do
+    test "moves to next (newer) history entry after navigating back" do
       handler = InputHandler.new()
 
       handler =
         handler
         |> InputHandler.process_keyboard("test1")
+        # history: ["test1"]
         |> InputHandler.add_to_history()
         |> InputHandler.process_keyboard("test2")
+        # history: ["test2", "test1"]
         |> InputHandler.add_to_history()
         |> InputHandler.process_keyboard("test3")
+        # history: ["test3", "test2", "test1"]
         |> InputHandler.add_to_history()
 
-      handler = InputHandler.next_history_entry(handler)
+      # Navigate back (older)
+      # -> test3 (index 0)
+      handler = handler |> InputHandler.previous_history_entry()
+      # -> test2 (index 1)
+      handler = handler |> InputHandler.previous_history_entry()
+      # -> test1 (index 2)
+      handler = handler |> InputHandler.previous_history_entry()
+
+      # Now navigate forward (newer)
+      # -> test2 (index 1)
+      handler = handler |> InputHandler.next_history_entry()
       assert InputHandler.get_buffer_contents(handler) == "test2"
+      assert handler.history_index == 1
+
+      # -> test3 (index 0)
+      handler = handler |> InputHandler.next_history_entry()
+      assert InputHandler.get_buffer_contents(handler) == "test3"
+      assert handler.history_index == 0
+
+      # Cannot go newer than newest
+      original_handler_state = handler
+      # -> should do nothing
+      handler = handler |> InputHandler.next_history_entry()
+      assert handler == original_handler_state
     end
   end
 
@@ -247,7 +272,20 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
         |> InputHandler.add_to_history()
 
       handler = InputHandler.previous_history_entry(handler)
+      assert InputHandler.get_buffer_contents(handler) == "test3"
+      assert handler.history_index == 0
+
+      handler = InputHandler.previous_history_entry(handler)
+      assert InputHandler.get_buffer_contents(handler) == "test2"
+      assert handler.history_index == 1
+
+      handler = InputHandler.previous_history_entry(handler)
       assert InputHandler.get_buffer_contents(handler) == "test1"
+      assert handler.history_index == 2
+
+      original_handler_state = handler
+      handler = InputHandler.previous_history_entry(handler)
+      assert handler == original_handler_state
     end
   end
 

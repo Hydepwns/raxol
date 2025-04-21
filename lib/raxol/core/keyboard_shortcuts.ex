@@ -385,87 +385,107 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
   # Private functions
 
-  # defp handle_keyboard_event({:key, key, modifiers}) do # Unused
-  #   # Get current shortcuts registry
-  #   shortcuts = Process.get(:keyboard_shortcuts)
+  # Make handle_keyboard_event public and uncomment it and helpers
+  def handle_keyboard_event({:keyboard_event, {:key, key, modifiers}}) do
+    # Get current shortcuts registry
+    shortcuts = Process.get(:keyboard_shortcuts)
 
-  #   # Get current context
-  #   current_context = get_current_context()
+    # Get current context
+    current_context = get_current_context()
 
-  #   # Build key combo
-  #   key_combo = %{
-  #     key: key,
-  #     ctrl: Enum.member?(modifiers, :ctrl),
-  #     alt: Enum.member?(modifiers, :alt),
-  #     shift: Enum.member?(modifiers, :shift)
-  #   }
+    # Build key combo
+    key_combo = %{
+      key: key,
+      ctrl: Enum.member?(modifiers, :ctrl),
+      alt: Enum.member?(modifiers, :alt),
+      shift: Enum.member?(modifiers, :shift)
+    }
 
-  #   # Find matching shortcuts
-  #   matching_shortcuts = find_matching_shortcuts(shortcuts, key_combo, current_context)
+    # Find matching shortcuts
+    matching_shortcuts =
+      find_matching_shortcuts(shortcuts, key_combo, current_context)
 
-  #   # Execute callbacks for matching shortcuts
-  #   Enum.each(matching_shortcuts, fn shortcut ->
-  #     shortcut.callback.()
-  #   end)
+    # Execute callbacks for matching shortcuts
+    # Execute only the highest priority shortcut found
+    case matching_shortcuts do
+      [] ->
+        # No shortcut found
+        :ok
 
-  #   :ok
-  # end
+      [highest_priority_shortcut | _] ->
+        highest_priority_shortcut.callback.()
+        :ok
+    end
 
-  # defp handle_keyboard_event(_), do: :ok
+    # # Original: Execute callbacks for all matching shortcuts
+    # Enum.each(matching_shortcuts, fn shortcut ->
+    #   shortcut.callback.()
+    # end)
 
-  # defp find_matching_shortcuts(shortcuts, key_combo, current_context) do # Unused
-  #   # Get global shortcuts that match
-  #   global_matches =
-  #     shortcuts.global
-  #     |> Map.values()
-  #     |> Enum.filter(fn shortcut ->
-  #       match_key_combo?(shortcut.key_combo, key_combo)
-  #     end)
+    # :ok
+  end
 
-  #   # If we're in global context, just return global matches
-  #   if current_context == :global do
-  #     global_matches
-  #   else
-  #     # Get context-specific shortcuts that match
-  #     context_map = Map.get(shortcuts.contexts, current_context, %{})
-  #     context_matches =
-  #       context_map
-  #       |> Map.values()
-  #       |> Enum.filter(fn shortcut ->
-  #         match_key_combo?(shortcut.key_combo, key_combo)
-  #       end)
+  # Catch-all for other event formats
+  def handle_keyboard_event(_), do: :ok
 
-  #     # Combine both, with context-specific taking precedence
-  #     prioritized_shortcuts(global_matches, context_matches)
-  #   end
-  # end
+  defp find_matching_shortcuts(shortcuts, key_combo, current_context) do
+    # Get global shortcuts that match
+    global_matches =
+      shortcuts.global
+      |> Map.values()
+      |> Enum.filter(fn shortcut ->
+        match_key_combo?(shortcut.key_combo, key_combo)
+      end)
 
-  # defp match_key_combo?(shortcut_combo, key_combo) do # Unused
-  #   shortcut_combo.key == key_combo.key &&
-  #   shortcut_combo.ctrl == key_combo.ctrl &&
-  #   shortcut_combo.alt == key_combo.alt &&
-  #   shortcut_combo.shift == key_combo.shift
-  # end
+    # If we're in global context, just return global matches sorted by priority
+    if current_context == :global do
+      global_matches
+      |> Enum.sort_by(&priority_value(&1.priority))
+    else
+      # Get context-specific shortcuts that match
+      context_map = Map.get(shortcuts.contexts, current_context, %{})
 
-  # defp prioritized_shortcuts(global_matches, context_matches) do # Unused
-  #   # Identify shortcut names from context matches
-  #   context_names = MapSet.new(context_matches, & &1.name)
+      context_matches =
+        context_map
+        |> Map.values()
+        |> Enum.filter(fn shortcut ->
+          match_key_combo?(shortcut.key_combo, key_combo)
+        end)
 
-  #   # Filter out global shortcuts that are overridden
-  #   filtered_globals = Enum.reject(global_matches, fn g ->
-  #     MapSet.member?(context_names, g.name)
-  #   end)
+      # Combine both, with context-specific taking precedence, and sort
+      prioritized_shortcuts(global_matches, context_matches)
+    end
+  end
 
-  #   # Combine and sort by priority
-  #   (filtered_globals ++ context_matches)
-  #   |> Enum.sort_by(fn s ->
-  #     priority_value(s.priority)
-  #   end)
-  # end
+  defp match_key_combo?(shortcut_combo, key_combo) do
+    shortcut_combo.key == key_combo.key &&
+      shortcut_combo.ctrl == key_combo.ctrl &&
+      shortcut_combo.alt == key_combo.alt &&
+      shortcut_combo.shift == key_combo.shift
+  end
 
-  # defp priority_value(:high), do: 1 # Unused
-  # defp priority_value(:medium), do: 2 # Unused
-  # defp priority_value(:low), do: 3 # Unused
+  defp prioritized_shortcuts(global_matches, context_matches) do
+    # Identify shortcut names from context matches
+    context_names = MapSet.new(context_matches, & &1.name)
+
+    # Filter out global shortcuts that are overridden by name in context
+    # (Note: This simple name override might not be ideal if different key combos
+    # exist for the same name globally vs context)
+    filtered_globals =
+      Enum.reject(global_matches, fn g ->
+        MapSet.member?(context_names, g.name)
+      end)
+
+    # Combine and sort by priority (high first)
+    (filtered_globals ++ context_matches)
+    |> Enum.sort_by(fn s ->
+      priority_value(s.priority)
+    end)
+  end
+
+  defp priority_value(:high), do: 1
+  defp priority_value(:medium), do: 2
+  defp priority_value(:low), do: 3
 
   defp parse_shortcut(shortcut_string) do
     # Simplified parsing (assumes format like "Ctrl+S")

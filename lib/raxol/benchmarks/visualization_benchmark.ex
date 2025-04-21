@@ -89,7 +89,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
           IO.write("    Iteration #{i}/#{iterations}...")
 
           # Reset cache between iterations if not testing cache
-          unless test_cache or i == 1 do
+          if !(test_cache or i == 1) do
             # This resets the plugin state, clearing the cache
             Raxol.Plugins.VisualizationPlugin.init()
           end
@@ -170,7 +170,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
           IO.write("    Iteration #{i}/#{iterations}...")
 
           # Reset cache between iterations if not testing cache
-          unless test_cache or i == 1 do
+          if !(test_cache or i == 1) do
             # This resets the plugin state, clearing the cache
             Raxol.Plugins.VisualizationPlugin.init()
           end

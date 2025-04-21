@@ -192,66 +192,92 @@ defmodule Raxol.Terminal.Input.InputHandler do
 
   @doc """
   Adds the current buffer contents to the input history.
+  Resets the history navigation index and clears the buffer.
   """
-  def add_to_history(%__MODULE__{} = handler) do
-    if InputBuffer.empty?(handler.buffer) do
-      handler
-    else
+  def add_to_history(
+        %__MODULE__{buffer: buffer, input_history: history} = handler
+      ) do
+    current_content = InputBuffer.get_contents(buffer)
+    # Don't add empty strings or duplicates of the last entry
+    allow_add =
+      current_content != "" and
+        (history == [] or hd(history) != current_content)
+
+    if allow_add do
       %{
         handler
-        | input_history: [
-            InputBuffer.get_contents(handler.buffer) | handler.input_history
-          ],
-          history_index: 0
+        | input_history: [current_content | history],
+          # Reset history index
+          history_index: nil,
+          # Clear the buffer
+          buffer: InputBuffer.clear(buffer)
       }
+    else
+      # Still clear buffer even if not adding (e.g., empty input)
+      %{handler | buffer: InputBuffer.clear(buffer)}
     end
   end
 
   @doc """
-  Retrieves a previous input from history.
+  Retrieves a specific input from history by its index (0 is most recent).
+  Sets the history_index to track navigation.
   """
-  def get_history_entry(%__MODULE__{} = handler, index) do
-    if index < length(handler.input_history) do
-      entry = Enum.at(handler.input_history, index)
-      %{handler | buffer: InputBuffer.set_contents(handler.buffer, entry)}
-    else
+  def get_history_entry(
+        %__MODULE__{input_history: history, buffer: current_buffer} = handler,
+        index
+      )
+      when is_integer(index) and index >= 0 and index < length(history) do
+    entry = Enum.at(history, index)
+    new_buffer = InputBuffer.set_contents(current_buffer, entry)
+
+    %{
       handler
+      | buffer: new_buffer,
+        history_index: index
+    }
+  end
+
+  # Ignore invalid index
+  def get_history_entry(handler, _index), do: handler
+
+  @doc """
+  Moves to the next history entry (newer / Down Arrow).
+  """
+  def next_history_entry(
+        %__MODULE__{history_index: index, input_history: history} = handler
+      ) do
+    # Check if not already at newest entry
+    if index > 0 do
+      new_index = index - 1
+      new_input = Enum.at(history, new_index)
+      new_buffer = InputBuffer.set_contents(handler.buffer, new_input)
+      # Move cursor to end
+      new_buffer = InputBuffer.move_cursor_to_end_of_line(new_buffer)
+      {%{handler | history_index: new_index, buffer: new_buffer}, new_input}
+    else
+      # Already at newest entry (index 0) or not navigating
+      {handler, InputBuffer.get_contents(handler.buffer)}
     end
   end
 
   @doc """
-  Moves to the next history entry.
+  Moves to the previous history entry (older / Up Arrow).
+  If not currently navigating history, it starts from the most recent entry (index 0).
   """
-  def next_history_entry(%__MODULE__{} = handler) do
-    if handler.history_index < length(handler.input_history) - 1 do
-      new_index = handler.history_index + 1
-      entry = Enum.at(handler.input_history, new_index)
-
-      %{
-        handler
-        | buffer: InputBuffer.set_contents(handler.buffer, entry),
-          history_index: new_index
-      }
+  def previous_history_entry(
+        %__MODULE__{history_index: index, input_history: history} = handler
+      ) do
+    # Check if there's an older entry available
+    if index < length(history) - 1 do
+      new_index = index + 1
+      new_input = Enum.at(history, new_index)
+      new_buffer = InputBuffer.set_contents(handler.buffer, new_input)
+      # Move cursor to end
+      new_buffer = InputBuffer.move_cursor_to_end_of_line(new_buffer)
+      {%{handler | history_index: new_index, buffer: new_buffer}, new_input}
     else
-      handler
-    end
-  end
-
-  @doc """
-  Moves to the previous history entry.
-  """
-  def previous_history_entry(%__MODULE__{} = handler) do
-    if handler.history_index > 0 do
-      new_index = handler.history_index - 1
-      entry = Enum.at(handler.input_history, new_index)
-
-      %{
-        handler
-        | buffer: InputBuffer.set_contents(handler.buffer, entry),
-          history_index: new_index
-      }
-    else
-      handler
+      # Already at oldest entry
+      {handler, InputBuffer.get_contents(handler.buffer)}
     end
   end
 
@@ -263,10 +289,10 @@ defmodule Raxol.Terminal.Input.InputHandler do
   end
 
   @doc """
-  Gets the current buffer contents.
+  Gets the contents of the internal input buffer.
   """
-  def get_buffer_contents(%__MODULE__{} = handler) do
-    InputBuffer.get_contents(handler.buffer)
+  def get_buffer_contents(%__MODULE__{buffer: buffer}) do
+    InputBuffer.get_contents(buffer)
   end
 
   @doc """
@@ -371,46 +397,79 @@ defmodule Raxol.Terminal.Input.InputHandler do
     case key do
       :up -> "\e[A"
       :down -> "\e[B"
-      :right -> "\e[C"
       :left -> "\e[D"
+      :right -> "\e[C"
       :home -> "\e[H"
       :end -> "\e[F"
       :page_up -> "\e[5~"
       :page_down -> "\e[6~"
       :insert -> "\e[2~"
       :delete -> "\e[3~"
-      :escape -> "\e"
+      # Note: Some terminals use OP, OQ, OR, OS for F1-F4
+      :f1 -> "\eOP"
+      :f2 -> "\eOQ"
+      :f3 -> "\eOR"
+      :f4 -> "\eOS"
+      :f5 -> "\e[15~"
+      :f6 -> "\e[17~"
+      :f7 -> "\e[18~"
+      :f8 -> "\e[19~"
+      :f9 -> "\e[20~"
+      :f10 -> "\e[21~"
+      :f11 -> "\e[23~"
+      :f12 -> "\e[24~"
       :tab -> "\t"
       :enter -> "\r"
       :backspace -> "\b"
+      :escape -> "\e"
       _ -> ""
     end
   end
 
+  # Encodes mouse event according to XTerm specification (SGR format preferred)
+  # Reference: https://invisible-island.net/xterm/ctlseqs/ctlseqs.html#h3-Extended-coordinates
+  # Format: CSI < Cb ; Cx ; Cy M (press) or m (release)
   defp encode_mouse_event(event_type, button, x, y) do
-    # Convert to 1-based coordinates for terminal
-    x = x + 1
-    y = y + 1
+    # SGR format uses different button codes and adds modifier info
+    # Basic button code: 0=Left, 1=Middle, 2=Right
+    # Scroll wheel: 64=Up, 65=Down
+    # Modifiers: Shift=4, Meta=8, Ctrl=16
+    # TODO: Incorporate modifier state from handler.modifier_state
 
-    # Encode the event type and button
-    event_code =
+    base_code =
       case {event_type, button} do
         {:press, 0} -> 0
         {:press, 1} -> 1
         {:press, 2} -> 2
+        # Release uses code 3 in basic encoding, but SGR is different
         {:release, _} -> 3
-        {:move, _} -> 35
-        # Scroll up
+        # Placeholder - SGR doesn't use button code 3 for release
+        # Scroll Up
         {:scroll, 4} -> 64
-        # Scroll down
+        # Scroll Down
         {:scroll, 5} -> 65
-        _ -> 0
+        # Code for mouse move / drag
+        _ -> 35
       end
 
-    # Encode the coordinates
-    # Format: \e[M<event_code><x><y>
-    # where x and y are ASCII characters with 32 added to make them printable
-    "\e[M#{<<event_code + 32>>}#{<<x + 32>>}#{<<y + 32>>}"
+    # TODO: Add modifier calculation: base_code + shift_val + meta_val + ctrl_val
+
+    # Coordinates are 1-based for SGR
+    final_x = x + 1
+    final_y = y + 1
+
+    # Determine final character M (press) or m (release)
+    final_char =
+      case event_type do
+        :press -> "M"
+        :release -> "m"
+        # Scrolls are typically treated as presses in SGR
+        :scroll -> "M"
+        # Motion events are typically treated as presses
+        :move -> "M"
+      end
+
+    "\e[<#{base_code};#{final_x};#{final_y}#{final_char}"
   end
 
   defp update_mouse_buttons(buttons, event_type, button) do

@@ -5,9 +5,9 @@ defmodule Raxol.Terminal.ANSI.ProcessorTest do
 
   setup do
     # Only start required applications
-    {:ok, _} = Application.ensure_all_started(:stdlib)
+    # {:ok, _} = Application.ensure_all_started(:stdlib) # Removed redundant
     {:ok, _} = Application.ensure_all_started(:logger)
-    {:ok, _} = Application.ensure_all_started(:gen_statem)
+    # {:ok, _} = Application.ensure_all_started(:gen_statem) # Removed redundant
 
     # Initialize processor and buffer manager with test dimensions
     {:ok, processor} = Processor.start_link([])

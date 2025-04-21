@@ -94,10 +94,16 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   defp calculate_range(series, min, max) do
     data = Enum.flat_map(series, & &1.data)
 
-    {
-      min || Enum.min(data),
-      max || Enum.max(data)
-    }
+    if Enum.empty?(data) do
+      # Handle empty data case: return default range
+      {min || 0, max || 1}
+    else
+      # Proceed as before if data is not empty
+      {
+        min || Enum.min(data),
+        max || Enum.max(data)
+      }
+    end
   end
 
   defp create_bar_chart(series, min, max, width, height, orientation) do
@@ -108,45 +114,71 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   defp create_vertical_bars(series, min, max, width, height) do
-    bar_width = div(width, Enum.sum(Enum.map(series, &length(&1.data))))
+    # Calculate total data points only if series is not empty
+    total_points = Enum.sum(Enum.map(series, &length(&1.data)))
 
-    bars =
-      series
-      |> Enum.flat_map(fn %{data: data, color: color} ->
-        data
-        |> Enum.map(fn value ->
-          bar_height = scale_value(value, min, max, 1, height) |> round()
-          chars = create_vertical_bar(bar_height, height)
+    # Handle empty data case
+    if total_points == 0 do
+      View.flex direction: :row do
+        # Return empty view
+        []
+      end
+    else
+      bar_width = div(width, total_points)
 
-          View.text(chars,
-            size: {bar_width, height},
-            fg: color
-          )
+      bars =
+        series
+        |> Enum.flat_map(fn %{data: data, color: color} ->
+          data
+          |> Enum.map(fn value ->
+            bar_height = scale_value(value, min, max, 1, height) |> round()
+            chars = create_vertical_bar(bar_height, height)
+
+            View.text(chars,
+              size: {bar_width, height},
+              fg: color
+            )
+          end)
         end)
-      end)
 
-    View.flex(direction: :row, children: bars)
+      View.flex direction: :row do
+        bars
+      end
+    end
   end
 
   defp create_horizontal_bars(series, min, max, width, height) do
-    bar_height = div(height, Enum.sum(Enum.map(series, &length(&1.data))))
+    # Calculate total data points only if series is not empty
+    total_points = Enum.sum(Enum.map(series, &length(&1.data)))
 
-    bars =
-      series
-      |> Enum.flat_map(fn %{data: data, color: color} ->
-        data
-        |> Enum.map(fn value ->
-          bar_width = scale_value(value, min, max, 1, width) |> round()
-          chars = create_horizontal_bar(bar_width, width)
+    # Handle empty data case
+    if total_points == 0 do
+      View.flex direction: :column do
+        # Return empty view
+        []
+      end
+    else
+      bar_height = div(height, total_points)
 
-          View.text(chars,
-            size: {width, bar_height},
-            fg: color
-          )
+      bars =
+        series
+        |> Enum.flat_map(fn %{data: data, color: color} ->
+          data
+          |> Enum.map(fn value ->
+            bar_width = scale_value(value, min, max, 1, width) |> round()
+            chars = create_horizontal_bar(bar_width, width)
+
+            View.text(chars,
+              size: {width, bar_height},
+              fg: color
+            )
+          end)
         end)
-      end)
 
-    View.flex(direction: :column, children: bars)
+      View.flex direction: :column do
+        bars
+      end
+    end
   end
 
   defp create_line_chart(series, min, max, width, height) do
@@ -175,7 +207,16 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     values = Enum.map(data, &scale_value(&1, min, max, 0, 7))
     chars = Enum.map(values, &Enum.at(@bar_chars, floor(&1)))
 
-    View.text(Enum.join(chars),
+    # Pad the character list with spaces if it's shorter than the width
+    padded_chars =
+      if length(chars) < width do
+        chars ++ List.duplicate(" ", width - length(chars))
+      else
+        # Optionally truncate if longer? For now, let View.text handle it.
+        chars
+      end
+
+    View.text(Enum.join(padded_chars),
       size: {width, 1},
       fg: color
     )

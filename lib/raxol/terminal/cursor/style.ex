@@ -13,8 +13,9 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Style.set_block(cursor)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> cursor = Style.set_block(cursor)
       iex> cursor.style
       :block
   """
@@ -27,8 +28,9 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Style.set_underline(cursor)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> cursor = Style.set_underline(cursor)
       iex> cursor.style
       :underline
   """
@@ -41,8 +43,9 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Style.set_bar(cursor)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> cursor = Style.set_bar(cursor)
       iex> cursor.style
       :bar
   """
@@ -55,8 +58,9 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Style.set_custom(cursor, "█", {2, 1})
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> cursor = Style.set_custom(cursor, "█", {2, 1})
       iex> cursor.style
       :custom
       iex> cursor.custom_shape
@@ -71,9 +75,10 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Manager.set_state(cursor, :hidden)
-      iex> cursor = Cursor.Style.show(cursor)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> cursor = Manager.set_state(cursor, :hidden)
+      iex> cursor = Style.show(cursor)
       iex> cursor.state
       :visible
   """
@@ -86,8 +91,9 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Style.hide(cursor)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> cursor = Style.hide(cursor)
       iex> cursor.state
       :hidden
   """
@@ -100,8 +106,9 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Style.blink(cursor)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> cursor = Style.blink(cursor)
       iex> cursor.state
       :blinking
   """
@@ -114,8 +121,9 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Style.set_blink_rate(cursor, 1000)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> cursor = Style.set_blink_rate(cursor, 1000)
       iex> cursor.blink_rate
       1000
   """
@@ -129,9 +137,10 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Style.blink(cursor)
-      iex> {cursor, visible} = Cursor.Style.update_blink(cursor)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> cursor = Style.blink(cursor)
+      iex> {cursor, visible} = Style.update_blink(cursor)
       iex> is_boolean(visible)
       true
   """
@@ -144,11 +153,12 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Style.toggle_visibility(cursor)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> cursor = Style.toggle_visibility(cursor)
       iex> cursor.state
       :hidden
-      iex> cursor = Cursor.Style.toggle_visibility(cursor)
+      iex> cursor = Style.toggle_visibility(cursor)
       iex> cursor.state
       :visible
   """
@@ -165,11 +175,12 @@ defmodule Raxol.Terminal.Cursor.Style do
 
   ## Examples
 
-      iex> cursor = Cursor.Manager.new()
-      iex> cursor = Cursor.Style.toggle_blink(cursor)
+      iex> alias Raxol.Terminal.Cursor.{Manager, Style}
+      iex> cursor = Manager.new()
+      iex> cursor = Style.toggle_blink(cursor)
       iex> cursor.state
       :blinking
-      iex> cursor = Cursor.Style.toggle_blink(cursor)
+      iex> cursor = Style.toggle_blink(cursor)
       iex> cursor.state
       :visible
   """

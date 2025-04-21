@@ -1,5 +1,6 @@
 defmodule Raxol.Style.Colors.HotReloadTest do
-  use ExUnit.Case, async: true
+  # Run tests serially to avoid GenServer name conflict
+  use ExUnit.Case
 
   alias Raxol.Style.Colors.{HotReload, Theme}
 
@@ -22,25 +23,45 @@ defmodule Raxol.Style.Colors.HotReloadTest do
     high_contrast: false
   }
 
-  setup do
+  # setup_all runs once for the file
+  setup_all do
     # Create temporary directory for theme files
     tmp_dir =
       Path.join(System.tmp_dir!(), "raxol_test_#{:rand.uniform(1_000_000)}")
 
     File.mkdir_p!(tmp_dir)
 
-    # Start the hot-reload server
-    {:ok, _pid} = HotReload.start_link()
+    # Start the hot-reload server once for all tests in this file
+    # Since it uses a global name, we manage it centrally.
+    # {:ok, pid} = HotReload.start_link() # Use original start_link here
+    # Ensure the globally started server is watching the test path
     HotReload.watch_path(tmp_dir)
 
-    # Subscribe to theme changes
-    HotReload.subscribe()
+    # Store pid and tmp_dir for cleanup and use in tests
+    # context = %{hot_reload_pid: pid, tmp_dir: tmp_dir} # <-- REMOVE PID STORAGE
+    # <-- Keep tmp_dir storage
+    context = %{tmp_dir: tmp_dir}
 
+    # Cleanup runs once after all tests
     on_exit(fn ->
-      # Clean up
+      # Stop the server manually if needed (though supervisor should handle)
+      # GenServer.stop(pid)
       File.rm_rf!(tmp_dir)
     end)
 
+    context
+  end
+
+  # setup runs before each test
+  # Receive tmp_dir from setup_all context
+  setup %{tmp_dir: tmp_dir} do
+    # Subscribe this test process to the single HotReload server
+    HotReload.subscribe()
+
+    # No need for on_exit cleanup specific to each test here
+    # The server persists, tmp_dir cleanup is in setup_all
+
+    # Pass tmp_dir along to the test case
     %{tmp_dir: tmp_dir}
   end
 

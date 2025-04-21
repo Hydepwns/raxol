@@ -17,8 +17,9 @@ defmodule Raxol.Components.Progress.ProgressBar do
   """
 
   use Raxol.Component
-
-  alias Raxol.View
+  require Raxol.View
+  alias Raxol.View.Layout
+  alias Raxol.View.Components
 
   @default_width 40
   @default_style :basic
@@ -101,21 +102,21 @@ defmodule Raxol.Components.Progress.ProgressBar do
     # Generate the DSL map AND convert to element in one step
     # Layout: [Label] [Progress Bar] [Percentage Text]
     dsl_result =
-      View.column do
+      Layout.column do
         label_element =
           if state.label do
-            View.text(state.label, style: state.style.label_style)
+            Components.text(state.label, style: state.style.label_style)
           else
             nil
           end
 
         bar_row =
-          View.row style: %{width: :auto} do
+          Layout.row style: %{width: :auto} do
             percentage_element =
               if state.show_percentage do
                 percentage_text = format_percentage(state.value, state.total)
 
-                View.text(" #{percentage_text}",
+                Components.text(" #{percentage_text}",
                   style: state.style.percentage_style
                 )
               else
@@ -125,9 +126,9 @@ defmodule Raxol.Components.Progress.ProgressBar do
             # Explicitly return list for row's children, filtering nil
             [
               # Progress Bar Segment
-              View.box style: %{width: state.width, bg: bar_bg} do
+              Layout.box style: %{width: state.width, bg: bar_bg} do
                 # Explicitly return list for box's children
-                [View.text(bar_text, style: %{fg: bar_fg})]
+                [Components.text(bar_text, style: %{fg: bar_fg})]
               end,
               # Percentage Text Segment (if enabled)
               percentage_element

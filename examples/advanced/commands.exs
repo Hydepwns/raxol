@@ -7,12 +7,11 @@
 
 defmodule Commands do
   @behaviour Raxol.App
+  use Raxol.View
 
   alias Raxol.Runtime.Command
 
-  import Raxol.View
-
-  def init(_context), do: %{commands: %{}, next_id: 1}
+  def init(_context), do: %{commands: %{}, next_id: 0, executed_commands: []}
 
   def update(%{commands: commands, next_id: id} = model, msg) do
     case msg do
@@ -42,21 +41,36 @@ defmodule Commands do
   def render(%{commands: commands}) do
     view do
       panel(title: "Press 't' repeatedly to start asynchronous commands") do
-        table do
-          table_row do
-            table_cell(content: "Command ID")
-            table_cell(content: "Status")
-            table_cell(content: "Result")
-          end
+        # Comment out first table as well
+        # table do
+        #   table_row do
+        #     table_cell(content: "Command ID")
+        #     table_cell(content: "Status")
+        #     table_cell(content: "Result")
+        #   end
+        #
+        #   for {id, status, result} <- Enum.map(Map.values(model.commands), & &1) do
+        #     table_row do
+        #       table_cell(content: to_string(id))
+        #       table_cell(content: to_string(status))
+        #       table_cell(content: to_string(result))
+        #     end
+        #   end
+        # end
+        text(content: "[Active commands table placeholder]")
+      end
 
-          for {id, {status, result}} <- commands do
-            table_row do
-              table_cell(content: to_string(id))
-              table_cell(content: to_string(status))
-              table_cell(content: to_string(result))
-            end
-          end
-        end
+      panel title: "Executed Commands" do
+        # Table components need implementation - comment out for now
+        # table headers: ["Command", "Result"] do
+        #   Enum.map(executed_commands, fn {command, result} ->
+        #     table_row do
+        #       table_cell(content: command)
+        #       table_cell(content: result)
+        #     end
+        #   end)
+        # end
+        text(content: "[Executed commands table placeholder]")
       end
     end
   end

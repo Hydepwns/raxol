@@ -1,6 +1,5 @@
 defmodule Raxol.Examples.UXRefinementDemo do
   use Raxol.App
-  alias Raxol.View
   # removed: @behaviour Raxol.Core.Runtime.Application
 
   @moduledoc """
@@ -24,15 +23,15 @@ defmodule Raxol.Examples.UXRefinementDemo do
   import Raxol.View.Components,
     only: [button: 1, text_input: 1, label: 2, space: 1]
 
-  import Raxol.View.Layout, only: [row: 2]
+  import Raxol.View.Elements, only: [panel: 2]
   alias Raxol.Core.UXRefinement
   alias Raxol.Core.FocusManager
   # alias Raxol.Core.KeyboardNavigator # Module seems to be missing
   alias Raxol.Components.HintDisplay
   alias Raxol.Components.FocusRing
   alias Raxol.View.Layout
+  # alias Raxol.View.Components # Removed alias, use explicit imports or direct macros
   require Logger
-  require Raxol.View
 
   @doc """
   Run the UX Refinement demo application.
@@ -175,9 +174,9 @@ defmodule Raxol.Examples.UXRefinementDemo do
     focused = FocusManager.get_focused_element()
 
     # Main layout
-    # Use View.panel macro directly
+    # Use the panel macro directly
     rendered_panel =
-      View.panel background: :default, height: "100%", width: "100%" do
+      panel background: :default, height: "100%", width: "100%" do
         # Layout the three main sections
         Layout.row height: "100%" do
           Layout.column padding: 1 do
@@ -185,7 +184,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
               render_help_dialog()
             else
               # Form elements
-              row(padding_bottom: 1) do
+              Layout.row(padding_bottom: 1) do
                 label("Username:", width: 10)
 
                 text_input(
@@ -196,7 +195,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
                 )
               end
 
-              row(padding_bottom: 1) do
+              Layout.row(padding_bottom: 1) do
                 label("Password:", width: 10)
 
                 text_input(
@@ -208,7 +207,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
                 )
               end
 
-              row(padding_top: 1) do
+              Layout.row(padding_top: 1) do
                 button(
                   id: "login_button",
                   label: "Login",
@@ -240,14 +239,14 @@ defmodule Raxol.Examples.UXRefinementDemo do
             FocusRing.render(model.focus_ring_model)
 
             # Keyboard shortcut info
-            row(padding_top: 2) do
+            Layout.row(padding_top: 2) do
               text("Tab: Next field | Shift+Tab: Previous field | Esc: Exit",
                 align: :center
               )
             end
 
             # Hint display at the bottom
-            row(bottom: 0, left: 0, width: "100%") do
+            Layout.row(bottom: 0, left: 0, width: "100%") do
               HintDisplay.render(focused)
             end
           end
@@ -314,9 +313,9 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
   @dialyzer {:nowarn_function, render_help_dialog: 0}
   defp render_help_dialog do
-    # Use View.panel macro directly
+    # Use the panel macro directly
     rendered_dialog =
-      View.panel title: "Help",
+      panel title: "Help",
                  padding: 1,
                  height: 12,
                  width: 40,
@@ -333,7 +332,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
           text("The focus ring indicates which element is focused.")
           text("Hints at the bottom provide context for each element.")
 
-          row(padding_top: 2) do
+          Layout.row(padding_top: 2) do
             button(
               id: "close_help",
               label: "Close",

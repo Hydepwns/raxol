@@ -108,12 +108,7 @@ defmodule Raxol.Terminal.Buffer.Scroll do
       1
   """
   def get_view(%__MODULE__{} = scroll, view_height) do
-    start_pos = max(0, scroll.height - view_height - scroll.position)
-    end_pos = min(scroll.height, start_pos + view_height)
-
-    scroll.buffer
-    |> Enum.slice(start_pos, end_pos - start_pos)
-    |> Enum.reverse()
+    Enum.slice(scroll.buffer, scroll.position, view_height)
   end
 
   @doc """
@@ -129,7 +124,9 @@ defmodule Raxol.Terminal.Buffer.Scroll do
       5
   """
   def scroll(%__MODULE__{} = scroll, amount) do
-    new_position = max(0, min(scroll.position + amount, scroll.height - 1))
+    new_position =
+      :erlang.max(0, :erlang.min(scroll.position + amount, scroll.height))
+
     %{scroll | position: new_position}
   end
 
@@ -223,7 +220,7 @@ defmodule Raxol.Terminal.Buffer.Scroll do
   end
 
   defp minimize_cell_attributes(cell) do
-    # Keep only essential attributes
-    %{cell | attributes: Map.take(cell.attributes, [:foreground, :background])}
+    # Access :style, not :attributes
+    %{cell | style: Map.take(cell.style, [:foreground, :background])}
   end
 end

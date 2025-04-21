@@ -125,7 +125,7 @@ defmodule Raxol.Components.Input.SingleLineInput do
   # end
 
   @impl true
-  def handle_event(%Event{type: :key, data: key_data} = event, state)
+  def handle_event(%Event{type: :key, data: key_data} = _event, state)
       when state.focused do
     case key_data do
       %{key: key} when is_binary(key) and byte_size(key) == 1 ->
@@ -246,8 +246,8 @@ defmodule Raxol.Components.Input.SingleLineInput do
     {update(:blur, state), []}
   end
 
-  def handle_event(event, state) do
-    {state, []}
+  def handle_event(_event, state) do
+    state
   end
 
   # Helper functions

@@ -65,7 +65,7 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     # Register spy handler
     EventManager.register_handler(
-      :accessibility_announcement,
+      :accessibility_announce,
       __MODULE__,
       :handle_announcement_spy
     )
@@ -76,7 +76,7 @@ defmodule Raxol.AccessibilityTestHelpers do
     after
       # Clean up spy handler
       EventManager.unregister_handler(
-        :accessibility_announcement,
+        :accessibility_announce,
         __MODULE__,
         :handle_announcement_spy
       )
@@ -110,7 +110,7 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     if exact do
       # Check for exact match
-      unless Enum.member?(announcements, expected) do
+      if !Enum.member?(announcements, expected) do
         raise ExUnit.AssertionError,
           message:
             "Expected screen reader announcement \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
@@ -119,14 +119,14 @@ defmodule Raxol.AccessibilityTestHelpers do
       # Check for pattern match
       if is_binary(expected) do
         # Search for substring
-        unless Enum.any?(announcements, &String.contains?(&1, expected)) do
+        if !Enum.any?(announcements, &String.contains?(&1, expected)) do
           raise ExUnit.AssertionError,
             message:
               "Expected screen reader announcement containing \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
         end
       else
         # Assume Regex
-        unless Enum.any?(announcements, &Regex.match?(expected, &1)) do
+        if !Enum.any?(announcements, &Regex.match?(expected, &1)) do
           raise ExUnit.AssertionError,
             message:
               "Expected screen reader announcement matching #{inspect(expected)} was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
@@ -155,7 +155,7 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     context = Keyword.get(opts, :context, "")
 
-    unless Enum.empty?(announcements) do
+    if !Enum.empty?(announcements) do
       raise ExUnit.AssertionError,
         message:
           "Expected no screen reader announcements, but got: #{inspect(announcements)}\n#{context}"
@@ -204,7 +204,7 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     context = Keyword.get(opts, :context, "")
 
-    unless ratio >= min_ratio do
+    if not (ratio >= min_ratio) do
       raise ExUnit.AssertionError,
         message:
           "Insufficient contrast ratio: got #{ratio}, need #{min_ratio} for #{level}/#{size}.\nForeground: #{foreground}, Background: #{background}\n#{context}"
@@ -285,7 +285,7 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     context = Keyword.get(opts, :context, "")
 
-    unless current == expected do
+    if current != expected do
       raise ExUnit.AssertionError,
         message:
           "Expected focus on \"#{expected}\", but it's on \"#{current}\"\n#{context}"
@@ -348,7 +348,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       executed = Process.get(:shortcut_action_executed, false)
       action_id = Process.get(:shortcut_action_id)
 
-      unless executed do
+      if !executed do
         raise ExUnit.AssertionError,
           message:
             "Keyboard shortcut \"#{shortcut}\" did not trigger any action.\n#{context}"
@@ -427,7 +427,7 @@ defmodule Raxol.AccessibilityTestHelpers do
   @doc """
   Spy handler for screen reader announcements.
   """
-  def handle_announcement_spy({:accessibility_announcement, message}) do
+  def handle_announcement_spy({:accessibility_announce, message}) do
     # Record the announcement
     announcements = Process.get(:accessibility_test_announcements, [])
     updated_announcements = [message | announcements]

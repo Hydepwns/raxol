@@ -36,6 +36,7 @@ defmodule Raxol.View do
   defmacro __using__(_opts) do
     quote do
       import Raxol.View
+      # Ensure Raxol.View.Elements is imported
       import Raxol.View.Elements
     end
   end
@@ -65,66 +66,12 @@ defmodule Raxol.View do
   end
 
   @doc """
-  Creates a panel component, handling options and an optional do block.
-  """
-  defmacro panel(opts \\ [], do: block) do
-    quote do
-      panel_opts = unquote(opts)
-      # Directly process the block result, handling lists/nils/elements
-      panel_children =
-        List.wrap(unquote(block)) |> List.flatten() |> Enum.reject(&is_nil(&1))
-
-      %{type: :panel, opts: panel_opts, children: panel_children}
-    end
-  end
-
-  @doc """
-  Creates a column component with child elements.
-  """
-  @spec column(opts(), children_fun()) :: map()
-  def column(opts, fun) when is_list(opts) and is_function(fun, 0) do
-    %{type: :column, opts: opts, children: fun.()}
-  end
-
-  @doc """
-  Creates a column component, returning a map describing it.
-  """
-  @spec column(opts()) :: map()
-  def column(opts) when is_list(opts) do
-    %{type: :column, opts: opts, children: []}
-  end
-
-  @doc """
-  Creates a row component with child elements.
-  """
-  @spec row(opts(), children_fun()) :: map()
-  def row(opts, fun) when is_list(opts) and is_function(fun, 0) do
-    %{type: :row, opts: opts, children: fun.()}
-  end
-
-  @doc """
-  Creates a row component, returning a map describing it.
-  """
-  @spec row(opts()) :: map()
-  def row(opts) when is_list(opts) do
-    %{type: :row, opts: opts, children: []}
-  end
-
-  @doc """
   Creates a text component.
   """
   # Simplified return type
   @spec text(binary(), opts()) :: any()
   def text(content, _opts \\ []) when is_binary(content) do
     %{type: :text, text: content, attrs: %{}}
-  end
-
-  @doc """
-  Creates a button component.
-  """
-  # Keep opts for future styling/behaviour
-  def button(opts \\ [], label) when is_list(opts) and is_binary(label) do
-    %{type: :button, label: label, opts: opts}
   end
 
   @doc """

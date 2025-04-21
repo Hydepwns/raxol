@@ -17,7 +17,7 @@ defmodule Raxol.I18nTestHelpers do
   import ExUnit.Assertions
   import Raxol.AccessibilityTestHelpers
 
-  alias Raxol.Core.I18n
+  alias RaxolWeb.Gettext
   alias Raxol.Core.Accessibility
 
   @doc """
@@ -28,17 +28,17 @@ defmodule Raxol.I18nTestHelpers do
   ## Examples
 
       with_locale("fr") do
-        assert I18n.t("greeting") == "Bonjour"
+        assert Gettext.t("greeting") == "Bonjour"
       end
   """
   def with_locale(locale, fun) when is_binary(locale) and is_function(fun, 0) do
-    original_locale = I18n.get_locale()
+    original_locale = Gettext.get_locale()
 
     try do
-      I18n.set_locale(locale)
+      Gettext.put_locale(locale)
       fun.()
     after
-      I18n.set_locale(original_locale)
+      Gettext.put_locale(original_locale)
     end
   end
 
@@ -51,9 +51,7 @@ defmodule Raxol.I18nTestHelpers do
   """
   def assert_translation_exists(locale, key)
       when is_binary(locale) and is_binary(key) do
-    # Use t/3 with the specific locale and check if it returns the key itself
-    # We pass the key as the default to ensure it returns the key if not found
-    translated = I18n.t(key, %{}, locale: locale, default: key)
+    translated = Gettext.t(key, %{}, locale: locale, default: key)
 
     assert translated != key,
            "Expected translation key '#{key}' to exist for locale '#{locale}', but it doesn't"
@@ -68,7 +66,7 @@ defmodule Raxol.I18nTestHelpers do
   """
   def assert_translation(locale, key, expected)
       when is_binary(locale) and is_binary(key) do
-    actual = I18n.t(key, %{}, locale)
+    actual = Gettext.t(key, %{}, locale)
 
     assert actual == expected,
            "Expected translation of '#{key}' in '#{locale}' to be '#{expected}', but got '#{actual}'"
@@ -105,10 +103,9 @@ defmodule Raxol.I18nTestHelpers do
       end
   """
   def with_rtl_locale(fun) when is_function(fun, 0) do
-    # Find first available RTL locale
     rtl_locale =
-      I18n.available_locales()
-      |> Enum.find(fn locale -> I18n.rtl?(locale) end)
+      Gettext.available_locales()
+      |> Enum.find(fn locale -> Gettext.rtl?(locale) end)
 
     if rtl_locale do
       with_locale(rtl_locale, fun)
@@ -126,7 +123,6 @@ defmodule Raxol.I18nTestHelpers do
   """
   def assert_accessibility_translations_complete(locale)
       when is_binary(locale) do
-    # List of essential accessibility-related translation keys
     essential_keys = [
       "accessibility.high_contrast_enabled",
       "accessibility.high_contrast_disabled",
@@ -141,9 +137,7 @@ defmodule Raxol.I18nTestHelpers do
 
     missing_keys =
       Enum.filter(essential_keys, fn key ->
-        # Use the same logic as assert_translation_exists
-        translated = I18n.t(key, %{}, locale: locale, default: key)
-        # If translation equals key, it's missing
+        translated = Gettext.t(key, %{}, locale: locale, default: key)
         translated == key
       end)
 
@@ -162,18 +156,25 @@ defmodule Raxol.I18nTestHelpers do
     with_locale(locale, fn ->
       key = "accessibility.screen_reader.#{announcement_type}"
 
-      # Use I18n.t/3 to get the translated and formatted string
-      formatted = I18n.t(key, bindings)
+      raw_translation = Gettext.t(key, %{}, locale: locale, default: key)
 
-      # Verify the announcement is not just the key (which would indicate missing translation)
+      IO.inspect({locale, key, raw_translation},
+        label: "assert_screen_reader_format: Raw Translation"
+      )
+
+      formatted = Gettext.t(key, bindings)
+
+      IO.inspect({locale, key, bindings, formatted},
+        label: "assert_screen_reader_format: Formatted Translation"
+      )
+
       refute formatted == key,
              "Screen reader announcement '#{announcement_type}' not properly formatted for locale '#{locale}'"
 
-      # If there are bindings, verify they are applied
       if map_size(bindings) > 0 do
         Enum.each(bindings, fn {key, value} ->
           assert String.contains?(formatted, to_string(value)),
-                 "Screen reader announcement doesn't contain binding value '#{value}' for key '#{key}'"
+                 "Screen reader announcement doesn't contain binding value '#{value}' for key '#{key}'. Formatted: '#{formatted}'"
         end)
       end
     end)
@@ -190,37 +191,29 @@ defmodule Raxol.I18nTestHelpers do
       when is_binary(locale) and is_binary(component_id) and
              is_list(label_types) do
     with_locale(locale, fn ->
-      # Get all metadata for the component once
       metadata = Accessibility.get_element_metadata(component_id) || %{}
 
       Enum.each(label_types, fn label_type ->
-        # Fetch the specific label type from metadata
         label = Map.get(metadata, label_type)
 
         refute is_nil(label),
                "Component '#{component_id}' is missing '#{label_type}' accessibility label in locale '#{locale}'"
 
-        # Verify the label is not in the default locale when a different locale is set
-        # Use the suggested function name
-        default_locale = I18n.get_locale()
+        default_locale = Gettext.get_locale()
 
         if locale != default_locale do
           default_label =
             with_locale(default_locale, fn ->
-              # Fetch metadata and the specific label in the default locale
               default_metadata =
                 Accessibility.get_element_metadata(component_id) || %{}
 
               Map.get(default_metadata, label_type)
             end)
 
-          # Ensure the default label was found before comparing
-          unless is_nil(default_label) do
+          if not is_nil(default_label) do
             refute label == default_label,
                    "Component '#{component_id}' '#{label_type}' label ('#{label}') was not translated from default locale ('#{default_label}')"
           else
-            # If default label is nil, we can't compare, but the translated label exists (checked above)
-            # This might indicate an issue with the test setup or default translations
             require Logger
 
             Logger.debug(
@@ -246,10 +239,8 @@ defmodule Raxol.I18nTestHelpers do
         expected_description
       ) do
     with_locale(locale, fn ->
-      # Get all shortcuts for the current context (implicitly set by with_locale)
       all_shortcuts = Raxol.Core.KeyboardShortcuts.get_shortcuts_for_context()
 
-      # Find the specific shortcut by its ID
       shortcut_data =
         Enum.find(all_shortcuts, fn s -> s.name == shortcut_id end)
 
@@ -263,7 +254,6 @@ defmodule Raxol.I18nTestHelpers do
         assert actual_description == expected_description,
                "Expected shortcut description for '#{shortcut_id}' to be '#{expected_description}' in locale '#{locale}', but got '#{actual_description}'"
       else
-        # Shortcut ID not found in the current context
         flunk(
           "Shortcut with ID '#{shortcut_id}' not found in current context for locale '#{locale}'"
         )
@@ -281,13 +271,10 @@ defmodule Raxol.I18nTestHelpers do
       end)
   """
   def assert_locale_accessibility_settings(locale, assertion_fn) do
-    # Set the locale
-    Raxol.I18n.set_locale(locale)
+    Gettext.put_locale(locale)
 
-    # Apply accessibility settings based on locale
-    settings = Raxol.Accessibility.apply_locale_settings()
+    settings = Accessibility.apply_locale_settings()
 
-    # Run the provided assertion function
     assertion_fn.(settings)
   end
 end

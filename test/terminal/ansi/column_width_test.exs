@@ -54,7 +54,8 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
       # Verify screen is cleared and cursor is home
       assert is_screen_clear?(emulator_132)
       assert emulator_132.cursor.position == {0, 0}
-      assert emulator_132.screen_buffer.width == 132 # Verify width still changes
+      # Verify width still changes
+      assert emulator_132.screen_buffer.width == 132
 
       # Switch back to 80-column mode
       {emulator_80, _rest2} =
@@ -63,7 +64,8 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
       # Verify screen is cleared again and cursor is home
       assert is_screen_clear?(emulator_80)
       assert emulator_80.cursor.position == {0, 0}
-      assert emulator_80.screen_buffer.width == 80 # Verify width changes back
+      # Verify width changes back
+      assert emulator_80.screen_buffer.width == 80
     end
   end
 
@@ -92,12 +94,14 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
 
   # Helper to check if the screen is clear (all cells are default)
   defp is_screen_clear?(emulator) do
-    default_cell = Cell.new() # Assumes Cell.new() creates the default empty cell
+    # Assumes Cell.new() creates the default empty cell
+    default_cell = Cell.new()
 
     Enum.all?(emulator.screen_buffer.cells, fn row ->
       Enum.all?(row, fn cell ->
         # Compare relevant fields, ignore style for simplicity if needed
-        cell.char == default_cell.char # && cell.style == default_cell.style
+        # && cell.style == default_cell.style
+        cell.char == default_cell.char
       end)
     end)
   end

@@ -94,7 +94,8 @@ defmodule Raxol.Core.Renderer.Buffer do
   """
   def swap_buffers(buffer) do
     now = System.monotonic_time(:millisecond)
-    frame_time = 1000 / buffer.fps
+    # Ensure frame_time is an integer for comparison
+    frame_time = trunc(1000 / buffer.fps)
 
     if now - buffer.last_frame_time >= frame_time do
       # Swap buffers
@@ -173,13 +174,17 @@ defmodule Raxol.Core.Renderer.Buffer do
 
   # Private Helpers
 
-  defp copy_cells(cells, {old_w, _old_h}, {new_w, new_h}) do
+  defp copy_cells(cells, {old_w, old_h}, {new_w, new_h}) do
     # Copy cells from old dimensions to new dimensions
     for y <- 0..(new_h - 1) do
       for x <- 0..(new_w - 1) do
-        if x < old_w and y < new_h do
-          get_in(cells, [y, x]) || Raxol.Terminal.Cell.new()
+        # Check if the coordinate was within the OLD bounds
+        if x < old_w and y < old_h do
+          # Get the cell from the old map using the {x, y} tuple key
+          # Use default if somehow missing
+          Map.get(cells, {x, y}, Raxol.Terminal.Cell.new())
         else
+          # Cell is outside the old bounds, use a new default cell
           Raxol.Terminal.Cell.new()
         end
       end

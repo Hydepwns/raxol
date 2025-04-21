@@ -1,22 +1,31 @@
 defmodule Raxol.Terminal.Emulator do
   @moduledoc """
-  The Raxol Terminal Emulator module provides a terminal emulation layer that
-  handles screen buffer management, cursor positioning, input handling, and
-  terminal state management.
-
-  Note: When running in certain environments, stdin may be excluded from Credo analysis
-  due to how it's processed. This is expected behavior and doesn't affect functionality.
+  Manages the state of the terminal emulator, including screen buffer,
+  cursor position, attributes, and modes.
   """
 
+  # alias Raxol.Terminal.ANSI # Unused
+  alias Raxol.Terminal.Cell
+  # alias Raxol.Terminal.Screen # Unused
+  # alias Raxol.Terminal.Style # Unused
+  # alias Raxol.Terminal.Modes # Unused
+  # alias Raxol.Terminal.Unicode # Unused
+  # alias Raxol.Terminal.Buffer.Manager, as: BufferManager # Unused
+  # alias Raxol.Terminal.Buffer.Scroll # Unused
+  # alias Raxol.Terminal.Emulator # Unused - self alias
+  # alias Raxol.Terminal.CommandHistory # Unused
+  # alias Raxol.Terminal.Configuration # Unused
+
+  # NOTE: Keep these aliases as they might be used implicitly or are fundamental
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.{Manager, Movement}
-  alias Raxol.Terminal.Cursor.Style
   alias Raxol.Terminal.EscapeSequence
   alias Raxol.Terminal.ANSI.ScreenModes
   alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Plugins.PluginManager
   alias Raxol.Terminal.ANSI.TerminalState
+
   require Logger
 
   @type t :: %__MODULE__{
@@ -83,7 +92,7 @@ defmodule Raxol.Terminal.Emulator do
   @dialyzer {:nowarn_function, new: 3}
   def new(width \\ 80, height \\ 24, opts \\ []) do
     scrollback_limit = Keyword.get(opts, :scrollback, 1000)
-    memory_limit = Keyword.get(opts, :memory_limit, 1_000_000)
+    memory_limit = Keyword.get(opts, :memorylimit, 1_000_000)
     plugin_manager = PluginManager.new()
     # Initialize Manager
     initial_cursor = Manager.new()
@@ -134,7 +143,7 @@ defmodule Raxol.Terminal.Emulator do
         process_escape_sequence(emulator, "\e" <> rest)
 
       char when is_binary(char) and byte_size(char) == 1 ->
-        process_character(emulator, char)
+        {process_character(emulator, char), ""}
 
       _ ->
         {emulator, ""}
@@ -153,7 +162,7 @@ defmodule Raxol.Terminal.Emulator do
 
   """
   @spec process_escape_sequence(t(), String.t()) :: {t(), String.t()}
-  def process_escape_sequence(%__MODULE__{} = emulator, sequence) do
+  def process_escape_sequence(%Raxol.Terminal.Emulator{} = emulator, sequence) do
     case EscapeSequence.parse(sequence) do
       {:ok, command_data, rest} ->
         # Dispatch based on parsed command
@@ -178,336 +187,69 @@ defmodule Raxol.Terminal.Emulator do
     end
   end
 
-  # Helper to dispatch parsed commands to emulator functions
-  defp dispatch_command(emulator, {:batch, commands}) do
-    Enum.reduce(commands, emulator, &dispatch_command/2)
-  end
-
-  defp dispatch_command(emulator, {:cursor_position, {row, col}}) do
-    move_cursor_absolute(emulator, row, col)
-  end
-
-  defp dispatch_command(emulator, {:cursor_move, :up, count}) do
-    move_cursor(emulator, :up, count)
-  end
-
-  defp dispatch_command(emulator, {:cursor_move, :down, count}) do
-    move_cursor(emulator, :down, count)
-  end
-
-  defp dispatch_command(emulator, {:cursor_move, :right, count}) do
-    move_cursor(emulator, :forward, count)
-  end
-
-  defp dispatch_command(emulator, {:cursor_move, :left, count}) do
-    move_cursor(emulator, :backward, count)
-  end
-
-  defp dispatch_command(emulator, {:cursor_next_line, count}) do
-    move_cursor(emulator, :next_line, count)
-  end
-
-  defp dispatch_command(emulator, {:cursor_prev_line, count}) do
-    move_cursor(emulator, :prev_line, count)
-  end
-
-  defp dispatch_command(emulator, {:cursor_col_abs, col}) do
-    move_cursor_absolute(emulator, nil, col)
-  end
-
-  # Mode setting uses a helper to map codes to atoms
-  defp dispatch_command(emulator, {:set_mode, type, code, value}) do
-    handle_mode_change(emulator, type, code, value)
-  end
-
-  # Character Sets
-  defp dispatch_command(emulator, {:designate_charset, g_set, charset_atom}) do
-    designate_charset(emulator, g_set, charset_atom)
-  end
-
-  defp dispatch_command(emulator, {:invoke_charset_gr, g_set}) do
-    # TODO: Implement GR invocation logic (updates GR mapping in Charset state)
-    Logger.debug("GR Invocation not fully implemented yet: #{g_set}")
-    emulator
-  end
-
-  # SGR - Needs mapping codes to style changes
-  defp dispatch_command(emulator, {:set_graphic_rendition, codes}) do
-    # TODO: Implement SGR logic - map codes to TextFormatting changes
-    # Requires TextFormatting module interaction
-    Logger.debug("SGR not fully implemented: #{inspect(codes)}")
-    emulator
-  end
-
-  # Scroll Region
-  defp dispatch_command(emulator, {:set_scroll_region, region_tuple}) do
-    case region_tuple do
-      nil -> clear_scroll_region(emulator)
-      {top, bottom} -> set_scroll_region(emulator, top, bottom)
-    end
-  end
-
-  # Erasing
-  defp dispatch_command(emulator, {:erase_display, _mode}) do
-    # TODO: Implement erase display logic (using ScreenBuffer.clear_region?)
-    Logger.debug("Erase Display (ED) not implemented yet")
-    emulator
-  end
-
-  defp dispatch_command(emulator, {:erase_line, _mode}) do
-    # TODO: Implement erase line logic
-    Logger.debug("Erase Line (EL) not implemented yet")
-    emulator
-  end
-
-  # Scrolling
-  defp dispatch_command(emulator, {:scroll, :up, count}) do
-    scroll_up(emulator, count)
-  end
-
-  defp dispatch_command(emulator, {:scroll, :down, count}) do
-    scroll_down(emulator, count)
-  end
-
-  # Cursor Saving/Restoring (DEC)
-  defp dispatch_command(emulator, {:dec_save_cursor, _}) do
-    # Use general state stack for now
-    push_state(emulator)
-  end
-
-  defp dispatch_command(emulator, {:dec_restore_cursor, _}) do
-    pop_state(emulator)
-  end
-
-  # DSR
-  defp dispatch_command(emulator, {:device_status_report, type}) do
-    # TODO: Implement DSR response generation
-    Logger.debug(
-      "Device Status Report (DSR) response not implemented yet: #{type}"
-    )
-
-    emulator
-  end
-
-  # Default: Unknown/unhandled command
-  defp dispatch_command(emulator, command_data) do
-    Logger.warning(
-      "Unhandled parsed command in dispatch_command: #{inspect(command_data)}"
-    )
-
-    emulator
-  end
-
   # --- Mode Setting ---
-  def set_screen_mode(%__MODULE__{} = emulator, mode_atom) do
-    new_mode_state = ScreenModes.set_mode(emulator.mode_state, mode_atom)
-    emulator_with_state = %{emulator | mode_state: new_mode_state}
+  def handle_mode_change(%__MODULE__{} = emulator, type, code, value) do
+    mode_atom = lookup_mode_atom(type, code)
 
-    # Handle side effects for specific modes
-    case mode_atom do
-      # Mode 3: 132 Column Mode
-      :columns_132 ->
-        new_width = 132
-        Logger.debug("Emulator: Setting 132 column mode. Resizing buffer.")
-        # ---> Change: Pass the struct and use struct's height <---
-        new_buffer =
-          ScreenBuffer.resize(
-            emulator.screen_buffer,
-            new_width,
-            emulator.screen_buffer.height
-          )
-
-        # ---> Change: Replace old struct with new one, remove width update <---
-        if new_buffer do
-          %{emulator_with_state | screen_buffer: new_buffer}
-        else
-          Logger.error(
-            "Emulator: Failed to resize screen buffer for 132 columns."
-          )
-
-          # Return unchanged state on resize failure
-          emulator_with_state
-        end
-
-      # Mode 47/1047/1049: Alternate Screen Buffer
-      # ... (keep existing TODOs/logging) ...
-      :alternate_screen ->
-        # TODO: Implement alternate buffer saving/clearing logic
-        Logger.debug(
-          "Emulator: Set Alternate Screen Buffer (not fully implemented)"
-        )
-
-        # Return state with mode updated for now
-        emulator_with_state
-
-      :alternate_screen_sc ->
-        # TODO: Implement alternate buffer saving/clearing logic
-        Logger.debug(
-          "Emulator: Set Alternate Screen Buffer SC (not fully implemented)"
-        )
-
-        emulator_with_state
-
-      :alternate_screen_full ->
-        # TODO: Implement alternate buffer saving/clearing logic
-        Logger.debug(
-          "Emulator: Set Alternate Screen Buffer Full (not fully implemented)"
-        )
-
-        emulator_with_state
-
-      _ ->
-        # No special side effects for other modes
-        emulator_with_state
-    end
-  end
-
-  def reset_screen_mode(%__MODULE__{} = emulator, mode_atom) do
-    new_mode_state = ScreenModes.reset_mode(emulator.mode_state, mode_atom)
-    emulator_with_state = %{emulator | mode_state: new_mode_state}
-
-    # Handle side effects for specific modes
-    case mode_atom do
-      # Mode 3: 80 Column Mode
-      :columns_132 ->
-        new_width = 80
-        Logger.debug("Emulator: Resetting to 80 column mode. Resizing buffer.")
-        # ---> Change: Pass the struct and use struct's height <---
-        new_buffer =
-          ScreenBuffer.resize(
-            emulator.screen_buffer,
-            new_width,
-            emulator.screen_buffer.height
-          )
-
-        # ---> Change: Replace old struct with new one, remove width update <---
-        if new_buffer do
-          %{emulator_with_state | screen_buffer: new_buffer}
-        else
-          Logger.error(
-            "Emulator: Failed to resize screen buffer for 80 columns."
-          )
-
-          # Return unchanged state on resize failure
-          emulator_with_state
-        end
-
-      # Mode 47/1047/1049: Main Screen Buffer
-      # ... (keep existing TODOs/logging) ...
-      :alternate_screen ->
-        # TODO: Implement main buffer restoring logic
-        Logger.debug(
-          "Emulator: Reset Alternate Screen Buffer (not fully implemented)"
-        )
-
-        # Return state with mode updated for now
-        emulator_with_state
-
-      :alternate_screen_sc ->
-        # TODO: Implement main buffer restoring logic
-        Logger.debug(
-          "Emulator: Reset Alternate Screen Buffer SC (not fully implemented)"
-        )
-
-        emulator_with_state
-
-      :alternate_screen_full ->
-        # TODO: Implement main buffer restoring logic
-        Logger.debug(
-          "Emulator: Reset Alternate Screen Buffer Full (not fully implemented)"
-        )
-
-        emulator_with_state
-
-      _ ->
-        # No special side effects for other modes
-        emulator_with_state
-    end
-  end
-
-  # --- Internal Command Processing ---
-
-  # Helper to get current buffer dimensions
-  defp buffer_dimensions(%__MODULE__{
-         screen_buffer: %ScreenBuffer{width: w, height: h}
-       }) do
-    {w, h}
-  end
-
-  defp buffer_dimensions(%__MODULE__{}) do
-    Logger.warn(
-      "Emulator: Attempted to get dimensions from invalid screen_buffer."
-    )
-
-    # Default or error dimensions
-    {0, 0}
-  end
-
-  # Helper to update a cell in the buffer
-  defp update_cell(%__MODULE__{} = emulator, {line, col}, cell) do
-    new_screen_buffer =
-      ScreenBuffer.update_cell(emulator.screen_buffer, {line, col}, cell)
-
-    if new_screen_buffer do
-      %{emulator | screen_buffer: new_screen_buffer}
-    else
-      Logger.error("Emulator: Failed to update cell at {#{line}, #{col}}")
-      # Return unchanged on failure
-      emulator
-    end
-  end
-
-  # ... potentially other helpers using screen_buffer ...
-
-  # --- Character Processing ---
-
-  defp process_character(%__MODULE__{} = emulator, char) do
-    # Check for C0/C1 control codes first (TODO)
-
-    # Handle printable characters
-    {line, col} = emulator.cursor.position
-    # ---> Change: Get dimensions from struct <---
-    {width, height} = buffer_dimensions(emulator)
-
-    # Autowrap (DECAWM) handling
-    # Needs refinement based on exact DECAWM logic
-    # wrapped = if col > width and ScreenModes.is_set?(emulator.mode_state, :autowrap) do
-    #   # Move to start of next line, potentially scrolling
-    #   # This logic needs ScreenBuffer.scroll_up integration
-    #   new_line = min(line + 1, height) # Simplified - needs scroll check
-    #   emulator = %{emulator | cursor: {new_line, 1}}
-    #   true
-    # else
-    #   false
-    # end
-    # {line, col} = emulator.cursor # Re-fetch cursor after potential wrap
-
-    if line > height or col > width do
-      Logger.warn(
-        "Emulator: Cursor #{line},#{col} out of bounds #{width}x#{height}. Ignoring char '#{char}'."
+    if mode_atom do
+      Logger.debug(
+        "Emulator: Changing mode: #{type} code #{code} (#{mode_atom}) -> #{value}"
       )
 
-      # Ignore characters if cursor is out of bounds
+      emulator_after_change =
+        if value do
+          set_screen_mode(emulator, mode_atom)
+        else
+          reset_screen_mode(emulator, mode_atom)
+        end
+
+      # Specific handling for DECCOLM (Mode 3)
+      if mode_atom == :deccolm_132 do
+        # Clear screen and home cursor on width change, as per tests
+        cleared_emulator = erase_in_display(emulator_after_change, :all)
+        move_cursor_absolute(cleared_emulator, 1, 1)
+      else
+        emulator_after_change
+      end
+    else
+      Logger.warning(
+        "Emulator: Unknown mode change requested: #{type} code #{code}"
+      )
+
+      # Return unchanged if mode is unknown
       emulator
     end
-
-    # Apply current style to the character
-    cell_to_write = Cell.new(char, emulator.style)
-
-    # Update the cell in the buffer
-    # ---> Change: Use helper <---
-    emulator_with_update = update_cell(emulator, {line, col}, cell_to_write)
-
-    # Advance cursor
-    new_col = col + 1
-
-    # TODO: Handle DECAWM wrap explicitly here if needed, maybe set last_col_exceeded
-    %{emulator_with_update | cursor: {line, new_col}}
   end
 
-  # ... existing code ...
+  # Helper to lookup mode atom from ScreenModes
+  defp lookup_mode_atom(:dec_private, code),
+    do: ScreenModes.lookup_private(code)
 
-  # --- Command Dispatch ---
+  defp lookup_mode_atom(:standard, code), do: ScreenModes.lookup_standard(code)
+  defp lookup_mode_atom(_, _), do: nil
+
+  # Delegate mode setting/resetting to ScreenModes
+  defp set_screen_mode(
+         %__MODULE__{mode_state: current_mode_state} = emulator,
+         mode_atom
+       ) do
+    new_mode_state =
+      ScreenModes.switch_mode(current_mode_state, mode_atom, true)
+
+    %{emulator | mode_state: new_mode_state}
+  end
+
+  defp reset_screen_mode(
+         %__MODULE__{mode_state: current_mode_state} = emulator,
+         mode_atom
+       ) do
+    new_mode_state =
+      ScreenModes.switch_mode(current_mode_state, mode_atom, false)
+
+    %{emulator | mode_state: new_mode_state}
+  end
+
+  # --- Command Dispatch (Primary Mechanism) ---
 
   defp dispatch_command(emulator, command) do
     Logger.debug("Emulator: Dispatching command: #{inspect(command)}")
@@ -580,6 +322,10 @@ defmodule Raxol.Terminal.Emulator do
       {:set_mode, type, code, value} ->
         handle_mode_change(emulator, type, code, value)
 
+      # Add the reset_mode clause here
+      {:reset_mode, type, code} ->
+        handle_mode_change(emulator, type, code, false)
+
       # --- Character Attributes (SGR) ---
       {:select_graphic_rendition, params} ->
         apply_sgr(emulator, params)
@@ -606,13 +352,11 @@ defmodule Raxol.Terminal.Emulator do
       # TODO: Implement other commands (tabs, etc.)
 
       _ ->
-        Logger.warn("Emulator: Unhandled command: #{inspect(command)}")
+        Logger.warning("Emulator: Unhandled command: #{inspect(command)}")
         # Return unchanged for unhandled commands
         emulator
     end
   end
-
-  # --- Specific Command Implementations ---
 
   # Helper for relative cursor movement
   defp move_cursor(%__MODULE__{} = emulator, direction, count) do
@@ -673,24 +417,32 @@ defmodule Raxol.Terminal.Emulator do
   # Placeholder for erase functions (requires ScreenBuffer integration)
   defp erase_in_display(%__MODULE__{} = emulator, type) do
     Logger.debug(
-      "Emulator: Erase in Display (type: #{type}) - requires ScreenBuffer implementation"
+      "Emulator: Erase in Display (type: #{type}) - calling ScreenBuffer.erase_in_display"
     )
 
-    # TODO: Call ScreenBuffer.erase_in_display(emulator.screen_buffer, emulator.cursor, type)
-    # new_buffer = ScreenBuffer.erase_in_display(emulator.screen_buffer, emulator.cursor, type)
-    # %{emulator | screen_buffer: new_buffer}
-    emulator
+    # Call ScreenBuffer.erase_in_display(emulator.screen_buffer, emulator.cursor, type)
+    new_buffer =
+      ScreenBuffer.erase_in_display(
+        emulator.screen_buffer,
+        emulator.cursor,
+        type
+      )
+
+    %{emulator | screen_buffer: new_buffer}
+    # emulator
   end
 
   defp erase_in_line(%__MODULE__{} = emulator, type) do
     Logger.debug(
-      "Emulator: Erase in Line (type: #{type}) - requires ScreenBuffer implementation"
+      "Emulator: Erase in Line (type: #{type}) - calling ScreenBuffer.erase_in_line"
     )
 
-    # TODO: Call ScreenBuffer.erase_in_line(emulator.screen_buffer, emulator.cursor, type)
-    # new_buffer = ScreenBuffer.erase_in_line(emulator.screen_buffer, emulator.cursor, type)
-    # %{emulator | screen_buffer: new_buffer}
-    emulator
+    # Call ScreenBuffer.erase_in_line(emulator.screen_buffer, emulator.cursor, type)
+    new_buffer =
+      ScreenBuffer.erase_in_line(emulator.screen_buffer, emulator.cursor, type)
+
+    %{emulator | screen_buffer: new_buffer}
+    # emulator
   end
 
   # Placeholder for scroll functions (requires ScreenBuffer integration)
@@ -706,142 +458,148 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   defp set_scroll_region(%__MODULE__{} = emulator, top, bottom) do
+    # Convert 1-based to 0-based for internal storage
+    top_0 = max(0, top - 1)
+    bottom_0 = max(0, bottom - 1)
+
+    # TODO: Validate top < bottom?
+
     Logger.debug(
-      "Emulator: Set Scroll Region (#{top}, #{bottom}) - requires ScreenBuffer implementation"
+      "Emulator: Setting Scroll Region (0-based) top=#{top_0}, bottom=#{bottom_0}"
     )
 
-    # ---> Change: Update struct within screen_buffer <---
-    new_buffer =
-      ScreenBuffer.set_scroll_region(emulator.screen_buffer, top, bottom)
+    # Setting the scroll region doesn't modify the buffer contents directly,
+    # it affects how scrolling commands operate.
+    # The ScreenBuffer might need awareness, but the core state is here.
 
-    if new_buffer do
-      # Move cursor to home
-      %{emulator | screen_buffer: new_buffer, cursor: {1, 1}}
-    else
-      Logger.error("Emulator: Failed to set scroll region.")
-      emulator
-    end
+    # Move cursor to home (0, 0) relative to screen, not scroll region
+    new_cursor = Movement.move_to_position(emulator.cursor, 0, 0)
+
+    %{emulator | scroll_region: {top_0, bottom_0}, cursor: new_cursor}
+    # Note: ScreenBuffer.set_scroll_region might not be needed if scrolling
+    # logic within ScreenBuffer uses emulator.scroll_region.
+    # Commenting out buffer modification for now.
+    # new_buffer =
+    #   ScreenBuffer.set_scroll_region(emulator.screen_buffer, top_0, bottom_0)
+    # if new_buffer do
+    #   %{emulator | screen_buffer: new_buffer, scroll_region: {top_0, bottom_0}, cursor: new_cursor}
+    # else
+    #   Logger.error("Emulator: Failed to set scroll region in ScreenBuffer.")
+    #   emulator
+    # end
   end
 
   # SGR implementation (simplified example)
+  # Alias needed
+  alias Raxol.Terminal.ANSI.TextFormatting
+
   defp apply_sgr(%__MODULE__{} = emulator, params) do
-    new_style = Enum.reduce(params, emulator.style, &Style.apply_sgr_code/2)
+    # Iterate through params, applying each attribute
+    new_style =
+      Enum.reduce(params, emulator.style, fn param, current_style ->
+        # TODO: Map SGR parameter (integer) to attribute atom if needed by apply_attribute
+        # Assuming TextFormatting.apply_attribute/2 takes the atom directly
+        # Need to map integer codes (e.g., 1 for bold, 30-37 for colors) to atoms (:bold, :black, etc.)
+        # Placeholder for mapping function
+        sgr_atom = map_sgr_param_to_atom(param)
+        TextFormatting.apply_attribute(current_style, sgr_atom)
+      end)
+
     %{emulator | style: new_style}
   end
 
+  # Placeholder function to map SGR integer codes to atoms
+  # TODO: Implement this mapping fully based on SGR standards
+  defp map_sgr_param_to_atom(0), do: :reset
+  defp map_sgr_param_to_atom(1), do: :bold
+  defp map_sgr_param_to_atom(4), do: :underline
+  defp map_sgr_param_to_atom(5), do: :blink
+  defp map_sgr_param_to_atom(7), do: :reverse
+  # Often resets bold/faint
+  defp map_sgr_param_to_atom(22), do: :normal_intensity
+  defp map_sgr_param_to_atom(24), do: :no_underline
+  defp map_sgr_param_to_atom(25), do: :no_blink
+  defp map_sgr_param_to_atom(27), do: :no_reverse
+
+  defp map_sgr_param_to_atom(n) when n >= 30 and n <= 37,
+    do: map_color_code_to_atom(n)
+
+  # Default foreground
+  defp map_sgr_param_to_atom(39), do: :default_fg
+
+  defp map_sgr_param_to_atom(n) when n >= 40 and n <= 47,
+    do: map_color_code_to_atom(n)
+
+  # Default background
+  defp map_sgr_param_to_atom(49), do: :default_bg
+  # Bright foreground
+  defp map_sgr_param_to_atom(n) when n >= 90 and n <= 97,
+    do: map_color_code_to_atom(n)
+
+  # Bright background
+  defp map_sgr_param_to_atom(n) when n >= 100 and n <= 107,
+    do: map_color_code_to_atom(n)
+
+  # Ignore unknown codes for now
+  defp map_sgr_param_to_atom(_), do: :unknown
+
+  defp map_color_code_to_atom(code) do
+    case code do
+      30 -> :black
+      40 -> :bg_black
+      90 -> :bright_black
+      100 -> :bg_bright_black
+      31 -> :red
+      41 -> :bg_red
+      91 -> :bright_red
+      101 -> :bg_bright_red
+      32 -> :green
+      42 -> :bg_green
+      92 -> :bright_green
+      102 -> :bg_bright_green
+      33 -> :yellow
+      43 -> :bg_yellow
+      93 -> :bright_yellow
+      103 -> :bg_bright_yellow
+      34 -> :blue
+      44 -> :bg_blue
+      94 -> :bright_blue
+      104 -> :bg_bright_blue
+      35 -> :magenta
+      45 -> :bg_magenta
+      95 -> :bright_magenta
+      105 -> :bg_bright_magenta
+      36 -> :cyan
+      46 -> :bg_cyan
+      96 -> :bright_cyan
+      106 -> :bg_bright_cyan
+      37 -> :white
+      47 -> :bg_white
+      97 -> :bright_white
+      107 -> :bg_bright_white
+      _ -> :unknown
+    end
+  end
+
   # Charset implementation (simplified)
-  defp designate_charset(%__MODULE__{} = emulator, g, charset_atom) do
+  defp designate_charset(%__MODULE__{} = emulator, g, _charset) do
     # G must be 0, 1, 2, or 3
     # Default to G0
     g_index = if g in [0, 1, 2, 3], do: g, else: 0
-    new_charsets = Map.put(emulator.charset_state, g_index, charset_atom)
-    %{emulator | charset_state: new_charsets}
-  end
 
-  # Mode setting dispatchers (delegating to set/reset_screen_mode)
-  # defp set_standard_mode(emulator, code), do: set_screen_mode(emulator, ScreenModes.lookup_standard(code))
-  # defp set_private_mode(emulator, code), do: set_screen_mode(emulator, ScreenModes.lookup_private(code))
-  # defp reset_standard_mode(emulator, code), do: reset_screen_mode(emulator, ScreenModes.lookup_standard(code))
-  # defp reset_private_mode(emulator, code), do: reset_screen_mode(emulator, ScreenModes.lookup_private(code))
+    # TODO: Map `charset` string (e.g., \"B\", \"0\") to the correct charset atom
+    # For now, assuming a direct mapping or placeholder
+    # Placeholder, use atom directly
+    charset_atom = :us_ascii
 
-  # --- Unified Mode Handling ---
-  @doc """
-  Handles setting or resetting a standard or DEC private mode.
-  Looks up the mode atom and applies the change based on the value.
-  """
-  defp handle_mode_change(%__MODULE__{} = emulator, type, code, value) do
-    mode_atom =
-      case type do
-        :standard ->
-          ScreenModes.lookup_standard(code)
+    new_charset_state =
+      CharacterSets.switch_charset(
+        emulator.charset_state,
+        g_index,
+        charset_atom
+      )
 
-        :dec_private ->
-          ScreenModes.lookup_private(code)
-
-        _ ->
-          Logger.warn(
-            "Emulator: Unknown mode type '#{type}' for code '#{code}'"
-          )
-
-          nil
-      end
-
-    if mode_atom do
-      # Delegate to a function that handles the specific mode atom change
-      # This function will encapsulate the logic previously in set_screen_mode/reset_screen_mode
-      apply_mode_change(emulator, mode_atom, value)
-    else
-      Logger.warn("Emulator: Unknown mode code '#{code}' for type '#{type}'")
-      # Return unchanged if mode is unknown
-      emulator
-    end
-  end
-
-  # Placeholder for the function that applies the actual mode change logic
-  # Needs to handle specific mode_atoms like :deccolm_132, :decawm, etc.
-  defp apply_mode_change(%__MODULE__{} = emulator, mode_atom, value) do
-    # TODO: Implement the logic for each mode atom based on \'value\' (true/false)
-    # This might involve updating emulator.mode_state, calling ScreenBuffer functions,
-    # adjusting cursor, clearing screen, etc.
-    Logger.debug("Emulator: Applying mode change: #{mode_atom} -> #{value}")
-
-    # Example: Handling :deccolm_132 (Column Width)
-    case mode_atom do
-      :deccolm_132 ->
-        # Update mode_state using ScreenModes functions
-        new_mode_state =
-          if value do
-            ScreenModes.set_mode(emulator.mode_state, :wide_column)
-          else
-            ScreenModes.reset_mode(emulator.mode_state, :wide_column)
-          end
-
-        # Determine new width
-        new_width = if value, do: 132, else: 80
-        current_height = emulator.screen_buffer.height
-
-        # Resize the buffer
-        resized_buffer =
-          ScreenBuffer.resize(emulator.screen_buffer, new_width, current_height)
-
-        # Clear the resized buffer
-        cleared_buffer =
-          ScreenBuffer.clear_region(
-            resized_buffer,
-            0,
-            0,
-            new_width - 1,
-            current_height - 1
-          )
-
-        # Move cursor to home position (0, 0)
-        # Use the dedicated function from the Movement module
-        new_cursor = Movement.move_home(emulator.cursor)
-
-        Logger.info(
-          "Emulator: Mode :deccolm_132 set to #{value}. Resized to #{new_width}x#{current_height}, cleared screen, and reset cursor."
-        )
-
-        # Update emulator state
-        %{
-          emulator
-          | mode_state: new_mode_state,
-            screen_buffer: cleared_buffer,
-            cursor: new_cursor
-        }
-
-      # TODO: Add cases for other modes (:decawm, :decom, :decsclm, :insert_mode, etc.)
-
-      _ ->
-        Logger.warn(
-          "Emulator: Unhandled mode atom in apply_mode_change: #{mode_atom}"
-        )
-
-        emulator
-    end
-
-    # Placeholder return
-    # emulator
+    %{emulator | charset_state: new_charset_state}
   end
 
   # Helper for clamping values
@@ -883,7 +641,7 @@ defmodule Raxol.Terminal.Emulator do
           | state_stack: updated_stack,
             # Assign the updated cursor manager
             cursor: new_cursor,
-            text_style: new_text_style,
+            style: new_text_style,
             charset_state: new_charset_state,
             mode_state: new_mode_state,
             scroll_region: new_scroll_region
@@ -919,8 +677,8 @@ defmodule Raxol.Terminal.Emulator do
       mode_state: emulator.mode_state,
       charset_state: emulator.charset_state,
       scroll_region: emulator.scroll_region,
-      width: emulator.width,
-      height: emulator.height
+      width: emulator.screen_buffer.width,
+      height: emulator.screen_buffer.height
       # Add other relevant state fields as needed
     }
   end
@@ -1021,7 +779,11 @@ defmodule Raxol.Terminal.Emulator do
     # Replace undefined clear/1 with a call to new/2 to reset the buffer
     %{
       emulator
-      | screen_buffer: ScreenBuffer.new(emulator.width, emulator.height)
+      | screen_buffer:
+          ScreenBuffer.new(
+            emulator.screen_buffer.width,
+            emulator.screen_buffer.height
+          )
     }
   end
 
@@ -1312,7 +1074,7 @@ defmodule Raxol.Terminal.Emulator do
   @spec set_character_set(t(), atom() | String.t(), atom() | String.t()) :: t()
   def set_character_set(%__MODULE__{} = emulator, target_set, charset) do
     new_state =
-      CharacterSets.set_designator(emulator.charset_state, target_set, charset)
+      CharacterSets.switch_charset(emulator.charset_state, target_set, charset)
 
     %{emulator | charset_state: new_state}
   end
@@ -1322,8 +1084,10 @@ defmodule Raxol.Terminal.Emulator do
   (Placeholder implementation)
   """
   @spec invoke_character_set(t(), atom() | String.t()) :: t()
-  def invoke_character_set(%__MODULE__{} = emulator, gset) do
-    new_state = CharacterSets.invoke_designator(emulator.charset_state, gset)
+  def invoke_character_set(%__MODULE__{} = emulator, _gset) do
+    # Placeholder based on common usage (LS0/LS1/etc.)
+    target_set = :g0
+    new_state = CharacterSets.set_gl(emulator.charset_state, target_set)
     %{emulator | charset_state: new_state}
   end
 
@@ -1417,196 +1181,92 @@ defmodule Raxol.Terminal.Emulator do
     ScreenBuffer.get_cell_at(emulator.screen_buffer, x, y)
   end
 
-  # Private functions
+  # --- Internal Helpers ---
 
-  # Map DEC Private Mode codes from escape sequence parser to ScreenModes atoms
-  # Based on map from Raxol.Terminal.ANSI
-  @dec_mode_map %{
-    # DECCKM - Cursor Keys Mode (Application vs. Normal)
-    "1" => :cursor_keys,
-    # DECCOLM - Column Mode (132 vs. 80)
-    "3" => :wide_column,
-    # DECSCNM - Screen Mode (Reverse Video)
-    "5" => :screen,
-    # DECOM - Origin Mode (Relative vs. Absolute)
-    "6" => :origin,
-    # DECAWM - Autowrap Mode
-    "7" => :auto_wrap,
-    # DECARM - Auto-repeat Keys Mode
-    "8" => :auto_repeat,
-    # DECX10MOUSE - X10 Mouse Reporting
-    "9" => :mouse_x10,
-    # ATT610 - Start/Stop Blinking Cursor (xterm)
-    "12" => :cursor_blink,
-    # DECTCEM - Text Cursor Enable Mode
-    "25" => :cursor_visible,
-    # Use Alternate Screen Buffer
-    "47" => :alternate_screen,
-    # VT200 Mouse Reporting
-    "1000" => :mouse_vt200,
-    # Button-event tracking
-    "1002" => :mouse_button_event,
-    # Any-event tracking
-    "1003" => :mouse_any_event,
-    # FocusIn/FocusOut events
-    "1004" => :mouse_focus_event,
-    # UTF8 mouse coordinates
-    "1005" => :mouse_utf8,
-    # SGR mouse coordinates
-    "1006" => :mouse_sgr,
-    # Alternate Scroll Mode (xterm)
-    "1007" => :mouse_alternate_scroll,
-    # urxvt mouse mode
-    "1015" => :mouse_urxvt,
-    # SGR Pixels mouse coordinates
-    "1016" => :mouse_sgr_pixels,
-    # 8-Bit Meta Key
-    "1034" => :interpret_meta,
-    # Num Lock Modifier
-    "1035" => :num_lock_mod,
-    # Meta Key sends ESC prefix
-    "1036" => :meta_esc_prefix,
-    # Delete key sends DEL
-    "1037" => :delete_del,
-    # Alt key sends ESC prefix
-    "1039" => :alt_esc_prefix,
-    # Use Alt Screen Buffer (and clear)
-    "1047" => :alternate_screen_and_clear,
-    # Save cursor as in DECSC
-    "1048" => :save_cursor,
-    # Combines 1047 and 1048
-    "1049" => :alternate_screen_and_cursor
-    # Add more mappings as needed
-  }
-
-  # Maps mode codes from the parser (:private or :standard, code string)
-  # to internal mode atoms used by ScreenModes.
-  defp map_mode_code(:private, code_str) do
-    case Map.get(@dec_mode_map, code_str) do
-      nil -> {:error, :unknown_private_mode}
-      mode_atom -> {:ok, mode_atom}
-    end
+  # Helper to get current buffer dimensions
+  defp buffer_dimensions(%__MODULE__{
+         screen_buffer: %ScreenBuffer{width: w, height: h}
+       }) do
+    {w, h}
   end
 
-  defp map_mode_code(:standard, code_str) do
-    # TODO: Implement mapping for standard modes if needed
+  defp buffer_dimensions(%__MODULE__{}) do
     Logger.warning(
-      "Standard mode mapping not implemented for code: #{code_str}"
+      "Emulator: Attempted to get dimensions from invalid screen_buffer."
     )
 
-    {:error, :unsupported_standard_mode}
+    # Default or error dimensions
+    {0, 0}
   end
 
-  defp map_mode_code(type, code_str) do
-    Logger.error(
-      "Unknown mode type '#{type}' for code '#{code_str}' in map_mode_code"
-    )
+  # Helper to update a cell in the buffer
+  defp update_cell(%__MODULE__{} = emulator, {line, col}, cell) do
+    # Extract char and style from the Cell struct
+    char_to_write = cell.char
+    style_to_apply = cell.style
 
-    {:error, :unknown_mode_type}
-  end
-
-  # Pushes relevant emulator state onto the state_stack.
-  # Used for DEC Save Cursor (DECSC) like operations.
-  defp push_state(%__MODULE__{} = emulator) do
-    # Extract the state components needed by TerminalState.save_state/2
-    state_to_save = %{
-      cursor: emulator.cursor,
-      # Assuming style holds the attributes map
-      attributes: emulator.style,
-      charset_state: emulator.charset_state,
-      mode_state: emulator.mode_state,
-      scroll_region: emulator.scroll_region
-    }
-
-    new_stack = TerminalState.save_state(emulator.state_stack, state_to_save)
-    %{emulator | state_stack: new_stack}
-  end
-
-  # Clears the scroll region by setting it back to the full screen.
-  defp clear_scroll_region(%__MODULE__{} = emulator) do
-    # Set scroll region to nil (representing full screen) in ScreenBuffer
-    new_buffer =
-      ScreenBuffer.set_scroll_region(emulator.screen_buffer, nil, nil)
-
-    if new_buffer do
-      # Move cursor to home position (1, 1) after resetting scroll region
-      %{emulator | screen_buffer: new_buffer, cursor: {1, 1}}
-    else
-      Logger.error("Emulator: Failed to clear scroll region in ScreenBuffer.")
-      # Return unchanged on failure
-      emulator
-    end
-  end
-
-  defp process_transformed_output(emulator, output) do
-    # This function needs to iterate through the output string,
-    # handling both regular characters and potential embedded escape sequences.
-    # For now, a simplified approach writing char by char.
-
-    {final_emulator, _remaining_output} =
-      Enum.reduce(
-        String.graphemes(output),
-        {emulator, ""},
-        fn grapheme, {current_emulator, _acc_output} ->
-          {x, y} = current_emulator.cursor.position
-
-          # Combine current text style with hyperlink if active
-          current_style = current_emulator.style
-
-          style_with_link =
-            if current_emulator.current_hyperlink_url do
-              %{
-                current_style
-                | hyperlink: current_emulator.current_hyperlink_url
-              }
-            else
-              current_style
-            end
-
-          updated_buffer =
-            ScreenBuffer.write_char(
-              current_emulator.screen_buffer,
-              x,
-              y,
-              grapheme,
-              # Pass style here
-              style_with_link
-            )
-
-          # Move cursor forward
-          # TODO: Handle wrapping and scrolling
-          # Placeholder
-          new_x = x + 1
-
-          new_cursor =
-            Movement.move_to_position(current_emulator.cursor, new_x, y)
-
-          updated_emulator = %{
-            current_emulator
-            | screen_buffer: updated_buffer,
-              cursor: new_cursor
-          }
-
-          # Continue reduction
-          {updated_emulator, ""}
-        end
+    # Call ScreenBuffer.write_char/5 instead of the non-existent update_cell/3
+    new_screen_buffer =
+      ScreenBuffer.write_char(
+        emulator.screen_buffer,
+        col,
+        line,
+        char_to_write,
+        style_to_apply
       )
 
-    final_emulator
+    # Update the emulator state with the modified screen buffer
+    %{emulator | screen_buffer: new_screen_buffer}
   end
 
-  @spec handle_escape_sequence(t(), atom(), [non_neg_integer()], String.t()) ::
-          t()
-  def handle_escape_sequence(emulator, command, _params, _intermediate) do
-    case command do
-      # ... other cases ...
-      :restore_state ->
-        # TODO: Ensure state_stack is handled correctly
-        {restored_stack, _popped_value} =
-          Raxol.Terminal.ANSI.TerminalState.restore_state(emulator.state_stack)
+  # --- Character Processing ---
 
-        %{emulator | state_stack: restored_stack}
-        # ... other cases ...
+  defp process_character(%__MODULE__{} = emulator, char) when is_binary(char) do
+    # Check for C0/C1 control codes first (TODO)
+
+    # Handle printable characters
+    {line, col} = emulator.cursor.position
+    # ---> Change: Get dimensions from struct <---
+    {width, height} = buffer_dimensions(emulator)
+
+    # Autowrap (DECAWM) handling
+    # Needs refinement based on exact DECAWM logic
+    # wrapped = if col > width and ScreenModes.is_set?(emulator.mode_state, :autowrap) do
+    #   # Move to start of next line, potentially scrolling
+    #   # This logic needs ScreenBuffer.scroll_up integration
+    #   new_line = min(line + 1, height) # Simplified - needs scroll check
+    #   emulator = %{emulator | cursor: {new_line, 1}}
+    #   true
+    # else
+    #   false
+    # end
+    # {line, col} = emulator.cursor # Re-fetch cursor after potential wrap
+
+    if line >= height or col >= width do
+      Logger.warning(
+        "Emulator: Cursor %{line},%{col} out of bounds %{width}x%{height}. Ignoring char '%{char}'.",
+        line: line + 1,
+        col: col + 1,
+        width: width,
+        height: height,
+        char: char
+      )
+
+      # Ignore characters if cursor is out of bounds
+      emulator
     end
+
+    # Apply current style to the character
+    cell_to_write = Cell.new(char, emulator.style)
+
+    # Update the cell in the buffer
+    # ---> Change: Use helper <---
+    emulator_with_update = update_cell(emulator, {line, col}, cell_to_write)
+
+    # Advance cursor
+    new_col = col + 1
+
+    # TODO: Handle DECAWM wrap explicitly here if needed, maybe set last_col_exceeded
+    %{emulator_with_update | cursor: {line, new_col}}
   end
 end

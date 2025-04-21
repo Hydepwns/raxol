@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Input.InputBuffer do
-  alias Raxol.Terminal.Input.InputBufferUtils
   alias Raxol.Terminal.Input.Types
+  alias Raxol.Terminal.Input.InputBufferUtils
 
   @moduledoc """
   Handles input buffering for the terminal emulator.
@@ -56,7 +56,7 @@ defmodule Raxol.Terminal.Input.InputBuffer do
   """
   def prepend(%__MODULE__{} = buffer, data) when is_binary(data) do
     new_contents = data <> buffer.contents
-    handle_overflow(buffer, new_contents)
+    handle_overflow(buffer, new_contents, :prepend)
   end
 
   @doc """
@@ -103,10 +103,15 @@ defmodule Raxol.Terminal.Input.InputBuffer do
 
   @doc """
   Sets the maximum size of the buffer.
+  If the current content exceeds the new max size, it will be handled
+  according to the current overflow mode.
   """
   def set_max_size(%__MODULE__{} = buffer, max_size)
       when is_integer(max_size) and max_size > 0 do
-    %{buffer | max_size: max_size}
+    # Update the max_size first
+    new_buffer = %{buffer | max_size: max_size}
+    # Then, handle potential overflow of existing content with the new size
+    handle_overflow(new_buffer, new_buffer.contents)
   end
 
   @doc """
@@ -126,10 +131,14 @@ defmodule Raxol.Terminal.Input.InputBuffer do
 
   @doc """
   Removes the last character from the buffer.
+  Uses graphemes to handle multi-byte characters correctly.
   """
-  def backspace(%__MODULE__{} = buffer) do
-    if String.length(buffer.contents) > 0 do
-      %{buffer | contents: String.slice(buffer.contents, 0..-2//-1)}
+  def backspace(%__MODULE__{contents: contents} = buffer) do
+    if String.length(contents) > 0 do
+      new_contents =
+        contents |> String.graphemes() |> Enum.drop(-1) |> Enum.join()
+
+      %{buffer | contents: new_contents}
     else
       buffer
     end
@@ -148,34 +157,47 @@ defmodule Raxol.Terminal.Input.InputBuffer do
 
   @doc """
   Inserts a character at the specified position.
+  Raises ArgumentError if position is out of bounds.
   """
   def insert_at(%__MODULE__{} = buffer, position, char) when is_binary(char) do
-    if String.length(char) == 1 and position <= String.length(buffer.contents) do
-      new_contents =
-        String.slice(buffer.contents, 0, position) <>
-          char <>
-          String.slice(buffer.contents, position..-1)
+    content_len = String.length(buffer.contents)
+    _char_len = String.length(char)
 
-      %{buffer | contents: new_contents}
-    else
-      buffer
+    if position < 0 or position > content_len do
+      raise ArgumentError, "Position out of bounds"
     end
+
+    # Ensure positive step
+    new_contents =
+      String.slice(buffer.contents, 0, position) <>
+        char <>
+        String.slice(buffer.contents, position..-1//1)
+
+    # After insertion, check for overflow
+    handle_overflow(buffer, new_contents)
   end
 
   @doc """
   Replaces a character at the specified position.
+  Raises ArgumentError if position is out of bounds.
   """
   def replace_at(%__MODULE__{} = buffer, position, char) when is_binary(char) do
-    if String.length(char) == 1 and position <= String.length(buffer.contents) do
-      new_contents =
-        String.slice(buffer.contents, 0, position) <>
-          char <>
-          String.slice(buffer.contents, (position + 1)..-1)
+    content_len = String.length(buffer.contents)
+    _char_len = String.length(char)
 
-      %{buffer | contents: new_contents}
-    else
-      buffer
+    if position < 0 or position >= content_len do
+      raise ArgumentError, "Position out of bounds"
     end
+
+    # Calculate slices carefully
+    prefix = String.slice(buffer.contents, 0, position)
+    # Ensure positive step
+    suffix = String.slice(buffer.contents, (position + String.length(char))..-1//1)
+
+    new_contents = prefix <> char <> suffix
+
+    # After replacement, check for overflow (char might be longer than replaced section)
+    handle_overflow(buffer, new_contents)
   end
 
   @doc """
@@ -202,23 +224,48 @@ defmodule Raxol.Terminal.Input.InputBuffer do
 
   defp append_to_contents(%__MODULE__{} = buffer, data) do
     new_contents = buffer.contents <> data
-    handle_overflow(buffer, new_contents)
+    handle_overflow(buffer, new_contents, :append)
   end
 
   @doc false
-  defp handle_overflow(%__MODULE__{} = buffer, new_contents) do
-    if String.length(new_contents) <= buffer.max_size do
+  defp handle_overflow(
+         %__MODULE__{} = buffer,
+         new_contents,
+         operation \\ :append
+       ) do
+    content_len = String.length(new_contents)
+
+    if content_len <= buffer.max_size do
       %{buffer | contents: new_contents}
     else
       case buffer.overflow_mode do
         :truncate ->
-          %{buffer | contents: String.slice(new_contents, 0, buffer.max_size)}
+          # For append/set_contents (default), take the start.
+          # For prepend, take the end.
+          final_contents =
+            if operation == :prepend do
+              String.slice(new_contents, -buffer.max_size..-1//1)
+            else
+              String.slice(new_contents, 0, buffer.max_size)
+            end
+
+          %{buffer | contents: final_contents}
 
         :error ->
-          buffer
+          # Raise the error instead of returning the old buffer
+          raise RuntimeError, "Buffer overflow"
 
         :wrap ->
-          %{buffer | contents: String.slice(new_contents, -buffer.max_size..-1)}
+          # For append/set_contents (default), take the end.
+          # For prepend, take the start.
+          final_contents =
+            if operation == :prepend do
+              String.slice(new_contents, 0, buffer.max_size)
+            else
+              String.slice(new_contents, -buffer.max_size..-1//1)
+            end
+
+          %{buffer | contents: final_contents}
       end
     end
   end
@@ -297,4 +344,12 @@ defmodule Raxol.Terminal.Input.InputBuffer do
 
     %{buffer | cursor_pos: new_cursor_pos}
   end
+
+  # This function appears unused currently.
+  # defp insert_at_index(str, index, char) do
+  #   {prefix, suffix} = String.split_at(str, index)
+  #   # Calculate char length for accurate cursor positioning after insert
+  #   _char_len = String.length(char) # Prefix with _ as it seems unused below
+  #   prefix <> char <> suffix
+  # end
 end

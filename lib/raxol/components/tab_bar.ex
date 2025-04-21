@@ -1,9 +1,14 @@
 defmodule Raxol.Components.TabBar do
-  # Removed: use Raxol.Component
+  use Raxol.Component
+
   require Raxol.View
 
   # alias Raxol.Components.FocusManager # Removed - Unused
   alias Raxol.View
+  alias Raxol.View.Layout
+  alias Raxol.View.Components
+
+  alias Raxol.Component.FocusManager
 
   @moduledoc """
   A tab bar component for navigating between different sections of a UI.
@@ -85,7 +90,7 @@ defmodule Raxol.Components.TabBar do
     active_tab_style =
       Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
 
-    View.row([style: style, id: focus_key], fn ->
+    Layout.row([style: style, id: focus_key], fn ->
       Enum.map(tabs, fn %{id: id, label: label} = tab ->
         is_active = id == active_tab
 
@@ -103,14 +108,13 @@ defmodule Raxol.Components.TabBar do
         # Create the tab with proper focus key
         tab_focus_key = "#{focus_key}_#{id}"
 
-        View.button(
+        Components.button(label,
           [
             id: tab_focus_key,
             style: final_style,
             on_click: fn -> on_change.(id) end,
             tooltip: tooltip
-          ],
-          label
+          ]
         )
       end)
     end)
@@ -166,8 +170,8 @@ defmodule Raxol.Components.TabBar do
 
     content_style = Keyword.get(opts, :content_style, %{})
 
-    View.row([style: style, id: focus_key], fn ->
-      View.row([style: tab_bar_style], fn ->
+    Layout.row([style: style, id: focus_key], fn ->
+      Layout.row([style: tab_bar_style], fn ->
         render(tabs, active_tab, on_change,
           focus_key: focus_key,
           style: tab_bar_style,
@@ -176,7 +180,7 @@ defmodule Raxol.Components.TabBar do
         )
       end)
 
-      View.row([style: content_style], fn ->
+      Layout.row([style: content_style], fn ->
         # Find and render the content for the active tab
         active_tab_content =
           case Enum.find(tabs, fn %{id: id} -> id == active_tab end) do
@@ -188,7 +192,7 @@ defmodule Raxol.Components.TabBar do
               content
 
             _ ->
-              View.text("Content not found for tab: #{active_tab}")
+              Components.text("Content not found for tab: #{active_tab}")
           end
 
         # Return the content to be rendered in the row

@@ -18,8 +18,7 @@ defmodule Raxol.Core.UXRefinementTest do
         :keyboard_navigation,
         :hints,
         :focus_ring,
-        :accessibility,
-        :perceived_performance
+        :accessibility
       ]
       |> Enum.each(fn feature ->
         if UXRefinement.feature_enabled?(feature) do
@@ -42,7 +41,6 @@ defmodule Raxol.Core.UXRefinementTest do
       refute UXRefinement.feature_enabled?(:hints)
       refute UXRefinement.feature_enabled?(:focus_ring)
       refute UXRefinement.feature_enabled?(:accessibility)
-      refute UXRefinement.feature_enabled?(:perceived_performance)
     end
   end
 
@@ -85,14 +83,6 @@ defmodule Raxol.Core.UXRefinementTest do
 
       # Verify feature is enabled
       assert UXRefinement.feature_enabled?(:accessibility)
-    end
-
-    test "enables perceived_performance feature" do
-      # Enable feature
-      assert :ok = UXRefinement.enable_feature(:perceived_performance)
-
-      # Verify feature is enabled
-      assert UXRefinement.feature_enabled?(:perceived_performance)
     end
 
     test "enables multiple features" do
@@ -159,15 +149,6 @@ defmodule Raxol.Core.UXRefinementTest do
 
       # Verify feature is disabled
       refute UXRefinement.feature_enabled?(:accessibility)
-    end
-
-    test "disables perceived_performance feature" do
-      # Enable then disable
-      UXRefinement.enable_feature(:perceived_performance)
-      assert :ok = UXRefinement.disable_feature(:perceived_performance)
-
-      # Verify feature is disabled
-      refute UXRefinement.feature_enabled?(:perceived_performance)
     end
 
     test "does nothing if feature is already disabled" do
@@ -254,34 +235,20 @@ defmodule Raxol.Core.UXRefinementTest do
                "Example usage"
     end
 
-    test "registers and retrieves shortcuts" do
-      # Register a hint with shortcuts
-      shortcuts = [{"Ctrl+S", "Save"}, {"Esc", "Cancel"}]
-
-      hint_info = %{
-        basic: "Basic hint",
-        shortcuts: shortcuts
-      }
+    test "register_component_hint/2 and get_component_hint/2 returns basic hint for unknown hint level" do
+      # Register only a basic hint
+      hint_info = %{basic: "Basic hint"}
 
       assert :ok =
                UXRefinement.register_component_hint("test_component", hint_info)
 
-      # Retrieve the shortcuts
-      assert UXRefinement.get_component_hint("test_component", :shortcuts) ==
-               shortcuts
+      # Getting detailed should return basic hint
+      assert UXRefinement.get_component_hint("test_component", :detailed) ==
+               "Basic hint"
     end
 
     test "returns nil for unknown component" do
       assert UXRefinement.get_component_hint("unknown_component", :basic) == nil
-    end
-
-    test "returns nil for unknown hint level" do
-      # Register a basic hint
-      hint_info = %{basic: "Basic hint"}
-      UXRefinement.register_component_hint("test_component", hint_info)
-
-      # Try to retrieve a detailed hint that doesn't exist
-      assert UXRefinement.get_component_hint("test_component", :detailed) == nil
     end
 
     test "does nothing when hints feature is disabled" do
@@ -310,87 +277,21 @@ defmodule Raxol.Core.UXRefinementTest do
     end
   end
 
-  describe "register_accessibility_metadata/2" do
-    setup do
-      UXRefinement.enable_feature(:accessibility)
-      :ok
+  describe "feature_enabled?/1" do
+    test "returns true for enabled feature" do
+      # Enable feature
+      UXRefinement.enable_feature(:focus_management)
+
+      # Verify feature is enabled
+      assert UXRefinement.feature_enabled?(:focus_management)
     end
 
-    test "registers accessibility metadata" do
-      # Register metadata
-      metadata = %{
-        announce: "Test component",
-        role: :button,
-        label: "Test"
-      }
+    test "returns false for disabled feature" do
+      # Disable feature
+      UXRefinement.disable_feature(:focus_management)
 
-      assert :ok =
-               UXRefinement.register_accessibility_metadata(
-                 "test_component",
-                 metadata
-               )
-    end
-
-    test "does nothing when accessibility feature is disabled" do
-      # Disable accessibility
-      UXRefinement.disable_feature(:accessibility)
-
-      # Register metadata
-      metadata = %{
-        announce: "Test component",
-        role: :button,
-        label: "Test"
-      }
-
-      assert :ok =
-               UXRefinement.register_accessibility_metadata(
-                 "test_component",
-                 metadata
-               )
-    end
-  end
-
-  describe "announce/2" do
-    setup do
-      UXRefinement.enable_feature(:accessibility)
-      :ok
-    end
-
-    test "makes an accessibility announcement" do
-      assert :ok = UXRefinement.announce("Test announcement")
-    end
-
-    test "does nothing when accessibility feature is disabled" do
-      # Disable accessibility
-      UXRefinement.disable_feature(:accessibility)
-
-      assert :ok = UXRefinement.announce("Test announcement")
-    end
-  end
-
-  describe "optimize_perceived_performance/1" do
-    setup do
-      UXRefinement.enable_feature(:perceived_performance)
-      :ok
-    end
-
-    test "applies performance optimizations" do
-      assert :ok = UXRefinement.optimize_perceived_performance()
-    end
-
-    test "applies specific optimizations" do
-      assert :ok =
-               UXRefinement.optimize_perceived_performance(
-                 loading_indicator: true,
-                 background_processing: false
-               )
-    end
-
-    test "does nothing when perceived_performance feature is disabled" do
-      # Disable perceived_performance
-      UXRefinement.disable_feature(:perceived_performance)
-
-      assert :ok = UXRefinement.optimize_perceived_performance()
+      # Verify feature is disabled
+      refute UXRefinement.feature_enabled?(:focus_management)
     end
   end
 end

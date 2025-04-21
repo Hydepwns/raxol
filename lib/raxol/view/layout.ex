@@ -39,13 +39,13 @@ defmodule Raxol.View.Layout do
           :type => :row
         }
   def row(opts) when is_list(opts) do
-    View.row(opts)
+    row(opts)
   end
 
   @spec row(opts(), [{:do, children_fun()}]) :: map()
   @dialyzer {:nowarn_function, row: 2}
   def row(opts \\ [], do: block) when is_list(opts) and is_function(block, 0) do
-    View.row(opts, block)
+    row(opts, do: block)
   end
 
   @doc """
@@ -73,125 +73,37 @@ defmodule Raxol.View.Layout do
           :type => :column
         }
   def column(opts) when is_list(opts) do
-    View.column(opts)
+    column(opts)
   end
 
   @spec column(opts(), [{:do, children_fun()}]) :: map()
   @dialyzer {:nowarn_function, column: 2}
   def column(opts \\ [], do: block)
       when is_list(opts) and is_function(block, 0) do
-    View.column(opts, block)
+    column(opts, do: block)
   end
 
   @doc """
-  Creates a box component for layout.
+  Creates a box component for layout, delegating to `Raxol.View.box/2`.
+
+  This function serves as a convenience wrapper within the Layout module.
+  Refer to `Raxol.View.box/2` for detailed options and usage.
 
   ## Options
 
-  * `:style` - Style map for the box
-  * `:border` - Border style (:none, :single, :double, :rounded, :bold, :dashed)
-  * `:padding` - Padding around the content
-  * `:margin` - Margin around the box
+  Accepts the same options as `Raxol.View.box/2`.
 
   ## Example
 
   ```elixir
-  box(style: %{border: :single, padding: 1}) do
-    text("Content goes here")
+  box(style: %{border: true, padding: 1}) do
+    text("Content inside a box")
   end
   ```
   """
-  def box(opts \\ [], do: block) do
-    %{
-      type: :box,
-      attrs: opts,
-      children: block
-    }
-  end
-
-  @doc """
-  Creates a grid layout component.
-
-  ## Options
-
-  * `:style` - Style map for the grid
-  * `:columns` - Number of columns
-  * `:rows` - Number of rows
-  * `:gap` - Gap between grid items
-
-  ## Example
-
-  ```elixir
-  grid(style: %{columns: 2, gap: 1}) do
-    text("Item 1")
-    text("Item 2")
-    text("Item 3")
-    text("Item 4")
-  end
-  ```
-  """
-  def grid(opts \\ [], do: block) do
-    %{
-      type: :grid,
-      attrs: opts,
-      children: block
-    }
-  end
-
-  @doc """
-  Creates a stack layout component.
-
-  ## Options
-
-  * `:style` - Style map for the stack
-  * `:spacing` - Space between items
-  * `:align` - Alignment of items (:start, :center, :end)
-
-  ## Example
-
-  ```elixir
-  stack(style: %{spacing: 1, align: :center}) do
-    text("Item 1")
-    text("Item 2")
-    text("Item 3")
-  end
-  ```
-  """
-  def stack(opts \\ [], do: block) do
-    %{
-      type: :stack,
-      attrs: opts,
-      children: block
-    }
-  end
-
-  @doc """
-  Creates a flex layout component.
-
-  ## Options
-
-  * `:style` - Style map for the flex container
-  * `:direction` - Direction of flex items (:row, :column)
-  * `:wrap` - Whether to wrap items (:nowrap, :wrap)
-  * `:justify` - Justification of items (:start, :center, :end, :space_between, :space_around)
-  * `:align` - Alignment of items (:start, :center, :end, :stretch)
-  * `:gap` - Gap between items
-
-  ## Example
-
-  ```elixir
-  flex(style: %{direction: :row, wrap: :wrap, gap: 1}) do
-    text("Item 1")
-    text("Item 2")
-    text("Item 3")
-  end
-  ```
-  """
-  def flex(opts \\ [], do: block) do
-    %{
-      type: :flex,
-      attrs: opts,
-      children: block
-    }
+  @spec box(opts(), [{:do, children_fun()}]) :: map()
+  @dialyzer {:nowarn_function, box: 2}
+  def box(opts \\ [], do: block) when is_list(opts) and is_function(block, 0) do
+    View.box(opts, do: block)
   end
 end

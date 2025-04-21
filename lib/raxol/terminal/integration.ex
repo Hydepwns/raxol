@@ -20,15 +20,11 @@ defmodule Raxol.Terminal.Integration do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.CommandHistory
   alias Raxol.Terminal.Configuration
-  # alias Raxol.Terminal.ScreenBuffer # Unused
-  # alias Raxol.Plugins.Manager, as: PluginManager # Unused
-  # alias Raxol.Style.TextFormatting # Unused
-  # alias Raxol.Terminal.{ANSI, Cell, Modes} # Unused
-  # alias Raxol.Utils.LRUCache # Unused
-  # alias Raxol.View # Unused
+  alias Raxol.Terminal.Renderer
 
   @type t :: %__MODULE__{
           emulator: Emulator.t(),
+          renderer: Renderer.t(),
           buffer_manager: BufferManager.t(),
           scroll_buffer: Scroll.t(),
           cursor_manager: CursorManager.t(),
@@ -40,6 +36,7 @@ defmodule Raxol.Terminal.Integration do
 
   defstruct [
     :emulator,
+    :renderer,
     :buffer_manager,
     :scroll_buffer,
     :cursor_manager,
@@ -48,10 +45,6 @@ defmodule Raxol.Terminal.Integration do
     :memory_limit,
     :last_cleanup
   ]
-
-  # @default_memory_limit 50 * 1024 * 1024  # 50MB - This seems unused, memory_limit comes from config
-  # 1 minute
-  @cleanup_interval 60 * 1000
 
   @doc """
   Creates a new integrated terminal system with the specified dimensions.
@@ -76,12 +69,16 @@ defmodule Raxol.Terminal.Integration do
         config.memory_limit
       )
 
+    # Create the initial renderer
+    renderer = Renderer.new(emulator.screen_buffer, config.theme)
+
     scroll_buffer = Scroll.new(config.scrollback_height)
     cursor_manager = CursorManager.new()
     command_history = CommandHistory.new(config.command_history_size)
 
     %__MODULE__{
       emulator: emulator,
+      renderer: renderer,
       buffer_manager: buffer_manager,
       scroll_buffer: scroll_buffer,
       cursor_manager: cursor_manager,
@@ -204,50 +201,12 @@ defmodule Raxol.Terminal.Integration do
       "Hello"
   """
   def write(%__MODULE__{} = integration, text) do
-    # Check memory usage
-    integration = check_memory_usage(integration)
-
-    # Write to emulator
     emulator = Emulator.write(integration.emulator, text)
+    # Update the renderer with the new screen buffer from the emulator
+    new_renderer =
+      Renderer.new(emulator.screen_buffer, integration.config.theme)
 
-    # Update buffer manager
-    buffer_manager =
-      BufferManager.mark_damaged(
-        integration.buffer_manager,
-        0,
-        0,
-        emulator.width - 1,
-        emulator.height - 1
-      )
-
-    # Get cursor position from the cursor manager
-    {cursor_x, cursor_y} = integration.cursor_manager.position
-
-    # Update cursor manager
-    cursor_manager =
-      CursorManager.move_to(
-        integration.cursor_manager,
-        cursor_x,
-        cursor_y
-      )
-
-    # Update scroll buffer if needed
-    scroll_buffer =
-      if cursor_y >= emulator.height - 1 do
-        # Get the last line directly from the cells list
-        line = Enum.at(emulator.screen_buffer.cells, emulator.height - 1)
-        Scroll.add_line(integration.scroll_buffer, line)
-      else
-        integration.scroll_buffer
-      end
-
-    %{
-      integration
-      | emulator: emulator,
-        buffer_manager: buffer_manager,
-        scroll_buffer: scroll_buffer,
-        cursor_manager: cursor_manager
-    }
+    %{integration | emulator: emulator, renderer: new_renderer}
   end
 
   @doc """
@@ -261,8 +220,16 @@ defmodule Raxol.Terminal.Integration do
       {10, 5}
   """
   def move_cursor(%__MODULE__{} = integration, x, y) do
-    # Move cursor in emulator
-    emulator = Emulator.move_cursor(integration.emulator, x, y)
+    # Assuming Emulator provides a way to move cursor, e.g., via Cursor.Movement
+    # TODO: Verify the correct function to call for moving the cursor in Emulator
+    new_cursor =
+      Raxol.Terminal.Cursor.Movement.move_to_position(
+        integration.emulator.cursor,
+        x,
+        y
+      )
+
+    emulator = %{integration.emulator | cursor: new_cursor}
 
     # Update cursor manager
     cursor_manager = CursorManager.move_to(integration.cursor_manager, x, y)
@@ -282,28 +249,12 @@ defmodule Raxol.Terminal.Integration do
       ""
   """
   def clear_screen(%__MODULE__{} = integration) do
-    # Clear emulator screen
     emulator = Emulator.clear_screen(integration.emulator)
+    # Update the renderer with the new screen buffer from the emulator
+    new_renderer =
+      Renderer.new(emulator.screen_buffer, integration.config.theme)
 
-    # Update buffer manager
-    buffer_manager =
-      BufferManager.mark_damaged(
-        integration.buffer_manager,
-        0,
-        0,
-        emulator.width - 1,
-        emulator.height - 1
-      )
-
-    # Reset cursor manager
-    cursor_manager = CursorManager.move_to(integration.cursor_manager, 0, 0)
-
-    %{
-      integration
-      | emulator: emulator,
-        buffer_manager: buffer_manager,
-        cursor_manager: cursor_manager
-    }
+    %{integration | emulator: emulator, renderer: new_renderer}
   end
 
   @doc """
@@ -672,28 +623,22 @@ defmodule Raxol.Terminal.Integration do
   end
 
   @doc """
-  Sets a screen mode.
-
-  ## Examples
-
-      iex> integration = Integration.new(80, 24)
-      iex> integration = Integration.set_screen_mode(integration, "?47")
+  Sets a specific screen mode in the emulator.
   """
   def set_screen_mode(%__MODULE__{} = integration, mode) do
-    emulator = Emulator.set_screen_mode(integration.emulator, mode)
+    # Assuming type is :screen and code corresponds to mode atom
+    # Convert mode atom back to code if necessary, or update handle_mode_change
+    # For now, assume mode is the code (integer)
+    emulator = Emulator.handle_mode_change(integration.emulator, :screen, mode, true)
     %{integration | emulator: emulator}
   end
 
   @doc """
-  Resets a screen mode.
-
-  ## Examples
-
-      iex> integration = Integration.new(80, 24)
-      iex> integration = Integration.reset_screen_mode(integration, "?47")
+  Resets a specific screen mode in the emulator.
   """
   def reset_screen_mode(%__MODULE__{} = integration, mode) do
-    emulator = Emulator.reset_screen_mode(integration.emulator, mode)
+    # Assuming type is :screen and code corresponds to mode atom
+    emulator = Emulator.handle_mode_change(integration.emulator, :screen, mode, false)
     %{integration | emulator: emulator}
   end
 
@@ -751,32 +696,6 @@ defmodule Raxol.Terminal.Integration do
   end
 
   # Private functions
-
-  defp check_memory_usage(%__MODULE__{} = integration) do
-    current_time = System.system_time(:millisecond)
-
-    if current_time - integration.last_cleanup > @cleanup_interval do
-      cleanup_memory(integration)
-    else
-      integration
-    end
-  end
-
-  defp cleanup_memory(%__MODULE__{} = integration) do
-    integration = update_memory_usage(integration)
-
-    if integration.buffer_manager.memory_usage > integration.memory_limit do
-      scroll_buffer = Scroll.clear(integration.scroll_buffer)
-
-      %{
-        integration
-        | scroll_buffer: scroll_buffer,
-          last_cleanup: System.system_time(:millisecond)
-      }
-    else
-      %{integration | last_cleanup: System.system_time(:millisecond)}
-    end
-  end
 
   def handle_event(%__MODULE__{} = integration, {:cursor_style, style}) do
     cursor_manager = CursorManager.set_style(integration.cursor_manager, style)

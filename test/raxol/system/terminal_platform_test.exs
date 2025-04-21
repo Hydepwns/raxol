@@ -17,8 +17,7 @@ defmodule Raxol.System.TerminalPlatformTest do
     end
 
     test "features list contains only supported features" do
-      capabilities = TerminalPlatform.get_terminal_capabilities()
-      features = capabilities.features
+      features = TerminalPlatform.get_supported_features()
 
       assert is_list(features)
       assert Enum.all?(features, &is_atom/1)
@@ -26,6 +25,7 @@ defmodule Raxol.System.TerminalPlatformTest do
       assert Enum.all?(
                features,
                &(&1 in [
+                   :colors_256,
                    :true_color,
                    :unicode,
                    :mouse,
@@ -82,6 +82,7 @@ defmodule Raxol.System.TerminalPlatformTest do
       assert Enum.all?(
                features,
                &(&1 in [
+                   :colors_256,
                    :true_color,
                    :unicode,
                    :mouse,
@@ -95,6 +96,7 @@ defmodule Raxol.System.TerminalPlatformTest do
 
     test "matches features in capabilities" do
       capabilities = TerminalPlatform.get_terminal_capabilities()
+      assert is_list(capabilities.features)
       assert capabilities.features == TerminalPlatform.get_supported_features()
     end
   end

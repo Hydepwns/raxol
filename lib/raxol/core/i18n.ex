@@ -388,12 +388,11 @@ defmodule Raxol.Core.I18n do
     end
   end
 
-  defp apply_bindings(translation, bindings) do
-    # Apply variable bindings to the translation string
-    # Replace patterns like {{variable}} with the value from bindings
-    Enum.reduce(bindings, translation, fn {key, value}, acc ->
-      pattern = "{{#{key}}}"
-      String.replace(acc, pattern, to_string(value))
+  defp apply_bindings(text, bindings) when is_map(bindings) do
+    Regex.replace(~r/%{(\w+)}/, text, fn _, key ->
+      Map.get(bindings, String.to_atom(key), "")
     end)
   end
+
+  defp apply_bindings(text, _bindings), do: text
 end
