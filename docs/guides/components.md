@@ -220,13 +220,18 @@ view do
 end
 ```
 
+### `<Table>` / `table`
+
+A component for displaying data in a structured tabular format.
+
+**Note:** The exact implementation and API might be found in `Raxol.Components.Table`. Refer to the source code or specific examples for usage details.
+
 ## Placeholder / WIP Components
 
-The following components were seen as placeholders in examples (`examples/basic/rendering.exs`) but may not be fully implemented yet. Their availability and functionality should be verified.
+The following components have been considered or were seen as placeholders in early examples (`examples/basic/rendering.exs`) but may not be fully implemented yet. Their availability and functionality should be verified in the source code or examples.
 
-- `Table`
 - `Tree`
 - `Chart`
 - `Sparkline`
 
-Please refer to the specific examples or source code for the latest status on these components.
+Please refer to the specific examples or source code for the latest status on these potential components.

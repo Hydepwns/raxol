@@ -5,6 +5,7 @@ This document provides a comprehensive guide to using the advanced UI components
 ## Table of Contents
 
 1. [Advanced Components](#advanced-components)
+
    - [Infinite Scroll](#infinite-scroll)
    - [Lazy Loading](#lazy-loading)
    - [Drag and Drop](#drag-and-drop)
@@ -159,16 +160,19 @@ View.debounceRender(callback: () => void, delay: number)
 ## Best Practices
 
 1. **Use Infinite Scroll for Large Lists**
+
    - Set appropriate `itemHeight` and `containerHeight`
    - Implement `onLoadMore` to fetch more data
    - Use `loadingIndicator` to show loading state
 
 2. **Use Lazy Loading for Images**
+
    - Always provide a `placeholder`
    - Set appropriate `threshold` based on viewport size
    - Handle loading errors gracefully
 
 3. **Use Drag and Drop for Reordering**
+
    - Provide clear visual feedback during dragging
    - Use `draggableItemStyle` and `dropTargetStyle` for visual cues
    - Handle edge cases in `onDrop`
@@ -185,11 +189,13 @@ See `src/examples/advanced-components.tsx` for a complete example of using these
 ## Performance Considerations
 
 1. **Memory Usage**
+
    - Monitor memory usage with `ViewPerformance.getInstance().getMetrics()`
    - Use lazy loading for large assets
    - Clean up event listeners and observers
 
 2. **Rendering Performance**
+
    - Use `optimizeRendering` for complex UI trees
    - Batch updates with `batchUpdates`
    - Debounce frequent updates with `debounceRender`
@@ -202,16 +208,19 @@ See `src/examples/advanced-components.tsx` for a complete example of using these
 ## Troubleshooting
 
 1. **Infinite Scroll Issues**
+
    - Check `itemHeight` matches actual rendered height
    - Verify `onLoadMore` is called correctly
    - Monitor scroll performance
 
 2. **Lazy Loading Issues**
+
    - Check image URLs are correct
    - Verify intersection observer is working
    - Monitor memory usage
 
 3. **Drag and Drop Issues**
+
    - Check event handlers are properly bound
    - Verify styles are applied correctly
    - Monitor performance during dragging

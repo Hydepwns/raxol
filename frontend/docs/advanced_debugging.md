@@ -26,13 +26,13 @@ This guide provides in-depth techniques for debugging complex issues in Raxol ap
 Raxol's event system includes built-in logging capabilities that can be enabled for debugging:
 
 ```typescript
-import { EventManager, LogLevel } from 'raxol';
+import { EventManager, LogLevel } from "raxol";
 
 // Enable detailed event logging
 EventManager.setLogLevel(LogLevel.DEBUG);
 
 // Log only specific event types
-EventManager.enableLoggingForEvents(['click', 'keydown', 'focus']);
+EventManager.enableLoggingForEvents(["click", "keydown", "focus"]);
 ```
 
 ### Event Tracing
@@ -40,7 +40,7 @@ EventManager.enableLoggingForEvents(['click', 'keydown', 'focus']);
 To understand the flow of events through your application:
 
 ```typescript
-import { EventTracer } from 'raxol/debugging';
+import { EventTracer } from "raxol/debugging";
 
 // Start tracing all events
 const tracer = new EventTracer();
@@ -51,7 +51,7 @@ const traceResults = tracer.stop();
 console.log(traceResults.summary());
 
 // Export trace for visualization
-tracer.exportToFile('event-trace.json');
+tracer.exportToFile("event-trace.json");
 ```
 
 ### Visualizing Event Flow
@@ -59,11 +59,11 @@ tracer.exportToFile('event-trace.json');
 To visualize event propagation:
 
 ```typescript
-import { EventFlowVisualizer } from 'raxol/debugging';
+import { EventFlowVisualizer } from "raxol/debugging";
 
 // Visualize event flow in your application
 const visualizer = new EventFlowVisualizer();
-visualizer.mount('#event-debug-container');
+visualizer.mount("#event-debug-container");
 
 // To cleanup
 visualizer.unmount();
@@ -74,13 +74,13 @@ visualizer.unmount();
 Debugging specific events in complex applications:
 
 ```typescript
-import { EventBreakpoint } from 'raxol/debugging';
+import { EventBreakpoint } from "raxol/debugging";
 
 // Break on specific events
-EventBreakpoint.set('click', (event) => event.target.id === 'submit-button');
+EventBreakpoint.set("click", (event) => event.target.id === "submit-button");
 
 // Remove breakpoint
-EventBreakpoint.clear('click');
+EventBreakpoint.clear("click");
 ```
 
 ## Performance Debugging
@@ -90,11 +90,11 @@ EventBreakpoint.clear('click');
 Raxol includes a performance profiler for identifying bottlenecks:
 
 ```typescript
-import { PerformanceProfiler } from 'raxol/performance';
+import { PerformanceProfiler } from "raxol/performance";
 
 // Start profiling a specific component
 const profiler = new PerformanceProfiler();
-profiler.start('MyComponent');
+profiler.start("MyComponent");
 
 // After operations complete
 const results = profiler.stop();
@@ -102,7 +102,7 @@ console.table(results.operationTimings);
 
 // Identify slow operations
 const bottlenecks = results.getBottlenecks();
-console.log('Optimization opportunities:', bottlenecks);
+console.log("Optimization opportunities:", bottlenecks);
 ```
 
 ### Frame Rate Analysis
@@ -110,7 +110,7 @@ console.log('Optimization opportunities:', bottlenecks);
 For analyzing rendering performance:
 
 ```typescript
-import { FrameRateMonitor } from 'raxol/performance';
+import { FrameRateMonitor } from "raxol/performance";
 
 // Start monitoring frame rate
 const monitor = new FrameRateMonitor();
@@ -129,11 +129,11 @@ console.log(`Dropped frames: ${frameStats.droppedFrames}`);
 To identify slow-rendering components:
 
 ```typescript
-import { ComponentTimingAnalyzer } from 'raxol/performance';
+import { ComponentTimingAnalyzer } from "raxol/performance";
 
 // Analyze component render times
 const analyzer = new ComponentTimingAnalyzer();
-analyzer.enableForComponents(['DataTable', 'Dashboard', 'Chart']);
+analyzer.enableForComponents(["DataTable", "Dashboard", "Chart"]);
 
 // Run your application...
 
@@ -147,7 +147,7 @@ console.table(timingData.sortByRenderTime());
 Our recently implemented responsiveness scoring system provides detailed insights:
 
 ```typescript
-import { ResponsivenessScorer } from 'raxol/performance';
+import { ResponsivenessScorer } from "raxol/performance";
 
 // Create a scorer with default thresholds
 const scorer = new ResponsivenessScorer();
@@ -158,7 +158,7 @@ scorer.startTracking();
 // After user interactions...
 const score = scorer.calculateScore();
 console.log(`Responsiveness score: ${score.overall}/100`);
-console.log('Issues found:', score.issues);
+console.log("Issues found:", score.issues);
 ```
 
 ## Memory Leak Detection
@@ -168,22 +168,22 @@ console.log('Issues found:', score.issues);
 To identify memory leaks:
 
 ```typescript
-import { MemoryProfiler } from 'raxol/performance';
+import { MemoryProfiler } from "raxol/performance";
 
 // Create a memory profile
 const profiler = new MemoryProfiler();
 
 // Take a baseline snapshot
-profiler.takeSnapshot('baseline');
+profiler.takeSnapshot("baseline");
 
 // Perform operations that might leak memory
 // (e.g., create and destroy components repeatedly)
 
 // Take comparison snapshot
-profiler.takeSnapshot('after-operations');
+profiler.takeSnapshot("after-operations");
 
 // Analyze differences
-const leaks = profiler.findPotentialLeaks('baseline', 'after-operations');
+const leaks = profiler.findPotentialLeaks("baseline", "after-operations");
 console.table(leaks);
 ```
 
@@ -192,7 +192,7 @@ console.table(leaks);
 To track component creation and destruction:
 
 ```typescript
-import { ComponentLifecycleAuditor } from 'raxol/debugging';
+import { ComponentLifecycleAuditor } from "raxol/debugging";
 
 // Start auditing component lifecycles
 const auditor = new ComponentLifecycleAuditor();
@@ -202,7 +202,7 @@ auditor.start();
 
 // Check for orphaned components
 const orphans = auditor.findOrphanedComponents();
-console.log('Potential memory leaks:', orphans);
+console.log("Potential memory leaks:", orphans);
 ```
 
 ### Memory Usage Visualization
@@ -210,11 +210,11 @@ console.log('Potential memory leaks:', orphans);
 To visualize memory usage over time:
 
 ```typescript
-import { MemoryUsageVisualizer } from 'raxol/performance';
+import { MemoryUsageVisualizer } from "raxol/performance";
 
 // Create a visualizer
 const visualizer = new MemoryUsageVisualizer();
-visualizer.mount('#memory-debug-container');
+visualizer.mount("#memory-debug-container");
 
 // To stop tracking
 visualizer.unmount();
@@ -225,14 +225,14 @@ visualizer.unmount();
 Automated leak detection during development:
 
 ```typescript
-import { AutomaticLeakDetector } from 'raxol/performance';
+import { AutomaticLeakDetector } from "raxol/performance";
 
 // In development mode
-if (process.env.NODE_ENV === 'development') {
+if (process.env.NODE_ENV === "development") {
   // Start automatic leak detection
   const detector = new AutomaticLeakDetector();
   detector.startTracking();
-  
+
   // Detector will automatically warn in console when
   // potential leaks are identified
 }
@@ -251,89 +251,64 @@ if (process.env.NODE_ENV === 'development') {
 
 ### Performance Debugging Workflow
 
-1. **Identify performance issues**: Note where the application feels slow
-2. **Run the performance profiler**: Get timing information for operations
-3. **Analyze component render times**: Identify slow-rendering components
-4. **Check frame rates**: Use FrameRateMonitor to identify drops
-5. **Use the responsiveness scorer**: Get an overall score and specific issues
-6. **Optimize bottlenecks**: Focus on the biggest problems first
-7. **Validate improvements**: Re-run tests to confirm optimization benefits
+1. **Identify performance issue**: Notice slowdowns or unresponsiveness
+2. **Use frame rate monitor**: Check for rendering bottlenecks
+3. **Use performance profiler**: Profile specific operations
+4. **Analyze component timings**: Find slow-rendering components
+5. **Use responsiveness scorer**: Get detailed responsiveness metrics
+6. **Optimize code**: Address identified bottlenecks
 
 ### Memory Leak Debugging Workflow
 
-1. **Confirm a memory leak**: Observe growing memory usage over time
-2. **Use the memory profiler**: Take baseline and comparison snapshots
-3. **Run the component lifecycle auditor**: Identify orphaned components
-4. **Check component cleanup code**: Ensure all resources are released
-5. **Fix identified issues**: Update component cleanup code
-6. **Validate the fix**: Confirm memory usage stabilizes
+1. **Suspect a leak**: Observe increasing memory usage over time
+2. **Use memory profiler**: Take snapshots and compare
+3. **Use component lifecycle auditor**: Check for orphaned components
+4. **Analyze leak candidates**: Investigate potential leak sources
+5. **Fix the leak**: Remove unnecessary references or listeners
+6. **Verify the fix**: Retest with memory profiler
 
 ## Using Raxol's Built-in Debug Tools
 
-### Debug Mode
+### Debug Overlay Component
 
-Enable Raxol's debug mode for comprehensive logging:
-
-```typescript
-import { Raxol } from 'raxol';
-
-// Initialize with debug mode
-const app = new Raxol({
-  debug: true,
-  verboseLogging: true,
-  traceEvents: true,
-  memoryMonitoring: true
-});
-```
-
-### Debug Console
-
-Raxol provides a built-in debug console that can be enabled:
+Raxol provides a Debug Overlay component for real-time insights:
 
 ```typescript
-import { DebugConsole } from 'raxol/debugging';
+import { DebugOverlay } from "raxol/debugging";
 
-// Enable the debug console
-DebugConsole.enable({
-  position: 'bottom-right',
-  tabs: ['events', 'performance', 'memory', 'components']
-});
-
-// The console can be toggled with Ctrl+Shift+D
+// Add the overlay to your application's root
+function App() {
+  return (
+    <>
+      {/* Your application components */}
+      {process.env.NODE_ENV === "development" && <DebugOverlay />}
+    </>
+  );
+}
 ```
 
-### Debug Overlays
+The overlay displays:
 
-Visual overlays can help identify issues:
+- Current frame rate
+- Event log summary
+- Basic memory usage
+- Active component count
+
+### Debugging Utilities
+
+Raxol offers various utility functions for debugging:
 
 ```typescript
-import { DebugOverlays } from 'raxol/debugging';
+import { logComponentTree, inspectElementState } from "raxol/debugging";
 
-// Enable specific overlays
-DebugOverlays.enable([
-  'component-boundaries',
-  'render-counts',
-  'event-handlers',
-  'memory-usage'
-]);
+// Log the current component tree to the console
+logComponentTree();
+
+// Inspect the internal state of a specific element
+const elementState = inspectElementState(myElementRef.current);
+console.log("Element State:", elementState);
 ```
 
-### Integration with Performance Alerting
+---
 
-Use our performance alerting system to get notified of problems:
-
-```typescript
-import { PerformanceAlerts } from 'raxol/performance/alerts';
-
-// Configure performance alerts
-const alerts = new PerformanceAlerts({
-  notifyThreshold: 'warning',
-  showInConsole: true,
-  logToFile: 'performance-alerts.log'
-});
-
-// Start monitoring
-alerts.startMonitoring();
-```
-
-By combining these debugging techniques and tools, you can efficiently diagnose and solve complex issues in your Raxol applications. 
+_Use these advanced techniques judiciously to diagnose and resolve complex issues in your Raxol applications._

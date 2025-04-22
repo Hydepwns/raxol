@@ -87,3 +87,6 @@ themes/staged_version.json
 
 # Editor / Development Artifacts
 preferences.json
+
+# Documentation build artifacts
+docs/search-index.json

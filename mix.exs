@@ -80,7 +80,7 @@ defmodule Raxol.MixProject do
 
       # Database and persistence
       {:ecto_sql, "~> 3.10"},
-      {:postgrex, ">= 0.0.0", runtime: false},
+      {:postgrex, "~> 0.19.0", runtime: false},
       # For password hashing
       {:bcrypt_elixir, "~> 3.0"},
 
@@ -162,8 +162,8 @@ defmodule Raxol.MixProject do
 
   defp package do
     [
-      maintainers: ["Your Name"],
-      licenses: ["Apache-2.0"],
+      maintainers: ["DROO AMOR"],
+      licenses: ["MIT"],
       links: %{
         "GitHub" => "https://github.com/Hydepwns/raxol"
       }
