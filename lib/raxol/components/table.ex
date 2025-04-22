@@ -235,13 +235,15 @@ defmodule Raxol.Components.Table do
                   row_props
                 end
 
-              Layout.row(row_props, do: fn ->
-                # Render each cell in the row
-                normalized_columns
-                |> Enum.each(fn column ->
-                  render_cell(row_data, column, index)
-                end)
-              end)
+              Layout.row(row_props,
+                do: fn ->
+                  # Render each cell in the row
+                  normalized_columns
+                  |> Enum.each(fn column ->
+                    render_cell(row_data, column, index)
+                  end)
+                end
+              )
             end)
           end)
         end
@@ -313,82 +315,87 @@ defmodule Raxol.Components.Table do
 
     # Create footer function for pagination controls
     footer_fn = fn ->
-      Layout.row([id: "#{id}_pagination", style: pagination_style], do: fn ->
-        # Page info display
-        if show_page_info do
-          info_text = "Page #{page} of #{total_pages}"
+      Layout.row([id: "#{id}_pagination", style: pagination_style],
+        do: fn ->
+          # Page info display
+          if show_page_info do
+            info_text = "Page #{page} of #{total_pages}"
 
-          if page_size && total_items do
-            start_item = (page - 1) * page_size + 1
-            end_item = min(page * page_size, total_items)
+            if page_size && total_items do
+              start_item = (page - 1) * page_size + 1
+              end_item = min(page * page_size, total_items)
 
-            ^info_text =
-              "#{info_text} (#{start_item}-#{end_item} of #{total_items})"
+              ^info_text =
+                "#{info_text} (#{start_item}-#{end_item} of #{total_items})"
+            end
+
+            Components.text(info_text, style: %{marginRight: "1rem"})
           end
 
-          Components.text(info_text, style: %{marginRight: "1rem"})
-        end
+          # Spacer - construct map directly
+          %{
+            type: :box,
+            opts: [style: %{width: :flex}],
+            children: List.wrap(Components.text(""))
+          }
 
-        # Spacer - construct map directly
-        %{
-          type: :box,
-          opts: [style: %{width: :flex}],
-          children: List.wrap(Components.text(""))
-        }
+          # Pagination buttons
+          Layout.row([style: %{gap: 1}],
+            do: fn ->
+              # First page button
+              Components.button("<<",
+                id: "#{id}_first_page",
+                style: %{},
+                disabled: page <= 1,
+                on_click: fn -> on_page_change.(1) end
+              )
 
-        # Pagination buttons
-        Layout.row([style: %{gap: 1}], do: fn ->
-          # First page button
-          Components.button("<<",
-            id: "#{id}_first_page",
-            style: %{},
-            disabled: page <= 1,
-            on_click: fn -> on_page_change.(1) end
-          )
+              # Previous page button
+              Components.button("<",
+                id: "#{id}_prev_page",
+                style: %{},
+                disabled: page <= 1,
+                on_click: fn -> on_page_change.(page - 1) end
+              )
 
-          # Previous page button
-          Components.button("<",
-            id: "#{id}_prev_page",
-            style: %{},
-            disabled: page <= 1,
-            on_click: fn -> on_page_change.(page - 1) end
-          )
+              # Page number buttons
+              page_numbers = calculate_page_numbers(page, total_pages)
 
-          # Page number buttons
-          page_numbers = calculate_page_numbers(page, total_pages)
+              Enum.map(page_numbers, fn p ->
+                is_current = p == page
 
-          Enum.map(page_numbers, fn p ->
-            is_current = p == page
+                if p == :ellipsis do
+                  Components.text("...")
+                else
+                  Components.button(to_string(p),
+                    id: "#{id}_page_#{p}",
+                    style:
+                      if(is_current, do: %{bg: :blue, fg: :white}, else: %{}),
+                    disabled: is_current,
+                    on_click: fn -> on_page_change.(p) end
+                  )
+                end
+              end)
 
-            if p == :ellipsis do
-              Components.text("...")
-            else
-              Components.button(to_string(p),
-                id: "#{id}_page_#{p}",
-                style: if(is_current, do: %{bg: :blue, fg: :white}, else: %{}),
-                disabled: is_current,
-                on_click: fn -> on_page_change.(p) end
+              # Next page button
+              Components.button(">",
+                id: "#{id}_next_page",
+                style: %{},
+                disabled: page >= total_pages,
+                on_click: fn -> on_page_change.(page + 1) end
+              )
+
+              # Last page button
+              Components.button(">>",
+                id: "#{id}_last_page",
+                style: %{},
+                disabled: page >= total_pages,
+                on_click: fn -> on_page_change.(total_pages) end
               )
             end
-          end)
-
-          # Next page button
-          Components.button(">",
-            id: "#{id}_next_page",
-            style: %{},
-            disabled: page >= total_pages,
-            on_click: fn -> on_page_change.(page + 1) end
           )
-
-          # Last page button
-          Components.button(">>",
-            id: "#{id}_last_page",
-            style: %{},
-            disabled: page >= total_pages,
-            on_click: fn -> on_page_change.(total_pages) end
-          )
-        end)
-      end)
+        end
+      )
     end
 
     # Render the table with pagination footer
@@ -423,72 +430,76 @@ defmodule Raxol.Components.Table do
 
   # Render table header row
   defp render_header(columns, style, sort_by, sort_dir, on_sort) do
-    Layout.row([style: style], do: fn ->
-      columns
-      |> Enum.map(fn column ->
-        is_sorted = column.key == sort_by
+    Layout.row([style: style],
+      do: fn ->
+        columns
+        |> Enum.map(fn column ->
+          is_sorted = column.key == sort_by
 
-        header_click =
-          if column.sortable && on_sort do
-            fn ->
-              new_dir = if is_sorted && sort_dir == :asc, do: :desc, else: :asc
-              on_sort.(%{column: column.key, direction: new_dir})
+          header_click =
+            if column.sortable && on_sort do
+              fn ->
+                new_dir =
+                  if is_sorted && sort_dir == :asc, do: :desc, else: :asc
+
+                on_sort.(%{column: column.key, direction: new_dir})
+              end
+            else
+              nil
             end
-          else
-            nil
-          end
 
-        # Base props
-        header_props_map = %{id: "header_#{column.key}", style: %{}}
+          # Base props
+          header_props_map = %{id: "header_#{column.key}", style: %{}}
 
-        # Add style constraints
-        style_constraints = %{}
+          # Add style constraints
+          style_constraints = %{}
 
-        style_constraints =
-          if Map.has_key?(column, :width),
-            do: Map.put(style_constraints, :width, column.width),
-            else: style_constraints
+          style_constraints =
+            if Map.has_key?(column, :width),
+              do: Map.put(style_constraints, :width, column.width),
+              else: style_constraints
 
-        style_constraints =
-          if Map.has_key?(column, :min_width),
-            do: Map.put(style_constraints, :min_width, column.min_width),
-            else: style_constraints
+          style_constraints =
+            if Map.has_key?(column, :min_width),
+              do: Map.put(style_constraints, :min_width, column.min_width),
+              else: style_constraints
 
-        style_constraints =
-          if Map.has_key?(column, :max_width),
-            do: Map.put(style_constraints, :max_width, column.max_width),
-            else: style_constraints
+          style_constraints =
+            if Map.has_key?(column, :max_width),
+              do: Map.put(style_constraints, :max_width, column.max_width),
+              else: style_constraints
 
-        header_props_map =
-          Map.put(
-            header_props_map,
-            :style,
-            Map.merge(header_props_map.style, style_constraints)
-          )
+          header_props_map =
+            Map.put(
+              header_props_map,
+              :style,
+              Map.merge(header_props_map.style, style_constraints)
+            )
 
-        # Add click handler
-        header_props_map =
-          if header_click,
-            do: Map.put(header_props_map, :on_click, header_click),
-            else: header_props_map
+          # Add click handler
+          header_props_map =
+            if header_click,
+              do: Map.put(header_props_map, :on_click, header_click),
+              else: header_props_map
 
-        # Calculate sort indicator label
-        sort_indicator_label =
-          if is_sorted do
-            case sort_dir do
-              :asc -> " ↑"
-              :desc -> " ↓"
-              _ -> ""
+          # Calculate sort indicator label
+          sort_indicator_label =
+            if is_sorted do
+              case sort_dir do
+                :asc -> " ↑"
+                :desc -> " ↓"
+                _ -> ""
+              end
+            else
+              ""
             end
-          else
-            ""
-          end
 
-        # Render using View.text for now, applying final props
-        cell_content = column.label <> sort_indicator_label
-        %{type: :text, text: cell_content, attrs: header_props_map}
-      end)
-    end)
+          # Render using View.text for now, applying final props
+          cell_content = column.label <> sort_indicator_label
+          %{type: :text, text: cell_content, attrs: header_props_map}
+        end)
+      end
+    )
   end
 
   # Render a data cell

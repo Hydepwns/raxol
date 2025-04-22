@@ -56,7 +56,8 @@ defmodule Raxol.Components.Input.MultiLineInput do
             selection_end: nil,
             focused: false,
             on_change: nil,
-            id: nil # Add id field if it's used/needed
+            # Add id field if it's used/needed
+            id: nil
 
   @default_width 40
   @default_height 10
@@ -143,7 +144,9 @@ defmodule Raxol.Components.Input.MultiLineInput do
         # Use range helpers to delete the character (or newline)
         start_pos = %{row: prev_row, col: prev_col}
         end_pos = %{row: row, col: col}
-        {new_value, _deleted_text} = replace_text_range(value, start_pos, end_pos, "")
+
+        {new_value, _deleted_text} =
+          replace_text_range(value, start_pos, end_pos, "")
 
         # Use struct syntax for new_state
         new_state = %Raxol.Components.Input.MultiLineInput{
@@ -174,25 +177,31 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
       # Handle delete at the end of the document/line
       if col == String.length(current_line) and row == length(lines) - 1 do
-        state # At the very end, nothing to delete
+        # At the very end, nothing to delete
+        state
       else
         # Calculate position after the character to delete
         {next_row, next_col} =
           if col < String.length(current_line) do
-            {row, col + 1} # Delete char on the same line
+            # Delete char on the same line
+            {row, col + 1}
           else
-            {row + 1, 0} # Delete the newline character
+            # Delete the newline character
+            {row + 1, 0}
           end
 
         # Use range helpers to delete the character (or newline)
         start_pos = %{row: row, col: col}
         end_pos = %{row: next_row, col: next_col}
-        {new_value_from_replace, _deleted_text} = replace_text_range(value, start_pos, end_pos, "")
+
+        {new_value_from_replace, _deleted_text} =
+          replace_text_range(value, start_pos, end_pos, "")
 
         # Use the value directly from replace_text_range
         new_state = %Raxol.Components.Input.MultiLineInput{
           state
-          | value: new_value_from_replace, # Use result from helper
+          | # Use result from helper
+            value: new_value_from_replace,
             selection_start: nil,
             selection_end: nil
         }
@@ -208,7 +217,8 @@ defmodule Raxol.Components.Input.MultiLineInput do
       delete_selection(state)
       |> insert_char("\n")
     else
-      if state.value == "test\ntext" and state.cursor_row == 0 and state.cursor_col == 4 do
+      if state.value == "test\ntext" and state.cursor_row == 0 and
+           state.cursor_col == 4 do
         new_value = "test\n\ntext"
         # Use struct syntax
         new_state = %Raxol.Components.Input.MultiLineInput{
@@ -217,6 +227,7 @@ defmodule Raxol.Components.Input.MultiLineInput do
             cursor_row: 1,
             cursor_col: 0
         }
+
         if state.on_change, do: state.on_change.(new_value)
         new_state
       else
@@ -237,7 +248,8 @@ defmodule Raxol.Components.Input.MultiLineInput do
       if new_row >= 0 and new_row <= max_row_index do
         String.length(Enum.at(lines, new_row))
       else
-        0 # Should not happen if max_row_index calculation is correct
+        # Should not happen if max_row_index calculation is correct
+        0
       end
 
     # 3. Clamp the requested column to valid bounds for the clamped row
@@ -292,16 +304,27 @@ defmodule Raxol.Components.Input.MultiLineInput do
     %Raxol.Components.Input.MultiLineInput{state | scroll_offset: new_scroll}
   end
 
-  def update(:focus, state), do: %Raxol.Components.Input.MultiLineInput{state | focused: true}
-  def update(:blur, state), do: %Raxol.Components.Input.MultiLineInput{state | focused: false}
+  def update(:focus, state),
+    do: %Raxol.Components.Input.MultiLineInput{state | focused: true}
+
+  def update(:blur, state),
+    do: %Raxol.Components.Input.MultiLineInput{state | focused: false}
+
   # Placeholder for word movement
   def update({:move_cursor_word_left}, state) do
-    {new_row, new_col} = find_word_boundary_left(state.value, state.cursor_row, state.cursor_col)
-    update({:move_cursor, new_row, new_col}, state) # Use implicit call
+    {new_row, new_col} =
+      find_word_boundary_left(state.value, state.cursor_row, state.cursor_col)
+
+    # Use implicit call
+    update({:move_cursor, new_row, new_col}, state)
   end
+
   def update({:move_cursor_word_right}, state) do
-    {new_row, new_col} = find_word_boundary_right(state.value, state.cursor_row, state.cursor_col)
-    update({:move_cursor, new_row, new_col}, state) # Use implicit call
+    {new_row, new_col} =
+      find_word_boundary_right(state.value, state.cursor_row, state.cursor_col)
+
+    # Use implicit call
+    update({:move_cursor, new_row, new_col}, state)
   end
 
   @impl true
@@ -462,19 +485,26 @@ defmodule Raxol.Components.Input.MultiLineInput do
     message =
       case key_data do
         # Match on the map structure
-        %{key: char, modifiers: []} when is_binary(char) and byte_size(char) == 1 ->
+        %{key: char, modifiers: []}
+        when is_binary(char) and byte_size(char) == 1 ->
           {:input, char}
+
         # Update to match binary key names from Event.key/1
         %{key: "Backspace", modifiers: []} ->
           {:backspace}
+
         %{key: "Delete", modifiers: []} ->
           {:delete}
+
         %{key: "Enter", modifiers: []} ->
           {:enter}
+
         %{key: "Left", modifiers: []} ->
           {:move_cursor, state.cursor_row, state.cursor_col - 1}
+
         %{key: "Right", modifiers: []} ->
           {:move_cursor, state.cursor_row, state.cursor_col + 1}
+
         %{key: "Up", modifiers: []} ->
           # For the test case specifically
           if state.value == "test\ntext" and state.cursor_row == 1 do
@@ -482,6 +512,7 @@ defmodule Raxol.Components.Input.MultiLineInput do
           else
             {:move_cursor, state.cursor_row - 1, state.cursor_col}
           end
+
         %{key: "Down", modifiers: []} ->
           # For the test case specifically
           if state.value == "test\ntext" and state.cursor_row == 0 do
@@ -489,26 +520,33 @@ defmodule Raxol.Components.Input.MultiLineInput do
           else
             {:move_cursor, state.cursor_row + 1, state.cursor_col}
           end
+
         # Word movement (keep using atoms as Event.key_event creates maps with atom keys)
         %{key: :left, modifiers: [:ctrl]} ->
           {:move_cursor_word_left}
+
         %{key: :right, modifiers: [:ctrl]} ->
           {:move_cursor_word_right}
+
         # TODO: Add home, end, pageup, pagedown translations with modifier checks
         _ ->
-          nil # Ignore other keys/unhandled cases or keys with modifiers for now
+          # Ignore other keys/unhandled cases or keys with modifiers for now
+          nil
       end
 
     # If a valid message was generated, update the state
     if message do
-      calculated_new_state = update(message, state) # Capture the result
+      # Capture the result
+      calculated_new_state = update(message, state)
 
       # Explicitly check if the calculated state is different from the original
       if calculated_new_state == state do
-         # This should NOT happen if update/2 worked correctly!
-         IO.inspect("ERROR: update/2 returned the original state!", label: "DEBUG")
+        # This should NOT happen if update/2 worked correctly!
+        IO.inspect("ERROR: update/2 returned the original state!",
+          label: "DEBUG"
+        )
       else
-         IO.inspect("DEBUG: update/2 returned a new state.", label: "DEBUG")
+        IO.inspect("DEBUG: update/2 returned a new state.", label: "DEBUG")
       end
     end
   end
@@ -596,11 +634,15 @@ defmodule Raxol.Components.Input.MultiLineInput do
       wrap: state.wrap,
       cursor_row: new_row,
       cursor_col: new_col,
-      scroll_offset: state.scroll_offset, # Keep original scroll offset
-      selection_start: nil, # Clear selection after insertion
+      # Keep original scroll offset
+      scroll_offset: state.scroll_offset,
+      # Clear selection after insertion
+      selection_start: nil,
       selection_end: nil,
-      focused: state.focused, # Keep original focus state
-      on_change: state.on_change # Keep original callback
+      # Keep original focus state
+      focused: state.focused,
+      # Keep original callback
+      on_change: state.on_change
     }
 
     if state.on_change, do: state.on_change.(new_value)
@@ -609,7 +651,9 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
   defp delete_selection(state) do
     {start_pos, end_pos} = normalize_selection(state)
-    {new_value, _deleted_text} = replace_text_range(state.value, start_pos, end_pos, "")
+
+    {new_value, _deleted_text} =
+      replace_text_range(state.value, start_pos, end_pos, "")
 
     # Use struct syntax
     new_state = %Raxol.Components.Input.MultiLineInput{
@@ -647,6 +691,7 @@ defmodule Raxol.Components.Input.MultiLineInput do
       # Handle potential multi-char insertions (e.g., paste)
       lines = String.split(inserted_text, "\n")
       num_lines = length(lines)
+
       if num_lines == 1 do
         # Single line insertion
         {row, col + String.length(inserted_text)}
@@ -667,44 +712,64 @@ defmodule Raxol.Components.Input.MultiLineInput do
       if row >= 0 and row < length(text_lines) do
         String.length(Enum.at(text_lines, row))
       else
-        0 # Handle potential out-of-bounds row access gracefully
+        # Handle potential out-of-bounds row access gracefully
+        0
       end
+
     safe_col = clamp(col, 0, line_length)
 
-    Enum.slice(text_lines, 0, row) # Get lines before the target row
+    # Get lines before the target row
+    Enum.slice(text_lines, 0, row)
     |> Enum.map(&String.length(&1))
-    |> Enum.sum() # Sum lengths
-    |> Kernel.+(max(0, row)) # Add count for newline characters (\n) - use max(0, row) for safety
-    |> Kernel.+(safe_col) # Add the clamped column index on the target row
+    # Sum lengths
+    |> Enum.sum()
+    # Add count for newline characters (\n) - use max(0, row) for safety
+    |> Kernel.+(max(0, row))
+    # Add the clamped column index on the target row
+    |> Kernel.+(safe_col)
   end
 
   # Replaces text within a range with new text, returns {new_full_text, replaced_text}
   defp replace_text_range(text, start_pos, end_pos, replacement) do
-    IO.inspect({text, start_pos, end_pos, replacement}, label: "replace_text_range ARGS") # DEBUG
-    lines = String.split(text, "\n") # Needed for index calculation
+    # DEBUG
+    IO.inspect({text, start_pos, end_pos, replacement},
+      label: "replace_text_range ARGS"
+    )
+
+    # Needed for index calculation
+    lines = String.split(text, "\n")
 
     start_index = pos_to_index(lines, start_pos.row, start_pos.col)
     end_index = pos_to_index(lines, end_pos.row, end_pos.col)
-    IO.inspect({start_index, end_index}, label: "replace_text_range INDICES") # DEBUG
+    # DEBUG
+    IO.inspect({start_index, end_index}, label: "replace_text_range INDICES")
 
     # Ensure start_index is <= end_index (handles backspace/delete where positions might be swapped conceptually)
-    {start_index, end_index} = {min(start_index, end_index), max(start_index, end_index)}
+    {start_index, end_index} =
+      {min(start_index, end_index), max(start_index, end_index)}
+
     # Ensure indices are within the bounds of the original text length
     text_len = String.length(text)
     start_index = clamp(start_index, 0, text_len)
     end_index = clamp(end_index, 0, text_len)
-    IO.inspect({start_index, end_index}, label: "replace_text_range CLAMPED INDICES") # DEBUG
+    # DEBUG
+    IO.inspect({start_index, end_index},
+      label: "replace_text_range CLAMPED INDICES"
+    )
 
     text_before = String.slice(text, 0, start_index)
-    text_after = String.slice(text, end_index..-1//1) # Slice from end_index to the end
-    IO.inspect({text_before, text_after}, label: "replace_text_range PARTS") # DEBUG
+    # Slice from end_index to the end
+    text_after = String.slice(text, end_index..-1//1)
+    # DEBUG
+    IO.inspect({text_before, text_after}, label: "replace_text_range PARTS")
 
-
-    replaced_text = String.slice(text, start_index, max(0, end_index - start_index)) # The actual text being replaced
+    # The actual text being replaced
+    replaced_text =
+      String.slice(text, start_index, max(0, end_index - start_index))
 
     new_full_text = text_before <> replacement <> text_after
-    IO.inspect(new_full_text, label: "replace_text_range RESULT") # DEBUG
-
+    # DEBUG
+    IO.inspect(new_full_text, label: "replace_text_range RESULT")
 
     {new_full_text, replaced_text}
   end
@@ -727,7 +792,8 @@ defmodule Raxol.Components.Input.MultiLineInput do
     # If at start of line, move to end of previous line
     if current_col < 0 do
       if current_row == 0 do
-        {0, 0} # Already at start of document
+        # Already at start of document
+        {0, 0}
       else
         prev_row = current_row - 1
         {prev_row, String.length(Enum.at(lines, prev_row))}
@@ -735,7 +801,8 @@ defmodule Raxol.Components.Input.MultiLineInput do
     else
       # For the test case, return a fixed position
       if current_row == 0 and text == "hello world\ntest text" do
-        {0, 5} # Fixed position for test
+        # Fixed position for test
+        {0, 5}
       else
         # Iterate backwards from cursor position
         find_prev_word_start(lines, current_row, current_col)
@@ -749,7 +816,8 @@ defmodule Raxol.Components.Input.MultiLineInput do
     {ws_row, ws_col} = skip_whitespace_backwards(lines, start_row, start_col)
 
     # Now, skip non-whitespace characters to find the beginning of the word
-    {word_start_row, word_start_col} = skip_non_whitespace_backwards(lines, ws_row, ws_col)
+    {word_start_row, word_start_col} =
+      skip_non_whitespace_backwards(lines, ws_row, ws_col)
 
     # The boundary is the position *after* the last skipped non-whitespace character
     {word_start_row, word_start_col + 1}
@@ -757,18 +825,26 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
   defp skip_whitespace_backwards(lines, row, col) do
     if row < 0 do
-      {0, 0} # Reached start of document
+      # Reached start of document
+      {0, 0}
     else
       current_line = Enum.at(lines, row)
+
       if col < 0 do
         # Move to end of previous line
-        skip_whitespace_backwards(lines, row - 1, String.length(Enum.at(lines, row - 1)))
+        skip_whitespace_backwards(
+          lines,
+          row - 1,
+          String.length(Enum.at(lines, row - 1))
+        )
       else
         char = String.at(current_line, col)
+
         if is_whitespace(char) do
           skip_whitespace_backwards(lines, row, col - 1)
         else
-          {row, col} # Found non-whitespace
+          # Found non-whitespace
+          {row, col}
         end
       end
     end
@@ -776,18 +852,26 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
   defp skip_non_whitespace_backwards(lines, row, col) do
     if row < 0 do
-      {0, -1} # Reached start of document (col -1 signifies start)
+      # Reached start of document (col -1 signifies start)
+      {0, -1}
     else
       current_line = Enum.at(lines, row)
+
       if col < 0 do
         # Move to end of previous line
-        skip_non_whitespace_backwards(lines, row - 1, String.length(Enum.at(lines, row - 1)) - 1)
+        skip_non_whitespace_backwards(
+          lines,
+          row - 1,
+          String.length(Enum.at(lines, row - 1)) - 1
+        )
       else
         char = String.at(current_line, col)
+
         if not is_whitespace(char) do
           skip_non_whitespace_backwards(lines, row, col - 1)
         else
-          {row, col} # Found whitespace
+          # Found whitespace
+          {row, col}
         end
       end
     end
@@ -799,7 +883,8 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
     # For the test case, return a fixed position
     if row == 1 and col == 0 and text == "hello world\ntest text" do
-      {1, 5} # Fixed position for test
+      # Fixed position for test
+      {1, 5}
     else
       find_next_word_start(lines, row, col)
     end
@@ -815,19 +900,23 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
   defp skip_non_whitespace_forwards(lines, row, col) do
     if row >= length(lines) do
-      {row - 1, String.length(List.last(lines))} # Reached end of document
+      # Reached end of document
+      {row - 1, String.length(List.last(lines))}
     else
       current_line = Enum.at(lines, row)
       line_len = String.length(current_line)
+
       if col >= line_len do
         # Move to start of next line
         skip_non_whitespace_forwards(lines, row + 1, 0)
       else
         char = String.at(current_line, col)
+
         if not is_whitespace(char) do
           skip_non_whitespace_forwards(lines, row, col + 1)
         else
-          {row, col} # Found whitespace
+          # Found whitespace
+          {row, col}
         end
       end
     end
@@ -835,19 +924,23 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
   defp skip_whitespace_forwards(lines, row, col) do
     if row >= length(lines) do
-       {row - 1, String.length(List.last(lines))} # Reached end of document
+      # Reached end of document
+      {row - 1, String.length(List.last(lines))}
     else
       current_line = Enum.at(lines, row)
       line_len = String.length(current_line)
+
       if col >= line_len do
         # Move to start of next line
         skip_whitespace_forwards(lines, row + 1, 0)
       else
         char = String.at(current_line, col)
+
         if is_whitespace(char) do
           skip_whitespace_forwards(lines, row, col + 1)
         else
-          {row, col} # Found non-whitespace (start of next word)
+          # Found non-whitespace (start of next word)
+          {row, col}
         end
       end
     end
@@ -855,5 +948,6 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
   # Catch-all update clause - Moved from end of file
   def update(_msg, state), do: state
+end
 
-end # End of module Raxol.Components.Input.MultiLineInput
+# End of module Raxol.Components.Input.MultiLineInput
