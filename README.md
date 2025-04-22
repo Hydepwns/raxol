@@ -35,7 +35,7 @@ For detailed installation options and requirements, see the [Installation Guide]
 
 Here's a basic example of a Raxol application:
 
-````elixir
+```elixir
 defmodule MyApp do
   use Raxol.App
 
@@ -53,7 +53,7 @@ end
 {:ok, _pid} = Raxol.Runtime.start_link(app: MyApp)
 
 # Keep the application running (e.g., in an IEx session or supervisor)
-# ...
+```
 
 > **Note:** Raxol also supports defining views using `use Raxol.View` and nested component functions (e.g., `box do ... end`). See the examples in `/examples` and the [Getting Started Tutorial](docs/guides/quick_start.md) for more details on both approaches.
 
@@ -93,7 +93,7 @@ mix dialyzer
 
 # Format code before committing
 mix format # Or ./scripts/format_before_commit.sh
-````
+```
 
 ### GitHub Actions
 
