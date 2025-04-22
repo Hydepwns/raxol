@@ -1,243 +1,241 @@
 ---
 title: Testing Guide
-description: Comprehensive guide for testing in Raxol Terminal Emulator
-date: 2023-04-04
+description: Comprehensive guide for testing Raxol applications and components
+date: 2024-07-27 # Updated date
 author: Raxol Team
 section: guides
-tags: [guides, testing, documentation]
+tags: [guides, testing, documentation, exunit]
 ---
 
 # Raxol Testing Guide
 
 ## Overview
 
-This guide covers best practices and examples for testing Raxol components using our comprehensive testing infrastructure. The testing framework is divided into three main categories:
+This guide covers best practices and examples for testing Raxol applications and components. Testing typically involves standard Elixir tooling like ExUnit, possibly complemented by project-specific helpers found in `test/support/`.
 
-1. Unit Testing
-2. Integration Testing
-3. Visual Testing
+Testing strategies might include:
 
-## Test Types
+1. **Unit Testing:** Testing individual functions or components in isolation.
+2. **Integration Testing:** Testing the interaction between multiple components or parts of the application.
+3. **Visual/Snapshot Testing:** Verifying the rendered output of components (if applicable, using tools like snapshot testing).
+4. **Performance Testing:** Measuring the performance characteristics of components or the application.
+
+## Test Types & Examples
 
 ### Unit Testing
 
-Unit tests focus on testing individual components in isolation. They verify:
-- Component initialization
-- State management
-- Event handling
-- Rendering logic
+Unit tests focus on testing individual functions or modules. For UI components (if applicable, depending on the component model used, e.g., `Raxol.App` or lower-level parts), this might involve testing state transitions or helper functions.
 
 ```elixir
-use Raxol.Test.Unit
+# Example assuming standard ExUnit tests
+defmodule MyApp.MyComponentTest do
+  use ExUnit.Case, async: true
 
-test "component handles state updates" do
-  {:ok, component} = setup_isolated_component(MyComponent)
-  {updated, _} = simulate_event(component, :some_event)
-  assert updated.state.value == expected_value
+  alias MyApp.MyComponent
+
+  test "component logic updates state correctly" do
+    initial_state = MyComponent.init()
+    event = :some_event
+    params = %{} # Example params
+    # Assuming a function handles state transitions
+    {:ok, new_state} = MyComponent.handle_event(event, params, initial_state)
+    assert new_state.value == :expected_value
+  end
 end
 ```
 
-Best Practices:
-- Test one behavior per test
-- Use descriptive test names
-- Mock external dependencies
-- Test edge cases and error conditions
-- Verify both state updates and commands
+**Best Practices:**
+
+- Test one behavior per test.
+- Use descriptive test names.
+- Mock external dependencies where necessary (e.g., using Mox).
+- Test edge cases and error conditions.
 
 ### Integration Testing
 
-Integration tests verify interactions between components. They test:
-- Parent-child relationships
-- Event propagation
-- State synchronization
-- Error boundaries
+Integration tests verify interactions between different parts of your Raxol application. This could involve testing how events flow, how parent/child components interact (if applicable), or how the application state changes in response to sequences of events.
 
 ```elixir
-use Raxol.Test.Integration
+# Example: Testing interaction within an App or View
+defmodule MyApp.AppIntegrationTest do
+  use ExUnit.Case # Or potentially a ConnCase/FeatureCase if web features are involved
 
-test_scenario "parent-child interaction" do
-  {:ok, parent, child} = setup_component_hierarchy(Parent, Child)
-  simulate_user_action(child, :trigger_event)
-  assert_child_received(child, :event_received)
-  assert_parent_updated(parent, :child_event)
+  # Example - Highly dependent on actual Raxol.App structure
+  # This might involve starting the Runtime and sending events,
+  # or testing composite views.
+  test "user action triggers expected state change across components" do
+    # Setup might involve starting the Raxol runtime or rendering a view
+    # with multiple interacting parts.
+    # ... setup code ...
+
+    # Simulate an action
+    # ... simulation code ...
+
+    # Assert the final state or effects
+    # ... assertion code ...
+    assert true # Placeholder
+  end
 end
 ```
 
-Best Practices:
-- Test realistic component combinations
-- Verify event bubbling and capturing
-- Test error propagation
-- Check state synchronization
-- Validate lifecycle hooks
+**Best Practices:**
 
-### Visual Testing
+- Test realistic user flows or interaction scenarios.
+- Verify state changes across relevant parts of the application.
+- Test error handling across boundaries.
 
-Visual tests ensure components render correctly. They verify:
-- Component appearance
-- Layout behavior
-- Style application
-- Theme consistency
-- Responsive design
+### Visual/Snapshot Testing
+
+Visual tests ensure components render correctly. This often involves "snapshot testing", where the rendered output (e.g., terminal character grid, ANSI sequences, or HTML if applicable) is compared against a previously approved "snapshot" file. The `test/snapshots/` directory suggests this might be used. Tools or custom helpers in `test/support/` might facilitate this.
 
 ```elixir
-use Raxol.Test.Visual
+# Hypothetical Snapshot Test Example
+# Check test/support/ or specific snapshot tests for actual implementation
+defmodule MyApp.MyComponentSnapshotTest do
+  use ExUnit.Case
+  # Possibly import snapshotting helpers from test/support
 
-test "component renders correctly" do
-  component = setup_visual_component(MyComponent)
-  assert_renders_with(component, expected_content)
-  assert_styled_with(component, %{color: :blue})
-  assert_matches_snapshot(component, "my_component")
+  test "component renders correctly with given state" do
+    state = %{value: "Example"}
+    # Assuming a function generates the renderable output
+    output = MyApp.MyComponent.render(state) # Or similar render call
+
+    # Assert against a stored snapshot
+    assert_snapshot "my_component_example_state", output
+  end
 end
 ```
 
-Best Practices:
-- Maintain snapshot tests
-- Test different themes
-- Verify responsive behavior
-- Check alignment and borders
-- Test state-based styling
+**Best Practices:**
 
-## Performance Testing
+- Maintain snapshot tests: Review and update snapshots intentionally when UI changes are expected.
+- Test components with different states/props.
+- Ensure snapshot stability across environments.
 
-Performance tests measure and verify component efficiency:
+### Performance Testing
+
+Performance tests measure and verify component or application efficiency. Elixir has tools like `Benchee` that can be integrated. The `test/performance/` directory suggests dedicated performance tests exist.
 
 ```elixir
-use Raxol.Test.Performance
+# Example using Benchee (requires adding :benchee to deps)
+# Check test/performance/ for actual implementation
+defmodule MyApp.PerformanceTest do
+  use ExUnit.Case
 
-test "render performance" do
-  component = setup_benchmark_component(MyComponent)
-  
-  assert_render_time component, fn ->
-    render_iterations(component, 1000)
-  end, under: 100 # milliseconds
-end
+  def run_render(state) do
+    # Replace with actual render logic
+    MyApp.MyComponent.render(state)
+  end
 
-test "memory usage" do
-  component = setup_benchmark_component(LargeComponent)
-  
-  assert_memory_usage component, fn ->
-    render_with_large_dataset(component)
-  end, under: :memory_threshold
+  # @tag :performance # Optional tag for selective running
+  # test "render performance is adequate" do
+  #   state = %{value: "complex data"}
+  #   Benchee.run(
+  #     %{ "render_component" => fn -> run_render(state) end },
+  #     time: 5, # seconds
+  #     memory: true
+  #   )
+  #   # Assertions might involve checking Benchee output or comparing to baseline
+  # end
 end
 ```
 
-Best Practices:
-- Set realistic benchmarks
-- Test with varying data sizes
-- Measure resource usage
-- Profile critical paths
-- Monitor performance regressions
+**Best Practices:**
+
+- Establish realistic benchmarks based on expected usage.
+- Test with varying data sizes or complexity.
+- Measure relevant metrics (time, memory, reductions).
+- Monitor for performance regressions over time.
 
 ## Test Organization
 
 ### Directory Structure
+
+The actual test directory structure appears organized by feature area or test type:
+
 ```
 test/
-  unit/
-    components/
-    events/
-    state/
-  integration/
-    scenarios/
-    boundaries/
-  visual/
-    snapshots/
-    themes/
-  performance/
-    benchmarks/
-    profiles/
+├── core/               # Core Raxol logic tests
+├── data/               # Data structure related tests
+├── examples/           # Tests related to examples
+├── js/                 # JavaScript-related tests (if any)
+├── performance/        # Performance benchmarks
+├── platform/           # Platform abstraction tests
+├── platform_specific/  # Tests for specific platforms (OS, terminal)
+├── raxol/              # General Raxol feature tests
+├── raxol_web/          # Web-related feature tests (if any)
+├── snapshots/          # Snapshot files for visual/render testing
+├── support/            # Helper modules and setup for tests
+├── terminal/           # Terminal emulation layer tests
+├── setup.ts            # TypeScript setup for JS tests (if any)
+└── test_helper.exs     # Main test helper setup (loads support/*)
 ```
 
 ### Naming Conventions
-- Unit tests: `*_test.exs`
-- Integration tests: `*_integration_test.exs`
-- Visual tests: `*_visual_test.exs`
-- Performance tests: `*_bench.exs`
+
+Follow standard Elixir conventions:
+
+- Test files typically end with `_test.exs`.
+- Use descriptive module and test names.
 
 ## Test Helpers and Utilities
 
-### Common Test Setups
-```elixir
-defmodule Raxol.Test.Helper do
-  def setup_test_component(module, props \\ %{}) do
-    {:ok, component} = setup_isolated_component(module, props)
-    setup_test_environment(component)
-  end
-end
-```
+Helper modules are often placed in `test/support/`. These might include:
 
-### Custom Assertions
-```elixir
-defmodule Raxol.Test.CustomAssertions do
-  def assert_valid_render(component) do
-    output = capture_render(component)
-    assert String.length(output) > 0
-    assert valid_structure?(output)
-  end
-end
-```
+- Setup functions for components or application state.
+- Custom assertion functions.
+
+- Factories for generating test data (e.g., using `ExMachina`).
+
+- Mocks for external services (e.g., using `Mox`).
+
+Examine `test/support/` and individual tests to understand available helpers.
 
 ## Continuous Integration
 
 ### Test Running
+
+The primary command to run the default test suite is:
+
 ```bash
-# Run all tests
+# Run all tests defined in mix.exs test paths
 mix test
-
-# Run specific test types
-mix test test/unit
-mix test test/integration
-mix test test/visual
-
-# Run performance tests
-mix test test/performance
 ```
 
+You can often run specific test files or directories:
+
+```bash
+# Run a specific file
+mix test test/core/some_feature_test.exs
+
+# Run all tests in a directory
+mix test test/terminal/
+```
+
+**Specialized Test Scripts:**
+
+The project utilizes helper scripts for more specific testing scenarios (e.g., platform-specific tests, dashboard tests). These provide more control and target different aspects of the testing matrix.
+
+**Refer to the [Scripts Documentation](scripts/README.md) for details on available testing scripts** like `run-local-tests.sh`, `run_all_dashboard_tests.sh`, and others, and how to use them. These are crucial for comprehensive testing beyond the basic `mix test` command.
+
 ### Performance Monitoring
-- Set up performance test baselines
-- Monitor trends over time
-- Set up alerts for regressions
-- Keep historical performance data
+
+If performance benchmarks exist (`test/performance/`), they might be integrated into CI to:
+
+- Establish performance baselines.
+- Monitor trends over time.
+- Detect performance regressions.
 
 ## Common Pitfalls
 
-1. Snapshot Test Maintenance
-   - Review snapshots regularly
-   - Update snapshots intentionally
-   - Document visual changes
-
-2. Performance Test Stability
-   - Use consistent test environments
-   - Account for system variations
-   - Set appropriate thresholds
-
-3. Integration Test Complexity
-   - Keep component hierarchies manageable
-   - Focus on critical paths
-   - Mock complex dependencies
+1. **Snapshot Test Maintenance:** Brittle snapshots require frequent updates. Ensure changes are intentional.
+2. **Test Environment Consistency:** Differences between local and CI environments can lead to flaky tests. Use containers (like Docker, suggested by the `/docker` directory) or consistent setup procedures.
+3. **Integration Test Complexity:** Overly complex integration tests can be slow and difficult to debug. Focus on key interactions.
 
 ## Best Practices Summary
 
-1. General Testing
-   - Write descriptive test names
-   - One assertion per test
-   - Use appropriate test types
-   - Maintain test independence
-
-2. Component Testing
-   - Test component lifecycle
-   - Verify event handling
-   - Check render output
-   - Test state management
-
-3. Visual Testing
-   - Maintain snapshots
-   - Test responsive behavior
-   - Verify theme consistency
-   - Check accessibility
-
-4. Performance Testing
-   - Set realistic benchmarks
-   - Test edge cases
-   - Monitor trends
-   - Document thresholds 
+1. **General Testing:** Use standard ExUnit practices. Write clear, focused tests. Leverage helpers from `test/support/`.
+2. **Component Testing:** Test component state, events, and rendering logic according to the specific component model used.
+3. **Visual Testing:** If using snapshots (`test/snapshots/`), maintain them carefully.
+4. **Performance Testing:** Use tools like Benchee (`test/performance/`) and integrate them into CI if needed.
+5. **Utilize Scripts:** Use the helper scripts detailed in `scripts/README.md` for comprehensive testing.

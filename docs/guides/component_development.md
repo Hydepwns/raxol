@@ -1,26 +1,30 @@
 ---
-title: Component Development Guide
-description: Guide for developing custom components for Raxol Terminal Emulator
-date: 2023-04-04
+title: Low-Level Terminal & Plugin Development Guide
+description: Guide for developing core terminal components and plugins for the Raxol Terminal Emulator
+date: 2024-07-27
 author: Raxol Team
 section: guides
-tags: [development, components, guide]
+tags: [development, components, plugins, terminal, emulator, low-level, guide]
 ---
 
-# Component Development Guide
+# Low-Level Terminal & Plugin Development Guide
 
-This guide provides instructions for developing custom components for the Raxol Terminal Emulator.
+**Note:** This guide covers the development of low-level components and plugins that directly interact with the `Raxol.Terminal.Emulator`. This is different from building user interfaces with high-level components using `Raxol.App` or `Raxol.View`, which is covered in the [Getting Started Tutorial](quick_start.md) and the [UI Components Guide](components.md).
+
+This guide provides instructions for developing custom core components and extension plugins for the Raxol Terminal Emulator.
 
 ## Component Types
 
-Raxol supports two main types of components:
+Raxol supports two main types of low-level components described in this guide:
 
-1. **Terminal Components** - Core functionality of the terminal emulator
-2. **Plugin Components** - Extensions that add functionality to the terminal
+1. **Terminal Components** - Core building blocks of the terminal emulator itself.
+2. **Plugin Components** - Extensions that add specific features or functionality to the terminal emulator through the plugin system.
 
 ## Terminal Components
 
-Terminal components are part of the core terminal functionality and include:
+Terminal components are fundamental parts of the core terminal functionality. Developing these usually involves modifying or extending the Raxol library itself.
+
+Examples include:
 
 - Screen buffer management
 - Cursor handling
@@ -157,7 +161,7 @@ Plugin components extend the terminal's functionality and include:
 
 2. **Integration Tests**
 
-   Write integration tests to ensure your component works with the terminal:
+   Write integration tests to ensure your component works correctly within the terminal emulator context:
 
    ```elixir
    defmodule Raxol.Terminal.MyComponentIntegrationTest do
@@ -171,6 +175,8 @@ Plugin components extend the terminal's functionality and include:
      end
    end
    ```
+
+For more general testing strategies, best practices, and information on available helper scripts, please refer to the main [Testing Guide](testing.md).
 
 ## Documentation
 
@@ -246,4 +252,4 @@ Plugin components extend the terminal's functionality and include:
 
 6. **Documentation**
 
-   Document your component thoroughly, including usage examples. 
+   Document your component thoroughly, including usage examples.

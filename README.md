@@ -1,8 +1,17 @@
 # Raxol
 
+<!-- TODO: Add badges (Hex version, CI status, License, etc.) -->
+
+[![Hex pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
+[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
+
+[![GitHub Actions CI](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml/badge.svg)](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml)
+
 A terminal application toolkit for Elixir, providing components and a runtime for building interactive TUI applications.
 
 > **Note:** Pre-release software. APIs may change before v1.0.
+
+<!-- TODO: Add a screenshot or GIF demo here -->
 
 ## Features
 
@@ -55,13 +64,15 @@ end
 # Keep the application running (e.g., in an IEx session or supervisor)
 ```
 
-> **Note:** Raxol also supports defining views using `use Raxol.View` and nested component functions (e.g., `box do ... end`). See the examples in `/examples` and the [Getting Started Tutorial](docs/guides/quick_start.md) for more details on both approaches.
+> **Note:** Use `Raxol.App` for the main application entry point and `Raxol.View` for reusable UI components. Raxol also supports nested component functions (e.g., `box do ... end`). See the examples in `/examples` and the [Getting Started Tutorial](docs/guides/quick_start.md) for more details on both approaches.
 
 For a more comprehensive guide, please refer to the [Getting Started Tutorial](docs/guides/quick_start.md).
 
+Explore the `/examples` directory for more detailed usage patterns and advanced features.
+
 ## Documentation
 
-Detailed documentation can be found in the `/docs` directory or online (TODO: Add link):
+Detailed documentation can be found in the `/docs` directory or online (TODO: Add the hosted documentation link here):
 
 - [Using Raxol (Installation Guide)](docs/installation/Installation.md)
 - [Getting Started Tutorial](docs/guides/quick_start.md)
@@ -77,23 +88,29 @@ Detailed documentation can be found in the `/docs` directory or online (TODO: Ad
 
 To set up your development environment, please see the [Development Environment Setup](docs/installation/DevelopmentSetup.md) guide.
 
-Basic development commands:
+Common development commands:
 
 ```bash
-# Ensure dependencies are installed (after setup)
-# mix deps.get # Handled in setup guide
-# mix compile # Handled in setup guide
-
-# Run tests
+# Run the full test suite
 mix test
 
-# Run static analysis
+# Run static analysis (Credo for style, Dialyzer for types)
 mix credo
 mix dialyzer
 
-# Format code before committing
-mix format # Or ./scripts/format_before_commit.sh
+# Format code
+mix format
 ```
+
+We also provide a range of helper scripts for various development tasks, including:
+
+- Running different test suites (integration, platform-specific, visualization, etc.)
+- Performing code quality and pre-commit checks
+- Managing database setup and diagnostics
+- Building releases
+- Simulating CI/CD workflows locally
+
+For detailed information on all available scripts and their usage, please refer to the [Scripts Documentation](scripts/README.md).
 
 ### GitHub Actions
 
@@ -108,10 +125,14 @@ See [GitHub Actions README](.github/workflows/README.md) for detailed instructio
 - `/extensions` - IDE integrations and extensions (e.g., VS Code)
 - `/frontend` - Frontend JavaScript/TypeScript configurations and assets
 - `/lib` - Core Elixir code
-- `/pages` - Application pages or site content (Verify description)
+- `/pages` - In-depth documentation/articles (e.g., for site generation)
 - `/priv` - Non-source code assets (e.g., templates, static files for releases)
 - `/scripts` - Helper scripts for development tasks
 - `/themes` - Theme definitions for styling
+
+## Contributing
+
+Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines.
 
 ## License
 

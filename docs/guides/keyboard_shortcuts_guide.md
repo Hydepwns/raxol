@@ -1,10 +1,10 @@
 ---
 title: Keyboard Shortcuts Guide
-description: Guide for keyboard shortcuts in Raxol Terminal Emulator
-date: 2023-04-04
+description: Guide for implementing and using keyboard shortcuts in Raxol applications
+date: 2024-07-27 # Updated date
 author: Raxol Team
 section: guides
-tags: [guides, keyboard, shortcuts]
+tags: [guides, keyboard, shortcuts, events, accessibility]
 ---
 
 # Raxol Keyboard Shortcuts Guide
@@ -18,51 +18,65 @@ This guide provides information on implementing and using keyboard shortcuts in 
 3. [Registering Shortcuts](#registering-shortcuts)
 4. [Context-Specific Shortcuts](#context-specific-shortcuts)
 5. [Shortcut Prioritization](#shortcut-prioritization)
-6. [Integration with Accessibility](#integration-with-accessibility)
-7. [Displaying Available Shortcuts](#displaying-available-shortcuts)
-8. [Best Practices](#best-practices)
-9. [Example Implementation](#example-implementation)
-10. [Troubleshooting](#troubleshooting)
+6. [Handling Keyboard Events](#handling-keyboard-events)
+7. [Integration with Accessibility](#integration-with-accessibility)
+8. [Displaying Available Shortcuts](#displaying-available-shortcuts)
+9. [Best Practices](#best-practices)
+10. [Example Implementation](#example-implementation)
+11. [Troubleshooting](#troubleshooting)
 
 ## Introduction
 
-Keyboard shortcuts are essential for improving efficiency and accessibility in terminal UI applications. Raxol provides a comprehensive keyboard shortcuts system that allows you to:
+Keyboard shortcuts are essential for improving efficiency and accessibility in terminal UI applications. Raxol provides a keyboard shortcuts system, primarily managed by the `Raxol.Core.KeyboardShortcuts` module, allowing you to:
 
 - Register global and context-specific shortcuts
 - Handle keyboard events and execute callbacks
-- Display available shortcuts to users
 - Prioritize shortcuts to handle conflicts
-- Integrate shortcuts with accessibility features
+
+Integration with hints and accessibility features involves other modules like `Raxol.Core.UXRefinement` and `Raxol.Core.Accessibility`.
 
 ## Getting Started
 
-To enable keyboard shortcuts in your Raxol application, you need to initialize the UX refinement system and enable the keyboard shortcuts feature:
+To use the keyboard shortcuts system, you first need to initialize the core UX features and enable the necessary components using `Raxol.Core.UXRefinement`:
 
 ```elixir
-# Initialize UX refinement
-Raxol.Core.UXRefinement.init()
+# Initialize core UX systems (including Event Manager)
+defp setup_ux do
+  Raxol.Core.UXRefinement.init()
+  Raxol.Core.UXRefinement.enable_feature(:events)
+  Raxol.Core.UXRefinement.enable_feature(:keyboard_shortcuts)
+  # Optionally enable accessibility for announcements
+  Raxol.Core.UXRefinement.enable_feature(:accessibility)
+end
 
-# Enable keyboard shortcuts and events features
-Raxol.Core.UXRefinement.enable_feature(:events)
-Raxol.Core.UXRefinement.enable_feature(:keyboard_shortcuts)
+# Call this setup early in your application initialization
+setup_ux()
 ```
+
+This ensures the `Raxol.Core.KeyboardShortcuts` module is initialized and ready to register and handle shortcuts.
 
 ## Registering Shortcuts
 
+Use `Raxol.Core.KeyboardShortcuts.register_shortcut/4` to define shortcuts.
+
 ### Basic Shortcut Registration
 
-Register a keyboard shortcut with a callback function:
+Register a keyboard shortcut with a unique name (atom), the key combination string, and a callback function:
 
 ```elixir
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+S", :save, fn -> 
+# Assuming KeyboardShortcuts is aliased or imported
+KeyboardShortcuts.register_shortcut(:save_doc, "Ctrl+S", fn ->
   save_document()
-  Raxol.Core.UXRefinement.announce("Document saved")
+  # Optionally announce using the Accessibility module if enabled
+  Accessibility.announce("Document saved")
 end, description: "Save document")
 ```
 
+**Note:** The first argument is a unique atom identifying the shortcut. The callback function is executed when the shortcut is triggered in the correct context.
+
 ### Shortcut Format
 
-Shortcuts are specified as strings in the format `"Modifier+Key"`, where `Modifier` can be `Ctrl`, `Alt`, or `Shift`, and multiple modifiers can be combined:
+Shortcuts are specified as strings in the format `"Modifier+Key"`, where `Modifier` can be `Ctrl`, `Alt`, or `Shift`. Multiple modifiers can be combined:
 
 ```elixir
 # Single modifier
@@ -71,26 +85,30 @@ Shortcuts are specified as strings in the format `"Modifier+Key"`, where `Modifi
 "Shift+Tab"
 
 # Multiple modifiers
-"Ctrl+Alt+S"
-"Ctrl+Shift+Alt+X"
+"Ctrl+Alt+Delete"
+"Ctrl+Shift+Z"
 
-# No modifier
+# Function keys, arrows, and special keys
 "F1"
 "Escape"
 "Enter"
+"ArrowUp"
+"PageDown"
 ```
+
+(Refer to the specific input event handling documentation for exact key names.)
 
 ### Shortcut Options
 
-When registering shortcuts, you can specify additional options:
+When registering shortcuts, you can specify additional options as the fourth argument (keyword list):
 
 ```elixir
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+S", :save, fn -> 
+KeyboardShortcuts.register_shortcut(:save_doc, "Ctrl+S", fn ->
   save_document()
-end, 
-  context: :editor,           # Context in which this shortcut is active
+end,
+  context: :editor,           # Context in which this shortcut is active (defaults to :global)
   description: "Save document", # Description for help display
-  priority: :high             # Priority level (high, medium, low)
+  priority: :high             # Priority level (:high, :medium, :low - default :medium)
 )
 ```
 
@@ -98,437 +116,249 @@ end,
 
 ### Contexts Overview
 
-Contexts allow you to group shortcuts based on the current state or mode of your application. For example, you might have different shortcuts for an editor mode versus a browser mode.
+Contexts (represented by atoms) allow you to group shortcuts based on the current state or mode of your application (e.g., `:editor`, `:file_browser`, `:command_palette`). Only shortcuts matching the currently active context (or the `:global` context) will be considered.
 
 ### Defining Contexts
 
-Contexts are defined implicitly when you register shortcuts with a specific context:
+Contexts are defined implicitly when registering shortcuts:
 
 ```elixir
-# Register shortcuts for editor context
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+S", :save, fn -> 
-  save_document()
-end, context: :editor)
+# Register shortcuts for :editor context
+KeyboardShortcuts.register_shortcut(:save, "Ctrl+S", &save_document/0, context: :editor)
+KeyboardShortcuts.register_shortcut(:find, "Ctrl+F", &find_in_document/0, context: :editor)
 
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+F", :find, fn -> 
-  find_in_document()
-end, context: :editor)
-
-# Register shortcuts for browser context
-Raxol.Core.UXRefinement.register_shortcut("Alt+R", :refresh, fn -> 
-  refresh_page()
-end, context: :browser)
+# Register shortcuts for :browser context
+KeyboardShortcuts.register_shortcut(:refresh, "Alt+R", &refresh_page/0, context: :browser)
 ```
 
 ### Switching Contexts
 
-Switch between contexts based on the current state of your application:
+Use `Raxol.Core.KeyboardShortcuts.set_active_context/1` to change the currently active context:
 
 ```elixir
-# Switch to editor context
-Raxol.Core.UXRefinement.set_shortcuts_context(:editor)
+# Activate editor shortcuts
+KeyboardShortcuts.set_active_context(:editor)
 
-# Switch to browser context
-Raxol.Core.UXRefinement.set_shortcuts_context(:browser)
+# Activate browser shortcuts
+KeyboardShortcuts.set_active_context(:browser)
 
-# Switch to global context
-Raxol.Core.UXRefinement.set_shortcuts_context(:global)
+# Revert to only global shortcuts being active
+KeyboardShortcuts.set_active_context(:global)
 ```
+
+This function should be called whenever your application transitions between states where different shortcut sets are relevant.
 
 ### Global Shortcuts
 
-Global shortcuts are always active, regardless of the current context:
+Shortcuts registered without a `context` option or with `context: :global` are always active, regardless of the specific context set by `set_active_context/1`.
 
 ```elixir
-# Register global shortcut (no context specified)
-Raxol.Core.UXRefinement.register_shortcut("F1", :help, fn -> 
-  show_help()
-end, description: "Show help")
+# Register global shortcut
+KeyboardShortcuts.register_shortcut(:help, "F1", &show_help/0, description: "Show help")
 ```
 
 ## Shortcut Prioritization
 
 ### Priority Levels
 
-When multiple shortcuts share the same key combination, you can specify priority levels to determine which one takes precedence:
+If multiple active shortcuts (matching the current context or global) use the same key combination, the `priority` option determines which one executes:
+
+- `:high` takes precedence over `:medium` and `:low`.
+- `:medium` (default) takes precedence over `:low`.
 
 ```elixir
 # High priority shortcut
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+X", :cut, fn -> 
-  cut_selection()
-end, priority: :high)
+KeyboardShortcuts.register_shortcut(:cut_item, "Ctrl+X", &cut_selection/0, priority: :high, context: :list_view)
 
-# Medium priority shortcut (default)
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+X", :close, fn -> 
-  close_document()
-end, priority: :medium)
-
-# Low priority shortcut
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+X", :exit, fn -> 
-  exit_application()
-end, priority: :low)
+# Medium priority global shortcut (might close a window)
+KeyboardShortcuts.register_shortcut(:close_window, "Ctrl+X", &close_window/0, priority: :medium)
 ```
+
+In the `:list_view` context, `Ctrl+X` triggers `cut_item`. In other contexts, it triggers `close_window`.
 
 ### Context Precedence
 
-Context-specific shortcuts take precedence over global shortcuts with the same name:
+Context-specific shortcuts generally take precedence over global shortcuts _with the same name_. However, if shortcuts have _different names_ but the _same key combination_, the `priority` field is the primary determinant.
 
-```elixir
-# Global shortcut
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+S", :save, fn -> 
-  save_global_settings()
-end)
+## Handling Keyboard Events
 
-# Context-specific shortcut
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+S", :save, fn -> 
-  save_document()
-end, context: :editor)
+Keyboard shortcuts don't trigger themselves automatically. Your application needs to capture keyboard input events and pass them to the shortcut system.
 
-# When in editor context, the context-specific save will be triggered
-# When in global context, the global save will be triggered
-```
-
-## Integration with Accessibility
-
-### Announcing Shortcut Actions
-
-When a shortcut is triggered, announce the action to screen readers:
-
-```elixir
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+S", :save, fn -> 
-  save_document()
-  Raxol.Core.UXRefinement.announce("Document saved", priority: :medium)
-end)
-```
-
-### Component Shortcuts
-
-Register shortcuts for focusing specific components:
-
-```elixir
-# Register accessibility metadata with shortcut
-Raxol.Core.UXRefinement.register_accessibility_metadata("search_button", %{
-  announce: "Search button. Press Enter to search.",
-  role: :button,
-  label: "Search",
-  shortcut: "Alt+S"
-})
-
-# This automatically registers a shortcut to focus the component
-# and announces the component when focused
-```
-
-### Hint Integration
-
-Include shortcuts in component hints:
-
-```elixir
-Raxol.Core.UXRefinement.register_component_hint("search_button", %{
-  basic: "Search for content",
-  detailed: "Search for content in the application",
-  shortcuts: [
-    {"Enter", "Execute search"},
-    {"Alt+S", "Focus search"}
-  ]
-})
-```
-
-## Displaying Available Shortcuts
-
-### Show All Shortcuts
-
-Display all available shortcuts for the current context:
-
-```elixir
-# Display shortcuts help
-{:ok, help_message} = Raxol.Core.UXRefinement.show_shortcuts_help()
-
-# Output will be something like:
-# "Available keyboard shortcuts for Editor:
-# Ctrl+S: Save document
-# Ctrl+F: Find in document
-# F1: Show help"
-```
-
-### Get Shortcuts Programmatically
-
-Get the list of available shortcuts for the current context:
-
-```elixir
-# Get shortcuts
-shortcuts = Raxol.Core.UXRefinement.get_available_shortcuts()
-
-# Result will be a list of maps:
-# [
-#   %{name: :save, key_combo: "Ctrl+S", description: "Save document"},
-#   %{name: :find, key_combo: "Ctrl+F", description: "Find in document"}
-# ]
-```
-
-### Register Help Shortcut
-
-Register a shortcut to display available shortcuts:
-
-```elixir
-Raxol.Core.UXRefinement.register_shortcut("Ctrl+H", :help, fn -> 
-  Raxol.Core.UXRefinement.show_shortcuts_help()
-end, description: "Show keyboard shortcuts")
-```
-
-## Best Practices
-
-1. **Use consistent shortcuts**: Follow platform conventions (e.g., Ctrl+S for save, Ctrl+C for copy).
-2. **Avoid conflicts**: Don't use the same shortcut for different actions in the same context.
-3. **Provide discoverability**: Always include a way for users to discover available shortcuts.
-4. **Group related shortcuts**: Use contexts to group related shortcuts together.
-5. **Use descriptive names**: Provide clear descriptions for shortcuts in help displays.
-6. **Support keyboard-only operation**: Ensure all functionality can be accessed via keyboard shortcuts.
-7. **Announce actions**: Announce shortcut actions to screen readers for accessibility.
-8. **Prioritize correctly**: Use priority levels to handle potential conflicts.
-9. **Document shortcuts**: Include a shortcut reference in your application documentation.
-10. **Test thoroughly**: Test shortcuts in different contexts and with screen readers.
-
-## Example Implementation
-
-Here's a comprehensive example of implementing keyboard shortcuts in a Raxol application:
+This typically happens within your main application logic, such as the `handle_event/3` callback in a `Raxol.App` implementation:
 
 ```elixir
 defmodule MyApp do
-  alias Raxol.Core.UXRefinement
+  use Raxol.App
+
   alias Raxol.Core.KeyboardShortcuts
-  alias Raxol.Core.Accessibility
-  
-  def init do
-    # Initialize UX refinement
+
+  # ... init, render ...
+
+  @impl true
+  def handle_event({:key, key_event}, _from, state) do
+    # Pass the key event to the shortcut handler
+    case KeyboardShortcuts.handle_key_event(key_event, state) do
+      {:ok, :handled, new_state} ->
+        # Shortcut was found and executed, state might have changed by the callback
+        {:noreply, new_state}
+      {:ok, :not_handled, state} ->
+        # No matching shortcut found, handle the key event normally
+        handle_other_key_input(key_event, state)
+      {:error, reason, state} ->
+        # Handle error from shortcut system
+        Logger.error("Keyboard shortcut error: #{inspect(reason)}")
+        {:noreply, state}
+    end
+  end
+
+  def handle_event(event, from, state) do
+    # Handle other events
+    # ...
+  end
+
+  defp handle_other_key_input(key_event, state) do
+    # Fallback key handling logic
+    # ...
+    {:noreply, state}
+  end
+end
+```
+
+The `KeyboardShortcuts.handle_key_event/2` function (or a similar function provided by the module) takes the raw key event data, checks against registered shortcuts for the active context, considers priority, executes the callback if a match is found, and returns whether the event was handled.
+
+## Integration with Accessibility
+
+While `Raxol.Core.KeyboardShortcuts` manages shortcut execution, integration with accessibility features like screen reader announcements typically involves the `Raxol.Core.Accessibility` module.
+
+### Announcing Shortcut Actions
+
+Callbacks triggered by shortcuts should use `Raxol.Core.Accessibility.announce/2` (if the accessibility feature is enabled via `UXRefinement`) to inform users of the action taken:
+
+```elixir
+KeyboardShortcuts.register_shortcut(:save, "Ctrl+S", fn ->
+  save_document()
+  # Announce the action if accessibility is enabled
+  if Raxol.Core.UXRefinement.feature_enabled?(:accessibility) do
+    Raxol.Core.Accessibility.announce("Document saved", priority: :medium)
+  end
+end)
+```
+
+### Component Shortcuts & Hints
+
+Registering shortcuts that focus specific components, or associating shortcuts with component hints, often involves coordinating between `KeyboardShortcuts`, `Accessibility`, and potentially `UXRefinement` or component-specific metadata registration.
+
+- Use `KeyboardShortcuts.register_shortcut/4` to define a shortcut whose callback focuses a specific component.
+- Use `Accessibility.register_element_metadata/2` (if available) or similar functions to associate accessibility properties (role, label) with a component.
+- Hints might be registered via `Raxol.Core.UXRefinement.register_component_hint/2`, which might internally link shortcuts to the hint display.
+
+Refer to specific documentation on Accessibility and Hints for detailed integration patterns.
+
+## Displaying Available Shortcuts
+
+To display a list of currently active shortcuts (global + current context), use `Raxol.Core.KeyboardShortcuts.get_active_shortcuts/0` or a similar function provided by the module.
+
+```elixir
+def show_help do
+  active_shortcuts = KeyboardShortcuts.get_active_shortcuts()
+  # Format and display the shortcuts list
+  formatted_help = format_shortcuts_help(active_shortcuts)
+  # Render the help text in a panel or overlay
+  # ...
+end
+
+def format_shortcuts_help(shortcuts) do
+  # shortcuts is likely a list of {key_combo, description} or similar
+  Enum.map_join(shortcuts, "\n", fn {key, desc} -> "#{key}: #{desc}" end)
+end
+```
+
+The exact structure returned might vary; inspect the return value of the relevant `KeyboardShortcuts` function.
+
+## Best Practices
+
+1.  **Consistency:** Use common shortcut patterns (e.g., Ctrl+C for copy).
+2.  **Discoverability:** Provide a way for users to view available shortcuts (e.g., via F1 or a help menu).
+3.  **Context Clarity:** Change shortcut contexts reliably as the application state changes.
+4.  **Avoid Conflicts:** Use priorities carefully and minimize overlapping global/contextual shortcuts with the same key combination.
+5.  **Accessibility:** Announce actions triggered by shortcuts.
+
+## Example Implementation
+
+```elixir
+defmodule MyEditorApp do
+  use Raxol.App
+  alias Raxol.Core.{KeyboardShortcuts, UXRefinement, Accessibility}
+
+  def start_link(_opts) do
+    # Initialize UX systems
     UXRefinement.init()
-    
-    # Enable required features
     UXRefinement.enable_feature(:events)
     UXRefinement.enable_feature(:keyboard_shortcuts)
     UXRefinement.enable_feature(:accessibility)
-    
-    # Setup shortcuts
-    setup_global_shortcuts()
-    setup_editor_shortcuts()
-    setup_browser_shortcuts()
-    
+
+    # Register shortcuts
+    KeyboardShortcuts.register_shortcut(:save, "Ctrl+S", &save/0, context: :editor, description: "Save File")
+    KeyboardShortcuts.register_shortcut(:quit, "Ctrl+Q", &quit/0, description: "Quit Application")
+    KeyboardShortcuts.register_shortcut(:help, "F1", &show_help/0, description: "Show Help")
+
     # Set initial context
-    UXRefinement.set_shortcuts_context(:global)
-    
-    # Make initial announcement
-    UXRefinement.announce("Application loaded. Press Ctrl+H to see available shortcuts.", 
-                         priority: :high)
-    
-    # Start event loop
-    event_loop()
+    KeyboardShortcuts.set_active_context(:editor)
+
+    Raxol.Runtime.start_link(app: __MODULE__)
   end
-  
-  defp setup_global_shortcuts do
-    # Help shortcuts
-    UXRefinement.register_shortcut("Ctrl+H", :help, fn -> 
-      UXRefinement.show_shortcuts_help()
-    end, description: "Show keyboard shortcuts")
-    
-    UXRefinement.register_shortcut("F1", :show_help, fn -> 
-      show_help_documentation()
-      UXRefinement.announce("Help documentation opened")
-    end, description: "Show help documentation")
-    
-    # Accessibility shortcuts
-    UXRefinement.register_shortcut("Alt+C", :toggle_high_contrast, fn -> 
-      toggle_high_contrast()
-    end, description: "Toggle high contrast mode")
-    
-    UXRefinement.register_shortcut("Alt+M", :toggle_reduced_motion, fn -> 
-      toggle_reduced_motion()
-    end, description: "Toggle reduced motion")
-    
-    # Context switching shortcuts
-    UXRefinement.register_shortcut("F2", :switch_to_editor, fn -> 
-      switch_context(:editor)
-    end, description: "Switch to editor mode")
-    
-    UXRefinement.register_shortcut("F3", :switch_to_browser, fn -> 
-      switch_context(:browser)
-    end, description: "Switch to browser mode")
-    
-    # Universal cancel/escape
-    UXRefinement.register_shortcut("Escape", :cancel, fn -> 
-      cancel_current_operation()
-      UXRefinement.announce("Operation canceled", priority: :high)
-    end, description: "Cancel current operation", priority: :high)
-  end
-  
-  defp setup_editor_shortcuts do
-    # File operations
-    UXRefinement.register_shortcut("Ctrl+S", :save, fn -> 
-      save_document()
-      UXRefinement.announce("Document saved", priority: :medium)
-    end, context: :editor, description: "Save document")
-    
-    UXRefinement.register_shortcut("Ctrl+O", :open, fn -> 
-      open_document()
-      UXRefinement.announce("Document opened", priority: :medium)
-    end, context: :editor, description: "Open document")
-    
-    # Edit operations
-    UXRefinement.register_shortcut("Ctrl+X", :cut, fn -> 
-      cut_selection()
-      UXRefinement.announce("Text cut to clipboard", priority: :medium)
-    end, context: :editor, description: "Cut selection")
-    
-    UXRefinement.register_shortcut("Ctrl+C", :copy, fn -> 
-      copy_selection()
-      UXRefinement.announce("Text copied to clipboard", priority: :medium)
-    end, context: :editor, description: "Copy selection")
-    
-    UXRefinement.register_shortcut("Ctrl+V", :paste, fn -> 
-      paste_clipboard()
-      UXRefinement.announce("Text pasted from clipboard", priority: :medium)
-    end, context: :editor, description: "Paste from clipboard")
-    
-    # Search operations
-    UXRefinement.register_shortcut("Ctrl+F", :find, fn -> 
-      open_find_dialog()
-      UXRefinement.announce("Find dialog opened", priority: :medium)
-    end, context: :editor, description: "Find in document")
-    
-    UXRefinement.register_shortcut("Ctrl+H", :replace, fn -> 
-      open_replace_dialog()
-      UXRefinement.announce("Find and replace dialog opened", priority: :medium)
-    end, context: :editor, description: "Find and replace")
-  end
-  
-  defp setup_browser_shortcuts do
-    # Navigation
-    UXRefinement.register_shortcut("Alt+Left", :back, fn -> 
-      navigate_back()
-      UXRefinement.announce("Navigated back", priority: :medium)
-    end, context: :browser, description: "Navigate back")
-    
-    UXRefinement.register_shortcut("Alt+Right", :forward, fn -> 
-      navigate_forward()
-      UXRefinement.announce("Navigated forward", priority: :medium)
-    end, context: :browser, description: "Navigate forward")
-    
-    # Tab management
-    UXRefinement.register_shortcut("Ctrl+T", :new_tab, fn -> 
-      open_new_tab()
-      UXRefinement.announce("New tab opened", priority: :medium)
-    end, context: :browser, description: "Open new tab")
-    
-    UXRefinement.register_shortcut("Ctrl+W", :close_tab, fn -> 
-      close_current_tab()
-      UXRefinement.announce("Tab closed", priority: :medium)
-    end, context: :browser, description: "Close current tab")
-    
-    # Page actions
-    UXRefinement.register_shortcut("F5", :refresh, fn -> 
-      refresh_page()
-      UXRefinement.announce("Page refreshed", priority: :medium)
-    end, context: :browser, description: "Refresh page")
-    
-    UXRefinement.register_shortcut("Ctrl+D", :bookmark, fn -> 
-      bookmark_page()
-      UXRefinement.announce("Page bookmarked", priority: :medium)
-    end, context: :browser, description: "Bookmark page")
-  end
-  
-  defp switch_context(context) do
-    # Set the context
-    UXRefinement.set_shortcuts_context(context)
-    
-    # Update UI to reflect context change
-    update_ui_for_context(context)
-    
-    # Announce context change
-    UXRefinement.announce("Switched to #{context} mode. Press Ctrl+H to see available shortcuts.", 
-                         priority: :medium)
-  end
-  
-  defp toggle_high_contrast do
-    # Get current state
-    current = Accessibility.high_contrast_enabled?()
-    
-    # Toggle the state
-    Accessibility.set_high_contrast(!current)
-    
-    # Announce the change
-    message = if !current do
-      "High contrast mode enabled"
-    else
-      "High contrast mode disabled"
+
+  # ... init/render ...
+
+  @impl true
+  def handle_event({:key, key_event}, _from, state) do
+    case KeyboardShortcuts.handle_key_event(key_event, state) do
+      {:ok, :handled, new_state} -> {:noreply, new_state}
+      {:ok, :not_handled, state} ->
+        # Handle key event normally
+        {:noreply, state}
+      {:error, _reason, state} -> {:noreply, state}
     end
-    
-    UXRefinement.announce(message, priority: :medium)
   end
-  
-  defp toggle_reduced_motion do
-    # Get current state
-    current = Accessibility.reduced_motion_enabled?()
-    
-    # Toggle the state
-    Accessibility.set_reduced_motion(!current)
-    
-    # Announce the change
-    message = if !current do
-      "Reduced motion enabled"
-    else
-      "Reduced motion disabled"
-    end
-    
-    UXRefinement.announce(message, priority: :medium)
+  def handle_event(_event, _from, state), do: {:noreply, state}
+
+  # Shortcut Callbacks
+  defp save do
+    # ... save logic ...
+    Accessibility.announce("File saved.")
+    # Return state change if needed, or :ok
+    :ok
   end
-  
-  # ... Implementation of other functions and event handling ...
+
+  defp quit do
+    Raxol.Runtime.stop(self()) # Or appropriate shutdown
+    :ok
+  end
+
+  defp show_help do
+    active_shortcuts = KeyboardShortcuts.get_active_shortcuts()
+    help_text = format_shortcuts_help(active_shortcuts)
+    # Trigger rendering of help_text in the UI
+    # ... update state to show help panel ...
+    :ok
+  end
+
+  defp format_shortcuts_help(shortcuts) do
+     Enum.map_join(shortcuts, "\n", fn {key, desc} -> "#{key}: #{desc}" end)
+   end
 end
 ```
 
 ## Troubleshooting
 
-### Shortcut Not Working
-
-If a shortcut isn't working as expected:
-
-1. **Check context**: Make sure you're in the correct context for the shortcut.
-2. **Check conflicts**: Another shortcut with higher priority might be overriding it.
-3. **Verify registration**: Make sure the shortcut is registered correctly.
-4. **Check callback**: Ensure the callback function is working properly.
-5. **Check event handling**: Make sure keyboard events are being dispatched correctly.
-
-### Common Issues and Solutions
-
-| Issue | Possible Cause | Solution |
-|-------|---------------|----------|
-| Shortcut not triggering | Wrong context | Check current context with `KeyboardShortcuts.get_current_context/0` |
-| | Conflicting shortcut | Use different key combination or adjust priority |
-| | Event not dispatched | Make sure events feature is enabled |
-| Multiple shortcuts trigger | Priority not set | Set appropriate priority levels |
-| | Context not specific enough | Use more specific contexts |
-| Screen reader not announcing | Accessibility not enabled | Enable accessibility feature |
-| | Missing announce call | Add `UXRefinement.announce/2` in shortcut callback |
-| Help display not showing | Missing descriptions | Add descriptions when registering shortcuts |
-
-### Debugging Shortcuts
-
-You can debug keyboard shortcuts by adding logging to your callbacks:
-
-```elixir
-UXRefinement.register_shortcut("Ctrl+S", :save, fn -> 
-  IO.puts("Ctrl+S shortcut triggered")
-  save_document()
-  UXRefinement.announce("Document saved", priority: :medium)
-end)
-```
-
-You can also get information about registered shortcuts:
-
-```elixir
-# Print all shortcuts for debugging
-shortcuts = UXRefinement.get_available_shortcuts()
-IO.inspect(shortcuts, label: "Available Shortcuts")
-```
+- **Shortcut Not Triggering:**
+  - Verify `KeyboardShortcuts.handle_key_event/2` is being called with key events.
+  - Check if the correct context is set using `KeyboardShortcuts.set_active_context/1`.
+  - Ensure the key combination string matches exactly what the event system provides.
+  - Check for conflicting shortcuts and verify priorities.
+- **Incorrect Callback Executing:** Check priorities and context settings for conflicting shortcuts.
+- **Announcements Not Working:** Ensure `:accessibility` feature is enabled via `UXRefinement` and `Accessibility.announce/2` is called.
 
 ---
 
-By following these guidelines and implementing keyboard shortcuts using Raxol's shortcut system, you can create terminal UI applications that are efficient, accessible, and user-friendly. 
+By following these guidelines and implementing keyboard shortcuts using Raxol's shortcut system, you can create terminal UI applications that are efficient, accessible, and user-friendly.

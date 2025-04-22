@@ -21,8 +21,8 @@ This documentation focuses on using Raxol as a library to build your own interac
 - **[Concepts](concepts/README.md) (Planned):** Core concepts like the `Raxol.App` lifecycle, state management, event handling, and the component model.
 - **[Components](components/README.md) (Planned):** Detailed documentation for the built-in UI components (e.g., `<box>`, `<text>`, `<input>`).
 - **Examples:** (Link to `/examples` directory in the main repo if it exists and is relevant)
-- **[Changelog](CHANGELOG.md):** A log of changes between Raxol versions.
-- **[Contributing](CONTRIBUTING.md):** Guidelines for contributing to the Raxol library or its documentation.
+- **[Changelog](../CHANGELOG.md):** A log of changes between Raxol versions.
+- **[Contributing](../CONTRIBUTING.md):** Guidelines for contributing to the Raxol library or its documentation.
 
 ## Navigating the Docs
 

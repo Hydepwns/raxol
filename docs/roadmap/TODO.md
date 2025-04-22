@@ -65,6 +65,9 @@ tags: [roadmap, todo, tasks]
 - [ ] Add dashboard sharing and export functionality
 - [ ] Implement AI-assisted dashboard configuration
 - [ ] Add multi-language support for UI elements
+- [ ] Add visual demo (screenshot/GIF) to README.md
+- [ ] Resolve stubbed/incomplete Web Authentication & LiveView features in `lib/raxol_web/` (implement or remove)
+- [ ] Address numerous code-level TODO comments (Terminal emulation details, component implementations, error handling, etc.)
 
 ## Issues to Investigate
 
@@ -72,6 +75,7 @@ tags: [roadmap, todo, tasks]
 - [ ] Performance degradation with multiple complex visualizations
 - [ ] Memory usage patterns with large datasets
 - [ ] Cross-platform compatibility issues
+- [ ] Component: Text wrapping off-by-one issue (`text_wrapping.ex`)
 
 ## Testing Needs
 
