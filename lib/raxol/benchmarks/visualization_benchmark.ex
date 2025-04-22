@@ -32,7 +32,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
     dataset_sizes = Keyword.get(opts, :datasets, [10, 100, 1000, 10000])
     iterations = Keyword.get(opts, :iterations, 5)
     test_cache = Keyword.get(opts, :cache_test, true)
-    test_memory = Keyword.get(opts, :memory_test, true)
+    test_memory = opts[:test_memory] || false
 
     # Create output directory if it doesn't exist
     File.mkdir_p!(output_path)
@@ -78,7 +78,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       IO.puts("  Benchmarking chart with #{size} data points...")
 
       # Prepare test environment
-      if test_memory, do: RuntimeDebug.start_memory_tracking()
+      if test_memory do
+        # IO.puts("Starting memory tracking...") # DEBUG
+        # Raxol.RuntimeDebug.start_memory_tracking()
+      end
 
       # Create standard bounds for testing
       bounds = %{x: 0, y: 0, width: 80, height: 24}
@@ -122,8 +125,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       # Collect memory data if requested
       memory_data =
         if test_memory do
-          memory_info = RuntimeDebug.get_memory_snapshot()
-          RuntimeDebug.stop_memory_tracking()
+          # Raxol.RuntimeDebug.get_memory_snapshot()
+          memory_info = nil
+          # Raxol.RuntimeDebug.stop_memory_tracking()
+          # IO.inspect(memory_info, label: "Memory Info #{label}") # DEBUG
           memory_info
         else
           nil
@@ -159,7 +164,9 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       IO.puts("  Benchmarking treemap with #{size} nodes...")
 
       # Prepare test environment
-      if test_memory, do: RuntimeDebug.start_memory_tracking()
+      if test_memory do
+        # Raxol.RuntimeDebug.start_memory_tracking()
+      end
 
       # Create standard bounds for testing
       bounds = %{x: 0, y: 0, width: 80, height: 24}
@@ -203,8 +210,10 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       # Collect memory data if requested
       memory_data =
         if test_memory do
-          memory_info = RuntimeDebug.get_memory_snapshot()
-          RuntimeDebug.stop_memory_tracking()
+          # Raxol.RuntimeDebug.get_memory_snapshot()
+          memory_info = nil
+          # Raxol.RuntimeDebug.stop_memory_tracking()
+          # IO.inspect(memory_info, label: "Memory Info #{label}") # DEBUG
           memory_info
         else
           nil
@@ -461,7 +470,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       |> Enum.map(fn result ->
         if length(result.times) > 1 do
           first_time = Enum.at(result.times, 0)
-          rest_times = Enum.slice(result.times, 1..-1//-1)
+          rest_times = Enum.slice(result.times, 1..-1)
           avg_rest_time = Enum.sum(rest_times) / length(rest_times)
 
           if avg_rest_time > 0, do: first_time / avg_rest_time, else: 1.0

@@ -263,8 +263,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
       # Assert buffer contents are cleared, scrollback remains
   """
   def clear_visible_display(%__MODULE__{active_buffer: buffer} = manager) do
-    width = ScreenBuffer.get_width(buffer)
-    height = ScreenBuffer.get_height(buffer)
+    width = buffer.width
+    height = buffer.height
 
     # Mark the entire visible region as damaged
     manager = mark_damaged(manager, 0, 0, width - 1, height - 1)
@@ -295,8 +295,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
       []
   """
   def clear_entire_display_with_scrollback(%__MODULE__{} = manager) do
-    width = ScreenBuffer.get_width(manager.active_buffer)
-    height = ScreenBuffer.get_height(manager.active_buffer)
+    width = manager.active_buffer.width
+    height = manager.active_buffer.height
 
     # Mark the region as damaged
     manager = mark_damaged(manager, 0, 0, width - 1, height - 1)
@@ -328,7 +328,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   """
   def erase_from_cursor_to_end_of_line(%__MODULE__{} = manager) do
     {x, y} = manager.cursor_position
-    width = ScreenBuffer.get_width(manager.active_buffer)
+    width = manager.active_buffer.width
 
     # Mark the region as damaged
     manager = mark_damaged(manager, x, y, width - 1, y)
@@ -375,7 +375,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
   """
   def clear_current_line(%__MODULE__{} = manager) do
     {_, y} = manager.cursor_position
-    width = ScreenBuffer.get_width(manager.active_buffer)
+    width = manager.active_buffer.width
 
     # Mark the region as damaged
     manager = mark_damaged(manager, 0, y, width - 1, y)
@@ -400,8 +400,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
   """
   def erase_from_cursor_to_end(%__MODULE__{} = manager) do
     {x, y} = manager.cursor_position
-    width = ScreenBuffer.get_width(manager.active_buffer)
-    height = ScreenBuffer.get_height(manager.active_buffer)
+    width = manager.active_buffer.width
+    height = manager.active_buffer.height
 
     # Mark the region as damaged
     manager = mark_damaged(manager, x, y, width - 1, height - 1)

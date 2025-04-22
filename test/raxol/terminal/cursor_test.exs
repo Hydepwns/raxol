@@ -301,69 +301,69 @@ defmodule Raxol.Terminal.CursorTest do
     # Test that the EscapeSequence.parse function correctly identifies cursor movement sequences
     test "parse correctly identifies cursor movement sequences" do
       # CUP - Cursor Position (Row 10, Col 5) -> {9, 4} 0-based
-      assert EscapeSequence.parse("\\e[10;5H") ==
+      assert EscapeSequence.parse("\e[10;5H") ==
                {:ok, {:cursor_position, {9, 4}}, ""}
 
       # CUU - Cursor Up 3 lines
-      assert EscapeSequence.parse("\\e[3A") == {:ok, {:cursor_move, :up, 3}, ""}
+      assert EscapeSequence.parse("\e[3A") == {:ok, {:cursor_move, :up, 3}, ""}
       # CUD - Cursor Down 1 line (default)
-      assert EscapeSequence.parse("\\e[B") ==
+      assert EscapeSequence.parse("\e[B") ==
                {:ok, {:cursor_move, :down, 1}, ""}
 
       # CUF - Cursor Forward (Right) 2 columns
-      assert EscapeSequence.parse("\\e[2C") ==
+      assert EscapeSequence.parse("\e[2C") ==
                {:ok, {:cursor_move, :right, 2}, ""}
 
       # CUB - Cursor Backward (Left) 4 columns
-      assert EscapeSequence.parse("\\e[4D") ==
+      assert EscapeSequence.parse("\e[4D") ==
                {:ok, {:cursor_move, :left, 4}, ""}
 
       # CNL - Cursor Next Line 2 lines down
-      assert EscapeSequence.parse("\\e[2E") == {:ok, {:cursor_next_line, 2}, ""}
+      assert EscapeSequence.parse("\e[2E") == {:ok, {:cursor_next_line, 2}, ""}
       # CPL - Cursor Previous Line 1 line up (default)
-      assert EscapeSequence.parse("\\e[F") == {:ok, {:cursor_prev_line, 1}, ""}
+      assert EscapeSequence.parse("\e[F") == {:ok, {:cursor_prev_line, 1}, ""}
       # CHA - Cursor Horizontal Absolute (Column 8) -> 7 0-based
-      assert EscapeSequence.parse("\\e[8G") ==
+      assert EscapeSequence.parse("\e[8G") ==
                {:ok, {:cursor_horizontal_absolute, 7}, ""}
     end
 
     # Test that the EscapeSequence.parse function correctly identifies cursor style sequences
     test "parse correctly identifies cursor style/mode sequences (DEC Private)" do
       # DECTCEM - Show Cursor
-      assert EscapeSequence.parse("\\e[?25h") ==
+      assert EscapeSequence.parse("\e[?25h") ==
                {:ok, {:set_mode, :dec_private, 25, true}, ""}
 
       # DECTCEM - Hide Cursor
-      assert EscapeSequence.parse("\\e[?25l") ==
+      assert EscapeSequence.parse("\e[?25l") ==
                {:ok, {:set_mode, :dec_private, 25, false}, ""}
 
       # Other examples (if needed)
-      # assert EscapeSequence.parse("\\e[?1h") == {:ok, {:set_mode, :dec_private, 1, true}, ""} # DECCKM - Cursor Keys Mode
+      # assert EscapeSequence.parse("\e[?1h") == {:ok, {:set_mode, :dec_private, 1, true}, ""} # DECCKM - Cursor Keys Mode
     end
 
     # Test that the EscapeSequence.parse function correctly identifies terminal mode sequences
     test "parse correctly identifies terminal mode sequences (DEC Private and Standard)" do
       # DECSET 1049 - Use Alternate Screen Buffer
-      assert EscapeSequence.parse("\\e[?1049h") ==
+      assert EscapeSequence.parse("\e[?1049h") ==
                {:ok, {:set_mode, :dec_private, 1049, true}, ""}
 
       # DECRST 1049 - Use Normal Screen Buffer
-      assert EscapeSequence.parse("\\e[?1049l") ==
+      assert EscapeSequence.parse("\e[?1049l") ==
                {:ok, {:set_mode, :dec_private, 1049, false}, ""}
 
       # Standard Set Mode (example: IRM - Insert Mode)
-      # assert EscapeSequence.parse("\\e[4h") == {:ok, {:set_mode, :standard, 4, true}, ""}
+      # assert EscapeSequence.parse("\e[4h") == {:ok, {:set_mode, :standard, 4, true}, ""}
       # Standard Reset Mode (example: IRM - Replace Mode)
-      # assert EscapeSequence.parse("\\e[4l") == {:ok, {:set_mode, :standard, 4, false}, ""}
+      # assert EscapeSequence.parse("\e[4l") == {:ok, {:set_mode, :standard, 4, false}, ""}
     end
 
     # This test is redundant now as the tests above cover parse results.
     # We keep the structure but comment out the old logic.
     # test "parse_sequence parses an escape sequence and determines its type" do
-    #   assert EscapeSequence.parse_sequence("\\e[10;5H") ==
+    #   assert EscapeSequence.parse_sequence("\e[10;5H") ==
     #            {:cursor_movement, "10;5H"}
-    #   assert EscapeSequence.parse_sequence("\\e[?25h") == {:cursor_style, "?25h"}
-    #   assert EscapeSequence.parse_sequence("\\e[?1049h") ==
+    #   assert EscapeSequence.parse_sequence("\e[?25h") == {:cursor_style, "?25h"}
+    #   assert EscapeSequence.parse_sequence("\e[?1049h") ==
     #            {:terminal_mode, "?1049h"}
     # end
 
@@ -374,7 +374,7 @@ defmodule Raxol.Terminal.CursorTest do
     #   cursor = Manager.new()
     #   modes = Modes.new()
     #   {cursor, modes, _} =
-    #     EscapeSequence.process_sequence(cursor, modes, "\\e[10;5H")
+    #     EscapeSequence.process_sequence(cursor, modes, "\e[10;5H")
     #   # Check the state *after* applying the parsed command if logic existed here
     #   # assert cursor.position == {9, 4} # Correct 0-based
     # end

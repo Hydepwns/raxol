@@ -244,6 +244,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Fixed `InputHandlerTest` failures by updating default state, fixing history navigation, correcting `process_special_key`, adding missing private helpers, and fixing test logic.
   - Resolved view compilation errors across all example files (`examples/**/*.exs`) by using `use Raxol.View`, replacing deprecated elements, correcting `panel` macro usage, removing unsupported options, and commenting out unimplemented components.
   - Implemented missing `handle_mode_change/4`, `set_screen_mode/2`, and `reset_screen_mode/2` functions in `Emulator.ex` to handle DEC Private Mode 3 (132 columns) switching, resolving related `FunctionClauseError`.
+  - Fixed compilation error related to `List.last/1` call within guard in `accumulate_csi_param/2` (2024-05-25).
+  - Corrected call from `Movement.move_to/3` to `Manager.move_to/3` in `process_character/2` (2024-05-25).
+  - Resolved the `FunctionClauseError` in `process_chunk/2` (ground state fallback) by ensuring C0 control characters are correctly passed to `process_character/2` (2024-05-25).
+  - Initialized default `tab_stops` in `Emulator.new/3` (2024-05-26).
+  - Corrected argument order in `Manager.move_to/3` calls within `Emulator.handle_lf/1` and `Emulator.process_character/2` (2024-05-26).
+  - Replaced all calls to the deprecated `Emulator.write/2` with `Emulator.process_input/2` in `test/raxol/terminal/emulator_test.exs` (2024-05-27).
+  - Fixed compilation errors in `lib/raxol/terminal/parser.ex` related to using function calls within binary pattern matches/guards (2024-05-29/30).
+  - Fixed `KeyError: :screen_buffer not found` in `test/raxol/components/terminal/emulator_test.exs` by using `Emulator.get_active_buffer/1` (2024-05-31).
+  - Fixed `UndefinedFunctionError` for `TextFormatting.ansi_code_to_color_name/1` and `ScreenModes.switch_mode/3` by adding `require` directives in `lib/raxol/terminal/command_executor.ex` (2024-05-31).
+  - Fixed `KeyError: :screen_buffer not found` in `test/raxol/terminal/emulator_test.exs` by using `Emulator.get_active_buffer/1` (2024-05-31).
+  - Fixed `UndefinedFunctionError: function Raxol.Terminal.Cursor.Manager.get_position/1` by replacing calls with direct `cursor.position` access in `lib/raxol/terminal/emulator.ex` (2024-05-31).
+  - Fixed incorrect cursor coordinate assignment (`{cursor_y, cursor_x}` vs `{cursor_x, cursor_y}`) in `Emulator.process_character/2`. This resolved all remaining test failures (2024-05-31).
 
 ### Security
 

@@ -13,24 +13,21 @@ defmodule Raxol.Style.Colors.Utilities do
   # Check if text is readable on a background
   bg = Color.from_hex("#333333")
   fg = Color.from_hex("#FFFFFF")
-  Utilities.readable?(bg, fg)  # Returns true
+  Raxol.Style.Colors.Utilities.readable?(bg, fg)  # Returns true
 
   # Get the contrast ratio between two colors
-  ratio = Utilities.contrast_ratio(bg, fg)  # Returns 12.63
+  ratio = Raxol.Style.Colors.Utilities.contrast_ratio(bg, fg)  # Returns 12.63
 
   # Suggest a text color for a background
-  text_color = Utilities.suggest_text_color(bg)  # Returns white for dark backgrounds
+  text_color = Raxol.Style.Colors.Utilities.suggest_text_color(bg)  # Returns white for dark backgrounds
 
   # Generate color harmonies
   red = Color.from_hex("#FF0000")
-  analogous = Utilities.analogous_colors(red)  # Returns colors adjacent to red
-  complementary = Utilities.complementary_colors(red)  # Returns red and its opposite
+  analogous = Raxol.Style.Colors.Utilities.analogous_colors(red)  # Returns colors adjacent to red
+  complementary = Raxol.Style.Colors.Utilities.complementary_colors(red)  # Returns red and its opposite
   """
 
   alias Raxol.Style.Colors.Color
-  # alias Raxol.Style.Colors # Unused
-  # alias Raxol.Style.Colors.ColorConversion # Unused
-  # alias Raxol.Style.Colors.Utilities # Unused
 
   # WCAG contrast ratio thresholds
   # AA level for normal text
@@ -55,10 +52,10 @@ defmodule Raxol.Style.Colors.Utilities do
 
   ## Examples
 
-      iex> Utilities.relative_luminance("#000000")
+      iex> Raxol.Style.Colors.Utilities.relative_luminance("#000000")
       0.0
 
-      iex> Utilities.relative_luminance("#FFFFFF")
+      iex> Raxol.Style.Colors.Utilities.relative_luminance("#FFFFFF")
       1.0
   """
   def relative_luminance(color) when is_binary(color) do
@@ -100,10 +97,10 @@ defmodule Raxol.Style.Colors.Utilities do
 
   ## Examples
 
-      iex> Utilities.contrast_ratio("#000000", "#FFFFFF")
+      iex> Raxol.Style.Colors.Utilities.contrast_ratio("#000000", "#FFFFFF")
       21.0
 
-      iex> Utilities.contrast_ratio("#777777", "#999999")
+      iex> Raxol.Style.Colors.Utilities.contrast_ratio("#777777", "#999999")
       1.3
   """
   def contrast_ratio(color1, color2)
@@ -136,10 +133,10 @@ defmodule Raxol.Style.Colors.Utilities do
 
   ## Examples
 
-      iex> Utilities.dark_color?("#000000")
+      iex> Raxol.Style.Colors.Utilities.dark_color?("#000000")
       true
 
-      iex> Utilities.dark_color?("#FFFFFF")
+      iex> Raxol.Style.Colors.Utilities.dark_color?("#FFFFFF")
       false
   """
   def dark_color?(color) when is_binary(color) do
@@ -166,7 +163,7 @@ defmodule Raxol.Style.Colors.Utilities do
 
   ## Examples
 
-      iex> Utilities.darken_until_contrast("#777777", "#FFFFFF", 4.5)
+      iex> Raxol.Style.Colors.Utilities.darken_until_contrast("#777777", "#FFFFFF", 4.5)
       "#595959"
   """
   def darken_until_contrast(color, background, target_ratio)
@@ -221,7 +218,7 @@ defmodule Raxol.Style.Colors.Utilities do
 
   ## Examples
 
-      iex> Utilities.lighten_until_contrast("#777777", "#000000", 4.5)
+      iex> Raxol.Style.Colors.Utilities.lighten_until_contrast("#777777", "#000000", 4.5)
       "#CCCCCC"
   """
   def lighten_until_contrast(color, background, target_ratio)
@@ -277,7 +274,7 @@ defmodule Raxol.Style.Colors.Utilities do
 
   ## Examples
 
-      iex> Utilities.rotate_hue("#FF0000", 120)
+      iex> Raxol.Style.Colors.Utilities.rotate_hue("#FF0000", 120)
       "#00FF00"
   """
   def rotate_hue(color, degrees) when is_binary(color) do
@@ -373,7 +370,7 @@ defmodule Raxol.Style.Colors.Utilities do
 
     # Calculate intermediate values
     c = (1 - abs(2 * l - 1)) * s
-    x = c * (1 - abs(rem(h, 60) / 60 - 1))
+    x = c * (1 - abs(rem(round(h), 60) / 60 - 1))
     m = l - c / 2
 
     # Determine RGB based on hue segment
@@ -409,12 +406,12 @@ defmodule Raxol.Style.Colors.Utilities do
 
       iex> bg = Raxol.Style.Colors.Color.from_hex("#333333")
       iex> fg = Raxol.Style.Colors.Color.from_hex("#FFFFFF")
-      iex> Utilities.readable?(bg, fg)
+      iex> Raxol.Style.Colors.Utilities.readable?(bg, fg)
       true
 
       iex> bg = Raxol.Style.Colors.Color.from_hex("#CCCCCC")
       iex> fg = Raxol.Style.Colors.Color.from_hex("#999999")
-      iex> Utilities.readable?(bg, fg, :aaa)
+      iex> Raxol.Style.Colors.Utilities.readable?(bg, fg, :aaa)
       false
   """
   @spec readable?(Color.t(), Color.t(), :aa | :aaa | :aa_large | :aaa_large) ::
@@ -445,11 +442,11 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Examples
 
       iex> black = Raxol.Style.Colors.Color.from_hex("#000000")
-      iex> Utilities.brightness(black)
+      iex> Raxol.Style.Colors.Utilities.brightness(black)
       0
 
       iex> white = Raxol.Style.Colors.Color.from_hex("#FFFFFF")
-      iex> Utilities.brightness(white)
+      iex> Raxol.Style.Colors.Utilities.brightness(white)
       255
   """
   def brightness(%Color{r: r, g: g, b: b}) do
@@ -470,11 +467,11 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Examples
 
       iex> black = Raxol.Style.Colors.Color.from_hex("#000000")
-      iex> Utilities.luminance(black)
+      iex> Raxol.Style.Colors.Utilities.luminance(black)
       0.0
 
       iex> white = Raxol.Style.Colors.Color.from_hex("#FFFFFF")
-      iex> Utilities.luminance(white)
+      iex> Raxol.Style.Colors.Utilities.luminance(white)
       1.0
   """
   def luminance(%Color{} = color) do
@@ -491,11 +488,11 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Examples
 
       iex> dark_bg = Raxol.Style.Colors.Color.from_hex("#333333")
-      iex> Utilities.suggest_text_color(dark_bg).hex
+      iex> Raxol.Style.Colors.Utilities.suggest_text_color(dark_bg).hex
       "#FFFFFF"
 
       iex> light_bg = Raxol.Style.Colors.Color.from_hex("#EEEEEE")
-      iex> Utilities.suggest_text_color(light_bg).hex
+      iex> Raxol.Style.Colors.Utilities.suggest_text_color(light_bg).hex
       "#000000"
   """
   def suggest_text_color(%Color{} = background) do
@@ -522,8 +519,8 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Examples
 
       iex> color = Raxol.Style.Colors.Color.from_hex("#3366CC")
-      iex> contrast = Utilities.suggest_contrast_color(color)
-      iex> Utilities.contrast_ratio(color, contrast) > 4.5
+      iex> contrast = Raxol.Style.Colors.Utilities.suggest_contrast_color(color)
+      iex> Raxol.Style.Colors.Utilities.contrast_ratio(color, contrast) > 4.5
       true
   """
   def suggest_contrast_color(%Color{} = color) do
@@ -556,8 +553,8 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Examples
 
       iex> color = Raxol.Style.Colors.Color.from_hex("#3366CC")
-      iex> {bg, fg} = Utilities.accessible_color_pair(color)
-      iex> Utilities.readable?(bg, fg)
+      iex> {bg, fg} = Raxol.Style.Colors.Utilities.accessible_color_pair(color)
+      iex> Raxol.Style.Colors.Utilities.readable?(bg, fg)
       true
   """
   def accessible_color_pair(%Color{} = base_color, level \\ :aa) do
@@ -597,7 +594,7 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Examples
 
       iex> color = Raxol.Style.Colors.Color.from_hex("#FF0000")  # Red
-      iex> colors = Utilities.analogous_colors(color)
+      iex> colors = Raxol.Style.Colors.Utilities.analogous_colors(color)
       iex> length(colors)
       3
   """
@@ -633,7 +630,7 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Examples
 
       iex> color = Raxol.Style.Colors.Color.from_hex("#FF0000")  # Red
-      iex> [red, cyan] = Utilities.complementary_colors(color)
+      iex> [red, cyan] = Raxol.Style.Colors.Utilities.complementary_colors(color)
       iex> cyan.hex
       "#00FFFF"
   """
@@ -652,7 +649,7 @@ defmodule Raxol.Style.Colors.Utilities do
   ## Examples
 
       iex> color = Raxol.Style.Colors.Color.from_hex("#FF0000")  # Red
-      iex> colors = Utilities.triadic_colors(color)
+      iex> colors = Raxol.Style.Colors.Utilities.triadic_colors(color)
       iex> length(colors)
       3
   """
@@ -780,9 +777,9 @@ defmodule Raxol.Style.Colors.Utilities do
 
   ## Examples
 
-      iex> Utilities.hex_color?("#FF00AA")
+      iex> Raxol.Style.Colors.Utilities.hex_color?("#FF00AA")
       true
-      iex> Utilities.hex_color?("blue")
+      iex> Raxol.Style.Colors.Utilities.hex_color?("blue")
       false
   """
   @spec hex_color?(String.t()) :: boolean()

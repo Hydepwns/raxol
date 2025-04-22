@@ -4,16 +4,27 @@ defmodule RaxolWeb.TerminalLiveTest do
   alias RaxolWeb.TerminalLive
 
   setup :start_endpoint
+  # Bypass authentication for tests
+  setup :bypass_auth
+
+  # Helper to bypass auth pipeline
+  defp bypass_auth(%{conn: conn}) do
+    conn =
+      Plug.Test.init_test_session(conn, %{})
+      |> bypass_through(RaxolWeb.Router, :auth)
+
+    {:ok, conn: conn}
+  end
 
   describe "mount/3" do
     test "mounts successfully when disconnected", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/terminal")
+      {:ok, view, _html} = live(conn, "/terminal/test-session")
       assert view.module == TerminalLive
       assert view.assigns.connected == false
     end
 
     test "mounts successfully when connected", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/terminal")
+      {:ok, view, _html} = live(conn, "/terminal/test-session")
       assert view.module == TerminalLive
       assert view.assigns.session_id
       assert view.assigns.dimensions == %{width: 80, height: 24}
@@ -24,7 +35,7 @@ defmodule RaxolWeb.TerminalLiveTest do
 
   describe "handle_event/3" do
     test "handles connect event", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/terminal")
+      {:ok, view, _html} = live(conn, "/terminal/test-session")
       assert view.assigns.connected == false
 
       send(view.pid, {:connect, %{}})
@@ -32,7 +43,7 @@ defmodule RaxolWeb.TerminalLiveTest do
     end
 
     test "handles terminal output", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/terminal")
+      {:ok, view, _html} = live(conn, "/terminal/test-session")
 
       html = "<div>Test output</div>"
       cursor = %{x: 5, y: 0, visible: true}
@@ -44,7 +55,7 @@ defmodule RaxolWeb.TerminalLiveTest do
     end
 
     test "handles resize event", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/terminal")
+      {:ok, view, _html} = live(conn, "/terminal/test-session")
 
       send(view.pid, {:resize, %{"width" => 40, "height" => 12}})
 
@@ -52,7 +63,7 @@ defmodule RaxolWeb.TerminalLiveTest do
     end
 
     test "handles scroll event", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/terminal")
+      {:ok, view, _html} = live(conn, "/terminal/test-session")
 
       send(view.pid, {:scroll, %{"offset" => 10}})
 
@@ -60,7 +71,7 @@ defmodule RaxolWeb.TerminalLiveTest do
     end
 
     test "handles theme event", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/terminal")
+      {:ok, view, _html} = live(conn, "/terminal/test-session")
 
       theme = %{
         background: "#111111",
@@ -74,7 +85,7 @@ defmodule RaxolWeb.TerminalLiveTest do
     end
 
     test "handles disconnect event", %{conn: conn} do
-      {:ok, view, _html} = live(conn, "/terminal")
+      {:ok, view, _html} = live(conn, "/terminal/test-session")
       send(view.pid, {:connect, %{}})
       assert view.assigns.connected == true
 
@@ -85,7 +96,7 @@ defmodule RaxolWeb.TerminalLiveTest do
 
   describe "render/1" do
     test "renders terminal container", %{conn: conn} do
-      {:ok, view, html} = live(conn, "/terminal")
+      {:ok, view, html} = live(conn, "/terminal/test-session")
 
       assert html =~ ~r/<div class="terminal-container"/
       assert html =~ ~r/<div class="terminal-header"/
@@ -94,7 +105,7 @@ defmodule RaxolWeb.TerminalLiveTest do
     end
 
     test "renders terminal controls", %{conn: conn} do
-      {:ok, view, html} = live(conn, "/terminal")
+      {:ok, view, html} = live(conn, "/terminal/test-session")
 
       assert html =~ ~r/<button.*Reset Size/
       assert html =~ ~r/<button.*Dark Theme/
@@ -102,7 +113,7 @@ defmodule RaxolWeb.TerminalLiveTest do
     end
 
     test "renders connection status", %{conn: conn} do
-      {:ok, view, html} = live(conn, "/terminal")
+      {:ok, view, html} = live(conn, "/terminal/test-session")
 
       assert html =~ ~r/<span class="status-disconnected"/
       assert html =~ ~r/<button.*Connect/
@@ -115,7 +126,7 @@ defmodule RaxolWeb.TerminalLiveTest do
     end
 
     test "renders terminal dimensions", %{conn: conn} do
-      {:ok, view, html} = live(conn, "/terminal")
+      {:ok, view, html} = live(conn, "/terminal/test-session")
 
       assert html =~ ~r/80x24/
 

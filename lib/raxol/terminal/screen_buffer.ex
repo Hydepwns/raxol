@@ -45,11 +45,28 @@ defmodule Raxol.Terminal.ScreenBuffer do
       )
     end
 
+    # Validate scrollback_limit
+    {valid_scrollback_limit, scrollback_warning} =
+      cond do
+        is_integer(scrollback_limit) and scrollback_limit >= 0 ->
+          {scrollback_limit, nil}
+
+        true ->
+          warning =
+            "Invalid scrollback_limit provided to ScreenBuffer.new: #{inspect(scrollback_limit)}. Using default 1000."
+
+          # Default to 1000 if invalid
+          {1000, warning}
+      end
+
+    # Log warning if scrollback_limit was invalid
+    if scrollback_warning, do: Logger.warning(scrollback_warning)
+
     %__MODULE__{
       cells:
         List.duplicate(List.duplicate(Cell.new(), actual_width), actual_height),
       scrollback: [],
-      scrollback_limit: scrollback_limit,
+      scrollback_limit: valid_scrollback_limit,
       selection: nil,
       scroll_region: nil,
       width: actual_width,
@@ -531,23 +548,39 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   @doc """
-  Deletes `n` lines starting from the specified `start_y` within the scroll region.
-  New blank lines are added at the bottom of the scroll region.
+  Deletes `n` lines starting from `start_y`.
+  Lines below `start_y` are shifted up.
+  `n` blank lines are added at the bottom of the affected region.
+  Respects the scroll region if set.
   """
-  @spec delete_lines(t(), non_neg_integer(), non_neg_integer()) :: t()
-  def delete_lines(%__MODULE__{} = buffer, start_y, n)
-      when start_y >= 0 and n > 0 do
-    {scroll_start, scroll_end} = get_scroll_region_boundaries(buffer)
-    visible_lines = scroll_end - scroll_start + 1
+  @spec delete_lines(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          {non_neg_integer(), non_neg_integer()} | nil
+        ) :: t()
+  def delete_lines(%__MODULE__{} = buffer, start_y, n, scroll_region)
+      when n > 0 do
+    # Determine the effective scroll region (top, bottom)
+    {scroll_start, scroll_end} =
+      case scroll_region do
+        {top, bottom} -> {top, bottom}
+        nil -> {0, buffer.height - 1}
+      end
 
-    # Ensure deletion happens within the scroll region
+    # Ensure start_y is within the scroll region
     if start_y < scroll_start or start_y > scroll_end do
+      # Cursor is outside the scroll region, do nothing
       buffer
     else
-      # Calculate the effective number of lines to delete within the region
+      # Number of lines in the scroll region
+      visible_lines = scroll_end - scroll_start + 1
+
+      # Ensure we don't delete more lines than available in the region below start_y
       lines_to_delete = min(n, scroll_end - start_y + 1)
 
-      if lines_to_delete <= 0 do
+      if lines_to_delete == 0 do
+        # Nothing to delete
         buffer
       else
         # Get the lines within the scroll region
@@ -884,4 +917,168 @@ defmodule Raxol.Terminal.ScreenBuffer do
       buffer
     end
   end
+
+  @doc """
+  Clears the entire screen buffer (excluding scrollback) by replacing all cells with new empty cells.
+  """
+  @spec clear(t()) :: t()
+  def clear(%__MODULE__{width: width, height: height} = buffer) do
+    new_cells = List.duplicate(List.duplicate(Cell.new(), width), height)
+    %{buffer | cells: new_cells}
+  end
+
+  @doc """
+  Inserts a specified number of blank characters at the given cursor position (x, y).
+  Characters at and after the cursor position are shifted to the right.
+  Characters shifted past the right margin are lost.
+  The inserted characters use the provided style.
+  """
+  @spec insert_characters(
+          t(),
+          {non_neg_integer(), non_neg_integer()},
+          non_neg_integer(),
+          TextFormatting.text_style()
+        ) :: t()
+  def insert_characters(%__MODULE__{} = buffer, {x, y}, count, style)
+      when y >= 0 and y < buffer.height and x >= 0 and x < buffer.width and
+             count > 0 do
+    blank_cell = Cell.new(" ", style)
+    # Create a list of 'count' blank cells
+    blanks_to_insert = List.duplicate(blank_cell, count)
+
+    new_cells =
+      List.update_at(buffer.cells, y, fn row ->
+        # Split the row at the insertion point
+        {prefix, suffix} = Enum.split(row, x)
+        # Determine how many suffix characters can remain after insertion
+        remaining_suffix_length = max(0, buffer.width - x - count)
+        # Take the necessary suffix chars and pad/truncate the row
+        new_suffix = Enum.take(suffix, remaining_suffix_length)
+        # Combine prefix, new blanks, and the remaining suffix
+        prefix ++ blanks_to_insert ++ new_suffix
+      end)
+
+    %{buffer | cells: new_cells}
+  end
+
+  def insert_characters(buffer, _, _, _) do
+    # No-op if position is invalid or count is zero
+    buffer
+  end
+
+  @doc """
+  Deletes a specified number of characters at the given cursor position (x, y).
+  Characters after the deleted portion are shifted to the left.
+  The vacated space at the end of the line is filled with blank cells (default style).
+  """
+  @spec delete_characters(
+          t(),
+          {non_neg_integer(), non_neg_integer()},
+          non_neg_integer()
+        ) :: t()
+  def delete_characters(%__MODULE__{} = buffer, {x, y}, count)
+      when y >= 0 and y < buffer.height and x >= 0 and x < buffer.width and
+             count > 0 do
+    # Use default style for trailing blanks
+    blank_cell = Cell.new()
+
+    new_cells =
+      List.update_at(buffer.cells, y, fn row ->
+        # Split the row at the deletion start point
+        {prefix, rest} = Enum.split(row, x)
+        # Drop the characters to be deleted from the rest
+        # max(0, ...) ensures we don't drop negative count if count > length(rest)
+        suffix_to_keep = Enum.drop(rest, max(0, count))
+        # Calculate how many blanks are needed to fill the line
+        blanks_needed =
+          max(0, buffer.width - length(prefix) - length(suffix_to_keep))
+
+        # Create the trailing blank cells
+        trailing_blanks = List.duplicate(blank_cell, blanks_needed)
+        # Combine prefix, remaining suffix, and trailing blanks
+        prefix ++ suffix_to_keep ++ trailing_blanks
+      end)
+
+    %{buffer | cells: new_cells}
+  end
+
+  def delete_characters(buffer, _, _) do
+    # No-op if position is invalid or count is zero
+    buffer
+  end
+
+  @doc """
+  Inserts `n` blank lines at the specified `start_y` row within the scroll region.
+  Lines from `start_y` to the bottom of the scroll region are shifted down.
+  Lines shifted below the scroll region are discarded.
+  Handles `scroll_region` being nil (uses full buffer).
+  """
+  @spec insert_lines(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          {non_neg_integer(), non_neg_integer()} | nil
+        ) :: t()
+  def insert_lines(%__MODULE__{} = buffer, start_y, n, scroll_region)
+      when start_y >= 0 and n > 0 do
+    # Determine scroll boundaries based on the passed-in scroll_region
+    {scroll_start, scroll_end} =
+      case scroll_region do
+        {start, ending} -> {start, ending}
+        nil -> {0, buffer.height - 1}
+      end
+
+    visible_lines_in_region = scroll_end - scroll_start + 1
+
+    # Only proceed if start_y is within the scroll region
+    if start_y >= scroll_start and start_y <= scroll_end do
+      # Create the blank lines to insert
+      blank_line = List.duplicate(Cell.new(), buffer.width)
+      blank_lines_to_insert = List.duplicate(blank_line, n)
+
+      # Get the lines currently within the scroll region
+      scroll_region_cells = Enum.slice(buffer.cells, scroll_start..scroll_end)
+
+      # Calculate the insertion index relative to the region start
+      relative_insert_y = start_y - scroll_start
+
+      # Split the region lines at the insertion point
+      {lines_before_insert, lines_at_and_after_insert} =
+        Enum.split(scroll_region_cells, relative_insert_y)
+
+      # Determine how many lines from `lines_at_and_after_insert` to keep
+      # We need to make space for `n` new lines.
+      lines_to_keep_count =
+        max(0, visible_lines_in_region - length(lines_before_insert) - n)
+
+      lines_to_keep = Enum.take(lines_at_and_after_insert, lines_to_keep_count)
+
+      # Combine the parts: lines before + new blank lines + kept lines
+      new_region_content =
+        lines_before_insert ++ blank_lines_to_insert ++ lines_to_keep
+
+      # Ensure the new region content has the correct number of lines (it should, but safeguard)
+      new_region_content =
+        Enum.take(new_region_content, visible_lines_in_region)
+
+      # Construct the new full cells list by replacing the scroll region content
+      # scrollback unchanged by IL
+      replace_scroll_region(
+        buffer,
+        scroll_start,
+        scroll_end,
+        new_region_content,
+        buffer.scrollback
+      )
+    else
+      # Insertion point is outside the scroll region, do nothing
+      buffer
+    end
+  end
+
+  # No-op if start_y is negative or n is zero or less
+  def insert_lines(buffer, _, n, _) when n <= 0, do: buffer
+  def insert_lines(buffer, start_y, _, _) when start_y < 0, do: buffer
+
+  # --- Modification Helpers ---
 end

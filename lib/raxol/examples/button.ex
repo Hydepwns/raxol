@@ -37,6 +37,7 @@ defmodule Raxol.Examples.Button do
   @impl true
   def update(_msg, state), do: {:noreply, state}
 
+  @impl Raxol.Component
   def handle_event(%Event{type: :resize} = _event, state) do
     # TODO: Implement resize handling
     state
@@ -58,7 +59,7 @@ defmodule Raxol.Examples.Button do
   def render(state) do
     # Generate the DSL representation
     dsl_result =
-      Components.button(state.label,
+      Raxol.View.Components.button(state.label,
         id: state.id,
         style: state.style,
         on_click: state.on_click,

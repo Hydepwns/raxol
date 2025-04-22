@@ -170,7 +170,7 @@ defmodule Raxol.Terminal.EscapeSequence do
   defp parse_csi(data) do
     Logger.debug("Parsing CSI data: #{inspect(data)}")
     # First try DEC private format: CSI ? P... F
-    case Regex.run(~r/^\\?([\\d;]*)([hl])/, data, capture: :all_but_first) do
+    case Regex.run(~r/^\?([\d;]*)([hl])/, data, capture: :all_but_first) do
       [params_str, final_byte] ->
         # --- DEBUGGING: Force error return for ?3h ---
         # if params_str == "3" and final_byte == "h" do
@@ -209,7 +209,7 @@ defmodule Raxol.Terminal.EscapeSequence do
       _ ->
         Logger.debug("DEC Private did not match, trying standard CSI.")
         # Regex captures: 1=params, 2=final byte
-        case Regex.run(~r/^([\\d;]*)((?:[@A-Z]|[\\[\\^_`a-z{}~]))/, data,
+        case Regex.run(~r/^([\d;]*)((?:[@A-Z]|[\\[\\^_`a-z{}~]))/, data,
                capture: :all_but_first
              ) do
           [params_str, final_byte] when final_byte != "" ->

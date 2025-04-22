@@ -136,7 +136,7 @@ defmodule Raxol.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "ecto.setup", "assets.setup", "assets.build"],
+      setup: ["deps.get", "cmd cd ../rex_termbox && make"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["test"],
@@ -144,11 +144,11 @@ defmodule Raxol.MixProject do
         "esbuild.install --if-missing",
         "sass.install --if-missing"
       ],
-      "assets.build": ["esbuild raxol", "sass default"],
-      "assets.deploy": [
-        "esbuild raxol --minify",
-        "sass default --no-source-map --style=compressed",
-        "phx.digest"
+      "assets.deploy": ["sass.deploy", "tailwind.deploy"],
+      "assets.build": [
+        "cmd cd ../rex_termbox && make",
+        "sass default",
+        "tailwind default"
       ],
       "explain.credo": ["run scripts/explain_credo_warning.exs"]
     ]
