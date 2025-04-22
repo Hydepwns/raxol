@@ -177,19 +177,21 @@ defmodule Raxol.Components.Modal do
       title,
       fn -> Components.text(message) end,
       fn ->
-        Layout.row([style: %{justify: :flex_end, gap: 1}], do: fn ->
-          Components.button(no_text,
-            id: "#{title}_no",
-            style: no_style,
-            on_click: on_cancel
-          )
+        Layout.row([style: %{justify: :flex_end, gap: 1}],
+          do: fn ->
+            Components.button(no_text,
+              id: "#{title}_no",
+              style: no_style,
+              on_click: on_cancel
+            )
 
-          Components.button(yes_text,
-            id: "#{title}_yes",
-            style: yes_style,
-            on_click: on_confirm
-          )
-        end)
+            Components.button(yes_text,
+              id: "#{title}_yes",
+              style: yes_style,
+              on_click: on_confirm
+            )
+          end
+        )
       end,
       Keyword.merge(
         [
@@ -232,13 +234,15 @@ defmodule Raxol.Components.Modal do
       title,
       content_fn,
       fn ->
-        Layout.row([style: %{justify: :center}], do: fn ->
-          Components.button(ok_text,
-            id: "#{title}_ok",
-            style: ok_style,
-            on_click: on_ok
-          )
-        end)
+        Layout.row([style: %{justify: :center}],
+          do: fn ->
+            Components.button(ok_text,
+              id: "#{title}_ok",
+              style: ok_style,
+              on_click: on_ok
+            )
+          end
+        )
       end,
       Keyword.merge(
         [
