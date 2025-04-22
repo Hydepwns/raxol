@@ -10,7 +10,6 @@ A terminal application toolkit for Elixir, providing components and a runtime fo
 - **Component Model:** Build UIs with reusable components inspired by web frameworks.
 - **Layout System:** Flexible layouts for arranging components within the terminal window.
 - **Performance:** Optimized rendering pipeline with double buffering and efficient updates.
-- **Extensibility:** (Add details about plugins or extension points if applicable)
 
 ## Installation
 
@@ -30,13 +29,13 @@ Then, fetch the dependencies:
 mix deps.get
 ```
 
-For detailed installation options and requirements, see the [Installation Guide](docs/installation.md).
+For detailed installation options and requirements, see the [Installation Guide](docs/installation/Installation.md).
 
 ## Getting Started
 
 Here's a basic example of a Raxol application:
 
-```elixir
+````elixir
 defmodule MyApp do
   use Raxol.App
 
@@ -55,27 +54,35 @@ end
 
 # Keep the application running (e.g., in an IEx session or supervisor)
 # ...
-```
 
-For a more comprehensive guide, please refer to the [Getting Started Tutorial](docs/getting_started.md).
+> **Note:** Raxol also supports defining views using `use Raxol.View` and nested component functions (e.g., `box do ... end`). See the examples in `/examples` and the [Getting Started Tutorial](docs/guides/quick_start.md) for more details on both approaches.
+
+For a more comprehensive guide, please refer to the [Getting Started Tutorial](docs/guides/quick_start.md).
 
 ## Documentation
 
-Detailed documentation can be found in the `/docs` directory:
+Detailed documentation can be found in the `/docs` directory or online (TODO: Add link):
 
-- [Installation Guide](docs/installation.md)
-- [Getting Started Tutorial](docs/getting_started.md)
+- [Using Raxol (Installation Guide)](docs/installation/Installation.md)
+- [Getting Started Tutorial](docs/guides/quick_start.md)
+- [UI Components & Layout](docs/guides/components.md)
+- [Async Operations (Subscriptions & Commands)](docs/guides/async_operations.md)
+- [Runtime Options](docs/guides/runtime_options.md)
 - [Terminal Emulator Details](docs/terminal_emulator.md)
-- [Core Concepts](docs/concepts/README.md) (Planned)
-- [Components](docs/components/README.md) (Planned)
-- (Add link to ExDoc API reference when available)
+- [Development Environment Setup](docs/installation/DevelopmentSetup.md)
+- [Cross-Platform Support](docs/installation/CrossPlatformSupport.md)
+- [Version Management](docs/installation/VersionManagement.md)
 
 ## Development
 
+To set up your development environment, please see the [Development Environment Setup](docs/installation/DevelopmentSetup.md) guide.
+
+Basic development commands:
+
 ```bash
-# Ensure dependencies are installed
-mix deps.get
-mix compile
+# Ensure dependencies are installed (after setup)
+# mix deps.get # Handled in setup guide
+# mix compile # Handled in setup guide
 
 # Run tests
 mix test
@@ -84,28 +91,27 @@ mix test
 mix credo
 mix dialyzer
 
-# Run tests locally without GitHub Actions (if applicable)
-# ./scripts/run-local-tests.sh
-
 # Format code before committing
 mix format # Or ./scripts/format_before_commit.sh
-```
+````
 
 ### GitHub Actions
 
-(Keep existing GitHub Actions section if still relevant)
 See [GitHub Actions README](.github/workflows/README.md) for detailed instructions...
 
 ## Project Structure
 
-(Keep existing Project Structure section, review later if needed)
-
-- `/examples` - Example applications and code samples
-- `/extensions` - IDE integrations and extensions (Review if still accurate)
-- `/frontend` - JavaScript/TypeScript configurations and assets (Review if still accurate)
-- `/lib` - Core Elixir code
-- `/priv` - Non-source code assets
+- `/assets` - Static assets (e.g., images, fonts)
+- `/docker` - Docker configurations (e.g., for local testing with `act`)
 - `/docs` - User documentation
+- `/examples` - Example applications and code samples
+- `/extensions` - IDE integrations and extensions (e.g., VS Code)
+- `/frontend` - Frontend JavaScript/TypeScript configurations and assets
+- `/lib` - Core Elixir code
+- `/pages` - Application pages or site content (Verify description)
+- `/priv` - Non-source code assets (e.g., templates, static files for releases)
+- `/scripts` - Helper scripts for development tasks
+- `/themes` - Theme definitions for styling
 
 ## License
 
