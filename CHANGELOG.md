@@ -20,37 +20,92 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Various compiler warnings as documented in the CI logs
 
-## [Unreleased] - 2024-06-03
+## [Unreleased]
+
+### Added
+
+- **Project Foundation:** Initial structure, config, docs, CI/CD, dev env, quality tools, test framework.
+- **Terminal Capabilities:** Emulation layer, ANSI processing, platform/feature detection (colors, mouse, etc.).
+- **Buffer Management:** Double buffering, damage tracking, virtual scrolling, cursor management.
+- **Plugin System:** Core API, configuration, dependency management, clipboard/notification plugins.
+- **Enhanced ANSI Processing:** Advanced formatting, device status reports, screen modes, character sets.
+- **Component System:** Refactored View DSL, dashboard/layout components, specialized widgets (Info, Chart, etc.), testing framework.
+- **VS Code Extension Integration:** Communication protocol, WebView panel, JSON interface.
+- **Database Improvements:** Connection management, error handling, diagnostics.
+- **Testing Framework:** Test plan, scripts (VS Code/native), mock components, performance monitoring.
+- **Dashboard/Visualization:** Widget positioning/resizing, layout persistence, responsive components, drag-and-drop, caching.
+- **CI/CD Improvements:** Local testing (`act`), cross-platform enhancements, security scanning.
+- **Theme System:** Multiple built-in themes, selection UI, customization API, persistence.
 
 ### Changed
 
-- **Emulator/Test Plan Refinement (Internal):**
-  - Initialized default tab stops in `Emulator.new/3`.
-  - Corrected argument order in `Manager.move_to/3` calls within `Emulator.handle_lf/1` and `Emulator.process_character/2`.
-  - Paused parser extraction (TEST_PLAN.md Issue 5).
-  - Updated TEST_PLAN.md to reflect recent fixes and focus action items.
+- **Architecture:** Improved modularity, configuration management, development workflow, documentation structure.
+- **Terminal Functionality:** Improved feature detection, refined ANSI processing, optimized config/memory.
+- **Plugin System:** Improved initialization, dependency resolution, API versioning, maintainability.
+- **Runtime System:** Dual-mode operation (native/VS Code), conditional init, improved startup/error handling.
+- **Project Structure:** Consolidated examples, dedicated frontend dir, normalized extensions, improved secrets/git handling.
 
-### Historical Fixes (Moved from TEST_PLAN.md Issue 3.1)
+### Deprecated
 
-- **(2024-05-17):** Fixed failures in `emulator_test.exs` (missing public functions), resolved `set_scroll_region/3` conflict.
-- **(2024-05-18):** Fixed `Emulator.init/0` alias conflict, syntax errors in `emulator.ex`.
-- **(2024-05-22):** Replaced `Cursor.Manager.get_position/1` call with struct access. Replaced `ScreenModes.is_mode_set?/2` calls with `ScreenModes.mode_enabled?/2`.
-- **(2024-05-23):** Deleted outdated `input_test.exs`.
-- **(2024-05-23):** Added basic implementations/placeholders for numerous missing private helper functions (`handle_*`, `execute_*`, `accumulate_*`, `collect_*`) in `lib/raxol/terminal/emulator.ex`.
-- **(2024-05-23):** Corrected misplaced `end` keyword syntax error in `lib/raxol/terminal/emulator.ex`.
-- **(2024-05-23):** Performed clean build (`mix deps.get`, `mix compile`). Addressed `handle_*` definition order issue in `lib/raxol/terminal/emulator.ex`. Deleted obsolete `test/terminal/ansi/processor_test.exs`. Fixed several undefined function calls (`Movement.move_to_col`, `ScreenBuffer.scroll_up/down`, `Movement.move_to_row`, `CharacterSets.invoke_g*`, `TerminalState.push/pop`, `ScreenModes.set_mode`) within `lib/raxol/terminal/emulator.ex` based on compiler warnings.
-- **(2024-05-24):** Added `IO.inspect` logging to `process_input/2` and `process_chunk/2` clauses to trace execution flow. Identified and fixed `FunctionClauseError` for simple text input (`"Line 1\\n"`) in `process_chunk/2` (ground state) by adding specific handlers (`handle_lf`, `handle_cr`) for C0 control characters.
-- **(2024-05-25):** Fixed compilation error related to `List.last/1` call within guard in `accumulate_csi_param/2`. Corrected call from `Movement.move_to/3` to `Manager.move_to/3` in `process_character/2`. `mix test` now compiles.
-- **(2024-05-25):** Resolved the `FunctionClauseError` in `process_chunk/2` (ground state fallback) by ensuring C0 control characters are correctly passed to `process_character/2`.
-- **(2024-05-26):** Initialized default `tab_stops` in `Emulator.new/3`. Corrected argument order in `Manager.move_to/3` calls within `Emulator.handle_lf/1` and `Emulator.process_character/2`.
-- **(2024-05-27):** Replaced all calls to the deprecated `Emulator.write/2` with `Emulator.process_input/2` in `test/raxol/terminal/emulator_test.exs`.
-- **(2024-05-29/30):** Fixed compilation errors in `lib/raxol/terminal/parser.ex` related to using function calls within binary pattern matches/guards.
-- **(2024-05-31):** Fixed `KeyError: :screen_buffer not found` in `test/raxol/components/terminal/emulator_test.exs` by using `Emulator.get_active_buffer/1`.
-- **(2024-05-31):** Fixed `UndefinedFunctionError` for `TextFormatting.ansi_code_to_color_name/1` and `ScreenModes.switch_mode/3` by adding `require` directives in `lib/raxol/terminal/command_executor.ex`.
-- **(2024-05-31):** Fixed `KeyError: :screen_buffer not found` in `test/raxol/terminal/emulator_test.exs` by using `Emulator.get_active_buffer/1`.
-- **(2024-05-31):** Fixed `UndefinedFunctionError: function Raxol.Terminal.Cursor.Manager.get_position/1` by replacing calls with direct `cursor.position` access in `lib/raxol/terminal/emulator.ex`.
-- **(2024-05-31):** Fixed incorrect cursor coordinate assignment (`{cursor_y, cursor_x}` vs `{cursor_x, cursor_y}`) in `Emulator.process_character/2`. This resolved all remaining test failures.
+- Old event system
+- Legacy rendering approach
+- Previous styling methods
+
+### Removed
+
+- Outdated configuration files and dependencies
+- Redundant documentation
+- Legacy terminal handling code
+- `use Raxol.Component` from helper modules
 
 ### Fixed
 
+- Numerous fixes across core system stability, components, database connections, VS Code integration, runtime issues, CI/CD, ANSI processing, and test suites (details below).
+
+- **Detailed Fix History (Recent First):**
+- **(2024-06-03):** Resolved remaining compilation warnings. Verified that previously listed warnings were mostly outdated or already fixed. Corrected `.screen_buffer` access in `lib/raxol/terminal/session.ex` to use `Emulator.get_active_buffer/1`.
+
+## [Unreleased] - 2024-06-03
+
+### Added
+
+- **Project Foundation:** Initial structure, config, docs, CI/CD, dev env, quality tools, test framework.
+- **Terminal Capabilities:** Emulation layer, ANSI processing, platform/feature detection (colors, mouse, etc.).
+- **Buffer Management:** Double buffering, damage tracking, virtual scrolling, cursor management.
+- **Plugin System:** Core API, configuration, dependency management, clipboard/notification plugins.
+- **Enhanced ANSI Processing:** Advanced formatting, device status reports, screen modes, character sets.
+- **Component System:** Refactored View DSL, dashboard/layout components, specialized widgets (Info, Chart, etc.), testing framework.
+- **VS Code Extension Integration:** Communication protocol, WebView panel, JSON interface.
+- **Database Improvements:** Connection management, error handling, diagnostics.
+- **Testing Framework:** Test plan, scripts (VS Code/native), mock components, performance monitoring.
+- **Dashboard/Visualization:** Widget positioning/resizing, layout persistence, responsive components, drag-and-drop, caching.
+- **CI/CD Improvements:** Local testing (`act`), cross-platform enhancements, security scanning.
+- **Theme System:** Multiple built-in themes, selection UI, customization API, persistence.
+
+### Changed
+
+- **Architecture:** Improved modularity, configuration management, development workflow, documentation structure.
+- **Terminal Functionality:** Improved feature detection, refined ANSI processing, optimized config/memory.
+- **Plugin System:** Improved initialization, dependency resolution, API versioning, maintainability.
+- **Runtime System:** Dual-mode operation (native/VS Code), conditional init, improved startup/error handling.
+- **Project Structure:** Consolidated examples, dedicated frontend dir, normalized extensions, improved secrets/git handling.
+
+### Deprecated
+
+- Old event system
+- Legacy rendering approach
+- Previous styling methods
+
+### Removed
+
+- Outdated configuration files and dependencies
+- Redundant documentation
+- Legacy terminal handling code
+- `use Raxol.Component` from helper modules
+
+### Fixed
+
+- Numerous fixes across core system stability, components, database connections, VS Code integration, runtime issues, CI/CD, ANSI processing, and test suites (details below).
+
+- **Detailed Fix History (Recent First):**
 - **(2024-06-03):** Resolved remaining compilation warnings. Verified that previously listed warnings were mostly outdated or already fixed. Corrected `.screen_buffer` access in `lib/raxol/terminal/session.ex` to use `Emulator.get_active_buffer/1`.
