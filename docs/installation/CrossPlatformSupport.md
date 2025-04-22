@@ -11,17 +11,52 @@ tags: [installation, cross-platform, support]
 
 Raxol is designed to work seamlessly across multiple platforms including macOS, Linux, and Windows. This document outlines platform-specific considerations and optimizations.
 
+## System Dependency Installation
+
+Before cloning and building Raxol from source (see [Development Environment Setup](DevelopmentSetup.md)), you need to install the core system dependencies. The main requirements are Elixir, Erlang, and potentially Node.js/npm if you plan to work with frontend components.
+
+### Linux (Debian/Ubuntu Example)
+
+```bash
+# Install Elixir and Erlang
+sudo apt-get update
+sudo apt-get install elixir erlang
+
+# Install Node.js and npm (if needed)
+curl -fsSL https://deb.nodesource.com/setup_16.x | sudo -E bash -
+sudo apt-get install -y nodejs
+```
+
+_(Adapt package manager commands for other distributions like Fedora, Arch, etc.)_
+
+### macOS
+
+```bash
+# Install Elixir and Erlang using Homebrew
+brew install elixir erlang
+
+# Install Node.js and npm (if needed)
+brew install node
+```
+
+### Windows
+
+1. Install [Elixir](https://elixir-lang.org/install.html#windows) (includes Erlang)
+2. Install [Node.js](https://nodejs.org/en/download/) (includes npm, if needed)
+
+_(Ensure the installers add the commands to your system's PATH.)_
+
 ## Platform Matrix
 
-| Platform | Architecture | Status | Notes |
-|----------|-------------|--------|-------|
-| macOS | x86_64 (Intel) | ✅ Fully supported | |
-| macOS | arm64 (Apple Silicon) | ✅ Fully supported | Native performance |
-| Linux (Debian/Ubuntu) | x86_64 | ✅ Fully supported | |
-| Linux (Debian/Ubuntu) | arm64 | ✅ Fully supported | |
-| Linux (RHEL/Fedora) | x86_64 | ✅ Fully supported | |
-| Linux (Arch) | x86_64 | ✅ Fully supported | AUR package available |
-| Windows | x86_64 | ✅ Fully supported | |
+| Platform              | Architecture          | Status             | Notes                 |
+| --------------------- | --------------------- | ------------------ | --------------------- |
+| macOS                 | x86_64 (Intel)        | ✅ Fully supported |                       |
+| macOS                 | arm64 (Apple Silicon) | ✅ Fully supported | Native performance    |
+| Linux (Debian/Ubuntu) | x86_64                | ✅ Fully supported |                       |
+| Linux (Debian/Ubuntu) | arm64                 | ✅ Fully supported |                       |
+| Linux (RHEL/Fedora)   | x86_64                | ✅ Fully supported |                       |
+| Linux (Arch)          | x86_64                | ✅ Fully supported | AUR package available |
+| Windows               | x86_64                | ✅ Fully supported |                       |
 
 ## Platform-Specific Considerations
 
@@ -98,17 +133,17 @@ Raxol can be used within Windows Subsystem for Linux with:
 
 ## Feature Compatibility Matrix
 
-| Feature | macOS | Linux | Windows |
-|---------|-------|-------|---------|
-| True Color (24-bit) | ✅ | ✅ | ✅* |
-| Unicode/emoji support | ✅ | ✅ | ✅* |
-| Mouse support | ✅ | ✅ | ✅ |
-| Keyboard shortcuts | ✅ | ✅ | ✅ |
-| Clipboard integration | ✅ | ✅ | ✅ |
-| Auto-update | ✅ | ✅ | ✅ |
-| HiDPI support | ✅ | ✅ | ✅ |
+| Feature               | macOS | Linux | Windows |
+| --------------------- | ----- | ----- | ------- |
+| True Color (24-bit)   | ✅    | ✅    | ✅\*    |
+| Unicode/emoji support | ✅    | ✅    | ✅\*    |
+| Mouse support         | ✅    | ✅    | ✅      |
+| Keyboard shortcuts    | ✅    | ✅    | ✅      |
+| Clipboard integration | ✅    | ✅    | ✅      |
+| Auto-update           | ✅    | ✅    | ✅      |
+| HiDPI support         | ✅    | ✅    | ✅      |
 
-*Full support in Windows Terminal, limited in older terminals
+\*Full support in Windows Terminal, limited in older terminals
 
 ## Building for Multiple Platforms
 
@@ -140,4 +175,4 @@ mix run scripts/release.exs --env prod --platform [macos|linux|windows]
 
 - **PATH issues**: Ensure installation directory is in your PATH
 - **Color rendering**: Use Windows Terminal for best experience
-- **Unicode problems**: Set PowerShell to UTF-8 with `[console]::OutputEncoding = [System.Text.Encoding]::UTF8` 
+- **Unicode problems**: Set PowerShell to UTF-8 with `[console]::OutputEncoding = [System.Text.Encoding]::UTF8`
