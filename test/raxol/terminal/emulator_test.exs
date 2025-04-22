@@ -1284,7 +1284,9 @@ defmodule Raxol.Terminal.EmulatorTest do
 
       text_to_write =
         if padding_needed > 20 do
-          line_text <> String.duplicate(" ", 16) <> "..." <> String.duplicate(" ", max(0, padding_needed - 19))
+          line_text <>
+            String.duplicate(" ", 16) <>
+            "..." <> String.duplicate(" ", max(0, padding_needed - 19))
         else
           line_text <> String.duplicate(" ", padding_needed)
         end

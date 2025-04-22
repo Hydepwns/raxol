@@ -156,37 +156,37 @@ defmodule Raxol.Terminal.CommandExecutor do
         # CUU - Cursor Up
         {?A, ""} ->
           count = List.first(params || [1])
+
           %{
             emulator
-            | cursor:
-                Movement.move_up(emulator.cursor, count)
+            | cursor: Movement.move_up(emulator.cursor, count)
           }
 
         # CUD - Cursor Down
         {?B, ""} ->
           count = List.first(params || [1])
+
           %{
             emulator
-            | cursor:
-                Movement.move_down(emulator.cursor, count)
+            | cursor: Movement.move_down(emulator.cursor, count)
           }
 
         # CUF - Cursor Forward
         {?C, ""} ->
           count = List.first(params || [1])
+
           %{
             emulator
-            | cursor:
-                Movement.move_right(emulator.cursor, count)
+            | cursor: Movement.move_right(emulator.cursor, count)
           }
 
         # CUB - Cursor Back
         {?D, ""} ->
           count = List.first(params || [1])
+
           %{
             emulator
-            | cursor:
-                Movement.move_left(emulator.cursor, count)
+            | cursor: Movement.move_left(emulator.cursor, count)
           }
 
         # CUP - Cursor Position
@@ -900,7 +900,11 @@ defmodule Raxol.Terminal.CommandExecutor do
         24 ->
           %{
             acc_emulator
-            | style: %{current_style | underline: false, double_underline: false}
+            | style: %{
+                current_style
+                | underline: false,
+                  double_underline: false
+              }
           }
 
         # Not blinking
@@ -926,6 +930,7 @@ defmodule Raxol.Terminal.CommandExecutor do
         # Set foreground color (30-37)
         n when n >= 30 and n <= 37 ->
           color_name = TextFormatting.ansi_code_to_color_name(n)
+
           %{
             acc_emulator
             | style: %{current_style | foreground_color: color_name}
@@ -934,7 +939,10 @@ defmodule Raxol.Terminal.CommandExecutor do
         # Set foreground color (extended - 38)
         38 ->
           # TODO: Handle 256-color / RGB foreground (requires parsing next params)
-          Logger.warning("SGR: Extended foreground color (38) not fully implemented")
+          Logger.warning(
+            "SGR: Extended foreground color (38) not fully implemented"
+          )
+
           acc_emulator
 
         # Default foreground color
@@ -944,6 +952,7 @@ defmodule Raxol.Terminal.CommandExecutor do
         # Set background color (40-47)
         n when n >= 40 and n <= 47 ->
           color_name = TextFormatting.ansi_code_to_color_name(n)
+
           %{
             acc_emulator
             | style: %{current_style | background_color: color_name}
@@ -952,7 +961,10 @@ defmodule Raxol.Terminal.CommandExecutor do
         # Set background color (extended - 48)
         48 ->
           # TODO: Handle 256-color / RGB background (requires parsing next params)
-          Logger.warning("SGR: Extended background color (48) not fully implemented")
+          Logger.warning(
+            "SGR: Extended background color (48) not fully implemented"
+          )
+
           acc_emulator
 
         # Default background color
@@ -962,6 +974,7 @@ defmodule Raxol.Terminal.CommandExecutor do
         # Set bright foreground color (90-97)
         n when n >= 90 and n <= 97 ->
           color_name = TextFormatting.ansi_code_to_color_name(n)
+
           %{
             acc_emulator
             | style: %{current_style | foreground_color: color_name}
@@ -970,6 +983,7 @@ defmodule Raxol.Terminal.CommandExecutor do
         # Set bright background color (100-107)
         n when n >= 100 and n <= 107 ->
           color_name = TextFormatting.ansi_code_to_color_name(n)
+
           %{
             acc_emulator
             | style: %{current_style | background_color: color_name}
