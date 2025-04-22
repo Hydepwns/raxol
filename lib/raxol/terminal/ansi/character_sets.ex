@@ -139,4 +139,42 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     active_charset = get_active_charset(state)
     CharacterTranslations.translate_string(string, active_charset)
   end
+
+  @doc """
+  Designates a character set for a specific G-set (G0-G3).
+  `gset_index` is 0, 1, 2, or 3.
+  `charset_code` is the character byte following ESC (, ESC ), ESC *, or ESC +.
+  """
+  @spec designate_charset(charset_state(), 0..3, byte()) :: charset_state()
+  def designate_charset(state, gset_index, charset_code) do
+    charset_atom = charset_code_to_atom(charset_code)
+    target_g_set = index_to_gset(gset_index)
+
+    if charset_atom && target_g_set do
+      Map.put(state, target_g_set, charset_atom)
+    else
+      # Log or ignore unknown charset code / gset index
+      state
+    end
+  end
+
+  # --- Private Helpers ---
+
+  # Map G-set index (0-3) to map key (:g0-:g3)
+  defp index_to_gset(0), do: :g0
+  defp index_to_gset(1), do: :g1
+  defp index_to_gset(2), do: :g2
+  defp index_to_gset(3), do: :g3
+  defp index_to_gset(_), do: nil
+
+  # Map character code byte to charset atom (Based on escape_sequence.ex)
+  defp charset_code_to_atom(?B), do: :us_ascii
+  defp charset_code_to_atom(?0), do: :dec_special_graphics
+  defp charset_code_to_atom(?A), do: :uk
+  # Often same as US ASCII initially
+  defp charset_code_to_atom(?<), do: :dec_supplemental
+  defp charset_code_to_atom(?>), do: :dec_technical
+  # TODO: Add mappings for other national/special charsets (?F, ?K, etc.)
+  # Return nil for unknown codes
+  defp charset_code_to_atom(_), do: nil
 end

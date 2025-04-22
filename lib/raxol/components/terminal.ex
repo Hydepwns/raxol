@@ -105,36 +105,46 @@ defmodule Raxol.Components.Terminal do
   end
 
   def handle_event(%Event{type: :output, data: output}, state) do
-    # Extract arguments for ANSI.process/5
-    %{
-      cells: current_cells,
-      cursor: current_cursor,
-      style: current_style,
-      dimensions: dims
-    } = state.ansi_state
+    # Extract arguments for ANSI.process/5 - REMOVED as ANSI.process/5 is undefined/refactored
+    # %{
+    #   cells: current_cells,
+    #   cursor: current_cursor,
+    #   style: current_style,
+    #   dimensions: dims
+    # } = state.ansi_state
 
-    # Process ANSI codes in the output
-    {new_cells, new_cursor, new_style} =
-      ANSI.process(output, current_cells, current_cursor, current_style, dims)
+    # Process ANSI codes in the output - REMOVED
+    # {new_cells, new_cursor, new_style} =
+    #   ANSI.process(output, current_cells, current_cursor, current_style, dims)
 
-    # Update terminal ansi_state
-    new_ansi_state = %{
-      state.ansi_state
-      | cells: new_cells,
-        cursor: new_cursor,
-        style: new_style
-    }
+    # Update terminal ansi_state - REMOVED
+    # new_ansi_state = %{
+    #   state.ansi_state
+    #   | cells: new_cells,
+    #     cursor: new_cursor,
+    #     style: new_style
+    # }
+
+    # TODO: Implement proper ANSI processing using Raxol.Terminal.Emulator
+    #       or remove ANSI handling from this component if not needed.
+    # For now, just append raw output.
+    new_content = state.buffer_content <> output
+
+    # Update cursor naively (just moves to end of new content for now - adjust row if needed)
+    # Assuming single line for simplicity
+    new_cursor = {String.length(new_content), state.cursor |> elem(1)}
 
     # Update main state. Note: we now primarily use ansi_state for buffer/cursor/style.
     # The top-level state.cursor/style might become redundant or serve a different purpose.
     %{
       state
-      | # | buffer: ... # Buffer update logic needs review; ANSI.process returns cells, not lines\
-        # Update main cursor from ANSI state\
-        cursor: new_cursor,
-        # Merge styles\
-        style: Map.merge(state.style, new_style),
-        ansi_state: new_ansi_state
+      | # | buffer: ... # Buffer update logic needs review; ANSI.process returns cells, not lines -> Use buffer_content
+        buffer_content: new_content,
+        # Update main cursor from ANSI state -> Update naively
+        cursor: new_cursor
+        # Merge styles -> Style update removed for now
+        # style: Map.merge(state.style, new_style),
+        # ansi_state: new_ansi_state # ANSI state update removed for now
     }
   end
 

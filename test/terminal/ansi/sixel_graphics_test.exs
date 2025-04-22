@@ -72,7 +72,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
   describe "process_sequence/2" do
     test "handles color setting" do
       state = SixelGraphics.new()
-      {new_state, response} = SixelGraphics.process_sequence(state, "\e[1q")
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[1p")
 
       assert new_state.current_color == 1
       assert response == ""
@@ -80,9 +80,9 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
     test "handles position setting" do
       state = SixelGraphics.new()
-      {new_state, response} = SixelGraphics.process_sequence(state, "\e[10;5p")
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[10;5q")
 
-      assert new_state.position == {5, 10}
+      assert new_state.position == {10, 5}
       assert response == ""
     end
 
@@ -96,29 +96,63 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
     test "handles attribute setting" do
       state = SixelGraphics.new()
-      {new_state, response} = SixelGraphics.process_sequence(state, "\e[1a")
-
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[1s")
       assert new_state.attributes.width == :double_width
+      assert new_state.attributes.height == :normal
+      assert response == ""
+
+      state = SixelGraphics.new()
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[2s")
+      assert new_state.attributes.width == :normal
+      assert new_state.attributes.height == :double_height
+      assert response == ""
+
+      state = SixelGraphics.new()
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[3s")
+      assert new_state.attributes.width == :double_width
+      assert new_state.attributes.height == :double_height
+      assert new_state.attributes.size == :double_size
+      assert response == ""
+
+      state = SixelGraphics.new()
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[1a")
+      assert new_state == state
       assert response == ""
     end
 
     test "handles background color setting" do
       state = SixelGraphics.new()
-      {new_state, response} = SixelGraphics.process_sequence(state, "\e[1b")
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[1t")
+      assert new_state == state
+      assert response == ""
 
+      state = SixelGraphics.new()
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[1b")
       assert new_state == state
       assert response == ""
     end
 
     test "handles foreground color setting" do
       state = SixelGraphics.new()
-      {new_state, response} = SixelGraphics.process_sequence(state, "\e[2c")
-
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[2v")
       assert new_state.current_color == 2
+      assert response == ""
+
+      state = SixelGraphics.new()
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[2c")
+      assert new_state == state
       assert response == ""
     end
 
     test "handles dimension setting" do
+      state = SixelGraphics.new()
+
+      {new_state, response} =
+        SixelGraphics.process_sequence(state, "\e[100;50x")
+
+      assert new_state == state
+      assert response == ""
+
       state = SixelGraphics.new()
 
       {new_state, response} =
@@ -130,16 +164,15 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
     test "handles scale setting" do
       state = SixelGraphics.new()
-      {new_state, response} = SixelGraphics.process_sequence(state, "\e[2s")
-
-      assert new_state == state
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[2y")
+      # Check that the scale attribute is updated
+      assert new_state.attributes.scale == 2
       assert response == ""
     end
 
     test "handles transparency setting" do
       state = SixelGraphics.new()
-      {new_state, response} = SixelGraphics.process_sequence(state, "\e[128t")
-
+      {new_state, response} = SixelGraphics.process_sequence(state, "\e[128z")
       assert new_state == state
       assert response == ""
     end
@@ -157,12 +190,12 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
   describe "parse_sequence/1" do
     test "parses color setting sequence" do
-      assert {:ok, :set_color, [1]} = SixelGraphics.parse_sequence("1q")
+      assert {:ok, :set_color, [1]} = SixelGraphics.parse_sequence("1p")
     end
 
     test "parses position setting sequence" do
       assert {:ok, :set_position, [10, 5]} =
-               SixelGraphics.parse_sequence("10;5p")
+               SixelGraphics.parse_sequence("10;5q")
     end
 
     test "parses repeat count sequence" do
@@ -170,33 +203,70 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
     end
 
     test "parses attribute setting sequence" do
-      assert {:ok, :set_attribute, [1]} = SixelGraphics.parse_sequence("1a")
+      assert {:ok, :unknown, [1]} = SixelGraphics.parse_sequence("1a")
+      assert {:ok, :set_attribute, [1]} = SixelGraphics.parse_sequence("1s")
     end
 
     test "parses background color sequence" do
-      assert {:ok, :set_background, [1]} = SixelGraphics.parse_sequence("1b")
+      assert {:ok, :unknown, [1]} = SixelGraphics.parse_sequence("1b")
+      assert {:ok, :set_background, [1]} = SixelGraphics.parse_sequence("1t")
     end
 
     test "parses foreground color sequence" do
-      assert {:ok, :set_foreground, [2]} = SixelGraphics.parse_sequence("2c")
+      assert {:ok, :unknown, [2]} = SixelGraphics.parse_sequence("2c")
+      assert {:ok, :set_foreground, [2]} = SixelGraphics.parse_sequence("2v")
     end
 
     test "parses dimension setting sequence" do
-      assert {:ok, :set_dimension, [100, 50]} =
+      assert {:ok, :unknown, [100, 50]} =
                SixelGraphics.parse_sequence("100;50d")
+
+      assert {:ok, :set_dimension, [100, 50]} =
+               SixelGraphics.parse_sequence("100;50x")
     end
 
     test "parses scale setting sequence" do
-      assert {:ok, :set_scale, [2]} = SixelGraphics.parse_sequence("2s")
+      assert {:ok, :set_scale, [2]} = SixelGraphics.parse_sequence("2y")
     end
 
     test "parses transparency setting sequence" do
       assert {:ok, :set_transparency, [128]} =
-               SixelGraphics.parse_sequence("128t")
+               SixelGraphics.parse_sequence("128z")
     end
 
     test "parses invalid sequence" do
       assert :error = SixelGraphics.parse_sequence("invalid")
+    end
+
+    test "parses sequence with no parameters" do
+      assert {:ok, :set_color, []} = SixelGraphics.parse_sequence("p")
+      assert {:ok, :set_position, []} = SixelGraphics.parse_sequence("q")
+      assert {:ok, :set_repeat, []} = SixelGraphics.parse_sequence("r")
+    end
+
+    test "parses sequence with empty parameter" do
+      assert {:ok, :set_position, [10]} = SixelGraphics.parse_sequence("10;q")
+      assert {:ok, :set_position, [10]} = SixelGraphics.parse_sequence(";10q")
+    end
+
+    test "parses uppercase command chars" do
+      assert {:ok, :set_color, [1]} = SixelGraphics.parse_sequence("1P")
+
+      assert {:ok, :set_position, [10, 5]} =
+               SixelGraphics.parse_sequence("10;5Q")
+
+      assert {:ok, :set_repeat, [5]} = SixelGraphics.parse_sequence("5R")
+      assert {:ok, :set_attribute, [1]} = SixelGraphics.parse_sequence("1S")
+      assert {:ok, :set_background, [1]} = SixelGraphics.parse_sequence("1T")
+      assert {:ok, :set_foreground, [2]} = SixelGraphics.parse_sequence("2V")
+
+      assert {:ok, :set_dimension, [100, 50]} =
+               SixelGraphics.parse_sequence("100;50X")
+
+      assert {:ok, :set_scale, [2]} = SixelGraphics.parse_sequence("2Y")
+
+      assert {:ok, :set_transparency, [128]} =
+               SixelGraphics.parse_sequence("128Z")
     end
   end
 

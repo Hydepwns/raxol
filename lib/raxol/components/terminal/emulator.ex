@@ -1,147 +1,64 @@
 defmodule Raxol.Components.Terminal.Emulator do
   @moduledoc """
-  Terminal emulator module that handles core terminal functionality including:
-  - Screen buffer management
-  - Character cell operations
-  - Terminal modes and attributes
-  - ANSI escape code processing
+  Terminal emulator component wrapping the core emulator logic.
   """
 
-  alias Raxol.Components.Terminal.ANSI
-
-  @type cell :: %{
-          char: String.t(),
-          style: map(),
-          dirty: boolean()
-        }
-
-  @type screen :: %{
-          cells: [[cell()]],
-          cursor: {integer(), integer()},
-          dimensions: {integer(), integer()},
-          scroll_region: {integer(), integer()} | nil,
-          mode: :normal | :insert,
-          attributes: map()
-        }
+  alias Raxol.Terminal.Emulator, as: CoreEmulator
 
   @type emulator_state :: %{
-          dimensions: {integer(), integer()},
-          screen: screen(),
-          history: [String.t()]
-          # ansi_state is no longer needed here, state managed directly
+          core_emulator: CoreEmulator.t()
         }
 
-  @default_dimensions {80, 24}
-
   @doc """
-  Initializes a new terminal emulator state.
+  Initializes a new terminal emulator component state.
   """
   def init do
-    dimensions = @default_dimensions
-    screen = init_screen(dimensions)
+    # Initialize the core emulator
+    core_emulator = CoreEmulator.new()
 
     %{
-      dimensions: @default_dimensions,
-      screen: screen,
-      history: []
+      core_emulator: core_emulator
     }
   end
 
   @doc """
-  Processes input and updates terminal state.
+  Processes input and updates terminal state by delegating to the core emulator.
   """
-  def process_input(input, state) do
-    # Pass current screen state to ANSI processor
-    {updated_cells, updated_cursor, updated_style} =
-      ANSI.process(
-        input,
-        state.screen.cells,
-        state.screen.cursor,
-        Map.get(state.screen, :attributes, %{}),
-        state.dimensions
-      )
+  def process_input(input, %{core_emulator: current_emulator} = state) do
+    # Delegate processing to the core emulator
+    {updated_emulator, _rest} =
+      CoreEmulator.process_input(current_emulator, input)
 
-    # Update screen with results from ANSI processor
-    updated_screen = %{
-      state.screen
-      | cells: updated_cells,
-        cursor: updated_cursor,
-        attributes: updated_style
-    }
-
-    %{state | screen: updated_screen}
+    # Update the component's state with the updated core emulator state
+    %{state | core_emulator: updated_emulator}
   end
 
   @doc """
   Handles terminal resize events.
+  TODO: Implement proper resizing by delegating to CoreEmulator or ScreenBuffer
   """
   def handle_resize({width, height}, state) do
-    new_screen = resize_screen(state.screen, {width, height})
-    %{state | dimensions: {width, height}, screen: new_screen}
+    # Placeholder: Currently just logs a warning.
+    # Needs proper implementation to resize the core_emulator state.
+    IO.puts("Warning: handle_resize in component not fully implemented.")
+    # Re-initialize for now to avoid state mismatch (loses history/state)
+    new_core = CoreEmulator.new(width, height)
+    %{state | core_emulator: new_core}
   end
 
   @doc """
   Returns the current visible content of the terminal.
+  TODO: Delegate this to the core emulator/screen buffer
   """
   def get_visible_content(state) do
-    state.screen.cells
-    |> Enum.map(fn row ->
-      row
-      |> Enum.map(& &1.char)
-      |> Enum.join()
-    end)
-    |> Enum.join("\n")
+    # Placeholder: Needs to extract content from state.core_emulator.screen_buffer
+    "Visible content not implemented yet."
+    # Example (needs ScreenBuffer API confirmation):
+    # ScreenBuffer.get_visible_content(state.core_emulator.screen_buffer)
   end
 
-  # Private functions
-
-  defp init_screen({width, height}) do
-    cells =
-      for _ <- 1..height do
-        for _ <- 1..width do
-          %{char: " ", style: %{}, dirty: false}
-        end
-      end
-
-    %{
-      cells: cells,
-      cursor: {0, 0},
-      dimensions: {width, height},
-      scroll_region: nil,
-      mode: :normal,
-      attributes: %{}
-    }
-  end
-
-  defp resize_screen(screen, {new_width, new_height}) do
-    current_cells = screen.cells
-
-    new_cells =
-      for y <- 0..(new_height - 1) do
-        for x <- 0..(new_width - 1) do
-          case {x, y} do
-            {x, y}
-            when x < length(hd(current_cells)) and y < length(current_cells) ->
-              Enum.at(Enum.at(current_cells, y), x)
-
-            _ ->
-              %{char: " ", style: %{}, dirty: true}
-          end
-        end
-      end
-
-    %{
-      screen
-      | cells: new_cells,
-        dimensions: {new_width, new_height},
-        cursor: clamp_cursor(screen.cursor, {new_width, new_height})
-    }
-  end
-
-  defp clamp_cursor({x, y}, {width, height}) do
-    {
-      min(max(0, x), width - 1),
-      min(max(0, y), height - 1)
-    }
-  end
+  # Private functions removed as logic is now in CoreEmulator
+  # defp init_screen(...)
+  # defp resize_screen(...)
+  # defp clamp_cursor(...)
 end

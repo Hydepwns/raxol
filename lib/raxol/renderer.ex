@@ -10,7 +10,7 @@ defmodule Raxol.Renderer do
 
   alias Raxol.Renderer.Layout
   alias ExTermbox.Bindings
-  alias ExTermbox.Constants
+  alias Raxol.Terminal.Constants
 
   # Client API
 

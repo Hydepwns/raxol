@@ -290,6 +290,8 @@ defmodule Raxol.Style.Colors.Gradient do
   # Private functions
 
   # Generate interpolated colors between start and end
+  defp generate_gradient_colors(start_color, _end_color, 1), do: [start_color]
+
   defp generate_gradient_colors(start_color, end_color, steps) do
     0..(steps - 1)
     |> Enum.map(fn step ->

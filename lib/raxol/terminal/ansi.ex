@@ -949,20 +949,6 @@ defmodule Raxol.Terminal.ANSI do
     %{emulator | attributes: %{emulator.attributes | background_256: index}}
   end
 
-  defp set_foreground_basic(emulator, color_code) do
-    # Map code (0-7) to color name
-    color_name = Map.get(@colors, color_code)
-    new_style = TextFormatting.set_foreground(emulator.style, color_name)
-    %{emulator | style: new_style}
-  end
-
-  defp set_background_basic(emulator, color_code) do
-    # Map code (0-7) to color name
-    color_name = Map.get(@colors, color_code)
-    new_style = TextFormatting.set_background(emulator.style, color_name)
-    %{emulator | style: new_style}
-  end
-
   defp color_code(%Raxol.Style.Colors.Color{r: r, g: g, b: b}, :foreground) do
     "\e[38;2;#{r};#{g};#{b}m"
   end
@@ -977,148 +963,10 @@ defmodule Raxol.Terminal.ANSI do
 
   # Text attribute functions
 
-  defp set_text_attribute(emulator, attribute) do
-    case Map.get(@attributes, attribute) do
-      nil ->
-        emulator
-
-      :reset ->
-        %{emulator | attributes: %{}}
-
-      :style_reset ->
-        %{emulator | attributes: %{}}
-
-      :style_reset_all ->
-        %{emulator | attributes: %{}}
-
-      :style_reset_color ->
-        Map.drop(emulator.attributes, [
-          :foreground,
-          :background,
-          :underline_color,
-          :strikethrough_color,
-          :overline_color
-        ])
-
-      :style_reset_attributes ->
-        Map.drop(emulator.attributes, [
-          :bold,
-          :faint,
-          :italic,
-          :underline,
-          :blink,
-          :rapid_blink,
-          :inverse,
-          :conceal,
-          :strikethrough
-        ])
-
-      :style_reset_font ->
-        Map.drop(emulator.attributes, [:font])
-
-      :style_reset_alignment ->
-        Map.drop(emulator.attributes, [:alignment])
-
-      :style_reset_wrap ->
-        Map.drop(emulator.attributes, [:wrap])
-
-      :style_reset_direction ->
-        Map.drop(emulator.attributes, [:direction])
-
-      :style_reset_spacing ->
-        Map.drop(emulator.attributes, [:spacing])
-
-      :style_reset_case ->
-        Map.drop(emulator.attributes, [:case])
-
-      :style_reset_emphasis ->
-        Map.drop(emulator.attributes, [:emphasis])
-
-      :style_reset_outline ->
-        Map.drop(emulator.attributes, [:outline])
-
-      :style_reset_shadow ->
-        Map.drop(emulator.attributes, [:shadow])
-
-      :style_reset_rotation ->
-        Map.drop(emulator.attributes, [:rotation])
-
-      :style_reset_scale ->
-        Map.drop(emulator.attributes, [:scale])
-
-      :style_reset_tracking ->
-        Map.drop(emulator.attributes, [:tracking])
-
-      :style_reset_leading ->
-        Map.drop(emulator.attributes, [:leading])
-
-      :style_reset_kerning ->
-        Map.drop(emulator.attributes, [:kerning])
-
-      :style_reset_ligatures ->
-        Map.drop(emulator.attributes, [:ligatures])
-
-      :style_reset_baseline ->
-        Map.drop(emulator.attributes, [:baseline])
-
-      :style_reset_underline ->
-        Map.drop(emulator.attributes, [:underline, :underline_style])
-
-      :style_reset_strikethrough ->
-        Map.drop(emulator.attributes, [:strikethrough, :strikethrough_style])
-
-      :style_reset_overline ->
-        Map.drop(emulator.attributes, [:overline, :overline_style])
-
-      :style_reset_blink ->
-        Map.drop(emulator.attributes, [:blink, :blink_style])
-
-      :style_reset_inverse ->
-        Map.drop(emulator.attributes, [:inverse])
-
-      :style_reset_conceal ->
-        Map.drop(emulator.attributes, [:conceal])
-
-      :style_reset_color_foreground ->
-        Map.drop(emulator.attributes, [:foreground])
-
-      :style_reset_color_background ->
-        Map.drop(emulator.attributes, [:background])
-
-      :style_reset_color_underline ->
-        Map.drop(emulator.attributes, [:underline_color])
-
-      :style_reset_color_strikethrough ->
-        Map.drop(emulator.attributes, [:strikethrough_color])
-
-      :style_reset_color_overline ->
-        Map.drop(emulator.attributes, [:overline_color])
-
-      attr ->
-        Map.put(emulator.attributes, attr, true)
-    end
-  end
-
-  defp reset_attributes(emulator) do
-    default_attributes = %{
-      bold: false,
-      faint: false,
-      italic: false,
-      underline: false,
-      blink: false,
-      rapid_blink: false,
-      inverse: false,
-      conceal: false,
-      strikethrough: false,
-      proportional_spacing: nil,
-      superscript: false,
-      subscript: false,
-      font: nil,
-      alignment: nil
-    }
-
-    %{emulator | attributes: Map.merge(emulator.attributes, default_attributes)}
-  end
+  # Function removed as unused
+  # defp set_text_attribute(emulator, attribute) do
+  # ... body ...
+  # end
 
   # Screen manipulation functions
 
@@ -1133,8 +981,8 @@ defmodule Raxol.Terminal.ANSI do
   end
 
   defp clear_line(emulator, n) do
-    buffer = Emulator.get_buffer(emulator)
-    {cursor_x, cursor_y} = Emulator.get_cursor_position(emulator)
+    buffer = Emulator.get_active_buffer(emulator)
+    {cursor_x, cursor_y} = emulator.cursor.position
     buffer_width = ScreenBuffer.get_width(buffer)
 
     new_buffer =
@@ -1165,7 +1013,7 @@ defmodule Raxol.Terminal.ANSI do
           buffer
       end
 
-    Emulator.set_buffer(emulator, new_buffer)
+    Map.put(emulator, emulator.active_buffer_key, new_buffer)
   end
 
   defp insert_line(_emulator, _n) do
@@ -1174,10 +1022,10 @@ defmodule Raxol.Terminal.ANSI do
 
   defp delete_line(emulator, n) do
     # Delete n lines starting from the current cursor line
-    {_, y} = Emulator.get_cursor_position(emulator)
-    buffer = Emulator.get_buffer(emulator)
-    new_buffer = ScreenBuffer.delete_lines(buffer, y, n)
-    Emulator.set_buffer(emulator, new_buffer)
+    {_, y} = emulator.cursor.position
+    buffer = Emulator.get_active_buffer(emulator)
+    new_buffer = ScreenBuffer.delete_lines(buffer, y, n, emulator.style)
+    Map.put(emulator, emulator.active_buffer_key, new_buffer)
   end
 
   # Internal function to handle GL character set changes from ANSI sequences
@@ -1189,10 +1037,6 @@ defmodule Raxol.Terminal.ANSI do
   # end
 
   # Helper functions
-
-  defp get_color_name(code) when code >= 0 and code <= 15 do
-    Map.get(@colors, code)
-  end
 
   defp attribute_code(attr) do
     case attr do

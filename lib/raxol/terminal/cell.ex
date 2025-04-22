@@ -12,14 +12,16 @@ defmodule Raxol.Terminal.Cell do
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @type t :: %__MODULE__{
-          char: String.t(),
+          char: String.t() | nil,
           style: TextFormatting.text_style(),
+          dirty: boolean(),
           is_wide_placeholder: boolean()
         }
 
   defstruct [
     :char,
     :style,
+    :dirty,
     is_wide_placeholder: false
   ]
 
@@ -47,6 +49,7 @@ defmodule Raxol.Terminal.Cell do
       # Use a space character for empty cells
       char: " ",
       style: TextFormatting.new(),
+      dirty: true,
       is_wide_placeholder: false
     }
   end
@@ -56,6 +59,7 @@ defmodule Raxol.Terminal.Cell do
       # Use a space character for empty cells
       char: " ",
       style: style,
+      dirty: true,
       is_wide_placeholder: false
     }
   end
@@ -64,6 +68,7 @@ defmodule Raxol.Terminal.Cell do
     %__MODULE__{
       char: char,
       style: TextFormatting.new(),
+      dirty: true,
       is_wide_placeholder: false
     }
   end
@@ -72,6 +77,7 @@ defmodule Raxol.Terminal.Cell do
     %__MODULE__{
       char: char,
       style: style,
+      dirty: true,
       is_wide_placeholder: false
     }
   end
@@ -85,6 +91,7 @@ defmodule Raxol.Terminal.Cell do
       # Placeholder has no visible char
       char: " ",
       style: style,
+      dirty: true,
       is_wide_placeholder: true
     }
   end
@@ -372,6 +379,7 @@ defmodule Raxol.Terminal.Cell do
       # Assign style directly, assuming it's valid from renderer
       # style: TextFormatting.normalize_style(style),
       style: style,
+      dirty: true,
       is_wide_placeholder: is_wide
     }
   end

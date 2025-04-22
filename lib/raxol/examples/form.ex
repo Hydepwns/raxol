@@ -9,7 +9,6 @@ defmodule Raxol.Examples.Form do
   - Error boundaries
   """
 
-  use GenServer
   use Raxol.App
 
   @impl true

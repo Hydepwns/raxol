@@ -233,4 +233,45 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       :none -> nil
     end
   end
+
+  @doc """
+  Converts a standard ANSI 3/4-bit color code to a color name atom.
+
+  ## Examples
+
+      iex> Raxol.Terminal.ANSI.TextFormatting.ansi_code_to_color_name(31)
+      :red
+
+      iex> Raxol.Terminal.ANSI.TextFormatting.ansi_code_to_color_name(44)
+      :blue
+
+      iex> Raxol.Terminal.ANSI.TextFormatting.ansi_code_to_color_name(99) # Unknown
+      nil
+
+  """
+  @spec ansi_code_to_color_name(integer()) :: color() | nil
+  def ansi_code_to_color_name(code) do
+    case code do
+      30 -> :black
+      31 -> :red
+      32 -> :green
+      33 -> :yellow
+      34 -> :blue
+      35 -> :magenta
+      36 -> :cyan
+      37 -> :white
+      40 -> :black
+      41 -> :red
+      42 -> :green
+      43 -> :yellow
+      44 -> :blue
+      45 -> :magenta
+      46 -> :cyan
+      47 -> :white
+      # TODO: Add bright color codes (90-97, 100-107) if needed and map them appropriately
+      # For now, map them to nil or their base color
+      # Or handle bright colors if desired
+      _ -> nil
+    end
+  end
 end

@@ -235,7 +235,7 @@ defmodule Raxol.Components.Table do
                   row_props
                 end
 
-              Layout.row(row_props, fn ->
+              Layout.row(row_props, do: fn ->
                 # Render each cell in the row
                 normalized_columns
                 |> Enum.each(fn column ->
@@ -313,7 +313,7 @@ defmodule Raxol.Components.Table do
 
     # Create footer function for pagination controls
     footer_fn = fn ->
-      Layout.row([id: "#{id}_pagination", style: pagination_style], fn ->
+      Layout.row([id: "#{id}_pagination", style: pagination_style], do: fn ->
         # Page info display
         if show_page_info do
           info_text = "Page #{page} of #{total_pages}"
@@ -337,7 +337,7 @@ defmodule Raxol.Components.Table do
         }
 
         # Pagination buttons
-        Layout.row([style: %{gap: 1}], fn ->
+        Layout.row([style: %{gap: 1}], do: fn ->
           # First page button
           Components.button("<<",
             id: "#{id}_first_page",
@@ -423,7 +423,7 @@ defmodule Raxol.Components.Table do
 
   # Render table header row
   defp render_header(columns, style, sort_by, sort_dir, on_sort) do
-    Layout.row([style: style], fn ->
+    Layout.row([style: style], do: fn ->
       columns
       |> Enum.map(fn column ->
         is_sorted = column.key == sort_by

@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.Session do
   @impl true
   def init({id, width, height, title, theme}) do
     emulator = Emulator.new(width, height)
-    renderer = Renderer.new(emulator.screen_buffer, theme)
+    renderer = Renderer.new(Emulator.get_active_buffer(emulator), theme)
 
     state = %__MODULE__{
       id: id,
@@ -149,7 +149,7 @@ defmodule Raxol.Terminal.Session do
       when is_struct(new_emulator, Raxol.Terminal.Emulator) ->
         new_renderer = %{
           state.renderer
-          | screen_buffer: new_emulator.screen_buffer
+          | screen_buffer: Emulator.get_active_buffer(new_emulator)
         }
 
         {:noreply, %{state | emulator: new_emulator, renderer: new_renderer}}
@@ -183,7 +183,7 @@ defmodule Raxol.Terminal.Session do
     theme = Map.get(config, :theme, state.theme)
 
     emulator = Emulator.new(width, height)
-    renderer = Renderer.new(emulator.screen_buffer, theme)
+    renderer = Renderer.new(Emulator.get_active_buffer(emulator), theme)
 
     %{
       state

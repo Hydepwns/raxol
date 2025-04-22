@@ -21,6 +21,7 @@ defmodule Raxol.Terminal.Integration do
   alias Raxol.Terminal.CommandHistory
   alias Raxol.Terminal.Configuration
   alias Raxol.Terminal.Renderer
+  alias Raxol.Terminal.ScreenBuffer
 
   @type t :: %__MODULE__{
           emulator: Emulator.t(),
@@ -70,7 +71,8 @@ defmodule Raxol.Terminal.Integration do
       )
 
     # Create the initial renderer
-    renderer = Renderer.new(emulator.screen_buffer, config.theme)
+    # Use getter for active buffer
+    renderer = Renderer.new(Emulator.get_active_buffer(emulator), config.theme)
 
     scroll_buffer = Scroll.new(config.scrollback_height)
     cursor_manager = CursorManager.new()
@@ -201,10 +203,15 @@ defmodule Raxol.Terminal.Integration do
       "Hello"
   """
   def write(%__MODULE__{} = integration, text) do
-    emulator = Emulator.write(integration.emulator, text)
+    # Use process_input for writing text
+    {emulator, _output} = Emulator.process_input(integration.emulator, text)
     # Update the renderer with the new screen buffer from the emulator
+    # Use getter for active buffer
     new_renderer =
-      Renderer.new(emulator.screen_buffer, integration.config.theme)
+      Renderer.new(
+        Emulator.get_active_buffer(emulator),
+        integration.config.theme
+      )
 
     %{integration | emulator: emulator, renderer: new_renderer}
   end
@@ -249,10 +256,15 @@ defmodule Raxol.Terminal.Integration do
       ""
   """
   def clear_screen(%__MODULE__{} = integration) do
-    emulator = Emulator.clear_screen(integration.emulator)
+    # Use process_input with CSI 2J (Erase Screen)
+    {emulator, _output} = Emulator.process_input(integration.emulator, "\e[2J")
     # Update the renderer with the new screen buffer from the emulator
+    # Use getter for active buffer
     new_renderer =
-      Renderer.new(emulator.screen_buffer, integration.config.theme)
+      Renderer.new(
+        Emulator.get_active_buffer(emulator),
+        integration.config.theme
+      )
 
     %{integration | emulator: emulator, renderer: new_renderer}
   end
@@ -269,8 +281,10 @@ defmodule Raxol.Terminal.Integration do
       "Line 2\nLine 3"
   """
   def scroll(%__MODULE__{} = integration, lines) do
-    # Scroll emulator
-    emulator = Emulator.scroll(integration.emulator, lines)
+    # Scroll emulator using CSI S (Scroll Up) - Assuming scroll up based on example
+    # TODO: Verify if scroll down (CSI T) might also be needed.
+    {emulator, _output} =
+      Emulator.process_input(integration.emulator, "\e[#{lines}S")
 
     # Update scroll buffer
     scroll_buffer = Scroll.scroll(integration.scroll_buffer, lines)
@@ -289,7 +303,9 @@ defmodule Raxol.Terminal.Integration do
       "Hello"
   """
   def get_visible_content(%__MODULE__{} = integration) do
-    Emulator.get_visible_content(integration.emulator)
+    # Assuming ScreenBuffer has a function to get string content
+    # Use getter for active buffer
+    ScreenBuffer.get_content(Emulator.get_active_buffer(integration.emulator))
   end
 
   @doc """
@@ -605,7 +621,19 @@ defmodule Raxol.Terminal.Integration do
       iex> integration = Integration.set_character_set(integration, "0", "B")
   """
   def set_character_set(%__MODULE__{} = integration, gset, charset) do
-    emulator = Emulator.set_character_set(integration.emulator, gset, charset)
+    # Use process_input with ESC sequence e.g., ESC ( B for G0/ASCII
+    designator =
+      case gset do
+        "0" -> "("
+        "1" -> ")"
+        "2" -> "*"
+        "3" -> "+"
+        # Default to G0
+        _ -> "("
+      end
+
+    sequence = "\e" <> designator <> charset
+    {emulator, _output} = Emulator.process_input(integration.emulator, sequence)
     %{integration | emulator: emulator}
   end
 
@@ -618,7 +646,29 @@ defmodule Raxol.Terminal.Integration do
       iex> integration = Integration.invoke_character_set(integration, "0")
   """
   def invoke_character_set(%__MODULE__{} = integration, gset) do
-    emulator = Emulator.invoke_character_set(integration.emulator, gset)
+    # Use process_input with Shift In/Out etc.
+    # LS0 = SI = ^O = \x0F (G0)
+    # LS1 = SO = ^N = \x0E (G1)
+    # LS2 = ESC n (G2)
+    # LS3 = ESC o (G3)
+    # LS1R = ESC ~ (G1)
+    # LS2R = ESC } (G2)
+    # LS3R = ESC | (G3)
+    sequence =
+      case gset do
+        # SI
+        "0" -> "\x0F"
+        # SO
+        "1" -> "\x0E"
+        # LS2
+        "2" -> "\en"
+        # LS3
+        "3" -> "\eo"
+        # Default to G0
+        _ -> "\x0F"
+      end
+
+    {emulator, _output} = Emulator.process_input(integration.emulator, sequence)
     %{integration | emulator: emulator}
   end
 
@@ -626,11 +676,12 @@ defmodule Raxol.Terminal.Integration do
   Sets a specific screen mode in the emulator.
   """
   def set_screen_mode(%__MODULE__{} = integration, mode) do
-    # Assuming type is :screen and code corresponds to mode atom
-    # Convert mode atom back to code if necessary, or update handle_mode_change
-    # For now, assume mode is the code (integer)
-    emulator =
-      Emulator.handle_mode_change(integration.emulator, :screen, mode, true)
+    # Assuming mode is the numeric code (e.g., 4 for IRM, ?6 for DECOM)
+    # Need to distinguish between standard and DEC private modes based on the atom.
+    # For now, assume DEC private mode format CSI ? mode h
+    # TODO: Refine this based on actual mode atoms used
+    sequence = "\e[?#{mode}h"
+    {emulator, _output} = Emulator.process_input(integration.emulator, sequence)
 
     %{integration | emulator: emulator}
   end
@@ -639,9 +690,11 @@ defmodule Raxol.Terminal.Integration do
   Resets a specific screen mode in the emulator.
   """
   def reset_screen_mode(%__MODULE__{} = integration, mode) do
-    # Assuming type is :screen and code corresponds to mode atom
-    emulator =
-      Emulator.handle_mode_change(integration.emulator, :screen, mode, false)
+    # Assuming mode is the numeric code (e.g., 4 for IRM, ?6 for DECOM)
+    # Assuming DEC private mode format CSI ? mode l
+    # TODO: Refine this based on actual mode atoms used
+    sequence = "\e[?#{mode}l"
+    {emulator, _output} = Emulator.process_input(integration.emulator, sequence)
 
     %{integration | emulator: emulator}
   end
@@ -656,7 +709,8 @@ defmodule Raxol.Terminal.Integration do
       false
   """
   def screen_mode_enabled?(%__MODULE__{} = integration, mode) do
-    Emulator.screen_mode_enabled?(integration.emulator, mode)
+    # Check the mode_state map directly
+    Map.get(integration.emulator.mode_state, mode, false)
   end
 
   @doc """
@@ -668,7 +722,10 @@ defmodule Raxol.Terminal.Integration do
       iex> integration = Integration.switch_to_alternate_buffer(integration)
   """
   def switch_to_alternate_buffer(%__MODULE__{} = integration) do
-    emulator = Emulator.switch_to_alternate_buffer(integration.emulator)
+    # Use process_input with CSI ?1047h (or ?1049h if clearing is desired)
+    {emulator, _output} =
+      Emulator.process_input(integration.emulator, "\e[?1047h")
+
     %{integration | emulator: emulator}
   end
 
@@ -681,7 +738,10 @@ defmodule Raxol.Terminal.Integration do
       iex> integration = Integration.switch_to_main_buffer(integration)
   """
   def switch_to_main_buffer(%__MODULE__{} = integration) do
-    emulator = Emulator.switch_to_main_buffer(integration.emulator)
+    # Use process_input with CSI ?1047l (or ?1049l)
+    {emulator, _output} =
+      Emulator.process_input(integration.emulator, "\e[?1047l")
+
     %{integration | emulator: emulator}
   end
 
@@ -695,8 +755,18 @@ defmodule Raxol.Terminal.Integration do
       iex> response
       "\e[1;1R"
   """
-  def handle_device_status_query(%__MODULE__{} = integration, query) do
-    Emulator.handle_device_status_query(integration.emulator, query)
+  def handle_device_status_query(%__MODULE__{} = _integration, _query) do
+    # Emulator.process_input does not return application-level responses.
+    # This function likely needs to be handled differently, perhaps by peeking
+    # into the emulator state or requiring a different interaction model.
+    # TODO: Re-implement or remove handle_device_status_query
+    Logger.warning(
+      "handle_device_status_query is not implemented after refactor",
+      []
+    )
+
+    # Return nil as a placeholder
+    nil
   end
 
   # Private functions

@@ -78,18 +78,21 @@ defmodule Raxol.Plugins.PluginManager do
                 # Save updated config
                 case PluginConfig.save(updated_config) do
                   {:ok, saved_config} ->
-                    %{
-                      manager
-                      | plugins: Map.put(manager.plugins, plugin.name, plugin),
-                        config: saved_config
-                    }
+                    {:ok,
+                     %{
+                       manager
+                       | plugins: Map.put(manager.plugins, plugin.name, plugin),
+                         config: saved_config
+                     }}
 
                   {:error, _reason} ->
-                    # Continue even if save fails
-                    %{
-                      manager
-                      | plugins: Map.put(manager.plugins, plugin.name, plugin)
-                    }
+                    # Continue even if save fails, return manager with plugin loaded
+                    {:ok,
+                     %{
+                       manager
+                       | plugins: Map.put(manager.plugins, plugin.name, plugin)
+                         # Maybe log the config save error here?
+                     }}
                 end
 
               {:error, reason} ->
@@ -158,7 +161,17 @@ defmodule Raxol.Plugins.PluginManager do
                              "Elixir.#{String.replace(plugin_name, "_", ".")}"
                            )
                          ) do
+                      # Match on {:ok, updated_manager} now
+                      {:ok, updated_manager} ->
+                        {:cont, {:ok, updated_manager}}
+
+                      # Handle the direct manager return case (if any remain after fixing load_plugin/2)
                       updated_manager when is_map(updated_manager) ->
+                        Logger.warning(
+                          "load_plugin returned manager directly, expected {:ok, manager}",
+                          plugin: plugin_name
+                        )
+
                         {:cont, {:ok, updated_manager}}
 
                       {:error, reason} ->
@@ -188,7 +201,10 @@ defmodule Raxol.Plugins.PluginManager do
         {:error, "Plugin #{name} not found"}
 
       plugin ->
-        case plugin.cleanup() do
+        # Get module from struct BEFORE calling cleanup
+        module = plugin.__struct__
+        # Call cleanup on the module, passing the plugin state
+        case module.cleanup(plugin) do
           :ok ->
             # Update config to disable plugin
             updated_config = PluginConfig.disable_plugin(manager.config, name)
@@ -196,15 +212,17 @@ defmodule Raxol.Plugins.PluginManager do
             # Save updated config
             case PluginConfig.save(updated_config) do
               {:ok, saved_config} ->
-                %{
-                  manager
-                  | plugins: Map.delete(manager.plugins, name),
-                    config: saved_config
-                }
+                # Return {:ok, updated_manager}
+                {:ok,
+                 %{
+                   manager
+                   | plugins: Map.delete(manager.plugins, name),
+                     config: saved_config
+                 }}
 
               {:error, _reason} ->
-                # Continue even if save fails
-                %{manager | plugins: Map.delete(manager.plugins, name)}
+                # Continue even if save fails, but still return {:ok, updated_manager}
+                {:ok, %{manager | plugins: Map.delete(manager.plugins, name)}}
             end
 
           {:error, reason} ->
@@ -337,7 +355,10 @@ defmodule Raxol.Plugins.PluginManager do
                                                                    acc_manager,
                                                                    acc_output} ->
       if plugin.enabled do
-        case plugin.handle_output(output) do
+        # Get module from struct BEFORE calling handle_output
+        module = plugin.__struct__
+        # Call handle_output on the module, passing plugin state and output
+        case module.handle_output(plugin, output) do
           {:ok, updated_plugin} ->
             {:cont,
              {:ok,
@@ -375,20 +396,29 @@ defmodule Raxol.Plugins.PluginManager do
     Enum.reduce_while(manager.plugins, {:ok, manager}, fn {_name, plugin},
                                                           {:ok, acc_manager} ->
       if plugin.enabled do
-        case plugin.handle_mouse(event, emulator_state) do
-          {:ok, updated_plugin} ->
-            {:cont,
-             {:ok,
-              %{
-                acc_manager
-                | plugins:
-                    Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-              }}}
+        # Get module from struct BEFORE calling handle_mouse
+        module = plugin.__struct__
+        # Check if module implements handle_mouse/3
+        if function_exported?(module, :handle_mouse, 3) do
+          # Call handle_mouse on the module, passing plugin state, event, and emulator_state
+          case module.handle_mouse(plugin, event, emulator_state) do
+            {:ok, updated_plugin} ->
+              {:cont,
+               {:ok,
+                %{
+                  acc_manager
+                  | plugins:
+                      Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+                }}}
 
-          {:error, reason} ->
-            {:halt,
-             {:error,
-              "Plugin #{plugin.name} failed to handle mouse event: #{reason}"}}
+            {:error, reason} ->
+              {:halt,
+               {:error,
+                "Plugin #{plugin.name} failed to handle mouse event: #{reason}"}}
+          end
+        else
+          # Plugin disabled or doesn't implement handle_mouse/3, continue
+          {:cont, {:ok, acc_manager}}
         end
       else
         {:cont, {:ok, acc_manager}}
@@ -404,20 +434,29 @@ defmodule Raxol.Plugins.PluginManager do
     Enum.reduce_while(manager.plugins, {:ok, manager}, fn {_name, plugin},
                                                           {:ok, acc_manager} ->
       if plugin.enabled do
-        case plugin.handle_resize(width, height) do
-          {:ok, updated_plugin} ->
-            {:cont,
-             {:ok,
-              %{
-                acc_manager
-                | plugins:
-                    Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-              }}}
+        # Get module from struct BEFORE calling handle_resize
+        module = plugin.__struct__
+        # Check if module implements handle_resize/3
+        if function_exported?(module, :handle_resize, 3) do
+          # Call handle_resize on the module, passing plugin state, width, and height
+          case module.handle_resize(plugin, width, height) do
+            {:ok, updated_plugin} ->
+              {:cont,
+               {:ok,
+                %{
+                  acc_manager
+                  | plugins:
+                      Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+                }}}
 
-          {:error, reason} ->
-            {:halt,
-             {:error,
-              "Plugin #{plugin.name} failed to handle resize: #{reason}"}}
+            {:error, reason} ->
+              {:halt,
+               {:error,
+                "Plugin #{plugin.name} failed to handle resize: #{reason}"}}
+          end
+        else
+          # Plugin disabled or doesn't implement handle_resize/3, continue
+          {:cont, {:ok, acc_manager}}
         end
       else
         {:cont, {:ok, acc_manager}}
