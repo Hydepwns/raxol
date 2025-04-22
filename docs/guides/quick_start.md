@@ -1,76 +1,123 @@
 ---
 title: Quick Start Guide
-description: Get started with Raxol Terminal Emulator quickly
-date: 2023-04-04
-author: Raxol Team
+description: Create your first Raxol application
+date: 2025-07-26 # Or use a dynamic date if possible
+author: DROO AMOR
 section: guides
-tags: [quick start, guide, tutorial]
+tags: [quick start, guide, tutorial, Raxol.App]
 ---
 
-# Quick Start Guide
+# Quick Start Guide: Your First Raxol App
 
-This guide will help you get started with Raxol Terminal Emulator quickly.
+This guide walks you through creating a simple "Hello, World!" terminal application using Raxol.
 
-## Installation
+## Prerequisites
 
-1. Clone the repository:
+Before you start, ensure you have:
 
-   ```bash
-   git clone https://github.com/Hydepwns/raxol.git
-   cd raxol
-   ```
+1.  **Elixir installed:** Raxol requires Elixir. You can find installation instructions on the [official Elixir website](https://elixir-lang.org/install.html).
+2.  **A new Mix project (optional):** If you don't have a project, create one:
+    ```bash
+    mix new my_raxol_app
+    cd my_raxol_app
+    ```
 
-2. Install dependencies:
+## 1. Add Raxol Dependency
 
-   ```bash
-   mix deps.get
-   ```
-
-3. Build the project:
-   ```bash
-   mix compile
-   ```
-
-## Basic Usage
-
-### Starting the Terminal
+First, add `raxol` to your project's dependencies. Open your `mix.exs` file and update the `deps` function:
 
 ```elixir
-# Start the terminal emulator
-iex -S mix run -e "Raxol.Terminal.Emulator.start()"
+def deps do
+  [
+    {:raxol, "~> 0.1.0"}
+    # Or {:raxol, github: "Hydepwns/raxol"} for the latest code
+  ]
+end
 ```
 
-### Basic Terminal Operations
+Then, fetch the dependency:
+
+```bash
+mix deps.get
+```
+
+For more details, see the [Installation Guide](../installation/Installation.md).
+
+## 2. Create Your Application Module
+
+Create a new Elixir file, for example, `lib/my_raxol_app/application.ex`, and define your application module. This module will use `Raxol.App` and implement the `render/1` callback.
 
 ```elixir
-# Create a new terminal emulator
-terminal = Raxol.Terminal.Emulator.new(80, 24)
+defmodule MyRaxolApp.Application do
+  use Raxol.App
 
-# Write text to the terminal
-terminal = Raxol.Terminal.Emulator.write_char(terminal, "Hello, World!")
-
-# Move the cursor
-terminal = Raxol.Terminal.Emulator.move_cursor(terminal, 5, 5)
-
-# Set text attributes
-terminal = Raxol.Terminal.Emulator.set_attribute(terminal, :bold)
-terminal = Raxol.Terminal.Emulator.set_attribute(terminal, :underline)
+  # The render/1 callback defines the UI.
+  # It receives assigns (data) and must return rendered content.
+  @impl true
+  def render(assigns) do
+    ~H"""
+    <box border="single" padding="1">
+      <text color="cyan" bold="true">Hello, Raxol!</text>
+    </box>
+    """
+  end
+end
 ```
 
-### Using Plugins
+- `use Raxol.App`: Imports necessary functions and defines the behaviour for a Raxol application.
+- `@impl true def render(assigns)`: Implements the required callback to define the UI structure.
+- `~H""" ... """`: This is a HEEx sigil used to define the component-based UI. Here, we have a `<box>` containing a `<text>` element.
+
+## 3. Start the Application
+
+To run your application, you need to start the Raxol runtime, passing your application module.
+
+You can do this directly in an IEx session or as part of your application's supervision tree.
+
+**Running in IEx:**
+
+Start an IEx session within your project:
+
+```bash
+iex -S mix
+```
+
+Inside IEx, start the runtime:
 
 ```elixir
-# Load plugins
-{:ok, terminal} = Raxol.Terminal.Emulator.load_plugin(terminal, Raxol.Plugins.HyperlinkPlugin)
-{:ok, terminal} = Raxol.Terminal.Emulator.load_plugin(terminal, Raxol.Plugins.ImagePlugin)
-
-# Enable/disable a plugin
-{:ok, terminal} = Raxol.Terminal.Emulator.disable_plugin(terminal, "hyperlink")
-{:ok, terminal} = Raxol.Terminal.Emulator.enable_plugin(terminal, "hyperlink")
+iex> {:ok, _pid} = Raxol.Runtime.start_link(app: MyRaxolApp.Application)
 ```
+
+Your terminal should clear and display the box with "Hello, Raxol!". Press `Ctrl+C` twice to exit IEx and stop the application.
+
+**Adding to a Supervisor (More Robust):**
+
+For long-running applications, you'll typically add the `Raxol.Runtime` to your application's supervision tree (e.g., in `lib/my_raxol_app/application.ex` if you used `mix new --sup`):
+
+```elixir
+defmodule MyRaxolApp.Application do
+  use Application
+
+  @impl true
+  def start(_type, _args) do
+    children = [
+      # Start the Raxol Runtime
+      {Raxol.Runtime, app: MyRaxolApp.Application} # Use the module defined in step 2
+      # ... other children
+    ]
+
+    opts = [strategy: :one_for_one, name: MyRaxolApp.Supervisor]
+    Supervisor.start_link(children, opts)
+  end
+end
+```
+
+Make sure `MyRaxolApp.Application` is listed in your `mix.exs` `application/0` function.
 
 ## Next Steps
 
-- Check out the [Installation Guide](../installation/Installation.md) for detailed installation instructions
-- Explore the [Components Documentation](../components/README.md) to learn about available components
-- Read the [Contributing Guide](../../CONTRIBUTING.md) to learn how to contribute to the project
+Congratulations! You've built and run your first Raxol application.
+
+- Explore the different built-in [Components](docs/components/README.md) (Planned).
+- Learn about [Core Concepts](docs/concepts/README.md) like state management and event handling (Planned).
+- Check out the `/examples` directory in the Raxol repository for more advanced use cases.

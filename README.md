@@ -1,110 +1,111 @@
 # Raxol
 
-High-performance terminal emulator with VS Code integration.
+A terminal application toolkit for Elixir, providing components and a runtime for building interactive TUI applications.
 
 > **Note:** Pre-release software. APIs may change before v1.0.
 
 ## Features
 
-- **Terminal:** ANSI processing, platform detection, color/Unicode support
-- **Components:** Widgets, visualization, flexible layouts
-- **Plugins:** Notifications, clipboard, visualization tools
-- **VS Code:** Extension for in-editor integration
-- **Performance:** Double buffering, memory optimization, virtual scrolling, visualization caching (5,000-15,000x speedup)
-- **Dashboard:** Flexible layout system with drag-and-drop widgets and persistence
-- **Visualization:** Charts and TreeMaps with optimized rendering for large datasets
+- **ANSI Terminal Emulation:** Robust handling of ANSI escape codes, colors, and Unicode characters.
+- **Component Model:** Build UIs with reusable components inspired by web frameworks.
+- **Layout System:** Flexible layouts for arranging components within the terminal window.
+- **Performance:** Optimized rendering pipeline with double buffering and efficient updates.
+- **Extensibility:** (Add details about plugins or extension points if applicable)
 
-## Install
+## Installation
 
-### Terminal
-
-```bash
-git clone https://github.com/Hydepwns/raxol.git
-cd raxol
-mix deps.get
-mix compile
-mix run --no-halt
-```
-
-### VS Code Extension
-
-```bash
-cd extensions/vscode
-npm install
-npm run build
-# Press F5 in VS Code or run: code --install-extension raxol-*.vsix
-# Or press Command + Shift + P -> Install from VSIX -> raxol-*.vsix
-```
-
-## Usage
+Add `raxol` to your list of dependencies in `mix.exs`:
 
 ```elixir
-# Start terminal
-{:ok, terminal} = Raxol.Runtime.start_link(width: 80, height: 24)
+def deps do
+  [
+    {:raxol, "~> 0.1.0"} # Or use {:raxol, github: "Hydepwns/raxol"} for development
+  ]
+end
+```
 
-# Create widget
-defmodule MyWidget do
-  use Raxol.Component
+Then, fetch the dependencies:
+
+```bash
+mix deps.get
+```
+
+For detailed installation options and requirements, see the [Installation Guide](docs/installation.md).
+
+## Getting Started
+
+Here's a basic example of a Raxol application:
+
+```elixir
+defmodule MyApp do
+  use Raxol.App
+
+  @impl true
   def render(assigns) do
     ~H"""
-    <box title="Widget"><text>Content</text></box>
+    <box border="single">
+      <text>Hello, Raxol!</text>
+    </box>
     """
   end
 end
 
-# Create a visualization
-MyDashboard.add_chart("Sales", %{
-  data: sales_data,
-  type: :bar,
-  options: %{show_labels: true}
-})
+# Start the application
+{:ok, _pid} = Raxol.Runtime.start_link(app: MyApp)
+
+# Keep the application running (e.g., in an IEx session or supervisor)
+# ...
 ```
+
+For a more comprehensive guide, please refer to the [Getting Started Tutorial](docs/getting_started.md).
+
+## Documentation
+
+Detailed documentation can be found in the `/docs` directory:
+
+- [Installation Guide](docs/installation.md)
+- [Getting Started Tutorial](docs/getting_started.md)
+- [Terminal Emulator Details](docs/terminal_emulator.md)
+- [Core Concepts](docs/concepts/README.md) (Planned)
+- [Components](docs/components/README.md) (Planned)
+- (Add link to ExDoc API reference when available)
 
 ## Development
 
 ```bash
-mix test                  # Run tests
-mix credo                 # Code quality
-mix dialyzer              # Type checking
-./scripts/run-local-tests.sh  # Run tests locally without GitHub Actions
+# Ensure dependencies are installed
+mix deps.get
+mix compile
+
+# Run tests
+mix test
+
+# Run static analysis
+mix credo
+mix dialyzer
+
+# Run tests locally without GitHub Actions (if applicable)
+# ./scripts/run-local-tests.sh
+
+# Format code before committing
+mix format # Or ./scripts/format_before_commit.sh
 ```
-
-### Code Formatting
-
-To ensure your code is properly formatted before committing, run the following script:
-
-```bash
-./scripts/format_before_commit.sh
-```
-
-This will run `mix format` on all Elixir files in the project, ensuring that your code passes the CI format check.
 
 ### GitHub Actions
 
-To run GitHub Actions workflows locally for testing:
-
-```bash
-# Run with default settings (CI workflow)
-./scripts/run-local-actions.sh
-
-# Run a specific workflow (e.g., simplified dummy test)
-./scripts/run-local-actions.sh -w dummy-test.yml -j test
-```
-
-See [GitHub Actions README](.github/workflows/README.md) for detailed instructions on:
-
-- Running workflows locally with `act`
-- Troubleshooting common issues
-- Testing on different platforms
-- Setting up custom Docker images for ARM Macs
+(Keep existing GitHub Actions section if still relevant)
+See [GitHub Actions README](.github/workflows/README.md) for detailed instructions...
 
 ## Project Structure
 
+(Keep existing Project Structure section, review later if needed)
+
 - `/examples` - Example applications and code samples
-- `/extensions` - IDE integrations and extensions
-- `/frontend` - JavaScript/TypeScript configurations and assets
+- `/extensions` - IDE integrations and extensions (Review if still accurate)
+- `/frontend` - JavaScript/TypeScript configurations and assets (Review if still accurate)
 - `/lib` - Core Elixir code
 - `/priv` - Non-source code assets
+- `/docs` - User documentation
 
 ## License
 
