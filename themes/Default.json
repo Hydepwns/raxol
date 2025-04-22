@@ -1,0 +1,79 @@
+{
+  "name": "Default",
+  "palette": {
+    "accent": {
+      "r": 190,
+      "g": 88,
+      "b": 0,
+      "a": 1.0
+    },
+    "background": {
+      "r": 255,
+      "g": 255,
+      "b": 255,
+      "a": 1.0
+    },
+    "error": {
+      "r": 204,
+      "g": 0,
+      "b": 0,
+      "a": 1.0
+    },
+    "info": {
+      "r": 0,
+      "g": 114,
+      "b": 165,
+      "a": 1.0
+    },
+    "primary": {
+      "r": 0,
+      "g": 119,
+      "b": 204,
+      "a": 1.0
+    },
+    "secondary": {
+      "r": 102,
+      "g": 102,
+      "b": 102,
+      "a": 1.0
+    },
+    "success": {
+      "r": 0,
+      "g": 127,
+      "b": 0,
+      "a": 1.0
+    },
+    "surface": {
+      "r": 115,
+      "g": 115,
+      "b": 115,
+      "a": 1.0
+    },
+    "text": {
+      "r": 51,
+      "g": 51,
+      "b": 51,
+      "a": 1.0
+    },
+    "warning": {
+      "r": 190,
+      "g": 88,
+      "b": 0,
+      "a": 1.0
+    }
+  },
+  "high_contrast": false,
+  "dark_mode": false,
+  "ui_mappings": {
+    "accent_button": "accent",
+    "app_background": "background",
+    "error_text": "error",
+    "info_text": "info",
+    "primary_button": "primary",
+    "secondary_button": "secondary",
+    "success_text": "success",
+    "surface_background": "surface",
+    "text": "text",
+    "warning_text": "warning"
+  }
+}

@@ -71,7 +71,8 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library
-      {:rrex_termbox, path: "../rex_termbox", only: [:prod, :test]},
+      # {:rrex_termbox, path: "../rex_termbox", only: [:prod, :test]},
+      {:rrex_termbox, "~> 1.0.3"},
       {:phoenix, "~> 1.7.20"},
       {:phoenix_live_view, "~> 1.0.0"},
       {:surface, "~> 0.12"},
@@ -95,13 +96,6 @@ defmodule Raxol.MixProject do
       {:plug_cowboy, "~> 2.7"},
       {:phoenix_html, "~> 4.2"},
       {:phoenix_html_helpers, "~> 1.0"},
-      {:heroicons,
-       github: "tailwindlabs/heroicons",
-       tag: "v2.1.1",
-       sparse: "optimized",
-       app: false,
-       compile: false,
-       depth: 1},
 
       # Components & Layout (Using local path for now)
       # {:raxol_view_components, path: "../raxol_view_components"}, # Example if extracted
@@ -162,6 +156,8 @@ defmodule Raxol.MixProject do
 
   defp package do
     [
+      files:
+        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG*),
       maintainers: ["DROO AMOR"],
       licenses: ["MIT"],
       links: %{
