@@ -1,7 +1,5 @@
 # Raxol
 
-<!-- TODO: Add badges (Hex version, CI status, License, etc.) -->
-
 [![Hex pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 
