@@ -65,15 +65,15 @@
   "high_contrast": false,
   "dark_mode": false,
   "ui_mappings": {
-    "text": "text",
-    "app_background": "background",
     "accent_button": "accent",
+    "app_background": "background",
     "error_text": "error",
     "info_text": "info",
     "primary_button": "primary",
     "secondary_button": "secondary",
     "success_text": "success",
     "surface_background": "surface",
+    "text": "text",
     "warning_text": "warning"
   }
 }
