@@ -45,9 +45,16 @@ For more details, see the [Installation Guide](../installation/Installation.md).
 
 ## 2. Create Your Application Module
 
-Create a new Elixir file, for example, `lib/my_raxol_app/application.ex`, and define your application module. This module will use `Raxol.App` and implement the `render/1` callback.
+Create a new Elixir file, for example, `lib/my_raxol_app/application.ex`, and define your application module. This module will use `Raxol.App` and implement the `render/1` callback to define the user interface.
+
+Raxol offers two primary ways to define your UI within the `render/1` function:
+
+**Method 1: Using the HEEx Sigil (`~H`)**
+
+This approach uses a syntax similar to HTML and is often convenient for static structures or when integrating with HEEx templates.
 
 ```elixir
+# lib/my_raxol_app/application.ex
 defmodule MyRaxolApp.Application do
   use Raxol.App
 
@@ -55,22 +62,118 @@ defmodule MyRaxolApp.Application do
   # It receives assigns (data) and must return rendered content.
   @impl true
   def render(assigns) do
-    ~H"""
-    <box border="single" padding="1">
-      <text color="cyan" bold="true">Hello, Raxol!</text>
+    ~H\"\"\"
+    <box border=\"single\" padding=\"1\">
+      <text color=\"cyan\" bold=\"true\">Hello from HEEx!</text>
     </box>
-    """
+    \"\"\"
   end
 end
 ```
 
 - `use Raxol.App`: Imports necessary functions and defines the behaviour for a Raxol application.
 - `@impl true def render(assigns)`: Implements the required callback to define the UI structure.
-- `~H""" ... """`: This is a HEEx sigil used to define the component-based UI. Here, we have a `<box>` containing a `<text>` element.
+- `~H\"\"\" ... \"\"\"`: The HEEx sigil defines the component-based UI using HTML-like tags.
+
+**Method 2: Using `Raxol.View` and Component Functions**
+
+This approach uses standard Elixir function calls for components, often providing more flexibility for programmatically building complex UIs. Many examples in the `/examples` directory use this method.
+
+```elixir
+# lib/my_raxol_app/application_view.ex
+defmodule MyRaxolApp.ApplicationView do
+  use Raxol.App
+  use Raxol.View # Use Raxol.View for this approach
+  import Raxol.View.Elements # Optional: Import elements for cleaner calls
+
+  @impl true
+  def render(assigns) do
+    # Use the view macro and nested component functions
+    view do
+      box border: :single, padding: 1 do
+        text content: "Hello from Raxol.View!", color: :cyan, attributes: [:bold]
+      end
+    end
+  end
+end
+
+```
+
+- `use Raxol.View`: Required to enable the `view` macro and component function syntax.
+- `import Raxol.View.Elements`: Allows calling components like `box` and `text` directly, otherwise you might need `Raxol.View.Elements.box(...)`.
+- `view do ... end`: A macro block containing nested component function calls (e.g., `box(...)`, `text(...)`). Note that attributes are passed as keyword lists or maps.
+
+Choose the method that best suits your needs or project style. Both achieve the same goal of defining the UI.
+
+## 2.5 Adding State and Interactivity (init, update)
+
+Static UIs are useful, but most terminal applications need to manage state and respond to user input. Raxol handles this using the `init/1` and `update/2` callbacks, inspired by the Elm Architecture.
+
+**1. Initialize State with `init/1`**
+
+The `init/1` callback is called once when the application starts. It should return the initial state of your application.
+
+**2. Handle Messages with `update/2`**
+
+The `update/2` callback is triggered when a message is sent to your application (e.g., from a button click or a subscription). It receives the message and the current state, and returns the _new_ state. Optionally, it can also return a `Command` for executing background tasks (see `examples/advanced/commands.exs`).
+
+**3. Render State in `render/1`**
+
+The `render/1` callback receives the current state (as `assigns`) and uses it to draw the UI.
+
+**Example: A Simple Counter**
+
+Let's modify our application to be a counter. We'll use the `Raxol.View` method here for illustration.
+
+```elixir
+# lib/my_raxol_app/counter.ex
+defmodule MyRaxolApp.Counter do
+  use Raxol.App
+  use Raxol.View
+  import Raxol.View.Elements
+
+  # 1. Define the initial state
+  @impl true
+  def init(_context), do: %{count: 0}
+
+  # 2. Handle messages to update the state
+  @impl true
+  def update(model, message) do
+    case message do
+      :increment ->
+        %{model | count: model.count + 1}
+      _ ->
+        model # Return the unchanged model for other messages
+    end
+  end
+
+  # 3. Render the UI based on the current state
+  @impl true
+  def render(assigns) do
+    view do
+      box border: :single, padding: 1 do
+        # Display the current count from assigns (state)
+        text content: "Count: \#{assigns.count}"
+        # Add a button that sends the :increment message when clicked
+        button label: "Increment", on_click: :increment
+      end
+    end
+  end
+end
+```
+
+- `init/1` returns the initial state `%{count: 0}`.
+- `update/2` handles the `:increment` message by returning a new state map with the count increased.
+- `render/1` now uses `assigns.count` to display the value and includes a `<button>` component.
+- The `button` has an `on_click: :increment` attribute. When clicked, Raxol sends the `:increment` message to the `update/2` function.
+
+**Subscriptions (`subscribe/1`)**
+
+For handling external events like timers or keyboard events not tied to specific components, you can implement the `subscribe/1` callback. It returns subscriptions that send messages to `update/2`. See `examples/basic/subscriptions.exs` for details and the [Async Operations Guide](async_operations.md) for a full explanation.
 
 ## 3. Start the Application
 
-To run your application, you need to start the Raxol runtime, passing your application module.
+To run your application, you need to start the Raxol runtime, passing your application module. See the [Runtime Options Guide](runtime_options.md) for configuration options like setting the title or quit keys.
 
 You can do this directly in an IEx session or as part of your application's supervision tree.
 
@@ -85,10 +188,10 @@ iex -S mix
 Inside IEx, start the runtime:
 
 ```elixir
-iex> {:ok, _pid} = Raxol.Runtime.start_link(app: MyRaxolApp.Application)
+iex> {:ok, _pid} = Raxol.Runtime.start_link(app: MyRaxolApp.Counter)
 ```
 
-Your terminal should clear and display the box with "Hello, Raxol!". Press `Ctrl+C` twice to exit IEx and stop the application.
+Your terminal should clear and display the counter. Clicking the button (if your terminal supports mouse events) or pressing Enter when it's focused should increment the count.
 
 **Adding to a Supervisor (More Robust):**
 
@@ -102,7 +205,7 @@ defmodule MyRaxolApp.Application do
   def start(_type, _args) do
     children = [
       # Start the Raxol Runtime
-      {Raxol.Runtime, app: MyRaxolApp.Application} # Use the module defined in step 2
+      {Raxol.Runtime, app: MyRaxolApp.Counter} # Use the module defined in step 2.5
       # ... other children
     ]
 
@@ -118,6 +221,7 @@ Make sure `MyRaxolApp.Application` is listed in your `mix.exs` `application/0` f
 
 Congratulations! You've built and run your first Raxol application.
 
-- Explore the different built-in [Components](docs/components/README.md) (Planned).
-- Learn about [Core Concepts](docs/concepts/README.md) like state management and event handling (Planned).
+- Explore the different built-in [UI Components](components.md).
+- Dive deeper into [Asynchronous Operations (Subscriptions & Commands)](async_operations.md).
+- Configure the application startup using [Runtime Options](runtime_options.md).
 - Check out the `/examples` directory in the Raxol repository for more advanced use cases.
