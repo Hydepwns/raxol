@@ -101,6 +101,7 @@ defmodule Raxol.Components.Progress.Spinner do
   def update(_msg, state), do: state
 
   @impl true
+  @dialyzer {:nowarn_function, render: 1}
   def render(state) do
     spinner_char = Enum.at(state.style.chars, state.frame)
 

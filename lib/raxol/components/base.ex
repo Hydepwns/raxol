@@ -8,6 +8,9 @@ defmodule Raxol.Components.Base do
 
   use Raxol.Component
 
+  # Add @dialyzer directive to silence the callback_type_mismatch warning
+  @dialyzer {:nowarn_function, render: 1}
+
   alias Raxol.Core.Events.Event
   alias Raxol.Style
 

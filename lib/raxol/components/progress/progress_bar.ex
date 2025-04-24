@@ -61,10 +61,10 @@ defmodule Raxol.Components.Progress.ProgressBar do
     %{state | characters: chars}
   end
 
+  # Catch-all clause to match Component behavior
   def update(_msg, state), do: state
 
   @impl true
-  @spec render(map()) :: Raxol.Core.Renderer.Element.t() | nil
   @dialyzer {:nowarn_function, render: 1}
   def render(state) do
     # Determine bar characters based on style

@@ -104,7 +104,7 @@ defmodule Raxol.Components.Selection.Dropdown do
   @spec render(map()) :: Raxol.Core.Renderer.Element.t() | nil
   @dialyzer {:nowarn_function, render: 1}
   def render(state) do
-    if state.expanded do
+    if state.is_open do
       dsl_result_expanded = render_expanded(state)
       Raxol.View.to_element(dsl_result_expanded)
     else
@@ -138,33 +138,61 @@ defmodule Raxol.Components.Selection.Dropdown do
       # Explicitly return a list for the column's children
       [
         # Show the collapsed view first
-        render_collapsed(state),
+        _collapsed_view = render_collapsed(state),
         # Then render the list of options below
         Layout.box style: %{border: :single, width: state.width} do
-          # Assuming List.render returns an element or list of elements
-          List.render(%{
-            items: state.items,
-            render_item: state.render_item,
-            selected_index: state.focused_index,
-            # Adjust for border
-            width: state.width - 2,
-            # Or a max height
-            height: Enum.count(state.items)
-          })
+          # Determine the selected index
+          selected_index =
+            cond do
+              is_integer(state.selected_item) ->
+                state.selected_item
+
+              not is_nil(state.selected_item) ->
+                # Find index of the item in the list
+                Enum.find_index(state.items, fn item ->
+                  item == state.selected_item
+                end)
+
+              true ->
+                nil
+            end
+
+          # Capture the result of List.render
+          list_elements =
+            List.render(%{
+              items: state.items,
+              render_item: state.render_item,
+              selected_index: selected_index,
+              # Adjust for border
+              width: state.width - 2,
+              # Or a max height
+              height: Enum.count(state.items)
+            })
+
+          # Return the result
+          list_elements
         end
       ]
     end
   end
 
   defp get_selected_label(state) do
-    if state.selected_index do
-      selected_item = Enum.at(state.items, state.selected_index)
+    cond do
+      is_integer(state.selected_item) ->
+        # If selected_item is an index
+        selected_item = Enum.at(state.items, state.selected_item)
 
-      if selected_item,
-        do: state.render_item.(selected_item),
-        else: state.placeholder
-    else
-      state.placeholder
+        if selected_item,
+          do: state.render_item.(selected_item),
+          else: state.placeholder
+
+      not is_nil(state.selected_item) ->
+        # If selected_item is the actual item value
+        state.render_item.(state.selected_item)
+
+      true ->
+        # Default case
+        state.placeholder
     end
   end
 

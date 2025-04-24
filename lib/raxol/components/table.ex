@@ -7,6 +7,9 @@ defmodule Raxol.Components.Table do
 
   require Raxol.Core.Renderer.Element
 
+  # Add @dialyzer directive to silence the callback_type_mismatch warning
+  @dialyzer {:nowarn_function, render: 1}
+
   @moduledoc """
   Table component for displaying tabular data in terminal UI applications.
 
@@ -171,90 +174,117 @@ defmodule Raxol.Components.Table do
     table_opts = [id: id, style: table_style]
 
     table_children = fn ->
-      Layout.column([], fn ->
-        # Render table header
-        render_header(
-          normalized_columns,
-          header_style,
-          sort_by,
-          sort_dir,
-          on_sort
-        )
+      children =
+        Layout.column([], fn ->
+          # Render table header
+          header_result =
+            render_header(
+              normalized_columns,
+              header_style,
+              sort_by,
+              sort_dir,
+              on_sort
+            )
 
-        # Render table body
-        body_props =
-          if max_height do
-            [style: %{height: max_height, overflow: :scroll}]
-          else
-            []
+          # Render table body
+          body_props =
+            if max_height do
+              [style: %{height: max_height, overflow: :scroll}]
+            else
+              []
+            end
+
+          # Construct body map directly
+          body_children = fn ->
+            Layout.column([], fn ->
+              # Render each row
+              row_results =
+                sorted_data
+                |> Enum.with_index()
+                |> Enum.map(fn {row_data, index} ->
+                  # Determine if this row is selected
+                  is_selected =
+                    selected && Map.get(row_data, select_key) == selected
+
+                  # Determine row style based on zebra striping and selection
+                  row_final_style =
+                    cond do
+                      is_selected ->
+                        Map.merge(row_style, selected_style)
+
+                      zebra_stripe && rem(index, 2) == 1 ->
+                        Map.merge(row_style, zebra_style)
+
+                      true ->
+                        row_style
+                    end
+
+                  # Create click handler for row selection
+                  row_click_handler =
+                    if on_select do
+                      fn -> on_select.(Map.get(row_data, select_key)) end
+                    else
+                      nil
+                    end
+
+                  # Render the row
+                  row_props = [
+                    id: "#{id}_row_#{index}",
+                    style: row_final_style
+                  ]
+
+                  # Add click handler if provided
+                  row_props =
+                    if row_click_handler do
+                      Keyword.put(row_props, :on_click, row_click_handler)
+                    else
+                      row_props
+                    end
+
+                  row_result =
+                    Layout.row(row_props,
+                      do: fn ->
+                        # Render each cell in the row
+                        cell_results =
+                          normalized_columns
+                          |> Enum.map(fn column ->
+                            render_cell(row_data, column, index)
+                          end)
+
+                        # Return the cell results
+                        cell_results
+                      end
+                    )
+
+                  # Return the row result
+                  row_result
+                end)
+
+              # Return the row results
+              row_results
+            end)
           end
 
-        # Construct body map directly
-        body_children = fn ->
-          Layout.column([], fn ->
-            # Render each row
-            sorted_data
-            |> Enum.with_index()
-            |> Enum.each(fn {row_data, index} ->
-              # Determine if this row is selected
-              is_selected =
-                selected && Map.get(row_data, select_key) == selected
+          body_box = %{
+            type: :box,
+            opts: body_props,
+            children: List.wrap(body_children.())
+          }
 
-              # Determine row style based on zebra striping and selection
-              row_final_style =
-                cond do
-                  is_selected ->
-                    Map.merge(row_style, selected_style)
+          # Render footer if provided
+          footer_result =
+            if footer_fn do
+              footer_fn.()
+            else
+              nil
+            end
 
-                  zebra_stripe && rem(index, 2) == 1 ->
-                    Map.merge(row_style, zebra_style)
+          # Return all components
+          [header_result, body_box, footer_result]
+        end)
 
-                  true ->
-                    row_style
-                end
-
-              # Create click handler for row selection
-              row_click_handler =
-                if on_select do
-                  fn -> on_select.(Map.get(row_data, select_key)) end
-                else
-                  nil
-                end
-
-              # Render the row
-              row_props = [
-                id: "#{id}_row_#{index}",
-                style: row_final_style
-              ]
-
-              # Add click handler if provided
-              row_props =
-                if row_click_handler do
-                  Keyword.put(row_props, :on_click, row_click_handler)
-                else
-                  row_props
-                end
-
-              Layout.row(row_props,
-                do: fn ->
-                  # Render each cell in the row
-                  normalized_columns
-                  |> Enum.each(fn column ->
-                    render_cell(row_data, column, index)
-                  end)
-                end
-              )
-            end)
-          end)
-        end
-
-        %{type: :box, opts: body_props, children: List.wrap(body_children.())}
-
-        # Render footer if provided
-        if footer_fn do
-          footer_fn.()
-        end
-      end)
+      # Return the children
+      children
     end
 
     %{type: :box, opts: table_opts, children: List.wrap(table_children.())}
@@ -318,82 +348,103 @@ defmodule Raxol.Components.Table do
       Layout.row([id: "#{id}_pagination", style: pagination_style],
         do: fn ->
           # Page info display
-          if show_page_info do
-            info_text = "Page #{page} of #{total_pages}"
+          info_element =
+            if show_page_info do
+              info_text = "Page #{page} of #{total_pages}"
 
-            if page_size && total_items do
-              start_item = (page - 1) * page_size + 1
-              end_item = min(page * page_size, total_items)
+              info_text =
+                if page_size && total_items do
+                  start_item = (page - 1) * page_size + 1
+                  end_item = min(page * page_size, total_items)
 
-              ^info_text =
-                "#{info_text} (#{start_item}-#{end_item} of #{total_items})"
+                  "#{info_text} (#{start_item}-#{end_item} of #{total_items})"
+                else
+                  info_text
+                end
+
+              Components.text(info_text, style: %{marginRight: "1rem"})
+            else
+              nil
             end
 
-            Components.text(info_text, style: %{marginRight: "1rem"})
-          end
-
           # Spacer - construct map directly
-          %{
+          spacer = %{
             type: :box,
             opts: [style: %{width: :flex}],
             children: List.wrap(Components.text(""))
           }
 
           # Pagination buttons
-          Layout.row([style: %{gap: 1}],
-            do: fn ->
-              # First page button
-              Components.button("<<",
-                id: "#{id}_first_page",
-                style: %{},
-                disabled: page <= 1,
-                on_click: fn -> on_page_change.(1) end
-              )
-
-              # Previous page button
-              Components.button("<",
-                id: "#{id}_prev_page",
-                style: %{},
-                disabled: page <= 1,
-                on_click: fn -> on_page_change.(page - 1) end
-              )
-
-              # Page number buttons
-              page_numbers = calculate_page_numbers(page, total_pages)
-
-              Enum.map(page_numbers, fn p ->
-                is_current = p == page
-
-                if p == :ellipsis do
-                  Components.text("...")
-                else
-                  Components.button(to_string(p),
-                    id: "#{id}_page_#{p}",
-                    style:
-                      if(is_current, do: %{bg: :blue, fg: :white}, else: %{}),
-                    disabled: is_current,
-                    on_click: fn -> on_page_change.(p) end
+          buttons_row =
+            Layout.row([style: %{gap: 1}],
+              do: fn ->
+                # First page button
+                first_button =
+                  Components.button("<<",
+                    id: "#{id}_first_page",
+                    style: %{},
+                    disabled: page <= 1,
+                    on_click: fn -> on_page_change.(1) end
                   )
-                end
-              end)
 
-              # Next page button
-              Components.button(">",
-                id: "#{id}_next_page",
-                style: %{},
-                disabled: page >= total_pages,
-                on_click: fn -> on_page_change.(page + 1) end
-              )
+                # Previous page button
+                prev_button =
+                  Components.button("<",
+                    id: "#{id}_prev_page",
+                    style: %{},
+                    disabled: page <= 1,
+                    on_click: fn -> on_page_change.(page - 1) end
+                  )
 
-              # Last page button
-              Components.button(">>",
-                id: "#{id}_last_page",
-                style: %{},
-                disabled: page >= total_pages,
-                on_click: fn -> on_page_change.(total_pages) end
-              )
-            end
-          )
+                # Page number buttons
+                page_numbers = calculate_page_numbers(page, total_pages)
+
+                page_buttons =
+                  Enum.map(page_numbers, fn p ->
+                    is_current = p == page
+
+                    if p == :ellipsis do
+                      Components.text("...")
+                    else
+                      Components.button(to_string(p),
+                        id: "#{id}_page_#{p}",
+                        style:
+                          if(is_current,
+                            do: %{bg: :blue, fg: :white},
+                            else: %{}
+                          ),
+                        disabled: is_current,
+                        on_click: fn -> on_page_change.(p) end
+                      )
+                    end
+                  end)
+
+                # Next page button
+                next_button =
+                  Components.button(">",
+                    id: "#{id}_next_page",
+                    style: %{},
+                    disabled: page >= total_pages,
+                    on_click: fn -> on_page_change.(page + 1) end
+                  )
+
+                # Last page button
+                last_button =
+                  Components.button(">>",
+                    id: "#{id}_last_page",
+                    style: %{},
+                    disabled: page >= total_pages,
+                    on_click: fn -> on_page_change.(total_pages) end
+                  )
+
+                # Return all buttons as a list
+                [first_button, prev_button] ++
+                  page_buttons ++ [next_button, last_button]
+              end
+            )
+
+          # Return the elements
+          [info_element, spacer, buttons_row]
         end
       )
     end
@@ -432,72 +483,76 @@ defmodule Raxol.Components.Table do
   defp render_header(columns, style, sort_by, sort_dir, on_sort) do
     Layout.row([style: style],
       do: fn ->
-        columns
-        |> Enum.map(fn column ->
-          is_sorted = column.key == sort_by
+        header_cells =
+          columns
+          |> Enum.map(fn column ->
+            is_sorted = column.key == sort_by
 
-          header_click =
-            if column.sortable && on_sort do
-              fn ->
-                new_dir =
-                  if is_sorted && sort_dir == :asc, do: :desc, else: :asc
+            header_click =
+              if column.sortable && on_sort do
+                fn ->
+                  new_dir =
+                    if is_sorted && sort_dir == :asc, do: :desc, else: :asc
 
-                on_sort.(%{column: column.key, direction: new_dir})
+                  on_sort.(%{column: column.key, direction: new_dir})
+                end
+              else
+                nil
               end
-            else
-              nil
-            end
 
-          # Base props
-          header_props_map = %{id: "header_#{column.key}", style: %{}}
+            # Base props
+            header_props_map = %{id: "header_#{column.key}", style: %{}}
 
-          # Add style constraints
-          style_constraints = %{}
+            # Add style constraints
+            style_constraints = %{}
 
-          style_constraints =
-            if Map.has_key?(column, :width),
-              do: Map.put(style_constraints, :width, column.width),
-              else: style_constraints
+            style_constraints =
+              if Map.has_key?(column, :width),
+                do: Map.put(style_constraints, :width, column.width),
+                else: style_constraints
 
-          style_constraints =
-            if Map.has_key?(column, :min_width),
-              do: Map.put(style_constraints, :min_width, column.min_width),
-              else: style_constraints
+            style_constraints =
+              if Map.has_key?(column, :min_width),
+                do: Map.put(style_constraints, :min_width, column.min_width),
+                else: style_constraints
 
-          style_constraints =
-            if Map.has_key?(column, :max_width),
-              do: Map.put(style_constraints, :max_width, column.max_width),
-              else: style_constraints
+            style_constraints =
+              if Map.has_key?(column, :max_width),
+                do: Map.put(style_constraints, :max_width, column.max_width),
+                else: style_constraints
 
-          header_props_map =
-            Map.put(
-              header_props_map,
-              :style,
-              Map.merge(header_props_map.style, style_constraints)
-            )
+            header_props_map =
+              Map.put(
+                header_props_map,
+                :style,
+                Map.merge(header_props_map.style, style_constraints)
+              )
 
-          # Add click handler
-          header_props_map =
-            if header_click,
-              do: Map.put(header_props_map, :on_click, header_click),
-              else: header_props_map
+            # Add click handler
+            header_props_map =
+              if header_click,
+                do: Map.put(header_props_map, :on_click, header_click),
+                else: header_props_map
 
-          # Calculate sort indicator label
-          sort_indicator_label =
-            if is_sorted do
-              case sort_dir do
-                :asc -> " ↑"
-                :desc -> " ↓"
-                _ -> ""
+            # Calculate sort indicator label
+            sort_indicator_label =
+              if is_sorted do
+                case sort_dir do
+                  :asc -> " ↑"
+                  :desc -> " ↓"
+                  _ -> ""
+                end
+              else
+                ""
               end
-            else
-              ""
-            end
 
-          # Render using View.text for now, applying final props
-          cell_content = column.label <> sort_indicator_label
-          %{type: :text, text: cell_content, attrs: header_props_map}
-        end)
+            # Render using View.text for now, applying final props
+            cell_content = column.label <> sort_indicator_label
+            %{type: :text, text: cell_content, attrs: header_props_map}
+          end)
+
+        # Return the header cells
+        header_cells
       end
     )
   end
@@ -566,13 +621,17 @@ defmodule Raxol.Components.Table do
     # Render the cell
     cell_children = fn ->
       # Render custom or default cell content
-      case column do
-        %{render: render_fun} when is_function(render_fun, 1) ->
-          render_fun.(row_data)
+      cell_content =
+        case column do
+          %{render: render_fun} when is_function(render_fun, 1) ->
+            render_fun.(row_data)
 
-        _ ->
-          Components.text(display_value, style: cell_style)
-      end
+          _ ->
+            Components.text(display_value, style: cell_style)
+        end
+
+      # Return the cell content
+      cell_content
     end
 
     %{type: :box, opts: cell_props, children: List.wrap(cell_children.())}

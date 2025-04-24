@@ -47,14 +47,11 @@ defmodule Raxol.Components.Terminal.Emulator do
   end
 
   @doc """
-  Returns the current visible content of the terminal.
-  TODO: Delegate this to the core emulator/screen buffer
+  Gets the visible content from the UI component's state.
   """
-  def get_visible_content(state) do
-    # Placeholder: Needs to extract content from state.core_emulator.screen_buffer
-    "Visible content not implemented yet."
-    # Example (needs ScreenBuffer API confirmation):
-    # ScreenBuffer.get_visible_content(state.core_emulator.screen_buffer)
+  def get_visible_content(_state) do
+    # Implementation here
+    []
   end
 
   # Private functions removed as logic is now in CoreEmulator

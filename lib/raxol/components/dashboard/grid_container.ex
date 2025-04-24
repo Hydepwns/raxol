@@ -200,8 +200,7 @@ defmodule Raxol.Components.Dashboard.GridContainer do
           "Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(container_width)}, container_height=#{inspect(container_height)}"
         )
 
-        return_default = %{x: 0, y: 0, width: 10, height: 10}
-        return_default
+        %{x: 0, y: 0, width: 10, height: 10}
       else
         # Extract widget grid spec with defaults
         grid_spec =
@@ -232,8 +231,7 @@ defmodule Raxol.Components.Dashboard.GridContainer do
             "Invalid cell dimensions in calculate_widget_bounds: width=#{inspect(cell_width)}, height=#{inspect(cell_height)}"
           )
 
-          return_default = %{x: 0, y: 0, width: 10, height: 10}
-          return_default
+          %{x: 0, y: 0, width: 10, height: 10}
         else
           x_pos =
             parent_bounds.x + (col_start - 1) * cell_width +
@@ -246,16 +244,13 @@ defmodule Raxol.Components.Dashboard.GridContainer do
           width = width_cells * cell_width + (width_cells - 1) * gap
           height = height_cells * cell_height + (height_cells - 1) * gap
 
-          # Clamp size to container bounds just in case
-          final_width =
-            max(0, min(width, parent_bounds.x + container_width - x_pos))
-
-          final_height =
-            max(0, min(height, parent_bounds.y + container_height - y_pos))
-
-          # --- End of calculation logic ---
-
-          %{x: x_pos, y: y_pos, width: final_width, height: final_height}
+          # Return the final bounds with calculated dimensions
+          %{
+            x: x_pos,
+            y: y_pos,
+            width: width,
+            height: height
+          }
         end
       end
     end

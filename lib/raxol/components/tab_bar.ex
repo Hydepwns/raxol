@@ -1,16 +1,7 @@
 defmodule Raxol.Components.TabBar do
-  use Raxol.Component
-
-  require Raxol.View
-
-  # alias Raxol.Components.FocusManager # Removed - Unused
-  alias Raxol.View
-  alias Raxol.View.Layout
-  alias Raxol.View.Components
-
-  alias Raxol.Component.FocusManager
-
   @moduledoc """
+  A tab bar component for Raxol.
+
   A tab bar component for navigating between different sections of a UI.
 
   ## Examples
@@ -47,7 +38,7 @@ defmodule Raxol.Components.TabBar do
 
   @behaviour Raxol.ComponentBehaviour
 
-  @doc \"""
+  @doc """
   Renders a tab bar with the given tabs, highlighting the active tab.
 
   ## Parameters
@@ -90,31 +81,35 @@ defmodule Raxol.Components.TabBar do
     active_tab_style =
       Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
 
-    Layout.row([style: style, id: focus_key], fn ->
-      Enum.map(tabs, fn %{id: id, label: label} = tab ->
-        is_active = id == active_tab
+    Raxol.View.Layout.row([style: style, id: focus_key], fn ->
+      tab_buttons =
+        Enum.map(tabs, fn %{id: id, label: label} = tab ->
+          is_active = id == active_tab
 
-        # Compute final style for this tab
-        final_style =
-          if is_active do
-            Map.merge(tab_style, active_tab_style)
-          else
-            tab_style
-          end
+          # Compute final style for this tab
+          final_style =
+            if is_active do
+              Map.merge(tab_style, active_tab_style)
+            else
+              tab_style
+            end
 
-        # Get additional tab properties if provided
-        tooltip = Map.get(tab, :tooltip, "")
+          # Get additional tab properties if provided
+          tooltip = Map.get(tab, :tooltip, "")
 
-        # Create the tab with proper focus key
-        tab_focus_key = "#{focus_key}_#{id}"
+          # Create the tab with proper focus key
+          tab_focus_key = "#{focus_key}_#{id}"
 
-        Components.button(label,
-          id: tab_focus_key,
-          style: final_style,
-          on_click: fn -> on_change.(id) end,
-          tooltip: tooltip
-        )
-      end)
+          Raxol.View.Components.button(label,
+            id: tab_focus_key,
+            style: final_style,
+            on_click: fn -> on_change.(id) end,
+            tooltip: tooltip
+          )
+        end)
+
+      # Return the tab buttons
+      tab_buttons
     end)
   end
 
@@ -168,34 +163,40 @@ defmodule Raxol.Components.TabBar do
 
     content_style = Keyword.get(opts, :content_style, %{})
 
-    Layout.row([style: style, id: focus_key], fn ->
-      Layout.row([style: tab_bar_style], fn ->
-        render(tabs, active_tab, on_change,
-          focus_key: focus_key,
-          style: tab_bar_style,
-          tab_style: tab_style,
-          active_tab_style: active_tab_style
-        )
-      end)
+    Raxol.View.Layout.row([style: style, id: focus_key], fn ->
+      tab_bar =
+        Raxol.View.Layout.row([style: tab_bar_style], fn ->
+          tab_bar_result =
+            render(tabs, active_tab, on_change,
+              focus_key: focus_key,
+              style: tab_bar_style,
+              tab_style: tab_style,
+              active_tab_style: active_tab_style
+            )
 
-      Layout.row([style: content_style], fn ->
-        # Find and render the content for the active tab
-        active_tab_content =
-          case Enum.find(tabs, fn %{id: id} -> id == active_tab end) do
-            %{content: content_fn} when is_function(content_fn, 0) ->
-              content_fn.()
+          # Return the tab bar
+          tab_bar_result
+        end)
 
-            %{content: content} ->
-              # Assume content is already a View element/map
-              content
+      content =
+        Raxol.View.Layout.row([style: content_style], fn ->
+          # Find and render the content for the active tab
+          active_tab_content =
+            case Enum.find(tabs, fn %{id: id} -> id == active_tab end) do
+              %{content: content_fn} when is_function(content_fn, 0) ->
+                content_fn.()
 
-            _ ->
-              Components.text("Content not found for tab: #{active_tab}")
-          end
+              _ ->
+                # Handle case when tab not found or has no content function
+                Raxol.View.Components.text("Content not found for tab: #{active_tab}")
+            end
 
-        # Return the content to be rendered in the row
-        active_tab_content
-      end)
+          # Return content element
+          active_tab_content
+        end)
+
+      # Return tab bar and content in a list
+      [tab_bar, content]
     end)
   end
 end

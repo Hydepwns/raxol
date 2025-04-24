@@ -37,6 +37,57 @@ defmodule Raxol.Components.Modal do
   """
 
   @doc """
+  Initializes the component state.
+
+  This is a default implementation that can be overridden by components.
+  """
+  @impl true
+  def init(props) when is_map(props), do: props
+  def init(_props), do: %{}
+
+  @doc """
+  Updates the component state in response to a message.
+
+  This is a default implementation that can be overridden by components.
+  """
+  @impl true
+  def update(_msg, state), do: state
+
+  @doc """
+  Renders the component based on its current state.
+
+  This function should be overridden by actual component implementations.
+  """
+  @impl true
+  def render(state) do
+    if state[:component], do: state.component, else: nil
+  end
+
+  @doc """
+  Handles external events sent to this component.
+
+  This is a default implementation that can be overridden by components.
+  """
+  @impl true
+  def handle_event(_event, state), do: {state, []}
+
+  @doc """
+  Called when the component is mounted to the view tree.
+
+  This is a default implementation that can be overridden by components.
+  """
+  @impl true
+  def mount(state), do: {state, []}
+
+  @doc """
+  Called when the component is removed from the view tree.
+
+  This is a default implementation that can be overridden by components.
+  """
+  @impl true
+  def unmount(state), do: state
+
+  @doc """
   Renders a modal dialog.
 
   This is the base function for creating modals. It renders a modal with
@@ -79,6 +130,7 @@ defmodule Raxol.Components.Modal do
     centered: true
   )```
   """
+  @dialyzer {:nowarn_function, [render: 3, render: 4]}
   def render(title, content_fn, actions_fn, opts \\ []) do
     # Extract options with defaults
     id = Keyword.get(opts, :id, "modal")
@@ -97,12 +149,12 @@ defmodule Raxol.Components.Modal do
     container_props = [id: id, style: style]
 
     container_props =
-      if width,
+      if not is_nil(width),
         do: Keyword.put(container_props, :style, Map.put(style, :width, width)),
         else: container_props
 
     container_props =
-      if height,
+      if not is_nil(height),
         do:
           Keyword.put(
             container_props,
@@ -113,28 +165,46 @@ defmodule Raxol.Components.Modal do
 
     # TODO: Add on_key handling if/when View DSL supports it
 
-    # Use box instead of panel
-    Layout.box container_props do
-      # Create children conditionally, filtering nils
-      [
-        if title do
-          Layout.box id: "#{id}_title", style: title_style do
-            Components.text(title)
-          end
-        end,
-        if content_fn do
-          Layout.box id: "#{id}_content", style: content_style do
-            content_fn.()
-          end
-        end,
-        if actions_fn do
-          Layout.box id: "#{id}_actions", style: actions_style do
-            actions_fn.()
-          end
+    # Build children content first, capturing results
+    title_content =
+      if title do
+        Layout.box id: "#{id}_title", style: title_style do
+          Components.text(title)
         end
-      ]
+      else
+        nil
+      end
+
+    content_result =
+      if content_fn do
+        content_value = content_fn.()
+
+        Layout.box id: "#{id}_content", style: content_style do
+          content_value
+        end
+      else
+        nil
+      end
+
+    actions_result =
+      if actions_fn do
+        actions_value = actions_fn.()
+
+        Layout.box id: "#{id}_actions", style: actions_style do
+          actions_value
+        end
+      else
+        nil
+      end
+
+    children_result =
+      [title_content, content_result, actions_result]
       |> Enum.reject(&is_nil(&1))
       |> List.flatten()
+
+    # Use box with prepared children
+    Layout.box container_props do
+      children_result
     end
   end
 
@@ -165,6 +235,7 @@ defmodule Raxol.Components.Modal do
   )
   ```
   """
+  @dialyzer {:nowarn_function, [confirmation: 4, confirmation: 5]}
   def confirmation(title, message, on_confirm, on_cancel, opts \\ []) do
     # Get customization options
     yes_text = Keyword.get(opts, :yes_text, "Yes")
@@ -172,26 +243,38 @@ defmodule Raxol.Components.Modal do
     yes_style = Keyword.get(opts, :yes_style, %{fg: :white, bg: :blue})
     no_style = Keyword.get(opts, :no_style, %{})
 
+    # Create content function that returns the message text
+    message_fn = fn -> Components.text(message) end
+
     # Create confirmation modal
     render(
       title,
-      fn -> Components.text(message) end,
+      message_fn,
       fn ->
-        Layout.row([style: %{justify: :flex_end, gap: 1}],
-          do: fn ->
-            Components.button(no_text,
-              id: "#{title}_no",
-              style: no_style,
-              on_click: on_cancel
-            )
+        row_result =
+          Layout.row([style: %{justify: :flex_end, gap: 1}],
+            do: fn ->
+              no_button =
+                Components.button(no_text,
+                  id: "#{title}_no",
+                  style: no_style,
+                  on_click: on_cancel
+                )
 
-            Components.button(yes_text,
-              id: "#{title}_yes",
-              style: yes_style,
-              on_click: on_confirm
-            )
-          end
-        )
+              yes_button =
+                Components.button(yes_text,
+                  id: "#{title}_yes",
+                  style: yes_style,
+                  on_click: on_confirm
+                )
+
+              # Return the buttons rather than just assigning them
+              [no_button, yes_button]
+            end
+          )
+
+        # Return the row component
+        row_result
       end,
       Keyword.merge(
         [
@@ -224,26 +307,38 @@ defmodule Raxol.Components.Modal do
   Modal.alert("Success", fn -> "Item saved successfully." end, fn -> send(self(), {:alert_ok}) end)
   ```
   """
+  @dialyzer {:nowarn_function, [alert: 3, alert: 4]}
   def alert(title, content_fn, on_ok, opts \\ []) do
     # Get customization options
     ok_text = Keyword.get(opts, :ok_text, "OK")
     ok_style = Keyword.get(opts, :ok_style, %{fg: :white, bg: :blue})
 
+    # Create actions function
+    actions_fn = fn ->
+      row_result =
+        Layout.row([style: %{justify: :center}],
+          do: fn ->
+            ok_button =
+              Components.button(ok_text,
+                id: "#{title}_ok",
+                style: ok_style,
+                on_click: on_ok
+              )
+
+            # Return the button rather than just assigning it
+            [ok_button]
+          end
+        )
+
+      # Return the row component
+      row_result
+    end
+
     # Create alert modal
     render(
       title,
       content_fn,
-      fn ->
-        Layout.row([style: %{justify: :center}],
-          do: fn ->
-            Components.button(ok_text,
-              id: "#{title}_ok",
-              style: ok_style,
-              on_click: on_ok
-            )
-          end
-        )
-      end,
+      actions_fn,
       Keyword.merge(
         [
           id: "alert_#{String.downcase(title) |> String.replace(" ", "_")}",
@@ -283,13 +378,55 @@ defmodule Raxol.Components.Modal do
   )
   ```
   """
-  def form(title, form_fn, _on_submit, _on_cancel, opts \\ []) do
+  @dialyzer {:nowarn_function, [form: 4, form: 5]}
+  def form(title, form_fn, on_submit, on_cancel, opts \\ []) do
+    # Get customization options
+    submit_text = Keyword.get(opts, :submit_text, "Submit")
+    cancel_text = Keyword.get(opts, :cancel_text, "Cancel")
+    submit_style = Keyword.get(opts, :submit_style, %{fg: :white, bg: :blue})
+    cancel_style = Keyword.get(opts, :cancel_style, %{})
+
+    # Create actions function with explicit return value handling
+    actions_fn = fn ->
+      row_result =
+        Layout.row([style: %{justify: :flex_end, gap: 1}],
+          do: fn ->
+            cancel_button =
+              Components.button(cancel_text,
+                id: "#{title}_cancel",
+                style: cancel_style,
+                on_click: on_cancel
+              )
+
+            submit_button =
+              Components.button(submit_text,
+                id: "#{title}_submit",
+                style: submit_style,
+                on_click: on_submit
+              )
+
+            # Return the buttons rather than just assigning them
+            [cancel_button, submit_button]
+          end
+        )
+
+      # Return the row component
+      row_result
+    end
+
+    # Create form modal with submit/cancel buttons
     render(
       title,
       form_fn,
-      # Return empty list to fix syntax and represent no footer content
-      fn -> [] end,
-      opts
+      actions_fn,
+      Keyword.merge(
+        [
+          id: "form_#{String.downcase(title) |> String.replace(" ", "_")}",
+          width: 50,
+          on_escape: on_cancel
+        ],
+        opts
+      )
     )
   end
 end

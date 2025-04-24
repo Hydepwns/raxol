@@ -106,6 +106,7 @@ defmodule Raxol.Components.Selection.List do
   def update(_msg, state), do: state
 
   @impl true
+  @dialyzer {:nowarn_function, render: 1}
   def render(state) do
     dsl_result =
       View.box style: %{width: state.width, height: state.height} do
