@@ -7,7 +7,16 @@ defmodule Raxol.Terminal.CommandHistory do
   - Navigating through command history
   - Persisting command history
   - Managing history size limits
+
+  DEPRECATED: This module is being refactored into the Raxol.Terminal.Commands.History module.
+  New code should use the Raxol.Terminal.Commands.History module directly.
   """
+
+  # Display a compile-time deprecation warning
+  @deprecated "This module is deprecated. Use Raxol.Terminal.Commands.History instead."
+
+  alias Raxol.Terminal.Commands.History
+  require Logger
 
   @type t :: %__MODULE__{
           commands: [String.t()],
@@ -26,23 +35,37 @@ defmodule Raxol.Terminal.CommandHistory do
   @doc """
   Creates a new command history manager.
 
+  DEPRECATED: Use Raxol.Terminal.Commands.History.new/1 instead.
+
   ## Examples
 
       iex> history = CommandHistory.new(1000)
       iex> history.max_size
       1000
+
+  ## Migration Path
+
+  ```elixir
+  # Before
+  history = Raxol.Terminal.CommandHistory.new(1000)
+
+  # After
+  history = Raxol.Terminal.Commands.History.new(1000)
+  ```
   """
   def new(max_size) when is_integer(max_size) and max_size > 0 do
-    %__MODULE__{
-      commands: [],
-      current_index: -1,
-      max_size: max_size,
-      current_input: ""
-    }
+    Logger.warn(
+      "Raxol.Terminal.CommandHistory.new/1 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.History.new/1 instead."
+    )
+
+    History.new(max_size)
   end
 
   @doc """
   Adds a command to the history.
+
+  DEPRECATED: Use Raxol.Terminal.Commands.History.add/2 instead.
 
   ## Examples
 
@@ -50,16 +73,33 @@ defmodule Raxol.Terminal.CommandHistory do
       iex> history = CommandHistory.add(history, "ls -la")
       iex> history.commands
       ["ls -la"]
+
+  ## Migration Path
+
+  ```elixir
+  # Before
+  history = Raxol.Terminal.CommandHistory.add(history, "ls -la")
+
+  # After
+  history = Raxol.Terminal.Commands.History.add(history, "ls -la")
+  ```
   """
   def add(%__MODULE__{} = history, command) when is_binary(command) do
-    commands = [command | history.commands]
-    commands = Enum.take(commands, history.max_size)
+    Logger.warn(
+      "Raxol.Terminal.CommandHistory.add/2 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.History.add/2 instead."
+    )
 
-    %{history | commands: commands, current_index: -1, current_input: ""}
+    # Convert to new structure, add command, then convert back for compatibility
+    new_history = convert_to_new(history)
+    |> History.add(command)
+    convert_to_old(new_history)
   end
 
   @doc """
   Retrieves the previous command in history.
+
+  DEPRECATED: Use Raxol.Terminal.Commands.History.previous/1 instead.
 
   ## Examples
 
@@ -68,21 +108,33 @@ defmodule Raxol.Terminal.CommandHistory do
       iex> history = CommandHistory.add(history, "cd /tmp")
       iex> CommandHistory.previous(history)
       {"cd /tmp", %CommandHistory{...}}
+
+  ## Migration Path
+
+  ```elixir
+  # Before
+  {command, history} = Raxol.Terminal.CommandHistory.previous(history)
+
+  # After
+  {command, history} = Raxol.Terminal.Commands.History.previous(history)
+  ```
   """
   def previous(%__MODULE__{} = history) do
-    case history.current_index + 1 < length(history.commands) do
-      true ->
-        new_index = history.current_index + 1
-        command = Enum.at(history.commands, new_index)
-        {command, %{history | current_index: new_index}}
+    Logger.warn(
+      "Raxol.Terminal.CommandHistory.previous/1 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.History.previous/1 instead."
+    )
 
-      false ->
-        {nil, history}
-    end
+    # Convert to new structure, get previous, then convert back
+    new_history = convert_to_new(history)
+    {command, updated_history} = History.previous(new_history)
+    {command, convert_to_old(updated_history)}
   end
 
   @doc """
   Retrieves the next command in history.
+
+  DEPRECATED: Use Raxol.Terminal.Commands.History.next/1 instead.
 
   ## Examples
 
@@ -92,26 +144,33 @@ defmodule Raxol.Terminal.CommandHistory do
       iex> {_, history} = CommandHistory.previous(history)
       iex> CommandHistory.next(history)
       {"ls -la", %CommandHistory{...}}
+
+  ## Migration Path
+
+  ```elixir
+  # Before
+  {command, history} = Raxol.Terminal.CommandHistory.next(history)
+
+  # After
+  {command, history} = Raxol.Terminal.Commands.History.next(history)
+  ```
   """
   def next(%__MODULE__{} = history) do
-    case history.current_index - 1 >= -1 do
-      true ->
-        new_index = history.current_index - 1
+    Logger.warn(
+      "Raxol.Terminal.CommandHistory.next/1 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.History.next/1 instead."
+    )
 
-        command =
-          if new_index == -1,
-            do: history.current_input,
-            else: Enum.at(history.commands, new_index)
-
-        {command, %{history | current_index: new_index}}
-
-      false ->
-        {nil, history}
-    end
+    # Convert to new structure, get next, then convert back
+    new_history = convert_to_new(history)
+    {command, updated_history} = History.next(new_history)
+    {command, convert_to_old(updated_history)}
   end
 
   @doc """
   Saves the current input state.
+
+  DEPRECATED: Use Raxol.Terminal.Commands.History.save_input/2 instead.
 
   ## Examples
 
@@ -119,13 +178,33 @@ defmodule Raxol.Terminal.CommandHistory do
       iex> history = CommandHistory.save_input(history, "ls -l")
       iex> history.current_input
       "ls -l"
+
+  ## Migration Path
+
+  ```elixir
+  # Before
+  history = Raxol.Terminal.CommandHistory.save_input(history, "ls -l")
+
+  # After
+  history = Raxol.Terminal.Commands.History.save_input(history, "ls -l")
+  ```
   """
   def save_input(%__MODULE__{} = history, input) when is_binary(input) do
-    %{history | current_input: input}
+    Logger.warn(
+      "Raxol.Terminal.CommandHistory.save_input/2 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.History.save_input/2 instead."
+    )
+
+    # Convert to new structure, save input, then convert back
+    new_history = convert_to_new(history)
+    |> History.save_input(input)
+    convert_to_old(new_history)
   end
 
   @doc """
   Clears the command history.
+
+  DEPRECATED: Use Raxol.Terminal.Commands.History.clear/1 instead.
 
   ## Examples
 
@@ -134,13 +213,33 @@ defmodule Raxol.Terminal.CommandHistory do
       iex> history = CommandHistory.clear(history)
       iex> history.commands
       []
+
+  ## Migration Path
+
+  ```elixir
+  # Before
+  history = Raxol.Terminal.CommandHistory.clear(history)
+
+  # After
+  history = Raxol.Terminal.Commands.History.clear(history)
+  ```
   """
   def clear(%__MODULE__{} = history) do
-    %{history | commands: [], current_index: -1, current_input: ""}
+    Logger.warn(
+      "Raxol.Terminal.CommandHistory.clear/1 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.History.clear/1 instead."
+    )
+
+    # Convert to new structure, clear, then convert back
+    new_history = convert_to_new(history)
+    |> History.clear()
+    convert_to_old(new_history)
   end
 
   @doc """
   Returns the current command history as a list.
+
+  DEPRECATED: Use Raxol.Terminal.Commands.History.list/1 instead.
 
   ## Examples
 
@@ -149,8 +248,45 @@ defmodule Raxol.Terminal.CommandHistory do
       iex> history = CommandHistory.add(history, "cd /tmp")
       iex> CommandHistory.list(history)
       ["cd /tmp", "ls -la"]
+
+  ## Migration Path
+
+  ```elixir
+  # Before
+  commands = Raxol.Terminal.CommandHistory.list(history)
+
+  # After
+  commands = Raxol.Terminal.Commands.History.list(history)
+  ```
   """
   def list(%__MODULE__{} = history) do
-    history.commands
+    Logger.warn(
+      "Raxol.Terminal.CommandHistory.list/1 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.History.list/1 instead."
+    )
+
+    # Convert to new structure and get list
+    new_history = convert_to_new(history)
+    History.list(new_history)
+  end
+
+  # Helper functions for compatibility
+
+  defp convert_to_new(%__MODULE__{} = old) do
+    %History{
+      commands: old.commands,
+      current_index: old.current_index,
+      max_size: old.max_size,
+      current_input: old.current_input
+    }
+  end
+
+  defp convert_to_old(%History{} = new) do
+    %__MODULE__{
+      commands: new.commands,
+      current_index: new.current_index,
+      max_size: new.max_size,
+      current_input: new.current_input
+    }
   end
 end

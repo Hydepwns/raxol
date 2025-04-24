@@ -2,6 +2,37 @@
 
 The Raxol Terminal System provides a comprehensive terminal emulation solution with advanced buffer management, cursor control, and scrolling capabilities. This document outlines the architecture and components of the system.
 
+## Reorganization Notice
+
+This module is currently undergoing a significant restructuring as part of the Raxol Repository Reorganization Plan. The goal is to break down large monolithic files into smaller, more focused modules for improved maintainability and discoverability.
+
+### Completed Refactoring:
+
+- **ANSI Module**: The large `ansi.ex` (1257 lines) has been broken down into:
+
+  - `ansi/parser.ex` - ANSI escape sequence parsing
+  - `ansi/emitter.ex` - ANSI sequence generation
+  - `ansi/sequences/*.ex` - Handlers for specific sequence types
+  - `ansi_facade.ex` - Maintains backward compatibility
+
+- **Command Executor**: The large `command_executor.ex` (1243 lines) has been broken down into:
+  - `commands/executor.ex` - Main entry point for command execution
+  - `commands/parser.ex` - Parameter parsing utilities
+  - `commands/modes.ex` - Mode setting/resetting handlers
+  - `commands/screen.ex` - Screen manipulation functions
+
+### In-Progress Refactoring:
+
+- **Configuration Module**: Breaking down `configuration.ex` (2394 lines) into modules in the `config/` directory.
+
+### Upcoming Refactoring:
+
+- **Screen Buffer**: Breaking down `screen_buffer.ex` (1129 lines)
+- **Emulator**: Reorganizing `emulator.ex` (911 lines)
+- **Parser**: Refactoring `parser.ex` (1013 lines)
+
+During this transition, we maintain backward compatibility through facade modules and deprecation warnings to guide users to the new APIs.
+
 ## Components
 
 ### Terminal Emulator

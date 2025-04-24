@@ -14,6 +14,8 @@ defmodule Raxol.Terminal.ANSI.Processor do
   use GenServer
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Manager, as: BufferManager
+  alias Raxol.Terminal.ANSI.Sequences.{Cursor, Colors, Modes, ScreenModes}
+  alias Raxol.Terminal.ANSI.{TextFormatting, CharacterSets, MouseEvents}
 
   # ANSI sequence types
   @type sequence_type :: :csi | :osc | :sos | :pm | :apc | :esc | :text
@@ -27,6 +29,106 @@ defmodule Raxol.Terminal.ANSI.Processor do
           final: String.t(),
           text: String.t()
         }
+
+  @doc """
+  Process a parsed ANSI sequence and return the updated emulator state.
+  This is a direct interface for processing sequences without using the GenServer.
+
+  ## Parameters
+
+  * `sequence` - The parsed ANSI sequence (result from Parser.parse_sequence/1)
+  * `emulator` - The current emulator state
+
+  ## Returns
+
+  Updated emulator state
+
+  ## Examples
+
+      iex> sequence = Raxol.Terminal.ANSI.Parser.parse_sequence("\e[31m")
+      iex> new_state = Raxol.Terminal.ANSI.Processor.process(sequence, emulator)
+  """
+  def process(sequence, emulator) do
+    case sequence do
+      {:cursor_up, n} ->
+        Cursor.move_up(emulator, n)
+
+      {:cursor_down, n} ->
+        Cursor.move_down(emulator, n)
+
+      {:cursor_forward, n} ->
+        Cursor.move_forward(emulator, n)
+
+      {:cursor_backward, n} ->
+        Cursor.move_backward(emulator, n)
+
+      {:cursor_move, row, col} ->
+        Cursor.move_to(emulator, row, col)
+
+      {:clear_screen, n} ->
+        ScreenModes.clear_screen(emulator, n)
+
+      {:clear_line, n} ->
+        ScreenModes.clear_line(emulator, n)
+
+      {:insert_line, n} ->
+        ScreenModes.insert_line(emulator, n)
+
+      {:delete_line, n} ->
+        ScreenModes.delete_line(emulator, n)
+
+      {:text_attributes, attrs} ->
+        process_text_attributes(attrs, emulator)
+
+      {:set_mode, mode, enabled} ->
+        Modes.set_mode(emulator, mode, enabled)
+
+      {:reset_attributes} ->
+        TextFormatting.reset_attributes(emulator)
+
+      {:charset, gset_num, charset} ->
+        CharacterSets.set_charset(emulator, gset_num, charset)
+
+      {:unknown, _sequence} ->
+        # Return the emulator unchanged for unknown sequences
+        emulator
+
+      _ ->
+        # Default case for any unhandled sequence type
+        emulator
+    end
+  end
+
+  defp process_text_attributes(attrs, emulator) do
+    Enum.reduce(attrs, emulator, fn
+      :reset, acc ->
+        TextFormatting.reset_attributes(acc)
+
+      {:foreground_basic, color_code}, acc ->
+        Colors.set_foreground_basic(acc, color_code)
+
+      {:background_basic, color_code}, acc ->
+        Colors.set_background_basic(acc, color_code)
+
+      {:foreground_256, index}, acc ->
+        Colors.set_foreground_256(acc, index)
+
+      {:background_256, index}, acc ->
+        Colors.set_background_256(acc, index)
+
+      {:foreground_true, r, g, b}, acc ->
+        Colors.set_foreground_true(acc, r, g, b)
+
+      {:background_true, r, g, b}, acc ->
+        Colors.set_background_true(acc, r, g, b)
+
+      attribute, acc when is_atom(attribute) ->
+        TextFormatting.set_attribute(acc, attribute)
+
+      _, acc ->
+        acc
+    end)
+  end
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts)

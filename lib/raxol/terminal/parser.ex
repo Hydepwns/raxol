@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Parser do
   """
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.CommandExecutor
+  alias Raxol.Terminal.Commands.Executor
   alias Raxol.Terminal.ANSI.CharacterSets
 
   # Add alias for ScreenModes if mode_enabled? is called directly (it isn't currently)
@@ -499,7 +499,7 @@ defmodule Raxol.Terminal.Parser do
       when final_byte >= 0x40 and final_byte <= 0x7E ->
         # Pass explicit params, intermediates, final_byte to Emulator
         new_emulator =
-          CommandExecutor.execute_csi_command(
+          Executor.execute_csi_command(
             emulator,
             parser_state.params_buffer,
             parser_state.intermediates_buffer,
@@ -570,7 +570,7 @@ defmodule Raxol.Terminal.Parser do
       when final_byte >= 0x40 and final_byte <= 0x7E ->
         # Pass explicit params, intermediates, final_byte to Emulator
         new_emulator =
-          CommandExecutor.execute_csi_command(
+          Executor.execute_csi_command(
             emulator,
             parser_state.params_buffer,
             parser_state.intermediates_buffer,
@@ -644,7 +644,7 @@ defmodule Raxol.Terminal.Parser do
       when final_byte >= 0x40 and final_byte <= 0x7E ->
         # Pass explicit params, intermediates, final_byte to Emulator
         new_emulator =
-          CommandExecutor.execute_csi_command(
+          Executor.execute_csi_command(
             emulator,
             parser_state.params_buffer,
             parser_state.intermediates_buffer,
@@ -701,7 +701,7 @@ defmodule Raxol.Terminal.Parser do
       # Bell (BEL) can also terminate OSC
       <<0x07, rest_after_bel::binary>> ->
         new_emulator =
-          CommandExecutor.execute_osc_command(
+          Executor.execute_osc_command(
             emulator,
             parser_state.payload_buffer
           )
@@ -711,10 +711,10 @@ defmodule Raxol.Terminal.Parser do
 
       # Collect printable characters for the OSC payload
       # Standard printable ASCII
-      <<_byte, rest_after_byte::binary>> when _byte >= 32 and _byte <= 126 ->
+      <<byte, rest_after_byte::binary>> when byte >= 32 and byte <= 126 ->
         next_parser_state = %{
           parser_state
-          | payload_buffer: parser_state.payload_buffer <> <<_byte>>
+          | payload_buffer: parser_state.payload_buffer <> <<byte>>
         }
 
         parse_loop(emulator, next_parser_state, rest_after_byte)
@@ -745,7 +745,7 @@ defmodule Raxol.Terminal.Parser do
       # Found ST (ESC \), use literal 92 for '\'
       <<92, rest_after_st::binary>> ->
         new_emulator =
-          CommandExecutor.execute_osc_command(
+          Executor.execute_osc_command(
             emulator,
             parser_state.payload_buffer
           )
@@ -771,7 +771,7 @@ defmodule Raxol.Terminal.Parser do
         )
 
         # Go to ground
-        %{parser_state | state: :ground}
+        _next_parser_state = %{parser_state | state: :ground}
         # Return emulator as is
         emulator
     end
@@ -900,7 +900,7 @@ defmodule Raxol.Terminal.Parser do
       <<92, rest_after_st::binary>> ->
         # Pass explicit params, intermediates, final_byte, payload to Emulator
         new_emulator =
-          CommandExecutor.execute_dcs_command(
+          Executor.execute_dcs_command(
             emulator,
             parser_state.params_buffer,
             parser_state.intermediates_buffer,
@@ -929,7 +929,7 @@ defmodule Raxol.Terminal.Parser do
         )
 
         # Go to ground
-        %{parser_state | state: :ground}
+        _next_parser_state = %{parser_state | state: :ground}
         # Return emulator as is
         emulator
     end

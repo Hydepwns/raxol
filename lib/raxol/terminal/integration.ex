@@ -7,19 +7,21 @@ defmodule Raxol.Terminal.Integration do
   - Screen buffer management (`Raxol.Terminal.Buffer.Manager`)
   - Cursor state and rendering (`Raxol.Terminal.Cursor.Manager`)
   - Scrollback buffer (`Raxol.Terminal.Buffer.Scroll`)
-  - Input handling and command history (`Raxol.Terminal.CommandHistory`)
-  - Terminal configuration (`Raxol.Terminal.Configuration`)
+  - Input handling and command history (`Raxol.Terminal.Commands.History`)
+  - Terminal configuration (`Raxol.Terminal.Config`)
   - Managing memory and performance optimizations
   - Command history management
   """
+
+  require Logger
 
   alias Raxol.Terminal.Buffer.Manager, as: BufferManager
   alias Raxol.Terminal.Buffer.Scroll
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.Cursor.Style
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.CommandHistory
-  alias Raxol.Terminal.Configuration
+  alias Raxol.Terminal.Commands.History
+  alias Raxol.Terminal.Config
   alias Raxol.Terminal.Renderer
   alias Raxol.Terminal.ScreenBuffer
 
@@ -29,8 +31,8 @@ defmodule Raxol.Terminal.Integration do
           buffer_manager: BufferManager.t(),
           scroll_buffer: Scroll.t(),
           cursor_manager: CursorManager.t(),
-          command_history: CommandHistory.t(),
-          config: Configuration.t(),
+          command_history: History.t(),
+          config: map(),
           memory_limit: non_neg_integer(),
           last_cleanup: integer()
         }
@@ -59,24 +61,24 @@ defmodule Raxol.Terminal.Integration do
       24
   """
   def new(width, height, opts \\ []) do
-    config = Configuration.new(opts)
+    default_config = Config.generate_default_config()
+    config = apply_config_options(default_config, opts)
+
     emulator = Emulator.new(width, height)
 
     {:ok, buffer_manager} =
       BufferManager.new(
         width,
         height,
-        config.scrollback_height,
-        config.memory_limit
+        config.behavior.scrollback_lines,
+        config.memory_limit || 50 * 1024 * 1024
       )
 
-    # Create the initial renderer
-    # Use getter for active buffer
-    renderer = Renderer.new(Emulator.get_active_buffer(emulator), config.theme)
+    renderer = Renderer.new(Emulator.get_active_buffer(emulator), config.ansi.colors)
 
-    scroll_buffer = Scroll.new(config.scrollback_height)
+    scroll_buffer = Scroll.new(config.behavior.scrollback_lines)
     cursor_manager = CursorManager.new()
-    command_history = CommandHistory.new(config.command_history_size)
+    command_history = History.new(config.behavior.save_history && 1000 || 0)
 
     %__MODULE__{
       emulator: emulator,
@@ -86,7 +88,7 @@ defmodule Raxol.Terminal.Integration do
       cursor_manager: cursor_manager,
       command_history: command_history,
       config: config,
-      memory_limit: config.memory_limit,
+      memory_limit: config.memory_limit || 50 * 1024 * 1024,
       last_cleanup: System.system_time(:millisecond)
     }
   end
@@ -105,7 +107,7 @@ defmodule Raxol.Terminal.Integration do
       integration = %{
         integration
         | command_history:
-            CommandHistory.save_input(integration.command_history, input)
+            History.save_input(integration.command_history, input)
       }
 
       integration
@@ -117,7 +119,7 @@ defmodule Raxol.Terminal.Integration do
   def handle_input(%__MODULE__{} = integration, :up_arrow) do
     if integration.config.enable_command_history do
       {command, command_history} =
-        CommandHistory.previous(integration.command_history)
+        History.previous(integration.command_history)
 
       if command do
         integration = %{integration | command_history: command_history}
@@ -133,7 +135,7 @@ defmodule Raxol.Terminal.Integration do
   def handle_input(%__MODULE__{} = integration, :down_arrow) do
     if integration.config.enable_command_history do
       {command, command_history} =
-        CommandHistory.next(integration.command_history)
+        History.next(integration.command_history)
 
       if command do
         integration = %{integration | command_history: command_history}
@@ -161,7 +163,7 @@ defmodule Raxol.Terminal.Integration do
         %{
           integration
           | command_history:
-              CommandHistory.add(integration.command_history, command)
+              History.add(integration.command_history, command)
         }
       else
         integration
@@ -181,11 +183,12 @@ defmodule Raxol.Terminal.Integration do
       iex> integration = Integration.update_config(integration, theme: "light")
   """
   def update_config(%__MODULE__{} = integration, opts) do
-    config = Configuration.update(integration.config, opts)
+    partial_config = create_partial_config(opts)
 
-    case Configuration.validate(config) do
-      :ok ->
-        %{integration | config: config}
+    case Config.validate_config(partial_config) do
+      {:ok, _validated_partial} ->
+        updated_config = deep_merge(integration.config, partial_config)
+        %{integration | config: updated_config}
 
       {:error, reason} ->
         {:error, reason}
@@ -210,7 +213,7 @@ defmodule Raxol.Terminal.Integration do
     new_renderer =
       Renderer.new(
         Emulator.get_active_buffer(emulator),
-        integration.config.theme
+        integration.config.ansi.colors
       )
 
     %{integration | emulator: emulator, renderer: new_renderer}
@@ -263,7 +266,7 @@ defmodule Raxol.Terminal.Integration do
     new_renderer =
       Renderer.new(
         Emulator.get_active_buffer(emulator),
-        integration.config.theme
+        integration.config.ansi.colors
       )
 
     %{integration | emulator: emulator, renderer: new_renderer}
@@ -785,4 +788,45 @@ defmodule Raxol.Terminal.Integration do
     cursor_manager = Style.hide(integration.cursor_manager)
     %{integration | cursor_manager: cursor_manager}
   end
+
+  defp apply_config_options(config, opts) do
+    Enum.reduce(opts, config, fn {key, value}, acc ->
+      deep_put(acc, key, value)
+    end)
+  end
+
+  defp create_partial_config(opts) do
+    Enum.reduce(opts, %{}, fn {key, value}, acc ->
+      deep_put(acc, key, value)
+    end)
+  end
+
+  defp deep_put(map, key, value) when is_atom(key) do
+    Map.put(map, key, value)
+  end
+
+  defp deep_put(map, path, value) when is_list(path) do
+    path_to_nested_map(path, value)
+    |> deep_merge(map)
+  end
+
+  defp path_to_nested_map([key], value) do
+    %{key => value}
+  end
+
+  defp path_to_nested_map([head | tail], value) do
+    %{head => path_to_nested_map(tail, value)}
+  end
+
+  defp deep_merge(left, right) when is_map(left) and is_map(right) do
+    Map.merge(left, right, fn
+      _, left_value, right_value when is_map(left_value) and is_map(right_value) ->
+        deep_merge(left_value, right_value)
+
+      _, _left_value, right_value ->
+        right_value
+    end)
+  end
+
+  defp deep_merge(_, right), do: right
 end

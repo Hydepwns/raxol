@@ -9,6 +9,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   - Sixel image attributes
   """
 
+  require Logger
+
   alias Raxol.Terminal.ANSI.SequenceParser
 
   @type sixel_state :: %{

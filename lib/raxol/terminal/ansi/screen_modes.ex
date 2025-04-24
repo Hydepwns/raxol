@@ -259,4 +259,141 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
       saved_state: nil
     }
   end
+
+  @doc """
+  Clears the screen based on the mode parameter.
+
+  ## Parameters
+
+  * `emulator` - The terminal emulator state
+  * `n` - The mode for clearing the screen:
+    * 0: Clear from cursor to end of screen
+    * 1: Clear from start of screen to cursor
+    * 2: Clear entire screen
+    * 3: Clear entire screen and scrollback buffer
+
+  ## Returns
+
+  Updated emulator state
+  """
+  def clear_screen(emulator, n) do
+    case n do
+      # Since all values 0-3 return the same result in the original implementation
+      # we can combine them here
+      n when n in [0, 1, 2, 3] -> %{emulator | buffer: []}
+      _ -> emulator
+    end
+  end
+
+  @doc """
+  Clears the current line based on the mode parameter.
+
+  ## Parameters
+
+  * `emulator` - The terminal emulator state
+  * `n` - The mode for clearing the line:
+    * 0: Clear from cursor to end of line
+    * 1: Clear from start of line to cursor
+    * 2: Clear entire line
+
+  ## Returns
+
+  Updated emulator state
+  """
+  def clear_line(emulator, n) do
+    buffer = Raxol.Terminal.Emulator.get_active_buffer(emulator)
+    {cursor_x, cursor_y} = emulator.cursor.position
+    buffer_width = Raxol.Terminal.ScreenBuffer.get_width(buffer)
+
+    new_buffer =
+      case n do
+        0 ->
+          # Clear from cursor to end of line
+          Raxol.Terminal.ScreenBuffer.clear_region(
+            buffer,
+            cursor_x,
+            cursor_y,
+            buffer_width - 1,
+            cursor_y
+          )
+
+        1 ->
+          # Clear from start of line to cursor
+          Raxol.Terminal.ScreenBuffer.clear_region(buffer, 0, cursor_y, cursor_x, cursor_y)
+
+        2 ->
+          # Clear entire line
+          Raxol.Terminal.ScreenBuffer.clear_region(
+            buffer,
+            0,
+            cursor_y,
+            buffer_width - 1,
+            cursor_y
+          )
+
+        # Unknown mode, do nothing
+        _ ->
+          buffer
+      end
+
+    Map.put(emulator, emulator.active_buffer_key, new_buffer)
+  end
+
+  @doc """
+  Inserts n lines at the current cursor position.
+
+  ## Parameters
+
+  * `emulator` - The terminal emulator state
+  * `n` - The number of lines to insert
+
+  ## Returns
+
+  Updated emulator state
+  """
+  def insert_line(emulator, n) do
+    {_, y} = emulator.cursor.position
+    buffer = Raxol.Terminal.Emulator.get_active_buffer(emulator)
+
+    # Get the correct buffer key based on active_buffer_type
+    buffer_key =
+      if emulator.active_buffer_type == :main,
+        do: :main_screen_buffer,
+        else: :alternate_screen_buffer
+
+    # Insert n lines at the current cursor position
+    new_buffer = Raxol.Terminal.ScreenBuffer.insert_lines(buffer, y, n, emulator.style)
+
+    # Return the updated emulator
+    %{emulator | buffer_key => new_buffer}
+  end
+
+  @doc """
+  Deletes n lines starting from the current cursor position.
+
+  ## Parameters
+
+  * `emulator` - The terminal emulator state
+  * `n` - The number of lines to delete
+
+  ## Returns
+
+  Updated emulator state
+  """
+  def delete_line(emulator, n) do
+    {_, y} = emulator.cursor.position
+    buffer = Raxol.Terminal.Emulator.get_active_buffer(emulator)
+
+    # Get the correct buffer key based on active_buffer_type
+    buffer_key =
+      if emulator.active_buffer_type == :main,
+        do: :main_screen_buffer,
+        else: :alternate_screen_buffer
+
+    # Delete n lines starting from the current cursor position
+    new_buffer = Raxol.Terminal.ScreenBuffer.delete_lines(buffer, y, n, emulator.style)
+
+    # Return the updated emulator
+    %{emulator | buffer_key => new_buffer}
+  end
 end

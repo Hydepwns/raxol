@@ -263,4 +263,89 @@ defmodule Raxol.Terminal.Cursor.Manager do
         }
     end
   end
+
+  @doc """
+  Moves the cursor down by the specified number of rows.
+
+  ## Examples
+
+      iex> alias Raxol.Terminal.Cursor.Manager
+      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
+      iex> cursor = Raxol.Terminal.Cursor.Manager.move_down(cursor, 3)
+      iex> cursor.position
+      {0, 3}
+  """
+  def move_down(%__MODULE__{position: {x, y}} = cursor, count)
+      when is_integer(count) and count >= 0 do
+    %{cursor | position: {x, y + count}}
+  end
+
+  @doc """
+  Moves the cursor up by the specified number of rows.
+
+  ## Examples
+
+      iex> alias Raxol.Terminal.Cursor.Manager
+      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
+      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 5, 5)
+      iex> cursor = Raxol.Terminal.Cursor.Manager.move_up(cursor, 3)
+      iex> cursor.position
+      {5, 2}
+  """
+  def move_up(%__MODULE__{position: {x, y}} = cursor, count)
+      when is_integer(count) and count >= 0 do
+    new_y = max(0, y - count)
+    %{cursor | position: {x, new_y}}
+  end
+
+  @doc """
+  Moves the cursor left by the specified number of columns.
+
+  ## Examples
+
+      iex> alias Raxol.Terminal.Cursor.Manager
+      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
+      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 5, 0)
+      iex> cursor = Raxol.Terminal.Cursor.Manager.move_left(cursor, 3)
+      iex> cursor.position
+      {2, 0}
+  """
+  def move_left(%__MODULE__{position: {x, y}} = cursor, count)
+      when is_integer(count) and count >= 0 do
+    new_x = max(0, x - count)
+    %{cursor | position: {new_x, y}}
+  end
+
+  @doc """
+  Moves the cursor right by the specified number of columns.
+
+  ## Examples
+
+      iex> alias Raxol.Terminal.Cursor.Manager
+      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
+      iex> cursor = Raxol.Terminal.Cursor.Manager.move_right(cursor, 3)
+      iex> cursor.position
+      {3, 0}
+  """
+  def move_right(%__MODULE__{position: {x, y}} = cursor, count)
+      when is_integer(count) and count >= 0 do
+    %{cursor | position: {x + count, y}}
+  end
+
+  @doc """
+  Moves the cursor to a specific column while maintaining the current row.
+
+  ## Examples
+
+      iex> alias Raxol.Terminal.Cursor.Manager
+      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
+      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 0, 5)
+      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to_col(cursor, 10)
+      iex> cursor.position
+      {10, 5}
+  """
+  def move_to_col(%__MODULE__{position: {_x, y}} = cursor, col)
+      when is_integer(col) and col >= 0 do
+    %{cursor | position: {col, y}}
+  end
 end
