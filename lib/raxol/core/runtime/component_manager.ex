@@ -187,7 +187,9 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
         {:schedule, msg, delay} ->
           # Schedule delayed message using Process.send_after
-          Process.send_after(self(), {:update, component_id, msg}, delay)
+          _timer_ref =
+            Process.send_after(self(), {:update, component_id, msg}, delay)
+
           acc
 
         {:broadcast, msg} ->

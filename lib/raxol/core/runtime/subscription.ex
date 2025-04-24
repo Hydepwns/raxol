@@ -169,7 +169,7 @@ defmodule Raxol.Core.Runtime.Subscription do
           {:error, :process_not_alive}
         end
 
-      _ ->
+      _other_subscription_id ->
         {:error, :invalid_subscription}
     end
   end

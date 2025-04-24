@@ -58,6 +58,10 @@ defmodule Raxol.Application do
         ),
         # Start hot-reload server
         {HotReload, []},
+        # Start Phoenix Telemetry
+        {RaxolWeb.Telemetry, []},
+        # Start the Phoenix endpoint for the web interface
+        RaxolWeb.Endpoint,
         # Add DynamicSupervisor for Raxol.Runtime
         {DynamicSupervisor,
          name: Raxol.DynamicSupervisor, strategy: :one_for_one}
@@ -127,7 +131,7 @@ defmodule Raxol.Application do
       nil ->
         # Create and apply default theme
         default_theme = create_default_theme()
-        apply_theme(default_theme)
+        _apply_result = apply_theme(default_theme)
 
       theme_name ->
         # Load theme from file
@@ -137,13 +141,13 @@ defmodule Raxol.Application do
             validate_and_adjust_theme(theme)
 
             # Apply theme
-            apply_theme(theme)
+            _apply_result = apply_theme(theme)
 
           {:error, _} ->
             # Fall back to default theme
             default_theme = create_default_theme()
             validate_and_adjust_theme(default_theme)
-            apply_theme(default_theme)
+            _apply_result = apply_theme(default_theme)
         end
     end
 
