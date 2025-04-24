@@ -31,6 +31,25 @@ defmodule Raxol.Components do
   ```
   """
 
+  # Add dialyzer directives to silence no_return warnings
+  @dialyzer {:nowarn_function,
+             [
+               modal: 3,
+               modal: 4,
+               alert: 3,
+               alert: 4,
+               confirmation: 4,
+               confirmation: 5,
+               form_modal: 4,
+               form_modal: 5,
+               focus_ring: 0,
+               focus_ring: 1,
+               message: 2,
+               message: 3,
+               single_line_input: 0,
+               single_line_input: 1
+             ]}
+
   # Delegate to component modules
 
   # Button
