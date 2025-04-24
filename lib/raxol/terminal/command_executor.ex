@@ -2,29 +2,77 @@ defmodule Raxol.Terminal.CommandExecutor do
   @moduledoc """
   Handles the execution of parsed CSI, OSC, and DCS sequences.
   Receives emulator state and sequence details, returns updated emulator state.
+
+  DEPRECATED: This module is being refactored into smaller, more focused modules.
+  New code should use the modules in the Raxol.Terminal.Commands namespace instead:
+
+  - Raxol.Terminal.Commands.Executor - Main entry point for executing commands
+  - Raxol.Terminal.Commands.Parser - For parsing command parameters
+  - Raxol.Terminal.Commands.Modes - For handling terminal mode setting/resetting
+  - Raxol.Terminal.Commands.Screen - For screen manipulation operations
+  - Raxol.Terminal.Commands.History - For command history management
+
+  This module is maintained for backward compatibility and will be removed in a future version.
   """
 
   # For Emulator.t type spec
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Commands
+  alias Raxol.Terminal.Commands.Executor
+  alias Raxol.Terminal.Commands.Parser
+  alias Raxol.Terminal.Commands.Modes
+  alias Raxol.Terminal.Commands.Screen
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.Manager
   alias Raxol.Terminal.Cursor.Movement
   alias Raxol.Terminal.Cursor.Style
   alias Raxol.Terminal.ScreenModes
   alias Raxol.Terminal.TextFormatting
+  alias Raxol.Terminal.Cell
   # Needed for CAN/SUB constants
   # alias Raxol.Terminal.ControlCodes
-  alias Raxol.Terminal.CharacterSets
+  # Remove unused alias to fix warning
+  # alias Raxol.Terminal.CharacterSets
 
   require Logger
   require Raxol.Terminal.TextFormatting
   require Raxol.Terminal.ScreenModes
-  require Raxol.Terminal.CharacterSets
+  # Either remove this require or use CharacterSets in the module
+  # require Raxol.Terminal.CharacterSets
+
+  # Display a compile-time deprecation warning
+  @deprecated "This module is deprecated. Use Raxol.Terminal.Commands.* modules instead."
 
   # --- Sequence Executors ---
 
   # Note: All functions receive the full Emulator.t state as the first argument
 
+  @doc """
+  Executes a CSI (Control Sequence Introducer) command.
+
+  DEPRECATED: Use Raxol.Terminal.Commands.Executor.execute_csi_command/4 instead.
+
+  ## Parameters
+
+  * `emulator` - The current emulator state
+  * `params_buffer` - The parameter portion of the CSI sequence
+  * `intermediates_buffer` - The intermediate bytes portion of the CSI sequence
+  * `final_byte` - The final byte that determines the specific command
+
+  ## Returns
+
+  * Updated emulator state
+
+  ## Migration Path
+
+  ```elixir
+  # Before
+  new_emulator = Raxol.Terminal.CommandExecutor.execute_csi_command(emulator, params, intermediates, final_byte)
+
+  # After
+  new_emulator = Raxol.Terminal.Commands.Executor.execute_csi_command(emulator, params, intermediates, final_byte)
+  ```
+  """
   @spec execute_csi_command(
           Emulator.t(),
           String.t(),
@@ -37,362 +85,291 @@ defmodule Raxol.Terminal.CommandExecutor do
         intermediates_buffer,
         final_byte
       ) do
-    # Parse the raw param string buffer into a list of integers/nil
-    params = parse_params(params_buffer)
-    # Use intermediates_buffer directly
-    intermediates = intermediates_buffer
+    Logger.warn(
+      "Raxol.Terminal.CommandExecutor.execute_csi_command/4 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.Executor.execute_csi_command/4 instead."
+    )
 
-    # Assign the result of the case statement to new_emulator
-    new_emulator =
-      case {final_byte, intermediates} do
-        # SGR - Select Graphic Rendition
-        # Corrected pattern
-        {?m, ""} ->
-          # Params can be empty (CSI m), which defaults to [0]
-          sgr_params = if params == [], do: [0], else: params
-          handle_sgr(emulator, sgr_params)
+    Executor.execute_csi_command(
+      emulator,
+      params_buffer,
+      intermediates_buffer,
+      final_byte
+    )
+  end
 
-        # --- Scrolling ---
-        # SU - Scroll Up
-        # Corrected pattern
-        {?S, ""} ->
-          # Default to 1
-          count = List.first(params || [1])
-          active_buffer = Emulator.get_active_buffer(emulator)
+  @doc """
+  Parses a raw parameter string buffer into a list of integers or nil values.
 
-          new_active_buffer =
-            ScreenBuffer.scroll_up(active_buffer, count)
+  DEPRECATED: Use Raxol.Terminal.Commands.Parser.parse_params/1 instead.
 
-          Emulator.update_active_buffer(emulator, new_active_buffer)
+  ## Parameters
 
-        # SD - Scroll Down
-        # Corrected pattern
-        {?T, ""} ->
-          # Default to 1
-          count = List.first(params || [1])
-          active_buffer = Emulator.get_active_buffer(emulator)
+  * `params_string` - The raw parameter string from a CSI sequence
 
-          new_active_buffer =
-            ScreenBuffer.scroll_down(
-              active_buffer,
-              count
-            )
+  ## Returns
 
-          Emulator.update_active_buffer(emulator, new_active_buffer)
+  * A list of parsed parameters
 
-        # --- Scrolling Region ---
-        # DECSTBM - Set Top and Bottom Margins
-        # Corrected pattern
-        {?r, ""} ->
-          # IO.inspect({:inside_csi_r_start, params, emulator.screen_buffer, emulator.cursor}, label: "DEBUG_R") # DEBUG ADD
-          active_buffer = Emulator.get_active_buffer(emulator)
-          height = ScreenBuffer.get_height(active_buffer)
+  ## Migration Path
 
-          # IO.inspect({:inside_csi_r_after_height, height}, label: "DEBUG_R") # DEBUG ADD
-          [top, bottom] =
-            case params do
-              # Handle CSI r -> default (1, height)
-              [] -> [1, height]
-              # Should not happen with map defaults, but safe
-              [nil] -> [1, height]
-              [t] -> [t, height]
-              [nil, b] -> [1, b]
-              # Handle CSI top ; bottom r
-              [t, b] -> [t, b]
-              # Handle more than 2 params - take the first two
-              [t, b | _] -> [t, b]
-            end
+  ```elixir
+  # Before
+  params = Raxol.Terminal.CommandExecutor.parse_params(params_string)
 
-          # Ensure top < bottom and within screen bounds (1 to height)
-          # Clamp values and ensure top < bottom.
-          # Terminals often reset region if top >= bottom.
-          clamped_top = max(1, min(top, height))
-          clamped_bottom = max(1, min(bottom, height))
+  # After
+  params = Raxol.Terminal.Commands.Parser.parse_params(params_string)
+  ```
+  """
+  @spec parse_params(String.t()) :: list(integer() | nil | list(integer() | nil))
+  def parse_params(params_string) do
+    Logger.warn(
+      "Raxol.Terminal.CommandExecutor.parse_params/1 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.Parser.parse_params/1 instead."
+    )
 
-          if clamped_top >= clamped_bottom do
-            Logger.debug(
-              "DECSTBM: Invalid region (#{top}, #{bottom}), resetting to full screen."
-            )
+    Commands.parse_params(params_string)
+  end
 
-            # Reset scroll region and move cursor home
-            # IO.inspect({:inside_csi_r_invalid_before_move, emulator.cursor}, label: "DEBUG_R") # DEBUG ADD
-            cursor_after_move = Manager.move_to(emulator.cursor, 1, 1)
+  @doc """
+  Gets a parameter at a specific index from the params list.
 
-            # IO.inspect({:inside_csi_r_invalid_after_move, cursor_after_move}, label: "DEBUG_R") # DEBUG ADD
-            %{emulator | scroll_region: nil, cursor: cursor_after_move}
-          else
-            # Store region as 0-based {top, bottom} (inclusive)
-            Logger.debug(
-              "DECSTBM: Setting scroll region to {#{clamped_top - 1}, #{clamped_bottom - 1}} (0-based)"
-            )
+  DEPRECATED: Use Raxol.Terminal.Commands.Parser.get_param/3 instead.
 
-            # Set the scroll region but leave the cursor position unchanged.
-            %{
-              emulator
-              | scroll_region: {clamped_top - 1, clamped_bottom - 1}
-            }
-          end
+  ## Parameters
 
-        # --- DEC Private Mode Set/Reset ---
-        # DECSET - Set Mode
-        # Corrected pattern
-        {?h, "?"} ->
-          handle_dec_private_mode(emulator, params, :set)
+  * `params` - The list of parsed parameters
+  * `index` - The index to get the parameter from
+  * `default` - The default value to return if the parameter is nil or out of bounds
 
-        # Corrected pattern
-        {?h, ""} ->
-          handle_ansi_mode(emulator, params, :set)
+  ## Returns
 
-        # DECRST - Reset Mode
-        # Corrected pattern
-        {?l, "?"} ->
-          handle_dec_private_mode(emulator, params, :reset)
+  * The parameter value or the default value
 
-        # Corrected pattern
-        {?l, ""} ->
-          handle_ansi_mode(emulator, params, :reset)
+  ## Migration Path
 
-        # --- Cursor Movement ---
-        # CUU - Cursor Up
-        {?A, ""} ->
-          count = List.first(params || [1])
+  ```elixir
+  # Before
+  value = Raxol.Terminal.CommandExecutor.get_param(params, 1, 0)
 
-          %{
-            emulator
-            | cursor: Movement.move_up(emulator.cursor, count)
-          }
+  # After
+  value = Raxol.Terminal.Commands.Parser.get_param(params, 1, 0)
+  ```
+  """
+  @spec get_param(list(integer() | nil), pos_integer(), integer()) :: integer()
+  def get_param(params, index, default \\ 1) do
+    Logger.warn(
+      "Raxol.Terminal.CommandExecutor.get_param/3 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.Parser.get_param/3 instead."
+    )
 
-        # CUD - Cursor Down
-        {?B, ""} ->
-          count = List.first(params || [1])
+    Commands.get_param(params, index, default)
+  end
 
-          %{
-            emulator
-            | cursor: Movement.move_down(emulator.cursor, count)
-          }
+  @doc """
+  Handles DEC private mode setting or resetting.
 
-        # CUF - Cursor Forward
-        {?C, ""} ->
-          count = List.first(params || [1])
+  DEPRECATED: Use Raxol.Terminal.Commands.Modes.handle_dec_private_mode/3 instead.
 
-          %{
-            emulator
-            | cursor: Movement.move_right(emulator.cursor, count)
-          }
+  ## Parameters
 
-        # CUB - Cursor Back
-        {?D, ""} ->
-          count = List.first(params || [1])
+  * `emulator` - The current emulator state
+  * `params` - The parsed parameters
+  * `action` - The action to perform (:set or :reset)
 
-          %{
-            emulator
-            | cursor: Movement.move_left(emulator.cursor, count)
-          }
+  ## Returns
 
-        # CUP - Cursor Position
-        {?H, ""} ->
-          [row, col] =
-            case params do
-              [] -> [1, 1]
-              [r] -> [r, 1]
-              [r, c | _] -> [r, c]
-            end
+  * Updated emulator state
 
-          # Get dimensions from the active buffer
-          active_buffer = Emulator.get_active_buffer(emulator)
-          height = ScreenBuffer.get_height(active_buffer)
-          width = ScreenBuffer.get_width(active_buffer)
-          zero_based_row = max(0, min(height - 1, (row || 1) - 1))
-          zero_based_col = max(0, min(width - 1, (col || 1) - 1))
+  ## Migration Path
 
-          %{
-            emulator
-            | cursor:
-                Manager.move_to(emulator.cursor, zero_based_col, zero_based_row)
-          }
+  ```elixir
+  # Before
+  new_emulator = Raxol.Terminal.CommandExecutor.handle_dec_private_mode(emulator, params, :set)
 
-        # ED - Erase Display
-        # Corrected pattern
-        {?J, ""} ->
-          handle_ed(emulator, List.first(params || [0]))
+  # After
+  new_emulator = Raxol.Terminal.Commands.Modes.handle_dec_private_mode(emulator, params, :set)
+  ```
+  """
+  @spec handle_dec_private_mode(Emulator.t(), list(integer()), :set | :reset) :: Emulator.t()
+  def handle_dec_private_mode(emulator, params, action) do
+    Logger.warn(
+      "Raxol.Terminal.CommandExecutor.handle_dec_private_mode/3 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.Modes.handle_dec_private_mode/3 instead."
+    )
 
-        # EL - Erase Line
-        # Corrected pattern
-        {?K, ""} ->
-          handle_el(emulator, List.first(params || [0]))
+    Commands.handle_dec_private_mode(emulator, params, action)
+  end
 
-        # ICH - Insert Character
-        # CSI n @
-        {?@, ""} ->
-          count = List.first(params || [1])
-          active_buffer = Emulator.get_active_buffer(emulator)
-          {x, y} = emulator.cursor.position
+  @doc """
+  Handles ANSI mode setting or resetting.
 
-          new_active_buffer =
-            ScreenBuffer.insert_characters(
-              active_buffer,
-              {x, y},
-              count,
-              # Use current style for inserted spaces
-              emulator.cursor.style
-            )
+  DEPRECATED: Use Raxol.Terminal.Commands.Modes.handle_ansi_mode/3 instead.
 
-          Emulator.update_active_buffer(emulator, new_active_buffer)
+  ## Parameters
 
-        # IL - Insert Line
-        # CSI n L
-        {?L, ""} ->
-          count = List.first(params || [1])
-          active_buffer = Emulator.get_active_buffer(emulator)
-          {_x, y} = emulator.cursor.position
+  * `emulator` - The current emulator state
+  * `params` - The parsed parameters
+  * `action` - The action to perform (:set or :reset)
 
-          new_active_buffer =
-            ScreenBuffer.insert_lines(
-              active_buffer,
-              y,
-              count,
-              emulator.scroll_region
-            )
+  ## Returns
 
-          Emulator.update_active_buffer(emulator, new_active_buffer)
+  * Updated emulator state
 
-        # DCH - Delete Character
-        # CSI n P
-        {?P, ""} ->
-          count = List.first(params || [1])
-          active_buffer = Emulator.get_active_buffer(emulator)
-          {x, y} = emulator.cursor.position
+  ## Migration Path
 
-          new_active_buffer =
-            ScreenBuffer.delete_characters(
-              active_buffer,
-              {x, y},
-              count
-            )
+  ```elixir
+  # Before
+  new_emulator = Raxol.Terminal.CommandExecutor.handle_ansi_mode(emulator, params, :set)
 
-          Emulator.update_active_buffer(emulator, new_active_buffer)
+  # After
+  new_emulator = Raxol.Terminal.Commands.Modes.handle_ansi_mode(emulator, params, :set)
+  ```
+  """
+  @spec handle_ansi_mode(Emulator.t(), list(integer()), :set | :reset) :: Emulator.t()
+  def handle_ansi_mode(emulator, params, action) do
+    Logger.warn(
+      "Raxol.Terminal.CommandExecutor.handle_ansi_mode/3 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.Modes.handle_ansi_mode/3 instead."
+    )
 
-        # DL - Delete Line
-        # CSI n M
-        {?M, ""} ->
-          count = List.first(params || [1])
-          active_buffer = Emulator.get_active_buffer(emulator)
-          {_x, y} = emulator.cursor.position
+    Commands.handle_ansi_mode(emulator, params, action)
+  end
 
-          new_active_buffer =
-            ScreenBuffer.delete_lines(
-              active_buffer,
-              y,
-              count,
-              emulator.scroll_region
-            )
+  @doc """
+  Clears the screen or a part of it based on the mode parameter.
 
-          Emulator.update_active_buffer(emulator, new_active_buffer)
+  DEPRECATED: Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead.
 
-        # --- Terminal Information ---
-        # DA - Device Attributes
-        # Primary DA: CSI c or CSI 0 c
-        {?c, ""} ->
-          # Parameter 0 or no parameter requests Primary DA
-          if params == [] or params == [0] do
-            # Respond with basic VT102 attributes (e.g., VT100 with Advanced Video Option)
-            # Response: ESC [ ? 6 c
-            response = "\e[?6c"
-            Logger.debug("DA Primary received, responding with: #{response}")
-            %{emulator | output_buffer: emulator.output_buffer <> response}
-          else
-            Logger.warning(
-              "Unhandled Primary DA parameters: #{inspect(params)}"
-            )
+  ## Parameters
 
-            emulator
-          end
+  * `emulator` - The current emulator state
+  * `mode` - The mode parameter (0, 1, 2, or 3)
 
-        # Secondary DA: CSI > c or CSI > 0 c
-        {?c, ">"} ->
-          # Parameter 0 or no parameter requests Secondary DA
-          if params == [] or params == [0] do
-            # Respond with a basic xterm-like response (Type 0, Version 0, Patch 0)
-            # Response: ESC [ > 0 ; 0 ; 0 c
-            response = "\e[>0;0;0c"
-            Logger.debug("DA Secondary received, responding with: #{response}")
-            %{emulator | output_buffer: emulator.output_buffer <> response}
-          else
-            Logger.warning(
-              "Unhandled Secondary DA parameters: #{inspect(params)}"
-            )
+  ## Returns
 
-            emulator
-          end
+  * Updated emulator state
 
-        # DSR - Device Status Report
-        {?n, ""} ->
-          case params do
-            # CSI 5 n - Status Report Request
-            [5] ->
-              # Respond with "OK" (no malfunctions)
-              response = "\e[0n"
-              Logger.debug("DSR 5n received, responding with: #{response}")
-              %{emulator | output_buffer: emulator.output_buffer <> response}
+  ## Migration Path
 
-            # CSI 6 n - Report Cursor Position (CPR)
-            [6] ->
-              # Get 0-based cursor position
-              {x, y} = emulator.cursor.position
-              # Convert to 1-based for report
-              row = y + 1
-              col = x + 1
-              # Format response: ESC [ <row> ; <col> R
-              response = "\e[#{row};#{col}R"
-              Logger.debug("DSR 6n received, responding with: #{response}")
-              %{emulator | output_buffer: emulator.output_buffer <> response}
+  ```elixir
+  # Before
+  new_emulator = Raxol.Terminal.CommandExecutor.clear_screen(emulator, 2)
 
-            # Others (e.g., CSI ? 15 n - Printer status report)
-            _ ->
-              Logger.warning("Unhandled DSR parameter(s): #{inspect(params)}")
-              emulator
-          end
+  # After
+  new_emulator = Raxol.Terminal.Commands.Screen.clear_screen(emulator, 2)
+  ```
+  """
+  @spec clear_screen(Emulator.t(), integer()) :: Emulator.t()
+  def clear_screen(emulator, mode) do
+    Logger.warn(
+      "Raxol.Terminal.CommandExecutor.clear_screen/2 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead."
+    )
 
-        # DECSCUSR - Set Cursor Style
-        # CSI Ps SP q
-        # Note the space intermediate
-        {?q, " "} ->
-          # Default to 1 if no param
-          handle_decscusr(emulator, List.first(params || [1]))
+    Commands.clear_screen(emulator, mode)
+  end
 
-        # --- Character Set Selection (SCS) ---
-        # These are handled by the Parser state machine, not CSI executor.
-        # GZD4 (Select G0 Character Set)
-        # Default to ASCII 'B'
-        # {?(, ""} ->  # REMOVED
-        #  CharacterSets.designate_g0(emulator, List.first(params || [?B])) # REMOVED
-        #
-        # G1D4 (Select G1 Character Set)
-        # {?), ""} -> # REMOVED
-        #  CharacterSets.designate_g1(emulator, List.first(params || [?B])) # REMOVED
-        #
-        # G2D4 (Select G2 Character Set)
-        # {?*, ""} -> # REMOVED
-        #  CharacterSets.designate_g2(emulator, List.first(params || [?B])) # REMOVED
-        #
-        # G3D4 (Select G3 Character Set)
-        # {?+, ""} -> # REMOVED
-        #  CharacterSets.designate_g3(emulator, List.first(params || [?B])) # REMOVED
+  @doc """
+  Clears a line or part of a line based on the mode parameter.
 
-        # --- Other ---
-        # Add more CSI command handlers here...
+  DEPRECATED: Use Raxol.Terminal.Commands.Screen.clear_line/2 instead.
 
-        _ ->
-          Logger.warning(
-            "Unhandled CSI sequence: Params=#{inspect(params)}, Intermediates='#{intermediates}', Final='#{<<final_byte>>}'"
-          )
+  ## Parameters
 
-          # Return unchanged state for unhandled sequences
-          emulator
-      end
+  * `emulator` - The current emulator state
+  * `mode` - The mode parameter (0, 1, or 2)
 
-    # Return the result
-    new_emulator
+  ## Returns
+
+  * Updated emulator state
+
+  ## Migration Path
+
+  ```elixir
+  # Before
+  new_emulator = Raxol.Terminal.CommandExecutor.clear_line(emulator, 2)
+
+  # After
+  new_emulator = Raxol.Terminal.Commands.Screen.clear_line(emulator, 2)
+  ```
+  """
+  @spec clear_line(Emulator.t(), integer()) :: Emulator.t()
+  def clear_line(emulator, mode) do
+    Logger.warn(
+      "Raxol.Terminal.CommandExecutor.clear_line/2 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead."
+    )
+
+    Commands.clear_line(emulator, mode)
+  end
+
+  @doc """
+  Inserts blank lines at the current cursor position.
+
+  DEPRECATED: Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead.
+
+  ## Parameters
+
+  * `emulator` - The current emulator state
+  * `count` - The number of lines to insert
+
+  ## Returns
+
+  * Updated emulator state
+
+  ## Migration Path
+
+  ```elixir
+  # Before
+  new_emulator = Raxol.Terminal.CommandExecutor.insert_line(emulator, 2)
+
+  # After
+  new_emulator = Raxol.Terminal.Commands.Screen.insert_lines(emulator, 2)
+  ```
+  """
+  @spec insert_line(Emulator.t(), integer()) :: Emulator.t()
+  def insert_line(emulator, count) do
+    Logger.warn(
+      "Raxol.Terminal.CommandExecutor.insert_line/2 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead."
+    )
+
+    Commands.insert_line(emulator, count)
+  end
+
+  @doc """
+  Deletes lines at the current cursor position.
+
+  DEPRECATED: Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead.
+
+  ## Parameters
+
+  * `emulator` - The current emulator state
+  * `count` - The number of lines to delete
+
+  ## Returns
+
+  * Updated emulator state
+
+  ## Migration Path
+
+  ```elixir
+  # Before
+  new_emulator = Raxol.Terminal.CommandExecutor.delete_line(emulator, 2)
+
+  # After
+  new_emulator = Raxol.Terminal.Commands.Screen.delete_lines(emulator, 2)
+  ```
+  """
+  @spec delete_line(Emulator.t(), integer()) :: Emulator.t()
+  def delete_line(emulator, count) do
+    Logger.warn(
+      "Raxol.Terminal.CommandExecutor.delete_line/2 is deprecated. " <>
+      "Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead."
+    )
+
+    Commands.delete_line(emulator, count)
   end
 
   @spec execute_osc_command(Emulator.t(), String.t()) :: Emulator.t()
@@ -535,492 +512,6 @@ defmodule Raxol.Terminal.CommandExecutor do
     emulator
   end
 
-  # ANSI Mode Handler (SM/RM)
-  @spec handle_ansi_mode(Emulator.t(), list(integer() | nil), :set | :reset) ::
-          Emulator.t()
-  def handle_ansi_mode(emulator, params_list, action) do
-    # If params_list is empty, behavior is undefined/ignored by most terminals
-    Enum.reduce(params_list, emulator, fn param_code, acc_emulator ->
-      # Ignore nil parameters in the list (e.g., from CSI ; h)
-      if is_nil(param_code) do
-        acc_emulator
-      else
-        bool_value = action == :set
-
-        case param_code do
-          # Insert Mode (IRM)
-          4 ->
-            Logger.debug(
-              "ANSI Mode #{action}: 4 (Insert Mode IRM) -> #{bool_value}"
-            )
-
-            %{
-              acc_emulator
-              | mode_state:
-                  ScreenModes.switch_mode(
-                    acc_emulator.mode_state,
-                    :irm_insert,
-                    bool_value
-                  )
-            }
-
-          # Linefeed/Newline Mode (LNM)
-          20 ->
-            Logger.debug(
-              "ANSI Mode #{action}: 20 (Linefeed/Newline LNM) -> #{bool_value}"
-            )
-
-            %{
-              acc_emulator
-              | mode_state:
-                  ScreenModes.switch_mode(
-                    acc_emulator.mode_state,
-                    :lnm_linefeed_newline,
-                    bool_value
-                  )
-            }
-
-          # Add other ANSI standard modes (e.g., Keyboard Action Mode - KAM)
-          _ ->
-            Logger.warning("Unhandled ANSI mode #{action} code: #{param_code}")
-            acc_emulator
-        end
-      end
-    end)
-  end
-
-  # DEC Private Mode Handler (DECSET/DECRST)
-  @spec handle_dec_private_mode(
-          Emulator.t(),
-          list(integer() | nil),
-          :set | :reset
-        ) :: Emulator.t()
-  def handle_dec_private_mode(emulator, params_list, action) do
-    # If params_list is empty, behavior is undefined/ignored by most terminals
-    Enum.reduce(params_list, emulator, fn param_code, acc_emulator ->
-      # Ignore nil parameters in the list (e.g., from CSI ? ; h)
-      if is_nil(param_code) do
-        acc_emulator
-      else
-        bool_value = action == :set
-
-        case param_code do
-          # Cursor Keys Mode (DECCKM)
-          1 ->
-            Logger.debug(
-              "DEC Mode #{action}: 1 (Cursor Keys DECCKM) -> #{bool_value}"
-            )
-
-            %{
-              acc_emulator
-              | mode_state:
-                  ScreenModes.switch_mode(
-                    acc_emulator.mode_state,
-                    :decckm_cursor_keys,
-                    bool_value
-                  )
-            }
-
-          # Mode 4 (Insert/Replace Mode - DECSM/DECRM) is handled by ANSI mode 4 (IRM)
-          # DEC mode 4 is often related to smooth scrolling, but we map CSI 4 h/l to IRM.
-          # Screen Mode (DECSCNM) - Reverse video
-          5 ->
-            Logger.debug(
-              "DEC Mode #{action}: 5 (Screen Mode DECSCNM) -> #{bool_value}"
-            )
-
-            %{
-              acc_emulator
-              | mode_state:
-                  ScreenModes.switch_mode(
-                    acc_emulator.mode_state,
-                    :decscnm_screen,
-                    bool_value
-                  )
-            }
-
-          # Origin Mode (DECOM)
-          6 ->
-            Logger.debug(
-              "DEC Mode #{action}: 6 (Origin Mode DECOM) -> #{bool_value}"
-            )
-
-            %{
-              acc_emulator
-              | mode_state:
-                  ScreenModes.switch_mode(
-                    acc_emulator.mode_state,
-                    :decom_origin,
-                    bool_value
-                  )
-            }
-
-          # Autowrap Mode (DECAWM)
-          7 ->
-            Logger.debug(
-              "DEC Mode #{action}: 7 (Autowrap DECAWM) -> #{bool_value}"
-            )
-
-            %{
-              acc_emulator
-              | mode_state:
-                  ScreenModes.switch_mode(
-                    acc_emulator.mode_state,
-                    :decawm_autowrap,
-                    bool_value
-                  )
-            }
-
-          # 25 -> Cursor Visible (DECTCEM)
-          25 ->
-            Logger.debug(
-              "DEC Mode #{action}: 25 (Cursor Visible DECTCEM) -> #{bool_value}"
-            )
-
-            # Calculate new_cursor first
-            new_cursor =
-              if bool_value do
-                Style.show(acc_emulator.cursor)
-              else
-                Style.hide(acc_emulator.cursor)
-              end
-
-            # Return the updated emulator
-            %{acc_emulator | cursor: new_cursor}
-
-          # 1000 -> Send Mouse X & Y on button press.
-          # 1002 -> Use Cell Motion Mouse Tracking.
-          # 1003 -> Use All Motion Mouse Tracking.
-          # 1004 -> Send FocusIn/FocusOut events.
-          # 1005 -> UTF8 Mouse Mode.
-          # 1006 -> SGR Mouse Mode.
-          # 1007 -> Alternate Scroll Mode (seems less common).
-          # 1015 -> urxvt Mouse Mode.
-          # 1016 -> SGR PixelMode Mouse.
-          # Mouse tracking modes
-          1000..1016 ->
-            Logger.debug(
-              "DEC Mode #{action}: #{param_code} (Mouse Tracking) -> #{bool_value}"
-            )
-
-            # Store the state, actual handling might be elsewhere (e.g., UI layer)
-            %{
-              acc_emulator
-              | mode_state:
-                  ScreenModes.switch_mode(
-                    acc_emulator.mode_state,
-                    :"mouse_#{param_code}",
-                    bool_value
-                  )
-            }
-
-          # Use Alternate Screen Buffer
-          1047 ->
-            Logger.debug(
-              "DEC Mode #{action}: 1047 (Alternate Screen Buffer) -> #{bool_value}"
-            )
-
-            # Set mode (h)
-            # Reset mode (l)
-            if bool_value do
-              # Switch to alternate buffer and clear it
-              emulator_switched = %{
-                acc_emulator
-                | active_buffer_type: :alternate
-              }
-
-              alt_buffer = Emulator.get_active_buffer(emulator_switched)
-              cleared_alt_buffer = ScreenBuffer.clear(alt_buffer)
-
-              Emulator.update_active_buffer(
-                emulator_switched,
-                cleared_alt_buffer
-              )
-            else
-              # Switch back to main buffer
-              %{acc_emulator | active_buffer_type: :main}
-            end
-
-          # Save cursor as in DECSC
-          1048 ->
-            Logger.debug(
-              "DEC Mode #{action}: 1048 (Save/Restore Cursor) -> #{bool_value}"
-            )
-
-            # Set mode (h) - Save
-            # Reset mode (l) - Restore
-            if bool_value do
-              Emulator.handle_decsc(acc_emulator)
-            else
-              Emulator.handle_decrc(acc_emulator)
-            end
-
-          # Save cursor as in DECSC and use Alternate Screen Buffer
-          1049 ->
-            Logger.debug(
-              "DEC Mode #{action}: 1049 (Alt Screen + Save/Restore Cursor) -> #{bool_value}"
-            )
-
-            # Set mode (h) - Save, Switch, Clear
-            # Reset mode (l) - Switch, Restore
-            if bool_value do
-              # 1. Save state
-              emulator_saved = Emulator.handle_decsc(acc_emulator)
-              # 2. Switch to alternate buffer
-              emulator_switched = %{
-                emulator_saved
-                | active_buffer_type: :alternate
-              }
-
-              # 3. Clear alternate buffer
-              alt_buffer = Emulator.get_active_buffer(emulator_switched)
-              cleared_alt_buffer = ScreenBuffer.clear(alt_buffer)
-
-              Emulator.update_active_buffer(
-                emulator_switched,
-                cleared_alt_buffer
-              )
-            else
-              # 1. Switch back to main buffer
-              emulator_switched = %{acc_emulator | active_buffer_type: :main}
-              # 2. Restore state
-              Emulator.handle_decrc(emulator_switched)
-            end
-
-          # Set bracketed paste mode
-          2004 ->
-            Logger.debug(
-              "DEC Mode #{action}: 2004 (Bracketed Paste) -> #{bool_value}"
-            )
-
-            %{
-              acc_emulator
-              | mode_state:
-                  ScreenModes.switch_mode(
-                    acc_emulator.mode_state,
-                    :bracketed_paste,
-                    bool_value
-                  )
-            }
-
-          # Add other DEC private modes...
-          _ ->
-            Logger.warning(
-              "Unhandled DEC private mode #{action} code: ?#{param_code}"
-            )
-
-            acc_emulator
-        end
-      end
-    end)
-  end
-
-  # SGR - Select Graphic Rendition Handler
-  @spec handle_sgr(Emulator.t(), list(integer() | nil)) :: Emulator.t()
-  def handle_sgr(emulator, params) do
-    # Process parameters sequentially, updating the style
-    Enum.reduce(params, emulator, fn param, acc_emulator ->
-      current_style = acc_emulator.style
-
-      case param do
-        # Reset / Normal
-        0 ->
-          %{acc_emulator | style: TextFormatting.new()}
-
-        # Bold or increased intensity
-        1 ->
-          %{acc_emulator | style: %{current_style | bold: true}}
-
-        # Faint (decreased intensity)
-        2 ->
-          # Assuming TextFormatting map has :faint field (or treat as non-bold)
-          # %{acc_emulator | style: %{current_style | faint: true}}
-          # Treat as non-bold for now
-          %{acc_emulator | style: %{current_style | bold: false}}
-
-        # Italic
-        3 ->
-          %{acc_emulator | style: %{current_style | italic: true}}
-
-        # Underline - Single
-        4 ->
-          %{
-            acc_emulator
-            | style: %{current_style | underline: true, double_underline: false}
-          }
-
-        # Blink - Slow
-        5 ->
-          %{acc_emulator | style: %{current_style | blink: true}}
-
-        # Blink - Rapid (Treat same as slow blink)
-        6 ->
-          %{acc_emulator | style: %{current_style | blink: true}}
-
-        # Reverse video
-        7 ->
-          %{acc_emulator | style: %{current_style | reverse: true}}
-
-        # Conceal
-        8 ->
-          %{acc_emulator | style: %{current_style | conceal: true}}
-
-        # Crossed-out / Strikethrough
-        9 ->
-          %{acc_emulator | style: %{current_style | strikethrough: true}}
-
-        # Primary font (default)
-        10 ->
-          acc_emulator
-
-        # 11-19: Alternative fonts
-        11..19 ->
-          acc_emulator
-
-        # Fraktur (rarely supported, treat as normal)
-        20 ->
-          acc_emulator
-
-        # Double underline
-        21 ->
-          %{
-            acc_emulator
-            | style: %{current_style | underline: false, double_underline: true}
-          }
-
-        # Normal intensity (neither bold nor faint)
-        22 ->
-          %{acc_emulator | style: %{current_style | bold: false, faint: false}}
-
-        # Not italicized, not fraktur
-        23 ->
-          %{acc_emulator | style: %{current_style | italic: false}}
-
-        # Not underlined (neither single nor double)
-        24 ->
-          %{
-            acc_emulator
-            | style: %{
-                current_style
-                | underline: false,
-                  double_underline: false
-              }
-          }
-
-        # Not blinking
-        25 ->
-          %{acc_emulator | style: %{current_style | blink: false}}
-
-        # Proportional spacing (rarely used/supported)
-        26 ->
-          acc_emulator
-
-        # Not reversed
-        27 ->
-          %{acc_emulator | style: %{current_style | reverse: false}}
-
-        # Reveal (not concealed)
-        28 ->
-          %{acc_emulator | style: %{current_style | conceal: false}}
-
-        # Not crossed out
-        29 ->
-          %{acc_emulator | style: %{current_style | strikethrough: false}}
-
-        # Set foreground color (30-37)
-        n when n >= 30 and n <= 37 ->
-          color_name = TextFormatting.ansi_code_to_color_name(n)
-
-          %{
-            acc_emulator
-            | style: %{current_style | foreground_color: color_name}
-          }
-
-        # Set foreground color (extended - 38)
-        38 ->
-          # TODO: Handle 256-color / RGB foreground (requires parsing next params)
-          Logger.warning(
-            "SGR: Extended foreground color (38) not fully implemented"
-          )
-
-          acc_emulator
-
-        # Default foreground color
-        39 ->
-          %{acc_emulator | style: %{current_style | foreground_color: nil}}
-
-        # Set background color (40-47)
-        n when n >= 40 and n <= 47 ->
-          color_name = TextFormatting.ansi_code_to_color_name(n)
-
-          %{
-            acc_emulator
-            | style: %{current_style | background_color: color_name}
-          }
-
-        # Set background color (extended - 48)
-        48 ->
-          # TODO: Handle 256-color / RGB background (requires parsing next params)
-          Logger.warning(
-            "SGR: Extended background color (48) not fully implemented"
-          )
-
-          acc_emulator
-
-        # Default background color
-        49 ->
-          %{acc_emulator | style: %{current_style | background_color: nil}}
-
-        # Set bright foreground color (90-97)
-        n when n >= 90 and n <= 97 ->
-          color_name = TextFormatting.ansi_code_to_color_name(n)
-
-          %{
-            acc_emulator
-            | style: %{current_style | foreground_color: color_name}
-          }
-
-        # Set bright background color (100-107)
-        n when n >= 100 and n <= 107 ->
-          color_name = TextFormatting.ansi_code_to_color_name(n)
-
-          %{
-            acc_emulator
-            | style: %{current_style | background_color: color_name}
-          }
-
-        # Ignore nil params (from maybe_param)
-        nil ->
-          acc_emulator
-
-        _ ->
-          Logger.warning("SGR: Unhandled parameter: #{param}")
-          acc_emulator
-      end
-    end)
-  end
-
-  # Parameter Parser
-  @spec parse_params(String.t()) :: list(integer() | nil)
-  def parse_params(param_string) when is_binary(param_string) do
-    param_string
-    # Corrected: Keep empty strings for params like CSI ;m
-    |> String.split(";", trim: false)
-    |> Enum.map(fn
-      # Represent empty param (e.g., CSI ;m or CSI m)
-      "" ->
-        nil
-
-      # Handle potential integer conversion errors gracefully
-      str ->
-        case Integer.parse(str) do
-          {int_val, ""} -> int_val
-          # Treat non-integer params as nil or handle as error? Defaulting to nil.
-          _ -> nil
-        end
-    end)
-  end
-
   # --- Helper for Erasing ---
 
   # Creates a list of new (empty) cells
@@ -1052,7 +543,9 @@ defmodule Raxol.Terminal.CommandExecutor do
     Logger.debug("ED received - Erase Display (Mode: #{mode})")
     %{cursor: cursor} = emulator
     active_buffer = Emulator.get_active_buffer(emulator)
-    {current_col, current_row} = Manager.get_position(cursor)
+
+    # Access position directly from cursor struct instead of calling get_position
+    {current_col, current_row} = cursor.position
 
     %{width: width, height: height, cells: cells, scrollback: scrollback} =
       active_buffer
@@ -1071,7 +564,10 @@ defmodule Raxol.Terminal.CommandExecutor do
           cells_after_update =
             List.replace_at(cells, current_row, erased_current_line)
 
-          Enum.map_indexed(cells_after_update, fn line, index ->
+          # Replace Enum.map_indexed with Enum.with_index |> Enum.map
+          cells_after_update
+          |> Enum.with_index()
+          |> Enum.map(fn {line, index} ->
             if index > current_row do
               create_empty_cells(width)
             else
@@ -1091,7 +587,10 @@ defmodule Raxol.Terminal.CommandExecutor do
           cells_after_update =
             List.replace_at(cells, current_row, erased_current_line)
 
-          Enum.map_indexed(cells_after_update, fn line, index ->
+          # Replace Enum.map_indexed with Enum.with_index |> Enum.map
+          cells_after_update
+          |> Enum.with_index()
+          |> Enum.map(fn {line, index} ->
             if index < current_row do
               create_empty_cells(width)
             else
@@ -1132,7 +631,9 @@ defmodule Raxol.Terminal.CommandExecutor do
     Logger.debug("EL received - Erase in Line (Mode: #{mode})")
     %{cursor: cursor} = emulator
     active_buffer = Emulator.get_active_buffer(emulator)
-    {current_col, current_row} = Manager.get_position(cursor)
+
+    # Access position directly from cursor struct instead of calling get_position
+    {current_col, current_row} = cursor.position
     %{width: width, cells: cells} = active_buffer
 
     # Ensure row index is within bounds
@@ -1210,5 +711,34 @@ defmodule Raxol.Terminal.CommandExecutor do
 
     Logger.debug("DECSCUSR: Setting cursor style to #{style}")
     %{emulator | cursor_style: style}
+  end
+
+  # Helper function to handle Device Status Report (DSR)
+  defp handle_dsr(emulator, code) do
+    case code do
+      # CSI 5 n - Status Report Request
+      5 ->
+        # Respond with "OK" (no malfunctions)
+        response = "\e[0n"
+        Logger.debug("DSR 5n received, responding with: #{response}")
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      # CSI 6 n - Report Cursor Position (CPR)
+      6 ->
+        # Get 0-based cursor position
+        {x, y} = emulator.cursor.position
+        # Convert to 1-based for report
+        row = y + 1
+        col = x + 1
+        # Format response: ESC [ <row> ; <col> R
+        response = "\e[#{row};#{col}R"
+        Logger.debug("DSR 6n received, responding with: #{response}")
+        %{emulator | output_buffer: emulator.output_buffer <> response}
+
+      # Others (e.g., CSI ? 15 n - Printer status report)
+      _ ->
+        Logger.warning("Unhandled DSR parameter(s): #{inspect(code)}")
+        emulator
+    end
   end
 end

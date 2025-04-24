@@ -154,11 +154,24 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   @doc """
-  Scrolls the buffer up by the specified number of lines.
+  Scrolls the buffer up by the specified number of lines, optionally within a specified scroll region.
   """
-  @spec scroll_up(t(), non_neg_integer()) :: t()
-  def scroll_up(%__MODULE__{} = buffer, lines) when lines > 0 do
-    {scroll_start, scroll_end} = get_scroll_region_boundaries(buffer)
+  @spec scroll_up(
+          t(),
+          non_neg_integer(),
+          {non_neg_integer(), non_neg_integer()} | nil
+        ) :: t()
+  def scroll_up(%__MODULE__{} = buffer, lines, scroll_region \\ nil)
+      when lines > 0 do
+    # Use the provided scroll region or the one stored in the buffer
+    effective_scroll_region = scroll_region || buffer.scroll_region
+
+    # Store the effective scroll region temporarily to use with get_scroll_region_boundaries
+    buffer_with_region = %{buffer | scroll_region: effective_scroll_region}
+
+    {scroll_start, scroll_end} =
+      get_scroll_region_boundaries(buffer_with_region)
+
     visible_lines = scroll_end - scroll_start + 1
 
     if lines >= visible_lines do
@@ -193,11 +206,24 @@ defmodule Raxol.Terminal.ScreenBuffer do
   end
 
   @doc """
-  Scrolls the buffer down by the specified number of lines.
+  Scrolls the buffer down by the specified number of lines, optionally within a specified scroll region.
   """
-  @spec scroll_down(t(), non_neg_integer()) :: t()
-  def scroll_down(%__MODULE__{} = buffer, lines) when lines > 0 do
-    {scroll_start, scroll_end} = get_scroll_region_boundaries(buffer)
+  @spec scroll_down(
+          t(),
+          non_neg_integer(),
+          {non_neg_integer(), non_neg_integer()} | nil
+        ) :: t()
+  def scroll_down(%__MODULE__{} = buffer, lines, scroll_region \\ nil)
+      when lines > 0 do
+    # Use the provided scroll region or the one stored in the buffer
+    effective_scroll_region = scroll_region || buffer.scroll_region
+
+    # Store the effective scroll region temporarily to use with get_scroll_region_boundaries
+    buffer_with_region = %{buffer | scroll_region: effective_scroll_region}
+
+    {scroll_start, scroll_end} =
+      get_scroll_region_boundaries(buffer_with_region)
+
     visible_lines = scroll_end - scroll_start + 1
 
     if lines >= visible_lines do
@@ -1079,6 +1105,24 @@ defmodule Raxol.Terminal.ScreenBuffer do
   # No-op if start_y is negative or n is zero or less
   def insert_lines(buffer, _, n, _) when n <= 0, do: buffer
   def insert_lines(buffer, start_y, _, _) when start_y < 0, do: buffer
+
+  @doc """
+  Converts the screen buffer content to a plain text string.
+  """
+  @spec get_content(t()) :: String.t()
+  def get_content(%__MODULE__{} = buffer) do
+    buffer.cells
+    |> Enum.map(fn row ->
+      row
+      |> Enum.map(fn cell ->
+        # Extract just the character content (ignore style information)
+        cell.char
+      end)
+      |> Enum.join("")
+      |> String.trim_trailing()
+    end)
+    |> Enum.join("\n")
+  end
 
   # --- Modification Helpers ---
 end

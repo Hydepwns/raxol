@@ -324,9 +324,8 @@ defmodule Raxol.Terminal.ANSI.MouseEvents do
       3 ->
         :right
 
-      _ ->
-        # Handle unexpected button values
-        :unknown
+        # This clause can't be reached since button &&& 0x3 can only be 0-3
+        # But we keep :unknown in the spec for completeness
     end
   end
 

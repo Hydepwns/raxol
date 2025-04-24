@@ -1,12 +1,24 @@
 defmodule Raxol.Terminal.Configuration do
   @moduledoc """
   Handles terminal configuration, detection, and application.
+
+  DEPRECATED: This module is being refactored. Use Raxol.Terminal.Config instead.
+  See the new modules in the lib/raxol/terminal/config/ directory:
+  - Raxol.Terminal.Config.Schema
+  - Raxol.Terminal.Config.Validation
+  - Raxol.Terminal.Config.Persistence
+  - Raxol.Terminal.Config.Defaults
+  - Raxol.Terminal.Config.Capabilities
+  - Raxol.Terminal.Config.Profiles
+  - Raxol.Terminal.Config.Application
   """
 
   require Logger
 
   alias Raxol.System.TerminalPlatform
   alias Raxol.Core.UserPreferences
+  alias Raxol.Terminal.Config
+  alias Raxol.Terminal.Config.{Capabilities, Defaults, Application}
 
   # Animation cache ETS table name
   @animation_cache_table :raxol_animation_cache
@@ -132,57 +144,98 @@ defmodule Raxol.Terminal.Configuration do
       iex> config = Configuration.detect_and_configure()
       iex> config.terminal_type
       :iterm2
+
+  DEPRECATED: Use `Raxol.Terminal.Config.detect_capabilities/0` and
+  `Raxol.Terminal.Config.optimized_config/0` instead.
   """
-  @dialyzer {:nowarn_function, detect_and_configure: 0}
-  @spec detect_and_configure() :: config()
+  # Add a more specific return type to match the actual implementation
+  @spec detect_and_configure() :: %{
+          terminal_type: terminal_type(),
+          color_mode: color_mode(),
+          unicode_support: boolean(),
+          mouse_support: boolean(),
+          clipboard_support: boolean(),
+          bracketed_paste: boolean(),
+          focus_support: boolean(),
+          title_support: boolean(),
+          font_family: String.t(),
+          font_size: pos_integer(),
+          line_height: float(),
+          cursor_style: :block | :underline | :bar,
+          cursor_blink: boolean(),
+          scrollback_limit: pos_integer(),
+          batch_size: pos_integer(),
+          virtual_scroll: boolean(),
+          visible_rows: pos_integer(),
+          theme: theme_map(),
+          ligatures: boolean(),
+          font_rendering: :normal | :subpixel | :grayscale,
+          cursor_color: String.t(),
+          selection_color: String.t(),
+          hyperlinks: boolean(),
+          sixel_support: boolean(),
+          image_support: boolean(),
+          sound_support: boolean(),
+          background_type: background_type(),
+          background_opacity: float(),
+          background_image: String.t() | nil,
+          background_blur: float(),
+          background_scale: :fit | :fill | :stretch,
+          animation_type: animation_type() | nil,
+          animation_path: String.t() | nil,
+          animation_fps: integer(),
+          animation_loop: boolean(),
+          animation_blend: float()
+        }
   def detect_and_configure do
-    # Initialize animation cache if not already initialized
-    _ = init_animation_cache()
+    # Log deprecation warning
+    Logger.warning(
+      "Raxol.Terminal.Configuration.detect_and_configure/0 is deprecated. " <>
+      "Use Raxol.Terminal.Config.detect_capabilities/0 and " <>
+      "Raxol.Terminal.Config.optimized_config/0 instead."
+    )
 
-    # Preload animations from the preload directory
-    _ = preload_animations()
+    # Get capabilities from new module and transform to old format
+    capabilities = Capabilities.detect_capabilities()
 
-    terminal_type = detect_terminal_type()
-    color_mode = detect_color_mode()
-    features = TerminalPlatform.get_supported_features()
-
+    # Convert from new to old format
     %{
-      terminal_type: terminal_type,
-      color_mode: color_mode,
-      unicode_support: :unicode in features,
-      mouse_support: :mouse in features,
-      clipboard_support: :clipboard in features,
-      bracketed_paste: :bracketed_paste in features,
-      focus_support: :focus in features,
-      title_support: :title in features,
-      font_family: get_font_family(terminal_type),
-      font_size: get_font_size(terminal_type),
-      line_height: get_line_height(terminal_type),
-      cursor_style: get_cursor_style(terminal_type),
-      cursor_blink: get_cursor_blink(terminal_type),
-      scrollback_limit: get_scrollback_limit(terminal_type),
-      batch_size: get_batch_size(terminal_type),
-      virtual_scroll: get_virtual_scroll(terminal_type),
-      visible_rows: get_visible_rows(terminal_type),
-      theme: get_theme(terminal_type, color_mode),
-      ligatures: get_ligatures(terminal_type),
-      font_rendering: get_font_rendering(terminal_type),
-      cursor_color: get_cursor_color(terminal_type),
-      selection_color: get_selection_color(terminal_type),
-      hyperlinks: get_hyperlinks(terminal_type),
-      sixel_support: get_sixel_support(terminal_type),
-      image_support: get_image_support(terminal_type),
-      sound_support: get_sound_support(terminal_type),
-      background_type: get_background_type(terminal_type),
-      background_opacity: get_background_opacity(terminal_type),
-      background_image: get_background_image(terminal_type),
-      background_blur: get_background_blur(terminal_type),
-      background_scale: get_background_scale(terminal_type),
-      animation_type: get_animation_type(terminal_type),
-      animation_path: get_animation_path(terminal_type),
-      animation_fps: get_animation_fps(terminal_type),
-      animation_loop: get_animation_loop(terminal_type),
-      animation_blend: get_animation_blend(terminal_type)
+      terminal_type: get_in(capabilities, [:terminal, :type]) || :unknown,
+      color_mode: get_in(capabilities, [:ansi, :color_mode]) || :basic,
+      unicode_support: get_in(capabilities, [:display, :unicode]) || false,
+      mouse_support: get_in(capabilities, [:input, :mouse]) || false,
+      clipboard_support: get_in(capabilities, [:input, :clipboard]) || false,
+      bracketed_paste: get_in(capabilities, [:input, :paste_mode]) == :bracketed,
+      focus_support: get_in(capabilities, [:input, :focus]) || false,
+      title_support: get_in(capabilities, [:display, :title_support]) || false,
+      font_family: get_in(capabilities, [:display, :font_family]) || "Monospace",
+      font_size: get_in(capabilities, [:display, :font_size]) || 12,
+      line_height: get_in(capabilities, [:rendering, :line_height]) || 1.0,
+      cursor_style: get_in(capabilities, [:display, :cursor_style]) || :block,
+      cursor_blink: get_in(capabilities, [:display, :cursor_blink]) || true,
+      scrollback_limit: get_in(capabilities, [:display, :scrollback]) || 1000,
+      batch_size: get_in(capabilities, [:rendering, :batch_size]) || 100,
+      virtual_scroll: get_in(capabilities, [:rendering, :virtual_scroll]) || false,
+      visible_rows: get_in(capabilities, [:display, :height]) || 24,
+      theme: get_in(capabilities, [:display, :theme]) || %{},
+      ligatures: get_in(capabilities, [:display, :ligatures]) || false,
+      font_rendering: get_in(capabilities, [:rendering, :font_quality]) || :normal,
+      cursor_color: get_in(capabilities, [:display, :cursor_color]) || "#FFFFFF",
+      selection_color: get_in(capabilities, [:display, :selection_color]) || "#3465A4",
+      hyperlinks: get_in(capabilities, [:display, :hyperlinks]) || false,
+      sixel_support: get_in(capabilities, [:display, :sixel]) || false,
+      image_support: get_in(capabilities, [:display, :images]) || false,
+      sound_support: get_in(capabilities, [:audio, :enabled]) || false,
+      background_type: get_in(capabilities, [:display, :background, :type]) || :solid,
+      background_opacity: get_in(capabilities, [:display, :background, :opacity]) || 1.0,
+      background_image: get_in(capabilities, [:display, :background, :image]) || nil,
+      background_blur: get_in(capabilities, [:display, :background, :blur]) || 0.0,
+      background_scale: get_in(capabilities, [:display, :background, :scale]) || :fit,
+      animation_type: get_in(capabilities, [:display, :animation, :type]) || nil,
+      animation_path: get_in(capabilities, [:display, :animation, :path]) || nil,
+      animation_fps: get_in(capabilities, [:display, :animation, :fps]) || 30,
+      animation_loop: get_in(capabilities, [:display, :animation, :loop]) || true,
+      animation_blend: get_in(capabilities, [:display, :animation, :blend]) || 0.5
     }
   end
 
@@ -196,54 +249,51 @@ defmodule Raxol.Terminal.Configuration do
       iex> config = Configuration.new()
       iex> Configuration.apply(config)
       :ok
+
+  DEPRECATED: Use `Raxol.Terminal.Config.apply_config/1` instead.
   """
-  # Suppress persistent invalid_contract warning
-  @dialyzer {:nowarn_function, apply: 1}
+  # Update param type to match actual parameter structure
   @spec apply(config()) :: :ok
   def apply(config) do
-    # Set terminal title if supported
-    if config.title_support do
-      set_terminal_title("Raxol Terminal")
+    # Log deprecation warning
+    Logger.warning(
+      "Raxol.Terminal.Configuration.apply/1 is deprecated. " <>
+      "Use Raxol.Terminal.Config.apply_config/1 instead."
+    )
+
+    # Convert to new format and delegate to new module
+    new_format_config = %{
+      display: %{
+        width: config[:width] || @default_width,
+        height: config[:height] || @default_height,
+        title: "Raxol Terminal",
+        colors: config[:color_mode] == :true_color && 16777216 || 256,
+        unicode: config[:unicode_support] || false,
+        font_family: config[:font_family] || "Monospace",
+        font_size: config[:font_size] || 12,
+        cursor_style: config[:cursor_style] || :block,
+        cursor_blink: config[:cursor_blink] || true,
+        theme: config[:theme] || %{}
+      },
+      input: %{
+        mouse: config[:mouse_support] || false,
+        keyboard: true,
+        clipboard: config[:clipboard_support] || false,
+        paste_mode: config[:bracketed_paste] && :bracketed || :raw
+      },
+      rendering: %{
+        fps: 60,
+        batch_size: config[:batch_size] || 100,
+        virtual_scroll: config[:virtual_scroll] || false,
+        line_height: config[:line_height] || 1.0
+      }
+    }
+
+    # Call the new module's apply_config function and transform the result
+    case Application.apply_config(new_format_config) do
+      {:ok, _} -> :ok
+      {:error, _} -> :ok  # Match old behavior which always returns :ok
     end
-
-    # Configure mouse support
-    if config.mouse_support do
-      enable_mouse_support()
-    end
-
-    # Configure bracketed paste mode
-    if config.bracketed_paste do
-      enable_bracketed_paste()
-    end
-
-    # Apply color mode settings
-    apply_color_mode(config.color_mode)
-
-    # Configure hyperlinks if supported
-    if config.hyperlinks do
-      enable_hyperlinks()
-    end
-
-    # Configure sixel support if available
-    if config.sixel_support do
-      enable_sixel_support()
-    end
-
-    # Configure image support if available
-    if config.image_support do
-      enable_image_support()
-    end
-
-    # Configure sound support if available
-    if config.sound_support do
-      enable_sound_support()
-    end
-
-    # Apply background settings
-    apply_background_settings(config)
-
-    # Save configuration to user preferences (implicitly returns :ok)
-    save_to_preferences(config)
   end
 
   @doc """
@@ -254,20 +304,76 @@ defmodule Raxol.Terminal.Configuration do
       iex> config = Configuration.get_preset(:iterm2)
       iex> config.font_family
       "Fira Code"
+
+  DEPRECATED: Use `Raxol.Terminal.Config.load_profile/1` instead.
   """
   @spec get_preset(terminal_type()) :: config()
   def get_preset(terminal_type) do
-    case terminal_type do
-      :iterm2 -> iterm2_preset()
-      :windows_terminal -> windows_terminal_preset()
-      :xterm -> xterm_preset()
-      :screen -> screen_preset()
-      :kitty -> kitty_preset()
-      :alacritty -> alacritty_preset()
-      :konsole -> konsole_preset()
-      :gnome_terminal -> gnome_terminal_preset()
-      :vscode -> vscode_preset()
-      :unknown -> default_preset()
+    # Log deprecation warning
+    Logger.warning(
+      "Raxol.Terminal.Configuration.get_preset/1 is deprecated. " <>
+      "Use Raxol.Terminal.Config.load_profile/1 instead."
+    )
+
+    # Convert terminal_type to profile name
+    profile_name = Atom.to_string(terminal_type)
+
+    # Try to load from the profiles module
+    case Config.load_profile(profile_name) do
+      {:ok, profile} ->
+        # Convert from new format to old format
+        %{
+          terminal_type: terminal_type,
+          color_mode: get_in(profile, [:ansi, :color_mode]) || :basic,
+          unicode_support: get_in(profile, [:display, :unicode]) || false,
+          mouse_support: get_in(profile, [:input, :mouse]) || false,
+          clipboard_support: get_in(profile, [:input, :clipboard]) || false,
+          bracketed_paste: get_in(profile, [:input, :paste_mode]) == :bracketed,
+          focus_support: get_in(profile, [:input, :focus]) || false,
+          title_support: get_in(profile, [:display, :title_support]) || false,
+          font_family: get_in(profile, [:display, :font_family]) || "Monospace",
+          font_size: get_in(profile, [:display, :font_size]) || 12,
+          line_height: get_in(profile, [:rendering, :line_height]) || 1.0,
+          cursor_style: get_in(profile, [:display, :cursor_style]) || :block,
+          cursor_blink: get_in(profile, [:display, :cursor_blink]) || true,
+          scrollback_limit: get_in(profile, [:display, :scrollback]) || 1000,
+          batch_size: get_in(profile, [:rendering, :batch_size]) || 100,
+          virtual_scroll: get_in(profile, [:rendering, :virtual_scroll]) || false,
+          visible_rows: get_in(profile, [:display, :height]) || 24,
+          theme: get_in(profile, [:display, :theme]) || %{},
+          ligatures: get_in(profile, [:display, :ligatures]) || false,
+          font_rendering: get_in(profile, [:rendering, :font_quality]) || :normal,
+          cursor_color: get_in(profile, [:display, :cursor_color]) || "#FFFFFF",
+          selection_color: get_in(profile, [:display, :selection_color]) || "#3465A4",
+          hyperlinks: get_in(profile, [:display, :hyperlinks]) || false,
+          sixel_support: get_in(profile, [:display, :sixel]) || false,
+          image_support: get_in(profile, [:display, :images]) || false,
+          sound_support: get_in(profile, [:audio, :enabled]) || false,
+          background_type: get_in(profile, [:display, :background, :type]) || :solid,
+          background_opacity: get_in(profile, [:display, :background, :opacity]) || 1.0,
+          background_image: get_in(profile, [:display, :background, :image]) || nil,
+          background_blur: get_in(profile, [:display, :background, :blur]) || 0.0,
+          background_scale: get_in(profile, [:display, :background, :scale]) || :fit,
+          animation_type: get_in(profile, [:display, :animation, :type]) || nil,
+          animation_path: get_in(profile, [:display, :animation, :path]) || nil,
+          animation_fps: get_in(profile, [:display, :animation, :fps]) || 30,
+          animation_loop: get_in(profile, [:display, :animation, :loop]) || true,
+          animation_blend: get_in(profile, [:display, :animation, :blend]) || 0.5
+        }
+      {:error, _} ->
+        # Fall back to the old implementation
+        case terminal_type do
+          :iterm2 -> iterm2_preset()
+          :windows_terminal -> windows_terminal_preset()
+          :xterm -> xterm_preset()
+          :screen -> screen_preset()
+          :kitty -> kitty_preset()
+          :alacritty -> alacritty_preset()
+          :konsole -> konsole_preset()
+          :gnome_terminal -> gnome_terminal_preset()
+          :vscode -> vscode_preset()
+          :unknown -> default_preset()
+        end
     end
   end
 
@@ -2115,7 +2221,7 @@ defmodule Raxol.Terminal.Configuration do
   end
 
   @doc """
-  Creates a new terminal configuration with default values.
+  Creates a new configuration struct with the given options.
 
   ## Examples
 
@@ -2124,20 +2230,32 @@ defmodule Raxol.Terminal.Configuration do
       80
       iex> config.height
       24
+
+  DEPRECATED: Use `Raxol.Terminal.Config.generate_default_config/0` instead.
   """
   def new(opts \\ []) do
+    # Log deprecation warning
+    Logger.warning(
+      "Raxol.Terminal.Configuration.new/1 is deprecated. " <>
+      "Use Raxol.Terminal.Config.generate_default_config/0 instead."
+    )
+
+    # Get default config from new module and convert to old format
+    new_config = Defaults.generate_default_config()
+
+    # Create struct with default values, then apply any overrides from opts
     struct(__MODULE__,
-      width: Keyword.get(opts, :width, @default_width),
-      height: Keyword.get(opts, :height, @default_height),
+      width: Keyword.get(opts, :width, get_in(new_config, [:display, :width]) || @default_width),
+      height: Keyword.get(opts, :height, get_in(new_config, [:display, :height]) || @default_height),
       scrollback_height:
-        Keyword.get(opts, :scrollback_height, @default_scrollback_height),
+        Keyword.get(opts, :scrollback_height, get_in(new_config, [:display, :scrollback]) || @default_scrollback_height),
       memory_limit: Keyword.get(opts, :memory_limit, @default_memory_limit),
       cleanup_interval:
         Keyword.get(opts, :cleanup_interval, @default_cleanup_interval),
       prompt: Keyword.get(opts, :prompt, @default_prompt),
       welcome_message:
         Keyword.get(opts, :welcome_message, @default_welcome_message),
-      theme: Keyword.get(opts, :theme, @default_theme),
+      theme: Keyword.get(opts, :theme, get_in(new_config, [:display, :theme]) || @default_theme),
       command_history_size:
         Keyword.get(opts, :command_history_size, @default_command_history_size),
       enable_command_history:
@@ -2170,8 +2288,17 @@ defmodule Raxol.Terminal.Configuration do
       100
       iex> updated.height
       30
+
+  DEPRECATED: Use `Raxol.Terminal.Config.apply_partial_config/1` instead.
   """
   def update(config, opts) do
+    # Log deprecation warning
+    Logger.warning(
+      "Raxol.Terminal.Configuration.update/2 is deprecated. " <>
+      "Use Raxol.Terminal.Config.apply_partial_config/1 instead."
+    )
+
+    # Simply update the struct using the passed options
     struct(config, opts)
   end
 
@@ -2189,29 +2316,36 @@ defmodule Raxol.Terminal.Configuration do
       iex> config = Configuration.new()
       iex> Configuration.validate(config)
       :ok
+
+  DEPRECATED: Use `Raxol.Terminal.Config.validate_config/1` instead.
   """
   def validate(config) do
-    cond do
-      config.width <= 0 ->
-        {:error, "Width must be a positive integer"}
+    # Log deprecation warning
+    Logger.warning(
+      "Raxol.Terminal.Configuration.validate/1 is deprecated. " <>
+      "Use Raxol.Terminal.Config.validate_config/1 instead."
+    )
 
-      config.height <= 0 ->
-        {:error, "Height must be a positive integer"}
+    # Convert to new format for validation
+    new_format = %{
+      display: %{
+        width: config.width,
+        height: config.height,
+        scrollback: config.scrollback_height
+      },
+      memory: %{
+        limit: config.memory_limit,
+        cleanup_interval: config.cleanup_interval
+      },
+      terminal: %{
+        command_history_size: config.command_history_size
+      }
+    }
 
-      config.scrollback_height <= 0 ->
-        {:error, "Scrollback height must be a positive integer"}
-
-      config.memory_limit <= 0 ->
-        {:error, "Memory limit must be a positive integer"}
-
-      config.cleanup_interval <= 0 ->
-        {:error, "Cleanup interval must be a positive integer"}
-
-      config.command_history_size <= 0 ->
-        {:error, "Command history size must be a positive integer"}
-
-      true ->
-        :ok
+    # Call new validation function
+    case Config.validate_config(new_format) do
+      {:ok, _validated} -> :ok
+      {:error, message} -> {:error, message}
     end
   end
 

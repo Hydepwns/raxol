@@ -274,4 +274,12 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       _ -> nil
     end
   end
+
+  @doc """
+  Resets all text formatting attributes to their default values.
+  """
+  @spec reset(text_style()) :: text_style()
+  def reset(_style) do
+    new()
+  end
 end

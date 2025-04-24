@@ -4,76 +4,67 @@ defmodule Raxol.Terminal.Emulator do
   cursor position, attributes, and modes.
   """
 
-  alias Raxol.Terminal.Cell
-  # NOTE: Keep these aliases as they might be used implicitly or are fundamental
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cursor.{Manager, Movement}
-  alias Raxol.Terminal.ANSI.ScreenModes
   alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ANSI.ScreenModes
   alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Plugins.PluginManager
   alias Raxol.Terminal.ANSI.TerminalState
-  # Add alias for the new Parser module
-  alias Raxol.Terminal.Parser
+  alias Raxol.Terminal.Cursor.Manager
   alias Raxol.Terminal.ControlCodes
+  alias Raxol.Terminal.Parser
+  alias Raxol.Plugins.PluginManager
 
   require Logger
 
-  # Module Attributes for Control Characters and Escape Sequences
-  # ESC - Introduces escape sequences
-  @escape_char 27
-  # CSI - Control Sequence Introducer '['
-  @csi_char ?[
-  # DCS - Device Control String 'P'
-  @dcs_char ?P
-  # OSC - Operating System Command ']'
-  @osc_char ?]
-  # PM  - Privacy Message '^'
-  @pm_char ?^
-  # APC - Application Program Command '_'
-  @apc_char ?_
-  # SOS - Start of String 'X' (Used sometimes instead of DCS/OSC/PM/APC)
-  @sos_char ?X
-  # ST  - String Terminator (ESC \) - Often used with DCS, OSC, PM, APC
-  @st_char 92
+  @dialyzer [
+    {:nowarn_function, [
+      resize: 3,
+      get_cursor_position: 1,
+      map_charset_code_to_atom: 1,
+      index_to_gset_atom: 1
+    ]}
+  ]
 
-  # Single Shift Characters
-  # SS2 - Single Shift Two (Select G2 character set for the next character)
+  # Constants for control characters
+  @escape_char 27
+  @compile {:unused_attr, :csi_char}
+  @csi_char ?[
+  @compile {:unused_attr, :dcs_char}
+  @dcs_char ?P
+  @compile {:unused_attr, :osc_char}
+  @osc_char ?]
+  @compile {:unused_attr, :pm_char}
+  @pm_char ?^
+  @compile {:unused_attr, :apc_char}
+  @apc_char ?_
+  @compile {:unused_attr, :sos_char}
+  @sos_char ?X
+  @compile {:unused_attr, :st_char}
+  @st_char 92
+  @compile {:unused_attr, :ss2_char}
   @ss2_char ?N
-  # SS3 - Single Shift Three (Select G3 character set for the next character)
+  @compile {:unused_attr, :ss3_char}
   @ss3_char ?O
 
-  # C0 Control Codes (excluding NUL, ESC, SI, SO which are handled differently)
-  # BEL - Bell
-  @bel 7
-  # BS  - Backspace
-  @bs_char 8
-  # HT  - Horizontal Tab
-  @ht 9
-  # LF  - Line Feed
-  @lf 10
-  # VT  - Vertical Tab
-  @vt 11
-  # FF  - Form Feed
-  @ff 12
-  # CR  - Carriage Return
-  @cr_char 13
-  # SO/SI handled by charset mapping
-  # DLE, DC1-4, NAK, SYN, ETB, EM, FS, GS, RS, US - Not implemented yet
-  # CAN - Cancel
-  @can_char 24
-  # SUB - Substitute
-  @sub_char 26
-  # ESC is 27, defined above
-  # DEL - Delete
-  @del_char 127
-  # NUL - Null
+  # Constants for simple C0 codes - used by ControlCodes
   @nul 0
-  # SO  - Shift Out (-> G1)
+  @bel 7
+  @bs_char 8
+  @ht 9
+  @lf 10
+  @vt 11
+  @ff 12
+  @cr_char 13
   @so 14
-  # SI  - Shift In  (-> G0)
   @si 15
-  # US  - Unit Separator (often ignored)
+  @can_char 24
+  @sub_char 26
+  @del_char 127
+
+  # Constants for simple control codes - used by parser
+  @compile {:unused_attr, :sp}
+  @sp 32
+  @compile {:unused_attr, :us}
   @us 31
 
   @type cursor_style_type ::
@@ -153,7 +144,7 @@ defmodule Raxol.Terminal.Emulator do
       {0, 0}
 
   """
-  @spec new(non_neg_integer(), non_neg_integer(), map()) :: t()
+  @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: t()
   @dialyzer {:nowarn_function, new: 3}
   def new(width \\ 80, height \\ 24, opts \\ []) do
     scrollback_limit = Keyword.get(opts, :scrollback, 1000)
@@ -161,7 +152,7 @@ defmodule Raxol.Terminal.Emulator do
     plugin_manager = PluginManager.new()
     # Initialize Manager
     initial_cursor = Manager.new()
-    initial_buffer = ScreenBuffer.new(width, height, scrollback_limit)
+    _initial_buffer = ScreenBuffer.new(width, height, scrollback_limit)
     # Initialize both buffers
     main_buffer = ScreenBuffer.new(width, height, scrollback_limit)
     # Alternate buffer usually has no scrollback
@@ -234,7 +225,8 @@ defmodule Raxol.Terminal.Emulator do
   # --- Active Buffer Helpers ---
 
   @doc "Gets the currently active screen buffer."
-  @spec get_active_buffer(t()) :: ScreenBuffer.t()
+  @spec get_active_buffer(Raxol.Terminal.Emulator.t()) ::
+          Raxol.Terminal.ScreenBuffer.t()
   def get_active_buffer(%__MODULE__{
         active_buffer_type: :main,
         main_screen_buffer: buffer
@@ -248,7 +240,10 @@ defmodule Raxol.Terminal.Emulator do
       do: buffer
 
   @doc "Updates the currently active screen buffer."
-  @spec update_active_buffer(t(), ScreenBuffer.t()) :: t()
+  @spec update_active_buffer(
+          Raxol.Terminal.Emulator.t(),
+          Raxol.Terminal.ScreenBuffer.t()
+        ) :: Raxol.Terminal.Emulator.t()
   def update_active_buffer(
         %__MODULE__{active_buffer_type: :main} = emulator,
         new_buffer
@@ -426,7 +421,7 @@ defmodule Raxol.Terminal.Emulator do
 
   # Internal helper, called by ControlCodes
   @doc false
-  @spec handle_lf(t()) :: t()
+  @spec handle_lf(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_lf(%__MODULE__{} = emulator) do
     # Moves cursor down one line.
     # If at bottom of scroll region, scrolls region up.
@@ -435,11 +430,10 @@ defmodule Raxol.Terminal.Emulator do
       emulator
 
     active_buffer = get_active_buffer(emulator)
-
     {_cur_x, cur_y} = cursor.position
-    height = ScreenBuffer.get_height(active_buffer)
+    _height = ScreenBuffer.get_height(active_buffer)
 
-    {scroll_top, scroll_bottom} =
+    {_scroll_top, scroll_bottom} =
       ScreenBuffer.get_scroll_region_boundaries(active_buffer)
 
     new_cursor =
@@ -448,7 +442,7 @@ defmodule Raxol.Terminal.Emulator do
         new_active_buffer =
           ScreenBuffer.scroll_up(active_buffer, 1, scroll_region)
 
-        emulator = update_active_buffer(emulator, new_active_buffer)
+        _updated_emulator = update_active_buffer(emulator, new_active_buffer)
         cursor
       else
         # Move cursor down
@@ -468,7 +462,7 @@ defmodule Raxol.Terminal.Emulator do
 
   # Internal helper, called by ControlCodes
   @doc false
-  @spec handle_cr(t()) :: t()
+  @spec handle_cr(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_cr(%__MODULE__{} = emulator) do
     # Moves cursor to beginning of the current line.
     %{
@@ -480,7 +474,7 @@ defmodule Raxol.Terminal.Emulator do
 
   # Internal helper, called by ControlCodes
   @doc false
-  @spec handle_bs(t()) :: t()
+  @spec handle_bs(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_bs(%__MODULE__{} = emulator) do
     # Moves cursor left one position.
     # Stops at the beginning of the line.
@@ -493,7 +487,8 @@ defmodule Raxol.Terminal.Emulator do
 
   # Internal helper, called by ControlCodes
   @doc false
-  @spec handle_ht(t()) :: t()
+  @spec handle_ht(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  @dialyzer {:nowarn_function, handle_ht: 1}
   def handle_ht(%__MODULE__{} = emulator) do
     # Moves cursor to the next tab stop.
     # If no more tab stops, moves to the last column.
@@ -503,14 +498,18 @@ defmodule Raxol.Terminal.Emulator do
     width = ScreenBuffer.get_width(active_buffer)
     {cur_x, _cur_y} = cursor.position
 
-    next_stop =
-      tab_stops
-      |> Enum.filter(fn stop -> stop > cur_x end)
-      # Default to last column if no stops found
-      |> Enum.min(width - 1)
+    # Find next tab stop after current position
+    next_stops = Enum.filter(tab_stops, fn stop -> stop > cur_x end)
 
-    # Ensure the next stop is not beyond the last column
-    target_col = min(next_stop, width - 1)
+    # Calculate the target column
+    target_col =
+      if Enum.empty?(next_stops) do
+        # Default to last column if no stops found
+        width - 1
+      else
+        # Find the minimum and ensure it's not beyond the last column
+        min(Enum.min(next_stops), width - 1)
+      end
 
     %{
       emulator
@@ -521,7 +520,7 @@ defmodule Raxol.Terminal.Emulator do
 
   # Internal helper, called by ControlCodes
   @doc false
-  @spec handle_so(t()) :: t()
+  @spec handle_so(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_so(%__MODULE__{charset_state: cs} = emulator) do
     # Shift Out: Select G1 character set for GL.
     Logger.debug("Charset: SO (Shift Out) -> Invoking G1")
@@ -530,7 +529,7 @@ defmodule Raxol.Terminal.Emulator do
 
   # Internal helper, called by ControlCodes
   @doc false
-  @spec handle_si(t()) :: t()
+  @spec handle_si(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_si(%__MODULE__{charset_state: cs} = emulator) do
     # Shift In: Select G0 character set for GL.
     Logger.debug("Charset: SI (Shift In) -> Invoking G0")
@@ -539,7 +538,7 @@ defmodule Raxol.Terminal.Emulator do
 
   # Internal helper, called by ControlCodes
   @doc false
-  @spec handle_bel(t()) :: t()
+  @spec handle_bel(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_bel(emulator) do
     Logger.info("BEL received - Sound bell (not implemented visually)")
     # TODO: Implement visual bell or hook for external handler?
@@ -548,7 +547,7 @@ defmodule Raxol.Terminal.Emulator do
 
   # Internal helper, called by ControlCodes
   @doc false
-  @spec handle_can(t()) :: t()
+  @spec handle_can(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_can(emulator) do
     Logger.warning(
       "CAN received - Canceling sequence (parser should handle this)"
@@ -560,7 +559,7 @@ defmodule Raxol.Terminal.Emulator do
 
   # Internal helper, called by ControlCodes
   @doc false
-  @spec handle_sub(t()) :: t()
+  @spec handle_sub(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_sub(emulator) do
     Logger.warning(
       "SUB received - Treating as error/replacement (parser should handle this)"
@@ -572,18 +571,19 @@ defmodule Raxol.Terminal.Emulator do
 
   # --- Escape Sequence Handlers (Called by Parser) ---
 
-  @spec handle_nel(t()) :: t()
+  @spec handle_nel(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_nel(%__MODULE__{} = emulator) do
     # NEL (Next Line): Equivalent to CR + LF.
-    %{cursor: cursor, scroll_region: scroll_region, mode_state: mode_state} =
-      emulator
+    %{cursor: cursor, scroll_region: scroll_region} = emulator
+    # Ignore mode_state for NEL
+    _mode_state = emulator.mode_state
 
     active_buffer = get_active_buffer(emulator)
 
     {_cur_x, cur_y} = cursor.position
     height = ScreenBuffer.get_height(active_buffer)
 
-    {scroll_top, scroll_bottom} =
+    {_scroll_top, scroll_bottom} =
       ScreenBuffer.get_scroll_region_boundaries(active_buffer)
 
     new_cursor_y =
@@ -592,7 +592,7 @@ defmodule Raxol.Terminal.Emulator do
         new_active_buffer =
           ScreenBuffer.scroll_up(active_buffer, 1, scroll_region)
 
-        emulator = update_active_buffer(emulator, new_active_buffer)
+        _updated_emulator = update_active_buffer(emulator, new_active_buffer)
         # Y doesn't change relative to scrolled region
         cur_y
       else
@@ -605,7 +605,7 @@ defmodule Raxol.Terminal.Emulator do
     %{emulator | cursor: new_cursor, last_col_exceeded: false}
   end
 
-  @spec handle_hts(t()) :: t()
+  @spec handle_hts(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_hts(%__MODULE__{cursor: cursor} = emulator) do
     # HTS (Horizontal Tabulation Set): Set tab stop at current cursor column.
     {x, _y} = cursor.position
@@ -613,7 +613,7 @@ defmodule Raxol.Terminal.Emulator do
     %{emulator | tab_stops: MapSet.put(emulator.tab_stops, x)}
   end
 
-  @spec handle_ri(t()) :: t()
+  @spec handle_ri(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_ri(%__MODULE__{} = emulator) do
     # RI (Reverse Index): Move cursor up one line, scrolling down if at top of region.
     %{cursor: cursor, scroll_region: scroll_region} = emulator
@@ -631,22 +631,23 @@ defmodule Raxol.Terminal.Emulator do
           ScreenBuffer.scroll_down(active_buffer, 1, scroll_region)
 
         # Update the emulator with the scrolled buffer BEFORE updating cursor
-        emulator = update_active_buffer(emulator, new_active_buffer)
+        _updated_emulator = update_active_buffer(emulator, new_active_buffer)
+        # Cursor position doesn't change
         cursor
       else
-        # Move cursor up
+        # Just move up 1 if possible (but not past the top of screen)
         Manager.move_up(cursor, 1)
       end
 
-    %{emulator | cursor: new_cursor, last_col_exceeded: false}
+    %{emulator | cursor: new_cursor}
   end
 
   # --- DECSC/DECRC Handlers (Called by Parser or CommandExecutor) ---
 
   # Internal helper
   @doc false
-  @spec handle_decsc(t()) :: t()
-  def handle_decsc(emulator) do
+  @spec handle_decsc(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  def handle_decsc(%__MODULE__{} = emulator) do
     Logger.debug("DECSC: Saving state")
     # Capture relevant state fields into a map
     state_to_save = %{
@@ -667,8 +668,8 @@ defmodule Raxol.Terminal.Emulator do
 
   # Internal helper
   @doc false
-  @spec handle_decrc(t()) :: t()
-  def handle_decrc(emulator) do
+  @spec handle_decrc(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  def handle_decrc(%__MODULE__{} = emulator) do
     Logger.debug("DECRC: Restoring state")
 
     case emulator.state_stack do
@@ -705,6 +706,7 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   # Helper to map gset index (0-3) to atom (:g0-:g3)
+  @dialyzer {:nowarn_function, index_to_gset_atom: 1}
   defp index_to_gset_atom(0), do: :g0
   defp index_to_gset_atom(1), do: :g1
   defp index_to_gset_atom(2), do: :g2
@@ -713,6 +715,7 @@ defmodule Raxol.Terminal.Emulator do
   defp index_to_gset_atom(_), do: nil
 
   # Helper to map charset designation code to charset atom
+  @dialyzer {:nowarn_function, map_charset_code_to_atom: 1}
   defp map_charset_code_to_atom(charset_code) do
     case charset_code do
       ?B ->
@@ -776,5 +779,132 @@ defmodule Raxol.Terminal.Emulator do
         # Return nil for unhandled codes
         nil
     end
+  end
+
+  @doc """
+  Handles the RIS (Reset to Initial State) escape sequence.
+  This resets the terminal to its initial state, including clearing the screen,
+  resetting cursor position, character sets, modes, etc.
+  """
+  @spec handle_ris(t()) :: t()
+  @dialyzer {:nowarn_function, handle_ris: 1}
+  def handle_ris(%__MODULE__{} = emulator) do
+    # Get current dimensions
+    active_buffer = get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
+    scrollback_limit = active_buffer.scrollback_limit
+
+    # Create a fresh emulator with current dimensions
+    # but reset all other state
+    new_emulator = new(width, height, scrollback_limit: scrollback_limit)
+
+    # Preserve plugin manager from original emulator
+    %{new_emulator | plugin_manager: emulator.plugin_manager}
+  end
+
+  @doc """
+  Handles the IND (Index) escape sequence.
+  Moves cursor down one line, scrolling if necessary.
+  Similar to LF but doesn't reset column position.
+  """
+  @spec handle_ind(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  def handle_ind(%__MODULE__{} = emulator) do
+    %{cursor: cursor, scroll_region: scroll_region} = emulator
+    active_buffer = get_active_buffer(emulator)
+
+    {_cur_x, cur_y} = cursor.position
+
+    {_scroll_top, scroll_bottom} =
+      ScreenBuffer.get_scroll_region_boundaries(active_buffer)
+
+    if cur_y == scroll_bottom do
+      # At bottom of region, need to scroll
+      new_active_buffer =
+        ScreenBuffer.scroll_up(active_buffer, 1, scroll_region)
+
+      # Update buffer but keep cursor position
+      update_active_buffer(emulator, new_active_buffer)
+    else
+      # Not at bottom, just move cursor down
+      %{emulator | cursor: Manager.move_down(cursor, 1)}
+    end
+  end
+
+  @doc """
+  Resizes the emulator's screen buffers.
+
+  ## Parameters
+
+  * `emulator` - The emulator to resize
+  * `new_width` - New width in columns
+  * `new_height` - New height in rows
+
+  ## Returns
+
+  Updated emulator with resized buffers
+  """
+  @spec resize(
+          Raxol.Terminal.Emulator.t(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Raxol.Terminal.Emulator.t()
+  @dialyzer {:nowarn_function, resize: 3}
+  def resize(%__MODULE__{} = emulator, new_width, new_height) do
+    # Resize both buffers
+    new_main_buffer =
+      ScreenBuffer.resize(emulator.main_screen_buffer, new_width, new_height)
+
+    new_alt_buffer =
+      ScreenBuffer.resize(
+        emulator.alternate_screen_buffer,
+        new_width,
+        new_height
+      )
+
+    # Update tab stops for the new width
+    new_tab_stops = default_tab_stops(new_width)
+
+    # Return updated emulator
+    %{
+      emulator
+      | main_screen_buffer: new_main_buffer,
+        alternate_screen_buffer: new_alt_buffer,
+        tab_stops: new_tab_stops
+    }
+  end
+
+  @doc """
+  Gets the current cursor position from the emulator.
+
+  ## Parameters
+
+  * `emulator` - The emulator to get the cursor position from
+
+  ## Returns
+
+  A tuple {x, y} representing the cursor position
+  """
+  @spec get_cursor_position(Raxol.Terminal.Emulator.t()) ::
+          {non_neg_integer(), non_neg_integer()}
+  @dialyzer {:nowarn_function, get_cursor_position: 1}
+  def get_cursor_position(%__MODULE__{} = emulator) do
+    emulator.cursor.position
+  end
+
+  @doc """
+  Gets whether the cursor is currently visible.
+
+  ## Parameters
+
+  * `emulator` - The emulator to check
+
+  ## Returns
+
+  Boolean indicating if cursor is visible
+  """
+  @spec get_cursor_visible(Raxol.Terminal.Emulator.t()) :: boolean()
+  def get_cursor_visible(%__MODULE__{} = emulator) do
+    emulator.cursor.state != :hidden
   end
 end

@@ -158,6 +158,25 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     end
   end
 
+  @doc """
+  Invokes a character set as the GL (left) character set.
+  This is used by SI/SO (Shift In/Shift Out) control codes.
+
+  ## Examples
+
+      iex> state = Raxol.Terminal.ANSI.CharacterSets.new()
+      iex> state = Raxol.Terminal.ANSI.CharacterSets.switch_charset(state, :g1, :dec_special_graphics)
+      iex> state = Raxol.Terminal.ANSI.CharacterSets.invoke_charset(state, :g1)
+      iex> state.gl
+      :g1
+  """
+  @spec invoke_charset(charset_state(), :g0 | :g1 | :g2 | :g3) ::
+          charset_state()
+  def invoke_charset(state, gset) when gset in [:g0, :g1, :g2, :g3] do
+    # Set the specified G-set as the GL (left) charset
+    %{state | gl: gset}
+  end
+
   # --- Private Helpers ---
 
   # Map G-set index (0-3) to map key (:g0-:g3)
