@@ -1,0 +1,156 @@
+defmodule Raxol.Core.Runtime.CommandTest do
+  use ExUnit.Case, async: true
+  alias Raxol.Core.Runtime.Command
+
+  describe "command creation" do
+    test "none/0 creates a no-op command" do
+      cmd = Command.none()
+      assert %Command{type: :none} = cmd
+    end
+
+    test "task/1 creates a task command" do
+      fun = fn -> :result end
+      cmd = Command.task(fun)
+      assert %Command{type: :task, data: ^fun} = cmd
+    end
+
+    test "batch/1 creates a batch command" do
+      commands = [Command.none(), Command.delay(:msg, 100)]
+      cmd = Command.batch(commands)
+      assert %Command{type: :batch, data: ^commands} = cmd
+    end
+
+    test "delay/2 creates a delay command" do
+      msg = :delayed_message
+      delay_ms = 500
+      cmd = Command.delay(msg, delay_ms)
+      assert %Command{type: :delay, data: {^msg, ^delay_ms}} = cmd
+    end
+
+    test "broadcast/1 creates a broadcast command" do
+      msg = :broadcast_message
+      cmd = Command.broadcast(msg)
+      assert %Command{type: :broadcast, data: ^msg} = cmd
+    end
+
+    test "system/2 creates a system command" do
+      operation = :file_write
+      opts = [path: "test.txt", content: "Hello"]
+      cmd = Command.system(operation, opts)
+      assert %Command{type: :system, data: {^operation, ^opts}} = cmd
+    end
+  end
+
+  describe "map/2" do
+    test "maps over task command result" do
+      cmd = Command.task(fn -> :original end)
+      mapper = fn :original -> :mapped end
+
+      mapped_cmd = Command.map(cmd, mapper)
+      assert %Command{type: :task} = mapped_cmd
+
+      # Execute the function to verify mapping
+      result = mapped_cmd.data.()
+      assert result == :mapped
+    end
+
+    test "maps over batch command results" do
+      commands = [
+        Command.delay(:msg1, 100),
+        Command.broadcast(:msg2)
+      ]
+
+      cmd = Command.batch(commands)
+      mapper = fn
+        :msg1 -> :mapped1
+        :msg2 -> :mapped2
+      end
+
+      mapped_cmd = Command.map(cmd, mapper)
+      assert %Command{type: :batch} = mapped_cmd
+
+      [delay_cmd, broadcast_cmd] = mapped_cmd.data
+      assert delay_cmd.data == {:mapped1, 100}
+      assert broadcast_cmd.data == :mapped2
+    end
+
+    test "maps over delay command message" do
+      cmd = Command.delay(:original, 200)
+      mapper = fn :original -> :mapped end
+
+      mapped_cmd = Command.map(cmd, mapper)
+      assert %Command{type: :delay, data: {:mapped, 200}} = mapped_cmd
+    end
+
+    test "maps over broadcast command message" do
+      cmd = Command.broadcast(:original)
+      mapper = fn :original -> :mapped end
+
+      mapped_cmd = Command.map(cmd, mapper)
+      assert %Command{type: :broadcast, data: :mapped} = mapped_cmd
+    end
+
+    test "does nothing for none command" do
+      cmd = Command.none()
+      mapper = fn _ -> :something_else end
+
+      mapped_cmd = Command.map(cmd, mapper)
+      assert mapped_cmd == cmd
+    end
+  end
+
+  describe "execute/2" do
+    setup do
+      context = %{pid: self()}
+      {:ok, context: context}
+    end
+
+    test "executes task command", %{context: context} do
+      msg = {:task_completed, :data}
+      cmd = Command.task(fn -> msg end)
+
+      Command.execute(cmd, context)
+      assert_receive {:command_result, ^msg}, 500
+    end
+
+    test "executes batch commands", %{context: context} do
+      msg1 = {:result1, :data1}
+      msg2 = {:result2, :data2}
+
+      cmds = [
+        Command.task(fn -> msg1 end),
+        Command.task(fn -> msg2 end)
+      ]
+
+      cmd = Command.batch(cmds)
+      Command.execute(cmd, context)
+
+      assert_receive {:command_result, ^msg1}, 500
+      assert_receive {:command_result, ^msg2}, 500
+    end
+
+    test "executes delay command", %{context: context} do
+      msg = :delayed_message
+      cmd = Command.delay(msg, 50)
+
+      Command.execute(cmd, context)
+      refute_receive {:command_result, ^msg}, 10
+      assert_receive {:command_result, ^msg}, 100
+    end
+
+    test "executes file read system command", %{context: context} do
+      # Create a temporary file for testing
+      path = "test_file.txt"
+      content = "test content"
+      File.write!(path, content)
+
+      cmd = Command.system(:file_read, [path: path])
+      Command.execute(cmd, context)
+
+      assert_receive {:command_result, {:file_read, ^content}}, 500
+
+      # Clean up
+      File.rm!(path)
+    end
+  end
+end
