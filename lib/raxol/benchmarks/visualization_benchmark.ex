@@ -5,7 +5,6 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   for different data sizes and visualization types.
   """
 
-  alias Raxol.RuntimeDebug
   require Logger
 
   @doc """
@@ -81,6 +80,8 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       if test_memory do
         # IO.puts("Starting memory tracking...") # DEBUG
         # Raxol.RuntimeDebug.start_memory_tracking()
+        # Placeholder for memory tracking return value
+        _result = nil
       end
 
       # Create standard bounds for testing
@@ -94,7 +95,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
           # Reset cache between iterations if not testing cache
           if !(test_cache or i == 1) do
             # This resets the plugin state, clearing the cache
-            Raxol.Plugins.VisualizationPlugin.init()
+            _init_result = Raxol.Plugins.VisualizationPlugin.init()
           end
 
           # Measure chart rendering time
@@ -166,6 +167,8 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       # Prepare test environment
       if test_memory do
         # Raxol.RuntimeDebug.start_memory_tracking()
+        # Placeholder for memory tracking return value
+        _result = nil
       end
 
       # Create standard bounds for testing
@@ -179,7 +182,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
           # Reset cache between iterations if not testing cache
           if !(test_cache or i == 1) do
             # This resets the plugin state, clearing the cache
-            Raxol.Plugins.VisualizationPlugin.init()
+            _init_result = Raxol.Plugins.VisualizationPlugin.init()
           end
 
           # Measure treemap rendering time
@@ -470,7 +473,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
       |> Enum.map(fn result ->
         if length(result.times) > 1 do
           first_time = Enum.at(result.times, 0)
-          rest_times = Enum.slice(result.times, 1..-1)
+          rest_times = Enum.slice(result.times, 1..-1//-1)
           avg_rest_time = Enum.sum(rest_times) / length(rest_times)
 
           if avg_rest_time > 0, do: first_time / avg_rest_time, else: 1.0

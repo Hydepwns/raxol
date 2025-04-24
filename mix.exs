@@ -71,8 +71,7 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library
-      # {:rrex_termbox, path: "../rex_termbox", only: [:prod, :test]},
-      {:rrex_termbox, "~> 1.0.3"},
+      {:rrex_termbox, "1.0.4"},
       {:phoenix, "~> 1.7.20"},
       {:phoenix_live_view, "~> 1.0.0"},
       {:surface, "~> 0.12"},
@@ -130,7 +129,7 @@ defmodule Raxol.MixProject do
 
   defp aliases do
     [
-      setup: ["deps.get", "cmd cd ../rex_termbox && make"],
+      setup: ["deps.get"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
       test: ["test"],
@@ -140,7 +139,6 @@ defmodule Raxol.MixProject do
       ],
       "assets.deploy": ["sass.deploy", "tailwind.deploy"],
       "assets.build": [
-        "cmd cd ../rex_termbox && make",
         "sass default",
         "tailwind default"
       ],

@@ -202,6 +202,6 @@ defmodule Raxol.Style.Colors.HotReload do
   end
 
   defp schedule_check do
-    Process.send_after(self(), :check_changes, @check_interval)
+    _timer_ref = Process.send_after(self(), :check_changes, @check_interval)
   end
 end

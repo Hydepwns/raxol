@@ -119,7 +119,7 @@ defmodule Raxol.Cloud.Monitoring do
 
     # Start monitoring if active
     if active do
-      _ = start_monitoring(state.config)
+      _monitoring_pid = start_monitoring(state.config)
     end
 
     :ok
@@ -143,7 +143,7 @@ defmodule Raxol.Cloud.Monitoring do
     with_state(fn state ->
       if not state.active do
         # Start monitoring loops
-        start_monitoring(state.config)
+        _monitoring_pid = start_monitoring(state.config)
         %{state | active: true}
       else
         state

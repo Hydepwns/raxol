@@ -10,11 +10,8 @@ defmodule Raxol.Examples.Button do
   - Theme support
   """
 
-  use GenServer
   use Raxol.Component
   alias Raxol.Core.Events.Event
-
-  @behaviour Raxol.App
 
   @default_theme %{
     normal: %{fg: :blue, bg: :white, style: :bold},
@@ -31,13 +28,13 @@ defmodule Raxol.Examples.Button do
 
   @impl true
   def update(%Event{type: :mouse, data: %{state: :pressed}} = _event, state) do
-    {:noreply, %{state | count: state.count + 1}}
+    %{state | count: state.count + 1}
   end
 
   @impl true
-  def update(_msg, state), do: {:noreply, state}
+  def update(_msg, state), do: state
 
-  @impl Raxol.Component
+  @impl true
   def handle_event(%Event{type: :resize} = _event, state) do
     # TODO: Implement resize handling
     state

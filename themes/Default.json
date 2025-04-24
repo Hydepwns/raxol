@@ -1,5 +1,6 @@
 {
   "name": "Default",
+  "high_contrast": false,
   "palette": {
     "accent": {
       "r": 190,
@@ -62,7 +63,6 @@
       "a": 1.0
     }
   },
-  "high_contrast": false,
   "dark_mode": false,
   "ui_mappings": {
     "accent_button": "accent",

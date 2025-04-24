@@ -47,7 +47,7 @@ defmodule Raxol.Core.Performance.Monitor do
 
       iex> {:ok, monitor} = Monitor.start_link()
       {:ok, #PID<0.123.0>}
-      
+
       iex> {:ok, monitor} = Monitor.start_link(jank_threshold: 20)
       {:ok, #PID<0.124.0>}
   """
@@ -141,7 +141,8 @@ defmodule Raxol.Core.Performance.Monitor do
     }
 
     # Schedule memory check
-    schedule_memory_check(memory_check_interval)
+    _memory_check_timer =
+      Process.send_after(self(), :check_memory, memory_check_interval)
 
     {:ok, state}
   end

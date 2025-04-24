@@ -109,7 +109,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   defp yank_selection(%__MODULE__{} = state) do
     case get_selected_text(state) do
       {:ok, text} ->
-        set_clipboard_content(text)
+        _clipboard_result = set_clipboard_content(text)
         {:ok, state}
 
       _ ->

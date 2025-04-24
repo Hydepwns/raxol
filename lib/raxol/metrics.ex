@@ -146,7 +146,8 @@ defmodule Raxol.Metrics do
   end
 
   defp schedule_metrics_collection do
-    Process.send_after(self(), :collect_metrics, @collection_interval)
+    _timer_ref =
+      Process.send_after(self(), :collect_metrics, @collection_interval)
   end
 
   def get_cpu_usage do

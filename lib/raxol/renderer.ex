@@ -3,7 +3,7 @@ defmodule Raxol.Renderer do
   The Renderer module handles drawing UI elements to the terminal.
 
   This module translates the virtual DOM representation of the UI
-  into actual terminal output using rex_termbox.
+  into actual terminal output using rrex_termbox.
   """
 
   use GenServer
@@ -86,7 +86,7 @@ defmodule Raxol.Renderer do
 
   @impl true
   def terminate(reason, _state) do
-    Bindings.shutdown()
+    _ = Bindings.shutdown()
     IO.puts("Termbox shut down. Reason: #{inspect(reason)}")
     :ok
   end
