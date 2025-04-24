@@ -1,13 +1,13 @@
 ---
 title: Components Documentation
 description: Overview of Raxol Terminal Emulator components
-date: 2023-04-04
+date: 2025-04-24
 author: Raxol Team
 section: components
 tags: [components, documentation, terminal]
 ---
 
-# Components Documentation
+## Components Documentation
 
 This directory contains documentation for the various components of the Raxol Terminal Emulator.
 
@@ -49,4 +49,4 @@ To create a custom component, follow these guidelines:
 4. Write tests for your component
 5. Integrate with the terminal emulator
 
-For more information on creating custom components, see the [Component Development Guide](../guides/component_development.md). 
+For more information on creating custom components, see the [Component Development Guide](../guides/component_development.md).

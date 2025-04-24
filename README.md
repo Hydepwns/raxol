@@ -2,12 +2,11 @@
 
 [![Hex pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
-
 [![GitHub Actions CI](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml/badge.svg)](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml)
 
 A terminal application toolkit for Elixir, providing components and a runtime for building interactive TUI applications.
 
-> **Note:** Pre-release software. APIs may change before v1.0.
+> **Note:** Pre-release software. APIs may change before v2.0. -- as i'm adding in more features and refactoring.
 
 <!-- TODO: Add a screenshot or GIF demo here -->
 
@@ -25,7 +24,7 @@ Add `raxol` to your list of dependencies in `mix.exs`:
 ```elixir
 def deps do
   [
-    {:raxol, "~> 0.1.0"} # Or use {:raxol, github: "Hydepwns/raxol"} for development
+    {:raxol, "~> 0.1.0"}
   ]
 end
 ```
@@ -72,6 +71,7 @@ Explore the `/examples` directory for more detailed usage patterns and advanced 
 
 Detailed documentation can be found in the `/docs` directory or online (TODO: Add the hosted documentation link here):
 
+- [Architecture Overview](docs/ARCHITECTURE.md) - Learn about the reorganized codebase structure
 - [Using Raxol (Installation Guide)](docs/installation/Installation.md)
 - [Getting Started Tutorial](docs/guides/quick_start.md)
 - [UI Components & Layout](docs/guides/components.md)
