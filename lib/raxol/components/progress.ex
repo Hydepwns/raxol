@@ -4,6 +4,9 @@ defmodule Raxol.Components.Progress do
   alias Raxol.View.Layout
   alias Raxol.View.Components
 
+  # Add @dialyzer directive to silence the callback_type_mismatch warning
+  @dialyzer {:nowarn_function, render: 1}
+
   @moduledoc """
   Progress and loading indicator components for Raxol applications.
 
@@ -128,13 +131,26 @@ defmodule Raxol.Components.Progress do
     # Create the progress bar
     Layout.row([id: id, style: style],
       do: fn ->
-        if filled_width > 0 do
-          Components.text(filled_portion, style: filled_style)
-        end
+        elements = []
 
-        if empty_width > 0 do
-          Components.text(empty_portion, style: empty_style)
-        end
+        elements =
+          if filled_width > 0 do
+            filled_text = Components.text(filled_portion, style: filled_style)
+            [filled_text | elements]
+          else
+            elements
+          end
+
+        elements =
+          if empty_width > 0 do
+            empty_text = Components.text(empty_portion, style: empty_style)
+            [empty_text | elements]
+          else
+            elements
+          end
+
+        # Return elements in correct order (reverse accumulation)
+        Enum.reverse(elements)
       end
     )
   end
@@ -194,47 +210,97 @@ defmodule Raxol.Components.Progress do
     case position do
       :above ->
         Layout.column([id: id], fn ->
-          Layout.row([style: %{justify: :space_between}], fn ->
-            Components.text(label, style: label_style)
+          header_row =
+            Layout.row([style: %{justify: :space_between}], fn ->
+              label_text = Components.text(label, style: label_style)
 
-            if percentage_text,
-              do: Components.text(percentage_text, style: percentage_style)
-          end)
+              percentage_element =
+                if percentage_text do
+                  Components.text(percentage_text, style: percentage_style)
+                else
+                  nil
+                end
 
-          bar(value, opts)
+              # Make sure to return the elements
+              elements = [label_text]
+
+              elements =
+                if percentage_element,
+                  do: elements ++ [percentage_element],
+                  else: elements
+
+              elements
+            end)
+
+          progress_bar = bar(value, opts)
+
+          [header_row, progress_bar]
         end)
 
       :below ->
         Layout.column([id: id], fn ->
-          bar(value, opts)
+          progress_bar = bar(value, opts)
 
-          Layout.row([style: %{justify: :space_between}], fn ->
-            Components.text(label, style: label_style)
+          footer_row =
+            Layout.row([style: %{justify: :space_between}], fn ->
+              label_text = Components.text(label, style: label_style)
 
-            if percentage_text,
-              do: Components.text(percentage_text, style: percentage_style)
-          end)
+              percentage_element =
+                if percentage_text do
+                  Components.text(percentage_text, style: percentage_style)
+                else
+                  nil
+                end
+
+              # Make sure to return the elements
+              elements = [label_text]
+
+              elements =
+                if percentage_element,
+                  do: elements ++ [percentage_element],
+                  else: elements
+
+              elements
+            end)
+
+          [progress_bar, footer_row]
         end)
 
       :right ->
         Layout.row([id: id], fn ->
-          bar(
-            value,
-            Keyword.put(
-              opts,
-              :width,
-              Keyword.get(opts, :width, 20) - String.length(label) -
-                if(percentage_text,
-                  do: String.length(percentage_text) + 1,
-                  else: 0
-                )
+          # Adjust width for right-aligned label and percentage
+          adjusted_width =
+            Keyword.get(opts, :width, 20) -
+              String.length(label) -
+              if(percentage_text,
+                do: String.length(percentage_text) + 1,
+                else: 0
+              )
+
+          progress_bar =
+            bar(
+              value,
+              Keyword.put(opts, :width, adjusted_width)
             )
-          )
 
-          Components.text(" #{label}", style: label_style)
+          label_text = Components.text(" #{label}", style: label_style)
 
-          if percentage_text,
-            do: Components.text(" #{percentage_text}", style: percentage_style)
+          percentage_element =
+            if percentage_text do
+              Components.text(" #{percentage_text}", style: percentage_style)
+            else
+              nil
+            end
+
+          # Make sure to return the elements
+          elements = [progress_bar, label_text]
+
+          elements =
+            if percentage_element,
+              do: elements ++ [percentage_element],
+              else: elements
+
+          elements
         end)
 
       _ ->
@@ -299,11 +365,20 @@ defmodule Raxol.Components.Progress do
     # Create the spinner with optional message
     Layout.row([id: id, style: style],
       do: fn ->
-        Components.text(current_frame, style: spinner_style)
+        # Create spinner character element
+        spinner_element = Components.text(current_frame, style: spinner_style)
 
-        if message do
-          Components.text(" #{message}", style: message_style)
-        end
+        # Create message element if provided
+        message_element =
+          if message do
+            Components.text(" #{message}", style: message_style)
+          else
+            nil
+          end
+
+        # Return elements, filtering nil
+        [spinner_element, message_element]
+        |> Enum.reject(&is_nil/1)
       end
     )
   end
@@ -379,19 +454,42 @@ defmodule Raxol.Components.Progress do
     # Create the indeterminate progress bar
     Layout.row([id: id, style: style],
       do: fn ->
-        if left_width > 0 do
-          Components.text(String.duplicate(" ", left_width),
-            style: background_style
-          )
-        end
+        elements = []
 
-        Components.text(String.duplicate(" ", bar_width), style: bar_style)
+        # Add left part if there is space
+        elements =
+          if left_width > 0 do
+            left_element =
+              Components.text(String.duplicate(" ", left_width),
+                style: background_style
+              )
 
-        if right_width > 0 do
-          Components.text(String.duplicate(" ", right_width),
-            style: background_style
-          )
-        end
+            [left_element | elements]
+          else
+            elements
+          end
+
+        # Add animated bar segment
+        bar_element =
+          Components.text(String.duplicate(" ", bar_width), style: bar_style)
+
+        elements = [bar_element | elements]
+
+        # Add right part if there is space
+        elements =
+          if right_width > 0 do
+            right_element =
+              Components.text(String.duplicate(" ", right_width),
+                style: background_style
+              )
+
+            [right_element | elements]
+          else
+            elements
+          end
+
+        # Return elements in correct order
+        Enum.reverse(elements)
       end
     )
   end
@@ -452,11 +550,24 @@ defmodule Raxol.Components.Progress do
     # Create the circular progress indicator
     Layout.row([id: id],
       do: fn ->
-        Components.text(progress_char, style: style)
+        # Create progress char element
+        char_element = Components.text(progress_char, style: style)
 
-        if show_percentage do
-          Components.text(percentage_text, style: percentage_style)
-        end
+        # Create percentage element if needed
+        elements = [char_element]
+
+        elements =
+          if show_percentage do
+            percentage_element =
+              Components.text(percentage_text, style: percentage_style)
+
+            elements ++ [percentage_element]
+          else
+            elements
+          end
+
+        # Return the elements
+        elements
       end
     )
   end

@@ -290,37 +290,78 @@ defmodule Raxol.Components.HintDisplay do
   # Renders the footer section (shortcuts)
   defp render_footer(shortcuts, style) do
     if style != :minimal && length(shortcuts) > 0 do
-      Layout.row padding_top: 1 do
-        # Assuming render_shortcuts/0 exists and returns a view element
-        render_shortcuts()
-      end
+      # Capture the result of the row function
+      row_result =
+        Layout.row([padding_top: 1],
+          do: fn ->
+            # Capture the result of render_shortcuts
+            shortcuts_result = render_shortcuts()
+            # Return the shortcuts_result
+            shortcuts_result
+          end
+        )
+
+      # Return the row_result
+      row_result
     else
       nil
     end
   end
 
   defp render_shortcuts() do
-    Layout.column do
-      Layout.row do
-        Components.text("Keyboard Shortcuts:", style: [bold: true])
-      end
+    # Capture the result of the column function
+    column_result =
+      Layout.column([],
+        do: fn ->
+          row1 =
+            Layout.row([],
+              do: fn ->
+                text_result =
+                  Components.text("Keyboard Shortcuts:", style: [bold: true])
 
-      Layout.row do
-        Components.text("Tab: Next field")
-      end
+                [text_result]
+              end
+            )
 
-      Layout.row do
-        Components.text("Shift+Tab: Previous field")
-      end
+          row2 =
+            Layout.row([],
+              do: fn ->
+                text_result = Components.text("Tab: Next field")
+                [text_result]
+              end
+            )
 
-      Layout.row do
-        Components.text("Enter: Submit")
-      end
+          row3 =
+            Layout.row([],
+              do: fn ->
+                text_result = Components.text("Shift+Tab: Previous field")
+                [text_result]
+              end
+            )
 
-      Layout.row do
-        Components.text("Esc: Cancel")
-      end
-    end
+          row4 =
+            Layout.row([],
+              do: fn ->
+                text_result = Components.text("Enter: Submit")
+                [text_result]
+              end
+            )
+
+          row5 =
+            Layout.row([],
+              do: fn ->
+                text_result = Components.text("Esc: Cancel")
+                [text_result]
+              end
+            )
+
+          # Explicitly return the list of rows
+          [row1, row2, row3, row4, row5]
+        end
+      )
+
+    # Return the column_result
+    column_result
   end
 
   defp highlight_shortcuts_in_text(text) do
@@ -360,21 +401,44 @@ defmodule Raxol.Components.HintDisplay do
   end
 
   @impl true
-  def init(opts) when is_map(opts) do
+  def init(opts) do
     # Initialize the help level
+    help_level =
+      if is_map(opts), do: Map.get(opts, :help_level, :basic), else: :basic
+
     Process.put(
       :hint_display_help_level,
-      Map.get(opts, :help_level, :basic)
+      help_level
     )
 
-    %{
-      visible: Map.get(opts, :visible, true),
-      style: Map.get(opts, :style, :standard),
-      position: Map.get(opts, :position, :bottom),
-      always_show: Map.get(opts, :always_show, false),
-      max_width: Map.get(opts, :max_width, nil),
-      help_level: Map.get(opts, :help_level, :basic)
+    # Create state map with defaults for any input type
+    state = %{
+      visible: true,
+      style: :standard,
+      position: :bottom,
+      always_show: false,
+      max_width: nil,
+      help_level: help_level,
+      highlight_shortcuts: true,
+      current_hint: nil
     }
+
+    # Override defaults with provided options if they exist and are a map
+    if is_map(opts) do
+      state
+      |> Map.put(:visible, Map.get(opts, :visible, true))
+      |> Map.put(:style, Map.get(opts, :style, :standard))
+      |> Map.put(:position, Map.get(opts, :position, :bottom))
+      |> Map.put(:always_show, Map.get(opts, :always_show, false))
+      |> Map.put(:max_width, Map.get(opts, :max_width, nil))
+      |> Map.put(
+        :highlight_shortcuts,
+        Map.get(opts, :highlight_shortcuts, true)
+      )
+      |> Map.put(:current_hint, Map.get(opts, :current_hint, nil))
+    else
+      state
+    end
   end
 
   @impl true
@@ -404,6 +468,10 @@ defmodule Raxol.Components.HintDisplay do
         Process.put(:hint_display_help_level, next_level)
         %{model | help_level: next_level}
 
+      {:set_current_hint, hint_id} ->
+        %{model | current_hint: hint_id}
+
+      # Return model unchanged for any other message type
       _ ->
         model
     end
@@ -415,5 +483,13 @@ defmodule Raxol.Components.HintDisplay do
   def subscriptions(_model) do
     # Subscribe to focus change events to update hints
     [{:focus_change, :global}]
+  end
+
+  @impl true
+  def unmount(state) do
+    # Clean up any Process dictionary entries
+    Process.delete(:hint_display_shortcuts)
+    Process.delete(:hint_display_help_level)
+    state
   end
 end

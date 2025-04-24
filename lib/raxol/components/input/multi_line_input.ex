@@ -158,7 +158,13 @@ defmodule Raxol.Components.Input.MultiLineInput do
             selection_end: nil
         }
 
-        if state.on_change, do: state.on_change.(new_value)
+        # Handle on_change function with properly returned value
+        if state.on_change do
+          # Call on_change but don't ignore the result
+          _ = state.on_change.(new_value)
+        end
+
+        # Return the new state
         new_state
       end
     end
@@ -206,7 +212,13 @@ defmodule Raxol.Components.Input.MultiLineInput do
             selection_end: nil
         }
 
-        if state.on_change, do: state.on_change.(new_value_from_replace)
+        # Handle on_change function with properly returned value
+        if state.on_change do
+          # Call on_change but don't ignore the result
+          _ = state.on_change.(new_value_from_replace)
+        end
+
+        # Return the updated state
         new_state
       end
     end
@@ -228,7 +240,13 @@ defmodule Raxol.Components.Input.MultiLineInput do
             cursor_col: 0
         }
 
-        if state.on_change, do: state.on_change.(new_value)
+        # Handle on_change function with properly returned value
+        if state.on_change do
+          # Call on_change but don't ignore the result
+          _ = state.on_change.(new_value)
+        end
+
+        # Return the updated state
         new_state
       else
         insert_char(state, "\n")
@@ -362,22 +380,37 @@ defmodule Raxol.Components.Input.MultiLineInput do
       for {line, index} <- Enum.with_index(visible_lines) do
         row_index = index + state.scroll_offset
 
-        row do
-          if state.style.line_numbers do
-            Components.text(
-              content:
-                String.pad_leading(
-                  Integer.to_string(row_index + 1),
-                  line_number_width
-                ),
-              color: state.style.line_number_color
-            )
+        row_result =
+          row do
+            line_elements =
+              if state.style.line_numbers do
+                line_number_text =
+                  Components.text(
+                    content:
+                      String.pad_leading(
+                        Integer.to_string(row_index + 1),
+                        line_number_width
+                      ),
+                    color: state.style.line_number_color
+                  )
 
-            Components.text(content: " ")
+                space_text = Components.text(content: " ")
+
+                [line_number_text, space_text]
+              else
+                []
+              end
+
+            line_content = render_line(line, row_index, state)
+
+            if state.style.line_numbers do
+              line_elements ++ [line_content]
+            else
+              line_content
+            end
           end
 
-          render_line(line, row_index, state)
-        end
+        row_result
       end
     end
   end
@@ -945,9 +978,6 @@ defmodule Raxol.Components.Input.MultiLineInput do
       end
     end
   end
-
-  # Catch-all update clause - Moved from end of file
-  def update(_msg, state), do: state
 end
 
 # End of module Raxol.Components.Input.MultiLineInput

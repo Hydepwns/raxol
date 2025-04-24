@@ -39,13 +39,31 @@ defmodule Raxol.View.Layout do
           :type => :row
         }
   def row(opts) when is_list(opts) do
-    row(opts)
+    %{
+      type: :row,
+      opts: opts,
+      children: []
+    }
   end
 
-  @spec row(opts(), [{:do, children_fun()}]) :: map()
+  @spec row(opts(), children_fun() | [{:do, children_fun()}]) :: map()
   @dialyzer {:nowarn_function, row: 2}
-  def row(opts \\ [], do: block) when is_list(opts) and is_function(block, 0) do
-    row(opts, do: block)
+  def row(opts \\ [], block_or_fun) do
+    children =
+      if is_function(block_or_fun, 0) do
+        block_or_fun.()
+      else
+        case block_or_fun do
+          [do: block] when is_function(block, 0) -> block.()
+          _ -> []
+        end
+      end
+
+    %{
+      type: :row,
+      opts: opts,
+      children: List.wrap(children)
+    }
   end
 
   @doc """
@@ -73,14 +91,31 @@ defmodule Raxol.View.Layout do
           :type => :column
         }
   def column(opts) when is_list(opts) do
-    column(opts)
+    %{
+      type: :column,
+      opts: opts,
+      children: []
+    }
   end
 
-  @spec column(opts(), [{:do, children_fun()}]) :: map()
+  @spec column(opts(), children_fun() | [{:do, children_fun()}]) :: map()
   @dialyzer {:nowarn_function, column: 2}
-  def column(opts \\ [], do: block)
-      when is_list(opts) and is_function(block, 0) do
-    column(opts, do: block)
+  def column(opts \\ [], block_or_fun) do
+    children =
+      if is_function(block_or_fun, 0) do
+        block_or_fun.()
+      else
+        case block_or_fun do
+          [do: block] when is_function(block, 0) -> block.()
+          _ -> []
+        end
+      end
+
+    %{
+      type: :column,
+      opts: opts,
+      children: List.wrap(children)
+    }
   end
 
   @doc """
