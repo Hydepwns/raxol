@@ -7,6 +7,7 @@ defmodule Raxol.Core.Runtime.Supervisor do
   * Event handlers
   * Render processes
   * State management
+  * Plugin system
   """
 
   use Supervisor
@@ -18,9 +19,17 @@ defmodule Raxol.Core.Runtime.Supervisor do
   @impl true
   def init(_init_arg) do
     children = [
+      # Task supervisor for isolated task execution
+      {Task.Supervisor, name: Raxol.Core.Runtime.TaskSupervisor},
+
+      # Core runtime services
       {Raxol.Core.Runtime.StateManager, []},
       {Raxol.Core.Runtime.EventLoop, []},
-      {Raxol.Core.Runtime.RenderLoop, []}
+      {Raxol.Core.Runtime.RenderLoop, []},
+
+      # Plugin system
+      {Raxol.Core.Runtime.Plugins.Manager, []},
+      {Raxol.Core.Runtime.Plugins.Commands, []}
     ]
 
     Supervisor.init(children, strategy: :one_for_all)

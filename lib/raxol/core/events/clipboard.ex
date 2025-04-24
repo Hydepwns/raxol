@@ -64,10 +64,8 @@ defmodule Raxol.Core.Events.Clipboard do
             {:error, {:clip_failed, output}}
         end
 
-      {os_type, os_name} ->
-        Logger.warning(
-          "Clipboard copy not supported on OS: #{os_type}/#{os_name}"
-        )
+      _other_os ->
+        Logger.warning("Clipboard copy not supported on this OS")
 
         {:error, :unsupported_os}
     end
@@ -143,10 +141,8 @@ defmodule Raxol.Core.Events.Clipboard do
             {:error, {:powershell_get_clipboard_failed, output}}
         end
 
-      {os_type, os_name} ->
-        Logger.warning(
-          "Clipboard paste not supported on OS: #{os_type}/#{os_name}"
-        )
+      _other_os ->
+        Logger.warning("Clipboard paste not supported on this OS")
 
         {:error, :unsupported_os}
     end

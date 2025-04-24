@@ -517,15 +517,7 @@ defmodule Raxol.Runtime do
             ExTermbox.Bindings.present()
 
             # Handle plugin commands
-            case send_plugin_commands(plugin_commands) do
-              :ok ->
-                :ok
-
-              {:error, reason} ->
-                Logger.error(
-                  "Failed to send plugin commands: #{inspect(reason)}"
-                )
-            end
+            _send_result = send_plugin_commands(plugin_commands)
 
             # Update state
             new_state = %{
@@ -540,7 +532,7 @@ defmodule Raxol.Runtime do
             # Schedule next render
             if state.fps > 0 do
               interval_ms = round(1000 / state.fps)
-              Process.send_after(self(), :render, interval_ms)
+              _timer_ref = Process.send_after(self(), :render, interval_ms)
             end
 
             {:noreply, new_state}
@@ -569,27 +561,37 @@ defmodule Raxol.Runtime do
         app_event = TermboxConverter.convert(type_int, mod, key, ch, w, h, x, y)
 
         # Pass the Raxol event struct to appropriate handler
-        # TODO: Update the handler logic below to use raxol_event properly
         case app_event do
           # Pass RaxolEvent directly to private handlers
           %RaxolEvent{type: :mouse} = event ->
-            p_handle_mouse_event(event, state)
+            case p_handle_mouse_event(event, state) do
+              {:noreply, updated_state} -> {:noreply, updated_state}
+              {:stop, reason, updated_state} -> {:stop, reason, updated_state}
+            end
 
           %RaxolEvent{type: :key} = event ->
-            p_handle_key_event(event, state)
+            case p_handle_key_event(event, state) do
+              {:noreply, updated_state} -> {:noreply, updated_state}
+              {:stop, reason, updated_state} -> {:stop, reason, updated_state}
+            end
 
-          # Handle other RaxolEvent types directly (resize, unknown)
-          # The handle_event function below might need updating to accept RaxolEvent struct
-          # Matches any other RaxolEvent struct
+          # Handle other event types (resize, unknown)
           %RaxolEvent{} = other_event ->
-            case handle_event(other_event, state) do
+            # Convert to core event format
+            core_event = %Raxol.Core.Events.Event{
+              type: other_event.type,
+              data: other_event.data,
+              timestamp: System.monotonic_time(:millisecond)
+            }
+
+            # Pass to handle_event
+            case handle_event(core_event, state) do
               {:continue, updated_state} ->
                 {:noreply, updated_state}
 
-              # Match with reason and state (only valid pattern)
-              {:stop, _reason, updated_state} ->
+              {:stop, reason, updated_state} ->
                 cleanup(updated_state)
-                {:stop, :normal, updated_state}
+                {:stop, reason, updated_state}
             end
         end
       rescue
@@ -635,9 +637,10 @@ defmodule Raxol.Runtime do
            :save_layout,
            1
          ) do
-        Raxol.Components.Dashboard.Dashboard.save_layout(
-          dashboard_model.widgets
-        )
+        _saved =
+          Raxol.Components.Dashboard.Dashboard.save_layout(
+            dashboard_model.widgets
+          )
       else
         Logger.warning(
           "[Runtime] Dashboard.save_layout/1 not found, cannot save layout."
@@ -656,13 +659,11 @@ defmodule Raxol.Runtime do
           "[Runtime] Sending shutdown notification via StdioInterface..."
         )
 
-        StdioInterface.send_message(%{
-          type: "shutdown",
-          payload: %{reason: "normal"}
-        })
-
-        # Give StdioInterface time to flush messages
-        Process.sleep(100)
+        _notification_result =
+          StdioInterface.send_message(%{
+            type: "shutdown",
+            payload: %{reason: "normal"}
+          })
       end
     else
       # TTY mode - ExTermbox cleanup
@@ -674,40 +675,9 @@ defmodule Raxol.Runtime do
 
         # IMPORTANT: Order of operations matters
         # First stop the polling task
-        try do
-          Logger.debug("[Runtime] Calling stop_polling...")
-
-          case ExTermbox.Bindings.stop_polling() do
-            :ok ->
-              Logger.debug("[Runtime] stop_polling completed successfully")
-
-            {:error, reason} ->
-              Logger.warning(
-                "[Runtime] stop_polling returned error: #{inspect(reason)}"
-              )
-          end
-        rescue
-          e ->
-            Logger.error("[Runtime] Error during stop_polling: #{inspect(e)}")
-        end
-
+        _polling_result = ExTermbox.Bindings.stop_polling()
         # Then shut down the terminal
-        try do
-          Logger.debug("[Runtime] Calling shutdown...")
-
-          case ExTermbox.Bindings.shutdown() do
-            :ok ->
-              Logger.debug("[Runtime] shutdown completed successfully")
-
-            {:error, reason} ->
-              Logger.warning(
-                "[Runtime] shutdown returned error: #{inspect(reason)}"
-              )
-          end
-        rescue
-          e ->
-            Logger.error("[Runtime] Error during shutdown: #{inspect(e)}")
-        end
+        _shutdown_result = ExTermbox.Bindings.shutdown()
 
         Logger.info("[Runtime] Termbox cleanup complete")
       else
@@ -759,52 +729,33 @@ defmodule Raxol.Runtime do
     end
   end
 
-  # Updated to expect flat map: %{type: :key, modifiers: list(), key: key_atom_or_char}
-  defp is_quit_key?(%{type: :key, modifiers: mods, key: key}, quit_keys) do
+  # Handles is_quit_key? detection across various event formats
+  defp is_quit_key?(%{type: :key, key: key, modifiers: modifiers}, quit_keys) do
+    # Check if the key (with modifiers) is in the list of quit keys
     Enum.any?(quit_keys, fn quit_key ->
-      # Log which quit_key from the list is being checked and the event details
-      Logger.debug(
-        "[is_quit_key?] Checking event key '#{inspect(key)}' (mods: #{inspect(mods)}) against quit key '#{inspect(quit_key)}'"
-      )
+      case quit_key do
+        # If the quit key is specified as a string, compare with the key directly
+        key_str when is_binary(key_str) ->
+          to_string(key) == key_str
 
-      match_result =
-        case quit_key do
-          # Check for Ctrl+C
-          :ctrl_c ->
-            :ctrl in mods && key == ?c
+        # If it's a map with specific key/modifiers, check both match
+        %{key: quit_key_val, modifiers: quit_mods} ->
+          # Both the key and ALL specified modifiers must match
+          to_string(key) == to_string(quit_key_val) &&
+            Enum.all?(quit_mods, fn mod -> mod in modifiers end)
 
-          # Check for generic Ctrl + character
-          {:ctrl, char} ->
-            :ctrl in mods && key == char
+        # If it's just a map with a key, ignore modifiers
+        %{key: quit_key_val} ->
+          to_string(key) == to_string(quit_key_val)
 
-          # Check for generic Alt + character
-          {:alt, char} ->
-            :alt in mods && key == char
-
-          # Check for simple 'q' key (no modifiers)
-          :q ->
-            mods == [] && key == ?q
-
-          # Check for other simple keys (atoms like :escape, or chars) without modifiers
-          simple_key when is_atom(simple_key) or is_integer(simple_key) ->
-            mods == [] && key == simple_key
-
-          _ ->
-            # Default: does not match
-            false
-        end
-
-      # Log the result of this specific check
-      Logger.debug(
-        "[is_quit_key?] Match result for '#{inspect(quit_key)}': #{match_result}"
-      )
-
-      # Return result for Enum.any?
-      match_result
+        # For any other format, use strict equality
+        _ ->
+          key == quit_key
+      end
     end)
   end
 
-  # Catch clause for non-key events or mismatched maps
+  # Handle non-key events (never quit keys)
   defp is_quit_key?(_event, _quit_keys), do: false
 
   # Remove unused function
@@ -815,16 +766,55 @@ defmodule Raxol.Runtime do
   # end
 
   defp cleanup(state) do
-    if state.termbox_initialized do
-      ExTermbox.Bindings.shutdown()
+    # Save dashboard layout if available
+    dashboard_model = Map.get(state.model, :dashboard_model)
+
+    if dashboard_model do
+      Logger.info("[Runtime] Saving dashboard layout during cleanup...")
+      # Call a function in Dashboard to handle saving
+      if function_exported?(
+           Raxol.Components.Dashboard.Dashboard,
+           :save_layout,
+           1
+         ) do
+        _saved =
+          Raxol.Components.Dashboard.Dashboard.save_layout(
+            dashboard_model.widgets
+          )
+      else
+        Logger.warning(
+          "[Runtime] Dashboard.save_layout/1 not found, cannot save layout."
+        )
+      end
     end
 
-    # Unregister the application name from the registry
-    # Ensure app_name is fetched correctly if needed, or assumed from init arg
-    # For simplicity, let's assume app_module gives us the context
-    app_name = get_app_name(state.app_module)
-    AppRegistry.unregister(app_name)
-    Logger.debug("Raxol Runtime for #{app_name} cleaned up.")
+    # Different cleanup based on environment mode
+    if state.is_vscode_extension_env do
+      # VS Code extension mode cleanup
+      Logger.info("[Runtime] VS Code extension mode cleanup...")
+
+      # Notify StdioInterface about shutdown
+      if state.stdio_interface_pid && Process.alive?(state.stdio_interface_pid) do
+        _notification_result =
+          StdioInterface.send_message(%{
+            type: "shutdown",
+            payload: %{reason: "normal"}
+          })
+      end
+    else
+      # TTY mode cleanup
+      Logger.info("[Runtime] TTY mode cleanup...")
+
+      # Shutdown Termbox if it was initialized
+      if state.termbox_initialized do
+        # First stop polling for events
+        _polling_result = ExTermbox.Bindings.stop_polling()
+        # Then shutdown Termbox
+        _shutdown_result = ExTermbox.Bindings.shutdown()
+      end
+    end
+
+    :ok
   end
 
   # === Core Rendering Logic ===
@@ -905,17 +895,12 @@ defmodule Raxol.Runtime do
   defp convert_webview_modifiers(_), do: []
 
   # --- Private helper for app event delegation ---
-  defp handle_event(event_tuple, state) do
-    # Convert the raw event tuple/map to the application event format
-    # Destructure
-    {type_int, mod, key, ch, w, h, x, y} = event_tuple
-    # Call convert/8
-    app_event = TermboxConverter.convert(type_int, mod, key, ch, w, h, x, y)
-
+  defp handle_event(%Raxol.Core.Events.Event{} = raxol_event, state) do
+    # Handle events in the Raxol.Core.Events.Event format (new style)
     if Code.ensure_loaded?(state.app_module) and
          function_exported?(state.app_module, :update, 2) do
-      # Call the application's update function
-      case state.app_module.update(app_event, state.model) do
+      # Call the application's update function with the event
+      case state.app_module.update(raxol_event, state.model) do
         # App returned a new model, continue
         new_model when is_map(new_model) ->
           {:continue, %{state | model: new_model}}
@@ -949,17 +934,74 @@ defmodule Raxol.Runtime do
     else
       # App doesn't implement update/2
       Logger.warning(
-        "Application #{state.app_module} does not implement update/2. Ignoring event: #{inspect(app_event)}"
+        "Application #{state.app_module} does not implement update/2. Ignoring event: #{inspect(raxol_event)}"
       )
 
       {:continue, state}
     end
   end
 
+  # Legacy handler for tuple-based events
+  defp handle_event(event_tuple, state) when is_tuple(event_tuple) do
+    # Convert the raw event tuple to the application event format
+    try do
+      # Destructure only if it's a valid 8-element tuple
+      {type_int, mod, key, ch, w, h, x, y} = event_tuple
+      # Call convert/8
+      app_event = TermboxConverter.convert(type_int, mod, key, ch, w, h, x, y)
+
+      if Code.ensure_loaded?(state.app_module) and
+           function_exported?(state.app_module, :update, 2) do
+        # Call the application's update function
+        case state.app_module.update(app_event, state.model) do
+          # App returned a new model, continue
+          new_model when is_map(new_model) ->
+            {:continue, %{state | model: new_model}}
+
+          # App requested to stop
+          {:stop, :normal, new_model} ->
+            # Handle normal termination
+            Logger.info("[Runtime] Terminate callback started. Reason: :normal")
+            # Trigger graceful shutdown of Termbox if needed
+            if new_model.termbox_initialized, do: ExTermbox.Bindings.shutdown()
+            {:stop, :normal, new_model}
+
+          # Handle other stop cases
+          {:stop, reason, new_model} ->
+            Logger.error(
+              "[Runtime] Terminate callback started. Reason: #{inspect(reason)}"
+            )
+
+            if new_model.termbox_initialized, do: ExTermbox.Bindings.shutdown()
+            {:stop, reason, new_model}
+
+          # Invalid return from app update
+          other ->
+            Logger.error(
+              "Invalid return from #{state.app_module}.update/2: #{inspect(other)}. Continuing with old state."
+            )
+
+            {:continue, state}
+        end
+      else
+        # App doesn't implement update/2
+        Logger.warning(
+          "Application #{state.app_module} does not implement update/2. Ignoring event: #{inspect(app_event)}"
+        )
+
+        {:continue, state}
+      end
+    rescue
+      e ->
+        Logger.error("Error in handle_event with tuple: #{inspect(e)}")
+        {:continue, state}
+    end
+  end
+
   # Private Event Handlers
 
   # Handles key events, checks for quit keys, then delegates
-  defp p_handle_key_event(%RaxolEvent{data: key_data} = raxol_event, state) do
+  defp p_handle_key_event(%RaxolEvent{data: key_data} = _raxol_event, state) do
     # Logger.debug(
     #   "[Runtime.p_handle_key_event] Received Raxol key event: #{inspect(raxol_event)}"
     # )
@@ -976,24 +1018,44 @@ defmodule Raxol.Runtime do
       cleanup(state)
       {:stop, :normal, state}
     else
-      # Pass the RaxolEvent struct to the main handle_event
-      handle_event(raxol_event, state)
+      # Create Raxol.Core.Events.Event from RaxolEvent
+      core_event = %Raxol.Core.Events.Event{
+        type: :key,
+        data: key_data,
+        timestamp: System.monotonic_time(:millisecond)
+      }
+
+      # Pass the Raxol.Core.Events.Event struct to handle_event
+      case handle_event(core_event, state) do
+        {:continue, updated_state} -> {:noreply, updated_state}
+        {:stop, reason, updated_state} -> {:stop, reason, updated_state}
+      end
     end
   end
 
   # Handles mouse events, delegates to main handle_event
-  defp p_handle_mouse_event(%RaxolEvent{type: :mouse} = raxol_event, state) do
+  defp p_handle_mouse_event(%RaxolEvent{data: mouse_data} = _raxol_event, state) do
     # Logger.debug(
     #   "[Runtime.p_handle_mouse_event] Received Raxol mouse event: #{inspect(raxol_event)}"
     # )
 
-    # Delegate the RaxolEvent struct to the main handle_event
-    handle_event(raxol_event, state)
+    # Create Raxol.Core.Events.Event from RaxolEvent
+    core_event = %Raxol.Core.Events.Event{
+      type: :mouse,
+      data: mouse_data,
+      timestamp: System.monotonic_time(:millisecond)
+    }
+
+    # Pass the Raxol.Core.Events.Event to handle_event
+    case handle_event(core_event, state) do
+      {:continue, updated_state} -> {:noreply, updated_state}
+      {:stop, reason, updated_state} -> {:stop, reason, updated_state}
+    end
   end
 
   # --- Helper to Process Plugin Commands ---
   defp send_plugin_commands(commands) when is_list(commands) do
-    # TODO: This IO.write might still interfere with rex_termbox. Proper solution needed.
+    # TODO: This IO.write might still interfere with rrex_termbox. Proper solution needed.
     # Enum.each(commands, &IO.write/1) # Old version causing crash
     Logger.debug(
       "[Runtime.send_plugin_commands] Sending commands: #{inspect(commands)}"
@@ -1003,7 +1065,7 @@ defmodule Raxol.Runtime do
       # Match the tuple from ImagePlugin
       {:direct_output, content} when is_binary(content) ->
         # Write the content string, not the tuple
-        IO.write(content)
+        _io_result = IO.write(content)
 
       # Log and ignore other command types for now
       other_command ->
@@ -1011,6 +1073,8 @@ defmodule Raxol.Runtime do
           "[Runtime.send_plugin_commands] Received unhandled command type: #{inspect(other_command)}"
         )
     end)
+
+    :ok
   end
 
   # --- Actual View Rendering Logic (Basic) ---
@@ -1070,6 +1134,46 @@ defmodule Raxol.Runtime do
       char >= 32 and char <= 126 -> <<char::utf8>>
       char == 127 -> "DEL"
       true -> "Unknown"
+    end
+  end
+
+  # Helper function to conditionally initialize termbox
+  @dialyzer {:nowarn_function, maybe_init_termbox: 1}
+  defp maybe_init_termbox(%{termbox_initialized: true} = state),
+    do: {:ok, state}
+
+  defp maybe_init_termbox(state) do
+    if state.is_vscode_extension_env do
+      # VS Code extension mode - no need to init Termbox
+      Logger.info(
+        "[Runtime] Running in VS Code extension mode, skipping Termbox init"
+      )
+
+      {:ok, state}
+    else
+      # TTY mode - initialize Termbox
+      Logger.info("[Runtime] Running in TTY mode, initializing Termbox")
+
+      case ExTermbox.Bindings.init() do
+        :ok ->
+          # Successfully initialized
+          Logger.debug("[Runtime] Termbox initialized successfully")
+
+          # Also start polling for events
+          # Fix: ExTermbox.Bindings.start_polling() requires a parameter
+          _poll_result = ExTermbox.Bindings.start_polling(self())
+
+          # Update state with termbox_initialized = true
+          {:ok, %{state | termbox_initialized: true}}
+
+        {:error, reason} ->
+          # Failed to initialize
+          Logger.error(
+            "[Runtime] Failed to initialize Termbox: #{inspect(reason)}"
+          )
+
+          {:error, reason}
+      end
     end
   end
 end
