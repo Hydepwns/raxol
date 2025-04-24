@@ -457,7 +457,8 @@ defmodule Raxol.Core.FocusManager do
   The handler function should accept two arguments: `old_focus` and `new_focus`.
   (Placeholder implementation)
   """
-  @spec register_focus_change_handler(fun()) :: :ok
+  @spec register_focus_change_handler((String.t() | nil, String.t() | nil ->
+                                         any())) :: :ok
   def register_focus_change_handler(handler_fun)
       when is_function(handler_fun, 2) do
     handlers = Process.get(:focus_manager_change_handlers, [])
@@ -470,7 +471,8 @@ defmodule Raxol.Core.FocusManager do
   Unregister a focus change handler function.
   (Placeholder implementation)
   """
-  @spec unregister_focus_change_handler(fun()) :: :ok
+  @spec unregister_focus_change_handler((String.t() | nil, String.t() | nil ->
+                                           any())) :: :ok
   def unregister_focus_change_handler(handler_fun)
       when is_function(handler_fun, 2) do
     handlers = Process.get(:focus_manager_change_handlers, [])

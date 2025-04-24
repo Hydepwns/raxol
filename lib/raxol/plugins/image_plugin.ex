@@ -176,16 +176,28 @@ defmodule Raxol.Plugins.ImagePlugin do
   end
 
   defp generate_image_escape_sequence(base64_data, params) do
-    width = if params.width == 0, do: "auto", else: params.width
-    height = if params.height == 0, do: "auto", else: params.height
-    preserve_aspect_flag = if params.preserve_aspect, do: "1", else: "0"
+    width = Map.get(params, :width, 0)
+    height = Map.get(params, :height, 0)
+
+    width_param = if width == 0, do: "auto", else: "#{width}"
+    height_param = if height == 0, do: "auto", else: "#{height}"
+
+    # Fix: Use a conditional instead of Map.get with a default that might trigger guard failures
+    preserve_aspect_flag =
+      case Map.get(params, :preserve_aspect) do
+        # Default to true when nil
+        nil -> "1"
+        true -> "1"
+        false -> "0"
+      end
+
     decoded_result = Base.decode64(base64_data)
 
     case decoded_result do
       {:ok, decoded_data} ->
         size = byte_size(decoded_data)
 
-        "\\e]1337;File=inline=1;width=#{width};height=#{height};preserveAspectRatio=#{preserve_aspect_flag};size=#{size};name=image.png;base64,#{base64_data}\\a"
+        "\\e]1337;File=inline=1;width=#{width_param};height=#{height_param};preserveAspectRatio=#{preserve_aspect_flag};size=#{size};name=image.png;base64,#{base64_data}\\a"
 
       :error ->
         ""

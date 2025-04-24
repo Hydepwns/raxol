@@ -117,20 +117,17 @@ defmodule Raxol.System.Platform do
       }
   """
   @spec get_platform_info() :: %{
-          :architecture => binary() | atom(),
           :name => :linux | :macos | :windows,
-          :terminal => nil | binary(),
-          :version => binary() | nil,
-          # Placeholder, type can vary
-          :console_type => any(),
-          # Placeholder, type can vary
-          :distribution => any(),
-          :is_apple_silicon => boolean(),
-          :is_wayland => boolean(),
-          :is_windows_terminal => boolean(),
-          :is_wsl => boolean(),
-          # Placeholder, type can vary
-          :terminal_app => any()
+          :version => String.t() | nil,
+          :architecture => String.t(),
+          :terminal => String.t(),
+          optional(:console_type) => String.t(),
+          optional(:distribution) => String.t(),
+          optional(:is_apple_silicon) => boolean(),
+          optional(:is_wayland) => boolean(),
+          optional(:is_windows_terminal) => boolean(),
+          optional(:is_wsl) => boolean(),
+          optional(:terminal_app) => String.t()
         }
   def get_platform_info do
     platform = get_current_platform()

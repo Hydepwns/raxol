@@ -186,53 +186,70 @@ defmodule Raxol.Examples.UXRefinementDemo do
             else
               # Form elements
               Layout.row padding_bottom: 1 do
-                label("Username:", width: 10)
+                label_element = label("Username:", width: 10)
 
-                text_input(
-                  id: "username_input",
-                  value: model.username,
-                  width: 30,
-                  focus: focused == "username_input"
-                )
+                input_element =
+                  text_input(
+                    id: "username_input",
+                    value: model.username,
+                    width: 30,
+                    focus: focused == "username_input"
+                  )
+
+                [label_element, input_element]
               end
 
               Layout.row padding_bottom: 1 do
-                label("Password:", width: 10)
+                label_element = label("Password:", width: 10)
 
-                text_input(
-                  id: "password_input",
-                  value: model.password,
-                  width: 30,
-                  password: true,
-                  focus: focused == "password_input"
-                )
+                input_element =
+                  text_input(
+                    id: "password_input",
+                    value: model.password,
+                    width: 30,
+                    password: true,
+                    focus: focused == "password_input"
+                  )
+
+                [label_element, input_element]
               end
 
               Layout.row padding_top: 1 do
-                button(
-                  id: "login_button",
-                  label: "Login",
-                  width: 10,
-                  focus: focused == "login_button"
-                )
+                login_button =
+                  button(
+                    id: "login_button",
+                    label: "Login",
+                    width: 10,
+                    focus: focused == "login_button"
+                  )
 
-                space(width: 2)
+                space_element = space(width: 2)
 
-                button(
-                  id: "reset_button",
-                  label: "Reset",
-                  width: 10,
-                  focus: focused == "reset_button"
-                )
+                reset_button =
+                  button(
+                    id: "reset_button",
+                    label: "Reset",
+                    width: 10,
+                    focus: focused == "reset_button"
+                  )
 
-                space(width: 2)
+                space_element2 = space(width: 2)
 
-                button(
-                  id: "help_button",
-                  label: "Help",
-                  width: 10,
-                  focus: focused == "help_button"
-                )
+                help_button =
+                  button(
+                    id: "help_button",
+                    label: "Help",
+                    width: 10,
+                    focus: focused == "help_button"
+                  )
+
+                [
+                  login_button,
+                  space_element,
+                  reset_button,
+                  space_element2,
+                  help_button
+                ]
               end
             end
 
@@ -241,14 +258,19 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
             # Keyboard shortcut info
             Layout.row padding_top: 2 do
-              text("Tab: Next field | Shift+Tab: Previous field | Esc: Exit",
-                align: :center
-              )
+              text_element =
+                text("Tab: Next field | Shift+Tab: Previous field | Esc: Exit",
+                  align: :center
+                )
+
+              [text_element]
             end
 
             # Hint display at the bottom
             Layout.row bottom: 0, left: 0, width: "100%" do
-              HintDisplay.render(focused)
+              hint_element = HintDisplay.render(focused)
+
+              [hint_element]
             end
           end
         end

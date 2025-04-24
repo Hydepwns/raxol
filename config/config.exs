@@ -61,6 +61,7 @@ config :raxol, RaxolWeb.Endpoint,
   code_reloader: true,
   debug_errors: true,
   secret_key_base: "your-secret-key-base",
+  adapter: Bandit.HTTP,
   watchers: [
     # Configure esbuild version
     esbuild: {

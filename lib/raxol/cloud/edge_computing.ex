@@ -418,7 +418,7 @@ defmodule Raxol.Cloud.EdgeComputing do
 
   defp process_pending_operations do
     # Process operations in the queue
-    Queue.process_pending()
+    _process_result = Queue.process_pending()
   end
 
   defp perform_connection_check do
@@ -460,16 +460,11 @@ defmodule Raxol.Cloud.EdgeComputing do
           :cloud_request ->
             Map.update!(state.metrics, :cloud_requests, &(&1 + 1))
 
-          :sync_operation ->
-            Map.update!(state.metrics, :sync_operations, &(&1 + 1))
-
-          :sync_failure ->
-            Map.update!(state.metrics, :sync_failures, &(&1 + 1))
-
           :edge_failure ->
-            state.metrics
+            Map.update!(state.metrics, :edge_failures, &(&1 + 1))
 
-          _ ->
+          _other ->
+            # Handle any other metric types
             state.metrics
         end
 
@@ -683,38 +678,29 @@ defmodule Raxol.Cloud.EdgeComputing.Queue do
     operation.id
   end
 
-  def process_pending do
-    queue = get_queue()
-
-    # Process each pending operation
-    {processed, failed} =
-      Enum.reduce(queue.operations, {0, 0}, fn op, {processed, failed} ->
-        case process_operation(op) do
-          :ok -> {processed + 1, failed}
-          :retry -> {processed, failed}
-          :failed -> {processed, failed + 1}
-        end
-      end)
-
-    # Remove processed operations
-    updated_operations =
-      Enum.filter(queue.operations, fn op ->
-        op.attempts > 0 && process_operation(op) == :retry
-      end)
-
-    # Update queue
-    Process.put(@queue_key, %{queue | operations: updated_operations})
-
-    %{
-      processed: processed,
-      failed: failed,
-      remaining: length(updated_operations)
-    }
-  end
-
   def pending_count do
     queue = get_queue()
     length(queue.operations)
+  end
+
+  @doc """
+  Process all pending operations in the queue.
+  """
+  def process_pending do
+    queue = get_queue()
+
+    # Process each operation
+    {processed, remaining} =
+      Enum.split_with(queue.operations, fn operation ->
+        result = process_operation(operation)
+        result == :ok || result == :failed
+      end)
+
+    # Update queue with remaining operations
+    Process.put(@queue_key, %{queue | operations: remaining})
+
+    # Return number of processed operations
+    length(processed)
   end
 
   # Private helpers

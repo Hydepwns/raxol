@@ -155,25 +155,17 @@ defmodule Raxol.Plugins.PluginManager do
 
                   _plugin ->
                     # Load the plugin using its module name
-                    case load_plugin(
-                           acc_manager,
-                           String.to_atom(
-                             "Elixir.#{String.replace(plugin_name, "_", ".")}"
-                           )
-                         ) do
+                    plugin_module =
+                      String.to_atom(
+                        "Elixir.#{String.replace(plugin_name, "_", ".")}"
+                      )
+
+                    case load_plugin(acc_manager, plugin_module) do
                       # Match on {:ok, updated_manager} now
                       {:ok, updated_manager} ->
                         {:cont, {:ok, updated_manager}}
 
-                      # Handle the direct manager return case (if any remain after fixing load_plugin/2)
-                      updated_manager when is_map(updated_manager) ->
-                        Logger.warning(
-                          "load_plugin returned manager directly, expected {:ok, manager}",
-                          plugin: plugin_name
-                        )
-
-                        {:cont, {:ok, updated_manager}}
-
+                      # Handle error case only - no direct manager return case
                       {:error, reason} ->
                         {:halt,
                          {:error,

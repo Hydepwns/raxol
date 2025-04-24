@@ -222,7 +222,8 @@ defmodule Raxol.Web.Session.Manager do
   @impl true
   def handle_info(:cleanup, state) do
     # Schedule next cleanup
-    schedule_cleanup(state)
+    _cleanup_timer =
+      Process.send_after(self(), :cleanup, state.cleanup_interval)
 
     # Perform cleanup
     {:reply, _status, new_state} = handle_call(:cleanup_sessions, self(), state)

@@ -132,6 +132,8 @@ defmodule Raxol.Web.Session.Monitor do
   end
 
   defp schedule_monitoring(state) do
-    Process.send_after(self(), :monitor, state.monitoring_interval)
+    # Schedule next monitoring run
+    _monitor_timer =
+      Process.send_after(self(), :monitor, state.monitoring_interval)
   end
 end
