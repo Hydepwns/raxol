@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.Commands.Modes do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenModes
-  alias Raxol.Terminal.Commands.Parser
+  alias Raxol.Terminal.ANSI.Sequences.Modes, as: ANSIModeSequences
 
   require Logger
   require Raxol.Terminal.ScreenModes
@@ -29,16 +29,32 @@ defmodule Raxol.Terminal.Commands.Modes do
 
   * Updated emulator state
   """
-  @spec handle_dec_private_mode(Emulator.t(), list(integer()), :set | :reset) :: Emulator.t()
+  @spec handle_dec_private_mode(Emulator.t(), list(integer()), :set | :reset) ::
+          Emulator.t()
   def handle_dec_private_mode(emulator, params, action) do
+    enabled = action == :set
+
     params
     |> Enum.reduce(emulator, fn param, acc ->
-      # Safely handle nil params
       if is_nil(param) do
-        Logger.warn("Ignoring nil mode parameter in DEC private mode set/reset")
+        Logger.warning("Ignoring nil mode parameter in DEC private mode set/reset")
         acc
       else
-        handle_single_dec_mode(acc, param, action)
+        # Lookup the mode atom
+        case ScreenModes.lookup_private(param) do
+          nil ->
+            Logger.debug("Ignoring unknown DEC private mode code: #{param}")
+            # Handle special cases not directly mapped by lookup
+            handle_special_dec_mode(acc, param, enabled)
+
+          mode_atom ->
+            Logger.debug(
+              "#{if enabled, do: "Setting", else: "Resetting"} DEC private mode #{param} (#{inspect(mode_atom)})"
+            )
+
+            # Use switch_mode/3 with the looked-up atom
+            ScreenModes.switch_mode(acc, mode_atom, enabled)
+        end
       end
     end)
   end
@@ -58,99 +74,81 @@ defmodule Raxol.Terminal.Commands.Modes do
 
   * Updated emulator state
   """
-  @spec handle_ansi_mode(Emulator.t(), list(integer()), :set | :reset) :: Emulator.t()
+  @spec handle_ansi_mode(Emulator.t(), list(integer()), :set | :reset) ::
+          Emulator.t()
   def handle_ansi_mode(emulator, params, action) do
+    enabled = action == :set
+
     params
     |> Enum.reduce(emulator, fn param, acc ->
-      # Safely handle nil params
       if is_nil(param) do
-        Logger.warn("Ignoring nil mode parameter in ANSI mode set/reset")
+        Logger.warning("Ignoring nil mode parameter in ANSI mode set/reset")
         acc
       else
-        handle_single_ansi_mode(acc, param, action)
+        # Lookup the mode atom
+        case ScreenModes.lookup_standard(param) do
+          nil ->
+            Logger.debug("Ignoring unknown ANSI mode code: #{param}")
+            # Return unmodified accumulator for unknown standard modes
+            acc
+
+          mode_atom ->
+            Logger.debug(
+              "#{if enabled, do: "Setting", else: "Resetting"} ANSI mode #{param} (#{inspect(mode_atom)})"
+            )
+
+            # Use switch_mode/3 with the looked-up atom
+            ScreenModes.switch_mode(acc, mode_atom, enabled)
+        end
       end
     end)
   end
 
-  # Private handlers for specific DEC modes
-  defp handle_single_dec_mode(emulator, mode, action) do
-    enabled = action == :set
-    Logger.debug("#{if enabled, do: "Setting", else: "Resetting"} DEC private mode #{mode}")
-
+  # Private handler for special DEC cases not directly mapped by lookup_private
+  # These often involve multiple actions (like saving cursor + switching buffer)
+  defp handle_special_dec_mode(emulator, mode, enabled) do
     case mode do
-      # DECCKM - Cursor Keys Mode
-      1 ->
-        ScreenModes.set_mode(emulator, ScreenModes.cursor_keys_application(), enabled)
-
-      # DECANM - ANSI/VT52 Mode
-      2 ->
-        ScreenModes.set_mode(emulator, ScreenModes.ansi_mode(), enabled)
-
-      # DECCOLM - 80/132 Column Mode
-      3 ->
-        ScreenModes.set_mode(emulator, ScreenModes.column_mode(), enabled)
-
-      # DECSCLM - Smooth Scroll Mode
-      4 ->
-        ScreenModes.set_mode(emulator, ScreenModes.smooth_scroll(), enabled)
-
-      # DECSCNM - Screen Mode (reverse video)
-      5 ->
-        ScreenModes.set_mode(emulator, ScreenModes.reverse_screen(), enabled)
-
-      # DECOM - Origin Mode
-      6 ->
-        ScreenModes.set_mode(emulator, ScreenModes.origin_mode(), enabled)
-
-      # DECAWM - Auto Wrap Mode
-      7 ->
-        ScreenModes.set_mode(emulator, ScreenModes.auto_wrap(), enabled)
-
-      # DECARM - Auto Repeat Mode
-      8 ->
-        ScreenModes.set_mode(emulator, ScreenModes.auto_repeat(), enabled)
-
-      # X10 Mouse Tracking Mode
-      9 ->
-        ScreenModes.set_mode(emulator, ScreenModes.mouse_x10(), enabled)
-
-      # DECBKM - Backarrow Key Mode
-      12 ->
-        ScreenModes.set_mode(emulator, ScreenModes.backarrow_mode(), enabled)
-
-      # DECTCEM - Text Cursor Enable Mode
-      25 ->
-        ScreenModes.set_mode(emulator, ScreenModes.show_cursor(), enabled)
-
-      # DECNRCM - National Replacement Character Set Mode
-      42 ->
-        ScreenModes.set_mode(emulator, ScreenModes.nrc_mode(), enabled)
-
-      # Use Alternate Screen Buffer
+      # Use Alternate Screen Buffer (DECALTBUF)
+      # Note: 47 is not in lookup_private; handled here.
       47 ->
-        if enabled do
-          Emulator.use_alternate_buffer(emulator)
-        else
-          Emulator.use_main_buffer(emulator)
-        end
+        Logger.debug(
+          "Switching screen buffer (Mode 47) -> #{if enabled, do: "alternate", else: "main"}"
+        )
 
-      # DECCM - Cursor Position Visible
+        # Use the function from ANSI.Sequences.Modes
+        ANSIModeSequences.set_alternate_buffer(emulator, enabled)
+
+      # DECSCUR - Save Cursor position (not a mode switch)
+      # Often used with 1049
       1048 ->
+        Logger.debug("Saving/Restoring cursor position (Mode 1048)")
+
         if enabled do
           cursor_pos = emulator.cursor.position
           %{emulator | saved_cursor_position: cursor_pos}
         else
           # Restore cursor position if saved
           case emulator.saved_cursor_position do
-            nil -> emulator
-            pos -> %{emulator | cursor: %{emulator.cursor | position: pos}}
+            nil ->
+              emulator
+
+            pos ->
+              %{
+                emulator
+                | cursor: %{emulator.cursor | position: pos},
+                  saved_cursor_position: nil
+              }
           end
         end
 
-      # DECCM + Use Alternative Screen Buffer
+      # xterm Alternate Screen Buffer with cursor save/restore
+      # Equivalent to 1048 + 47
       1049 ->
-        # Equivalent to 1048 + 47
-        # First, save/restore cursor position
+        Logger.debug(
+          "Switching alt screen buffer + save/restore cursor (Mode 1049)"
+        )
+
+        # First, save/restore cursor position (like 1048)
         em_with_cursor =
           if enabled do
             cursor_pos = emulator.cursor.position
@@ -158,47 +156,37 @@ defmodule Raxol.Terminal.Commands.Modes do
           else
             # Restore cursor position if saved
             case emulator.saved_cursor_position do
-              nil -> emulator
-              pos -> %{emulator | cursor: %{emulator.cursor | position: pos}}
+              nil ->
+                emulator
+
+              pos ->
+                %{
+                  emulator
+                  | cursor: %{emulator.cursor | position: pos},
+                    saved_cursor_position: nil
+                }
             end
           end
 
-        # Then, switch screen buffer
-        if enabled do
-          Emulator.use_alternate_buffer(em_with_cursor)
-        else
-          Emulator.use_main_buffer(em_with_cursor)
-        end
+        # Then, switch screen buffer (like 47)
+        # Use the function from ANSI.Sequences.Modes
+        ANSIModeSequences.set_alternate_buffer(em_with_cursor, enabled)
 
-      # Bracketed Paste Mode
+      # Bracketed Paste Mode (Not in lookup map? Add or handle here)
+      # Should be mapped to :bracketed_paste atom if possible
       2004 ->
-        ScreenModes.set_mode(emulator, ScreenModes.bracketed_paste(), enabled)
+        Logger.debug("Setting bracketed paste mode (Mode 2004) -> #{enabled}")
+        # Assuming :bracketed_paste is the correct atom, delegate
+        # If :bracketed_paste is not defined in ANSI.ScreenModes, this will need adjustment
+        ScreenModes.switch_mode(emulator, :bracketed_paste, enabled)
 
-      # Unknown mode - log and return unmodified emulator
+      # Unknown mode code
       _ ->
-        Logger.debug("Ignoring unknown DEC private mode: #{mode}")
+        # Already logged in handle_dec_private_mode
         emulator
     end
   end
 
-  # Private handlers for specific ANSI modes
-  defp handle_single_ansi_mode(emulator, mode, action) do
-    enabled = action == :set
-    Logger.debug("#{if enabled, do: "Setting", else: "Resetting"} ANSI mode #{mode}")
-
-    case mode do
-      # Insert/Replace Mode (IRM)
-      4 ->
-        ScreenModes.set_mode(emulator, ScreenModes.insert_mode(), enabled)
-
-      # Line Feed/New Line Mode (LNM)
-      20 ->
-        ScreenModes.set_mode(emulator, ScreenModes.new_line_mode(), enabled)
-
-      # Unknown mode - log and return unmodified emulator
-      _ ->
-        Logger.debug("Ignoring unknown ANSI mode: #{mode}")
-        emulator
-    end
-  end
+  # Note: handle_single_dec_mode and handle_single_ansi_mode are removed
+  # as their logic is incorporated into the main handle functions.
 end

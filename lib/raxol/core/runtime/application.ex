@@ -21,11 +21,11 @@ defmodule Raxol.Core.Runtime.Application do
 
         def update(msg, model) do
           case msg do
-            :increment -> 
+            :increment ->
               {%{model | count: model.count + 1}, []}
-            :decrement -> 
+            :decrement ->
               {%{model | count: model.count - 1}, []}
-            _ -> 
+            _ ->
               {model, []}
           end
         end
@@ -83,6 +83,8 @@ defmodule Raxol.Core.Runtime.Application do
   @type command :: term()
   @type subscription :: term()
   @type element :: Raxol.Core.Renderer.Element.t()
+
+  require Logger
 
   @doc """
   Initializes the application state.
@@ -161,5 +163,27 @@ defmodule Raxol.Core.Runtime.Application do
         Subscription.interval(interval, msg)
       end
     end
+  end
+
+  @doc """
+  Placeholder for the application update function.
+  Should handle messages and update the application model.
+  """
+  @spec update(module(), any(), map()) :: {map(), list()} | {:error, term()}
+  def update(_app_module, message, current_model) do
+    Logger.debug("[#{__MODULE__}] update called with: #{inspect(message)}")
+    # Default behaviour: return model unchanged, no commands
+    # TODO: Implement actual update logic based on app_module behaviour
+    {current_model, []}
+  end
+
+  @doc """
+  Placeholder for getting environment configuration.
+  """
+  @spec get_env(atom(), atom(), any()) :: any()
+  def get_env(app, key, default \\ nil) do
+    Logger.debug("[#{__MODULE__}] get_env called for: #{app}.#{key}")
+    # TODO: Implement actual config fetching (e.g., from Application env)
+    Application.get_env(app, key, default)
   end
 end

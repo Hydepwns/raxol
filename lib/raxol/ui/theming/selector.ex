@@ -9,10 +9,11 @@ defmodule Raxol.UI.Theming.Selector do
   * Theme management integration
   """
 
-  alias Raxol.UI.Components.Base.Component
-  alias Raxol.UI.Theming.Theme
+  use Raxol.UI.Components.Base.Component
 
-  @behaviour Component
+  alias Raxol.Style.Theme
+  # alias Raxol.UI.Components.Input.SelectList
+  # alias Raxol.Core.Events
 
   @type props :: %{
           optional(:id) => String.t(),
@@ -34,11 +35,11 @@ defmodule Raxol.UI.Theming.Selector do
           state: state()
         }
 
-  @impl Component
-  def create(props) do
+  @impl Raxol.UI.Components.Base.Component
+  def init(props) do
     # Get all available themes
     themes = Theme.list_themes()
-    current_theme_name = Theme.get_current_name()
+    current_theme_name = Theme.current().name
 
     # Find the index of the current theme
     selected_index =
@@ -56,15 +57,16 @@ defmodule Raxol.UI.Theming.Selector do
     }
   end
 
-  @impl Component
+  @impl true
   def update(component, new_props) do
     updated_props = Map.merge(component.props, normalize_props(new_props))
 
     %{component | props: updated_props}
   end
 
-  @impl Component
-  def handle_event(component, {:key_press, key, _modifiers}, _context) when key in [:up, :down] do
+  @impl true
+  def handle_event(component, {:key_press, key, _modifiers}, _context)
+      when key in [:up, :down, :left, :right, :enter, :space] do
     if component.state.expanded do
       # Only handle up/down when expanded
       themes_count = length(component.state.themes)
@@ -75,37 +77,19 @@ defmodule Raxol.UI.Theming.Selector do
         case key do
           :up -> max(0, current_index - 1)
           :down -> min(themes_count - 1, current_index + 1)
+          :left -> max(0, current_index - 1)
+          :right -> min(themes_count - 1, current_index + 1)
+          :enter -> current_index
+          :space -> current_index
         end
 
-      {:ok, %{component | state: %{component.state | selected_index: new_index}}}
+      {:ok,
+       %{component | state: %{component.state | selected_index: new_index}}}
     else
       {:ok, component}
     end
   end
 
-  @impl Component
-  def handle_event(component, {:key_press, :enter, _modifiers}, _context) do
-    if component.state.expanded do
-      # When expanded, apply the selected theme
-      selected_theme = Enum.at(component.state.themes, component.state.selected_index)
-
-      # Apply the theme
-      Theme.apply_theme(selected_theme.name)
-
-      # Call the onSelect callback if provided
-      if on_select = component.props[:on_select] do
-        on_select.(selected_theme.name)
-      end
-
-      # Collapse after selection
-      {:ok, %{component | state: %{component.state | expanded: false}}}
-    else
-      # When collapsed, expand the selector
-      {:ok, %{component | state: %{component.state | expanded: true}}}
-    end
-  end
-
-  @impl Component
   def handle_event(component, {:key_press, :escape, _modifiers}, _context) do
     # Escape key collapses the selector without changing the theme
     if component.state.expanded do
@@ -115,7 +99,6 @@ defmodule Raxol.UI.Theming.Selector do
     end
   end
 
-  @impl Component
   def handle_event(component, {:mouse_event, :click, _x, y, _button}, _context) do
     if component.state.expanded do
       # Calculate which theme was clicked based on y position
@@ -124,7 +107,10 @@ defmodule Raxol.UI.Theming.Selector do
 
       if clicked_index >= 0 && clicked_index < length(component.state.themes) do
         # Update selected index
-        updated = %{component | state: %{component.state | selected_index: clicked_index}}
+        updated = %{
+          component
+          | state: %{component.state | selected_index: clicked_index}
+        }
 
         # Apply theme on click
         selected_theme = Enum.at(updated.state.themes, clicked_index)
@@ -147,30 +133,30 @@ defmodule Raxol.UI.Theming.Selector do
     end
   end
 
-  @impl Component
   def handle_event(component, _event, _context) do
     {:ok, component}
   end
 
-  @impl Component
+  @impl true
   def render(component, _context) do
     props = component.props
     state = component.state
     width = props.width
 
     # Get current theme for colors
-    current_theme = Theme.get_current()
-    colors = current_theme[:selector] || %{
-      fg: :white,
-      bg: :black,
-      border: :blue,
-      highlight: :cyan,
-      title: :yellow
-    }
+    current_theme_struct = Theme.current()
+    selected_name = current_theme_struct.name
 
-    # Get the currently selected theme name for display
-    selected_theme = Enum.at(state.themes, state.selected_index)
-    selected_name = selected_theme.name
+    colors =
+      Map.get(current_theme_struct.styles, :selector) ||
+        %{
+          # Fallback colors if :selector style is not defined in the theme
+          fg: Theme.get_color(:foreground) || :white,
+          bg: Theme.get_color(:background) || :black,
+          border: Theme.get_color(:primary) || :blue,
+          highlight: Theme.get_color(:secondary) || :cyan,
+          title: Theme.get_color(:info) || :yellow
+        }
 
     if state.expanded do
       # Render expanded selector as a list
@@ -194,8 +180,10 @@ defmodule Raxol.UI.Theming.Selector do
 
           %{
             type: :text,
-            x: 2, # Indented
-            y: index + 1, # +1 to account for header
+            # Indented
+            x: 2,
+            # +1 to account for header
+            y: index + 1,
             text: theme.name,
             attrs: %{
               fg: if(is_selected, do: colors.highlight, else: colors.fg),
@@ -205,7 +193,8 @@ defmodule Raxol.UI.Theming.Selector do
         end)
 
       # Calculate box height based on number of themes
-      box_height = length(state.themes) + 2 # +1 for header, +1 for bottom border
+      # +1 for header, +1 for bottom border
+      box_height = length(state.themes) + 2
 
       # Create container box
       box = %{
@@ -230,42 +219,50 @@ defmodule Raxol.UI.Theming.Selector do
       instructions = %{
         type: :text,
         x: 0,
-        y: box_height + 1,
-        text: "↑/↓: Navigate  Enter: Select  Esc: Cancel",
+        # Positioned below the box
+        y: box_height,
+        text: "↑/↓: Nav  Enter: Select  Esc: Cancel",
         attrs: %{
           fg: colors.fg,
           bg: colors.bg
         }
       }
 
-      # Combine all elements
-      [instructions, header, box | theme_items]
+      # Combine elements for expanded view
+      [box, header | theme_items] ++ [instructions]
     else
-      # Render collapsed selector as a button
-      [
-        %{
-          type: :text,
-          x: 0,
-          y: 0,
-          text: "Theme: #{selected_name} [▼]",
-          attrs: %{
-            fg: colors.fg,
-            bg: colors.bg
-          }
+      # Render collapsed selector (shows current theme)
+      text = "Theme: " <> selected_name <> " ▼"
+
+      %{
+        type: :text,
+        x: 0,
+        y: 0,
+        text: String.pad_trailing(text, width),
+        attrs: %{
+          fg: colors.fg,
+          bg: colors.bg
         }
-      ]
+      }
     end
   end
 
   # Private helpers
 
   defp normalize_props(props) do
-    props = Map.new(props)
-
-    props
-    |> Map.put_new(:width, 30)
-    |> Map.put_new(:height, 10)
-    |> Map.put_new(:show_preview, false)
-    |> Map.put_new(:title, "Select Theme:")
+    Map.merge(
+      %{
+        id: nil,
+        on_select: fn _ -> nil end,
+        # Default width
+        width: 20,
+        # Default height (usually expands)
+        height: 1,
+        # Preview not implemented yet
+        show_preview: false,
+        title: nil
+      },
+      props
+    )
   end
 end

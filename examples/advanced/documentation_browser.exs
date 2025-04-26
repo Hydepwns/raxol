@@ -19,7 +19,7 @@ defmodule DocumentationBrowser do
   @behaviour Raxol.App
   use Raxol.View
 
-  alias Raxol.Runtime.Command
+  alias Raxol.Core.Runtime.Command
 
   @arrow_up :arrow_up
   @arrow_down :arrow_down

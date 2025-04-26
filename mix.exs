@@ -47,7 +47,7 @@ defmodule Raxol.MixProject do
           # Raxol.ExampleModule,
           # Phoenix.HTML.Form, # Ignore specific modules if needed
           # Ignore NIF module wrappers
-          Raxol.Runtime.Termbox,
+          # Raxol.Runtime.Termbox, # Removed reference to deprecated module
           # Suppress persistent spurious warnings
           Raxol.Terminal.Configuration
         ]

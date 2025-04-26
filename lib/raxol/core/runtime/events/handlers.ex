@@ -57,7 +57,9 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   """
   def unregister_handler(handler_id) do
     case get_handler(handler_id) do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
+
       _handler ->
         remove_handler(handler_id)
         :ok
@@ -89,7 +91,9 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
 
     # Execute handlers in priority order
     try do
-      Enum.reduce_while(handlers, {event, state}, fn handler, {current_event, current_state} ->
+      Enum.reduce_while(handlers, {event, state}, fn handler,
+                                                     {current_event,
+                                                      current_state} ->
         case handler.handler_fun.(current_event, current_state) do
           {:ok, new_event, new_state} ->
             {:cont, {new_event, new_state}}

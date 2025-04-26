@@ -4,14 +4,16 @@
 
 Code.require_file("test/data/visualization_test_data.ex")
 
-defmodule Raxol.VisualizationTester do
+# No longer need aliases for deprecated Runtime modules
+# alias Raxol.Runtime
+# alias Raxol.RuntimeDebug
+
+defmodule Raxol.RunVisualizationTests do
   @moduledoc """
   A test harness for Raxol visualization components.
   """
 
   alias Raxol.Test.VisualizationTestData
-  alias Raxol.Runtime
-  alias Raxol.RuntimeDebug
 
   def run_tests do
     IO.puts("\n=== Raxol Visualization Component Test Suite ===")
@@ -369,4 +371,4 @@ defmodule Raxol.VisualizationTester do
 end
 
 # Run the tests
-Raxol.VisualizationTester.run_tests()
+Raxol.RunVisualizationTests.run_tests()

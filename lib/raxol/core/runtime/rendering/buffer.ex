@@ -21,7 +21,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
   - `bg`: Background color
   - `attrs`: List of attributes (e.g., :bold, :underline)
   """
-  @type cell :: {integer, integer, String.t, term, term, list}
+  @type cell :: {integer, integer, String.t(), term, term, list}
 
   @typedoc """
   A buffer is a map containing cells indexed by their position.
@@ -29,11 +29,11 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
   The buffer also contains metadata about its dimensions.
   """
   @type t :: %__MODULE__{
-    cells: %{{integer, integer} => {String.t, term, term, list}},
-    width: integer,
-    height: integer,
-    dirty: boolean
-  }
+          cells: %{{integer, integer} => {String.t(), term, term, list}},
+          width: integer,
+          height: integer,
+          dirty: boolean
+        }
 
   defstruct cells: %{},
             width: 0,
@@ -189,9 +189,12 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
       new_buffer.cells
       |> Enum.filter(fn {{x, y}, {ch, fg, bg, attrs}} ->
         case Map.get(old_buffer.cells, {x, y}) do
-          nil -> true  # Cell doesn't exist in old buffer
-          {^ch, ^fg, ^bg, ^attrs} -> false  # Cell is unchanged
-          _ -> true  # Cell has changed
+          # Cell doesn't exist in old buffer
+          nil -> true
+          # Cell is unchanged
+          {^ch, ^fg, ^bg, ^attrs} -> false
+          # Cell has changed
+          _ -> true
         end
       end)
       |> Enum.map(fn {{x, y}, {ch, fg, bg, attrs}} ->
@@ -251,7 +254,8 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
         new_x = x + offset_x
         new_y = y + offset_y
 
-        if new_x >= 0 and new_x < buffer.width and new_y >= 0 and new_y < buffer.height do
+        if new_x >= 0 and new_x < buffer.width and new_y >= 0 and
+             new_y < buffer.height do
           Map.put(acc, {new_x, new_y}, cell)
         else
           acc

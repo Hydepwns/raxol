@@ -15,12 +15,13 @@ This guide walks you through creating a simple "Hello, World!" terminal applicat
 
 Before you start, ensure you have:
 
-1.  **Elixir installed:** Raxol requires Elixir. You can find installation instructions on the [official Elixir website](https://elixir-lang.org/install.html).
-2.  **A new Mix project (optional):** If you don't have a project, create one:
-    ```bash
-    mix new my_raxol_app
-    cd my_raxol_app
-    ```
+1. **Elixir installed:** Raxol requires Elixir. You can find installation instructions on the [official Elixir website](https://elixir-lang.org/install.html).
+2. **A new Mix project (optional):** If you don't have a project, create one:
+
+   ```bash
+   mix new my_raxol_app
+   cd my_raxol_app
+   ```
 
 ## 1. Add Raxol Dependency
 
@@ -62,18 +63,18 @@ defmodule MyRaxolApp.Application do
   # It receives assigns (data) and must return rendered content.
   @impl true
   def render(assigns) do
-    ~H\"\"\"
-    <box border=\"single\" padding=\"1\">
-      <text color=\"cyan\" bold=\"true\">Hello from HEEx!</text>
+    ~H"""
+    <box border="single" padding="1">
+      <text color="cyan" bold="true">Hello from HEEx!</text>
     </box>
-    \"\"\"
+    """
   end
 end
 ```
 
 - `use Raxol.App`: Imports necessary functions and defines the behaviour for a Raxol application.
 - `@impl true def render(assigns)`: Implements the required callback to define the UI structure.
-- `~H\"\"\" ... \"\"\"`: The HEEx sigil defines the component-based UI using HTML-like tags.
+- `~H""" ... """`: The HEEx sigil defines the component-based UI using HTML-like tags.
 
 **Method 2: Using `Raxol.View` and Component Functions**
 
@@ -173,40 +174,23 @@ For handling external events like timers or keyboard events not tied to specific
 
 ## 3. Start the Application
 
-To run your application, you need to start the Raxol runtime, passing your application module. See the [Runtime Options Guide](runtime_options.md) for configuration options like setting the title or quit keys.
-
-You can do this directly in an IEx session or as part of your application's supervision tree.
-
-**Running in IEx:**
-
-Start an IEx session within your project:
-
-```bash
-iex -S mix
-```
-
-Inside IEx, start the runtime:
+To run your application, you can start it directly in `iex` using the new `Lifecycle` module:
 
 ```elixir
-iex> {:ok, _pid} = Raxol.Runtime.start_link(app: MyRaxolApp.Counter)
+<iex> Raxol.Core.Runtime.Lifecycle.start_application(MyRaxolApp.Counter)
+# {:ok, #PID<0.xxx.0>}
 ```
 
-Your terminal should clear and display the counter. Clicking the button (if your terminal supports mouse events) or pressing Enter when it's focused should increment the count.
-
-**Adding to a Supervisor (More Robust):**
-
-For long-running applications, you'll typically add the `Raxol.Runtime` to your application's supervision tree (e.g., in `lib/my_raxol_app/application.ex` if you used `mix new --sup`):
+For long-running applications, you'll typically add the `Raxol.Core.Runtime.Application` to your application's supervision tree (e.g., in `lib/my_raxol_app/application.ex` if you used `mix new --sup`):
 
 ```elixir
 defmodule MyRaxolApp.Application do
   use Application
 
-  @impl true
   def start(_type, _args) do
     children = [
-      # Start the Raxol Runtime
-      {Raxol.Runtime, app: MyRaxolApp.Counter} # Use the module defined in step 2.5
-      # ... other children
+      # Other children...
+      {Raxol.Core.Runtime.Application, app: MyRaxolApp.Counter} # Use the module defined previously
     ]
 
     opts = [strategy: :one_for_one, name: MyRaxolApp.Supervisor]

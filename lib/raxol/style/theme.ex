@@ -129,6 +129,51 @@ defmodule Raxol.Style.Theme do
     :ok
   end
 
+  # TODO: Implement dynamic theme discovery (e.g., from config or files)
+  @spec available_themes() :: %{String.t() => t()}
+  def available_themes do
+    %{
+      "default" => default_theme(),
+      "dark" => dark_theme(),
+      "light" => light_theme()
+      # Add more themes here as needed
+    }
+  end
+
+  @doc """
+  Returns a list of available theme structs.
+  """
+  @spec list_themes() :: list(t())
+  def list_themes do
+    available_themes() |> Map.values()
+  end
+
+  @doc """
+  Gets a specific theme struct by its name.
+  Returns nil if the theme name is not found.
+  """
+  @spec get_theme_by_name(String.t()) :: t() | nil
+  def get_theme_by_name(name) do
+    Map.get(available_themes(), name)
+  end
+
+  @doc """
+  Applies a theme by its name, setting it as the current theme for the process.
+
+  Returns `:ok` if the theme was found and applied, `:error` otherwise.
+  """
+  @spec apply_theme(String.t()) :: :ok | :error
+  def apply_theme(name) do
+    case get_theme_by_name(name) do
+      nil ->
+        # Optionally log a warning here
+        :error
+
+      theme ->
+        set_current(theme)
+    end
+  end
+
   # Private helpers
 
   defp default_theme do
@@ -157,6 +202,82 @@ defmodule Raxol.Style.Theme do
         disabled: :gray,
         background: :black,
         foreground: :white
+      },
+      metadata: %{
+        author: "Raxol",
+        version: "1.0.0"
+      }
+    }
+  end
+
+  # Example additional themes
+  defp dark_theme do
+    %__MODULE__{
+      name: "dark",
+      description: "A dark Raxol theme",
+      styles: %{
+        default: %Style{color: :light_gray, background: :black},
+        primary: %Style{
+          color: :cyan,
+          text_decoration: [:bold],
+          background: :black
+        },
+        secondary: %Style{color: :magenta, background: :black},
+        success: %Style{color: :green, background: :black},
+        warning: %Style{color: :yellow, background: :black},
+        error: %Style{color: :red, text_decoration: [:bold], background: :black},
+        info: %Style{color: :white, background: :black},
+        disabled: %Style{color: :dark_gray, background: :black}
+      },
+      variants: %{},
+      color_palette: %{
+        primary: :cyan,
+        secondary: :magenta,
+        success: :green,
+        warning: :yellow,
+        error: :red,
+        info: :white,
+        disabled: :dark_gray,
+        background: :black,
+        foreground: :light_gray
+      },
+      metadata: %{author: "Raxol", version: "1.0.0"}
+    }
+  end
+
+  defp light_theme do
+    %__MODULE__{
+      name: "light",
+      description: "A light Raxol theme",
+      styles: %{
+        default: %Style{color: :dark_gray, background: :white},
+        primary: %Style{
+          color: :blue,
+          text_decoration: [:bold],
+          background: :white
+        },
+        secondary: %Style{color: :purple, background: :white},
+        success: %Style{color: :dark_green, background: :white},
+        warning: %Style{color: :dark_yellow, background: :white},
+        error: %Style{
+          color: :dark_red,
+          text_decoration: [:bold],
+          background: :white
+        },
+        info: %Style{color: :black, background: :white},
+        disabled: %Style{color: :light_gray, background: :white}
+      },
+      variants: %{},
+      color_palette: %{
+        primary: :blue,
+        secondary: :purple,
+        success: :dark_green,
+        warning: :dark_yellow,
+        error: :dark_red,
+        info: :black,
+        disabled: :light_gray,
+        background: :white,
+        foreground: :dark_gray
       },
       metadata: %{
         author: "Raxol",

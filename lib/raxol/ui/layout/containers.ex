@@ -42,9 +42,10 @@ defmodule Raxol.UI.Layout.Containers do
         end)
 
       # Total width used by children
-      total_width = Enum.reduce(child_dimensions, 0, fn dim, acc ->
-        acc + dim.width
-      end)
+      total_width =
+        Enum.reduce(child_dimensions, 0, fn dim, acc ->
+          acc + dim.width
+        end)
 
       # Space needed for gaps
       gaps_width = gap * (length(children) - 1)
@@ -53,33 +54,42 @@ defmodule Raxol.UI.Layout.Containers do
       total_content_width = total_width + gaps_width
 
       # Calculate starting x position based on justification
-      start_x = case justify do
-        :start -> space.x
-        :center -> space.x + div(space.width - total_content_width, 2)
-        :end -> space.x + space.width - total_content_width
-        :space_between ->
-          # With space_between, we'll recalculate the gap
-          space.x
-      end
+      start_x =
+        case justify do
+          :start ->
+            space.x
+
+          :center ->
+            space.x + div(space.width - total_content_width, 2)
+
+          :end ->
+            space.x + space.width - total_content_width
+
+          :space_between ->
+            # With space_between, we'll recalculate the gap
+            space.x
+        end
 
       # If we're using space_between, recalculate the gap
-      effective_gap = if justify == :space_between and length(children) > 1 do
-        remaining_space = space.width - total_width
-        div(remaining_space, length(children) - 1)
-      else
-        gap
-      end
+      effective_gap =
+        if justify == :space_between and length(children) > 1 do
+          remaining_space = space.width - total_width
+          div(remaining_space, length(children) - 1)
+        else
+          gap
+        end
 
       # Position each child
       {_, elements} =
         Enum.zip(children, child_dimensions)
         |> Enum.reduce({start_x, []}, fn {child, dims}, {current_x, elements} ->
           # Calculate y position based on alignment
-          child_y = case align do
-            :start -> space.y
-            :center -> space.y + div(space.height - dims.height, 2)
-            :end -> space.y + space.height - dims.height
-          end
+          child_y =
+            case align do
+              :start -> space.y
+              :center -> space.y + div(space.height - dims.height, 2)
+              :end -> space.y + space.height - dims.height
+            end
 
           # Create child space
           child_space = %{
@@ -116,7 +126,11 @@ defmodule Raxol.UI.Layout.Containers do
 
   A list of positioned elements with absolute coordinates.
   """
-  def process_column(%{type: :column, attrs: attrs, children: children}, space, acc)
+  def process_column(
+        %{type: :column, attrs: attrs, children: children},
+        space,
+        acc
+      )
       when is_list(children) do
     # Calculate spacing between items
     gap = Map.get(attrs, :gap, 1)
@@ -134,9 +148,10 @@ defmodule Raxol.UI.Layout.Containers do
         end)
 
       # Total height used by children
-      total_height = Enum.reduce(child_dimensions, 0, fn dim, acc ->
-        acc + dim.height
-      end)
+      total_height =
+        Enum.reduce(child_dimensions, 0, fn dim, acc ->
+          acc + dim.height
+        end)
 
       # Space needed for gaps
       gaps_height = gap * (length(children) - 1)
@@ -145,33 +160,42 @@ defmodule Raxol.UI.Layout.Containers do
       total_content_height = total_height + gaps_height
 
       # Calculate starting y position based on justification
-      start_y = case justify do
-        :start -> space.y
-        :center -> space.y + div(space.height - total_content_height, 2)
-        :end -> space.y + space.height - total_content_height
-        :space_between ->
-          # With space_between, we'll recalculate the gap
-          space.y
-      end
+      start_y =
+        case justify do
+          :start ->
+            space.y
+
+          :center ->
+            space.y + div(space.height - total_content_height, 2)
+
+          :end ->
+            space.y + space.height - total_content_height
+
+          :space_between ->
+            # With space_between, we'll recalculate the gap
+            space.y
+        end
 
       # If we're using space_between, recalculate the gap
-      effective_gap = if justify == :space_between and length(children) > 1 do
-        remaining_space = space.height - total_height
-        div(remaining_space, length(children) - 1)
-      else
-        gap
-      end
+      effective_gap =
+        if justify == :space_between and length(children) > 1 do
+          remaining_space = space.height - total_height
+          div(remaining_space, length(children) - 1)
+        else
+          gap
+        end
 
       # Position each child
       {_, elements} =
         Enum.zip(children, child_dimensions)
         |> Enum.reduce({start_y, []}, fn {child, dims}, {current_y, elements} ->
           # Calculate x position based on alignment
-          child_x = case align do
-            :start -> space.x
-            :center -> space.x + div(space.width - dims.width, 2)
-            :end -> space.x + space.width - dims.width
-          end
+          child_x =
+            case align do
+              :start -> space.x
+              :center -> space.x + div(space.width - dims.width, 2)
+              :end -> space.x + space.width - dims.width
+            end
 
           # Create child space
           child_space = %{
@@ -207,7 +231,10 @@ defmodule Raxol.UI.Layout.Containers do
 
   The dimensions of the row: %{width: w, height: h}
   """
-  def measure_row(%{type: :row, attrs: _attrs, children: children}, available_space)
+  def measure_row(
+        %{type: :row, attrs: _attrs, children: children},
+        available_space
+      )
       when is_list(children) do
     # Skip if no children
     if children == [] do
@@ -220,14 +247,16 @@ defmodule Raxol.UI.Layout.Containers do
         end)
 
       # Row width is sum of children's width
-      row_width = Enum.reduce(child_dimensions, 0, fn dim, acc ->
-        acc + dim.width
-      end)
+      row_width =
+        Enum.reduce(child_dimensions, 0, fn dim, acc ->
+          acc + dim.width
+        end)
 
       # Row height is the maximum child height
-      row_height = Enum.reduce(child_dimensions, 0, fn dim, acc ->
-        max(acc, dim.height)
-      end)
+      row_height =
+        Enum.reduce(child_dimensions, 0, fn dim, acc ->
+          max(acc, dim.height)
+        end)
 
       # Return dimensions constrained to available space
       %{
@@ -237,7 +266,7 @@ defmodule Raxol.UI.Layout.Containers do
     end
   end
 
-  def measure_row(_, available_space), do: %{width: 0, height: 0}
+  def measure_row(_, _available_space), do: %{width: 0, height: 0}
 
   @doc """
   Measures the space needed by a column element.
@@ -251,7 +280,10 @@ defmodule Raxol.UI.Layout.Containers do
 
   The dimensions of the column: %{width: w, height: h}
   """
-  def measure_column(%{type: :column, attrs: _attrs, children: children}, available_space)
+  def measure_column(
+        %{type: :column, attrs: _attrs, children: children},
+        available_space
+      )
       when is_list(children) do
     # Skip if no children
     if children == [] do
@@ -264,14 +296,16 @@ defmodule Raxol.UI.Layout.Containers do
         end)
 
       # Column height is sum of children's height
-      column_height = Enum.reduce(child_dimensions, 0, fn dim, acc ->
-        acc + dim.height
-      end)
+      column_height =
+        Enum.reduce(child_dimensions, 0, fn dim, acc ->
+          acc + dim.height
+        end)
 
       # Column width is the maximum child width
-      column_width = Enum.reduce(child_dimensions, 0, fn dim, acc ->
-        max(acc, dim.width)
-      end)
+      column_width =
+        Enum.reduce(child_dimensions, 0, fn dim, acc ->
+          max(acc, dim.width)
+        end)
 
       # Return dimensions constrained to available space
       %{
@@ -281,5 +315,5 @@ defmodule Raxol.UI.Layout.Containers do
     end
   end
 
-  def measure_column(_, available_space), do: %{width: 0, height: 0}
+  def measure_column(_, _available_space), do: %{width: 0, height: 0}
 end

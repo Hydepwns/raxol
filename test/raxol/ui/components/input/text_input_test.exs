@@ -18,12 +18,13 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
     end
 
     test "creates a text input with custom props" do
-      input = TextInput.create(%{
-        placeholder: "Enter text",
-        is_password: true,
-        max_length: 10,
-        value: "Initial"
-      })
+      input =
+        TextInput.create(%{
+          placeholder: "Enter text",
+          is_password: true,
+          max_length: 10,
+          value: "Initial"
+        })
 
       assert input.props.placeholder == "Enter text"
       assert input.props.is_password == true
@@ -72,7 +73,8 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       input = TextInput.create(%{value: "Hello"})
       input = %{input | state: %{input.state | cursor_pos: 5}}
 
-      {:ok, updated} = TextInput.handle_event(input, {:key_press, :backspace, []}, %{})
+      {:ok, updated} =
+        TextInput.handle_event(input, {:key_press, :backspace, []}, %{})
 
       assert updated.state.value == "Hell"
       assert updated.state.cursor_pos == 4
@@ -82,7 +84,8 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       input = TextInput.create(%{value: "Hello"})
       input = %{input | state: %{input.state | cursor_pos: 2}}
 
-      {:ok, updated} = TextInput.handle_event(input, {:key_press, :delete, []}, %{})
+      {:ok, updated} =
+        TextInput.handle_event(input, {:key_press, :delete, []}, %{})
 
       assert updated.state.value == "Helo"
       assert updated.state.cursor_pos == 2
@@ -97,7 +100,9 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert left.state.cursor_pos == 1
 
       # Test right arrow
-      {:ok, right} = TextInput.handle_event(input, {:key_press, :right, []}, %{})
+      {:ok, right} =
+        TextInput.handle_event(input, {:key_press, :right, []}, %{})
+
       assert right.state.cursor_pos == 3
 
       # Test home
@@ -105,7 +110,9 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       assert home.state.cursor_pos == 0
 
       # Test end
-      {:ok, end_pos} = TextInput.handle_event(input, {:key_press, :end, []}, %{})
+      {:ok, end_pos} =
+        TextInput.handle_event(input, {:key_press, :end, []}, %{})
+
       assert end_pos.state.cursor_pos == 5
     end
 
@@ -124,7 +131,8 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       input = TextInput.create(%{})
       input = %{input | state: %{input.state | focused: true}}
 
-      {:ok, updated} = TextInput.handle_event(input, {:key_press, :escape, []}, %{})
+      {:ok, updated} =
+        TextInput.handle_event(input, {:key_press, :escape, []}, %{})
 
       assert updated.state.focused == false
     end
@@ -132,7 +140,8 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
     test "handles mouse click (focus)" do
       input = TextInput.create(%{})
 
-      {:ok, updated} = TextInput.handle_event(input, {:mouse_event, :click, 5, 0, :left}, %{})
+      {:ok, updated} =
+        TextInput.handle_event(input, {:mouse_event, :click, 5, 0, :left}, %{})
 
       assert updated.state.focused == true
     end
@@ -157,7 +166,8 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
 
       # Try to add an invalid character (letter)
       {:ok, invalid} = TextInput.handle_event(input, {:key_press, "A", []}, %{})
-      assert invalid.state.value == "123" # Value should not change
+      # Value should not change
+      assert invalid.state.value == "123"
     end
   end
 
@@ -185,7 +195,8 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
 
       text = Enum.find(elements, fn e -> e.type == :text end)
       assert text.text == "Type here"
-      assert text.attrs.fg == :gray # Placeholder should use placeholder color
+      # Placeholder should use placeholder color
+      assert text.attrs.fg == :gray
     end
 
     test "renders password input as masked" do
@@ -193,7 +204,8 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       elements = TextInput.render(input, %{})
 
       text = Enum.find(elements, fn e -> e.type == :text end)
-      assert text.text == "******" # Should show asterisks instead of actual text
+      # Should show asterisks instead of actual text
+      assert text.text == "******"
     end
 
     test "renders cursor when focused" do
@@ -207,7 +219,8 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
 
       cursor = Enum.find(elements, fn e -> e.type == :cursor end)
       assert cursor != nil
-      assert cursor.x == 4 # Position 3 + 1 for border
+      # Position 3 + 1 for border
+      assert cursor.x == 4
     end
   end
 end

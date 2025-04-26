@@ -1,8 +1,16 @@
 # Raxol Runtime Options
 
-When starting your Raxol application using `Raxol.Runtime.start_link/1` or the simpler `Raxol.run/2` function, you can pass various options to configure the runtime behavior and initial setup.
+When starting your Raxol application using the `Raxol.Core.Runtime.Lifecycle.start_application/2` function, or by adding `Raxol.Core.Runtime.Application` to your supervision tree, you can pass various options to configure the runtime behavior and initial setup.
 
 These options are typically provided as a keyword list.
+
+## Starting Raxol
+
+When starting your Raxol application using the `Raxol.Core.Runtime.Lifecycle.start_application/2` function, or by adding `Raxol.Core.Runtime.Application` to your supervision tree, you can pass various options to configure the runtime behavior and initial setup.
+
+### Using `start_application/2`
+
+This is common for starting directly from `iex` or scripts.
 
 ```elixir
 defmodule MyApp do
@@ -13,23 +21,34 @@ end
 # Example using Raxol.run/2
 Raxol.run(MyApp, title: "My Awesome App", quit_keys: ["q", :ctrl_c])
 
-# Example using Raxol.Runtime.start_link/1 (more common in supervision trees)
+# Example using Raxol.Core.Runtime.Lifecycle.start_application/2
 opts = [
   app: MyApp,
-  title: "My Supervised App",
-  quit_keys: [:ctrl_c],
-  interval: 50 # Set render interval to 50ms
+  title: "My Custom App",
+  fps: 30,
+  quit_keys: [{:ctrl, ?q}],
+  debug: true
 ]
-{:ok, pid} = Raxol.Runtime.start_link(opts)
+{:ok, pid} = Raxol.Core.Runtime.Lifecycle.start_application(MyApp, opts)
 ```
 
-Here are some of the commonly used options:
+### Using a Supervisor
 
-## `app:`
+This is the standard approach for long-running applications.
 
-- **Required** (when using `Raxol.Runtime.start_link/1`)
-- Specifies the `Raxol.App` module that defines your application's logic (`init/1`, `update/2`, `render/1`, etc.).
-- When using `Raxol.run/2`, the app module is the first argument, so this option is not needed.
+```elixir
+# In your Application module's start/2
+children = [
+  {Raxol.Core.Runtime.Application, [app: MyApp, title: "Supervised App"]}
+]
+Supervisor.start_link(children, strategy: :one_for_one)
+```
+
+## Available Options
+
+- `:app`
+  - **Required** (when using `Raxol.Core.Runtime.Application` in a supervisor)
+  - The module implementing the `Raxol.App` behaviour.
 
 ## `title:`
 
@@ -52,4 +71,14 @@ Here are some of the commonly used options:
 - Lower values mean potentially smoother animations but higher CPU usage.
 - Defaults to `100` (milliseconds), aiming for roughly 10 frames per second.
 
-There might be other options available. Refer to the `Raxol.Runtime` module documentation or source code for a complete list.
+* `:fps`
+
+  - **Optional**
+  - Specifies the target frame rate in frames per second.
+  - Default: `30`
+
+* `:debug`
+  - Default: `false`
+  - Enables runtime debugging features.
+
+There might be other options available. Refer to the `Raxol.Core.Runtime.Lifecycle` and `Raxol.Core.Runtime.Application` module documentation for a complete list.

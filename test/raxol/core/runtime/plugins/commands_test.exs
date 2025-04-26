@@ -27,7 +27,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
 
   describe "plugin commands" do
     test "register adds a command to the registry" do
-      :ok = Commands.register("test:command", TestCommandHandler, "Test command help")
+      :ok =
+        Commands.register(
+          "test:command",
+          TestCommandHandler,
+          "Test command help"
+        )
 
       commands = Commands.list_commands()
       assert Map.has_key?(commands, "test:command")
@@ -39,7 +44,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
 
     test "unregister removes a command from the registry" do
       # Register first
-      :ok = Commands.register("test:command", TestCommandHandler, "Test command")
+      :ok =
+        Commands.register("test:command", TestCommandHandler, "Test command")
+
       assert Map.has_key?(Commands.list_commands(), "test:command")
 
       # Then unregister
@@ -48,7 +55,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     end
 
     test "get_help returns help text for registered command" do
-      Commands.register("test:help", TestCommandHandler, "Help text for test command")
+      Commands.register(
+        "test:help",
+        TestCommandHandler,
+        "Help text for test command"
+      )
 
       {:ok, help_text} = Commands.get_help("test:help")
       assert help_text == "Help text for test command"
@@ -60,7 +71,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
 
     test "execute calls the command handler with args and context" do
       # Register command
-      :ok = Commands.register("test:execute", TestCommandHandler, "Execute test")
+      :ok =
+        Commands.register("test:execute", TestCommandHandler, "Execute test")
 
       # Execute command
       args = ["arg1", "arg2"]
@@ -74,30 +86,34 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     end
 
     test "execute returns error for unknown command" do
-      assert {:error, :command_not_found} = Commands.execute("unknown:command", [])
+      assert {:error, :command_not_found} =
+               Commands.execute("unknown:command", [])
     end
 
     test "execute handles error results from command handler" do
       # Register command that returns an error
-      :ok = Commands.register(
-        "test:error",
-        TestCommandHandler,
-        "Error test",
-        function: :execute_error
-      )
+      :ok =
+        Commands.register(
+          "test:error",
+          TestCommandHandler,
+          "Error test",
+          function: :execute_error
+        )
 
       # Execute should return the error from the handler
-      assert {:error, "Command execution failed"} = Commands.execute("test:error", [])
+      assert {:error, "Command execution failed"} =
+               Commands.execute("test:error", [])
     end
 
     test "execute safely handles crashes in command handler" do
       # Register command that crashes
-      :ok = Commands.register(
-        "test:crash",
-        TestCommandHandler,
-        "Crash test",
-        function: :execute_crash
-      )
+      :ok =
+        Commands.register(
+          "test:crash",
+          TestCommandHandler,
+          "Crash test",
+          function: :execute_crash
+        )
 
       # Execute should catch the crash and return an error
       assert {:error, message} = Commands.execute("test:crash", [])
@@ -106,8 +122,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
 
     test "plugin_command? correctly identifies plugin commands" do
       # Use handle_command as a proxy to test plugin_command?
-      assert {:error, :not_plugin_command} = Commands.handle_command("regular_command", [], %{})
-      assert {:error, :command_not_found} = Commands.handle_command("plugin:command", [], %{})
+      assert {:error, :not_plugin_command} =
+               Commands.handle_command("regular_command", [], %{})
+
+      assert {:error, :command_not_found} =
+               Commands.handle_command("plugin:command", [], %{})
     end
   end
 end

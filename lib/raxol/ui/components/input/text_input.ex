@@ -12,8 +12,9 @@ defmodule Raxol.UI.Components.Input.TextInput do
   """
 
   alias Raxol.UI.Components.Base.Component
-  alias Raxol.UI.Theming.Theme
-  alias Raxol.UI.Theming.Colors
+  # alias Raxol.View
+  # alias Raxol.View.Style
+  # alias Raxol.Core.Events
 
   @behaviour Component
 
@@ -23,94 +24,111 @@ defmodule Raxol.UI.Components.Input.TextInput do
           optional(:placeholder) => String.t(),
           optional(:on_change) => (String.t() -> any()),
           optional(:on_submit) => (String.t() -> any()),
-          optional(:max_length) => integer(),
-          optional(:width) => integer(),
-          optional(:is_password) => boolean(),
-          optional(:validate) => (String.t() -> boolean()),
-          optional(:theme) => map()
+          optional(:on_cancel) => (-> any()) | nil,
+          optional(:theme) => map(),
+          optional(:mask_char) => String.t() | nil,
+          optional(:max_length) => integer() | nil,
+          optional(:validator) => (String.t() -> boolean()) | nil
         }
 
   @type state :: %{
-          value: String.t(),
-          focused: boolean(),
-          cursor_pos: integer(),
-          scroll_offset: integer()
+          cursor_pos: non_neg_integer(),
+          focused: boolean()
         }
 
-  @type t :: %{
-          props: props(),
-          state: state()
-        }
+  require Logger
 
-  @impl Component
-  def create(props) do
-    %{
-      props: normalize_props(props),
-      state: %{
-        value: props[:value] || "",
-        focused: false,
-        cursor_pos: 0,
-        scroll_offset: 0
-      }
+  # Implementation of Component callbacks
+  @impl true
+  def init(_props) do
+    state = %{
+      cursor_pos: 0,
+      focused: false
     }
+
+    {:ok, state}
   end
 
-  @impl Component
-  def update(component, new_props) do
-    # Update props and recalculate anything dependent on props
-    updated_props = Map.merge(component.props, normalize_props(new_props))
+  def handle_event(component, %{type: :keypress, key: key} = _event) do
+    case key do
+      :enter ->
+        if is_function(component.props[:on_submit], 1) do
+          component.props.on_submit.(component.props.value || "")
+        end
 
-    # Update value if changed externally (e.g. from a binding)
-    state =
-      if Map.has_key?(new_props, :value) && new_props.value != component.state.value do
-        %{component.state | value: new_props.value || ""}
-      else
-        component.state
-      end
+        {:ok, component}
 
-    %{component | props: updated_props, state: state}
-  end
+      :escape ->
+        if is_function(component.props[:on_cancel], 0) do
+          component.props.on_cancel.()
+        end
 
-  @impl Component
-  def handle_event(component, {:key_press, key, modifiers}, _context) do
-    case {key, modifiers} do
-      {:backspace, _} ->
-        # Handle backspace
-        if component.state.cursor_pos > 0 do
-          {before_cursor, after_cursor} = split_at_cursor(component)
-          new_value = String.slice(before_cursor, 0..-2) <> after_cursor
-          new_cursor_pos = component.state.cursor_pos - 1
-          updated = update_value(component, new_value, new_cursor_pos)
-          {:ok, updated}
+        {:ok, component}
+
+      :backspace ->
+        # Delete character before cursor
+        %{state: state} = component
+        current_pos = state.cursor_pos
+        current_value = component.props.value || ""
+
+        if current_pos > 0 do
+          # Simplify slice calls temporarily by removing step operator
+          before_part = String.slice(current_value, 0..(current_pos - 2))
+          remaining_part = String.slice(current_value, current_pos..-1)
+
+          # Handle potential nil results explicitly
+          before = before_part || ""
+          remaining = remaining_part || ""
+
+          new_value = before <> remaining
+          new_state = %{state | cursor_pos: current_pos - 1}
+          # Assign updated component to variable first
+          updated_component = %{component | state: new_state}
+          emit_change(updated_component, new_value)
         else
           {:ok, component}
         end
 
       {:delete, _} ->
-        # Handle delete
-        {before_cursor, after_cursor} = split_at_cursor(component)
-        if String.length(after_cursor) > 0 do
-          new_value = before_cursor <> String.slice(after_cursor, 1..-1)
-          updated = update_value(component, new_value, component.state.cursor_pos)
-          {:ok, updated}
+        # Delete character AT cursor position
+        %{state: state} = component
+        current_pos = state.cursor_pos
+        current_value = component.props.value || ""
+
+        if current_pos < String.length(current_value) do
+          before = String.slice(current_value, 0, current_pos)
+          # Use // -1 for explicit negative step
+          after_text =
+            String.slice(current_value, (current_pos + 1)..-1//1) || ""
+
+          new_value = before <> after_text
+          emit_change(component, new_value)
         else
           {:ok, component}
         end
 
       {:left, _} ->
         # Move cursor left
-        if component.state.cursor_pos > 0 do
-          new_cursor_pos = component.state.cursor_pos - 1
-          {:ok, %{component | state: %{component.state | cursor_pos: new_cursor_pos}}}
+        %{state: state} = component
+        if state.cursor_pos > 0 do
+          new_cursor_pos = state.cursor_pos - 1
+
+          {:ok,
+           %{component | state: %{state | cursor_pos: new_cursor_pos}}}
         else
           {:ok, component}
         end
 
       {:right, _} ->
         # Move cursor right
-        if component.state.cursor_pos < String.length(component.state.value) do
-          new_cursor_pos = component.state.cursor_pos + 1
-          {:ok, %{component | state: %{component.state | cursor_pos: new_cursor_pos}}}
+        %{state: state} = component
+        current_value = component.props.value || ""
+
+        if state.cursor_pos < String.length(current_value) do
+          new_cursor_pos = state.cursor_pos + 1
+
+          {:ok,
+           %{component | state: %{state | cursor_pos: new_cursor_pos}}}
         else
           {:ok, component}
         end
@@ -121,208 +139,129 @@ defmodule Raxol.UI.Components.Input.TextInput do
 
       {:end, _} ->
         # Move cursor to end
-        new_cursor_pos = String.length(component.state.value)
-        {:ok, %{component | state: %{component.state | cursor_pos: new_cursor_pos}}}
+        %{state: state} = component
+        current_value = component.props.value || ""
 
-      {:enter, _} ->
-        # Submit the input
-        if on_submit = component.props[:on_submit] do
-          on_submit.(component.state.value)
-        end
-        {:ok, component}
+        {:ok,
+         %{
+           component
+           | state: %{
+               state
+               | cursor_pos: String.length(current_value)
+             }
+         }}
 
-      {:escape, _} ->
-        # Blur the input
-        {:ok, %{component | state: %{component.state | focused: false}}}
-
-      {char, _} when is_binary(char) and byte_size(char) == 1 ->
-        # Handle character input
+      # Handle regular character input
+      {char, _} when is_integer(char) and char >= 32 and char <= 126 ->
+        # Check max length if set
+        %{state: state} = component
+        current_value = component.props.value || ""
         max_length = component.props[:max_length]
-        if max_length && String.length(component.state.value) >= max_length do
+
+        if max_length && String.length(current_value) >= max_length do
+          # Max length reached
           {:ok, component}
         else
-          {before_cursor, after_cursor} = split_at_cursor(component)
-          new_value = before_cursor <> char <> after_cursor
+          # Validate character if validator provided
+          validator = component.props[:validator]
+          char_str = <<char::utf8>>
 
-          # Validate if needed
-          if validate = component.props[:validate] do
-            if validate.(new_value) do
-              new_cursor_pos = component.state.cursor_pos + 1
-              updated = update_value(component, new_value, new_cursor_pos)
-              {:ok, updated}
-            else
-              {:ok, component}
-            end
+          if is_function(validator, 1) && !validator.(char_str) do
+            # Character rejected by validator
+            {:ok, component}
           else
-            new_cursor_pos = component.state.cursor_pos + 1
-            updated = update_value(component, new_value, new_cursor_pos)
-            {:ok, updated}
+            # Insert character at cursor position
+            cursor_pos = state.cursor_pos
+            before = String.slice(current_value, 0, cursor_pos)
+            after_text = String.slice(current_value, cursor_pos..-1//1) || ""
+
+            new_value = before <> char_str <> after_text
+            new_cursor_pos = cursor_pos + 1
+
+            # Update component with new value and cursor position
+            updated_component = %{
+              component
+              | state: %{state | cursor_pos: new_cursor_pos}
+            }
+
+            emit_change(updated_component, new_value)
           end
         end
 
       _ ->
+        # Ignore other keys
         {:ok, component}
     end
   end
 
-  @impl Component
-  def handle_event(component, {:mouse_event, :click, _x, _y, _button}, _context) do
-    # Handle click - focus the text input
+  def handle_event(component, %{type: :focus}) do
     {:ok, %{component | state: %{component.state | focused: true}}}
   end
 
-  @impl Component
-  def handle_event(component, _event, _context) do
+  def handle_event(component, %{type: :blur}) do
+    {:ok, %{component | state: %{component.state | focused: false}}}
+  end
+
+  def handle_event(component, _event) do
     {:ok, component}
   end
 
-  @impl Component
-  def render(component, _context) do
-    props = component.props
-    state = component.state
-    theme = props[:theme] || Theme.get_current()
-    colors = theme[:input] || %{fg: :white, bg: :black, placeholder: :gray, border: :blue}
+  def render(component) do
+    # Use component.state directly
+    %{state: state} = component
+    value = state.value
+    placeholder = state.placeholder
+    # display_text = if value == "", do: placeholder, else: value
 
-    # Get the displayed text
-    display_value =
-      if state.value == "" do
-        %{text: props[:placeholder] || "", fg: colors.placeholder}
+    # Simplified render logic for demonstration
+    # In a real component, you'd use the state to generate View elements
+    # Apply masking if mask_char is provided
+    masked_text =
+      if component.props[:mask_char] do
+        String.duplicate(component.props.mask_char, String.length(value))
       else
-        if props[:is_password] do
-          # Mask password input with asterisks
-          %{text: String.duplicate("*", String.length(state.value)), fg: colors.fg}
-        else
-          %{text: state.value, fg: colors.fg}
-        end
+        value
       end
 
-    # Calculate the visible portion if text is longer than width
-    width = props[:width] || 20
-    visible_width = width - 2  # Accounting for borders
-
-    {visible_text, cursor_x} = calculate_visible_text(
-      display_value.text,
-      state.cursor_pos,
-      state.scroll_offset,
-      visible_width
-    )
-
-    # Create the input box with border
-    input_elements = [
-      # Box border
-      %{
-        type: :box,
-        width: width,
-        height: 1,
-        attrs: %{
-          fg: if(state.focused, do: colors.border, else: colors.fg),
-          bg: colors.bg,
-          border: %{
-            top_left: "[",
-            top_right: "]",
-            bottom_left: "[",
-            bottom_right: "]",
-            horizontal: " ",
-            vertical: "|"
-          }
-        }
-      },
-      # Input text
-      %{
-        type: :text,
-        x: 1,  # Inside the box
-        y: 0,
-        text: visible_text,
-        attrs: %{
-          fg: display_value.fg,
-          bg: colors.bg
-        }
-      }
-    ]
-
-    # Add cursor if focused
-    input_elements =
-      if state.focused do
-        cursor_element = %{
-          type: :cursor,
-          x: cursor_x + 1,  # +1 to account for left border
-          y: 0,
-          attrs: %{
-            fg: colors.fg,
-            bg: colors.bg
-          }
-        }
-        [cursor_element | input_elements]
-      else
-        input_elements
-      end
-
-    input_elements
-  end
-
-  # Private helper functions
-
-  defp normalize_props(props) do
-    # Ensure props have expected types and defaults
-    props = Map.new(props)
-
-    props
-    |> Map.put_new(:placeholder, "")
-    |> Map.put_new(:max_length, nil)
-    |> Map.put_new(:is_password, false)
-  end
-
-  defp update_value(component, new_value, new_cursor_pos) do
-    # Update the value and trigger on_change callback
-    if on_change = component.props[:on_change] do
-      on_change.(new_value)
-    end
-
-    # Update component state
-    updated_state = %{
-      component.state |
-      value: new_value,
-      cursor_pos: new_cursor_pos
+    # Return a representation of the text input
+    %{
+      type: :text_input,
+      text: if(value == "", do: placeholder, else: masked_text),
+      cursor_pos: state.cursor_pos,
+      focused: state.focused
     }
-
-    %{component | state: updated_state}
   end
 
-  defp split_at_cursor(component) do
-    value = component.state.value
-    pos = component.state.cursor_pos
-
-    before_cursor = String.slice(value, 0, pos)
-    after_cursor = String.slice(value, pos..-1)
-
-    {before_cursor, after_cursor}
-  end
-
-  defp calculate_visible_text(text, cursor_pos, scroll_offset, visible_width) do
-    text_length = String.length(text)
-
-    # Adjust scroll_offset if cursor would be outside visible area
-    scroll_offset = cond do
-      cursor_pos < scroll_offset ->
-        # Cursor moved left of visible area
-        cursor_pos
-      cursor_pos >= scroll_offset + visible_width ->
-        # Cursor moved right of visible area
-        cursor_pos - visible_width + 1
-      true ->
-        # Cursor is within visible area
-        scroll_offset
+  # Helper function to emit change events
+  defp emit_change(component, new_value) do
+    # Call on_change callback if provided
+    if is_function(component.props[:on_change], 1) do
+      component.props.on_change.(new_value)
     end
 
-    # Calculate end of visible area
-    end_offset = min(scroll_offset + visible_width, text_length)
+    # Return updated component with new value
+    {:ok, %{component | props: Map.put(component.props, :value, new_value)}}
+  end
 
-    # Get visible portion of text
-    visible_text = String.slice(text, scroll_offset, visible_width)
+  @impl true
+  def render(_component, _context) do
+    # Return a simple text map as placeholder
+    %{type: :text, text: "Placeholder TextInput Render"}
+  end
 
-    # Calculate cursor position within visible area
-    visible_cursor_pos = cursor_pos - scroll_offset
+  @impl true
+  def handle_event(component, _event, _context) do
+    # TODO: Implement proper event handling based on behaviour signature
+    # Can delegate to old handle_event/2 if modified to fit.
+    # Example: handle_event(component, event)
+    # Must return {new_state, commands}
+    {component.state, []}
+  end
 
-    {visible_text, visible_cursor_pos}
+  @impl true
+  def update(component, _message) do
+    # TODO: Implement update logic based on messages if needed
+    # Must return {:noreply, new_state}
+    {:noreply, component.state}
   end
 end

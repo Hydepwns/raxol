@@ -96,7 +96,7 @@ This script tests all methods for getting terminal dimensions and reports the re
 
 ## Integration with Runtime and Rendering
 
-The `TerminalUtils` module is integrated with the `Raxol.Runtime` and `Raxol.RuntimeDebug` modules to ensure that accurate dimensions are used for UI rendering. This integration replaced the previous hardcoded height value.
+The `TerminalUtils` module is integrated with the `Raxol.Core.Runtime` modules to ensure that accurate dimensions are used for UI rendering. This integration replaced the previous hardcoded height value.
 
 ## Impact on Visualization and Layout
 

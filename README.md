@@ -55,8 +55,8 @@ defmodule MyApp do
   end
 end
 
-# Start the application
-{:ok, _pid} = Raxol.Runtime.start_link(app: MyApp)
+# Start the application using the new Lifecycle module
+Raxol.Core.Runtime.Lifecycle.start_application(MyApp)
 
 # Keep the application running (e.g., in an IEx session or supervisor)
 ```

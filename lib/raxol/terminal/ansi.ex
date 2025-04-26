@@ -95,32 +95,4 @@ defmodule Raxol.Terminal.ANSI do
   def process_escape(sequence, state) do
     ANSIFacade.process_escape(sequence, state)
   end
-
-  @doc """
-  Emits an ANSI escape sequence for a specific operation.
-
-  DEPRECATED: Use Raxol.Terminal.ANSI.Emitter.emit/2 instead.
-
-  ## Parameters
-
-  * `operation` - The operation to emit a sequence for
-  * `args` - Arguments for the operation
-
-  ## Returns
-
-  The ANSI escape sequence string.
-
-  ## Migration Path
-
-  ```elixir
-  # Before
-  sequence = Raxol.Terminal.ANSI.emit(:cursor_up, [2])
-
-  # After
-  sequence = Raxol.Terminal.ANSI.Emitter.emit(:cursor_up, [2])
-  ```
-  """
-  def emit(operation, args \\ []) do
-    ANSIFacade.emit(operation, args)
-  end
 end

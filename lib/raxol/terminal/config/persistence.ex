@@ -128,7 +128,7 @@ defmodule Raxol.Terminal.Config.Persistence do
     map
     |> Enum.map(fn {k, v} ->
       {
-        (if is_binary(k), do: String.to_atom(k), else: k),
+        if(is_binary(k), do: String.to_atom(k), else: k),
         atomize_keys(v)
       }
     end)

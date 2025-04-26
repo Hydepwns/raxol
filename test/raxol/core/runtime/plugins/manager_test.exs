@@ -38,6 +38,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     test "loads discovered plugins" do
       # Mock the private discover_plugins function to return our test plugin
       :meck.new(Manager, [:passthrough])
+
       :meck.expect(Manager, :discover_plugins, fn ->
         [{"test_plugin", %{name: "Test Plugin", version: "1.0.0"}, TestPlugin}]
       end)
@@ -56,6 +57,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     test "get_plugin returns plugin data" do
       # Mock the private functions to return our test plugin
       :meck.new(Manager, [:passthrough])
+
       :meck.expect(Manager, :discover_plugins, fn ->
         [{"test_plugin", %{name: "Test Plugin", version: "1.0.0"}, TestPlugin}]
       end)
@@ -75,6 +77,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     test "enable_plugin and disable_plugin change plugin state" do
       # Mock the private functions and plugin storage
       :meck.new(Manager, [:passthrough])
+
       :meck.expect(Manager, :discover_plugins, fn ->
         [{"test_plugin", %{name: "Test Plugin"}, TestPlugin}]
       end)
@@ -98,6 +101,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     test "reload_plugin unloads and reloads a plugin" do
       # Mock functions
       :meck.new(Manager, [:passthrough])
+
       :meck.expect(Manager, :discover_plugins, fn ->
         [{"test_plugin", %{name: "Test Plugin"}, TestPlugin}]
       end)

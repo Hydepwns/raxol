@@ -54,8 +54,10 @@ defmodule Raxol.Terminal.ANSI.EmitterTest do
 
   test "generates color sequences" do
     # Basic colors
-    assert Emitter.foreground(1) == "\e[38;5;1m"  # Red
-    assert Emitter.background(4) == "\e[48;5;4m"  # Blue
+    # Red
+    assert Emitter.foreground(1) == "\e[38;5;1m"
+    # Blue
+    assert Emitter.background(4) == "\e[48;5;4m"
 
     # Named colors
     assert Emitter.foreground(:red) == "\e[38;5;1m"
@@ -71,8 +73,10 @@ defmodule Raxol.Terminal.ANSI.EmitterTest do
   end
 
   test "generates terminal mode sequences" do
-    assert Emitter.set_mode(25) == "\e[?25h"  # Show cursor
-    assert Emitter.reset_mode(25) == "\e[?25l"  # Hide cursor
+    # Show cursor
+    assert Emitter.set_mode(25) == "\e[?25h"
+    # Hide cursor
+    assert Emitter.reset_mode(25) == "\e[?25l"
     assert Emitter.alternate_buffer_on() == "\e[?1049h"
     assert Emitter.alternate_buffer_off() == "\e[?1049l"
     assert Emitter.bracketed_paste_on() == "\e[?2004h"

@@ -86,12 +86,17 @@ defmodule Raxol.Terminal.Config.Application do
     pid = terminal_pid || default_terminal_pid()
 
     case pid do
-      nil -> %{} # No terminal active
+      # No terminal active
+      nil ->
+        %{}
+
       pid when is_pid(pid) ->
         # Try to get configuration from the terminal process
         case get_config_from_terminal(pid) do
-          {:ok, config} -> config
-          {:error, _} -> %{} # Empty config if unavailable
+          {:ok, config_map} ->
+            # Extract only the necessary parts
+            config_map
+            |> Map.take([:font_size, :font_family, :theme])
         end
     end
   end
@@ -126,8 +131,10 @@ defmodule Raxol.Terminal.Config.Application do
   # Private functions
 
   # Apply display configuration
-  defp apply_display_config(%{display: display}, terminal_pid) when is_map(display) do
+  defp apply_display_config(%{display: display}, terminal_pid)
+       when is_map(display) do
     pid = terminal_pid || default_terminal_pid()
+
     if pid do
       # Extract relevant display settings
       settings = %{
@@ -142,15 +149,18 @@ defmodule Raxol.Terminal.Config.Application do
       # Send configuration to terminal process
       send_config_to_terminal(pid, {:display_config, settings})
     else
-      :ok # No terminal active
+      # No terminal active
+      :ok
     end
   end
 
-  defp apply_display_config(_, _), do: :ok # No display config to apply
+  # No display config to apply
+  defp apply_display_config(_, _), do: :ok
 
   # Apply input configuration
   defp apply_input_config(%{input: input}, terminal_pid) when is_map(input) do
     pid = terminal_pid || default_terminal_pid()
+
     if pid do
       # Extract relevant input settings
       settings = %{
@@ -163,15 +173,19 @@ defmodule Raxol.Terminal.Config.Application do
       # Send configuration to terminal process
       send_config_to_terminal(pid, {:input_config, settings})
     else
-      :ok # No terminal active
+      # No terminal active
+      :ok
     end
   end
 
-  defp apply_input_config(_, _), do: :ok # No input config to apply
+  # No input config to apply
+  defp apply_input_config(_, _), do: :ok
 
   # Apply rendering configuration
-  defp apply_rendering_config(%{rendering: rendering}, terminal_pid) when is_map(rendering) do
+  defp apply_rendering_config(%{rendering: rendering}, terminal_pid)
+       when is_map(rendering) do
     pid = terminal_pid || default_terminal_pid()
+
     if pid do
       # Extract relevant rendering settings
       settings = %{
@@ -183,15 +197,18 @@ defmodule Raxol.Terminal.Config.Application do
       # Send configuration to terminal process
       send_config_to_terminal(pid, {:rendering_config, settings})
     else
-      :ok # No terminal active
+      # No terminal active
+      :ok
     end
   end
 
-  defp apply_rendering_config(_, _), do: :ok # No rendering config to apply
+  # No rendering config to apply
+  defp apply_rendering_config(_, _), do: :ok
 
   # Apply ANSI configuration
   defp apply_ansi_config(%{ansi: ansi}, terminal_pid) when is_map(ansi) do
     pid = terminal_pid || default_terminal_pid()
+
     if pid do
       # Extract relevant ANSI settings
       settings = %{
@@ -203,15 +220,19 @@ defmodule Raxol.Terminal.Config.Application do
       # Send configuration to terminal process
       send_config_to_terminal(pid, {:ansi_config, settings})
     else
-      :ok # No terminal active
+      # No terminal active
+      :ok
     end
   end
 
-  defp apply_ansi_config(_, _), do: :ok # No ANSI config to apply
+  # No ANSI config to apply
+  defp apply_ansi_config(_, _), do: :ok
 
   # Apply behavior configuration
-  defp apply_behavior_config(%{behavior: behavior}, terminal_pid) when is_map(behavior) do
+  defp apply_behavior_config(%{behavior: behavior}, terminal_pid)
+       when is_map(behavior) do
     pid = terminal_pid || default_terminal_pid()
+
     if pid do
       # Extract relevant behavior settings
       settings = %{
@@ -223,11 +244,13 @@ defmodule Raxol.Terminal.Config.Application do
       # Send configuration to terminal process
       send_config_to_terminal(pid, {:behavior_config, settings})
     else
-      :ok # No terminal active
+      # No terminal active
+      :ok
     end
   end
 
-  defp apply_behavior_config(_, _), do: :ok # No behavior config to apply
+  # No behavior config to apply
+  defp apply_behavior_config(_, _), do: :ok
 
   # Get the default terminal process PID
   defp default_terminal_pid do
@@ -247,10 +270,8 @@ defmodule Raxol.Terminal.Config.Application do
   end
 
   # Get configuration from terminal process
-  defp get_config_from_terminal(pid) do
-    # This is a placeholder implementation
-    # In a real implementation, this would query the terminal process
-    # For now, we'll return an empty config
+  defp get_config_from_terminal(_pid) do
+    # Placeholder implementation
     {:ok, %{}}
   end
 

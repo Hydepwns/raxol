@@ -8,7 +8,7 @@
 defmodule RenderingDemo do
   @behaviour Raxol.App
 
-  alias Raxol.Runtime.Subscription
+  alias Raxol.Core.Runtime.Events.Subscription
 
   import Raxol.View
   import Raxol.View.Elements

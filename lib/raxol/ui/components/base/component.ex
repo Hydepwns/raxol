@@ -56,6 +56,8 @@ defmodule Raxol.UI.Components.Base.Component do
   @type command :: term()
   @type element :: term()
   @type event :: term()
+  # Type for context passed to render/handle_event
+  @type context :: map()
 
   @doc """
   Initializes the component with the given props.
@@ -85,16 +87,18 @@ defmodule Raxol.UI.Components.Base.Component do
   @doc """
   Renders the component based on its current state.
 
-  Returns an element tree that will be rendered to the screen.
+  Returns an element tree that will be rendered to the screen. The context
+  map contains theme, layout constraints, etc.
   """
-  @callback render(state()) :: element()
+  @callback render(state(), context()) :: element()
 
   @doc """
   Handles UI events that occur on the component.
 
+  The context map provides additional event details or UI state.
   Returns the potentially modified state and any commands to execute.
   """
-  @callback handle_event(event(), state()) :: {state(), [command()]}
+  @callback handle_event(event(), state(), context()) :: {state(), [command()]}
 
   @doc """
   Called when the component is being removed from the UI.
@@ -117,131 +121,12 @@ defmodule Raxol.UI.Components.Base.Component do
       def unmount(state), do: state
 
       # Allow overriding
-      defoverridable [mount: 1, unmount: 1]
+      defoverridable mount: 1, unmount: 1
 
       # Helper functions for commands
       def command(cmd), do: {:command, cmd}
       def schedule(msg, delay), do: {:schedule, msg, delay}
       def broadcast(msg), do: {:broadcast, msg}
     end
-  end
-
-  @type t :: map()
-
-  @doc """
-  Renders the component based on its current state.
-
-  This callback must return a view representation of the component,
-  which will be used by the layout engine to position and display the component.
-
-  ## Parameters
-
-  * `component` - The component to render
-  * `context` - The rendering context containing theme and other information
-
-  ## Returns
-
-  A view representation of the component for the layout engine.
-  """
-  @callback render(component :: t(), context :: map()) :: map()
-
-  @doc """
-  Handles input events for the component.
-
-  This callback processes user interactions and other events that affect
-  the component's state.
-
-  ## Parameters
-
-  * `component` - The component receiving the event
-  * `event` - The event to handle
-  * `context` - The event handling context
-
-  ## Returns
-
-  `{:update, updated_component}` if the component state changed,
-  `{:handled, component}` if the event was handled but state didn't change,
-  `:passthrough` if the event wasn't handled by the component.
-  """
-  @callback handle_event(component :: t(), event :: map(), context :: map()) ::
-    {:update, updated_component :: t()} |
-    {:handled, component :: t()} |
-    :passthrough
-
-  @doc """
-  Optional callback that runs when the component is mounted.
-
-  This is where you can initialize state, start processes, or set up subscriptions.
-
-  ## Parameters
-
-  * `component` - The component being mounted
-  * `context` - The mounting context
-
-  ## Returns
-
-  The updated component.
-  """
-  @callback mount(component :: t(), context :: map()) :: t()
-
-  @doc """
-  Optional callback that runs when the component is updated with new props.
-
-  This allows the component to react to prop changes beyond simple state updates.
-
-  ## Parameters
-
-  * `old_component` - The component before the update
-  * `new_component` - The component with updated props
-  * `context` - The update context
-
-  ## Returns
-
-  The finalized updated component.
-  """
-  @callback update(old_component :: t(), new_component :: t(), context :: map()) :: t()
-
-  @doc """
-  Optional callback that runs when the component is unmounted.
-
-  This is where you can clean up resources, stop processes, or cancel subscriptions.
-
-  ## Parameters
-
-  * `component` - The component being unmounted
-  * `context` - The unmounting context
-
-  ## Returns
-
-  The final component state (typically just for debugging purposes).
-  """
-  @callback unmount(component :: t(), context :: map()) :: t()
-
-  # Make mount, update, and unmount optional callbacks
-  @optional_callbacks [mount: 2, update: 3, unmount: 2]
-
-  @doc """
-  Returns a default implementation for a component callback.
-
-  This is useful for implementing common default behaviors for optional callbacks.
-
-  ## Parameters
-
-  * `callback` - The callback to get a default implementation for
-
-  ## Returns
-
-  The default implementation function.
-  """
-  def default_impl(:mount) do
-    fn component, _context -> component end
-  end
-
-  def default_impl(:update) do
-    fn _old_component, new_component, _context -> new_component end
-  end
-
-  def default_impl(:unmount) do
-    fn component, _context -> component end
   end
 end

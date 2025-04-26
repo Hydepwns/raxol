@@ -8,7 +8,12 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
     # Track lifecycle events
     def new(opts \\ []) do
       %{
-        id: Keyword.get(opts, :id, "test-component-#{:erlang.unique_integer([:positive])}"),
+        id:
+          Keyword.get(
+            opts,
+            :id,
+            "test-component-#{:erlang.unique_integer([:positive])}"
+          ),
         value: Keyword.get(opts, :value, ""),
         lifecycle_events: [],
         render_count: 0,
@@ -19,7 +24,9 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
     @impl true
     def render(component, _context) do
       updated = Map.update!(component, :render_count, &(&1 + 1))
-      updated = Map.update!(updated, :lifecycle_events, &[{:render, :called} | &1])
+
+      updated =
+        Map.update!(updated, :lifecycle_events, &[{:render, :called} | &1])
 
       %{
         type: :test_component,
@@ -33,7 +40,9 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
     @impl true
     def handle_event(component, event, _context) do
       updated = Map.update!(component, :handle_event_count, &(&1 + 1))
-      updated = Map.update!(updated, :lifecycle_events, &[{:handle_event, event} | &1])
+
+      updated =
+        Map.update!(updated, :lifecycle_events, &[{:handle_event, event} | &1])
 
       case event do
         %{type: :test, value: value} ->
@@ -85,10 +94,11 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       TestComponent.render(component, context)
 
       # Render should be idempotent - verify by rendering multiple times
-      rendered = component
-      |> TestComponent.render(context)
-      |> TestComponent.render(context)
-      |> TestComponent.render(context)
+      rendered =
+        component
+        |> TestComponent.render(context)
+        |> TestComponent.render(context)
+        |> TestComponent.render(context)
 
       assert rendered.render_count == 4
       assert length(rendered.lifecycle_events) == 4
@@ -99,7 +109,9 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       updated = TestComponent.update(component, %{value: "updated"})
 
       assert updated.value == "updated"
-      assert Enum.at(updated.lifecycle_events, 0) == {:update, %{value: "updated"}}
+
+      assert Enum.at(updated.lifecycle_events, 0) ==
+               {:update, %{value: "updated"}}
     end
   end
 
@@ -139,13 +151,21 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
 
       # Handle a series of events
       {:update, after_first} =
-        TestComponent.handle_event(component, %{type: :test, value: "first"}, %{})
+        TestComponent.handle_event(
+          component,
+          %{type: :test, value: "first"},
+          %{}
+        )
 
       {:handled, after_second} =
         TestComponent.handle_event(after_first, %{type: :no_change}, %{})
 
       {:update, after_third} =
-        TestComponent.handle_event(after_second, %{type: :test, value: "third"}, %{})
+        TestComponent.handle_event(
+          after_second,
+          %{type: :test, value: "third"},
+          %{}
+        )
 
       # Verify the final state
       assert after_third.value == "third"
@@ -166,7 +186,11 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
 
       # Handle events
       {:update, after_event} =
-        TestComponent.handle_event(rendered, %{type: :test, value: "updated"}, context)
+        TestComponent.handle_event(
+          rendered,
+          %{type: :test, value: "updated"},
+          context
+        )
 
       # Render again after update
       re_rendered = TestComponent.render(after_event, context)
@@ -182,7 +206,10 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
 
       assert Enum.at(events, 0) == {:mount, :called}
       assert Enum.at(events, 1) == {:render, :called}
-      assert Enum.at(events, 2) == {:handle_event, %{type: :test, value: "updated"}}
+
+      assert Enum.at(events, 2) ==
+               {:handle_event, %{type: :test, value: "updated"}}
+
       assert Enum.at(events, 3) == {:render, :called}
       assert Enum.at(events, 4) == {:update, %{value: "final"}}
       assert Enum.at(events, 5) == {:unmount, :called}

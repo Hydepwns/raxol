@@ -9,11 +9,14 @@ defmodule Raxol.UI.Theming.Colors do
   - Validating color accessibility
   """
 
-  @type color_hex :: String.t()  # Format: "#RRGGBB" or "#RRGGBBAA"
+  # Format: "#RRGGBB" or "#RRGGBBAA"
+  @type color_hex :: String.t()
   @type color_rgb :: {red :: 0..255, green :: 0..255, blue :: 0..255}
-  @type color_rgba :: {red :: 0..255, green :: 0..255, blue :: 0..255, alpha :: 0..255}
+  @type color_rgba ::
+          {red :: 0..255, green :: 0..255, blue :: 0..255, alpha :: 0..255}
   @type color_hsl :: {hue :: 0..360, saturation :: 0..100, lightness :: 0..100}
-  @type color_name :: atom()  # Named colors like :red, :blue, etc.
+  # Named colors like :red, :blue, etc.
+  @type color_name :: atom()
 
   @color_names %{
     black: "#000000",
@@ -47,7 +50,8 @@ defmodule Raxol.UI.Theming.Colors do
   @spec to_rgb(color_hex | color_name) :: color_rgb
   def to_rgb(color)
 
-  def to_rgb(hex_color) when is_binary(hex_color) and byte_size(hex_color) >= 7 do
+  def to_rgb(hex_color)
+      when is_binary(hex_color) and byte_size(hex_color) >= 7 do
     hex_color
     |> String.trim_leading("#")
     |> String.downcase()
@@ -153,17 +157,22 @@ defmodule Raxol.UI.Theming.Colors do
       iex> Colors.accessible?("#FFFFFF", "#000000", :aa, :normal)
       true
   """
-  @spec accessible?(color_hex | color_name, color_hex | color_name,
-                   level :: :aa | :aaa, type :: :normal | :large) :: boolean
+  @spec accessible?(
+          color_hex | color_name,
+          color_hex | color_name,
+          level :: :aa | :aaa,
+          type :: :normal | :large
+        ) :: boolean
   def accessible?(color1, color2, level \\ :aa, type \\ :normal) do
     ratio = contrast_ratio(color1, color2)
 
-    min_ratio = case {level, type} do
-      {:aa, :normal} -> 4.5
-      {:aa, :large} -> 3.0
-      {:aaa, :normal} -> 7.0
-      {:aaa, :large} -> 4.5
-    end
+    min_ratio =
+      case {level, type} do
+        {:aa, :normal} -> 4.5
+        {:aa, :large} -> 3.0
+        {:aaa, :normal} -> 7.0
+        {:aaa, :large} -> 4.5
+      end
 
     ratio >= min_ratio
   end
@@ -176,14 +185,15 @@ defmodule Raxol.UI.Theming.Colors do
       iex> Colors.blend("#FF0000", "#0000FF", 0.5)
       "#800080"
   """
-  @spec blend(color_hex | color_name, color_hex | color_name, alpha :: 0..1) :: color_hex
+  @spec blend(color_hex | color_name, color_hex | color_name, alpha :: 0..1) ::
+          color_hex
   def blend(color1, color2, alpha) when alpha >= 0 and alpha <= 1 do
     {r1, g1, b1} = to_rgb(color1)
     {r2, g2, b2} = to_rgb(color2)
 
-    r = r1 * alpha + r2 * (1 - alpha) |> round()
-    g = g1 * alpha + g2 * (1 - alpha) |> round()
-    b = b1 * alpha + b2 * (1 - alpha) |> round()
+    r = (r1 * alpha + r2 * (1 - alpha)) |> round()
+    g = (g1 * alpha + g2 * (1 - alpha)) |> round()
+    b = (b1 * alpha + b2 * (1 - alpha)) |> round()
 
     to_hex({r, g, b})
   end
@@ -234,10 +244,140 @@ defmodule Raxol.UI.Theming.Colors do
     g_srgb = g / 255
     b_srgb = b / 255
 
-    r_linear = if r_srgb <= 0.03928, do: r_srgb / 12.92, else: :math.pow((r_srgb + 0.055) / 1.055, 2.4)
-    g_linear = if g_srgb <= 0.03928, do: g_srgb / 12.92, else: :math.pow((g_srgb + 0.055) / 1.055, 2.4)
-    b_linear = if b_srgb <= 0.03928, do: b_srgb / 12.92, else: :math.pow((b_srgb + 0.055) / 1.055, 2.4)
+    r_linear =
+      if r_srgb <= 0.03928,
+        do: r_srgb / 12.92,
+        else: :math.pow((r_srgb + 0.055) / 1.055, 2.4)
+
+    g_linear =
+      if g_srgb <= 0.03928,
+        do: g_srgb / 12.92,
+        else: :math.pow((g_srgb + 0.055) / 1.055, 2.4)
+
+    b_linear =
+      if b_srgb <= 0.03928,
+        do: b_srgb / 12.92,
+        else: :math.pow((b_srgb + 0.055) / 1.055, 2.4)
 
     0.2126 * r_linear + 0.7152 * g_linear + 0.0722 * b_linear
   end
+
+  # --- ANSI Color Palette Conversion ---
+
+  @ansi_basic_colors [
+    # Standard 8 colors
+    {0, {0, 0, 0}},         # Black
+    {1, {128, 0, 0}},       # Red
+    {2, {0, 128, 0}},       # Green
+    {3, {128, 128, 0}},     # Yellow
+    {4, {0, 0, 128}},       # Blue
+    {5, {128, 0, 128}},     # Magenta
+    {6, {0, 128, 128}},     # Cyan
+    {7, {192, 192, 192}},   # White (Light Gray)
+    # Bright 8 colors
+    {8, {128, 128, 128}},   # Bright Black (Dark Gray)
+    {9, {255, 0, 0}},       # Bright Red
+    {10, {0, 255, 0}},      # Bright Green
+    {11, {255, 255, 0}},    # Bright Yellow
+    {12, {0, 0, 255}},      # Bright Blue
+    {13, {255, 0, 255}},    # Bright Magenta
+    {14, {0, 255, 255}},    # Bright Cyan
+    {15, {255, 255, 255}}    # Bright White
+  ]
+
+  # Generate 216 colors (6x6x6 cube)
+  @ansi_216_colors (for r <- 0..5, g <- 0..5, b <- 0..5 do
+    index = 16 + 36 * r + 6 * g + b
+    red = if r == 0, do: 0, else: 55 + r * 40
+    green = if g == 0, do: 0, else: 55 + g * 40
+    blue = if b == 0, do: 0, else: 55 + b * 40
+    {index, {red, green, blue}}
+  end)
+
+  # Generate 24 grayscale colors
+  @ansi_grayscale_colors (for i <- 0..23 do
+    index = 232 + i
+    level = 8 + i * 10
+    {index, {level, level, level}}
+  end)
+
+  @ansi_256_colors @ansi_basic_colors ++ @ansi_216_colors ++ @ansi_grayscale_colors
+
+  # --- Palette Generation --- #
+
+  # Note: No @doc as it's private
+  defp color_distance_sq({r1, g1, b1}, {r2, g2, b2}) do
+    dr = r1 - r2
+    dg = g1 - g2
+    db = b1 - b2
+    dr * dr + dg * dg + db * db
+  end
+
+  @doc """
+  Finds the closest ANSI basic color index (0-15) to the given RGB color.
+  """
+  @spec find_closest_basic_color(color_rgb) :: 0..15
+  def find_closest_basic_color(rgb) do
+    @ansi_basic_colors
+    |> Enum.min_by(fn {_index, ansi_rgb} -> color_distance_sq(rgb, ansi_rgb) end)
+    |> elem(0)
+  end
+
+  @doc """
+  Finds the closest ANSI 256-color index (0-255) to the given RGB color.
+  """
+  @spec find_closest_256_color(color_rgb) :: 0..255
+  def find_closest_256_color(rgb) do
+    @ansi_256_colors
+    |> Enum.min_by(fn {_index, ansi_rgb} -> color_distance_sq(rgb, ansi_rgb) end)
+    |> elem(0)
+  end
+
+  def convert_to_basic(color) when is_tuple(color), do: find_closest_basic_color(color)
+
+  def convert_to_basic(theme) when is_map(theme) do
+    Map.new(theme, fn {key, value} ->
+      {key, convert_to_basic(value)}
+    end)
+  end
+
+  def convert_to_basic(value), do: value # Return non-color values as is
+
+  @doc """
+  Converts a color or theme map to use a specific palette (e.g., 256 colors).
+  Finds the closest color in the palette for each color in the theme.
+  *Currently only supports named palettes like :xterm256*
+  """
+  def convert_to_palette(value, palette_name \\ :xterm256)
+
+  def convert_to_palette(color, palette_name) when is_tuple(color) do
+    find_closest_palette_color(color, palette_name)
+  end
+
+  def convert_to_palette(theme, palette_name) when is_map(theme) do
+    Map.new(theme, fn {key, value} ->
+      {key, convert_to_palette(value, palette_name)}
+    end)
+  end
+
+  def convert_to_palette(value, _palette_name), do: value
+
+  # Helper function
+  defp find_closest_palette_color(rgb, palette_name) do
+    palette = case palette_name do
+      :xterm256 -> @ansi_256_colors
+      :basic -> @ansi_basic_colors
+      # TODO: Add support for other palettes or custom palettes
+      _ -> @ansi_256_colors # Default to 256
+    end
+
+    palette
+    |> Enum.min_by(fn {_index, palette_rgb} -> color_distance_sq(rgb, palette_rgb) end)
+    |> elem(0)
+  end
+
+  # --- Distance Calculation --- #
+
+  # Removed unused distance/2 function
+  # defp distance(c1, c2), do: :math.sqrt(color_distance_sq(c1, c2))
 end

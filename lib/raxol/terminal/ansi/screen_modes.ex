@@ -319,7 +319,13 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
 
         1 ->
           # Clear from start of line to cursor
-          Raxol.Terminal.ScreenBuffer.clear_region(buffer, 0, cursor_y, cursor_x, cursor_y)
+          Raxol.Terminal.ScreenBuffer.clear_region(
+            buffer,
+            0,
+            cursor_y,
+            cursor_x,
+            cursor_y
+          )
 
         2 ->
           # Clear entire line
@@ -362,7 +368,8 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
         else: :alternate_screen_buffer
 
     # Insert n lines at the current cursor position
-    new_buffer = Raxol.Terminal.ScreenBuffer.insert_lines(buffer, y, n, emulator.style)
+    new_buffer =
+      Raxol.Terminal.ScreenBuffer.insert_lines(buffer, y, n, emulator.style)
 
     # Return the updated emulator
     %{emulator | buffer_key => new_buffer}
@@ -391,7 +398,8 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
         else: :alternate_screen_buffer
 
     # Delete n lines starting from the current cursor position
-    new_buffer = Raxol.Terminal.ScreenBuffer.delete_lines(buffer, y, n, emulator.style)
+    new_buffer =
+      Raxol.Terminal.ScreenBuffer.delete_lines(buffer, y, n, emulator.style)
 
     # Return the updated emulator
     %{emulator | buffer_key => new_buffer}

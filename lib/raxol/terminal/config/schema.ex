@@ -17,9 +17,11 @@ defmodule Raxol.Terminal.Config.Schema do
       display: %{
         width: {:integer, "Terminal width in columns"},
         height: {:integer, "Terminal height in rows"},
-        colors: {:integer, "Number of supported colors (0, 8, 16, 256, or 16777216)"},
-        truecolor: {:boolean, "Whether the terminal supports true color (24-bit)"},
-        unicode: {:boolean, "Whether the terminal supports unicode characters"},
+        colors:
+          {:integer, "Number of supported colors (0, 8, 16, 256, or 16777216)"},
+        truecolor:
+          {:boolean, "Whether the terminal supports true color (24-bit)"},
+        unicode: {:boolean, "Whether the terminal supports unicode characters"}
         # ... other display fields ...
       },
 
@@ -27,7 +29,8 @@ defmodule Raxol.Terminal.Config.Schema do
       input: %{
         mouse: {:boolean, "Whether mouse support is enabled"},
         keyboard: {:boolean, "Whether keyboard support is enabled"},
-        escape_timeout: {:integer, "Timeout for escape sequences in milliseconds"},
+        escape_timeout:
+          {:integer, "Timeout for escape sequences in milliseconds"}
         # ... other input fields ...
       },
 
@@ -35,16 +38,18 @@ defmodule Raxol.Terminal.Config.Schema do
       rendering: %{
         fps: {:integer, "Target frames per second for rendering"},
         double_buffer: {:boolean, "Whether double buffering is enabled"},
-        redraw_mode: {:enum, [:full, :incremental], "How screen updates are handled"},
+        redraw_mode:
+          {:enum, [:full, :incremental], "How screen updates are handled"}
         # ... other rendering fields ...
       },
 
       # ANSI configuration
       ansi: %{
         enabled: {:boolean, "Whether ANSI escape sequences are enabled"},
-        color_mode: {:enum, [:none, :basic, :extended, :truecolor], "ANSI color mode"},
+        color_mode:
+          {:enum, [:none, :basic, :extended, :truecolor], "ANSI color mode"}
         # ... other ANSI fields ...
-      },
+      }
 
       # ... other top-level configuration sections ...
     }
@@ -77,6 +82,7 @@ defmodule Raxol.Terminal.Config.Schema do
 
   # Private function to retrieve type from nested schema
   defp get_type_from_path(_schema, []), do: nil
+
   defp get_type_from_path(schema, [key | rest]) when is_map(schema) do
     case Map.get(schema, key) do
       nil -> nil
@@ -84,5 +90,6 @@ defmodule Raxol.Terminal.Config.Schema do
       value -> if rest == [], do: value, else: nil
     end
   end
+
   defp get_type_from_path(_schema, _path), do: nil
 end

@@ -10,22 +10,20 @@ defmodule Raxol.UI.Theming.Theme do
   """
 
   @type t :: %__MODULE__{
-    id: atom(),
-    name: String.t(),
-    description: String.t(),
-    colors: map(),
-    fonts: map(),
-    component_styles: map()
-  }
+          id: atom(),
+          name: String.t(),
+          description: String.t(),
+          colors: map(),
+          fonts: map(),
+          component_styles: map()
+        }
 
-  defstruct [
-    id: :default,
-    name: "Default Theme",
-    description: "The default Raxol theme",
-    colors: %{},
-    fonts: %{},
-    component_styles: %{}
-  ]
+  defstruct id: :default,
+            name: "Default Theme",
+            description: "The default Raxol theme",
+            colors: %{},
+            fonts: %{},
+            component_styles: %{}
 
   # Store registered themes
   @themes_table :themes
@@ -264,7 +262,8 @@ defmodule Raxol.UI.Theming.Theme do
 
   # Private helpers
 
-  defp apply_theme_to_element(%{type: type, attrs: attrs} = element, theme) when is_atom(type) do
+  defp apply_theme_to_element(%{type: type, attrs: attrs} = element, theme)
+       when is_atom(type) do
     # Get component style for this element type
     comp_style = component_style(theme, type)
 
@@ -272,11 +271,12 @@ defmodule Raxol.UI.Theming.Theme do
     themed_attrs = Map.merge(attrs, Map.drop(comp_style, [:children]))
 
     # Apply theme to children recursively
-    themed_children = if Map.has_key?(element, :children) do
-      apply_theme_to_children(Map.get(element, :children), theme)
-    else
-      nil
-    end
+    themed_children =
+      if Map.has_key?(element, :children) do
+        apply_theme_to_children(Map.get(element, :children), theme)
+      else
+        nil
+      end
 
     # Return themed element
     element

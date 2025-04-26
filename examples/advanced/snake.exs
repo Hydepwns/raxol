@@ -8,7 +8,7 @@
 defmodule Snake do
   @behaviour Raxol.App
 
-  alias Raxol.Runtime.Subscription
+  alias Raxol.Core.Runtime.Events.Subscription
 
   import Raxol.Constants, only: [key: 1]
   import Raxol.View

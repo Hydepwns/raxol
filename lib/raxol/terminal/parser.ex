@@ -1,12 +1,17 @@
 defmodule Raxol.Terminal.Parser do
   @moduledoc """
-  Handles the state machine parsing of terminal input streams.
-  Delegates actions (like character processing, command execution) back to the Emulator module.
+  Parses raw byte streams into terminal events and commands.
+  Handles escape sequences (CSI, OSC, DCS, etc.) and plain text.
   """
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Commands.Executor
   alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.Commands.Executor
+  alias Raxol.Terminal.Commands.Modes
+  alias Raxol.Terminal.Commands.Screen
+  alias Raxol.Terminal.Cursor.Movement
+  alias Raxol.Terminal.Cursor.Manager
+  # alias Raxol.Terminal.ANSI.Parser, as: ANSIParser
 
   # Add alias for ScreenModes if mode_enabled? is called directly (it isn't currently)
   # alias Raxol.Terminal.ANSI.ScreenModes
@@ -61,12 +66,6 @@ defmodule Raxol.Terminal.Parser do
   end
 
   # --- Ground State ---
-  # Accepts emulator, parser_state (matching state: :ground), and empty input
-  defp parse_loop(emulator, %State{state: :ground}, <<>>) do
-    # IO.inspect({:parse_loop_ground_empty, parser_state.state, ""}, label: "DEBUG_PARSER")
-    emulator
-  end
-
   # Accepts emulator, parser_state (matching state: :ground), and input starting with ESC
   defp parse_loop(
          emulator,
@@ -499,7 +498,7 @@ defmodule Raxol.Terminal.Parser do
       when final_byte >= 0x40 and final_byte <= 0x7E ->
         # Pass explicit params, intermediates, final_byte to Emulator
         new_emulator =
-          Executor.execute_csi_command(
+          dispatch_csi_command(
             emulator,
             parser_state.params_buffer,
             parser_state.intermediates_buffer,
@@ -570,7 +569,7 @@ defmodule Raxol.Terminal.Parser do
       when final_byte >= 0x40 and final_byte <= 0x7E ->
         # Pass explicit params, intermediates, final_byte to Emulator
         new_emulator =
-          Executor.execute_csi_command(
+          dispatch_csi_command(
             emulator,
             parser_state.params_buffer,
             parser_state.intermediates_buffer,
@@ -644,7 +643,7 @@ defmodule Raxol.Terminal.Parser do
       when final_byte >= 0x40 and final_byte <= 0x7E ->
         # Pass explicit params, intermediates, final_byte to Emulator
         new_emulator =
-          Executor.execute_csi_command(
+          dispatch_csi_command(
             emulator,
             parser_state.params_buffer,
             parser_state.intermediates_buffer,
@@ -683,7 +682,11 @@ defmodule Raxol.Terminal.Parser do
 
   # --- OSC String State ---
   # Accepts emulator, parser_state (matching state: :osc_string), and input
-  defp parse_loop(emulator, %State{state: :osc_string} = parser_state, rest) do
+  defp parse_loop(
+         emulator,
+         %State{state: :osc_string} = parser_state,
+         rest
+       ) do
     # IO.inspect({:parse_loop_osc_string, parser_state.state, rest}, label: "DEBUG_PARSER")
     case rest do
       # Incomplete
@@ -698,18 +701,25 @@ defmodule Raxol.Terminal.Parser do
           rest_after_esc
         )
 
-      # Bell (BEL) can also terminate OSC
-      <<0x07, rest_after_bel::binary>> ->
+      # BEL (7) is another valid terminator for OSC
+      <<7, rest_after_bel::binary>> ->
+        # Call the new Executor module
         new_emulator =
           Executor.execute_osc_command(
             emulator,
             parser_state.payload_buffer
           )
-
+        # TODO: Actually implement execute_osc_command in the new module
         next_parser_state = %{parser_state | state: :ground}
         parse_loop(new_emulator, next_parser_state, rest_after_bel)
 
-      # Collect printable characters for the OSC payload
+      # CAN/SUB abort OSC string -- MOVED BEFORE C0/DEL catch-all
+      <<abort_byte, rest_after_abort::binary>>
+      when abort_byte == 0x18 or abort_byte == 0x1A ->
+        Logger.debug("Aborting OSC String due to CAN/SUB")
+        next_parser_state = %{parser_state | state: :ground}
+        parse_loop(emulator, next_parser_state, rest_after_abort)
+
       # Standard printable ASCII
       <<byte, rest_after_byte::binary>> when byte >= 32 and byte <= 126 ->
         next_parser_state = %{
@@ -719,19 +729,12 @@ defmodule Raxol.Terminal.Parser do
 
         parse_loop(emulator, next_parser_state, rest_after_byte)
 
-      # Ignore C0/DEL bytes within OSC string
+      # Ignore C0/DEL bytes within OSC string -- MOVED AFTER CAN/SUB check
       <<_ignored_byte, rest_after_ignored::binary>> ->
-        # Includes C0 0-31 and DEL 127 (excluding ESC, CAN, SUB which are handled below)
+        # Includes C0 0-31 and DEL 127 (excluding ESC, BEL, CAN, SUB which are handled above)
         Logger.debug("Ignoring C0/DEL byte in OSC String")
         # Stay in state, ignore byte
         parse_loop(emulator, parser_state, rest_after_ignored)
-
-      # CAN/SUB abort OSC string
-      <<abort_byte, rest_after_abort::binary>>
-      when abort_byte == 0x18 or abort_byte == 0x1A ->
-        Logger.debug("Aborting OSC String due to CAN/SUB")
-        next_parser_state = %{parser_state | state: :ground}
-        parse_loop(emulator, next_parser_state, rest_after_abort)
     end
   end
 
@@ -744,12 +747,13 @@ defmodule Raxol.Terminal.Parser do
     case rest do
       # Found ST (ESC \), use literal 92 for '\'
       <<92, rest_after_st::binary>> ->
+        # Call the new Executor module
         new_emulator =
           Executor.execute_osc_command(
             emulator,
             parser_state.payload_buffer
           )
-
+        # TODO: Actually implement execute_osc_command in the new module
         next_parser_state = %{parser_state | state: :ground}
         parse_loop(new_emulator, next_parser_state, rest_after_st)
 
@@ -898,7 +902,8 @@ defmodule Raxol.Terminal.Parser do
     case rest do
       # Found ST (ESC \), use literal 92 for '\'
       <<92, rest_after_st::binary>> ->
-        # Pass explicit params, intermediates, final_byte, payload to Emulator
+        # Completed DCS Sequence
+        # Call the new Executor module
         new_emulator =
           Executor.execute_dcs_command(
             emulator,
@@ -907,7 +912,7 @@ defmodule Raxol.Terminal.Parser do
             parser_state.final_byte,
             parser_state.payload_buffer
           )
-
+        # TODO: Actually implement execute_dcs_command in the new module
         next_parser_state = %{parser_state | state: :ground}
         parse_loop(new_emulator, next_parser_state, rest_after_st)
 
@@ -1008,5 +1013,219 @@ defmodule Raxol.Terminal.Parser do
       Logger.warning("Exceeded DCS intermediate string length limit")
       parser_state
     end
+  end
+
+  # --- ADDED CSI Dispatcher ---
+  # Dispatches CSI commands based on final byte and intermediates
+  defp dispatch_csi_command(
+         emulator,
+         params_buffer,
+         intermediates_buffer,
+         final_byte
+       ) do
+    params = parse_csi_params(params_buffer)
+    intermediates = intermediates_buffer
+
+    case {final_byte, intermediates} do
+      # SGR - Select Graphic Rendition
+      {?m, ""} ->
+        sgr_params = if params == [], do: [0], else: params
+        handle_sgr(emulator, sgr_params)
+
+      # --- Scrolling ---
+      # SU - Scroll Up
+      {?S, ""} ->
+        count = get_csi_param(params, 1)
+        Screen.scroll_up(emulator, count)
+
+      # SD - Scroll Down
+      {?T, ""} ->
+        count = get_csi_param(params, 1)
+        Screen.scroll_down(emulator, count)
+
+      # --- Scrolling Region ---
+      # DECSTBM - Set Top and Bottom Margins
+      {?r, ""} ->
+        handle_set_scroll_region(emulator, params)
+
+      # --- DEC Private Mode Set/Reset ---
+      # DECSET - Set Mode
+      {?h, "?"} ->
+        Modes.handle_dec_private_mode(emulator, params, :set)
+
+      {?h, ""} ->
+        Modes.handle_ansi_mode(emulator, params, :set)
+
+      # DECRST - Reset Mode
+      {?l, "?"} ->
+        Modes.handle_dec_private_mode(emulator, params, :reset)
+
+      {?l, ""} ->
+        Modes.handle_ansi_mode(emulator, params, :reset)
+
+      # --- Cursor Movement ---
+      # CUU - Cursor Up
+      {?A, ""} ->
+        count = get_csi_param(params, 1)
+        %{emulator | cursor: Movement.move_up(emulator.cursor, count)}
+
+      # CUD - Cursor Down
+      {?B, ""} ->
+        count = get_csi_param(params, 1)
+        %{emulator | cursor: Movement.move_down(emulator.cursor, count)}
+
+      # CUF - Cursor Forward
+      {?C, ""} ->
+        count = get_csi_param(params, 1)
+        %{emulator | cursor: Movement.move_right(emulator.cursor, count)}
+
+      # CUB - Cursor Back
+      {?D, ""} ->
+        count = get_csi_param(params, 1)
+        %{emulator | cursor: Movement.move_left(emulator.cursor, count)}
+
+      # CUP - Cursor Position
+      {?H, ""} ->
+        handle_cursor_position(emulator, params)
+
+      # HVP - Horizontal and Vertical Position (same as CUP)
+      {?f, ""} ->
+        handle_cursor_position(emulator, params)
+
+      # CNL - Cursor Next Line
+      {?E, ""} ->
+        count = get_csi_param(params, 1)
+        cursor = emulator.cursor
+        # Move to col 0
+        cursor = %{cursor | position: {0, elem(cursor.position, 1)}}
+        cursor = Movement.move_down(cursor, count)
+        %{emulator | cursor: cursor}
+
+      # CPL - Cursor Previous Line
+      {?F, ""} ->
+        count = get_csi_param(params, 1)
+        cursor = emulator.cursor
+        # Move to col 0
+        cursor = %{cursor | position: {0, elem(cursor.position, 1)}}
+        cursor = Movement.move_up(cursor, count)
+        %{emulator | cursor: cursor}
+
+      # CHA - Cursor Horizontal Absolute
+      {?G, ""} ->
+        col = get_csi_param(params, 1)
+        {_, row} = emulator.cursor.position
+        %{emulator | cursor: Manager.move_to(emulator.cursor, col, row)}
+
+      # VPA - Vertical Position Absolute
+      {?d, ""} ->
+        row = get_csi_param(params, 1)
+        {col, _} = emulator.cursor.position
+        %{emulator | cursor: Manager.move_to(emulator.cursor, col, row)}
+
+      # --- Editing ---
+      # ED - Erase in Display (clear screen)
+      {?J, ""} ->
+        # Default 0
+        n = get_csi_param(params, 1, 0)
+        Screen.clear_screen(emulator, n)
+
+      # EL - Erase in Line (clear line)
+      {?K, ""} ->
+        # Default 0
+        n = get_csi_param(params, 1, 0)
+        Screen.clear_line(emulator, n)
+
+      # IL - Insert Line
+      {?L, ""} ->
+        n = get_csi_param(params, 1)
+        Screen.insert_lines(emulator, n)
+
+      # DL - Delete Line
+      {?M, ""} ->
+        n = get_csi_param(params, 1)
+        Screen.delete_lines(emulator, n)
+
+      # --- Cursor Style/Visibility ---
+      # DECSCUSR - Set Cursor Style (assuming from intermediate " " and final q)
+      {?q, " "} ->
+        # Default depends on terminal
+        n = get_csi_param(params, 1, 1)
+        handle_cursor_style(emulator, n)
+
+      # --- Device Status Reports ---
+      # DSR - Device Status Report
+      {?n, ""} ->
+        n = get_csi_param(params, 1)
+        handle_device_status_report(emulator, n)
+
+      # --- Default case ---
+      _ ->
+        Logger.debug(
+          "Unhandled CSI sequence in dispatch: final=#{final_byte}, intermediates=#{inspect(intermediates)}, params=#{inspect(params)}"
+        )
+
+        emulator
+    end
+  end
+
+  # --- ADDED Placeholder Helper Functions ---
+  # These need to be implemented based on the logic from the old executor
+
+  defp parse_csi_params(params_buffer) do
+    # Simplified placeholder - assumes Parser.parse_params exists or similar logic
+    String.split(params_buffer, ";", trim: true)
+    |> Enum.map(fn
+      # Empty param
+      "" ->
+        nil
+
+      s ->
+        try do
+          String.to_integer(s)
+        rescue
+          # Invalid integer
+          _ -> nil
+        end
+    end)
+  end
+
+  defp get_csi_param(params, index, default \\ 1) do
+    # Simplified placeholder - assumes Parser.get_param exists or similar logic
+    Enum.at(params, index - 1) || default
+  end
+
+  defp handle_sgr(emulator, params) do
+    # Placeholder - Needs logic from old executor's handle_sgr
+    # This involves iterating params and applying TextFormatting based on codes
+    Logger.debug("SGR called with params: #{inspect(params)}")
+    # Example call (incorrect, just placeholder):
+    # new_style = Enum.reduce(params, emulator.style, &TextFormatting.apply_attribute/2)
+    # %{emulator | style: new_style}
+    # Return unchanged for now
+    emulator
+  end
+
+  defp handle_set_scroll_region(emulator, params) do
+    # Placeholder - Needs logic from old executor's handle_set_scroll_region
+    Logger.debug("DECSTBM called with params: #{inspect(params)}")
+    emulator
+  end
+
+  defp handle_cursor_position(emulator, params) do
+    # Placeholder - Needs logic from old executor's handle_cursor_position
+    Logger.debug("CUP/HVP called with params: #{inspect(params)}")
+    emulator
+  end
+
+  defp handle_cursor_style(emulator, param) do
+    # Placeholder - Needs logic from old executor's handle_cursor_style
+    Logger.debug("DECSCUSR called with param: #{inspect(param)}")
+    emulator
+  end
+
+  defp handle_device_status_report(emulator, param) do
+    # Placeholder - Needs logic from old executor's handle_device_status_report
+    Logger.debug("DSR called with param: #{inspect(param)}")
+    emulator
   end
 end

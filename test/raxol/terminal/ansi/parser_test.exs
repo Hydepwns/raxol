@@ -14,22 +14,26 @@ defmodule Raxol.Terminal.ANSI.ParserTest do
   end
 
   test "parses SGR (color and attribute) sequences" do
-    assert Parser.parse_sequence("\e[31m") == {:text_attributes, [{:foreground_basic, 1}]}
-    assert Parser.parse_sequence("\e[42m") == {:text_attributes, [{:background_basic, 2}]}
+    assert Parser.parse_sequence("\e[31m") ==
+             {:text_attributes, [{:foreground_basic, 1}]}
+
+    assert Parser.parse_sequence("\e[42m") ==
+             {:text_attributes, [{:background_basic, 2}]}
+
     assert Parser.parse_sequence("\e[1m") == {:text_attributes, [:bold]}
     assert Parser.parse_sequence("\e[0m") == {:reset_attributes}
 
     # Multiple attributes
     assert Parser.parse_sequence("\e[31;1;4m") ==
-      {:text_attributes, [:underline, :bold, {:foreground_basic, 1}]}
+             {:text_attributes, [:underline, :bold, {:foreground_basic, 1}]}
 
     # 256-color mode
     assert Parser.parse_sequence("\e[38;5;100m") ==
-      {:text_attributes, [{:foreground_256, 100}]}
+             {:text_attributes, [{:foreground_256, 100}]}
 
     # RGB color
     assert Parser.parse_sequence("\e[38;2;100;150;200m") ==
-      {:text_attributes, [{:foreground_true, 100, 150, 200}]}
+             {:text_attributes, [{:foreground_true, 100, 150, 200}]}
   end
 
   test "parses screen manipulation sequences" do
@@ -54,7 +58,8 @@ defmodule Raxol.Terminal.ANSI.ParserTest do
   end
 
   test "parses OSC sequences" do
-    assert Parser.parse_sequence("\e]0;window title\a") == {:osc, 0, "window title"}
+    assert Parser.parse_sequence("\e]0;window title\a") ==
+             {:osc, 0, "window title"}
   end
 
   test "handles unknown sequences" do

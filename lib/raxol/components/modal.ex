@@ -109,6 +109,7 @@ defmodule Raxol.Components.Modal do
   * `:title_style` - Style for the modal title
   * `:content_style` - Style for the modal content area
   * `:actions_style` - Style for the modal action buttons area
+  * `:on_escape` - Optional callback function to execute when Escape key is pressed
 
   ## Returns
 
@@ -135,18 +136,49 @@ defmodule Raxol.Components.Modal do
     # Extract options with defaults
     id = Keyword.get(opts, :id, "modal")
     width = Keyword.get(opts, :width, 50)
-    # Optional height
     height = Keyword.get(opts, :height)
-    # Example default style
     style = Keyword.get(opts, :style, %{border: :double})
     title_style = Keyword.get(opts, :title_style, %{align: :center})
     content_style = Keyword.get(opts, :content_style, %{padding: 1})
     actions_style = Keyword.get(opts, :actions_style, %{padding_top: 1})
-    # on_escape = Keyword.get(opts, :on_escape)
+    # Extract the callback
+    on_escape_callback = Keyword.get(opts, :on_escape)
     # centered = Keyword.get(opts, :centered, true) # Centering deferred
+
+    # --- Define Key Handler ---
+    # NOTE: This assumes Layout.box supports :on_key and the event format.
+    # The return value (:handled/:passthrough) might need adjustment based on the event system.
+    key_handler =
+      if on_escape_callback do
+        fn key_event ->
+          case key_event do
+            # Match common key event structures for Escape
+            {:key_press, :escape, _modifiers} ->
+              on_escape_callback.()
+              # Indicate event was handled
+              :handled
+
+            %{type: :keypress, key: :escape} ->
+              on_escape_callback.()
+              # Indicate event was handled
+              :handled
+
+            _ ->
+              # Ignore other keys
+              :passthrough
+          end
+        end
+      else
+        nil
+      end
 
     # Build props for the main panel
     container_props = [id: id, style: style]
+
+    container_props =
+      if key_handler,
+        do: Keyword.put(container_props, :on_key, key_handler),
+        else: container_props
 
     container_props =
       if not is_nil(width),
@@ -163,7 +195,7 @@ defmodule Raxol.Components.Modal do
           ),
         else: container_props
 
-    # TODO: Add on_key handling if/when View DSL supports it
+    # TODO: Verify Layout.box supports :on_key and handles focus correctly for this.
 
     # Build children content first, capturing results
     title_content =
@@ -202,7 +234,7 @@ defmodule Raxol.Components.Modal do
       |> Enum.reject(&is_nil(&1))
       |> List.flatten()
 
-    # Use box with prepared children
+    # Use box with prepared children, passing container_props which now includes :on_key
     Layout.box container_props do
       children_result
     end
@@ -219,6 +251,14 @@ defmodule Raxol.Components.Modal do
   * `on_cancel` - Function to call when user cancels
   * `opts` - Options for customizing the modal (same as `render/4`)
 
+  ## Options (in addition to `render/4` options)
+
+  * `:yes_text` - Text for the confirmation button (default: "Yes")
+  * `:no_text` - Text for the cancellation button (default: "No")
+  * `:yes_style` - Style for the confirmation button (default: `{fg: :white, bg: :blue}`)
+  * `:no_style` - Style for the cancellation button (default: `{}`)
+  * `:default` - Which button is activated by default on Enter (`:confirm` or `:cancel`, default: `:confirm`)
+
   ## Returns
 
   A view element representing the confirmation dialog.
@@ -231,7 +271,8 @@ defmodule Raxol.Components.Modal do
     "Are you sure you want to delete this item? This action cannot be undone.",
     fn -> send(self(), {:delete_confirmed}) end,
     fn -> send(self(), {:delete_cancelled}) end,
-    width: 40
+    width: 40,
+    default: :cancel
   )
   ```
   """
@@ -242,9 +283,17 @@ defmodule Raxol.Components.Modal do
     no_text = Keyword.get(opts, :no_text, "No")
     yes_style = Keyword.get(opts, :yes_style, %{fg: :white, bg: :blue})
     no_style = Keyword.get(opts, :no_style, %{})
+    # Default to confirm
+    default_action = Keyword.get(opts, :default, :confirm)
 
     # Create content function that returns the message text
     message_fn = fn -> Components.text(message) end
+
+    # Determine focus based on default
+    # NOTE: This assumes focus can be set via props, which might need adjustment
+    # in the Button component or Layout system.
+    yes_focused = default_action == :confirm
+    no_focused = default_action == :cancel
 
     # Create confirmation modal
     render(
@@ -258,6 +307,8 @@ defmodule Raxol.Components.Modal do
                 Components.button(no_text,
                   id: "#{title}_no",
                   style: no_style,
+                  # Pass focus state
+                  focused: no_focused,
                   on_click: on_cancel
                 )
 
@@ -265,11 +316,18 @@ defmodule Raxol.Components.Modal do
                 Components.button(yes_text,
                   id: "#{title}_yes",
                   style: yes_style,
+                  # Pass focus state
+                  focused: yes_focused,
                   on_click: on_confirm
                 )
 
               # Return the buttons rather than just assigning them
-              [no_button, yes_button]
+              # Order might matter for tab navigation if implemented
+              if default_action == :confirm do
+                [no_button, yes_button]
+              else
+                [yes_button, no_button]
+              end
             end
           )
 
@@ -280,6 +338,7 @@ defmodule Raxol.Components.Modal do
         [
           id: "confirm_#{String.downcase(title) |> String.replace(" ", "_")}",
           width: 40,
+          # Attempt to handle escape key via on_escape, assuming render/4 supports it
           on_escape: on_cancel
         ],
         opts

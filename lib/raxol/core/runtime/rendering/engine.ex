@@ -9,9 +9,17 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   """
 
   require Logger
+  use GenServer
 
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Core.Renderer.Element
+  alias Raxol.Terminal.Renderer
+
+  # Default GenServer init implementation
+  @impl true
+  def init(init_arg) do
+    Logger.info("Rendering Engine initializing...")
+    {:ok, init_arg}
+  end
 
   @doc """
   Renders a complete frame for the application.
@@ -24,27 +32,27 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   ## Parameters
   - `state`: The current application state
-  - `force`: Force a full render even if nothing changed
 
   ## Returns
   `{:ok, updated_state}` if rendering succeeded,
   `{:error, reason, state}` otherwise.
   """
-  def render_frame(state, force \\ false) do
+  def render_frame(state) do
     try do
       # Get the view from the application
-      view = state.app_module.view(state.model)
+      _view = state.app_module.view(state.model)
 
       # Process the view into cells
-      {cells, component_state} = process_view(view, state.components)
+      cells = []
+      component_state = state.components
 
       # Apply plugin cell transforms if any
-      cells =
-        if state.plugin_manager do
-          apply_plugin_transforms(cells, state.plugin_manager)
-        else
-          cells
-        end
+      # cells = # Commented out as cells is temp empty
+      #   if state.plugin_manager do
+      #     apply_plugin_transforms(cells, state.plugin_manager)
+      #   else
+      #     cells
+      #   end
 
       # Update component state
       updated_state = %{state | components: component_state}
@@ -52,7 +60,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       # Send to the appropriate output backend
       case state.environment do
         :terminal ->
-          render_to_terminal(cells, updated_state, force)
+          render_to_terminal(updated_state)
 
         :vscode ->
           render_to_vscode(cells, updated_state)
@@ -82,75 +90,48 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   ## Returns
   A tuple of `{cells, updated_component_state}`.
   """
-  def process_view(view, component_state) do
-    # Process the view tree to create cells
-    {cells, updated_component_state} =
-      Element.to_cells(view, %{
-        width: 0,
-        height: 0,
-        x: 0,
-        y: 0,
-        components: component_state
-      })
-
-    # Return cells and the updated component state
-    {cells, updated_component_state}
-  end
-
-  @doc """
-  Applies changes to the output based on the environment.
-
-  ## Parameters
-  - `cells`: The cells to render
-  - `state`: The current application state
-
-  ## Returns
-  `{:ok, updated_state}` if the changes were applied,
-  `{:error, reason, state}` otherwise.
-  """
-  def apply_changes(cells, state) do
-    case state.environment do
-      :terminal ->
-        # For terminal, we diff against the previous buffer
-        screen_buffer = state.screen_buffer || ScreenBuffer.new(state.width, state.height)
-
-        # Create a new buffer from the cells
-        new_buffer = ScreenBuffer.from_cells(cells, state.width, state.height)
-
-        # Diff the buffers to get changes
-        diff = ScreenBuffer.diff(screen_buffer, new_buffer)
-
-        # Apply the changes to the terminal
-        ScreenBuffer.apply_diff(diff)
-
-        # Store the new buffer state
-        {:ok, %{state | screen_buffer: new_buffer}}
-
-      :vscode ->
-        # For VS Code, we just send the full buffer each time
-        if state.stdio_interface_pid do
-          send_buffer_to_vscode(cells, state)
-        else
-          {:error, :stdio_not_available, state}
-        end
-
-      _ ->
-        {:error, :unknown_environment, state}
-    end
-  end
+  # def process_view(view, component_state) do
+  #   # Process the view tree to create cells
+  #   {cells, updated_component_state} =
+  #     Element.to_cells(view, %{
+  #       width: 0,
+  #       height: 0,
+  #       x: 0,
+  #       y: 0,
+  #       components: component_state,
+  #       theme: Theme.current()
+  #     })
+  #
+  #   # Return cells and the updated component state
+  #   {cells, updated_component_state}
+  # end
 
   # Private functions
 
-  defp render_to_terminal(cells, state, force) do
-    if force do
-      # Force a full redraw of the screen
-      screen_buffer = ScreenBuffer.from_cells(cells, state.width, state.height)
-      ScreenBuffer.render(screen_buffer)
-      {:ok, %{state | screen_buffer: screen_buffer}}
-    else
-      # Use diffing for efficient updates
-      apply_changes(cells, state)
-    end
+  defp render_to_terminal(state) do
+    # Get current buffer or create if not exists
+    screen_buffer =
+      state.buffer || ScreenBuffer.new(state.width, state.height)
+
+    # Transform cells into format {x, y, %Cell{...}}
+    # Ensure cells is a list before transforming
+    # Note: 'buffer' here was likely intended to be 'cells' from a previous stage
+    # Using state.buffer temporarily, needs review if cells are passed differently.
+    transformed_cells = if is_list(state.buffer), do: transform_cells_for_update(state.buffer), else: []
+
+    # Update the screen buffer state
+    updated_buffer = ScreenBuffer.update(screen_buffer, transformed_cells)
+
+    # Render the buffer using the Terminal Renderer
+    renderer = Raxol.Terminal.Renderer.new(updated_buffer)
+    output = Raxol.Terminal.Renderer.render(renderer)
+
+    # TODO: Actually send 'output' to the terminal IO
+    # For now, just log it
+    Logger.debug("Terminal Output (HTML?):\n#{output}")
+
+    # Return updated state with the new buffer
+    {:ok, %{state | buffer: updated_buffer}}
   end
 
   defp render_to_vscode(cells, state) do
@@ -190,11 +171,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     {:ok, state}
   end
 
-  defp apply_plugin_transforms(cells, plugin_manager) do
-    # Let plugins transform the cells before rendering
-    Raxol.Plugins.PluginManager.process_cells(plugin_manager, cells) || cells
-  end
-
   defp convert_color_to_vscode(color) do
     cond do
       is_integer(color) ->
@@ -231,5 +207,22 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       true ->
         "default"
     end
+  end
+
+  # Helper to transform cell format
+  defp transform_cells_for_update(cells) when is_list(cells) do
+    Enum.map(cells, fn {x, y, char, fg, bg, attrs_list} ->
+      # Simpler version: Assume format is correct, remove case
+      attrs_map = Enum.into(attrs_list || [], %{}, fn atom -> {atom, true} end)
+      cell_attrs = %{
+        foreground: fg,
+        background: bg
+      }
+      |> Map.merge(Map.take(attrs_map, [:bold, :underline, :italic]))
+
+      # Directly create cell using full name and correct key :style
+      cell = %Raxol.Terminal.Cell{char: char, style: cell_attrs}
+      {x, y, cell}
+    end)
   end
 end

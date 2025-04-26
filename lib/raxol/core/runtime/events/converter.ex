@@ -183,19 +183,39 @@ defmodule Raxol.Core.Runtime.Events.Converter do
     # Convert key string to atom or code
     key_value =
       case key do
-        "Enter" -> :enter
-        "Escape" -> :escape
-        "Backspace" -> :backspace
-        "Tab" -> :tab
-        "Space" -> :space
-        "ArrowLeft" -> :arrow_left
-        "ArrowRight" -> :arrow_right
-        "ArrowUp" -> :arrow_up
-        "ArrowDown" -> :arrow_down
+        "Enter" ->
+          :enter
+
+        "Escape" ->
+          :escape
+
+        "Backspace" ->
+          :backspace
+
+        "Tab" ->
+          :tab
+
+        "Space" ->
+          :space
+
+        "ArrowLeft" ->
+          :arrow_left
+
+        "ArrowRight" ->
+          :arrow_right
+
+        "ArrowUp" ->
+          :arrow_up
+
+        "ArrowDown" ->
+          :arrow_down
+
         # For regular characters, use the first character's code point
         _ when is_binary(key) and byte_size(key) == 1 ->
           :binary.first(key)
-        _ -> key
+
+        _ ->
+          key
       end
 
     # Convert modifiers

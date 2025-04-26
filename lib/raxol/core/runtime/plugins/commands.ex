@@ -10,14 +10,20 @@ defmodule Raxol.Core.Runtime.Plugins.Commands do
 
   use GenServer
 
-  alias Raxol.Core.Runtime.Lifecycle
+  # alias Raxol.Core.Runtime.Plugins.CommandRegistry # Unused
+  # alias Raxol.Core.Runtime.Events.Dispatcher # Unused
+  # alias Raxol.Core.Runtime.Lifecycle # Unused
+
+  require Logger
 
   # State stored in the process
   defmodule State do
     @moduledoc false
     defstruct [
-      commands: %{}, # Map of command_name to {handler, options}
-      help_text: %{} # Map of command_name to help text
+      # Map of command_name to {handler, options}
+      commands: %{},
+      # Map of command_name to help text
+      help_text: %{}
     ]
   end
 
@@ -47,9 +53,12 @@ defmodule Raxol.Core.Runtime.Plugins.Commands do
   - `{:error, reason}` for other errors
   """
   @spec register(String.t(), module(), String.t(), keyword()) ::
-    :ok | {:error, term()}
+          :ok | {:error, term()}
   def register(command_name, handler, help_text, options \\ []) do
-    GenServer.call(__MODULE__, {:register, command_name, handler, help_text, options})
+    GenServer.call(
+      __MODULE__,
+      {:register, command_name, handler, help_text, options}
+    )
   end
 
   @doc """
@@ -121,14 +130,18 @@ defmodule Raxol.Core.Runtime.Plugins.Commands do
 
   @impl true
   def init(_opts) do
-    # Subscribe to lifecycle events
-    Lifecycle.subscribe(:shutdown, __MODULE__)
-
-    {:ok, %State{}}
+    registry = Raxol.Core.Runtime.Plugins.CommandRegistry.new()
+    # Subscribe to system shutdown event for cleanup
+    # Raxol.Core.Runtime.Events.Dispatcher.subscribe(:shutdown, {__MODULE__, :handle_shutdown})
+    {:ok, %{registry: registry}}
   end
 
   @impl true
-  def handle_call({:register, command_name, handler, help_text, options}, _from, state) do
+  def handle_call(
+        {:register, command_name, handler, help_text, options},
+        _from,
+        state
+      ) do
     if Map.has_key?(state.commands, command_name) do
       {:reply, {:error, :already_registered}, state}
     else
@@ -167,14 +180,16 @@ defmodule Raxol.Core.Runtime.Plugins.Commands do
 
   @impl true
   def handle_call(:list_commands, _from, state) do
-    commands = Enum.map(state.commands, fn {name, {handler, options}} ->
-      {name, %{
-        handler: handler,
-        help: Map.get(state.help_text, name, ""),
-        options: options
-      }}
-    end)
-    |> Map.new()
+    commands =
+      Enum.map(state.commands, fn {name, {handler, options}} ->
+        {name,
+         %{
+           handler: handler,
+           help: Map.get(state.help_text, name, ""),
+           options: options
+         }}
+      end)
+      |> Map.new()
 
     {:reply, commands, state}
   end
@@ -193,18 +208,26 @@ defmodule Raxol.Core.Runtime.Plugins.Commands do
     {:noreply, state}
   end
 
+  # TODO: Add handle_shutdown callback
+  def handle_shutdown(reason, state) do
+    Logger.info("[Commands Plugin] Received shutdown signal: #{inspect(reason)}. Cleaning up command registry.")
+    # Perform any necessary cleanup for the command registry
+    {:noreply, state}
+  end
+
   # Private functions
 
   defp execute_safely(handler, args, context) do
-    task = Task.Supervisor.async_nolink(Raxol.Core.Runtime.TaskSupervisor, fn ->
-      try do
-        apply(handler, :execute, [args, context])
-      rescue
-        error -> {:error, "Plugin command error: #{inspect(error)}"}
-      catch
-        _kind, value -> {:error, "Plugin command error: #{inspect(value)}"}
-      end
-    end)
+    task =
+      Task.Supervisor.async_nolink(Raxol.Core.Runtime.TaskSupervisor, fn ->
+        try do
+          apply(handler, :execute, [args, context])
+        rescue
+          error -> {:error, "Plugin command error: #{inspect(error)}"}
+        catch
+          _kind, value -> {:error, "Plugin command error: #{inspect(value)}"}
+        end
+      end)
 
     try do
       # Set timeout to prevent hanging commands
@@ -213,7 +236,8 @@ defmodule Raxol.Core.Runtime.Plugins.Commands do
       case result do
         {:ok, _} = success -> success
         {:error, _} = error -> error
-        other -> {:ok, other}  # Wrap bare returns for consistency
+        # Wrap bare returns for consistency
+        other -> {:ok, other}
       end
     catch
       :exit, _ -> {:error, :timeout}

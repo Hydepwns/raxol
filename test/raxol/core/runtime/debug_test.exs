@@ -47,7 +47,8 @@ defmodule Raxol.Core.Runtime.DebugTest do
 
   describe "capture_state/2" do
     test "captures basic state info", %{state: state} do
-      result = Debug.capture_state(state, include_model: false, include_buffer: false)
+      result =
+        Debug.capture_state(state, include_model: false, include_buffer: false)
 
       assert result.app_module == TestApp
       assert result.app_name == :test_app
@@ -61,7 +62,8 @@ defmodule Raxol.Core.Runtime.DebugTest do
     end
 
     test "includes model when requested", %{state: state} do
-      result = Debug.capture_state(state, include_model: true, include_buffer: false)
+      result =
+        Debug.capture_state(state, include_model: true, include_buffer: false)
 
       assert Map.has_key?(result, :model)
       assert result.model.counter == 10
@@ -74,7 +76,8 @@ defmodule Raxol.Core.Runtime.DebugTest do
     end
 
     test "includes buffer when requested", %{state: state} do
-      result = Debug.capture_state(state, include_model: false, include_buffer: true)
+      result =
+        Debug.capture_state(state, include_model: false, include_buffer: true)
 
       assert Map.has_key?(result, :buffer)
       assert result.buffer.width == 100
@@ -120,36 +123,45 @@ defmodule Raxol.Core.Runtime.DebugTest do
   describe "log/4" do
     test "logs messages at specified levels", %{state: state} do
       # Debug level
-      log = capture_log(fn ->
-        Debug.log(state, :debug, "Debug message")
-      end)
+      log =
+        capture_log(fn ->
+          Debug.log(state, :debug, "Debug message")
+        end)
+
       assert log =~ "Debug message"
 
       # Info level
-      log = capture_log(fn ->
-        Debug.log(state, :info, "Info message")
-      end)
+      log =
+        capture_log(fn ->
+          Debug.log(state, :info, "Info message")
+        end)
+
       assert log =~ "Info message"
 
       # Warning level
-      log = capture_log(fn ->
-        Debug.log(state, :warn, "Warning message")
-      end)
+      log =
+        capture_log(fn ->
+          Debug.log(state, :warn, "Warning message")
+        end)
+
       assert log =~ "Warning message"
 
       # Error level
-      log = capture_log(fn ->
-        Debug.log(state, :error, "Error message")
-      end)
+      log =
+        capture_log(fn ->
+          Debug.log(state, :error, "Error message")
+        end)
+
       assert log =~ "Error message"
     end
 
     test "includes metadata in log", %{state: state} do
       metadata = [custom_field: "custom_value"]
 
-      log = capture_log(fn ->
-        Debug.log(state, :info, "Message with metadata", metadata)
-      end)
+      log =
+        capture_log(fn ->
+          Debug.log(state, :info, "Message with metadata", metadata)
+        end)
 
       assert log =~ "Message with metadata"
       # Metadata is included but not directly visible in the log message
@@ -159,14 +171,18 @@ defmodule Raxol.Core.Runtime.DebugTest do
     test "doesn't log when debug_mode is false except errors", %{state: state} do
       state = %{state | debug_mode: false}
 
-      log = capture_log(fn ->
-        Debug.log(state, :debug, "Should not be logged")
-      end)
+      log =
+        capture_log(fn ->
+          Debug.log(state, :debug, "Should not be logged")
+        end)
+
       assert log == ""
 
-      log = capture_log(fn ->
-        Debug.log(state, :error, "Should still be logged")
-      end)
+      log =
+        capture_log(fn ->
+          Debug.log(state, :error, "Should still be logged")
+        end)
+
       assert log =~ "Should still be logged"
     end
   end
@@ -231,7 +247,7 @@ defmodule Raxol.Core.Runtime.DebugTest do
       # We can test private functions by calling them directly with :erlang.apply/3
       assert :erlang.apply(Debug, :format_bytes, [500]) == "500 B"
       assert :erlang.apply(Debug, :format_bytes, [1500]) =~ "KB"
-      assert :erlang.apply(Debug, :format_bytes, [1500000]) =~ "MB"
+      assert :erlang.apply(Debug, :format_bytes, [1_500_000]) =~ "MB"
     end
   end
 end

@@ -9,7 +9,7 @@ defmodule Commands do
   @behaviour Raxol.App
   use Raxol.View
 
-  alias Raxol.Runtime.Command
+  alias Raxol.Core.Runtime.Command
 
   def init(_context), do: %{commands: %{}, next_id: 0, executed_commands: []}
 

@@ -17,34 +17,12 @@ defmodule Raxol.Terminal.Emulator do
   require Logger
 
   @dialyzer [
-    {:nowarn_function, [
-      resize: 3,
-      get_cursor_position: 1,
-      map_charset_code_to_atom: 1,
-      index_to_gset_atom: 1
-    ]}
+    {:nowarn_function,
+     [
+       resize: 3,
+       get_cursor_position: 1
+     ]}
   ]
-
-  # Constants for control characters
-  @escape_char 27
-  @compile {:unused_attr, :csi_char}
-  @csi_char ?[
-  @compile {:unused_attr, :dcs_char}
-  @dcs_char ?P
-  @compile {:unused_attr, :osc_char}
-  @osc_char ?]
-  @compile {:unused_attr, :pm_char}
-  @pm_char ?^
-  @compile {:unused_attr, :apc_char}
-  @apc_char ?_
-  @compile {:unused_attr, :sos_char}
-  @sos_char ?X
-  @compile {:unused_attr, :st_char}
-  @st_char 92
-  @compile {:unused_attr, :ss2_char}
-  @ss2_char ?N
-  @compile {:unused_attr, :ss3_char}
-  @ss3_char ?O
 
   # Constants for simple C0 codes - used by ControlCodes
   @nul 0
@@ -63,9 +41,12 @@ defmodule Raxol.Terminal.Emulator do
 
   # Constants for simple control codes - used by parser
   @compile {:unused_attr, :sp}
-  @sp 32
   @compile {:unused_attr, :us}
-  @us 31
+
+  @esc 27 # Escape character
+
+  # Define escape_char, even if not used currently
+  @escape_char @esc
 
   @type cursor_style_type ::
           :blinking_block
@@ -703,82 +684,6 @@ defmodule Raxol.Terminal.Emulator do
     # 0-based calculation, stop at 1, 9, 17, ...
     Enum.to_list(0..div(width - 1, 8))
     |> Enum.map(&(&1 * 8))
-  end
-
-  # Helper to map gset index (0-3) to atom (:g0-:g3)
-  @dialyzer {:nowarn_function, index_to_gset_atom: 1}
-  defp index_to_gset_atom(0), do: :g0
-  defp index_to_gset_atom(1), do: :g1
-  defp index_to_gset_atom(2), do: :g2
-  defp index_to_gset_atom(3), do: :g3
-  # Should not happen
-  defp index_to_gset_atom(_), do: nil
-
-  # Helper to map charset designation code to charset atom
-  @dialyzer {:nowarn_function, map_charset_code_to_atom: 1}
-  defp map_charset_code_to_atom(charset_code) do
-    case charset_code do
-      ?B ->
-        :us_ascii
-
-      ?0 ->
-        :dec_special_graphics
-
-      # United Kingdom
-      ?A ->
-        :uk
-
-      ?4 ->
-        :dutch
-
-      ?5 ->
-        :finnish
-
-      # Alternative code
-      ?C ->
-        :finnish
-
-      # Alternative code
-      ?f ->
-        :finnish
-
-      ?R ->
-        :french
-
-      ?Q ->
-        :french_canadian
-
-      ?K ->
-        :german
-
-      ?Y ->
-        :italian
-
-      ?Z ->
-        :spanish
-
-      ?H ->
-        :swedish
-
-      # Alternative code
-      ?7 ->
-        :swedish
-
-      ?= ->
-        :swiss
-
-      ?> ->
-        :dec_technical
-
-      # Add other mappings as needed (e.g., Cyrillic, Greek, Hebrew)
-      _ ->
-        Logger.warning(
-          "Unhandled charset designation code: #{<<charset_code>>} (#{charset_code})"
-        )
-
-        # Return nil for unhandled codes
-        nil
-    end
   end
 
   @doc """
