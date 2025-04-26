@@ -7,6 +7,9 @@ defmodule Raxol.Terminal.Config.Profiles do
   """
 
   alias Raxol.Terminal.Config.{Persistence, Validation, Defaults}
+  # alias Raxol.Core.Config # Unused
+  # alias Raxol.UI.Theming.Theme # Unused
+  # alias Raxol.UI.Theming.Colors # Unused
 
   @profiles_dir "priv/config/profiles"
   @profile_ext ".json"
@@ -110,6 +113,7 @@ defmodule Raxol.Terminal.Config.Profiles do
   """
   def create_default_profile(name) do
     config = Defaults.generate_default_config()
+
     case save_profile(name, config) do
       :ok -> {:ok, config}
       error -> error
@@ -137,6 +141,7 @@ defmodule Raxol.Terminal.Config.Profiles do
           {:ok, validated_config} -> save_profile(name, validated_config)
           error -> error
         end
+
       false ->
         {:error, "Profile '#{name}' not found"}
     end
@@ -161,6 +166,7 @@ defmodule Raxol.Terminal.Config.Profiles do
           :ok -> {:ok, config}
           error -> error
         end
+
       error ->
         error
     end
@@ -184,11 +190,31 @@ defmodule Raxol.Terminal.Config.Profiles do
         :ok
 
       true ->
-        {:error, "Profile name contains invalid characters (allowed: letters, numbers, spaces, underscores, hyphens, periods)"}
+        {:error,
+         "Profile name contains invalid characters (allowed: letters, numbers, spaces, underscores, hyphens, periods)"}
     end
   end
 
   defp validate_profile_name(_) do
     {:error, "Profile name must be a string"}
   end
+
+  # Define types locally or import/alias if needed
+  # Example types (adjust based on actual usage):
+  @type terminal_type ::
+          :iterm2
+          | :windows_terminal
+          | :xterm
+          | :screen
+          | :kitty
+          | :alacritty
+          | :konsole
+          | :gnome_terminal
+          | :vscode
+          | :unknown
+  @type color_mode :: :basic | :true_color | :palette
+  @type theme_map :: %{atom() => String.t()}
+  @type background_type :: :solid | :transparent | :image | :animated
+  @type animation_type :: :gif | :video | :shader | :particle
+  @type config :: map() # Assuming a generic map for now
 end

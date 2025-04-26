@@ -22,11 +22,23 @@ defmodule Raxol.Terminal.ConfigTest do
 
     test "rejects invalid configuration" do
       # Invalid color mode
-      invalid_config = put_in(Defaults.generate_default_config(), [:ansi, :color_mode], :invalid_mode)
+      invalid_config =
+        put_in(
+          Defaults.generate_default_config(),
+          [:ansi, :color_mode],
+          :invalid_mode
+        )
+
       assert {:error, _reason} = Validation.validate_config(invalid_config)
 
       # Invalid data type
-      invalid_config = put_in(Defaults.generate_default_config(), [:display, :width], "not_an_integer")
+      invalid_config =
+        put_in(
+          Defaults.generate_default_config(),
+          [:display, :width],
+          "not_an_integer"
+        )
+
       assert {:error, _reason} = Validation.validate_config(invalid_config)
     end
   end

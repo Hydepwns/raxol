@@ -38,7 +38,7 @@ defmodule Raxol.Components.TabBar do
 
   @behaviour Raxol.ComponentBehaviour
 
-  @doc """
+  @doc \"""
   Renders a tab bar with the given tabs, highlighting the active tab.
 
   ## Parameters
@@ -188,7 +188,9 @@ defmodule Raxol.Components.TabBar do
 
               _ ->
                 # Handle case when tab not found or has no content function
-                Raxol.View.Components.text("Content not found for tab: #{active_tab}")
+                Raxol.View.Components.text(
+                  "Content not found for tab: #{active_tab}"
+                )
             end
 
           # Return content element

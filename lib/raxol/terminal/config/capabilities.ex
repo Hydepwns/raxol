@@ -84,7 +84,8 @@ defmodule Raxol.Terminal.Config.Capabilities do
   defp detect_input_capabilities do
     %{
       mouse: detect_mouse_support(),
-      keyboard: true, # All terminals support basic keyboard
+      # All terminals support basic keyboard
+      keyboard: true,
       clipboard: detect_clipboard_support()
     }
   end
@@ -102,12 +103,16 @@ defmodule Raxol.Terminal.Config.Capabilities do
         # Try to get from tput if available
         case System.cmd("tput", ["cols"], stderr_to_stdout: true) do
           {cols, 0} -> String.to_integer(String.trim(cols))
-          _ -> 80 # Default fallback
+          # Default fallback
+          _ -> 80
         end
-      cols -> String.to_integer(cols)
+
+      cols ->
+        String.to_integer(cols)
     end
   rescue
-    _ -> 80 # Default fallback on any error
+    # Default fallback on any error
+    _ -> 80
   end
 
   defp detect_height do
@@ -116,27 +121,43 @@ defmodule Raxol.Terminal.Config.Capabilities do
         # Try to get from tput if available
         case System.cmd("tput", ["lines"], stderr_to_stdout: true) do
           {lines, 0} -> String.to_integer(String.trim(lines))
-          _ -> 24 # Default fallback
+          # Default fallback
+          _ -> 24
         end
-      lines -> String.to_integer(lines)
+
+      lines ->
+        String.to_integer(lines)
     end
   rescue
-    _ -> 24 # Default fallback on any error
+    # Default fallback on any error
+    _ -> 24
   end
 
   defp detect_color_support do
     # Check environment variables first
     case System.get_env("COLORTERM") do
-      "truecolor" -> 16_777_216 # 24-bit color
-      "24bit" -> 16_777_216     # 24-bit color
+      # 24-bit color
+      "truecolor" ->
+        16_777_216
+
+      # 24-bit color
+      "24bit" ->
+        16_777_216
+
       _ ->
         # Get the TERM environment variable
         term = System.get_env("TERM")
 
         cond do
-          term == "xterm-256color" -> 256
-          is_binary(term) && String.contains?(term, "256") -> 256
-          is_binary(term) && String.contains?(term, "color") -> 16
+          term == "xterm-256color" ->
+            256
+
+          is_binary(term) && String.contains?(term, "256") ->
+            256
+
+          is_binary(term) && String.contains?(term, "color") ->
+            16
+
           true ->
             # Try to get from tput if available
             case System.cmd("tput", ["colors"], stderr_to_stdout: true) do
@@ -145,12 +166,16 @@ defmodule Raxol.Terminal.Config.Capabilities do
                   "-1" -> 0
                   num -> String.to_integer(num)
                 end
-              _ -> 8 # Default fallback
+
+              # Default fallback
+              _ ->
+                8
             end
         end
     end
   rescue
-    _ -> 8 # Default fallback on any error
+    # Default fallback on any error
+    _ -> 8
   end
 
   defp detect_truecolor_support do
@@ -203,6 +228,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
 
   defp detect_color_mode do
     colors = detect_color_support()
+
     cond do
       colors >= 16_777_216 -> :truecolor
       colors >= 256 -> :extended
@@ -213,10 +239,12 @@ defmodule Raxol.Terminal.Config.Capabilities do
   end
 
   # Recursively merge capabilities into configuration
-  defp deep_merge_capabilities(config, capabilities) when is_map(config) and is_map(capabilities) do
+  defp deep_merge_capabilities(config, capabilities)
+       when is_map(config) and is_map(capabilities) do
     Map.merge(config, capabilities, fn
       # If both values are maps, merge them recursively
-      _, config_value, capability_value when is_map(config_value) and is_map(capability_value) ->
+      _, config_value, capability_value
+      when is_map(config_value) and is_map(capability_value) ->
         deep_merge_capabilities(config_value, capability_value)
 
       # For any other case, keep the config value (don't override explicit configuration)
@@ -231,24 +259,26 @@ defmodule Raxol.Terminal.Config.Capabilities do
   defp optimize_config_for_capabilities(config) do
     # Adjust rendering settings based on capabilities
     rendering = Map.get(config, :rendering, %{})
-    updated_rendering = case Map.get(config, :display, %{}) do
-      %{colors: colors} when colors <= 16 ->
-        # For terminals with limited colors, reduce other graphics settings
-        rendering
-        |> Map.put(:fps, 30)
-        |> Map.put(:optimize_empty_cells, true)
-        |> Map.put(:smooth_resize, false)
 
-      %{width: width, height: height} when width < 80 or height < 24 ->
-        # For small terminals, reduce rendering overhead
-        rendering
-        |> Map.put(:fps, 30)
-        |> Map.put(:optimize_empty_cells, true)
+    updated_rendering =
+      case Map.get(config, :display, %{}) do
+        %{colors: colors} when colors <= 16 ->
+          # For terminals with limited colors, reduce other graphics settings
+          rendering
+          |> Map.put(:fps, 30)
+          |> Map.put(:optimize_empty_cells, true)
+          |> Map.put(:smooth_resize, false)
 
-      _ ->
-        # Keep existing settings for capable terminals
-        rendering
-    end
+        %{width: width, height: height} when width < 80 or height < 24 ->
+          # For small terminals, reduce rendering overhead
+          rendering
+          |> Map.put(:fps, 30)
+          |> Map.put(:optimize_empty_cells, true)
+
+        _ ->
+          # Keep existing settings for capable terminals
+          rendering
+      end
 
     %{config | rendering: updated_rendering}
   end

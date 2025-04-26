@@ -5,21 +5,19 @@ defmodule Raxol.Terminal.ANSIFacadeTest do
 
   # Create a basic emulator mock struct for testing
   defmodule EmulatorMock do
-    defstruct [
-      cursor_x: 0,
-      cursor_y: 0,
-      cursor_saved: nil,
-      cursor_visible: true,
-      style: %{},
-      attributes: %{
-        foreground_true: nil,
-        background_true: nil,
-        foreground_256: nil,
-        background_256: nil
-      },
-      screen_modes: %{},
-      active_buffer: []
-    ]
+    defstruct cursor_x: 0,
+              cursor_y: 0,
+              cursor_saved: nil,
+              cursor_visible: true,
+              style: %{},
+              attributes: %{
+                foreground_true: nil,
+                background_true: nil,
+                foreground_256: nil,
+                background_256: nil
+              },
+              screen_modes: %{},
+              active_buffer: []
   end
 
   test "facade initializes state correctly" do
@@ -44,7 +42,7 @@ defmodule Raxol.Terminal.ANSIFacadeTest do
 
     # Ensure both direct facade call and delegated call work the same
     assert ANSI.process_escape(emulator, "\e[5B") ==
-           ANSIFacade.process_escape(emulator, "\e[5B")
+             ANSIFacade.process_escape(emulator, "\e[5B")
   end
 
   test "process_escape handles cursor save/restore" do

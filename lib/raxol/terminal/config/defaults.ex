@@ -6,7 +6,9 @@ defmodule Raxol.Terminal.Config.Defaults do
   """
 
   @doc """
-  Generates a default configuration based on terminal capabilities.
+  Generates a default configuration map merging all specific defaults.
+
+  This map represents the base configuration before any detection or user overrides.
 
   ## Returns
 
@@ -14,12 +16,28 @@ defmodule Raxol.Terminal.Config.Defaults do
   """
   def generate_default_config do
     %{
-      display: default_display_config(),
-      input: default_input_config(),
-      rendering: default_rendering_config(),
-      ansi: default_ansi_config(),
-      behavior: default_behavior_config()
+      # Base settings often detected or overridden
+      terminal_type: :unknown,
+      color_mode: :basic, # Safer default, detected later
+      unicode_support: false, # Safer default, detected later
+      mouse_support: false, # Safer default, detected later
+      clipboard_support: false, # Safer default, detected later
+      bracketed_paste: false, # Safer default, detected later
+      focus_support: false, # Safer default, detected later
+      title_support: false, # Safer default, detected later
+      hyperlinks: false, # Safer default, detected later
+      sixel_support: false, # Safer default, detected later
+      image_support: false, # Safer default, detected later
+      sound_support: false # Safer default, detected later
     }
+    |> Map.merge(default_display_config())
+    |> Map.merge(default_rendering_config())
+    |> Map.merge(default_behavior_config())
+    |> Map.merge(default_system_config())
+    |> Map.merge(default_background_config())
+    |> Map.merge(default_animation_config())
+    # Note: Input defaults like escape_timeout are less common in the main config struct
+    # Note: ANSI color map is usually part of theme/profile, not base defaults here
   end
 
   @doc """
@@ -33,33 +51,13 @@ defmodule Raxol.Terminal.Config.Defaults do
     %{
       width: 80,
       height: 24,
-      colors: 256,
-      truecolor: false,
-      unicode: true,
-      title: "Raxol Terminal",
-      font_family: "monospace",
-      font_size: 14,
+      font_family: "Monospace", # Aligned from configuration.ex
+      font_size: 12, # Aligned from configuration.ex
       cursor_style: :block,
-      cursor_blink: true
-    }
-  end
-
-  @doc """
-  Generates a default input configuration.
-
-  ## Returns
-
-  A map containing default input configuration values.
-  """
-  def default_input_config do
-    %{
-      mouse: true,
-      keyboard: true,
-      escape_timeout: 100,
-      alt_sends_esc: true,
-      backspace_sends_backspace: true,
-      clipboard: true,
-      paste_mode: :bracketed
+      cursor_blink: true,
+      cursor_color: "#ffffff", # Added from configuration.ex
+      selection_color: "rgba(255, 255, 255, 0.3)" # Added from configuration.ex
+      # Removed: colors, truecolor, unicode, title (handled in main map or detection)
     }
   end
 
@@ -72,50 +70,11 @@ defmodule Raxol.Terminal.Config.Defaults do
   """
   def default_rendering_config do
     %{
-      fps: 60,
-      double_buffer: true,
-      redraw_mode: :incremental,
-      optimize_empty_cells: true,
-      smooth_resize: true,
-      cell_width: 8,
-      cell_height: 16,
-      line_height: 1.2
-    }
-  end
-
-  @doc """
-  Generates a default ANSI configuration.
-
-  ## Returns
-
-  A map containing default ANSI configuration values.
-  """
-  def default_ansi_config do
-    %{
-      enabled: true,
-      color_mode: :extended,
-      interpret_control_codes: true,
-      enable_c1_codes: false,
-      enable_vt52_mode: false,
-      graphics_mode: true,
-      colors: %{
-        black: "#000000",
-        red: "#cd0000",
-        green: "#00cd00",
-        yellow: "#cdcd00",
-        blue: "#0000ee",
-        magenta: "#cd00cd",
-        cyan: "#00cdcd",
-        white: "#e5e5e5",
-        bright_black: "#7f7f7f",
-        bright_red: "#ff0000",
-        bright_green: "#00ff00",
-        bright_yellow: "#ffff00",
-        bright_blue: "#5c5cff",
-        bright_magenta: "#ff00ff",
-        bright_cyan: "#00ffff",
-        bright_white: "#ffffff"
-      }
+      line_height: 1.0, # Aligned from configuration.ex
+      ligatures: false, # Added from configuration.ex
+      font_rendering: :normal, # Added from configuration.ex
+      batch_size: 100 # Added from configuration.ex
+      # Removed: fps, double_buffer, redraw_mode, optimize_empty_cells, smooth_resize, cell_width, cell_height (less common top-level defaults)
     }
   end
 
@@ -128,57 +87,66 @@ defmodule Raxol.Terminal.Config.Defaults do
   """
   def default_behavior_config do
     %{
-      scrollback_lines: 10000,
-      save_history: true,
-      history_file: "~/.raxol_history",
-      exit_on_close: false,
-      confirm_exit: true,
-      bell_style: :visible,
-      silence_bell: false,
-      word_separators: " \t\"'`()[]{}<>|",
-      auto_wrap: true,
-      scroll_on_output: false,
-      scroll_on_keystroke: true
+      scrollback_limit: 1000, # Aligned from configuration.ex (@default_scrollback_height)
+      prompt: "> ", # Added from configuration.ex
+      welcome_message: "Welcome to Raxol Terminal", # Added from configuration.ex
+      command_history_size: 1000, # Added from configuration.ex
+      enable_command_history: true, # Added from configuration.ex (renamed from save_history)
+      enable_syntax_highlighting: true, # Added from configuration.ex
+      enable_fullscreen: false, # Added from configuration.ex
+      accessibility_mode: false, # Added from configuration.ex
+      virtual_scroll: false # Added from configuration.ex
+      # Removed: history_file, exit_on_close, confirm_exit, bell_style, silence_bell, word_separators, auto_wrap, scroll_on_output, scroll_on_keystroke (less common or potentially profile-specific)
     }
   end
 
   @doc """
-  Returns a minimal configuration with only essential settings.
-
-  This is useful for testing or scenarios where minimal resources are required.
+  Generates a default system/performance configuration.
 
   ## Returns
 
-  A map containing minimal configuration values.
+  A map containing default system/performance configuration values.
   """
-  def minimal_config do
+  def default_system_config do
     %{
-      display: %{
-        width: 80,
-        height: 24,
-        colors: 16,
-        truecolor: false,
-        unicode: false
-      },
-      input: %{
-        mouse: false,
-        keyboard: true,
-        escape_timeout: 100
-      },
-      rendering: %{
-        fps: 30,
-        double_buffer: false,
-        redraw_mode: :full
-      },
-      ansi: %{
-        enabled: true,
-        color_mode: :basic
-      },
-      behavior: %{
-        scrollback_lines: 1000,
-        save_history: false,
-        auto_wrap: true
-      }
+      memory_limit: 50 * 1024 * 1024, # Added from configuration.ex
+      cleanup_interval: 60 * 1000 # Added from configuration.ex
     }
   end
+
+  @doc """
+  Generates a default background configuration.
+
+  ## Returns
+
+  A map containing default background configuration values.
+  """
+  def default_background_config do
+    %{
+      background_type: :solid, # Added from configuration.ex
+      background_opacity: 1.0, # Added from configuration.ex
+      background_image: nil, # Added from configuration.ex
+      background_blur: 0.0, # Added from configuration.ex
+      background_scale: :fit # Added from configuration.ex
+    }
+  end
+
+  @doc """
+  Generates a default animation configuration.
+
+  ## Returns
+
+  A map containing default animation configuration values.
+  """
+  def default_animation_config do
+    %{
+      animation_type: nil, # Added from configuration.ex
+      animation_path: nil, # Added from configuration.ex
+      animation_fps: 30, # Added from configuration.ex
+      animation_loop: true, # Added from configuration.ex
+      animation_blend: 0.8 # Added from configuration.ex
+    }
+  end
+
+  # Removed minimal_config - use generate_default_config and override as needed
 end

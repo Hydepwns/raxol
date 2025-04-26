@@ -61,6 +61,7 @@ defmodule Raxol.Core.Runtime.CommandTest do
       ]
 
       cmd = Command.batch(commands)
+
       mapper = fn
         :msg1 -> :mapped1
         :msg2 -> :mapped2
@@ -144,7 +145,7 @@ defmodule Raxol.Core.Runtime.CommandTest do
       content = "test content"
       File.write!(path, content)
 
-      cmd = Command.system(:file_read, [path: path])
+      cmd = Command.system(:file_read, path: path)
       Command.execute(cmd, context)
 
       assert_receive {:command_result, {:file_read, ^content}}, 500

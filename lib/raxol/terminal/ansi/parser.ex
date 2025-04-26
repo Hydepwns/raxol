@@ -7,7 +7,11 @@ defmodule Raxol.Terminal.ANSI.Parser do
   This is the main entry point for parsing all ANSI sequences.
   """
 
-  alias Raxol.Terminal.ANSI.SequenceParser
+  # alias Raxol.Terminal.ANSI.State # Unused
+  # alias Raxol.Terminal.ANSI.Actions # Unused
+  # alias Raxol.Terminal.Cursor # Unused
+  # alias Raxol.Terminal.ANSI.Sequences # Unused
+
   require Logger
 
   @doc """
@@ -94,7 +98,9 @@ defmodule Raxol.Terminal.ANSI.Parser do
 
   defp parse_cursor_sequence(sequence) do
     # Example: \e[nA (cursor up n lines)
-    case Regex.run(~r/^\e\[(\d*)(A|B|C|D|H|F|S|T)/, sequence, capture: :all_but_first) do
+    case Regex.run(~r/^\e\[(\d*)(A|B|C|D|H|F|S|T)/, sequence,
+           capture: :all_but_first
+         ) do
       [n, "A"] ->
         n = parse_optional_number(n, 1)
         {:cursor_up, n}
@@ -162,7 +168,8 @@ defmodule Raxol.Terminal.ANSI.Parser do
         parse_sgr_params(rest, [{:foreground_basic, color_code} | acc])
 
       color when color >= "90" and color <= "97" ->
-        color_code = String.to_integer(color) - 90 + 8  # Bright colors start at 8
+        # Bright colors start at 8
+        color_code = String.to_integer(color) - 90 + 8
         parse_sgr_params(rest, [{:foreground_basic, color_code} | acc])
 
       # Background colors 40-47, 100-107
@@ -171,7 +178,8 @@ defmodule Raxol.Terminal.ANSI.Parser do
         parse_sgr_params(rest, [{:background_basic, color_code} | acc])
 
       color when color >= "100" and color <= "107" ->
-        color_code = String.to_integer(color) - 100 + 8  # Bright colors start at 8
+        # Bright colors start at 8
+        color_code = String.to_integer(color) - 100 + 8
         parse_sgr_params(rest, [{:background_basic, color_code} | acc])
 
       # 256-color and RGB color
@@ -200,7 +208,9 @@ defmodule Raxol.Terminal.ANSI.Parser do
     # 256-color mode: \e[38;5;Nm or \e[48;5;Nm
     index = String.to_integer(index)
 
-    if rest == [], do: {{:foreground_256, index}, []}, else: {{:foreground_256, index}, rest}
+    if rest == [],
+      do: {{:foreground_256, index}, []},
+      else: {{:foreground_256, index}, rest}
   end
 
   defp parse_extended_color(["2", r, g, b | rest]) do
@@ -209,7 +219,9 @@ defmodule Raxol.Terminal.ANSI.Parser do
     g = String.to_integer(g)
     b = String.to_integer(b)
 
-    if rest == [], do: {{:foreground_true, r, g, b}, []}, else: {{:foreground_true, r, g, b}, rest}
+    if rest == [],
+      do: {{:foreground_true, r, g, b}, []},
+      else: {{:foreground_true, r, g, b}, rest}
   end
 
   defp parse_extended_color(params) do

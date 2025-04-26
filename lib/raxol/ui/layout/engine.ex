@@ -72,7 +72,14 @@ defmodule Raxol.UI.Layout.Engine do
 
       %{type: element_type} when element_type in [:label, :text] ->
         # Default text element measurement
-        %{width: min(String.length(element.attrs.content || ""), available_space.width), height: 1}
+        %{
+          width:
+            min(
+              String.length(element.attrs.content || ""),
+              available_space.width
+            ),
+          height: 1
+        }
 
       %{type: :button} ->
         # Button measurement
@@ -84,18 +91,26 @@ defmodule Raxol.UI.Layout.Engine do
         value = element.attrs.value || ""
         placeholder = element.attrs.placeholder || ""
         text = if value == "", do: placeholder, else: value
-        %{width: min(max(String.length(text) + 4, 10), available_space.width), height: 3}
+
+        %{
+          width: min(max(String.length(text) + 4, 10), available_space.width),
+          height: 3
+        }
 
       %{type: :checkbox} ->
         # Checkbox measurement
         label = element.attrs.label || ""
-        %{width: min(String.length(label) + 4, available_space.width), height: 1}
+
+        %{
+          width: min(String.length(label) + 4, available_space.width),
+          height: 1
+        }
 
       %{type: :table} ->
         # Table measurement - simplified version, would need more sophistication in practice
         headers = element.attrs.headers || []
         data = element.attrs.data || []
-        rows = max(length(data), 0) + (if headers != [], do: 2, else: 0)
+        rows = max(length(data), 0) + if headers != [], do: 2, else: 0
         %{width: available_space.width, height: rows}
 
       _ ->
@@ -105,38 +120,38 @@ defmodule Raxol.UI.Layout.Engine do
   end
 
   # Process a view element
-  defp process_element(%{type: :view, children: children}, space, acc)
-       when is_list(children) do
+  def process_element(%{type: :view, children: children}, space, acc)
+      when is_list(children) do
     # Process children with the available space
     process_children(children, space, acc)
   end
 
-  defp process_element(%{type: :view, children: children}, space, acc) do
+  def process_element(%{type: :view, children: children}, space, acc) do
     # Handle case where children is not a list
     process_element(children, space, acc)
   end
 
-  defp process_element(%{type: :panel} = panel, space, acc) do
+  def process_element(%{type: :panel} = panel, space, acc) do
     # Delegate to panel-specific layout processing
     Panels.process(panel, space, acc)
   end
 
-  defp process_element(%{type: :row} = row, space, acc) do
+  def process_element(%{type: :row} = row, space, acc) do
     # Delegate to row layout processing
     Containers.process_row(row, space, acc)
   end
 
-  defp process_element(%{type: :column} = column, space, acc) do
+  def process_element(%{type: :column} = column, space, acc) do
     # Delegate to column layout processing
     Containers.process_column(column, space, acc)
   end
 
-  defp process_element(%{type: :grid} = grid, space, acc) do
+  def process_element(%{type: :grid} = grid, space, acc) do
     # Delegate to grid layout processing
     Grid.process(grid, space, acc)
   end
 
-  defp process_element(%{type: :label, attrs: attrs}, space, acc) do
+  def process_element(%{type: :label, attrs: attrs}, space, acc) do
     # Create a text element at the given position
     text_element = %{
       type: :text,
@@ -149,7 +164,7 @@ defmodule Raxol.UI.Layout.Engine do
     [text_element | acc]
   end
 
-  defp process_element(%{type: :button, attrs: attrs}, space, acc) do
+  def process_element(%{type: :button, attrs: attrs}, space, acc) do
     # Create a button element
     text = Map.get(attrs, :label, "Button")
 
@@ -176,7 +191,7 @@ defmodule Raxol.UI.Layout.Engine do
     button_elements ++ acc
   end
 
-  defp process_element(%{type: :text_input, attrs: attrs}, space, acc) do
+  def process_element(%{type: :text_input, attrs: attrs}, space, acc) do
     # Create a text input element
     value = Map.get(attrs, :value, "")
     placeholder = Map.get(attrs, :placeholder, "")
@@ -208,7 +223,7 @@ defmodule Raxol.UI.Layout.Engine do
     text_input_elements ++ acc
   end
 
-  defp process_element(%{type: :checkbox, attrs: attrs}, space, acc) do
+  def process_element(%{type: :checkbox, attrs: attrs}, space, acc) do
     # Create a checkbox element
     checked = Map.get(attrs, :checked, false)
     label = Map.get(attrs, :label, "")
@@ -229,7 +244,7 @@ defmodule Raxol.UI.Layout.Engine do
     checkbox_elements ++ acc
   end
 
-  defp process_element(%{type: :table, attrs: attrs}, space, acc) do
+  def process_element(%{type: :table, attrs: attrs}, space, acc) do
     # Create a table element
     headers = Map.get(attrs, :headers, [])
     data = Map.get(attrs, :data, [])
@@ -283,19 +298,19 @@ defmodule Raxol.UI.Layout.Engine do
     header_elements ++ data_elements ++ acc
   end
 
-  defp process_element(element, _space, acc) do
+  def process_element(element, _space, acc) do
     # Default case for unhandled elements
     [element | acc]
   end
 
   # Process a list of children
-  defp process_children(children, space, acc) when is_list(children) do
+  def process_children(children, space, acc) when is_list(children) do
     Enum.reduce(children, acc, fn child, acc ->
       process_element(child, space, acc)
     end)
   end
 
-  defp process_children(child, space, acc) do
+  def process_children(child, space, acc) do
     process_element(child, space, acc)
   end
 end

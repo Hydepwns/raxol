@@ -57,17 +57,21 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert box_element.height == 24
 
       # Find the panel title
-      title_element = Enum.find(result, fn
-        %{type: :text, text: text} -> String.contains?(text, "Test Panel")
-        _ -> false
-      end)
+      title_element =
+        Enum.find(result, fn
+          %{type: :text, text: text} -> String.contains?(text, "Test Panel")
+          _ -> false
+        end)
+
       assert title_element != nil
 
       # Find the panel content
-      content_element = Enum.find(result, fn
-        %{type: :text, text: "Panel Content"} -> true
-        _ -> false
-      end)
+      content_element =
+        Enum.find(result, fn
+          %{type: :text, text: "Panel Content"} -> true
+          _ -> false
+        end)
+
       assert content_element != nil
       # Content should be inside the panel
       assert content_element.x > 0
@@ -105,25 +109,33 @@ defmodule Raxol.UI.Layout.EngineTest do
       result = Engine.apply_layout(view, dimensions)
 
       assert is_list(result)
-      assert length(result) == 4  # Four label elements
+      # Four label elements
+      assert length(result) == 4
 
       # Find the labels
-      top_left = Enum.find(result, fn
-        %{type: :text, text: "Top Left"} -> true
-        _ -> false
-      end)
-      bottom_left = Enum.find(result, fn
-        %{type: :text, text: "Bottom Left"} -> true
-        _ -> false
-      end)
-      top_right = Enum.find(result, fn
-        %{type: :text, text: "Top Right"} -> true
-        _ -> false
-      end)
-      bottom_right = Enum.find(result, fn
-        %{type: :text, text: "Bottom Right"} -> true
-        _ -> false
-      end)
+      top_left =
+        Enum.find(result, fn
+          %{type: :text, text: "Top Left"} -> true
+          _ -> false
+        end)
+
+      bottom_left =
+        Enum.find(result, fn
+          %{type: :text, text: "Bottom Left"} -> true
+          _ -> false
+        end)
+
+      top_right =
+        Enum.find(result, fn
+          %{type: :text, text: "Top Right"} -> true
+          _ -> false
+        end)
+
+      bottom_right =
+        Enum.find(result, fn
+          %{type: :text, text: "Bottom Right"} -> true
+          _ -> false
+        end)
 
       assert top_left != nil
       assert bottom_left != nil
@@ -145,7 +157,8 @@ defmodule Raxol.UI.Layout.EngineTest do
 
       dimensions = Engine.measure_element(element, available_space)
 
-      assert dimensions.width == 10  # Length of "Test Label"
+      # Length of "Test Label"
+      assert dimensions.width == 10
       assert dimensions.height == 1
     end
 
@@ -178,7 +191,8 @@ defmodule Raxol.UI.Layout.EngineTest do
 
       dimensions = Engine.measure_element(element, available_space)
 
-      assert dimensions.width == 50  # Constrained to available width
+      # Constrained to available width
+      assert dimensions.width == 50
       assert dimensions.height == 1
     end
   end

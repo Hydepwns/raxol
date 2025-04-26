@@ -49,59 +49,69 @@ defmodule Raxol.Core.Runtime.Plugins.APITest do
     :meck.new(Raxol.Core.Runtime.Debug, [:passthrough])
 
     # Replace functions with our test implementations
-    :meck.expect(Raxol.Core.Runtime.Events.Dispatcher, :subscribe,
+    :meck.expect(
+      Raxol.Core.Runtime.Events.Dispatcher,
+      :subscribe,
       fn event_type, handler, function ->
         send(self(), {:subscribe_called, event_type, handler, function})
         :ok
-      end)
+      end
+    )
 
-    :meck.expect(Raxol.Core.Runtime.Events.Dispatcher, :unsubscribe,
+    :meck.expect(
+      Raxol.Core.Runtime.Events.Dispatcher,
+      :unsubscribe,
       fn event_type, handler ->
         send(self(), {:unsubscribe_called, event_type, handler})
         :ok
-      end)
+      end
+    )
 
-    :meck.expect(Raxol.Core.Runtime.Events.Dispatcher, :broadcast,
+    :meck.expect(
+      Raxol.Core.Runtime.Events.Dispatcher,
+      :broadcast,
       fn event_type, payload ->
         send(self(), {:broadcast_called, event_type, payload})
         :ok
-      end)
+      end
+    )
 
-    :meck.expect(Raxol.Core.Runtime.Plugins.Commands, :register,
-      fn name, handler, help, options ->
-        send(self(), {:command_registered, name, handler, help, options})
-        :ok
-      end)
+    :meck.expect(Raxol.Core.Runtime.Plugins.Commands, :register, fn name,
+                                                                    handler,
+                                                                    help,
+                                                                    options ->
+      send(self(), {:command_registered, name, handler, help, options})
+      :ok
+    end)
 
-    :meck.expect(Raxol.Core.Runtime.Plugins.Commands, :unregister,
-      fn name ->
-        send(self(), {:command_unregistered, name})
-        :ok
-      end)
+    :meck.expect(Raxol.Core.Runtime.Plugins.Commands, :unregister, fn name ->
+      send(self(), {:command_unregistered, name})
+      :ok
+    end)
 
-    :meck.expect(Raxol.Core.Runtime.Rendering.Engine, :render,
-      fn region, content, options ->
-        send(self(), {:render_called, region, content, options})
-        :ok
-      end)
+    :meck.expect(Raxol.Core.Runtime.Rendering.Engine, :render, fn region,
+                                                                  content,
+                                                                  options ->
+      send(self(), {:render_called, region, content, options})
+      :ok
+    end)
 
-    :meck.expect(Raxol.Core.Runtime.Rendering.Buffer, :create,
-      fn width, height, options ->
-        send(self(), {:buffer_created, width, height, options})
-        {:ok, %{width: width, height: height}}
-      end)
+    :meck.expect(Raxol.Core.Runtime.Rendering.Buffer, :create, fn width,
+                                                                  height,
+                                                                  options ->
+      send(self(), {:buffer_created, width, height, options})
+      {:ok, %{width: width, height: height}}
+    end)
 
-    :meck.expect(Raxol.Core.Runtime.Debug, :info,
-      fn message ->
-        send(self(), {:debug_info, message})
-        :ok
-      end)
+    :meck.expect(Raxol.Core.Runtime.Debug, :info, fn message ->
+      send(self(), {:debug_info, message})
+      :ok
+    end)
 
-    :meck.expect(Raxol.Core.Runtime.Debug, :error,
-      fn message ->
-        send(self(), {:debug_error, message})
-        :ok
-      end)
+    :meck.expect(Raxol.Core.Runtime.Debug, :error, fn message ->
+      send(self(), {:debug_error, message})
+      :ok
+    end)
 
     on_exit(fn ->
       :meck.unload(Raxol.Core.Runtime.Events.Dispatcher)
@@ -117,12 +127,16 @@ defmodule Raxol.Core.Runtime.Plugins.APITest do
   describe "event handling" do
     test "subscribe forwards calls to dispatcher" do
       API.subscribe(:test_event, TestEventHandler)
-      assert_received {:subscribe_called, :test_event, TestEventHandler, :handle_event}
+
+      assert_received {:subscribe_called, :test_event, TestEventHandler,
+                       :handle_event}
     end
 
     test "subscribe with custom function forwards function name" do
       API.subscribe(:test_event, TestEventHandler, :custom_handler)
-      assert_received {:subscribe_called, :test_event, TestEventHandler, :custom_handler}
+
+      assert_received {:subscribe_called, :test_event, TestEventHandler,
+                       :custom_handler}
     end
 
     test "unsubscribe forwards calls to dispatcher" do
@@ -140,13 +154,23 @@ defmodule Raxol.Core.Runtime.Plugins.APITest do
   describe "command registration" do
     test "register_command forwards calls to Commands module" do
       API.register_command("test:cmd", TestEventHandler, "Test command")
-      assert_received {:command_registered, "test:cmd", TestEventHandler, "Test command", []}
+
+      assert_received {:command_registered, "test:cmd", TestEventHandler,
+                       "Test command", []}
     end
 
     test "register_command with options forwards options" do
       options = [priority: 10]
-      API.register_command("test:cmd", TestEventHandler, "Test command", options)
-      assert_received {:command_registered, "test:cmd", TestEventHandler, "Test command", ^options}
+
+      API.register_command(
+        "test:cmd",
+        TestEventHandler,
+        "Test command",
+        options
+      )
+
+      assert_received {:command_registered, "test:cmd", TestEventHandler,
+                       "Test command", ^options}
     end
 
     test "unregister_command forwards calls to Commands module" do
@@ -191,7 +215,11 @@ defmodule Raxol.Core.Runtime.Plugins.APITest do
     test "get_config forwards to Application.get_env" do
       # Test environment setup
       :meck.new(Application, [:passthrough])
-      :meck.expect(Application, :get_env, fn :raxol, :test_key, nil -> "test_value" end)
+
+      :meck.expect(Application, :get_env, fn :raxol, :test_key, nil ->
+        "test_value"
+      end)
+
       on_exit(fn -> :meck.unload(Application) end)
 
       # Test the function
@@ -201,7 +229,13 @@ defmodule Raxol.Core.Runtime.Plugins.APITest do
     test "plugin_data_dir returns correct path" do
       # Test environment setup
       :meck.new(Application, [:passthrough])
-      :meck.expect(Application, :get_env, fn :raxol, :plugin_data_path, "data/plugins" -> "custom/path" end)
+
+      :meck.expect(Application, :get_env, fn :raxol,
+                                             :plugin_data_path,
+                                             "data/plugins" ->
+        "custom/path"
+      end)
+
       on_exit(fn -> :meck.unload(Application) end)
 
       # Test the function

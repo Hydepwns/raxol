@@ -19,7 +19,8 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     end
 
     def update({:add, amount}, model) do
-      {%{model | count: model.count + amount}, [{:command, :operation_complete}]}
+      {%{model | count: model.count + amount},
+       [{:command, :operation_complete}]}
     end
 
     def view(model) do
@@ -36,6 +37,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
 
     def subscribe(model) do
       interval = if model.count > 10, do: 100, else: 1000
+
       [
         subscribe_interval(interval, :tick),
         subscribe_to_events([:key_press, :mouse_click])
@@ -83,7 +85,8 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       result = TestApp.view(model)
 
       # Test that view generates correct structure
-      assert is_struct(result) # Check that result is a struct
+      # Check that result is a struct
+      assert is_struct(result)
 
       # Convert to string and check content
       string_result = inspect(result)

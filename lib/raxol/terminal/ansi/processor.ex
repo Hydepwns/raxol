@@ -14,8 +14,16 @@ defmodule Raxol.Terminal.ANSI.Processor do
   use GenServer
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Manager, as: BufferManager
-  alias Raxol.Terminal.ANSI.Sequences.{Cursor, Colors, Modes, ScreenModes}
-  alias Raxol.Terminal.ANSI.{TextFormatting, CharacterSets, MouseEvents}
+  alias Raxol.Terminal.ANSI.Sequences.{Cursor, Colors}
+  alias Raxol.Terminal.ANSI.{TextFormatting, CharacterSets}
+  alias Raxol.Terminal.Commands.Screen
+  alias Raxol.Terminal.ANSI.ScreenModes, as: ANSIScreenModes
+  # alias Raxol.Terminal.Emulator
+  # alias Raxol.Terminal.Commands.History
+  # alias Raxol.Terminal.Commands.Modes, as: CmdModes
+  # alias Raxol.Terminal.ScreenModes
+
+  require Logger
 
   # ANSI sequence types
   @type sequence_type :: :csi | :osc | :sos | :pm | :apc | :esc | :text
@@ -51,43 +59,50 @@ defmodule Raxol.Terminal.ANSI.Processor do
   def process(sequence, emulator) do
     case sequence do
       {:cursor_up, n} ->
-        Cursor.move_up(emulator, n)
+        Cursor.move_cursor_up(emulator, n)
 
       {:cursor_down, n} ->
-        Cursor.move_down(emulator, n)
+        Cursor.move_cursor_down(emulator, n)
 
       {:cursor_forward, n} ->
-        Cursor.move_forward(emulator, n)
+        Cursor.move_cursor_forward(emulator, n)
 
       {:cursor_backward, n} ->
-        Cursor.move_backward(emulator, n)
+        Cursor.move_cursor_backward(emulator, n)
 
       {:cursor_move, row, col} ->
-        Cursor.move_to(emulator, row, col)
+        Cursor.move_cursor(emulator, row, col)
 
       {:clear_screen, n} ->
-        ScreenModes.clear_screen(emulator, n)
+        Screen.clear_screen(emulator, n)
 
       {:clear_line, n} ->
-        ScreenModes.clear_line(emulator, n)
+        Screen.clear_line(emulator, n)
 
       {:insert_line, n} ->
-        ScreenModes.insert_line(emulator, n)
+        Screen.insert_lines(emulator, n)
 
       {:delete_line, n} ->
-        ScreenModes.delete_line(emulator, n)
+        Screen.delete_lines(emulator, n)
 
       {:text_attributes, attrs} ->
-        process_text_attributes(attrs, emulator)
+        handle_text_attributes(attrs, emulator)
 
-      {:set_mode, mode, enabled} ->
-        Modes.set_mode(emulator, mode, enabled)
+      {:set_mode, mode_atom, enabled} when is_atom(mode_atom) ->
+        new_mode_state =
+          ANSIScreenModes.switch_mode(emulator.mode_state, mode_atom, enabled)
 
-      {:reset_attributes} ->
-        TextFormatting.reset_attributes(emulator)
+        %{emulator | mode_state: new_mode_state}
 
       {:charset, gset_num, charset} ->
-        CharacterSets.set_charset(emulator, gset_num, charset)
+        new_charset_state =
+          CharacterSets.switch_charset(
+            emulator.charset_state,
+            gset_num,
+            charset
+          )
+
+        %{emulator | charset_state: new_charset_state}
 
       {:unknown, _sequence} ->
         # Return the emulator unchanged for unknown sequences
@@ -99,35 +114,52 @@ defmodule Raxol.Terminal.ANSI.Processor do
     end
   end
 
-  defp process_text_attributes(attrs, emulator) do
-    Enum.reduce(attrs, emulator, fn
-      :reset, acc ->
-        TextFormatting.reset_attributes(acc)
+  defp handle_text_attributes(attrs, emulator) do
+    # Use emulator.style as the initial accumulator
+    initial_style = emulator.style
 
-      {:foreground_basic, color_code}, acc ->
-        Colors.set_foreground_basic(acc, color_code)
+    new_style =
+      Enum.reduce(attrs, initial_style, fn
+        # Use apply_attribute with :reset atom
+        :reset, _acc ->
+          # Reset by creating a new default style
+          TextFormatting.new()
 
-      {:background_basic, color_code}, acc ->
-        Colors.set_background_basic(acc, color_code)
+        {:foreground_basic, color_code}, acc ->
+          # Colors functions take style struct, not emulator
+          Colors.set_foreground_basic(acc, color_code)
 
-      {:foreground_256, index}, acc ->
-        Colors.set_foreground_256(acc, index)
+        {:background_basic, color_code}, acc ->
+          # Colors functions take style struct, not emulator
+          Colors.set_background_basic(acc, color_code)
 
-      {:background_256, index}, acc ->
-        Colors.set_background_256(acc, index)
+        {:foreground_256, index}, acc ->
+          # Colors functions take style struct, not emulator
+          Colors.set_foreground_256(acc, index)
 
-      {:foreground_true, r, g, b}, acc ->
-        Colors.set_foreground_true(acc, r, g, b)
+        {:background_256, index}, acc ->
+          # Colors functions take style struct, not emulator
+          Colors.set_background_256(acc, index)
 
-      {:background_true, r, g, b}, acc ->
-        Colors.set_background_true(acc, r, g, b)
+        {:foreground_true, r, g, b}, acc ->
+          # Colors functions take style struct, not emulator
+          Colors.set_foreground_true(acc, r, g, b)
 
-      attribute, acc when is_atom(attribute) ->
-        TextFormatting.set_attribute(acc, attribute)
+        {:background_true, r, g, b}, acc ->
+          # Colors functions take style struct, not emulator
+          Colors.set_background_true(acc, r, g, b)
 
-      _, acc ->
-        acc
-    end)
+        attribute, acc when is_atom(attribute) ->
+          # Use correct function name
+          TextFormatting.apply_attribute(acc, attribute)
+
+        # Ignore unknown attribute types
+        _, acc ->
+          acc
+      end)
+
+    # Update the emulator with the new style
+    %{emulator | style: new_style}
   end
 
   def start_link(opts \\ []) do
@@ -438,22 +470,6 @@ defmodule Raxol.Terminal.ANSI.Processor do
     {:ok, new_state}
   end
 
-  defp handle_text_attributes(sequence, state) do
-    # Parse the attribute codes
-    codes = parse_params(sequence.params, [0])
-
-    # Update the terminal state with new attributes
-    new_attributes =
-      apply_text_attributes(codes, state.terminal_state.attributes)
-
-    new_state = %{
-      state
-      | terminal_state: %{state.terminal_state | attributes: new_attributes}
-    }
-
-    {:ok, new_state}
-  end
-
   defp handle_cursor_visibility(sequence, state) do
     # Parse the visibility mode
     mode = parse_param(sequence.params, 1)
@@ -537,30 +553,6 @@ defmodule Raxol.Terminal.ANSI.Processor do
       case Integer.parse(param) do
         {value, _} -> value
         :error -> default
-      end
-    end)
-  end
-
-  defp apply_text_attributes(codes, current_attributes) do
-    Enum.reduce(codes, current_attributes, fn code, attrs ->
-      case code do
-        # Reset all attributes
-        0 -> %{}
-        1 -> Map.put(attrs, :bold, true)
-        4 -> Map.put(attrs, :underline, true)
-        7 -> Map.put(attrs, :inverse, true)
-        # Basic Foreground Colors (30-37)
-        c when c >= 30 and c <= 37 -> Map.put(attrs, :foreground, c - 30)
-        # Basic Background Colors (40-47)
-        c when c >= 40 and c <= 47 -> Map.put(attrs, :background, c - 40)
-        # Bright Foreground Colors (90-97)
-        # Map 90-97 to 8-15
-        c when c >= 90 and c <= 97 -> Map.put(attrs, :foreground, c - 90 + 8)
-        # Bright Background Colors (100-107)
-        # Map 100-107 to 8-15
-        c when c >= 100 and c <= 107 -> Map.put(attrs, :background, c - 100 + 8)
-        # TODO: Handle 256-color and true-color codes (38, 48)
-        _ -> attrs
       end
     end)
   end

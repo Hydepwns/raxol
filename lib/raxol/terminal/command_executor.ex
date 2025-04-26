@@ -1,44 +1,28 @@
 defmodule Raxol.Terminal.CommandExecutor do
   @moduledoc """
-  Handles the execution of parsed CSI, OSC, and DCS sequences.
-  Receives emulator state and sequence details, returns updated emulator state.
+  DEPRECATED: Handles the execution of parsed terminal commands.
 
-  DEPRECATED: This module is being refactored into smaller, more focused modules.
-  New code should use the modules in the Raxol.Terminal.Commands namespace instead:
+  This module is being replaced by `Raxol.Terminal.Commands.Executor` and
+  various submodules within `Raxol.Terminal.Commands.*`.
 
-  - Raxol.Terminal.Commands.Executor - Main entry point for executing commands
-  - Raxol.Terminal.Commands.Parser - For parsing command parameters
-  - Raxol.Terminal.Commands.Modes - For handling terminal mode setting/resetting
-  - Raxol.Terminal.Commands.Screen - For screen manipulation operations
-  - Raxol.Terminal.Commands.History - For command history management
-
-  This module is maintained for backward compatibility and will be removed in a future version.
+  Existing functions are kept temporarily for backward compatibility or as
+  placeholders during refactoring, but they primarily log warnings and delegate
+  to the new modules where possible.
   """
-
-  # For Emulator.t type spec
-  alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Commands
-  alias Raxol.Terminal.Commands.Executor
-  alias Raxol.Terminal.Commands.Parser
-  alias Raxol.Terminal.Commands.Modes
-  alias Raxol.Terminal.Commands.Screen
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cursor.Manager
-  alias Raxol.Terminal.Cursor.Movement
-  alias Raxol.Terminal.Cursor.Style
-  alias Raxol.Terminal.ScreenModes
-  alias Raxol.Terminal.TextFormatting
-  alias Raxol.Terminal.Cell
-  # Needed for CAN/SUB constants
-  # alias Raxol.Terminal.ControlCodes
-  # Remove unused alias to fix warning
-  # alias Raxol.Terminal.CharacterSets
-
   require Logger
-  require Raxol.Terminal.TextFormatting
-  require Raxol.Terminal.ScreenModes
-  # Either remove this require or use CharacterSets in the module
-  # require Raxol.Terminal.CharacterSets
+
+  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.Emulator
+  # alias Raxol.Terminal.Commands.Executor, as: CommandImpl # Unused
+  # alias Raxol.Terminal.Screen # Unused
+  # alias Raxol.Terminal.ScreenBuffer # Unused
+  # alias Raxol.Terminal.Cursor # Unused
+  # alias Raxol.Terminal.TextAttributes # Unused
+  # alias Raxol.Terminal.BufferManager # Unused
+  # alias Raxol.Terminal.Config # Unused
+
+  # Command module aliases
+  # alias Raxol.Terminal.Commands.{Screen, CursorOps, Editing, Attributes, History} # All unused
 
   # Display a compile-time deprecation warning
   @deprecated "This module is deprecated. Use Raxol.Terminal.Commands.* modules instead."
@@ -85,12 +69,12 @@ defmodule Raxol.Terminal.CommandExecutor do
         intermediates_buffer,
         final_byte
       ) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.CommandExecutor.execute_csi_command/4 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Executor.execute_csi_command/4 instead."
+        "Use Raxol.Terminal.Commands.Executor.execute_csi_command/4 instead."
     )
 
-    Executor.execute_csi_command(
+    Raxol.Terminal.Commands.Executor.execute_csi_command(
       emulator,
       params_buffer,
       intermediates_buffer,
@@ -121,14 +105,15 @@ defmodule Raxol.Terminal.CommandExecutor do
   params = Raxol.Terminal.Commands.Parser.parse_params(params_string)
   ```
   """
-  @spec parse_params(String.t()) :: list(integer() | nil | list(integer() | nil))
+  @spec parse_params(String.t()) ::
+          list(integer() | nil | list(integer() | nil))
   def parse_params(params_string) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.CommandExecutor.parse_params/1 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Parser.parse_params/1 instead."
+        "Use Raxol.Terminal.Commands.Parser.parse_params/1 instead."
     )
 
-    Commands.parse_params(params_string)
+    Raxol.Terminal.Commands.Parser.parse_params(params_string)
   end
 
   @doc """
@@ -158,12 +143,12 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec get_param(list(integer() | nil), pos_integer(), integer()) :: integer()
   def get_param(params, index, default \\ 1) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.CommandExecutor.get_param/3 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Parser.get_param/3 instead."
+        "Use Raxol.Terminal.Commands.Parser.get_param/3 instead."
     )
 
-    Commands.get_param(params, index, default)
+    Raxol.Terminal.Commands.Parser.get_param(params, index, default)
   end
 
   @doc """
@@ -191,14 +176,15 @@ defmodule Raxol.Terminal.CommandExecutor do
   new_emulator = Raxol.Terminal.Commands.Modes.handle_dec_private_mode(emulator, params, :set)
   ```
   """
-  @spec handle_dec_private_mode(Emulator.t(), list(integer()), :set | :reset) :: Emulator.t()
+  @spec handle_dec_private_mode(Emulator.t(), list(integer()), :set | :reset) ::
+          Emulator.t()
   def handle_dec_private_mode(emulator, params, action) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.CommandExecutor.handle_dec_private_mode/3 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Modes.handle_dec_private_mode/3 instead."
+        "Use Raxol.Terminal.Commands.Modes.handle_dec_private_mode/3 instead."
     )
 
-    Commands.handle_dec_private_mode(emulator, params, action)
+    Raxol.Terminal.Commands.Modes.handle_dec_private_mode(emulator, params, action)
   end
 
   @doc """
@@ -226,14 +212,15 @@ defmodule Raxol.Terminal.CommandExecutor do
   new_emulator = Raxol.Terminal.Commands.Modes.handle_ansi_mode(emulator, params, :set)
   ```
   """
-  @spec handle_ansi_mode(Emulator.t(), list(integer()), :set | :reset) :: Emulator.t()
+  @spec handle_ansi_mode(Emulator.t(), list(integer()), :set | :reset) ::
+          Emulator.t()
   def handle_ansi_mode(emulator, params, action) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.CommandExecutor.handle_ansi_mode/3 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Modes.handle_ansi_mode/3 instead."
+        "Use Raxol.Terminal.Commands.Modes.handle_ansi_mode/3 instead."
     )
 
-    Commands.handle_ansi_mode(emulator, params, action)
+    Raxol.Terminal.Commands.Modes.handle_ansi_mode(emulator, params, action)
   end
 
   @doc """
@@ -262,12 +249,12 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec clear_screen(Emulator.t(), integer()) :: Emulator.t()
   def clear_screen(emulator, mode) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.CommandExecutor.clear_screen/2 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead."
     )
 
-    Commands.clear_screen(emulator, mode)
+    Raxol.Terminal.Commands.Screen.clear_screen(emulator, mode)
   end
 
   @doc """
@@ -296,12 +283,12 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec clear_line(Emulator.t(), integer()) :: Emulator.t()
   def clear_line(emulator, mode) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.CommandExecutor.clear_line/2 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead."
     )
 
-    Commands.clear_line(emulator, mode)
+    Raxol.Terminal.Commands.Screen.clear_line(emulator, mode)
   end
 
   @doc """
@@ -330,12 +317,12 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec insert_line(Emulator.t(), integer()) :: Emulator.t()
   def insert_line(emulator, count) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.CommandExecutor.insert_line/2 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead."
     )
 
-    Commands.insert_line(emulator, count)
+    Raxol.Terminal.Commands.Screen.insert_lines(emulator, count)
   end
 
   @doc """
@@ -364,17 +351,21 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec delete_line(Emulator.t(), integer()) :: Emulator.t()
   def delete_line(emulator, count) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.CommandExecutor.delete_line/2 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead."
     )
 
-    Commands.delete_line(emulator, count)
+    Raxol.Terminal.Commands.Screen.delete_lines(emulator, count)
   end
 
   @spec execute_osc_command(Emulator.t(), String.t()) :: Emulator.t()
   def execute_osc_command(emulator, command_string) do
-    Logger.debug("Executing OSC: String='#{command_string}'")
+    Logger.warning(
+      "Deprecated execute_osc_command called in Raxol.Terminal.CommandExecutor. " <>
+        "Delegating to Raxol.Terminal.Commands.Executor.execute_osc_command/2. " <>
+        "Command: #{inspect(command_string)}, Emulator: #{inspect(emulator)}"
+    )
 
     # Parse the command string: Ps ; Pt ST
     # Ps is the command code (0, 2, 8, etc.)
@@ -472,7 +463,7 @@ defmodule Raxol.Terminal.CommandExecutor do
     # Use intermediates_buffer directly
     intermediates = intermediates_buffer
 
-    Logger.debug(
+    Logger.warning(
       "Executing DCS: Params=#{inspect(params)}, Intermediates='#{intermediates}', Final='#{<<final_byte>>}', Payload(len=#{String.length(payload)})"
     )
 
@@ -516,6 +507,7 @@ defmodule Raxol.Terminal.CommandExecutor do
 
   # Creates a list of new (empty) cells
   defp create_empty_cells(count) do
+    # Create a list of `count` empty cells with default attributes
     List.duplicate(Cell.new(), count)
   end
 
@@ -673,72 +665,12 @@ defmodule Raxol.Terminal.CommandExecutor do
     end
   end
 
-  # --- New Helper Function for DECSCUSR ---
-  @spec handle_decscusr(Emulator.t(), integer() | nil) :: Emulator.t()
-  defp handle_decscusr(emulator, param) do
-    style =
-      case param do
-        0 ->
-          :blinking_block
+  # DEC Private Mode Handlers (Not fully implemented)
+  # TODO: Implement these DEC private mode handlers
 
-        # Default
-        1 ->
-          :blinking_block
-
-        2 ->
-          :steady_block
-
-        3 ->
-          :blinking_underline
-
-        4 ->
-          :steady_underline
-
-        5 ->
-          :blinking_bar
-
-        6 ->
-          :steady_bar
-
-        # Handle invalid parameter, default to blinking block
-        _ ->
-          Logger.debug(
-            "DECSCUSR: Invalid parameter #{inspect(param)}, defaulting to blinking_block."
-          )
-
-          :blinking_block
-      end
-
-    Logger.debug("DECSCUSR: Setting cursor style to #{style}")
-    %{emulator | cursor_style: style}
-  end
-
-  # Helper function to handle Device Status Report (DSR)
-  defp handle_dsr(emulator, code) do
-    case code do
-      # CSI 5 n - Status Report Request
-      5 ->
-        # Respond with "OK" (no malfunctions)
-        response = "\e[0n"
-        Logger.debug("DSR 5n received, responding with: #{response}")
-        %{emulator | output_buffer: emulator.output_buffer <> response}
-
-      # CSI 6 n - Report Cursor Position (CPR)
-      6 ->
-        # Get 0-based cursor position
-        {x, y} = emulator.cursor.position
-        # Convert to 1-based for report
-        row = y + 1
-        col = x + 1
-        # Format response: ESC [ <row> ; <col> R
-        response = "\e[#{row};#{col}R"
-        Logger.debug("DSR 6n received, responding with: #{response}")
-        %{emulator | output_buffer: emulator.output_buffer <> response}
-
-      # Others (e.g., CSI ? 15 n - Printer status report)
-      _ ->
-        Logger.warning("Unhandled DSR parameter(s): #{inspect(code)}")
-        emulator
-    end
-  end
+  # Placeholder for DSR (Device Status Report) handling
+  # Unused function
+  # defp _handle_dsr(emulator, code) do
+  # ... body omitted ...
+  # end
 end

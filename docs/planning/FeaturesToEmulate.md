@@ -17,23 +17,23 @@ Prompt provides an elegant API for handling user input in command-line applicati
 
 ### Input Handling
 
-- **Text Input**: Clean interface for collecting free-form text
-- **Password Input**: Masked input for sensitive information
-- **Confirmation Prompts**: Yes/No interactions with customizable defaults
-- **Custom Choice Selection**: Support for custom confirmation choices beyond Yes/No
-- **Selection Lists**: Numbered menu options with easy selection
+- **Text Input**: Clean interface for collecting free-form text (`TextInput` component exists, refined)
+- **Password Input**: Masked input for sensitive information (`TextInput` with `:is_password` flag)
+- **Confirmation Prompts**: Yes/No interactions with customizable defaults (`Modal.confirmation` enhanced with defaults)
+- **Custom Choice Selection**: Support for custom confirmation choices beyond Yes/No (`SelectList` component implemented)
+- **Selection Lists**: Numbered menu options with easy selection (Partially covered by `SelectList`, could be enhanced)
 
 ### Display Features
 
-- **Table Rendering**: Well-formatted tables with auto-sizing columns
-- **Styled Text**: Color and formatting options for displayed text
-- **Positioned Text**: Control over text positioning in the terminal
+- **Table Rendering**: Well-formatted tables with auto-sizing columns (`Table` component started, needs refinement)
+- **Styled Text**: Color and formatting options for displayed text (Ongoing via Theme/Styling system)
+- **Positioned Text**: Control over text positioning in the terminal (Partially available via layout system)
 
 ### Integration Opportunities
 
-- Port Prompt's clean API design to our form system
+- Port Prompt's clean API design to our form system (Ongoing)
 - Enhance our Shell Integration component with Prompt's input handling
-- Integrate table rendering capabilities into our display components
+- Integrate table rendering capabilities into our display components (Ongoing)
 
 ## Features from Artificery (<https://github.com/bitwalker/artificery>)
 
@@ -61,8 +61,8 @@ Artificery provides robust tooling for creating command-line interfaces. Here ar
 
 ## Implementation Priority
 
-1. First enhance our **Form System** with Prompt's input handling features
-2. Add **Table Rendering** capabilities to our display components
+1. ~~First enhance our **Form System** with Prompt's input handling features~~ (Partially Complete - Text, Password, Confirmation, SelectList)
+2. Add **Table Rendering** capabilities to our display components (In Progress - Basic implementation done, refinement needed)
 3. Integrate **Command Line Parsing** from Artificery for shell integration
-4. Implement **Help Text Generation** for all CLI components
-5. Enhance **Release Integration** with our existing Burrito support
+4. Implement **Help Text Generation** for all CLI components (Partially Started - Linked to Accessibility work)
+5. Enhance **Release Integration** with our existing Burrito support (Partially Started - Runtime cleanup touched related areas)

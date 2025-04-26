@@ -38,12 +38,11 @@ defmodule Raxol.Examples.UXRefinementDemo do
   Run the UX Refinement demo application.
   """
   def run do
-    IO.puts("Starting UX Refinement Demo...")
+    Logger.info("Starting UX Refinement Demo...")
 
-    # Start the runtime with this module as the application
     # Ensure Raxol.Runtime is started if it's not already running as part of the main app
-    # Runtime.start_link(%{initial_component: __MODULE__})
-    Raxol.Runtime.run(__MODULE__, [])
+    # Updated to use the new Lifecycle module
+    Raxol.Core.Runtime.Lifecycle.start_application(__MODULE__, [])
 
     # Placeholder state for demonstration
     _initial_state = %{

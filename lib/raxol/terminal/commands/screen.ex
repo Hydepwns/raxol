@@ -97,13 +97,13 @@ defmodule Raxol.Terminal.Commands.Screen do
           )
 
         # Also clear scrollback if supported
-        new_buffer = ScreenBuffer.clear_scrollback(new_buffer)
-
-        Emulator.update_active_buffer(emulator, new_buffer)
+        # new_buffer = ScreenBuffer.clear_scrollback(new_buffer)
+        # TODO: Re-implement scrollback clearing if needed
+        new_buffer
 
       # Unknown mode, do nothing
       _ ->
-        Logger.warn("Unknown clear screen mode: #{mode}")
+        Logger.warning("Unknown clear screen mode: #{mode}")
         emulator
     end
   end
@@ -157,7 +157,7 @@ defmodule Raxol.Terminal.Commands.Screen do
 
         # Unknown mode, do nothing
         _ ->
-          Logger.warn("Unknown clear line mode: #{mode}")
+          Logger.warning("Unknown clear line mode: #{mode}")
           buffer
       end
 
@@ -191,7 +191,9 @@ defmodule Raxol.Terminal.Commands.Screen do
     # Only insert if cursor is within the scroll region
     if cursor_y >= top && cursor_y <= bottom do
       # Insert count lines at cursor_y
-      new_buffer = ScreenBuffer.insert_lines(buffer, cursor_y, count, emulator.style)
+      new_buffer =
+        ScreenBuffer.insert_lines(buffer, cursor_y, count, emulator.style)
+
       Emulator.update_active_buffer(emulator, new_buffer)
     else
       # Outside scroll region, do nothing
@@ -226,7 +228,9 @@ defmodule Raxol.Terminal.Commands.Screen do
     # Only delete if cursor is within the scroll region
     if cursor_y >= top && cursor_y <= bottom do
       # Delete count lines at cursor_y
-      new_buffer = ScreenBuffer.delete_lines(buffer, cursor_y, count, emulator.style)
+      new_buffer =
+        ScreenBuffer.delete_lines(buffer, cursor_y, count, emulator.style)
+
       Emulator.update_active_buffer(emulator, new_buffer)
     else
       # Outside scroll region, do nothing

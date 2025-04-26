@@ -305,7 +305,8 @@ defmodule MyEditorApp do
     # Set initial context
     KeyboardShortcuts.set_active_context(:editor)
 
-    Raxol.Runtime.start_link(app: __MODULE__)
+    # Start the Raxol application
+    Raxol.Core.Runtime.Lifecycle.start_application(MyAppWithShortcuts)
   end
 
   # ... init/render ...
@@ -331,7 +332,7 @@ defmodule MyEditorApp do
   end
 
   defp quit do
-    Raxol.Runtime.stop(self()) # Or appropriate shutdown
+    Raxol.Core.Runtime.Lifecycle.stop_application(:normal) # Or appropriate shutdown reason
     :ok
   end
 

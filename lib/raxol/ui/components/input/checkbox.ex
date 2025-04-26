@@ -5,22 +5,39 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   This component provides a selectable checkbox with customizable appearance and behavior.
   """
 
-  alias Raxol.UI.Components.Base.Component
-  alias Raxol.Event
+  # use Raxol.UI.Components.Base
+  # alias Raxol.UI.Components.Base.Component
+  # alias Raxol.UI.Style
+  # alias Raxol.UI.Element
+  # alias Raxol.UI.Theme
+  # alias Raxol.UI.Theming.Theme
+  # alias Raxol.UI.Layout.Constraints
 
-  @behaviour Component
+  # alias Raxol.View
+  # alias Raxol.UI.Theming.Colors
+  # alias Raxol.View.Style
+  # alias Raxol.Core.Events
+  # alias Raxol.Core.Events.{FocusEvent, KeyEvent}
+
+  alias Raxol.Core.Renderer.Element
+  alias Raxol.UI.Theming.Theme
+
+  # alias Raxol.UI.Components.Base # Unused
+  # alias Raxol.Core.Events.ClickEvent # Unused
+
+  @behaviour Raxol.UI.Components.Base.Component
 
   @type t :: %{
-    id: String.t(),
-    label: String.t(),
-    checked: boolean(),
-    on_change: function() | nil,
-    disabled: boolean(),
-    theme: map(),
-    tooltip: String.t() | nil,
-    required: boolean(),
-    aria_label: String.t() | nil
-  }
+          id: String.t(),
+          label: String.t(),
+          checked: boolean(),
+          on_change: function() | nil,
+          disabled: boolean(),
+          theme: map(),
+          tooltip: String.t() | nil,
+          required: boolean(),
+          aria_label: String.t() | nil
+        }
 
   @doc """
   Creates a new checkbox component with the given options.
@@ -44,7 +61,12 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
     %{
-      id: Keyword.get(opts, :id, "checkbox-#{:erlang.unique_integer([:positive])}"),
+      id:
+        Keyword.get(
+          opts,
+          :id,
+          "checkbox-#{:erlang.unique_integer([:positive])}"
+        ),
       label: Keyword.get(opts, :label, ""),
       checked: Keyword.get(opts, :checked, false),
       on_change: Keyword.get(opts, :on_change),
@@ -56,107 +78,60 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     }
   end
 
-  @doc """
-  Renders the checkbox component based on its current state.
+  @impl true
+  def init(props) do
+    id = props[:id] || Raxol.Core.ID.generate()
+    state = struct!(__MODULE__, Keyword.merge([id: id], props))
+    {:ok, state}
+  end
 
-  ## Parameters
+  @impl true
+  def mount(_state), do: {:ok, []}
 
-  * `checkbox` - The checkbox component to render
-  * `context` - The rendering context
+  @impl true
+  def update({:update_props, new_props}, state) do
+    {:noreply, Map.merge(state, Map.new(new_props))}
+  end
 
-  ## Returns
+  @impl true
+  def update(message, state) do
+    IO.inspect(message, label: "Unhandled Checkbox update")
+    {:noreply, state}
+  end
 
-  A rendered view representation of the checkbox.
-  """
-  @impl Component
-  def render(checkbox, context) do
-    theme = Map.merge(context.theme.checkbox || %{}, checkbox.theme || %{})
+  @impl true
+  def handle_event(state, event, _context) do
+    case event do
+      {:keypress, :space} ->
+        {:noreply, %{state | checked: !state.checked}}
 
-    # Determine colors based on state
-    {fg, bg} = resolve_colors(checkbox, theme)
+      {:click} ->
+        {:noreply, %{state | checked: !state.checked}}
 
-    %{
-      type: :checkbox,
-      id: checkbox.id,
-      attrs: %{
-        label: checkbox.label,
-        checked: checkbox.checked,
-        fg: fg,
-        bg: bg,
-        disabled: checkbox.disabled,
-        tooltip: checkbox.tooltip,
-        required: checkbox.required,
-        aria_label: checkbox.aria_label || checkbox.label
-      },
-      events: [
-        Event.new(:click, fn ->
-          if !checkbox.disabled && checkbox.on_change do
-            checkbox.on_change.(!checkbox.checked)
-          end
-        end),
-        Event.new(:keypress, fn key ->
-          if key == " " && !checkbox.disabled && checkbox.on_change do
-            checkbox.on_change.(!checkbox.checked)
-          end
-        end)
+      _ ->
+        {:noreply, state}
+    end
+  end
+
+  @impl true
+  def render(state, context) do
+    theme = context.theme
+    component_theme_style = Theme.component_style(theme, :checkbox)
+    style = Raxol.Style.merge(component_theme_style, state.style)
+
+    check_char = if state.checked, do: "[x]", else: "[ ]"
+    label_text = state.label
+
+    Element.new(
+      :hbox,
+      %{style: style},
+      [
+        Element.new(:text, %{id: "#{state.id}-check"}, check_char),
+        Element.new(:text, %{id: "#{state.id}-label"}, " " <> label_text)
       ]
-    }
+    )
   end
 
-  @doc """
-  Handles input events for the checkbox component.
-
-  ## Parameters
-
-  * `checkbox` - The checkbox component
-  * `event` - The input event to handle
-  * `context` - The event context
-
-  ## Returns
-
-  `{:update, updated_checkbox}` if the checkbox state changed,
-  `{:handled, checkbox}` if the event was handled but state didn't change,
-  `:passthrough` if the event wasn't handled by the checkbox.
-  """
-  @impl Component
-  def handle_event(checkbox, %{type: :click}, _context) do
-    if checkbox.disabled do
-      {:handled, checkbox}
-    else
-      updated_checkbox = %{checkbox | checked: !checkbox.checked}
-      if checkbox.on_change do
-        checkbox.on_change.(updated_checkbox.checked)
-      end
-      {:update, updated_checkbox}
-    end
-  end
-
-  def handle_event(checkbox, %{type: :keypress, key: " "}, _context) do
-    if checkbox.disabled do
-      {:handled, checkbox}
-    else
-      updated_checkbox = %{checkbox | checked: !checkbox.checked}
-      if checkbox.on_change do
-        checkbox.on_change.(updated_checkbox.checked)
-      end
-      {:update, updated_checkbox}
-    end
-  end
-
-  def handle_event(_checkbox, _event, _context), do: :passthrough
-
-  # Private helpers
-
-  defp resolve_colors(checkbox, theme) do
-    cond do
-      checkbox.disabled ->
-        {theme.disabled_fg || :gray, theme.disabled_bg || :black}
-
-      checkbox.checked ->
-        {theme.checked_fg || :green, theme.checked_bg || :black}
-
-      true ->
-        {theme.fg || :white, theme.bg || :black}
-    end
-  end
+  @impl true
+  def unmount(_state), do: :ok
 end

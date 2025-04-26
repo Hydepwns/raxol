@@ -15,8 +15,10 @@ defmodule Raxol.UI.Layout.PanelsTest do
 
       dimensions = Panels.measure(panel, available_space)
 
-      assert dimensions.width == 80  # Uses full available width by default
-      assert dimensions.height == 24  # Uses full available height by default
+      # Uses full available width by default
+      assert dimensions.width == 80
+      # Uses full available height by default
+      assert dimensions.height == 24
     end
 
     test "measures a panel with specific dimensions" do
@@ -46,8 +48,10 @@ defmodule Raxol.UI.Layout.PanelsTest do
       dimensions = Panels.measure(panel, available_space)
 
       # Minimum width and height for a panel should be enforced
-      assert dimensions.width >= 4  # Minimum width to accommodate borders
-      assert dimensions.height >= 3  # Minimum height to accommodate borders
+      # Minimum width to accommodate borders
+      assert dimensions.width >= 4
+      # Minimum height to accommodate borders
+      assert dimensions.height >= 3
     end
 
     test "constrains to available space" do
@@ -84,20 +88,22 @@ defmodule Raxol.UI.Layout.PanelsTest do
       assert length(List.flatten(result)) >= 2
 
       # Find box element
-      box = Enum.find(List.flatten(result), fn
-        %{type: :box} -> true
-        _ -> false
-      end)
+      box =
+        Enum.find(List.flatten(result), fn
+          %{type: :box} -> true
+          _ -> false
+        end)
 
       assert box != nil
       assert box.width == 80
       assert box.height == 24
 
       # Find title element
-      title = Enum.find(List.flatten(result), fn
-        %{type: :text, text: text} -> String.contains?(text, "Empty Panel")
-        _ -> false
-      end)
+      title =
+        Enum.find(List.flatten(result), fn
+          %{type: :text, text: text} -> String.contains?(text, "Empty Panel")
+          _ -> false
+        end)
 
       assert title != nil
     end
@@ -117,10 +123,11 @@ defmodule Raxol.UI.Layout.PanelsTest do
       flattened = List.flatten(result)
 
       # Find child element
-      child = Enum.find(flattened, fn
-        %{type: :text, text: "Child Content"} -> true
-        _ -> false
-      end)
+      child =
+        Enum.find(flattened, fn
+          %{type: :text, text: "Child Content"} -> true
+          _ -> false
+        end)
 
       assert child != nil
 
@@ -149,15 +156,17 @@ defmodule Raxol.UI.Layout.PanelsTest do
       flattened = List.flatten(result)
 
       # Find child elements
-      first_child = Enum.find(flattened, fn
-        %{type: :text, text: "First Child"} -> true
-        _ -> false
-      end)
+      first_child =
+        Enum.find(flattened, fn
+          %{type: :text, text: "First Child"} -> true
+          _ -> false
+        end)
 
-      second_child = Enum.find(flattened, fn
-        %{type: :text, text: "Second Child"} -> true
-        _ -> false
-      end)
+      second_child =
+        Enum.find(flattened, fn
+          %{type: :text, text: "Second Child"} -> true
+          _ -> false
+        end)
 
       assert first_child != nil
       assert second_child != nil
@@ -177,7 +186,8 @@ defmodule Raxol.UI.Layout.PanelsTest do
         children: []
       }
 
-      single_result = Panels.process(single_panel, %{x: 0, y: 0, width: 20, height: 10}, [])
+      single_result =
+        Panels.process(single_panel, %{x: 0, y: 0, width: 20, height: 10}, [])
 
       # Test double border
       double_panel = %{
@@ -186,7 +196,8 @@ defmodule Raxol.UI.Layout.PanelsTest do
         children: []
       }
 
-      double_result = Panels.process(double_panel, %{x: 0, y: 0, width: 20, height: 10}, [])
+      double_result =
+        Panels.process(double_panel, %{x: 0, y: 0, width: 20, height: 10}, [])
 
       # Test thick border
       thick_panel = %{
@@ -195,7 +206,8 @@ defmodule Raxol.UI.Layout.PanelsTest do
         children: []
       }
 
-      thick_result = Panels.process(thick_panel, %{x: 0, y: 0, width: 20, height: 10}, [])
+      thick_result =
+        Panels.process(thick_panel, %{x: 0, y: 0, width: 20, height: 10}, [])
 
       # Test no border
       no_border_panel = %{
@@ -204,23 +216,31 @@ defmodule Raxol.UI.Layout.PanelsTest do
         children: []
       }
 
-      no_border_result = Panels.process(no_border_panel, %{x: 0, y: 0, width: 20, height: 10}, [])
+      no_border_result =
+        Panels.process(
+          no_border_panel,
+          %{x: 0, y: 0, width: 20, height: 10},
+          []
+        )
 
       # Verify border types are different by looking at box elements
-      single_box = Enum.find(List.flatten(single_result), fn
-        %{type: :box} -> true
-        _ -> false
-      end)
+      single_box =
+        Enum.find(List.flatten(single_result), fn
+          %{type: :box} -> true
+          _ -> false
+        end)
 
-      double_box = Enum.find(List.flatten(double_result), fn
-        %{type: :box} -> true
-        _ -> false
-      end)
+      double_box =
+        Enum.find(List.flatten(double_result), fn
+          %{type: :box} -> true
+          _ -> false
+        end)
 
-      thick_box = Enum.find(List.flatten(thick_result), fn
-        %{type: :box} -> true
-        _ -> false
-      end)
+      thick_box =
+        Enum.find(List.flatten(thick_result), fn
+          %{type: :box} -> true
+          _ -> false
+        end)
 
       # Each border style should have a box element with different border chars
       assert single_box != nil
@@ -228,10 +248,11 @@ defmodule Raxol.UI.Layout.PanelsTest do
       assert thick_box != nil
 
       # For no border, there should be no box element
-      no_border_box = Enum.find(List.flatten(no_border_result), fn
-        %{type: :box} -> true
-        _ -> false
-      end)
+      no_border_box =
+        Enum.find(List.flatten(no_border_result), fn
+          %{type: :box} -> true
+          _ -> false
+        end)
 
       if no_border_box != nil do
         # If there's a box, it shouldn't have border chars

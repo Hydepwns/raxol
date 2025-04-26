@@ -23,7 +23,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   Updated emulator state
   """
   def set_screen_mode(emulator, mode, enabled) do
-    case ScreenModes.get_mode_by_id(mode) do
+    case ScreenModes.get_mode(mode) do
       nil ->
         Logger.debug("Unknown screen mode: #{mode}")
         emulator

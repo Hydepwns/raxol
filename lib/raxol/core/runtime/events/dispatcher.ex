@@ -8,10 +8,17 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   * Maintaining the event flow through the system
   """
 
+  use GenServer
+
   require Logger
 
   alias Raxol.Core.Events.Event
-  alias Raxol.Core.Runtime.Application
+
+  @impl true
+  def init(init_arg) do
+    Logger.info("Dispatcher initializing...")
+    {:ok, init_arg}
+  end
 
   @doc """
   Dispatches an event to the appropriate handler based on event type and target.
@@ -49,7 +56,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       end
 
     # Update the application state with the new message
-    case Application.update(app_module, message, current_model) do
+    case Raxol.Core.Runtime.Application.update(app_module, message, current_model) do
       {updated_model, commands} ->
         # Process any commands returned by the update function
         {:ok, %{state | model: updated_model, commands: commands}}
@@ -90,6 +97,24 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     end
   end
 
+  # --- Public API for PubSub ---
+
+  @doc "Placeholder for subscribing to event topics."
+  @spec subscribe(atom(), {module(), atom()}) :: :ok | {:error, term()}
+  def subscribe(topic, subscriber) do
+    Logger.debug("[#{__MODULE__}] subscribe called for topic '#{topic}': #{inspect(subscriber)}")
+    # TODO: Implement subscription management (e.g., using Registry or ETS)
+    :ok
+  end
+
+  @doc "Placeholder for broadcasting events to subscribers."
+  @spec broadcast(atom(), map()) :: :ok | {:error, term()}
+  def broadcast(topic, payload) do
+    Logger.debug("[#{__MODULE__}] broadcast called for topic '#{topic}': #{inspect(payload)}")
+    # TODO: Implement broadcast logic to notify subscribers
+    :ok
+  end
+
   # Private functions
 
   defp do_dispatch_event(event, state) do
@@ -121,19 +146,25 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp system_event?(_), do: false
 
   defp apply_plugin_filters(event, state) do
-    # If there's a plugin manager, let plugins filter the event
-    if state.plugin_manager do
-      Raxol.Plugins.PluginManager.filter_event(state.plugin_manager, event)
-    else
-      event
+    # Allow plugins to filter/modify the event before processing
+    case Raxol.Core.Runtime.Plugins.Manager.filter_event(state.plugin_manager, event) do
+      {:ok, filtered_event} -> filtered_event
+      :halt -> nil # Event processing halted by a plugin
+      _ -> event # No filtering applied
     end
   end
 
-  defp default_event_to_message(%Event{type: :key, data: %{key: key, modifiers: mods}}) do
+  defp default_event_to_message(%Event{
+         type: :key,
+         data: %{key: key, modifiers: mods}
+       }) do
     {:key_press, key, mods}
   end
 
-  defp default_event_to_message(%Event{type: :mouse, data: %{action: action, x: x, y: y, button: button}}) do
+  defp default_event_to_message(%Event{
+         type: :mouse,
+         data: %{action: action, x: x, y: y, button: button}
+       }) do
     {:mouse_event, action, x, y, button}
   end
 

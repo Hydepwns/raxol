@@ -11,13 +11,20 @@ defmodule Raxol.UI.Components.Display.Progress do
   """
 
   alias Raxol.UI.Components.Base.Component
-  alias Raxol.UI.Theming.Theme
+  # alias Raxol.UI.Element # Unused
+  # alias Raxol.UI.Layout.Constraints # Unused
+  # alias Raxol.UI.Theming.Theme # Unused
+  # alias Raxol.View
+  # alias Raxol.UI.Theming.Colors
+  # alias Raxol.View.Style
+  # alias Raxol.View.Fragment
 
   @behaviour Component
 
   @type props :: %{
           optional(:id) => String.t(),
-          optional(:progress) => float(),  # 0.0 to 1.0
+          # 0.0 to 1.0
+          optional(:progress) => float(),
           optional(:width) => integer(),
           optional(:show_percentage) => boolean(),
           optional(:label) => String.t(),
@@ -26,81 +33,122 @@ defmodule Raxol.UI.Components.Display.Progress do
         }
 
   @type state :: %{
-          animation_frame: integer(),
-          last_update: integer()  # timestamp for animation
-        }
-
-  @type t :: %{
-          props: props(),
-          state: state()
+          # props are merged into state
+          :id => String.t() | nil,
+          :progress => float(),
+          :width => integer(),
+          :show_percentage => boolean(),
+          :label => String.t() | nil,
+          :theme => map() | nil,
+          :animated => boolean(),
+          # Internal state
+          :animation_frame => integer(),
+          # timestamp for animation
+          :last_update => integer()
         }
 
   @animation_chars [" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"]
-  @animation_speed 100  # ms between frames
+  # ms between frames
+  @animation_speed 100
 
   @impl Component
-  def create(props) do
-    %{
-      props: normalize_props(props),
-      state: %{
-        animation_frame: 0,
-        last_update: System.monotonic_time(:millisecond)
-      }
-    }
+  def init(props) do
+    # Initialize state by merging normalized props with default internal state
+    normalized_props = normalize_props(props)
+
+    Map.merge(normalized_props, %{
+      animation_frame: 0,
+      last_update: System.monotonic_time(:millisecond)
+    })
   end
 
   @impl Component
-  def update(component, new_props) do
-    updated_props = Map.merge(component.props, normalize_props(new_props))
+  def update({:update_props, new_props}, state) do
+    # Update props within the state
+    updated_props = Map.merge(state, normalize_props(new_props))
+    # Assuming props are nested under :props key? No, merged directly.
+    %{state | props: updated_props}
+    # Let's re-read init. init merges props directly into the state map.
+    # So, merge new_props directly into the current state.
+    updated_state_props = Map.merge(state, normalize_props(new_props))
 
-    # Update animation state if needed
-    state =
-      if Map.get(new_props, :animated, false) do
-        now = System.monotonic_time(:millisecond)
-        time_diff = now - component.state.last_update
+    # Update animation state if needed (logic moved from old update/2)
+    now = System.monotonic_time(:millisecond)
+    time_diff = now - state.last_update
 
-        if time_diff >= @animation_speed do
-          # Advance animation frame
-          new_frame = rem(component.state.animation_frame + 1, length(@animation_chars))
-          %{animation_frame: new_frame, last_update: now}
-        else
-          component.state
-        end
+    updated_state_animation =
+      if state.animated and time_diff >= @animation_speed do
+        # Advance animation frame
+        new_frame = rem(state.animation_frame + 1, length(@animation_chars))
+        %{state | animation_frame: new_frame, last_update: now}
       else
-        component.state
+        # No animation update needed
+        state
       end
 
-    %{component | props: updated_props, state: state}
+    # Merge prop updates and animation updates
+    Map.merge(updated_state_props, %{
+      animation_frame: updated_state_animation.animation_frame,
+      last_update: updated_state_animation.last_update
+    })
+  end
+
+  def update(_message, state) do
+    # Handle potential animation updates even if no other message is processed
+    now = System.monotonic_time(:millisecond)
+    time_diff = now - state.last_update
+
+    if state.animated and time_diff >= @animation_speed do
+      new_frame = rem(state.animation_frame + 1, length(@animation_chars))
+      %{state | animation_frame: new_frame, last_update: now}
+    else
+      # Return unchanged state for unknown messages
+      state
+    end
   end
 
   @impl Component
-  def handle_event(component, _event, _context) do
+  def handle_event(_event, state, _context) do
     # Progress bar doesn't respond to events directly
-    {:ok, component}
+    # Return the state and empty command list
+    {state, []}
   end
 
   @impl Component
-  def render(component, _context) do
-    props = component.props
-    progress = props.progress
-    width = props.width
-    theme = props.theme || Theme.get_current()
-    colors = theme[:progress] || %{
-      fg: :green,
-      bg: :black,
-      border: :white,
-      text: :white
-    }
+  def render(state, _context) do
+    # Access props directly from state map
+    progress = state.progress
+    width = state.width
+    # Use the component's theme if set, otherwise the global theme
+    theme = state.theme || Raxol.UI.Theming.Theme.default_theme()
+
+    colors =
+      Map.get(theme, :progress, %{
+        fg: :green,
+        bg: :black,
+        border: :white,
+        text: :white
+      })
 
     # Calculate the filled width
     filled_width = floor(progress * (width - 2))
 
     # Generate progress bar content
-    bar_content = generate_bar_content(filled_width, width - 2, colors, props.animated, component.state.animation_frame)
+    bar_content =
+      generate_bar_content(
+        filled_width,
+        width - 2,
+        colors,
+        # Use state.animated
+        state.animated,
+        # Use state.animation_frame
+        state.animation_frame
+      )
 
     # Create percentage text if needed
+    # Use state.show_percentage
     percentage_text =
-      if props.show_percentage do
+      if state.show_percentage do
         percent_str = "#{floor(progress * 100)}%"
         # Center the percentage text in the bar
         padding = div(width - String.length(percent_str), 2)
@@ -132,7 +180,8 @@ defmodule Raxol.UI.Components.Display.Progress do
       # Progress fill
       %{
         type: :text,
-        x: 1, # Inside the border
+        # Inside the border
+        x: 1,
         y: 0,
         text: bar_content,
         attrs: %{
@@ -143,8 +192,9 @@ defmodule Raxol.UI.Components.Display.Progress do
     ]
 
     # Add percentage text if needed
+    # Use state.show_percentage
     progress_elements =
-      if props.show_percentage do
+      if state.show_percentage do
         text_element = %{
           type: :text,
           x: 1,
@@ -152,52 +202,79 @@ defmodule Raxol.UI.Components.Display.Progress do
           text: percentage_text,
           attrs: %{
             fg: colors.text,
-            bg: :transparent # To show the bar underneath
+            # To show the bar underneath
+            bg: :transparent
           }
         }
+
+        # Prepend text element
         [text_element | progress_elements]
       else
         progress_elements
       end
 
     # Add label if provided
+    # Use state.label
     progress_elements =
-      if label = props.label do
+      if label = state.label do
         label_element = %{
           type: :text,
           x: 0,
-          y: -1, # Above the progress bar
+          # Above the progress bar
+          y: -1,
           text: label,
           attrs: %{
             fg: colors.text,
+            # Use main background color
             bg: colors.bg
           }
         }
+
+        # Prepend label element
         [label_element | progress_elements]
       else
         progress_elements
       end
 
+    # Return the list of elements
     progress_elements
   end
 
   # Private helpers
 
   defp normalize_props(props) do
+    # Ensure it's a map
     props = Map.new(props)
 
     # Ensure proper value ranges and defaults
     props
+    # Allow nil ID
+    |> Map.put_new_lazy(:id, fn -> nil end)
     |> Map.put_new(:progress, 0.0)
     |> Map.put_new(:width, 20)
     |> Map.put_new(:show_percentage, false)
     |> Map.put_new(:animated, false)
     |> Map.put_new(:label, nil)
-    |> Map.update!(:progress, &(max(0.0, min(1.0, &1))))  # Clamp between 0.0 and 1.0
+    # Allow nil theme initially
+    |> Map.put_new_lazy(:theme, fn -> nil end)
+    # Clamp progress between 0.0 and 1.0
+    |> Map.update!(:progress, &max(0.0, min(1.0, &1)))
+    # Ensure minimum width for borders
+    |> Map.update!(:width, &max(3, &1))
   end
 
-  defp generate_bar_content(filled_width, total_width, colors, animated, animation_frame) do
-    empty_width = total_width - filled_width
+  defp generate_bar_content(
+         filled_width,
+         total_width,
+         # colors not used here? Check original code. Ok, not used.
+         _colors,
+         animated,
+         animation_frame
+       ) do
+    # Ensure widths are non-negative integers
+    filled_width = max(0, floor(filled_width))
+    total_width = max(0, floor(total_width))
+    empty_width = max(0, total_width - filled_width)
 
     # For full blocks
     filled_part = String.duplicate("█", filled_width)
@@ -211,14 +288,16 @@ defmodule Raxol.UI.Components.Display.Progress do
       animation_char = Enum.at(@animation_chars, animation_frame)
 
       # Insert animation character at the transition point
-      if filled_width > 0 do
-        filled_part <> animation_char <> String.slice(empty_part, 1..-1)
-      else
-        animation_char <> String.slice(empty_part, 1..-1)
-      end
+      # Need slicing adjustment if empty_part is ""
+      trail = if empty_width > 0, do: String.slice(empty_part, 1..-1//-1), else: ""
+      filled_part <> animation_char <> trail
     else
       # No animation
       filled_part <> empty_part
     end
   end
+
+  # Optional callbacks provided by `use Component` if not defined:
+  # def mount(state), do: {state, []}
+  # def unmount(state), do: state
 end

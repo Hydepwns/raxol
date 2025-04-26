@@ -74,11 +74,12 @@ defmodule Raxol.Terminal.Integration do
         config.memory_limit || 50 * 1024 * 1024
       )
 
-    renderer = Renderer.new(Emulator.get_active_buffer(emulator), config.ansi.colors)
+    renderer =
+      Renderer.new(Emulator.get_active_buffer(emulator), config.ansi.colors)
 
     scroll_buffer = Scroll.new(config.behavior.scrollback_lines)
     cursor_manager = CursorManager.new()
-    command_history = History.new(config.behavior.save_history && 1000 || 0)
+    command_history = History.new((config.behavior.save_history && 1000) || 0)
 
     %__MODULE__{
       emulator: emulator,
@@ -162,8 +163,7 @@ defmodule Raxol.Terminal.Integration do
       if integration.config.enable_command_history do
         %{
           integration
-          | command_history:
-              History.add(integration.command_history, command)
+          | command_history: History.add(integration.command_history, command)
         }
       else
         integration
@@ -820,7 +820,8 @@ defmodule Raxol.Terminal.Integration do
 
   defp deep_merge(left, right) when is_map(left) and is_map(right) do
     Map.merge(left, right, fn
-      _, left_value, right_value when is_map(left_value) and is_map(right_value) ->
+      _, left_value, right_value
+      when is_map(left_value) and is_map(right_value) ->
         deep_merge(left_value, right_value)
 
       _, _left_value, right_value ->

@@ -106,11 +106,12 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
     view = component.__struct__.render(component, context)
 
     # Track render in debug mode
-    debug_component = if Map.get(context, :debug_mode) do
-      add_lifecycle_event(component, :render)
-    else
-      component
-    end
+    debug_component =
+      if Map.get(context, :debug_mode) do
+        add_lifecycle_event(component, :render)
+      else
+        component
+      end
 
     # Return both the updated component and the view
     {debug_component, view}
@@ -131,14 +132,16 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   `{:handled, component}` if the event was handled but state didn't change,
   `:passthrough` if the event wasn't handled by the component.
   """
-  @spec process_event(Component.t(), map(), map()) :: {:update, Component.t()} | {:handled, Component.t()} | :passthrough
+  @spec process_event(Component.t(), map(), map()) ::
+          {:update, Component.t()} | {:handled, Component.t()} | :passthrough
   def process_event(component, event, context) do
     # Track the event in debug mode
-    debug_component = if Map.get(context, :debug_mode) do
-      add_lifecycle_event(component, {:event, event})
-    else
-      component
-    end
+    debug_component =
+      if Map.get(context, :debug_mode) do
+        add_lifecycle_event(component, {:event, event})
+      else
+        component
+      end
 
     # Process the event using the component's handler
     debug_component.__struct__.handle_event(debug_component, event, context)
@@ -159,7 +162,10 @@ defmodule Raxol.UI.Components.Base.Lifecycle do
   @spec add_lifecycle_event(Component.t(), term()) :: Component.t()
   def add_lifecycle_event(component, event) do
     lifecycle_events = Map.get(component, :__lifecycle_events__, [])
-    Map.put(component, :__lifecycle_events__, [{event, System.system_time(:millisecond)} | lifecycle_events])
+
+    Map.put(component, :__lifecycle_events__, [
+      {event, System.system_time(:millisecond)} | lifecycle_events
+    ])
   end
 
   @doc """

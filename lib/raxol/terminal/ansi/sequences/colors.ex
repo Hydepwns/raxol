@@ -84,7 +84,9 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   """
   def set_foreground_true(emulator, r, g, b) do
     color = Color.from_rgb(r, g, b)
-    adapted_color = Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
+    adapted_color =
+      Advanced.adapt_color_advanced(color, preserve_brightness: true)
 
     %{
       emulator
@@ -111,7 +113,9 @@ defmodule Raxol.Terminal.ANSI.Sequences.Colors do
   """
   def set_background_true(emulator, r, g, b) do
     color = Color.from_rgb(r, g, b)
-    adapted_color = Advanced.adapt_color_advanced(color, preserve_brightness: true)
+
+    adapted_color =
+      Advanced.adapt_color_advanced(color, preserve_brightness: true)
 
     %{
       emulator

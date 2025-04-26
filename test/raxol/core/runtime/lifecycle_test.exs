@@ -68,7 +68,13 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
 
   describe "error handling" do
     test "handle_error logs termbox errors and attempts retry" do
-      state = %{app_module: TestApp, model: %{}, app_name: :test_app, environment: :terminal}
+      state = %{
+        app_module: TestApp,
+        model: %{},
+        app_name: :test_app,
+        environment: :terminal
+      }
+
       error = {:termbox_error, :some_reason}
 
       log =
@@ -81,7 +87,13 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
     end
 
     test "handle_error logs application errors and stops" do
-      state = %{app_module: TestApp, model: %{}, app_name: :test_app, environment: :terminal}
+      state = %{
+        app_module: TestApp,
+        model: %{},
+        app_name: :test_app,
+        environment: :terminal
+      }
+
       error = {:application_error, :crash}
 
       log =
@@ -94,7 +106,13 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
     end
 
     test "handle_error logs unknown errors and continues" do
-      state = %{app_module: TestApp, model: %{}, app_name: :test_app, environment: :terminal}
+      state = %{
+        app_module: TestApp,
+        model: %{},
+        app_name: :test_app,
+        environment: :terminal
+      }
+
       error = {:unknown_error, :reason}
 
       log =
@@ -112,15 +130,29 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
       # Mock TerminalUtils module
       original_module = Raxol.Terminal.TerminalUtils
       :meck.new(Raxol.Terminal.TerminalUtils, [:passthrough])
-      :meck.expect(Raxol.Terminal.TerminalUtils, :initialize_terminal, fn _, _ -> :ok end)
-      :meck.expect(Raxol.Terminal.TerminalUtils, :set_terminal_title, fn _ -> :ok end)
 
-      options = [environment: :terminal, width: 100, height: 50, title: "Test Title"]
+      :meck.expect(Raxol.Terminal.TerminalUtils, :initialize_terminal, fn _,
+                                                                          _ ->
+        :ok
+      end)
+
+      :meck.expect(Raxol.Terminal.TerminalUtils, :set_terminal_title, fn _ ->
+        :ok
+      end)
+
+      options = [
+        environment: :terminal,
+        width: 100,
+        height: 50,
+        title: "Test Title"
+      ]
 
       log =
         capture_log(fn ->
           result = Lifecycle.initialize_environment(options)
-          assert {:ok, %{environment: :terminal, width: 100, height: 50}} = result
+
+          assert {:ok, %{environment: :terminal, width: 100, height: 50}} =
+                   result
         end)
 
       assert log =~ "Terminal environment initialized"
@@ -133,8 +165,15 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
       # Mock TerminalUtils module to fail
       original_module = Raxol.Terminal.TerminalUtils
       :meck.new(Raxol.Terminal.TerminalUtils, [:passthrough])
-      :meck.expect(Raxol.Terminal.TerminalUtils, :initialize_terminal, fn _, _ -> {:error, :test_failure} end)
-      :meck.expect(Raxol.Terminal.TerminalUtils, :set_terminal_title, fn _ -> :ok end)
+
+      :meck.expect(Raxol.Terminal.TerminalUtils, :initialize_terminal, fn _,
+                                                                          _ ->
+        {:error, :test_failure}
+      end)
+
+      :meck.expect(Raxol.Terminal.TerminalUtils, :set_terminal_title, fn _ ->
+        :ok
+      end)
 
       options = [environment: :terminal]
 
@@ -170,7 +209,10 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
 
       # Mock TerminalUtils module for cleanup
       :meck.new(Raxol.Terminal.TerminalUtils, [:passthrough])
-      :meck.expect(Raxol.Terminal.TerminalUtils, :restore_terminal, fn -> :ok end)
+
+      :meck.expect(Raxol.Terminal.TerminalUtils, :restore_terminal, fn ->
+        :ok
+      end)
 
       state = %{
         app_module: TestApp,

@@ -10,7 +10,7 @@ defmodule Subscriptions do
   @behaviour Raxol.App
   use Raxol.View
 
-  alias Raxol.Runtime.Subscription
+  alias Raxol.Core.Runtime.Events.Subscription
 
   def init(_context), do: {0, 0}
 

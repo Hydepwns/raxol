@@ -47,7 +47,8 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   Delay in milliseconds between frames.
   """
   def calculate_frame_delay(fps) do
-    max_fps = min(fps, 120)  # Cap at 120 FPS for sanity
+    # Cap at 120 FPS for sanity
+    max_fps = min(fps, 120)
 
     # Calculate milliseconds per frame (mpf)
     mpf = trunc(1000 / max_fps)
@@ -81,7 +82,9 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
 
         # Log performance if in debug mode
         if updated_state.debug_mode do
-          Logger.debug("Frame rendered in #{render_duration}ms (target: #{trunc(1000 / updated_state.fps)}ms)")
+          Logger.debug(
+            "Frame rendered in #{render_duration}ms (target: #{trunc(1000 / updated_state.fps)}ms)"
+          )
         end
 
         # Schedule the next frame
@@ -128,7 +131,8 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   ## Returns
   `{:ok, updated_state}` with potentially adjusted FPS.
   """
-  def adjust_frame_rate(state, render_times) when is_list(render_times) and length(render_times) > 0 do
+  def adjust_frame_rate(state, render_times)
+      when is_list(render_times) and length(render_times) > 0 do
     # Calculate average render time
     avg_render_time = Enum.sum(render_times) / length(render_times)
 
@@ -143,7 +147,8 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
           # Reduce FPS by 10%
           max(trunc(state.fps * 0.9), 10)
 
-        avg_render_time < target_frame_time * 0.5 and state.fps < state.target_fps ->
+        avg_render_time < target_frame_time * 0.5 and
+            state.fps < state.target_fps ->
           # Increase FPS by 10% up to original target
           min(trunc(state.fps * 1.1), state.target_fps)
 

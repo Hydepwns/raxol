@@ -16,12 +16,11 @@ defmodule Raxol.Terminal.Commands do
   - Raxol.Terminal.Commands.History - For command history management
   """
 
-  alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Commands.Executor
-  alias Raxol.Terminal.Commands.Parser
-  alias Raxol.Terminal.Commands.Modes
-  alias Raxol.Terminal.Commands.Screen
-  alias Raxol.Terminal.Commands.History
+  alias Raxol.Terminal.Commands.{History, Parser, Modes, Screen, Executor}
+  # alias Raxol.Terminal.Emulator
+  # alias Raxol.Terminal.ScreenBuffer
+  # alias Raxol.Terminal.Cursor
+  # alias Raxol.Terminal.ANSI
   require Logger
 
   # --- CSI Command Execution ---
@@ -54,10 +53,15 @@ defmodule Raxol.Terminal.Commands do
   new_emulator = Raxol.Terminal.Commands.Executor.execute_csi_command(emulator, params, intermediates, final_byte)
   ```
   """
-  def execute_csi_command(emulator, params_buffer, intermediates_buffer, final_byte) do
-    Logger.warn(
+  def execute_csi_command(
+        emulator,
+        params_buffer,
+        intermediates_buffer,
+        final_byte
+      ) do
+    Logger.warning(
       "Raxol.Terminal.Commands.execute_csi_command/4 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Executor.execute_csi_command/4 instead."
+        "Use Raxol.Terminal.Commands.Executor.execute_csi_command/4 instead."
     )
 
     Executor.execute_csi_command(
@@ -96,9 +100,9 @@ defmodule Raxol.Terminal.Commands do
   ```
   """
   def parse_params(params_string) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.Commands.parse_params/1 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Parser.parse_params/1 instead."
+        "Use Raxol.Terminal.Commands.Parser.parse_params/1 instead."
     )
 
     Parser.parse_params(params_string)
@@ -132,9 +136,9 @@ defmodule Raxol.Terminal.Commands do
   ```
   """
   def get_param(params, index, default \\ 1) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.Commands.get_param/3 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Parser.get_param/3 instead."
+        "Use Raxol.Terminal.Commands.Parser.get_param/3 instead."
     )
 
     Parser.get_param(params, index, default)
@@ -170,9 +174,9 @@ defmodule Raxol.Terminal.Commands do
   ```
   """
   def handle_dec_private_mode(emulator, params, action) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.Commands.handle_dec_private_mode/3 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Modes.handle_dec_private_mode/3 instead."
+        "Use Raxol.Terminal.Commands.Modes.handle_dec_private_mode/3 instead."
     )
 
     Modes.handle_dec_private_mode(emulator, params, action)
@@ -206,9 +210,9 @@ defmodule Raxol.Terminal.Commands do
   ```
   """
   def handle_ansi_mode(emulator, params, action) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.Commands.handle_ansi_mode/3 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Modes.handle_ansi_mode/3 instead."
+        "Use Raxol.Terminal.Commands.Modes.handle_ansi_mode/3 instead."
     )
 
     Modes.handle_ansi_mode(emulator, params, action)
@@ -243,9 +247,9 @@ defmodule Raxol.Terminal.Commands do
   ```
   """
   def clear_screen(emulator, mode) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.Commands.clear_screen/2 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead."
     )
 
     Screen.clear_screen(emulator, mode)
@@ -278,9 +282,9 @@ defmodule Raxol.Terminal.Commands do
   ```
   """
   def clear_line(emulator, mode) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.Commands.clear_line/2 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead."
     )
 
     Screen.clear_line(emulator, mode)
@@ -313,9 +317,9 @@ defmodule Raxol.Terminal.Commands do
   ```
   """
   def insert_line(emulator, count) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.Commands.insert_line/2 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead."
     )
 
     Screen.insert_lines(emulator, count)
@@ -348,9 +352,9 @@ defmodule Raxol.Terminal.Commands do
   ```
   """
   def delete_line(emulator, count) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.Commands.delete_line/2 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead."
     )
 
     Screen.delete_lines(emulator, count)
@@ -384,9 +388,9 @@ defmodule Raxol.Terminal.Commands do
   ```
   """
   def new_history(max_size) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.Commands.new_history/1 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.History.new/1 instead."
+        "Use Raxol.Terminal.Commands.History.new/1 instead."
     )
 
     History.new(max_size)
@@ -419,9 +423,9 @@ defmodule Raxol.Terminal.Commands do
   ```
   """
   def add_to_history(history, command) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.Commands.add_to_history/2 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.History.add/2 instead."
+        "Use Raxol.Terminal.Commands.History.add/2 instead."
     )
 
     History.add(history, command)
@@ -434,64 +438,48 @@ defmodule Raxol.Terminal.Commands do
 
   ## Parameters
 
-  * `history` - The history manager struct
-
-  ## Returns
-
-  * {command, updated_history} or {nil, history}
-
-  ## Migration Path
-
-  Update your code to use the History module directly:
-
-  ```elixir
-  # Before
-  {command, history} = Raxol.Terminal.CommandHistory.previous(history)
-
-  # After
-  {command, history} = Raxol.Terminal.Commands.History.previous(history)
-  ```
+  * `history`
   """
   def previous_command(history) do
-    Logger.warn(
+    Logger.warning(
       "Raxol.Terminal.Commands.previous_command/1 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.History.previous/1 instead."
+        "Use Raxol.Terminal.Commands.History.previous/1 instead."
     )
 
     History.previous(history)
   end
 
-  @doc """
-  Retrieves the next command in history.
+  # @doc """
+  # Retrieves the next command in history.
 
-  This method delegates to the Commands.History module.
+  # This method delegates to the Commands.History module.
 
-  ## Parameters
+  # ## Parameters
 
-  * `history` - The history manager struct
+  # * `history` - The history manager struct
 
-  ## Returns
+  # ## Returns
 
-  * {command, updated_history} or {nil, history}
+  # * {command, updated_history} or {nil, history}
 
-  ## Migration Path
+  # ## Migration Path
 
-  Update your code to use the History module directly:
+  # Update your code to use the History module directly:
 
-  ```elixir
-  # Before
-  {command, history} = Raxol.Terminal.CommandHistory.next(history)
+  # ```elixir
+  # # Before
+  # {command, history} = Raxol.Terminal.CommandHistory.next(history)
 
-  # After
-  {command, history} = Raxol.Terminal.Commands.History.next(history)
-  ```
-  """
-  def next_command(history) do
-    Logger.warn(
-      "Raxol.Terminal.Commands.next_command/1 is deprecated. " <>
-      "Use Raxol.Terminal.Commands.History.next/1 instead."
-    )
+  # # After
+  # {command, history} = Raxol.Terminal.Commands.History.next(history)
+  # ```
+  # """
+  # def next_command(history) do
+  #   Logger.warning(
+  #     "Raxol.Terminal.Commands.next_command/1 is deprecated. " <>
+  #       "Use Raxol.Terminal.Commands.History.next/1 instead."
+  #   )
 
-    History.next(history)
-  end
+  #   History.next(history)
+  # end
 end

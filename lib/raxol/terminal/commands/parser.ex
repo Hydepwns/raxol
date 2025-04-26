@@ -24,7 +24,8 @@ defmodule Raxol.Terminal.Commands.Parser do
       iex> Parser.parse_params("5:1;10:2;15:3")
       [[5, 1], [10, 2], [15, 3]]
   """
-  @spec parse_params(String.t()) :: list(integer() | nil | list(integer() | nil))
+  @spec parse_params(String.t()) ::
+          list(integer() | nil | list(integer() | nil))
   def parse_params(""), do: []
   def parse_params(nil), do: []
 

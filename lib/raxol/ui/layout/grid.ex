@@ -37,8 +37,8 @@ defmodule Raxol.UI.Layout.Grid do
       gap_y = Map.get(attrs, :gap_y, 1)
 
       # Calculate cell dimensions
-      available_width = space.width - (gap_x * (columns - 1))
-      available_height = space.height - (gap_y * (rows - 1))
+      available_width = space.width - gap_x * (columns - 1)
+      available_height = space.height - gap_y * (rows - 1)
       cell_width = div(available_width, columns)
       cell_height = div(available_height, rows)
 
@@ -123,8 +123,14 @@ defmodule Raxol.UI.Layout.Grid do
         end)
 
       # Calculate grid dimensions
-      grid_width = min(columns * max_cell_width + gap_x * (columns - 1), available_space.width)
-      grid_height = min(rows * max_cell_height + gap_y * (rows - 1), available_space.height)
+      grid_width =
+        min(
+          columns * max_cell_width + gap_x * (columns - 1),
+          available_space.width
+        )
+
+      grid_height =
+        min(rows * max_cell_height + gap_y * (rows - 1), available_space.height)
 
       %{width: grid_width, height: grid_height}
     end
@@ -152,8 +158,8 @@ defmodule Raxol.UI.Layout.Grid do
     gap_y = Map.get(grid_attrs, :gap_y, 1)
 
     # Available space accounting for gaps
-    available_width = space.width - (gap_x * (columns - 1))
-    available_height = space.height - (gap_y * (rows - 1))
+    available_width = space.width - gap_x * (columns - 1)
+    available_height = space.height - gap_y * (rows - 1)
 
     # Cell dimensions
     cell_width = max(div(available_width, columns), 1)

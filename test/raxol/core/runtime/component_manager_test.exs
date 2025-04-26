@@ -46,6 +46,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
         {:command, {:subscribe, [:test_event]}},
         {:schedule, :delayed_message, 50}
       ]
+
       {state, commands}
     end
 
@@ -53,6 +54,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       commands = [
         {:broadcast, :broadcast_message}
       ]
+
       {state, commands}
     end
   end
@@ -100,7 +102,8 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
     end
 
     test "unmount returns error for unknown component" do
-      assert {:error, :not_found} = ComponentManager.unmount("unknown_component")
+      assert {:error, :not_found} =
+               ComponentManager.unmount("unknown_component")
     end
   end
 
@@ -136,7 +139,8 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
     end
 
     test "update returns error for unknown component" do
-      assert {:error, :not_found} = ComponentManager.update("unknown_component", :increment)
+      assert {:error, :not_found} =
+               ComponentManager.update("unknown_component", :increment)
     end
   end
 
@@ -174,7 +178,8 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       render_queue = ComponentManager.get_render_queue()
 
       # Verify both components are in the queue
-      assert Enum.sort([component_id1, component_id2]) == Enum.sort(render_queue)
+      assert Enum.sort([component_id1, component_id2]) ==
+               Enum.sort(render_queue)
 
       # Verify queue was cleared
       assert ComponentManager.get_render_queue() == []
@@ -185,7 +190,10 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
     test "handles component commands" do
       # Mount with custom mount function that returns commands
       {:ok, component_id} =
-        GenServer.call(ComponentManager, {:mount, TestComponent, %{}, :mount_with_commands})
+        GenServer.call(
+          ComponentManager,
+          {:mount, TestComponent, %{}, :mount_with_commands}
+        )
 
       # Wait for delayed message to be processed
       Process.sleep(100)
@@ -201,7 +209,10 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       {:ok, component_id2} = ComponentManager.mount(TestComponent)
 
       # Set up a mock event that will trigger broadcasting
-      GenServer.cast(ComponentManager, {:dispatch_event_with_commands, component_id1})
+      GenServer.cast(
+        ComponentManager,
+        {:dispatch_event_with_commands, component_id1}
+      )
 
       # Wait for broadcasting to complete
       Process.sleep(100)

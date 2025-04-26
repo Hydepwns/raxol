@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
   setup do
     # Create a minimal emulator for testing
     buffer = ScreenBuffer.new(10, 5)
+
     emulator = %Emulator{
       main_screen_buffer: buffer,
       alternate_screen_buffer: ScreenBuffer.new(10, 5),
@@ -44,19 +45,22 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
           assert ScreenBuffer.get_cell(result.main_screen_buffer, x, y) == "X"
         end
       end
+
       for x <- 0..1 do
         assert ScreenBuffer.get_cell(result.main_screen_buffer, x, 2) == "X"
       end
 
       # Check that cells from cursor to end are cleared
       for y <- 2..4 do
-        for x <- (if y == 2, do: 2, else: 0)..9 do
+        for x <- if(y == 2, do: 2, else: 0)..9 do
           assert ScreenBuffer.get_cell(result.main_screen_buffer, x, y) == nil
         end
       end
     end
 
-    test "clears from beginning of screen to cursor (mode 1)", %{emulator: emulator} do
+    test "clears from beginning of screen to cursor (mode 1)", %{
+      emulator: emulator
+    } do
       # Fill buffer with test data
       filled_buffer =
         Enum.reduce(0..4, emulator.main_screen_buffer, fn y, acc ->
@@ -76,13 +80,14 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
           assert ScreenBuffer.get_cell(result.main_screen_buffer, x, y) == nil
         end
       end
+
       for x <- 0..2 do
         assert ScreenBuffer.get_cell(result.main_screen_buffer, x, 2) == nil
       end
 
       # Check that cells after cursor are unchanged
       for y <- 2..4 do
-        for x <- (if y == 2, do: 3, else: 0)..9 do
+        for x <- if(y == 2, do: 3, else: 0)..9 do
           assert ScreenBuffer.get_cell(result.main_screen_buffer, x, y) == "X"
         end
       end
@@ -135,7 +140,9 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       end
     end
 
-    test "clears from beginning of line to cursor (mode 1)", %{emulator: emulator} do
+    test "clears from beginning of line to cursor (mode 1)", %{
+      emulator: emulator
+    } do
       # Fill buffer with test data
       filled_buffer =
         Enum.reduce(0..9, emulator.main_screen_buffer, fn x, buf ->

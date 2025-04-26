@@ -24,15 +24,18 @@ defmodule Raxol.Terminal.Config.Validation do
   end
 
   # Recursive validation of configuration against schema
-  defp validate_config_recursive(config, path, schema) when is_map(config) and is_map(schema) do
+  defp validate_config_recursive(config, path, schema)
+       when is_map(config) and is_map(schema) do
     # Get all keys from both config and schema
     config_keys = Map.keys(config)
     schema_keys = Map.keys(schema)
 
     # Check for unknown keys in config
     unknown_keys = config_keys -- schema_keys
+
     if unknown_keys != [] do
-      {:error, "Unknown configuration keys at #{inspect(path)}: #{inspect(unknown_keys)}"}
+      {:error,
+       "Unknown configuration keys at #{inspect(path)}: #{inspect(unknown_keys)}"}
     else
       # Validate each key in the config
       Enum.reduce_while(config, {:ok, %{}}, fn {key, value}, {:ok, acc} ->
@@ -44,6 +47,7 @@ defmodule Raxol.Terminal.Config.Validation do
         case validate_value_with_schema(value, key_path, key_schema) do
           {:ok, validated_value} ->
             {:cont, {:ok, Map.put(acc, key, validated_value)}}
+
           {:error, reason} ->
             {:halt, {:error, reason}}
         end
@@ -56,7 +60,8 @@ defmodule Raxol.Terminal.Config.Validation do
   end
 
   # Validate a value against its schema
-  defp validate_value_with_schema(value, path, schema) when is_map(schema) and is_map(value) do
+  defp validate_value_with_schema(value, path, schema)
+       when is_map(schema) and is_map(value) do
     # For nested maps, recursively validate
     validate_config_recursive(value, path, schema)
   end
@@ -97,19 +102,26 @@ defmodule Raxol.Terminal.Config.Validation do
   end
 
   # Private validation functions for different types
-  defp validate_type(value, :integer, _path) when is_integer(value), do: {:ok, value}
-  defp validate_type(value, :boolean, _path) when is_boolean(value), do: {:ok, value}
-  defp validate_type(value, :string, _path) when is_binary(value), do: {:ok, value}
+  defp validate_type(value, :integer, _path) when is_integer(value),
+    do: {:ok, value}
+
+  defp validate_type(value, :boolean, _path) when is_boolean(value),
+    do: {:ok, value}
+
+  defp validate_type(value, :string, _path) when is_binary(value),
+    do: {:ok, value}
 
   defp validate_type(value, {:enum, options}, path) do
     if value in options do
       {:ok, value}
     else
-      {:error, "Value #{inspect(value)} at #{inspect(path)} is not one of #{inspect(options)}"}
+      {:error,
+       "Value #{inspect(value)} at #{inspect(path)} is not one of #{inspect(options)}"}
     end
   end
 
   defp validate_type(value, type, path) do
-    {:error, "Invalid value #{inspect(value)} at #{inspect(path)} for type #{inspect(type)}"}
+    {:error,
+     "Invalid value #{inspect(value)} at #{inspect(path)} for type #{inspect(type)}"}
   end
 end

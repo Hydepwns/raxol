@@ -40,7 +40,10 @@ defmodule Raxol.Terminal.ConfigurationMigrationTest do
       # Verify key properties match
       assert old_iterm.terminal_type == :iterm2
       assert get_in(new_iterm, [:terminal, :type]) == :iterm2
-      assert old_iterm.font_family == get_in(new_iterm, [:display, :font_family])
+
+      assert old_iterm.font_family ==
+               get_in(new_iterm, [:display, :font_family])
+
       assert old_iterm.font_size == get_in(new_iterm, [:display, :font_size])
 
       # Test Windows Terminal preset
@@ -49,7 +52,9 @@ defmodule Raxol.Terminal.ConfigurationMigrationTest do
 
       assert old_windows.terminal_type == :windows_terminal
       assert get_in(new_windows, [:terminal, :type]) == :windows_terminal
-      assert old_windows.font_family == get_in(new_windows, [:display, :font_family])
+
+      assert old_windows.font_family ==
+               get_in(new_windows, [:display, :font_family])
     end
 
     # Skip validation tests as they're implementation-specific
@@ -71,8 +76,11 @@ defmodule Raxol.Terminal.ConfigurationMigrationTest do
       new_detected = Config.detect_capabilities()
 
       # Verify format transformation is correct
-      assert old_detected.unicode_support == get_in(new_detected, [:display, :unicode])
-      assert old_detected.mouse_support == get_in(new_detected, [:input, :mouse])
+      assert old_detected.unicode_support ==
+               get_in(new_detected, [:display, :unicode])
+
+      assert old_detected.mouse_support ==
+               get_in(new_detected, [:input, :mouse])
     end
   end
 end

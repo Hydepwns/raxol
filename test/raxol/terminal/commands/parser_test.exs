@@ -27,7 +27,12 @@ defmodule Raxol.Terminal.Commands.ParserTest do
     end
 
     test "handles mixed parameter types" do
-      assert Parser.parse_params("5;10:2;;7:1:3") == [5, [10, 2], nil, [7, 1, 3]]
+      assert Parser.parse_params("5;10:2;;7:1:3") == [
+               5,
+               [10, 2],
+               nil,
+               [7, 1, 3]
+             ]
     end
 
     test "handles invalid numeric parameters" do

@@ -33,44 +33,44 @@ defmodule Raxol do
 
   Here's a simple counter example:
 
-  ```elixir
-  defmodule Counter do
-    @behaviour Raxol.App
+      ```text
+      defmodule Counter do
+        @behaviour Raxol.App
 
-    alias Raxol.View
-    alias Raxol.Components, as: C
+        alias Raxol.View
+        alias Raxol.Components, as: C
 
-    def init(_) do
-      %{count: 0}
-    end
+        def init(_) do
+          %{count: 0}
+        end
 
-    def update(model, msg) do
-      case msg do
-        :increment -> %{model | count: model.count + 1}
-        :decrement -> %{model | count: model.count - 1}
-        _ -> model
-      end
-    end
+        def update(model, msg) do
+          case msg do
+            :increment -> %{model | count: model.count + 1}
+            :decrement -> %{model | count: model.count - 1}
+            _ -> model
+          end
+        end
 
-    def render(model) do
-      View.view do
-        View.panel [title: "Counter Example", border: true], fn ->
-          View.column [padding: 1], fn ->
-            View.text("Count: \#{model.count}")
+        def render(model) do
+          View.view do
+            View.panel [title: "Counter Example", border: true], fn ->
+              View.column [padding: 1], fn ->
+                # View.text("Count: \#{model.count}") # Temporarily commented out
 
-            View.row [gap: 1], fn ->
-              C.button([on_click: fn -> :decrement end], "-")
-              C.button([on_click: fn -> :increment end], "+")
+                View.row [gap: 1], fn ->
+                  C.button([on_click: fn -> :decrement end], "-")
+                  C.button([on_click: fn -> :increment end], "+")
+                end
+              end
             end
           end
         end
       end
-    end
-  end
 
-  # Start the application
-  Raxol.run(Counter)
-  ```
+      # Start the application
+      Raxol.run(Counter)
+      ```
 
   ## Architecture
 
@@ -135,7 +135,7 @@ defmodule Raxol do
   ```
   """
   def run(app, opts \\ []) do
-    Raxol.Runtime.run(app, opts)
+    Raxol.Core.Runtime.Lifecycle.start_application(app, opts)
   end
 
   @doc """
@@ -157,7 +157,7 @@ defmodule Raxol do
   ```
   """
   def stop(return_value \\ :ok) do
-    Raxol.Runtime.stop(return_value)
+    Raxol.Core.Runtime.Lifecycle.stop_application(return_value)
   end
 
   @doc """

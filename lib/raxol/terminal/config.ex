@@ -131,15 +131,6 @@ defmodule Raxol.Terminal.Config do
   """
   defdelegate generate_default_config, to: Defaults
 
-  @doc """
-  Returns a minimal configuration with only essential settings.
-
-  ## Returns
-
-  A map containing minimal configuration values.
-  """
-  defdelegate minimal_config, to: Defaults
-
   # Capability-related functions
 
   @doc """
@@ -226,7 +217,8 @@ defmodule Raxol.Terminal.Config do
 
   `{:ok, updated_config}` or `{:error, reason}`
   """
-  defdelegate apply_partial_config(partial_config, terminal_pid \\ nil), to: Application
+  defdelegate apply_partial_config(partial_config, terminal_pid \\ nil),
+    to: Application
 
   @doc """
   Gets the current terminal configuration.
@@ -253,5 +245,6 @@ defmodule Raxol.Terminal.Config do
 
   `{:ok, default_config}` or `{:error, reason}`
   """
-  defdelegate reset_config(terminal_pid \\ nil, optimize \\ true), to: Application
+  defdelegate reset_config(terminal_pid \\ nil, optimize \\ true),
+    to: Application
 end

@@ -8,7 +8,10 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
   # Mock modules for testing
   defmodule Mock.Application do
     def handle_event(_), do: {:test_message, []}
-    def update(_module, {:test_message, []}, model), do: {%{model | count: model.count + 1}, []}
+
+    def update(_module, {:test_message, []}, model),
+      do: {%{model | count: model.count + 1}, []}
+
     def update(_module, _, model), do: {model, []}
   end
 
@@ -32,7 +35,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
 
     test "handles errors during dispatch" do
       state = %{
-        app_module: nil, # This will cause an error
+        # This will cause an error
+        app_module: nil,
         model: %{},
         commands: [],
         debug_mode: false
@@ -41,9 +45,11 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       event = %Event{type: :key, key: :enter, modifiers: []}
 
       # Capture log to verify error is logged
-      log = capture_log(fn ->
-        assert {:error, {:dispatch_error, _}, ^state} = Dispatcher.dispatch_event(event, state)
-      end)
+      log =
+        capture_log(fn ->
+          assert {:error, {:dispatch_error, _}, ^state} =
+                   Dispatcher.dispatch_event(event, state)
+        end)
 
       assert log =~ "Error dispatching event"
     end
@@ -54,7 +60,9 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       state = %{width: 80, height: 24}
       event = %Event{type: :resize, width: 100, height: 50}
 
-      assert {:ok, updated_state} = Dispatcher.process_system_event(event, state)
+      assert {:ok, updated_state} =
+               Dispatcher.process_system_event(event, state)
+
       assert updated_state.width == 100
       assert updated_state.height == 50
     end
@@ -70,7 +78,9 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       state = %{focused: false}
       event = %Event{type: :focus, focused: true}
 
-      assert {:ok, updated_state} = Dispatcher.process_system_event(event, state)
+      assert {:ok, updated_state} =
+               Dispatcher.process_system_event(event, state)
+
       assert updated_state.focused == true
     end
 
@@ -79,9 +89,11 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       event = %Event{type: :error, error: "Test error"}
 
       # Capture log to verify error is logged
-      log = capture_log(fn ->
-        assert {:error, "Test error", ^state} = Dispatcher.process_system_event(event, state)
-      end)
+      log =
+        capture_log(fn ->
+          assert {:error, "Test error", ^state} =
+                   Dispatcher.process_system_event(event, state)
+        end)
 
       assert log =~ "System error event"
     end
@@ -117,12 +129,23 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
 
       # Test different event types
       key_event = %Event{type: :key, key: :a, modifiers: [:shift]}
-      mouse_event = %Event{type: :mouse, action: :click, x: 10, y: 20, button: :left}
+
+      mouse_event = %Event{
+        type: :mouse,
+        action: :click,
+        x: 10,
+        y: 20,
+        button: :left
+      }
+
       text_event = %Event{type: :text, text: "Hello"}
 
       # Mock the update function to return the message for verification
       :meck.new(Mock.Application, [:passthrough])
-      :meck.expect(Mock.Application, :update, fn _, msg, model -> {{:captured, msg}, model, []} end)
+
+      :meck.expect(Mock.Application, :update, fn _, msg, model ->
+        {{:captured, msg}, model, []}
+      end)
 
       # Test key event
       {:ok, result} = Dispatcher.handle_event(key_event, state)

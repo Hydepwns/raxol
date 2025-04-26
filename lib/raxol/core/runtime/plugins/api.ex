@@ -13,9 +13,8 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   the Raxol system to ensure forward compatibility when the internal system changes.
   """
 
-  alias Raxol.Core.Runtime.Events.Dispatcher
-  alias Raxol.Core.Runtime.Rendering.Engine
-  alias Raxol.Core.Runtime.Rendering.Buffer
+  # --- Event Management ---
+  alias Raxol.Core.Events.Manager, as: EventManager
 
   @doc """
   Subscribe to runtime events.
@@ -39,7 +38,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   """
   @spec subscribe(atom(), module(), atom()) :: :ok | {:error, term()}
   def subscribe(event_type, handler, function \\ :handle_event) do
-    Dispatcher.subscribe(event_type, handler, function)
+    EventManager.register_handler(event_type, handler, function)
   end
 
   @doc """
@@ -57,7 +56,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   """
   @spec unsubscribe(atom(), module()) :: :ok | {:error, term()}
   def unsubscribe(event_type, handler) do
-    Dispatcher.unsubscribe(event_type, handler)
+    EventManager.unregister_handler(event_type, handler, :handle_event)
   end
 
   @doc """
@@ -74,7 +73,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   """
   @spec broadcast(atom(), map()) :: :ok
   def broadcast(event_type, payload) do
-    Dispatcher.broadcast(event_type, payload)
+    EventManager.dispatch({event_type, payload})
   end
 
   @doc """
@@ -100,7 +99,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   ```
   """
   @spec register_command(String.t(), module(), String.t(), keyword()) ::
-    :ok | {:error, term()}
+          :ok | {:error, term()}
   def register_command(command_name, handler, help_text, options \\ []) do
     Raxol.Core.Runtime.Plugins.Commands.register(
       command_name,
@@ -127,44 +126,12 @@ defmodule Raxol.Core.Runtime.Plugins.API do
     Raxol.Core.Runtime.Plugins.Commands.unregister(command_name)
   end
 
-  @doc """
-  Render content to a screen region.
-
-  ## Parameters
-
-  - `region` - The region identifier to render to
-  - `content` - The content to render (can be string or specialized buffer)
-  - `options` - Additional rendering options
-
-  ## Returns
-
-  - `:ok` if rendering was scheduled
-  - `{:error, reason}` if rendering failed
-  """
-  @spec render(atom() | String.t(), term(), keyword()) :: :ok | {:error, term()}
-  def render(region, content, options \\ []) do
-    Engine.render(region, content, options)
-  end
-
-  @doc """
-  Create a new buffer for rendering complex content.
-
-  ## Parameters
-
-  - `width` - Width of the buffer in columns
-  - `height` - Height of the buffer in rows
-  - `options` - Additional buffer options
-
-  ## Returns
-
-  - `{:ok, buffer}` with the new buffer
-  - `{:error, reason}` if buffer creation failed
-  """
-  @spec create_buffer(integer(), integer(), keyword()) ::
-    {:ok, Buffer.t()} | {:error, term()}
-  def create_buffer(width, height, options \\ []) do
-    Buffer.create(width, height, options)
-  end
+  # TODO: Refactor plugin buffer creation. The Core.Runtime.Rendering.Buffer module
+  # does not exist. Buffer creation is likely handled by Terminal.ScreenBuffer.
+  # def create_buffer(width, height, options \\ []) do
+  #   Logger.debug("Plugin API: create_buffer(#{width}, #{height}, #{inspect(options)})")
+  #   Raxol.Core.Runtime.Rendering.Buffer.create(width, height, options)
+  # end
 
   @doc """
   Get the current application configuration.
@@ -180,7 +147,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   """
   @spec get_config(atom() | String.t(), term()) :: term()
   def get_config(key, default \\ nil) do
-    Application.get_env(:raxol, key, default)
+    Raxol.Core.Runtime.Application.get_env(:raxol, key, default)
   end
 
   @doc """
@@ -196,7 +163,7 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   """
   @spec plugin_data_dir(String.t()) :: String.t()
   def plugin_data_dir(plugin_id) do
-    base_path = Application.get_env(:raxol, :plugin_data_path, "data/plugins")
+    base_path = Raxol.Core.Runtime.Application.get_env(:raxol, :plugin_data_path, "data/plugins")
     Path.join(base_path, plugin_id)
   end
 

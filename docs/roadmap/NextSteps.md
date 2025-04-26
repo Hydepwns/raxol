@@ -1,7 +1,7 @@
 ---
 title: Next Steps
 description: Documentation of next steps in Raxol Terminal Emulator development
-date: 2023-04-04
+date: 2024-06-05
 author: Raxol Team
 section: roadmap
 tags: [roadmap, next steps, planning]
@@ -11,70 +11,72 @@ tags: [roadmap, next steps, planning]
 
 ## Current Status Overview
 
-The application is now at a stable prototype stage with most core components working. The immediate focus is on:
+The project has completed its foundational phases (1-3), including core architecture refactoring, comprehensive component and styling systems, and performance maturity work. Phase 4 is well underway (~50% complete), with significant milestones achieved:
 
-- Testing in native terminal environment
-- Performance optimization for large datasets
-- Documentation updates for recent features
-- Cross-platform compatibility verification
+- **Major Codebase Reorganization:** Completed according to plan.
+- **VS Code Extension Integration:** Core communication bridge, rendering, and input handling implemented and functional.
+- **Dashboard & Visualization:** Layout system, core visualizations (bar, treemap), and persistence are implemented and tested.
+- **Testing Framework:** Comprehensive framework and tooling are in place.
+- **Theme System:** Core functionality, API, and persistence implemented.
+- **Critical Bug Fixes:** Addressed major runtime, database, and integration issues.
+
+**Immediate Focus:**
+
+- Resolving remaining compiler warnings (currently addressing unused functions).
+- Completing native terminal environment testing and TUI enhancements.
+- Performance analysis and optimization (profiling, benchmarking, caching).
+- Documentation expansion (user guides, API updates).
+- Completing cross-platform testing.
 
 ## Tactical Next Steps
 
-1. **Complete Testing in Native Terminal Environment**
-
-   - Verify TUI rendering in native terminal
-   - Test cross-platform compatibility for core features
-   - Test visualization components in terminal mode
-   - Ensure proper window resizing and layout management
-   - Test theme system functionality in terminal environment
-
-2. **Performance Optimization**
-
-   - Profile visualization performance with large datasets
-   - Optimize rendering pipeline for complex dashboards
-   - Add asset optimization for improved load times
-   - Benchmark performance metrics in both environments
-
-3. **Fix Remaining Technical Issues**
-
-   - Verify image rendering with visual confirmation
-   - Ensure proper terminal cleanup across platforms
-
-4. **Documentation Expansion**
-
-   - Create comprehensive user guides
-   - Update API documentation with latest implementations
-   - Create tutorials for common workflows
-   - Document theme customization process
-   - Document component testing approach for contributors
-
-5. **CI/CD and GitHub Actions Improvements**
-   - Updated cross-platform testing matrix for Linux, macOS and Windows
-   - Streamlined Docker images for testing environment
-   - Local workflow testing with act for debugging GitHub Actions
-   - ARM support for macOS developers using Orbstack
-   - Consistent environment variables across all test platforms
+1.  **Address Compiler Warnings:** Continue cleanup based on `handoff_prompt.md`, focusing on unused functions first.
+2.  **Complete Native Terminal Environment Testing:**
+    - Verify TUI rendering, themes, and layout management.
+    - Test cross-platform compatibility for core features.
+    - Test visualization components in terminal mode.
+    - Ensure proper window resizing and event handling.
+3.  **Performance Optimization:**
+    - Profile visualization performance with large datasets.
+    - Benchmark performance metrics in both VS Code and native terminal environments.
+    - Implement further caching for visualization calculations.
+    - Investigate reported performance degradation with complex dashboards.
+    - Investigate memory usage patterns with large datasets.
+4.  **Fix Remaining Technical Issues:**
+    - Visually verify ImagePlugin rendering.
+    - Test HyperlinkPlugin across OSes.
+    - Investigate `ex_termbox` dimension inconsistencies.
+    - Verify potential infinite loop and other runtime warnings.
+    - Address `text_wrapping.ex` off-by-one issue.
+5.  **Documentation Expansion:**
+    - Create comprehensive user guides.
+    - Update API documentation reflecting refactoring and new features.
+    - Create tutorials for common workflows (Dashboard setup, Plugin usage).
+    - Document theme customization process.
+6.  **Complete Cross-Platform Testing:** Systematically test all core features across supported platforms (Linux, macOS, Windows).
 
 ## Immediate Development Priorities
 
-| Task                         | Description                                           | Status      |
-| ---------------------------- | ----------------------------------------------------- | ----------- |
-| Native Terminal Testing      | Test functionality in terminal environment            | In Progress |
-| Performance Optimization     | Profile and optimize visualization rendering          | In Progress |
-| Cross-Platform Compatibility | Ensure consistent behavior across platforms           | In Progress |
-| TUI Rendering Enhancements   | Improve rendering performance in terminal environment | In Progress |
-| Documentation Updates        | Update API docs and create user guides                | In Progress |
-| GitHub Actions Improvements  | Fix workflow testing matrix for cross-platform runs   | Completed   |
+| Task                         | Description                                                            | Status                              |
+| ---------------------------- | ---------------------------------------------------------------------- | ----------------------------------- |
+| Compiler Warning Cleanup     | Address remaining warnings (focus: next type, e.g., deprecated)        | In Progress (Unused Functions Done) |
+| Native Terminal Testing      | Complete testing & TUI enhancements in native terminal                 | In Progress                         |
+| Performance Analysis & Opt.  | Profile, benchmark, implement caching, investigate reported issues     | In Progress                         |
+| Documentation Updates        | Create user guides, update API docs                                    | In Progress                         |
+| Cross-Platform Compatibility | Complete systematic testing across platforms                           | In Progress                         |
+| Fix Known Technical Issues   | Address specific runtime, component, plugin issues listed in `TODO.md` | ToDo                                |
+| GitHub Actions Improvements  | Ensure CI covers all platforms/scenarios effectively                   | Completed                           |
 
 ## Technical Implementation Plan
 
-### Timeline for Next 2 Weeks
+### Timeline for Next ~4 Weeks
 
-| Week   | Focus                       | Tasks                                                                                                                                  |
-| ------ | --------------------------- | -------------------------------------------------------------------------------------------------------------------------------------- |
-| Week 1 | Native Terminal Environment | - Complete native terminal testing<br>- Verify TUI rendering<br>- Test cross-platform compatibility<br>- Document issues and solutions |
-| Week 2 | Performance Optimization    | - Profile rendering with complex dashboards<br>- Optimize large dataset handling<br>- Benchmark improvements                           |
-| Week 3 | Documentation & Testing     | - Create user documentation<br>- Add tutorials for common workflows<br>- Theme customization documentation<br>- Performance testing    |
+| Week   | Focus                               | Tasks                                                                                                                                                                                       |
+| ------ | ----------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Week 1 | Compiler Warnings & Native Terminal | - Address unused function warnings (Done)<br>- Address next warning type (e.g., deprecated Logger)<br>- Continue native terminal testing (rendering, layout, themes)<br>- Document findings |
+| Week 2 | Performance & Native Terminal       | - Profile/Benchmark visualizations<br>- Begin implementing caching<br>- Complete native terminal testing (visualizations, events)<br>- Start fixing minor known issues                      |
+| Week 3 | Documentation & Cross-Platform      | - Start writing user guides<br>- Update key API docs<br>- Begin systematic cross-platform testing                                                                                           |
+| Week 4 | Performance & Documentation         | - Continue performance optimizations (caching, investigate issues)<br>- Continue user guides & tutorials<br>- Continue cross-platform testing                                               |
 
 ## Additional Visualization Types
 

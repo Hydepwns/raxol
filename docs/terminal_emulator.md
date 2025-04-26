@@ -48,4 +48,6 @@ Even though you don't directly call functions like `Raxol.Terminal.Emulator.writ
 - **Consistency:** Your application should look and behave similarly across different terminal emulators (within the limits of the emulator's capabilities).
 - **Developer Experience:** You can focus on defining your UI structure and logic using components, without worrying about low-level terminal escape codes.
 
-For most use cases involving `Raxol.App`, you don't need to interact with this layer directly. The `Raxol.Runtime` manages the terminal lifecycle and rendering based on the output of your `render/1` function and event handlers.
+For most use cases involving `Raxol.App`, you don't need to interact with this layer directly. The `Raxol.Core.Runtime` manages the terminal lifecycle and rendering based on the output of your `render/1` function and event handlers.
+
+### Key Concepts

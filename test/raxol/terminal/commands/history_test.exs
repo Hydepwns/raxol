@@ -35,9 +35,10 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
     end
 
     test "adds command to existing history" do
-      history = History.new(10)
-      |> History.add("first command")
-      |> History.add("second command")
+      history =
+        History.new(10)
+        |> History.add("first command")
+        |> History.add("second command")
 
       assert history.commands == ["second command", "first command"]
     end
@@ -45,11 +46,12 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
     test "respects max_size limit" do
       history = History.new(3)
 
-      history = Enum.reduce(
-        ["cmd1", "cmd2", "cmd3", "cmd4", "cmd5"],
-        history,
-        fn cmd, acc -> History.add(acc, cmd) end
-      )
+      history =
+        Enum.reduce(
+          ["cmd1", "cmd2", "cmd3", "cmd4", "cmd5"],
+          history,
+          fn cmd, acc -> History.add(acc, cmd) end
+        )
 
       assert length(history.commands) == 3
       assert history.commands == ["cmd5", "cmd4", "cmd3"]
@@ -63,9 +65,10 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
     end
 
     test "returns previous command and updates index" do
-      history = History.new(10)
-      |> History.add("first command")
-      |> History.add("second command")
+      history =
+        History.new(10)
+        |> History.add("first command")
+        |> History.add("second command")
 
       {command, history} = History.previous(history)
       assert command == "second command"
@@ -89,9 +92,10 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
     end
 
     test "returns next command after previous calls" do
-      history = History.new(10)
-      |> History.add("first command")
-      |> History.add("second command")
+      history =
+        History.new(10)
+        |> History.add("first command")
+        |> History.add("second command")
 
       # First go back in history
       {_, history} = History.previous(history)
@@ -113,9 +117,10 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
     end
 
     test "returns saved input when at start position" do
-      history = History.new(10)
-      |> History.add("command")
-      |> History.save_input("partial input")
+      history =
+        History.new(10)
+        |> History.add("command")
+        |> History.save_input("partial input")
 
       # Go back in history
       {_, history} = History.previous(history)
@@ -138,10 +143,11 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
 
   describe "clear/1" do
     test "clears all commands" do
-      history = History.new(10)
-      |> History.add("command 1")
-      |> History.add("command 2")
-      |> History.save_input("partial command")
+      history =
+        History.new(10)
+        |> History.add("command 1")
+        |> History.add("command 2")
+        |> History.save_input("partial command")
 
       history = History.clear(history)
 
@@ -158,12 +164,17 @@ defmodule Raxol.Terminal.Commands.HistoryTest do
     end
 
     test "returns list of commands in order" do
-      history = History.new(10)
-      |> History.add("first command")
-      |> History.add("second command")
-      |> History.add("third command")
+      history =
+        History.new(10)
+        |> History.add("first command")
+        |> History.add("second command")
+        |> History.add("third command")
 
-      assert History.list(history) == ["third command", "second command", "first command"]
+      assert History.list(history) == [
+               "third command",
+               "second command",
+               "first command"
+             ]
     end
   end
 end
