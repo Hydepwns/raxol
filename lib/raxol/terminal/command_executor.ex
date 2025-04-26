@@ -184,7 +184,11 @@ defmodule Raxol.Terminal.CommandExecutor do
         "Use Raxol.Terminal.Commands.Modes.handle_dec_private_mode/3 instead."
     )
 
-    Raxol.Terminal.Commands.Modes.handle_dec_private_mode(emulator, params, action)
+    Raxol.Terminal.Commands.Modes.handle_dec_private_mode(
+      emulator,
+      params,
+      action
+    )
   end
 
   @doc """

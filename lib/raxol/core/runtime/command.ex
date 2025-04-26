@@ -14,6 +14,10 @@ defmodule Raxol.Core.Runtime.Command do
   * `:delay` - Delayed message delivery
   * `:broadcast` - Send a message to all components
   * `:system` - System-level operations (file, network, etc.)
+  * `:quit` - Signals the runtime to quit
+  * `:clipboard_write` - Write text to the system clipboard
+  * `:clipboard_read` - Request text from the system clipboard (will result in a message)
+  * `:notify` - Send a system notification
 
   ## Examples
 
@@ -41,10 +45,25 @@ defmodule Raxol.Core.Runtime.Command do
 
       # System operation
       Command.system(:file_write, path: "data.txt", content: "Hello")
+
+      # Signal the runtime to quit
+      Command.quit()
+
+      # Write to clipboard
+      Command.clipboard_write("Copied text")
+
+      # Read from clipboard (expects a {:clipboard_content, text} message later)
+      Command.clipboard_read()
+
+      # Send notification
+      Command.notify("Task Complete", "Your background job finished.")
   """
 
+  alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
+
   @type t :: %__MODULE__{
-          type: :none | :task | :batch | :delay | :broadcast | :system,
+          type: :none | :task | :batch | :delay | :broadcast | :system | :quit
+                | :clipboard_write | :clipboard_read | :notify,
           data: term()
         }
 
@@ -100,6 +119,34 @@ defmodule Raxol.Core.Runtime.Command do
   """
   def system(operation, opts \\ []) do
     new(:system, {operation, opts})
+  end
+
+  @doc """
+  Returns a command that signals the runtime to quit.
+  """
+  def quit, do: new(:quit)
+
+  @doc """
+  Creates a command to write text to the system clipboard.
+  """
+  def clipboard_write(text) when is_binary(text) do
+    new(:clipboard_write, text)
+  end
+
+  @doc """
+  Creates a command to read text from the system clipboard.
+  This will eventually result in a `{:command_result, {:clipboard_content, content}}`
+  message being sent back to the application's update function.
+  """
+  def clipboard_read do
+    new(:clipboard_read)
+  end
+
+  @doc """
+  Creates a command to send a system notification.
+  """
+  def notify(title, body) when is_binary(title) and is_binary(body) do
+    new(:notify, {title, body})
   end
 
   @doc """
@@ -163,6 +210,23 @@ defmodule Raxol.Core.Runtime.Command do
 
       %{type: :system, data: {operation, opts}} ->
         execute_system_operation(operation, opts, context)
+
+      %{type: :quit} ->
+        # Signal the main Runtime process to quit
+        send(context.runtime_pid, :quit_runtime)
+
+      %{type: :clipboard_write, data: text} ->
+        # Delegate to PluginManager
+        GenServer.cast(PluginManager, {:handle_command, :clipboard_write, text})
+
+      %{type: :clipboard_read} ->
+        # Delegate to PluginManager, expects a result back via {:command_result, ...}
+        # PluginManager needs to know who to send the result back to (context.pid)
+        GenServer.cast(PluginManager, {:handle_command, :clipboard_read, context.pid})
+
+      %{type: :notify, data: {title, body}} ->
+        # Delegate to PluginManager
+        GenServer.cast(PluginManager, {:handle_command, :notify, {title, body}})
     end
   end
 

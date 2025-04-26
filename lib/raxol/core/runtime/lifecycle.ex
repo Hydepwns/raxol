@@ -173,7 +173,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   defp initialize_vscode_environment(_options) do
     # Find StdioInterface PID (assuming it's registered)
     stdio_pid = Process.whereis(Raxol.StdioInterface)
-    Logger.debug("Existing StdioInterface PID: #{inspect(stdio_pid)}") # Optional: Log if found
+    # Optional: Log if found
+    Logger.debug("Existing StdioInterface PID: #{inspect(stdio_pid)}")
 
     # Attempt to start the stdio interface
     case Raxol.StdioInterface.start_link([]) do
@@ -190,18 +191,20 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
       # Handle cases where it's already started or errors
       {:error, {:already_started, existing_pid}} ->
-          Logger.debug("[Lifecycle] VS Code StdioInterface already started.")
-          # Send ready message anyway, in case the frontend missed it
-          Raxol.StdioInterface.send_message(%{
-            type: "ready",
-            payload: %{status: "Backend restarted/reattached"}
-          })
-          {:ok, %{environment: :vscode, stdio_pid: existing_pid}}
+        Logger.debug("[Lifecycle] VS Code StdioInterface already started.")
+        # Send ready message anyway, in case the frontend missed it
+        Raxol.StdioInterface.send_message(%{
+          type: "ready",
+          payload: %{status: "Backend restarted/reattached"}
+        })
+
+        {:ok, %{environment: :vscode, stdio_pid: existing_pid}}
 
       {:error, reason} ->
         Logger.error(
           "[Lifecycle] Failed to initialize VS Code environment: #{inspect(reason)}"
         )
+
         {:error, reason}
     end
   end
@@ -238,7 +241,13 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     Logger.info("[Lifecycle] Initializing with args: #{inspect(init_arg)}")
     # TODO: Implement proper initialization based on init_arg
     # For now, just return a basic state map
-    {:ok, %{init_arg: init_arg, app_module: nil, init_status: nil, shutdown_status: nil}}
+    {:ok,
+     %{
+       init_arg: init_arg,
+       app_module: nil,
+       init_status: nil,
+       shutdown_status: nil
+     }}
   end
 
   # TODO: Add other GenServer callbacks (handle_call, handle_cast, handle_info, terminate)

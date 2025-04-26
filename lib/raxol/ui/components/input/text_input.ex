@@ -110,11 +110,11 @@ defmodule Raxol.UI.Components.Input.TextInput do
       {:left, _} ->
         # Move cursor left
         %{state: state} = component
+
         if state.cursor_pos > 0 do
           new_cursor_pos = state.cursor_pos - 1
 
-          {:ok,
-           %{component | state: %{state | cursor_pos: new_cursor_pos}}}
+          {:ok, %{component | state: %{state | cursor_pos: new_cursor_pos}}}
         else
           {:ok, component}
         end
@@ -127,8 +127,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
         if state.cursor_pos < String.length(current_value) do
           new_cursor_pos = state.cursor_pos + 1
 
-          {:ok,
-           %{component | state: %{state | cursor_pos: new_cursor_pos}}}
+          {:ok, %{component | state: %{state | cursor_pos: new_cursor_pos}}}
         else
           {:ok, component}
         end

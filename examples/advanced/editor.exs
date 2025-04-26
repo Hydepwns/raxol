@@ -51,9 +51,4 @@ defmodule Editor do
   end
 end
 
-Raxol.run(
-  Editor,
-  quit_keys: [
-    %{type: :key, key: ?d, modifiers: [:ctrl]}
-  ]
-)
+Raxol.Core.Runtime.start_application(Editor, []) # Quit key (Ctrl+C) is default

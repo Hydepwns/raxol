@@ -9,7 +9,8 @@ defmodule Raxol.Terminal.Buffer.Selection do
   @doc """
   Starts a selection at the specified coordinates in the buffer.
   """
-  @spec start(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec start(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          ScreenBuffer.t()
   def start(%ScreenBuffer{} = buffer, x, y) when x >= 0 and y >= 0 do
     %{buffer | selection: {x, y, x, y}}
   end
@@ -17,7 +18,8 @@ defmodule Raxol.Terminal.Buffer.Selection do
   @doc """
   Updates the endpoint of the current selection in the buffer.
   """
-  @spec update(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec update(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          ScreenBuffer.t()
   def update(%ScreenBuffer{} = buffer, x, y) when x >= 0 and y >= 0 do
     case buffer.selection do
       {start_x, start_y, _end_x, _end_y} ->
@@ -45,7 +47,8 @@ defmodule Raxol.Terminal.Buffer.Selection do
   @doc """
   Checks if a position (x, y) is within the current selection in the buffer.
   """
-  @spec contains?(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: boolean()
+  @spec contains?(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          boolean()
   def contains?(%ScreenBuffer{} = buffer, x, y) do
     case buffer.selection do
       {start_x, start_y, end_x, end_y} ->
@@ -65,7 +68,9 @@ defmodule Raxol.Terminal.Buffer.Selection do
   Returns nil if there is no selection.
   """
   @spec get_boundaries(ScreenBuffer.t()) ::
-          {non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()} | nil
+          {non_neg_integer(), non_neg_integer(), non_neg_integer(),
+           non_neg_integer()}
+          | nil
   def get_boundaries(%ScreenBuffer{} = buffer) do
     buffer.selection
   end
@@ -81,7 +86,13 @@ defmodule Raxol.Terminal.Buffer.Selection do
           non_neg_integer(),
           non_neg_integer()
         ) :: String.t()
-  def get_text_in_region(%ScreenBuffer{} = buffer, start_x, start_y, end_x, end_y) do
+  def get_text_in_region(
+        %ScreenBuffer{} = buffer,
+        start_x,
+        start_y,
+        end_x,
+        end_y
+      ) do
     # Ensure coordinates are within valid range if needed, though buffer access handles it
     min_x = min(start_x, end_x)
     max_x = max(start_x, end_x)
@@ -99,12 +110,15 @@ defmodule Raxol.Terminal.Buffer.Selection do
       ""
     else
       buffer.cells
-      |> Enum.slice(clamped_min_y..clamped_max_y) # Slice rows safely
+      # Slice rows safely
+      |> Enum.slice(clamped_min_y..clamped_max_y)
       |> Enum.map_join("\n", fn row ->
         row
-        |> Enum.slice(clamped_min_x..(clamped_max_x - clamped_min_x + 1)) # Slice cols safely
+        # Slice cols safely
+        |> Enum.slice(clamped_min_x..(clamped_max_x - clamped_min_x + 1))
         |> Enum.map_join("", &Cell.get_char/1)
-        |> String.trim_trailing() # Trim trailing whitespace from each line
+        # Trim trailing whitespace from each line
+        |> String.trim_trailing()
       end)
     end
   end

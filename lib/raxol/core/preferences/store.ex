@@ -9,10 +9,12 @@ defmodule Raxol.Core.Preferences.Store do
 
   # Assuming 't' is the old Configuration struct or a map
   # Needs alias Raxol.Core.UserPreferences or similar
-  alias Raxol.Core.UserPreferences # Adjust if name changed
+  # Adjust if name changed
+  alias Raxol.Core.UserPreferences
 
   @spec save_to_preferences(map() | struct()) :: :ok
-  def save_to_preferences(config) do # Make public
+  # Make public
+  def save_to_preferences(config) do
     # Convert struct to map if necessary
     config_map = if is_struct(config), do: Map.from_struct(config), else: config
 
@@ -51,7 +53,6 @@ defmodule Raxol.Core.Preferences.Store do
 
     UserPreferences.set(:terminal_config, pref_data)
   end
-
 end
 
 # --- Code previously after end ---

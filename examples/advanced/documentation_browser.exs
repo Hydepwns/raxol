@@ -121,4 +121,5 @@ defmodule DocumentationBrowser do
   end
 end
 
-Raxol.run(DocumentationBrowser, quit_keys: [?q])
+# Raxol.run(DocumentationBrowser, quit_keys: [?q])
+Raxol.Core.Runtime.start_application(DocumentationBrowser, [])

@@ -131,10 +131,14 @@ defmodule Raxol.Terminal.Configuration do
 
     merged_config_map =
       Enum.reduce(opts, base_config_map, fn {key, value}, acc ->
-        if Map.has_key?(acc, key) or key in __MODULE__.__struct__() |> Map.keys() do
+        if Map.has_key?(acc, key) or
+             (key in __MODULE__.__struct__()) |> Map.keys() do
           Map.put(acc, key, value)
         else
-          Logger.warning("Ignoring unknown configuration option: #{inspect(key)}")
+          Logger.warning(
+            "Ignoring unknown configuration option: #{inspect(key)}"
+          )
+
           acc
         end
       end)

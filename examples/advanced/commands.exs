@@ -76,4 +76,5 @@ defmodule Commands do
   end
 end
 
-Raxol.run(Commands)
+# Raxol.run(Commands)
+Raxol.Core.Runtime.start_application(Commands, [])

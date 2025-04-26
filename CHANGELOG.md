@@ -39,6 +39,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Core Features:** Added ID generation (`Core.ID`), preferences infrastructure (`Core.Preferences`), plugin registry/loader/command registry (`Core.Runtime.Plugins.*`).
 - **Terminal Buffer Features:** Added modules for buffer operations, scrollback, and selection (`Terminal.Buffer.*`).
 - **UI Components:** Added Table and SelectList components (`UI.Components.Display.Table`, `UI.Components.Input.SelectList`).
+- **Testing Enhancements:** Added basic mouse event parsing tests (VT200, SGR) to `TerminalDriverTest`. Expanded `RuntimeTest` to better cover supervisor behavior and basic input-to-update flow.
 
 ### Changed
 
@@ -49,8 +50,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Created detailed ARCHITECTURE.md documentation
   - **Refactored `lib/raxol/terminal/configuration.ex`**: Moved logic to dedicated modules (`Defaults`, `Profiles`, `AnimationCache`, `Validation`, `Pipeline`) and implemented missing color conversion utilities in `lib/raxol/ui/theming/colors.ex`, integrating them into `Profiles`.
 - **Terminal Functionality:** Improved feature detection, refined ANSI processing, optimized config/memory.
+  - **Input Parsing:** Implemented parsing in `TerminalDriver` for sequences covered by existing tests (F-keys, Home/End, PgUp/Dn, Del, Backspace, Tab, Enter, Esc, Ctrl+Arrows, Ctrl+Chars, VT200/SGR Mouse). Added parsing and tests for Alt+keys, Shift+Arrows, Focus In/Out, and Bracketed Paste mode.
 - **Plugin System:** Improved initialization, dependency resolution, API versioning, maintainability.
+  - Defined `Plugin` behaviour (`lib/raxol/core/runtime/plugins/plugin.ex`).
+  - Implemented basic plugin discovery (from `priv/plugins/`), loading (`init/1`), and command registration (`get_commands/0`) in `PluginManager`.
 - **Runtime System:** Dual-mode operation (native/VS Code), conditional init, improved startup/error handling.
+- **Rendering Pipeline:** Refined rendering flow:
+  - Integrated theme application into `Raxol.UI.Renderer`, using component-specific styles from `theme.component_styles` where available.
+  - Implemented active theme management via application state in `Dispatcher`.
+  - Updated `LayoutEngine` to pass `component_type` information and remove hardcoded styles for decomposed elements (`:button`, `:text_input`, etc.).
+  - `RenderingEngine` now uses the active theme provided by `Dispatcher`.
 - **Project Structure:** Consolidated examples, dedicated frontend dir, normalized extensions, improved secrets/git handling.
 - **Roadmap Documentation:** Updated files in `docs/roadmap/` (TODO, Timeline, Phases, NextSteps) to reflect current project status based on `CHANGELOG.md` and `handoff_prompt.md`.
 - **Core Runtime Refactoring:** Moved core runtime modules (`Application`, `Debug`, `Events`, `Lifecycle`, `Plugins`, `Rendering`) under `lib/raxol/core/`. Removed obsolete `lib/raxol/runtime*` files.
@@ -77,8 +86,35 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Fixed
 
 - Numerous fixes across core system stability, components, database connections, VS Code integration, runtime issues, CI/CD, ANSI processing, and test suites (details below).
-
-- **Detailed Fix History (Recent First):**
+- **(Current Date - YYYY-MM-DD):** Addressed compiler errors and warnings:
+  - Fixed syntax errors (`pass`, invalid map syntax) and an invalid match error in `PluginManager`.
+  - Fixed undefined function errors (`&&&`) in `TerminalDriver` by importing `Bitwise`.
+  - Addressed warnings for unused variables/aliases (`config`, `plugin_module`, `CommandRegistry`, `TerminalDriver`, `Cell`, `element`).
+  - Resolved unreachable clause warnings in `Dispatcher`.
+  - Attempted to fix ungrouped clause warnings and private `@doc` warnings (edits failed, requires manual fix).
+  - Added `require Event` in `Dispatcher` (did not fix struct expansion error, likely cyclic dependency).
+- **(Current Date - YYYY-MM-DD):** Fixed cascading compilation errors originating in `manager.ex` and `driver.ex` involving mismatched delimiters, invalid `cond` usage, incorrect binary matching, missing aliases, and function header defaults.
+- **(Current Date - YYYY-MM-DD):** Refactored showcase and advanced examples:
+  - Updated `examples/showcase/architecture_demo.exs` to use `Runtime.start_application`.
+  - Updated `examples/advanced/commands.exs` to use `Runtime.start_application`.
+  - Updated `examples/advanced/documentation_browser.exs` to use `Runtime.start_application`.
+  - Updated `examples/advanced/snake.exs` to use `Runtime.start_application`.
+  - Updated `examples/advanced/editor.exs` to use `Runtime.start_application`.
+  - Skipped outdated `plugin_demo.exs` and non-application examples.
+- **(Current Date - YYYY-MM-DD):** Refactored remaining basic examples:
+  - Updated `examples/basic/rendering.exs` to use `Runtime.start_application`.
+  - Updated `examples/basic/subscriptions.exs` to use `Runtime.start_application`.
+  - Updated `examples/basic/multiple_views.exs` to use `Runtime.start_application`.
+- **(Current Date - YYYY-MM-DD):** Added basic tests and refactored first example:
+  - Created basic test suite for `TerminalDriver` (`driver_test.exs`), covering init, input parsing (chars, arrows, ctrl+c, buffering), SIGWINCH, and terminate.
+  - Created basic test suite for `Runtime` (`runtime_test.exs`), covering `start_application` success/failure and basic supervisor/process checks.
+  - Refactored `examples/basic/counter.exs` to use `Application` behaviour and `Runtime.start_application`.
+- **(Current Date - YYYY-MM-DD):** Implemented core runtime loop and input/rendering flow:
+  - Implemented initial terminal size query and SIGWINCH handling in `TerminalDriver`.
+  - Implemented basic input parsing (chars, arrows, Ctrl+C) with buffering in `TerminalDriver`.
+  - Completed basic `Runtime` main loop logic (event routing, resize, quit handling).
+  - Refactored `RenderingEngine` to fetch the latest model from `Dispatcher` before rendering.
+  - Introduced `Runtime.Supervisor` to manage core processes (`PluginManager`, `Dispatcher`, `RenderingEngine`, `TerminalDriver`).
 - **(Current Date - YYYY-MM-DD):** Organized progress into logical commits. Addressed numerous compiler warnings encountered during refactoring and committing:
   - Fixed unreachable clauses in `plugins/manager.ex` by adjusting pattern matching for placeholder `load_plugin/2` return value.
   - Addressed various undefined function errors by correcting module paths/aliases (e.g., `Raxol.Terminal.Renderer`) or commenting out temporarily broken logic (e.g., `process_view` in `rendering/engine.ex`).
@@ -111,43 +147,4 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added placeholder functions (`execute_csi_command/4`, `execute_osc_command/2`, `execute_dcs_command/5`) to the new Executor module.
   - Updated alias in `lib/raxol/terminal/parser.ex` to point to the new Executor.
   - Updated delegation in deprecated `lib/raxol/terminal/command_executor.ex` to call the new Executor module.
-  - Resolved compilation warnings related to undefined `Executor` module and functions.
-- **(Current Date - YYYY-MM-DD):** Continued compilation warning cleanup:
-  - Fixed undefined function call `ScreenModes.get_mode_by_id` in `lib/raxol/terminal/ansi/sequences/modes.ex`.
-  - Refactored `lib/raxol/ui/theming/selector.ex`: removed incorrect Component behaviour implementation, fixed alias, and commented out logic using undefined Theme functions (`list_themes`, `apply_theme`, etc.) pending reimplementation.
-  - Achieved clean compilation (`MIX_ENV=test mix compile`).
-- **(2024-06-04):** Completed major codebase reorganization:
-  - Refactored all core modules according to new architecture
-  - Fixed Event struct usage in dispatcher and converter modules
-  - Added necessary Bitwise module imports
-  - Created comprehensive ARCHITECTURE.md documentation
-  - Added architecture_demo.exs example showcasing new structure
-  - Pruned obsolete documentation files
-- **(2024-06-03):** Resolved remaining compilation warnings. Verified that previously listed warnings were mostly outdated or already fixed. Corrected `.screen_buffer` access in `lib/raxol/terminal/session.ex` to use `Emulator.get_active_buffer/1`.
-- **(2023-07-15):** Resolved Dialyzer warnings across multiple modules:
-  - Fixed unused variables and shadow variable warnings in terminal emulator
-  - Corrected pattern matching issues in parser and component modules
-  - Addressed unmatched return warnings in runtime and web channel modules
-  - Fixed type specification (@spec) issues using fully qualified module names
-  - Added missing function implementations for previously undefined functions
-  - Fixed invalid contracts and no-return function warnings
-  - Improved error handling around problematic function calls
-  - Enhanced module references and fixed unqualified module access
-  - Created targeted ignore patterns for remaining false positives
-- **(2023-07-01):** Fixed critical Dialyzer issues in key modules:
-  - `lib/raxol/terminal/command_executor.ex`: Fixed unused aliases and missing function calls
-  - `lib/raxol/terminal/emulator.ex`: Corrected no-return errors and function access
-  - `lib/raxol/terminal/control_codes.ex`: Fixed invalid contracts with fully qualified module names
-  - `lib/raxol/terminal/parser.ex`: Resolved pattern matching issues and unmatched returns
-  - `lib/raxol/renderer.ex`: Fixed undefined module issues with module references
-  - `lib/raxol/components/tab_bar.ex`: Corrected type violations with Layout functions
-  - `lib/raxol/terminal/session.ex`: Fixed pattern matches that would never succeed
-  - `lib/raxol/terminal/ansi.ex`: Fixed delete_line/2 no_return warning
-  - `lib/raxol_web/channels/terminal_channel.ex`: Fixed missing function calls
-- **(2023-06-15):** Implemented systematic approach to Dialyzer warnings:
-  - Established prioritization system for addressing warnings (critical errors first)
-  - Created modular, file-by-file resolution strategy
-  - Developed comprehensive fix patterns for common issues
-  - Enhanced Dialyzer configuration with targeted ignore patterns
-  - Documented resolution process for team knowledge sharing
-- **(Current Date - YYYY-MM-DD):** Replaced deprecated `Logger.warn/1` calls with `Logger.warning/2`.
+  - Resolved compilation warnings related to undefined `Executor`

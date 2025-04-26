@@ -709,6 +709,7 @@ defmodule Raxol.Terminal.Parser do
             emulator,
             parser_state.payload_buffer
           )
+
         # TODO: Actually implement execute_osc_command in the new module
         next_parser_state = %{parser_state | state: :ground}
         parse_loop(new_emulator, next_parser_state, rest_after_bel)
@@ -753,6 +754,7 @@ defmodule Raxol.Terminal.Parser do
             emulator,
             parser_state.payload_buffer
           )
+
         # TODO: Actually implement execute_osc_command in the new module
         next_parser_state = %{parser_state | state: :ground}
         parse_loop(new_emulator, next_parser_state, rest_after_st)
@@ -912,6 +914,7 @@ defmodule Raxol.Terminal.Parser do
             parser_state.final_byte,
             parser_state.payload_buffer
           )
+
         # TODO: Actually implement execute_dcs_command in the new module
         next_parser_state = %{parser_state | state: :ground}
         parse_loop(new_emulator, next_parser_state, rest_after_st)

@@ -266,42 +266,59 @@ defmodule Raxol.UI.Theming.Colors do
 
   @ansi_basic_colors [
     # Standard 8 colors
-    {0, {0, 0, 0}},         # Black
-    {1, {128, 0, 0}},       # Red
-    {2, {0, 128, 0}},       # Green
-    {3, {128, 128, 0}},     # Yellow
-    {4, {0, 0, 128}},       # Blue
-    {5, {128, 0, 128}},     # Magenta
-    {6, {0, 128, 128}},     # Cyan
-    {7, {192, 192, 192}},   # White (Light Gray)
+    # Black
+    {0, {0, 0, 0}},
+    # Red
+    {1, {128, 0, 0}},
+    # Green
+    {2, {0, 128, 0}},
+    # Yellow
+    {3, {128, 128, 0}},
+    # Blue
+    {4, {0, 0, 128}},
+    # Magenta
+    {5, {128, 0, 128}},
+    # Cyan
+    {6, {0, 128, 128}},
+    # White (Light Gray)
+    {7, {192, 192, 192}},
     # Bright 8 colors
-    {8, {128, 128, 128}},   # Bright Black (Dark Gray)
-    {9, {255, 0, 0}},       # Bright Red
-    {10, {0, 255, 0}},      # Bright Green
-    {11, {255, 255, 0}},    # Bright Yellow
-    {12, {0, 0, 255}},      # Bright Blue
-    {13, {255, 0, 255}},    # Bright Magenta
-    {14, {0, 255, 255}},    # Bright Cyan
-    {15, {255, 255, 255}}    # Bright White
+    # Bright Black (Dark Gray)
+    {8, {128, 128, 128}},
+    # Bright Red
+    {9, {255, 0, 0}},
+    # Bright Green
+    {10, {0, 255, 0}},
+    # Bright Yellow
+    {11, {255, 255, 0}},
+    # Bright Blue
+    {12, {0, 0, 255}},
+    # Bright Magenta
+    {13, {255, 0, 255}},
+    # Bright Cyan
+    {14, {0, 255, 255}},
+    # Bright White
+    {15, {255, 255, 255}}
   ]
 
   # Generate 216 colors (6x6x6 cube)
   @ansi_216_colors (for r <- 0..5, g <- 0..5, b <- 0..5 do
-    index = 16 + 36 * r + 6 * g + b
-    red = if r == 0, do: 0, else: 55 + r * 40
-    green = if g == 0, do: 0, else: 55 + g * 40
-    blue = if b == 0, do: 0, else: 55 + b * 40
-    {index, {red, green, blue}}
-  end)
+                      index = 16 + 36 * r + 6 * g + b
+                      red = if r == 0, do: 0, else: 55 + r * 40
+                      green = if g == 0, do: 0, else: 55 + g * 40
+                      blue = if b == 0, do: 0, else: 55 + b * 40
+                      {index, {red, green, blue}}
+                    end)
 
   # Generate 24 grayscale colors
   @ansi_grayscale_colors (for i <- 0..23 do
-    index = 232 + i
-    level = 8 + i * 10
-    {index, {level, level, level}}
-  end)
+                            index = 232 + i
+                            level = 8 + i * 10
+                            {index, {level, level, level}}
+                          end)
 
-  @ansi_256_colors @ansi_basic_colors ++ @ansi_216_colors ++ @ansi_grayscale_colors
+  @ansi_256_colors @ansi_basic_colors ++
+                     @ansi_216_colors ++ @ansi_grayscale_colors
 
   # --- Palette Generation --- #
 
@@ -319,7 +336,9 @@ defmodule Raxol.UI.Theming.Colors do
   @spec find_closest_basic_color(color_rgb) :: 0..15
   def find_closest_basic_color(rgb) do
     @ansi_basic_colors
-    |> Enum.min_by(fn {_index, ansi_rgb} -> color_distance_sq(rgb, ansi_rgb) end)
+    |> Enum.min_by(fn {_index, ansi_rgb} ->
+      color_distance_sq(rgb, ansi_rgb)
+    end)
     |> elem(0)
   end
 
@@ -329,11 +348,14 @@ defmodule Raxol.UI.Theming.Colors do
   @spec find_closest_256_color(color_rgb) :: 0..255
   def find_closest_256_color(rgb) do
     @ansi_256_colors
-    |> Enum.min_by(fn {_index, ansi_rgb} -> color_distance_sq(rgb, ansi_rgb) end)
+    |> Enum.min_by(fn {_index, ansi_rgb} ->
+      color_distance_sq(rgb, ansi_rgb)
+    end)
     |> elem(0)
   end
 
-  def convert_to_basic(color) when is_tuple(color), do: find_closest_basic_color(color)
+  def convert_to_basic(color) when is_tuple(color),
+    do: find_closest_basic_color(color)
 
   def convert_to_basic(theme) when is_map(theme) do
     Map.new(theme, fn {key, value} ->
@@ -341,7 +363,8 @@ defmodule Raxol.UI.Theming.Colors do
     end)
   end
 
-  def convert_to_basic(value), do: value # Return non-color values as is
+  # Return non-color values as is
+  def convert_to_basic(value), do: value
 
   @doc """
   Converts a color or theme map to use a specific palette (e.g., 256 colors).
@@ -364,15 +387,19 @@ defmodule Raxol.UI.Theming.Colors do
 
   # Helper function
   defp find_closest_palette_color(rgb, palette_name) do
-    palette = case palette_name do
-      :xterm256 -> @ansi_256_colors
-      :basic -> @ansi_basic_colors
-      # TODO: Add support for other palettes or custom palettes
-      _ -> @ansi_256_colors # Default to 256
-    end
+    palette =
+      case palette_name do
+        :xterm256 -> @ansi_256_colors
+        :basic -> @ansi_basic_colors
+        # TODO: Add support for other palettes or custom palettes
+        # Default to 256
+        _ -> @ansi_256_colors
+      end
 
     palette
-    |> Enum.min_by(fn {_index, palette_rgb} -> color_distance_sq(rgb, palette_rgb) end)
+    |> Enum.min_by(fn {_index, palette_rgb} ->
+      color_distance_sq(rgb, palette_rgb)
+    end)
     |> elem(0)
   end
 

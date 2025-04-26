@@ -123,4 +123,5 @@ defmodule RenderingDemo do
   end
 end
 
-Raxol.run(RenderingDemo)
+# Raxol.run(RenderingDemo)
+Raxol.Core.Runtime.start_application(RenderingDemo, [])

@@ -2,7 +2,7 @@
 
 This document provides an overview of the Raxol architecture after the completed reorganization. It explains the core components, their responsibilities, and how they interact.
 
-_Last updated: April 24, 2025_
+_Last updated: 2025-04-26_
 
 ## Overview
 
@@ -47,6 +47,7 @@ lib/raxol/
 ### Runtime System
 
 The runtime system manages the application lifecycle and provides core services:
+_(Note: The core runtime loop, basic event handling (keyboard, resize), and rendering pipeline are now functional under supervision.)_
 
 - **Lifecycle Management**: Application startup, updates, and shutdown
 - **Event Handling**: Processing keyboard, mouse, and system events

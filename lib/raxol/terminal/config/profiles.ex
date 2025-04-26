@@ -216,5 +216,6 @@ defmodule Raxol.Terminal.Config.Profiles do
   @type theme_map :: %{atom() => String.t()}
   @type background_type :: :solid | :transparent | :image | :animated
   @type animation_type :: :gif | :video | :shader | :particle
-  @type config :: map() # Assuming a generic map for now
+  # Assuming a generic map for now
+  @type config :: map()
 end

@@ -43,7 +43,8 @@ defmodule Raxol.Terminal.Emulator do
   @compile {:unused_attr, :sp}
   @compile {:unused_attr, :us}
 
-  @esc 27 # Escape character
+  # Escape character
+  @esc 27
 
   # Define escape_char, even if not used currently
   @escape_char @esc

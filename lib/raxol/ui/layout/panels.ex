@@ -46,10 +46,17 @@ defmodule Raxol.UI.Layout.Panels do
 
   The dimensions of the panel: %{width: w, height: h}
   """
-  def measure(%{type: :panel, attrs: attrs, children: children}, available_space) do
+  def measure(
+        %{type: :panel, attrs: attrs, children: children},
+        available_space
+      ) do
     # panel = %{type: :panel, attrs: attrs, children: children}, # Unused
     # Measure children first to determine intrinsic size
-    _children_size = Engine.measure_element(%{type: :column, children: children}, available_space)
+    _children_size =
+      Engine.measure_element(
+        %{type: :column, children: children},
+        available_space
+      )
 
     # Default to using all available space unless specifically constrained
     width = Map.get(attrs, :width, available_space.width)

@@ -1,9 +1,17 @@
 defmodule Raxol.Examples.PluginDemo do
+  # TODO: This example needs significant rework.
+  # The Raxol runtime and plugin system have been refactored.
+  # Plugin management (load, list, enable, disable, unload) should now
+  # likely be handled via Raxol.Core.Runtime.Plugins.Manager, possibly
+  # within a proper Raxol.App or by interacting with a started runtime.
+  # The Emulator.* functions for plugin management used below are likely deprecated.
   @moduledoc """
   Example application that demonstrates how to use the Raxol terminal emulator with its plugin system.
+  (Currently outdated due to refactoring)
   """
 
   alias Raxol.Terminal.Emulator
+  # Plugin modules seem to still be in Raxol.Plugins.*
   alias Raxol.Plugins.{HyperlinkPlugin, ImagePlugin, ThemePlugin, SearchPlugin}
 
   def run do
@@ -16,20 +24,20 @@ defmodule Raxol.Examples.PluginDemo do
     _output4 = IO.puts("Created a new terminal emulator with dimensions 80x24")
     _output5 = IO.puts("")
 
-    # Load plugins
-    {:ok, emulator} = Emulator.load_plugin(emulator, HyperlinkPlugin)
-    {:ok, emulator} = Emulator.load_plugin(emulator, ImagePlugin)
-    {:ok, emulator} = Emulator.load_plugin(emulator, ThemePlugin)
-    {:ok, emulator} = Emulator.load_plugin(emulator, SearchPlugin)
-    _output6 = IO.puts("Loaded plugins: hyperlink, image, theme, search")
+    # Load plugins (Commented out - Use Core.Runtime.Plugins.Manager)
+    # {:ok, emulator} = Emulator.load_plugin(emulator, HyperlinkPlugin)
+    # {:ok, emulator} = Emulator.load_plugin(emulator, ImagePlugin)
+    # {:ok, emulator} = Emulator.load_plugin(emulator, ThemePlugin)
+    # {:ok, emulator} = Emulator.load_plugin(emulator, SearchPlugin)
+    _output6 = IO.puts("Plugin loading commented out - needs update.")
     _output7 = IO.puts("")
 
-    # List loaded plugins
-    plugins = Emulator.list_plugins(emulator)
-    _output8 = IO.puts("Loaded plugins:")
-    _plugins_list = Enum.each(plugins, fn plugin ->
-      _plugin_info = IO.puts("  - #{plugin.name} (#{if plugin.enabled, do: "enabled", else: "disabled"})")
-    end)
+    # List loaded plugins (Commented out - Use Core.Runtime.Plugins.Manager)
+    # plugins = Emulator.list_plugins(emulator)
+    _output8 = IO.puts("Listing plugins commented out - needs update.")
+    # _plugins_list = Enum.each(plugins, fn plugin ->
+    #   _plugin_info = IO.puts("  - #{plugin.name} (#{if plugin.enabled, do: "enabled", else: "disabled"})")
+    # end)
     _output9 = IO.puts("")
 
     # Demonstrate hyperlink plugin
@@ -60,31 +68,31 @@ defmodule Raxol.Examples.PluginDemo do
     _output20 = IO.puts("  - Wrote text with an image marker")
     _output21 = IO.puts("")
 
-    # Demonstrate plugin management
-    _output22 = IO.puts("Demonstrating plugin management:")
-    {:ok, emulator} = Emulator.disable_plugin(emulator, "hyperlink")
-    _output23 = IO.puts("  - Disabled hyperlink plugin")
+    # Demonstrate plugin management (Commented out - Use Core.Runtime.Plugins.Manager)
+    _output22 = IO.puts("Demonstrating plugin management (Commented out - needs update):")
+    # {:ok, emulator} = Emulator.disable_plugin(emulator, "hyperlink")
+    _output23 = IO.puts("  - Disabling hyperlink plugin (commented out)")
 
     emulator = Emulator.write_string(emulator, "This URL should not be clickable: https://example.com\n")
     _output24 = IO.puts("  - Wrote text with a URL (hyperlink plugin disabled)")
 
-    {:ok, emulator} = Emulator.enable_plugin(emulator, "hyperlink")
-    _output25 = IO.puts("  - Re-enabled hyperlink plugin")
+    # {:ok, emulator} = Emulator.enable_plugin(emulator, "hyperlink")
+    _output25 = IO.puts("  - Re-enabling hyperlink plugin (commented out)")
 
     emulator = Emulator.write_string(emulator, "This URL should be clickable: https://example.com\n")
     _output26 = IO.puts("  - Wrote text with a URL (hyperlink plugin enabled)")
     _output27 = IO.puts("")
 
-    # Demonstrate plugin unloading
-    _output28 = IO.puts("Demonstrating plugin unloading:")
-    {:ok, emulator} = Emulator.unload_plugin(emulator, "image")
-    _output29 = IO.puts("  - Unloaded image plugin")
+    # Demonstrate plugin unloading (Commented out - Use Core.Runtime.Plugins.Manager)
+    _output28 = IO.puts("Demonstrating plugin unloading (Commented out - needs update):")
+    # {:ok, emulator} = Emulator.unload_plugin(emulator, "image")
+    _output29 = IO.puts("  - Unloading image plugin (commented out)")
 
-    plugins = Emulator.list_plugins(emulator)
-    _output30 = IO.puts("  - Remaining plugins: #{length(plugins)}")
-    _final_plugins = Enum.each(plugins, fn plugin ->
-      _plugin_info = IO.puts("    - #{plugin.name}")
-    end)
+    # plugins = Emulator.list_plugins(emulator)
+    _output30 = IO.puts("  - Listing remaining plugins (commented out)")
+    # _final_plugins = Enum.each(plugins, fn plugin ->
+    #   _plugin_info = IO.puts("    - #{plugin.name}")
+    # end)
     _output31 = IO.puts("")
 
     _final_message = IO.puts("Plugin demo completed successfully!")

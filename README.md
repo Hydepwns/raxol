@@ -6,7 +6,7 @@
 
 A terminal application toolkit for Elixir, providing components and a runtime for building interactive TUI applications.
 
-> **Note:** Pre-release software. APIs may change before v2.0. -- as i'm adding in more features and refactoring.
+> **Note:** Pre-release software. APIs may change before v2.0 as the codebase undergoes active refactoring and feature additions, particularly in the core runtime and terminal emulation layers.
 
 <!-- TODO: Add a screenshot or GIF demo here -->
 
@@ -86,6 +86,8 @@ Detailed documentation can be found in the `/docs` directory or online (TODO: Ad
 
 To set up your development environment, please see the [Development Environment Setup](docs/installation/DevelopmentSetup.md) guide.
 
+> **Note:** The project is currently undergoing significant refactoring based on the plan outlined in `docs/archive/REORGANIZATION_PLAN.md`. See `CHANGELOG.md` and `docs/planning/handoff_prompt.md` for recent changes.
+
 Common development commands:
 
 ```bash
@@ -122,15 +124,11 @@ See [GitHub Actions README](.github/workflows/README.md) for detailed instructio
 - `/examples` - Example applications and code samples
 - `/extensions` - IDE integrations and extensions (e.g., VS Code)
 - `/frontend` - Frontend JavaScript/TypeScript configurations and assets
-- `/lib` - Core Elixir code
+- `/lib` - Core Elixir code (includes `core/runtime`, `terminal`, `ui`, etc.)
 - `/pages` - In-depth documentation/articles (e.g., for site generation)
 - `/priv` - Non-source code assets (e.g., templates, static files for releases)
 - `/scripts` - Helper scripts for development tasks
 - `/themes` - Theme definitions for styling
-
-## Contributing
-
-Contributions are welcome! Please see the [CONTRIBUTING.md](CONTRIBUTING.md) file for guidelines.
 
 ## License
 

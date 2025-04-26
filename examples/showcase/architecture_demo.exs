@@ -233,4 +233,5 @@ defmodule ArchitectureDemo do
 end
 
 # Start the application
-Raxol.run(ArchitectureDemo, debug: true)
+# Raxol.run(ArchitectureDemo, debug: true)
+Raxol.Core.Runtime.start_application(ArchitectureDemo, debug: true) # Keep debug option if needed by runtime

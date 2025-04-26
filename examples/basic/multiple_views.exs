@@ -43,7 +43,8 @@ defmodule MultipleViewsDemo do
   end
 end
 
-Raxol.run(
-  MultipleViewsDemo,
-  quit_keys: [?q]
-)
+# Raxol.run(
+#   MultipleViewsDemo,
+#   quit_keys: [?q]
+# )
+Raxol.Core.Runtime.start_application(MultipleViewsDemo, [])
