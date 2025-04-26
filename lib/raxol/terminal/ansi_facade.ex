@@ -74,7 +74,9 @@ defmodule Raxol.Terminal.ANSIFacade do
         Raxol.Terminal.ANSI.Processor.process(parsed_sequence, emulator)
 
       {:error, reason} ->
-        Logger.warning("Failed to parse ANSI sequence: #{reason} - #{inspect(byte_sequence)}")
+        Logger.warning(
+          "Failed to parse ANSI sequence: #{reason} - #{inspect(byte_sequence)}"
+        )
     end
   end
 

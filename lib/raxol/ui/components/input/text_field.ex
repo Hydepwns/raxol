@@ -33,7 +33,9 @@ defmodule Raxol.UI.Components.Input.TextField do
   def update({:update_props, new_props}, state) do
     updated_state = Map.merge(state, Map.new(new_props))
     # Clamp cursor position if value changed
-    cursor_pos = clamp(updated_state.cursor_pos, 0, String.length(updated_state.value))
+    cursor_pos =
+      clamp(updated_state.cursor_pos, 0, String.length(updated_state.value))
+
     {:noreply, %{updated_state | cursor_pos: cursor_pos}}
   end
 
@@ -122,18 +124,21 @@ defmodule Raxol.UI.Components.Input.TextField do
     {:noreply, state}
   end
 
-
   @impl true
   def render(state, context) do
     theme = context.theme
     component_theme_style = Theme.component_style(theme, :text_field)
     style = Raxol.Style.merge(component_theme_style, state.style)
 
-    display_value = if state.secret, do: String.duplicate("*", String.length(state.value)), else: state.value
+    display_value =
+      if state.secret,
+        do: String.duplicate("*", String.length(state.value)),
+        else: state.value
 
     # Add placeholder if value is empty and not focused
     final_value =
-      if String.length(display_value) == 0 && !state.focused && state.placeholder != "" do
+      if String.length(display_value) == 0 && !state.focused &&
+           state.placeholder != "" do
         # TODO: Style placeholder differently?
         state.placeholder
       else

@@ -10,14 +10,16 @@ defmodule Raxol.Terminal.Buffer.Operations do
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.CharacterHandling
   alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.Buffer.Scrollback # Needed for scroll functions
+  # Needed for scroll functions
+  alias Raxol.Terminal.Buffer.Scrollback
 
   @doc """
   Writes a character to the buffer at the specified position.
   Handles wide characters by taking up two cells when necessary.
   Accepts an optional style to apply to the cell.
   """
-  @dialyzer {:nowarn_function, write_char: 5} # Suppress spurious exact_eq warning
+  # Suppress spurious exact_eq warning
+  @dialyzer {:nowarn_function, write_char: 5}
   @spec write_char(
           ScreenBuffer.t(),
           non_neg_integer(),
@@ -56,7 +58,12 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Writes a string to the buffer at the specified position.
   Handles wide characters and bidirectional text.
   """
-  @spec write_string(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), String.t()) ::
+  @spec write_string(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t()
+        ) ::
           ScreenBuffer.t()
   def write_string(%ScreenBuffer{} = buffer, x, y, string)
       when x >= 0 and y >= 0 do
@@ -70,8 +77,14 @@ defmodule Raxol.Terminal.Buffer.Operations do
     |> elem(0)
   end
 
-  @dialyzer {:nowarn_function, write_segment: 4} # Silence potential spurious no_return warning
-  @spec write_segment(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), String.t()) ::
+  # Silence potential spurious no_return warning
+  @dialyzer {:nowarn_function, write_segment: 4}
+  @spec write_segment(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          String.t()
+        ) ::
           {ScreenBuffer.t(), non_neg_integer()}
   defp write_segment(buffer, x, y, segment) do
     Enum.reduce(String.graphemes(segment), {buffer, x}, fn char,
@@ -99,7 +112,10 @@ defmodule Raxol.Terminal.Buffer.Operations do
       when lines > 0 do
     effective_scroll_region = scroll_region || buffer.scroll_region
     buffer_with_region = %{buffer | scroll_region: effective_scroll_region}
-    {scroll_start, scroll_end} = get_scroll_region_boundaries(buffer_with_region)
+
+    {scroll_start, scroll_end} =
+      get_scroll_region_boundaries(buffer_with_region)
+
     visible_lines = scroll_end - scroll_start + 1
 
     if lines >= visible_lines do
@@ -108,9 +124,19 @@ defmodule Raxol.Terminal.Buffer.Operations do
       scroll_region_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
       {scrolled_lines, remaining_lines} = Enum.split(scroll_region_lines, lines)
       new_scrollback = Scrollback.add(buffer, scrolled_lines)
-      empty_lines = List.duplicate(List.duplicate(Cell.new(), buffer.width), lines)
+
+      empty_lines =
+        List.duplicate(List.duplicate(Cell.new(), buffer.width), lines)
+
       new_region_content = remaining_lines ++ empty_lines
-      replace_scroll_region(buffer, scroll_start, scroll_end, new_region_content, new_scrollback)
+
+      replace_scroll_region(
+        buffer,
+        scroll_start,
+        scroll_end,
+        new_region_content,
+        new_scrollback
+      )
     end
   end
 
@@ -127,19 +153,30 @@ defmodule Raxol.Terminal.Buffer.Operations do
       when lines > 0 do
     effective_scroll_region = scroll_region || buffer.scroll_region
     buffer_with_region = %{buffer | scroll_region: effective_scroll_region}
-    {scroll_start, scroll_end} = get_scroll_region_boundaries(buffer_with_region)
+
+    {scroll_start, scroll_end} =
+      get_scroll_region_boundaries(buffer_with_region)
+
     visible_lines = scroll_end - scroll_start + 1
 
     if lines >= visible_lines do
       clear_scroll_region(buffer, scroll_start, scroll_end, visible_lines)
     else
-      {scroll_lines, new_scrollback} = Scrollback.retrieve_for_scroll_down(buffer, lines)
+      {scroll_lines, new_scrollback} =
+        Scrollback.retrieve_for_scroll_down(buffer, lines)
 
       if scroll_lines != [] do
         scroll_region_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
         shifted_lines = Enum.drop(scroll_region_lines, -lines)
         new_region_content = scroll_lines ++ shifted_lines
-        replace_scroll_region(buffer, scroll_start, scroll_end, new_region_content, new_scrollback)
+
+        replace_scroll_region(
+          buffer,
+          scroll_start,
+          scroll_end,
+          new_region_content,
+          new_scrollback
+        )
       else
         buffer
       end
@@ -147,9 +184,22 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   # Helper to clear a scroll region (internal)
-  defp clear_scroll_region(%ScreenBuffer{} = buffer, scroll_start, scroll_end, visible_lines) do
-    empty_region = List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
-    replace_scroll_region(buffer, scroll_start, scroll_end, empty_region, buffer.scrollback)
+  defp clear_scroll_region(
+         %ScreenBuffer{} = buffer,
+         scroll_start,
+         scroll_end,
+         visible_lines
+       ) do
+    empty_region =
+      List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
+
+    replace_scroll_region(
+      buffer,
+      scroll_start,
+      scroll_end,
+      empty_region,
+      buffer.scrollback
+    )
   end
 
   # Helper to replace content within a scroll region (internal)
@@ -163,14 +213,23 @@ defmodule Raxol.Terminal.Buffer.Operations do
     new_cells =
       Enum.slice(buffer.cells, 0, scroll_start) ++
         new_content ++
-        Enum.slice(buffer.cells, scroll_end + 1, buffer.height - (scroll_end + 1))
+        Enum.slice(
+          buffer.cells,
+          scroll_end + 1,
+          buffer.height - (scroll_end + 1)
+        )
+
     %{buffer | cells: new_cells, scrollback: new_scrollback}
   end
 
   @doc """
   Sets a scroll region in the buffer.
   """
-  @spec set_scroll_region(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec set_scroll_region(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: ScreenBuffer.t()
   def set_scroll_region(%ScreenBuffer{} = buffer, start_line, end_line)
       when start_line >= 0 and end_line >= start_line do
     %{buffer | scroll_region: {start_line, end_line}}
@@ -188,7 +247,8 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Gets the boundaries {top, bottom} of the current scroll region.
   Returns {0, height - 1} if no region is set.
   """
-  @spec get_scroll_region_boundaries(ScreenBuffer.t()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_scroll_region_boundaries(ScreenBuffer.t()) ::
+          {non_neg_integer(), non_neg_integer()}
   def get_scroll_region_boundaries(%ScreenBuffer{} = buffer) do
     case buffer.scroll_region do
       {start, ending} -> {start, ending}
@@ -200,21 +260,29 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Resizes the screen buffer to the new dimensions.
   Preserves content that fits within the new bounds. Clears selection and scroll region.
   """
-  @spec resize(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: ScreenBuffer.t()
+  @spec resize(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          ScreenBuffer.t()
   def resize(%ScreenBuffer{} = buffer, new_width, new_height)
-      when is_integer(new_width) and new_width > 0 and is_integer(new_height) and new_height > 0 do
+      when is_integer(new_width) and new_width > 0 and is_integer(new_height) and
+             new_height > 0 do
     old_width = buffer.width
     old_height = buffer.height
-    new_cells = List.duplicate(List.duplicate(Cell.new(), new_width), new_height)
+
+    new_cells =
+      List.duplicate(List.duplicate(Cell.new(), new_width), new_height)
+
     max_y_copy = min(old_height, new_height)
     max_x_copy = min(old_width, new_width)
 
     copied_cells =
       Enum.reduce(0..(max_y_copy - 1), new_cells, fn y, acc_new_cells ->
-        old_row_index = y # Keep top content on shrink
+        # Keep top content on shrink
+        old_row_index = y
+
         if old_row_index >= 0 and old_row_index < old_height do
           old_row = Enum.at(buffer.cells, old_row_index)
           new_row = Enum.at(acc_new_cells, y)
+
           updated_new_row =
             Enum.reduce(0..(max_x_copy - 1), new_row, fn x, acc_new_row ->
               if old_row do
@@ -224,6 +292,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
                 acc_new_row
               end
             end)
+
           List.replace_at(acc_new_cells, y, updated_new_row)
         else
           acc_new_cells
@@ -259,7 +328,8 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Gets the dimensions {width, height} of the screen buffer.
   """
-  @spec get_dimensions(ScreenBuffer.t()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_dimensions(ScreenBuffer.t()) ::
+          {non_neg_integer(), non_neg_integer()}
   def get_dimensions(%ScreenBuffer{} = buffer) do
     {buffer.width, buffer.height}
   end
@@ -277,7 +347,8 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Gets a specific Cell from the buffer at {x, y}.
   Returns nil if coordinates are out of bounds.
   """
-  @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: Cell.t() | nil
+  @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          Cell.t() | nil
   def get_cell(%ScreenBuffer{} = buffer, x, y) when x >= 0 and y >= 0 do
     buffer.cells |> Enum.at(y) |> Enum.at(x)
   end
@@ -296,6 +367,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
     Enum.reduce(start_y..end_y, buffer, fn y, acc_buffer ->
       if y >= 0 and y < acc_buffer.height do
         row = Enum.at(acc_buffer.cells, y)
+
         new_row =
           Enum.reduce(start_x..end_x, row, fn x, acc_row ->
             if x >= 0 and x < acc_buffer.width do
@@ -304,7 +376,11 @@ defmodule Raxol.Terminal.Buffer.Operations do
               acc_row
             end
           end)
-        %{acc_buffer | cells: List.update_at(acc_buffer.cells, y, fn _ -> new_row end)}
+
+        %{
+          acc_buffer
+          | cells: List.update_at(acc_buffer.cells, y, fn _ -> new_row end)
+        }
       else
         acc_buffer
       end
@@ -321,8 +397,13 @@ defmodule Raxol.Terminal.Buffer.Operations do
           non_neg_integer(),
           {non_neg_integer(), non_neg_integer()} | nil
         ) :: ScreenBuffer.t()
-  def delete_lines(%ScreenBuffer{} = buffer, start_y, n, scroll_region) when n > 0 do
-    {scroll_start, scroll_end} = get_scroll_region_boundaries(%{buffer | scroll_region: scroll_region || buffer.scroll_region})
+  def delete_lines(%ScreenBuffer{} = buffer, start_y, n, scroll_region)
+      when n > 0 do
+    {scroll_start, scroll_end} =
+      get_scroll_region_boundaries(%{
+        buffer
+        | scroll_region: scroll_region || buffer.scroll_region
+      })
 
     if start_y < scroll_start or start_y > scroll_end do
       buffer
@@ -335,22 +416,41 @@ defmodule Raxol.Terminal.Buffer.Operations do
       else
         scroll_region_cells = Enum.slice(buffer.cells, scroll_start..scroll_end)
         relative_start_y = start_y - scroll_start
-        {before_deleted, rest} = Enum.split(scroll_region_cells, relative_start_y)
+
+        {before_deleted, rest} =
+          Enum.split(scroll_region_cells, relative_start_y)
+
         {_deleted_lines, after_deleted} = Enum.split(rest, lines_to_delete)
-        blank_lines = List.duplicate(List.duplicate(Cell.new(), buffer.width), lines_to_delete)
+
+        blank_lines =
+          List.duplicate(
+            List.duplicate(Cell.new(), buffer.width),
+            lines_to_delete
+          )
+
         new_region_content = before_deleted ++ after_deleted ++ blank_lines
         new_region_content = Enum.take(new_region_content, visible_lines)
-        replace_scroll_region(buffer, scroll_start, scroll_end, new_region_content, buffer.scrollback)
+
+        replace_scroll_region(
+          buffer,
+          scroll_start,
+          scroll_end,
+          new_region_content,
+          buffer.scrollback
+        )
       end
     end
   end
-  def delete_lines(buffer, _, n, _) when n <= 0, do: buffer # No-op if n is not positive
+
+  # No-op if n is not positive
+  def delete_lines(buffer, _, n, _) when n <= 0, do: buffer
 
   @doc """
   Gets the cell at the specified coordinates {x, y}.
   Returns nil if coordinates are out of bounds. Alias for get_cell/3.
   """
-  @spec get_cell_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) :: Cell.t() | nil
+  @spec get_cell_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
+          Cell.t() | nil
   def get_cell_at(buffer, x, y), do: get_cell(buffer, x, y)
 
   @doc """
@@ -365,19 +465,26 @@ defmodule Raxol.Terminal.Buffer.Operations do
   def diff(%ScreenBuffer{} = buffer, changes) when is_list(changes) do
     # Ensure changes are in the expected {x, y, map} format
     if Enum.empty?(changes) or match?([{_, _, _} | _], changes) do
-       Enum.filter(changes, fn {x, y, desired_cell_map} ->
-          current_cell_struct = get_cell_at(buffer, x, y)
-          desired_cell_struct = Cell.from_map(desired_cell_map) # Convert map for comparison
+      Enum.filter(changes, fn {x, y, desired_cell_map} ->
+        current_cell_struct = get_cell_at(buffer, x, y)
+        # Convert map for comparison
+        desired_cell_struct = Cell.from_map(desired_cell_map)
 
-          case {desired_cell_struct, current_cell_struct} do
-            {nil, _} -> false # Invalid desired cell map
-            {_, nil} -> true  # Current cell doesn't exist (e.g., outside buffer), needs update if desired is valid
-            {desired, current} -> not Cell.equals?(current, desired)
-          end
-       end)
+        case {desired_cell_struct, current_cell_struct} do
+          # Invalid desired cell map
+          {nil, _} -> false
+          # Current cell doesn't exist (e.g., outside buffer), needs update if desired is valid
+          {_, nil} -> true
+          {desired, current} -> not Cell.equals?(current, desired)
+        end
+      end)
     else
-        Logger.warning("Invalid format passed to ScreenBuffer.Operations.diff/2. Expected list of {x, y, map}. Got: #{inspect(changes)}")
-        [] # Return empty list for invalid input format
+      Logger.warning(
+        "Invalid format passed to ScreenBuffer.Operations.diff/2. Expected list of {x, y, map}. Got: #{inspect(changes)}"
+      )
+
+      # Return empty list for invalid input format
+      []
     end
   end
 
@@ -394,36 +501,56 @@ defmodule Raxol.Terminal.Buffer.Operations do
     Enum.reduce(changes, buffer, fn
       {x, y, %Cell{} = cell}, acc_buffer when is_integer(x) and is_integer(y) ->
         apply_cell_update(acc_buffer, x, y, cell)
-      {x, y, cell_map}, acc_buffer when is_integer(x) and is_integer(y) and is_map(cell_map) ->
+
+      {x, y, cell_map}, acc_buffer
+      when is_integer(x) and is_integer(y) and is_map(cell_map) ->
         case Cell.from_map(cell_map) do
           nil ->
-            Logger.warning("[ScreenBuffer.Operations.update] Failed to convert cell map: #{inspect(cell_map)} at (#{x}, #{y})")
+            Logger.warning(
+              "[ScreenBuffer.Operations.update] Failed to convert cell map: #{inspect(cell_map)} at (#{x}, #{y})"
+            )
+
             acc_buffer
+
           cell_struct ->
-             apply_cell_update(acc_buffer, x, y, cell_struct)
+            apply_cell_update(acc_buffer, x, y, cell_struct)
         end
+
       invalid_change, acc_buffer ->
-         Logger.warning("[ScreenBuffer.Operations.update] Invalid change format: #{inspect(invalid_change)}")
-         acc_buffer
+        Logger.warning(
+          "[ScreenBuffer.Operations.update] Invalid change format: #{inspect(invalid_change)}"
+        )
+
+        acc_buffer
     end)
   end
 
   # Helper for applying a single cell update, handling wide chars
   defp apply_cell_update(%ScreenBuffer{} = buffer, x, y, %Cell{} = cell) do
     if y >= 0 and y < buffer.height and x >= 0 and x < buffer.width do
-      is_wide = CharacterHandling.get_char_width(cell.char) == 2 and not cell.is_wide_placeholder
+      is_wide =
+        CharacterHandling.get_char_width(cell.char) == 2 and
+          not cell.is_wide_placeholder
+
       new_cells =
         List.update_at(buffer.cells, y, fn row ->
           row_with_primary = List.replace_at(row, x, cell)
+
           if is_wide and x + 1 < buffer.width do
-            List.replace_at(row_with_primary, x + 1, Cell.new_wide_placeholder(cell.style))
+            List.replace_at(
+              row_with_primary,
+              x + 1,
+              Cell.new_wide_placeholder(cell.style)
+            )
           else
             row_with_primary
           end
         end)
+
       %{buffer | cells: new_cells}
     else
-      buffer # Ignore updates outside bounds
+      # Ignore updates outside bounds
+      buffer
     end
   end
 
@@ -431,23 +558,54 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Erases parts of the display based on cursor position (:to_end, :to_beginning, :all).
   Requires cursor state {x, y}.
   """
-  @spec erase_in_display(ScreenBuffer.t(), {non_neg_integer(), non_neg_integer()}, atom()) :: ScreenBuffer.t()
+  @spec erase_in_display(
+          ScreenBuffer.t(),
+          {non_neg_integer(), non_neg_integer()},
+          atom()
+        ) :: ScreenBuffer.t()
   def erase_in_display(%ScreenBuffer{} = buffer, {cursor_x, cursor_y}, type) do
     blank_cell = Cell.new()
+
     case type do
       :to_end ->
-        buffer_after_line_erase = erase_line_part(buffer, cursor_y, cursor_x, buffer.width - 1, blank_cell)
-        Enum.reduce((cursor_y + 1)..(buffer.height - 1), buffer_after_line_erase, fn y, acc_buffer ->
+        buffer_after_line_erase =
+          erase_line_part(
+            buffer,
+            cursor_y,
+            cursor_x,
+            buffer.width - 1,
+            blank_cell
+          )
+
+        Enum.reduce(
+          (cursor_y + 1)..(buffer.height - 1),
+          buffer_after_line_erase,
+          fn y, acc_buffer ->
             erase_line_part(acc_buffer, y, 0, buffer.width - 1, blank_cell)
-          end)
+          end
+        )
+
       :to_beginning ->
-        buffer_after_line_erase = erase_line_part(buffer, cursor_y, 0, cursor_x, blank_cell)
-        Enum.reduce(0..(cursor_y - 1), buffer_after_line_erase, fn y, acc_buffer ->
-            erase_line_part(acc_buffer, y, 0, buffer.width - 1, blank_cell)
-          end)
+        buffer_after_line_erase =
+          erase_line_part(buffer, cursor_y, 0, cursor_x, blank_cell)
+
+        Enum.reduce(0..(cursor_y - 1), buffer_after_line_erase, fn y,
+                                                                   acc_buffer ->
+          erase_line_part(acc_buffer, y, 0, buffer.width - 1, blank_cell)
+        end)
+
       :all ->
-        %{buffer | cells: List.duplicate(List.duplicate(blank_cell, buffer.width), buffer.height)}
-      _ -> buffer
+        %{
+          buffer
+          | cells:
+              List.duplicate(
+                List.duplicate(blank_cell, buffer.width),
+                buffer.height
+              )
+        }
+
+      _ ->
+        buffer
     end
   end
 
@@ -455,14 +613,32 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Erases parts of the current line based on cursor position (:to_end, :to_beginning, :all).
   Requires cursor state {x, y}.
   """
-  @spec erase_in_line(ScreenBuffer.t(), {non_neg_integer(), non_neg_integer()}, atom()) :: ScreenBuffer.t()
+  @spec erase_in_line(
+          ScreenBuffer.t(),
+          {non_neg_integer(), non_neg_integer()},
+          atom()
+        ) :: ScreenBuffer.t()
   def erase_in_line(%ScreenBuffer{} = buffer, {cursor_x, cursor_y}, type) do
     blank_cell = Cell.new()
+
     case type do
-      :to_end -> erase_line_part(buffer, cursor_y, cursor_x, buffer.width - 1, blank_cell)
-      :to_beginning -> erase_line_part(buffer, cursor_y, 0, cursor_x, blank_cell)
-      :all -> erase_line_part(buffer, cursor_y, 0, buffer.width - 1, blank_cell)
-      _ -> buffer
+      :to_end ->
+        erase_line_part(
+          buffer,
+          cursor_y,
+          cursor_x,
+          buffer.width - 1,
+          blank_cell
+        )
+
+      :to_beginning ->
+        erase_line_part(buffer, cursor_y, 0, cursor_x, blank_cell)
+
+      :all ->
+        erase_line_part(buffer, cursor_y, 0, buffer.width - 1, blank_cell)
+
+      _ ->
+        buffer
     end
   end
 
@@ -471,10 +647,15 @@ defmodule Raxol.Terminal.Buffer.Operations do
     if y >= 0 and y < buffer.height do
       start_col = max(0, start_x)
       end_col = min(buffer.width - 1, end_x)
+
       if start_col <= end_col do
-        new_cells = List.update_at(buffer.cells, y, fn row ->
-            Enum.reduce(start_col..end_col, row, fn x, acc_row -> List.replace_at(acc_row, x, fill_cell) end)
+        new_cells =
+          List.update_at(buffer.cells, y, fn row ->
+            Enum.reduce(start_col..end_col, row, fn x, acc_row ->
+              List.replace_at(acc_row, x, fill_cell)
+            end)
           end)
+
         %{buffer | cells: new_cells}
       else
         buffer
@@ -505,9 +686,11 @@ defmodule Raxol.Terminal.Buffer.Operations do
   def insert_characters(buffer, pos, count, style \\ nil)
 
   def insert_characters(%ScreenBuffer{} = buffer, {x, y}, count, style)
-      when y >= 0 and y < buffer.height and x >= 0 and x < buffer.width and count > 0 do
+      when y >= 0 and y < buffer.height and x >= 0 and x < buffer.width and
+             count > 0 do
     blank_cell = Cell.new(" ", style || %{})
     blanks_to_insert = List.duplicate(blank_cell, count)
+
     new_cells =
       List.update_at(buffer.cells, y, fn row ->
         {prefix, suffix} = Enum.split(row, x)
@@ -515,11 +698,19 @@ defmodule Raxol.Terminal.Buffer.Operations do
         new_suffix = Enum.take(suffix, remaining_suffix_length)
         prefix ++ blanks_to_insert ++ new_suffix
       end)
+
     %{buffer | cells: new_cells}
   end
-  def insert_characters(buffer, _, count, _) when count <= 0, do: buffer # No-op if count is not positive
-  def insert_characters(buffer, {_, y}, _, _) when y < 0 or y >= buffer.height, do: buffer # No-op if y is out of bounds
-  def insert_characters(buffer, {x, _}, _, _) when x < 0 or x >= buffer.width, do: buffer # No-op if x is out of bounds
+
+  # No-op if count is not positive
+  def insert_characters(buffer, _, count, _) when count <= 0, do: buffer
+  # No-op if y is out of bounds
+  def insert_characters(buffer, {_, y}, _, _) when y < 0 or y >= buffer.height,
+    do: buffer
+
+  # No-op if x is out of bounds
+  def insert_characters(buffer, {x, _}, _, _) when x < 0 or x >= buffer.width,
+    do: buffer
 
   @doc """
   Deletes characters at the cursor position {x, y}, shifting remaining chars left.
@@ -530,22 +721,34 @@ defmodule Raxol.Terminal.Buffer.Operations do
           non_neg_integer()
         ) :: ScreenBuffer.t()
   def delete_characters(%ScreenBuffer{} = buffer, {x, y}, count)
-      when y >= 0 and y < buffer.height and x >= 0 and x < buffer.width and count > 0 do
+      when y >= 0 and y < buffer.height and x >= 0 and x < buffer.width and
+             count > 0 do
     blank_cell = Cell.new()
+
     new_cells =
       List.update_at(buffer.cells, y, fn row ->
         {prefix, rest} = Enum.split(row, x)
         suffix_to_keep = Enum.drop(rest, max(0, count))
-        blanks_needed = max(0, buffer.width - length(prefix) - length(suffix_to_keep))
+
+        blanks_needed =
+          max(0, buffer.width - length(prefix) - length(suffix_to_keep))
+
         trailing_blanks = List.duplicate(blank_cell, blanks_needed)
         prefix ++ suffix_to_keep ++ trailing_blanks
       end)
+
     %{buffer | cells: new_cells}
   end
-  def delete_characters(buffer, _, count) when count <= 0, do: buffer # No-op if count is not positive
-  def delete_characters(buffer, {_, y}, _) when y < 0 or y >= buffer.height, do: buffer # No-op if y is out of bounds
-  def delete_characters(buffer, {x, _}, _) when x < 0 or x >= buffer.width, do: buffer # No-op if x is out of bounds
 
+  # No-op if count is not positive
+  def delete_characters(buffer, _, count) when count <= 0, do: buffer
+  # No-op if y is out of bounds
+  def delete_characters(buffer, {_, y}, _) when y < 0 or y >= buffer.height,
+    do: buffer
+
+  # No-op if x is out of bounds
+  def delete_characters(buffer, {x, _}, _) when x < 0 or x >= buffer.width,
+    do: buffer
 
   @doc """
   Inserts `n` blank lines at `start_y` within the scroll region, shifting lines down.
@@ -556,8 +759,14 @@ defmodule Raxol.Terminal.Buffer.Operations do
           non_neg_integer(),
           {non_neg_integer(), non_neg_integer()} | nil
         ) :: ScreenBuffer.t()
-  def insert_lines(%ScreenBuffer{} = buffer, start_y, n, scroll_region) when start_y >= 0 and n > 0 do
-    {scroll_start, scroll_end} = get_scroll_region_boundaries(%{buffer | scroll_region: scroll_region || buffer.scroll_region})
+  def insert_lines(%ScreenBuffer{} = buffer, start_y, n, scroll_region)
+      when start_y >= 0 and n > 0 do
+    {scroll_start, scroll_end} =
+      get_scroll_region_boundaries(%{
+        buffer
+        | scroll_region: scroll_region || buffer.scroll_region
+      })
+
     visible_lines_in_region = scroll_end - scroll_start + 1
 
     if start_y >= scroll_start and start_y <= scroll_end do
@@ -565,16 +774,33 @@ defmodule Raxol.Terminal.Buffer.Operations do
       blank_lines_to_insert = List.duplicate(blank_line, n)
       scroll_region_cells = Enum.slice(buffer.cells, scroll_start..scroll_end)
       relative_insert_y = start_y - scroll_start
-      {lines_before_insert, lines_at_and_after_insert} = Enum.split(scroll_region_cells, relative_insert_y)
-      lines_to_keep_count = max(0, visible_lines_in_region - length(lines_before_insert) - n)
+
+      {lines_before_insert, lines_at_and_after_insert} =
+        Enum.split(scroll_region_cells, relative_insert_y)
+
+      lines_to_keep_count =
+        max(0, visible_lines_in_region - length(lines_before_insert) - n)
+
       lines_to_keep = Enum.take(lines_at_and_after_insert, lines_to_keep_count)
-      new_region_content = lines_before_insert ++ blank_lines_to_insert ++ lines_to_keep
-      new_region_content = Enum.take(new_region_content, visible_lines_in_region)
-      replace_scroll_region(buffer, scroll_start, scroll_end, new_region_content, buffer.scrollback)
+
+      new_region_content =
+        lines_before_insert ++ blank_lines_to_insert ++ lines_to_keep
+
+      new_region_content =
+        Enum.take(new_region_content, visible_lines_in_region)
+
+      replace_scroll_region(
+        buffer,
+        scroll_start,
+        scroll_end,
+        new_region_content,
+        buffer.scrollback
+      )
     else
       buffer
     end
   end
+
   def insert_lines(buffer, _, n, _) when n <= 0, do: buffer
   def insert_lines(buffer, start_y, _, _) when start_y < 0, do: buffer
 

@@ -210,7 +210,10 @@ defmodule Raxol.Core.Runtime.Plugins.Commands do
 
   # TODO: Add handle_shutdown callback
   def handle_shutdown(reason, state) do
-    Logger.info("[Commands Plugin] Received shutdown signal: #{inspect(reason)}. Cleaning up command registry.")
+    Logger.info(
+      "[Commands Plugin] Received shutdown signal: #{inspect(reason)}. Cleaning up command registry."
+    )
+
     # Perform any necessary cleanup for the command registry
     {:noreply, state}
   end

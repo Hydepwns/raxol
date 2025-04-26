@@ -163,7 +163,13 @@ defmodule Raxol.Core.Runtime.Plugins.API do
   """
   @spec plugin_data_dir(String.t()) :: String.t()
   def plugin_data_dir(plugin_id) do
-    base_path = Raxol.Core.Runtime.Application.get_env(:raxol, :plugin_data_path, "data/plugins")
+    base_path =
+      Raxol.Core.Runtime.Application.get_env(
+        :raxol,
+        :plugin_data_path,
+        "data/plugins"
+      )
+
     Path.join(base_path, plugin_id)
   end
 

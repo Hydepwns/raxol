@@ -2,6 +2,7 @@ defmodule Raxol.UI.Components.Display.Table do
   @moduledoc """
   A component for displaying tabular data with sorting, filtering, and pagination.
   """
+
   # alias Raxol.UI.Components.Base.Component # Unused
   # alias Raxol.UI.Style
   # alias Raxol.UI.Element
@@ -45,24 +46,24 @@ defmodule Raxol.UI.Components.Display.Table do
           state: state()
         }
 
-  defstruct [
-    id: nil,
-    headers: [],
-    rows: [],
-    style: %{},
-    row_style: nil, # Default set in init
-    cell_style: nil, # Default set in init
-    header_style: %{bold: true},
-    footer: nil,
-    # Internal state
-    column_widths: [],
-    scroll_top: 0,
-    scroll_left: 0,
-    focused_row: nil,
-    focused_col: nil,
-    max_height: nil,
-    max_width: nil
-  ]
+  defstruct id: nil,
+            headers: [],
+            rows: [],
+            style: %{},
+            # Default set in init
+            row_style: nil,
+            # Default set in init
+            cell_style: nil,
+            header_style: %{bold: true},
+            footer: nil,
+            # Internal state
+            column_widths: [],
+            scroll_top: 0,
+            scroll_left: 0,
+            focused_row: nil,
+            focused_col: nil,
+            max_height: nil,
+            max_width: nil
 
   # --- Component Implementation ---
 
@@ -85,7 +86,8 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   @impl true
-  def mount(_state), do: {:ok, []} # No mount needed
+  # No mount needed
+  def mount(_state), do: {:ok, []}
 
   @impl true
   def update({:update_props, new_props}, state) do
@@ -137,7 +139,8 @@ defmodule Raxol.UI.Components.Display.Table do
     base_style = Raxol.Style.merge(component_theme_style, state.style)
 
     # Calculate visible rows/cols based on scroll and max_height/max_width
-    _visible_rows_data = Enum.slice(state.rows, state.scroll_top, visible_height(state))
+    _visible_rows_data =
+      Enum.slice(state.rows, state.scroll_top, visible_height(state))
 
     header_element = render_header(state, theme)
     row_elements = render_rows(state, theme, base_style)
@@ -151,7 +154,8 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   @impl true
-  def unmount(_state), do: :ok # No unmount needed
+  # No unmount needed
+  def unmount(_state), do: :ok
 
   # --- Private Helpers ---
 
@@ -159,7 +163,8 @@ defmodule Raxol.UI.Components.Display.Table do
   defp default_cell_style(_cell_data, _row_index, _col_index), do: %{}
 
   defp visible_height(state)
-  defp visible_height(%{max_height: nil}), do: 1_000_000 # Effectively infinite
+  # Effectively infinite
+  defp visible_height(%{max_height: nil}), do: 1_000_000
   defp visible_height(%{max_height: h}) when is_integer(h), do: h
 
   defp update_column_widths(state) do
@@ -204,7 +209,8 @@ defmodule Raxol.UI.Components.Display.Table do
   defp render_row(row_data, columns, style, row_index, table_id) do
     cell_elements =
       Enum.with_index(row_data, fn cell_data, col_index ->
-        column_config = Enum.at(columns, col_index, %{}) # Default to empty map if index out of bounds
+        # Default to empty map if index out of bounds
+        column_config = Enum.at(columns, col_index, %{})
         render_cell(cell_data, column_config, style)
       end)
 

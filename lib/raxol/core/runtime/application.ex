@@ -166,15 +166,45 @@ defmodule Raxol.Core.Runtime.Application do
   end
 
   @doc """
-  Placeholder for the application update function.
-  Should handle messages and update the application model.
+  Delegates the update logic to the specific application module.
+
+  This function is called by the runtime (e.g., Dispatcher) and invokes the
+  `update/2` callback on the provided `app_module`.
   """
-  @spec update(module(), any(), map()) :: {map(), list()} | {:error, term()}
-  def update(_app_module, message, current_model) do
-    Logger.debug("[#{__MODULE__}] update called with: #{inspect(message)}")
-    # Default behaviour: return model unchanged, no commands
-    # TODO: Implement actual update logic based on app_module behaviour
-    {current_model, []}
+  @spec update(module(), any(), map()) ::
+          {map(), list(Command.t())} | {:error, term()}
+  def update(app_module, message, current_model)
+      when is_atom(app_module) do
+    if function_exported?(app_module, :update, 2) do
+      try do
+        # Call the application's update callback
+        case app_module.update(message, current_model) do
+          {new_model, commands} when is_map(new_model) and is_list(commands) ->
+            {new_model, commands}
+
+          invalid_return ->
+            Logger.error(
+              "[#{__MODULE__}] #{inspect(app_module)}.update/2 returned invalid value: #{inspect(invalid_return)}. Expected {map(), list()}.
+              Falling back to previous model with no commands."
+            )
+
+            {current_model, []}
+        end
+      rescue
+        error ->
+          Logger.error(
+            "[#{__MODULE__}] Error executing #{inspect(app_module)}.update/2: #{inspect(error)}\nStacktrace: #{inspect(__STACKTRACE__)}"
+          )
+
+          {:error, {:update_failed, error}}
+      end
+    else
+      Logger.error(
+        "[#{__MODULE__}] Application module #{inspect(app_module)} does not implement update/2 callback."
+      )
+
+      {:error, :update_callback_not_implemented}
+    end
   end
 
   @doc """

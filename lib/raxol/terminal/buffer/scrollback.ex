@@ -23,7 +23,8 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   """
   @spec retrieve_for_scroll_down(ScreenBuffer.t(), non_neg_integer()) ::
           {list(list(Cell.t())), list(list(Cell.t()))}
-  def retrieve_for_scroll_down(%ScreenBuffer{} = buffer, lines_needed) when lines_needed > 0 do
+  def retrieve_for_scroll_down(%ScreenBuffer{} = buffer, lines_needed)
+      when lines_needed > 0 do
     if length(buffer.scrollback) >= lines_needed do
       Enum.split(buffer.scrollback, lines_needed)
     else
@@ -31,7 +32,8 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
     end
   end
 
-  def retrieve_for_scroll_down(%ScreenBuffer{} = buffer, _lines_needed), do: {[], buffer.scrollback}
+  def retrieve_for_scroll_down(%ScreenBuffer{} = buffer, _lines_needed),
+    do: {[], buffer.scrollback}
 
   @doc """
   Gets the current scroll position (number of lines in scrollback).

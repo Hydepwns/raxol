@@ -127,4 +127,5 @@ defmodule Snake do
   defp next_link({x, y}, :right), do: {x + 1, y}
 end
 
-Raxol.run(Snake, interval: 100)
+# Raxol.run(Snake, interval: 100)
+Raxol.Core.Runtime.start_application(Snake, []) # Interval is handled by subscribe

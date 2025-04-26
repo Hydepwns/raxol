@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 description: High-level overview of the Raxol Terminal Emulator architecture
-date: 2023-04-04
+date: [Current Date]
 author: Raxol Team
 section: architecture
 tags: [architecture, overview, design]
@@ -43,20 +43,23 @@ Raxol is built on a modular architecture that implements the Elm-inspired design
 The foundation of Raxol, handling the fundamental terminal operations and system integration:
 
 1. **Runtime System**
+
    - BEAM VM integration
-   - Process supervision
+   - Process supervision _(Basic supervisor implemented)_
    - Hot code reloading
-   - State management
+   - State management _(via Dispatcher)_
 
 2. **Renderer**
+
    - Terminal buffer management
    - Double buffering
    - Damage tracking
    - Frame-rate control
+   - _(Basic rendering engine connected to layout and theme)_
 
 3. **Event System**
    - Event handling
-   - Input processing
+   - Input processing _(Basic keyboard and resize handling implemented)_
    - Event delegation
    - Custom event support
 
@@ -65,12 +68,14 @@ The foundation of Raxol, handling the fundamental terminal operations and system
 Provides comprehensive styling capabilities for terminal UI elements:
 
 1. **Color System**
+
    - ANSI color support (4-bit, 8-bit, 24-bit)
    - Theme management
    - Color adaptation
    - Gradient support
 
 2. **Layout Engine**
+
    - Box model implementation
    - Grid system
    - Flex-like layouts
@@ -87,12 +92,14 @@ Provides comprehensive styling capabilities for terminal UI elements:
 Pre-built, customizable UI components:
 
 1. **Input Components**
+
    - Text input
    - Multi-line editor
    - Password fields
    - Search boxes
 
 2. **Selection Components**
+
    - Lists
    - Dropdowns
    - Multi-select
@@ -109,11 +116,13 @@ Pre-built, customizable UI components:
 The high-level interface for building applications:
 
 1. **Model**
+
    - Application state
    - Data structures
    - State validation
 
 2. **Update**
+
    - Message handling
    - State transitions
    - Side effects
@@ -169,16 +178,19 @@ end
 ### Component Lifecycle
 
 1. **Initialization**
+
    - Props validation
    - State initialization
    - Resource setup
 
 2. **Update Cycle**
+
    - Message processing
    - State updates
    - Side effect handling
 
 3. **Rendering**
+
    - State to view conversion
    - Style application
    - Layout calculation
@@ -238,11 +250,13 @@ Event handling follows a bubbling pattern:
 ### Event Types
 
 1. **User Events**
+
    - Keyboard
    - Mouse
    - Window
 
 2. **System Events**
+
    - Timer
    - Subscription
    - Command
@@ -271,6 +285,7 @@ Event handling follows a bubbling pattern:
 ```
 
 1. **Packaging**
+
    - Dependency bundling
    - BEAM inclusion
    - Native dependencies
@@ -283,11 +298,13 @@ Event handling follows a bubbling pattern:
 ## Performance Considerations
 
 1. **Rendering Optimization**
+
    - Frame rate control
    - Damage tracking
    - Buffer management
 
 2. **Event Processing**
+
    - Event batching
    - Debouncing
    - Throttling
@@ -300,6 +317,7 @@ Event handling follows a bubbling pattern:
 ## Security Model
 
 1. **Input Validation**
+
    - Event sanitization
    - Props validation
    - Command validation
@@ -312,11 +330,13 @@ Event handling follows a bubbling pattern:
 ## Testing Strategy
 
 1. **Unit Testing**
+
    - Component testing
    - Style testing
    - Event testing
 
 2. **Integration Testing**
+
    - Application flows
    - Component interaction
    - System integration
@@ -329,11 +349,13 @@ Event handling follows a bubbling pattern:
 ## Future Considerations
 
 1. **Extensibility**
+
    - Plugin system
    - Custom components
    - Theme extensions
 
 2. **Integration**
+
    - Web bridge
    - Native extensions
    - External services

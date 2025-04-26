@@ -1,7 +1,7 @@
 ---
 title: Features to Emulate
 description: Documentation of features to emulate in Raxol Terminal Emulator
-date: 2023-04-04
+date: 2025-04-26
 author: Raxol Team
 section: planning
 tags: [planning, features, emulation]
@@ -63,6 +63,6 @@ Artificery provides robust tooling for creating command-line interfaces. Here ar
 
 1. ~~First enhance our **Form System** with Prompt's input handling features~~ (Partially Complete - Text, Password, Confirmation, SelectList)
 2. Add **Table Rendering** capabilities to our display components (In Progress - Basic implementation done, refinement needed)
-3. Integrate **Command Line Parsing** from Artificery for shell integration
+3. Integrate **Command Line Parsing** from Artificery for shell integration (Partially Started - Core plugin command registry/manager implemented)
 4. Implement **Help Text Generation** for all CLI components (Partially Started - Linked to Accessibility work)
-5. Enhance **Release Integration** with our existing Burrito support (Partially Started - Runtime cleanup touched related areas)
+5. Enhance **Release Integration** with our existing Burrito support (Partially Started - Core runtime refactoring complete, touching related areas)

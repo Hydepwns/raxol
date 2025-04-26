@@ -8,13 +8,15 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   alias Raxol.Terminal.Cell
   # alias Raxol.Terminal.CharacterHandling # No longer directly used here
-  alias Raxol.Terminal.ANSI.TextFormatting # Used by Operations
+  # Used by Operations
+  alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Buffer.Selection
   alias Raxol.Terminal.Buffer.Scrollback
   alias Raxol.Terminal.Buffer.Operations
 
   defstruct [
-    :cells, # The main grid of cells
+    # The main grid of cells
+    :cells,
     :scrollback,
     :scrollback_limit,
     :selection,
@@ -52,15 +54,19 @@ defmodule Raxol.Terminal.ScreenBuffer do
       cond do
         is_integer(scrollback_limit) and scrollback_limit >= 0 ->
           {scrollback_limit, nil}
+
         true ->
           warning =
             "Invalid scrollback_limit: #{inspect(scrollback_limit)}. Using default 1000."
+
           {1000, warning}
       end
+
     if scrollback_warning, do: Logger.warning(scrollback_warning)
 
     %__MODULE__{
-      cells: List.duplicate(List.duplicate(Cell.new(), actual_width), actual_height),
+      cells:
+        List.duplicate(List.duplicate(Cell.new(), actual_width), actual_height),
       scrollback: [],
       scrollback_limit: valid_scrollback_limit,
       selection: nil,
@@ -84,16 +90,25 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate write_char(buffer, x, y, char, style \\ nil), to: Operations
 
   @doc "Writes a string. See `Raxol.Terminal.Buffer.Operations.write_string/4`."
-  @spec write_string(t(), non_neg_integer(), non_neg_integer(), String.t()) :: t()
+  @spec write_string(t(), non_neg_integer(), non_neg_integer(), String.t()) ::
+          t()
   defdelegate write_string(buffer, x, y, string), to: Operations
 
   # --- Scrolling --- (Delegated to Operations, uses Scrollback)
   @doc "Scrolls up. See `Raxol.Terminal.Buffer.Operations.scroll_up/3`."
-  @spec scroll_up(t(), non_neg_integer(), {non_neg_integer(), non_neg_integer()} | nil) :: t()
+  @spec scroll_up(
+          t(),
+          non_neg_integer(),
+          {non_neg_integer(), non_neg_integer()} | nil
+        ) :: t()
   defdelegate scroll_up(buffer, lines, scroll_region \\ nil), to: Operations
 
   @doc "Scrolls down. See `Raxol.Terminal.Buffer.Operations.scroll_down/3`."
-  @spec scroll_down(t(), non_neg_integer(), {non_neg_integer(), non_neg_integer()} | nil) :: t()
+  @spec scroll_down(
+          t(),
+          non_neg_integer(),
+          {non_neg_integer(), non_neg_integer()} | nil
+        ) :: t()
   defdelegate scroll_down(buffer, lines, scroll_region \\ nil), to: Operations
 
   # --- Scroll Region --- (Delegated to Operations)
@@ -110,7 +125,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate get_scroll_position(buffer), to: Scrollback, as: :get_position
 
   @doc "Gets scroll region boundaries. See `Raxol.Terminal.Buffer.Operations.get_scroll_region_boundaries/1`."
-  @spec get_scroll_region_boundaries(t()) :: {non_neg_integer(), non_neg_integer()}
+  @spec get_scroll_region_boundaries(t()) ::
+          {non_neg_integer(), non_neg_integer()}
   defdelegate get_scroll_region_boundaries(buffer), to: Operations
 
   # --- Selection --- (Delegated to Selection)
@@ -131,12 +147,24 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate in_selection?(buffer, x, y), to: Selection, as: :contains?
 
   @doc "Gets selection boundaries. See `Raxol.Terminal.Buffer.Selection.get_boundaries/1`."
-  @spec get_selection_boundaries(t()) :: {non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()} | nil
-  defdelegate get_selection_boundaries(buffer), to: Selection, as: :get_boundaries
+  @spec get_selection_boundaries(t()) ::
+          {non_neg_integer(), non_neg_integer(), non_neg_integer(),
+           non_neg_integer()}
+          | nil
+  defdelegate get_selection_boundaries(buffer),
+    to: Selection,
+    as: :get_boundaries
 
   @doc "Gets text in region. See `Raxol.Terminal.Buffer.Selection.get_text_in_region/5`."
-  @spec get_text_in_region(t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: String.t()
-  defdelegate get_text_in_region(buffer, start_x, start_y, end_x, end_y), to: Selection
+  @spec get_text_in_region(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: String.t()
+  defdelegate get_text_in_region(buffer, start_x, start_y, end_x, end_y),
+    to: Selection
 
   # --- Resizing & Dimensions --- (Delegated to Operations)
   @doc "Resizes buffer. See `Raxol.Terminal.Buffer.Operations.resize/3`."
@@ -170,15 +198,24 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   # --- Clearing/Erasing --- (Delegated to Operations)
   @doc "Clears region. See `Raxol.Terminal.Buffer.Operations.clear_region/5`."
-  @spec clear_region(t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: t()
-  defdelegate clear_region(buffer, start_x, start_y, end_x, end_y), to: Operations
+  @spec clear_region(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: t()
+  defdelegate clear_region(buffer, start_x, start_y, end_x, end_y),
+    to: Operations
 
   @doc "Erases in display. See `Raxol.Terminal.Buffer.Operations.erase_in_display/3`."
-  @spec erase_in_display(t(), {non_neg_integer(), non_neg_integer()}, atom()) :: t()
+  @spec erase_in_display(t(), {non_neg_integer(), non_neg_integer()}, atom()) ::
+          t()
   defdelegate erase_in_display(buffer, cursor_pos, type), to: Operations
 
   @doc "Erases in line. See `Raxol.Terminal.Buffer.Operations.erase_in_line/3`."
-  @spec erase_in_line(t(), {non_neg_integer(), non_neg_integer()}, atom()) :: t()
+  @spec erase_in_line(t(), {non_neg_integer(), non_neg_integer()}, atom()) ::
+          t()
   defdelegate erase_in_line(buffer, cursor_pos, type), to: Operations
 
   @doc "Clears buffer. See `Raxol.Terminal.Buffer.Operations.clear/1`."
@@ -187,29 +224,53 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   # --- Deleting --- (Delegated to Operations)
   @doc "Deletes lines. See `Raxol.Terminal.Buffer.Operations.delete_lines/4`."
-  @spec delete_lines(t(), non_neg_integer(), non_neg_integer(), {non_neg_integer(), non_neg_integer()} | nil) :: t()
+  @spec delete_lines(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          {non_neg_integer(), non_neg_integer()} | nil
+        ) :: t()
   defdelegate delete_lines(buffer, start_y, n, scroll_region), to: Operations
 
   @doc "Deletes characters. See `Raxol.Terminal.Buffer.Operations.delete_characters/3`."
-  @spec delete_characters(t(), {non_neg_integer(), non_neg_integer()}, non_neg_integer()) :: t()
+  @spec delete_characters(
+          t(),
+          {non_neg_integer(), non_neg_integer()},
+          non_neg_integer()
+        ) :: t()
   defdelegate delete_characters(buffer, pos, count), to: Operations
 
   # --- Inserting --- (Delegated to Operations)
   @doc "Inserts characters. See `Raxol.Terminal.Buffer.Operations.insert_characters/4`."
-  @spec insert_characters(t(), {non_neg_integer(), non_neg_integer()}, non_neg_integer(), TextFormatting.text_style() | nil) :: t()
-  defdelegate insert_characters(buffer, pos, count, style \\ nil), to: Operations
+  @spec insert_characters(
+          t(),
+          {non_neg_integer(), non_neg_integer()},
+          non_neg_integer(),
+          TextFormatting.text_style() | nil
+        ) :: t()
+  defdelegate insert_characters(buffer, pos, count, style \\ nil),
+    to: Operations
 
   @doc "Inserts lines. See `Raxol.Terminal.Buffer.Operations.insert_lines/4`."
-  @spec insert_lines(t(), non_neg_integer(), non_neg_integer(), {non_neg_integer(), non_neg_integer()} | nil) :: t()
+  @spec insert_lines(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          {non_neg_integer(), non_neg_integer()} | nil
+        ) :: t()
   defdelegate insert_lines(buffer, start_y, n, scroll_region), to: Operations
 
   # --- Diffing & Updating --- (Delegated to Operations)
   @doc "Calculates diff. See `Raxol.Terminal.Buffer.Operations.diff/2`."
-  @spec diff(t(), list({non_neg_integer(), non_neg_integer(), map()})) :: list({non_neg_integer(), non_neg_integer(), map()})
+  @spec diff(t(), list({non_neg_integer(), non_neg_integer(), map()})) ::
+          list({non_neg_integer(), non_neg_integer(), map()})
   defdelegate diff(buffer, changes), to: Operations
 
   @doc "Updates buffer from changes. See `Raxol.Terminal.Buffer.Operations.update/2`."
-  @spec update(t(), list({non_neg_integer(), non_neg_integer(), Cell.t() | map()})) :: t()
+  @spec update(
+          t(),
+          list({non_neg_integer(), non_neg_integer(), Cell.t() | map()})
+        ) :: t()
   defdelegate update(buffer, changes), to: Operations
 
   # --- Content Retrieval --- (Delegated to Operations)
@@ -223,5 +284,4 @@ defmodule Raxol.Terminal.ScreenBuffer do
   # def is_in_selection?(buffer, x, y), do: in_selection?(buffer, x, y)
 
   # Note: Removed get_changes/2 as diff/2 now handles the {x,y,map} format directly.
-
 end

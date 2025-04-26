@@ -37,7 +37,10 @@ defmodule Raxol.Terminal.Commands.Modes do
     params
     |> Enum.reduce(emulator, fn param, acc ->
       if is_nil(param) do
-        Logger.warning("Ignoring nil mode parameter in DEC private mode set/reset")
+        Logger.warning(
+          "Ignoring nil mode parameter in DEC private mode set/reset"
+        )
+
         acc
       else
         # Lookup the mode atom

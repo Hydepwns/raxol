@@ -43,7 +43,10 @@ defmodule Raxol.Terminal.Commands.Executor do
   Placeholder for OSC command execution
   """
   def execute_osc_command(emulator, _payload_buffer) do
-    Logger.debug("[Commands.Executor] execute_osc_command called (NOT IMPLEMENTED)")
+    Logger.debug(
+      "[Commands.Executor] execute_osc_command called (NOT IMPLEMENTED)"
+    )
+
     emulator
   end
 
@@ -51,8 +54,17 @@ defmodule Raxol.Terminal.Commands.Executor do
   @doc """
   Placeholder for DCS command execution
   """
-  def execute_dcs_command(emulator, _params, _intermediates, _final_byte, _payload) do
-    Logger.debug("[Commands.Executor] execute_dcs_command called (NOT IMPLEMENTED)")
+  def execute_dcs_command(
+        emulator,
+        _params,
+        _intermediates,
+        _final_byte,
+        _payload
+      ) do
+    Logger.debug(
+      "[Commands.Executor] execute_dcs_command called (NOT IMPLEMENTED)"
+    )
+
     emulator
   end
 end

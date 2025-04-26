@@ -151,22 +151,26 @@ defmodule Raxol.UI.Layout.Engine do
     Grid.process(grid, space, acc)
   end
 
-  def process_element(%{type: :label, attrs: attrs}, space, acc) do
+  # Process basic text/label
+  def process_element(%{type: type, attrs: attrs} = _element, space, acc) when type in [:label, :text] do
     # Create a text element at the given position
     text_element = %{
       type: :text,
       x: space.x,
       y: space.y,
-      text: Map.get(attrs, :content, ""),
-      attrs: %{fg: :white, bg: :black}
+      text: Map.get(attrs, :content, Map.get(attrs, :text, "")),
+      # Pass original attributes through, let Renderer handle styling
+      attrs: Map.put(attrs, :original_type, type)
     }
 
     [text_element | acc]
   end
 
-  def process_element(%{type: :button, attrs: attrs}, space, acc) do
-    # Create a button element
+  def process_element(%{type: :button, attrs: attrs} = _element, space, acc) do
+    # Create a button element composed of a box and text
     text = Map.get(attrs, :label, "Button")
+    # Keep original attributes like :disabled, :focused if present
+    component_attrs = Map.put(attrs, :component_type, :button)
 
     button_elements = [
       # Button box
@@ -176,7 +180,8 @@ defmodule Raxol.UI.Layout.Engine do
         y: space.y,
         width: min(String.length(text) + 4, space.width),
         height: 3,
-        attrs: %{fg: :white, bg: :blue}
+        # Pass attributes, Renderer will use theme + component_type
+        attrs: component_attrs
       },
       # Button text
       %{
@@ -184,18 +189,22 @@ defmodule Raxol.UI.Layout.Engine do
         x: space.x + 2,
         y: space.y + 1,
         text: text,
-        attrs: %{fg: :white, bg: :blue}
+        # Pass attributes, Renderer will use theme + component_type
+        attrs: component_attrs
       }
     ]
 
     button_elements ++ acc
   end
 
-  def process_element(%{type: :text_input, attrs: attrs}, space, acc) do
-    # Create a text input element
+  def process_element(%{type: :text_input, attrs: attrs} = _element, space, acc) do
+    # Create a text input element composed of box and text
     value = Map.get(attrs, :value, "")
     placeholder = Map.get(attrs, :placeholder, "")
-    text = if value == "", do: placeholder, else: value
+    display_text = if value == "", do: placeholder, else: value
+
+    # Add component_type, potentially pass placeholder/value info if Renderer needs it
+    component_attrs = Map.put(attrs, :component_type, :text_input)
 
     text_input_elements = [
       # Input box
@@ -203,41 +212,40 @@ defmodule Raxol.UI.Layout.Engine do
         type: :box,
         x: space.x,
         y: space.y,
-        width: min(max(String.length(text) + 4, 10), space.width),
+        width: min(max(String.length(display_text) + 4, 10), space.width),
         height: 3,
-        attrs: %{fg: :white, bg: :black}
+        attrs: component_attrs
       },
-      # Input text
+      # Input text (or placeholder)
       %{
         type: :text,
         x: space.x + 2,
         y: space.y + 1,
-        text: text,
-        attrs: %{
-          fg: if(value == "", do: :gray, else: :white),
-          bg: :black
-        }
+        text: display_text,
+        # Pass component_attrs; Renderer can check :value == "" and use placeholder style
+        attrs: Map.merge(component_attrs, %{is_placeholder: value == ""})
       }
     ]
 
     text_input_elements ++ acc
   end
 
-  def process_element(%{type: :checkbox, attrs: attrs}, space, acc) do
-    # Create a checkbox element
+  def process_element(%{type: :checkbox, attrs: attrs} = _element, space, acc) do
+    # Create a checkbox element (simple text for now)
     checked = Map.get(attrs, :checked, false)
     label = Map.get(attrs, :label, "")
+    component_attrs = Map.put(attrs, :component_type, :checkbox)
 
     checkbox_text = if checked, do: "[✓]", else: "[ ]"
 
     checkbox_elements = [
-      # Checkbox text
+      # Checkbox text (box + label)
       %{
         type: :text,
         x: space.x,
         y: space.y,
         text: "#{checkbox_text} #{label}",
-        attrs: %{fg: :white, bg: :black}
+        attrs: component_attrs # Pass attributes for theme styling
       }
     ]
 
@@ -298,19 +306,30 @@ defmodule Raxol.UI.Layout.Engine do
     header_elements ++ data_elements ++ acc
   end
 
-  def process_element(element, _space, acc) do
-    # Default case for unhandled elements
-    [element | acc]
-  end
+  # --- Helper Functions ---
 
-  # Process a list of children
-  def process_children(children, space, acc) when is_list(children) do
-    Enum.reduce(children, acc, fn child, acc ->
-      process_element(child, space, acc)
+  # Process children of a container element
+  defp process_children(children, space, acc) when is_list(children) do
+    # Placeholder: needs proper handling based on container type (row, col, etc.)
+    # For now, just process each child in the same space (will overlap)
+    Enum.reduce(children, acc, fn child, current_acc ->
+      process_element(child, space, current_acc)
     end)
   end
 
-  def process_children(child, space, acc) do
-    process_element(child, space, acc)
+  # Add other element processing functions here...
+  # process_element for table, select_list etc.
+
+  # Catch-all for unknown element types
+  def process_element(%{type: type} = element, _space, acc) do
+    Logger.warning(
+      "LayoutEngine: Unknown or unhandled element type: #{inspect(type)}. Element: #{inspect(element)}"
+    )
+    acc
+  end
+
+  def process_element(other, _space, acc) do
+    Logger.warning("LayoutEngine: Received non-element data: #{inspect(other)}")
+    acc
   end
 end

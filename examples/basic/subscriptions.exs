@@ -46,4 +46,5 @@ defmodule Subscriptions do
   end
 end
 
-Raxol.run(Subscriptions, interval: 100)
+# Raxol.run(Subscriptions, interval: 100)
+Raxol.Core.Runtime.start_application(Subscriptions, [])

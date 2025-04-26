@@ -17,16 +17,17 @@ defmodule Raxol.UI.Rendering.Pipeline do
           float(),
           :fit | :fill | :stretch
         ) :: :ok
+  # Make public
   def apply_animation_settings(
-         animation_type,
-         animation_path,
-         fps,
-         loop,
-         blend,
-         opacity,
-         blur,
-         scale
-       ) do # Make public
+        animation_type,
+        animation_path,
+        fps,
+        loop,
+        blend,
+        opacity,
+        blur,
+        scale
+      ) do
     # Store animation settings in the process dictionary (or send to relevant process)
     Process.put(:animation_settings, %{
       type: animation_type,
@@ -38,6 +39,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
       blur: blur,
       scale: scale
     })
+
     # TODO: This likely needs to communicate with the actual rendering process,
     # not just store in the current process's dictionary.
     :ok

@@ -7,6 +7,7 @@ defmodule Raxol.Core.Runtime.Debug do
 
   def debug(message), do: Logger.debug(message)
   def info(message), do: Logger.info(message)
-  def warn(message), do: Logger.warning(message) # Use warning/1
+  # Use warning/1
+  def warn(message), do: Logger.warning(message)
   def error(message), do: Logger.error(message)
 end

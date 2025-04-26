@@ -289,7 +289,9 @@ defmodule Raxol.UI.Components.Display.Progress do
 
       # Insert animation character at the transition point
       # Need slicing adjustment if empty_part is ""
-      trail = if empty_width > 0, do: String.slice(empty_part, 1..-1//-1), else: ""
+      trail =
+        if empty_width > 0, do: String.slice(empty_part, 1..-1//-1), else: ""
+
       filled_part <> animation_char <> trail
     else
       # No animation

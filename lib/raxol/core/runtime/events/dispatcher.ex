@@ -1,23 +1,68 @@
+require Raxol.Core.Events.Event
+
 defmodule Raxol.Core.Runtime.Events.Dispatcher do
   @moduledoc """
-  Handles the dispatching of events to the appropriate handlers within a Raxol application.
+  Handles the dispatching of events and commands within a Raxol application.
 
-  This module is responsible for:
-  * Routing events to the correct application handlers
-  * Processing system-level events
-  * Maintaining the event flow through the system
+  Acts as a central hub for:
+  * Routing events (system, application)
+  * Processing commands returned by application updates
+  * Managing PubSub subscriptions and broadcasts using Registry
   """
 
   use GenServer
 
   require Logger
 
-  alias Raxol.Core.Events.Event
+  alias Raxol.Core.Runtime.Application
+  alias Raxol.Core.Runtime.Command
+  alias Raxol.Core.Runtime.Events.Event
+  # alias Raxol.Core.Runtime.Plugins.CommandRegistry # Remove unused alias
+  alias Raxol.Registry
+
+  # Define the Registry name
+  @registry_name :raxol_event_subscriptions
+
+  # Internal state
+  defmodule State do
+    @moduledoc false
+    defstruct [
+      # PID of the main Runtime process
+      runtime_pid: nil,
+      app_module: nil,
+      model: nil,
+      width: 0,
+      height: 0,
+      focused: true,
+      debug_mode: false,
+      # Reference or PID?
+      plugin_manager: nil,
+      # ETS table name
+      command_registry_table: nil,
+      # Add current theme ID
+      current_theme_id: :default # Default to :default theme
+    ]
+  end
+
+  # --- Public API ---
+
+  def start_link(runtime_pid, initial_state) do
+    # Start the Registry for subscriptions
+    {:ok, _pid} = Registry.start_link(keys: :duplicate, name: @registry_name)
+    Logger.info("Event Dispatcher starting...")
+
+    GenServer.start_link(__MODULE__, {runtime_pid, initial_state},
+      name: __MODULE__
+    )
+  end
 
   @impl true
-  def init(init_arg) do
-    Logger.info("Dispatcher initializing...")
-    {:ok, init_arg}
+  def init({runtime_pid, %State{} = initial_state}) do
+    # Ensure model has a default theme ID if not provided
+    initial_model = Map.put_new(initial_state.model, :current_theme_id, :default)
+    updated_initial_state = %{initial_state | model: initial_model}
+    Logger.info("Dispatcher initialized.")
+    {:ok, %{updated_initial_state | runtime_pid: runtime_pid}}
   end
 
   @doc """
@@ -41,28 +86,44 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   This is typically used for user interaction events like keyboard or mouse input.
   """
-  def handle_event(event, state) do
-    # Extract the application module and current model
+  def handle_event(event, %State{} = state) do
     app_module = state.app_module
     current_model = state.model
 
-    # Convert the event to an application message if the app defines a handle_event callback
+    # --- Handle theme change event specifically ---
     message =
-      if function_exported?(app_module, :handle_event, 1) do
-        app_module.handle_event(event)
-      else
-        # Default conversion for common events
-        default_event_to_message(event)
+      case event do
+        # Define a specific event structure for theme changes
+        %Event{type: :set_theme, data: %{theme_id: theme_id}} when is_atom(theme_id) ->
+          # Let the application update decide, passing the theme_id as the message
+          {:set_theme, theme_id}
+        _ ->
+          # Default event processing
+          if function_exported?(app_module, :handle_event, 1) do
+            app_module.handle_event(event)
+          else
+            default_event_to_message(event)
+          end
       end
 
-    # Update the application state with the new message
-    case Raxol.Core.Runtime.Application.update(app_module, message, current_model) do
+    # --- Call application update ---
+    case Raxol.Core.Runtime.Application.update(
+           app_module,
+           message,
+           current_model
+         ) do
       {updated_model, commands} ->
-        # Process any commands returned by the update function
-        {:ok, %{state | model: updated_model, commands: commands}}
+        # Execute commands using the Command module
+        context = %{
+          pid: self(),
+          command_registry_table: state.command_registry_table,
+          runtime_pid: state.runtime_pid
+        }
 
-      {:error, reason} ->
-        {:error, reason, state}
+        process_commands(commands, context)
+        # Ensure the theme ID from the model is stored in the Dispatcher state as well
+        new_theme_id = Map.get(updated_model, :current_theme_id, state.current_theme_id)
+        {:ok, %{state | model: updated_model, current_theme_id: new_theme_id}}
     end
   end
 
@@ -99,20 +160,111 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # --- Public API for PubSub ---
 
-  @doc "Placeholder for subscribing to event topics."
-  @spec subscribe(atom(), {module(), atom()}) :: :ok | {:error, term()}
-  def subscribe(topic, subscriber) do
-    Logger.debug("[#{__MODULE__}] subscribe called for topic '#{topic}': #{inspect(subscriber)}")
-    # TODO: Implement subscription management (e.g., using Registry or ETS)
+  @doc "Subscribes the calling process to a specific event topic."
+  @spec subscribe(atom()) :: :ok | {:error, term()}
+  def subscribe(topic) when is_atom(topic) do
+    Registry.register(@registry_name, topic, {})
+  end
+
+  @doc "Unsubscribes the calling process from a specific event topic."
+  @spec unsubscribe(atom()) :: :ok | {:error, term()}
+  def unsubscribe(topic) when is_atom(topic) do
+    Registry.unregister(@registry_name, topic)
+  end
+
+  @doc "Broadcasts an event payload to all subscribers of a topic."
+  @spec broadcast(atom(), map()) :: :ok | {:error, term()}
+  def broadcast(topic, payload) when is_atom(topic) and is_map(payload) do
+    Logger.debug(
+      "[#{__MODULE__}] Broadcasting on topic '#{topic}': #{inspect(payload)}"
+    )
+
+    # Find subscribers for the topic
+    subscribers = Registry.lookup(@registry_name, topic)
+
+    # Send the message to each subscriber
+    # Consider async send vs. send for backpressure/ordering needs
+    Enum.each(subscribers, fn {pid, _value} ->
+      send(pid, {:event, topic, payload})
+    end)
+
     :ok
   end
 
-  @doc "Placeholder for broadcasting events to subscribers."
-  @spec broadcast(atom(), map()) :: :ok | {:error, term()}
-  def broadcast(topic, payload) do
-    Logger.debug("[#{__MODULE__}] broadcast called for topic '#{topic}': #{inspect(payload)}")
-    # TODO: Implement broadcast logic to notify subscribers
-    :ok
+  # --- GenServer Callbacks ---
+
+  @impl true
+  def handle_cast({:dispatch, event}, %State{} = state) do
+    # Dispatch event internally
+    case do_dispatch_event(event, state) do
+      {:ok, updated_state} ->
+        # Check if state actually changed before rendering?
+        if updated_state != state do
+          # Signal Runtime to render
+          Logger.debug("State changed, sending :render_needed to Runtime")
+          send(state.runtime_pid, :render_needed)
+          {:noreply, updated_state}
+        else
+          # No change, no render
+          {:noreply, state}
+        end
+
+      {:quit, final_state} ->
+        # TODO: How to signal Runtime to quit?
+        Logger.info("Quit requested via event dispatch.")
+        send(state.runtime_pid, :quit_runtime) # Send message to runtime to handle shutdown
+        {:noreply, final_state}
+
+      {:error, _reason, final_state} ->
+        # Error already logged by do_dispatch_event
+        {:noreply, final_state}
+    end
+  end
+
+  @impl GenServer
+  def handle_info({:command_result, msg}, %State{} = state) do
+    # A command executed via Command.execute (e.g., a Task or Delay) has finished
+    # We need to feed this message back into the application's update loop
+    Logger.debug("[#{__MODULE__}] Received command result: #{inspect(msg)}")
+
+    # Call Application.update with the received message
+    case Application.update(state.app_module, msg, state.model) do
+      {updated_model, commands} ->
+        # Execute any new commands generated by the update
+        context = %{
+          pid: self(),
+          command_registry_table: state.command_registry_table,
+          runtime_pid: state.runtime_pid
+        }
+
+        process_commands(commands, context)
+        {:noreply, %{state | model: updated_model}}
+    end
+  end
+
+  # Catch-all for other messages
+  @impl GenServer
+  def handle_info(message, state) do
+    Logger.warning(
+      "[#{__MODULE__}] Received unexpected message: #{inspect(message)}"
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_call(:get_model, _from, state) do
+    {:reply, {:ok, state.model}, state}
+  end
+
+  @impl true
+  def handle_call(:get_render_context, _from, state) do
+    # Return both the model and the current theme ID
+    render_context = %{
+      model: state.model,
+      theme_id: state.current_theme_id # Use the theme ID stored in Dispatcher state
+    }
+    {:reply, {:ok, render_context}, state}
   end
 
   # Private functions
@@ -147,10 +299,16 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   defp apply_plugin_filters(event, state) do
     # Allow plugins to filter/modify the event before processing
-    case Raxol.Core.Runtime.Plugins.Manager.filter_event(state.plugin_manager, event) do
+    # TODO: Ensure state.plugin_manager is correctly passed/set
+    # Assuming named process if nil
+    manager_pid = state.plugin_manager || Raxol.Core.Runtime.Plugins.Manager
+    # Assuming Manager implements handle_call for :filter_event
+    case GenServer.call(manager_pid, {:filter_event, event}) do
       {:ok, filtered_event} -> filtered_event
-      :halt -> nil # Event processing halted by a plugin
-      _ -> event # No filtering applied
+      # Event processing halted by a plugin
+      :halt -> nil
+      # No filtering applied
+      _ -> event
     end
   end
 
@@ -175,5 +333,25 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp default_event_to_message(event) do
     # For other events, just pass through the whole event
     {:event, event}
+  end
+
+  # --- Command Processing ---
+
+  defp process_commands(commands, context) when is_list(commands) do
+    Enum.each(commands, fn command ->
+      # Use the Command module's execution logic
+      # Add error handling around execute if needed
+      # Note: Command.execute handles different command types (:task, :batch, :broadcast, etc.)
+      # It needs context, including the PID to send results back to.
+      case command do
+        %Command{} = cmd ->
+          Command.execute(cmd, context)
+
+        _ ->
+          Logger.warning(
+            "[#{__MODULE__}] Invalid command format: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}. Ignoring."
+          )
+      end
+    end)
   end
 end
