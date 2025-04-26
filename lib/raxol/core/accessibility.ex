@@ -32,6 +32,13 @@ defmodule Raxol.Core.Accessibility do
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.Accessibility.ThemeIntegration
+  alias Raxol.Core.UserPreferences
+
+  # Key prefix for accessibility preferences
+  @pref_prefix "accessibility"
+
+  # Helper function to get preference key
+  defp pref_key(key), do: "#{@pref_prefix}.#{key}"
 
   @doc """
   Enable accessibility features.
@@ -53,10 +60,12 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def enable(opts \\ []) do
-    options = Keyword.merge(default_options(), opts)
+    # Get initial options from UserPreferences merged with explicit opts
+    initial_options = load_initial_options(opts)
 
-    # Store options
-    Process.put(:accessibility_options, options)
+    Logger.debug(
+      "[Accessibility] Enabling with options: #{inspect(initial_options)}"
+    )
 
     # Register event handler for focus changes
     EventManager.register_handler(
@@ -85,8 +94,8 @@ defmodule Raxol.Core.Accessibility do
     # Initialize theme integration
     ThemeIntegration.init()
 
-    # Apply settings to relevant components
-    apply_settings(options)
+    # Apply initial settings based on loaded preferences
+    apply_initial_settings(initial_options)
 
     :ok
   end
@@ -124,15 +133,9 @@ defmodule Raxol.Core.Accessibility do
     # Clean up theme integration
     ThemeIntegration.cleanup()
 
-    # Clear stored settings
-    Process.delete(:accessibility_options)
+    # Clear process dictionary values
     Process.delete(:accessibility_announcements)
-    Process.delete(:accessibility_element_metadata)
-    Process.delete(:accessibility_text_scale)
-    Process.delete(:accessibility_component_styles)
-
-    # Revert settings applied to components
-    revert_settings()
+    # Process.delete(:accessibility_options) # No longer storing options here
 
     :ok
   end
@@ -162,12 +165,13 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def announce(message, opts \\ []) when is_binary(message) do
-    # Get options
-    options = Process.get(:accessibility_options) || default_options()
-
-    if options[:screen_reader] do
-      # Get announcement queue
-      queue = Process.get(:accessibility_announcements) || []
+    # Get screen reader setting directly from preferences
+    if UserPreferences.get(
+         pref_key(:screen_reader),
+         default_options()[:screen_reader]
+       ) do
+      # Get options
+      _options = Process.get(:accessibility_options) || default_options()
 
       # Create announcement with metadata
       announcement = %{
@@ -184,7 +188,10 @@ defmodule Raxol.Core.Accessibility do
           [announcement]
         else
           # Add to queue based on priority
-          insert_by_priority(queue, announcement)
+          insert_by_priority(
+            Process.get(:accessibility_announcements) || [],
+            announcement
+          )
         end
 
       # Store updated queue
@@ -245,13 +252,10 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def set_high_contrast(enabled) when is_boolean(enabled) do
-    options = Process.get(:accessibility_options) || default_options()
-    updated_options = Keyword.put(options, :high_contrast, enabled)
-    Process.put(:accessibility_options, updated_options)
-
-    # Dispatch event to notify components of high contrast mode change
+    # Save setting to preferences
+    :ok = UserPreferences.set(pref_key(:high_contrast), enabled)
+    # Dispatch event to notify listeners (like ThemeIntegration)
     EventManager.dispatch({:accessibility_high_contrast, enabled})
-
     :ok
   end
 
@@ -264,13 +268,8 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def set_reduced_motion(enabled) when is_boolean(enabled) do
-    options = Process.get(:accessibility_options) || default_options()
-    updated_options = Keyword.put(options, :reduced_motion, enabled)
-    Process.put(:accessibility_options, updated_options)
-
-    # Dispatch event to notify animation system to reduce motion
+    :ok = UserPreferences.set(pref_key(:reduced_motion), enabled)
     EventManager.dispatch({:accessibility_reduced_motion, enabled})
-
     :ok
   end
 
@@ -283,13 +282,8 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def set_large_text(enabled) when is_boolean(enabled) do
-    options = Process.get(:accessibility_options) || default_options()
-    updated_options = Keyword.put(options, :large_text, enabled)
-    Process.put(:accessibility_options, updated_options)
-
-    # Dispatch event to notify text components to use larger font
+    :ok = UserPreferences.set(pref_key(:large_text), enabled)
     EventManager.dispatch({:accessibility_large_text, enabled})
-
     :ok
   end
 
@@ -403,8 +397,10 @@ defmodule Raxol.Core.Accessibility do
       false
   """
   def reduced_motion_enabled? do
-    options = Process.get(:accessibility_options) || default_options()
-    options[:reduced_motion]
+    UserPreferences.get(
+      pref_key(:reduced_motion),
+      default_options()[:reduced_motion]
+    )
   end
 
   @doc """
@@ -416,8 +412,10 @@ defmodule Raxol.Core.Accessibility do
       false
   """
   def high_contrast_enabled? do
-    options = Process.get(:accessibility_options) || default_options()
-    options[:high_contrast]
+    UserPreferences.get(
+      pref_key(:high_contrast),
+      default_options()[:high_contrast]
+    )
   end
 
   @doc """
@@ -429,30 +427,33 @@ defmodule Raxol.Core.Accessibility do
       false
   """
   def large_text_enabled? do
-    options = Process.get(:accessibility_options) || default_options()
-    options[:large_text]
+    UserPreferences.get(pref_key(:large_text), default_options()[:large_text])
   end
 
   @doc """
   Handle preference changed events for accessibility announcements.
   """
-  def handle_preference_changed(
-        {:preference_changed, key, _old_value, new_value}
-      ) do
-    # Announce changes to relevant accessibility preferences
-    announce_key =
-      case {key, new_value} do
-        {:high_contrast, true} -> "accessibility.high_contrast_enabled"
-        {:high_contrast, false} -> "accessibility.high_contrast_disabled"
-        {:reduced_motion, true} -> "accessibility.reduced_motion_enabled"
-        {:reduced_motion, false} -> "accessibility.reduced_motion_disabled"
-        # Add other relevant preferences here
-        _ -> nil
-      end
+  def handle_preference_changed({:preference_changed, key, value}) do
+    # Only react to changes relevant to accessibility
+    # Check key against known preference keys *outside* guards
+    high_contrast_key = pref_key(:high_contrast)
+    reduced_motion_key = pref_key(:reduced_motion)
+    large_text_key = pref_key(:large_text)
 
-    if announce_key do
-      # Use I18n.announce which handles translation internally
-      Raxol.Core.I18n.announce(announce_key)
+    # Use `case` to compare the key directly
+    case key do
+      ^high_contrast_key ->
+        EventManager.dispatch({:accessibility_high_contrast, value})
+
+      ^reduced_motion_key ->
+        EventManager.dispatch({:accessibility_reduced_motion, value})
+
+      ^large_text_key ->
+        EventManager.dispatch({:accessibility_large_text, value})
+
+      # Ignore other preference changes
+      _ ->
+        :ok
     end
 
     :ok
@@ -461,68 +462,93 @@ defmodule Raxol.Core.Accessibility do
   @doc """
   Handle locale changed events for accessibility announcements.
   """
-  def handle_locale_changed({:locale_changed, _old_locale, new_locale}) do
-    # Announce the new locale. Consider using a translatable key.
-    # For now, mimicking the test's expectation of announcing the locale code itself.
-    # A better approach might be I18n.announce("accessibility.locale_changed", %{locale: new_locale})
-    # announce(new_locale)
-
-    # --- TEMPORARY DEBUGGING: Directly update spy list ---
-    announcements = Process.get(:accessibility_test_announcements, [])
-    updated_announcements = [new_locale | announcements]
-    Process.put(:accessibility_test_announcements, updated_announcements)
-    # --- END TEMPORARY DEBUGGING ---
-
+  def handle_locale_changed({:locale_changed, _locale}) do
+    # Handle locale changes for accessibility announcements
+    # TODO: Implement locale-specific announcement logic
     :ok
   end
 
   # Private functions
 
   defp default_options do
-    [
+    %{
       screen_reader: true,
       high_contrast: false,
       reduced_motion: false,
       keyboard_focus: true,
       large_text: false
-    ]
+    }
   end
 
-  defp apply_settings(_options) do
-    # Apply accessibility settings
-    :ok
+  defp apply_initial_settings(options) do
+    Logger.debug(
+      "[Accessibility] Applying initial settings: #{inspect(options)}"
+    )
+
+    # Trigger events for initial state
+    EventManager.dispatch(
+      {:accessibility_high_contrast, options[:high_contrast]}
+    )
+
+    EventManager.dispatch(
+      {:accessibility_reduced_motion, options[:reduced_motion]}
+    )
+
+    EventManager.dispatch({:accessibility_large_text, options[:large_text]})
   end
 
-  defp revert_settings do
-    # Revert all accessibility settings
-    EventManager.dispatch({:accessibility_high_contrast, false})
-    EventManager.dispatch({:accessibility_reduced_motion, false})
-    EventManager.dispatch({:accessibility_large_text, false})
-    :ok
+  defp load_initial_options(opts) do
+    defaults = default_options()
+
+    pref_options = %{
+      high_contrast:
+        UserPreferences.get(pref_key(:high_contrast), defaults[:high_contrast]),
+      reduced_motion:
+        UserPreferences.get(
+          pref_key(:reduced_motion),
+          defaults[:reduced_motion]
+        ),
+      large_text:
+        UserPreferences.get(pref_key(:large_text), defaults[:large_text]),
+      screen_reader:
+        UserPreferences.get(pref_key(:screen_reader), defaults[:screen_reader]),
+      keyboard_focus:
+        UserPreferences.get(
+          pref_key(:keyboard_focus),
+          defaults[:keyboard_focus]
+        )
+    }
+
+    # Explicit opts override preferences
+    Keyword.merge(pref_options, opts)
   end
 
   defp insert_by_priority(queue, announcement) do
-    # Sort by priority (high -> medium -> low) then by timestamp (oldest first)
-    priority_value =
-      case announcement.priority do
-        :high -> 0
-        :medium -> 1
-        :low -> 2
-      end
+    # Simple priority: High > Medium > Low
+    priority_order = %{high: 3, medium: 2, low: 1}
+    _announcement_priority = Map.get(priority_order, announcement.priority, 0)
 
-    # Insert at the right position
-    {before, remaining} =
-      Enum.split_while(queue, fn item ->
-        item_priority =
-          case item.priority do
-            :high -> 0
-            :medium -> 1
-            :low -> 2
-          end
+    Enum.sort_by(
+      queue ++ [announcement],
+      # Descending priority
+      &(-Map.get(priority_order, &1.priority, 0)),
+      # Ascending timestamp for same priority
+      & &1.timestamp
+    )
+  end
 
-        item_priority < priority_value
-      end)
-
-    before ++ [announcement] ++ remaining
+  @doc """
+  Get a specific accessibility option's current value.
+  """
+  @spec get_option(atom()) :: any()
+  def get_option(key)
+      when key in [
+             :high_contrast,
+             :reduced_motion,
+             :large_text,
+             :screen_reader,
+             :keyboard_focus
+           ] do
+    UserPreferences.get(pref_key(key), default_options()[key])
   end
 end

@@ -1,24 +1,20 @@
-require Raxol.Core.Events.Event
-
 defmodule Raxol.Core.Runtime.Events.Dispatcher do
   @moduledoc """
-  Handles the dispatching of events and commands within a Raxol application.
-
-  Acts as a central hub for:
-  * Routing events (system, application)
-  * Processing commands returned by application updates
-  * Managing PubSub subscriptions and broadcasts using Registry
+  Manages the application state (model) and dispatches events to the application's
+  `update/2` function. It also handles commands returned by `update/2`.
   """
 
   use GenServer
 
   require Logger
+  require Raxol.Core.Events.Event
+  require Raxol.Core.Runtime.Command
+  require Raxol.Core.UserPreferences
 
   alias Raxol.Core.Runtime.Application
   alias Raxol.Core.Runtime.Command
-  alias Raxol.Core.Runtime.Events.Event
-  # alias Raxol.Core.Runtime.Plugins.CommandRegistry # Remove unused alias
-  alias Raxol.Registry
+  alias Raxol.Core.Events.Event
+  alias Raxol.Core.UserPreferences
 
   # Define the Registry name
   @registry_name :raxol_event_subscriptions
@@ -40,7 +36,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       # ETS table name
       command_registry_table: nil,
       # Add current theme ID
-      current_theme_id: :default # Default to :default theme
+      # Fetched from UserPreferences on init
+      current_theme_id: :default # Will be overwritten in init
     ]
   end
 
@@ -57,12 +54,47 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   @impl true
-  def init({runtime_pid, %State{} = initial_state}) do
-    # Ensure model has a default theme ID if not provided
-    initial_model = Map.put_new(initial_state.model, :current_theme_id, :default)
-    updated_initial_state = %{initial_state | model: initial_model}
-    Logger.info("Dispatcher initialized.")
-    {:ok, %{updated_initial_state | runtime_pid: runtime_pid}}
+  def init({runtime_pid, initial_state_map}) do
+    # Start the Registry for subscriptions
+    {:ok, _pid} = Registry.start_link(keys: :duplicate, name: @registry_name)
+    Logger.info("Event Dispatcher starting...")
+
+    # Load initial theme from preferences
+    initial_theme_id = UserPreferences.get("theme.active_id", :default)
+    Logger.debug("Dispatcher init: Loaded initial theme ID: #{inspect(initial_theme_id)}")
+
+    # Ensure model has the loaded theme ID if not provided explicitly
+    initial_model =
+      Map.put_new(initial_state_map.model, :current_theme_id, initial_theme_id)
+
+    # Extract initial commands
+    initial_commands = initial_state_map.initial_commands
+
+    # Build the final initial state struct
+    initial_state = %State{
+      runtime_pid: runtime_pid,
+      app_module: initial_state_map.app_module,
+      model: initial_model,
+      width: initial_state_map.width,
+      height: initial_state_map.height,
+      plugin_manager: initial_state_map.plugin_manager,
+      command_registry_table: initial_state_map.command_registry_table,
+      current_theme_id: initial_theme_id # Set from preferences
+      # Add other fields from initial_state_map if needed, setting defaults
+    }
+
+    Logger.info("Dispatcher initialized with theme: #{inspect(initial_state.current_theme_id)}")
+
+    # Process initial commands after state is set up
+    context = %{
+      pid: self(),
+      command_registry_table: initial_state.command_registry_table,
+      runtime_pid: initial_state.runtime_pid
+    }
+
+    process_commands(initial_commands, context)
+
+    {:ok, initial_state}
   end
 
   @doc """
@@ -89,25 +121,13 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   def handle_event(event, %State{} = state) do
     app_module = state.app_module
     current_model = state.model
+    current_theme_id = state.current_theme_id
 
-    # --- Handle theme change event specifically ---
-    message =
-      case event do
-        # Define a specific event structure for theme changes
-        %Event{type: :set_theme, data: %{theme_id: theme_id}} when is_atom(theme_id) ->
-          # Let the application update decide, passing the theme_id as the message
-          {:set_theme, theme_id}
-        _ ->
-          # Default event processing
-          if function_exported?(app_module, :handle_event, 1) do
-            app_module.handle_event(event)
-          else
-            default_event_to_message(event)
-          end
-      end
+    # Convert event to message for app update
+    message = default_event_to_message(event)
 
-    # --- Call application update ---
-    case Raxol.Core.Runtime.Application.update(
+    # Call application update
+    case Application.delegate_update(
            app_module,
            message,
            current_model
@@ -121,9 +141,25 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         }
 
         process_commands(commands, context)
-        # Ensure the theme ID from the model is stored in the Dispatcher state as well
-        new_theme_id = Map.get(updated_model, :current_theme_id, state.current_theme_id)
-        {:ok, %{state | model: updated_model, current_theme_id: new_theme_id}}
+
+        # Check if theme ID changed in the model
+        new_theme_id =
+          Map.get(updated_model, :current_theme_id, current_theme_id)
+
+        updated_state =
+          if new_theme_id != current_theme_id do
+            Logger.debug("Theme changed in model: #{current_theme_id} -> #{new_theme_id}. Updating preferences.")
+            # Save the new theme preference
+            :ok = UserPreferences.set("theme.active_id", new_theme_id)
+            %{state | model: updated_model, current_theme_id: new_theme_id}
+          else
+            %{state | model: updated_model}
+          end
+
+        {:ok, updated_state}
+
+      # Handle other potential return values from delegate_update if necessary
+      # e.g., {:error, reason}
     end
   end
 
@@ -212,7 +248,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       {:quit, final_state} ->
         # TODO: How to signal Runtime to quit?
         Logger.info("Quit requested via event dispatch.")
-        send(state.runtime_pid, :quit_runtime) # Send message to runtime to handle shutdown
+        # Send message to runtime to handle shutdown
+        send(state.runtime_pid, :quit_runtime)
         {:noreply, final_state}
 
       {:error, _reason, final_state} ->
@@ -228,7 +265,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     Logger.debug("[#{__MODULE__}] Received command result: #{inspect(msg)}")
 
     # Call Application.update with the received message
-    case Application.update(state.app_module, msg, state.model) do
+    case Application.delegate_update(state.app_module, msg, state.model) do
       {updated_model, commands} ->
         # Execute any new commands generated by the update
         context = %{
@@ -244,11 +281,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # Catch-all for other messages
   @impl GenServer
-  def handle_info(message, state) do
-    Logger.warning(
-      "[#{__MODULE__}] Received unexpected message: #{inspect(message)}"
-    )
-
+  def handle_info(msg, state) do
+    Logger.warn("Dispatcher received unexpected message: #{inspect(msg)}")
     {:noreply, state}
   end
 
@@ -259,11 +293,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl true
   def handle_call(:get_render_context, _from, state) do
-    # Return both the model and the current theme ID
-    render_context = %{
-      model: state.model,
-      theme_id: state.current_theme_id # Use the theme ID stored in Dispatcher state
-    }
+    render_context = %{model: state.model, theme_id: state.current_theme_id}
     {:reply, {:ok, render_context}, state}
   end
 

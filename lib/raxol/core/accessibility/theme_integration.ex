@@ -23,7 +23,15 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   """
 
   alias Raxol.Core.Events.Manager, as: EventManager
-  alias Raxol.Components.FocusRing
+  # Remove Raxol.Logger alias - use Logger directly
+  # alias Raxol.Logger
+  require Logger
+  alias Raxol.Core.Accessibility # Added alias
+  alias Raxol.Style.Theme # Added alias
+  alias Raxol.Core.UserPreferences # Added alias
+
+  # Process dictionary key for active theme variant state
+  # @active_variant_key :raxol_active_theme_variant
 
   @doc """
   Initialize the theme integration.
@@ -121,20 +129,38 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
 
   @doc """
   Handle high contrast mode changes.
-
-  ## Examples
-
-      iex> ThemeIntegration.handle_high_contrast({:accessibility_high_contrast, true})
-      :ok
+  Stores the active variant (:high_contrast or nil) in the process dictionary.
+  Components should then use a central function (e.g., ColorSystem.get) to query colors.
   """
   def handle_high_contrast({:accessibility_high_contrast, enabled}) do
-    # Update focus ring for high contrast
-    FocusRing.set_high_contrast(enabled)
+    require Logger
+    Logger.debug("ThemeIntegration handling high contrast event: #{enabled}")
 
-    # Update component colors based on high contrast setting
-    update_component_colors(enabled)
+    # No longer storing in process dictionary
+    # active_variant = if enabled, do: :high_contrast, else: nil
+    # Process.put(@active_variant_key, active_variant)
+
+    # Components will now query Accessibility.get_option(:high_contrast)
+    # or use ColorSystem which should internally check this.
+
+    # Optionally, trigger a global UI refresh event if needed
+    # EventManager.trigger(:ui_refresh_required, %{reason: :theme_variant_change})
 
     :ok
+  end
+
+  @doc """
+  Gets the currently active theme variant name (e.g., :high_contrast) or nil.
+  Reads the state directly from Accessibility (which reads from UserPreferences).
+  """
+  @spec get_active_variant() :: atom() | nil
+  def get_active_variant do
+    # Process.get(@active_variant_key)
+    if Accessibility.get_option(:high_contrast) do
+      :high_contrast
+    else
+      nil
+    end
   end
 
   @doc """
@@ -145,15 +171,11 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       iex> ThemeIntegration.handle_reduced_motion({:accessibility_reduced_motion, true})
       :ok
   """
-  def handle_reduced_motion({:accessibility_reduced_motion, enabled}) do
-    # Configure animations based on reduced motion setting
-    if enabled do
-      # Disable animations for focus ring
-      FocusRing.configure(animation: :none, transition_effect: :none)
-    else
-      # Enable default animations for focus ring
-      FocusRing.configure(animation: :pulse, transition_effect: :fade)
-    end
+  def handle_reduced_motion({:accessibility_reduced_motion, _enabled}) do
+    require Logger
+    Logger.debug("Restoring FocusRing config for normal motion")
+    # No animation, immediate focus change
+    # FocusRing.configure(animation: :none, transition_effect: :none)
 
     :ok
   end
@@ -170,157 +192,24 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     # Update text size based on large text setting
     text_scale = if enabled, do: 1.5, else: 1.0
 
-    # Store text scale factor in process dictionary for components to use
+    # Store text scale factor in process dictionary for components to use - REMOVED?
+    # Or should this also be a preference?
+    # For now, keep in process dictionary as it's more transient display state
     Process.put(:accessibility_text_scale, text_scale)
 
     :ok
   end
 
-  @doc """
-  Define high contrast color scheme for components.
-
-  ## Examples
-
-      iex> ThemeIntegration.get_high_contrast_colors()
-      %{
-        background: :black,
-        foreground: :white,
-        accent: :yellow,
-        focus: :white,
-        button: :yellow,
-        error: :red
-      }
-  """
-  def get_high_contrast_colors do
-    %{
-      background: :black,
-      foreground: :white,
-      accent: :yellow,
-      focus: :white,
-      button: :yellow,
-      error: :red,
-      success: :green,
-      warning: :yellow,
-      info: :cyan,
-      border: :white
-    }
-  end
-
-  @doc """
-  Define standard color scheme for components.
-
-  ## Examples
-
-      iex> ThemeIntegration.get_standard_colors()
-      %{
-        background: {:rgb, 30, 30, 30},
-        foreground: {:rgb, 220, 220, 220},
-        accent: {:rgb, 0, 120, 215},
-        focus: {:rgb, 0, 120, 215},
-        button: {:rgb, 0, 120, 215},
-        error: {:rgb, 232, 17, 35},
-        success: {:rgb, 16, 124, 16},
-        warning: {:rgb, 255, 140, 0},
-        info: {:rgb, 41, 128, 185},
-        border: {:rgb, 100, 100, 100}
-      }
-  """
-  def get_standard_colors do
-    %{
-      background: {:rgb, 30, 30, 30},
-      foreground: {:rgb, 220, 220, 220},
-      accent: {:rgb, 0, 120, 215},
-      focus: {:rgb, 0, 120, 215},
-      button: {:rgb, 0, 120, 215},
-      error: {:rgb, 232, 17, 35},
-      success: {:rgb, 16, 124, 16},
-      warning: {:rgb, 255, 140, 0},
-      info: {:rgb, 41, 128, 185},
-      border: {:rgb, 100, 100, 100}
-    }
-  end
-
-  @doc """
-  Get the current color scheme based on high contrast setting.
-
-  ## Examples
-
-      iex> ThemeIntegration.get_current_colors()
-      %{...} # Returns either high contrast or standard colors
-  """
-  def get_current_colors do
-    # Get current accessibility options
-    options = Process.get(:accessibility_options) || default_options()
-
-    if options[:high_contrast] do
-      get_high_contrast_colors()
-    else
-      get_standard_colors()
-    end
-  end
-
   # Private functions
 
   defp default_options do
-    [
-      high_contrast: false,
-      reduced_motion: false,
-      large_text: false
-    ]
+    # %{high_contrast: false, reduced_motion: false, large_text: false}
+    # Read defaults from Accessibility module
+    Accessibility.default_options()
   end
 
-  defp update_component_colors(high_contrast) do
-    # This would set colors for specific component types
-    # based on high contrast mode
-
-    # Example: Configure button styles for high contrast
-    if high_contrast do
-      # Set high contrast colors for buttons
-      colors = get_high_contrast_colors()
-
-      # Store component-specific styles in process dictionary
-      # for components to use when rendering
-      Process.put(:accessibility_component_styles, %{
-        button: %{
-          background: colors.button,
-          foreground: colors.background,
-          border: colors.border
-        },
-        input: %{
-          background: colors.background,
-          foreground: colors.foreground,
-          border: colors.border
-        },
-        panel: %{
-          background: colors.background,
-          foreground: colors.foreground,
-          border: colors.border
-        }
-      })
-    else
-      # Set standard colors
-      colors = get_standard_colors()
-
-      # Store component-specific styles in process dictionary
-      Process.put(:accessibility_component_styles, %{
-        button: %{
-          background: colors.button,
-          foreground: :white,
-          border: colors.border
-        },
-        input: %{
-          background: {:lighten, colors.background, 0.1},
-          foreground: colors.foreground,
-          border: colors.border
-        },
-        panel: %{
-          background: colors.background,
-          foreground: colors.foreground,
-          border: colors.border
-        }
-      })
-    end
-
-    :ok
-  end
+  # Add helper to check accessibility state directly if needed - REMOVED
+  # defp is_high_contrast? do
+  #   Accessibility.get_option(:high_contrast)
+  # end
 end
