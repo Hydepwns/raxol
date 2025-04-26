@@ -86,12 +86,23 @@ defmodule Raxol.View.Elements do
   ## Options
 
   * `:content` - The label text
+  * Other options are passed as attributes
   """
-  defmacro label(opts) do
+  defmacro label(opts) when is_list(opts) do
     quote do
       %{
         type: :label,
         attrs: unquote(opts)
+      }
+    end
+  end
+
+  # Handle label/1 with just content string for convenience
+  defmacro label(content) when is_binary(content) do
+    quote do
+      %{
+        type: :label,
+        attrs: [content: unquote(content)]
       }
     end
   end
@@ -203,6 +214,31 @@ defmodule Raxol.View.Elements do
       %{
         type: :table,
         attrs: unquote(opts)
+      }
+    end
+  end
+
+  @doc """
+  Creates a box container, often used for bordering or grouping.
+
+  ## Options
+
+  * `:style` - Map containing styling attributes (e.g., border, padding)
+
+  ## Example
+
+  ```elixir
+  box style: %{border: :single, padding: 1} do
+    text content: "Content inside the box"
+  end
+  ```
+  """
+  defmacro box(opts \\ [], do: block) do
+    quote do
+      %{
+        type: :box,
+        attrs: unquote(opts),
+        children: unquote(block)
       }
     end
   end

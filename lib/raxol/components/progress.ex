@@ -1,39 +1,128 @@
 defmodule Raxol.Components.Progress do
-  use Raxol.Component
-  require Raxol.View
-  alias Raxol.View.Layout
-  alias Raxol.View.Components
-
-  # Add @dialyzer directive to silence the callback_type_mismatch warning
-  @dialyzer {:nowarn_function, render: 1}
-
   @moduledoc """
-  Progress and loading indicator components for Raxol applications.
-
-  This module provides various components for displaying progress and loading
-  states in terminal UI applications, including progress bars, spinners,
-  and loading indicators.
-
-  ## Examples
-
-  ```elixir
-  alias Raxol.Components.Progress
-
-  # Simple progress bar
-  Progress.bar(model.progress_value, width: 30)
-
-  # Spinner with custom message
-  Progress.spinner("Loading data...", model.spinner_frame)
-
-  # Progress bar with percentage and label
-  Progress.bar_with_label(
-    model.download_progress,
-    "Downloading file...",
-    show_percentage: true,
-    width: 40
-  )
-  ```
+  Provides components for displaying progress, like progress bars and spinners.
   """
+  # Use standard component behaviour
+  use Raxol.UI.Components.Base.Component
+  require Logger
+
+  # Require view macros
+  require Raxol.View.Elements
+
+  # Define state struct (example - might need merging/refactoring existing logic)
+  defstruct id: nil,
+            type: :bar, # :bar, :spinner, :indeterminate, :circular
+            value: 0,
+            max: 100,
+            label: nil,
+            style: %{},
+            # State for spinner
+            frames: [],
+            frame_index: 0,
+            interval: 100 # ms
+            # Add other fields as needed (width, height, etc.)
+
+  # --- Component Behaviour Callbacks ---
+
+  @impl Raxol.UI.Components.Base.Component
+  def init(props) do
+    # Initialize state based on type and props
+    type = Map.get(props, :type, :bar)
+    base_state = struct!(__MODULE__, props)
+    # TODO: Set up frames/interval based on type (:spinner, etc.)
+    # Potentially start timer if needed
+    %{base_state | type: type}
+  end
+
+  @impl Raxol.UI.Components.Base.Component
+  def update(msg, state) do
+    # Handle messages to update value, change type, etc.
+    Logger.debug("Progress #{state.id} received message: #{inspect msg}")
+    # Placeholder
+    case msg do
+      {:set_value, value} when is_number(value) ->
+        {%{state | value: clamp(value, 0, state.max)}, []}
+      :tick when state.type == :spinner ->
+        next_frame = rem(state.frame_index + 1, length(state.frames))
+        {%{state | frame_index: next_frame}, []}
+      _ -> {state, []}
+    end
+  end
+
+  @impl Raxol.UI.Components.Base.Component
+  def handle_event(event, %{} = _props, state) do
+    # Handle events if needed
+    Logger.debug("Progress #{state.id} received event: #{inspect event}")
+    {state, []}
+  end
+
+  # --- Render Logic ---
+
+  @impl Raxol.UI.Components.Base.Component
+  def render(state, %{} = _props) do
+    case state.type do
+      :bar -> render_bar(state)
+      :spinner -> render_spinner(state)
+      :indeterminate -> render_indeterminate(state)
+      :circular -> render_circular(state)
+      _ -> Raxol.View.Elements.label(content: "Unknown progress type")
+    end
+  end
+
+  # --- Internal Render Helpers (Using View Elements Macros) ---
+
+  defp render_bar(state) do
+    # Based on original bar/bar_with_label logic
+    percentage = state.value / state.max
+    filled_width = round(state.width * percentage)
+    empty_width = state.width - filled_width
+
+    bar_content = String.duplicate("█", filled_width) <> String.duplicate("░", empty_width)
+
+    content = [
+      Raxol.View.Elements.label(content: bar_content)
+    ]
+
+    content = if state.label do
+      [Raxol.View.Elements.label(content: state.label) | content]
+    else
+      content
+    end
+
+    # Use row or column based on desired layout
+    Raxol.View.Elements.row id: state.id, style: state.style do
+       content
+    end
+  end
+
+  defp render_spinner(state) do
+     # Based on original spinner logic
+     frame = Enum.at(state.frames, state.frame_index, "?")
+     Raxol.View.Elements.row id: state.id, style: state.style do
+        Raxol.View.Elements.label(content: frame)
+        if state.label do
+          Raxol.View.Elements.label(content: state.label, style: %{margin_left: 1})
+        end
+     end
+  end
+
+  defp render_indeterminate(state) do
+    # Based on original indeterminate logic - needs state tracking for animation
+    Raxol.View.Elements.label(content: "[ <=> ]", id: state.id, style: state.style)
+  end
+
+  defp render_circular(state) do
+    # Based on original circular logic - complex, needs state + drawing
+    Raxol.View.Elements.label(content: "( O )", id: state.id, style: state.style)
+  end
+
+  # --- Original Helper Functions (May need removal/refactoring) ---
+  # Functions like bar/2, bar_with_label/3, spinner/3, etc.
+  # should be adapted into the render helpers above or removed.
+
+  defp clamp(value, min, max) do
+    value |> Kernel.max(min) |> Kernel.min(max)
+  end
 
   @spinner_frames [
     "⠋",
@@ -129,13 +218,13 @@ defmodule Raxol.Components.Progress do
     empty_portion = String.duplicate(empty_char, empty_width)
 
     # Create the progress bar
-    Layout.row([id: id, style: style],
+    Raxol.View.Elements.row([id: id, style: style],
       do: fn ->
         elements = []
 
         elements =
           if filled_width > 0 do
-            filled_text = Components.text(filled_portion, style: filled_style)
+            filled_text = Raxol.View.Elements.label(content: filled_portion, style: filled_style)
             [filled_text | elements]
           else
             elements
@@ -143,7 +232,7 @@ defmodule Raxol.Components.Progress do
 
         elements =
           if empty_width > 0 do
-            empty_text = Components.text(empty_portion, style: empty_style)
+            empty_text = Raxol.View.Elements.label(content: empty_portion, style: empty_style)
             [empty_text | elements]
           else
             elements
@@ -209,14 +298,14 @@ defmodule Raxol.Components.Progress do
     # Create the progress bar with label based on position
     case position do
       :above ->
-        Layout.column([id: id], fn ->
+        Raxol.View.Elements.column id: id do
           header_row =
-            Layout.row([style: %{justify: :space_between}], fn ->
-              label_text = Components.text(label, style: label_style)
+            Raxol.View.Elements.row style: %{justify: :space_between} do
+              label_text = Raxol.View.Elements.label(content: label, style: label_style)
 
               percentage_element =
                 if percentage_text do
-                  Components.text(percentage_text, style: percentage_style)
+                  Raxol.View.Elements.label(content: percentage_text, style: percentage_style)
                 else
                   nil
                 end
@@ -230,24 +319,24 @@ defmodule Raxol.Components.Progress do
                   else: elements
 
               elements
-            end)
+            end
 
           progress_bar = bar(value, opts)
 
           [header_row, progress_bar]
-        end)
+        end
 
       :below ->
-        Layout.column([id: id], fn ->
+        Raxol.View.Elements.column id: id do
           progress_bar = bar(value, opts)
 
           footer_row =
-            Layout.row([style: %{justify: :space_between}], fn ->
-              label_text = Components.text(label, style: label_style)
+            Raxol.View.Elements.row style: %{justify: :space_between} do
+              label_text = Raxol.View.Elements.label(content: label, style: label_style)
 
               percentage_element =
                 if percentage_text do
-                  Components.text(percentage_text, style: percentage_style)
+                  Raxol.View.Elements.label(content: percentage_text, style: percentage_style)
                 else
                   nil
                 end
@@ -261,13 +350,13 @@ defmodule Raxol.Components.Progress do
                   else: elements
 
               elements
-            end)
+            end
 
           [progress_bar, footer_row]
-        end)
+        end
 
       :right ->
-        Layout.row([id: id], fn ->
+        Raxol.View.Elements.row id: id do
           # Adjust width for right-aligned label and percentage
           adjusted_width =
             Keyword.get(opts, :width, 20) -
@@ -283,11 +372,11 @@ defmodule Raxol.Components.Progress do
               Keyword.put(opts, :width, adjusted_width)
             )
 
-          label_text = Components.text(" #{label}", style: label_style)
+          label_text = Raxol.View.Elements.label(content: " #{label}", style: label_style)
 
           percentage_element =
             if percentage_text do
-              Components.text(" #{percentage_text}", style: percentage_style)
+              Raxol.View.Elements.label(content: " #{percentage_text}", style: percentage_style)
             else
               nil
             end
@@ -301,7 +390,7 @@ defmodule Raxol.Components.Progress do
               else: elements
 
           elements
-        end)
+        end
 
       _ ->
         # Default to above if invalid position
@@ -363,15 +452,15 @@ defmodule Raxol.Components.Progress do
     current_frame = Enum.at(frames, frame_index)
 
     # Create the spinner with optional message
-    Layout.row([id: id, style: style],
+    Raxol.View.Elements.row([id: id, style: style],
       do: fn ->
         # Create spinner character element
-        spinner_element = Components.text(current_frame, style: spinner_style)
+        spinner_element = Raxol.View.Elements.label(content: current_frame, style: spinner_style)
 
         # Create message element if provided
         message_element =
           if message do
-            Components.text(" #{message}", style: message_style)
+            Raxol.View.Elements.label(content: " #{message}", style: message_style)
           else
             nil
           end
@@ -452,7 +541,7 @@ defmodule Raxol.Components.Progress do
     right_width = width - bar_width - left_width
 
     # Create the indeterminate progress bar
-    Layout.row([id: id, style: style],
+    Raxol.View.Elements.row([id: id, style: style],
       do: fn ->
         elements = []
 
@@ -460,7 +549,7 @@ defmodule Raxol.Components.Progress do
         elements =
           if left_width > 0 do
             left_element =
-              Components.text(String.duplicate(" ", left_width),
+              Raxol.View.Elements.label(content: String.duplicate(" ", left_width),
                 style: background_style
               )
 
@@ -471,7 +560,7 @@ defmodule Raxol.Components.Progress do
 
         # Add animated bar segment
         bar_element =
-          Components.text(String.duplicate(" ", bar_width), style: bar_style)
+          Raxol.View.Elements.label(content: String.duplicate(" ", bar_width), style: bar_style)
 
         elements = [bar_element | elements]
 
@@ -479,7 +568,7 @@ defmodule Raxol.Components.Progress do
         elements =
           if right_width > 0 do
             right_element =
-              Components.text(String.duplicate(" ", right_width),
+              Raxol.View.Elements.label(content: String.duplicate(" ", right_width),
                 style: background_style
               )
 
@@ -548,10 +637,10 @@ defmodule Raxol.Components.Progress do
       end
 
     # Create the circular progress indicator
-    Layout.row([id: id],
+    Raxol.View.Elements.row([id: id],
       do: fn ->
         # Create progress char element
-        char_element = Components.text(progress_char, style: style)
+        char_element = Raxol.View.Elements.label(content: progress_char, style: style)
 
         # Create percentage element if needed
         elements = [char_element]
@@ -559,7 +648,7 @@ defmodule Raxol.Components.Progress do
         elements =
           if show_percentage do
             percentage_element =
-              Components.text(percentage_text, style: percentage_style)
+              Raxol.View.Elements.label(content: percentage_text, style: percentage_style)
 
             elements ++ [percentage_element]
           else

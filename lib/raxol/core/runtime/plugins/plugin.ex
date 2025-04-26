@@ -7,7 +7,8 @@ defmodule Raxol.Core.Runtime.Plugins.Plugin do
 
   @type config :: map()
   @type state :: map()
-  @type event :: Raxol.Core.Runtime.Events.Event.t() | term() # Adjust based on actual Event struct
+  # Adjust based on actual Event struct
+  @type event :: Raxol.Core.Runtime.Events.Event.t() | term()
   @type command :: atom() | tuple()
 
   @doc """
@@ -46,7 +47,8 @@ defmodule Raxol.Core.Runtime.Plugins.Plugin do
   Return `:halt` to stop the event from propagating further.
   Return any other value to indicate an error.
   """
-  @callback filter_event(event :: event(), state :: state()) :: {:ok, event()} | :halt | any()
+  @callback filter_event(event :: event(), state :: state()) ::
+              {:ok, event()} | :halt | any()
 
   @doc """
   Optional callback to handle commands delegated by the PluginManager.
@@ -54,7 +56,11 @@ defmodule Raxol.Core.Runtime.Plugins.Plugin do
   Should return `{:ok, new_state, result}` or `{:error, reason, new_state}`.
   The `result` can be sent back to the original command requester if needed.
   """
-  @callback handle_command(command :: command(), args :: list(), state :: state()) ::
+  @callback handle_command(
+              command :: command(),
+              args :: list(),
+              state :: state()
+            ) ::
               {:ok, state(), any()} | {:error, any(), state()}
 
   @doc """

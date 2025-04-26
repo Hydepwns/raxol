@@ -61,10 +61,10 @@ defmodule Mix.Tasks.Benchmark.Visualization do
           {[10, 100, 500, 1000], 5, "Medium Test"}
 
         :large ->
-          {[10, 100, 1000, 5000, 10000], 3, "Large Test"}
+          {[10, 100, 1000, 5000, 10_000], 3, "Large Test"}
 
         :production ->
-          {[10, 100, 1000, 5000, 10000, 50000], 10, "Production Benchmark"}
+          {[10, 100, 1000, 5000, 10_000, 50_000], 10, "Production Benchmark"}
       end
 
     # Set output directory

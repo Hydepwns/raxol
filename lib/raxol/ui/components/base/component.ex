@@ -113,7 +113,6 @@ defmodule Raxol.UI.Components.Base.Component do
     quote do
       @behaviour Raxol.UI.Components.Base.Component
 
-      import Raxol.View
       alias Raxol.Core.Events.Event
 
       # Default implementations

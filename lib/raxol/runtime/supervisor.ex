@@ -10,6 +10,7 @@ defmodule Raxol.Runtime.Supervisor do
   alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
   alias Raxol.Terminal.Driver, as: TerminalDriver
+  alias Raxol.Core.UserPreferences
 
   def start_link(init_args) do
     Supervisor.start_link(__MODULE__, init_args, name: __MODULE__)
@@ -26,14 +27,18 @@ defmodule Raxol.Runtime.Supervisor do
     # }
     app_module = init_args.app_module
     initial_model = init_args.initial_model
+    initial_commands = init_args.initial_commands
     initial_term_size = init_args.initial_term_size
     # Runtime PID is needed by Dispatcher
     runtime_pid = init_args.runtime_pid
 
     children = [
+      # 0. User Preferences (needs to start early)
+      {Raxol.Core.UserPreferences, []},
+
       # 1. Plugin Manager (needed by Dispatcher)
       {PluginManager, []},
-      # 2. Dispatcher (needs PluginManager, app_module, model, runtime_pid)
+      # 2. Dispatcher (needs PluginManager, app_module, model, runtime_pid, commands)
       %{
         id: Dispatcher,
         start:
@@ -43,6 +48,7 @@ defmodule Raxol.Runtime.Supervisor do
              %{
                app_module: app_module,
                model: initial_model,
+               initial_commands: initial_commands,
                width: initial_term_size.width,
                height: initial_term_size.height,
                # Uses registered name

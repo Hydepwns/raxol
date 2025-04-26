@@ -13,7 +13,8 @@ defmodule Raxol.Terminal.Config do
     Defaults,
     Capabilities,
     Profiles,
-    Application
+    Application,
+    Utils
   }
 
   # Schema-related functions
@@ -247,4 +248,12 @@ defmodule Raxol.Terminal.Config do
   """
   defdelegate reset_config(terminal_pid \\ nil, optimize \\ true),
     to: Application
+
+  # Config Utils
+  @doc """
+  Merges configuration options into an existing configuration map.
+
+  Delegates to `Raxol.Terminal.Config.Utils.merge_opts/2`.
+  """
+  defdelegate merge_opts(config, opts), to: Utils
 end

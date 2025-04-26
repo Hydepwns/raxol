@@ -99,6 +99,11 @@ defmodule Raxol.MixProject do
       # Components & Layout (Using local path for now)
       # {:raxol_view_components, path: "../raxol_view_components"}, # Example if extracted
 
+      # Core Plugins Dependencies
+      {:clipboard, "~> 0.2.1"}, # System clipboard access
+      {:circular_buffer, "~> 0.2"},
+      # {:ex_notify, "~> 0.2"}, # REMOVED - Package does not exist / wrong one chosen
+
       # Development tools
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},

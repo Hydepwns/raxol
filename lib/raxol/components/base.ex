@@ -6,14 +6,6 @@ defmodule Raxol.Components.Base do
   including common validation, styling, and event handling patterns.
   """
 
-  use Raxol.Component
-
-  # Add @dialyzer directive to silence the callback_type_mismatch warning
-  @dialyzer {:nowarn_function, render: 1}
-
-  alias Raxol.Core.Events.Event
-  alias Raxol.Style
-
   @type state :: map()
 
   @doc """
@@ -46,7 +38,7 @@ defmodule Raxol.Components.Base do
   Creates a base style for components with common properties.
   """
   def base_style(opts \\ []) do
-    Style.new(
+    Raxol.Style.new(
       padding: Keyword.get(opts, :padding, [1, 2]),
       margin: Keyword.get(opts, :margin, [0, 0]),
       border: Keyword.get(opts, :border, :none),
@@ -57,17 +49,19 @@ defmodule Raxol.Components.Base do
 
   @doc """
   Handles common events like focus, blur, and keyboard navigation.
+
+  Should be called from a component's handle_event callback.
   """
-  def handle_common_events(%Event{type: :focus} = _event, state) do
+  def handle_common_events(%{type: :focus} = _event, state) do
     {Map.put(state, :focused, true), []}
   end
 
-  def handle_common_events(%Event{type: :blur} = _event, state) do
+  def handle_common_events(%{type: :blur} = _event, state) do
     {Map.put(state, :focused, false), []}
   end
 
   def handle_common_events(
-        %Event{type: :key, data: %{key: key}} = _event,
+        %{type: :key, data: %{key: key}} = _event,
         state
       ) do
     case key do

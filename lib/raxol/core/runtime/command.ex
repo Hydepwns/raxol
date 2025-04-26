@@ -62,8 +62,17 @@ defmodule Raxol.Core.Runtime.Command do
   alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
 
   @type t :: %__MODULE__{
-          type: :none | :task | :batch | :delay | :broadcast | :system | :quit
-                | :clipboard_write | :clipboard_read | :notify,
+          type:
+            :none
+            | :task
+            | :batch
+            | :delay
+            | :broadcast
+            | :system
+            | :quit
+            | :clipboard_write
+            | :clipboard_read
+            | :notify,
           data: term()
         }
 
@@ -222,7 +231,10 @@ defmodule Raxol.Core.Runtime.Command do
       %{type: :clipboard_read} ->
         # Delegate to PluginManager, expects a result back via {:command_result, ...}
         # PluginManager needs to know who to send the result back to (context.pid)
-        GenServer.cast(PluginManager, {:handle_command, :clipboard_read, context.pid})
+        GenServer.cast(
+          PluginManager,
+          {:handle_command, :clipboard_read, context.pid}
+        )
 
       %{type: :notify, data: {title, body}} ->
         # Delegate to PluginManager

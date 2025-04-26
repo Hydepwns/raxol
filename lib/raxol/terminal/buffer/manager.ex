@@ -12,29 +12,27 @@ defmodule Raxol.Terminal.Buffer.Manager do
   use GenServer
 
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Buffer.DamageTracker
+  alias Raxol.Terminal.Buffer.Scrollback
 
   @type t :: %__MODULE__{
           active_buffer: ScreenBuffer.t(),
           back_buffer: ScreenBuffer.t(),
-          damage_regions:
-            list(
-              {non_neg_integer(), non_neg_integer(), non_neg_integer(),
-               non_neg_integer()}
-            ),
+          damage_tracker: DamageTracker.t(),
           memory_limit: non_neg_integer(),
           memory_usage: non_neg_integer(),
           cursor_position: {non_neg_integer(), non_neg_integer()},
-          scrollback_buffer: list(ScreenBuffer.t())
+          scrollback: Scrollback.t()
         }
 
   defstruct [
     :active_buffer,
     :back_buffer,
-    :damage_regions,
+    :damage_tracker,
     :memory_limit,
     :memory_usage,
     :cursor_position,
-    :scrollback_buffer
+    :scrollback
   ]
 
   def child_spec(opts) do
@@ -84,11 +82,11 @@ defmodule Raxol.Terminal.Buffer.Manager do
      %__MODULE__{
        active_buffer: active_buffer,
        back_buffer: back_buffer,
-       damage_regions: [],
+       damage_tracker: DamageTracker.new(),
        memory_limit: memory_limit,
        memory_usage: 0,
        cursor_position: {0, 0},
-       scrollback_buffer: []
+       scrollback: Scrollback.new(scrollback_height)
      }}
   end
 
@@ -107,7 +105,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
       manager
       | active_buffer: manager.back_buffer,
         back_buffer: manager.active_buffer,
-        damage_regions: []
+        damage_tracker: DamageTracker.clear_regions(manager.damage_tracker)
     }
   end
 
@@ -122,12 +120,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
       1
   """
   def mark_damaged(%__MODULE__{} = manager, x1, y1, x2, y2) do
-    new_region = {x1, y1, x2, y2}
-
-    # Merge overlapping regions
-    merged_regions = merge_damage_regions([new_region | manager.damage_regions])
-
-    %{manager | damage_regions: merged_regions}
+    new_tracker = DamageTracker.mark_damaged(manager.damage_tracker, x1, y1, x2, y2)
+    %{manager | damage_tracker: new_tracker}
   end
 
   @doc """
@@ -142,7 +136,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
       1
   """
   def get_damage_regions(%__MODULE__{} = manager) do
-    manager.damage_regions
+    DamageTracker.get_regions(manager.damage_tracker)
   end
 
   @doc """
@@ -157,7 +151,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
       0
   """
   def clear_damage_regions(%__MODULE__{} = manager) do
-    %{manager | damage_regions: []}
+    new_tracker = DamageTracker.clear_regions(manager.damage_tracker)
+    %{manager | damage_tracker: new_tracker}
   end
 
   @doc """
@@ -301,18 +296,13 @@ defmodule Raxol.Terminal.Buffer.Manager do
     # Mark the region as damaged
     manager = mark_damaged(manager, 0, 0, width - 1, height - 1)
 
-    # Clear the cells in the active buffer
-    active_buffer =
-      ScreenBuffer.clear_region(
-        manager.active_buffer,
-        0,
-        0,
-        width - 1,
-        height - 1
-      )
+    # Clear the cells in the active buffer (using ScreenBuffer.clear)
+    active_buffer = ScreenBuffer.clear(manager.active_buffer)
 
-    # Clear the scrollback buffer
-    %{manager | active_buffer: active_buffer, scrollback_buffer: []}
+    # Clear the scrollback state
+    new_scrollback = Scrollback.clear(manager.scrollback)
+
+    %{manager | active_buffer: active_buffer, scrollback: new_scrollback}
   end
 
   @doc """
@@ -424,30 +414,19 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Lines that scroll off the top are added to the scrollback buffer.
   """
   def scroll_up(manager, lines) do
-    # ScreenBuffer.scroll_up only returns the updated buffer, not the scrolled lines.
-    # The manager needs to retrieve these lines *before* scrolling if it handles scrollback.
-    # TODO: Re-evaluate scrollback handling between Manager and ScreenBuffer.
-    active_buffer = ScreenBuffer.scroll_up(manager.active_buffer, lines)
+    # Call modified ScreenBuffer.scroll_up (which delegates to Operations.scroll_up)
+    # It now returns {updated_cells, scrolled_off_lines}
+    {updated_cells, scrolled_off_lines} = ScreenBuffer.scroll_up(manager.active_buffer, lines)
 
-    manager = %{
+    # Add scrolled lines to our scrollback state
+    new_scrollback = Scrollback.add_lines(manager.scrollback, scrolled_off_lines)
+
+    # Update manager state
+    %{
       manager
-      | active_buffer: active_buffer
-        # scrollback_buffer: scrollback ++ manager.scrollback_buffer # Cannot get scrollback this way
+      | active_buffer: %{manager.active_buffer | cells: updated_cells},
+        scrollback: new_scrollback
     }
-
-    # Trim scrollback buffer if it exceeds the limit
-    # Use limit from buffer struct
-    scrollback_limit = manager.active_buffer.scrollback_limit
-
-    if length(manager.scrollback_buffer) > scrollback_limit do
-      %{
-        manager
-        | scrollback_buffer:
-            Enum.take(manager.scrollback_buffer, scrollback_limit)
-      }
-    else
-      manager
-    end
   end
 
   @doc """
@@ -455,15 +434,18 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Lines are restored from the scrollback buffer if available.
   """
   def scroll_down(manager, lines) do
-    # ScreenBuffer.scroll_down only returns the updated buffer.
-    # It uses its *internal* scrollback, which isn't populated correctly by Manager's scroll_up.
-    # TODO: Re-evaluate scrollback handling between Manager and ScreenBuffer.
-    active_buffer = ScreenBuffer.scroll_down(manager.active_buffer, lines)
+    # Take lines from our scrollback state
+    {lines_to_restore, new_scrollback} = Scrollback.take_lines(manager.scrollback, lines)
 
+    # Call modified ScreenBuffer.scroll_down (delegating to Operations.scroll_down)
+    # passing the lines to insert
+    updated_active_buffer = ScreenBuffer.scroll_down(manager.active_buffer, lines_to_restore, lines)
+
+    # Update manager state
     %{
       manager
-      | active_buffer: active_buffer
-        # scrollback_buffer: remaining_scrollback # Cannot get remaining_scrollback this way
+      | active_buffer: updated_active_buffer,
+        scrollback: new_scrollback
     }
   end
 
@@ -536,36 +518,6 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   # Private functions
-
-  defp merge_damage_regions(regions) do
-    regions
-    |> Enum.reduce([], fn region, acc ->
-      case find_overlapping_region(acc, region) do
-        nil -> [region | acc]
-        {overlapping, rest} -> [merge_regions(overlapping, region) | rest]
-      end
-    end)
-    |> Enum.reverse()
-  end
-
-  defp find_overlapping_region(regions, {x1, y1, x2, y2}) do
-    Enum.split_with(regions, fn {rx1, ry1, rx2, ry2} ->
-      x1 <= rx2 && x2 >= rx1 && y1 <= ry2 && y2 >= ry1
-    end)
-    |> case do
-      {[overlapping], rest} -> {overlapping, rest}
-      _ -> nil
-    end
-  end
-
-  defp merge_regions({x1, y1, x2, y2}, {rx1, ry1, rx2, ry2}) do
-    {
-      min(x1, rx1),
-      min(y1, ry1),
-      max(x2, rx2),
-      max(y2, ry2)
-    }
-  end
 
   defp calculate_buffer_memory_usage(buffer) do
     # Rough estimation of memory usage based on buffer size and content

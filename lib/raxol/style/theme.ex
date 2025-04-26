@@ -64,13 +64,17 @@ defmodule Raxol.Style.Theme do
   @doc """
   Registers a theme variant.
   Theme variants allow for alternate visual styles like high-contrast, dark mode, etc.
+  A variant can include overrides for both :styles and :color_palette.
   """
-  def register_variant(name, variant_styles) when is_atom(name) do
+  def register_variant(name, variant_overrides) when is_atom(name) and is_map(variant_overrides) do
     current = current()
+
+    # Ensure variant_overrides has :styles and :color_palette keys, even if empty
+    validated_overrides = Map.merge(%{styles: %{}, color_palette: %{}}, variant_overrides)
 
     updated = %{
       current
-      | variants: Map.put(current.variants, name, variant_styles)
+      | variants: Map.put(current.variants, name, validated_overrides)
     }
 
     set_current(updated)
@@ -95,21 +99,61 @@ defmodule Raxol.Style.Theme do
   end
 
   @doc """
-  Gets a color from the current theme's palette.
+  Gets a color from the current theme's palette, considering active variants.
+  Checks the active variant first, then the base palette.
+  (Note: Need a way to know the active variant - maybe from Accessibility state?)
+  This is a placeholder - the logic to check active variant needs refinement.
   """
-  def get_color(name) when is_atom(name) do
-    Map.get(current().color_palette, name)
+  def get_color(name, active_variant \\ nil) when is_atom(name) do
+    theme = current()
+
+    # 1. Try active variant palette
+    variant_color =
+      if active_variant do
+        theme.variants
+        |> Map.get(active_variant, %{})
+        |> Map.get(:color_palette, %{})
+        |> Map.get(name)
+      end
+
+    # 2. Try base theme palette if variant color not found
+    variant_color || Map.get(theme.color_palette, name)
   end
 
   @doc """
-  Creates a high-contrast version of the current theme.
+  Creates and registers a high-contrast variant based on predefined high-contrast colors.
+  This variant overrides the color palette.
   """
   def create_high_contrast_variant do
-    high_contrast_styles = %Style{
-      text_decoration: [:bold]
+    # Define the high-contrast palette (similar to ThemeIntegration's old one)
+    high_contrast_palette = %{
+      background: :black,
+      foreground: :white,
+      accent: :yellow,
+      focus: :white,
+      button: :yellow,
+      error: :red,
+      success: :green,
+      warning: :yellow,
+      info: :cyan,
+      border: :white,
+      # Add other semantic colors as needed
+      primary: :yellow,
+      secondary: :cyan,
+      disabled: :dark_gray
     }
 
-    register_variant(:high_contrast, high_contrast_styles)
+    # Define any style overrides for high contrast (e.g., bold text)
+    high_contrast_styles = %{
+      default: %Style{text_decoration: [:bold]} # Example: make all default text bold
+    }
+
+    variant_overrides = %{
+      styles: high_contrast_styles,
+      color_palette: high_contrast_palette
+    }
+
+    register_variant(:high_contrast, variant_overrides)
   end
 
   @doc """

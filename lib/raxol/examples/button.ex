@@ -10,8 +10,9 @@ defmodule Raxol.Examples.Button do
   - Theme support
   """
 
-  use Raxol.Component
-  alias Raxol.Core.Events.Event
+  use Raxol.UI.Components.Base.Component
+  require Logger
+  require Raxol.View.Elements
 
   @default_theme %{
     normal: %{fg: :blue, bg: :white, style: :bold},
@@ -23,49 +24,52 @@ defmodule Raxol.Examples.Button do
 
   @impl true
   def init(_opts) do
-    {:ok, %{count: 0, theme: @default_theme}}
+    %{count: 0, theme: @default_theme}
   end
 
   @impl true
-  def update(%Event{type: :mouse, data: %{state: :pressed}} = _event, state) do
-    %{state | count: state.count + 1}
+  def update(%{type: :mouse, data: %{state: :pressed}} = _event, state) do
+    IO.puts("Button clicked!")
+    # Simulate an action
+    {state, [:notify, "Button Action Performed"]}
   end
 
   @impl true
-  def update(_msg, state), do: state
+  def update(_event, state), do: {state, []}
 
   @impl true
-  def handle_event(%Event{type: :resize} = _event, state) do
-    # TODO: Implement resize handling
-    state
-  end
-
-  def handle_event(:focus, state) do
+  def handle_event(%{type: :resize} = _event, %{} = _props, state) do
+    Logger.info("Button received resize event, ignoring.")
     {state, []}
   end
 
-  def handle_event(:blur, state) do
+  # Fallback for other events if Component behaviour requires it
+  def handle_event(_event, %{} = _props, state), do: {state, []}
+
+  def handle_event(:focus, %{} = _props, state) do
     {state, []}
   end
 
-  def handle_event(:trigger_error, _state) do
+  def handle_event(:blur, %{} = _props, state) do
+    {state, []}
+  end
+
+  def handle_event(:trigger_error, %{} = _props, _state) do
     raise "Simulated error for testing"
   end
 
   @impl true
-  def render(state) do
-    # Generate the DSL representation
-    dsl_result =
-      Raxol.View.Components.button(state.label,
-        id: state.id,
-        style: state.style,
-        on_click: state.on_click,
-        disabled: state.disabled,
-        pressed: state.pressed
-      )
-
-    # Convert to Element struct
-    Raxol.View.to_element(dsl_result)
+  def render(%{} = _props, state) do
+    # Generate the DSL representation using the Raxol.View.Elements macro
+    Raxol.View.Elements.button(
+      label: state.label,
+      id: state.id,
+      style: state.style,
+      on_click: state.on_click,
+      disabled: state.disabled,
+      pressed: state.pressed
+    )
+    # The button macro already returns the correct element map structure
   end
 
   # Private Helpers

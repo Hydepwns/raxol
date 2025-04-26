@@ -8,6 +8,8 @@ defmodule Raxol.UI.Layout.Engine do
   * Managing the layout pipeline
   """
 
+  require Logger
+
   alias Raxol.UI.Layout.{Grid, Panels, Containers}
 
   @doc """
@@ -36,88 +38,8 @@ defmodule Raxol.UI.Layout.Engine do
     |> List.flatten()
   end
 
-  @doc """
-  Calculates the space taken by an element in the layout.
-
-  ## Parameters
-
-  * `element` - The element to measure
-  * `available_space` - The available space for the element
-
-  ## Returns
-
-  The dimensions of the element: %{width: w, height: h}
-  """
-  def measure_element(element, available_space) do
-    case element do
-      %{type: :view} ->
-        # View takes up all available space
-        %{width: available_space.width, height: available_space.height}
-
-      %{type: :panel} ->
-        # Delegate to panel-specific measurement
-        Panels.measure(element, available_space)
-
-      %{type: :row} ->
-        # Delegate to row measurement
-        Containers.measure_row(element, available_space)
-
-      %{type: :column} ->
-        # Delegate to column measurement
-        Containers.measure_column(element, available_space)
-
-      %{type: :grid} ->
-        # Delegate to grid measurement
-        Grid.measure(element, available_space)
-
-      %{type: element_type} when element_type in [:label, :text] ->
-        # Default text element measurement
-        %{
-          width:
-            min(
-              String.length(element.attrs.content || ""),
-              available_space.width
-            ),
-          height: 1
-        }
-
-      %{type: :button} ->
-        # Button measurement
-        text = element.attrs.label || "Button"
-        %{width: min(String.length(text) + 4, available_space.width), height: 3}
-
-      %{type: :text_input} ->
-        # Text input measurement
-        value = element.attrs.value || ""
-        placeholder = element.attrs.placeholder || ""
-        text = if value == "", do: placeholder, else: value
-
-        %{
-          width: min(max(String.length(text) + 4, 10), available_space.width),
-          height: 3
-        }
-
-      %{type: :checkbox} ->
-        # Checkbox measurement
-        label = element.attrs.label || ""
-
-        %{
-          width: min(String.length(label) + 4, available_space.width),
-          height: 1
-        }
-
-      %{type: :table} ->
-        # Table measurement - simplified version, would need more sophistication in practice
-        headers = element.attrs.headers || []
-        data = element.attrs.data || []
-        rows = max(length(data), 0) + if headers != [], do: 2, else: 0
-        %{width: available_space.width, height: rows}
-
-      _ ->
-        # Default fallback for unknown elements
-        %{width: 1, height: 1}
-    end
-  end
+  # --- Element Processing Logic ---
+  # Moved all process_element/3 definitions here for grouping
 
   # Process a view element
   def process_element(%{type: :view, children: children}, space, acc)
@@ -152,7 +74,8 @@ defmodule Raxol.UI.Layout.Engine do
   end
 
   # Process basic text/label
-  def process_element(%{type: type, attrs: attrs} = _element, space, acc) when type in [:label, :text] do
+  def process_element(%{type: type, attrs: attrs} = _element, space, acc)
+      when type in [:label, :text] do
     # Create a text element at the given position
     text_element = %{
       type: :text,
@@ -245,7 +168,8 @@ defmodule Raxol.UI.Layout.Engine do
         x: space.x,
         y: space.y,
         text: "#{checkbox_text} #{label}",
-        attrs: component_attrs # Pass attributes for theme styling
+        # Pass attributes for theme styling
+        attrs: component_attrs
       }
     ]
 
@@ -306,9 +230,21 @@ defmodule Raxol.UI.Layout.Engine do
     header_elements ++ data_elements ++ acc
   end
 
-  # --- Helper Functions ---
+  # Catch-all for unknown element types
+  def process_element(%{type: type} = element, _space, acc) do
+    Logger.warning(
+      "LayoutEngine: Unknown or unhandled element type: #{inspect(type)}. Element: #{inspect(element)}"
+    )
 
-  # Process children of a container element
+    acc
+  end
+
+  def process_element(other, _space, acc) do
+    Logger.warning("LayoutEngine: Received non-element data: #{inspect(other)}")
+    acc
+  end
+
+  # Process children of a container element (Helper)
   defp process_children(children, space, acc) when is_list(children) do
     # Placeholder: needs proper handling based on container type (row, col, etc.)
     # For now, just process each child in the same space (will overlap)
@@ -317,19 +253,132 @@ defmodule Raxol.UI.Layout.Engine do
     end)
   end
 
-  # Add other element processing functions here...
-  # process_element for table, select_list etc.
+  # --- End Element Processing ---
 
-  # Catch-all for unknown element types
-  def process_element(%{type: type} = element, _space, acc) do
-    Logger.warning(
-      "LayoutEngine: Unknown or unhandled element type: #{inspect(type)}. Element: #{inspect(element)}"
-    )
-    acc
+  # --- Element Measurement Logic ---
+  # Function Header for multi-clause function with defaults
+  @doc """
+  Calculates the intrinsic dimensions (width, height) of an element.
+
+  This function determines the natural size of an element before layout constraints
+  are applied. For containers, it might recursively measure children.
+
+  ## Parameters
+
+  * `element` - The element map to measure.
+  * `available_space` - Map providing context (e.g., max width).
+  - Defaults to an empty map.
+
+  ## Returns
+
+  A map representing the dimensions: `%{width: integer(), height: integer()}`.
+  """
+  def measure_element(element, available_space \\ %{})
+
+  # The clauses below starting from the one matching %{type: type, attrs: attrs} are the main implementation
+  # --- Measurement Logic ---
+
+  # Handles valid elements (maps with :type and :attrs)
+  def measure_element(%{type: type, attrs: attrs} = element, available_space)
+      when is_atom(type) and is_map(attrs) do
+    case type do
+      :text ->
+        text = Map.get(attrs, :text, "")
+        %{width: String.length(text), height: 1}
+
+      :label ->
+        # Alias for text in measurement
+        text = Map.get(attrs, :content, "")
+        %{width: String.length(text), height: 1}
+
+      :box ->
+        # Simple box takes explicit size or minimal size
+        width = Map.get(attrs, :width, 1)
+        height = Map.get(attrs, :height, 1)
+        %{width: width, height: height}
+
+      :button ->
+        text = Map.get(attrs, :label, "Button")
+        padding = 4 # Box: [ Text ]
+        width = min(String.length(text) + padding, available_space.width)
+        height = 3 # Fixed height for button
+        %{width: width, height: height}
+
+      :text_input ->
+        value = Map.get(attrs, :value, "")
+        placeholder = Map.get(attrs, :placeholder, "")
+        display_text = if value == "", do: placeholder, else: value
+        padding = 4 # Box: [ Text ]
+        min_width = 10
+        width = min(max(String.length(display_text) + padding, min_width), available_space.width)
+        height = 3 # Fixed height for text input
+        %{width: width, height: height}
+
+      :checkbox ->
+        label = Map.get(attrs, :label, "")
+        # "[ ] " or "[✓] " prefix
+        width = 4 + String.length(label)
+        height = 1
+        %{width: width, height: height}
+
+      # Container types delegate to helper measurement functions
+      :row ->
+        Containers.measure_row(element, available_space)
+
+      :column ->
+        Containers.measure_column(element, available_space)
+
+      :panel ->
+        # Assuming Panel takes full available space unless constrained
+        # TODO: Implement Panels.measure_panel if needed
+        # %{width: available_space.width, height: available_space.height}
+        # Delegate to Panels module for measurement
+        Panels.measure_panel(element, available_space)
+
+      :grid ->
+        # TODO: Implement Grid.measure_grid if needed
+        # %{width: available_space.width, height: available_space.height} # Placeholder
+        # Delegate to Grid module for measurement
+        Grid.measure_grid(element, available_space)
+
+      :view ->
+        # View takes full available space or measures children if needed
+        # For now, assume it takes available space. A different approach might be needed.
+        # %{width: available_space.width, height: available_space.height} # Placeholder
+        # Measure view based on its children (treat as a column)
+        %{type: :column, children: Map.get(element, :children, [])}
+        |> Engine.measure_element(available_space)
+
+      :table ->
+        # Basic table measurement (consider headers, widest row)
+        headers = Map.get(attrs, :headers, [])
+        data = Map.get(attrs, :data, [])
+
+        header_width = if headers == [], do: 0, else: String.length(Enum.join(headers, " | "))
+        max_data_width =
+          data
+          |> Enum.map(fn row -> String.length(Enum.join(row, " | ")) end)
+          |> Enum.max(fn -> 0 end)
+
+        width = max(header_width, max_data_width)
+        header_height = if headers == [], do: 0, else: 2 # Header + separator
+        data_height = length(data)
+        height = header_height + data_height
+
+        %{width: min(width, available_space.width), height: min(height, available_space.height)}
+
+      _ ->
+        # Fallback for unknown or unmeasurable elements
+        Logger.warning("LayoutEngine: Cannot measure element type: #{inspect(type)}")
+        %{width: 0, height: 0}
+    end
   end
 
-  def process_element(other, _space, acc) do
-    Logger.warning("LayoutEngine: Received non-element data: #{inspect(other)}")
-    acc
+  # Catch-all for non-element data or invalid elements
+  def measure_element(other, _available_space) do
+    Logger.warning("LayoutEngine: Cannot measure non-element or invalid element: #{inspect(other)}")
+    %{width: 0, height: 0}
   end
+
+  # --- End Measurement Logic ---
 end

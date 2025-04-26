@@ -74,6 +74,8 @@ defmodule Raxol.Components.TabBar do
   ```
   """
   def render(tabs, active_tab, on_change, opts \\ []) do
+    require Raxol.View.Elements
+
     focus_key = Keyword.get(opts, :focus_key, "tab_bar")
     style = Keyword.get(opts, :style, %{})
     tab_style = Keyword.get(opts, :tab_style, %{})
@@ -81,7 +83,7 @@ defmodule Raxol.Components.TabBar do
     active_tab_style =
       Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
 
-    Raxol.View.Layout.row([style: style, id: focus_key], fn ->
+    Raxol.View.Elements.row [style: style, id: focus_key] do
       tab_buttons =
         Enum.map(tabs, fn %{id: id, label: label} = tab ->
           is_active = id == active_tab
@@ -110,7 +112,7 @@ defmodule Raxol.Components.TabBar do
 
       # Return the tab buttons
       tab_buttons
-    end)
+    end
   end
 
   @doc """
@@ -153,6 +155,8 @@ defmodule Raxol.Components.TabBar do
   ```
   """
   def tabbed_view(tabs, active_tab, on_change, opts \\ []) do
+    require Raxol.View.Elements
+
     focus_key = Keyword.get(opts, :focus_key, "tabbed_view")
     style = Keyword.get(opts, :style, %{})
     tab_bar_style = Keyword.get(opts, :tab_bar_style, %{})
@@ -163,9 +167,9 @@ defmodule Raxol.Components.TabBar do
 
     content_style = Keyword.get(opts, :content_style, %{})
 
-    Raxol.View.Layout.row([style: style, id: focus_key], fn ->
+    Raxol.View.Elements.row [style: style, id: focus_key] do
       tab_bar =
-        Raxol.View.Layout.row([style: tab_bar_style], fn ->
+        Raxol.View.Elements.row [style: tab_bar_style] do
           tab_bar_result =
             render(tabs, active_tab, on_change,
               focus_key: focus_key,
@@ -176,10 +180,10 @@ defmodule Raxol.Components.TabBar do
 
           # Return the tab bar
           tab_bar_result
-        end)
+        end
 
       content =
-        Raxol.View.Layout.row([style: content_style], fn ->
+        Raxol.View.Elements.row [style: content_style] do
           # Find and render the content for the active tab
           active_tab_content =
             case Enum.find(tabs, fn %{id: id} -> id == active_tab end) do
@@ -195,10 +199,10 @@ defmodule Raxol.Components.TabBar do
 
           # Return content element
           active_tab_content
-        end)
+        end
 
       # Return tab bar and content in a list
       [tab_bar, content]
-    end)
+    end
   end
 end
