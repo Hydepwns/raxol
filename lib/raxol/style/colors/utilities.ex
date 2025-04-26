@@ -1,43 +1,27 @@
 defmodule Raxol.Style.Colors.Utilities do
   @moduledoc """
-  Provides color manipulation and accessibility utilities.
+  Provides basic color utility functions.
 
-  This module contains functions for analyzing colors, ensuring proper contrast
-  for accessibility, and generating harmonious color combinations.
+  Includes checks for dark colors, brightness, luminance, and hex format.
 
   ## Examples
 
   ```elixir
   alias Raxol.Style.Colors.{Color, Utilities}
 
-  # Check if text is readable on a background
-  bg = Color.from_hex("#333333")
-  fg = Color.from_hex("#FFFFFF")
-  Raxol.Style.Colors.Utilities.readable?(bg, fg)  # Returns true
+  # Check if a color is dark
+  Utilities.dark_color?("#333333") # true
 
-  # Get the contrast ratio between two colors
-  ratio = Raxol.Style.Colors.Utilities.contrast_ratio(bg, fg)  # Returns 12.63
+  # Get perceived brightness
+  Utilities.brightness(Color.from_hex("#FF0000")) # 76
 
-  # Suggest a text color for a background
-  text_color = Raxol.Style.Colors.Utilities.suggest_text_color(bg)  # Returns white for dark backgrounds
-
-  # Generate color harmonies
-  red = Color.from_hex("#FF0000")
-  analogous = Raxol.Style.Colors.Utilities.analogous_colors(red)  # Returns colors adjacent to red
-  complementary = Raxol.Style.Colors.Utilities.complementary_colors(red)  # Returns red and its opposite
+  # Check hex format
+  Utilities.hex_color?("#ABC") # true
+  Utilities.hex_color?("blue") # false
   """
 
   alias Raxol.Style.Colors.Color
-
-  # WCAG contrast ratio thresholds
-  # AA level for normal text
-  @contrast_aa 4.5
-  # AAA level for normal text
-  @contrast_aaa 7.0
-  # AA level for large text
-  @contrast_aa_large 3.0
-  # AAA level for large text
-  @contrast_aaa_large 4.5
+  alias Raxol.Style.Colors.Accessibility
 
   @doc """
   Calculates the relative luminance of a color according to WCAG guidelines.
@@ -123,6 +107,8 @@ defmodule Raxol.Style.Colors.Utilities do
   @doc """
   Checks if a color is considered dark.
 
+  Uses relative luminance (a value < 0.5 is considered dark).
+
   ## Parameters
 
   - `color` - The color to check (hex string or Color struct)
@@ -140,294 +126,16 @@ defmodule Raxol.Style.Colors.Utilities do
       false
   """
   def dark_color?(color) when is_binary(color) do
-    color = Color.from_hex(color)
-    dark_color?(color)
+    # Delegate to Accessibility module for consistent calculation
+    case Color.from_hex(color) do
+      %Color{} = c -> dark_color?(c)
+      _ -> true # Treat invalid hex as dark?
+    end
   end
 
   def dark_color?(%Color{} = color) do
-    relative_luminance(color) < 0.5
-  end
-
-  @doc """
-  Darkens a color until it meets the specified contrast ratio with a background color.
-
-  ## Parameters
-
-  - `color` - The color to darken (hex string or Color struct)
-  - `background` - The background color (hex string or Color struct)
-  - `target_ratio` - The target contrast ratio to achieve
-
-  ## Returns
-
-  - A hex string representing the darkened color
-
-  ## Examples
-
-      iex> Raxol.Style.Colors.Utilities.darken_until_contrast("#777777", "#FFFFFF", 4.5)
-      "#595959"
-  """
-  def darken_until_contrast(color, background, target_ratio)
-      when is_binary(color) or is_binary(background) do
-    color = if is_binary(color), do: Color.from_hex(color), else: color
-
-    background =
-      if is_binary(background), do: Color.from_hex(background), else: background
-
-    darken_until_contrast(color, background, target_ratio)
-  end
-
-  def darken_until_contrast(
-        %Color{} = color,
-        %Color{} = background,
-        target_ratio
-      ) do
-    # Check if the original color already meets the contrast requirement
-    if contrast_ratio(color, background) >= target_ratio do
-      Color.to_hex(color)
-    else
-      # Start with the original color
-      current = color
-
-      # Keep darkening until we meet the target ratio or can't darken anymore
-      Stream.iterate(current, &darken_color/1)
-      |> Stream.take_while(&(&1.r > 0 or &1.g > 0 or &1.b > 0))
-      |> Enum.find(fn c ->
-        ratio = contrast_ratio(c, background)
-        ratio >= target_ratio
-      end)
-      |> case do
-        # If we couldn't find a suitable color, return the original
-        nil -> Color.to_hex(color)
-        result -> Color.to_hex(result)
-      end
-    end
-  end
-
-  @doc """
-  Lightens a color until it meets the specified contrast ratio with a background color.
-
-  ## Parameters
-
-  - `color` - The color to lighten (hex string or Color struct)
-  - `background` - The background color (hex string or Color struct)
-  - `target_ratio` - The target contrast ratio to achieve
-
-  ## Returns
-
-  - A hex string representing the lightened color
-
-  ## Examples
-
-      iex> Raxol.Style.Colors.Utilities.lighten_until_contrast("#777777", "#000000", 4.5)
-      "#CCCCCC"
-  """
-  def lighten_until_contrast(color, background, target_ratio)
-      when is_binary(color) or is_binary(background) do
-    color = if is_binary(color), do: Color.from_hex(color), else: color
-
-    background =
-      if is_binary(background), do: Color.from_hex(background), else: background
-
-    lighten_until_contrast(color, background, target_ratio)
-  end
-
-  def lighten_until_contrast(
-        %Color{} = color,
-        %Color{} = background,
-        target_ratio
-      ) do
-    # Check if the original color already meets the contrast requirement
-    if contrast_ratio(color, background) >= target_ratio do
-      Color.to_hex(color)
-    else
-      # Start with the original color
-      current = color
-
-      # Keep lightening until we meet the target ratio or can't lighten anymore
-      Stream.iterate(current, &lighten_color/1)
-      # Drop the original color before searching
-      |> Stream.drop(1)
-      |> Stream.take_while(&(&1.r < 255 or &1.g < 255 or &1.b < 255))
-      |> Enum.find(fn c ->
-        ratio = contrast_ratio(c, background)
-        ratio >= target_ratio
-      end)
-      |> case do
-        # If we couldn't find a suitable color, return the original
-        nil -> Color.to_hex(color)
-        result -> Color.to_hex(result)
-      end
-    end
-  end
-
-  @doc """
-  Rotates the hue of a color by a specified number of degrees.
-
-  ## Parameters
-
-  - `color` - The color to rotate (hex string or Color struct)
-  - `degrees` - The number of degrees to rotate (0-360)
-
-  ## Returns
-
-  - A hex string representing the rotated color
-
-  ## Examples
-
-      iex> Raxol.Style.Colors.Utilities.rotate_hue("#FF0000", 120)
-      "#00FF00"
-  """
-  def rotate_hue(color, degrees) when is_binary(color) do
-    color = Color.from_hex(color)
-    rotate_hue(color, degrees)
-  end
-
-  def rotate_hue(%Color{} = color, degrees) do
-    # Convert RGB to HSL
-    {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
-
-    # Rotate hue
-    new_h = rem(trunc(h + degrees), 360)
-
-    # Convert back to RGB
-    {r, g, b} = hsl_to_rgb(new_h, s, l)
-
-    # Create new color and convert to hex
-    %Color{r: r, g: g, b: b}
-    |> Color.to_hex()
-  end
-
-  # Private helper functions
-
-  defp darken_color(%Color{r: r, g: g, b: b}) do
-    %Color{
-      r: max(0, r - 10),
-      g: max(0, g - 10),
-      b: max(0, b - 10)
-    }
-  end
-
-  defp lighten_color(%Color{r: r, g: g, b: b}) do
-    %Color{
-      r: min(255, r + 10),
-      g: min(255, g + 10),
-      b: min(255, b + 10)
-    }
-  end
-
-  @doc """
-  Converts RGB values to HSL.
-
-  ## Parameters
-  - `r`, `g`, `b` - Red, Green, Blue values (0-255)
-
-  ## Returns
-  - `{h, s, l}` tuple: Hue (0-360), Saturation (0.0-1.0), Lightness (0.0-1.0)
-  """
-  @spec rgb_to_hsl(integer(), integer(), integer()) ::
-          {float(), float(), float()}
-  def rgb_to_hsl(r, g, b) do
-    r_norm = r / 255
-    g_norm = g / 255
-    b_norm = b / 255
-
-    max = Enum.max([r_norm, g_norm, b_norm])
-    min = Enum.min([r_norm, g_norm, b_norm])
-    delta = max - min
-
-    h = _calculate_hue(r_norm, g_norm, b_norm, max, delta)
-    l = (max + min) / 2
-    s = if delta == 0, do: 0, else: delta / (1 - abs(2 * l - 1))
-
-    {h, s, l}
-  end
-
-  defp _calculate_hue(r, g, b, max, delta) do
-    cond do
-      delta == 0 -> 0
-      max == r -> 60 * rem(round((g - b) / delta), 6)
-      max == g -> 60 * ((b - r) / delta + 2)
-      # max == b
-      true -> 60 * ((r - g) / delta + 4)
-    end
-  end
-
-  @doc """
-  Converts HSL values to RGB.
-
-  ## Parameters
-  - `h`, `s`, `l` - Hue (0-360), Saturation (0.0-1.0), Lightness (0.0-1.0)
-
-  ## Returns
-  - `{r, g, b}` tuple: Red, Green, Blue values (0-255)
-  """
-  @spec hsl_to_rgb(number(), float(), float()) ::
-          {integer(), integer(), integer()}
-  def hsl_to_rgb(h, s, l) when is_number(h) and is_float(s) and is_float(l) do
-    # Convert back to 0-1 range if needed
-    s = if s > 1, do: s / 100, else: s
-    l = if l > 1, do: l / 100, else: l
-
-    # Calculate intermediate values
-    c = (1 - abs(2 * l - 1)) * s
-    x = c * (1 - abs(rem(round(h), 60) / 60 - 1))
-    m = l - c / 2
-
-    # Determine RGB based on hue segment
-    {r_prime, g_prime, b_prime} =
-      cond do
-        h >= 0 and h < 60 -> {c, x, 0}
-        h >= 60 and h < 120 -> {x, c, 0}
-        h >= 120 and h < 180 -> {0, c, x}
-        h >= 180 and h < 240 -> {0, x, c}
-        h >= 240 and h < 300 -> {x, 0, c}
-        h >= 300 and h < 360 -> {c, 0, x}
-        true -> {0, 0, 0}
-      end
-
-    # Adjust RGB values and scale to 0-255
-    r = round((r_prime + m) * 255)
-    g = round((g_prime + m) * 255)
-    b = round((b_prime + m) * 255)
-
-    {r, g, b}
-  end
-
-  @doc """
-  Checks if a foreground color is readable on a background color.
-
-  ## Parameters
-
-  - `background` - Background color
-  - `foreground` - Text color
-  - `level` - Accessibility level (`:aa`, `:aaa`, `:aa_large`, `:aaa_large`)
-
-  ## Examples
-
-      iex> bg = Raxol.Style.Colors.Color.from_hex("#333333")
-      iex> fg = Raxol.Style.Colors.Color.from_hex("#FFFFFF")
-      iex> Raxol.Style.Colors.Utilities.readable?(bg, fg)
-      true
-
-      iex> bg = Raxol.Style.Colors.Color.from_hex("#CCCCCC")
-      iex> fg = Raxol.Style.Colors.Color.from_hex("#999999")
-      iex> Raxol.Style.Colors.Utilities.readable?(bg, fg, :aaa)
-      false
-  """
-  @spec readable?(Color.t(), Color.t(), :aa | :aaa | :aa_large | :aaa_large) ::
-          boolean()
-  def readable?(%Color{} = background, %Color{} = foreground, level \\ :aa) do
-    ratio = contrast_ratio(background, foreground)
-
-    threshold =
-      case level do
-        :aa -> @contrast_aa
-        :aaa -> @contrast_aaa
-        :aa_large -> @contrast_aa_large
-        :aaa_large -> @contrast_aaa_large
-      end
-
-    ratio >= threshold
+    # Use the canonical luminance calculation
+    Accessibility.relative_luminance(color) < 0.5
   end
 
   @doc """
@@ -449,6 +157,13 @@ defmodule Raxol.Style.Colors.Utilities do
       iex> Raxol.Style.Colors.Utilities.brightness(white)
       255
   """
+  def brightness(color) when is_binary(color) do
+    case Color.from_hex(color) do
+      %Color{} = c -> brightness(c)
+      _ -> 0 # Default to black brightness for invalid hex
+    end
+  end
+
   def brightness(%Color{r: r, g: g, b: b}) do
     # Formula: (299*R + 587*G + 114*B) / 1000
     # Simplified to be in 0-255 range
@@ -474,294 +189,13 @@ defmodule Raxol.Style.Colors.Utilities do
       iex> Raxol.Style.Colors.Utilities.luminance(white)
       1.0
   """
+  def luminance(color) when is_binary(color) do
+    # Delegate to Accessibility module
+    Accessibility.relative_luminance(color)
+  end
+
   def luminance(%Color{} = color) do
-    relative_luminance(color)
-  end
-
-  @doc """
-  Suggests an appropriate text color (black or white) for a given background.
-
-  ## Parameters
-
-  - `background` - The background color
-
-  ## Examples
-
-      iex> dark_bg = Raxol.Style.Colors.Color.from_hex("#333333")
-      iex> Raxol.Style.Colors.Utilities.suggest_text_color(dark_bg).hex
-      "#FFFFFF"
-
-      iex> light_bg = Raxol.Style.Colors.Color.from_hex("#EEEEEE")
-      iex> Raxol.Style.Colors.Utilities.suggest_text_color(light_bg).hex
-      "#000000"
-  """
-  def suggest_text_color(%Color{} = background) do
-    # Use white text for dark backgrounds, black text for light backgrounds
-    # Using the YIQ formula for perceived brightness
-    yiq = (background.r * 299 + background.g * 587 + background.b * 114) / 1000
-
-    if yiq >= 128 do
-      # Dark text on light background
-      Color.from_hex("#000000")
-    else
-      # Light text on dark background
-      Color.from_hex("#FFFFFF")
-    end
-  end
-
-  @doc """
-  Suggests a color with good contrast to the base color.
-
-  ## Parameters
-
-  - `color` - The base color
-
-  ## Examples
-
-      iex> color = Raxol.Style.Colors.Color.from_hex("#3366CC")
-      iex> contrast = Raxol.Style.Colors.Utilities.suggest_contrast_color(color)
-      iex> Raxol.Style.Colors.Utilities.contrast_ratio(color, contrast) > 4.5
-      true
-  """
-  def suggest_contrast_color(%Color{} = color) do
-    # Start with the complementary color
-    complement = Color.complement(color)
-
-    # Check if it has enough contrast
-    if contrast_ratio(color, complement) >= @contrast_aa do
-      complement
-    else
-      # If not, try black or white (whichever has better contrast)
-      black = Color.from_hex("#000000")
-      white = Color.from_hex("#FFFFFF")
-
-      black_ratio = contrast_ratio(color, black)
-      white_ratio = contrast_ratio(color, white)
-
-      if black_ratio > white_ratio, do: black, else: white
-    end
-  end
-
-  @doc """
-  Creates a pair of colors that meet accessibility guidelines.
-
-  ## Parameters
-
-  - `base_color` - The base color to use
-  - `level` - Accessibility level (`:aa`, `:aaa`, `:aa_large`, `:aaa_large`)
-
-  ## Examples
-
-      iex> color = Raxol.Style.Colors.Color.from_hex("#3366CC")
-      iex> {bg, fg} = Raxol.Style.Colors.Utilities.accessible_color_pair(color)
-      iex> Raxol.Style.Colors.Utilities.readable?(bg, fg)
-      true
-  """
-  def accessible_color_pair(%Color{} = base_color, level \\ :aa) do
-    # Try using the base color as background with black or white text
-    black = Color.from_hex("#000000")
-    white = Color.from_hex("#FFFFFF")
-
-    cond do
-      readable?(base_color, black, level) ->
-        {base_color, black}
-
-      readable?(base_color, white, level) ->
-        {base_color, white}
-
-      # If neither works well, adjust the base color darker or lighter
-      true ->
-        if brightness(base_color) > 127 do
-          # Light color - make it lighter and use black text
-          lighter = Color.lighten(base_color, 0.3)
-          {lighter, black}
-        else
-          # Dark color - make it darker and use white text
-          darker = Color.darken(base_color, 0.3)
-          {darker, white}
-        end
-    end
-  end
-
-  @doc """
-  Generates analogous colors (adjacent on the color wheel).
-
-  ## Parameters
-
-  - `color` - The base color
-  - `count` - Number of colors to generate (including the base color)
-
-  ## Examples
-
-      iex> color = Raxol.Style.Colors.Color.from_hex("#FF0000")  # Red
-      iex> colors = Raxol.Style.Colors.Utilities.analogous_colors(color)
-      iex> length(colors)
-      3
-  """
-  def analogous_colors(%Color{} = color, count \\ 3) when count >= 1 do
-    # Convert to HSL to work with hue
-    {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
-
-    # Generate colors with hues spaced around the base color
-    # Typically 30 degrees apart in either direction
-    angle = 30
-    hue_shift = div(angle * (count - 1), 2)
-
-    # Create a list of shifts centered around the original color
-    shifts = for i <- 0..(count - 1), do: -hue_shift + i * angle
-
-    # Apply each shift to create a new color
-    Enum.map(shifts, fn shift ->
-      # Calculate new hue (wrapping around 360 degrees)
-      new_h = rem(round(h + shift + 360), 360)
-      # Convert back to RGB
-      {r, g, b} = hsl_to_rgb(new_h, s, l)
-      Color.from_rgb(r, g, b)
-    end)
-  end
-
-  @doc """
-  Generates complementary colors (opposite on the color wheel).
-
-  ## Parameters
-
-  - `color` - The base color
-
-  ## Examples
-
-      iex> color = Raxol.Style.Colors.Color.from_hex("#FF0000")  # Red
-      iex> [red, cyan] = Raxol.Style.Colors.Utilities.complementary_colors(color)
-      iex> cyan.hex
-      "#00FFFF"
-  """
-  def complementary_colors(%Color{} = color) do
-    complement = Color.complement(color)
-    [color, complement]
-  end
-
-  @doc """
-  Generates triadic colors (three colors evenly spaced on the color wheel).
-
-  ## Parameters
-
-  - `color` - The base color
-
-  ## Examples
-
-      iex> color = Raxol.Style.Colors.Color.from_hex("#FF0000")  # Red
-      iex> colors = Raxol.Style.Colors.Utilities.triadic_colors(color)
-      iex> length(colors)
-      3
-  """
-  def triadic_colors(%Color{} = color) do
-    # Convert to HSL to work with hue
-    {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
-
-    # Generate colors 120 degrees apart
-    [0, 120, 240]
-    |> Enum.map(fn shift ->
-      # Calculate new hue (wrapping around 360 degrees)
-      new_h = rem(round(h + shift), 360)
-      # Convert back to RGB
-      {r, g, b} = hsl_to_rgb(new_h, s, l)
-      Color.from_rgb(r, g, b)
-    end)
-  end
-
-  @doc """
-  Lightens a color by a specified amount.
-
-  ## Parameters
-
-  - `color` - The color to lighten (hex string or Color struct)
-  - `amount` - The amount to lighten by (0.0 to 1.0)
-
-  ## Returns
-
-  - A hex string representing the lightened color
-  """
-  def lighten(color, amount) when is_binary(color) do
-    color = Color.from_hex(color)
-    lighten(color, amount)
-  end
-
-  def lighten(%Color{} = color, amount) do
-    {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
-    new_l = min(l + amount, 1.0)
-    {r, g, b} = hsl_to_rgb(h, s, new_l)
-    Color.to_hex(%Color{r: r, g: g, b: b})
-  end
-
-  @doc """
-  Darkens a color by a specified amount.
-
-  ## Parameters
-
-  - `color` - The color to darken (hex string or Color struct)
-  - `amount` - The amount to darken by (0.0 to 1.0)
-
-  ## Returns
-
-  - A hex string representing the darkened color
-  """
-  def darken(color, amount) when is_binary(color) do
-    color = Color.from_hex(color)
-    darken(color, amount)
-  end
-
-  def darken(%Color{} = color, amount) do
-    {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
-    new_l = max(l - amount, 0.0)
-    {r, g, b} = hsl_to_rgb(h, s, new_l)
-    Color.to_hex(%Color{r: r, g: g, b: b})
-  end
-
-  @doc """
-  Saturates a color by a specified amount.
-
-  ## Parameters
-
-  - `color` - The color to saturate (hex string or Color struct)
-  - `amount` - The amount to saturate by (0.0 to 1.0)
-
-  ## Returns
-
-  - A hex string representing the saturated color
-  """
-  def saturate(color, amount) when is_binary(color) do
-    color = Color.from_hex(color)
-    saturate(color, amount)
-  end
-
-  def saturate(%Color{} = color, amount) do
-    {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
-    new_s = min(s + amount, 1.0)
-    {r, g, b} = hsl_to_rgb(h, new_s, l)
-    Color.to_hex(%Color{r: r, g: g, b: b})
-  end
-
-  @doc """
-  Desaturates a color by a specified amount.
-
-  ## Parameters
-
-  - `color` - The color to desaturate (hex string or Color struct)
-  - `amount` - The amount to desaturate by (0.0 to 1.0)
-
-  ## Returns
-
-  - A hex string representing the desaturated color
-  """
-  def desaturate(color, amount) when is_binary(color) do
-    color = Color.from_hex(color)
-    desaturate(color, amount)
-  end
-
-  def desaturate(%Color{} = color, amount) do
-    {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
-    new_s = max(s - amount, 0.0)
-    {r, g, b} = hsl_to_rgb(h, new_s, l)
-    Color.to_hex(%Color{r: r, g: g, b: b})
+    Accessibility.relative_luminance(color)
   end
 
   @doc """

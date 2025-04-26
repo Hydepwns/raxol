@@ -10,6 +10,8 @@ defmodule CounterExample do
   @behaviour Raxol.Core.Runtime.Application
 
   alias Raxol.Core.Events.Event
+  alias Raxol.Core.Commands.Command
+  require Event
 
   @impl Raxol.Core.Runtime.Application
   def init(_app_module, _context) do
@@ -35,7 +37,7 @@ defmodule CounterExample do
 
       # Handle direct key presses from TerminalDriver
       %Event{type: :key, data: %{key: :char, char: "q"}} ->
-        {model, [:quit]} # Command to quit the application
+        {model, [Command.new(:quit)]} # Command to quit the application
 
       %Event{type: :key, data: %{key: :char, char: "+"}} -> # Example: '+' key increments
         {%{model | count: model.count + 1}, []}
@@ -45,7 +47,7 @@ defmodule CounterExample do
 
       # Handle Ctrl+C from TerminalDriver
       %Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
-        {model, [:quit]}
+        {model, [Command.new(:quit)]}
 
       # Ignore other events
       _ ->

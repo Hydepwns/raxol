@@ -8,7 +8,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   require Logger
 
   @type command_name :: String.t()
-  @type command_entry :: {module(), atom()}
+  @type namespace :: atom() | nil
+  @type command_key :: {namespace(), command_name()}
+  @type command_entry :: {module(), atom(), integer() | nil}
   @type table_name :: atom()
 
   @doc """
@@ -19,8 +21,15 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @spec new() :: table_name()
   def new() do
     table_name = :raxol_command_registry
-    :ets.new(table_name, [:set, :public, :named_table, read_concurrency: true])
-    Logger.debug("[#{__MODULE__}] ETS table `#{inspect(table_name)}` created.")
+
+    if :ets.info(table_name, :name) != table_name do
+      :ets.new(table_name, [:set, :public, :named_table, read_concurrency: true])
+
+      Logger.debug(
+        "[#{__MODULE__}] ETS table `#{inspect(table_name)}` created."
+      )
+    end
+
     table_name
   end
 
@@ -32,28 +41,39 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     - `command_name`: The name the command will be invoked by.
     - `module`: The plugin module implementing the command.
     - `function`: The function within the module to call.
+    - `arity`: The arity of the function.
 
   Returns `:ok` or `{:error, :already_registered}`.
   """
-  @spec register_command(table_name(), command_name(), module(), atom()) ::
+  @spec register_command(
+          table_name(),
+          namespace(),
+          command_name(),
+          module(),
+          atom(),
+          integer() | nil
+        ) ::
           :ok | {:error, :already_registered}
-  def register_command(table, command_name, module, function)
-      when is_atom(table) and is_binary(command_name) and is_atom(module) and
-             is_atom(function) do
-    # Check for existing command
-    case :ets.lookup(table, command_name) do
+  def register_command(table, namespace, command_name, module, function, arity)
+      when is_atom(table) and (is_atom(namespace) or is_nil(namespace)) and
+             is_binary(command_name) and is_atom(module) and
+             is_atom(function) and (is_integer(arity) or is_nil(arity)) do
+    key = {namespace, command_name}
+    value = {module, function, arity}
+
+    case :ets.lookup(table, key) do
       [] ->
-        :ets.insert(table, {command_name, {module, function}})
-        # TODO: How to get arity?
+        :ets.insert(table, {key, value})
+
         Logger.info(
-          "[#{__MODULE__}] Registered command \"#{command_name}\" -> #{inspect(module)}.#{function}/arity"
+          ~c"[#{__MODULE__}] Registered command [#{namespace || "global"}] \"#{command_name}\" -> #{inspect(module)}.#{function}/#{arity || ~c"?"}"
         )
 
         :ok
 
       [_] ->
         Logger.warning(
-          "[#{__MODULE__}] Command \"#{command_name}\" already registered. Registration failed."
+          "[#{__MODULE__}] Command [#{namespace || "global"}] \"#{command_name}\" already registered. Registration failed."
         )
 
         {:error, :already_registered}
@@ -63,23 +83,32 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @doc """
   Unregisters a command.
   """
-  @spec unregister_command(table_name(), command_name()) :: :ok
-  def unregister_command(table, command_name)
-      when is_atom(table) and is_binary(command_name) do
-    :ets.delete(table, command_name)
-    Logger.info("[#{__MODULE__}] Unregistered command \"#{command_name}\".")
+  @spec unregister_command(table_name(), namespace(), command_name()) :: :ok
+  def unregister_command(table, namespace, command_name)
+      when is_atom(table) and (is_atom(namespace) or is_nil(namespace)) and
+             is_binary(command_name) do
+    key = {namespace, command_name}
+    :ets.delete(table, key)
+
+    Logger.info(
+      "[#{__MODULE__}] Unregistered command [#{namespace || "global"}] \"#{command_name}\"."
+    )
+
     :ok
   end
 
   @doc """
-  Looks up the handler {module, function} for a command name.
+  Looks up the handler {module, function, arity} for a command name and namespace.
   """
-  @spec lookup_command(table_name(), command_name()) ::
+  @spec lookup_command(table_name(), namespace(), command_name()) ::
           {:ok, command_entry()} | {:error, :not_found}
-  def lookup_command(table, command_name)
-      when is_atom(table) and is_binary(command_name) do
-    case :ets.lookup(table, command_name) do
-      [{^command_name, handler}] -> {:ok, handler}
+  def lookup_command(table, namespace, command_name)
+      when is_atom(table) and (is_atom(namespace) or is_nil(namespace)) and
+             is_binary(command_name) do
+    key = {namespace, command_name}
+
+    case :ets.lookup(table, key) do
+      [{^key, handler}] -> {:ok, handler}
       [] -> {:error, :not_found}
     end
   end
@@ -92,20 +121,23 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @spec unregister_commands_by_module(table_name(), module()) :: :ok
   def unregister_commands_by_module(table, module_to_remove)
       when is_atom(table) and is_atom(module_to_remove) do
-    match_spec = [{{:_, {module_to_remove, :_}}, [], [true]}]
-    commands_to_delete = :ets.select(table, match_spec)
-    count = Enum.count(commands_to_delete)
+    match_spec = [
+      {{{:"$1", :"$2"}, {module_to_remove, :_, :_}}, [], [{{:"$1", :"$2"}}]}
+    ]
+
+    keys_to_delete = :ets.select(table, match_spec)
+    count = Enum.count(keys_to_delete)
 
     if count > 0 do
       Logger.info(
         "[#{__MODULE__}] Unregistering #{count} commands for module #{inspect(module_to_remove)}..."
       )
 
-      Enum.each(commands_to_delete, fn {command_name, _handler} ->
-        :ets.delete(table, command_name)
+      Enum.each(keys_to_delete, fn {namespace, command_name} = key ->
+        :ets.delete(table, key)
 
         Logger.debug(
-          "[#{__MODULE__}] Unregistered command \"#{command_name}\"."
+          ~c"[#{__MODULE__}] Unregistered command [#{namespace || "global"}] \"#{command_name}\"."
         )
       end)
     end

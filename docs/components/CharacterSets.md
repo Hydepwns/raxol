@@ -60,16 +60,19 @@ charset = Raxol.Terminal.CharacterSets.new(config)
 ### Character Sets
 
 1. **ASCII Set**
+
    - Standard ASCII characters
    - Control characters
    - Extended ASCII
 
 2. **Special Characters**
+
    - Box drawing
    - Block elements
    - Geometric shapes
 
 3. **Graphics Characters**
+
    - Line drawing
    - Shading characters
    - Terminal graphics
@@ -82,6 +85,7 @@ charset = Raxol.Terminal.CharacterSets.new(config)
 ### Character Translation
 
 1. **Translation Tables**
+
    - Character mappings
    - Fallback characters
    - Combining characters
@@ -91,6 +95,14 @@ charset = Raxol.Terminal.CharacterSets.new(config)
    - Double-width
    - Zero-width
    - Full-width
+
+### Interaction with Sixel Graphics
+
+Sixel graphics sequences (`DCS P...q DATA ST`, often starting with `\eP...q`) represent a separate mode for transmitting pixel-based image data.
+
+The character data _within_ a Sixel sequence (typically characters `?` through `~`, along with commands like `"`, `#`, `!`, `$`, `-`) is interpreted according to the Sixel protocol itself and is **not** processed by the standard G0-G3 character set translation described in this document.
+
+Normal character set designation and translation apply to characters _outside_ of active Sixel sequences.
 
 ## API Reference
 
@@ -196,4 +208,4 @@ defmodule Raxol.Terminal.CharacterSetsTest do
     assert CharacterSets.get_width(charset, ?あ) == 2
   end
 end
-``` 
+```

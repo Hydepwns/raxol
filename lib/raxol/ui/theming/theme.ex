@@ -18,12 +18,15 @@ defmodule Raxol.UI.Theming.Theme do
           component_styles: map()
         }
 
+  # Added structure for theme variants (e.g., high contrast)
+  @type theme_variant :: %{palette: map(), component_styles: map()}
   defstruct id: :default,
             name: "Default Theme",
             description: "The default Raxol theme",
-            colors: %{},
+            colors: %{}, # Base color palette
             fonts: %{},
-            component_styles: %{}
+            component_styles: %{}, # Base component styles
+            variants: %{} # Map of variant_id => %{palette: map(), component_styles: map()}
 
   # Store registered themes
   @themes_table :themes
@@ -242,6 +245,30 @@ defmodule Raxol.UI.Theming.Theme do
   """
   def color(%__MODULE__{} = theme, color_name) do
     Map.get(theme.colors, color_name, :white)
+  end
+
+  @doc """
+  Gets a color value considering the theme and an optional variant.
+
+  Looks up the color in the variant's palette first, then falls back
+  to the theme's base palette.
+  """
+  @spec get_color(t(), atom(), atom() | nil) :: Raxol.Style.Colors.color_value() | nil
+  def get_color(%__MODULE__{} = theme, color_name, variant_id \\ nil) do
+    variant_palette = get_in(theme, [:variants, variant_id, :palette])
+    base_palette = theme.colors
+
+    cond do
+      # Check variant palette first
+      variant_palette && Map.has_key?(variant_palette, color_name) ->
+        Map.get(variant_palette, color_name)
+      # Fallback to base palette
+      Map.has_key?(base_palette, color_name) ->
+        Map.get(base_palette, color_name)
+      # Not found anywhere
+      true ->
+        nil # Or return a default like :white or :default?
+    end
   end
 
   @doc """

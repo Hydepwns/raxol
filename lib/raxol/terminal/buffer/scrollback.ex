@@ -1,45 +1,66 @@
 defmodule Raxol.Terminal.Buffer.Scrollback do
   @moduledoc """
-  Manages the scrollback buffer logic for Raxol.Terminal.ScreenBuffer.
+  Manages the scrollback buffer lines.
+
+  Stores lines scrolled off the top and provides them when scrolling down.
+  Enforces a configurable size limit.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ScreenBuffer.Line
+
+  @type t :: %__MODULE__{
+          lines: list(Line.t()),
+          limit: non_neg_integer()
+        }
+
+  defstruct lines: [], limit: 1000
 
   @doc """
-  Adds lines to the scrollback buffer, respecting the limit.
-  Returns the new scrollback list.
+  Creates a new scrollback buffer with a given limit.
   """
-  @spec add(ScreenBuffer.t(), list(list(Cell.t()))) :: list(list(Cell.t()))
-  def add(%ScreenBuffer{} = buffer, lines_to_add) do
-    (lines_to_add ++ buffer.scrollback)
-    |> Enum.take(buffer.scrollback_limit)
+  @spec new(non_neg_integer()) :: t()
+  def new(limit \\ 1000) when is_integer(limit) and limit >= 0 do
+    %__MODULE__{limit: limit, lines: []}
   end
 
   @doc """
-  Retrieves lines from the scrollback buffer for scrolling down.
-  Returns a tuple {lines_from_scrollback, new_scrollback_buffer}.
-  Returns {[], buffer.scrollback} if not enough lines are available.
-  """
-  @spec retrieve_for_scroll_down(ScreenBuffer.t(), non_neg_integer()) ::
-          {list(list(Cell.t())), list(list(Cell.t()))}
-  def retrieve_for_scroll_down(%ScreenBuffer{} = buffer, lines_needed)
-      when lines_needed > 0 do
-    if length(buffer.scrollback) >= lines_needed do
-      Enum.split(buffer.scrollback, lines_needed)
-    else
-      {[], buffer.scrollback}
-    end
-  end
+  Adds new lines to the top of the scrollback buffer.
 
-  def retrieve_for_scroll_down(%ScreenBuffer{} = buffer, _lines_needed),
-    do: {[], buffer.scrollback}
+  Lines are prepended. The buffer is trimmed to the limit if necessary.
+  """
+  @spec add_lines(t(), list(Line.t())) :: t()
+  def add_lines(%__MODULE__{limit: limit} = scrollback, new_lines) when is_list(new_lines) do
+    # Prepend new lines (they scrolled off the *top* of the screen)
+    combined = new_lines ++ scrollback.lines
+    trimmed_lines = Enum.take(combined, limit)
+    %__MODULE__{scrollback | lines: trimmed_lines}
+  end
 
   @doc """
-  Gets the current scroll position (number of lines in scrollback).
+  Takes a number of lines from the top of the scrollback buffer.
+
+  Used when scrolling down to restore lines.
+  Returns a tuple: `{restored_lines, updated_scrollback_state}`.
+  Fewer lines than requested may be returned if the buffer is smaller.
   """
-  @spec get_position(ScreenBuffer.t()) :: non_neg_integer()
-  def get_position(%ScreenBuffer{} = buffer) do
-    length(buffer.scrollback)
+  @spec take_lines(t(), non_neg_integer()) :: {list(Line.t()), t()}
+  def take_lines(%__MODULE__{} = scrollback, count) when is_integer(count) and count >= 0 do
+    {lines_to_restore, remaining_lines} = Enum.split(scrollback.lines, count)
+    updated_scrollback = %__MODULE__{scrollback | lines: remaining_lines}
+    {lines_to_restore, updated_scrollback}
   end
+
+  @doc """
+  Clears all lines from the scrollback buffer.
+  """
+  @spec clear(t()) :: t()
+  def clear(%__MODULE__{} = scrollback) do
+    %__MODULE__{scrollback | lines: []}
+  end
+
+  @doc """
+  Gets the current number of lines stored in the scrollback buffer.
+  """
+  @spec size(t()) :: non_neg_integer()
+  def size(%__MODULE__{lines: lines}), do: length(lines)
 end

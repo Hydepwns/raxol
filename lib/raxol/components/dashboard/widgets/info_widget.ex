@@ -1,25 +1,40 @@
 defmodule Raxol.Components.Dashboard.Widgets.InfoWidget do
   @moduledoc """
-  A simple widget displaying static informational text.
+  A dashboard widget that displays simple text information.
   """
-  import Raxol.View
 
-  @doc """
-  Renders the info widget content.
+  use Raxol.UI.Components.Base.Component
+  require Raxol.View.Elements
+  alias Raxol.View.Elements, as: UI # Use UI alias for consistency
 
-  Requires props:
-  - `widget_config`: The configuration map for the widget (%{id: _, type: _, title: _, ...}).
-  """
-  def render(_props) do
-    # We don't use the title from config here, as the WidgetContainer shows it.
-    # %{widget_config: widget_config} = props
-    # title = Map.get(widget_config, :title, "Info")
+  defstruct title: "Info", content: "No info available", id: :info_widget
 
-    # Return a list of view elements for the content area
-    [
-      # text(title), # Title is rendered by the container
-      text("This is static info."),
-      text("Rendered by InfoWidget.")
-    ]
+  @impl Raxol.UI.Components.Base.Component
+  def init(props) do
+    %__MODULE__{
+      id: props[:id] || :info_widget,
+      title: props[:title] || "Info",
+      content: props[:content] || "No info available"
+    }
   end
+
+  @impl Raxol.UI.Components.Base.Component
+  def update(_msg, state), do: {state, []} # Placeholder
+
+  @impl Raxol.UI.Components.Base.Component
+  def handle_event(_event, _props, state), do: {state, []} # Placeholder
+
+  @impl Raxol.UI.Components.Base.Component
+  def render(state, _props) do
+    UI.box title: state.title, id: state.id, border: :single do
+      UI.column do
+        [
+          UI.label(content: state.content || ""),
+          UI.label(content: "This is static info."),
+          UI.label(content: "More details...")
+        ] |> Enum.reject(&(&1 == nil || &1 == %{}))
+      end
+    end
+  end
+
 end

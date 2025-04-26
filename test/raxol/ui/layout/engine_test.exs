@@ -184,6 +184,73 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert dimensions.height == 3
     end
 
+    test "measures a box element" do
+      element = %{type: :box, attrs: %{width: 20, height: 10}}
+      available_space = %{width: 80, height: 24}
+      dimensions = Engine.measure_element(element, available_space)
+      assert dimensions.width == 20
+      assert dimensions.height == 10
+    end
+
+    test "measures a checkbox element" do
+      element = %{type: :checkbox, attrs: %{label: "Option 1"}}
+      available_space = %{width: 80, height: 24}
+      dimensions = Engine.measure_element(element, available_space)
+      # "[ ] " + "Option 1" => 4 + 8 = 12
+      assert dimensions.width == 12
+      assert dimensions.height == 1
+    end
+
+    test "measures a panel element based on children" do
+      element = %{
+        type: :panel,
+        attrs: %{},
+        children: [%{type: :label, attrs: %{content: String.duplicate("X", 15)}}]
+      }
+      # Panel adds 2 width/height for borders
+      available_space = %{width: 80, height: 24}
+      dimensions = Engine.measure_element(element, available_space)
+      # Child width 15, Panel width 15 + 2 = 17
+      assert dimensions.width == 17
+      # Child height 1, Panel height 1 + 2 = 3
+      assert dimensions.height == 3
+    end
+
+    test "measures a panel element with explicit size" do
+      element = %{
+        type: :panel,
+        attrs: %{width: 30, height: 5},
+        children: [%{type: :label, attrs: %{content: "Short"}}]
+      }
+      available_space = %{width: 80, height: 24}
+      dimensions = Engine.measure_element(element, available_space)
+      assert dimensions.width == 30
+      assert dimensions.height == 5
+    end
+
+    test "measures a grid element based on children" do
+      element = %{
+        type: :grid,
+        attrs: %{columns: 2, gap_x: 1, gap_y: 1},
+        children: [
+          %{type: :label, attrs: %{content: "AAAAAAAAAA"}}, # Width 10
+          %{type: :label, attrs: %{content: "BB"}},          # Width 2
+          %{type: :label, attrs: %{content: "CCC"}},         # Width 3
+          %{type: :label, attrs: %{content: "DDDDDD"}}      # Width 6
+        ]
+      }
+      # Grid logic uses max child width/height
+      available_space = %{width: 80, height: 24}
+      dimensions = Engine.measure_element(element, available_space)
+      # Max child width = 10. Grid width = cols * max_w + gap_x * (cols - 1)
+      # 2 * 10 + 1 * (2 - 1) = 20 + 1 = 21
+      assert dimensions.width == 21
+      # Max child height = 1. Rows = ceil(4/2) = 2.
+      # Grid height = rows * max_h + gap_y * (rows - 1)
+      # 2 * 1 + 1 * (2 - 1) = 2 + 1 = 3
+      assert dimensions.height == 3
+    end
+
     test "constrains element size to available space" do
       # Create a label with very long text
       element = %{type: :label, attrs: %{content: String.duplicate("A", 100)}}

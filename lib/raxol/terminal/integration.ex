@@ -24,6 +24,7 @@ defmodule Raxol.Terminal.Integration do
   alias Raxol.Terminal.Config
   alias Raxol.Terminal.Renderer
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.MemoryManager
 
   @type t :: %__MODULE__{
           emulator: Emulator.t(),
@@ -33,7 +34,6 @@ defmodule Raxol.Terminal.Integration do
           cursor_manager: CursorManager.t(),
           command_history: History.t(),
           config: map(),
-          memory_limit: non_neg_integer(),
           last_cleanup: integer()
         }
 
@@ -45,7 +45,6 @@ defmodule Raxol.Terminal.Integration do
     :cursor_manager,
     :command_history,
     :config,
-    :memory_limit,
     :last_cleanup
   ]
 
@@ -89,7 +88,6 @@ defmodule Raxol.Terminal.Integration do
       cursor_manager: cursor_manager,
       command_history: command_history,
       config: config,
-      memory_limit: config.memory_limit || 50 * 1024 * 1024,
       last_cleanup: System.system_time(:millisecond)
     }
   end
@@ -104,49 +102,55 @@ defmodule Raxol.Terminal.Integration do
       iex> integration = Integration.handle_input(integration, :up_arrow)
   """
   def handle_input(%__MODULE__{} = integration, input) when is_binary(input) do
-    if integration.config.enable_command_history do
-      integration = %{
+    integration =
+      if integration.config.enable_command_history do
+        %{
+          integration
+          | command_history:
+              History.save_input(integration.command_history, input)
+        }
+      else
         integration
-        | command_history:
-            History.save_input(integration.command_history, input)
-      }
+      end
 
-      integration
-    else
-      integration
-    end
+    MemoryManager.check_and_cleanup(integration)
   end
 
   def handle_input(%__MODULE__{} = integration, :up_arrow) do
-    if integration.config.enable_command_history do
-      {command, command_history} =
-        History.previous(integration.command_history)
+    integration =
+      if integration.config.enable_command_history do
+        {command, command_history} =
+          History.previous(integration.command_history)
 
-      if command do
-        integration = %{integration | command_history: command_history}
-        handle_input(integration, command)
+        if command do
+          %{integration | command_history: command_history}
+          |> handle_input(command)
+        else
+          integration
+        end
       else
         integration
       end
-    else
-      integration
-    end
+
+    MemoryManager.check_and_cleanup(integration)
   end
 
   def handle_input(%__MODULE__{} = integration, :down_arrow) do
-    if integration.config.enable_command_history do
-      {command, command_history} =
-        History.next(integration.command_history)
+    integration =
+      if integration.config.enable_command_history do
+        {command, command_history} =
+          History.next(integration.command_history)
 
-      if command do
-        integration = %{integration | command_history: command_history}
-        handle_input(integration, command)
+        if command do
+          %{integration | command_history: command_history}
+          |> handle_input(command)
+        else
+          integration
+        end
       else
         integration
       end
-    else
-      integration
-    end
+    MemoryManager.check_and_cleanup(integration)
   end
 
   @doc """
@@ -177,20 +181,36 @@ defmodule Raxol.Terminal.Integration do
   @doc """
   Updates the terminal configuration.
 
+  Merges the provided `opts` into the current configuration and validates
+  the result before applying.
+
   ## Examples
 
       iex> integration = Integration.new(80, 24)
-      iex> integration = Integration.update_config(integration, theme: "light")
+      iex> {:ok, integration} = Integration.update_config(integration, theme: "light", behavior: [scrollback_lines: 2000])
+      iex> integration.config.theme
+      "light"
+      iex> integration.config.behavior.scrollback_lines
+      2000
+
+      iex> {:error, _reason} = Integration.update_config(integration, invalid_opt: :bad)
   """
   def update_config(%__MODULE__{} = integration, opts) do
-    partial_config = create_partial_config(opts)
+    # Merge the new options into the current config
+    updated_config = Config.merge_opts(integration.config, opts)
 
-    case Config.validate_config(partial_config) do
-      {:ok, _validated_partial} ->
-        updated_config = deep_merge(integration.config, partial_config)
-        %{integration | config: updated_config}
+    # Validate the *entire* updated configuration
+    case Config.validate_config(updated_config) do
+      {:ok, validated_config} ->
+        # Apply the validated, merged config
+        # TODO: Consider if other parts of the integration state need updating
+        #       based on config changes (e.g., BufferManager limits, Renderer colors).
+        #       This might require more granular updates or a dedicated apply_config function.
+        {:ok, %{integration | config: validated_config}}
 
       {:error, reason} ->
+        # Log the validation error
+        Logger.error("Terminal configuration update failed validation: #{inspect(reason)}")
         {:error, reason}
     end
   end
@@ -788,46 +808,4 @@ defmodule Raxol.Terminal.Integration do
     cursor_manager = Style.hide(integration.cursor_manager)
     %{integration | cursor_manager: cursor_manager}
   end
-
-  defp apply_config_options(config, opts) do
-    Enum.reduce(opts, config, fn {key, value}, acc ->
-      deep_put(acc, key, value)
-    end)
-  end
-
-  defp create_partial_config(opts) do
-    Enum.reduce(opts, %{}, fn {key, value}, acc ->
-      deep_put(acc, key, value)
-    end)
-  end
-
-  defp deep_put(map, key, value) when is_atom(key) do
-    Map.put(map, key, value)
-  end
-
-  defp deep_put(map, path, value) when is_list(path) do
-    path_to_nested_map(path, value)
-    |> deep_merge(map)
-  end
-
-  defp path_to_nested_map([key], value) do
-    %{key => value}
-  end
-
-  defp path_to_nested_map([head | tail], value) do
-    %{head => path_to_nested_map(tail, value)}
-  end
-
-  defp deep_merge(left, right) when is_map(left) and is_map(right) do
-    Map.merge(left, right, fn
-      _, left_value, right_value
-      when is_map(left_value) and is_map(right_value) ->
-        deep_merge(left_value, right_value)
-
-      _, _left_value, right_value ->
-        right_value
-    end)
-  end
-
-  defp deep_merge(_, right), do: right
 end

@@ -223,7 +223,7 @@ defmodule Raxol.Core.UXRefinement do
 
   def disable_feature(:hints) do
     # Clean up hint display
-    HintDisplay.cleanup()
+    # HintDisplay.cleanup()
 
     # Clear hint registry
     Process.put(:ux_refinement_hints, %{})
@@ -236,7 +236,7 @@ defmodule Raxol.Core.UXRefinement do
 
   def disable_feature(:focus_ring) do
     # Clean up focus ring
-    FocusRing.cleanup()
+    # FocusRing.cleanup()
 
     # Unregister the feature
     unregister_enabled_feature(:focus_ring)

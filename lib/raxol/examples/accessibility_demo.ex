@@ -15,7 +15,6 @@ defmodule Raxol.Examples.AccessibilityDemo do
   alias Raxol.Core.UXRefinement
   alias Raxol.Core.Accessibility
   alias Raxol.Core.FocusManager
-  alias Raxol.Components.FocusRing
 
   @doc """
   Start the accessibility demo.
@@ -33,7 +32,6 @@ defmodule Raxol.Examples.AccessibilityDemo do
     _ = UXRefinement.enable_feature(:focus_management)
     _ = UXRefinement.enable_feature(:keyboard_navigation)
     _ = UXRefinement.enable_feature(:hints)
-    _ = UXRefinement.enable_feature(:focus_ring)
     _ = UXRefinement.enable_feature(:accessibility)
 
     # Setup the demo UI
@@ -112,13 +110,13 @@ defmodule Raxol.Examples.AccessibilityDemo do
       ]
     })
 
-    # Configure focus ring with animation
-    FocusRing.configure(
-      style: :solid,
-      color: :blue,
-      animation: :pulse,
-      transition_effect: :fade
-    )
+    # Configure the focus ring - Needs update based on FocusRing API
+    # FocusRing.configure(
+    #   style: :dotted,
+    #   color: :cyan,
+    #   animation: :pulse,
+    #   offset: 1
+    # )
 
     # Make an initial announcement
     # UXRefinement.announce("Accessibility demo loaded. Use Tab to navigate between components.", priority: :high)

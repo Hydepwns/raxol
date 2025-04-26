@@ -133,11 +133,16 @@ defmodule Raxol.Core.Runtime.Application do
 
   @optional_callbacks [subscribe: 1]
 
+  # Placeholder for model type, user application should define this
+  # Or we rely on Dialyzer inference
+  # @type model :: %{required(integer) => any()} | map() # Example constraint
+  @type model :: any()
+
   defmacro __using__(_opts) do
     quote do
       @behaviour Raxol.Core.Runtime.Application
 
-      import Raxol.View
+      import Raxol.Core.Renderer.View
       alias Raxol.Core.Events.Event
       alias Raxol.Core.Runtime.Command
       alias Raxol.Core.Runtime.Subscription
@@ -165,15 +170,48 @@ defmodule Raxol.Core.Runtime.Application do
     end
   end
 
-  @doc """
-  Delegates the update logic to the specific application module.
+  @spec delegate_init(module(), context()) ::
+          {model(), list(Command.t())} | {:error, term()}
+  def delegate_init(app_module, context) when is_atom(app_module) do
+    if function_exported?(app_module, :init, 1) do
+      try do
+        case app_module.init(context) do
+          {model, commands} when is_map(model) and is_list(commands) ->
+            {model, commands}
 
-  This function is called by the runtime (e.g., Dispatcher) and invokes the
-  `update/2` callback on the provided `app_module`.
-  """
-  @spec update(module(), any(), map()) ::
-          {map(), list(Command.t())} | {:error, term()}
-  def update(app_module, message, current_model)
+          model when is_map(model) ->
+            # If only model is returned, default to no commands
+            {model, []}
+
+          invalid_return ->
+            Logger.error(
+              "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned invalid value: #{inspect(invalid_return)}. Expected map() or {map(), list()}.
+              Falling back to empty model with no commands."
+            )
+
+            {%{}, []}
+        end
+      rescue
+        error ->
+          Logger.error(
+            "[#{__MODULE__}] Error executing #{inspect(app_module)}.init/1: #{inspect(error)}\\nStacktrace: #{inspect(__STACKTRACE__)}"
+          )
+
+          {:error, {:init_failed, error}}
+      end
+    else
+      Logger.warning(
+        "[#{__MODULE__}] Application module #{inspect(app_module)} does not export init/1. Using default empty state."
+      )
+
+      # Default if init/1 is not exported
+      {%{}, []}
+    end
+  end
+
+  @spec delegate_update(module(), message(), model()) ::
+          {model(), list(Command.t())} | {:error, term()}
+  def delegate_update(app_module, message, current_model)
       when is_atom(app_module) do
     if function_exported?(app_module, :update, 2) do
       try do
@@ -193,7 +231,7 @@ defmodule Raxol.Core.Runtime.Application do
       rescue
         error ->
           Logger.error(
-            "[#{__MODULE__}] Error executing #{inspect(app_module)}.update/2: #{inspect(error)}\nStacktrace: #{inspect(__STACKTRACE__)}"
+            "[#{__MODULE__}] Error executing #{inspect(app_module)}.update/2: #{inspect(error)}\\nStacktrace: #{inspect(__STACKTRACE__)}"
           )
 
           {:error, {:update_failed, error}}
@@ -216,4 +254,79 @@ defmodule Raxol.Core.Runtime.Application do
     # TODO: Implement actual config fetching (e.g., from Application env)
     Application.get_env(app, key, default)
   end
+
+  @callback init(context :: context()) ::
+              {model(), [command()]}
+              | {model(), command()}
+              | model()
+              | {:error, term()}
+
+  @callback update(message :: message(), model :: model()) ::
+              {model(), [command()]} | {model(), command()} | model()
+
+  @callback view(model :: model()) :: Raxol.UI.Layout.element() | nil
+
+  @callback subscriptions(model :: model()) :: [Raxol.Core.Runtime.Subscription.t()] | Raxol.Core.Runtime.Subscription.t() | []
+
+  # Optional callbacks
+  @callback handle_event(Raxol.Core.Events.Event.t()) :: message() | :halt | nil
+  @callback handle_tick(model :: model()) :: {model(), [command()]}
+  @callback handle_message(message :: any(), model :: model()) ::
+             {model(), [command()]}
+
+  @callback terminate(reason :: any(), model :: model()) :: any()
+
+  # --- Placeholder Implementations for Helper Functions ---
+  # These are not part of the behaviour but are called by the runtime.
+
+  @doc """
+  Initializes the application state.
+
+  Called once when the application starts. The context map contains runtime
+  information such as terminal dimensions, environment variables, and startup
+  arguments.
+
+  Returns either:
+  - Initial state: `state()`
+  - State and commands: `{state(), [command()]}`
+  """
+  def init(app_module, context) do
+    if function_exported?(app_module, :init, 1) do
+      case app_module.init(context) do
+        {model, commands} when is_list(commands) -> {model, commands}
+        {model, command} -> {model, [command]}
+        model when is_map(model) -> {model, []}
+        {:error, _} = error -> error
+        _ -> {:error, :invalid_init_return}
+      end
+    else
+      # Default implementation if init/1 is not defined
+      {%{}, []}
+    end
+  end
+
+  @doc """
+  Handles incoming events or messages and updates the application state.
+
+  Returns the updated model and optional commands to execute.
+  """
+  def update(app_module, message, model) do
+    if function_exported?(app_module, :update, 2) do
+       case app_module.update(message, model) do
+        {updated_model, commands} when is_list(commands) -> {updated_model, commands}
+        {updated_model, command} -> {updated_model, [command]}
+        updated_model when is_map(updated_model) -> {updated_model, []}
+        # Allow returning only commands? Maybe not standard TEA.
+        _ ->
+          # Assume no change if return value is unexpected
+          {model, []}
+      end
+    else
+       # Default implementation if update/2 is not defined
+      {model, []}
+    end
+  end
+
+  # Add other delegating functions as needed (view, subscriptions, handle_event)
+
 end

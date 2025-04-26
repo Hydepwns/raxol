@@ -1,236 +1,154 @@
 defmodule Raxol.Components.Selection.List do
   @moduledoc """
-  A list component with keyboard navigation, selection handling, and filtering support.
-
-  ## Props
-    * `:items` - List of items to display
-    * `:selected_index` - Index of the selected item (default: 0)
-    * `:height` - Height of the list (default: 10)
-    * `:width` - Width of the list (default: 40)
-    * `:style` - Style map for customizing appearance
-      * `:text_color` - Color of the text (default: :white)
-      * `:selected_color` - Color of selected item (default: :blue)
-      * `:selected_text_color` - Color of text in selected item (default: :white)
-    * `:filter` - Current filter text (default: "")
-    * `:render_item` - Function to render an item (default: &to_string/1)
-    * `:filter_item` - Function to filter an item (default: string contains)
-    * `:on_select` - Function called when an item is selected
-    * `:on_submit` - Function called when Enter is pressed
+  A component for displaying a selectable list of items.
   """
 
-  use Raxol.Component
-
-  alias Raxol.Core.Events.Subscription
-  alias Raxol.View
+  # Use standard component behaviour
+  use Raxol.UI.Components.Base.Component
+  require Logger
+  # Require view macros
+  require Raxol.View.Elements
 
   @default_height 10
-  @default_width 40
-  @default_style %{
-    text_color: :white,
-    selected_color: :blue,
-    selected_text_color: :white
-  }
 
-  @impl true
+  # Define state struct
+  defstruct id: nil,
+            items: [],
+            selected_index: 0,
+            scroll_offset: 0,
+            width: 30, # Example default
+            height: @default_height,
+            style: %{},
+            focused: false,
+            on_select: nil,
+            item_renderer: nil # Remove default function capture
+
+  # --- Component Behaviour Callbacks ---
+
+  @impl Raxol.UI.Components.Base.Component
   def init(props) do
-    items = props[:items] || []
-
-    %{
-      items: items,
-      filtered_items: items,
-      selected_index: props[:selected_index] || 0,
+    # Initialize state
+    %__MODULE__{
+      id: props[:id],
+      items: props[:items] || [],
+      selected_index: props[:initial_index] || 0,
+      width: props[:width] || 30,
       height: props[:height] || @default_height,
-      width: props[:width] || @default_width,
-      style: Map.merge(@default_style, props[:style] || %{}),
-      filter: props[:filter] || "",
-      scroll_offset: 0,
-      render_item: props[:render_item] || (&to_string/1),
-      filter_item: props[:filter_item] || (&default_filter/2),
+      style: props[:style] || %{},
       on_select: props[:on_select],
-      on_submit: props[:on_submit],
-      focused: false
+      # Set default renderer here if not provided
+      item_renderer: props[:item_renderer] || &default_item_renderer/1
     }
   end
 
-  @impl true
-  def update({:set_items, items}, state) do
-    filtered = filter_items(items, state.filter, state.filter_item)
-
-    %{
-      state
-      | items: items,
-        filtered_items: filtered,
-        selected_index: 0,
-        scroll_offset: 0
-    }
+  @impl Raxol.UI.Components.Base.Component
+  def update(msg, state) do
+    # Handle internal messages (selection, scrolling)
+    Logger.debug("List #{state.id} received message: #{inspect msg}")
+    case msg do
+      :select_next -> select_item(state.selected_index + 1, state)
+      :select_prev -> select_item(state.selected_index - 1, state)
+      :focus -> {%{state | focused: true}, []}
+      :blur -> {%{state | focused: false}, []}
+      {:select_index, index} -> select_item(index, state)
+      _ -> {state, []}
+    end
   end
 
-  def update({:set_filter, filter}, state) do
-    filtered = filter_items(state.items, filter, state.filter_item)
-
-    %{
-      state
-      | filter: filter,
-        filtered_items: filtered,
-        selected_index: 0,
-        scroll_offset: 0
-    }
+  @impl Raxol.UI.Components.Base.Component
+  def handle_event(event, %{} = _props, state) do # Correct arity
+    # Handle keyboard (up/down/enter), mouse clicks
+    Logger.debug("List #{state.id} received event: #{inspect event}")
+    case event do
+      %{type: :key, data: %{key: "Up"}} -> update(:select_prev, state)
+      %{type: :key, data: %{key: "Down"}} -> update(:select_next, state)
+      %{type: :key, data: %{key: "Enter"}} -> confirm_selection(state)
+      %{type: :mouse, data: %{button: :left, action: :press, y: y_pos}} -> handle_click(y_pos, state)
+      _ -> {state, []}
+    end
   end
 
-  def update({:select_index, index}, state) do
-    new_index = clamp(index, 0, length(state.filtered_items) - 1)
-    new_scroll = adjust_scroll(new_index, state.scroll_offset, state.height)
+  # --- Render Logic ---
 
-    new_state = %{state | selected_index: new_index, scroll_offset: new_scroll}
+  @impl Raxol.UI.Components.Base.Component
+  def render(state, %{} = _props) do # Correct arity
+    # Determine visible items based on scroll offset and height
+    visible_items = Enum.slice(state.items, state.scroll_offset, state.height)
 
-    if state.on_select do
-      _ = state.on_select.(Enum.at(state.filtered_items, new_index))
+    # Render each visible item
+    item_elements = Enum.with_index(visible_items, state.scroll_offset)
+                    |> Enum.map(fn {item, index} ->
+                      is_selected = (index == state.selected_index)
+                      render_item(item, is_selected, state)
+                    end)
+
+    dsl_result = Raxol.View.Elements.box id: state.id, style: %{width: state.width, height: state.height} do
+      Raxol.View.Elements.column do
+        item_elements
+      end
     end
 
-    new_state
+    # Return the element structure directly
+    dsl_result
   end
 
-  def update(:scroll_up, state) do
-    new_scroll = max(0, state.scroll_offset - 1)
-    %{state | scroll_offset: new_scroll}
-  end
+  # --- Internal Render Helpers ---
 
-  def update(:scroll_down, state) do
-    max_scroll = max(0, length(state.filtered_items) - state.height)
-    new_scroll = min(max_scroll, state.scroll_offset + 1)
-    %{state | scroll_offset: new_scroll}
-  end
+  defp render_item(item_data, is_selected, state) do
+    base_style = %{width: :fill} # Ensure item fills width
+    selected_style = %{bg: :blue, fg: :white}
 
-  def update(:focus, state), do: %{state | focused: true}
-  def update(:blur, state), do: %{state | focused: false}
-  def update(_msg, state), do: state
+    style = if is_selected and state.focused, do: Map.merge(base_style, selected_style), else: base_style
 
-  @impl true
-  @dialyzer {:nowarn_function, render: 1}
-  def render(state) do
-    dsl_result =
-      View.box style: %{width: state.width, height: state.height} do
-        state.items
-        |> Enum.slice(state.scroll_offset, state.height)
-        |> Enum.with_index(state.scroll_offset)
-        |> Enum.map(fn {item, index} ->
-          render_item(item, index, state)
-        end)
-      end
+    # Use the custom renderer or default
+    content = state.item_renderer.(item_data)
 
-    Raxol.View.to_element(dsl_result)
-  end
-
-  defp render_item(item, index, state) do
-    content = state.render_item.(item)
-    is_selected = index == state.selected_index
-    # Use component's focused state
-    is_focused = is_selected and state.focused
-
-    style =
+    # Ensure display_content is always a valid element or list of elements
+    display_content =
       cond do
-        is_focused -> state.style.focused_item_style
-        is_selected -> state.style.selected_item_style
-        true -> state.style.item_style
+        is_binary(content) -> Raxol.View.Elements.label(content: content)
+        is_map(content) and Map.has_key?(content, :type) -> content # Assume valid element
+        true -> Raxol.View.Elements.label(content: to_string(content)) # Default fallback
       end
 
-    # Prepend cursor if focused
-    display_content = if is_focused, do: "> " <> content, else: "  " <> content
-
-    View.text(display_content, style: style)
+    Raxol.View.Elements.box style: style do [display_content] end # Pass as list
   end
 
-  @impl true
-  def handle_event(%Event{type: :key, data: data} = _event, state) do
-    msg =
-      case data do
-        %{key: :up} ->
-          {:move_selection, :up}
+  # --- Internal Logic Helpers ---
 
-        %{key: :down} ->
-          {:move_selection, :down}
-
-        %{key: :page_up} ->
-          {:move_selection, :page_up}
-
-        %{key: :page_down} ->
-          {:move_selection, :page_down}
-
-        %{key: :home} ->
-          {:move_selection, :home}
-
-        %{key: :end} ->
-          {:move_selection, :end}
-
-        %{key: :enter} ->
-          {:select}
-
-        %{key: key} when is_binary(key) and byte_size(key) == 1 ->
-          {:filter, key}
-
-        %{key: :backspace} ->
-          {:backspace}
-
-        _ ->
-          nil
-      end
-
-    if msg do
-      {update(msg, state), []}
-    else
-      {state, []}
-    end
+  defp select_item(index, state) do
+    new_index = clamp(index, 0, length(state.items) - 1)
+    new_offset = adjust_scroll(new_index, state.scroll_offset, state.height)
+    {%{state | selected_index: new_index, scroll_offset: new_offset}, []}
   end
 
-  @impl true
-  def handle_event(%Event{type: :click}, state) do
-    {update(:focus, state), []}
+  defp confirm_selection(state) do
+    selected_item = Enum.at(state.items, state.selected_index)
+    commands = if state.on_select && selected_item, do: [{state.on_select, selected_item}], else: []
+    {state, commands}
   end
 
-  @impl true
-  def handle_event(%Event{type: :blur}, state) do
-    {update(:blur, state), []}
+  defp handle_click(y_pos, state) do
+    # Calculate index based on click position relative to component top
+    clicked_index = state.scroll_offset + y_pos
+    # Select the clicked item and confirm it
+    {new_state, _} = select_item(clicked_index, state)
+    confirm_selection(new_state)
   end
 
-  @impl true
-  def handle_event(%Event{type: :scroll, data: %{direction: :up}}, state) do
-    {update(:scroll_up, state), []}
+  defp clamp(value, min_val, max_val) do
+    value |> max(min_val) |> min(max_val)
   end
 
-  @impl true
-  def handle_event(%Event{type: :scroll, data: %{direction: :down}}, state) do
-    {update(:scroll_down, state), []}
-  end
-
-  # Helper functions
-  defp clamp(value, min, max) do
-    value |> max(min) |> min(max)
-  end
-
-  defp adjust_scroll(selected_index, scroll_offset, height) do
+  defp adjust_scroll(index, offset, height) do
     cond do
-      selected_index < scroll_offset ->
-        selected_index
-
-      selected_index >= scroll_offset + height ->
-        selected_index - height + 1
-
-      true ->
-        scroll_offset
+      index < offset -> index
+      index >= offset + height -> index - height + 1
+      true -> offset
     end
   end
 
-  defp filter_items(items, filter, filter_fn) do
-    if filter == "" do
-      items
-    else
-      Enum.filter(items, &filter_fn.(&1, filter))
-    end
-  end
+  # Default item renderer just converts to string
+  defp default_item_renderer(item), do: to_string(item)
 
-  defp default_filter(item, filter) do
-    item_str = to_string(item)
-    filter_str = String.downcase(filter)
-    String.contains?(String.downcase(item_str), filter_str)
-  end
 end

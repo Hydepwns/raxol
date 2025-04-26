@@ -4,11 +4,11 @@ defmodule Raxol.Components.Progress.Spinner do
 
   ## Props
     * `:style` - The animation style to use (default: :dots)
-      * `:dots` - Rotating dots (⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏)
-      * `:line` - Rotating line (|/-\\)
-      * `:bounce` - Bouncing ball (⠁⠂⠄⠂)
-      * `:pulse` - Pulsing circle (●○)
-      * `:custom` - Custom animation using `:frames`
+    * `:dots` - Rotating dots (⠋⠙⠹⠸⠼⠴⠦⠧⠇⠏)
+    * `:line` - Rotating line (|/-\\)
+    * `:bounce` - Bouncing ball (⠁⠂⠄⠂)
+    * `:pulse` - Pulsing circle (●○)
+    * `:custom` - Custom animation using `:frames`
     * `:frames` - List of characters to use for custom animation
     * `:colors` - List of colors to transition between
     * `:speed` - Animation speed in milliseconds (default: 80)
@@ -16,9 +16,10 @@ defmodule Raxol.Components.Progress.Spinner do
     * `:text_position` - Position of text relative to spinner (:left or :right, default: :right)
   """
 
-  use Raxol.Component
+  use Raxol.UI.Components.Base.Component
 
-  alias Raxol.View
+  require Logger
+  import Raxol.View.Elements
 
   @default_speed 80
   @default_style :dots
@@ -101,37 +102,43 @@ defmodule Raxol.Components.Progress.Spinner do
   def update(_msg, state), do: state
 
   @impl true
-  @dialyzer {:nowarn_function, render: 1}
-  def render(state) do
-    spinner_char = Enum.at(state.style.chars, state.frame)
+  def render(%{} = _props, state) do
+    spinner_char = Enum.at(state.frames, state.frame_index)
+    spinner_color = Enum.at(state.colors, state.color_index)
+    spinner_style = [color: spinner_color]
+    label_style = [color: :white] # Assuming a default label style
 
-    # Generate DSL map
+    # Use label macro from imported Raxol.View.Elements
     dsl_result =
-      View.box style: %{width: state.width, height: 1} do
-        if state.label do
-          View.text("#{state.label} #{spinner_char}",
-            style: state.style.label_style
-          )
+      row do # Use the imported row macro
+        if state.text do
+          spinner_content = label(content: spinner_char, style: spinner_style)
+          label_content = label(content: state.text, style: label_style)
+          case state.text_position do
+            :left -> [label_content, label(content: " "), spinner_content]
+            _ -> [spinner_content, label(content: " "), label_content]
+          end
         else
-          View.text(spinner_char, style: state.style.spinner_style)
+          label(content: spinner_char, style: spinner_style)
         end
       end
 
     # Convert to Element struct
-    to_element(dsl_result)
+    dsl_result # Return the DSL map directly, LayoutEngine handles it
   end
 
-  @impl true
-  def handle_event(%Event{type: :timer, data: %{id: _timer_id}}, state) do
-    {update(:tick, state), []}
+  @impl Raxol.UI.Components.Base.Component
+  def handle_event(%{type: :timer, data: %{id: _timer_id}} = _event, %{} = _props, state) do
+    # Access event fields using dot notation if needed
+    # Logger.debug("Spinner timer event: #{inspect event.data}")
+    next_frame = rem(state.frame_index + 1, length(state.frames))
+    # Return updated state and potentially commands
+    {%{state | frame_index: next_frame}, []}
   end
 
-  # Also handle :frame events for ticking the animation
-  def handle_event(%Event{type: :frame}, state) do
-    {update(:tick, state), []}
-  end
-
-  def handle_event(_event, state), do: {state, []}
+  # Catch-all handle_event
+  @impl Raxol.UI.Components.Base.Component
+  def handle_event(_event, %{} = _props, state), do: {state, []}
 
   # Helper functions for common spinner configurations
   def loading(text \\ "Loading") do

@@ -1,6 +1,9 @@
 defmodule Raxol.Examples.UXRefinementDemo do
-  use Raxol.App
-  # removed: @behaviour Raxol.Core.Runtime.Application
+  use Raxol.Core.Runtime.Application
+  # Remove use Component
+  # use Raxol.UI.Components.Base.Component
+  # Removed conflicting behaviour
+  # @behaviour Raxol.UI.Components.Base.Component
 
   @moduledoc """
   Demo example showcasing the User Experience Refinement components.
@@ -17,22 +20,28 @@ defmodule Raxol.Examples.UXRefinementDemo do
   ```
   """
 
-  import Raxol.View,
+  import Raxol.Core.Renderer.View,
     except: [row: 2, column: 1, button: 1, text_input: 1, label: 2, space: 1]
 
-  import Raxol.View.Components,
-    only: [button: 1, text_input: 1, label: 2, space: 1]
-
-  import Raxol.View.Elements, only: [panel: 2]
   alias Raxol.Core.UXRefinement
   alias Raxol.Core.FocusManager
-  # alias Raxol.Core.KeyboardNavigator # Module seems to be missing
-  alias Raxol.Components.HintDisplay
   alias Raxol.Components.FocusRing
-  alias Raxol.View.Layout
-
-  # alias Raxol.View.Components # Removed alias, use explicit imports or direct macros
+  alias Raxol.Core.Runtime.Command
+  alias Raxol.View.Elements, as: UI
   require Logger
+
+  require Raxol.View.Elements
+
+  defstruct [
+    # Focus state
+    current_view: :main,
+    focus_id: "button_1",
+    username: "",
+    password: "",
+    focused_component: "username_input",
+    show_help: false,
+    focus_ring_model: Raxol.Components.FocusRing.init(%{animation: :pulse})
+  ]
 
   @doc """
   Run the UX Refinement demo application.
@@ -52,7 +61,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
       password: "",
       focused_component: "username_input",
       show_help: false,
-      focus_ring_model: FocusRing.init(%{animation: :pulse})
+      focus_ring_model: Raxol.Components.FocusRing.init(%{animation: :pulse})
     }
 
     # Enable UX refinement features
@@ -62,12 +71,12 @@ defmodule Raxol.Examples.UXRefinementDemo do
     _ = UXRefinement.enable_feature(:response_optimization)
 
     # Configure the focus ring appearance
-    FocusRing.configure(
-      style: :dotted,
-      color: :cyan,
-      animation: :pulse,
-      offset: 1
-    )
+    # FocusRing.configure(
+    #   style: :dotted,
+    #   color: :cyan,
+    #   animation: :pulse,
+    #   offset: 1
+    # )
 
     # Initialize keyboard navigation
     # KeyboardNavigator.init()
@@ -138,144 +147,164 @@ defmodule Raxol.Examples.UXRefinementDemo do
     }
 
     Process.put(:element_position_registry, element_registry)
+
+    # Start Raxol with the demo application using Lifecycle
+    Raxol.Core.Runtime.Lifecycle.start_application(__MODULE__, %{
+        form_data: %{username: "", password: ""},
+        focused_field: :username,
+        show_help: false,
+        focus_ring_model: Raxol.Components.FocusRing.init(%{animation: :pulse})
+      }
+    )
+
+    # Example: Configure focus ring after startup (if needed)
+    # This logic should likely be part of the application's init or update flow
+    # Commenting out as FocusRing.configure/1 is removed
+    # FocusRing.configure(
+    #   Raxol.Core.Runtime.Application.get_state(), # Needs access to state
+    #   animation: :blink,
+    #   color: :cyan
+    # )
   end
 
   @doc """
   Placeholder init/1 callback to satisfy the behaviour.
   """
+  @impl true
   def init(_opts) do
-    # Initialize the app state
-    initial_state = %{
-      username: "",
-      password: "",
-      focused_component: "username_input",
+    # Example initialization, focusing the first field
+    {:ok, %{
+      form_data: %{username: "", password: ""},
+      focused_field: :username,
       show_help: false,
-      focus_ring_model: FocusRing.init(%{animation: :pulse})
-    }
-
-    # Return state directly or {state, commands}
-    # Or {initial_state, []}
-    initial_state
+      # Initialize FocusRing component state
+      focus_ring_model: Raxol.Components.FocusRing.init(%{animation: :pulse})
+    }}
   end
 
   @doc """
   Render the application UI.
   """
   @dialyzer {:nowarn_function, view: 1}
+  @impl Raxol.Core.Runtime.Application
   def view(model) do
-    # Call the local render helper function
-    rendered_view = render(model, [])
-    rendered_view
-  end
+    focused_id = FocusManager.get_focused_element()
 
-  # This is a local helper function, not part of the Application behaviour
-  @dialyzer {:nowarn_function, render: 2}
-  def render(model, _opts) do
-    focused = FocusManager.get_focused_element()
+    # Get hints for the focused element
+    # Combine basic hint and shortcuts for display
+    basic_hint = UXRefinement.get_hint(focused_id)
+    shortcuts = UXRefinement.get_component_shortcuts(focused_id)
+    shortcut_hints = Enum.map(shortcuts, fn {key, desc} -> "#{key}: #{desc}" end)
 
-    # Main layout
-    # Use the panel macro directly
-    rendered_panel =
-      panel background: :default, height: "100%", width: "100%" do
-        # Layout the three main sections
-        Layout.row height: "100%" do
-          Layout.column padding: 1 do
-            if model.show_help do
-              render_help_dialog()
-            else
-              # Form elements
-              Layout.row padding_bottom: 1 do
-                label_element = label("Username:", width: 10)
+    all_hints = [basic_hint | shortcut_hints] |> List.flatten() |> Enum.reject(&is_nil/1)
 
-                input_element =
-                  text_input(
-                    id: "username_input",
-                    value: model.username,
-                    width: 30,
-                    focus: focused == "username_input"
-                  )
+    # Main layout - Wrap in a box to contain HintDisplay at bottom
+    UI.box do
+      [
+        # Main content area (takes up most space)
+        UI.box style: %{height: "fill-1"} do
+          # Layout the three main sections
+          Raxol.View.Elements.row height: "100%" do
+            Raxol.View.Elements.column padding: 1 do
+              # Wrap all children in an explicit list
+              [
+                if model.show_help do
+                  render_help_dialog()
+                else
+                  # Form elements need to be a list too for the outer list
+                  [
+                    Raxol.View.Elements.row padding_bottom: 1 do
+                      label_element = Raxol.View.Elements.label(content: "Username:", style: %{width: 10})
 
-                [label_element, input_element]
-              end
+                      input_element =
+                        Raxol.View.Elements.text_input(
+                          id: "username_input",
+                          value: model.form_data.username,
+                          width: 30,
+                          focus: focused_id == "username_input"
+                        )
 
-              Layout.row padding_bottom: 1 do
-                label_element = label("Password:", width: 10)
+                      [label_element, input_element]
+                    end,
+                    Raxol.View.Elements.row padding_bottom: 1 do
+                      label_element = Raxol.View.Elements.label(content: "Password:", style: %{width: 10})
 
-                input_element =
-                  text_input(
-                    id: "password_input",
-                    value: model.password,
-                    width: 30,
-                    password: true,
-                    focus: focused == "password_input"
-                  )
+                      input_element =
+                        Raxol.View.Elements.text_input(
+                          id: "password_input",
+                          value: model.form_data.password,
+                          width: 30,
+                          password: true,
+                          focus: focused_id == "password_input"
+                        )
 
-                [label_element, input_element]
-              end
+                      [label_element, input_element]
+                    end,
+                    Raxol.View.Elements.row padding_top: 1 do
+                      login_button =
+                        Raxol.View.Elements.button(
+                          id: "login_button",
+                          label: "Login",
+                          width: 10,
+                          focus: focused_id == "login_button"
+                        )
 
-              Layout.row padding_top: 1 do
-                login_button =
-                  button(
-                    id: "login_button",
-                    label: "Login",
-                    width: 10,
-                    focus: focused == "login_button"
-                  )
+                      space_element = Raxol.View.Elements.label(content: " ")
 
-                space_element = space(width: 2)
+                      reset_button =
+                        Raxol.View.Elements.button(
+                          id: "reset_button",
+                          label: "Reset",
+                          width: 10,
+                          focus: focused_id == "reset_button"
+                        )
 
-                reset_button =
-                  button(
-                    id: "reset_button",
-                    label: "Reset",
-                    width: 10,
-                    focus: focused == "reset_button"
-                  )
+                      space_element2 = Raxol.View.Elements.label(content: " ")
 
-                space_element2 = space(width: 2)
+                      help_button =
+                        Raxol.View.Elements.button(
+                          id: "help_button",
+                          label: "Help",
+                          width: 10,
+                          focus: focused_id == "help_button"
+                        )
 
-                help_button =
-                  button(
-                    id: "help_button",
-                    label: "Help",
-                    width: 10,
-                    focus: focused == "help_button"
-                  )
-
-                [
-                  login_button,
-                  space_element,
-                  reset_button,
-                  space_element2,
-                  help_button
-                ]
-              end
-            end
-
-            # Render the focus ring for the focused element
-            FocusRing.render(model.focus_ring_model)
-
-            # Keyboard shortcut info
-            Layout.row padding_top: 2 do
-              text_element =
-                text("Tab: Next field | Shift+Tab: Previous field | Esc: Exit",
-                  align: :center
-                )
-
-              [text_element]
-            end
-
-            # Hint display at the bottom
-            Layout.row bottom: 0, left: 0, width: "100%" do
-              hint_element = HintDisplay.render(focused)
-
-              [hint_element]
+                      [login_button, space_element, reset_button, space_element2, help_button]
+                    end
+                  ]
+                end
+              ]
             end
           end
-        end
-      end
+        end,
 
-    rendered_panel
+        # Hint display at the bottom
+        Raxol.View.Elements.component(
+          Raxol.Components.HintDisplay,
+          id: :hint_display,
+          hints: all_hints,
+          position: :bottom
+          # Style can be added here if needed
+        ),
+
+        # Render FocusRing component
+        # Fetch mock position (replace with actual layout data later)
+        element_registry = Process.get(:element_position_registry, %{}),
+        focused_position = Map.get(element_registry, focused_id),
+
+        # Render only if focused element has a position
+        if focused_position do
+          Raxol.View.Elements.component(
+            Raxol.Components.FocusRing,
+            id: :focus_ring, # Assign an ID
+            model: model.focus_ring_model,
+            focused_element_id: focused_id,
+            focused_element_position: focused_position
+            # Pass other props if needed, e.g., animation: :pulse
+          )
+        end
+      ]
+    end
   end
 
   @doc """
@@ -287,10 +316,10 @@ defmodule Raxol.Examples.UXRefinementDemo do
       case msg do
         # Text input updates
         {:input, "username_input", value} ->
-          %{model | username: value}
+          %{model | form_data: %{model.form_data | username: value}}
 
         {:input, "password_input", value} ->
-          %{model | password: value}
+          %{model | form_data: %{model.form_data | password: value}}
 
         # Button clicks
         {:click, "login_button"} ->
@@ -337,7 +366,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
   defp render_help_dialog do
     # Use the panel macro directly
     rendered_dialog =
-      panel title: "Help",
+      Raxol.View.Elements.panel title: "Help",
             padding: 1,
             height: 12,
             width: 40,
@@ -348,23 +377,54 @@ defmodule Raxol.Examples.UXRefinementDemo do
               left: "50%",
               transform: "translate(-50%, -50%)"
             } do
-        Layout.column do
-          text("This is a demo of the UX Refinement features in Raxol.")
-          text("Use Tab and Shift+Tab to navigate between form fields.")
-          text("The focus ring indicates which element is focused.")
-          text("Hints at the bottom provide context for each element.")
+        Raxol.View.Elements.column do
+          [
+            Raxol.View.Elements.label(content: "This is a demo of the UX Refinement features in Raxol."),
+            Raxol.View.Elements.label(content: "Use Tab and Shift+Tab to navigate between form fields."),
+            Raxol.View.Elements.label(content: "The focus ring indicates which element is focused."),
+            Raxol.View.Elements.label(content: "Hints at the bottom provide context for each element."),
 
-          Layout.row padding_top: 2 do
-            button(
-              id: "close_help",
-              label: "Close",
-              width: 10,
-              on_click: {:close_help}
-            )
-          end
+            Raxol.View.Elements.row padding_top: 2 do
+              [
+                 Raxol.View.Elements.button(
+                   id: "close_help",
+                   label: "Close",
+                   width: 10,
+                   on_click: {:close_help}
+                 )
+              ]
+            end
+          ] # End list of children for column
         end
       end
 
     rendered_dialog
   end
+
+  # --- Placeholder Hint Function ---
+  defp get_hints_for(_focused_component_id), do: []
+
+  # Correct arity for Application behaviour
+  @impl Raxol.Core.Runtime.Application
+  def handle_event(_event) do
+    # State is managed by Dispatcher, just return commands
+    []
+  end
+
+  # Correct arity for Application behaviour
+  @impl Raxol.Core.Runtime.Application
+  def handle_message(_msg, state), do: {state, []}
+
+  # Correct arity for Application behaviour
+  @impl Raxol.Core.Runtime.Application
+  def handle_tick(_tick) do
+    # State is managed by Dispatcher, just return commands
+    []
+  end
+
+  @impl Raxol.Core.Runtime.Application
+  def subscriptions(_state), do: []
+
+  @impl Raxol.Core.Runtime.Application
+  def terminate(_reason, _state), do: :ok
 end

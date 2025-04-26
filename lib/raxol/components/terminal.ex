@@ -1,252 +1,84 @@
 defmodule Raxol.Components.Terminal do
   @moduledoc """
-  A terminal component for Raxol that provides terminal emulation capabilities.
-
-  This component handles:
-  - Terminal output buffer
-  - Cursor management
-  - ANSI escape code processing
-  - Input handling
-  - Terminal state management
+  A terminal component that emulates a standard terminal within the UI.
   """
 
-  use Raxol.Component
-  alias Raxol.Components.Terminal.ANSI
-  # alias Raxol.Style # Unused
-  # alias Raxol.Terminal.Buffer # Unused
-  # import Raxol.View.Components
-  # import Raxol.View.Layout
+  # Use standard component behaviour
+  use Raxol.UI.Components.Base.Component
+  require Logger
 
-  @type terminal_state :: %{
-          buffer: [String.t()],
-          cursor: {integer(), integer()},
-          dimensions: {integer(), integer()},
-          mode: :normal | :insert | :command,
-          history: [String.t()],
-          history_index: integer(),
-          scroll_offset: integer(),
-          style: map(),
-          ansi_state: ANSI.ansi_state()
-        }
+  # Require view macros
+  require Raxol.View.Elements
 
-  # Helper to create initial empty cells grid
-  defp initial_cells(cols, rows) do
-    # Assuming default cell structure from ANSI module
-    default_cell = %{char: " ", style: %{}, dirty: true}
-    List.duplicate(List.duplicate(default_cell, cols), rows)
-  end
+  # Define state struct
+  defstruct id: nil,
+            width: 80,
+            height: 24,
+            # Add buffer, emulator state, etc.
+            buffer: [], # Example: List of lines
+            style: %{}
 
-  @doc """
-  Initializes a new terminal component.
+  # --- Component Behaviour Callbacks ---
 
-  ## Options
-
-  * `:rows` - Number of rows (default: 24)
-  * `:cols` - Number of columns (default: 80)
-  * `:prompt` - Command prompt string (default: "$ ")
-  * `:style` - Terminal style options
-  """
-  @impl Raxol.Component
-  def init(opts) when is_map(opts) do
-    rows = Map.get(opts, :rows, 24)
-    cols = Map.get(opts, :cols, 80)
-    prompt = Map.get(opts, :prompt, "$ ")
-    # Initial cursor position might need adjustment if prompt is written
-    # Start at top-left for now
-    initial_cursor = {0, 0}
-    initial_cells = initial_cells(cols, rows)
-
-    # Note: Prompt is not written to initial cells here, needs separate handling if required at init.
-
-    %{
-      # Keep existing buffer for now, might need later refactoring
-      buffer: [prompt],
-      buffer_content: prompt,
-      # Main cursor, might diverge from ansi_state.cursor
-      cursor: initial_cursor,
-      width: cols,
-      height: rows,
-      mode: :normal,
-      history: [],
-      history_index: 0,
-      scroll_offset: 0,
-      style:
-        Map.merge(
-          %{
-            padding: [1, 1],
-            border: :rounded,
-            background: :black,
-            color: :white
-          },
-          Map.get(opts, :style, %{})
-        ),
-      ansi_state: %{
-        cursor: initial_cursor,
-        # Initial ANSI style\
-        style: %{},
-        # Correctly structured cells\
-        cells: initial_cells,
-        # Dimensions needed by ANSI.process/5\
-        dimensions: {cols, rows}
-      }
+  @impl Raxol.UI.Components.Base.Component
+  def init(props) do
+    # Initialize terminal emulator state, buffer, etc.
+    %__MODULE__{
+      id: props[:id],
+      width: props[:width] || 80,
+      height: props[:height] || 24,
+      style: props[:style] || %{}
+      # Initialize buffer, etc.
     }
   end
 
-  @doc """
-  Handles terminal events.
-  """
-  @impl Raxol.Component
-  def handle_event(%Event{type: :key} = event, state) do
-    case state.mode do
-      :normal -> handle_normal_mode(event, state)
-      :insert -> handle_insert_mode(event, state)
-      :command -> handle_command_mode(event, state)
+  @impl Raxol.UI.Components.Base.Component
+  def update(msg, state) do
+    # Handle messages to write to terminal, clear, etc.
+    Logger.debug("Terminal #{state.id} received message: #{inspect msg}")
+    # Placeholder
+    {state, []}
+  end
+
+  @impl Raxol.UI.Components.Base.Component
+  def handle_event(%{type: :key} = event, %{} = _props, state) do # Use map matching
+    # Process key event, send to terminal emulator/process
+    Logger.debug("Terminal #{state.id} received key event: #{inspect event.data}")
+    # Placeholder: Append key to buffer for simple echo
+    new_buffer = state.buffer ++ ["Key: #{inspect event.data.key}"]
+    {%{state | buffer: new_buffer}, []}
+  end
+
+  # Catch-all handle_event
+  @impl Raxol.UI.Components.Base.Component
+  def handle_event(event, %{} = _props, state) do
+    Logger.debug("Terminal #{state.id} received event: #{inspect event.type}")
+    {state, []}
+  end
+
+  # --- Render Logic ---
+
+  @impl Raxol.UI.Components.Base.Component
+  def render(state, %{} = _props) do
+    # Render the terminal buffer content
+    # Assuming buffer is a list of strings
+    # Needs proper cell grid rendering based on actual emulator state
+
+    # Use View Elements macros
+    lines = Enum.map(state.buffer, &Raxol.View.Elements.label(content: &1))
+
+    dsl_result = Raxol.View.Elements.box id: state.id, width: state.width, height: state.height, style: state.style do
+      Raxol.View.Elements.column do
+        lines
+      end
     end
+
+    # Return the element structure directly
+    dsl_result
   end
 
-  def handle_event(%Event{type: :output, data: output}, state) do
-    # Extract arguments for ANSI.process/5 - REMOVED as ANSI.process/5 is undefined/refactored
-    # %{
-    #   cells: current_cells,
-    #   cursor: current_cursor,
-    #   style: current_style,
-    #   dimensions: dims
-    # } = state.ansi_state
+  # --- Internal Helpers ---
 
-    # Process ANSI codes in the output - REMOVED
-    # {new_cells, new_cursor, new_style} =
-    #   ANSI.process(output, current_cells, current_cursor, current_style, dims)
+  # Remove old handle_event/3 with @impl Component
 
-    # Update terminal ansi_state - REMOVED
-    # new_ansi_state = %{
-    #   state.ansi_state
-    #   | cells: new_cells,
-    #     cursor: new_cursor,
-    #     style: new_style
-    # }
-
-    # TODO: Implement proper ANSI processing using Raxol.Terminal.Emulator
-    #       or remove ANSI handling from this component if not needed.
-    # For now, just append raw output.
-    new_content = state.buffer_content <> output
-
-    # Update cursor naively (just moves to end of new content for now - adjust row if needed)
-    # Assuming single line for simplicity
-    new_cursor = {String.length(new_content), state.cursor |> elem(1)}
-
-    # Update main state. Note: we now primarily use ansi_state for buffer/cursor/style.
-    # The top-level state.cursor/style might become redundant or serve a different purpose.
-    %{
-      state
-      | # | buffer: ... # Buffer update logic needs review; ANSI.process returns cells, not lines -> Use buffer_content
-        buffer_content: new_content,
-        # Update main cursor from ANSI state -> Update naively
-        cursor: new_cursor
-        # Merge styles -> Style update removed for now
-        # style: Map.merge(state.style, new_style),
-        # ansi_state: new_ansi_state # ANSI state update removed for now
-    }
-  end
-
-  def handle_event(%Event{type: :resize, data: {cols, rows}} = _event, state) do
-    # Update dimensions in both main state and ansi_state
-    # TODO: Need a way to resize the ansi_state.cells grid in ANSI module or here.
-    # For now, just update the dimensions value.
-    new_dims = {cols, rows}
-    updated_ansi_state = %{state.ansi_state | dimensions: new_dims}
-    %{state | width: cols, height: rows, ansi_state: updated_ansi_state}
-  end
-
-  # Ensure handle_event returns {state, commands}
-  def handle_event(_event, state), do: {state, []}
-
-  @doc """
-  Renders the terminal component.
-  """
-  @impl true
-  def render(state) do
-    # Generate the DSL map structure for the terminal
-    dsl_result = %{
-      # Special type handled by Runtime
-      type: :terminal,
-      # Pass raw content
-      content: state.buffer_content,
-      dimensions: {state.width, state.height},
-      cursor: state.cursor,
-      # Pass base style
-      style: state.style
-    }
-
-    # Convert to Element struct
-    Raxol.View.to_element(dsl_result)
-  end
-
-  # Private functions
-
-  defp handle_normal_mode(%Event{type: :key, data: %{key: :i}}, state) do
-    {%{state | mode: :insert}, []}
-  end
-
-  defp handle_normal_mode(%Event{type: :key, data: %{key: :colon}}, state) do
-    {%{state | mode: :command, command_buffer: ":"}, []}
-  end
-
-  defp handle_normal_mode(%Event{type: :key, data: %{key: :up}}, state) do
-    {update(:move_cursor_up, state), []}
-  end
-
-  defp handle_normal_mode(%Event{type: :key, data: %{key: :down}}, state) do
-    {update(:move_cursor_down, state), []}
-  end
-
-  defp handle_normal_mode(_event, state), do: state
-
-  defp handle_insert_mode(%Event{type: :key, data: %{key: key}}, state)
-       when is_binary(key) do
-    {update(:insert_char, state, key), []}
-  end
-
-  defp handle_insert_mode(%Event{type: :key, data: %{key: :escape}}, state) do
-    {%{state | mode: :normal}, []}
-  end
-
-  defp handle_insert_mode(_event, state), do: state
-
-  defp handle_command_mode(%Event{type: :key, data: %{key: :enter}}, state) do
-    {update(:execute_command, state), []}
-  end
-
-  defp handle_command_mode(%Event{type: :key, data: %{key: :escape}}, state) do
-    {%{state | mode: :normal, command_buffer: ""}, []}
-  end
-
-  defp handle_command_mode(_event, state), do: state
-
-  def update(:insert_char, state, char) do
-    %{state | buffer: state.buffer <> char}
-  end
-
-  @impl true
-  def update(:move_cursor_up, state) do
-    if state.history_index < length(state.history) do
-      %{state | history_index: state.history_index + 1}
-    else
-      state
-    end
-  end
-
-  def update(:move_cursor_down, state) do
-    if state.history_index > 0 do
-      %{state | history_index: state.history_index - 1}
-    else
-      state
-    end
-  end
-
-  def update(:execute_command, state) do
-    # Execute command and reset mode
-    %{state | mode: :normal}
-  end
-
-  # Public API
 end

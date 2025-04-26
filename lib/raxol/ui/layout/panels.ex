@@ -46,32 +46,43 @@ defmodule Raxol.UI.Layout.Panels do
 
   The dimensions of the panel: %{width: w, height: h}
   """
-  def measure(
+  def measure_panel(
         %{type: :panel, attrs: attrs, children: children},
         available_space
       ) do
-    # panel = %{type: :panel, attrs: attrs, children: children}, # Unused
-    # Measure children first to determine intrinsic size
-    _children_size =
-      Engine.measure_element(
-        %{type: :column, children: children},
-        available_space
-      )
+    # Calculate space available for content (inside borders)
+    content_available_space = %{
+      available_space
+      | width: max(0, available_space.width - 2), # 1 cell border left/right
+        height: max(0, available_space.height - 2) # 1 cell border top/bottom
+    }
 
-    # Default to using all available space unless specifically constrained
-    width = Map.get(attrs, :width, available_space.width)
-    height = Map.get(attrs, :height, available_space.height)
+    # Measure children content size (treat as a column for measurement)
+    children_size = Engine.measure_element(%{type: :column, children: children}, content_available_space)
 
-    # Enforce minimum sizes
-    # Minimum width to accommodate borders
-    min_width = max(width, 4)
-    # Minimum height to accommodate borders and title
-    min_height = max(height, 3)
+    # Determine base width/height from content + borders
+    # Add 2 for left/right borders
+    content_width = children_size.width + 2
+    # Add 2 for top/bottom borders
+    content_height = children_size.height + 2
+
+    # Use explicit width/height if provided, otherwise use content size
+    explicit_width = Map.get(attrs, :width)
+    explicit_height = Map.get(attrs, :height)
+
+    width = explicit_width || content_width
+    height = explicit_height || content_height
+
+    # Ensure minimum dimensions (e.g., for borders)
+    min_width = 2
+    min_height = 2
+    width = max(width, min_width)
+    height = max(height, min_height)
 
     # Return dimensions constrained to available space
     %{
-      width: min(min_width, available_space.width),
-      height: min(min_height, available_space.height)
+      width: min(width, available_space.width),
+      height: min(height, available_space.height)
     }
   end
 

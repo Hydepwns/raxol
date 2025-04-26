@@ -10,8 +10,8 @@ defmodule Raxol.Components.Input.TextInput do
   * Placeholder text
   """
 
-  use Raxol.Component
-  # alias Raxol.Style # Unused
+  use Raxol.UI.Components.Base.Component
+  require Raxol.Core.Renderer.View
 
   @type state :: %{
           value: String.t(),
@@ -21,10 +21,6 @@ defmodule Raxol.Components.Input.TextInput do
           placeholder: String.t() | nil,
           password: boolean()
         }
-
-  # @default_width 40 # Unused
-
-  # @behaviour Raxol.Component # Redundant: already included by `use Raxol.Component`
 
   @doc false
   @impl true
@@ -41,32 +37,35 @@ defmodule Raxol.Components.Input.TextInput do
 
   @impl true
   def update(msg, state) do
-    case msg do
-      {:input, char} when is_integer(char) ->
-        insert_char(state, char)
+    new_state =
+      case msg do
+        {:input, char} when is_integer(char) ->
+          insert_char(state, char)
 
-      {:backspace} ->
-        delete_char(state)
+        {:backspace} ->
+          delete_char(state)
 
-      {:cursor, :left} ->
-        move_cursor(state, -1)
+        {:cursor, :left} ->
+          move_cursor(state, -1)
 
-      {:cursor, :right} ->
-        move_cursor(state, 1)
+        {:cursor, :right} ->
+          move_cursor(state, 1)
 
-      {:focus} ->
-        %{state | focused: true}
+        {:focus} ->
+          %{state | focused: true}
 
-      {:blur} ->
-        %{state | focused: false}
+        {:blur} ->
+          %{state | focused: false}
 
-      _ ->
-        state
-    end
+        _ ->
+          state
+      end
+    # Return {state, commands}
+    {new_state, []}
   end
 
   @impl true
-  def render(state) do
+  def render(%{} = _props, state) do
     # Render using basic Raxol.View elements
     display = display_value(state)
     style = if state.focused, do: [:bold], else: []
@@ -79,37 +78,27 @@ defmodule Raxol.Components.Input.TextInput do
     # TODO: Implement visual cursor rendering (e.g., underscore or inverse)
     # This is complex due to character widths and terminal capabilities.
     # For now, just render the text content with focus style.
-    dsl_result = Raxol.View.text(display, style: style)
-    Raxol.View.to_element(dsl_result)
+    dsl_result = Raxol.Core.Renderer.View.text(display, style: style)
+    dsl_result
   end
 
   @impl true
-  def handle_event(%Event{type: :key, data: key_data} = _event, state) do
-    msg =
-      case key_data do
-        {:char, c} -> {:input, c}
-        :backspace -> {:backspace}
-        :left -> {:cursor, :left}
-        :right -> {:cursor, :right}
-        _ -> nil
-      end
-
-    if msg do
-      {update(msg, state), []}
-    else
-      {state, []}
-    end
+  def handle_event(%{type: :key, data: key_data} = _event, %{} = _props, state) do
+    handle_key_event(key_data, state)
   end
 
-  def handle_event(%Event{type: :focus}, state) do
-    {update({:focus}, state), []}
+  @impl true
+  def handle_event(%{type: :focus}, %{} = _props, state) do
+    {Map.put(state, :focused, true), []}
   end
 
-  def handle_event(%Event{type: :blur}, state) do
-    {update({:blur}, state), []}
+  @impl true
+  def handle_event(%{type: :blur}, %{} = _props, state) do
+    {Map.put(state, :focused, false), []}
   end
 
-  def handle_event(_, state), do: {state, []}
+  @impl true
+  def handle_event(_event, %{} = _props, state), do: {state, []}
 
   # Private helpers
 
@@ -145,4 +134,42 @@ defmodule Raxol.Components.Input.TextInput do
   defp display_value(%{value: value}) do
     value
   end
+
+  defp handle_key_event(key_data, state) do
+    msg =
+      case key_data do
+        %{key: char, modifiers: []} when is_binary(char) and byte_size(char) == 1 ->
+          {:input, char}
+
+        %{key: :backspace, modifiers: []} ->
+          {:backspace}
+
+        %{key: :left, modifiers: []} ->
+          {:move_cursor, :left}
+
+        %{key: :right, modifiers: []} ->
+          {:move_cursor, :right}
+
+        # TODO: Add Home, End, Delete keys
+        %{key: :home, modifiers: []} ->
+          {:move_cursor, :home}
+
+        %{key: :end, modifiers: []} ->
+          {:move_cursor, :end}
+
+        %{key: :delete, modifiers: []} ->
+          {:delete}
+
+        _ ->
+          nil # Ignore other keys
+      end
+
+    if msg do
+      {update(msg, state), []}
+    else
+      {state, []}
+    end
+  end
+
+  # TODO: Add options for max length, validation regex/function, etc.
 end

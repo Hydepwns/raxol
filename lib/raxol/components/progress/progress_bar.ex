@@ -1,174 +1,128 @@
 defmodule Raxol.Components.Progress.ProgressBar do
   @moduledoc """
-  A progress bar component that displays progress as a horizontal bar.
-
-  ## Props
-    * `:value` - Current progress value (0-100)
-    * `:width` - Width of the progress bar in characters (default: 20)
-    * `:style` - Style of the progress bar (default: :basic)
-      * `:basic` - Uses simple ASCII characters
-      * `:block` - Uses block characters for smoother appearance
-      * `:custom` - Uses custom characters provided in `:characters`
-    * `:color` - Color of the progress bar (default: :blue)
-    * `:gradient` - List of colors to create a gradient effect (overrides :color)
-    * `:characters` - Map with :filled and :empty characters for custom style
-    * `:show_percentage` - Whether to show percentage value (default: true)
-    * `:label` - Optional label to show before the progress bar
+  A component to display a progress bar.
   """
 
-  use Raxol.Component
-  require Raxol.View
-  alias Raxol.View.Layout
-  alias Raxol.View.Components
+  # Use standard component behaviour
+  use Raxol.UI.Components.Base.Component
+  require Logger
 
-  @default_width 40
-  @default_style :basic
-  @default_color :blue
+  # Require view macros
+  require Raxol.View.Elements
+  # Alias view helper if needed
+  # alias Raxol.Core.Renderer.View
 
-  @impl true
+  # Define state struct
+  defstruct id: nil,
+            value: 0,
+            max: 100,
+            width: 20,
+            style: %{},
+            label: nil,
+            label_position: :below, # :above, :below, :right
+            show_percentage: false
+
+  # --- Component Behaviour Callbacks ---
+
+  @impl Raxol.UI.Components.Base.Component
   def init(props) do
-    %{
+    # Initialize state from props
+    %__MODULE__{
+      id: props[:id],
       value: props[:value] || 0,
-      width: props[:width] || @default_width,
-      style: props[:style] || @default_style,
-      color: props[:color] || @default_color,
-      gradient: props[:gradient],
-      characters: props[:characters],
-      show_percentage: Map.get(props, :show_percentage, true),
-      label: props[:label]
+      max: props[:max] || 100,
+      width: props[:width] || 20,
+      style: props[:style] || %{},
+      label: props[:label],
+      label_position: props[:label_position] || :below,
+      show_percentage: props[:show_percentage] || false
     }
   end
 
-  @impl true
-  def update({:set_progress, value}, state) when value >= 0 and value <= 100 do
-    %{state | value: value}
+  @impl Raxol.UI.Components.Base.Component
+  def update(msg, state) do
+    # Handle messages to update value
+    Logger.debug("ProgressBar #{state.id} received message: #{inspect msg}")
+    case msg do
+      {:set_value, value} when is_number(value) ->
+        {%{state | value: clamp(value, 0, state.max)}, []}
+      _ -> {state, []}
+    end
   end
 
-  def update({:set_style, style}, state)
-      when style in [:basic, :block, :custom] do
-    %{state | style: style}
+  @impl Raxol.UI.Components.Base.Component
+  def handle_event(event, %{} = _props, state) do
+    # Handle events if needed
+    Logger.debug("ProgressBar #{state.id} received event: #{inspect event}")
+    {state, []}
   end
 
-  def update({:set_color, color}, state) do
-    %{state | color: color, gradient: nil}
-  end
+  # --- Render Logic ---
 
-  def update({:set_gradient, colors}, state) when is_list(colors) do
-    %{state | gradient: colors, color: nil}
-  end
-
-  def update({:set_characters, chars}, state) when is_map(chars) do
-    %{state | characters: chars}
-  end
-
-  # Catch-all clause to match Component behavior
-  def update(_msg, state), do: state
-
-  @impl true
-  @dialyzer {:nowarn_function, render: 1}
-  def render(state) do
-    # Determine bar characters based on style
-    {filled_char, empty_char} =
-      case state.style.type do
-        :block ->
-          {"█", "░"}
-
-        :ascii ->
-          {"#", "-"}
-
-        :custom ->
-          {state.style.custom_chars.filled, state.style.custom_chars.empty}
-
-        # Default to block
-        _ ->
-          {"█", "░"}
-      end
-
-    # Calculate filled/empty segments
-    percentage = state.value / state.total
-    filled_width = round(percentage * state.width)
+  @impl Raxol.UI.Components.Base.Component
+  def render(state, %{} = _props) do # Correct arity
+    # Calculate fill
+    percentage = state.value / state.max
+    filled_width = round(state.width * percentage)
     empty_width = state.width - filled_width
 
-    # Build the bar text
-    bar_text =
-      String.duplicate(filled_char, filled_width) <>
-        String.duplicate(empty_char, empty_width)
+    # Define styles (example)
+    filled_style = Map.get(state.style, :filled, %{bg: :green})
+    empty_style = Map.get(state.style, :empty, %{bg: :gray})
+    label_style = Map.get(state.style, :label, %{})
+    percentage_style = Map.get(state.style, :percentage, %{})
 
-    # Determine colors
-    # Example default
-    bar_fg = Map.get(state.style, :fg, :green)
-    bar_bg = Map.get(state.style, :bg, nil)
+    # Create bar portions
+    filled_portion = Raxol.View.Elements.label(content: String.duplicate(" ", filled_width), style: filled_style)
+    empty_portion = Raxol.View.Elements.label(content: String.duplicate(" ", empty_width), style: empty_style)
 
-    # Generate the DSL map AND convert to element in one step
-    # Layout: [Label] [Progress Bar] [Percentage Text]
-    dsl_result =
-      Layout.column do
-        label_element =
-          if state.label do
-            Components.text(state.label, style: state.style.label_style)
-          else
-            nil
-          end
+    # Create label/percentage texts/elements conditionally
+    percentage_text = if state.show_percentage, do: " #{round(percentage * 100)}%", else: nil
+    label_content = state.label
 
-        bar_row =
-          Layout.row style: %{width: :auto} do
-            percentage_element =
-              if state.show_percentage do
-                percentage_text = format_percentage(state.value, state.total)
-
-                Components.text(" #{percentage_text}",
-                  style: state.style.percentage_style
-                )
-              else
-                nil
-              end
-
-            # Explicitly return list for row's children, filtering nil
+    # Combine based on label position
+    rendered_view = case state.label_position do
+      :above ->
+        Raxol.View.Elements.column id: state.id do
+          Raxol.View.Elements.row style: %{justify: :space_between} do
             [
-              # Progress Bar Segment
-              Layout.box style: %{width: state.width, bg: bar_bg} do
-                # Explicitly return list for box's children
-                [Components.text(bar_text, style: %{fg: bar_fg})]
-              end,
-              # Percentage Text Segment (if enabled)
-              percentage_element
-            ]
-            |> Enum.reject(&is_nil(&1))
+              (if label_content, do: Raxol.View.Elements.label(content: label_content, style: label_style), else: nil),
+              (if percentage_text, do: Raxol.View.Elements.label(content: percentage_text, style: percentage_style), else: nil)
+            ] |> Enum.reject(&is_nil(&1))
           end
+          Raxol.View.Elements.row do [filled_portion, empty_portion] end
+        end
+      :below ->
+        Raxol.View.Elements.column id: state.id do
+           Raxol.View.Elements.row do [filled_portion, empty_portion] end
+           Raxol.View.Elements.row style: %{justify: :space_between} do
+            [
+              (if label_content, do: Raxol.View.Elements.label(content: label_content, style: label_style), else: nil),
+              (if percentage_text, do: Raxol.View.Elements.label(content: percentage_text, style: percentage_style), else: nil)
+            ] |> Enum.reject(&is_nil(&1))
+          end
+        end
+      :right ->
+        Raxol.View.Elements.row id: state.id do
+          [
+            Raxol.View.Elements.row do [filled_portion, empty_portion] end,
+            (if label_content, do: Raxol.View.Elements.label(content: label_content, style: label_style), else: nil),
+            (if percentage_text, do: Raxol.View.Elements.label(content: percentage_text, style: percentage_style), else: nil)
+          ] |> Enum.reject(&is_nil(&1))
+        end
+    end
 
-        # Explicitly return list for column's children, filtering nil
-        [label_element, bar_row] |> Enum.reject(&is_nil(&1))
-      end
-
-    # Convert DSL map to Element struct
-    Raxol.View.to_element(dsl_result)
+    # Return element structure
+    rendered_view
+    # Or wrap: View.to_element(rendered_view)
   end
 
-  @impl true
-  def handle_event(
-        %{type: :progress_update, data: %{value: value}} = _event,
-        state
-      )
-      when is_number(value) do
-    {update(:set_value, state, value), []}
+  # --- Internal Helpers ---
+
+  defp clamp(value, min_val, max_val) do
+    value |> max(min_val) |> min(max_val)
   end
 
-  # Default clause for other events
-  def handle_event(_event, state), do: {state, []}
+  # Remove old render/1 and handle_event/2 if they existed
 
-  # Update function (internal)
-  defp update(:set_value, state, value) do
-    new_value = clamp(value, state.total)
-    %{state | value: new_value}
-  end
-
-  # Helper functions (clamp, format_percentage, etc.)
-  defp clamp(value, max, min \\ 0) do
-    value |> Kernel.max(min) |> Kernel.min(max)
-  end
-
-  defp format_percentage(value, total) do
-    percentage = round(value / total * 100)
-    "#{percentage}%"
-  end
 end

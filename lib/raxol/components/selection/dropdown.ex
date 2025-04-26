@@ -1,246 +1,165 @@
 defmodule Raxol.Components.Selection.Dropdown do
   @moduledoc """
-  A dropdown component that combines a trigger button with a popup list of options.
-
-  ## Props
-    * `:items` - List of items to display in the dropdown
-    * `:selected_item` - Currently selected item
-    * `:placeholder` - Text to display when no item is selected (default: "Select...")
-    * `:width` - Width of the dropdown (default: 30)
-    * `:max_height` - Maximum height of the dropdown list when open (default: 10)
-    * `:style` - Style map for customizing appearance
-      * `:text_color` - Color of the text (default: :white)
-      * `:placeholder_color` - Color of placeholder text (default: :gray)
-      * `:border_color` - Color of the border (default: :white)
-      * `:selected_color` - Color of selected item (default: :blue)
-      * `:selected_text_color` - Color of text in selected item (default: :white)
-    * `:render_item` - Function to render an item (default: &to_string/1)
-    * `:filter_item` - Function to filter an item (default: string contains)
-    * `:on_change` - Function called when selection changes
+  A dropdown component that allows selecting one option from a list.
   """
 
-  use Raxol.Component
+  # Use standard component behaviour
+  use Raxol.UI.Components.Base.Component
+  require Logger
+
+  # Require List component and View macros/helpers
   alias Raxol.Components.Selection.List
-  alias Raxol.View.Layout
-  alias Raxol.View.Components
+  require Raxol.View.Elements
 
-  @default_width 30
-  @default_max_height 10
-  @default_style %{
-    text_color: :white,
-    placeholder_color: :gray,
-    border_color: :white,
-    selected_color: :blue,
-    selected_text_color: :white
-  }
+  # Define state struct
+  defstruct id: nil,
+            options: [],
+            selected_option: nil,
+            expanded: false,
+            width: 20, # Example default
+            list_height: 5, # Example default
+            style: %{},
+            focused: false,
+            on_change: nil,
+            # Nested list state
+            list_state: nil
 
-  @impl true
+  # --- Component Behaviour Callbacks ---
+
+  @impl Raxol.UI.Components.Base.Component
   def init(props) do
-    items = props[:items] || []
+    # Initialize state, including nested List state
+    options = props[:options] || [] # Ensure options is a list
+    initial_option = props[:initial_value] || Enum.at(options, 0) # Use Enum.at for safety
+    width = props[:width] || 20
 
-    %{
-      items: items,
-      selected_item: props[:selected_item],
-      placeholder: props[:placeholder] || "Select...",
-      width: props[:width] || @default_width,
-      max_height: props[:max_height] || @default_max_height,
-      style: Map.merge(@default_style, props[:style] || %{}),
-      is_open: false,
-      filter: "",
-      render_item: props[:render_item] || (&to_string/1),
-      filter_item: props[:filter_item] || (&default_filter/2),
+    list_props = %{
+      id: "#{props[:id]}-list",
+      items: props[:options] || [],
+      width: width, # Match dropdown width
+      height: props[:list_height] || 5,
+      on_select: {:list_item_selected} # Internal message
+      # Pass item_renderer if needed
+    }
+
+    %__MODULE__{
+      id: props[:id],
+      options: props[:options] || [],
+      selected_option: initial_option,
+      width: width,
+      list_height: props[:list_height] || 5,
+      style: props[:style] || %{},
       on_change: props[:on_change],
-      focused: false,
-      list_state: init_list_state(props)
+      # Initialize nested list component
+      list_state: List.init(list_props)
     }
   end
 
-  defp init_list_state(props) do
-    List.init(%{
-      items: props[:items] || [],
-      # Account for borders
-      width: (props[:width] || @default_width) - 2,
-      height: props[:max_height] || @default_max_height,
-      style: Map.merge(@default_style, props[:style] || %{}),
-      render_item: props[:render_item] || (&to_string/1),
-      filter_item: props[:filter_item] || (&default_filter/2),
-      # We'll set this in the update function
-      on_select: nil,
-      # We'll set this in the update function
-      on_submit: nil
-    })
+  @impl Raxol.UI.Components.Base.Component
+  def update(msg, state) do
+    # Handle internal messages and messages from nested list
+    Logger.debug("Dropdown #{state.id} received message: #{inspect msg}")
+    case msg do
+      :toggle_expand ->
+        new_state = %{state | expanded: !state.expanded}
+        # Update focus on nested list when expanding/collapsing
+        list_focus_msg = if new_state.expanded, do: :focus, else: :blur
+        {list_state, list_cmds} = List.update(list_focus_msg, new_state.list_state)
+        {%{new_state | list_state: list_state}, list_cmds}
+
+      {:list_item_selected, selected_item} ->
+        # Item selected in the list, update dropdown state and collapse
+        new_state = %{state | selected_option: selected_item, expanded: false}
+        commands = if state.on_change, do: [{state.on_change, selected_item}], else: []
+        {new_state, commands}
+
+      :focus -> {%{state | focused: true}, []}
+      :blur -> {%{state | expanded: false, focused: false}, []} # Collapse on blur
+
+      # Forward other relevant messages to the list component
+      {:list_msg, list_message} when state.expanded ->
+         {new_list_state, list_cmds} = List.update(list_message, state.list_state)
+         {%{state | list_state: new_list_state}, list_cmds}
+
+      _ -> {state, []}
+    end
   end
 
-  @impl true
-  def update({:set_items, items}, state) do
-    list_state = List.update({:set_items, items}, state.list_state)
-    %{state | items: items, list_state: list_state}
+  @impl Raxol.UI.Components.Base.Component # Added @impl
+  def handle_event(%{type: :key, data: key_data} = event, %{} = _props, state) do
+    Logger.debug("Dropdown #{state.id} received event: #{inspect event}")
+    # Handle keys to toggle expansion, or forward to list if expanded
+    case key_data.key do
+      "Enter" when not state.expanded -> update(:toggle_expand, state)
+      "Escape" when state.expanded -> update(:toggle_expand, state)
+      _ ->
+        if state.expanded do
+          # Forward event to the list component using handle_event/3
+          {new_list_state, list_cmds} = List.handle_event(event, %{}, state.list_state)
+          {%{state | list_state: new_list_state}, list_cmds}
+        else
+          # Handle other keys for collapsed dropdown if needed
+          {state, []}
+        end
+    end
   end
 
-  def update({:select_item, item}, state) do
-    new_state = %{state | selected_item: item, is_open: false, filter: ""}
-    if state.on_change, do: state.on_change.(item)
-    new_state
+  # Catch-all handle_event
+  @impl Raxol.UI.Components.Base.Component
+  def handle_event(event, %{} = _props, state) do
+    Logger.debug("Dropdown #{state.id} received event: #{inspect event.type}")
+    case event do
+       %{type: :mouse, data: %{button: :left, action: :press}} ->
+         # Toggle expansion on click
+         update(:toggle_expand, state)
+      _ ->
+         {state, []}
+    end
   end
 
-  def update({:set_filter, filter}, state) do
-    list_state = List.update({:set_filter, filter}, state.list_state)
-    %{state | filter: filter, list_state: list_state}
-  end
+  # --- Render Logic ---
 
-  def update(:toggle, state) do
-    %{state | is_open: not state.is_open, filter: "", focused: true}
-  end
-
-  def update(:close, state) do
-    %{state | is_open: false, filter: ""}
-  end
-
-  def update(:focus, state), do: %{state | focused: true}
-  def update(:blur, state), do: %{state | focused: false, is_open: false}
-  def update(_msg, state), do: state
-
-  @impl true
-  @spec render(map()) :: Raxol.Core.Renderer.Element.t() | nil
-  @dialyzer {:nowarn_function, render: 1}
-  def render(state) do
-    if state.is_open do
-      dsl_result_expanded = render_expanded(state)
-      Raxol.View.to_element(dsl_result_expanded)
+  @impl Raxol.UI.Components.Base.Component
+  def render(state, %{} = _props) do
+    dsl_result = if state.expanded do
+      render_expanded(state)
     else
-      dsl_result_collapsed = render_collapsed(state)
-      Raxol.View.to_element(dsl_result_collapsed)
+      render_collapsed(state)
     end
+    # Return the element structure directly
+    dsl_result
   end
 
-  @dialyzer {:nowarn_function, render_collapsed: 1}
-  @spec render_collapsed(map()) :: map()
+  # --- Internal Render Helpers ---
+
   defp render_collapsed(state) do
-    selected_label = get_selected_label(state)
-    # Render a box that looks like a closed dropdown
-    Layout.box style: %{border: :single, width: state.width} do
-      [
-        Layout.row style: %{width: :fill} do
-          [
-            Components.text(selected_label, style: %{width: :fill}),
-            # Down arrow indicator
-            Components.text(" ▼")
-          ]
-        end
-      ]
+    # Display selected option and indicator
+    display_text = to_string(state.selected_option || "Select...") <> " ▼"
+    # Use View Elements macros
+    Raxol.View.Elements.box id: state.id, style: %{border: :single, width: state.width} do
+      Raxol.View.Elements.row style: %{width: :fill} do
+        Raxol.View.Elements.label(content: display_text)
+      end
     end
   end
 
-  @dialyzer {:nowarn_function, render_expanded: 1}
-  @spec render_expanded(map()) :: map()
   defp render_expanded(state) do
-    Layout.column do
-      # Explicitly return a list for the column's children
-      [
-        # Show the collapsed view first
-        _collapsed_view = render_collapsed(state),
-        # Then render the list of options below
-        Layout.box style: %{border: :single, width: state.width} do
-          # Determine the selected index
-          selected_index =
-            cond do
-              is_integer(state.selected_item) ->
-                state.selected_item
-
-              not is_nil(state.selected_item) ->
-                # Find index of the item in the list
-                Enum.find_index(state.items, fn item ->
-                  item == state.selected_item
-                end)
-
-              true ->
-                nil
-            end
-
-          # Capture the result of List.render
-          list_elements =
-            List.render(%{
-              items: state.items,
-              render_item: state.render_item,
-              selected_index: selected_index,
-              # Adjust for border
-              width: state.width - 2,
-              # Or a max height
-              height: Enum.count(state.items)
-            })
-
-          # Return the result
-          list_elements
-        end
-      ]
+    # Display selected option box and the list component below
+    display_text = to_string(state.selected_option || "Select...") <> " ▲"
+    # Use View Elements macros
+    Raxol.View.Elements.column id: state.id do
+      # Box for the selected item display
+      Raxol.View.Elements.box style: %{border: :single, width: state.width} do
+         Raxol.View.Elements.row style: %{width: :fill} do
+           Raxol.View.Elements.label(content: display_text)
+         end
+      end
+      # Render the list component (render/2 returns an Element)
+      List.render(state.list_state, %{})
     end
   end
 
-  defp get_selected_label(state) do
-    cond do
-      is_integer(state.selected_item) ->
-        # If selected_item is an index
-        selected_item = Enum.at(state.items, state.selected_item)
+  # Remove old handle_dropdown_keys (logic moved to handle_event)
+  # Remove old @impl Component annotation
 
-        if selected_item,
-          do: state.render_item.(selected_item),
-          else: state.placeholder
-
-      not is_nil(state.selected_item) ->
-        # If selected_item is the actual item value
-        state.render_item.(state.selected_item)
-
-      true ->
-        # Default case
-        state.placeholder
-    end
-  end
-
-  @impl true
-  def handle_event(%Event{type: :key, data: key_data} = event, state) do
-    cond do
-      # Delegate to List component when open and focused?
-      # Assuming List component handles Up/Down/Enter/Selection internally
-      state.is_open and state.focused ->
-        {new_list_state, commands} = List.handle_event(event, state.list_state)
-
-        # Check if List component selected an item (emitted command? Or changed state?)
-        # Need to know how List signals selection back up. Assuming it calls on_select/on_submit.
-        # For now, just update list_state.
-        # If list selection triggers on_select/on_submit which calls our update(:select_item, ...)
-        # then this might work.
-        {%{state | list_state: new_list_state}, commands}
-
-      # Toggle open/closed with Enter/Space when closed
-      (key_data == %{key: :enter} or key_data == %{key: " "}) and
-          not state.is_open ->
-        {update(:toggle, state), []}
-
-      # Close with Escape when open
-      key_data == %{key: :escape} and state.is_open ->
-        {update(:close, state), []}
-
-      # Ignore other keys when closed or not focused
-      true ->
-        {state, []}
-    end
-  end
-
-  def handle_event(%Event{type: :click}, state) do
-    # Toggle on click regardless of focus?
-    {update(:toggle, state), []}
-  end
-
-  def handle_event(%Event{type: :blur}, state) do
-    {update(:blur, state), []}
-  end
-
-  def handle_event(_event, state), do: {state, []}
-
-  # Helper functions
-  defp default_filter(item, filter) do
-    item_str = to_string(item)
-    filter_str = String.downcase(filter)
-    String.contains?(String.downcase(item_str), filter_str)
-  end
 end

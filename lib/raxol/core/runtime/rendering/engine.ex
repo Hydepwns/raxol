@@ -89,7 +89,6 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   # --- Private Helpers ---
 
-  @doc false
   defp do_render_frame(model, theme, state) do
     try do
       # 1. Get the view from the application
@@ -122,41 +121,13 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       end
     rescue
       error ->
-        Logger.error("Render error: #{inspect(error)} \n #{Exception.format_stacktrace(System.stacktrace())}")
+        Logger.error(
+          "Render error: #{inspect(error)} \n #{Exception.format_stacktrace(__STACKTRACE__)}"
+        )
+
         {:error, {:render_error, error}, state}
     end
   end
-
-  @doc """
-  Processes a view tree into a collection of renderable cells.
-
-  This takes the element tree from the application's view function
-  and converts it into a flat list of cells that can be rendered
-  to the screen buffer.
-
-  ## Parameters
-  - `view`: The element tree from the application's view function
-  - `component_state`: The current component state
-
-  ## Returns
-  A tuple of `{cells, updated_component_state}`.
-  """
-
-  # def process_view(view, component_state) do
-  #   # Process the view tree to create cells
-  #   {cells, updated_component_state} =
-  #     Element.to_cells(view, %{
-  #       width: 0,
-  #       height: 0,
-  #       x: 0,
-  #       y: 0,
-  #       components: component_state,
-  #       theme: Theme.current()
-  #     })
-  #
-  #   # Return cells and the updated component state
-  #   {cells, updated_component_state}
-  # end
 
   # --- Private Rendering Backends ---
 
@@ -193,33 +164,33 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     end
   end
 
-  defp send_buffer_to_vscode(cells, state) do
+  defp send_buffer_to_vscode(cells, _state) do
     # Convert cells to VS Code format
-    vscode_cells =
-      Enum.map(cells, fn {x, y, ch, fg, bg, attrs} ->
+    _vscode_cells =
+      Enum.map(cells, fn {x, y, char, fg, bg, _attrs} ->
         %{
           x: x,
           y: y,
-          char: ch,
+          char: char,
           fg: convert_color_to_vscode(fg),
           bg: convert_color_to_vscode(bg),
-          bold: Enum.member?(attrs || [], :bold),
-          underline: Enum.member?(attrs || [], :underline),
-          italic: Enum.member?(attrs || [], :italic)
+          bold: false,
+          underline: false,
+          italic: false
         }
       end)
 
-    # Send to VS Code
-    Raxol.StdioInterface.send_message(%{
-      type: "render",
-      payload: %{
-        cells: vscode_cells,
-        width: state.width,
-        height: state.height
-      }
-    })
+    # TODO: Handle other modes if necessary
 
-    {:ok, state}
+    # Commented out as StdioInterface is likely obsolete
+    # Raxol.StdioInterface.send_message(%{
+    #   type: "render",
+    #   payload: %{
+    #     buffer: buffer,
+    #     dimensions: dimensions
+    #   }
+    # })
+    :ok
   end
 
   defp convert_color_to_vscode(color) do

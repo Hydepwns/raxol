@@ -333,35 +333,63 @@ defmodule Raxol.Terminal.DriverTest do
     test "parses and dispatches Home/End key sequences", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # Home: \\e[H or \\e[1~
       send(driver_pid, {:io_reply, make_ref(), "\\e[H"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :home}}}, 500
+
+      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :home}}},
+                     500
+
       send(driver_pid, {:io_reply, make_ref(), "\\e[1~"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :home}}}, 500
+
+      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :home}}},
+                     500
 
       # End: \\e[F or \\e[4~
       send(driver_pid, {:io_reply, make_ref(), "\\e[F"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :end}}}, 500
+
+      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :end}}},
+                     500
+
       send(driver_pid, {:io_reply, make_ref(), "\\e[4~"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :end}}}, 500
+
+      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :end}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches PageUp/PageDown key sequences", %{original_stty: _} do
+    test "parses and dispatches PageUp/PageDown key sequences", %{
+      original_stty: _
+    } do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # PageUp: \\e[5~
       send(driver_pid, {:io_reply, make_ref(), "\\e[5~"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :page_up}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :page_up}}},
+                     500
 
       # PageDown: \\e[6~
       send(driver_pid, {:io_reply, make_ref(), "\\e[6~"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :page_down}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :page_down}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -369,11 +397,19 @@ defmodule Raxol.Terminal.DriverTest do
     test "parses and dispatches Delete key sequence", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # Delete: \\e[3~
       send(driver_pid, {:io_reply, make_ref(), "\\e[3~"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :delete}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :delete}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -381,13 +417,27 @@ defmodule Raxol.Terminal.DriverTest do
     test "parses and dispatches Backspace/Ctrl+H", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # Backspace (often sends ^H or ^?)
-      send(driver_pid, {:io_reply, make_ref(), <<8>>}) # Ctrl+H
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :backspace}}}, 500
-      send(driver_pid, {:io_reply, make_ref(), <<127>>}) # DEL (sometimes used for backspace)
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :backspace}}}, 500
+      # Ctrl+H
+      send(driver_pid, {:io_reply, make_ref(), <<8>>})
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :backspace}}},
+                     500
+
+      # DEL (sometimes used for backspace)
+      send(driver_pid, {:io_reply, make_ref(), <<127>>})
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :backspace}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -395,15 +445,24 @@ defmodule Raxol.Terminal.DriverTest do
     test "parses and dispatches Tab/Shift+Tab", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # Tab: \\t (character 9)
       send(driver_pid, {:io_reply, make_ref(), <<9>>})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :tab}}}, 500
+
+      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :tab}}},
+                     500
 
       # Shift+Tab: \\e[Z
       send(driver_pid, {:io_reply, make_ref(), "\\e[Z"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :back_tab}}}, # Use :back_tab for Shift+Tab
+      # Use :back_tab for Shift+Tab
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :back_tab}}},
                      500
 
       Process.exit(driver_pid, :shutdown)
@@ -412,11 +471,20 @@ defmodule Raxol.Terminal.DriverTest do
     test "parses and dispatches Enter/Ctrl+M", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # Enter (often sends ^M)
-      send(driver_pid, {:io_reply, make_ref(), <<13>>}) # Ctrl+M (Carriage Return)
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :enter}}}, 500
+      # Ctrl+M (Carriage Return)
+      send(driver_pid, {:io_reply, make_ref(), <<13>>})
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :enter}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -424,16 +492,24 @@ defmodule Raxol.Terminal.DriverTest do
     test "parses and dispatches Escape key", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # Escape: \\e (character 27) - Note: might be buffered if part of a sequence
       send(driver_pid, {:io_reply, make_ref(), <<27>>})
+
       # Sending ESC alone might not immediately trigger an event if the driver waits
       # for potential subsequent characters in an escape sequence.
       # Add a small delay or send another character to force processing.
-      :timer.sleep(50) # Adjust delay as needed based on driver's buffering logic
+      # Adjust delay as needed based on driver's buffering logic
+      :timer.sleep(50)
 
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :esc}}}, 100
+      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :esc}}},
+                     100
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -441,7 +517,12 @@ defmodule Raxol.Terminal.DriverTest do
     test "handles input buffering for escape sequences", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # Send partial sequence \\e[
       send(driver_pid, {:io_reply, make_ref(), "\\e["})
@@ -451,7 +532,8 @@ defmodule Raxol.Terminal.DriverTest do
       # Send the rest of the sequence 'A' for Up Arrow
       send(driver_pid, {:io_reply, make_ref(), "A"})
       # Should now receive the complete event
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up}}}, 500
+      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -468,26 +550,40 @@ defmodule Raxol.Terminal.DriverTest do
 
       # Ctrl+A (SOH)
       send(driver_pid, {:io_reply, make_ref(), <<1>>})
+
       assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :char, char: "a", ctrl: true}}},
+                      %Event{
+                        type: :key,
+                        data: %{key: :char, char: "a", ctrl: true}
+                      }},
                      500
 
       # Ctrl+Z (SUB)
       send(driver_pid, {:io_reply, make_ref(), <<26>>})
+
       assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :char, char: "z", ctrl: true}}},
+                      %Event{
+                        type: :key,
+                        data: %{key: :char, char: "z", ctrl: true}
+                      }},
                      500
 
       # Ctrl+C (ETX) - Should also be handled
       send(driver_pid, {:io_reply, make_ref(), <<3>>})
+
       assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :char, char: "c", ctrl: true}}},
+                      %Event{
+                        type: :key,
+                        data: %{key: :char, char: "c", ctrl: true}
+                      }},
                      500
 
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches mouse click events (VT200 format)", %{original_stty: _} do
+    test "parses and dispatches mouse click events (VT200 format)", %{
+      original_stty: _
+    } do
       test_pid = self()
       driver_pid = start_driver(test_pid)
 
@@ -500,7 +596,10 @@ defmodule Raxol.Terminal.DriverTest do
       # Simulate Mouse Left Button Press at (10, 5)
       # Format: \e[M Cb Cx Cy  (Cb = button + modifier, Cx/Cy = coords + 32)
       # Button 0 (Left), Coords (10, 5) -> Cx=10+32=42, Cy=5+32=37 -> Cb=32
-      send(driver_pid, {:io_reply, make_ref(), "\\e[M #{<<32>>}#{<<42>>}#{<<37>>}"})
+      send(
+        driver_pid,
+        {:io_reply, make_ref(), "\\e[M #{<<32>>}#{<<42>>}#{<<37>>}"}
+      )
 
       assert_receive {:terminal_event,
                       %Event{
@@ -519,13 +618,17 @@ defmodule Raxol.Terminal.DriverTest do
 
       # Simulate Mouse Left Button Release at (10, 5)
       # Format: \e[M Cb Cx Cy (Cb = 3 for release, same coords)
-      send(driver_pid, {:io_reply, make_ref(), "\\e[M #{<<35>>}#{<<42>>}#{<<37>>}"})
+      send(
+        driver_pid,
+        {:io_reply, make_ref(), "\\e[M #{<<35>>}#{<<42>>}#{<<37>>}"}
+      )
 
       assert_receive {:terminal_event,
                       %Event{
                         type: :mouse,
                         data: %{
-                          button: :none, # Typically release doesn't specify button in this format
+                          # Typically release doesn't specify button in this format
+                          button: :none,
                           action: :release,
                           x: 10,
                           y: 5,
@@ -537,7 +640,10 @@ defmodule Raxol.Terminal.DriverTest do
                      500
 
       # Simulate Mouse Right Button Press at (20, 15) -> Cb=34, Cx=52, Cy=47
-      send(driver_pid, {:io_reply, make_ref(), "\\e[M #{<<34>>}#{<<52>>}#{<<47>>}"})
+      send(
+        driver_pid,
+        {:io_reply, make_ref(), "\\e[M #{<<34>>}#{<<52>>}#{<<47>>}"}
+      )
 
       assert_receive {:terminal_event,
                       %Event{
@@ -557,7 +663,9 @@ defmodule Raxol.Terminal.DriverTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches mouse scroll events (VT200 format)", %{original_stty: _} do
+    test "parses and dispatches mouse scroll events (VT200 format)", %{
+      original_stty: _
+    } do
       test_pid = self()
       driver_pid = start_driver(test_pid)
 
@@ -568,7 +676,10 @@ defmodule Raxol.Terminal.DriverTest do
       end
 
       # Simulate Scroll Up at (1, 1) -> Cb=96, Cx=33, Cy=33
-      send(driver_pid, {:io_reply, make_ref(), "\\e[M #{<<96>>}#{<<33>>}#{<<33>>}"})
+      send(
+        driver_pid,
+        {:io_reply, make_ref(), "\\e[M #{<<96>>}#{<<33>>}#{<<33>>}"}
+      )
 
       assert_receive {:terminal_event,
                       %Event{
@@ -586,7 +697,10 @@ defmodule Raxol.Terminal.DriverTest do
                      500
 
       # Simulate Scroll Down at (1, 1) -> Cb=97, Cx=33, Cy=33
-      send(driver_pid, {:io_reply, make_ref(), "\\e[M #{<<97>>}#{<<33>>}#{<<33>>}"})
+      send(
+        driver_pid,
+        {:io_reply, make_ref(), "\\e[M #{<<97>>}#{<<33>>}#{<<33>>}"}
+      )
 
       assert_receive {:terminal_event,
                       %Event{
@@ -606,7 +720,9 @@ defmodule Raxol.Terminal.DriverTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches mouse click events (SGR format 1006)", %{original_stty: _} do
+    test "parses and dispatches mouse click events (SGR format 1006)", %{
+      original_stty: _
+    } do
       test_pid = self()
       driver_pid = start_driver(test_pid)
 
@@ -643,7 +759,8 @@ defmodule Raxol.Terminal.DriverTest do
                       %Event{
                         type: :mouse,
                         data: %{
-                          button: :left, # SGR retains button on release
+                          # SGR retains button on release
+                          button: :left,
                           action: :release,
                           x: 10,
                           y: 5,
@@ -708,23 +825,44 @@ defmodule Raxol.Terminal.DriverTest do
                       }},
                      500
 
-
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches Shift + Arrow key sequences", %{original_stty: _} do
+    test "parses and dispatches Shift + Arrow key sequences", %{
+      original_stty: _
+    } do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       send(driver_pid, {:io_reply, make_ref(), "\e[1;2A"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up, shift: true}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :up, shift: true}}},
+                     500
+
       send(driver_pid, {:io_reply, make_ref(), "\e[1;2B"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :down, shift: true}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :down, shift: true}}},
+                     500
+
       send(driver_pid, {:io_reply, make_ref(), "\e[1;2C"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :right, shift: true}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :right, shift: true}}},
+                     500
+
       send(driver_pid, {:io_reply, make_ref(), "\e[1;2D"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :left, shift: true}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :left, shift: true}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -732,14 +870,32 @@ defmodule Raxol.Terminal.DriverTest do
     test "parses and dispatches Alt + Char key sequences", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # Alt+a (ESC a)
       send(driver_pid, {:io_reply, make_ref(), "\ea"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :char, char: "a", alt: true}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{
+                        type: :key,
+                        data: %{key: :char, char: "a", alt: true}
+                      }},
+                     500
+
       # Alt+Z (ESC Z)
       send(driver_pid, {:io_reply, make_ref(), "\eZ"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :char, char: "Z", alt: true}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{
+                        type: :key,
+                        data: %{key: :char, char: "Z", alt: true}
+                      }},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -747,16 +903,36 @@ defmodule Raxol.Terminal.DriverTest do
     test "parses and dispatches Alt + Arrow key sequences", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       send(driver_pid, {:io_reply, make_ref(), "\e[1;3A"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up, alt: true}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :up, alt: true}}},
+                     500
+
       send(driver_pid, {:io_reply, make_ref(), "\e[1;3B"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :down, alt: true}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :down, alt: true}}},
+                     500
+
       send(driver_pid, {:io_reply, make_ref(), "\e[1;3C"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :right, alt: true}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :right, alt: true}}},
+                     500
+
       send(driver_pid, {:io_reply, make_ref(), "\e[1;3D"})
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :left, alt: true}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :key, data: %{key: :left, alt: true}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -764,7 +940,12 @@ defmodule Raxol.Terminal.DriverTest do
     test "parses and dispatches Focus In/Out events", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # Focus In: \e[I
       send(driver_pid, {:io_reply, make_ref(), "\e[I"})
@@ -780,12 +961,24 @@ defmodule Raxol.Terminal.DriverTest do
     test "parses bracketed paste events", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # Send paste sequence
       paste_content = "hello\nworld!\n"
-      send(driver_pid, {:io_reply, make_ref(), "\e[200~#{paste_content}\e[201~"})
-      assert_receive {:terminal_event, %Event{type: :paste, data: %{text: paste_content}}}, 500
+
+      send(
+        driver_pid,
+        {:io_reply, make_ref(), "\e[200~#{paste_content}\e[201~"}
+      )
+
+      assert_receive {:terminal_event,
+                      %Event{type: :paste, data: %{text: paste_content}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -793,15 +986,24 @@ defmodule Raxol.Terminal.DriverTest do
     test "buffers incomplete bracketed paste events", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
-      receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+      receive do
+        {:terminal_event, %Event{type: :resize}} -> :ok
+      after
+        100 -> flunk("Timeout")
+      end
 
       # Send partial paste sequence (start marker + some text)
       send(driver_pid, {:io_reply, make_ref(), "\e[200~hello"})
-      refute_receive {:terminal_event, _}, 50 # Should not receive paste event yet
+      # Should not receive paste event yet
+      refute_receive {:terminal_event, _}, 50
 
       # Send rest of text + end marker
       send(driver_pid, {:io_reply, make_ref(), " world\e[201~"})
-      assert_receive {:terminal_event, %Event{type: :paste, data: %{text: "hello world"}}}, 500
+
+      assert_receive {:terminal_event,
+                      %Event{type: :paste, data: %{text: "hello world"}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -959,13 +1161,21 @@ defmodule Raxol.Terminal.DriverTest do
     # For now, we assume the :io_request message implies this behaviour.
 
     driver_pid = start_driver(test_pid)
-    receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+    receive do
+      {:terminal_event, %Event{type: :resize}} -> :ok
+    after
+      100 -> flunk("Timeout")
+    end
 
     # The driver should have sent an initial :io_request to :io upon start
     # It will send another one after processing each :io_reply
     # Let's send some data and check it requests more
     send(driver_pid, {:io_reply, make_ref(), "x"})
-    assert_receive {:terminal_event, %Event{type: :key, data: %{key: :char, char: "x"}}}, 500
+
+    assert_receive {:terminal_event,
+                    %Event{type: :key, data: %{key: :char, char: "x"}}},
+                   500
 
     # Check if IO.getn was requested again (needs introspection or mocking)
     # Example using :sys.trace (can be intrusive)
@@ -981,25 +1191,35 @@ defmodule Raxol.Terminal.DriverTest do
   test "correctly buffers partial input sequences", %{original_stty: _} do
     test_pid = self()
     driver_pid = start_driver(test_pid)
-    receive do {:terminal_event, %Event{type: :resize}} -> :ok after 100 -> flunk("Timeout") end
+
+    receive do
+      {:terminal_event, %Event{type: :resize}} -> :ok
+    after
+      100 -> flunk("Timeout")
+    end
 
     # Send partial escape seq
     send(driver_pid, {:io_reply, make_ref(), "\e"})
-    refute_receive {:terminal_event, _}, 50 # Should be buffered
+    # Should be buffered
+    refute_receive {:terminal_event, _}, 50
 
     send(driver_pid, {:io_reply, make_ref(), "["})
-    refute_receive {:terminal_event, _}, 50 # Still buffered
+    # Still buffered
+    refute_receive {:terminal_event, _}, 50
 
     send(driver_pid, {:io_reply, make_ref(), "A"})
-    assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up}}}, 500 # Completed
+    # Completed
+    assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up}}}, 500
 
     # Test another sequence buffering
     send(driver_pid, {:io_reply, make_ref(), "\e[1;5"})
     refute_receive {:terminal_event, _}, 50
 
     send(driver_pid, {:io_reply, make_ref(), "A"})
+
     assert_receive {:terminal_event,
-                    %Event{type: :key, data: %{key: :up, ctrl: true}}}, 500
+                    %Event{type: :key, data: %{key: :up, ctrl: true}}},
+                   500
 
     Process.exit(driver_pid, :shutdown)
   end
