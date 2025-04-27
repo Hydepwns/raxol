@@ -85,10 +85,10 @@ Main documentation index: [docs/README.md](docs/README.md)
 
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [CHANGELOG](docs/development/changes/CHANGELOG.md)
-- [UI Components & Layout](docs/guides/components.md)
+- [UI Components & Layout](docs/guides/components/README.md)
 - [Async Operations](docs/guides/async_operations.md)
 - [Runtime Options](docs/guides/runtime_options.md)
-- [Terminal Details](docs/development/terminal_emulator.md)
+- [Terminal Details](docs/development/terminal/README.md)
 - [Development Setup](docs/development/DevelopmentSetup.md)
 - [Contributing](CONTRIBUTING.md)
 

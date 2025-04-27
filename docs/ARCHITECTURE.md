@@ -27,10 +27,10 @@ Raxol is organized into logical subsystems:
 
 ```bash
 lib/raxol/
-├── benchmarks/            # Performance benchmarks (Refactored)
+├── benchmarks/            # Performance benchmarks
 │   └── performance/       # Extracted benchmark categories
 ├── cloud/                 # Cloud integration modules
-│   └── monitoring/        # Extracted monitoring sub-modules (Refactored)
+│   └── monitoring/        # Extracted monitoring sub-modules
 ├── core/                  # Core runtime, application, plugins, events, rendering
 │   ├── runtime/
 │   │   ├── application.ex # Application behaviour definition
@@ -38,9 +38,9 @@ lib/raxol/
 │   │   ├── plugins/       # Plugin Manager, Loader, Helpers, Registry
 │   │   └── rendering/     # Rendering Engine & Scheduler
 │   └── ...
-├── docs/                  # Project documentation (See docs/README.md)
+├── docs/                  # Project documentation (docs/README.md)
 │   ├── development/
-│   │   └── terminal/      # Detailed terminal subsystem docs (See docs/development/terminal/README.md)
+│   │   └── terminal/      # Detailed terminal subsystem docs (docs/development/terminal/README.md)
 │   │       ├── ANSIProcessing.md
 │   │       ├── CharacterSets.md
 │   │       ├── ClipboardManagement.md
@@ -61,7 +61,7 @@ lib/raxol/
 │   ├── ARCHITECTURE.md  # This file
 │   └── README.md        # Main documentation index
 ├── plugins/
-│   └── visualization/     # Visualization Plugin Renderers & Helpers (New)
+│   └── visualization/     # Visualization Plugin Renderers & Helpers
 │       ├── chart_renderer.ex
 │       ├── treemap_renderer.ex
 │       ├── image_renderer.ex
@@ -80,18 +80,18 @@ lib/raxol/
 │   ├── layout/            # Layout Engine (measure/position)
 │   ├── renderer.ex        # Converts elements to styled cells
 │   └── theming/           # Theme definitions and application
-├── terminal/              # Terminal I/O and ANSI Processing (Source Code)
+├── terminal/              # Terminal I/O and ANSI Processing
 │   ├── ansi/              # ANSI sequence modules (Charsets, ScreenModes, etc.)
 │   │   ├── sixel_graphics.ex # Stateful sixel parser
-│   │   ├── sixel_palette.ex  # Sixel palette management (Extracted)
-│   │   └── sixel_pattern_map.ex # Sixel pattern mapping (Extracted)
+│   │   ├── sixel_palette.ex  # Sixel palette management
+│   │   └── sixel_pattern_map.ex # Sixel pattern mapping
 │   ├── buffer/            # ScreenBuffer logic
 │   ├── cursor/            # Cursor management
 │   ├── driver.ex          # Raw mode, Input parsing, Output writing
-│   ├── emulator.ex        # Terminal state management (Refactored)
+│   ├── emulator.ex        # Terminal state management
 │   ├── parser.ex          # Main parser state machine
 │   │   └── states/        # Individual state handlers for the parser
-│   ├── control_codes.ex   # C0/Simple ESC handlers (Refactored)
+│   ├── control_codes.ex   # C0/Simple ESC handlers
 │   └── ...
 └── view/                  # View Definition DSL
     └── elements.ex        # Macros for UI elements (box, text, etc.)
@@ -165,31 +165,19 @@ lib/raxol/
 5. **Render**: `Scheduler` triggers `RenderingEngine`. Engine gets model/theme from `Dispatcher` -> `Application.view/1` -> `LayoutEngine` (positions) -> `UIRenderer` (styled cells) -> `Terminal.Renderer` (diff output).
 6. **Reload**: `PluginManager` -> `LifecycleHelper` -> unload/purge/recompile/load/reinit sequence.
 
-## Recent Changes Summary (from handoff)
+## Recent Changes Summary
 
-- Core runtime, plugin lifecycle, command handling, rendering pipeline functional/refactored.
-- Multiple components refactored to use `Base.Component` behaviour and `View.Elements` macros.
-- **`Table` component refactored:** `render/2` now returns a map for `Renderer`, internal helpers removed.
-- **`Renderer` updated:** Now handles `:table` elements directly.
-- Measurement logic implemented and tested in `LayoutEngine`.
-- **Compiler status:** Project compiles, but **numerous warnings exist** (Accessibility API, unused code, type issues).
-- Resolved specific errors: duplicate `Application` behaviour, syntax errors (`SingleLineInput`, `ux_refinement_demo`), cyclic dependencies (`Spinner`, others via map matching).
-- Refactored `Benchmarks.Performance` and `Cloud.Monitoring` into sub-modules.
-- Refactored `VisualizationPlugin` into core plugin and helper modules (`ChartRenderer`, `TreemapRenderer`, `ImageRenderer`, `DrawingUtils`).
-- Corrected calls to `DrawingUtils` in `TreemapRenderer`.
-- Refactored `Terminal.Parser` (extracted state handlers and CSI dispatchers).
-- Refactored `Terminal.Integration` (extracted `MemoryManager`, updated config merging).
-- Refactored `Terminal.ANSI.SixelGraphics` (extracted `SixelPalette`, `SixelPatternMap`; implemented stateful parser and parameter handling).
-- Refactored `MultiLineInput` into core component and helper modules (`TextHelper`, `NavigationHelper`, `RenderHelper`, `EventHandler`, `ClipboardHelper`).
-- Added features to `MultiLineInput`: basic navigation, clipboard, scrolling, selection, mouse clicks.
-- Added basic tests for `MultiLineInput` helpers.
-- Integrated `UserPreferences` loading/saving into core modules. Calls to `Accessibility` options updated to use `UserPreferences`.
-- Implemented Run-Length Encoding (RLE) optimization in `SixelGraphics`.
-- Focus: **Address remaining compiler warnings**, test `Table` rendering, continue refactoring large modules, implement core UX features (Animation, i18n), enhance component tests, address remaining placeholders (`MultiLineInput` mouse drag, Sixel rendering refinements).
+- **Major Refactoring:** Completed significant refactoring across core systems (Runtime, Plugins, Rendering), Terminal subsystem (Parser, Sixel, Driver, Control Codes), UI components (`Table`, `MultiLineInput` extraction), Visualization Plugin (extracted renderers), and support modules (Benchmarking, Cloud Monitoring, User Preferences, Accessibility integration).
+- **Documentation Alignment:** Reviewed and updated key planning documents (`overview.md`, `handoff_prompt.md`, `Roadmap.md`), core documentation (`README.md`, `docs/README.md`), specific guides (`docs/guides/components/README.md`, `docs/development/terminal/README.md`), and architecture documentation (`ARCHITECTURE.md` sections, including codebase size).
+- **Compiler Status:** Addressed numerous compilation errors and warnings during refactoring. However, some warnings persist and require further investigation and cleanup.
+- **Key Component Updates:** `Table` component refactored to take data via attributes; `MultiLineInput` core logic extracted into helper modules; `Renderer` updated to handle `:table` directly.
+- **Feature Enhancements:** Added basic navigation, clipboard, scrolling, selection to `MultiLineInput`; implemented RLE optimization for Sixel graphics.
+
+- **Current Focus:** Address remaining compiler warnings, perform thorough testing of refactored components (especially `Table`), continue refactoring large modules as needed, implement planned core UX features (e.g., Animation, i18n), enhance component test coverage, and address known placeholders/TODOs.
 
 ## Codebase Size & Refactoring Candidates
 
-**Note:** LOC counts are approximate and based on `find . -type f \( -path './lib/*' -or -path './docs/*' \) -not -path '*/.git/*' -exec wc -l {} + | sort -nr`. Thresholds adjusted based on current distribution. Last updated: YYYY-MM-DD (Update this date).
+**Note:** LOC counts are approximate and based on `find . -type f \( -path './lib/*' -or -path './docs/*' \) -not -path '*/.git/*' -exec wc -l {} + | sort -nr`. Thresholds adjusted based on current distribution. Last updated: 2024-07-31
 
 **Critical (> 1200 LOC):**
 
@@ -199,7 +187,7 @@ lib/raxol/
 
 - `./docs/development/planning/performance/case_studies.md` (~999 lines)
 - `./lib/raxol/plugins/plugin_manager.ex` (~962 lines)
-- `./lib/raxol/docs/development/planning/examples/integration_example.md` (~915 lines)
+- `./docs/development/planning/examples/integration_example.md` (~915 lines)
 
 **Big (600 - 899 LOC):**
 
@@ -210,19 +198,19 @@ lib/raxol/
 - `./lib/raxol/docs/component_catalog.ex` (~695 lines)
 - `./lib/raxol/terminal/command_executor.ex` (~680 lines)
 - `./lib/raxol/components/progress.ex` (~663 lines)
+- `./lib/raxol/terminal/driver.ex` (~632 lines) # Updated count
 - `./lib/raxol/terminal/ansi/sixel_graphics.ex` (~628 lines) # Refactored
-- `./lib/raxol/terminal/driver.ex` (~618 lines)
 - `./lib/raxol/core/focus_manager.ex` (~617 lines)
 - `./docs/guides/examples/typescript/visualization/ChartExample.ts` (~611 lines) # Example file
 - `./lib/raxol/cloud/monitoring.ex` (~600 lines) # Refactored
 
 **Notable Shrinkage:** Several files previously listed as "Big" have been significantly refactored or had content moved:
 
-- `lib/raxol/terminal/parser.ex` (now ~244 lines)
+- `lib/raxol/terminal/parser.ex` (now ~345 lines) # Updated count
 - `lib/raxol/style/colors/utilities.ex` (now ~225 lines)
 - `lib/raxol/ui/components/display/table.ex` (now ~253 lines)
 
-**Newly Extracted/Refactored Modules:**
+**Newly Extracted/Refactored Modules:** (Counts updated where available in top list)
 
 - `./lib/raxol/plugins/visualization/chart_renderer.ex` (~168 lines)
 - `./lib/raxol/plugins/visualization/treemap_renderer.ex` (~271 lines) # Updated
@@ -230,31 +218,7 @@ lib/raxol/
 - `./lib/raxol/plugins/visualization/drawing_utils.ex` (~140 lines)
 - `./lib/raxol/components/input/multi_line_input/text_helper.ex` (~270 lines)
 - `./lib/raxol/components/input/multi_line_input/navigation_helper.ex` (~246 lines)
-- `./lib/raxol/components/input/multi_line_input/render_helper.ex` (~135 lines)
+- `./lib/raxol/components/input/multi_line_input/render_helper.ex` (~140 lines) # Updated count
 - `./lib/raxol/components/input/multi_line_input/event_handler.ex` (~148 lines)
 - `./lib/raxol/components/input/multi_line_input/clipboard_helper.ex` (~68 lines)
-- `./lib/raxol/terminal/ansi/sixel_palette.ex` (~81 lines)
-- `./lib/raxol/terminal/ansi/sixel_pattern_map.ex` (~131 lines)
-- `./lib/raxol/terminal/control_codes.ex` (~231 lines)
-- `./lib/raxol/terminal/memory_manager.ex` (~87 lines)
-- `./lib/raxol/terminal/config/utils.ex` (~70 lines)
-
-**Test Files (New/Extracted):**
-
-- `./test/raxol/terminal/emulator/screen_modes_test.exs` (~200 lines) # Example - update counts if needed
-- `./test/raxol/terminal/emulator/character_sets_test.exs` (~81 lines) # Example - update counts if needed
-- `./test/raxol/terminal/emulator/initialization_test.exs` (~95 lines)
-- `./test/raxol/terminal/emulator/writing_buffer_test.exs` (~86 lines)
-- `./test/raxol/terminal/emulator/cursor_management_test.exs` (~35 lines)
-- `./test/raxol/terminal/emulator/state_stack_test.exs` (~111 lines)
-- `./test/raxol/terminal/emulator/getters_setters_test.exs` (~69 lines)
-- `./test/raxol/terminal/emulator/sgr_formatting_test.exs` (~210 lines)
-- `./test/raxol/terminal/emulator/process_input_test.exs` (~80 lines)
-- `./test/raxol/terminal/emulator/csi_editing_test.exs` (~258 lines)
-- `./test/raxol/terminal/emulator/response_test.exs` (~63 lines)
-- `./test/raxol/components/input/multi_line_input/text_helper_test.exs` (~135 lines) # Example - update counts if needed
-- `./test/raxol/components/input/multi_line_input/navigation_helper_test.exs` (~235 lines) # Example - update counts if needed
-- `./test/raxol/components/input/multi_line_input/render_helper_test.exs` (~156 lines) # Example - update counts if needed
-- `./test/raxol/components/input/multi_line_input/event_handler_test.exs` (~176 lines) # Example - update counts if needed
-- `./test/raxol/components/input/multi_line_input/clipboard_helper_test.exs` (~161 lines) # Example - update counts if needed
-- `./test/support/emulator_helpers.ex` (~29 lines) # Example - update counts if needed
+- `./lib/raxol/terminal/ansi/sixel_palette.ex`

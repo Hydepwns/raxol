@@ -9,7 +9,7 @@ tags: [terminal, development, documentation, architecture, internals]
 
 # Raxol Terminal Subsystem Documentation
 
-This section contains detailed documentation about the low-level components and mechanisms that make up Raxol's terminal emulation layer. This information is primarily intended for developers working on the core terminal functionality.
+This section indexes detailed documentation on the low-level components of Raxol's terminal emulation layer. This is primarily intended for developers working on core terminal functionality.
 
 ## Key Subsystem Documentation
 
