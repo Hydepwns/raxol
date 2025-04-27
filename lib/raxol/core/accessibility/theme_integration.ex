@@ -1,37 +1,19 @@
 defmodule Raxol.Core.Accessibility.ThemeIntegration do
   @moduledoc """
-  Integrates accessibility settings with visual components.
+  Manages the integration between accessibility settings and the active theme.
 
-  This module bridges the accessibility features with visual components
-  to ensure proper rendering based on accessibility settings like:
-  - High contrast mode
-  - Reduced motion
-  - Large text
-
-  It provides event handlers that respond to accessibility setting changes
-  and applies them to the appropriate components.
-
-  ## Usage
-
-  ```elixir
-  # Initialize theme integration
-  ThemeIntegration.init()
-
-  # Apply current accessibility settings to components
-  ThemeIntegration.apply_current_settings()
-  ```
+  Listens for accessibility changes (e.g., high contrast toggle) and
+  updates the active theme variant accordingly.
   """
 
-  alias Raxol.Core.Events.Manager, as: EventManager
-  # Remove Raxol.Logger alias - use Logger directly
-  # alias Raxol.Logger
   require Logger
-  alias Raxol.Core.Accessibility # Added alias
-  alias Raxol.Style.Theme # Added alias
-  alias Raxol.Core.UserPreferences # Added alias
 
-  # Process dictionary key for active theme variant state
-  # @active_variant_key :raxol_active_theme_variant
+  alias Raxol.Core.Events.Manager, as: EventManager
+  # alias Raxol.UI.Theming.Theme # Removed unused alias
+  alias Raxol.Core.UserPreferences
+  # Remove unused aliases
+  # alias Raxol.Style.Theme # Added alias
+  # alias Raxol.Core.UserPreferences # Added alias
 
   @doc """
   Initialize the theme integration.
@@ -101,28 +83,24 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
 
   @doc """
   Apply the current accessibility settings to components.
-
-  ## Examples
-
-      iex> ThemeIntegration.apply_current_settings()
-      :ok
+  This function is typically called during initialization to ensure components
+  reflect the persisted preferences.
   """
   def apply_current_settings do
-    # Get current accessibility options
-    options = Process.get(:accessibility_options) || default_options()
+    # Get current accessibility options directly from UserPreferences
+    # Assuming default values are handled by UserPreferences.get/3 or similar
+    high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
+    reduced_motion = UserPreferences.get(pref_key(:reduced_motion)) || false
+    large_text = UserPreferences.get(pref_key(:large_text)) || false
 
     # Apply high contrast setting
-    handle_high_contrast(
-      {:accessibility_high_contrast, options[:high_contrast]}
-    )
+    handle_high_contrast({:accessibility_high_contrast, high_contrast})
 
     # Apply reduced motion setting
-    handle_reduced_motion(
-      {:accessibility_reduced_motion, options[:reduced_motion]}
-    )
+    handle_reduced_motion({:accessibility_reduced_motion, reduced_motion})
 
     # Apply large text setting
-    handle_large_text({:accessibility_large_text, options[:large_text]})
+    handle_large_text({:accessibility_large_text, large_text})
 
     :ok
   end
@@ -150,16 +128,18 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   end
 
   @doc """
-  Gets the currently active theme variant name (e.g., :high_contrast) or nil.
-  Reads the state directly from Accessibility (which reads from UserPreferences).
+  Returns the currently active theme variant based on accessibility settings.
+  Defaults to `:default` if high contrast is off.
   """
-  @spec get_active_variant() :: atom() | nil
-  def get_active_variant do
-    # Process.get(@active_variant_key)
-    if Accessibility.get_option(:high_contrast) do
+  @spec get_active_variant() :: atom()
+  def get_active_variant() do
+    # Read using UserPreferences
+    is_high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
+    if is_high_contrast do
+      # Return the variant atom directly
       :high_contrast
     else
-      nil
+      :default
     end
   end
 
@@ -200,16 +180,6 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
     :ok
   end
 
-  # Private functions
-
-  defp default_options do
-    # %{high_contrast: false, reduced_motion: false, large_text: false}
-    # Read defaults from Accessibility module
-    Accessibility.default_options()
-  end
-
-  # Add helper to check accessibility state directly if needed - REMOVED
-  # defp is_high_contrast? do
-  #   Accessibility.get_option(:high_contrast)
-  # end
+  # Helper to mimic internal pref_key logic
+  defp pref_key(key), do: "accessibility.#{key}"
 end

@@ -10,8 +10,6 @@ defmodule Raxol.Core.UserPreferences do
 
   # Use the new Persistence module
   alias Raxol.Core.Preferences.Persistence
-  alias Raxol.Core.Accessibility
-  alias Raxol.Style.Theme
 
   @save_delay_ms 1000 # Delay in ms before saving after a change
 
@@ -152,11 +150,19 @@ defmodule Raxol.Core.UserPreferences do
 
   defp default_preferences do
     %{
-      theme: "default", # Default theme name
-      accessibility: Accessibility.get_default_options(), # Get defaults from Accessibility module
-      # Add other preference categories as needed
-      ui: %{
-        font_size: 12
+      theme: Raxol.UI.Theming.Theme.default_theme().name,
+      terminal: Raxol.Terminal.Config.Defaults.generate_default_config(),
+      accessibility: %{
+        enabled: true,
+        screen_reader: true,
+        high_contrast: false,
+        reduced_motion: false,
+        keyboard_focus: true,
+        large_text: false,
+        silence_announcements: false
+      },
+      keybindings: %{
+        # Default keybindings can be added here
       }
     }
   end

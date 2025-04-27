@@ -13,8 +13,8 @@ defmodule Raxol.Examples.AccessibilityDemo do
   """
 
   alias Raxol.Core.UXRefinement
-  alias Raxol.Core.Accessibility
   alias Raxol.Core.FocusManager
+  alias Raxol.Core.UserPreferences
 
   @doc """
   Start the accessibility demo.
@@ -196,66 +196,30 @@ defmodule Raxol.Examples.AccessibilityDemo do
   end
 
   defp simulate_toggle_high_contrast do
-    # Get the current state
-    high_contrast_enabled = Accessibility.high_contrast_enabled?()
-
-    # Toggle the state
-    new_state = !high_contrast_enabled
-
-    # Apply the change
-    Accessibility.set_high_contrast(new_state)
-
-    # Announce the change
-    _message =
-      if new_state do
-        "High contrast mode enabled. Colors have been adjusted for better visibility."
-      else
-        "High contrast mode disabled. Standard color scheme restored."
-      end
-
-    # UXRefinement.announce(_message, priority: :medium)
+    # Read using UserPreferences
+    current_state = UserPreferences.get(pref_key(:high_contrast)) || false
+    # Use specific setter
+    Raxol.Core.Accessibility.set_high_contrast(not current_state)
+    IO.puts("Simulated toggle high contrast -> #{not current_state}")
+    show_current_theme_info()
   end
 
   defp simulate_toggle_reduced_motion do
-    # Get the current state
-    reduced_motion_enabled = Accessibility.reduced_motion_enabled?()
-
-    # Toggle the state
-    new_state = !reduced_motion_enabled
-
-    # Apply the change
-    Accessibility.set_reduced_motion(new_state)
-
-    # Announce the change
-    _message =
-      if new_state do
-        "Reduced motion enabled. Animations have been minimized."
-      else
-        "Reduced motion disabled. Standard animations restored."
-      end
-
-    # UXRefinement.announce(_message, priority: :medium)
+    # Read using UserPreferences
+    current_state = UserPreferences.get(pref_key(:reduced_motion)) || false
+    # Use specific setter
+    Raxol.Core.Accessibility.set_reduced_motion(not current_state)
+    IO.puts("Simulated toggle reduced motion -> #{not current_state}")
+    show_current_theme_info()
   end
 
   defp simulate_toggle_large_text do
-    # Get the current state
-    large_text_enabled = Accessibility.large_text_enabled?()
-
-    # Toggle the state
-    new_state = !large_text_enabled
-
-    # Apply the change
-    Accessibility.set_large_text(new_state)
-
-    # Announce the change
-    _message =
-      if new_state do
-        "Large text enabled. Text size increased to #{Accessibility.get_text_scale()} times normal size."
-      else
-        "Large text disabled. Standard text size restored."
-      end
-
-    # UXRefinement.announce(_message, priority: :medium)
+    # Read using UserPreferences
+    current_state = UserPreferences.get(pref_key(:large_text)) || false
+    # Use specific setter
+    Raxol.Core.Accessibility.set_large_text(not current_state)
+    IO.puts("Simulated toggle large text -> #{not current_state}")
+    show_current_theme_info()
   end
 
   defp show_current_hint do
@@ -282,35 +246,35 @@ defmodule Raxol.Examples.AccessibilityDemo do
   end
 
   defp show_current_theme_info do
-    # Get current accessibility settings
-    high_contrast = Accessibility.high_contrast_enabled?()
-    reduced_motion = Accessibility.reduced_motion_enabled?()
-    large_text = Accessibility.large_text_enabled?()
+    # Read using UserPreferences
+    high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
+    reduced_motion = UserPreferences.get(pref_key(:reduced_motion)) || false
+    large_text = UserPreferences.get(pref_key(:large_text)) || false
 
-    # Get color scheme
-    colors = Accessibility.get_color_scheme()
+    # Get base theme ID (assuming a preference key like 'ui.theme', default to :default)
+    base_theme_id = UserPreferences.get("ui.theme") || :default
+    # Fetch the base theme struct
+    base_theme = Raxol.UI.Theming.Theme.get(base_theme_id) || Raxol.UI.Theming.Theme.default_theme()
 
-    # Format color values for announcement
-    background_color = format_color_for_announcement(colors.background)
-    foreground_color = format_color_for_announcement(colors.foreground)
+    # Get the active variant identifier (:default or :high_contrast)
+    active_variant_id = Raxol.Core.Accessibility.ThemeIntegration.get_active_variant()
 
-    # Create message about current theme
-    _theme_message =
-      "Current theme settings: " <>
-        "High contrast is #{if high_contrast, do: "enabled", else: "disabled"}. " <>
-        "Reduced motion is #{if reduced_motion, do: "enabled", else: "disabled"}. " <>
-        "Large text is #{if large_text, do: "enabled", else: "disabled"}. " <>
-        "Using #{background_color} background and #{foreground_color} text."
+    # Get the variant overrides from the theme struct
+    variant_overrides = Map.get(base_theme.variants, active_variant_id, %{})
 
-    # Announce theme information (UXRefinement.announce is undefined)
-    # UXRefinement.announce(_theme_message, priority: :medium) # Function undefined
+    # Deep merge the overrides onto the base theme to get the final active theme
+    # NOTE: Needs a deep merge utility. Assuming Map.merge for shallow merge for now.
+    # A proper implementation might require a utility function.
+    active_theme_struct = Map.merge(base_theme, variant_overrides)
+
+    IO.puts("\n--- Current Theme Info ---")
+    IO.inspect(active_theme_struct, label: "Active Theme (#{active_variant_id})")
+    IO.puts("High Contrast:  #{high_contrast}")
+    IO.puts("Reduced Motion: #{reduced_motion}")
+    IO.puts("Large Text:     #{large_text}")
+    IO.puts("--------------------------\n")
   end
 
-  defp format_color_for_announcement(color) do
-    case color do
-      :black -> "black"
-      :white -> "white"
-      {:rgb, r, g, b} -> "RGB color #{r}, #{g}, #{b}"
-    end
-  end
+  # Helper to mimic internal pref_key logic if needed
+  defp pref_key(key), do: "accessibility.#{key}"
 end
