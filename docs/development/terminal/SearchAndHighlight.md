@@ -65,12 +65,14 @@ search = Raxol.Terminal.Search.new(config)
 ### Search Types
 
 1. **Text Search**
+
    - Plain text
    - Case matching
    - Word boundaries
    - Exact matches
 
 2. **Pattern Search**
+
    - Regular expressions
    - Wildcards
    - Character classes
@@ -85,6 +87,7 @@ search = Raxol.Terminal.Search.new(config)
 ### Search Management
 
 1. **Result Management**
+
    - Result caching
    - Result navigation
    - Result filtering
@@ -99,6 +102,7 @@ search = Raxol.Terminal.Search.new(config)
 ### Search State
 
 1. **Query State**
+
    - Current query
    - Query type
    - Query options
@@ -247,13 +251,4 @@ defmodule Raxol.Terminal.SearchTest do
     highlights = Search.get_highlights(search)
     assert length(highlights) > 0
   end
-
-  test "handles incremental search" do
-    search = Search.new()
-    search = Search.start_incremental(search)
-    {:ok, results1} = Search.update(search, "te")
-    {:ok, results2} = Search.update(search, "test")
-    assert length(results2) <= length(results1)
-  end
-end
-``` 
+```

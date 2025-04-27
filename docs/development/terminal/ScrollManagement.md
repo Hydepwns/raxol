@@ -66,12 +66,14 @@ scroll = Raxol.Terminal.Scroll.new(config)
 ### Scroll Types
 
 1. **Basic Scrolling**
+
    - Line scrolling
    - Page scrolling
    - Smooth scrolling
    - Jump scrolling
 
 2. **Special Scrolling**
+
    - Selection scrolling
    - Search result scrolling
    - Mark-based scrolling
@@ -86,6 +88,7 @@ scroll = Raxol.Terminal.Scroll.new(config)
 ### Scroll Management
 
 1. **History Management**
+
    - History buffer
    - History limits
    - History markers
@@ -100,6 +103,7 @@ scroll = Raxol.Terminal.Scroll.new(config)
 ### Scroll State
 
 1. **Viewport State**
+
    - View position
    - View size
    - View bounds
@@ -248,13 +252,4 @@ defmodule Raxol.Terminal.ScrollTest do
     {:ok, marker} = Scroll.find_marker(scroll, "test")
     assert marker.position == 50
   end
-
-  test "manages viewport correctly" do
-    scroll = Scroll.new()
-    viewport = Scroll.get_viewport(scroll)
-    scroll = Scroll.update_viewport(scroll, %{top: 10})
-    new_viewport = Scroll.get_viewport(scroll)
-    assert new_viewport.top == 10
-  end
-end
-``` 
+```

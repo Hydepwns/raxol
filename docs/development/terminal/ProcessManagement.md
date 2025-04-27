@@ -64,12 +64,14 @@ processes = Raxol.Terminal.Processes.new(config)
 ### Process Types
 
 1. **Shell Processes**
+
    - Interactive shells
    - Command execution
    - Shell integration
    - Shell history
 
 2. **Background Processes**
+
    - Daemon processes
    - Job control
    - Process groups
@@ -84,6 +86,7 @@ processes = Raxol.Terminal.Processes.new(config)
 ### Process Management
 
 1. **Lifecycle Management**
+
    - Process creation
    - Process monitoring
    - Process termination
@@ -98,6 +101,7 @@ processes = Raxol.Terminal.Processes.new(config)
 ### Process State
 
 1. **Process Information**
+
    - Process ID
    - Parent process
    - Process group
@@ -235,4 +239,4 @@ defmodule Raxol.Terminal.ProcessesTest do
     assert cwd == "/tmp"
   end
 end
-``` 
+```

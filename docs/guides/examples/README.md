@@ -1,17 +1,17 @@
 # Raxol Examples
 
-This directory contains examples to help you learn and explore Raxol's capabilities. The examples are organized into categories based on complexity and purpose.
+This directory contains examples showcasing Raxol's features.
 
 ## Directory Structure
 
-- **[basic](./basic/)** - Simple examples demonstrating core concepts like `Hello, World!` and basic components.
-- **[advanced](./advanced/)** - More complex examples showing advanced features like async operations or custom components.
-- **[interactive](./interactive/)** - Examples focusing on user interaction and events.
-- **[layout](./layout/)** - Examples demonstrating different layout strategies and containers.
-- **[showcase](./showcase/)** - Complete applications highlighting real-world use cases.
-- **[without-runtime](./without-runtime/)** - Examples showing how to use Raxol's lower-level APIs directly.
-- **[typescript](./typescript/)** - Examples related to the TypeScript integration (if applicable).
-- **[plugin_demo.exs](./plugin_demo.exs)** - A standalone example demonstrating plugin usage.
+- **`/examples/basic/`** - Core concepts (`Counter`, `HelloWorld`).
+- **`/examples/advanced/`** - Async operations, custom components.
+- **`/examples/interactive/`** - User interaction, events.
+- **`/examples/layout/`** - Layout strategies (`panel`, `row`, `column`).
+- **`/examples/showcase/`** - More complete applications (`component_showcase.exs`).
+- **`/examples/plugin_demo.exs`** - Standalone plugin usage example.
+
+_(Note: Some directories might exist from previous structures but check the list above for current relevant examples)_
 
 ## Getting Started
 
@@ -23,33 +23,41 @@ mix run examples/basic/counter.exs
 
 ## Running Examples
 
-All examples can be run using Mix:
+Run any example using `mix run`:
 
 ```bash
-mix run examples/path/to/example.exs
+mix run examples/showcase/component_showcase.exs | cat
+# Add " | cat " to prevent interference with your current terminal
 ```
 
 ## Creating Your Own
 
-Use these examples as a starting point for your own applications. A simple structure for a Raxol application is:
+Use these examples as a starting point. A simple application using the `Raxol.Core.Runtime.Application` behaviour looks like this:
 
 ```elixir
 defmodule MyApp do
-  use Raxol.App
+  use Raxol.Core.Runtime.Application
+  import Raxol.View.Elements
 
   @impl true
-  def render(assigns) do
-    # Render the UI based on assigns
-    ~H"""
-    <box border="single">
-      <text>My Raxol App</text>
-    </box>
-    """
+  def init(_context), do: {:ok, %{}} # Initial state
+
+  @impl true
+  def update(_message, state), do: {:ok, state, []} # Event handling
+
+  @impl true
+  def view(_state) do
+    # Render UI using View.Elements macros
+    view do
+      panel title: "My App" do
+        text(content: "Hello from Raxol!")
+      end
+    end
   end
 end
 
-# Start the application using the Lifecycle module
+# Start the application
 Raxol.Core.Runtime.Lifecycle.start_application(MyApp)
-
-For stateful applications or components, you'll typically use `Raxol.View` and implement `init/1`, `handle_event/3`, and `update/2` callbacks as needed.
 ```
+
+Refer to the [Getting Started Tutorial](../quick_start.md) and the [Components Guide](../components.md) for more details.

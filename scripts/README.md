@@ -1,6 +1,6 @@
 # Raxol Scripts
 
-This directory contains various scripts used for development, testing, and quality assurance in the Raxol project.
+This directory contains helper scripts for development, testing, and quality assurance.
 
 ## Table of Contents
 
@@ -8,7 +8,7 @@ This directory contains various scripts used for development, testing, and quali
 - [Validation Scripts](#validation-scripts)
 - [Testing Scripts](#testing-scripts)
   - [General Testing](#general-testing)
-  - [Dashboard Testing](#dashboard-testing)
+  - [Dashboard/UI Testing](#dashboardui-testing)
   - [Visualization Testing](#visualization-testing)
   - [Terminal Testing & Verification](#terminal-testing--verification)
   - [VS Code Testing](#vs-code-testing)
@@ -19,191 +19,268 @@ This directory contains various scripts used for development, testing, and quali
 
 ## Pre-Commit & Quality Checks
 
-These scripts ensure code quality, style, and consistency before committing changes.
+Ensure code quality before committing.
 
-- `pre_commit_check.exs`: Main script that runs all applicable pre-commit checks below.
+- `pre_commit_check.exs`: Runs all applicable checks (Dialyzer, Credo, Format, Docs, Links, Coverage).
+
   ```bash
   mix run scripts/pre_commit_check.exs
   ```
-- `check_type_safety.exs`: Checks type safety using Dialyzer.
+
+- `check_type_safety.exs`: Runs Dialyzer.
+
   ```bash
   mix run scripts/check_type_safety.exs
   ```
-- `check_documentation.exs`: Checks documentation consistency (e.g., module attributes).
+
+- `check_documentation.exs`: Checks documentation consistency.
+
   ```bash
   mix run scripts/check_documentation.exs
   ```
-- `check_style.exs`: Checks code style using Credo.
+
+- `check_style.exs`: Runs Credo.
+
   ```bash
   mix run scripts/check_style.exs
   ```
-- `check_links.exs`: Checks for broken links in documentation files.
+
+- `check_links.exs`: Checks for broken links in Markdown files.
+
   ```bash
   mix run scripts/check_links.exs
   ```
-- `check_coverage.exs`: Checks test coverage percentage. (Leverages `check_coverage.js`)
+
+- `check_coverage.exs`: Checks test coverage.
+
   ```bash
   mix run scripts/check_coverage.exs
   ```
-- `check_coverage.js`: Helper script for coverage calculation/reporting (likely used by `check_coverage.exs`).
-- `format_before_commit.sh`: Formats Elixir code using `mix format`. Can be used as a pre-commit hook or manually.
+
+- `format_before_commit.sh`: Runs `mix format`. Use manually or in a hook.
+
   ```bash
   ./scripts/format_before_commit.sh
   ```
-- `explain_credo_warning.exs`: Provides explanations for specific Credo warnings.
+
+- `explain_credo_warning.exs`: Explains specific Credo warnings.
+
   ```bash
   mix run scripts/explain_credo_warning.exs [WarningName]
   ```
 
 ## Validation Scripts
 
-These scripts perform specific validation checks beyond standard testing.
+Perform specific validation checks.
 
-- `validate_performance.exs`: Validates performance metrics against defined benchmarks.
+- `validate_performance.exs`: Validates performance against benchmarks.
+
   ```bash
   mix run scripts/validate_performance.exs
   ```
-- `validate_accessibility.exs`: Validates accessibility standards compliance.
+
+- `validate_accessibility.exs`: Validates accessibility standards.
+
   ```bash
   mix run scripts/validate_accessibility.exs
   ```
-- `validate_e2e.exs`: Validates end-to-end test results or setup.
+
+- `validate_e2e.exs`: Validates end-to-end test setup/results.
+
   ```bash
   mix run scripts/validate_e2e.exs
   ```
 
 ## Testing Scripts
 
-Scripts for running various test suites and scenarios.
+Run various test suites.
 
 ### General Testing
 
-- `run-local-tests.sh`: Runs the main local test suite.
+- `run-local-tests.sh`: Runs the main local test suite (`mix test`).
+
   ```bash
   ./scripts/run-local-tests.sh
   ```
-- `test_workflow.sh`: Executes a specific test workflow, potentially involving multiple steps or integrations.
+
+- `test_workflow.sh`: Executes a specific multi-step test workflow.
+
   ```bash
   ./scripts/test_workflow.sh
   ```
-- `run_platform_tests.exs`: Runs tests specific to different platforms or environments.
+
+- `run_platform_tests.exs`: Runs platform-specific tests.
+
   ```bash
   mix run scripts/run_platform_tests.exs [PlatformArg]
   ```
 
-### Dashboard Testing
+### Dashboard/UI Testing
 
-- `run_all_dashboard_tests.sh`: Runs all tests related to the dashboard features.
+- `run_all_dashboard_tests.sh`: Runs all UI/dashboard-related tests.
+
   ```bash
   ./scripts/run_all_dashboard_tests.sh
   ```
-- `run_dashboard_integration_test.sh`: Runs integration tests specifically for the dashboard.
+
+- `run_dashboard_integration_test.sh`: Runs UI/dashboard integration tests.
+
   ```bash
   ./scripts/run_dashboard_integration_test.sh
   ```
-- `test_dashboard_layout_integration.exs`: Tests the integration of dashboard layout components.
+
+- `test_dashboard_layout_integration.exs`: Specific layout integration tests.
+
   ```bash
-  mix test scripts/test_dashboard_layout_integration.exs # Or mix run? Verify usage
+  mix test test/integration/dashboard_layout_integration_test.exs # Example path
   ```
-- `test_layout_persistence.exs`: Tests the persistence of layout configurations.
+
+- `test_layout_persistence.exs`: Tests layout persistence.
+
   ```bash
-  mix test scripts/test_layout_persistence.exs # Or mix run? Verify usage
+  mix test test/integration/layout_persistence_test.exs # Example path
   ```
 
 ### Visualization Testing
 
-- `run_visualization_tests.exs`: Runs tests specifically for the visualization components.
+- `run_visualization_tests.exs`: Runs visualization component tests.
+
   ```bash
   mix run scripts/run_visualization_tests.exs
   ```
-- `test_visualization.exs`: Contains specific tests for visualization logic.
+
+- `test_visualization.exs`: Specific visualization tests.
+
   ```bash
-  mix test scripts/test_visualization.exs # Or mix run? Verify usage
+  mix test test/visualization/visualization_test.exs # Example path
   ```
-- `run_visualization_benchmark.exs`: Runs benchmarks for visualization performance.
+
+- `run_visualization_benchmark.exs`: Runs visualization benchmarks.
+
   ```bash
   mix run scripts/run_visualization_benchmark.exs
   ```
 
 ### Terminal Testing & Verification
 
-- `native_terminal_test.sh`: Runs tests within a native terminal environment.
+- `native_terminal_test.sh`: Runs tests within a native terminal.
+
   ```bash
   ./scripts/native_terminal_test.sh
   ```
-- `test_terminal_visualization.exs`: Tests visualization rendering in a standard terminal context.
+
+- `test_terminal_visualization.exs`: Tests visualization in a terminal context.
+
   ```bash
-  mix test scripts/test_terminal_visualization.exs # Or mix run? Verify usage
+  mix test test/terminal/visualization_test.exs # Example path
   ```
-- `run_native_terminal.sh`: Runs the application or specific tests in a native terminal.
+
+- `run_native_terminal.sh`: Runs the app or tests in a native terminal.
+
   ```bash
   ./scripts/run_native_terminal.sh
   ```
-- `verify_terminal_dimensions.exs`: Verifies or tests behavior related to terminal dimensions.
+
+- `verify_terminal_dimensions.exs`: Verifies terminal dimension handling.
+
   ```bash
   mix run scripts/verify_terminal_dimensions.exs
   ```
-- `verify_terminal_compatibility.exs`: Checks terminal compatibility features.
+
+- `verify_terminal_compatibility.exs`: Checks terminal compatibility.
+
   ```bash
   mix run scripts/verify_terminal_compatibility.exs
   ```
 
 ### VS Code Testing
 
-- `vs_code_test.sh`: Runs tests specifically for the VS Code integrated terminal or extension environment.
+- `vs_code_test.sh`: Runs tests for the VS Code integration.
+
   ```bash
   ./scripts/vs_code_test.sh
   ```
-- `test_vscode_visualization.exs`: Tests visualization rendering within the VS Code environment.
+
+- `test_vscode_visualization.exs`: Tests visualization in VS Code.
+
   ```bash
-  mix test scripts/test_vscode_visualization.exs # Or mix run? Verify usage
+  mix test test/vscode/visualization_test.exs # Example path
   ```
 
 ## Database Scripts
 
-Scripts for setting up and managing the development/test database.
+Manage development/test database.
 
-- `setup_db.sh`: Sets up the necessary database schemas, users, or initial data.
+- `setup_db.sh`: Sets up database schemas, users, data.
+
   ```bash
   ./scripts/setup_db.sh
   ```
-- `check_db.exs`: Checks the status or integrity of the database connection and schema.
+
+- `check_db.exs`: Checks database status/integrity.
+
   ```bash
   mix run scripts/check_db.exs
   ```
-- `diagnose_db.exs`: Provides diagnostic information about the database setup or potential issues.
+
+- `diagnose_db.exs`: Provides database diagnostics.
+
   ```bash
   mix run scripts/diagnose_db.exs
   ```
 
 ## Build & Release Scripts
 
-Scripts related to the build and release process.
+Handle build and release tasks.
 
-- `release.exs`: Handles tasks related to creating project releases (e.g., tagging, building artifacts).
+- `release.exs`: Creates project releases (tagging, artifacts).
+
   ```bash
   mix run scripts/release.exs [ReleaseArgs]
   ```
 
 ## Development Utilities
 
-General helper scripts for development tasks.
+General development helpers.
 
-- `run.exs`: A simple script likely used to run the main application or a specific entry point.
+- `run.exs`: Runs the main application or a specific entry point.
+
   ```bash
   mix run scripts/run.exs
   ```
-- `generate_elements_table.exs`: Generates a table or documentation related to UI elements.
+
+- `generate_elements_table.exs`: Generates UI element documentation.
+
   ```bash
   mix run scripts/generate_elements_table.exs
   ```
-- `run-local-actions.sh`: Simulates GitHub Actions workflows locally, possibly using `act`.
+
+- `run-local-actions.sh`: Simulates GitHub Actions locally using `act` (see [.github/workflows/README.md](../.github/workflows/README.md)).
+
   ```bash
   ./scripts/run-local-actions.sh [WorkflowName]
   ```
 
 ## Git Pre-Commit Hook
 
-A Git pre-commit hook can be set up to automatically run checks before each commit. You can often use `format_before_commit.sh` or invoke `mix run scripts/pre_commit_check.exs` within your `.git/hooks/pre-commit` file.
+Set up a Git pre-commit hook (e.g., in `.git/hooks/pre-commit`) to automate checks:
 
-If the pre-commit checks fail, the commit will be aborted, and you will need to fix the issues before committing again.
+```bash
+#!/bin/sh
+# Example pre-commit hook
+
+echo "Running pre-commit checks..."
+
+# Format code
+./scripts/format_before_commit.sh || exit 1
+
+# Run main checks
+mix run scripts/pre_commit_check.exs || exit 1
+
+echo "Pre-commit checks passed."
+exit 0
+```
+
+Make the hook executable: `chmod +x .git/hooks/pre-commit`.
+
+If checks fail, the commit is aborted. Fix issues and commit again.

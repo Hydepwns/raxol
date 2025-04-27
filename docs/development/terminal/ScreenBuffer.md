@@ -70,11 +70,13 @@ The screen buffer uses a two-dimensional array of cells, where each cell contain
 The buffer implements several memory optimization techniques:
 
 1. **Compression**
+
    - Historical content is compressed
    - Repeated characters are stored efficiently
    - Empty lines are optimized
 
 2. **Damage Tracking**
+
    - Only modified regions are updated
    - Changes are batched for efficiency
    - Minimal memory allocation during updates
@@ -198,4 +200,4 @@ defmodule Raxol.Terminal.ScreenBufferTest do
     assert ScreenBuffer.get_char(buffer, 0, 0) == "A"
   end
 end
-``` 
+```
