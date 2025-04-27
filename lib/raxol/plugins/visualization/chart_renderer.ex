@@ -5,12 +5,11 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
 
   require Logger
   alias Raxol.Terminal.Cell
-  alias Raxol.UI.Style
-  alias Raxol.Plugins.Visualization.DrawingUtils # For draw_box_with_text
+  alias Raxol.Plugins.Visualization.DrawingUtils
+  alias Raxol.Style
 
   # Define module attributes for thresholds previously in the plugin
   @max_chart_data_points 100
-  @chart_sampling_threshold 500 # Note: This wasn't used in the original sample_chart_data
 
   @doc """
   Public entry point for rendering chart content.
@@ -82,7 +81,8 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
       grid = DrawingUtils.draw_text(grid, height - 2, 0, Integer.to_string(min_value))
       # Draw simple Y-axis line
       grid = Enum.reduce(1..(height - 2), grid, fn y, acc_grid ->
-        DrawingUtils.put_cell(acc_grid, y, 3, %{Cell.new("|") | style: Style.new(fg: :dark_gray)})
+        axis_style = Style.new(fg: :dark_gray)
+        DrawingUtils.put_cell(acc_grid, y, 3, %{Cell.new("|") | style: axis_style})
       end)
 
       # Determine bar width and spacing
@@ -96,7 +96,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
       spacing = if num_bars > 1, do: 1, else: 0 # Simplified spacing
 
       # Draw Bars and X-axis labels
-      Enum.reduce(Enum.with_index(data), {grid, 4}, fn {{label, value}, index}, {acc_grid, current_x} ->
+      Enum.reduce(Enum.with_index(data), {grid, 4}, fn {{label, value}, _index}, {acc_grid, current_x} ->
         # Normalize value to chart height
         bar_height =
           if max_value == 0 do
@@ -110,7 +110,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
         # Draw the bar
         new_grid = Enum.reduce(0..(bar_width - 1), acc_grid, fn w_offset, inner_grid ->
           Enum.reduce(bar_start_y..(height - 2), inner_grid, fn y, innermost_grid ->
-             # Apply basic style
+             # Use correct Style module
              style = Style.new(bg: :blue, fg: :blue)
              cell = %{Cell.new("█") | style: style} # Use block character
              DrawingUtils.put_cell(innermost_grid, y, current_x + w_offset, cell)
