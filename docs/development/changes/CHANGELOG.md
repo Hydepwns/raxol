@@ -17,6 +17,7 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Known Issues
 
 - Various compiler warnings as documented in the CI logs
+- **Runtime Hang:** Examples launched via `Raxol.start_link/1` (e.g., using `bin/demo.exs`) currently hang after compilation, indicating a blocking issue in the core runtime initialization or render loop.
 
 ### Added
 
@@ -82,6 +83,9 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Documentation:** Updated `docs/development/planning/handoff_prompt.md` to include future feature goals from overview.
 - **Documentation:** Updated `docs/development/planning/roadmap/Roadmap.md` based on revised overview.
 - **Documentation:** Performed major cleanup: removed obsolete files/stubs, relocated terminal detail files to `docs/development/terminal/`, updated links in root `README.md` and `docs/README.md`.
+- **Documentation:** Archived outdated, large planning documents (`docs/development/planning/performance/case_studies.md`, `docs/development/planning/examples/integration_example.md`) to `docs/development/archive/planning/`.
+- **Examples:** Refactored `lib/raxol/examples/integrated_accessibility_demo.ex` to remove standalone `run/0` logic and rely on the `Raxol.Core.Runtime.Application` behaviour implementation.
+- **Examples:** Updated `bin/demo.exs` script to launch examples using `Raxol.start_link/1` instead of calling module-specific `run/0` functions.
 
 ### Deprecated
 

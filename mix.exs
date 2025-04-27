@@ -49,7 +49,7 @@ defmodule Raxol.MixProject do
           # Ignore NIF module wrappers
           # Raxol.Runtime.Termbox, # Removed reference to deprecated module
           # Suppress persistent spurious warnings
-          Raxol.Terminal.Configuration
+          # Raxol.Terminal.Configuration # Removed
         ]
       ]
     ]
@@ -71,7 +71,7 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library
-      {:rrex_termbox, "1.0.4"},
+      {:rrex_termbox, "~> 1.0.5"},
 
       # TODO: Review if Phoenix/web dependencies are needed for core library
       # They might be remnants of web UI / VSCode Stdio features.
@@ -120,7 +120,6 @@ defmodule Raxol.MixProject do
       {:mox, "~> 1.0", only: :test},
       {:meck, "~> 0.9.2", only: :test},
       {:elixir_make, "~> 0.6", runtime: false},
-      {:wallaby, "~> 0.30.0", only: :test, runtime: false},
       {:floki, ">= 0.30.0", only: :test},
 
       # Utilities
@@ -164,7 +163,7 @@ defmodule Raxol.MixProject do
   defp package do
     [
       files:
-        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG*),
+        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* docs/development/changes/CHANGELOG.md),
       maintainers: ["DROO AMOR"],
       licenses: ["MIT"],
       links: %{
