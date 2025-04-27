@@ -54,7 +54,7 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
 
   defp initialize_systems do
     _ = Accessibility.enable()
-    _ = UserPreferences.init()
+    _ = UserPreferences.init(%{})
     _ = ColorSystem.init()
     _ = PaletteManager.init()
     _ = AnimationFramework.init(%{})

@@ -38,6 +38,7 @@ defmodule Raxol.Style.Colors.System do
 
   alias Raxol.Style.Colors.Utilities
   alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.Style.Colors.HSL
 
   defstruct [
     # ... existing code ...
@@ -314,21 +315,31 @@ defmodule Raxol.Style.Colors.System do
   end
 
   defp generate_variant_color(base_color, variant) do
+    # Default algorithm for generating variants if not explicitly defined
     case variant do
-      :hover -> Utilities.lighten(base_color, 0.1)
-      :active -> Utilities.darken(base_color, 0.1)
-      :focus -> Utilities.saturate(base_color, 0.1)
-      :disabled -> Utilities.desaturate(base_color, 0.3)
-      _ -> base_color
+      # :hover -> Utilities.lighten(base_color, 0.1)
+      :hover -> HSL.lighten(base_color, 0.1)
+      # :active -> Utilities.darken(base_color, 0.1)
+      :active -> HSL.darken(base_color, 0.1)
+      # :focus -> Utilities.saturate(base_color, 0.1)
+      :focus -> HSL.saturate(base_color, 0.1)
+      # :disabled -> Utilities.desaturate(base_color, 0.3)
+      :disabled -> HSL.desaturate(base_color, 0.3)
+      _ -> base_color # Default to base color if variant is unknown
     end
   end
 
   defp generate_high_contrast_variant(base_color, variant) do
+    # High contrast variants often need more drastic changes
     case variant do
-      :hover -> Utilities.lighten(base_color, 0.2)
-      :active -> Utilities.darken(base_color, 0.2)
-      :focus -> Utilities.saturate(base_color, 0.2)
-      :disabled -> Utilities.desaturate(base_color, 0.5)
+      # :hover -> Utilities.lighten(base_color, 0.2)
+      :hover -> HSL.lighten(base_color, 0.2)
+      # :active -> Utilities.darken(base_color, 0.2)
+      :active -> HSL.darken(base_color, 0.2)
+      # :focus -> Utilities.saturate(base_color, 0.2)
+      :focus -> HSL.saturate(base_color, 0.2)
+      # :disabled -> Utilities.desaturate(base_color, 0.5)
+      :disabled -> HSL.desaturate(base_color, 0.5)
       _ -> base_color
     end
   end
@@ -342,12 +353,16 @@ defmodule Raxol.Style.Colors.System do
   end
 
   defp make_high_contrast(color) do
-    is_dark = Utilities.dark_color?(color)
-
-    if is_dark do
-      Utilities.lighten(color, 0.5)
+    # Placeholder logic for making a color high contrast
+    # This should involve checking luminance and adjusting
+    if Utilities.dark_color?(color) do
+      # Make it much lighter
+      # Utilities.lighten(color, 0.5)
+      HSL.lighten(color, 0.5)
     else
-      Utilities.darken(color, 0.5)
+      # Make it much darker
+      # Utilities.darken(color, 0.5)
+      HSL.darken(color, 0.5)
     end
   end
 
