@@ -225,11 +225,13 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
 
   # --- Internal Helpers (used by functions above) ---
 
-  defp clamp(value, min, max) do
+  # Make public as it's used by ClipboardHelper
+  def clamp(value, min, max) do
     value |> max(min) |> min(max)
   end
 
-  defp calculate_new_position(row, col, inserted_text) do
+  # Make public
+  def calculate_new_position(row, col, inserted_text) do
     if inserted_text == "" do
       {row, col}
     else

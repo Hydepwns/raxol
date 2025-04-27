@@ -6,19 +6,23 @@ defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
   # Needed for update/2 calls
   alias Raxol.Components.Input.MultiLineInput
   # For event structs like KeyDown
-  alias Raxol.Event
+  alias Raxol.Core.Events.Event, as: Event
   require Logger
 
   # Directly handle the event struct for more clarity
-  def handle_event(%Event.KeyDown{key: key, modifiers: modifiers}, state) do
+  def handle_event(%Event{type: :key, data: %{key: key, state: state, modifiers: modifiers}} = _event, state)
+  when state in [:pressed, :repeat] do
     # Translate key data to update message
     msg =
       case {key, modifiers} do
         # Basic Input
-        {char, []}
-        when is_binary(char) and String.length(char) == 1 and
-               String.printable?(char) ->
-          {:input, char}
+        {char, []} when is_binary(char) ->
+          if String.length(char) == 1 and String.printable?(char) do
+            {:input, char}
+          else
+            # Ignore multi-character sequences for now, or handle if needed
+            nil
+          end
 
         {:backspace, []} ->
           {:backspace}
@@ -121,41 +125,24 @@ defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
   end
 
   # Handle Mouse Events (Placeholder/Basic)
-  def handle_event(%Event.MouseClick{x: x, y: y, button: :left}, state) do
+  def handle_event(%Event{type: :mouse, data: %{x: x, y: y, button: :left, state: :pressed}} = _event, state) do
     # Calculate row/col based on component position/scroll (simplified)
     comp_x = Map.get(state.meta, :abs_col, 0)
     comp_y = Map.get(state.meta, :abs_row, 0)
-    offset = state.scroll_offset
-    scroll_row = elem(offset, 0)
-    scroll_col = elem(offset, 1)
+    {scroll_row, scroll_col} = state.scroll_offset
     row = max(0, y - comp_y + scroll_row)
     col = max(0, x - comp_x + scroll_col)
 
     msg = {:move_cursor_to, {row, col}}
     MultiLineInput.update(msg, state)
     # TODO: Handle drag for selection
-  end
-
-  # Ignore other events
-  def handle_event(_event, state) do
-    Logger.debug("Unhandled event: #{inspect(_event)}")
     {:noreply, state, nil}
   end
 
-  # Private helper to handle mouse clicks within the component area
-  # Needs component bounds/position from context/render state
-  defp handle_mouse_click(
-         %Event{type: :mouse_click, data: %{x: x, y: y}} = _event,
-         state
-       ) do
-    comp_x = Map.get(state.meta, :abs_col, 0)
-    comp_y = Map.get(state.meta, :abs_row, 0)
-    offset = state.scroll_offset
-    scroll_row = elem(offset, 0)
-    scroll_col = elem(offset, 1)
-    row = max(0, y - comp_y + scroll_row)
-    col = max(0, x - comp_x + scroll_col)
-
-    {:update, {:move_cursor_to, {row, col}}}
+  # Catch-all for unhandled events
+  def handle_event(event, state) do
+    # Rename _event to event
+    Logger.debug("Unhandled event: #{inspect(event)}")
+    {:noreply, state}
   end
 end

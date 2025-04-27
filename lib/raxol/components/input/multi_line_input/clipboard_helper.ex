@@ -1,9 +1,9 @@
 defmodule Raxol.Components.Input.MultiLineInput.ClipboardHelper do
   @moduledoc """
-  Helper functions for clipboard operations (copy, cut, paste) in MultiLineInput.
+  Helper functions for clipboard interactions (copy/cut/paste) in MultiLineInput.
   """
 
-  alias Raxol.Components.Input.MultiLineInput # May need state struct definition
+  # alias Raxol.Components.Input.MultiLineInput # May need state struct definition
   alias Raxol.Components.Input.MultiLineInput.NavigationHelper
   alias Raxol.Components.Input.MultiLineInput.TextHelper
   alias Raxol.Core.Runtime.Command

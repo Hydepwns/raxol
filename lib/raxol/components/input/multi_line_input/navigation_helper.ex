@@ -3,7 +3,7 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
   Helper functions for cursor navigation and text selection in MultiLineInput.
   """
 
-  alias Raxol.Components.Input.MultiLineInput # May need state struct definition
+  # alias Raxol.Components.Input.MultiLineInput # May need state struct definition
   alias Raxol.Components.Input.MultiLineInput.TextHelper # Need pos_to_index
   require Logger
 
@@ -21,6 +21,38 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
 
     %{state | cursor_row: clamped_row, cursor_col: clamped_col, selection_start: nil, selection_end: nil}
   end
+
+  # --- Add heads for directional movement ---
+  def move_cursor(state, :left) do
+    new_row = state.cursor_row
+    new_col = max(0, state.cursor_col - 1)
+    # TODO: Handle moving to end of previous line if at start of current line
+    move_cursor(state, {new_row, new_col})
+  end
+
+  def move_cursor(state, :right) do
+    lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
+    current_line_length = String.length(Enum.at(lines, state.cursor_row, ""))
+    new_row = state.cursor_row
+    new_col = min(current_line_length, state.cursor_col + 1)
+    # TODO: Handle moving to start of next line if at end of current line
+    move_cursor(state, {new_row, new_col})
+  end
+
+  def move_cursor(state, :up) do
+    new_row = max(0, state.cursor_row - 1)
+    new_col = state.cursor_col # Keep same column if possible (TODO: handle desired_col?)
+    move_cursor(state, {new_row, new_col})
+  end
+
+  def move_cursor(state, :down) do
+    lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
+    num_lines = length(lines)
+    new_row = min(num_lines - 1, state.cursor_row + 1)
+    new_col = state.cursor_col # Keep same column if possible (TODO: handle desired_col?)
+    move_cursor(state, {new_row, new_col})
+  end
+  # --- End added heads ---
 
   # Helper for clamping values (Needed by move_cursor)
   defp clamp(value, min_val, max_val) do
