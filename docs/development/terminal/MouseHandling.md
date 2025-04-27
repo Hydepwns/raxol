@@ -64,6 +64,7 @@ mouse = Raxol.Terminal.Mouse.new(config)
 ### Mouse Event Types
 
 1. **Button Events**
+
    - Left click
    - Right click
    - Middle click
@@ -71,6 +72,7 @@ mouse = Raxol.Terminal.Mouse.new(config)
    - Triple click
 
 2. **Motion Events**
+
    - Mouse movement
    - Drag operations
    - Hover events
@@ -85,6 +87,7 @@ mouse = Raxol.Terminal.Mouse.new(config)
 ### Mouse Management
 
 1. **Event Processing**
+
    - Event filtering
    - Coordinate mapping
    - Button state tracking
@@ -99,6 +102,7 @@ mouse = Raxol.Terminal.Mouse.new(config)
 ### Mouse State
 
 1. **Button State**
+
    - Button pressed
    - Button released
    - Modifier keys
@@ -241,4 +245,4 @@ defmodule Raxol.Terminal.MouseTest do
     assert Mouse.get_mode(mouse) == :normal
   end
 end
-``` 
+```

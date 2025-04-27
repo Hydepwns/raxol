@@ -63,12 +63,14 @@ keyboard = Raxol.Terminal.Keyboard.new(config)
 ### Key Mapping Types
 
 1. **Basic Mappings**
+
    - Single key mappings
    - Modifier combinations
    - Function keys
    - Special keys
 
 2. **Complex Mappings**
+
    - Key sequences
    - Chord combinations
    - Mode-specific bindings
@@ -83,6 +85,7 @@ keyboard = Raxol.Terminal.Keyboard.new(config)
 ### Keyboard Management
 
 1. **Layout Management**
+
    - Physical layouts
    - Logical layouts
    - Layout switching
@@ -97,6 +100,7 @@ keyboard = Raxol.Terminal.Keyboard.new(config)
 ### Keyboard State
 
 1. **Global State**
+
    - Current layout
    - Lock keys state
    - Modifier state
@@ -237,4 +241,4 @@ defmodule Raxol.Terminal.KeyboardTest do
     assert {:ok, :jump} = Keyboard.handle_sequence(keyboard, ["ctrl+k", "j"])
   end
 end
-``` 
+```

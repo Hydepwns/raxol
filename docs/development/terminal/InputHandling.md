@@ -61,11 +61,13 @@ input = Raxol.Terminal.Input.new(config)
 ### Input Modes
 
 1. **Normal Mode**
+
    - Character-by-character input
    - Special key handling
    - Command history
 
 2. **Insert Mode**
+
    - Text insertion
    - Character overwriting
    - Auto-indent
@@ -78,6 +80,7 @@ input = Raxol.Terminal.Input.new(config)
 ### Mouse Support
 
 1. **Event Types**
+
    - Click
    - Double click
    - Triple click
@@ -95,6 +98,7 @@ input = Raxol.Terminal.Input.new(config)
 ### Input Buffering
 
 1. **Buffer Types**
+
    - Character buffer
    - Key buffer
    - Command buffer
@@ -217,4 +221,4 @@ defmodule Raxol.Terminal.InputTest do
     assert Enum.member?(history, "command1")
   end
 end
-``` 
+```

@@ -63,12 +63,14 @@ windows = Raxol.Terminal.Windows.new(config)
 ### Window Types
 
 1. **Standard Windows**
+
    - Basic terminal window
    - Configurable size
    - Title bar
    - Scrollback buffer
 
 2. **Split Windows**
+
    - Horizontal splits
    - Vertical splits
    - Nested splits
@@ -83,6 +85,7 @@ windows = Raxol.Terminal.Windows.new(config)
 ### Window Management
 
 1. **Layout Management**
+
    - Tree-based layout
    - Dynamic resizing
    - Window constraints
@@ -97,6 +100,7 @@ windows = Raxol.Terminal.Windows.new(config)
 ### Window State
 
 1. **Persistent State**
+
    - Window positions
    - Window sizes
    - Scroll positions
@@ -235,4 +239,4 @@ defmodule Raxol.Terminal.WindowsTest do
     assert Windows.get_state(loaded, id).title == "Test"
   end
 end
-``` 
+```

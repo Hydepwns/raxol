@@ -38,6 +38,28 @@ lib/raxol/
 │   │   ├── plugins/       # Plugin Manager, Loader, Helpers, Registry
 │   │   └── rendering/     # Rendering Engine & Scheduler
 │   └── ...
+├── docs/                  # Project documentation (See docs/README.md)
+│   ├── development/
+│   │   └── terminal/      # Detailed terminal subsystem docs (See docs/development/terminal/README.md)
+│   │       ├── ANSIProcessing.md
+│   │       ├── CharacterSets.md
+│   │       ├── ClipboardManagement.md
+│   │       ├── ColorManagement.md
+│   │       ├── Cursor.md
+│   │       ├── InputHandling.md
+│   │       ├── KeyboardMapping.md
+│   │       ├── MouseHandling.md
+│   │       ├── ProcessManagement.md
+│   │       ├── ScreenBuffer.md
+│   │       ├── ScrollManagement.md
+│   │       ├── SearchAndHighlight.md
+│   │       ├── WindowManagement.md
+│   │       └── README.md
+│   ├── guides/
+│   │   ├── components/ # UI/Layout component docs
+│   │   └── ...         # Other user guides
+│   ├── ARCHITECTURE.md  # This file
+│   └── README.md        # Main documentation index
 ├── plugins/
 │   └── visualization/     # Visualization Plugin Renderers & Helpers (New)
 │       ├── chart_renderer.ex
@@ -58,7 +80,7 @@ lib/raxol/
 │   ├── layout/            # Layout Engine (measure/position)
 │   ├── renderer.ex        # Converts elements to styled cells
 │   └── theming/           # Theme definitions and application
-├── terminal/              # Terminal I/O and ANSI Processing
+├── terminal/              # Terminal I/O and ANSI Processing (Source Code)
 │   ├── ansi/              # ANSI sequence modules (Charsets, ScreenModes, etc.)
 │   │   ├── sixel_graphics.ex # Stateful sixel parser
 │   │   ├── sixel_palette.ex  # Sixel palette management (Extracted)
@@ -90,7 +112,6 @@ lib/raxol/
 - **Sixel Graphics (`Terminal.ANSI.SixelGraphics`):** Extracted pattern map and palette logic. Stateful parser implemented with parameter parsing for key commands. **RLE optimization implemented.**
 - **MultiLineInput Component (`UI.Components.Input.MultiLineInput`):** Core logic refactored into helper modules (`Text`, `Navigation`, `Render`, `Event`, `Clipboard`). Basic navigation, clipboard, scroll, selection, and basic mouse handling implemented. Basic tests added. **Refactored, Enhanced.**
 - **Visualization Plugin (`Plugins.VisualizationPlugin`):** Extracted rendering logic into helper modules (`ChartRenderer`, `TreemapRenderer`, `ImageRenderer`, `DrawingUtils`). Core plugin now delegates rendering via `handle_placeholder`. **Refactored.**
-- **Terminal Emulator (`Terminal.Emulator`):** Primarily manages terminal state (buffers, cursor, modes, charsets, etc.). C0/simple ESC sequence handling moved to `ControlCodes`. Autowrap logic extracted into helper. **Refactored.**
 - **User Preferences (`Core.Preferences.*`)**: Manages user preference loading, saving, and access via `UserPreferences` GenServer and `Persistence` module. Integrated with core modules. **Functional, Integrated.**
 - **Accessibility (`Core.Accessibility.*`)**: Provides core accessibility features (`announce`, specific setters like `set_high_contrast`). Options are read via `UserPreferences.get/1`. `ThemeIntegration` connects settings to themes. **API usage across codebase needs review/cleanup based on available public functions.**
 
@@ -107,7 +128,6 @@ lib/raxol/
 | `Raxol.UI.Renderer`                            | Converts layout elements to styled cells using active theme. Handles `:box`, `:text`, `:table`. | Functional         |
 | `Raxol.UI.Theming.Theme`                       | Theme data structure and retrieval                                                              | Functional         |
 | `Raxol.Terminal.Driver`                        | Handles terminal input/output, raw mode, basic parsing                                          | Functional         |
-| `Raxol.Terminal.Emulator`                      | Manages terminal state (buffers, cursor, modes, etc.)                                           | Refactored         |
 | `Raxol.Terminal.Parser`                        | Main parser state machine and state handlers                                                    | Refactored         |
 | `Raxol.Terminal.ControlCodes`                  | Handles C0 and simple ESC control codes                                                         | Refactored         |
 | `Raxol.Terminal.ANSI.SixelGraphics`            | Stateful Sixel graphics parser with RLE optimization                                            | Refactored, Opt.   |
@@ -157,7 +177,6 @@ lib/raxol/
 - Refactored `Benchmarks.Performance` and `Cloud.Monitoring` into sub-modules.
 - Refactored `VisualizationPlugin` into core plugin and helper modules (`ChartRenderer`, `TreemapRenderer`, `ImageRenderer`, `DrawingUtils`).
 - Corrected calls to `DrawingUtils` in `TreemapRenderer`.
-- Refactored `Terminal.Emulator` (moved C0/ESC to `ControlCodes`, extracted autowrap).
 - Refactored `Terminal.Parser` (extracted state handlers and CSI dispatchers).
 - Refactored `Terminal.Integration` (extracted `MemoryManager`, updated config merging).
 - Refactored `Terminal.ANSI.SixelGraphics` (extracted `SixelPalette`, `SixelPatternMap`; implemented stateful parser and parameter handling).
@@ -180,7 +199,7 @@ lib/raxol/
 
 - `./docs/development/planning/performance/case_studies.md` (~999 lines)
 - `./lib/raxol/plugins/plugin_manager.ex` (~962 lines)
-- `./docs/development/planning/examples/integration_example.md` (~915 lines)
+- `./lib/raxol/docs/development/planning/examples/integration_example.md` (~915 lines)
 
 **Big (600 - 899 LOC):**
 

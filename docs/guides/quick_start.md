@@ -1,15 +1,15 @@
 ---
 title: Quick Start Guide
 description: Create your first Raxol application
-date: 2024-06-05 # Updated to reflect recent activity
-author: Raxol Team # Standardized author
+date: 2025-04-27
+author: Raxol Team
 section: guides
-tags: [quick start, guide, tutorial, Raxol.App]
+tags: [quick start, guide, tutorial, application, components]
 ---
 
 # Quick Start Guide: Your First Raxol App
 
-This guide walks you through creating a simple "Hello, World!" terminal application using Raxol.
+This guide walks you through creating a simple stateful counter application using Raxol.
 
 ## Prerequisites
 
@@ -42,7 +42,7 @@ Then, fetch the dependency:
 mix deps.get
 ```
 
-For more details, see the [Installation Guide](../development/setup/DevelopmentSetup.md).
+For more details, see the [Development Setup](../development/DevelopmentSetup.md).
 
 ## 2. Create Your Application Module
 
