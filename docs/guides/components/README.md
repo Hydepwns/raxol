@@ -9,7 +9,7 @@ tags: [components, layout, ui, guides, documentation]
 
 # Raxol UI Components & Layout
 
-This document provides an overview of the UI component system and layout engine in Raxol.
+This document overviews the Raxol UI component system (`Base.Component` behaviour, `View.Elements` DSL, HEEx-like syntax) and the flexbox-inspired layout engine.
 
 ## Core Concepts
 
@@ -285,7 +285,7 @@ Raxol provides many other components located in `lib/raxol/ui/components/`.
 
 **Display Components (`lib/raxol/ui/components/display/`):**
 
-- `table`: Displays tabular data. Requires `:headers` and `:data` attributes.
+- `table`: Displays tabular data. Takes data and column definitions directly via attributes (e.g., `:headers`, `:data`) after refactoring.
 - `spinner`: Shows an animated loading indicator.
 - `progress` / `progress_bar`: Visualizes progress.
 
@@ -321,21 +321,14 @@ Advanced visualizations like charts and treemaps are handled via the `Raxol.Plug
 
 ## Layout System Details
 
-The layout engine uses a flexbox-inspired approach. You control layout using style attributes within the `View.Elements` macros or `<%= %>` blocks in HEEx. Key properties (often applied to `box` or `panel`) include:
+The layout engine uses a flexbox-inspired approach. Control layout using style attributes (`:flex_direction`, `:justify_content`, `:align_items`, `:width`, `:height`, `:padding`, `:margin`, `:flex_grow`, etc.) within the `View.Elements` macros or component tags.
 
-- `:flex_direction` (`:row` or `:column`)
-- `:justify_content` (`:flex_start`, `:center`, `:space_between`, etc.)
-- `:align_items` (`:flex_start`, `:center`, `:stretch`, etc.)
-- `:width`, `:height` (integer cells, `"percentage%"` string, `:auto`)
-- `:padding`, `:margin` (integer or map like `%{top: 1, left: 2}`)
-- `:flex_grow`, `:flex_shrink`, `:flex_basis`
-
-Refer to specific component documentation, examples, and potentially a dedicated layout guide (if created) for more details.
+Refer to specific component documentation and examples for more details.
 
 ## Creating Custom Components
 
-1.  Create a new module, e.g., `lib/raxol/ui/components/my_custom_component.ex`.
-2.  `use Raxol.UI.Components.Base.Component`.
-3.  Implement the required callbacks (`init/1`, `render/2`) and optional callbacks (`handle_event/3`, `update/2`).
-4.  Use `Raxol.View.Elements` macros or `~H` within your `render/2` function to define the component's structure.
-5.  Integrate your component into your application's `render/2` function using its module name as a function (`MyCustomComponent.render(assigns)`) or potentially as a tag (`<MyCustomComponent attr={value}/>` if HEEx integration supports it).
+1. Create a new module, e.g., `lib/raxol/ui/components/my_custom_component.ex`.
+2. `use Raxol.UI.Components.Base.Component`.
+3. Implement the required callbacks (`init/1`, `render/2`) and optional callbacks (`handle_event/3`, `update/2`).
+4. Use `Raxol.View.Elements` macros or `~H` within your `render/2` function to define the component's structure.
+5. Integrate your component into your application's `render/2` function using its module name as a function (`MyCustomComponent.render(assigns)`) or potentially as a tag (`<MyCustomComponent attr={value}/>` if HEEx integration supports it).

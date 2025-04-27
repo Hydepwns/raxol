@@ -78,6 +78,10 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Mixfile (`mix.exs`):** Removed obsolete `mod:` key, updated description.
 - **Examples:** Refactored `component_showcase.exs` theming tab to use `Raxol.Core.ColorSystem.get/2`.
 - **Documentation:** Reviewed and updated terminal subsystem documentation (`ANSIProcessing.md`, `CharacterSets.md`, `ClipboardManagement.md`, `ColorManagement.md`, `Cursor.md`) to align with current architecture (`Parser`, `Emulator`, `Driver`, `Theming`, `ColorSystem`, etc.) and remove outdated content.
+- **Documentation:** Rewritten `docs/development/planning/overview.md` to align with current state and future vision.
+- **Documentation:** Updated `docs/development/planning/handoff_prompt.md` to include future feature goals from overview.
+- **Documentation:** Updated `docs/development/planning/roadmap/Roadmap.md` based on revised overview.
+- **Documentation:** Performed major cleanup: removed obsolete files/stubs, relocated terminal detail files to `docs/development/terminal/`, updated links in root `README.md` and `docs/README.md`.
 
 ### Deprecated
 

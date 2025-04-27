@@ -16,13 +16,13 @@ Welcome to the main documentation index for Raxol, a terminal application toolki
 - **[Installation](development/DevelopmentSetup.md):** How to set up your development environment and add Raxol as a dependency.
 - **[Getting Started](guides/quick_start.md):** Build your first simple Raxol application using `Raxol.Core.Runtime.Application`.
 - **[Architecture](ARCHITECTURE.md):** Overview of the Raxol system architecture.
-- **[UI Components & Layout](guides/components.md):** Documentation for built-in UI components and the layout system.
+- **[UI Components & Layout](guides/components/README.md):** Documentation for built-in UI components and the layout system.
 - **[Async Operations](guides/async_operations.md):** Using subscriptions and commands for asynchronous tasks.
 - **[Theming](guides/theming.md):** Customizing the appearance of your application.
 - **[Plugin Development](guides/plugin_development.md):** Guide to creating custom plugins.
 - **[Terminal Details](development/terminal/README.md):** Lower-level information on terminal interaction.
 - **Examples:** Explore runnable examples in the main `/examples` directory.
-- **[CHANGELOG](../docs/development/changes/CHANGELOG.md):** Log of changes between versions.
+- **[CHANGELOG](development/changes/CHANGELOG.md):** Log of changes between versions.
 - **[Contributing](../CONTRIBUTING.md):** Guidelines for contributing to Raxol.
 
 ## Navigating the Docs
