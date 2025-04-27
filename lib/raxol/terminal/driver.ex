@@ -35,6 +35,7 @@ defmodule Raxol.Terminal.Driver do
   @doc "Starts the Terminal Driver process."
   @spec start_link(dispatcher_pid()) :: GenServer.on_start()
   def start_link(dispatcher_pid) when is_pid(dispatcher_pid) do
+    Logger.info("[#{__MODULE__}] start_link called for dispatcher: #{inspect(dispatcher_pid)}")
     GenServer.start_link(__MODULE__, dispatcher_pid, name: __MODULE__)
   end
 
@@ -42,25 +43,38 @@ defmodule Raxol.Terminal.Driver do
 
   @impl true
   def init(dispatcher_pid) do
-    Logger.info("Terminal Driver initializing...")
+    Logger.info("[#{__MODULE__}] init starting...")
     # Set process to trap exit signals to ensure cleanup
+    Logger.debug("[#{__MODULE__}] Setting trap_exit flag...")
     Process.flag(:trap_exit, true)
     # Subscribe to SIGWINCH for resize events
+    Logger.debug("[#{__MODULE__}] Subscribing to system_monitor :sigwinch...")
     :ok = :erlang.system_monitor(self(), [:sigwinch])
 
     # Register for SIGWINCH signals
+    Logger.debug("[#{__MODULE__}] Setting OS signal handler for :sigwinch...")
     :ok = :os.set_signal(:sigwinch, :deliver)
 
     # Save original terminal settings and set raw mode
-    original_stty = configure_terminal()
+    Logger.debug("[#{__MODULE__}] Configuring terminal (stty raw)...")
+    case configure_terminal() do
+      {:ok, original_stty} ->
+        Logger.debug("[#{__MODULE__}] Terminal configured. Original stty saved.")
+        # Subscribe to receive stdin data as messages using standard IO configuration
+        Logger.debug("[#{__MODULE__}] Setting stdio opts [:raw, encoding: :unicode, :binary]...")
+        :ok = :io.setopts(:stdio, [:raw, {:encoding, :unicode}, :binary])
 
-    # Subscribe to receive stdin data as messages using standard IO configuration
-    :ok = :io.setopts(:stdio, [:raw, {:encoding, :unicode}, :binary])
+        # Send initial size event
+        Logger.debug("[#{__MODULE__}] Sending initial resize event...")
+        send_initial_resize_event(dispatcher_pid)
 
-    # Send initial size event
-    send_initial_resize_event(dispatcher_pid)
+        Logger.info("[#{__MODULE__}] init completed successfully.")
+        {:ok, %State{dispatcher_pid: dispatcher_pid, original_stty: original_stty}}
 
-    {:ok, %State{dispatcher_pid: dispatcher_pid, original_stty: original_stty}}
+      {:error, reason} ->
+        Logger.error("[#{__MODULE__}] Failed to configure terminal: #{inspect(reason)}. Halting init.")
+        {:stop, {:terminal_setup_failed, reason}} # Stop the GenServer if terminal setup fails
+    end
   end
 
   @impl true

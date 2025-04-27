@@ -5,8 +5,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
-  # Import main parser for helper functions
-  import Raxol.Terminal.Parser, only: [dispatch_osc_command: 2]
+  alias Raxol.Terminal.Commands.Executor
   require Logger
 
   @doc """
@@ -33,7 +32,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
       <<7, rest_after_bel::binary>> ->
         # Call the dispatcher function (now imported)
         new_emulator =
-          dispatch_osc_command(
+          Executor.execute_osc_command(
             emulator,
             parser_state.payload_buffer
           )

@@ -5,8 +5,7 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
-  # Import main parser for helper functions
-  import Raxol.Terminal.Parser, only: [dispatch_dcs_command: 5]
+  alias Raxol.Terminal.Commands.Executor
   require Logger
 
   @doc """
@@ -25,7 +24,7 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState do
         # Completed DCS Sequence
         # Call the dispatcher function (now imported)
         new_emulator =
-          dispatch_dcs_command(
+          Executor.execute_dcs_command(
             emulator,
             parser_state.params_buffer,
             parser_state.intermediates_buffer,

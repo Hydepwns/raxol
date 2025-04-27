@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
+  alias Raxol.Terminal.ControlCodes
   require Logger
 
   @doc """
@@ -35,15 +36,15 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
 
       # LF
       <<10, rest_after_lf::binary>> ->
-        # Call back to Emulator
-        new_emulator = Emulator.handle_lf(emulator)
+        # Call back to ControlCodes
+        new_emulator = ControlCodes.handle_lf(emulator)
         # Continue with same parser state
         {:continue, new_emulator, parser_state, rest_after_lf}
 
       # CR
       <<13, rest_after_cr::binary>> ->
-        # Call back to Emulator
-        new_emulator = Emulator.handle_cr(emulator)
+        # Call back to ControlCodes
+        new_emulator = ControlCodes.handle_cr(emulator)
         # Continue with same parser state
         {:continue, new_emulator, parser_state, rest_after_cr}
 
@@ -58,7 +59,10 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
       # Fallback for other C0 or invalid UTF-8
       <<byte, rest::binary>> ->
         if byte >= 0 and byte <= 31 and byte != 10 and byte != 13 do
-          # Call back to Emulator for C0
+          # Call back to Emulator for C0 (needs a generic C0 handler in ControlCodes?)
+          # Or check specific codes and call ControlCodes handlers?
+          # For now, keep calling Emulator.process_character as a placeholder
+          # TODO: Refactor C0 handling here to use ControlCodes module
           new_emulator = Emulator.process_character(emulator, byte)
           {:continue, new_emulator, parser_state, rest}
         else

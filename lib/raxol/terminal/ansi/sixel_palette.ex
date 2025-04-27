@@ -70,6 +70,12 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
     end)
   end
 
+  @doc """
+  Returns the maximum valid color index (typically 255 for a 256-color palette).
+  """
+  @spec max_colors() :: non_neg_integer()
+  def max_colors(), do: 255
+
   # TODO: Add functions for defining custom colors via Sixel '#' command
   # e.g., define_color(palette, index, format, p1, p2, p3, p4, p5)
 end
