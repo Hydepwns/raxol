@@ -5,8 +5,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
-  # Import main parser for helper functions
-  import Raxol.Terminal.Parser, only: [dispatch_osc_command: 2]
+  alias Raxol.Terminal.Commands.Executor
   require Logger
 
   @doc """
@@ -20,11 +19,22 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
         input
       ) do
     case input do
-      # Found ST (ESC \), use literal 92 for '\'
-      <<92, rest_after_st::binary>> ->
+      # BEL terminates OSC string (alternative terminator)
+      <<7, rest_after_bel::binary>> ->
         # Call the dispatcher function (now imported)
         new_emulator =
-          dispatch_osc_command(
+          Executor.execute_osc_command(
+            emulator,
+            parser_state.payload_buffer
+          )
+        next_parser_state = %{parser_state | state: :ground}
+        {:continue, new_emulator, next_parser_state, rest_after_bel}
+
+      # ST (ESC \) terminates OSC string
+      <<?\\, rest_after_st::binary>> -> # Use ?\\ for clarity
+        # Call the dispatcher function
+        new_emulator =
+          Executor.execute_osc_command(
             emulator,
             parser_state.payload_buffer
           )
@@ -48,6 +58,14 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
         )
         # Go to ground, return emulator as is
         {:handled, emulator}
+
+      # Ignore CAN, SUB (abort sequence) - Moved for clarity
+      <<ignored_byte, rest_after_ignored::binary>>
+      when ignored_byte == 0x18 or ignored_byte == 0x1A ->
+        Logger.debug("Ignoring CAN/SUB byte during OSC String (after ESC)")
+        # Abort sequence, go to ground
+        next_parser_state = %{parser_state | state: :ground}
+        {:continue, emulator, next_parser_state, rest_after_ignored}
     end
   end
 end

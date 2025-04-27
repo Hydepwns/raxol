@@ -120,9 +120,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @spec clear_scroll_region(t()) :: t()
   defdelegate clear_scroll_region(buffer), to: Operations
 
-  @doc "Gets scroll position. See `Raxol.Terminal.Buffer.Scrollback.get_position/1`."
+  @doc "Gets scrollback size. See `Raxol.Terminal.Buffer.Scrollback.size/1`."
   @spec get_scroll_position(t()) :: non_neg_integer()
-  defdelegate get_scroll_position(buffer), to: Scrollback, as: :get_position
+  defdelegate get_scroll_position(buffer), to: Scrollback, as: :size
 
   @doc "Gets scroll region boundaries. See `Raxol.Terminal.Buffer.Operations.get_scroll_region_boundaries/1`."
   @spec get_scroll_region_boundaries(t()) ::

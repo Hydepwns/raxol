@@ -5,12 +5,7 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
-  # Import main parser for helper functions
-  import Raxol.Terminal.Parser, only: [
-    accumulate_csi_param: 2,
-    collect_csi_intermediate: 2,
-    dispatch_csi_command: 4
-  ]
+  alias Raxol.Terminal.Commands.Executor
   require Logger
 
   @doc """
@@ -32,14 +27,21 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
       # Collect more intermediate bytes
       <<intermediate_byte, rest_after_intermediate::binary>>
       when intermediate_byte >= 0x20 and intermediate_byte <= 0x2F ->
-        next_parser_state =
-          collect_csi_intermediate(parser_state, intermediate_byte)
+        # Collect intermediate directly
+        next_parser_state = %{
+          parser_state
+          | intermediates_buffer: parser_state.intermediates_buffer <> <<intermediate_byte>>
+        }
         {:continue, emulator, next_parser_state, rest_after_intermediate}
 
       # Parameter byte or separator
       <<param_byte, rest_after_param::binary>>
       when param_byte >= ?0 and param_byte <= ?; ->
-        next_parser_state = accumulate_csi_param(parser_state, param_byte)
+        # Accumulate parameter directly
+        next_parser_state = %{
+          parser_state
+          | params_buffer: parser_state.params_buffer <> <<param_byte>>
+        }
         # Transition back to csi_param state to continue collecting params
         {:continue, emulator, %{next_parser_state | state: :csi_param}, rest_after_param}
 
@@ -47,7 +49,7 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
       <<final_byte, rest_after_final::binary>>
       when final_byte >= 0x40 and final_byte <= 0x7E ->
         new_emulator =
-          dispatch_csi_command(
+          Executor.execute_csi_command(
             emulator,
             parser_state.params_buffer,
             parser_state.intermediates_buffer,

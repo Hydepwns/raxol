@@ -12,7 +12,6 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   require Logger
   import Bitwise # Import Bitwise for operators
 
-  alias Raxol.Terminal.ANSI.SequenceParser
   alias Raxol.Terminal.ANSI.SixelPatternMap
   alias Raxol.Terminal.ANSI.SixelPalette
 
@@ -154,174 +153,214 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
   # --- Parsing Logic ---
 
+  # Helper to parse integer parameters like Pn1;Pn2;... from the start of a binary
+  # Returns {:ok, [param1, param2, ...], rest_of_binary} or {:error, reason, original_binary}
+  defp consume_integer_params(input_binary) do
+    # Regex to find leading digits, optionally separated by semicolons
+    # It captures the entire param section and the rest
+    case Regex.run(~r/^([0-9;]*)(.*)/s, input_binary) do
+      [_full_match, param_section, rest_of_binary] ->
+        params =
+          param_section
+          |> String.split(";", trim: true)
+          |> Enum.map(&String.to_integer/1)
+        {:ok, params, rest_of_binary}
+      nil ->
+        # No params found at the beginning
+        {:ok, [], input_binary} # Return empty list and original binary
+      # Error case for String.to_integer handled by Enum.map/exception
+      # Consider adding explicit error handling if needed
+    end
+  rescue
+    e in ArgumentError -> {:error, {"Invalid integer parameter", e}, input_binary}
+  end
+
   # Placeholder for DCS parameter parsing
   defp parse_dcs_params(_param_str), do: %{}
 
   @doc false
   # Main recursive Sixel data parser
-  defp parse_sixel_data(<<>>, parser_state) do
+  defp parse_sixel_data(data, state) when is_binary(data) do
     # End of stream
-    {:ok, parser_state}
-  end
-
-  # Raster Attributes
-  defp parse_sixel_data(<<?", rest::binary>>, parser_state) do
-    # Parse " Pan;Pad;Ph;Pv
-    case SequenceParser.consume_integer_params(rest) do
-      {[pan, pad, ph, pv], remaining_data, _count} ->
-        Logger.debug(
-          "Sixel Parser: Found Raster Attributes. Pan=#{pan}, Pad=#{pad}, Ph=#{ph}, Pv=#{pv}"
-        )
-
-        new_attrs = %{
-          aspect_num: pan || 1,
-          aspect_den: pad || 1,
-          width: ph,
-          height: pv
-        }
-
-        parse_sixel_data(remaining_data, %{parser_state | raster_attrs: new_attrs})
-
-      {_params, _remaining_data, 0} ->
-        # No params provided, treat as default (or keep existing? Check spec - keeping existing for now)
-        Logger.debug("Sixel Parser: Found Raster Attributes with no parameters.")
-        parse_sixel_data(rest, parser_state) # Effectively skips just the '"'
-
-      {:error, reason} ->
-        Logger.warning("Sixel Parser: Error parsing Raster Attributes: #{inspect(reason)}. Skipping.")
-        # Decide how to handle error - skip the likely malformed params?
-        # For now, just skip the '"' and continue
-        parse_sixel_data(rest, parser_state)
-    end
-  end
-
-  # Color Definition
-  defp parse_sixel_data(<<?#, rest::binary>>, parser_state) do
-    # Parse # Pc;Pa;Px;Py;Pz
-    case SequenceParser.consume_integer_params(rest) do
-      {[pc | color_params], remaining_data, _count} ->
-        if pc >= 0 and pc <= SixelPalette.max_colors() do
-          color_space = List.first(color_params) || 1 # Default to HLS
-          color_values = List.drop(color_params, 1)
-
-          px = Enum.at(color_values, 0) || 0
-          py = Enum.at(color_values, 1) || 0
-          pz = Enum.at(color_values, 2) || 0
-
-          case convert_color(color_space, px, py, pz) do
-            {:ok, {r, g, b}} ->
+    if data == <<>> do
+      {:ok, state}
+    else
+      # Parse " Pan;Pad;Ph;Pv
+      case data do
+        <<"\"", rest::binary>> ->
+          case consume_integer_params(rest) do # Use local helper
+            {:ok, [pan, pad, ph, pv], remaining_data} ->
               Logger.debug(
-                "Sixel Parser: Defining Color ##{pc}. Space=#{color_space}, Vals=#{px};#{py};#{pz} -> RGB(#{r},#{g},#{b})"
+                "Sixel Parser: Found Raster Attributes. Pan=#{pan}, Pad=#{pad}, Ph=#{ph}, Pv=#{pv}"
               )
-              new_palette = Map.put(parser_state.palette, pc, {r, g, b})
-              parse_sixel_data(remaining_data, %{
-                parser_state
-                | palette: new_palette,
-                  color_index: pc # Select the newly defined color
-              })
 
-            {:error, reason} ->
-              Logger.warning(
-                "Sixel Parser: Invalid color definition ##{pc}: #{inspect(reason)}. Skipping."
-              )
-              parse_sixel_data(remaining_data, parser_state) # Skip invalid definition
+              new_attrs = %{
+                aspect_num: pan || 1,
+                aspect_den: pad || 1,
+                width: ph,
+                height: pv
+              }
+
+              parse_sixel_data(remaining_data, %{state | raster_attrs: new_attrs})
+
+            # Handle case where params might be fewer than 4 - use Enum.at or defaults
+            {:ok, params, remaining_data} ->
+              Logger.debug("Sixel Parser: Found Raster Attributes with params: #{inspect(params)}")
+              pan = Enum.at(params, 0)
+              pad = Enum.at(params, 1)
+              ph = Enum.at(params, 2)
+              pv = Enum.at(params, 3)
+              new_attrs = %{
+                aspect_num: pan || 1,
+                aspect_den: pad || 1,
+                width: ph, # ph/pv can be nil if not provided
+                height: pv
+              }
+              parse_sixel_data(remaining_data, %{state | raster_attrs: new_attrs})
+
+            {:error, reason, _original_binary} ->
+              Logger.warning("Sixel Parser: Error parsing Raster Attributes: #{inspect(reason)}. Skipping.")
+              # Decide how to handle error - skip the likely malformed params?
+              # For now, just skip the '"' and continue
+              parse_sixel_data(rest, state)
           end
-        else
-          Logger.warning("Sixel Parser: Invalid color index ##{pc}. Skipping.")
-          parse_sixel_data(remaining_data, parser_state)
-        end
 
-      {_params, _remaining_data, 0} ->
-        # No params means select color 0
-        Logger.debug("Sixel Parser: Found Color Definition with no parameters (Selecting color 0).")
-        parse_sixel_data(rest, %{parser_state | color_index: 0}) # Skip only '#'
+        # Parse # Pc;Pa;Px;Py;Pz
+        <<"#", rest::binary>> ->
+          case consume_integer_params(rest) do # Use local helper
+            {:ok, [pc | color_params], remaining_data} ->
+              if pc >= 0 and pc <= SixelPalette.max_colors() do
+                color_space = Enum.at(color_params, 0) || 1 # Default to HLS if Pa missing
+                px = Enum.at(color_params, 1) || 0
+                py = Enum.at(color_params, 2) || 0
+                pz = Enum.at(color_params, 3) || 0 # Use Enum.at for safety
 
-      {:error, reason} ->
-        Logger.warning("Sixel Parser: Error parsing Color Definition: #{inspect(reason)}. Skipping.")
-        parse_sixel_data(rest, parser_state)
-    end
-  end
+                case convert_color(color_space, px, py, pz) do
+                  {:ok, {r, g, b}} ->
+                    Logger.debug(
+                      "Sixel Parser: Defining Color ##{pc}. Space=#{color_space}, Vals=#{px};#{py};#{pz} -> RGB(#{r},#{g},#{b})"
+                    )
+                    new_palette = Map.put(state.palette, pc, {r, g, b})
+                    parse_sixel_data(remaining_data, %{
+                      state
+                      | palette: new_palette,
+                        color_index: pc # Select the newly defined color
+                    })
 
-  # Repeat Command
-  defp parse_sixel_data(<<?!, rest::binary>>, parser_state) do
-    # Parse ! Pn <char>
-    case SequenceParser.consume_integer_params(rest) do
-      {[pn], remaining_data, _count} when pn > 0 ->
-        Logger.debug("Sixel Parser: Found Repeat Command !#{pn}")
-        # We only set the repeat count here.
-        # The *next* character processed will use this count.
-        parse_sixel_data(remaining_data, %{parser_state | repeat_count: pn})
+                  {:error, reason} ->
+                    Logger.warning(
+                      "Sixel Parser: Invalid color definition ##{pc}: #{inspect(reason)}. Skipping."
+                    )
+                    parse_sixel_data(remaining_data, state) # Skip invalid definition
+                end
+              else
+                Logger.warning("Sixel Parser: Invalid color index ##{pc}. Skipping.")
+                parse_sixel_data(remaining_data, state)
+              end
 
-      {_params, remaining_data, 0} ->
-        # '!' without params is invalid according to some sources, but could mean repeat=1?
-        # Treat as no-op for now, just consume '!'.
-        Logger.debug("Sixel Parser: Found Repeat Command without parameters (Skipping).")
-        parse_sixel_data(rest, parser_state) # Skip just '!'
+            # Handle case where only Pc is provided (or empty params)
+            {:ok, params, remaining_data} ->
+              case params do
+                [pc] -> # Only Pc provided
+                   if pc >= 0 and pc <= SixelPalette.max_colors() do
+                     Logger.debug("Sixel Parser: Selecting Color ##{pc}")
+                     parse_sixel_data(remaining_data, %{state | color_index: pc})
+                   else
+                     Logger.warning("Sixel Parser: Invalid color index ##{pc} for selection. Skipping.")
+                     parse_sixel_data(remaining_data, state)
+                   end
+                [] -> # No params means select color 0
+                  Logger.debug("Sixel Parser: Found Color Definition with no parameters (Selecting color 0).")
+                  parse_sixel_data(rest, %{state | color_index: 0}) # Skip only '#'
+                _ -> # Unexpected number of params
+                  Logger.warning("Sixel Parser: Unexpected params for Color Definition: #{inspect(params)}. Skipping.")
+                  parse_sixel_data(remaining_data, state)
+              end
 
-      {_, remaining_data, _} -> # Includes pn <= 0 or multiple params
-        Logger.warning("Sixel Parser: Invalid repeat count found. Skipping repeat command.")
-        parse_sixel_data(remaining_data, parser_state)
+            {:error, reason, _original_binary} ->
+              Logger.warning("Sixel Parser: Error parsing Color Definition: #{inspect(reason)}. Skipping.")
+              parse_sixel_data(rest, state)
+          end
 
-      {:error, reason} ->
-        Logger.warning("Sixel Parser: Error parsing Repeat Command: #{inspect(reason)}. Skipping.")
-        parse_sixel_data(rest, parser_state) # Skip just '!'
-    end
-  end
+        # Parse ! Pn <char>
+        <<"!", rest::binary>> ->
+          case consume_integer_params(rest) do # Use local helper
+            {:ok, [pn], remaining_data} when pn > 0 ->
+              Logger.debug("Sixel Parser: Found Repeat Command !#{pn}")
+              # We only set the repeat count here.
+              # The *next* character processed will use this count.
+              parse_sixel_data(remaining_data, %{state | repeat_count: pn})
 
-  # Carriage Return
-  defp parse_sixel_data(<<?$, rest::binary>>, parser_state) do
-    Logger.debug("Sixel Parser: Found CR ($)")
-    parse_sixel_data(rest, %{parser_state | x: 0})
-  end
+            {:ok, [pn], remaining_data} -> # Includes pn <= 0, Renamed _pn to pn
+               Logger.warning("Sixel Parser: Invalid repeat count found (!#{pn}). Skipping repeat command.")
+               parse_sixel_data(remaining_data, state)
 
-  # Newline
-  defp parse_sixel_data(<<?-, rest::binary>>, parser_state) do
-    Logger.debug("Sixel Parser: Found NL (-)")
-    new_y = parser_state.y + 6
-    parse_sixel_data(rest, %{parser_state | x: 0, y: new_y, max_y: max(parser_state.max_y, new_y + 5)})
-  end
+            {:ok, [], remaining_data} -> # No params
+              Logger.debug("Sixel Parser: Found Repeat Command without parameters (Skipping).")
+              parse_sixel_data(remaining_data, state)
 
-  # Data Character
-  defp parse_sixel_data(<<char_code, rest::binary>>, parser_state) when char_code >= ?\? and char_code <= ?~ do
-    pattern_int = SixelPatternMap.get_pattern(char_code)
-    pixels = SixelPatternMap.pattern_to_pixels(pattern_int)
-    repeat = parser_state.repeat_count
-    start_x = parser_state.x
-    y = parser_state.y
-    color = parser_state.color_index
+            {:error, reason, _original_binary} ->
+              Logger.warning("Sixel Parser: Error parsing Repeat Command: #{inspect(reason)}. Skipping.")
+              parse_sixel_data(rest, state) # Skip just '!'
+          end
 
-    # Optimize pixel buffer update using batching
-    new_pixels_batch =
-      for i <- 0..(repeat - 1), reduce: %{} do
-        acc ->
-          current_x = start_x + i
-          Enum.reduce(0..5, acc, fn bit_index, inner_acc ->
-            if Enum.at(pixels, bit_index) == 1 do
-              Map.put(inner_acc, {current_x, y + bit_index}, color)
-            else
-              inner_acc
+        # Parse CR ($)
+        <<"$", rest::binary>> ->
+          Logger.debug("Sixel Parser: Found CR ($)")
+          parse_sixel_data(rest, %{state | x: 0})
+
+        # Parse NL (-), move to next line
+        <<"-", rest::binary>> ->
+          Logger.debug("Sixel Parser: Found NL (-)")
+          new_y = state.y + 6
+          parse_sixel_data(rest, %{state | x: 0, y: new_y, max_y: max(state.max_y, new_y + 5)})
+
+        # Parse data character
+        <<char_code, rest::binary>> when char_code >= ?\? and char_code <= ?~ ->
+          pattern_int = SixelPatternMap.get_pattern(char_code)
+          pixels = SixelPatternMap.pattern_to_pixels(pattern_int)
+          repeat = state.repeat_count
+          start_x = state.x
+          y = state.y
+          color = state.color_index
+
+          # Optimize pixel buffer update using batching
+          new_pixels_batch =
+            for i <- 0..(repeat - 1), reduce: %{} do
+              acc ->
+                current_x = start_x + i
+                Enum.reduce(0..5, acc, fn bit_index, inner_acc ->
+                  if Enum.at(pixels, bit_index) == 1 do
+                    Map.put(inner_acc, {current_x, y + bit_index}, color)
+                  else
+                    inner_acc
+                  end
+                end)
             end
-          end)
+
+          new_buffer = Map.merge(state.pixel_buffer, new_pixels_batch)
+
+          new_x = start_x + repeat
+          updated_state = %{
+            state |
+            x: new_x,
+            repeat_count: 1, # Reset repeat count after use
+            pixel_buffer: new_buffer,
+            max_x: max(state.max_x, new_x - 1), # Track max column used
+            max_y: max(state.max_y, y + 5)      # Track max row used
+          }
+          parse_sixel_data(rest, updated_state)
+
+        # Unknown/Invalid Character
+        _ ->
+          Logger.warning("Sixel Parser: Skipping invalid byte #{inspect(data)}") # Use inspect for potentially multi-byte
+          # Attempt to recover by skipping one byte if possible
+          case data do
+            <<_byte, rest::binary>> -> parse_sixel_data(rest, state)
+            _ -> {:ok, state} # Cannot skip, end parsing
+          end
       end
-
-    new_buffer = Map.merge(parser_state.pixel_buffer, new_pixels_batch)
-
-    new_x = start_x + repeat
-    updated_state = %{
-      parser_state |
-      x: new_x,
-      repeat_count: 1, # Reset repeat count after use
-      pixel_buffer: new_buffer,
-      max_x: max(parser_state.max_x, new_x - 1), # Track max column used
-      max_y: max(parser_state.max_y, y + 5)      # Track max row used
-    }
-    parse_sixel_data(rest, updated_state)
-  end
-
-  # Unknown/Invalid Character
-  defp parse_sixel_data(<<byte, rest::binary>>, parser_state) do
-    Logger.warning("Sixel Parser: Skipping invalid byte #{byte}")
-    parse_sixel_data(rest, parser_state)
+    end
   end
 
   # --- Color Conversion Helpers ---
@@ -357,25 +396,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
       val = round(l * 255)
       {:ok, {val, val, val}}
     else
-      c = (1 - abs(2 * l - 1)) * s
+      c = (1.0 - abs(2.0 * l - 1.0)) * s
       h_prime = h / 60.0
-      x = c * (1 - abs(rem(h_prime, 2) - 1))
+      x = c * (1.0 - abs(rem(round(h_prime), 2) - 1.0))
+      m = l - c / 2.0
 
-      {r1, g1, b1} =
-        cond do
-          h_prime < 1 -> {c, x, 0}
-          h_prime < 2 -> {x, c, 0}
-          h_prime < 3 -> {0, c, x}
-          h_prime < 4 -> {0, x, c}
-          h_prime < 5 -> {x, 0, c}
-          true -> {c, 0, x}
-        end
-
-      m = l - c / 2
-
-      r = round((r1 + m) * 255)
-      g = round((g1 + m) * 255)
-      b = round((b1 + m) * 255)
+      r = round((x + m) * 255)
+      g = round((x + m) * 255)
+      b = round((x + m) * 255)
       {:ok, {r, g, b}}
     end
   end
@@ -460,6 +488,11 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   # Helper function to generate the core Sixel pixel data string
   # Implements Run-Length Encoding (RLE) for optimization.
   defp generate_pixel_data(pixel_buffer, width, height, _used_colors) do
+    # Assume SixelPalette.rgb_to_color_index/2 exists and returns index or nil
+    # Need to pass the palette state from the parsing stage!
+    # Placeholder: Assume `palette` variable is available
+    _palette = %{} # Added placeholder palette, prefixed unused
+
     # Sixel data is built column by column, band by band (6 rows high).
     sixel_bands = for band_y <- 0..(height - 1) // 6 do
       # Process one 6-row high horizontal band across the image width
@@ -470,7 +503,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
       # Iterate through columns, applying RLE
       # Capture the full final accumulator
-      {final_band_commands, final_last_color, final_last_char, final_repeat_count} =
+      {final_band_commands, _final_last_color, final_last_char, final_repeat_count} =
         for x <- 0..(width - 1), reduce: initial_acc do
         {acc_commands, last_color, last_char, repeat_count} ->
           # Collect pixels for the current column slice (x, band_y*6) to (x, band_y*6 + 5)
@@ -497,14 +530,16 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
           # where a *single* color+bitmask pair repeats across columns.
           # Handling RLE for multi-color columns is significantly more complex.
 
+          # Initialize vars outside the if
           current_color = nil
           current_char = nil
+
           is_simple_column = map_size(column_pixels_by_color) == 1
 
           if is_simple_column do
              [{c, b}] = Map.to_list(column_pixels_by_color)
-             current_color = c
-             current_char = <<(b + 63)>>
+             current_color = c # Assign inner value
+             current_char = <<(b + 63)>> # Assign inner value
           end
 
           # Check if the current simple column matches the previous one
@@ -538,24 +573,24 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
                  current_column_commands
               end
 
-            # Start a new run if it's a simple column, otherwise reset RLE state
-            color_selection_cmd = [] # Initialize outside the if
-            {new_last_color, new_last_char, new_repeat_count} =
+            # Determine color selection command and next RLE state
+            {color_selection_cmd_for_new_run, new_last_color, new_last_char, new_repeat_count} =
               if is_simple_column do
-                # Select the new color before starting the run
-                color_selection_cmd = [<<"#", Integer.to_string(current_color)::binary>>]
-                {current_color, current_char, 1} # Start new run of 1
+                # Prepare the command to select the new color
+                safe_color_index = current_color || 0
+                cmd = [<<"#", Integer.to_string(safe_color_index)::binary>>]
+                {cmd, current_color, current_char, 1} # Start new run of 1
               else
-                # color_selection_cmd remains []
-                {nil, nil, 0} # Reset RLE state
+                {[], nil, nil, 0} # Reset RLE state, no selection command needed now
               end
 
             # Combine output commands
-            # If starting a new run, prepend the color selection
             combined_output =
               if new_repeat_count == 1 do
-                output_commands ++ color_selection_cmd ++ current_column_commands
+                # Started a new run, prepend color selection command
+                output_commands ++ color_selection_cmd_for_new_run ++ current_column_commands
               else
+                # Did not start a new run (complex column or end of data)
                 output_commands ++ current_column_commands
               end
 

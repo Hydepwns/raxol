@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
+  alias Raxol.Terminal.ControlCodes
   require Logger
 
   @doc """
@@ -106,7 +107,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
       <<?c, rest_after::binary>> ->
         # IO.inspect({:parse_loop_escape_ris, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
-        new_emulator = Emulator.handle_ris(emulator)
+        new_emulator = ControlCodes.handle_ris(emulator)
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after}
 
@@ -114,7 +115,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
       <<?D, rest_after::binary>> ->
         # IO.inspect({:parse_loop_escape_ind, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
-        new_emulator = Emulator.handle_ind(emulator)
+        new_emulator = ControlCodes.handle_ind(emulator)
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after}
 
@@ -122,7 +123,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
       <<?E, rest_after::binary>> ->
         # IO.inspect({:parse_loop_escape_nel, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
-        new_emulator = Emulator.handle_nel(emulator)
+        new_emulator = ControlCodes.handle_nel(emulator)
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after}
 
@@ -130,7 +131,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
       <<?H, rest_after::binary>> ->
         # IO.inspect({:parse_loop_escape_hts, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
-        new_emulator = Emulator.handle_hts(emulator)
+        new_emulator = ControlCodes.handle_hts(emulator)
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after}
 
@@ -138,7 +139,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
       <<?M, rest_after::binary>> ->
         # IO.inspect({:parse_loop_escape_ri, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
-        new_emulator = Emulator.handle_ri(emulator)
+        new_emulator = ControlCodes.handle_ri(emulator)
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after}
 
@@ -146,7 +147,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
       <<?7, rest_after::binary>> ->
         # IO.inspect({:parse_loop_escape_decsc, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
-        new_emulator = Emulator.handle_decsc(emulator)
+        new_emulator = ControlCodes.handle_decsc(emulator)
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after}
 
@@ -154,7 +155,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
       <<?8, rest_after::binary>> ->
         # IO.inspect({:parse_loop_escape_decrc, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
-        new_emulator = Emulator.handle_decrc(emulator)
+        new_emulator = ControlCodes.handle_decrc(emulator)
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after}
 

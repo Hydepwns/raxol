@@ -10,7 +10,6 @@ defmodule Raxol.Terminal.Emulator do
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.Cursor.Manager
-  alias Raxol.Terminal.ControlCodes
   alias Raxol.Terminal.Parser
   alias Raxol.Plugins.PluginManager
 

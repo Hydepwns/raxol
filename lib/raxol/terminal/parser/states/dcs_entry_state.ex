@@ -5,12 +5,6 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
-  # Import main parser for helper functions
-  import Raxol.Terminal.Parser, only: [
-    accumulate_dcs_param: 2,
-    collect_dcs_intermediate: 2
-    # dispatch_dcs_command not needed here, happens in passthrough
-  ]
   require Logger
 
   @doc """
@@ -28,20 +22,31 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
       # Parameter byte
       <<param_byte, rest_after_param::binary>>
       when param_byte >= ?0 and param_byte <= ?9 ->
-        next_parser_state = accumulate_dcs_param(parser_state, param_byte)
+        # Accumulate parameter directly
+        next_parser_state = %{
+          parser_state
+          | params_buffer: parser_state.params_buffer <> <<param_byte>>
+        }
         # Stay in dcs_entry while collecting params/intermediates
         {:continue, emulator, next_parser_state, rest_after_param}
 
       # Semicolon parameter separator
       <<?;, rest_after_param::binary>> ->
-        next_parser_state = accumulate_dcs_param(parser_state, ?;)
+        # Accumulate separator directly
+        next_parser_state = %{
+          parser_state
+          | params_buffer: parser_state.params_buffer <> <<?;>>
+        }
         {:continue, emulator, next_parser_state, rest_after_param}
 
       # Intermediate byte
       <<intermediate_byte, rest_after_intermediate::binary>>
       when intermediate_byte >= 0x20 and intermediate_byte <= 0x2F ->
-        next_parser_state =
-          collect_dcs_intermediate(parser_state, intermediate_byte)
+        # Collect intermediate directly
+        next_parser_state = %{
+          parser_state
+          | intermediates_buffer: parser_state.intermediates_buffer <> <<intermediate_byte>>
+        }
         {:continue, emulator, next_parser_state, rest_after_intermediate}
 
       # Final byte (ends DCS header, moves to passthrough)
