@@ -10,6 +10,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   """
 
   require Logger
+  import Bitwise # Import Bitwise for operators
 
   alias Raxol.Terminal.ANSI.SequenceParser
   alias Raxol.Terminal.ANSI.SixelPatternMap
@@ -468,11 +469,11 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
       initial_acc = {[], nil, nil, 0}
 
       # Iterate through columns, applying RLE
-      {final_band_commands, _, _, _} =
+      # Capture the full final accumulator
+      {final_band_commands, final_last_color, final_last_char, final_repeat_count} =
         for x <- 0..(width - 1), reduce: initial_acc do
         {acc_commands, last_color, last_char, repeat_count} ->
           # Collect pixels for the current column slice (x, band_y*6) to (x, band_y*6 + 5)
-          # Group them by color index
           column_pixels_by_color =
             (band_y * 6)..(band_y * 6 + current_band_height - 1)
             |> Enum.reduce(%{}, fn y, acc ->
@@ -538,13 +539,15 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
               end
 
             # Start a new run if it's a simple column, otherwise reset RLE state
+            color_selection_cmd = [] # Initialize outside the if
             {new_last_color, new_last_char, new_repeat_count} =
               if is_simple_column do
-                 # Select the new color before starting the run
-                 color_selection_cmd = [<<"#", Integer.to_string(current_color)::binary>>]
-                 {current_color, current_char, 1} # Start new run of 1
+                # Select the new color before starting the run
+                color_selection_cmd = [<<"#", Integer.to_string(current_color)::binary>>]
+                {current_color, current_char, 1} # Start new run of 1
               else
-                 {nil, nil, 0} # Reset RLE state
+                # color_selection_cmd remains []
+                {nil, nil, 0} # Reset RLE state
               end
 
             # Combine output commands
@@ -558,12 +561,11 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
             {acc_commands ++ combined_output, new_last_color, new_last_char, new_repeat_count}
           end
-        # -- RLE Logic End --
-      end # end reduce loop (columns)
+        end # end reduce loop (columns)
 
-      # After the loop, output any remaining run
+      # After the loop, output any remaining run using values from the final accumulator
       final_output_commands =
-        case {last_char, repeat_count} do
+        case {final_last_char, final_repeat_count} do
           {nil, _} -> [] # No run pending
           {char, 1} -> [char] # Output single char
           {char, count} -> [<<"!", Integer.to_string(count)::binary>>, char] # Output RLE

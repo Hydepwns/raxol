@@ -86,7 +86,7 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
 
 
   def insert_char(state, char) do
-    %{value: value, cursor_row: row, cursor_col: col} = state
+    %{value: value, cursor_pos: {row, col}} = state
     # Use range helper to insert the character, passing tuples
     start_pos = {row, col}
     {new_value, _} = replace_text_range(value, start_pos, start_pos, char)
@@ -99,8 +99,7 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
       # Use state | pattern for brevity
       state
       | value: new_value,
-        cursor_row: new_row,
-        cursor_col: new_col,
+        cursor_pos: {new_row, new_col},
         # Clear selection after insertion
         selection_start: nil,
         selection_end: nil
@@ -121,8 +120,7 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
     new_state = %MultiLineInput{
       state
       | value: new_value,
-        cursor_row: elem(start_pos, 0),
-        cursor_col: elem(start_pos, 1),
+        cursor_pos: start_pos,
         selection_start: nil,
         selection_end: nil
     }
@@ -133,7 +131,7 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
   end
 
   def handle_backspace_no_selection(state) do
-    %{value: value, cursor_row: row, cursor_col: col} = state
+    %{value: value, cursor_pos: {row, col}} = state
 
     # Handle backspace at the beginning of the document
     if row == 0 and col == 0 do
@@ -162,8 +160,7 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
       new_state = %MultiLineInput{
         state
         | value: new_value,
-          cursor_row: prev_row,
-          cursor_col: prev_col,
+          cursor_pos: {prev_row, prev_col},
           selection_start: nil,
           selection_end: nil
       }
@@ -180,7 +177,7 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
   end
 
   def handle_delete_no_selection(state) do
-    %{value: value, cursor_row: row, cursor_col: col} = state
+    %{value: value, cursor_pos: {row, col}} = state
     lines = String.split(value, "\n")
     current_line = Enum.at(lines, row)
 
@@ -252,8 +249,8 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
 
   # Need normalize_selection here as delete_selection depends on it
   defp normalize_selection(state) do
-    start_pos = state.selection_start || {state.cursor_row, state.cursor_col}
-    end_pos = state.selection_end || {state.cursor_row, state.cursor_col}
+    start_pos = state.selection_start || state.cursor_pos
+    end_pos = state.selection_end || state.cursor_pos
 
     # Convert to indices and normalize
     lines = String.split(state.value, "\n")

@@ -60,7 +60,8 @@ defmodule Raxol.Components.Input.MultiLineInput do
             # History for undo/redo
             history: nil,
             # Need to track if Shift is held for selection extension
-            shift_held: false, # This might need to be part of event data or handled differently
+            # This might need to be part of event data or handled differently
+            shift_held: false,
             focused: false,
             on_change: nil,
             id: nil,
@@ -91,12 +92,14 @@ defmodule Raxol.Components.Input.MultiLineInput do
       scroll_offset: {0, 0},
       selection_start: nil,
       selection_end: nil,
-      history: Raxol.History.new(), # Initialize history
+      # Initialize history
+      history: Raxol.History.new(),
       shift_held: false,
       focused: false,
       on_change: props[:on_change],
       lines: lines,
-      id: props[:id] || Ecto.UUID.generate() # Ensure ID
+      # Ensure ID
+      id: props[:id] || Ecto.UUID.generate()
     }
   end
 
@@ -114,7 +117,12 @@ defmodule Raxol.Components.Input.MultiLineInput do
     case String.to_charlist(char) do
       [codepoint] ->
         new_state = TextHelper.insert_char(state, codepoint)
-        trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
+
+        trigger_on_change(
+          {:noreply, ensure_cursor_visible(new_state), nil},
+          state
+        )
+
       _ ->
         # Ignore multi-character inputs for now
         {:noreply, state, nil}
@@ -137,47 +145,63 @@ defmodule Raxol.Components.Input.MultiLineInput do
   end
 
   # --- Basic Movement (Clears Selection) ---
-  def update({:move_cursor, direction}, %State{} = state) when direction in [:left, :right, :up, :down] do
-    new_state = NavigationHelper.move_cursor(state, direction)
-    |> NavigationHelper.clear_selection()
+  def update({:move_cursor, direction}, %State{} = state)
+      when direction in [:left, :right, :up, :down] do
+    new_state =
+      NavigationHelper.move_cursor(state, direction)
+      |> NavigationHelper.clear_selection()
+
     {:noreply, ensure_cursor_visible(new_state), nil}
   end
 
   def update({:move_cursor_line_start}, %State{} = state) do
-    new_state = NavigationHelper.move_cursor_to_start_of_line(state)
-    |> NavigationHelper.clear_selection()
+    new_state =
+      NavigationHelper.move_cursor_to_start_of_line(state)
+      |> NavigationHelper.clear_selection()
+
     {:noreply, ensure_cursor_visible(new_state), nil}
   end
 
   def update({:move_cursor_line_end}, %State{} = state) do
-    new_state = NavigationHelper.move_cursor_to_end_of_line(state)
-    |> NavigationHelper.clear_selection()
+    new_state =
+      NavigationHelper.move_cursor_to_end_of_line(state)
+      |> NavigationHelper.clear_selection()
+
     {:noreply, ensure_cursor_visible(new_state), nil}
   end
 
-  def update({:move_cursor_page, direction}, %State{} = state) when direction in [:up, :down] do
-    new_state = NavigationHelper.move_cursor_page_down(state)
-    |> NavigationHelper.clear_selection()
+  def update({:move_cursor_page, direction}, %State{} = state)
+      when direction in [:up, :down] do
+    new_state =
+      NavigationHelper.move_cursor_page_down(state)
+      |> NavigationHelper.clear_selection()
+
     {:noreply, ensure_cursor_visible(new_state), nil}
   end
 
   def update({:move_cursor_doc_start}, %State{} = state) do
-    new_state = NavigationHelper.move_cursor_to_start_of_document(state)
-    |> NavigationHelper.clear_selection()
+    new_state =
+      NavigationHelper.move_cursor_to_start_of_document(state)
+      |> NavigationHelper.clear_selection()
+
     {:noreply, ensure_cursor_visible(new_state), nil}
   end
 
   def update({:move_cursor_doc_end}, %State{} = state) do
-    new_state = NavigationHelper.move_cursor_to_end_of_document(state)
-    |> NavigationHelper.clear_selection()
+    new_state =
+      NavigationHelper.move_cursor_to_end_of_document(state)
+      |> NavigationHelper.clear_selection()
+
     {:noreply, ensure_cursor_visible(new_state), nil}
   end
 
   # --- Movement for Mouse Click ---
   def update({:move_cursor_to, {row, col}}, %State{} = state) do
-     # TODO: Validate row/col against lines
-    new_state = %{state | cursor_pos: {row, col}}
-    |> NavigationHelper.clear_selection()
+    # TODO: Validate row/col against lines
+    new_state =
+      %{state | cursor_pos: {row, col}}
+      |> NavigationHelper.clear_selection()
+
     {:noreply, ensure_cursor_visible(new_state), nil}
   end
 
@@ -188,17 +212,36 @@ defmodule Raxol.Components.Input.MultiLineInput do
     # Determine the new cursor position based on direction
     moved_state =
       case direction do
-        :left -> NavigationHelper.move_cursor(state, :left)
-        :right -> NavigationHelper.move_cursor(state, :right)
-        :up -> NavigationHelper.move_cursor(state, :up)
-        :down -> NavigationHelper.move_cursor(state, :down)
-        :line_start -> NavigationHelper.move_cursor_to_start_of_line(state)
-        :line_end -> NavigationHelper.move_cursor_to_end_of_line(state)
-        :page_up -> NavigationHelper.move_cursor_page_up(state)
-        :page_down -> NavigationHelper.move_cursor_page_down(state)
-        :doc_start -> NavigationHelper.move_cursor_to_start_of_document(state)
-        :doc_end -> NavigationHelper.move_cursor_to_end_of_document(state)
-         # TODO: Add word movements
+        :left ->
+          NavigationHelper.move_cursor(state, :left)
+
+        :right ->
+          NavigationHelper.move_cursor(state, :right)
+
+        :up ->
+          NavigationHelper.move_cursor(state, :up)
+
+        :down ->
+          NavigationHelper.move_cursor(state, :down)
+
+        :line_start ->
+          NavigationHelper.move_cursor_to_start_of_line(state)
+
+        :line_end ->
+          NavigationHelper.move_cursor_to_end_of_line(state)
+
+        :page_up ->
+          NavigationHelper.move_cursor_page_up(state)
+
+        :page_down ->
+          NavigationHelper.move_cursor_page_down(state)
+
+        :doc_start ->
+          NavigationHelper.move_cursor_to_start_of_document(state)
+
+        :doc_end ->
+          NavigationHelper.move_cursor_to_end_of_document(state)
+          # TODO: Add word movements
       end
 
     new_cursor_pos = moved_state.cursor_pos
@@ -206,7 +249,12 @@ defmodule Raxol.Components.Input.MultiLineInput do
     # Update selection: If no selection start, set it to original pos.
     # Always update selection end to the new cursor pos.
     selection_start = state.selection_start || original_cursor_pos
-    final_state = %{moved_state | selection_start: selection_start, selection_end: new_cursor_pos}
+
+    final_state = %{
+      moved_state
+      | selection_start: selection_start,
+        selection_end: new_cursor_pos
+    }
 
     {:noreply, ensure_cursor_visible(final_state), nil}
   end
@@ -232,11 +280,14 @@ defmodule Raxol.Components.Input.MultiLineInput do
   end
 
   # This is called when the clipboard content is received (e.g., from plugin)
-  def update({:clipboard_content, content}, %State{} = state) when is_binary(content) do
+  def update({:clipboard_content, content}, %State{} = state)
+      when is_binary(content) do
     new_state = ClipboardHelper.handle_clipboard_content(content, state)
     trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
   end
-  def update({:clipboard_content, _}, %State{} = state) do # Ignore non-binary content
+
+  # Ignore non-binary content
+  def update({:clipboard_content, _}, %State{} = state) do
     {:noreply, state, nil}
   end
 
@@ -247,7 +298,8 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
   def update(:blur, %State{} = state) do
     # Clear selection on blur
-    {:noreply, %{state | focused: false, selection_start: nil, selection_end: nil}, nil}
+    {:noreply,
+     %{state | focused: false, selection_start: nil, selection_end: nil}, nil}
   end
 
   # --- Catch-all for other messages ---
@@ -259,21 +311,23 @@ defmodule Raxol.Components.Input.MultiLineInput do
   @impl Raxol.UI.Components.Base.Component
   def render(%State{} = state, %{focused: focused} = context) do
     # Get theme from context if available, otherwise use a default mock/empty theme
-    theme = Map.get(context, :theme, %Raxol.UI.Theming.Theme{styles: %{}, component_styles: %{}})
+    theme =
+      Map.get(context, :theme, %Raxol.UI.Theming.Theme{component_styles: %{}})
+
     # Use RenderHelper to get the grid of cells
     cell_grid = RenderHelper.render_view(%{state | focused: focused}, theme)
 
     # Convert the cell grid into view elements (e.g., using :text elements)
-    view_elements = Enum.with_index(cell_grid, fn row_cells, _y ->
-      Raxol.View.Elements.text(content: row_cells)
-      # TODO: Consider rendering line numbers if enabled
-    end)
+    view_elements =
+      Enum.with_index(cell_grid, fn row_cells, _y ->
+        Raxol.View.Elements.text(content: row_cells)
+        # TODO: Consider rendering line numbers if enabled
+      end)
 
     # Wrap in a box or container if needed
-    Raxol.View.Elements.box(
-      # TODO: Add border, focus styling based on state.focused
-      # style: Style.new(border: if(state.focused, do: ..., else: ...))
-    ) do
+    # TODO: Add border, focus styling based on state.focused
+    # style: Style.new(border: if(state.focused, do: ..., else: ...))
+    Raxol.View.Elements.box do
       view_elements
     end
   end
@@ -288,11 +342,14 @@ defmodule Raxol.Components.Input.MultiLineInput do
     height = state.height
     # width = state.width # Needed for horizontal scrolling
 
-    new_scroll_row = cond do
-      cursor_row < scroll_row -> cursor_row # Scroll up
-      cursor_row >= scroll_row + height -> cursor_row - height + 1 # Scroll down
-      true -> scroll_row
-    end
+    new_scroll_row =
+      cond do
+        # Scroll up
+        cursor_row < scroll_row -> cursor_row
+        # Scroll down
+        cursor_row >= scroll_row + height -> cursor_row - height + 1
+        true -> scroll_row
+      end
 
     # TODO: Implement horizontal scrolling adjustment based on cursor_col and scroll_col
     new_scroll_col = scroll_col
@@ -300,21 +357,26 @@ defmodule Raxol.Components.Input.MultiLineInput do
     # Update lines cache if needed (e.g., after text modification)
     # Re-calculate lines based on potentially new value
     # This might be inefficient if called too often. Consider optimizing.
-    new_lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
+    new_lines =
+      TextHelper.split_into_lines(state.value, state.width, state.wrap)
 
     %{state | scroll_offset: {new_scroll_row, new_scroll_col}, lines: new_lines}
   end
 
   # Calls the on_change callback if defined and value changed
   defp trigger_on_change({:noreply, new_state, cmd}, old_state) do
-    if new_state.value != old_state.value and is_function(new_state.on_change, 1) do
+    if new_state.value != old_state.value and
+         is_function(new_state.on_change, 1) do
       # TODO: How to invoke the callback? Needs context or message passing.
       # Maybe return a specific command or structure?
       # For now, just logging it.
       Logger.debug("Value changed, would call on_change: #{new_state.id}")
       # new_state.on_change.(new_state.value)
     end
+
     {:noreply, new_state, cmd}
   end
-  defp trigger_on_change(other, _old_state), do: other # Pass through other results
+
+  # Pass through other results
+  defp trigger_on_change(other, _old_state), do: other
 end
