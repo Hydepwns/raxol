@@ -188,123 +188,147 @@ defmodule Raxol.Examples.UXRefinementDemo do
   @dialyzer {:nowarn_function, view: 1}
   @impl Raxol.Core.Runtime.Application
   def view(model) do
-    focused_id = FocusManager.get_focused_element()
+    focused_id = model.focused_component
+    all_hints = get_hints_for(focused_id)
 
-    # Get hints for the focused element
-    # Combine basic hint and shortcuts for display
-    basic_hint = UXRefinement.get_hint(focused_id)
-    shortcuts = UXRefinement.get_component_shortcuts(focused_id)
-    shortcut_hints = Enum.map(shortcuts, fn {key, desc} -> "#{key}: #{desc}" end)
+    # --- Calculate focus position BEFORE the main component list ---
+    element_registry = Process.get(:element_position_registry, %{})
+    focused_position = Map.get(element_registry, focused_id)
 
-    all_hints = [basic_hint | shortcut_hints] |> List.flatten() |> Enum.reject(&is_nil/1)
+    # --- Conditionally create the focus ring component ---
+    focus_ring_component =
+      if focused_position do
+        # Raxol.View.Elements.component(
+        #   Raxol.Components.FocusRing,
+        #   id: :focus_ring,
+        #   model: model.focus_ring_model,
+        #   focused_element_id: focused_id,
+        #   focused_element_position: focused_position
+        # )
+        # Construct component map directly
+        %{
+          type: Raxol.Components.FocusRing,
+          id: :focus_ring,
+          # Pass props directly, assuming component handles its own model state
+          # model: model.focus_ring_model,
+          focused_element_id: focused_id,
+          focused_element_position: focused_position
+        }
+      else
+        nil # Explicitly return nil if no position
+      end
 
-    # Main layout - Wrap in a box to contain HintDisplay at bottom
-    UI.box do
-      [
-        # Main content area (takes up most space)
-        UI.box style: %{height: "fill-1"} do
-          # Layout the three main sections
-          Raxol.View.Elements.row height: "100%" do
-            Raxol.View.Elements.column padding: 1 do
-              # Wrap all children in an explicit list
-              [
-                if model.show_help do
-                  render_help_dialog()
-                else
-                  # Form elements need to be a list too for the outer list
-                  [
-                    Raxol.View.Elements.row padding_bottom: 1 do
-                      label_element = Raxol.View.Elements.label(content: "Username:", style: %{width: 10})
+    # Raxol.View.Elements.component Raxol.Components.AppContainer, id: :app_container do
+    # Use AppContainer map directly as the root element
+    %{
+      type: Raxol.Components.AppContainer,
+      id: :app_container,
+      children: [
+        # START OF LIST
+        Raxol.View.Elements.panel title: "Login Form" do
+          UI.box do
+            [
+              # Main content area (takes up most space)
+              UI.box style: %{height: "fill-1"} do
+                # Layout the three main sections
+                Raxol.View.Elements.row height: "100%" do
+                  Raxol.View.Elements.column padding: 1 do
+                    # Wrap all children in an explicit list
+                    [
+                      if model.show_help do
+                        render_help_dialog()
+                      else
+                        # Form elements need to be a list too for the outer list
+                        [
+                          Raxol.View.Elements.row padding_bottom: 1 do
+                            label_element = Raxol.View.Elements.label(content: "Username:", style: %{width: 10})
 
-                      input_element =
-                        Raxol.View.Elements.text_input(
-                          id: "username_input",
-                          value: model.form_data.username,
-                          width: 30,
-                          focus: focused_id == "username_input"
-                        )
+                            input_element =
+                              Raxol.View.Elements.text_input(
+                                id: "username_input",
+                                value: model.form_data.username,
+                                width: 30,
+                                focus: focused_id == "username_input"
+                              )
 
-                      [label_element, input_element]
-                    end,
-                    Raxol.View.Elements.row padding_bottom: 1 do
-                      label_element = Raxol.View.Elements.label(content: "Password:", style: %{width: 10})
+                            [label_element, input_element]
+                          end,
+                          Raxol.View.Elements.row padding_bottom: 1 do
+                            label_element = Raxol.View.Elements.label(content: "Password:", style: %{width: 10})
 
-                      input_element =
-                        Raxol.View.Elements.text_input(
-                          id: "password_input",
-                          value: model.form_data.password,
-                          width: 30,
-                          password: true,
-                          focus: focused_id == "password_input"
-                        )
+                            input_element =
+                              Raxol.View.Elements.text_input(
+                                id: "password_input",
+                                value: model.form_data.password,
+                                width: 30,
+                                password: true,
+                                focus: focused_id == "password_input"
+                              )
 
-                      [label_element, input_element]
-                    end,
-                    Raxol.View.Elements.row padding_top: 1 do
-                      login_button =
-                        Raxol.View.Elements.button(
-                          id: "login_button",
-                          label: "Login",
-                          width: 10,
-                          focus: focused_id == "login_button"
-                        )
+                            [label_element, input_element]
+                          end,
+                          Raxol.View.Elements.row padding_top: 1 do
+                            login_button =
+                              Raxol.View.Elements.button(
+                                id: "login_button",
+                                label: "Login",
+                                width: 10,
+                                focus: focused_id == "login_button"
+                              )
 
-                      space_element = Raxol.View.Elements.label(content: " ")
+                            space_element = Raxol.View.Elements.label(content: " ")
 
-                      reset_button =
-                        Raxol.View.Elements.button(
-                          id: "reset_button",
-                          label: "Reset",
-                          width: 10,
-                          focus: focused_id == "reset_button"
-                        )
+                            reset_button =
+                              Raxol.View.Elements.button(
+                                id: "reset_button",
+                                label: "Reset",
+                                width: 10,
+                                focus: focused_id == "reset_button"
+                              )
 
-                      space_element2 = Raxol.View.Elements.label(content: " ")
+                            space_element2 = Raxol.View.Elements.label(content: " ")
 
-                      help_button =
-                        Raxol.View.Elements.button(
-                          id: "help_button",
-                          label: "Help",
-                          width: 10,
-                          focus: focused_id == "help_button"
-                        )
+                            help_button =
+                              Raxol.View.Elements.button(
+                                id: "help_button",
+                                label: "Help",
+                                width: 10,
+                                focus: focused_id == "help_button"
+                              )
 
-                      [login_button, space_element, reset_button, space_element2, help_button]
-                    end
-                  ]
+                            [login_button, space_element, reset_button, space_element2, help_button]
+                          end
+                        ]
+                      end
+                    ]
+                  end
                 end
-              ]
-            end
+              end,
+
+              # Hint display at the bottom
+              # Raxol.View.Elements.component(
+              #   Raxol.Components.HintDisplay,
+              #   id: :hint_display,
+              #   hints: all_hints,
+              #   position: :bottom
+              #   # Style can be added here if needed
+              # )
+              # Construct component map directly
+              %{
+                type: Raxol.Components.HintDisplay,
+                id: :hint_display,
+                hints: all_hints,
+                position: :bottom
+                # Style can be added here if needed
+              },
+
+              # Add the pre-calculated focus ring component (will be nil if not needed)
+              focus_ring_component
+            ]
           end
-        end,
-
-        # Hint display at the bottom
-        Raxol.View.Elements.component(
-          Raxol.Components.HintDisplay,
-          id: :hint_display,
-          hints: all_hints,
-          position: :bottom
-          # Style can be added here if needed
-        ),
-
-        # Render FocusRing component
-        # Fetch mock position (replace with actual layout data later)
-        element_registry = Process.get(:element_position_registry, %{}),
-        focused_position = Map.get(element_registry, focused_id),
-
-        # Render only if focused element has a position
-        if focused_position do
-          Raxol.View.Elements.component(
-            Raxol.Components.FocusRing,
-            id: :focus_ring, # Assign an ID
-            model: model.focus_ring_model,
-            focused_element_id: focused_id,
-            focused_element_position: focused_position
-            # Pass other props if needed, e.g., animation: :pulse
-          )
         end
       ]
-    end
+    }
   end
 
   @doc """

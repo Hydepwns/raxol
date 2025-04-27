@@ -155,19 +155,18 @@ defmodule Raxol.Components.Dashboard.Dashboard do
   end
 
   @impl Raxol.UI.Components.Base.Component
-  def render(state, props) do
+  def render(state, _props) do
     # Get grid config and layout from state
     grid_config = state.grid_config # Expects %{cols: _, rows: _, gap: _}
     layout_specs = state.layout    # Expects list of %{id: _, col: _, row: _, width: _, height: _}
 
-    # Define the main grid container using grid_config
-    UI.grid id: state.id,
-            cols: Map.get(grid_config, :cols, 12), # Default to 12 cols if not specified
-            rows: Map.get(grid_config, :rows),     # Let grid calculate rows if not specified
-            gap: Map.get(grid_config, :gap, 1),
-            border: :none do
+    # Define the main container using box (placeholder for grid)
+    UI.box id: state.id,
+            border: :single,
+            style: %{padding: Map.get(grid_config, :gap, 1)} do
 
       # Iterate through the layout specs to place widgets
+      # NOTE: This will just render widgets sequentially inside the box, not in a grid
       Enum.map(layout_specs, fn grid_spec ->
         widget_id = grid_spec.id
 
@@ -178,18 +177,17 @@ defmodule Raxol.Components.Dashboard.Dashboard do
             widget_module = Map.get(widget_state, :module) # Need module to call render
 
             if widget_module do
-              # Place the widget in its grid cell using grid_item
-              UI.grid_item col: grid_spec.col,
-                           row: grid_spec.row,
-                           width: grid_spec.width,
-                           height: grid_spec.height do
+              # Place the widget in its container (placeholder for grid_item)
+              UI.box title: Map.get(widget_state, :title, "Widget #{widget_id}"),
+                     border: :rounded,
+                     style: %{margin: 1} do # Add some margin for spacing
                 # Recursively render the child widget
                 # Passing down relevant props or an empty map if none needed
                 widget_module.render(widget_state, %{})
               end
             else
               # Error case: widget state doesn't specify its module
-              UI.grid_item col: grid_spec.col, row: grid_spec.row, width: 1, height: 1 do
+              UI.box title: "Error" do
                 UI.label(content: "Error: Module missing for widget #{widget_id}")
               end
             end
@@ -197,7 +195,7 @@ defmodule Raxol.Components.Dashboard.Dashboard do
           :error ->
             # Error case: widget ID from layout not found in widget state map
             # Render an error message in its place
-            UI.grid_item col: grid_spec.col, row: grid_spec.row, width: 1, height: 1 do
+            UI.box title: "Error" do
               UI.label(content: "Error: Widget '#{widget_id}' not found!")
             end
         end

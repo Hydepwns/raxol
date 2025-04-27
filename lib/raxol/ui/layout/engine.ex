@@ -11,6 +11,7 @@ defmodule Raxol.UI.Layout.Engine do
   require Logger
 
   alias Raxol.UI.Layout.{Grid, Panels, Containers}
+  alias Raxol.UI.Layout.Table
 
   @doc """
   Applies layout to a view, calculating absolute positions for all elements.
@@ -176,58 +177,9 @@ defmodule Raxol.UI.Layout.Engine do
     checkbox_elements ++ acc
   end
 
-  def process_element(%{type: :table, attrs: attrs}, space, acc) do
-    # Create a table element
-    headers = Map.get(attrs, :headers, [])
-    data = Map.get(attrs, :data, [])
-
-    # Calculate table dimensions
-    table_width = space.width
-    row_height = 1
-    header_y = space.y
-    # After header and separator
-    data_start_y = space.y + 2
-
-    # Create table elements
-    header_elements =
-      if headers != [] do
-        [
-          # Header row
-          %{
-            type: :text,
-            x: space.x,
-            y: header_y,
-            text: Enum.join(headers, " | "),
-            attrs: %{fg: :white, bg: :black}
-          },
-          # Separator line
-          %{
-            type: :text,
-            x: space.x,
-            y: header_y + 1,
-            text: String.duplicate("-", table_width),
-            attrs: %{fg: :white, bg: :black}
-          }
-        ]
-      else
-        []
-      end
-
-    # Create data rows
-    data_elements =
-      data
-      |> Enum.with_index()
-      |> Enum.map(fn {row, index} ->
-        %{
-          type: :text,
-          x: space.x,
-          y: data_start_y + index * row_height,
-          text: Enum.join(row, " | "),
-          attrs: %{fg: :white, bg: :black}
-        }
-      end)
-
-    header_elements ++ data_elements ++ acc
+  def process_element(%{type: :table} = table_element, space, acc) do
+    # Delegate table measurement and positioning to the dedicated module
+    Table.measure_and_position(table_element, space, acc)
   end
 
   # Catch-all for unknown element types
@@ -347,7 +299,7 @@ defmodule Raxol.UI.Layout.Engine do
         # %{width: available_space.width, height: available_space.height} # Placeholder
         # Measure view based on its children (treat as a column)
         %{type: :column, children: Map.get(element, :children, [])}
-        |> Engine.measure_element(available_space)
+        |> __MODULE__.measure_element(available_space)
 
       :table ->
         # Basic table measurement (consider headers, widest row)

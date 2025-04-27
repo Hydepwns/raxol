@@ -60,7 +60,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     Logger.info("Event Dispatcher starting...")
 
     # Load initial theme from preferences
-    initial_theme_id = UserPreferences.get("theme.active_id", :default)
+    initial_theme_id = UserPreferences.get("theme.active_id") || :default
     Logger.debug("Dispatcher init: Loaded initial theme ID: #{inspect(initial_theme_id)}")
 
     # Ensure model has the loaded theme ID if not provided explicitly
@@ -282,7 +282,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   # Catch-all for other messages
   @impl GenServer
   def handle_info(msg, state) do
-    Logger.warn("Dispatcher received unexpected message: #{inspect(msg)}")
+    Logger.warning("Dispatcher received unexpected message: #{inspect(msg)}")
     {:noreply, state}
   end
 

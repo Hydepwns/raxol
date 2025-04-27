@@ -173,9 +173,12 @@ defmodule Raxol.Core.Runtime.Application do
   @spec delegate_init(module(), context()) ::
           {model(), list(Command.t())} | {:error, term()}
   def delegate_init(app_module, context) when is_atom(app_module) do
+    Logger.info("[#{__MODULE__}] Delegating init to #{inspect(app_module)}...")
     if function_exported?(app_module, :init, 1) do
       try do
-        case app_module.init(context) do
+        result = app_module.init(context)
+        Logger.debug("[#{__MODULE__}] #{inspect(app_module)}.init/1 returned: #{inspect(result)}")
+        case result do
           {model, commands} when is_map(model) and is_list(commands) ->
             {model, commands}
 

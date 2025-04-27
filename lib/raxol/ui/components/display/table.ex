@@ -2,18 +2,12 @@ defmodule Raxol.UI.Components.Display.Table do
   @moduledoc """
   A component for displaying tabular data with sorting, filtering, and pagination.
   """
-
-  # alias Raxol.UI.Components.Base.Component # Unused
-  # alias Raxol.UI.Style
-  # alias Raxol.UI.Element
-  # alias Raxol.UI.Layout.Constraints # Unused
-  # alias Raxol.UI.Theme
-  # alias Raxol.Terminal.Cell # Unused
-
   require Logger
+  require Raxol.View.Elements
 
-  alias Raxol.Core.Renderer.Element
+  # alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
+  alias Raxol.View.Elements
 
   @behaviour Raxol.UI.Components.Base.Component
 
@@ -25,8 +19,12 @@ defmodule Raxol.UI.Components.Display.Table do
   @type rows :: [row()]
   @type props :: %{
           optional(:id) => String.t(),
-          headers => [header()],
-          rows => [row()],
+          optional(:columns) => list(), # From macro
+          optional(:data) => list(), # From macro
+          optional(:style) => map(), # From macro
+          # Internal state props, maybe?
+          optional(:headers) => [header()],
+          optional(:rows) => [row()],
           # :auto or list of widths/auto
           optional(:column_widths) => [:auto | [integer() | :auto]],
           optional(:theme) => map(),
@@ -42,13 +40,31 @@ defmodule Raxol.UI.Components.Display.Table do
   @type state :: map()
 
   @type t :: %{
-          props: props(),
-          state: state()
+          # props: props(), # Maybe remove direct props field if passed via render
+          state: state(),
+          # Or maybe attrs are merged into state? Need clarification
+          id: String.t() | atom(),
+          columns: list(),
+          data: list(),
+          style: map(),
+          # Default set in init
+          row_style: nil,
+          # Default set in init
+          cell_style: nil,
+          header_style: %{bold: true},
+          footer: nil,
+          # Internal state
+          scroll_top: 0,
+          scroll_left: 0,
+          focused_row: nil,
+          focused_col: nil,
+          max_height: nil,
+          max_width: nil
         }
 
   defstruct id: nil,
-            headers: [],
-            rows: [],
+            columns: [],
+            data: [],
             style: %{},
             # Default set in init
             row_style: nil,
@@ -57,7 +73,6 @@ defmodule Raxol.UI.Components.Display.Table do
             header_style: %{bold: true},
             footer: nil,
             # Internal state
-            column_widths: [],
             scroll_top: 0,
             scroll_left: 0,
             focused_row: nil,
@@ -68,21 +83,18 @@ defmodule Raxol.UI.Components.Display.Table do
   # --- Component Implementation ---
 
   @impl true
-  def init(props) do
-    id = props[:id] || Raxol.Core.ID.generate()
-    # Merge props first to allow overrides
-    initial_state = Keyword.merge([id: id], props)
-    state = struct!(__MODULE__, initial_state)
-
-    # Set default style functions if not provided
-    state = %{
-      state
-      | row_style: Map.get(initial_state, :row_style, &default_row_style/2),
-        cell_style: Map.get(initial_state, :cell_style, &default_cell_style/3)
+  def init(attrs) do
+    # Initialize only internal state, not data/columns passed via macro
+    id = Map.get(attrs, :id) || Raxol.Core.ID.generate()
+    # Don't merge all attrs into state struct blindly
+    internal_state = %{
+      id: id,
+      scroll_top: 0,
+      scroll_left: 0,
+      # ... other non-data internal defaults ...
+      style: %{} # Base style state, specific styles come from attrs
     }
-
-    state = update_column_widths(state)
-    {:ok, state}
+    {:ok, internal_state}
   end
 
   @impl true
@@ -104,25 +116,37 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   @impl true
-  def handle_event(state, event, _context) do
+  def handle_event(state, event, context) do
+    # Get necessary info from context attrs
+    attrs = context.attrs
+    data = Map.get(attrs, :data, [])
+    # Calculate max_height based on style in attrs
+    component_style = Map.get(attrs, :style, %{})
+    theme = context.theme
+    theme_style = Theme.component_style(theme, :table)
+    base_style = Raxol.Style.merge(theme_style, component_style)
+    max_height = get_style_prop(base_style, :height)
+    current_visible_height = visible_height(%{max_height: max_height})
+
     case event do
       {:keypress, :arrow_up} ->
         new_scroll_top = max(0, state.scroll_top - 1)
         {:noreply, %{state | scroll_top: new_scroll_top}}
 
       {:keypress, :arrow_down} ->
-        max_scroll = max(0, length(state.rows) - visible_height(state))
+        # Use actual data length and visible height
+        max_scroll = max(0, length(data) - current_visible_height)
         new_scroll_top = min(max_scroll, state.scroll_top + 1)
         {:noreply, %{state | scroll_top: new_scroll_top}}
 
       {:keypress, :page_up} ->
-        page_size = visible_height(state)
+        page_size = current_visible_height
         new_scroll_top = max(0, state.scroll_top - page_size)
         {:noreply, %{state | scroll_top: new_scroll_top}}
 
       {:keypress, :page_down} ->
-        max_scroll = max(0, length(state.rows) - visible_height(state))
-        page_size = visible_height(state)
+        max_scroll = max(0, length(data) - current_visible_height)
+        page_size = current_visible_height
         new_scroll_top = min(max_scroll, state.scroll_top + page_size)
         {:noreply, %{state | scroll_top: new_scroll_top}}
 
@@ -134,22 +158,49 @@ defmodule Raxol.UI.Components.Display.Table do
 
   @impl true
   def render(state, context) do
+    # ** Crucial Change: Use attrs from context/state for data **
+    # Attributes are typically passed via context
+    attrs = context.attrs
+
+    id = Map.get(attrs, :id)
+    # Get the ORIGINAL data and columns config from attrs
+    original_data = Map.get(attrs, :data, [])
+    columns_config = Map.get(attrs, :columns, [])
+
+    # Use style from attrs, merge with theme default
+    component_style = Map.get(attrs, :style, %{})
     theme = context.theme
-    component_theme_style = Theme.component_style(theme, :table)
-    base_style = Raxol.Style.merge(component_theme_style, state.style)
+    theme_style = Theme.component_style(theme, :table)
+    base_style = Raxol.Style.merge(theme_style, component_style)
 
-    # Calculate visible rows/cols based on scroll and max_height/max_width
-    _visible_rows_data =
-      Enum.slice(state.rows, state.scroll_top, visible_height(state))
+    # Remove header extraction here, Layout.Table should handle it from columns_config
+    # headers = Enum.map(columns_config, &Map.get(&1, :header, \"\"))
 
-    header_element = render_header(state, theme)
-    row_elements = render_rows(state, theme, base_style)
-    # footer_elements = render_footer(state, base_style)
+    # Remove row data extraction here, Layout/Renderer should handle it
+    # rows_data = Enum.map(original_data, fn data_item ->
+    #   Enum.map(columns_config, fn col -> Map.get(data_item, col.key) end)
+    # end)
 
-    Element.new(
-      :vbox,
-      %{style: base_style, id: state.id},
-      [header_element | row_elements]
+    # Remove scroll/visibility slicing logic here - Layout/Renderer responsibility
+    # max_height = get_style_prop(base_style, :height)
+    # visible_row_count = visible_height(%{max_height: max_height})
+    # actual_scroll_top = if state.scroll_top >= length(rows_data), do: 0, else: state.scroll_top
+    # visible_rows = Enum.slice(rows_data, actual_scroll_top, visible_row_count)
+
+    # Use the Elements.table macro, passing the original data and columns definition
+    # The Layout.Table module will extract headers and calculate layout.
+    # The Renderer will handle displaying the correct visible portion based on scroll state (passed via attrs?).
+    Elements.table(
+      id: id,
+      style: base_style,
+      # Pass the ORIGINAL data
+      data: original_data,
+      # Pass the column definitions
+      columns: columns_config,
+      # Pass scroll state so Renderer can use it?
+      # This needs clarification - how does Renderer know scroll offset?
+      # For now, let's assume Layout/Renderer handle this based on height/state.
+      _scroll_top: state.scroll_top # Pass internal state via underscored attr?
     )
   end
 
@@ -159,16 +210,32 @@ defmodule Raxol.UI.Components.Display.Table do
 
   # --- Private Helpers ---
 
-  defp default_row_style(_row_data, _index), do: %{}
-  defp default_cell_style(_cell_data, _row_index, _col_index), do: %{}
+  # Removed unused helper
+  # defp default_row_style(_row_data, _index), do: %{}
+  # Removed unused helper
+  # defp default_cell_style(_cell_data, _row_index, _col_index), do: %{}
+
+  # Helper to get style property, handling list or map format
+  defp get_style_prop(style, key) when is_list(style) do
+    Keyword.get(style, key)
+  end
+  defp get_style_prop(style, key) when is_map(style) do
+    Map.get(style, key)
+  end
+  defp get_style_prop(_, _), do: nil
 
   defp visible_height(state)
-  # Effectively infinite
+  # Effectively infinite if not set
   defp visible_height(%{max_height: nil}), do: 1_000_000
-  defp visible_height(%{max_height: h}) when is_integer(h), do: h
+  # Subtract 1 for header row?
+  # Needs border calculation too if borders take space
+  # Corrected: Ensure height is at least 1 if set
+  defp visible_height(%{max_height: h}) when is_integer(h) and h >= 1, do: max(1, h - 1) # Adjust for header, ensure min 1
+  defp visible_height(%{max_height: _}), do: 1 # Minimum 1 row if height is set
 
   defp update_column_widths(state) do
     # Calculate widths based on headers and potentially sample data rows
+    # TODO: This state update might not be necessary if widths calculated in render
     header_widths = Enum.map(state.headers, &str_width/1)
     # TODO: Sample data rows for more accurate widths?
     # For now, just use header widths
@@ -176,54 +243,11 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   defp str_width(s) when is_binary(s), do: String.length(s)
-  defp str_width(_), do: 0
+  defp str_width(s), do: String.length(to_string(s)) # Handle non-binaries
 
-  defp render_header(state, theme) do
-    header_style = Map.get(state.style, :header, %{})
-    component_theme_style = Theme.component_style(theme, :table_header)
-    style = Raxol.Style.merge(component_theme_style, header_style)
-    [render_row(state.headers, state.columns, style, -1, state.id)]
-  end
-
-  defp render_rows(state, _theme, base_style) do
-    row_style = Map.get(state.style, :row, %{})
-    alt_row_style = Map.get(state.style, :alternate_row, row_style)
-
-    Enum.with_index(state.rows, fn row_data, index ->
-      actual_index = index + state.scroll_top
-
-      # Determine style: alternating or standard
-      applied_row_style =
-        if rem(actual_index, 2) == 1 and alt_row_style != %{} do
-          alt_row_style
-        else
-          row_style
-        end
-
-      # Merge base style with the determined row style
-      style = Raxol.Style.merge(base_style, applied_row_style)
-      render_row(row_data, state.columns, style, actual_index, state.id)
-    end)
-  end
-
-  defp render_row(row_data, columns, style, row_index, table_id) do
-    cell_elements =
-      Enum.with_index(row_data, fn cell_data, col_index ->
-        # Default to empty map if index out of bounds
-        column_config = Enum.at(columns, col_index, %{})
-        render_cell(cell_data, column_config, style)
-      end)
-
-    Element.new(
-      :hbox,
-      %{style: style, id: "#{table_id}-row-#{row_index}"},
-      cell_elements
-    )
-  end
-
-  defp render_cell(cell_data, column_config, style) do
-    cell_style = Map.get(column_config, :style, %{})
-    final_style = Raxol.Style.merge(style, cell_style)
-    Element.new(:text, %{style: final_style}, to_string(cell_data))
-  end
+  # --- Removed Unused Render Helpers ---
+  # defp render_header(...) ... end
+  # defp render_rows(...) ... end
+  # defp render_row(...) ... end
+  # defp render_cell(...) ... end
 end

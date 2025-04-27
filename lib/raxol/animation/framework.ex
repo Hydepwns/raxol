@@ -61,9 +61,10 @@ defmodule Raxol.Animation.Framework do
   def init(opts \\ %{}) do
     Logger.debug("Initializing animation framework...")
 
-    # Get accessibility settings
-    reduced_motion =
-      Map.get(opts, :reduced_motion, Accessibility.reduced_motion_enabled?())
+    # Read reduced_motion preference
+    # Assuming pref_key helper is available or use literal string
+    reduced_motion_pref = Raxol.Core.UserPreferences.get("accessibility.reduced_motion") || false
+    reduced_motion = Map.get(opts, :reduced_motion, reduced_motion_pref)
 
     default_duration = Map.get(opts, :default_duration, 300)
     frame_ms = Map.get(opts, :frame_ms, @animation_frame_ms)

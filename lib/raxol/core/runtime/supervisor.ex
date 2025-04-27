@@ -11,13 +11,16 @@ defmodule Raxol.Core.Runtime.Supervisor do
   """
 
   use Supervisor
+  require Logger
 
   def start_link(init_arg) do
+    Logger.info("[#{__MODULE__}] start_link called with args: #{inspect(init_arg)}")
     Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
 
   @impl true
-  def init(_init_arg) do
+  def init(init_arg) do
+    Logger.info("[#{__MODULE__}] init called with args: #{inspect(init_arg)}")
     children = [
       # Task supervisor for isolated task execution
       {Task.Supervisor, name: Raxol.Core.Runtime.TaskSupervisor},
@@ -32,6 +35,7 @@ defmodule Raxol.Core.Runtime.Supervisor do
       {Raxol.Core.Runtime.Plugins.Commands, []}
     ]
 
+    Logger.debug("[#{__MODULE__}] Initializing children: #{inspect(children)}")
     Supervisor.init(children, strategy: :one_for_all)
   end
 end
