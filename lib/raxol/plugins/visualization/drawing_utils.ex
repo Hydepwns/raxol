@@ -93,7 +93,8 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
           # Halt the reduction early if out of bounds
           {:halt, acc_grid}
         end
-      end)\n      |> case do
+      end)
+      |> case do
            {:halt, final_grid} -> final_grid # Result when halted
            final_grid -> final_grid # Result when reduction completes normally
          end

@@ -85,16 +85,19 @@ defmodule Raxol.Style.Colors.Accessibility do
     contrast_ratio(c1, c2)
   end
 
+  @doc """
+  Calculates the WCAG contrast ratio between two colors.
+  See: https://www.w3.org/TR/WCAG21/#dfn-contrast-ratio
+  """
   def contrast_ratio(%Color{} = color1, %Color{} = color2) do
     l1 = relative_luminance(color1)
     l2 = relative_luminance(color2)
-
-    lighter = max(l1, l2)
-    darker = min(l1, l2)
-
-    ratio = (lighter + 0.05) / (darker + 0.05)
-    # Round to 2 decimal places for readability
-    Float.round(ratio, 2)
+    # Formula: (L1 + 0.05) / (L2 + 0.05), where L1 is the lighter luminance
+    if l1 > l2 do
+      (l1 + 0.05) / (l2 + 0.05)
+    else
+      (l2 + 0.05) / (l1 + 0.05)
+    end
   end
 
   @doc """
@@ -211,47 +214,82 @@ defmodule Raxol.Style.Colors.Accessibility do
   end
 
   @doc """
-  Creates a pair of colors {background, foreground} that meet accessibility guidelines.
+  Finds an accessible color pair (foreground/background) based on a base color and WCAG level.
 
-  Tries base color with black/white, then adjusts base if needed.
+  Tries to find a contrasting color (black or white first) that meets the desired level.
 
-  ## Parameters
+  Parameters:
+    - `base_color`: The Color struct to find a contrasting pair for.
+    - `level`: The minimum WCAG contrast ratio level (:aa or :aaa, defaults to :aa).
 
-  - `base_color` - The base color to use (hex string or Color struct)
-  - `level` - Accessibility level (`:aa`, `:aaa`, `:aa_large`, `:aaa_large`)
-
-  ## Examples
-
-      iex> {bg, fg} = Raxol.Style.Colors.Accessibility.accessible_color_pair("#3366CC")
-      iex> Raxol.Style.Colors.Accessibility.readable?(bg, fg)
-      true
+  Returns:
+    A tuple `{foreground_color, background_color}` where one is the `base_color`
+    and the other is a contrasting color (typically black or white) that meets the
+    specified `level`. Returns `nil` if no suitable pair is found immediately
+    (further logic might be needed for complex cases).
   """
-  def accessible_color_pair(base_color, level \\ :aa) when is_binary(base_color) do
+  @doc false # Helper
+  # Define head with defaults
+  def accessible_color_pair(base_color, level \\ :aa)
+  # Clause for binary (string) input
+  def accessible_color_pair(base_color, level) when is_binary(base_color) do
     case Color.from_hex(base_color) do
-      %Color{} = c -> accessible_color_pair(c, level)
-      # Default pair for invalid base color
-      _ -> {Color.from_hex("#FFFFFF"), Color.from_hex("#000000")}
+      %Color{} = c -> accessible_color_pair(c, level) # Delegate to Color struct clause
+      _ ->
+        Logger.warning("Invalid hex color for accessible_color_pair: #{inspect(base_color)}")
+        nil # Return nil for invalid base color
     end
   end
 
-  def accessible_color_pair(%Color{} = base_color, level \\ :aa) do
-    suggested_fg = suggest_text_color(base_color)
+  # Clause for Color struct input (removed default here)
+  def accessible_color_pair(%Color{} = base_color, level) do
+    white = Color.from_hex("#FFFFFF")
+    black = Color.from_hex("#000000")
 
-    if readable?(base_color, suggested_fg, level) do
-      {base_color, suggested_fg}
+    contrast_with_white = contrast_ratio(base_color, white)
+    contrast_with_black = contrast_ratio(base_color, black)
+    # Call the new helper function
+    min_ratio = min_contrast(level)
+
+    cond do
+      contrast_with_white >= min_ratio ->
+        {white, base_color} # White text on base_color background
+
+      contrast_with_black >= min_ratio ->
+        {black, base_color} # Black text on base_color background
+
+      contrast_with_white >= min_ratio -> # Same check, interpretation differs
+        {base_color, white} # Base_color text on white background
+
+      contrast_with_black >= min_ratio -> # Same check, interpretation differs
+        {base_color, black} # Base_color text on black background
+
+      true ->
+        Logger.debug("Could not find accessible pair for color: #{inspect(base_color)}")
+        nil # Could not find a simple black/white contrast pair
+    end
+  end
+
+  # --- Private Helpers ---
+
+  # Define the missing helper function
+  defp min_contrast(:aaa), do: 7.0
+  defp min_contrast(_level), do: 4.5 # Default to AA
+
+  @doc false
+  # Helper to calculate relative luminance
+  defp ensure_contrast_or_limit(adjusted_color, background, target_ratio, direction, original_color) do
+    if contrast_ratio(adjusted_color, background) >= target_ratio do
+      adjusted_color
     else
-      # If suggested (black/white) doesn't work, we need to adjust the base color
-      # This requires lighten/darken functions, which will be in HSL module.
-      # For now, return a default safe pair if adjustment is needed.
-      # TODO: Integrate with HSL module later for adjustment logic.
-      if relative_luminance(base_color) > 0.5 do
-        # Base is light, suggest black text, try darkening base if needed
-        # Placeholder: return safe pair
-        {Color.from_hex("#FFFFFF"), Color.from_hex("#000000")}
-      else
-        # Base is dark, suggest white text, try lightening base if needed
-        # Placeholder: return safe pair
-        {Color.from_hex("#000000"), Color.from_hex("#FFFFFF")}
+      # If even max adjustment doesn't meet contrast, return black/white or original?
+      # Returning black/white might be safer depending on use case.
+      # Returning original might preserve intent better.
+      # Let's return the limit (black/white) for now.
+      case direction do
+        :darker -> Color.from_hex("#000000")
+        :lighter -> Color.from_hex("#FFFFFF")
+        _ -> original_color # Fallback
       end
     end
   end
@@ -334,23 +372,6 @@ defmodule Raxol.Style.Colors.Accessibility do
          end
        # Final check in case the last step overshot
        |> ensure_contrast_or_limit(background, target_ratio, :lighter, color)
-    end
-  end
-
-  # Helper to ensure contrast is met or return the limit (black/white)
-  defp ensure_contrast_or_limit(adjusted_color, background, target_ratio, direction, original_color) do
-    if contrast_ratio(adjusted_color, background) >= target_ratio do
-      adjusted_color
-    else
-      # If even max adjustment doesn't meet contrast, return black/white or original?
-      # Returning black/white might be safer depending on use case.
-      # Returning original might preserve intent better.
-      # Let's return the limit (black/white) for now.
-      case direction do
-        :darker -> Color.from_hex("#000000")
-        :lighter -> Color.from_hex("#FFFFFF")
-        _ -> original_color # Fallback
-      end
     end
   end
 

@@ -25,6 +25,7 @@ defmodule Raxol.Terminal.Integration do
   alias Raxol.Terminal.Renderer
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.MemoryManager
+  alias Raxol.Terminal.Config.Utils
 
   @type t :: %__MODULE__{
           emulator: Emulator.t(),
@@ -60,8 +61,8 @@ defmodule Raxol.Terminal.Integration do
       24
   """
   def new(width, height, opts \\ []) do
-    default_config = Config.generate_default_config()
-    config = apply_config_options(default_config, opts)
+    default_config = Utils.load_default_config()
+    config = Utils.deep_merge(default_config, opts)
 
     emulator = Emulator.new(width, height)
 

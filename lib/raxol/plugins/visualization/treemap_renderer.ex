@@ -211,7 +211,8 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
         %{x: nx, y: ny, width: nw, height: nh, name: name, value: value, depth: depth} = node_rect
 
         # Choose color based on depth
-        color = Enum.at(color_palette, rem(depth -1, num_colors))
+        color = Enum.at(color_palette, rem(depth - 1, num_colors))
+        text_color = DrawingUtils.get_contrasting_text_color(color)
         style = Style.new(fg: color)
 
         # Draw the border
@@ -228,7 +229,7 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
               start_x = nx + 1 + max(0, div(nw - 2 - text_len, 2))
               start_y = ny + 1 + line_idx
               # Ensure text stays within bounds
-              if start_y < ny + nh -1 do
+              if start_y < ny + nh - 1 do
                  DrawingUtils.draw_text(inner_grid, start_y, start_x, String.slice(line, 0, nw - 2), style)
               else
                  inner_grid # Not enough vertical space for this line

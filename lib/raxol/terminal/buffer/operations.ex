@@ -425,7 +425,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
         new_region_content = before_deleted ++ after_deleted ++ blank_lines
         new_region_content = Enum.take(new_region_content, visible_lines)
 
-        replace_scroll_region(
+        clear_scroll_region(
           buffer,
           scroll_start,
           scroll_end,
@@ -450,7 +450,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Calculates the difference between the current buffer state and a list of desired cell changes.
   Returns a list of {x, y, cell_map} tuples representing only the cells that need to be updated.
-  Input `changes` must be a list of {x, y, cell_map} tuples.
+  Input `changes` must be a list of {x, y, map} tuples.
   """
   @spec diff(
           ScreenBuffer.t(),
@@ -783,7 +783,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
       new_region_content =
         Enum.take(new_region_content, visible_lines_in_region)
 
-      replace_scroll_region(
+      clear_scroll_region(
         buffer,
         scroll_start,
         scroll_end,
