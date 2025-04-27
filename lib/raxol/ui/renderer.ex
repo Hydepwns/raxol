@@ -61,6 +61,13 @@ defmodule Raxol.UI.Renderer do
       %{type: :box, x: x, y: y, width: w, height: h, attrs: attrs} ->
         render_box(x, y, w, h, attrs, theme)
 
+      # Add new clause for :table elements
+      %{type: :table, x: x, y: y, width: w, height: h, attrs: attrs} = table_element ->
+        # --- Logging ---
+        Logger.debug("[Renderer] Received :table element: #{inspect table_element}")
+        # ---------------
+        render_table(x, y, w, h, attrs, theme)
+
       # TODO: Add cases for other element types (:panel, :button, :input, :table etc.)
       # These might be decomposed into :text and :box primitives by the layout engine,
       # or we might need to handle them directly here, applying component-specific styles.
@@ -188,6 +195,134 @@ defmodule Raxol.UI.Renderer do
     background_cells ++ border_cells
   end
 
+  # --- Add Table Rendering Logic ---
+  defp render_table(x, y, width, _height, attrs, theme) do
+    headers = Map.get(attrs, :_headers, [])
+    data = Map.get(attrs, :_data, [])
+    col_widths = Map.get(attrs, :_col_widths, [])
+    component_type = Map.get(attrs, :_component_type, :table)
+
+    # Get base style for the table
+    {_fg, _bg, _style_attrs} = resolve_styles(attrs, component_type, theme)
+
+    # Get specific styles for header, separator, data rows from theme
+    table_base_styles = Raxol.UI.Theming.Theme.component_style(theme, component_type)
+
+    header_style = %{
+      fg: Map.get(table_base_styles, :header_fg, :cyan),
+      bg: Map.get(table_base_styles, :header_bg, :default)
+      # Add other header-specific attributes if needed
+    }
+    separator_style = %{
+      fg: Map.get(table_base_styles, :border, :white), # Use border color for separator
+      bg: Map.get(table_base_styles, :bg, :default) # Use base table bg
+      # Add other separator-specific attributes if needed
+    }
+    data_style = %{
+      fg: Map.get(table_base_styles, :row_fg, :default),
+      bg: Map.get(table_base_styles, :row_bg, :default)
+      # TODO: Handle alternate_row_bg here or in render_table_row
+    }
+
+    # TODO: Alternate row styling?
+
+    all_cells = [] # Collect all cells here
+
+    # --- Logging ---
+    Logger.debug(
+      "[Renderer.render_table] Rendering table at (#{x},#{y}) W=#{width}. Headers: #{inspect headers}, DataRows: #{length(data)}, ColWidths: #{inspect col_widths}"
+    )
+    # ---------------
+
+    current_y = y
+
+    # --- Render Headers ---
+    header_cells = if headers != [] do
+      render_table_row(x, current_y, headers, col_widths, header_style, width, theme)
+    else
+      []
+    end
+    all_cells = all_cells ++ header_cells
+    current_y = if headers != [], do: current_y + 1, else: current_y
+
+    # --- Render Separator ---
+    separator_cells = if headers != [] do
+      # Create a separator line using box drawing characters or simple dashes
+      # Use col_widths to generate the line with appropriate separators
+      separator_char = Map.get(separator_style, :char, "─") # Default to simple line
+      # Simple full-width separator for now
+      sep_text = String.duplicate(separator_char, width)
+      render_text(x, current_y, sep_text, separator_style, theme)
+      # TODO: Make separator respect column widths using junction characters?
+    else
+      []
+    end
+    all_cells = all_cells ++ separator_cells
+    current_y = if headers != [], do: current_y + 1, else: current_y
+
+    # --- Render Data Rows ---
+    data_cells = Enum.flat_map(Enum.with_index(data), fn {row_data, index} ->
+      row_y = current_y + index
+      # Alternate styling could be applied here based on index
+      render_table_row(x, row_y, row_data, col_widths, data_style, width, theme)
+    end)
+    all_cells = all_cells ++ data_cells
+
+    all_cells
+  end
+
+  # Helper to render a single row (header or data)
+  defp render_table_row(start_x, y, row_items, col_widths, style, max_width, theme) do
+    {row_fg, row_bg, row_attrs} = resolve_styles(style, nil, theme)
+
+    initial_acc = {start_x, []} # {current_x, cells}
+
+    # Use reduce_while to generate cells and handle early termination
+    # Rename lambda vars to avoid shadowing warnings
+    {_final_x, cells} = Enum.reduce_while(Enum.with_index(row_items), initial_acc, fn {item, col_index}, {iter_x, iter_cells} ->
+      col_width = Enum.at(col_widths, col_index, 0)
+      item_text = to_string(item)
+
+      # Check if adding this column exceeds max_width BEFORE processing
+      # Separator width needs to be considered too
+      is_last_col = col_index == length(row_items) - 1
+      projected_width = if is_last_col, do: col_width, else: col_width + 3 # +3 for " | "
+
+      if iter_x + projected_width <= start_x + max_width do
+        # Truncate or pad text
+        content_width = max(0, col_width - 2)
+        display_text = " " <> String.slice(item_text, 0, content_width)
+        padded_text = String.pad_trailing(display_text, col_width)
+
+        # Generate item cells
+        item_cells = for {char, char_index} <- Enum.with_index(String.graphemes(padded_text)) do
+           {iter_x + char_index, y, char, row_fg, row_bg, row_attrs}
+        end
+
+        new_cells_acc = iter_cells ++ item_cells
+        new_x = iter_x + col_width
+
+        # Add separator if not the last column
+        if !is_last_col do
+          sep_x = new_x
+          separator_cells = [
+            {sep_x,     y, " ", row_fg, row_bg, row_attrs},
+            {sep_x + 1, y, "|", row_fg, row_bg, row_attrs},
+            {sep_x + 2, y, " ", row_fg, row_bg, row_attrs}
+          ]
+          {:cont, {new_x + 3, new_cells_acc ++ separator_cells}}
+        else
+          {:cont, {new_x, new_cells_acc}}
+        end
+      else
+        # Stop rendering this row
+        {:halt, {iter_x, iter_cells}}
+      end
+    end)
+
+    cells
+  end
+
   # Helper to get border characters based on style
   defp get_border_chars(:single) do
     %{
@@ -284,59 +419,4 @@ defmodule Raxol.UI.Renderer do
     {fg_color, bg_color, final_style_attrs}
   end
 
-  @doc false
-  # Helper to return default value if primary is nil
-  defp default_if_nil(primary, default), do: primary || default
-
-  @doc false
-  # Resolves a potential color name/value from the theme palette.
-  # Priority:
-  # 1. Provided color value (if not nil or :default)
-  # 2. Theme component style (implicitly handled by caller using default_if_nil)
-  # 3. Theme general color (e.g., theme.colors.foreground)
-  # 4. Global default (@default_fg or @default_bg)
-  defp resolve_color(color_name_or_value, theme, theme_default_key) do
-    cond do
-      # Explicit color set (and not :default)
-      color_name_or_value != nil and color_name_or_value != :default ->
-        get_theme_color(color_name_or_value, theme, color_name_or_value)
-
-      # No explicit color, try theme default for this context (e.g., :foreground)
-      theme_default_key != nil ->
-        get_theme_color(
-          Map.get(theme.colors, theme_default_key),
-          theme,
-          @default_fg
-        )
-
-      # Fallback to global default
-      true ->
-        # Use specific default based on key
-        if theme_default_key == :background, do: @default_bg, else: @default_fg
-    end
-  end
-
-  @doc false
-  # Looks up a color name in the theme's color palette.
-  # If the color is already resolved (not an atom), returns it directly.
-  # If the color name (atom) exists in theme.colors, returns the resolved theme color.
-  # Otherwise, returns the fallback.
-  defp get_theme_color(color_name_or_value, theme, fallback) do
-    cond do
-      # Already resolved (e.g., a direct hex value - unlikely here but good practice)
-      not is_atom(color_name_or_value) ->
-        color_name_or_value
-
-      # Is an atom, check theme palette
-      is_map(theme) and Map.has_key?(theme, :colors) and
-          Map.has_key?(theme.colors, color_name_or_value) ->
-        Map.get(theme.colors, color_name_or_value)
-
-      # Color name not in theme, return fallback
-      true ->
-        fallback
-    end
-  end
-
-  # TODO: Add private helper functions for resolving styles (bold, italic etc.) from theme if needed.
 end

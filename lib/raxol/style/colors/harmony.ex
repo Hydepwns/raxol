@@ -25,13 +25,16 @@ defmodule Raxol.Style.Colors.Harmony do
 
   # Remove defaults from implementation clause(s)
   def analogous_colors(%Color{} = color, count, angle) do
-    hsl = Color.to_hsl(color)
+    # Use HSL module functions
+    {h, s, l} = HSL.rgb_to_hsl(color.r, color.g, color.b)
     step = angle / (count - 1)
-    start_angle = hsl.h - angle / 2
+    start_angle = h - angle / 2.0 # Ensure float division
 
     Enum.map(0..(count - 1), fn i ->
-      h = rem(start_angle + i * step + 360, 360)
-      Color.from_hsl(%{hsl | h: h})
+      new_h = rem(round(start_angle + i * step + 360.0), 360)
+      new_h = if new_h < 0, do: new_h + 360.0, else: new_h # Ensure positive
+      {r, g, b} = HSL.hsl_to_rgb(new_h, s, l)
+      %Color{color | r: r, g: g, b: b}
     end)
   end
 

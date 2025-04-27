@@ -1,16 +1,14 @@
 defmodule Raxol.Runtime.Supervisor do
   @moduledoc """
-  Supervises the core Raxol runtime processes.
+  The main supervisor for the Raxol application runtime.
+  Manages core processes like Dispatcher, PluginManager, etc.
   """
   use Supervisor
 
   require Logger
 
-  alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
   alias Raxol.Core.Runtime.Events.Dispatcher
-  alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
-  alias Raxol.Terminal.Driver, as: TerminalDriver
-  alias Raxol.Core.UserPreferences
+  alias Raxol.Core.Runtime.Plugins.Manager
 
   def start_link(init_args) do
     Supervisor.start_link(__MODULE__, init_args, name: __MODULE__)
@@ -37,7 +35,7 @@ defmodule Raxol.Runtime.Supervisor do
       {Raxol.Core.UserPreferences, []},
 
       # 1. Plugin Manager (needed by Dispatcher)
-      {PluginManager, []},
+      {Manager, []},
       # 2. Dispatcher (needs PluginManager, app_module, model, runtime_pid, commands)
       %{
         id: Dispatcher,
@@ -52,7 +50,7 @@ defmodule Raxol.Runtime.Supervisor do
                width: initial_term_size.width,
                height: initial_term_size.height,
                # Uses registered name
-               plugin_manager: PluginManager,
+               plugin_manager: Manager,
                command_registry_table: :raxol_command_registry
              }
            ]},

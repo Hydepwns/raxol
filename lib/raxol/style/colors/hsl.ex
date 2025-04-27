@@ -38,13 +38,14 @@ defmodule Raxol.Style.Colors.HSL do
     hue =
       cond do
         delta == 0.0 -> 0.0 # Achromatic
-        max == r -> 60.0 * rem(((g - b) / delta), 6)
+        max == r -> 60.0 * rem(round((g - b) / delta), 6)
         max == g -> 60.0 * (((b - r) / delta) + 2.0)
         # max == b
         true -> 60.0 * (((r - g) / delta) + 4.0)
       end
     # Ensure hue is always positive
     if hue < 0, do: hue + 360.0, else: hue
+    |> then(&(rem(round(&1), 360)))
   end
 
   @doc """
@@ -64,7 +65,7 @@ defmodule Raxol.Style.Colors.HSL do
 
     c = (1.0 - abs(2.0 * l - 1.0)) * s
     h_prime = h / 60.0
-    x = c * (1.0 - abs(rem(h_prime, 2.0) - 1.0))
+    x = c * (1.0 - abs(rem(round(h_prime), 2) - 1.0))
     m = l - c / 2.0
 
     {r_prime, g_prime, b_prime} =
@@ -101,10 +102,8 @@ defmodule Raxol.Style.Colors.HSL do
   @spec rotate_hue(Color.t(), number()) :: Color.t()
   def rotate_hue(%Color{} = color, degrees) when is_number(degrees) do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
-    # Use rem for proper wrapping with negative degrees
-    new_h = rem(h + degrees, 360.0)
-    new_h = if new_h < 0, do: new_h + 360.0, else: new_h
-
+    # Ensure calculations are float, then fix rem args: use round/1
+    new_h = rem(round(h + degrees + 360.0), 360)
     {r, g, b} = hsl_to_rgb(new_h, s, l)
     %Color{color | r: r, g: g, b: b}
   end
