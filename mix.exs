@@ -55,9 +55,9 @@ defmodule Raxol.MixProject do
     ]
   end
 
+  # Raxol is primarily a library/toolkit; applications using it define their own OTP app.
   def application do
     [
-      mod: {Raxol.Application, []},
       extra_applications: [:logger, :runtime_tools, :swoosh]
     ]
   end
@@ -72,6 +72,9 @@ defmodule Raxol.MixProject do
       # Core dependencies
       # Terminal rendering library
       {:rrex_termbox, "1.0.4"},
+
+      # TODO: Review if Phoenix/web dependencies are needed for core library
+      # They might be remnants of web UI / VSCode Stdio features.
       {:phoenix, "~> 1.7.20"},
       {:phoenix_live_view, "~> 1.0.0"},
       {:surface, "~> 0.12"},
@@ -100,7 +103,8 @@ defmodule Raxol.MixProject do
       # {:raxol_view_components, path: "../raxol_view_components"}, # Example if extracted
 
       # Core Plugins Dependencies
-      {:clipboard, "~> 0.2.1"}, # System clipboard access
+      # System clipboard access
+      {:clipboard, "~> 0.2.1"},
       {:circular_buffer, "~> 0.2"},
       # {:ex_notify, "~> 0.2"}, # REMOVED - Package does not exist / wrong one chosen
 
@@ -153,7 +157,7 @@ defmodule Raxol.MixProject do
 
   defp description do
     """
-    Raxol - A comprehensive terminal UI framework for Elixir with web interface capabilities.
+    Raxol - A toolkit for building interactive terminal UI applications in Elixir.
     """
   end
 
@@ -172,7 +176,11 @@ defmodule Raxol.MixProject do
   defp docs do
     [
       main: "readme",
-      extras: ["README.md", "CHANGELOG.md", "LICENSE.md", "docs/development.md"],
+      extras: [
+        "README.md",
+        "docs/guides/quick_start.md",
+        "docs/guides/vscode_extension.md"
+      ],
       source_url: "https://github.com/Hydepwns/raxol",
       source_ref: "v#{@version}",
       formatters: ["html"]

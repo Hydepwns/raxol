@@ -45,7 +45,6 @@ yarn-debug.log
 yarn-error.log
 
 # Build output and generated files
-/priv/static/
 /assets/node_modules/
 **/dist/
 /extensions/vscode/dist/
@@ -79,9 +78,6 @@ yarn-error.log
 *.iml
 .idea/
 .vscode/
-NEXT_AGENT_PROMPT.md
-test_plan.md
-TODO.md
 themes/working_version.json
 themes/staged_version.json
 

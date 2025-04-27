@@ -1,7 +1,7 @@
 ---
 title: Raxol Architecture
 description: Overview of the Raxol system architecture
-date: YYYY-MM-DD # Updated Date - Replace with current date
+date: 2024-06-25
 author: Raxol Team
 section: documentation
 tags: [architecture, documentation, design]
@@ -11,7 +11,7 @@ tags: [architecture, documentation, design]
 
 Overview of the Raxol architecture after the recent reorganization and refactoring.
 
-_Last updated: YYYY-MM-DD_ # Updated Date - Replace with current date
+_Last updated: 2024-06-25_ # Updated Date
 
 ## Overview
 
@@ -95,35 +95,34 @@ lib/raxol/
 
 ## Key Modules
 
-| Module                                        | Description                                                          | Status             |
-| --------------------------------------------- | -------------------------------------------------------------------- | ------------------ |
-| `Raxol.Core.Runtime.Application`              | Defines the application behaviour (init, update, view)               | Defined            |
-| `Raxol.Core.Runtime.Events.Dispatcher`        | Manages application state, routes events/commands                    | Functional         |
-| `Raxol.Core.Runtime.Plugins.Manager`          | Manages plugin lifecycle, command execution, reloading               | Functional, Tested |
-| `Raxol.Core.Runtime.Rendering.Engine`         | Orchestrates rendering: App -> Layout -> Renderer -> Terminal        | Functional         |
-| `Raxol.UI.Components.Base.Component`          | Base behaviour for UI components                                     | Defined, Adopted   |
-| `Raxol.UI.Layout.Engine`                      | Calculates element positions                                         | Functional, Tested |
-| `Raxol.UI.Renderer`                           | Converts layout elements to styled terminal cells using active theme | Functional         |
-| `Raxol.UI.Theming.Theme`                      | Theme data structure and retrieval                                   | Functional         |
-| `Raxol.Terminal.Driver`                       | Handles terminal input/output, raw mode, basic parsing               | Functional         |
-| `Raxol.Terminal.Emulator`                     | Manages terminal state (buffers, cursor, modes, etc.)                | Refactored         |
-| `Raxol.Terminal.Parser`                       | Main parser state machine and state handlers                         | Refactored         |
-| `Raxol.Terminal.ControlCodes`                 | Handles C0 and simple ESC control codes                              | Refactored         |
-| `Raxol.Terminal.ANSI.SixelGraphics`           | Stateful Sixel graphics parser with RLE optimization                 | Refactored, Opt.   |
-| `Raxol.View.Elements`                         | Macros (`box`, `text`, etc.) for defining UI views                   | Defined, Used      |
-| `Raxol.Plugins.VisualizationPlugin`           | Handles visualization placeholders, delegates rendering              | Refactored         |
-| `Raxol.Plugins.Visualization.ChartRenderer`   | Helper for rendering chart visualizations                            | Added              |
-| `Raxol.Plugins.Visualization.TreemapRenderer` | Helper for rendering treemap visualizations                          | Added              |
-| `Raxol.Plugins.Visualization.ImageRenderer`   | Helper for rendering image visualizations                            | Added              |
-| `Raxol.Plugins.Visualization.DrawingUtils`    | Shared drawing helpers for visualization                             | Added              |
-| `Raxol.UI.Components.Input.MultiLineInput.*`  | Helper modules for `MultiLineInput` component                        | Added              |
-
-| `Raxol.Terminal.Integration/memory_manager.ex` (~50 lines)
-| `./lib/raxol/terminal/config/utils.ex` (~40 lines)
-| `Raxol.Core.Preferences.Persistence` | Handles preference file I/O | Added |
-| `Raxol.Core.ColorSystem` | Centralized theme/accessibility-aware color retrieval | Added |
-| `Raxol.Core.Accessibility.ThemeIntegration` | Connects accessibility settings with themes | Refactored |
-| `Raxol.Core.UserPreferences` | GenServer for managing user preferences state | Refactored |
+| Module                                         | Description                                                          | Status             |
+| ---------------------------------------------- | -------------------------------------------------------------------- | ------------------ |
+| `Raxol.Core.Runtime.Application`               | Defines the application behaviour (init, update, view)               | Defined            |
+| `Raxol.Core.Runtime.Events.Dispatcher`         | Manages application state, routes events/commands                    | Functional         |
+| `Raxol.Core.Runtime.Plugins.Manager`           | Manages plugin lifecycle, command execution, reloading               | Functional, Tested |
+| `Raxol.Core.Runtime.Rendering.Engine`          | Orchestrates rendering: App -> Layout -> Renderer -> Terminal        | Functional         |
+| `Raxol.UI.Components.Base.Component`           | Base behaviour for UI components                                     | Defined, Adopted   |
+| `Raxol.UI.Layout.Engine`                       | Calculates element positions                                         | Functional, Tested |
+| `Raxol.UI.Renderer`                            | Converts layout elements to styled terminal cells using active theme | Functional         |
+| `Raxol.UI.Theming.Theme`                       | Theme data structure and retrieval                                   | Functional         |
+| `Raxol.Terminal.Driver`                        | Handles terminal input/output, raw mode, basic parsing               | Functional         |
+| `Raxol.Terminal.Emulator`                      | Manages terminal state (buffers, cursor, modes, etc.)                | Refactored         |
+| `Raxol.Terminal.Parser`                        | Main parser state machine and state handlers                         | Refactored         |
+| `Raxol.Terminal.ControlCodes`                  | Handles C0 and simple ESC control codes                              | Refactored         |
+| `Raxol.Terminal.ANSI.SixelGraphics`            | Stateful Sixel graphics parser with RLE optimization                 | Refactored, Opt.   |
+| `Raxol.View.Elements`                          | Macros (`box`, `text`, etc.) for defining UI views                   | Defined, Used      |
+| `Raxol.Plugins.VisualizationPlugin`            | Handles visualization placeholders, delegates rendering              | Refactored         |
+| `Raxol.Plugins.Visualization.ChartRenderer`    | Helper for rendering chart visualizations                            | Added              |
+| `Raxol.Plugins.Visualization.TreemapRenderer`  | Helper for rendering treemap visualizations                          | Added              |
+| `Raxol.Plugins.Visualization.ImageRenderer`    | Helper for rendering image visualizations                            | Added              |
+| `Raxol.Plugins.Visualization.DrawingUtils`     | Shared drawing helpers for visualization                             | Added              |
+| `Raxol.UI.Components.Input.MultiLineInput.*`   | Helper modules for `MultiLineInput` component                        | Added              |
+| `Raxol.Terminal.Integration/memory_manager.ex` | Helper for memory management in Terminal Integration                 | Added              |
+| `Raxol.Terminal.Config/utils.ex`               | Utilities for terminal configuration merging                         | Added              |
+| `Raxol.Core.Preferences.Persistence`           | Handles preference file I/O                                          | Added              |
+| `Raxol.Core.ColorSystem`                       | Centralized theme/accessibility-aware color retrieval                | Added              |
+| `Raxol.Core.Accessibility.ThemeIntegration`    | Connects accessibility settings with themes                          | Refactored         |
+| `Raxol.Core.UserPreferences`                   | GenServer for managing user preferences state                        | Refactored         |
 
 ## Plugin System
 
@@ -159,8 +158,8 @@ lib/raxol/
 - Refactored `MultiLineInput` into core component and helper modules (`TextHelper`, `NavigationHelper`, `RenderHelper`, `EventHandler`, `ClipboardHelper`).
 - Added features to `MultiLineInput`: basic navigation, clipboard, scrolling, selection, mouse clicks.
 - Added basic tests for `MultiLineInput` helpers.
-- **Integrated `UserPreferences` loading/saving into core modules (`Accessibility`, `ThemeIntegration`, `Dispatcher`, `ColorSystem`).**
-- **Implemented Run-Length Encoding (RLE) optimization in `SixelGraphics`.**
+- Integrated `UserPreferences` loading/saving into core modules (`Accessibility`, `ThemeIntegration`, `Dispatcher`, `ColorSystem`).
+- Implemented Run-Length Encoding (RLE) optimization in `SixelGraphics`.
 - Focus: Continue refactoring large modules, implement core UX features (Animation, i18n), enhance component tests, address remaining placeholders (`MultiLineInput` mouse drag, Sixel rendering refinements).
 
 ## Codebase Size & Refactoring Candidates
