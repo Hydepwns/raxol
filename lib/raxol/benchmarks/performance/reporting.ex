@@ -30,7 +30,7 @@ defmodule Raxol.Benchmarks.Performance.Reporting do
     {:ok, file_path}
   end
 
-  defp print_summary(results, detailed) do
+  def print_summary(results, detailed) do
     IO.puts("\n=== Performance Benchmark Summary ===\n")
     IO.puts("Platform: #{results.platform.name} #{results.platform.version}")
     IO.puts("Architecture: #{results.platform.architecture}")
