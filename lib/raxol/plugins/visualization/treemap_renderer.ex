@@ -6,8 +6,8 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
 
   require Logger
   alias Raxol.Terminal.Cell
-  alias Raxol.UI.Style
   alias Raxol.Plugins.Visualization.DrawingUtils
+  alias Raxol.Style
 
   @doc """
   Public entry point for rendering treemap content.
@@ -51,7 +51,7 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
   @doc false
   # Recursive helper to calculate treemap node rectangles using squarified approach.
   # Returns a flat list: [%{x:, y:, width:, height:, name:, value:, depth:}, ...]
-  defp layout_treemap_nodes(node, %{x: bx, y: by, width: bw, height: bh} = bounds, depth, total_value_for_level) do
+  defp layout_treemap_nodes(node, %{x: bx, y: by, width: bw, height: bh} = bounds, depth, _total_value_for_level) do
     children = Map.get(node, :children, [])
 
     # Base case: Leaf node or area too small
@@ -134,19 +134,30 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
      find_best_row_recursive(children, total_value, fixed_dimension, best_row, min_max_aspect_ratio, 1)
   end
 
-  defp find_best_row_recursive(_children, _total, _fixed_dim, best_row, _min_ratio, index) when index >= length(_children), do: {best_row, Enum.slice(_children, index..-1)}
-  defp find_best_row_recursive(children, total_value, fixed_dimension, best_row, min_max_aspect_ratio, index) do
-      current_row = Enum.slice(children, 0, index + 1)
-      current_aspect_ratio = calculate_max_aspect_ratio(current_row, total_value, fixed_dimension)
-
-      if current_aspect_ratio < min_max_aspect_ratio do
-         # This row is better, continue with it
-         find_best_row_recursive(children, total_value, fixed_dimension, current_row, current_aspect_ratio, index + 1)
-      else
-         # Previous row was better, stop here
-         {best_row, Enum.slice(children, index..-1)}
-      end
+  defp find_best_row_recursive([], _total, _fixed_dim, best_row, _min_ratio, _index) do
+    # Base case: No more children left to process
+    {best_row, []}
   end
+
+  defp find_best_row_recursive([_head | tail] = children, total, fixed_dim, best_row, min_ratio, index) do
+    current_row = Enum.slice(children, 0..index)
+    _current_row_sum = Enum.sum(Enum.map(current_row, & &1.value))
+
+    # Calculate aspect ratio for the current row
+    ratio = calculate_max_aspect_ratio(current_row, total, fixed_dim)
+
+    # If current ratio is worse than the best found so far, the previous row was best
+    if ratio < min_ratio do
+      {best_row, children} # Return the best row found and the remaining children
+    else
+      # Current row is potentially better, continue recursion
+      find_best_row_recursive(tail, total, fixed_dim, current_row, ratio, index + 1)
+    end
+  end
+
+  # Handle case when index exceeds length (should be covered by first clause, but added for clarity)
+  # Rename _children to children where used
+  defp find_best_row_recursive(children, _total, _fixed_dim, best_row, _min_ratio, index) when index >= length(children), do: {best_row, Enum.slice(children, index..-1)}
 
   # Calculates the maximum aspect ratio for a given row of children
   defp calculate_max_aspect_ratio(row, total_value, fixed_dimension) do
@@ -197,48 +208,64 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
 
   @doc false
   # Draws the treemap nodes onto a grid based on calculated rectangles.
-  defp draw_treemap_nodes(node_rects, title, %{width: width, height: height} = bounds) do
-     # Create base grid
-     grid = List.duplicate(List.duplicate(Cell.new(" "), width), height)
-     grid_with_title = DrawingUtils.draw_text_centered(grid, 0, title)
+  defp draw_treemap_nodes(node_rects, title, %{width: width, height: height} = _bounds) do
+    # Base case: no nodes to draw
+    if Enum.empty?(node_rects), do: []
 
-     # Define a color palette (adjust as needed)
-     color_palette = [:red, :green, :yellow, :blue, :magenta, :cyan, :white]
-     num_colors = length(color_palette)
+    # Create base grid
+    grid = List.duplicate(List.duplicate(Cell.new(" "), width), height)
+    grid_with_title = DrawingUtils.draw_text_centered(grid, 0, title)
 
-     # Draw each node rectangle onto the grid
-     Enum.reduce(node_rects, grid_with_title, fn node_rect, acc_grid ->
-        %{x: nx, y: ny, width: nw, height: nh, name: name, value: value, depth: depth} = node_rect
+    # Define a color palette (adjust as needed)
+    color_palette = [:red, :green, :yellow, :blue, :magenta, :cyan, :white]
+    num_colors = length(color_palette)
 
-        # Choose color based on depth
-        color = Enum.at(color_palette, rem(depth - 1, num_colors))
-        text_color = DrawingUtils.get_contrasting_text_color(color)
-        style = Style.new(fg: color)
+    # Draw each node rectangle onto the grid
+    Enum.reduce(node_rects, grid_with_title, fn node_rect, acc_grid ->
+       %{x: nx, y: ny, width: nw, height: nh, name: name, value: _value, depth: depth} = node_rect
 
-        # Draw the border
-        bordered_grid = DrawingUtils.draw_box_borders(acc_grid, ny, nx, nw, nh, style)
+       # Choose color based on depth
+       color = Enum.at(color_palette, rem(depth - 1, num_colors))
+       # TODO: Add border style based on focus/selection?
+       style = Style.new(bg: color)
 
-        # Draw label inside (if space allows)
-        label = "#{name}\n#{value}" # Multi-line label
-        label_lines = String.split(label, "\n")
+       # Draw filled rectangle using put_cell
+       grid_with_rect = draw_filled_rectangle(acc_grid, nx, ny, nw, nh, style)
 
-        if nw > 2 and nh > length(label_lines) do
-           Enum.reduce(Enum.with_index(label_lines), bordered_grid, fn {line, line_idx}, inner_grid ->
-              # Center text horizontally, place vertically
-              text_len = String.length(line)
-              start_x = nx + 1 + max(0, div(nw - 2 - text_len, 2))
-              start_y = ny + 1 + line_idx
-              # Ensure text stays within bounds
-              if start_y < ny + nh - 1 do
-                 DrawingUtils.draw_text(inner_grid, start_y, start_x, String.slice(line, 0, nw - 2), style)
-              else
-                 inner_grid # Not enough vertical space for this line
-              end
-           end)
-        else
-           bordered_grid # Not enough space for label
-        end
-     end)
+       # Add label if space allows
+       label = to_string(name)
+       label_len = String.length(label)
+
+       if nw >= label_len and nh >= 1 do
+         # Calculate center position like draw_text_centered/3
+         text_len = String.length(label)
+         # Assuming acc_grid dimensions are still valid for nx, nw. This might be fragile.
+         # If grid dimensions change, this needs recalculation.
+         # Need grid width to calculate centering. Let's assume nw is sufficient proxy.
+         start_x = nx + max(0, div(nw - text_len, 2))
+         # Truncate text to fit remaining width
+         truncated_text = String.slice(label, 0, max(0, nx + nw - start_x))
+
+         text_style = Style.new(fg: :black, bg: color)
+
+         # Call draw_text/4 directly with calculated position and style
+         DrawingUtils.draw_text(grid_with_rect, ny + div(nh, 2), start_x, truncated_text, text_style)
+       else
+         grid_with_rect
+       end
+    end)
+  end
+
+  # Helper to draw a filled rectangle
+  defp draw_filled_rectangle(grid, x, y, width, height, style) do
+    Enum.reduce(y..(y + height - 1), grid, fn current_y, acc_grid ->
+      Enum.reduce(x..(x + width - 1), acc_grid, fn current_x, inner_acc_grid ->
+        # Get background char from style or default to space
+        bg_char = Map.get(style.attrs, :bg_char, " ")
+        cell = %{Raxol.Terminal.Cell.new(bg_char) | style: style}
+        DrawingUtils.put_cell(inner_acc_grid, current_y, current_x, cell)
+      end)
+    end)
   end
 
 end

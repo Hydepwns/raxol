@@ -5,7 +5,7 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   """
 
   alias Raxol.Terminal.Cell
-  alias Raxol.UI.Style
+  alias Raxol.Style
 
   @doc """
   Draws a simple box with optional text centered inside.
@@ -73,21 +73,25 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   end
 
   @doc """
-  Draws text at a specific position in the grid.
-  Overwrites existing cells. Truncates if text exceeds grid width.
+  Draws text onto a grid at a specific coordinate.
+  Truncates if text exceeds grid width.
+  Uses optional style.
   """
   def draw_text(grid, y, x, text, style \\ Style.new()) do
-    height = length(grid)
-    width = if height > 0, do: length(List.first(grid)), else: 0
+    # Prefix unused text_length
+    _text_length = String.length(text)
+    grid_height = length(grid)
+    grid_width = length(List.first(grid))
+    # Prefix unused available_width
+    _available_width = grid_width - x
 
-    if y < 0 or y >= height or x >= width do
-      grid # Start position out of bounds
-    else
+    # Ensure coordinates are within bounds
+    if y >= 0 and y < grid_height and x >= 0 and x < grid_width do
       chars = String.to_charlist(text)
       Enum.reduce(Enum.with_index(chars), grid, fn {char_code, index}, acc_grid ->
         current_x = x + index
         # Stop if we go past the grid width
-        if current_x < width do
+        if current_x < grid_width do
           put_cell(acc_grid, y, current_x, %{Cell.new(<<char_code::utf8>>) | style: style})
         else
           # Halt the reduction early if out of bounds
@@ -98,6 +102,8 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
            {:halt, final_grid} -> final_grid # Result when halted
            final_grid -> final_grid # Result when reduction completes normally
          end
+    else
+      grid # Start position out of bounds
     end
   end
 
@@ -123,17 +129,12 @@ defmodule Raxol.Plugins.Visualization.DrawingUtils do
   Safely gets a cell from the grid.
   Returns nil if coordinates are out of bounds.
   """
-  def get_cell(grid, y, x) when is_list(grid) and y >= 0 and x >= 0 do
-     List.fetch(grid, y)
-     |> case do
-          {:ok, row} when is_list(row) -> List.fetch(row, x)
-          _ -> :error
-        end
-     |> case do
-          {:ok, cell} -> cell
-          _ -> nil
-        end
+  def get_cell(grid, x, y) do
+    # Use Enum.fetch for lists
+    case Enum.fetch(grid, y) do
+      {:ok, row} when is_list(row) -> Enum.fetch(row, x)
+      _ -> {:error, :out_of_bounds}
+    end
   end
-  def get_cell(_grid, _y, _x), do: nil
 
 end

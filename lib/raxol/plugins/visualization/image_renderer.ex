@@ -6,8 +6,8 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
   require Logger
   alias Raxol.Terminal.Cell
-  # alias Raxol.UI.Style # Needed if adding specific styles
   alias Raxol.Plugins.Visualization.DrawingUtils
+  alias Raxol.Style
 
   @doc """
   Public entry point for rendering image content.
@@ -43,10 +43,10 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
   @doc false
   # Draws a placeholder box indicating where the image would be.
-  defp draw_placeholder(data, title, %{width: width, height: height} = bounds) do
+  defp draw_placeholder(data, title, %{width: width, height: height} = _bounds) do
     grid = List.duplicate(List.duplicate(Cell.new(" "), width), height)
     grid_with_title = DrawingUtils.draw_text_centered(grid, 0, title)
-    grid_with_box = DrawingUtils.draw_box_borders(grid_with_title, 1, 1, width - 2, height - 2, Raxol.UI.Style.new(fg: :dark_gray))
+    grid_with_box = DrawingUtils.draw_box_borders(grid_with_title, 1, 1, width - 2, height - 2, Style.new(fg: :dark_gray))
     # Add text indicating data source (e.g., file path)
     data_info = case data do
                   path when is_binary(path) -> "Src: #{path}"
