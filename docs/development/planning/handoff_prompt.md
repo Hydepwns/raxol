@@ -7,6 +7,28 @@ section: planning
 tags: [planning, handoff, prompts]
 ---
 
+# Handoff: Terminal Documentation Review (Partial)
+
+**Context:**
+Systematically reviewing and updating the low-level terminal documentation files located in `docs/development/terminal/` to ensure they accurately reflect the current Raxol architecture after significant refactoring.
+
+**Progress Made:**
+
+Reviewed and rewrote the following files, aligning them with the roles of `Parser`, `Emulator`, `Driver`, `Theming`, `ColorSystem`, core plugins, etc., and removing outdated API references, configurations, examples, and hypothetical modules:
+
+- `docs/development/terminal/ANSIProcessing.md`
+- `docs/development/terminal/CharacterSets.md`
+- `docs/development/terminal/ClipboardManagement.md`
+- `docs/development/terminal/ColorManagement.md`
+- `docs/development/terminal/Cursor.md`
+
+**Immediate Next Steps:**
+
+1.  Continue the review process for the remaining files in `docs/development/terminal/`, starting with `InputHandling.md`.
+2.  Rewrite `InputHandling.md` to accurately describe the input flow involving `Driver`, `Parser`, `Dispatcher`, and application/component-level handling, removing references to the outdated `Terminal.Input` module concept.
+
+---
+
 # Handoff: MultiLineInput FunctionClauseError Fix
 
 **Context:**
@@ -86,10 +108,17 @@ I'd like you to focus on the following areas:
    - Handle screen reader announcements in multiple languages.
 
 5. **Testing Enhancements**:
+
    - Create specialized test helpers for accessibility testing.
    - Implement automated tests for WCAG compliance where applicable.
    - Add performance testing for animation and rendering.
    - Enhance tests for `MultiLineInput`, `SixelGraphics`, `Dashboard`, `ColorSystem`, `UserPreferences`.
+
+6. **Advanced Features (Future Goals from `overview.md`):**
+   - **Form System:** Design and implement a form framework (`Huh` equivalent) with validation, accessibility, and data binding.
+   - **Integrated Markdown Rendering:** Create a component for terminal-optimized markdown (`Glow` equivalent).
+   - **CLI Enhancement Tools (Ecosystem):** Explore developing utilities for shell scripting (`Gum` equivalent).
+   - **Terminal Recording (Ecosystem):** Explore creating a session recording tool (`VHS` equivalent).
 
 ## Codebase Information
 
@@ -407,3 +436,64 @@ Choose one of the following directions:
 2.  **Enhance Showcase Layout:** Add more examples to the "Layout" tab in `component_showcase.exs`, demonstrating features like `column` layout, alignment, spacing, etc.
 3.  **Add More Components:** Add demonstrations for other available components (e.g., `RadioGroup`, `Slider`) to `component_showcase.exs`.
 4.  **Investigate Warnings:** Dive deeper into the remaining warnings (`@doc` redefinition in `accessibility.ex`, unused variables in `sixel_graphics.ex` and `render_helper.ex`) to understand their root cause and fix them properly, potentially enabling the `--warnings-as-errors` flag again.
+
+---
+
+# Handoff: Documentation Cleanup & Simplification
+
+**Context:**
+Following recent refactoring and documentation updates (READMEs, guides), the focus shifts to simplifying the overall documentation structure by pruning redundant files and consolidating information.
+
+**Progress Made:**
+
+- Updated main `README.md` and `docs/README.md`.
+- Updated `docs/guides/examples/README.md` and `docs/guides/components/README.md`.
+- Updated `scripts/README.md` and `.github/workflows/README.md`.
+- Updated `docs/guides/component_development.md`.
+- Identified and deleted several empty/redundant documentation files (`docs/development/DevelopmentEnvironment.md`, potentially others like `docs/guides/installation/Installation.md`, `docs/guides/components/ComponentArchitecture.md`).
+
+**Immediate Next Steps: Documentation Pruning & Consolidation**
+
+1.  **Prune `docs/guides/components/` Stubs:**
+
+    - Delete the following empty/stub/redundant files:
+      - `docs/guides/components/ViewportManagement.md`
+      - `docs/guides/components/TerminalEmulation.md`
+      - `docs/guides/components/StyleSystem.md`
+      - `docs/guides/components/ComponentTypes.md`
+      - `docs/guides/components/ComponentTesting.md`
+      - `docs/guides/components/ComponentDevelopment.md`
+
+2.  **Review/Relocate `docs/guides/components/` Terminal Files:**
+
+    - Assess the content of the following files:
+      - `CharacterSets.md`
+      - `ScrollManagement.md`
+      - `SearchAndHighlight.md`
+      - `ClipboardManagement.md`
+      - `MouseHandling.md`
+      - `KeyboardMapping.md`
+      - `ProcessManagement.md`
+      - `WindowManagement.md`
+      - `ColorManagement.md`
+      - `InputHandling.md`
+      - `ANSIProcessing.md`
+      - `Cursor.md`
+      - `ScreenBuffer.md`
+    - **Action:** Decide for each file whether to:
+      - **Merge** relevant content into `docs/guides/terminal_emulator.md`.
+      - **Move** to `docs/development/terminal/` (if low-level developer info).
+      - **Delete** if outdated/redundant.
+
+3.  **Review Other `docs/guides/components/` Files:**
+
+    - Assess `VisualizationComponents.md` (vs. `visualization/` dir) and `CharmComponents.md`. Decide if they should be kept, merged, moved, or deleted.
+
+4.  **Consolidate Component Entry Point:**
+
+    - Compare `docs/guides/components.md` and `docs/guides/components/README.md`.
+    - Merge relevant content from `components.md` into `README.md` and delete `components.md`. Ensure `README.md` is the single, comprehensive entry point for UI components.
+
+5.  **Review Planning & Versioning Docs (Optional / Lower Priority):**
+    - Review files in `docs/development/planning/` for relevance; archive outdated ones.
+    - Review `docs/development/VersionManagement.md`; consider merging into `CONTRIBUTING.md` or `DevelopmentSetup.md`.
