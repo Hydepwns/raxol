@@ -57,7 +57,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   def init({runtime_pid, initial_state_map}) do
     # Start the Registry for subscriptions
     {:ok, _pid} = Registry.start_link(keys: :duplicate, name: @registry_name)
-    Logger.info("Event Dispatcher starting...")
+    Logger.info("Dispatcher starting...")
+    Logger.debug("Dispatcher init: runtime_pid=#{inspect(runtime_pid)}, initial_state_map=#{inspect(initial_state_map)}")
 
     # Load initial theme from preferences
     initial_theme_id = UserPreferences.get("theme.active_id") || :default
@@ -92,7 +93,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       runtime_pid: initial_state.runtime_pid
     }
 
+    Logger.debug("Dispatcher init: Processing initial commands: #{inspect(initial_commands)}")
     process_commands(initial_commands, context)
+    Logger.debug("Dispatcher init: Finished processing initial commands.")
+    Logger.debug("Dispatcher init complete. Final state: #{inspect(initial_state)}")
 
     {:ok, initial_state}
   end
@@ -293,7 +297,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl true
   def handle_call(:get_render_context, _from, state) do
-    render_context = %{model: state.model, theme_id: state.current_theme_id}
+    Logger.debug("Dispatcher received :get_render_context call. State: #{inspect(state)}")
+    render_context = %{
+      model: state.model,
+      theme_id: state.current_theme_id
+    }
+    Logger.debug("Dispatcher returning render context: #{inspect(render_context)}")
     {:reply, {:ok, render_context}, state}
   end
 

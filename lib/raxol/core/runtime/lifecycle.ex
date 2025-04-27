@@ -15,18 +15,22 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     * `:height` - Terminal height (default: 24)
   """
   def start_application(app_module, options \\ []) do
+    Logger.debug("[Lifecycle] Entered start_application/2")
     Logger.info("[#{__MODULE__}] start_application called for #{inspect(app_module)} with options: #{inspect(options)}")
     app_name = get_app_name(app_module)
     Logger.debug("[#{__MODULE__}] Determined app_name: #{inspect(app_name)}")
 
+    Logger.debug("[Lifecycle] Attempting DynamicSupervisor.start_child...")
     case DynamicSupervisor.start_child(
            Raxol.DynamicSupervisor,
            {Raxol.Core.Runtime.Application, {app_module, app_name, options}}
          ) do
       {:ok, pid} ->
+        Logger.debug("[Lifecycle] DynamicSupervisor.start_child returned {:ok, pid}")
         Logger.info("[#{__MODULE__}] Application process started successfully. PID: #{inspect(pid)}")
         {:ok, pid}
       {:error, reason} ->
+        Logger.debug("[Lifecycle] DynamicSupervisor.start_child returned {:error, reason}")
         Logger.error("[#{__MODULE__}] Failed to start application process. Reason: #{inspect(reason)}")
         {:error, reason}
     end
