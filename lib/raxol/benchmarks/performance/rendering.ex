@@ -43,18 +43,19 @@ defmodule Raxol.Benchmarks.Performance.Rendering do
 
   # Helper functions moved from Raxol.Benchmarks.Performance
 
-  defp generate_test_component(:simple) do
+  # Making public for use by other benchmarks
+  def generate_test_component(:simple) do
     # Return a simple text or button component
     %{type: :simple, content: "Simple test component"}
   end
 
-  defp generate_test_component(:medium) do
+  def generate_test_component(:medium) do
     # Return a medium complexity component like a form or table
     items = for i <- 1..10, do: %{id: i, name: "Item #{i}"}
     %{type: :medium, items: items, has_border: true}
   end
 
-  defp generate_test_component(:complex) do
+  def generate_test_component(:complex) do
     # Return a complex component like a dashboard
     panels =
       for i <- 1..5 do
@@ -73,7 +74,8 @@ defmodule Raxol.Benchmarks.Performance.Rendering do
     %{type: :complex, panels: panels, layout: :grid}
   end
 
-  defp measure_render_time(component, iterations) do
+  # Making public for use by other benchmarks
+  def measure_render_time(component, iterations) do
     {time, _} =
       :timer.tc(fn ->
         for _ <- 1..iterations do
@@ -86,7 +88,8 @@ defmodule Raxol.Benchmarks.Performance.Rendering do
     time / iterations
   end
 
-  defp render_component(component) do
+  # Making public for use by other benchmarks
+  def render_component(component) do
     # Simulate the work of rendering a component to a string
     case component do
       %{type: :simple, content: content} ->
@@ -115,7 +118,8 @@ defmodule Raxol.Benchmarks.Performance.Rendering do
     end
   end
 
-  defp measure_full_screen_render(iterations) do
+  # Making public for use by other benchmarks
+  def measure_full_screen_render(iterations) do
     # Simulate rendering a full screen (80x24 terminal)
     width = 80
     height = 24
@@ -142,13 +146,15 @@ defmodule Raxol.Benchmarks.Performance.Rendering do
     time / iterations / 1000
   end
 
-  defp calculate_components_per_frame(simple_component_time_μs) do
+  # Making public for use by other benchmarks
+  def calculate_components_per_frame(simple_component_time_μs) do
     # Calculate how many simple components can render in 16.67ms (60 FPS)
     frame_budget_μs = 16667
     trunc(frame_budget_μs / simple_component_time_μs)
   end
 
-  defp calculate_renders_per_second(full_screen_time_ms) do
+  # Making public for use by other benchmarks
+  def calculate_renders_per_second(full_screen_time_ms) do
     # Calculate full screens per second
     trunc(1000 / full_screen_time_ms)
   end
