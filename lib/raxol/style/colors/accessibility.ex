@@ -209,7 +209,7 @@ defmodule Raxol.Style.Colors.Accessibility do
   Tries to find a contrasting color (black or white first) that meets the desired level.
 
   Parameters:
-    - `base_color`: The Color struct to find a contrasting pair for.
+    - `base_color`: The Color struct or hex string to find a contrasting pair for.
     - `level`: The minimum WCAG contrast ratio level (:aa or :aaa, defaults to :aa).
 
   Returns:
@@ -219,6 +219,8 @@ defmodule Raxol.Style.Colors.Accessibility do
     (further logic might be needed for complex cases).
   """
   def accessible_color_pair(base_color, level \\ :aa)
+
+  #@doc false # Silence @doc warning for the first clause
   # Clause for binary (string) input
   def accessible_color_pair(base_color, level) when is_binary(base_color) do
     case Color.from_hex(base_color) do
@@ -229,7 +231,7 @@ defmodule Raxol.Style.Colors.Accessibility do
     end
   end
 
-  # Clause for Color struct input (removed default here)
+  # Clause for Color struct input
   def accessible_color_pair(%Color{} = base_color, level) do
     white = Color.from_hex("#FFFFFF")
     black = Color.from_hex("#000000")
@@ -262,13 +264,7 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   # Define the missing helper function
   defp min_contrast(:aaa), do: 7.0
-  defp min_contrast(_level), do: 4.5 # Default to AA
-
-  @doc false
-  # Helper to calculate relative luminance
-  # defp ensure_contrast_or_limit(adjusted_color, background, target_ratio, direction, original_color) do
-  # Removed unused function
-  # end
+  defp min_contrast(_level), do: 4.5
 
   @doc """
   Darkens a color until it meets the specified contrast ratio with a background color.
@@ -282,7 +278,6 @@ defmodule Raxol.Style.Colors.Accessibility do
   - `target_ratio` - The target contrast ratio to achieve
 
   ## Returns
-
   - A Color struct representing the darkened color
   """
   @spec darken_until_contrast(Color.t(), Color.t(), number()) :: Color.t()

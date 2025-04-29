@@ -2,7 +2,7 @@ defmodule Raxol.MixProject do
   use Mix.Project
 
   @version "0.1.0"
-  @source_url "https://github.com/hydepwns/raxol"
+  @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
     [
@@ -47,9 +47,7 @@ defmodule Raxol.MixProject do
           # Raxol.ExampleModule,
           # Phoenix.HTML.Form, # Ignore specific modules if needed
           # Ignore NIF module wrappers
-          # Raxol.Runtime.Termbox, # Removed reference to deprecated module
           # Suppress persistent spurious warnings
-          # Raxol.Terminal.Configuration # Removed
         ]
       ]
     ]
@@ -58,6 +56,7 @@ defmodule Raxol.MixProject do
   # Raxol is primarily a library/toolkit; applications using it define their own OTP app.
   def application do
     [
+      mod: {Raxol.Application, []},
       extra_applications: [:logger, :runtime_tools, :swoosh]
     ]
   end
@@ -71,7 +70,7 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library
-      {:rrex_termbox, "~> 1.0.5"},
+      {:rrex_termbox, "~> 1.1.0"},
 
       # TODO: Review if Phoenix/web dependencies are needed for core library
       # They might be remnants of web UI / VSCode Stdio features.

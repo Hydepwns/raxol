@@ -16,14 +16,6 @@ defmodule Raxol.Examples.KeyboardShortcutsDemo do
       async_data: nil
     }
 
-    _shortcuts = [
-      {[:ctrl], ?c, {__MODULE__, :handle_exit, []}},
-      {[:alt], ?h, {__MODULE__, :toggle_high_contrast, []}},
-      {[:alt], ?m, {__MODULE__, :toggle_reduced_motion, []}},
-      {[:alt], ?l, {__MODULE__, :toggle_large_text, []}},
-      {{}, :f1, {__MODULE__, :show_help, []}}
-    ]
-
     Accessibility.announce("Keyboard shortcuts demo started. Press F1 for help.")
 
     {:ok, initial_state}
@@ -69,53 +61,6 @@ defmodule Raxol.Examples.KeyboardShortcutsDemo do
   def terminate(reason, _state) do
     Logger.info("Terminating KeyboardShortcutsDemo: #{inspect(reason)}")
     :ok
-  end
-
-  def handle_exit(_context) do
-    Logger.info("Exit requested (Ctrl+C)")
-    Application.stop(:raxol)
-    {:stop, :normal, %{}}
-  end
-
-  def show_help(_context) do
-    Accessibility.announce("Shortcuts: Alt+H (Contrast), Alt+M (Motion), Alt+L (Large Text), Ctrl+C (Exit)")
-    {:noreply, %{}}
-  end
-
-  def toggle_high_contrast(_context) do
-    current_state = Raxol.Core.UserPreferences.get([:accessibility, :high_contrast]) || false
-    Accessibility.set_high_contrast(not current_state)
-    new_state = Raxol.Core.UserPreferences.get([:accessibility, :high_contrast]) || false
-    Logger.info("High contrast toggled to: #{new_state}")
-    announce_state_change("High contrast", new_state)
-    {:noreply, %{}}
-  end
-
-  def toggle_reduced_motion(_context) do
-    current_state = Raxol.Core.UserPreferences.get([:accessibility, :reduced_motion]) || false
-    Accessibility.set_reduced_motion(not current_state)
-    new_state = Raxol.Core.UserPreferences.get([:accessibility, :reduced_motion]) || false
-    Logger.info("Reduced motion toggled to: #{new_state}")
-    announce_state_change("Reduced motion", new_state)
-    {:noreply, %{}}
-  end
-
-  def toggle_large_text(_context) do
-    current_state = Raxol.Core.UserPreferences.get([:accessibility, :large_text]) || false
-    Accessibility.set_large_text(not current_state)
-    new_state = Raxol.Core.UserPreferences.get([:accessibility, :large_text]) || false
-    Logger.info("Large text toggled to: #{new_state}")
-    announce_state_change("Large text", new_state)
-    {:noreply, %{}}
-  end
-
-  defp announce_state_change(feature, state) do
-    Accessibility.announce("#{feature} is now #{if(state, do: "enabled", else: "disabled")}")
-  end
-
-  def handle_event(event, state) do
-    Logger.debug("Received unhandled event (handle_event/2): #{inspect event}")
-    {:noreply, state}
   end
 
   @impl Raxol.Core.Runtime.Application

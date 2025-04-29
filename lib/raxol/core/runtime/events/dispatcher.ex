@@ -55,8 +55,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl true
   def init({runtime_pid, initial_state_map}) do
-    # Start the Registry for subscriptions
-    {:ok, _pid} = Registry.start_link(keys: :duplicate, name: @registry_name)
     Logger.info("Dispatcher starting...")
     Logger.debug("Dispatcher init: runtime_pid=#{inspect(runtime_pid)}, initial_state_map=#{inspect(initial_state_map)}")
 
@@ -96,6 +94,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     Logger.debug("Dispatcher init: Processing initial commands: #{inspect(initial_commands)}")
     process_commands(initial_commands, context)
     Logger.debug("Dispatcher init: Finished processing initial commands.")
+
+    # Register self with Terminal.Driver
+    GenServer.cast(Raxol.Terminal.Driver, {:register_dispatcher, self()})
+
     Logger.debug("Dispatcher init complete. Final state: #{inspect(initial_state)}")
 
     {:ok, initial_state}

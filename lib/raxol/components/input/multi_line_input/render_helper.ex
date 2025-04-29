@@ -11,10 +11,9 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
   def render_line(line_index, line, state) do
     line_number_text =
       if state.style.line_numbers do
-        line_no_str = Integer.to_string(line_index + 1)
-        padding = String.pad_leading(line_no_str, 3)
-        # Use label macro
-        line_number_text = Raxol.View.Elements.label(content: padding <> " ", style: [color: state.style.line_number_color])
+        # Assuming state.style.line_number_padding >= 0
+        padding = String.duplicate(" ", state.style.line_number_padding)
+        Raxol.View.Elements.label(content: padding <> " ", style: [color: state.style.line_number_color])
       else
         nil # No line number element if disabled
       end

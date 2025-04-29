@@ -86,6 +86,13 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Documentation:** Archived outdated, large planning documents (`docs/development/planning/performance/case_studies.md`, `docs/development/planning/examples/integration_example.md`) to `docs/development/archive/planning/`.
 - **Examples:** Refactored `lib/raxol/examples/integrated_accessibility_demo.ex` to remove standalone `run/0` logic and rely on the `Raxol.Core.Runtime.Application` behaviour implementation.
 - **Examples:** Updated `bin/demo.exs` script to launch examples using `Raxol.start_link/1` instead of calling module-specific `run/0` functions.
+- **Terminal Subsystem:** Refactored `Raxol.Terminal.Driver` to utilize the `:rrex_termbox` Elixir Port interface (v1.1.0+) for input event handling, removing direct stdio management and ANSI parsing logic.
+- **Terminal Subsystem:** Refactored `Raxol.Terminal.TerminalUtils` to remove dependency on `:rrex_termbox` for determining terminal dimensions, relying solely on `:io` and `stty`.
+- **Examples:** Enhanced `lib/raxol/examples/integrated_accessibility_demo.ex` by:
+  - Integrating `Raxol.Core.UserPreferences` for loading/saving settings.
+  - Integrating `Raxol.Core.I18n` for translations.
+  - Improving the animation example (progress bar) and respecting reduced motion.
+  - Removing unused aliases and performing general cleanup.
 
 ### Deprecated
 
@@ -101,12 +108,17 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Fixed
 
+- **Compiler Warnings:** Resolved remaining warnings:
+  - Unused variable `_state` in `Raxol.Terminal.Driver.terminate/2`.
+  - Unused variables `_current_color`, `_current_char` in `Raxol.Terminal.ANSI.SixelGraphics.generate_pixel_data/4` within specific `if` block.
+  - Redefined `@doc` for `Raxol.Style.Colors.Accessibility.accessible_color_pair/2` by removing potentially conflicting comments/docs around private helper functions.
 - **Compilation & Build:**
+  - Resolved `:rrex_termbox` (v1.1.0) compilation failures by adapting code to its new Port-based API (removing references to `ExTermbox.Bindings`).
+  - Applied local patch to `deps/rrex_termbox/Makefile` to remove obsolete NIF build rules that prevented compilation.
   - Resolved numerous compilation errors and warnings across the codebase related to refactoring (undefined functions/variables, incorrect module paths/aliases/imports, behaviour implementations, syntax errors, type issues, argument errors, cyclic dependencies).
   - Fixed compilation errors in `lib/raxol/plugins/visualization/treemap_renderer.ex` (unused variable, incorrect function call).
   - Fixed compilation errors in `lib/raxol/style/colors/accessibility.ex` (removed duplicate `contrast_ratio/2` definition).
   - Fixed compilation error in `lib/raxol/ui/components/display/table.ex` (syntax error in `init/1`).
-  - Fixed `:rrex_termbox` dependency build failure.
   - Addressed issues related to Elixir/OTP compatibility (e.g., charlist syntax, `:os.cmd` usage).
   - Addressed compiler warnings related to missing color utility functions (`HSL.darken/2`, `HSL.lighten/2`, `Accessibility.ensure_contrast/3`, `DrawingUtils.get_contrasting_text_color/1`) by commenting out calls and adding TODOs in `palette_manager.ex`, `treemap_renderer.ex`, and `accessibility.ex`.
 - **Runtime & Core:**

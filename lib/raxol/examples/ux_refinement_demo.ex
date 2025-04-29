@@ -34,110 +34,83 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
   defstruct [
     # Focus state
-    current_view: :main,
-    focus_id: "button_1",
-    username: "",
-    password: "",
-    focused_component: "username_input",
-    show_help: false,
-    focus_ring_model: Raxol.Components.FocusRing.init(%{animation: :pulse})
+    current_view: :main, # Keep track of current UI view if needed
+    form_data: %{username: "", password: ""}, # Store form input values
+    focused_component: "username_input", # ID of the currently focused component
+    show_help: false, # Flag to control help dialog visibility
+    focus_ring_model: nil # State for the focus ring component (handled by component itself)
+    # Potentially add other UI state here
   ]
 
   @doc """
   Run the UX Refinement demo application.
   """
   def run do
-    Logger.info("Starting UX Refinement Demo...")
+    Logger.info("Starting UX Refinement Demo Application...")
 
-    # Ensure Raxol.Runtime is started if it's not already running as part of the main app
-    # Updated to use the new Lifecycle module
-    Raxol.Core.Runtime.Lifecycle.start_application(__MODULE__, [])
+    # Start Raxol with this module as the Application
+    # Pass an empty map as initial opts for init/1
+    Raxol.Core.Runtime.Lifecycle.start_application(__MODULE__, %{})
+  end
 
-    # Placeholder state for demonstration
-    _initial_state = %{
-      current_view: :main,
-      focus_id: "button_1",
-      username: "",
-      password: "",
-      focused_component: "username_input",
-      show_help: false,
-      focus_ring_model: Raxol.Components.FocusRing.init(%{animation: :pulse})
-    }
+  @doc """
+  Initialize the application state and perform setup.
+  """
+  @impl true
+  def init(_opts) do
+    Logger.info("Initializing UX Refinement Demo...") # Add logging
 
+    # --- Setup moved from run/0 ---
     # Enable UX refinement features
-    _ = UXRefinement.enable_feature(:keyboard_nav)
-    _ = UXRefinement.enable_feature(:focus_management)
-    _ = UXRefinement.enable_feature(:hints)
-    _ = UXRefinement.enable_feature(:response_optimization)
-
-    # Configure the focus ring appearance
-    # FocusRing.configure(
-    #   style: :dotted,
-    #   color: :cyan,
-    #   animation: :pulse,
-    #   offset: 1
-    # )
-
-    # Initialize keyboard navigation
-    # KeyboardNavigator.init()
-    # KeyboardNavigator.configure(vim_keys: true)
+    UXRefinement.enable_feature(:keyboard_nav)
+    UXRefinement.enable_feature(:focus_management)
+    UXRefinement.enable_feature(:hints)
+    UXRefinement.enable_feature(:response_optimization)
+    # Note: FocusRing feature enabled by default or via theme integration
 
     # Register hints for components
-    _ =
-      UXRefinement.register_hint(
-        "username_input",
-        "Enter your username (letters and numbers only)"
-      )
-
-    _ =
-      UXRefinement.register_hint(
-        "password_input",
-        "Enter a secure password (minimum 8 characters)"
-      )
-
-    _ = UXRefinement.register_hint("login_button", "Press Enter to log in")
-
-    _ =
-      UXRefinement.register_hint(
-        "reset_button",
-        "Press Enter to reset the form"
-      )
-
-    _ =
-      UXRefinement.register_hint(
-        "help_button",
-        "Press Enter to open the help dialog"
-      )
+    UXRefinement.register_hint(
+      "username_input",
+      "Enter your username (letters and numbers only)"
+    )
+    UXRefinement.register_hint(
+      "password_input",
+      "Enter a secure password (minimum 8 characters)"
+    )
+    UXRefinement.register_hint("login_button", "Press Enter to log in")
+    UXRefinement.register_hint(
+      "reset_button",
+      "Press Enter to reset the form"
+    )
+    UXRefinement.register_hint(
+      "help_button",
+      "Press Enter to open the help dialog"
+    )
 
     # Register focusable components
     FocusManager.register_focusable("username_input", 1,
       announce: "Username input field. Enter your username."
     )
-
     FocusManager.register_focusable("password_input", 2,
       announce: "Password input field. Enter your password."
     )
-
     FocusManager.register_focusable("login_button", 3,
       group: :buttons,
       announce: "Login button"
     )
-
     FocusManager.register_focusable("reset_button", 4,
       group: :buttons,
       announce: "Reset button"
     )
-
     FocusManager.register_focusable("help_button", 5,
       group: :buttons,
       announce: "Help button"
     )
 
     # Set initial focus
-    FocusManager.set_initial_focus("username_input")
+    FocusManager.set_initial_focus("username_input") # Initial focus is username_input
 
     # Mock element positions for the focus ring
-    # In a real app, these would be determined by the layout system
     element_registry = %{
       "username_input" => {10, 5, 30, 3},
       "password_input" => {10, 9, 30, 3},
@@ -145,40 +118,15 @@ defmodule Raxol.Examples.UXRefinementDemo do
       "reset_button" => {22, 13, 10, 3},
       "help_button" => {34, 13, 10, 3}
     }
-
     Process.put(:element_position_registry, element_registry)
+    # --- End of setup from run/0 ---
 
-    # Start Raxol with the demo application using Lifecycle
-    Raxol.Core.Runtime.Lifecycle.start_application(__MODULE__, %{
-        form_data: %{username: "", password: ""},
-        focused_field: :username,
-        show_help: false,
-        focus_ring_model: Raxol.Components.FocusRing.init(%{animation: :pulse})
-      }
-    )
-
-    # Example: Configure focus ring after startup (if needed)
-    # This logic should likely be part of the application's init or update flow
-    # Commenting out as FocusRing.configure/1 is removed
-    # FocusRing.configure(
-    #   Raxol.Core.Runtime.Application.get_state(), # Needs access to state
-    #   animation: :blink,
-    #   color: :cyan
-    # )
-  end
-
-  @doc """
-  Placeholder init/1 callback to satisfy the behaviour.
-  """
-  @impl true
-  def init(_opts) do
-    # Example initialization, focusing the first field
-    {:ok, %{
+    # Return initial state
+    {:ok, %__MODULE__{ # Return the struct
       form_data: %{username: "", password: ""},
-      focused_field: :username,
+      focused_component: "username_input", # Updated initial focus ID
       show_help: false,
-      # Initialize FocusRing component state
-      focus_ring_model: Raxol.Components.FocusRing.init(%{animation: :pulse})
+      focus_ring_model: nil # FocusRing manages its own state
     }}
   end
 

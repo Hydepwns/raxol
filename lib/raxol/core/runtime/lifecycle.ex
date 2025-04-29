@@ -21,9 +21,35 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     Logger.debug("[#{__MODULE__}] Determined app_name: #{inspect(app_name)}")
 
     Logger.debug("[Lifecycle] Attempting DynamicSupervisor.start_child...")
+
+    # Construct initial state map for Dispatcher
+    dispatcher_initial_state = %{
+      app_module: app_module,
+      # TODO: Get actual width/height from options or defaults
+      width: Keyword.get(options, :width, 80),
+      height: Keyword.get(options, :height, 24),
+      # TODO: Where does plugin_manager and command_registry_table come from?
+      plugin_manager: nil, # Placeholder
+      command_registry_table: nil, # Placeholder
+      # TODO: Get initial commands if any
+      initial_commands: [], # Placeholder
+      model: %{} # Assuming Application.init provides the initial model map
+    }
+
+    # Define the child spec map
+    child_spec = %{
+      id: Raxol.Core.Runtime.Events.Dispatcher,
+      # Call start_link/2 explicitly
+      # TODO: Determine the correct runtime_pid
+      start: {Raxol.Core.Runtime.Events.Dispatcher, :start_link, [nil, dispatcher_initial_state]}
+      # type: :worker, # Default
+      # restart: :permanent # Default
+    }
+
     case DynamicSupervisor.start_child(
            Raxol.DynamicSupervisor,
-           {Raxol.Core.Runtime.Application, {app_module, app_name, options}}
+           # {Raxol.Core.Runtime.Events.Dispatcher, {app_module, app_name, options}} # Old tuple format
+           child_spec # Use map-based spec
          ) do
       {:ok, pid} ->
         Logger.debug("[Lifecycle] DynamicSupervisor.start_child returned {:ok, pid}")

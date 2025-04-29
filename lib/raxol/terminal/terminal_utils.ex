@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   def get_terminal_dimensions do
     # Try primary method using Erlang's built-in :io module
     with {:error, _} <- try_io_dimensions(),
-         {:error, _} <- try_termbox_dimensions(),
+         # {:error, _} <- try_termbox_dimensions(), # Removed Termbox attempt
          {:error, _} <- try_system_command() do
       # Default fallback dimensions if all methods fail
       {80, 24}
@@ -68,71 +68,6 @@ defmodule Raxol.Terminal.TerminalUtils do
       _ -> {:error, :io_failure}
     catch
       _, _ -> {:error, :io_failure}
-    end
-  end
-
-  # Try to get dimensions using ExTermbox
-  defp try_termbox_dimensions do
-    # Check if we should use mock termbox in test environment
-    use_termbox =
-      Application.get_env(:raxol, :terminal, [])[:use_termbox] != false
-
-    mock_termbox =
-      Application.get_env(:raxol, :terminal, [])[:mock_termbox] == true
-
-    try do
-      # Initialize ExTermbox if not already initialized
-      init_result =
-        cond do
-          mock_termbox ->
-            Raxol.Test.MockTermbox.init()
-
-          use_termbox ->
-            ExTermbox.Bindings.init()
-
-          true ->
-            {:ok, :skipped}
-        end
-
-      case init_result do
-        {:ok, _} ->
-          # Get dimensions
-          width_result =
-            if mock_termbox do
-              Raxol.Test.MockTermbox.width()
-            else
-              if use_termbox, do: ExTermbox.Bindings.width(), else: {:ok, 80}
-            end
-
-          height_result =
-            if mock_termbox do
-              Raxol.Test.MockTermbox.height()
-            else
-              if use_termbox, do: ExTermbox.Bindings.height(), else: {:ok, 24}
-            end
-
-          # Clean up if we had to initialize
-          if mock_termbox do
-            Raxol.Test.MockTermbox.shutdown()
-          else
-            if use_termbox, do: ExTermbox.Bindings.shutdown()
-          end
-
-          # Extract dimensions
-          with {:ok, width} when is_integer(width) <- width_result,
-               {:ok, height} when is_integer(height) <- height_result do
-            {width, height}
-          else
-            _ -> {:error, :invalid_termbox_dimensions}
-          end
-
-        _ ->
-          {:error, :termbox_init_failed}
-      end
-    rescue
-      e -> {:error, {:termbox_exception, e}}
-    catch
-      type, value -> {:error, {:termbox_error, {type, value}}}
     end
   end
 
