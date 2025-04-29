@@ -9,7 +9,7 @@ defmodule Raxol.Examples.Form do
   - Error boundaries
   """
 
-  @behaviour Raxol.Core.Runtime.Application
+  use Raxol.Core.Runtime.Application
   require Logger
   require Raxol.View.Elements
   alias Raxol.View.Elements, as: UI

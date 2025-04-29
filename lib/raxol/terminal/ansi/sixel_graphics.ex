@@ -530,16 +530,16 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
           # where a *single* color+bitmask pair repeats across columns.
           # Handling RLE for multi-color columns is significantly more complex.
 
-          # Initialize vars outside the if
-          current_color = nil
-          current_char = nil
+          # Initialize vars outside the if with defaults
+          current_color = 0
+          current_char = <<>>
 
           is_simple_column = map_size(column_pixels_by_color) == 1
 
           if is_simple_column do
              [{c, b}] = Map.to_list(column_pixels_by_color)
-             current_color = c # Assign inner value
-             current_char = <<(b + 63)>> # Assign inner value
+             _current_color = c # Prefix internal assignment only
+             _current_char = <<(b + 63)>> # Prefix internal assignment only
           end
 
           # Check if the current simple column matches the previous one

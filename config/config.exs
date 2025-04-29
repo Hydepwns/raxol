@@ -8,7 +8,7 @@ import Config
 # if you want to provide default values for your application for
 # 3rd-party users, it should be done in your "mix.exs" file.
 
-config :logger, level: :info
+config :logger, level: :debug
 
 # Configure Ecto repositories
 config :raxol, ecto_repos: [Raxol.Repo]
