@@ -137,6 +137,9 @@ defmodule Raxol.RuntimeTest do
                         describe "Supervisor Behaviour" do
                           defp assert_model(expected_model) do
                             dispatcher_pid = Process.whereis(Dispatcher)
+                            {:ok, model} = GenServer.call(dispatcher_pid, :get_model)
+                            assert model == expected_model
+                          end
 
                           test "input event triggers application update and subsequent render", %{original_stty: _} do
                             # Start the application
