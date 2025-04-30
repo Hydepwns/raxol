@@ -56,7 +56,7 @@ For most use cases involving `Raxol.Core.Runtime.Application`, you don't need to
 
 ### Key Concepts
 
-- **`Raxol.Terminal.Driver`**: Handles low-level terminal interaction, including setting raw mode, reading input bytes, writing output bytes, and parsing basic input sequences into `Raxol.Core.Events.Event` structs.
+- **`Raxol.Terminal.Driver`**: Handles low-level terminal interaction through the `:rrex_termbox` v2.0.1 NIF-based backend. Responsible for setting raw mode, reading input events, writing output bytes, and translating NIF events into `Raxol.Core.Events.Event` structs. This architecture provides improved performance and reliability over the previous Port-based implementation.
 - **`Raxol.Terminal.Parser`**: A state machine responsible for parsing incoming ANSI escape sequences and other control codes, interpreting their meaning, and updating the terminal state. It utilizes helper modules for specific code types.
 - **`Raxol.Terminal.Emulator`**: Manages the internal state representation of the terminal, including screen buffers, cursor position, character attributes (color, style), screen modes, character sets, and scroll regions.
 - **`Raxol.Terminal.ControlCodes`**: Handles the interpretation and execution of simple C0 control codes (like newline, carriage return, backspace) and basic ESC sequences.

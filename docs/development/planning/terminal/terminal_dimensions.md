@@ -7,7 +7,7 @@ section: terminal
 tags: [terminal, dimensions, rendering]
 ---
 
-# Terminal Dimension Handling in Raxol
+## Terminal Dimension Handling in Raxol
 
 ## Overview
 
@@ -33,8 +33,8 @@ We created a robust solution with the `Raxol.Terminal.TerminalUtils` module whic
 The module tries to get terminal dimensions using multiple methods, falling back to subsequent methods if the previous ones fail:
 
 1. **Erlang's `:io` module** - The first attempt uses Erlang's built-in `:io.columns()` and `:io.rows()` functions
-2. **ExTermbox Bindings** - If `:io` fails, it tries to use `ExTermbox.Bindings` functions
-3. **System Commands** - If ExTermbox fails, it tries platform-specific commands:
+2. **rrex_termbox v2.0.1 NIF** - If `:io` fails, it tries to use the NIF-based interface
+3. **System Commands** - If rrex_termbox fails, it tries platform-specific commands:
    - Unix/macOS: Uses `stty size`
    - Windows: Uses PowerShell's `$host.UI.RawUI.WindowSize`
 4. **Default Values** - If all methods fail, it uses sensible defaults (80x24)
@@ -54,14 +54,23 @@ The module tries to get terminal dimensions using multiple methods, falling back
 The main function for getting terminal dimensions is:
 
 ```elixir
-@spec get_terminal_dimensions() :: {pos_integer(), pos_integer()}
-def get_terminal_dimensions do
+@spec detect_dimensions() :: {pos_integer(), pos_integer()}
+def detect_dimensions do
   # Try all methods with fallbacks
-  with {:error, _} <- try_io_dimensions(),
-       {:error, _} <- try_termbox_dimensions(),
-       {:error, _} <- try_system_command() do
-    # Default fallback dimensions if all methods fail
-    {80, 24}
+  {width, height} =
+    with {:error, _} <- detect_with_io(),
+         {:error, _} <- detect_with_termbox(),
+         {:error, _} <- detect_with_stty() do
+      # Default fallback dimensions if all methods fail
+      {80, 24}
+    else
+      {:ok, w, h} -> {w, h}
+    end
+
+  if width == 0 or height == 0 do
+    {80, 24}  # Use default if invalid
+  else
+    {width, height}
   end
 end
 ```
@@ -73,13 +82,13 @@ For convenience, the module also provides helper functions to get dimensions in 
 ```elixir
 @spec get_dimensions_map() :: %{width: pos_integer(), height: pos_integer()}
 def get_dimensions_map do
-  {width, height} = get_terminal_dimensions()
+  {width, height} = detect_dimensions()
   %{width: width, height: height}
 end
 
 @spec get_bounds_map() :: %{x: 0, y: 0, width: pos_integer(), height: pos_integer()}
 def get_bounds_map do
-  {width, height} = get_terminal_dimensions()
+  {width, height} = detect_dimensions()
   %{x: 0, y: 0, width: width, height: height}
 end
 ```

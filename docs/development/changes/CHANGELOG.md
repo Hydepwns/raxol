@@ -14,6 +14,23 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - Internationalization support
 - Theme system
 
+### Changed
+
+- **Dependencies:** Updated `rrex_termbox` from v1.1.5 to v2.0.1, migrating from Port-based to NIF-based architecture for improved performance and reliability.
+- **Terminal Subsystem:** Refactored all terminal code to use the new RrexTermbox 2.0.1 API with GenServer-based event delivery.
+  - Updated `lib/raxol/terminal/driver.ex` to use the NIF-based interface instead of Port-based communication
+  - Updated `lib/raxol/terminal/terminal_utils.ex` for NIF-based terminal dimension detection
+  - Redesigned `lib/raxol/terminal/constants.ex` to directly map to NIF constants
+  - Rewritten `lib/raxol/core/events/termbox_converter.ex` to handle NIF event format
+  - Updated `lib/raxol/test/mock_termbox.ex` to match the NIF-based interface for testing
+- **Terminal Documentation:** Updated all documentation to reflect the NIF-based architecture:
+  - Updated `docs/development/planning/terminal/terminal_dimensions.md`
+  - Updated `docs/development/planning/handoff_prompt.md`
+  - Updated `docs/guides/components/visualization/testing-guide.md`
+  - Updated `docs/guides/terminal_emulator.md`
+- **Tests:** Rewritten `test/raxol/terminal/driver_test.exs` to test NIF events instead of Port-based IO communication
+- **Event Handling:** Updated the event handling system to work with the new termbox NIF architecture.
+
 ### Known Issues
 
 - Various compiler warnings as documented in the CI logs
@@ -86,7 +103,7 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Documentation:** Archived outdated, large planning documents (`docs/development/planning/performance/case_studies.md`, `docs/development/planning/examples/integration_example.md`) to `docs/development/archive/planning/`.
 - **Examples:** Refactored `lib/raxol/examples/integrated_accessibility_demo.ex` to remove standalone `run/0` logic and rely on the `Raxol.Core.Runtime.Application` behaviour implementation.
 - **Examples:** Updated `bin/demo.exs` script to launch examples using `Raxol.start_link/1` instead of calling module-specific `run/0` functions.
-- **Terminal Subsystem:** Refactored `Raxol.Terminal.Driver` to utilize the `:rrex_termbox` Elixir Port interface (v1.1.0+) for input event handling, removing direct stdio management and ANSI parsing logic.
+- **Terminal Subsystem:** Refactored `Raxol.Terminal.Driver` to utilize the `:rrex_termbox` NIF-based interface (v2.0.1) for input event handling, removing direct stdio management and ANSI parsing logic.
 - **Terminal Subsystem:** Refactored `Raxol.Terminal.TerminalUtils` to remove dependency on `:rrex_termbox` for determining terminal dimensions, relying solely on `:io` and `stty`.
 - **Examples:** Enhanced `lib/raxol/examples/integrated_accessibility_demo.ex` by:
   - Integrating `Raxol.Core.UserPreferences` for loading/saving settings.
@@ -113,7 +130,18 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Unused variables `_current_color`, `_current_char` in `Raxol.Terminal.ANSI.SixelGraphics.generate_pixel_data/4` within specific `if` block.
   - Redefined `@doc` for `Raxol.Style.Colors.Accessibility.accessible_color_pair/2` by removing potentially conflicting comments/docs around private helper functions.
 - **Compilation & Build:**
-  - Resolved `:rrex_termbox` (v1.1.0) compilation failures by adapting code to its new Port-based API (removing references to `ExTermbox.Bindings`).
+  - Resolved `:rrex_termbox` (v2.0.1) compilation failures by adapting code to its NIF-based API.
+  - Fixed guard clause issues in `lib/raxol/core/events/termbox_converter.ex` by defining module attributes for key constants.
+  - Updated references from `:rrex_termbox` to `ExTermbox` in multiple files:
+    - `lib/raxol/terminal/constants.ex`
+    - `lib/raxol/terminal/driver.ex`
+    - `lib/raxol/terminal/terminal_utils.ex`
+  - Fixed issues in MultiLineInput component:
+    - Corrected namespace in tests from `Raxol.UI.Components.Input.MultiLineInput.State` to `Raxol.Components.Input.MultiLineInput`
+    - Updated cursor position handling to use the `cursor_pos` tuple instead of separate `cursor_row` and `cursor_col` fields
+    - Fixed pattern matching in navigation helper to extract coordinates from cursor position tuple
+    - Implemented missing `clear_selection` and `normalize_selection` functions
+    - Fixed line-wrapping behavior for cursor movement in left and right directions
   - Applied local patch to `deps/rrex_termbox/Makefile` to remove obsolete NIF build rules that prevented compilation.
   - Resolved numerous compilation errors and warnings across the codebase related to refactoring (undefined functions/variables, incorrect module paths/aliases/imports, behaviour implementations, syntax errors, type issues, argument errors, cyclic dependencies).
   - Fixed compilation errors in `lib/raxol/plugins/visualization/treemap_renderer.ex` (unused variable, incorrect function call).
@@ -183,3 +211,5 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **Compilation:** Resolved compilation errors by reverting variable prefixing (`_current_color`, `_current_char`, `_line_number_text`) that caused undefined variable errors, allowing compilation without `--warnings-as-errors`. Persisted warnings for unused variables and `@doc` redefinition are noted.
 
 ### Security
+
+Bing bong, fck ya life.
