@@ -146,8 +146,8 @@ defmodule MyApp.Worker do
     send(state.caller, {:operation_result, result})
     # GenServer can terminate after sending result
     {:stop, :normal, state}
+    end
   end
-end
 ```
 
 ## Timeouts and Cancellation
