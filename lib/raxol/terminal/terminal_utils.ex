@@ -5,27 +5,39 @@ defmodule Raxol.Terminal.TerminalUtils do
   """
 
   require Logger
-  # alias ExTermbox.Bindings  # Unused alias
+  alias ExTermbox
 
   @doc """
-  Gets the terminal dimensions using the most reliable method available.
+  Detects terminal dimensions using a multi-layered approach:
+  1. Uses `:io.columns` and `:io.rows` (preferred)
+  2. Falls back to rrex_termbox v2.0.1 NIF if `:io` methods fail
+  3. Falls back to `stty size` system command if needed
+  4. Finally uses hardcoded default dimensions if all else fails
 
-  This function tries multiple approaches to get accurate terminal dimensions:
-  1. First tries using `:io` module's functions (Erlang's built-in terminal interface)
-  2. Falls back to ExTermbox.Bindings if `:io` methods fail
-  3. Uses OS-specific commands as a last resort
-  4. Provides sensible defaults if all else fails
-
-  Returns a tuple of {width, height}
+  Returns a tuple of {width, height}.
   """
-  @spec get_terminal_dimensions() :: {pos_integer(), pos_integer()}
-  def get_terminal_dimensions do
-    # Try primary method using Erlang's built-in :io module
-    with {:error, _} <- try_io_dimensions(),
-         # {:error, _} <- try_termbox_dimensions(), # Removed Termbox attempt
-         {:error, _} <- try_system_command() do
-      # Default fallback dimensions if all methods fail
-      {80, 24}
+  @spec detect_dimensions :: {pos_integer(), pos_integer()}
+  def detect_dimensions do
+    default_width = 80
+    default_height = 24
+
+    # Try to detect dimensions (multiple methods with fallbacks)
+    {width, height} =
+      with {:error, _} <- detect_with_io(),
+           {:error, _} <- detect_with_termbox(),
+           {:error, _} <- detect_with_stty() do
+        Logger.warning("Could not determine terminal dimensions. Using defaults.")
+        {default_width, default_height}
+      else
+        {:ok, w, h} -> {w, h}
+      end
+
+    if width == 0 or height == 0 do
+      Logger.warning("Detected invalid terminal dimensions (#{width}x#{height}). Using defaults.")
+      {default_width, default_height}
+    else
+      Logger.debug("Terminal dimensions: #{width}x#{height}")
+      {width, height}
     end
   end
 
@@ -34,7 +46,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   """
   @spec get_dimensions_map() :: %{width: pos_integer(), height: pos_integer()}
   def get_dimensions_map do
-    {width, height} = get_terminal_dimensions()
+    {width, height} = detect_dimensions()
     %{width: width, height: height}
   end
 
@@ -48,97 +60,79 @@ defmodule Raxol.Terminal.TerminalUtils do
           height: pos_integer()
         }
   def get_bounds_map do
-    {width, height} = get_terminal_dimensions()
+    {width, height} = detect_dimensions()
     %{x: 0, y: 0, width: width, height: height}
+  end
+
+  @doc """
+  Returns the current cursor position, if available.
+  """
+  @spec cursor_position :: {:ok, {pos_integer(), pos_integer()}} | {:error, term()}
+  def cursor_position do
+    # This is a stub implementation - real implementation might use ANSI escape sequences
+    {:error, :not_implemented}
   end
 
   # Private helper functions
 
-  # Try to get dimensions using :io module
-  defp try_io_dimensions do
+  # Try to detect with :io.columns and :io.rows (most reliable)
+  defp detect_with_io do
     try do
-      {cols, rows} = :io.columns()
-
-      if cols > 0 and rows > 0 do
-        {cols, rows}
+      with {:ok, width} when is_integer(width) and width > 0 <- :io.columns(),
+           {:ok, height} when is_integer(height) and height > 0 <- :io.rows() do
+        {:ok, width, height}
       else
-        {:error, :invalid_dimensions}
+        {:error, reason} ->
+          Logger.debug("io.columns/rows error: #{inspect(reason)}")
+          {:error, reason}
+
+        other ->
+          Logger.debug("io.columns/rows unexpected return: #{inspect(other)}")
+          {:error, :invalid_response}
       end
     rescue
-      _ -> {:error, :io_failure}
-    catch
-      _, _ -> {:error, :io_failure}
+      e ->
+        Logger.debug("Error in detect_with_io: #{inspect(e)}")
+        {:error, e}
     end
   end
 
-  # Try using system commands as last resort
-  defp try_system_command do
-    # Different commands for different operating systems
-    command =
-      case :os.type() do
-        {:unix, :darwin} -> "stty size"
-        {:unix, _} -> "stty size"
-        {:win32, _} -> "powershell \"$host.UI.RawUI.WindowSize\""
-        _ -> nil
-      end
-
-    if command do
-      try do
-        case System.cmd("sh", ["-c", command], stderr_to_stdout: true) do
-          {output, 0} ->
-            parse_command_output(output, command)
-
-          _ ->
-            {:error, :command_failed}
-        end
-      rescue
-        _ -> {:error, :command_error}
-      end
+  # Try to detect with rrex_termbox
+  defp detect_with_termbox do
+    with {:ok, width} <- ExTermbox.width(),
+         {:ok, height} <- ExTermbox.height() do
+      {:ok, width, height}
     else
-      {:error, :unsupported_os}
+      error ->
+        Logger.debug("rrex_termbox error: #{inspect(error)}")
+        {:error, error}
     end
   end
 
-  # Parse system command output based on the command used
-  defp parse_command_output(output, "stty size") do
-    case String.split(String.trim(output), " ") do
-      [height_str, width_str] ->
-        try do
-          height = String.to_integer(height_str)
-          width = String.to_integer(width_str)
-          Logger.debug("Got terminal dimensions via stty: #{width}x#{height}")
-          {width, height}
-        rescue
-          _ -> {:error, :parse_error}
-        end
+  # Try to detect with stty size command
+  defp detect_with_stty do
+    try do
+      case System.cmd("stty", ["size"]) do
+        {output, 0} ->
+          output = String.trim(output)
 
-      _ ->
-        {:error, :invalid_output_format}
-    end
-  end
+          case String.split(output) do
+            [rows, cols] ->
+              {:ok, String.to_integer(cols), String.to_integer(rows)}
 
-  defp parse_command_output(output, cmd) when is_binary(cmd) do
-    if String.contains?(cmd, "powershell") do
-      # Parse PowerShell output which typically looks like:
-      # Width : 120
-      # Height: 30
-      width_pattern = ~r/Width\s*:?\s*(\d+)/i
-      height_pattern = ~r/Height\s*:?\s*(\d+)/i
+            _ ->
+              Logger.debug("Unexpected stty output format: #{inspect(output)}")
+              {:error, :invalid_format}
+          end
 
-      with [_, width_str] <- Regex.run(width_pattern, output, capture: :all),
-           [_, height_str] <- Regex.run(height_pattern, output, capture: :all),
-           {width, _} <- Integer.parse(width_str),
-           {height, _} <- Integer.parse(height_str) do
-        Logger.debug(
-          "Got terminal dimensions via PowerShell: #{width}x#{height}"
-        )
-
-        {width, height}
-      else
-        _ -> {:error, :parse_error}
+        {output, code} ->
+          Logger.debug("stty exited with code #{code}: #{inspect(output)}")
+          {:error, {:exit_code, code}}
       end
-    else
-      {:error, :unknown_command}
+    rescue
+      e ->
+        Logger.debug("Error in detect_with_stty: #{inspect(e)}")
+        {:error, e}
     end
   end
 end
