@@ -7,11 +7,82 @@ section: documentation
 tags: [architecture, documentation, design]
 ---
 
-## Raxol Architecture
+# Raxol Architecture
 
-Overview of the Raxol architecture after the recent reorganization and refactoring.
+This document provides an overview of the Raxol architecture, its components, and how they interact.
 
-_Last updated: 2024-07-17_ # Updated Date
+## System Overview
+
+Raxol is designed as a layered architecture with several key subsystems:
+
+```
+┌────────────────────────────────────────┐
+│              Application               │
+├────────────────────────────────────────┤
+│                 View                   │
+├────────────────────────────────────────┤
+│              Components                │
+├────────────────────────────────────────┤
+│         Runtime & Rendering            │
+├────────────────────────────────────────┤
+│              Terminal                  │
+└────────────────────────────────────────┘
+```
+
+## Core Subsystems
+
+### Terminal Subsystem
+
+The Terminal subsystem handles direct interaction with the terminal through the NIF-based rrex_termbox library. Key modules:
+
+- `Raxol.Terminal.Driver`: Manages the terminal interface via NIF
+- `Raxol.Terminal.Buffer`: Implements double buffering for smooth rendering
+- `Raxol.Terminal.ANSI`: Processes ANSI escape sequences
+- `Raxol.Terminal.Input`: Handles keyboard and mouse input events
+
+### Runtime System
+
+The Runtime system coordinates the application lifecycle, events, and state management. Key modules:
+
+- `Raxol.Core.Runtime.Application`: Behaviour for Raxol applications
+- `Raxol.Core.Runtime.Lifecycle`: Manages application startup and shutdown
+- `Raxol.Core.Runtime.Events`: Handles event dispatching and subscriptions
+- `Raxol.Core.Runtime.Plugins`: Provides plugin infrastructure
+
+### Component System
+
+The Component system provides reusable UI components. Key modules:
+
+- `Raxol.Components.*`: UI components like buttons, text inputs, etc.
+- `Raxol.View.Elements`: DSL for component composition
+- `Raxol.Core.ColorSystem`: Theme and color management
+- `Raxol.Core.Focus`: Focus management for components
+
+### View System
+
+The View system handles layout and component composition. Key modules:
+
+- `Raxol.View.Elements`: Macros for layout definition
+- `Raxol.UI.Layout`: Layout algorithms for components
+- `Raxol.UI.Rendering`: Rendering pipeline
+
+## Key Design Decisions
+
+1. **Application Model**: Inspired by The Elm Architecture, with clear update/view separation
+2. **NIF-based Terminal Interface**: Uses rrex_termbox NIF for improved performance
+3. **Component System**: Reusable, stateful components with lifecycle hooks
+4. **Plugins**: Extensible through a plugin system
+
+## Flow of Events
+
+1. Terminal events are captured by the Terminal Driver
+2. Events are translated into a standardized Event struct
+3. Events are dispatched to the application via the Dispatcher
+4. Application's `handle_event` callback processes the event
+5. Application state is updated
+6. View is re-rendered based on new state
+7. Terminal buffer is updated with the new view
+8. Changes are flushed to the terminal
 
 ## Overview
 

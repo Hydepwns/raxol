@@ -38,7 +38,7 @@ defmodule Raxol.Components.TabBar do
 
   @behaviour Raxol.ComponentBehaviour
 
-  @doc \"""
+  @doc """
   Renders a tab bar with the given tabs, highlighting the active tab.
 
   ## Parameters

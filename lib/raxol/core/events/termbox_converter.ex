@@ -47,9 +47,9 @@ defmodule Raxol.Core.Events.TermboxConverter do
 
   ## Returns
 
-  - {:ok, %Event{}} if the conversion was successful
-  - :ignore if the event should be ignored
-  - {:error, reason} if the conversion failed
+  - `{:ok, %Event{}}` if the conversion was successful
+  - `:ignore` if the event should be ignored
+  - `{:error, reason}` if the conversion failed
   """
   @spec convert(map()) :: {:ok, Event.t()} | :ignore | {:error, term()}
   def convert(event_map) do
