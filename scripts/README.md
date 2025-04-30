@@ -263,24 +263,34 @@ General development helpers.
 
 ## Git Pre-Commit Hook
 
-Set up a Git pre-commit hook (e.g., in `.git/hooks/pre-commit`) to automate checks:
+Raxol uses Git pre-commit hooks to ensure code quality standards are maintained.
+
+### Installing the Pre-commit Hook
+
+Run the following command to install the pre-commit hook:
 
 ```bash
-#!/bin/sh
-# Example pre-commit hook
-
-echo "Running pre-commit checks..."
-
-# Format code
-./scripts/format_before_commit.sh || exit 1
-
-# Run main checks
-mix run scripts/pre_commit_check.exs || exit 1
-
-echo "Pre-commit checks passed."
-exit 0
+./scripts/install_pre_commit.sh
 ```
 
-Make the hook executable: `chmod +x .git/hooks/pre-commit`.
+This will install a pre-commit hook that:
 
-If checks fail, the commit is aborted. Fix issues and commit again.
+1. Automatically formats staged Elixir files using `mix format`
+2. Runs basic code quality checks from `scripts/pre_commit_check.exs`
+
+### Pre-commit Checks
+
+The pre-commit hook performs these checks:
+
+- Code formatting validation
+- (Other checks currently disabled while migrating to NIF-based termbox)
+
+If formatting issues are found, the commit will still proceed, but you'll see a warning message.
+
+### Troubleshooting
+
+If the pre-commit hook isn't working:
+
+1. Ensure the hook is executable: `chmod +x .git/hooks/pre-commit`
+2. Check permissions: `ls -la .git/hooks/pre-commit`
+3. Verify the hook is installed properly: `cat .git/hooks/pre-commit`

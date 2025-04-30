@@ -6,7 +6,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
   alias Raxol.History
 
   # Helper to create a minimal state for testing
-  defp create_state(lines, cursor \ {0, 0}, selection \ nil) do
+  defp create_state(lines, cursor = {0, 0}, selection = nil) do
     sel_start = if selection, do: elem(selection, 0), else: nil
     sel_end = if selection, do: elem(selection, 1), else: nil
 
