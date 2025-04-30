@@ -40,9 +40,7 @@ defmodule Raxol.ApplicationTest do
       assert Map.has_key?(theme.ui_mappings, :primary_button)
     end
 
-    test "init_color_system loads existing theme from preferences", %{
-      tmp_dir: tmp_dir
-    } do
+    test "init_color_system loads existing theme from preferences", %{} do
       test_palette = %{
         "background" => Color.from_hex("#F0F0F0"),
         "primary" => Color.from_hex("#0077CC"),

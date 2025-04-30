@@ -4,7 +4,13 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
   import Mox
 
   # Define mocks for dependencies
-  defmock CodeMock, for: Code # For compile_file, purge, ensure_loaded
+  # Using a mock module for Code since Code is not a behavior
+  defmodule CodeBehavior do
+    @callback compile_file(String.t(), Keyword.t()) :: atom | no_return
+    @callback purge(atom) :: boolean
+    @callback ensure_loaded(atom) :: {:module, atom} | {:error, atom}
+  end
+  defmock CodeMock, for: CodeBehavior
   defmock LoaderMock, for: Raxol.Core.Runtime.Plugins.Loader
   defmock MockPluginBehaviour, for: Raxol.Core.Runtime.Plugins.Plugin # Define a behaviour plugins implement
   # Add metadata provider behaviour
@@ -129,8 +135,8 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
   setup do
     # Verify mocks in testing
     Mox.verify_on_exit!()
-    # Establish Mox stubs
-    Mox.stub_with(CodeMock, Code)
+    # Can't stub_with a behavior, so just set up expectations as needed
+
     Mox.stub_with(LoaderMock, Raxol.Core.Runtime.Plugins.Loader)
 
     # Start the CommandRegistry ETS table

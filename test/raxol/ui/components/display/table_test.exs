@@ -10,8 +10,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
     elements
     |> Enum.filter(&(&1.y == y && &1.type == :text))
     |> Enum.sort_by(&(&1.x || 0))
-    |> Enum.map(& &1.text)
-    |> Enum.join()
+    |> Enum.map_join(& &1.text)
   end
 
   # Helper to find a specific cell element
@@ -27,9 +26,11 @@ defmodule Raxol.UI.Components.Display.TableTest do
       max_width: width,
       # Mock theme structure
       theme: %Theme{
-        table: %{
-          header: %{fg: :blue, bold: true},
-          data: %{fg: :white}
+        component_styles: %{
+          "Table" => %{
+            header: %{fg: :blue, bold: true},
+            data: %{fg: :white}
+          }
         }
       }
       # Add other context keys if needed by the component

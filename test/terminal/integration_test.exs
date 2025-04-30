@@ -1,6 +1,5 @@
 defmodule Raxol.Terminal.IntegrationTest do
   use ExUnit.Case
-  alias Raxol.Terminal.ANSI
   alias Raxol.Terminal.Input
   alias Raxol.Terminal.ScreenBuffer
 
@@ -26,11 +25,11 @@ defmodule Raxol.Terminal.IntegrationTest do
       buffer = ScreenBuffer.write_char(buffer, Input.get_buffer(input))
 
       # Left arrow
-      input = Input.process_keyboard(input, "\e[D")
+      _input = Input.process_keyboard(input, "\e[D")
       # Left arrow
-      input = Input.process_keyboard(input, "\e[D")
+      _input = Input.process_keyboard(input, "\e[D")
       # Left arrow
-      input = Input.process_keyboard(input, "\e[D")
+      _input = Input.process_keyboard(input, "\e[D")
 
       buffer = ScreenBuffer.move_cursor_left(buffer, 3)
 
@@ -100,7 +99,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       buffer = ScreenBuffer.new(80, 24)
 
       # Send ANSI sequence to move cursor
-      input = Input.process_keyboard(input, "\e[10;5H")
+      _input = Input.process_keyboard(input, "\e[10;5H")
       # 0-based indexing
       buffer = ScreenBuffer.move_cursor(buffer, 9, 4)
 
@@ -117,7 +116,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       buffer = ScreenBuffer.write_char(buffer, Input.get_buffer(input))
 
       # Clear screen
-      input = Input.process_keyboard(input, "\e[2J")
+      _input = Input.process_keyboard(input, "\e[2J")
       buffer = ScreenBuffer.clear_screen(buffer, :all)
 
       # Verify screen is clear
@@ -134,7 +133,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       input = Input.set_mouse_enabled(input, true)
 
       # Process mouse click
-      input = Input.process_mouse(input, :left, :press, 10, 5)
+      _input = Input.process_mouse(input, :left, :press, 10, 5)
       buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
 
       # Verify cursor position
@@ -150,7 +149,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       buffer = ScreenBuffer.write_char(buffer, Input.get_buffer(input))
 
       # Enable mouse and set selection
-      input = Input.set_mouse_enabled(input, true)
+      _input = Input.set_mouse_enabled(input, true)
       buffer = ScreenBuffer.set_selection(buffer, 0, 0, 5, 0)
 
       # Verify selection
@@ -188,7 +187,7 @@ defmodule Raxol.Terminal.IntegrationTest do
 
       # Type some text
       input = Input.process_keyboard(input, "Hello")
-      buffer = ScreenBuffer.write_char(buffer, Input.get_buffer(input))
+      _buffer = ScreenBuffer.write_char(buffer, Input.get_buffer(input))
 
       # Switch to visual mode
       input = Input.process_keyboard(input, "\e")
@@ -228,7 +227,7 @@ defmodule Raxol.Terminal.IntegrationTest do
 
       # Process key with modifier
       input = Input.process_keyboard(input, "a")
-      buffer = ScreenBuffer.write_char(buffer, Input.get_buffer(input))
+      _buffer = ScreenBuffer.write_char(buffer, Input.get_buffer(input))
 
       # Clear modifier
       input = Input.clear_modifiers(input)

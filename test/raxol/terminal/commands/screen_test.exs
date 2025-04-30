@@ -10,16 +10,12 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
     # Create a minimal emulator for testing
     buffer = ScreenBuffer.new(10, 5)
 
-    emulator = %Emulator{
-      main_screen_buffer: buffer,
-      alternate_screen_buffer: ScreenBuffer.new(10, 5),
-      active_buffer_type: :main,
-      cursor: %{position: {2, 2}, style: %{}, visible: true},
-      style: %{},
-      scroll_region: nil,
-      height: 5,
-      width: 10
-    }
+    # Use Emulator.new instead of creating the struct directly
+    emulator =
+      Emulator.new(10, 5)
+      |> Map.put(:main_screen_buffer, buffer)
+      |> Map.put(:alternate_screen_buffer, ScreenBuffer.new(10, 5))
+      |> put_in([:cursor, :position], {2, 2})
 
     {:ok, %{emulator: emulator}}
   end

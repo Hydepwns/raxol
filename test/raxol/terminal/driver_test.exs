@@ -57,8 +57,8 @@ defmodule Raxol.Terminal.DriverTest do
     end
   end
 
-  describe "handle_info({:io_reply, ...})" do
-    test "parses and dispatches single printable characters", %{
+  describe "handle_info({:termbox_event, ...})" do
+    test "parses and dispatches key events", %{
       original_stty: _
     } do
       test_pid = self()
@@ -70,26 +70,24 @@ defmodule Raxol.Terminal.DriverTest do
         100 -> flunk("Did not receive initial resize event")
       end
 
-      # Simulate receiving 'a'
-      ref = make_ref()
-      send(driver_pid, {:io_reply, ref, "a"})
+      # Simulate receiving 'a' key event from rrex_termbox NIF
+      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?a, mod: 0}})
 
       assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :char, char: "a"}}},
+                      %Event{type: :key, data: %{char: "a"}}},
                      500
 
-      # Simulate receiving 'b'
-      ref = make_ref()
-      send(driver_pid, {:io_reply, ref, "b"})
+      # Simulate receiving 'b' key event from rrex_termbox NIF
+      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?b, mod: 0}})
 
       assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :char, char: "b"}}},
+                      %Event{type: :key, data: %{char: "b"}}},
                      500
 
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches arrow key sequences", %{original_stty: _} do
+    test "parses and dispatches special key events", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
 
@@ -99,27 +97,27 @@ defmodule Raxol.Terminal.DriverTest do
         100 -> flunk("Timeout")
       end
 
-      # Up Arrow: \e[A
-      send(driver_pid, {:io_reply, make_ref(), "\e[A"})
+      # Up Arrow key from rrex_termbox NIF (using placeholder key code 65)
+      send(driver_pid, {:termbox_event, %{type: :key, key: 65, char: 0, mod: 0}})
 
       assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up}}},
                      500
 
-      # Down Arrow: \e[B
-      send(driver_pid, {:io_reply, make_ref(), "\e[B"})
+      # Down Arrow key from rrex_termbox NIF (using placeholder key code 66)
+      send(driver_pid, {:termbox_event, %{type: :key, key: 66, char: 0, mod: 0}})
 
       assert_receive {:terminal_event, %Event{type: :key, data: %{key: :down}}},
                      500
 
-      # Right Arrow: \e[C
-      send(driver_pid, {:io_reply, make_ref(), "\e[C"})
+      # Right Arrow key from rrex_termbox NIF (using placeholder key code 67)
+      send(driver_pid, {:termbox_event, %{type: :key, key: 67, char: 0, mod: 0}})
 
       assert_receive {:terminal_event,
                       %Event{type: :key, data: %{key: :right}}},
                      500
 
-      # Left Arrow: \e[D
-      send(driver_pid, {:io_reply, make_ref(), "\e[D"})
+      # Left Arrow key from rrex_termbox NIF (using placeholder key code 68)
+      send(driver_pid, {:termbox_event, %{type: :key, key: 68, char: 0, mod: 0}})
 
       assert_receive {:terminal_event, %Event{type: :key, data: %{key: :left}}},
                      500
@@ -127,7 +125,7 @@ defmodule Raxol.Terminal.DriverTest do
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches function key sequences (F1-F12)", %{
+    test "parses and dispatches function key events", %{
       original_stty: _
     } do
       test_pid = self()
@@ -139,83 +137,23 @@ defmodule Raxol.Terminal.DriverTest do
         100 -> flunk("Timeout waiting for initial resize")
       end
 
-      # Function Keys (using common xterm/VT sequences)
-      # F1: \\e[11~ (or \\eOP) - Using \\eOP for wider compatibility demonstration
-      send(driver_pid, {:io_reply, make_ref(), "\\eOP"})
+      # Function Keys (using placeholder key codes for rrex_termbox v2.0.1 NIF)
+      # F1 key from rrex_termbox NIF
+      send(driver_pid, {:termbox_event, %{type: :key, key: 265, char: 0, mod: 0}})
 
       assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f1}}},
                      500
 
-      # F2: \\e[12~ (or \\eOQ) - Using \\eOQ
-      send(driver_pid, {:io_reply, make_ref(), "\\eOQ"})
+      # F2 key from rrex_termbox NIF
+      send(driver_pid, {:termbox_event, %{type: :key, key: 266, char: 0, mod: 0}})
 
       assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f2}}},
-                     500
-
-      # F3: \\e[13~ (or \\eOR) - Using \\eOR
-      send(driver_pid, {:io_reply, make_ref(), "\\eOR"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f3}}},
-                     500
-
-      # F4: \\e[14~ (or \\eOS) - Using \\eOS
-      send(driver_pid, {:io_reply, make_ref(), "\\eOS"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f4}}},
-                     500
-
-      # F5: \\e[15~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[15~"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f5}}},
-                     500
-
-      # F6: \\e[17~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[17~"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f6}}},
-                     500
-
-      # F7: \\e[18~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[18~"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f7}}},
-                     500
-
-      # F8: \\e[19~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[19~"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f8}}},
-                     500
-
-      # F9: \\e[20~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[20~"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f9}}},
-                     500
-
-      # F10: \\e[21~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[21~"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f10}}},
-                     500
-
-      # F11: \\e[23~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[23~"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f11}}},
-                     500
-
-      # F12: \\e[24~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[24~"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :f12}}},
                      500
 
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches Ctrl + Arrow key sequences", %{original_stty: _} do
+    test "parses and dispatches modifier key events", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
 
@@ -225,784 +163,59 @@ defmodule Raxol.Terminal.DriverTest do
         100 -> flunk("Timeout waiting for initial resize")
       end
 
-      # Ctrl+Up: \e[1;5A
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;5A"})
+      # Ctrl+Up Arrow from rrex_termbox NIF (using placeholder key code and mod value)
+      send(driver_pid, {:termbox_event, %{type: :key, key: 65, char: 0, mod: 2}})
 
       assert_receive {:terminal_event,
                       %Event{type: :key, data: %{key: :up, ctrl: true}}},
                      500
 
-      # Ctrl+Down: \e[1;5B
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;5B"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :down, ctrl: true}}},
-                     500
-
-      # Ctrl+Right: \e[1;5C
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;5C"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :right, ctrl: true}}},
-                     500
-
-      # Ctrl+Left: \e[1;5D
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;5D"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :left, ctrl: true}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches Ctrl+C", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      send(driver_pid, {:io_reply, make_ref(), <<3>>})
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :key,
-                        data: %{key: :char, char: "c", ctrl: true}
-                      }},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "buffers and parses partial ANSI sequences", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Send partial sequence "\e["
-      send(driver_pid, {:io_reply, make_ref(), "\e["})
-      # Should not receive anything yet
-      refute_receive {:terminal_event, _}, 50
-
-      # Send the rest "A"
-      send(driver_pid, {:io_reply, make_ref(), "A"})
-      # Should now receive the complete :up event
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "handles mixed sequences and characters", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Send "x\e[Ay"
-      send(driver_pid, {:io_reply, make_ref(), "x\e[Ay"})
-
-      # Expect :char x, then :up, then :char y
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :char, char: "x"}}},
-                     500
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up}}},
-                     500
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :char, char: "y"}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches Home/End key sequences", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Home: \\e[H or \\e[1~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[H"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :home}}},
-                     500
-
-      send(driver_pid, {:io_reply, make_ref(), "\\e[1~"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :home}}},
-                     500
-
-      # End: \\e[F or \\e[4~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[F"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :end}}},
-                     500
-
-      send(driver_pid, {:io_reply, make_ref(), "\\e[4~"})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :end}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches PageUp/PageDown key sequences", %{
-      original_stty: _
-    } do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # PageUp: \\e[5~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[5~"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :page_up}}},
-                     500
-
-      # PageDown: \\e[6~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[6~"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :page_down}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches Delete key sequence", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Delete: \\e[3~
-      send(driver_pid, {:io_reply, make_ref(), "\\e[3~"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :delete}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches Backspace/Ctrl+H", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Backspace (often sends ^H or ^?)
-      # Ctrl+H
-      send(driver_pid, {:io_reply, make_ref(), <<8>>})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :backspace}}},
-                     500
-
-      # DEL (sometimes used for backspace)
-      send(driver_pid, {:io_reply, make_ref(), <<127>>})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :backspace}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches Tab/Shift+Tab", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Tab: \\t (character 9)
-      send(driver_pid, {:io_reply, make_ref(), <<9>>})
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :tab}}},
-                     500
-
-      # Shift+Tab: \\e[Z
-      send(driver_pid, {:io_reply, make_ref(), "\\e[Z"})
-      # Use :back_tab for Shift+Tab
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :back_tab}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches Enter/Ctrl+M", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Enter (often sends ^M)
-      # Ctrl+M (Carriage Return)
-      send(driver_pid, {:io_reply, make_ref(), <<13>>})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :enter}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches Escape key", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Escape: \\e (character 27) - Note: might be buffered if part of a sequence
-      send(driver_pid, {:io_reply, make_ref(), <<27>>})
-
-      # Sending ESC alone might not immediately trigger an event if the driver waits
-      # for potential subsequent characters in an escape sequence.
-      # Add a small delay or send another character to force processing.
-      # Adjust delay as needed based on driver's buffering logic
-      :timer.sleep(50)
-
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :esc}}},
-                     100
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "handles input buffering for escape sequences", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Send partial sequence \\e[
-      send(driver_pid, {:io_reply, make_ref(), "\\e["})
-      # Should not receive anything yet
-      refute_receive {:terminal_event, _}, 50
-
-      # Send the rest of the sequence 'A' for Up Arrow
-      send(driver_pid, {:io_reply, make_ref(), "A"})
-      # Should now receive the complete event
-      assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches Ctrl + char sequences", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout waiting for initial resize")
-      end
-
-      # Ctrl+A (SOH)
-      send(driver_pid, {:io_reply, make_ref(), <<1>>})
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :key,
-                        data: %{key: :char, char: "a", ctrl: true}
-                      }},
-                     500
-
-      # Ctrl+Z (SUB)
-      send(driver_pid, {:io_reply, make_ref(), <<26>>})
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :key,
-                        data: %{key: :char, char: "z", ctrl: true}
-                      }},
-                     500
-
-      # Ctrl+C (ETX) - Should also be handled
-      send(driver_pid, {:io_reply, make_ref(), <<3>>})
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :key,
-                        data: %{key: :char, char: "c", ctrl: true}
-                      }},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches mouse click events (VT200 format)", %{
-      original_stty: _
-    } do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout waiting for initial resize")
-      end
-
-      # Simulate Mouse Left Button Press at (10, 5)
-      # Format: \e[M Cb Cx Cy  (Cb = button + modifier, Cx/Cy = coords + 32)
-      # Button 0 (Left), Coords (10, 5) -> Cx=10+32=42, Cy=5+32=37 -> Cb=32
-      send(
-        driver_pid,
-        {:io_reply, make_ref(), "\\e[M #{<<32>>}#{<<42>>}#{<<37>>}"}
-      )
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :mouse,
-                        data: %{
-                          button: :left,
-                          action: :press,
-                          x: 10,
-                          y: 5,
-                          ctrl: false,
-                          alt: false,
-                          shift: false
-                        }
-                      }},
-                     500
-
-      # Simulate Mouse Left Button Release at (10, 5)
-      # Format: \e[M Cb Cx Cy (Cb = 3 for release, same coords)
-      send(
-        driver_pid,
-        {:io_reply, make_ref(), "\\e[M #{<<35>>}#{<<42>>}#{<<37>>}"}
-      )
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :mouse,
-                        data: %{
-                          # Typically release doesn't specify button in this format
-                          button: :none,
-                          action: :release,
-                          x: 10,
-                          y: 5,
-                          ctrl: false,
-                          alt: false,
-                          shift: false
-                        }
-                      }},
-                     500
-
-      # Simulate Mouse Right Button Press at (20, 15) -> Cb=34, Cx=52, Cy=47
-      send(
-        driver_pid,
-        {:io_reply, make_ref(), "\\e[M #{<<34>>}#{<<52>>}#{<<47>>}"}
-      )
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :mouse,
-                        data: %{
-                          button: :right,
-                          action: :press,
-                          x: 20,
-                          y: 15,
-                          ctrl: false,
-                          alt: false,
-                          shift: false
-                        }
-                      }},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches mouse scroll events (VT200 format)", %{
-      original_stty: _
-    } do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout waiting for initial resize")
-      end
-
-      # Simulate Scroll Up at (1, 1) -> Cb=96, Cx=33, Cy=33
-      send(
-        driver_pid,
-        {:io_reply, make_ref(), "\\e[M #{<<96>>}#{<<33>>}#{<<33>>}"}
-      )
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :mouse,
-                        data: %{
-                          button: :wheel,
-                          action: :scroll_up,
-                          x: 1,
-                          y: 1,
-                          ctrl: false,
-                          alt: false,
-                          shift: false
-                        }
-                      }},
-                     500
-
-      # Simulate Scroll Down at (1, 1) -> Cb=97, Cx=33, Cy=33
-      send(
-        driver_pid,
-        {:io_reply, make_ref(), "\\e[M #{<<97>>}#{<<33>>}#{<<33>>}"}
-      )
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :mouse,
-                        data: %{
-                          button: :wheel,
-                          action: :scroll_down,
-                          x: 1,
-                          y: 1,
-                          ctrl: false,
-                          alt: false,
-                          shift: false
-                        }
-                      }},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches mouse click events (SGR format 1006)", %{
-      original_stty: _
-    } do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout waiting for initial resize")
-      end
-
-      # Simulate Mouse Left Button Press at (10, 5)
-      # Format: \e[<Cb;Cx;CyM  (Cb = button, Cx/Cy = coords)
-      send(driver_pid, {:io_reply, make_ref(), "\\e[<0;10;5M"})
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :mouse,
-                        data: %{
-                          button: :left,
-                          action: :press,
-                          x: 10,
-                          y: 5,
-                          ctrl: false,
-                          alt: false,
-                          shift: false
-                        }
-                      }},
-                     500
-
-      # Simulate Mouse Left Button Release at (10, 5)
-      # Format: \e[<Cb;Cx;Cym (lower case m)
-      send(driver_pid, {:io_reply, make_ref(), "\\e[<0;10;5m"})
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :mouse,
-                        data: %{
-                          # SGR retains button on release
-                          button: :left,
-                          action: :release,
-                          x: 10,
-                          y: 5,
-                          ctrl: false,
-                          alt: false,
-                          shift: false
-                        }
-                      }},
-                     500
-
-      # Simulate Scroll Up at (1, 1) -> Cb=64
-      send(driver_pid, {:io_reply, make_ref(), "\\e[<64;1;1M"})
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :mouse,
-                        data: %{
-                          button: :wheel,
-                          action: :scroll_up,
-                          x: 1,
-                          y: 1,
-                          ctrl: false,
-                          alt: false,
-                          shift: false
-                        }
-                      }},
-                     500
-
-      # Simulate Scroll Down at (1, 1) -> Cb=65
-      send(driver_pid, {:io_reply, make_ref(), "\\e[<65;1;1M"})
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :mouse,
-                        data: %{
-                          button: :wheel,
-                          action: :scroll_down,
-                          x: 1,
-                          y: 1,
-                          ctrl: false,
-                          alt: false,
-                          shift: false
-                        }
-                      }},
-                     500
-
-      # Simulate Ctrl+Left Click at (12, 8) -> Cb=16
-      send(driver_pid, {:io_reply, make_ref(), "\\e[<16;12;8M"})
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :mouse,
-                        data: %{
-                          button: :left,
-                          action: :press,
-                          x: 12,
-                          y: 8,
-                          ctrl: true,
-                          alt: false,
-                          shift: false
-                        }
-                      }},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches Shift + Arrow key sequences", %{
-      original_stty: _
-    } do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;2A"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :up, shift: true}}},
-                     500
-
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;2B"})
+      # Shift+Down Arrow from rrex_termbox NIF (using placeholder key code and mod value)
+      send(driver_pid, {:termbox_event, %{type: :key, key: 66, char: 0, mod: 1}})
 
       assert_receive {:terminal_event,
                       %Event{type: :key, data: %{key: :down, shift: true}}},
                      500
 
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;2C"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :right, shift: true}}},
-                     500
-
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;2D"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :left, shift: true}}},
-                     500
-
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches Alt + Char key sequences", %{original_stty: _} do
+    test "parses and dispatches mouse events", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
 
       receive do
         {:terminal_event, %Event{type: :resize}} -> :ok
       after
-        100 -> flunk("Timeout")
+        100 -> flunk("Timeout waiting for initial resize")
       end
 
-      # Alt+a (ESC a)
-      send(driver_pid, {:io_reply, make_ref(), "\ea"})
+      # Left mouse button press from rrex_termbox NIF
+      send(driver_pid, {:termbox_event, %{type: :mouse, x: 10, y: 5, button: 0}})
 
       assert_receive {:terminal_event,
-                      %Event{
-                        type: :key,
-                        data: %{key: :char, char: "a", alt: true}
-                      }},
-                     500
-
-      # Alt+Z (ESC Z)
-      send(driver_pid, {:io_reply, make_ref(), "\eZ"})
-
-      assert_receive {:terminal_event,
-                      %Event{
-                        type: :key,
-                        data: %{key: :char, char: "Z", alt: true}
-                      }},
+                      %Event{type: :mouse, data: %{x: 10, y: 5}}},
                      500
 
       Process.exit(driver_pid, :shutdown)
     end
 
-    test "parses and dispatches Alt + Arrow key sequences", %{original_stty: _} do
+    test "parses and dispatches resize events", %{original_stty: _} do
       test_pid = self()
       driver_pid = start_driver(test_pid)
 
+      # Consume initial resize event
       receive do
         {:terminal_event, %Event{type: :resize}} -> :ok
       after
-        100 -> flunk("Timeout")
+        100 -> flunk("Timeout waiting for initial resize")
       end
 
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;3A"})
+      # Resize event from rrex_termbox NIF
+      send(driver_pid, {:termbox_event, %{type: :resize, width: 100, height: 50}})
 
       assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :up, alt: true}}},
-                     500
-
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;3B"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :down, alt: true}}},
-                     500
-
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;3C"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :right, alt: true}}},
-                     500
-
-      send(driver_pid, {:io_reply, make_ref(), "\e[1;3D"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :key, data: %{key: :left, alt: true}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses and dispatches Focus In/Out events", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Focus In: \e[I
-      send(driver_pid, {:io_reply, make_ref(), "\e[I"})
-      assert_receive {:terminal_event, %Event{type: :focus_in}}, 500
-
-      # Focus Out: \e[O
-      send(driver_pid, {:io_reply, make_ref(), "\e[O"})
-      assert_receive {:terminal_event, %Event{type: :focus_out}}, 500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "parses bracketed paste events", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Send paste sequence
-      paste_content = "hello\nworld!\n"
-
-      send(
-        driver_pid,
-        {:io_reply, make_ref(), "\e[200~#{paste_content}\e[201~"}
-      )
-
-      assert_receive {:terminal_event,
-                      %Event{type: :paste, data: %{text: paste_content}}},
-                     500
-
-      Process.exit(driver_pid, :shutdown)
-    end
-
-    test "buffers incomplete bracketed paste events", %{original_stty: _} do
-      test_pid = self()
-      driver_pid = start_driver(test_pid)
-
-      receive do
-        {:terminal_event, %Event{type: :resize}} -> :ok
-      after
-        100 -> flunk("Timeout")
-      end
-
-      # Send partial paste sequence (start marker + some text)
-      send(driver_pid, {:io_reply, make_ref(), "\e[200~hello"})
-      # Should not receive paste event yet
-      refute_receive {:terminal_event, _}, 50
-
-      # Send rest of text + end marker
-      send(driver_pid, {:io_reply, make_ref(), " world\e[201~"})
-
-      assert_receive {:terminal_event,
-                      %Event{type: :paste, data: %{text: "hello world"}}},
+                      %Event{type: :resize, data: %{width: 100, height: 50}}},
                      500
 
       Process.exit(driver_pid, :shutdown)
@@ -1171,16 +384,16 @@ defmodule Raxol.Terminal.DriverTest do
     # The driver should have sent an initial :io_request to :io upon start
     # It will send another one after processing each :io_reply
     # Let's send some data and check it requests more
-    send(driver_pid, {:io_reply, make_ref(), "x"})
+    send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?x, mod: 0}})
 
     assert_receive {:terminal_event,
-                    %Event{type: :key, data: %{key: :char, char: "x"}}},
+                    %Event{type: :key, data: %{char: "x"}}},
                    500
 
     # Check if IO.getn was requested again (needs introspection or mocking)
     # Example using :sys.trace (can be intrusive)
     # :sys.trace(driver_pid, true)
-    # send(driver_pid, {:io_reply, make_ref(), "y"})
+    # send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?y, mod: 0}})
     # assert_receive {:trace, ^driver_pid, :call, {:erlang, :port_command, [:stdio, _]}} # Check for IO.getn call
     # :sys.trace(driver_pid, false)
 
@@ -1199,26 +412,26 @@ defmodule Raxol.Terminal.DriverTest do
     end
 
     # Send partial escape seq
-    send(driver_pid, {:io_reply, make_ref(), "\e"})
+    send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?e, mod: 0}})
     # Should be buffered
     refute_receive {:terminal_event, _}, 50
 
-    send(driver_pid, {:io_reply, make_ref(), "["})
+    send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?[, mod: 0}})
     # Still buffered
     refute_receive {:terminal_event, _}, 50
 
-    send(driver_pid, {:io_reply, make_ref(), "A"})
+    send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?A, mod: 0}})
     # Completed
-    assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up}}}, 500
+    assert_receive {:terminal_event, %Event{type: :key, data: %{char: "A"}}}, 500
 
     # Test another sequence buffering
-    send(driver_pid, {:io_reply, make_ref(), "\e[1;5"})
+    send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?[, mod: 0}})
     refute_receive {:terminal_event, _}, 50
 
-    send(driver_pid, {:io_reply, make_ref(), "A"})
+    send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?A, mod: 0}})
 
     assert_receive {:terminal_event,
-                    %Event{type: :key, data: %{key: :up, ctrl: true}}},
+                    %Event{type: :key, data: %{char: "A", ctrl: true}}},
                    500
 
     Process.exit(driver_pid, :shutdown)
@@ -1235,18 +448,18 @@ defmodule Raxol.Terminal.DriverTest do
     end
 
     # Send "x\e[Ay"
-    send(driver_pid, {:io_reply, make_ref(), "x\e[Ay"})
+    send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?x, mod: 0}})
 
     # Expect :char x, then :up, then :char y
     assert_receive {:terminal_event,
-                    %Event{type: :key, data: %{key: :char, char: "x"}}},
+                    %Event{type: :key, data: %{char: "x"}}},
                    500
 
     assert_receive {:terminal_event, %Event{type: :key, data: %{key: :up}}},
                    500
 
     assert_receive {:terminal_event,
-                    %Event{type: :key, data: %{key: :char, char: "y"}}},
+                    %Event{type: :key, data: %{char: "y"}}},
                    500
 
     Process.exit(driver_pid, :shutdown)

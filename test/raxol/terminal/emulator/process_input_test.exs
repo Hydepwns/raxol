@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Cursor.Manager
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell # Needed for get_cell_at
 
   describe "process_input state machine" do
     # Tests focus on how Emulator.process_input handles various sequences
@@ -82,7 +81,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       emulator = Emulator.new(80, 24)
       # Example DCS sequence (content doesn't matter for this test)
       # \\eP is DCS start, \\e\\\\ is ST (String Terminator)
-      dcs_sequence = "\eP1;1;1{\\"hello world\\"\e\\\\"
+      dcs_sequence = <<27>> <> "P1;1;1{" <> "hello world" <> <<27>> <> "\\"
       {_emulator, remaining} = Emulator.process_input(emulator, dcs_sequence)
 
       # For now, assert that the sequence is consumed completely

@@ -6,7 +6,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
   alias Raxol.Terminal.Cell
 
   # Helper to create a minimal state for testing
-  defp create_state(lines, cursor \ {0, 0}, scroll \ {0, 0}, dimensions \ {10, 3}, selection \ nil) do
+  defp create_state(lines, cursor \\ {0, 0}, scroll \\ {0, 0}, dimensions \\ {10, 3}, selection \\ nil) do
     sel_start = if selection, do: elem(selection, 0), else: nil
     sel_end = if selection, do: elem(selection, 1), else: nil
 

@@ -1,14 +1,12 @@
 defmodule Raxol.Terminal.Emulator.InitializationTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.Cursor.Manager
+  alias Raxol.Terminal.Cursor
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.ANSI.ScreenModes
-
-  @initial_state Emulator.new(80, 24)
+  alias Raxol.Terminal.Cursor.Manager
 
   describe "Emulator Initialization" do
     test "new creates a new terminal emulator instance with defaults" do
@@ -26,7 +24,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       # Access field on returned struct
       assert buffer.height == 24
       # Direct access to cursor struct seems needed
-      assert is_struct(emulator.cursor, Manager)
+      assert is_struct(emulator.cursor, Cursor)
       # Access scroll_region field directly
       assert emulator.scroll_region == nil
       # Access style field directly and compare with default using constructor
@@ -45,22 +43,22 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
     test "move_cursor moves cursor and clamps within bounds" do
       emulator = Emulator.new(80, 24)
       # Replace with direct update
-      emulator = %{emulator | cursor: Manager.move_to(emulator.cursor, 10, 5)}
+      emulator = %{emulator | cursor: Cursor.move_to(emulator.cursor, 10, 5)}
       # Use direct access
       assert emulator.cursor.position == {10, 5}
 
       # Replace with direct update
-      emulator = %{emulator | cursor: Manager.move_to(emulator.cursor, 90, 30)}
+      emulator = %{emulator | cursor: Cursor.move_to(emulator.cursor, 90, 30)}
 
-      # Use direct access - Check clamping logic (appears Manager.move_to doesn't clamp)
+      # Use direct access - Check clamping logic (appears Cursor.move_to doesn't clamp)
       # Assert actual non-clamped values
       assert emulator.cursor.position == {90, 30}
 
       # Replace with direct update
-      emulator = %{emulator | cursor: Manager.move_to(emulator.cursor, -5, -2)}
+      emulator = %{emulator | cursor: Cursor.move_to(emulator.cursor, -5, -2)}
 
       # Use direct access - Clamping should be handled elsewhere or coordinates assumed non-negative?
-      # Assuming negative values are clamped to 0 by move_to - CONFIRMED: Manager.move_to clamps to 0
+      # Assuming negative values are clamped to 0 by move_to - CONFIRMED: Cursor.move_to clamps to 0
       assert emulator.cursor.position == {0, 0}
     end
 
@@ -73,7 +71,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       # Use move_to
       emulator = %{
         emulator
-        | cursor: Manager.move_to(emulator.cursor, x, y + 2)
+        | cursor: Cursor.move_to(emulator.cursor, x, y + 2)
       }
 
       # Use direct access
@@ -84,7 +82,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       # Use move_to
       emulator = %{
         emulator
-        | cursor: Manager.move_to(emulator.cursor, x + 5, y)
+        | cursor: Cursor.move_to(emulator.cursor, x + 5, y)
       }
 
       # Use direct access
@@ -95,7 +93,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       # Use move_to
       emulator = %{
         emulator
-        | cursor: Manager.move_to(emulator.cursor, x, y - 1)
+        | cursor: Cursor.move_to(emulator.cursor, x, y - 1)
       }
 
       # Use direct access
@@ -106,7 +104,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       # Use move_to
       emulator = %{
         emulator
-        | cursor: Manager.move_to(emulator.cursor, x - 3, y)
+        | cursor: Cursor.move_to(emulator.cursor, x - 3, y)
       }
 
       # Use direct access

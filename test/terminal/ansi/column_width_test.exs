@@ -1,6 +1,7 @@
 defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{ANSI, Emulator, ScreenBuffer, Cell}
+  alias Raxol.Terminal.{Emulator, ScreenBuffer, Cell}
+  alias Raxol.Terminal.ANSI.ColumnWidth
 
   setup do
     # Create a terminal emulator with default dimensions (80x24)
@@ -87,8 +88,7 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
 
       line_cells ->
         line_cells
-        |> Enum.map(& &1.char)
-        |> Enum.join()
+        |> Enum.map_join(& &1.char)
     end
   end
 
