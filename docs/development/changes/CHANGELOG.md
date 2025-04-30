@@ -7,6 +7,20 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+### Changed
+
+### Deprecated
+
+### Removed
+
+### Fixed
+
+### Security
+
+## [0.2.0] - 2024-07-24
+
+### Added
+
 - Initial release of Raxol
 - Terminal UI framework with web interface capabilities
 - Core components library
