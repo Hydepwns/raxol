@@ -70,7 +70,7 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library
-      {:rrex_termbox, "~> 1.1.0"},
+      {:rrex_termbox, "~> 2.0.1"},
 
       # TODO: Review if Phoenix/web dependencies are needed for core library
       # They might be remnants of web UI / VSCode Stdio features.
