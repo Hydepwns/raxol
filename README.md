@@ -90,11 +90,10 @@ Main documentation index: [docs/README.md](docs/README.md)
 - [Runtime Options](docs/guides/runtime_options.md)
 - [Terminal Details](docs/development/terminal/README.md)
 - [Development Setup](docs/development/DevelopmentSetup.md)
-- [Contributing](CONTRIBUTING.md)
 
 ## Development
 
-See [Development Setup](docs/development/DevelopmentSetup.md) and [Contributing](CONTRIBUTING.md).
+See [Development Setup](docs/development/DevelopmentSetup.md).
 
 > **Note:** The project recently completed a major refactoring. See `CHANGELOG.md` and `docs/development/planning/handoff_prompt.md` for context.
 

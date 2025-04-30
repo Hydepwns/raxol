@@ -18,6 +18,7 @@ defmodule Raxol.Style.Colors.Utilities do
   # Check hex format
   Utilities.hex_color?("#ABC") # true
   Utilities.hex_color?("blue") # false
+  ```
   """
 
   alias Raxol.Style.Colors.Color

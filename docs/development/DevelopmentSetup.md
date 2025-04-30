@@ -7,44 +7,97 @@ section: installation
 tags: [installation, setup, development, contributing]
 ---
 
-# Development Environment Setup
+# Development Setup
 
-This guide explains how to set up your environment to develop and contribute to Raxol. If you want to _use_ Raxol as a dependency in your own project, see the [Installation Guide](Installation.md).
+This guide helps you set up your development environment for working on Raxol.
 
-## System Requirements
+## Prerequisites
 
-Ensure you have the following installed:
+- Elixir 1.14 or higher
+- Erlang/OTP 24 or higher
+- Git
+- A terminal emulator with ANSI support
 
-- Elixir 1.14 or later
-- Erlang/OTP 25 or later
-- Node.js 16 or later (for JavaScript components)
-- npm 8 or later (for JavaScript components)
+## Installation
 
-For platform-specific instructions on installing these system dependencies, see the [Cross-Platform Support](CrossPlatformSupport.md) guide.
+1. Clone the repository:
 
-## Getting the Code
+```bash
+git clone https://github.com/Hydepwns/raxol.git
+cd raxol
+```
 
-1.  Clone the repository:
-    ```bash
-    git clone https://github.com/Hydepwns/raxol.git
-    cd raxol
-    ```
+2. Install dependencies:
 
-## Building the Project
+```bash
+mix deps.get
+```
 
-1.  Install Elixir dependencies:
-    ```bash
-    mix deps.get
-    ```
-2.  Compile the project:
-    ```bash
-    mix compile
-    ```
-3.  Run the tests to ensure everything is set up correctly:
-    ```bash
-    mix test
-    ```
+3. Compile the project:
 
-## Next Steps
+```bash
+mix compile
+```
 
-Now you have a working development environment. You can start exploring the code in `/lib` or run the examples in `/examples`. See the main [README.md](../../README.md) for project structure and other development tasks like running static analysis.
+## Running Tests
+
+```bash
+# Run all tests
+mix test
+
+# Run tests with coverage
+mix coveralls
+
+# Run static analysis
+mix credo
+mix dialyzer
+```
+
+## Working with Examples
+
+Raxol comes with several example applications to demonstrate its features. You can run them using:
+
+```bash
+# Run a specific example
+mix run examples/component_showcase.exs
+
+# Or use the demo script
+./bin/demo.exs
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Termbox NIF Compilation**
+
+If you encounter compilation errors related to Termbox NIF:
+
+```bash
+# Check that you have a C compiler installed
+gcc --version
+
+# Clean the build artifacts and recompile
+mix deps.clean --all
+mix deps.get
+mix compile
+```
+
+2. **Terminal Display Issues**
+
+If the terminal output appears corrupted after running an example:
+
+```bash
+# Reset your terminal
+reset
+```
+
+## Editor Integration
+
+### VS Code
+
+For VS Code users, we recommend:
+
+1. ElixirLS extension
+2. Elixir Test Explorer
+3. Using our provided `.vscode/settings.json` configuration
