@@ -202,23 +202,4 @@ defmodule Raxol.Components.Dashboard.Dashboard do
       end)
     end
   end
-
-  # --- Internal Helpers ---
-
-  # Remove the placeholder render_widget_content function
-  # defp render_widget_content(widget_config) do ... end
-
-  # --- Helper Functions (Moved from MyApp) ---
-
-  # Remove unused helper
-  # defp _find_widget_and_bounds_at(x, y, widgets, grid_config) do ... end
-
-  # Remove unused helper
-  # defp _in_resize_handle?(_x, _y, bounds) ... end
-
-  # Remove unused helper
-  # defp _in_resize_handle?(x, y, bounds) ... end
-
-  # Remove unused helper
-  # defp _coords_to_grid_cell(x, y, grid_config) do ... end
 end

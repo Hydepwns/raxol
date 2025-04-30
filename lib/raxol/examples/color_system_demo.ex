@@ -89,7 +89,6 @@ defmodule Raxol.Examples.ColorSystemDemo do
     {:noreply, state}
   end
 
-  @impl Raxol.Core.Runtime.Application
   def handle_event(event, state) do
     Logger.debug("ColorSystemDemo received unhandled event (handle_event/2): #{inspect event}")
     {:noreply, state}

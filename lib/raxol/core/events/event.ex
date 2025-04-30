@@ -1,38 +1,33 @@
 defmodule Raxol.Core.Events.Event do
   @moduledoc """
-  Defines the structure and types for events in the Raxol system.
+  Defines the structure for events in the Raxol system, providing a standardized format
+  for key presses, mouse actions, and other UI events that components need to process.
 
-  Events represent various types of input and system occurrences, such as:
-  * Keyboard input
-  * Mouse input
-  * Window events
-  * System events
-  * Custom events
-
-  Each event has a type and associated data specific to that type.
+  Events are structs with a :type and :data field, where :type indicates the event category
+  (e.g., :key, :mouse, :resize) and :data contains the event-specific details.
   """
 
+  # Import any needed modules
+  # Remove unused aliases
+
   @type event_type :: atom()
+  @type event_data :: any()
 
   @type t :: %__MODULE__{
-          type: event_type(),
-          timestamp: integer(),
-          data: term()
-        }
+    type: event_type(),
+    data: event_data()
+  }
 
-  defstruct [:type, :timestamp, :data]
+  defstruct [:type, :data]
 
-  # alias ExTermbox.Event, as: ExTermboxEvent # Unused
-  # alias ExTermbox.Constants, as: ExTermboxConstants # Unused
+  # Event constructors for common events
 
   @doc """
   Creates a new event with the given type and data.
-  The timestamp is automatically set to the current system time.
   """
   def new(type, data) do
     %__MODULE__{
       type: type,
-      timestamp: System.monotonic_time(),
       data: data
     }
   end

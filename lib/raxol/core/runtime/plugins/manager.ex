@@ -323,18 +323,4 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
       end
     end
   end
-
-  # --- Command Registration ---
-
-  # REMOVED Unused helper function
-  # defp find_plugin_for_command(command_table, command_name_str, namespace, _arity) do
-  #   ...
-  # end
-
-  # --- Helper Functions ---
-
-  # REMOVED Unused helper function
-  # defp check_dependencies(_plugin_id, metadata, loaded_plugins) do
-  #   ...
-  # end
 end

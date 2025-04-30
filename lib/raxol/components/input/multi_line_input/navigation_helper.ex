@@ -19,37 +19,64 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
     target_line_length = String.length(Enum.at(lines, clamped_row, ""))
     clamped_col = clamp(target_col, 0, target_line_length)
 
-    %{state | cursor_row: clamped_row, cursor_col: clamped_col, selection_start: nil, selection_end: nil}
+    %{state | cursor_pos: {clamped_row, clamped_col}, selection_start: nil, selection_end: nil}
   end
 
   # --- Add heads for directional movement ---
   def move_cursor(state, :left) do
-    new_row = state.cursor_row
-    new_col = max(0, state.cursor_col - 1)
-    # TODO: Handle moving to end of previous line if at start of current line
-    move_cursor(state, {new_row, new_col})
+    {row, col} = state.cursor_pos
+
+    if col > 0 do
+      # Simple case: move cursor left within the current line
+      move_cursor(state, {row, col - 1})
+    else
+      # At beginning of line, try to move to end of previous line
+      if row > 0 do
+        prev_row = row - 1
+        lines = state.lines
+        prev_line_length = String.length(Enum.at(lines, prev_row, ""))
+        move_cursor(state, {prev_row, prev_line_length})
+      else
+        # Already at document start, no change
+        state
+      end
+    end
   end
 
   def move_cursor(state, :right) do
-    lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
-    current_line_length = String.length(Enum.at(lines, state.cursor_row, ""))
-    new_row = state.cursor_row
-    new_col = min(current_line_length, state.cursor_col + 1)
-    # TODO: Handle moving to start of next line if at end of current line
-    move_cursor(state, {new_row, new_col})
+    {row, col} = state.cursor_pos
+    lines = state.lines
+    current_line = Enum.at(lines, row, "")
+    current_line_length = String.length(current_line)
+
+    if col < current_line_length do
+      # Simple case: move cursor right within the current line
+      move_cursor(state, {row, col + 1})
+    else
+      # At end of line, try to move to beginning of next line
+      if row < length(lines) - 1 do
+        next_row = row + 1
+        move_cursor(state, {next_row, 0})
+      else
+        # Already at document end, no change
+        state
+      end
+    end
   end
 
   def move_cursor(state, :up) do
-    new_row = max(0, state.cursor_row - 1)
-    new_col = state.cursor_col # Keep same column if possible (TODO: handle desired_col?)
+    {row, col} = state.cursor_pos
+    new_row = max(0, row - 1)
+    new_col = col # Keep same column if possible (TODO: handle desired_col?)
     move_cursor(state, {new_row, new_col})
   end
 
   def move_cursor(state, :down) do
+    {row, col} = state.cursor_pos
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
     num_lines = length(lines)
-    new_row = min(num_lines - 1, state.cursor_row + 1)
-    new_col = state.cursor_col # Keep same column if possible (TODO: handle desired_col?)
+    new_row = min(num_lines - 1, row + 1)
+    new_col = col # Keep same column if possible (TODO: handle desired_col?)
     move_cursor(state, {new_row, new_col})
   end
   # --- End added heads ---
@@ -65,7 +92,7 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
   # Moves cursor one word to the left
   def move_cursor_word_left(state) do
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
-    {current_row, current_col} = {state.cursor_row, state.cursor_col}
+    {current_row, current_col} = state.cursor_pos
 
     # If at start of doc, do nothing
     if current_row == 0 and current_col == 0 do
@@ -97,7 +124,7 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
   # Moves cursor one word to the right
   def move_cursor_word_right(state) do
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
-    {current_row, current_col} = {state.cursor_row, state.cursor_col}
+    {current_row, current_col} = state.cursor_pos
 
     flat_index = TextHelper.pos_to_index(lines, {current_row, current_col})
     text_after_cursor = String.slice(state.value, flat_index..-1)
@@ -151,35 +178,37 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
 
   # Moves cursor up or down by one page (component height)
   def move_cursor_page(state, direction) do
+    {row, col} = state.cursor_pos
     page_amount = state.height
-    current_row = state.cursor_row
     target_row =
       case direction do
-        :up -> current_row - page_amount
-        :down -> current_row + page_amount
-        _ -> current_row
+        :up -> row - page_amount
+        :down -> row + page_amount
+        _ -> row
       end
 
     # Use existing move_cursor logic for clamping
-    move_cursor(state, {target_row, state.cursor_col})
+    move_cursor(state, {target_row, col})
     # Note: Does not handle scroll_offset changes yet.
   end
 
   # Moves cursor to the beginning of the current line
   def move_cursor_line_start(state) do
-    %{state | cursor_col: 0, selection_start: nil, selection_end: nil}
+    {row, _col} = state.cursor_pos
+    %{state | cursor_pos: {row, 0}, selection_start: nil, selection_end: nil}
   end
 
   # Moves cursor to the end of the current line
   def move_cursor_line_end(state) do
+    {row, _col} = state.cursor_pos
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
-    current_line_length = String.length(Enum.at(lines, state.cursor_row, ""))
-    %{state | cursor_col: current_line_length, selection_start: nil, selection_end: nil}
+    current_line_length = String.length(Enum.at(lines, row, ""))
+    %{state | cursor_pos: {row, current_line_length}, selection_start: nil, selection_end: nil}
   end
 
   # Moves cursor to the beginning of the document
   def move_cursor_doc_start(state) do
-    %{state | cursor_row: 0, cursor_col: 0, selection_start: nil, selection_end: nil}
+    %{state | cursor_pos: {0, 0}, selection_start: nil, selection_end: nil}
   end
 
   # Moves cursor to the end of the document
@@ -187,59 +216,54 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
     last_row = max(0, length(lines) - 1)
     last_col = String.length(Enum.at(lines, last_row, ""))
-    %{state | cursor_row: last_row, cursor_col: last_col, selection_start: nil, selection_end: nil}
+    %{state | cursor_pos: {last_row, last_col}, selection_start: nil, selection_end: nil}
+  end
+
+  # Clears the selection
+  def clear_selection(state) do
+    %{state | selection_start: nil, selection_end: nil}
   end
 
   # Selects all text in the document
   def select_all(state) do
-    lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
+    lines = state.lines
     last_row = max(0, length(lines) - 1)
     last_col = String.length(Enum.at(lines, last_row, ""))
     %{state | selection_start: {0, 0}, selection_end: {last_row, last_col}}
   end
 
-  # Clears the current selection
-  def clear_selection(state) do
-    %{state | selection_start: nil, selection_end: nil}
-  end
-
   # --- Selection Helpers ---
 
-  # Checks if a given line index falls within the current selection range.
-  def is_line_in_selection?(row_index, selection_start, selection_end)
-      when not is_nil(selection_start) and not is_nil(selection_end) do
-    {start_row, _start_col} = selection_start
-    {end_row, _end_col} = selection_end
-
-    # Ensure start_row <= end_row for comparison
-    {start_row, end_row} =
-      if start_row <= end_row, do: {start_row, end_row}, else: {end_row, start_row}
-
-    row_index >= start_row and row_index <= end_row
-  end
-
-  def is_line_in_selection?(_row_index, _nil_start, _nil_end), do: false
-
-  # Normalize selection ensuring start is before end based on text index.
-  # Accepts state, returns {start_tuple, end_tuple} or {nil, nil} if no selection.
-  def normalize_selection(%{selection_start: start_pos, selection_end: end_pos} = state) do
-    case {start_pos, end_pos} do
+  # Returns the normalized selection {start_pos, end_pos} or {nil, nil} if no selection
+  def normalize_selection(state) do
+    case {state.selection_start, state.selection_end} do
       {nil, _} -> {nil, nil}
       {_, nil} -> {nil, nil}
-      {{_start_row, _start_col} = start_tuple, {_end_row, _end_col} = end_tuple} ->
-        # Convert to indices to determine order
-        lines = String.split(state.value, "\n")
-        start_index = TextHelper.pos_to_index(lines, start_tuple)
-        end_index = TextHelper.pos_to_index(lines, end_tuple)
+      {start_pos, end_pos} ->
+        # Compare positions to ensure start <= end
+        start_index = TextHelper.pos_to_index(state.lines, start_pos)
+        end_index = TextHelper.pos_to_index(state.lines, end_pos)
 
         if start_index <= end_index do
-          {start_tuple, end_tuple}
+          {start_pos, end_pos}
         else
-          # Swap them
-          {end_tuple, start_tuple}
+          {end_pos, start_pos}
         end
-      # Handle potential invalid state if selection is not nil or a tuple
-      {_, _} -> {nil, nil}
+    end
+  end
+
+  # Checks if the given line index is within the selection
+  def is_line_in_selection?(line_index, start_pos, end_pos) do
+    case {start_pos, end_pos} do
+      {nil, _} -> false
+      {_, nil} -> false
+      {{start_row, _}, {end_row, _}} ->
+        # Ensure start_row <= end_row (normalize)
+        {min_row, max_row} = if start_row <= end_row,
+                               do: {start_row, end_row},
+                               else: {end_row, start_row}
+
+        line_index >= min_row && line_index <= max_row
     end
   end
 

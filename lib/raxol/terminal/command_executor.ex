@@ -11,51 +11,21 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   require Logger
 
-  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.Emulator
-  # alias Raxol.Terminal.Commands.Executor, as: CommandImpl # Unused
-  # alias Raxol.Terminal.Screen # Unused
-  # alias Raxol.Terminal.ScreenBuffer # Unused
-  # alias Raxol.Terminal.Cursor # Unused
-  # alias Raxol.Terminal.TextAttributes # Unused
-  # alias Raxol.Terminal.BufferManager # Unused
-  # alias Raxol.Terminal.Config # Unused
-
-  # Command module aliases
-  # alias Raxol.Terminal.Commands.{Screen, CursorOps, Editing, Attributes, History} # All unused
+  alias Raxol.Terminal.Commands.Screen
+  alias Raxol.Terminal.Commands.Parser
+  alias Raxol.Terminal.Commands.Executor
+  alias Raxol.Terminal.Commands.Modes
 
   # Display a compile-time deprecation warning
   @deprecated "This module is deprecated. Use Raxol.Terminal.Commands.* modules instead."
 
   # --- Sequence Executors ---
 
-  # Note: All functions receive the full Emulator.t state as the first argument
-
   @doc """
   Executes a CSI (Control Sequence Introducer) command.
 
   DEPRECATED: Use Raxol.Terminal.Commands.Executor.execute_csi_command/4 instead.
-
-  ## Parameters
-
-  * `emulator` - The current emulator state
-  * `params_buffer` - The parameter portion of the CSI sequence
-  * `intermediates_buffer` - The intermediate bytes portion of the CSI sequence
-  * `final_byte` - The final byte that determines the specific command
-
-  ## Returns
-
-  * Updated emulator state
-
-  ## Migration Path
-
-  ```elixir
-  # Before
-  new_emulator = Raxol.Terminal.CommandExecutor.execute_csi_command(emulator, params, intermediates, final_byte)
-
-  # After
-  new_emulator = Raxol.Terminal.Commands.Executor.execute_csi_command(emulator, params, intermediates, final_byte)
-  ```
   """
   @spec execute_csi_command(
           Emulator.t(),
@@ -74,7 +44,7 @@ defmodule Raxol.Terminal.CommandExecutor do
         "Use Raxol.Terminal.Commands.Executor.execute_csi_command/4 instead."
     )
 
-    Raxol.Terminal.Commands.Executor.execute_csi_command(
+    Executor.execute_csi_command(
       emulator,
       params_buffer,
       intermediates_buffer,
@@ -86,24 +56,6 @@ defmodule Raxol.Terminal.CommandExecutor do
   Parses a raw parameter string buffer into a list of integers or nil values.
 
   DEPRECATED: Use Raxol.Terminal.Commands.Parser.parse_params/1 instead.
-
-  ## Parameters
-
-  * `params_string` - The raw parameter string from a CSI sequence
-
-  ## Returns
-
-  * A list of parsed parameters
-
-  ## Migration Path
-
-  ```elixir
-  # Before
-  params = Raxol.Terminal.CommandExecutor.parse_params(params_string)
-
-  # After
-  params = Raxol.Terminal.Commands.Parser.parse_params(params_string)
-  ```
   """
   @spec parse_params(String.t()) ::
           list(integer() | nil | list(integer() | nil))
@@ -113,33 +65,13 @@ defmodule Raxol.Terminal.CommandExecutor do
         "Use Raxol.Terminal.Commands.Parser.parse_params/1 instead."
     )
 
-    Raxol.Terminal.Commands.Parser.parse_params(params_string)
+    Parser.parse_params(params_string)
   end
 
   @doc """
   Gets a parameter at a specific index from the params list.
 
   DEPRECATED: Use Raxol.Terminal.Commands.Parser.get_param/3 instead.
-
-  ## Parameters
-
-  * `params` - The list of parsed parameters
-  * `index` - The index to get the parameter from
-  * `default` - The default value to return if the parameter is nil or out of bounds
-
-  ## Returns
-
-  * The parameter value or the default value
-
-  ## Migration Path
-
-  ```elixir
-  # Before
-  value = Raxol.Terminal.CommandExecutor.get_param(params, 1, 0)
-
-  # After
-  value = Raxol.Terminal.Commands.Parser.get_param(params, 1, 0)
-  ```
   """
   @spec get_param(list(integer() | nil), pos_integer(), integer()) :: integer()
   def get_param(params, index, default \\ 1) do
@@ -148,33 +80,13 @@ defmodule Raxol.Terminal.CommandExecutor do
         "Use Raxol.Terminal.Commands.Parser.get_param/3 instead."
     )
 
-    Raxol.Terminal.Commands.Parser.get_param(params, index, default)
+    Parser.get_param(params, index, default)
   end
 
   @doc """
   Handles DEC private mode setting or resetting.
 
   DEPRECATED: Use Raxol.Terminal.Commands.Modes.handle_dec_private_mode/3 instead.
-
-  ## Parameters
-
-  * `emulator` - The current emulator state
-  * `params` - The parsed parameters
-  * `action` - The action to perform (:set or :reset)
-
-  ## Returns
-
-  * Updated emulator state
-
-  ## Migration Path
-
-  ```elixir
-  # Before
-  new_emulator = Raxol.Terminal.CommandExecutor.handle_dec_private_mode(emulator, params, :set)
-
-  # After
-  new_emulator = Raxol.Terminal.Commands.Modes.handle_dec_private_mode(emulator, params, :set)
-  ```
   """
   @spec handle_dec_private_mode(Emulator.t(), list(integer()), :set | :reset) ::
           Emulator.t()
@@ -184,7 +96,7 @@ defmodule Raxol.Terminal.CommandExecutor do
         "Use Raxol.Terminal.Commands.Modes.handle_dec_private_mode/3 instead."
     )
 
-    Raxol.Terminal.Commands.Modes.handle_dec_private_mode(
+    Modes.handle_dec_private_mode(
       emulator,
       params,
       action
@@ -195,26 +107,6 @@ defmodule Raxol.Terminal.CommandExecutor do
   Handles ANSI mode setting or resetting.
 
   DEPRECATED: Use Raxol.Terminal.Commands.Modes.handle_ansi_mode/3 instead.
-
-  ## Parameters
-
-  * `emulator` - The current emulator state
-  * `params` - The parsed parameters
-  * `action` - The action to perform (:set or :reset)
-
-  ## Returns
-
-  * Updated emulator state
-
-  ## Migration Path
-
-  ```elixir
-  # Before
-  new_emulator = Raxol.Terminal.CommandExecutor.handle_ansi_mode(emulator, params, :set)
-
-  # After
-  new_emulator = Raxol.Terminal.Commands.Modes.handle_ansi_mode(emulator, params, :set)
-  ```
   """
   @spec handle_ansi_mode(Emulator.t(), list(integer()), :set | :reset) ::
           Emulator.t()
@@ -224,32 +116,13 @@ defmodule Raxol.Terminal.CommandExecutor do
         "Use Raxol.Terminal.Commands.Modes.handle_ansi_mode/3 instead."
     )
 
-    Raxol.Terminal.Commands.Modes.handle_ansi_mode(emulator, params, action)
+    Modes.handle_ansi_mode(emulator, params, action)
   end
 
   @doc """
   Clears the screen or a part of it based on the mode parameter.
 
   DEPRECATED: Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead.
-
-  ## Parameters
-
-  * `emulator` - The current emulator state
-  * `mode` - The mode parameter (0, 1, 2, or 3)
-
-  ## Returns
-
-  * Updated emulator state
-
-  ## Migration Path
-
-  ```elixir
-  # Before
-  new_emulator = Raxol.Terminal.CommandExecutor.clear_screen(emulator, 2)
-
-  # After
-  new_emulator = Raxol.Terminal.Commands.Screen.clear_screen(emulator, 2)
-  ```
   """
   @spec clear_screen(Emulator.t(), integer()) :: Emulator.t()
   def clear_screen(emulator, mode) do
@@ -258,32 +131,13 @@ defmodule Raxol.Terminal.CommandExecutor do
         "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead."
     )
 
-    Raxol.Terminal.Commands.Screen.clear_screen(emulator, mode)
+    Screen.clear_screen(emulator, mode)
   end
 
   @doc """
   Clears a line or part of a line based on the mode parameter.
 
   DEPRECATED: Use Raxol.Terminal.Commands.Screen.clear_line/2 instead.
-
-  ## Parameters
-
-  * `emulator` - The current emulator state
-  * `mode` - The mode parameter (0, 1, or 2)
-
-  ## Returns
-
-  * Updated emulator state
-
-  ## Migration Path
-
-  ```elixir
-  # Before
-  new_emulator = Raxol.Terminal.CommandExecutor.clear_line(emulator, 2)
-
-  # After
-  new_emulator = Raxol.Terminal.Commands.Screen.clear_line(emulator, 2)
-  ```
   """
   @spec clear_line(Emulator.t(), integer()) :: Emulator.t()
   def clear_line(emulator, mode) do
@@ -292,32 +146,13 @@ defmodule Raxol.Terminal.CommandExecutor do
         "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead."
     )
 
-    Raxol.Terminal.Commands.Screen.clear_line(emulator, mode)
+    Screen.clear_line(emulator, mode)
   end
 
   @doc """
   Inserts blank lines at the current cursor position.
 
   DEPRECATED: Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead.
-
-  ## Parameters
-
-  * `emulator` - The current emulator state
-  * `count` - The number of lines to insert
-
-  ## Returns
-
-  * Updated emulator state
-
-  ## Migration Path
-
-  ```elixir
-  # Before
-  new_emulator = Raxol.Terminal.CommandExecutor.insert_line(emulator, 2)
-
-  # After
-  new_emulator = Raxol.Terminal.Commands.Screen.insert_lines(emulator, 2)
-  ```
   """
   @spec insert_line(Emulator.t(), integer()) :: Emulator.t()
   def insert_line(emulator, count) do
@@ -326,32 +161,13 @@ defmodule Raxol.Terminal.CommandExecutor do
         "Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead."
     )
 
-    Raxol.Terminal.Commands.Screen.insert_lines(emulator, count)
+    Screen.insert_lines(emulator, count)
   end
 
   @doc """
   Deletes lines at the current cursor position.
 
   DEPRECATED: Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead.
-
-  ## Parameters
-
-  * `emulator` - The current emulator state
-  * `count` - The number of lines to delete
-
-  ## Returns
-
-  * Updated emulator state
-
-  ## Migration Path
-
-  ```elixir
-  # Before
-  new_emulator = Raxol.Terminal.CommandExecutor.delete_line(emulator, 2)
-
-  # After
-  new_emulator = Raxol.Terminal.Commands.Screen.delete_lines(emulator, 2)
-  ```
   """
   @spec delete_line(Emulator.t(), integer()) :: Emulator.t()
   def delete_line(emulator, count) do
@@ -360,17 +176,23 @@ defmodule Raxol.Terminal.CommandExecutor do
         "Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead."
     )
 
-    Raxol.Terminal.Commands.Screen.delete_lines(emulator, count)
+    Screen.delete_lines(emulator, count)
   end
 
+  @doc """
+  Executes an OSC (Operating System Command).
+
+  DEPRECATED: Use Raxol.Terminal.Commands.Executor.execute_osc_command/2 instead.
+  """
   @spec execute_osc_command(Emulator.t(), String.t()) :: Emulator.t()
   def execute_osc_command(emulator, command_string) do
     Logger.warning(
-      "Deprecated execute_osc_command called in Raxol.Terminal.CommandExecutor. " <>
-        "Delegating to Raxol.Terminal.Commands.Executor.execute_osc_command/2. " <>
-        "Command: #{inspect(command_string)}, Emulator: #{inspect(emulator)}"
+      "Raxol.Terminal.CommandExecutor.execute_osc_command/2 is deprecated. " <>
+        "Use Raxol.Terminal.Commands.Executor.execute_osc_command/2 instead."
     )
 
+    # TODO: Move this implementation to Raxol.Terminal.Commands.Executor
+    # This is currently maintained here for backward compatibility
     # Parse the command string: Ps ; Pt ST
     # Ps is the command code (0, 2, 8, etc.)
     case String.split(command_string, ";", parts: 2) do
@@ -448,6 +270,11 @@ defmodule Raxol.Terminal.CommandExecutor do
     end
   end
 
+  @doc """
+  Executes a DCS (Device Control String) command.
+
+  DEPRECATED: Use Raxol.Terminal.Commands.Executor.execute_dcs_command/5 instead.
+  """
   @spec execute_dcs_command(
           Emulator.t(),
           String.t(),
@@ -462,6 +289,12 @@ defmodule Raxol.Terminal.CommandExecutor do
         final_byte,
         payload
       ) do
+    Logger.warning(
+      "Raxol.Terminal.CommandExecutor.execute_dcs_command/5 is deprecated. " <>
+        "This functionality should be moved to Raxol.Terminal.Commands.Executor."
+    )
+
+    # TODO: Move this implementation to Raxol.Terminal.Commands.Executor
     # Parse the raw param string buffer
     params = parse_params(params_buffer)
     # Use intermediates_buffer directly
@@ -490,57 +323,40 @@ defmodule Raxol.Terminal.CommandExecutor do
     end
   end
 
-  # --- Command Handlers ---
+  @doc """
+  Handles Sixel graphics.
 
-  # Sixel Graphics Handler
+  DEPRECATED: This should be moved to a dedicated Sixel handler module.
+  """
   @spec handle_sixel_graphics(Emulator.t(), String.t()) :: Emulator.t()
   def handle_sixel_graphics(emulator, payload) do
-    # TODO: Implement Sixel parsing and rendering to screen buffer.
-    # This likely requires an external library (e.g., NIF bindings for libsixel) or a pure Elixir implementation.
     Logger.warning(
-      "Sixel graphics received (payload length: #{String.length(payload)}), but Sixel decoding is NOT IMPLEMENTED."
+      "Sixel graphics received (payload length: #{String.length(payload)}), but Sixel decoding is NOT IMPLEMENTED. " <>
+      "This functionality should be moved to a dedicated Sixel handler module."
     )
 
     # TODO: Implement Sixel parsing and rendering to screen buffer
-    # Could involve calling an external library or a dedicated Elixir parser.
-    # Return unchanged state for now
     emulator
   end
 
-  # --- Helper for Erasing ---
+  @doc """
+  Erase Display handler.
 
-  # Creates a list of new (empty) cells
-  defp create_empty_cells(count) do
-    # Create a list of `count` empty cells with default attributes
-    List.duplicate(Cell.new(), count)
-  end
-
-  # Replaces a portion of a list (representing a row) with empty cells
-  # Handles potential negative lengths gracefully.
-  defp replace_range_with_empty(list, start_index, end_index)
-       when start_index <= end_index do
-    length = end_index - start_index + 1
-
-    if length > 0 do
-      empty_part = create_empty_cells(length)
-      List.replace_at(list, start_index, empty_part)
-    else
-      # No change if length is zero or negative
-      list
-    end
-  end
-
-  # Start > End
-  defp replace_range_with_empty(list, _start_index, _end_index), do: list
-
-  # ED - Erase Display Handler
+  DEPRECATED: Use Raxol.Terminal.Commands.Screen.erase_display/2 instead.
+  """
   @spec handle_ed(Emulator.t(), integer()) :: Emulator.t()
   def handle_ed(emulator, mode \\ 0) do
+    Logger.warning(
+      "Raxol.Terminal.CommandExecutor.handle_ed/2 is deprecated. " <>
+      "This functionality should be moved to Raxol.Terminal.Commands.Screen."
+    )
+
+    # TODO: Move this implementation to Screen.erase_display/2
     Logger.debug("ED received - Erase Display (Mode: #{mode})")
     %{cursor: cursor} = emulator
     active_buffer = Emulator.get_active_buffer(emulator)
 
-    # Access position directly from cursor struct instead of calling get_position
+    # Access position directly from cursor struct
     {current_col, current_row} = cursor.position
 
     %{width: width, height: height, cells: cells, scrollback: scrollback} =
@@ -560,7 +376,6 @@ defmodule Raxol.Terminal.CommandExecutor do
           cells_after_update =
             List.replace_at(cells, current_row, erased_current_line)
 
-          # Replace Enum.map_indexed with Enum.with_index |> Enum.map
           cells_after_update
           |> Enum.with_index()
           |> Enum.map(fn {line, index} ->
@@ -583,7 +398,6 @@ defmodule Raxol.Terminal.CommandExecutor do
           cells_after_update =
             List.replace_at(cells, current_row, erased_current_line)
 
-          # Replace Enum.map_indexed with Enum.with_index |> Enum.map
           cells_after_update
           |> Enum.with_index()
           |> Enum.map(fn {line, index} ->
@@ -600,7 +414,6 @@ defmodule Raxol.Terminal.CommandExecutor do
 
         # Mode 3: Erase entire screen + scrollback (xterm)
         3 ->
-          # Handled below by updating scrollback too
           List.duplicate(create_empty_cells(width), height)
 
         # Unknown mode - do nothing
@@ -621,14 +434,23 @@ defmodule Raxol.Terminal.CommandExecutor do
     Emulator.update_active_buffer(emulator, updated_active_buffer)
   end
 
-  # EL - Erase in Line Handler
+  @doc """
+  Erase Line handler.
+
+  DEPRECATED: Use Raxol.Terminal.Commands.Screen.erase_line/2 instead.
+  """
   @spec handle_el(Emulator.t(), integer()) :: Emulator.t()
   def handle_el(emulator, mode \\ 0) do
+    Logger.warning(
+      "Raxol.Terminal.CommandExecutor.handle_el/2 is deprecated. " <>
+      "This functionality should be moved to Raxol.Terminal.Commands.Screen."
+    )
+
+    # TODO: Move this implementation to Screen.erase_line/2
     Logger.debug("EL received - Erase in Line (Mode: #{mode})")
     %{cursor: cursor} = emulator
     active_buffer = Emulator.get_active_buffer(emulator)
 
-    # Access position directly from cursor struct instead of calling get_position
     {current_col, current_row} = cursor.position
     %{width: width, cells: cells} = active_buffer
 
@@ -660,7 +482,6 @@ defmodule Raxol.Terminal.CommandExecutor do
       updated_active_buffer = %{active_buffer | cells: new_cells}
       Emulator.update_active_buffer(emulator, updated_active_buffer)
     else
-      # Cursor outside valid rows, should ideally not happen
       Logger.error(
         "EL command received with cursor row (#{current_row}) outside buffer height (#{length(cells)})"
       )
@@ -669,12 +490,31 @@ defmodule Raxol.Terminal.CommandExecutor do
     end
   end
 
-  # DEC Private Mode Handlers (Not fully implemented)
-  # TODO: Implement these DEC private mode handlers
+  # --- Deprecated Helper Functions ---
+  # These should be moved to appropriate modules when full migration happens
 
-  # Placeholder for DSR (Device Status Report) handling
-  # Unused function
-  # defp _handle_dsr(emulator, code) do
-  # ... body omitted ...
-  # end
+  # Creates a list of new (empty) cells
+  @doc false
+  defp create_empty_cells(count) do
+    alias Raxol.Terminal.Cell
+    List.duplicate(Cell.new(), count)
+  end
+
+  # Replaces a portion of a list (representing a row) with empty cells
+  @doc false
+  defp replace_range_with_empty(list, start_index, end_index)
+       when start_index <= end_index do
+    length = end_index - start_index + 1
+
+    if length > 0 do
+      empty_part = create_empty_cells(length)
+      List.replace_at(list, start_index, empty_part)
+    else
+      # No change if length is zero or negative
+      list
+    end
+  end
+
+  # Start > End
+  defp replace_range_with_empty(list, _start_index, _end_index), do: list
 end

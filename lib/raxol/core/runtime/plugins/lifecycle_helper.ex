@@ -109,9 +109,6 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
       {:error, :module_not_found} ->
         Logger.error("Failed to load plugin code for ID: #{plugin_id}")
         {:error, :module_not_found}
-      # Remove the unreachable clause
-      # {:ok, plugin_module} ->
-        # This case is now handled by the :ok atom match above
     end
   end
 
