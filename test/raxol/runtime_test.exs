@@ -14,11 +14,12 @@ defmodule Raxol.RuntimeTest do
           @behaviour Raxol.Core.Runtime.Application
           alias Raxol.Core.Events.Event
           alias Raxol.Core.Runtime.Command
+
           @impl true
           def init(_app_module, _context) do
-
-          end%{count: 0, last_clipboard: nil}
+      {:ok, %{count: 0, last_clipboard: nil}}
         end
+
         @impl true
         def update(model, event, _context) do
           case event do
@@ -29,9 +30,11 @@ defmodule Raxol.RuntimeTest do
               # Test Quit (old way)
               %Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
                 {model, [:quit]}
+
                 # Test Quit (Command.quit)
                 %Event{type: :key, data: %{key: :char, char: "q", ctrl: true}} ->
                   {model, [Command.quit()]}
+
                   # Test Clipboard Write (Ctrl+X)
                   %Event{type: :key, data: %{key: :char, char: <<24>>, ctrl: true}} ->
                     {model, [Command.clipboard_write("Mock Copy")]}

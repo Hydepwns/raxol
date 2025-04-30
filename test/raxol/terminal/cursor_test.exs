@@ -379,4 +379,13 @@ defmodule Raxol.Terminal.CursorTest do
     #   # assert cursor.position == {9, 4} # Correct 0-based
     # end
   end
+
+  describe "Cursor Manager" do
+    test "set_blink_enabled updates cursor blink state" do
+      cursor = Manager.new()
+      cursor = Manager.set_blink_enabled(cursor, true)
+      {^cursor, visible} = Manager.update_blink(cursor)
+      assert visible == true
+    end
+  end
 end

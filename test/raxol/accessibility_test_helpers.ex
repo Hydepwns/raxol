@@ -381,17 +381,17 @@ defmodule Raxol.AccessibilityTestHelpers do
   """
   def with_high_contrast(fun) do
     # Store current setting
-    previous = Accessibility.high_contrast_enabled?()
+    previous = Accessibility.get_option(:high_contrast)
 
     # Enable high contrast
-    Accessibility.set_high_contrast(true)
+    Accessibility.set_option(:high_contrast, true)
 
     try do
       # Run the provided function
       fun.()
     after
       # Restore previous setting
-      Accessibility.set_high_contrast(previous)
+      Accessibility.set_option(:high_contrast, previous)
     end
   end
 
@@ -410,17 +410,17 @@ defmodule Raxol.AccessibilityTestHelpers do
   """
   def with_reduced_motion(fun) do
     # Store current setting
-    previous = Accessibility.reduced_motion_enabled?()
+    previous = Accessibility.get_option(:reduced_motion)
 
     # Enable reduced motion
-    Accessibility.set_reduced_motion(true)
+    Accessibility.set_option(:reduced_motion, true)
 
     try do
       # Run the provided function
       fun.()
     after
       # Restore previous setting
-      Accessibility.set_reduced_motion(previous)
+      Accessibility.set_option(:reduced_motion, previous)
     end
   end
 

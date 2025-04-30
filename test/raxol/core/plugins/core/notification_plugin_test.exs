@@ -2,13 +2,19 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
   use ExUnit.Case, async: true
   import Mox
 
-  # Mock System.cmd/3
-  defmock SystemMock, for: System
+  # Define a behavior for SystemCommand
+  defmodule SystemCommand do
+    @callback cmd(binary(), [binary()], keyword()) :: {binary(), integer()}
+  end
+
+  # Mock SystemCommand instead of System
+  defmock SystemCommandMock, for: SystemCommand
 
   alias Raxol.Core.Plugins.Core.NotificationPlugin
 
   setup do
-    Mox.stub_with(SystemMock, System)
+    # Stub SystemCommandMock to behave like System
+    Mox.stub(SystemCommandMock, :cmd, fn cmd, args, opts -> System.cmd(cmd, args, opts) end)
     Mox.verify_on_exit!()
     :ok
   end
@@ -42,9 +48,16 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
       ]
 
       # Expect System.cmd to be called
-      expect(SystemMock, :cmd, fn ^expected_cmd, ^expected_args, _opts -> {"output", 0} end)
+      expect(SystemCommandMock, :cmd, fn ^expected_cmd, ^expected_args, _opts -> {"output", 0} end)
+
+      # Use a module that can access SystemCommandMock
+      original_system = NotificationPlugin.system_module()
+      :meck.new(NotificationPlugin, [:passthrough])
+      :meck.expect(NotificationPlugin, :system_module, fn -> SystemCommandMock end)
 
       assert {:reply, :ok, current_state} = NotificationPlugin.handle_command(:notify, {summary, body}, current_state, opts)
+
+      :meck.unload(NotificationPlugin)
       Application.delete_env(:raxol, :os_family)
     end
 
@@ -60,7 +73,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
       expected_args = [summary, body]
 
       # Expect System.cmd to be called
-      expect(SystemMock, :cmd, fn ^expected_cmd, ^expected_args, _opts -> {"output", 0} end)
+      expect(SystemCommandMock, :cmd, fn ^expected_cmd, ^expected_args, _opts -> {"output", 0} end)
 
       assert {:reply, :ok, current_state} = NotificationPlugin.handle_command(:notify, {summary, body}, current_state, opts)
       Application.delete_env(:raxol, :os_family)
@@ -76,7 +89,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
       output = "Command failed"
 
       # Expect System.cmd to be called and return non-zero exit code
-      expect(SystemMock, :cmd, fn "notify-send", [^summary, ^body], _ -> {output, exit_code} end)
+      expect(SystemCommandMock, :cmd, fn "notify-send", [^summary, ^body], _ -> {output, exit_code} end)
 
       # Expect the plugin to return an error tuple
       assert {:reply, {:error, {:command_failed, output, exit_code}}, current_state} = NotificationPlugin.handle_command(:notify, {summary, body}, current_state, opts)

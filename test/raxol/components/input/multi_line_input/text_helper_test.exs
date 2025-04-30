@@ -5,7 +5,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
 
   # Helper to create a minimal state for testing
-  defp create_state(lines, cursor \ {0, 0}) do
+  defp create_state(lines, cursor \\ {0, 0}) do
     %State{
       lines: lines,
       cursor_pos: cursor,

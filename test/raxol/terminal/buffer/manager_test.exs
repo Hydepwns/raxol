@@ -147,10 +147,10 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
 
   # Helper functions
 
-  defp create_test_buffer(width, height) do
-    for y <- 0..(height - 1) do
-      for x <- 0..(width - 1) do
-        Cell.new("A", %{foreground: :white, background: :black})
+  defp create_test_buffer(width \\ 10, height \\ 5) do
+    for _y <- 0..(height - 1) do
+      for _x <- 0..(width - 1) do
+        " "
       end
     end
   end

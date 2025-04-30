@@ -3,10 +3,6 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.ANSI.ScreenModes # Assuming ScreenModes struct is used
-
-  # Define initial state if used consistently
-  @initial_state Emulator.new(80, 24)
 
   describe "screen mode functionality" do
     test "initializes with default screen modes" do

@@ -81,7 +81,7 @@ defmodule Raxol.System.DeltaUpdaterTest do
   describe "check_delta_availability/1" do
     test "returns delta info when delta is available" do
       # Replace :httpc with mock for this test
-      original_httpc = :httpc
+      _original_httpc = :httpc
       :meck.new(:httpc, [:passthrough])
 
       :meck.expect(:httpc, :request, fn method, url, opts1, opts2 ->

@@ -1,10 +1,9 @@
 defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.ANSI
+  alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.ANSI.CharacterSets
 
   # Define initial state if used consistently
   # Consider a setup block if state creation is complex or repeated

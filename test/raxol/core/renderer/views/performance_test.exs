@@ -218,7 +218,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
       before = :erlang.memory(:total)
 
       # Create a large complex layout
-      view = create_large_complex_layout()
+      _view = create_large_complex_layout()
 
       after_creation = :erlang.memory(:total)
       memory_increase = after_creation - before
@@ -280,7 +280,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
 
       # Create spinner frames
       frames =
-        for {char, i} <- Enum.with_index(spinner_chars) do
+        for {char, _i} <- Enum.with_index(spinner_chars) do
           View.box(
             children: [
               View.text(char, fg: :blue),
@@ -475,7 +475,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
 
       # Simulate real-time data updates
       update_times =
-        for i <- 1..100 do
+        for _i <- 1..100 do
           # Update random data point
           updated_data =
             Enum.map(@large_data, fn item ->

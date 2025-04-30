@@ -56,7 +56,7 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
       pid = start_supervised!(Supervisor)
 
       # Verify it's a supervisor
-      assert Process.info(pid, :dictionary)[:[$initial_call]] == {Supervisor, :init, 1}
+      assert Process.info(pid, :dictionary)[:$initial_call] == {Supervisor, :init, 1}
 
       # Get child specs to verify structure
       children = Supervisor.which_children(pid)

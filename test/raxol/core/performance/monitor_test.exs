@@ -70,7 +70,7 @@ defmodule Raxol.Core.Performance.MonitorTest do
       assert_in_delta metrics.avg_frame_time, 16.0, 0.1
     end
 
-    test "adapts to reduced motion setting", %{monitor: monitor} do
+    test "adapts to reduced motion setting", %{} do
       # Start with reduced motion
       {:ok, reduced_monitor} = Monitor.start_link(reduced_motion: true)
 

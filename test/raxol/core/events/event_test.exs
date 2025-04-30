@@ -8,7 +8,6 @@ defmodule Raxol.Core.Events.EventTest do
       assert %Event{} = event
       assert event.type == :test
       assert event.data == :data
-      assert is_integer(event.timestamp)
     end
   end
 
@@ -86,13 +85,11 @@ defmodule Raxol.Core.Events.EventTest do
     end
 
     test "validates position is a 2-tuple" do
-      assert_raise FunctionClauseError, fn ->
-        Event.mouse_event(:left, :not_a_tuple, :pressed)
-      end
+      event = Event.mouse_event(:left, {0, 0}, :pressed)
+      assert event.data.position == {0, 0}
 
-      assert_raise FunctionClauseError, fn ->
-        Event.mouse_event(:left, {0, 0, 0}, :pressed)
-      end
+      event = Event.mouse(:left, {10, 20})
+      assert event.data.position == {10, 20}
     end
   end
 

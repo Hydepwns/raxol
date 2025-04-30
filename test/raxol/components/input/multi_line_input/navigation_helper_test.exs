@@ -1,19 +1,27 @@
-defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
+defmodule Raxol.Components.Input.MultiLineInput.NavigationHelperTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.Components.Input.MultiLineInput.State
-  alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
+  alias Raxol.Components.Input.MultiLineInput, as: State
+  alias Raxol.Components.Input.MultiLineInput.NavigationHelper
 
   # Helper to create a minimal state for testing
-  defp create_state(lines, cursor \ {0, 0}, dimensions \ {10, 5}, scroll \ {0, 0}) do
+  defp create_state(lines, cursor \\ {0, 0}, dimensions \\ {10, 5}, scroll \\ {0, 0}) do
     %State{
-      lines: lines,
+      value: Enum.join(lines, "\n"),
+      placeholder: "",
+      width: elem(dimensions, 0),
+      height: elem(dimensions, 1),
+      style: %{},
+      wrap: :word,
       cursor_pos: cursor,
       scroll_offset: scroll,
-      dimensions: dimensions,
       selection_start: nil,
-      history: Raxol.History.new(),
-      clipboard: nil,
+      selection_end: nil,
+      history: Raxol.Terminal.Commands.History.new(100),
+      shift_held: false,
+      focused: false,
+      on_change: nil,
+      lines: lines,
       id: "test_mle"
     }
   end
@@ -92,62 +100,62 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
     end
   end
 
-  describe "move_cursor_to_start_of_line/1" do
+  describe "move_cursor_line_start/1" do
     test "moves cursor to column 0" do
       state = create_state(["hello"], {0, 4})
-      new_state = NavigationHelper.move_cursor_to_start_of_line(state)
+      new_state = NavigationHelper.move_cursor_line_start(state)
       assert new_state.cursor_pos == {0, 0}
     end
   end
 
-  describe "move_cursor_to_end_of_line/1" do
+  describe "move_cursor_line_end/1" do
     test "moves cursor to end of current line" do
       state = create_state(["hello", "world"], {0, 2})
-      new_state = NavigationHelper.move_cursor_to_end_of_line(state)
+      new_state = NavigationHelper.move_cursor_line_end(state)
       assert new_state.cursor_pos == {0, 5}
     end
   end
 
-  describe "move_cursor_page_up/1" do
+  describe "move_cursor_page/2" do
     test "moves cursor up by page height (viewport height)" do
       state = create_state(Enum.map(0..10, &"line #{&1}"), {10, 3}, {15, 5}) # 5 lines visible
-      new_state = NavigationHelper.move_cursor_page_up(state)
+      new_state = NavigationHelper.move_cursor_page(state, :up)
       assert new_state.cursor_pos == {5, 3} # 10 - 5 = 5
     end
 
     test "moves cursor to first line if page up goes past start" do
       state = create_state(Enum.map(0..10, &"line #{&1}"), {3, 3}, {15, 5})
-      new_state = NavigationHelper.move_cursor_page_up(state)
+      new_state = NavigationHelper.move_cursor_page(state, :up)
       assert new_state.cursor_pos == {0, 3}
     end
   end
 
-  describe "move_cursor_page_down/1" do
+  describe "move_cursor_page/2 down" do
     test "moves cursor down by page height (viewport height)" do
       state = create_state(Enum.map(0..10, &"line #{&1}"), {1, 3}, {15, 5}) # 5 lines visible
-      new_state = NavigationHelper.move_cursor_page_down(state)
+      new_state = NavigationHelper.move_cursor_page(state, :down)
       assert new_state.cursor_pos == {6, 3} # 1 + 5 = 6
     end
 
      test "moves cursor to last line if page down goes past end" do
       state = create_state(Enum.map(0..10, &"line #{&1}"), {8, 3}, {15, 5})
-      new_state = NavigationHelper.move_cursor_page_down(state)
+      new_state = NavigationHelper.move_cursor_page(state, :down)
       assert new_state.cursor_pos == {10, 3}
     end
   end
 
-  describe "move_cursor_to_start_of_document/1" do
+  describe "move_cursor_doc_start/1" do
      test "moves cursor to {0, 0}" do
       state = create_state(["hello", "world"], {1, 3})
-      new_state = NavigationHelper.move_cursor_to_start_of_document(state)
+      new_state = NavigationHelper.move_cursor_doc_start(state)
       assert new_state.cursor_pos == {0, 0}
     end
   end
 
-  describe "move_cursor_to_end_of_document/1" do
+  describe "move_cursor_doc_end/1" do
     test "moves cursor to end of the last line" do
       state = create_state(["hello", "world"], {0, 1})
-      new_state = NavigationHelper.move_cursor_to_end_of_document(state)
+      new_state = NavigationHelper.move_cursor_doc_end(state)
       assert new_state.cursor_pos == {1, 5}
     end
   end
@@ -207,13 +215,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
   describe "select_all/1" do
      test "sets selection start to {0, 0} and end to end of document" do
       state = create_state(["hello", "world there"], {1, 2})
-      |> Map.put(:value, "hello\nworld there") # Need value for pos_to_index
       new_state = NavigationHelper.select_all(state)
 
       assert new_state.selection_start == {0, 0}
-      # Note: This test relies on the structure returned by split_into_lines in the original code,
-      # which might differ from the simple split here. A more robust test would mock split_into_lines.
-      # Assuming simple split for now.
+      # Since the implementation calculates based on the actual lines,
+      # we should expect the correct endpoint
       assert new_state.selection_end == {1, 11} # end of "world there"
     end
   end

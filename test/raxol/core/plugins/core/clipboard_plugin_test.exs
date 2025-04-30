@@ -2,16 +2,32 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   use ExUnit.Case, async: true
   import Mox
 
-  # Mock the external Clipboard library
-  defmock ClipboardMock, for: Clipboard
+  # Define a behavior for ClipboardAPI
+  defmodule ClipboardAPI do
+    @callback get() :: String.t()
+    @callback put(String.t()) :: :ok
+  end
+
+  # Mock ClipboardAPI instead of Clipboard
+  defmock ClipboardAPIMock, for: ClipboardAPI
 
   alias Raxol.Core.Plugins.Core.ClipboardPlugin
 
   setup do
-    # Establish Mox stubs globally for this test module
-    Mox.stub_with(ClipboardMock, Clipboard)
-    # Verify mocks on exit for all tests in this module
+    # Stub ClipboardAPIMock to behave like Clipboard
+    Mox.stub(ClipboardAPIMock, :get, fn -> "default clipboard content" end)
+    Mox.stub(ClipboardAPIMock, :put, fn _text -> :ok end)
     Mox.verify_on_exit!()
+
+    # Use a module that can access ClipboardAPIMock
+    original_clipboard = ClipboardPlugin.clipboard_module()
+    :meck.new(ClipboardPlugin, [:passthrough])
+    :meck.expect(ClipboardPlugin, :clipboard_module, fn -> ClipboardAPIMock end)
+
+    on_exit(fn ->
+      :meck.unload(ClipboardPlugin)
+    end)
+
     :ok
   end
 
@@ -38,7 +54,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
       opts = [] # Assuming opts are not used by this command handler
 
       # Expect Clipboard.put/1 to be called with the text
-      expect(ClipboardMock, :put, fn ^test_text -> :ok end)
+      expect(ClipboardAPIMock, :put, fn ^test_text -> :ok end)
 
       # Call the command handler
       assert {:reply, :ok, current_state} = ClipboardPlugin.handle_command(:clipboard_write, test_text, current_state, opts)
@@ -50,7 +66,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
       opts = [] # Assuming opts are not used by this command handler
 
       # Expect Clipboard.get/0 to be called and return the text
-      expect(ClipboardMock, :get, fn -> expected_text end)
+      expect(ClipboardAPIMock, :get, fn -> expected_text end)
 
       # Call the command handler
       assert {:reply, {:ok, expected_text}, current_state} = ClipboardPlugin.handle_command(:clipboard_read, nil, current_state, opts)
@@ -64,14 +80,10 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
       # Expect Clipboard.get/0 to be called and return an error
       # Assuming the library might raise or return {:error, reason} - let's assume it raises for now
       # Mox can expect raises
-      expect(ClipboardMock, :get, fn -> raise error_reason end)
+      expect(ClipboardAPIMock, :get, fn -> raise error_reason end)
 
       # Call the command handler and assert it catches the error and returns appropriately
       assert {:reply, {:error, error_reason}, current_state} = ClipboardPlugin.handle_command(:clipboard_read, nil, current_state, opts)
-
-      # --- OR if Clipboard returns {:error, reason} ---
-      # expect(ClipboardMock, :get, fn -> {:error, error_reason} end)
-      # assert {:reply, {:error, error_reason}, current_state} = ClipboardPlugin.handle_command(:clipboard_read, nil, current_state, opts)
     end
 
      test "returns error for unknown command" do

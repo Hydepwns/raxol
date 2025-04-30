@@ -57,7 +57,7 @@ defmodule Raxol.Animation.FrameworkTest do
 
     test "starts animation for an element" do
       # Create and start a test animation
-      animation =
+      _animation =
         Framework.create_animation(:test_animation, %{
           type: :fade,
           from: 0,
@@ -89,7 +89,7 @@ defmodule Raxol.Animation.FrameworkTest do
 
     test "announces animations to screen readers when configured" do
       # Create an animation with screen reader announcement
-      animation =
+      _animation =
         Framework.create_animation(:test_animation, %{
           type: :fade,
           from: 0,
@@ -116,7 +116,7 @@ defmodule Raxol.Animation.FrameworkTest do
       }
 
       # Create and start a fade animation
-      animation =
+      _animation =
         Framework.create_animation(:fade_in, %{
           type: :fade,
           from: 0,
@@ -144,14 +144,14 @@ defmodule Raxol.Animation.FrameworkTest do
       }
 
       # Create and start multiple animations
-      fade_animation =
+      _fade_animation =
         Framework.create_animation(:fade_in, %{
           type: :fade,
           from: 0,
           to: 1
         })
 
-      slide_animation =
+      _slide_animation =
         Framework.create_animation(:slide_in, %{
           type: :slide,
           from: 0,
