@@ -188,9 +188,12 @@ defmodule Raxol.Core.Runtime.Subscription do
       send(context.pid, {:subscription, msg})
     end
 
+    # Calculate jitter safely, ensuring we don't call :rand.uniform with 0
+    jitter_ms = if jitter > 0, do: :rand.uniform(jitter), else: 0
+
     # Add error handling for timer creation
     case :timer.send_interval(
-           interval + :rand.uniform(jitter),
+           interval + jitter_ms,
            context.pid,
            {:subscription, msg}
          ) do

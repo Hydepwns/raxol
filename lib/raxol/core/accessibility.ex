@@ -369,6 +369,51 @@ defmodule Raxol.Core.Accessibility do
     :ok
   end
 
+  @doc """
+  Get an accessibility option value.
+
+  ## Parameters
+
+  * `key` - The option key to get
+
+  ## Examples
+
+      iex> Accessibility.get_option(:high_contrast)
+      false
+  """
+  def get_option(key) when is_atom(key) do
+    # Use the same key format as our other accessibility functions
+    UserPreferences.get(pref_key(key)) || Map.get(default_options(), key)
+  end
+
+  @doc """
+  Set an accessibility option value.
+
+  ## Parameters
+
+  * `key` - The option key to set
+  * `value` - The value to set
+
+  ## Examples
+
+      iex> Accessibility.set_option(:high_contrast, true)
+      :ok
+  """
+  def set_option(key, value) when is_atom(key) do
+    # Use our existing functions for specific settings when available
+    case key do
+      :high_contrast -> set_high_contrast(value)
+      :reduced_motion -> set_reduced_motion(value)
+      :large_text -> set_large_text(value)
+      _ ->
+        # For other settings, save directly to preferences
+        :ok = UserPreferences.set(pref_key(key), value)
+        # Dispatch a generic event
+        EventManager.dispatch({:accessibility_option_changed, key, value})
+    end
+    :ok
+  end
+
   # --- Private Helper Functions (Placeholders) ---
 
   # Placeholder for default accessibility options

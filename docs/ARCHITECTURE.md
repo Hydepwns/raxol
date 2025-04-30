@@ -7,7 +7,7 @@ section: documentation
 tags: [architecture, documentation, design]
 ---
 
-# Raxol Architecture
+## Raxol Architecture
 
 Overview of the Raxol architecture after the recent reorganization and refactoring.
 
@@ -19,7 +19,7 @@ Raxol is organized into logical subsystems:
 
 1. **Core**: Fundamental runtime, application lifecycle, plugin system, event dispatch, and rendering orchestration.
 2. **UI**: Component model (`Base.Component` behaviour), layout engine, rendering logic, and theming.
-3. **Terminal**: Low-level terminal interaction via `:rrex_termbox` Port, ANSI parsing/emulation (`Parser`, `Emulator`), Sixel support.
+3. **Terminal**: Low-level terminal interaction via `:rrex_termbox` NIF, ANSI parsing/emulation (`Parser`, `Emulator`), Sixel support.
 4. **View**: DSL (`Elements` macros) for defining UI structures.
 5. **Support Modules**: Benchmarking, Cloud integration (partially refactored).
 
@@ -87,7 +87,7 @@ lib/raxol/
 │   │   └── sixel_pattern_map.ex # Sixel pattern mapping
 │   ├── buffer/            # ScreenBuffer logic
 │   ├── cursor/            # Cursor management
-│   ├── driver.ex          # Manages `:rrex_termbox` port, receives/translates events
+│   ├── driver.ex          # Manages `:rrex_termbox` NIF interface, receives/translates events
 │   ├── emulator.ex        # Terminal state management
 │   ├── parser.ex          # Main parser state machine
 │   │   └── states/        # Individual state handlers for the parser
@@ -101,7 +101,7 @@ lib/raxol/
 
 - **Runtime System (`Core.Runtime.*`)**: Manages application lifecycle (`Application` behaviour), event dispatch (`Dispatcher`), plugin management (`Plugins.Manager`), and rendering orchestration (`Rendering.Engine`). **Largely functional, tested.**
 - **Plugin System (`Core.Runtime.Plugins.*`)**: Handles plugin discovery, loading (`Loader`), lifecycle (`LifecycleHelper`), command registration/execution (`CommandHelper`, `CommandRegistry`), and reloading. **Functional, tested.**
-- **Event Handling (`Terminal.Driver`, `Core.Runtime.Events.Dispatcher`)**: `Driver` receives events from `:rrex_termbox` Port, translates them, sends to `Dispatcher`. `Dispatcher` manages state and routes events/commands to `Application` or `PluginManager`. **Refactored.**
+- **Event Handling (`Terminal.Driver`, `Core.Runtime.Events.Dispatcher`)**: `Driver` receives events from `:rrex_termbox` NIF, translates them, sends to `Dispatcher`. `Dispatcher` manages state and routes events/commands to `Application` or `PluginManager`. **Refactored.**
 - **Rendering Pipeline (`Core.Runtime.Rendering.Engine`, `UI.Layout.Engine`, `UI.Renderer`, `Terminal.Renderer`)**: `Engine` gets view from `Application`, `LayoutEngine` calculates positions (measurement logic implemented for core elements), `Renderer` converts to styled cells using active theme (now includes direct handling for `:table` elements), `Terminal.Renderer` outputs diff to terminal. **Functional, tested.**
 - **Component System (`UI.Components.*`)**: Components implement `UI.Components.Base.Component` behaviour (`init/1`, `update/2`, `handle_event/3`, `render/2`) and use `View.Elements` macros. **Refactoring ongoing; `MultiLineInput` refactored into helpers, `Table` refactored to return raw map for `Renderer`, multiple core components updated.**
 - **Theming (`UI.Theming.*`, `UI.Renderer`)**: Defines and applies styles. Integrated into `Renderer`. **Functional.**
@@ -127,7 +127,7 @@ lib/raxol/
 | `Raxol.UI.Layout.Engine`                       | Calculates element positions                                                                    | Functional, Tested |
 | `Raxol.UI.Renderer`                            | Converts layout elements to styled cells using active theme. Handles `:box`, `:text`, `:table`. | Functional         |
 | `Raxol.UI.Theming.Theme`                       | Theme data structure and retrieval                                                              | Functional         |
-| `Raxol.Terminal.Driver`                        | Manages `:rrex_termbox` port, receives/translates events to Raxol events.                       | Refactored         |
+| `Raxol.Terminal.Driver`                        | Manages `:rrex_termbox` NIF interface, receives/translates events to Raxol events.              | Refactored         |
 | `Raxol.Terminal.Parser`                        | Main parser state machine and state handlers                                                    | Refactored         |
 | `Raxol.Terminal.ControlCodes`                  | Handles C0 and simple ESC control codes                                                         | Refactored         |
 | `Raxol.Terminal.ANSI.SixelGraphics`            | Stateful Sixel graphics parser with RLE optimization                                            | Refactored, Opt.   |
@@ -158,8 +158,8 @@ lib/raxol/
 
 ## Efficient Runtime Flow
 
-1. **Init**: Supervisor starts processes. `PluginManager` discovers, sorts, loads plugins (deps check, `init/1`, register commands). `Dispatcher` gets initial model/commands. `Driver` starts `:rrex_termbox` port.
-2. **Event**: `:rrex_termbox` Port sends event message -> `Driver` translates -> `Event` -> `Dispatcher` (async).
+1. **Init**: Supervisor starts processes. `PluginManager` discovers, sorts, loads plugins (deps check, `init/1`, register commands). `Dispatcher` gets initial model/commands. `Driver` starts `:rrex_termbox` NIF.
+2. **Event**: `:rrex_termbox` NIF sends event message -> `Driver` translates -> `Event` -> `Dispatcher` (async).
 3. **Update**: `Dispatcher` calls `Application.update/2` -> new model, commands.
 4. **Command**: `Dispatcher` handles core cmds or routes to `PluginManager` (async) -> `CommandHelper` -> ETS lookup -> `Plugin.handle_command/3`.
 5. **Render**: `Scheduler` triggers `RenderingEngine`. Engine gets model/theme from `Dispatcher` -> `Application.view/1` -> `LayoutEngine` (positions) -> `UIRenderer` (styled cells) -> `Terminal.Renderer` (diff output).
@@ -172,9 +172,7 @@ lib/raxol/
 - **Compiler Status:** Addressed numerous compilation errors and warnings during refactoring. However, some warnings persist and require further investigation and cleanup.
 - **Key Component Updates:** `Table` component refactored to take data via attributes; `MultiLineInput` core logic extracted into helper modules; `Renderer` updated to handle `:table` directly.
 - **Feature Enhancements:** Added basic navigation, clipboard, scrolling, selection to `MultiLineInput`; implemented RLE optimization for Sixel graphics.
-- **Dependency Integration:** Adapted terminal handling to use `:rrex_termbox` v1.1.0 Port API, resolving build issues and refactoring `Terminal.Driver`.
-
-- **Current Focus:** Address remaining compiler warnings, perform thorough testing of refactored components (especially `Table`), continue refactoring large modules as needed, implement planned core UX features (e.g., Animation, i18n), enhance component test coverage, and address known placeholders/TODOs.
+- **Dependency Integration:** Adapted terminal handling to use `:rrex_termbox` v2.0.1 NIF API, resolving build issues and refactoring `Terminal.Driver`.
 
 ## Codebase Size & Refactoring Candidates
 
