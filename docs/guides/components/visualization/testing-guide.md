@@ -88,7 +88,7 @@ If you didn't launch from the script, run:
 
 ### Step 3: Verify Functionality
 
-- **Terminal Initialization**: Verify that ExTermbox initializes properly
+- **Terminal Initialization**: Verify that rrex_termbox v2.0.1 NIF initializes properly
 - **Chart Rendering**: The bar chart should display correctly with labels and bars
 - **Treemap Rendering**: The treemap should display hierarchical data with proper nesting
 - **Resizing**: Try resizing the terminal window and verify that the visualizations adjust properly
@@ -105,7 +105,7 @@ If you didn't launch from the script, run:
 
 ### Native Terminal Mode
 
-- **ExTermbox Errors**: Ensure ExTermbox is properly compiled for your platform
+- **rrex_termbox Errors**: Ensure rrex_termbox v2.0.1 NIF is properly compiled for your platform
 - **Incorrect Terminal Dimensions**: The application may use fallback dimensions; try resizing the terminal
 - **VM Hang on Exit**: If the BEAM VM hangs on exit, check the terminate function in Terminal.ex
 
