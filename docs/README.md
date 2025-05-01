@@ -20,11 +20,11 @@ Welcome to the main documentation index for Raxol, a terminal application toolki
 - **[Core Concepts:**
   - [Runtime Options](docs/guides/02_core_concepts/runtime_options.md)
   - [Async Operations](docs/guides/02_core_concepts/async_operations.md)
-  - [Theming](docs/guides/02_core_concepts/theming.md)
+  - [Theming](docs/guides/02_core_concepts/theming.md) (Planned)
   - [Terminal Emulator](docs/guides/02_core_concepts/terminal_emulator.md)
 - **[Extending Raxol:**
-  - [Plugin Development](guides/04_extending_raxol/plugin_development.md)
-  - [VS Code Extension](guides/04_extending_raxol/vscode_extension.md)
+  - [Plugin Development](guides/04_extending_raxol/plugin_development.md) (Planned)
+  - [VS Code Extension](guides/04_extending_raxol/vscode_extension.md) (Planned)
 - **[Development & Testing](guides/05_development_and_testing/testing.md):** Guide to contributing and testing.
 - **[Terminal Details](guides/05_development_and_testing/development/terminal/README.md):** Lower-level information on terminal interaction.
 - **Examples:** Explore runnable demos and snippets in the top-level `examples/` directory.

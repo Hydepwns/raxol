@@ -27,7 +27,7 @@ Add `raxol` to `mix.exs`:
 ```elixir
 def deps do
   [
-    {:raxol, "~> 0.1.0"} # Check Hex for the latest version
+    {:raxol, "~> 0.2.0"} # Check Hex for the latest version, 0.2.0 is the last tag.
   ]
 end
 ```
@@ -73,11 +73,11 @@ defmodule MyApp do
   # Optional callbacks: handle_event/1, handle_tick/1, subscriptions/1
 end
 
-# Typically started via Supervisor or:
-# Raxol.Core.Runtime.Lifecycle.start_application(MyApp)
+# Or, using the convenience wrapper for common use cases:
+Raxol.start_link(MyApp)
 ```
 
-See [Getting Started Tutorial](docs/guides/01_getting_started/quick_start.md) and `/examples` for more.
+See [Getting Started Tutorial](docs/guides/01_getting_started/quick_start.md) and `/examples` for more runnable demos.
 
 ## Documentation
 
@@ -89,10 +89,10 @@ Main documentation index: [docs/README.md](docs/README.md)
 - **Core Concepts:**
   - [Runtime Options](docs/guides/02_core_concepts/runtime_options.md)
   - [Async Operations](docs/guides/02_core_concepts/async_operations.md)
-  - [Theming](docs/guides/02_core_concepts/theming.md)
+  - [Theming](docs/guides/02_core_concepts/theming.md) (Planned)
 - **Extending Raxol:**
-  - [Plugin Development](docs/guides/04_extending_raxol/plugin_development.md)
-  - [VS Code Extension](docs/guides/04_extending_raxol/vscode_extension.md)
+  - [Plugin Development](docs/guides/04_extending_raxol/plugin_development.md) (Planned)
+  - [VS Code Extension](docs/guides/04_extending_raxol/vscode_extension.md) (Planned)
 - **Development & Testing:**
   - [Development Setup](docs/guides/05_development_and_testing/DevelopmentSetup.md)
   - [Testing Guide](docs/guides/05_development_and_testing/testing.md)
@@ -123,8 +123,8 @@ GitHub Actions details: [.github/workflows/README.md](.github/workflows/README.m
 
 - `/assets` -> Processed web assets -> `/priv/static`
 - `/docker` -> Docker configs (`act`)
-- `/docs` -> Guides, Components, Architecture
-- `/docs/examples` -> Sample code
+- `/docs` -> Guides, Components, Architecture, Documentation Snippets
+- `/examples` -> Runnable example applications and demos
 - `/extensions` -> IDE integrations (VS Code)
 - `/lib` -> Core Elixir code (`raxol/core`, `raxol/ui`, `raxol/terminal`, etc.)
 - `/priv` -> Compiled assets (`priv/static`), themes, plugins
