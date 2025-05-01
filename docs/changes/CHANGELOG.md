@@ -7,19 +7,90 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
 ### Added
 
+- **Terminal:** Added placeholder handlers for OSC and DCS command sequences in `lib/raxol/terminal/commands/executor.ex`.
+- **Terminal:** Implemented basic OSC command handling in `Executor` for Window Title (OSC 0, 2) and Hyperlinks (OSC 8).
+- **Component(MultiLineInput):** Added basic word navigation logic (Ctrl+Left/Right) via `NavigationHelper.move_cursor_word_left/right`.
+- **Component(TextInput):** Implemented visual cursor rendering (inverse style on focused character).
+- **Component(TextInput):** Added handling for Home, End, and Delete keys.
+- **PluginSystem:** Added optional automatic plugin reloading via file watching (`FileSystem` dependency) in `:dev` environment. Enable with `enable_plugin_reloading: true` option to `PluginManager.start_link/1`.
+- **Tests:** Added tests for `PluginManager` covering command delegation, manual reload scenarios (success/failure), and file watch reloading.
+
 ### Changed
 
+- **Refactor:** Consolidated clipboard logic into `lib/raxol/system/clipboard.ex`, updated core plugins (`ClipboardPlugin`, `NotificationPlugin`) and tests to use it, removed redundant clipboard modules (`lib/raxol/terminal/clipboard.ex`, `lib/raxol/core/events/clipboard.ex`).
+- **Refactor:** Enhanced core `NotificationPlugin` with better shell escaping, Windows support, and error handling.
 - Reorganized documentation guides under `docs/guides/` into clearer categories (Getting Started, Core Concepts, Components, Extending, Development).
 - Updated `README.md` and `docs/README.md` links to reflect new guide locations.
 - Updated pre-commit hook documentation in `scripts/README.md` with installation and troubleshooting steps.
+- **PluginSystem:** Standardized plugin command declaration format in `Plugin.get_commands/0` to only accept `[{name_atom, function_atom, arity_integer}]`.
+- **PluginSystem:** Consolidated command registration by removing redundant `Raxol.Core.Runtime.Plugins.Commands` GenServer and `API.register_command`/`unregister_command` functions. Registration now solely relies on `get_commands/0` populating the `CommandRegistry` ETS table via `CommandHelper`.
+- **Tests:** Changed default logger level in `config/test.exs` from `:debug` to `:warn` to reduce noise in test output.
+- **Docs:** Updated root `README.md` and `docs/README.md` to reflect current project version, structure, and planned documentation.
+- **Docs:** Updated `docs/ARCHITECTURE.md` date, directory structure, module statuses, and compiler warning notes to align with current project state.
 
 ### Deprecated
 
 ### Removed
 
+- **PluginSystem:** Removed redundant `Raxol.Core.Runtime.Plugins.Commands` GenServer.
+- Removed redundant clipboard modules: `lib/raxol/terminal/clipboard.ex`, `lib/raxol/core/events/clipboard.ex`.
+
 ### Fixed
 
 - Updated `scripts/README.md` to replace outdated pre-commit hook example with current setup instructions.
+- **Tests:** Corrected various test setup issues in `test/test_helper.exs` related to Mox configuration:
+  - Removed incorrect `Mox.start_link/1` call.
+  - Removed `Mox.defmock` calls for modules that are not behaviours (`ThemeIntegration`, `Persistence`).
+  - Removed incorrect `Mox.defmock` usage for `MockDB`.
+  - Removed incorrect `Mox.allow/2` call.
+- **Tests:** Fixed `UndefinedFunctionError` in `test/raxol/core/accessibility_test.exs` setup by replacing `EventManager.init()` with direct `Process.put` calls.
+- **Tests:** Added missing `Mox.expect` for `MockApplication.update/2` in `test/raxol/core/runtime/events/dispatcher_test.exs`.
+- **Tests:** Fixed `KeyError :cursor_row` failures in `test/raxol/components/input/multi_line_input_test.exs` by updating to use `:cursor_pos` tuple.
+- **Tests:** Fixed `Mox.ExpectationError` in `test/raxol/core/plugins/core/clipboard_plugin_test.exs` by replacing Mox with `:meck` for mocking `Clipboard` module and managing `:meck` state correctly with `on_exit`.
+- **Tests:** Fixed compilation error in `test/raxol/components/input/multi_line_input/event_handler_test.exs` by updating event creation to use `Raxol.Core.Events.Event` struct and helpers.
+- **Tests:** Fixed `UndefinedFunctionError` for `move_cursor` and struct access issues in `test/raxol/terminal/emulator/initialization_test.exs` by adding correct alias and updating assertions.
+- **Tests:** Fixed `MatchError` in `test/raxol/components/input/multi_line_input/event_handler_test.exs` by correcting the return tuple structure in `lib/raxol/components/input/multi_line_input/event_handler.ex`.
+- **Tests:** Fixed `Access.Error` in `test/raxol/terminal/commands/screen_test.exs` setup by replacing `update_in` with direct `Map.put`.
+- **Tests:** Fixed `Mox.Error` (invalid behaviour module) in `test/raxol/core/runtime/events/dispatcher_test.exs` by replacing Mox with `:meck` for `Command`, `RenderingEngine`, and `Phoenix.PubSub` mocks.
+- **Tests:** Fixed `Mox.Error` (undefined function `times/2`) in `test/raxol/core/runtime/plugins/manager_test.exs` by using the `times:` option in `expect`.
+- **Tests:** Fixed `KeyError :key` in `test/raxol/core/runtime/events/dispatcher_test.exs` by updating `Event` struct creation to use the `:data` map.
+- **Tests:** Fixed `UndefinedFunctionError` for `TextHelper.wrap_lines_by_char` in `test/raxol/components/input/multi_line_input/clipboard_helper_test.exs` by correcting the module alias.
+- **Tests:** Fixed `ArgumentError` (supervisor child) in `test/examples/button_test.exs` by updating `setup_test_env` in `lib/raxol/test/test_helper.ex` to start `PluginManager`.
+- **Tests:** Fixed assertion failures in `test/raxol/style/colors/color_test.exs` related to `:ansi_code` and `:hex` format by aligning tests with `Color` module implementation.
+- **Tests:** Fixed `FunctionClauseError` in `test/raxol/ui/components/display/progress_test.exs` by replacing `Progress.create/1` calls with `Progress.init/1` and updating assertions/calls to align with component behaviour.
+- **Tests:** Fixed various errors in `test/raxol/terminal/commands_test.exs` (setup using `Emulator.new`, incorrect `History.next` call, `Parser.get_param` assertion).
+- **Tests:** Fixed widespread `UndefinedFunctionError` for `maybe_scroll` by moving the function from `ControlCodes` to `Emulator` and making it public.
+- **Tests:** Fixed `FunctionClauseError` for `get_width/1` in `test/raxol/components/terminal/emulator_test.exs` by correctly handling the `{state, output}` tuple return from `Emulator.process_input`.
+- **Tests:** Fixed `MatchError` in `test/raxol/terminal/driver_test.exs` setup by adding error handling for the `stty` command.
+- **Tests:** Fixed multiple failures in `test/raxol/components/terminal/emulator_test.exs` by:
+  - Correcting the return value of the component's `process_input` function.
+  - Implementing basic handlers for CSI commands SGR ('m'), CUP ('H'), DECSTBM ('r'), SM ('h'), RM ('l') in `lib/raxol/terminal/commands/executor.ex`.
+  - Fixing mode state updates in `lib/raxol/terminal/commands/modes.ex` by inlining logic from `ScreenModes`.
+  - Correcting autowrap mode check in `lib/raxol/terminal/emulator.ex`.
+- **Tests:** Fixed final failure in `test/raxol/components/terminal/emulator_test.exs` by correcting parameter index handling for the CUP ('H') command in `lib/raxol/terminal/commands/executor.ex`. All tests in this suite now pass.
+- **Tests:** Fixed `UndefinedFunctionError` and ETS table errors in `test/raxol/runtime_test.exs` by correcting supervisor startup and ETS management.
+- **Tests:** Fixed various component tests (`SingleLineInput`, `ProgressBar`, `Dropdown`, `MultiLineInput`, `List`) by aligning test expectations with component behaviour API (`init/1`, `handle_event/3`, return values).
+- **Tests:** Fixed terminal config tests (`ConfigurationTest`, `ConfigTest`) to use correct nested structure and test existing functions.
+- **Tests:** Fixed `KeyError` in `test/raxol/terminal/emulator/state_stack_test.exs` by correcting state field access in `TerminalState.save_state/2` and `ControlCodes.handle_decrc/1`.
+- **Tests:** Fixed `:enoent` and serialization errors in `test/raxol/style/colors/persistence_test.exs` by adding default theme setup and correcting `Color` struct handling.
+- **Tests:** Fixed `FunctionClauseError` in `test/raxol/style/colors/advanced_test.exs` by fixing HSL conversion and adding missing assertions.
+- **Tests:** Fixed `UndefinedFunctionError` in `test/terminal/screen_buffer_test.exs` by renaming function call.
+- **Tests:** Fixed `no process` error in `test/raxol/style/colors/hot_reload_test.exs` by starting the `HotReload` GenServer.
+- **Tests:** Fixed compilation error (duplicate test) in `test/raxol/terminal/emulator/cursor_management_test.exs`.
+- **Tests:** Fixed SGR attribute/color handling errors in `test/raxol/terminal/emulator/sgr_formatting_test.exs` by updating `Executor`.
+- **Tests:** Fixed `:flash not fetched` errors in `test/raxol_web/live/terminal_live_test.exs` by adding `fetch_flash/2` to test setup.
+- **Tests:** Fixed performance test errors (`ArithmeticError`, `UndefinedFunctionError`) in `test/performance/performance_test.exs` by ensuring positive log input and updating module calls.
+- **Tests:** Fixed wide character width calculation error in `test/raxol/terminal/ansi/text_formatting_test.exs`.
+- **Tests:** Fixed `FunctionClauseError` in `test/raxol_web/channels/terminal_channel_test.exs` setup by establishing a `%Phoenix.Socket{}` struct using `socket/2` before calling `subscribe_and_join/3`.
+- **Tests:** Fixed `UndefinedFunctionError` for `Raxol.Terminal.Input.set_mouse_enabled/2` in `test/terminal/integration_test.exs` by updating tests to use `Raxol.Terminal.Input.InputHandler` and `Raxol.Terminal.Input.InputBuffer`.
+- **Tests:** Resolved multiple setup and configuration errors in `test/raxol_web/channels/terminal_channel_test.exs` related to PubSub initialization, Endpoint starting, and `:user_id` params.
+- **Tests:** Fixed `FunctionClauseError` in `TerminalChannel.terminate/2` by removing access to `socket.assigns`.
+- **Tests:** Resolved `KeyError` issues in `TerminalChannel.handle_in/3` for "input" and "resize" events related to accessing `emulator.main_screen_buffer`.
+- **Renderer:** Fixed styling logic in `Renderer.build_style/2` to correctly apply default theme colors and specific cell style overrides.
+- **Tests:** Corrected assertions in `TerminalChannelTest` for "resize" and "scroll" events.
+- **Tests:** Fixed theme structure and assertions in `TerminalChannelTest` theme test.
+- **Tests:** Replaced deprecated `Phoenix.Channel.leave/1` with `push("phx_leave", ...)` in `TerminalChannelTest` terminate test.
+- **Tests:** All tests in `test/raxol_web/channels/terminal_channel_test.exs` now pass.
 
 ### Security
 
