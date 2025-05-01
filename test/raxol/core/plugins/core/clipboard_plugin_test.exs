@@ -1,95 +1,90 @@
 defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   use ExUnit.Case, async: true
-  import Mox
-
-  # Define a behavior for ClipboardAPI
-  defmodule ClipboardAPI do
-    @callback get() :: String.t()
-    @callback put(String.t()) :: :ok
-  end
-
-  # Mock ClipboardAPI instead of Clipboard
-  defmock ClipboardAPIMock, for: ClipboardAPI
 
   alias Raxol.Core.Plugins.Core.ClipboardPlugin
+  alias Raxol.System.Clipboard # Alias the module we now need to mock
 
+  # Setup assigns a default state and opts
   setup do
-    # Stub ClipboardAPIMock to behave like Clipboard
-    Mox.stub(ClipboardAPIMock, :get, fn -> "default clipboard content" end)
-    Mox.stub(ClipboardAPIMock, :put, fn _text -> :ok end)
-    Mox.verify_on_exit!()
+    # Mock Raxol.System.Clipboard functions using :meck
+    # Remove :passthrough as we are providing explicit mocks/expectations
+    :meck.new(Clipboard, [:copy, :paste])
 
-    # Use a module that can access ClipboardAPIMock
-    original_clipboard = ClipboardPlugin.clipboard_module()
-    :meck.new(ClipboardPlugin, [:passthrough])
-    :meck.expect(ClipboardPlugin, :clipboard_module, fn -> ClipboardAPIMock end)
+    state = %{}
 
-    on_exit(fn ->
-      :meck.unload(ClipboardPlugin)
-    end)
+    # Ensure meck is unloaded AFTER the test runs
+    on_exit(fn -> :meck.unload(Clipboard) end)
 
-    :ok
+    {:ok, state: state}
   end
 
-  test "init/1 returns ok with initial state" do
-    assert {:ok, %{}} = ClipboardPlugin.init([])
+  # Ensure :meck is unloaded after each test
+  # It's often better to put this in setup_all/on_exit for the module
+  # if :meck is used across multiple tests in the file.
+  # For simplicity here, we'll assume it's okay per test, but
+  # a module-level on_exit is generally preferred.
+  # on_exit fn -> :meck.unload(Clipboard) end
+
+  test "terminate/2 returns ok", %{state: state} do
+    assert :ok = ClipboardPlugin.terminate(:shutdown, state)
+    # No mocking needed for terminate
   end
 
-  test "terminate/2 returns ok" do
-    assert :ok = ClipboardPlugin.terminate(:shutdown, %{})
-  end
-
-  test "get_commands/0 returns clipboard commands" do
+  test "get_commands/0 returns clipboard commands", %{state: _state} do
     expected_commands = [
-      clipboard_write: "Write text to the system clipboard.",
-      clipboard_read: "Read text from the system clipboard."
+      {:clipboard_write, :handle_clipboard_command, 2},
+      {:clipboard_read, :handle_clipboard_command, 1}
     ]
     assert ClipboardPlugin.get_commands() == expected_commands
+    # No mocking needed for get_commands
   end
 
-  describe "handle_command/3" do
-    test ":clipboard_write calls Clipboard.put/1" do
-      test_text = "hello clipboard"
-      current_state = %{}
-      opts = [] # Assuming opts are not used by this command handler
+  test "handle_command/3 :clipboard_write calls Raxol.System.Clipboard.copy/1", %{state: current_state} do
+    test_text = "Hello Raxol"
 
-      # Expect Clipboard.put/1 to be called with the text
-      expect(ClipboardAPIMock, :put, fn ^test_text -> :ok end)
+    # Use :meck.expect to mock Raxol.System.Clipboard.copy/1
+    :meck.expect(Clipboard, :copy, fn ^test_text ->
+      :ok
+    end)
 
-      # Call the command handler
-      assert {:reply, :ok, current_state} = ClipboardPlugin.handle_command(:clipboard_write, test_text, current_state, opts)
-    end
+    # Call the command handler
+    assert {:ok, ^current_state, :clipboard_write_ok} = ClipboardPlugin.handle_command(:clipboard_write, [test_text], current_state)
 
-    test ":clipboard_read calls Clipboard.get/0 and returns text" do
-      expected_text = "text from clipboard"
-      current_state = %{}
-      opts = [] # Assuming opts are not used by this command handler
+    # Verify the mock was called
+    assert :meck.validate(Clipboard)
+  end
 
-      # Expect Clipboard.get/0 to be called and return the text
-      expect(ClipboardAPIMock, :get, fn -> expected_text end)
+  test "handle_command/3 :clipboard_read calls Raxol.System.Clipboard.paste/0 and returns text", %{state: current_state} do
+    expected_text = "Pasted Text"
 
-      # Call the command handler
-      assert {:reply, {:ok, expected_text}, current_state} = ClipboardPlugin.handle_command(:clipboard_read, nil, current_state, opts)
-    end
+    # Use :meck.expect to mock Raxol.System.Clipboard.paste/0
+    :meck.expect(Clipboard, :paste, fn ->
+      {:ok, expected_text}
+    end)
 
-    test ":clipboard_read handles Clipboard.get/0 error" do
-      error_reason = :clipboard_unavailable
-      current_state = %{}
-      opts = []
+    # Call the command handler
+    assert {:ok, ^current_state, {:clipboard_content, ^expected_text}} = ClipboardPlugin.handle_command(:clipboard_read, [], current_state)
 
-      # Expect Clipboard.get/0 to be called and return an error
-      # Assuming the library might raise or return {:error, reason} - let's assume it raises for now
-      # Mox can expect raises
-      expect(ClipboardAPIMock, :get, fn -> raise error_reason end)
+    assert :meck.validate(Clipboard)
+  end
 
-      # Call the command handler and assert it catches the error and returns appropriately
-      assert {:reply, {:error, error_reason}, current_state} = ClipboardPlugin.handle_command(:clipboard_read, nil, current_state, opts)
-    end
+  test "handle_command/3 :clipboard_read handles Raxol.System.Clipboard.paste/0 error", %{state: current_state} do
+    error_reason = {:paste_command_failed, "some error"}
 
-     test "returns error for unknown command" do
-      current_state = %{}
-      opts = []
-      assert {:reply, {:error, :unknown_command}, current_state} = ClipboardPlugin.handle_command(:unknown_cmd, nil, current_state, opts)
-    end
+    # Use :meck.expect to mock Raxol.System.Clipboard.paste/0 error
+    :meck.expect(Clipboard, :paste, fn ->
+      {:error, error_reason}
+    end)
+
+    # Call the command handler
+    assert {:error, {:clipboard_read_failed, ^error_reason}, ^current_state} = ClipboardPlugin.handle_command(:clipboard_read, [], current_state)
+
+    assert :meck.validate(Clipboard)
+  end
+
+  test "handle_command/3 returns error for unknown command", %{state: current_state} do
+    # No mocking needed for this path
+    assert {:error, :unhandled_clipboard_command, ^current_state} = ClipboardPlugin.handle_command(:unknown_cmd, [], current_state)
+    # Ensure :meck.unload is still called via on_exit even if no validation is needed
   end
 end

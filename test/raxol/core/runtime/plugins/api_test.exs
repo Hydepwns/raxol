@@ -43,7 +43,7 @@ defmodule Raxol.Core.Runtime.Plugins.APITest do
   setup do
     # Create mocks for dependencies
     :meck.new(Raxol.Core.Runtime.Events.Dispatcher, [:passthrough])
-    :meck.new(Raxol.Core.Runtime.Plugins.Commands, [:passthrough])
+    # :meck.new(Raxol.Core.Runtime.Plugins.Commands, [:passthrough]) # Removed
     :meck.new(Raxol.Core.Runtime.Rendering.Engine, [:passthrough])
     :meck.new(Raxol.Core.Runtime.Rendering.Buffer, [:passthrough])
     :meck.new(Raxol.Core.Runtime.Debug, [:passthrough])
@@ -115,7 +115,7 @@ defmodule Raxol.Core.Runtime.Plugins.APITest do
 
     on_exit(fn ->
       :meck.unload(Raxol.Core.Runtime.Events.Dispatcher)
-      :meck.unload(Raxol.Core.Runtime.Plugins.Commands)
+      # :meck.unload(Raxol.Core.Runtime.Plugins.Commands) # Removed
       :meck.unload(Raxol.Core.Runtime.Rendering.Engine)
       :meck.unload(Raxol.Core.Runtime.Rendering.Buffer)
       :meck.unload(Raxol.Core.Runtime.Debug)
@@ -148,34 +148,6 @@ defmodule Raxol.Core.Runtime.Plugins.APITest do
       payload = %{test: "data"}
       API.broadcast(:test_event, payload)
       assert_received {:broadcast_called, :test_event, ^payload}
-    end
-  end
-
-  describe "command registration" do
-    test "register_command forwards calls to Commands module" do
-      API.register_command("test:cmd", TestEventHandler, "Test command")
-
-      assert_received {:command_registered, "test:cmd", TestEventHandler,
-                       "Test command", []}
-    end
-
-    test "register_command with options forwards options" do
-      options = [priority: 10]
-
-      API.register_command(
-        "test:cmd",
-        TestEventHandler,
-        "Test command",
-        options
-      )
-
-      assert_received {:command_registered, "test:cmd", TestEventHandler,
-                       "Test command", ^options}
-    end
-
-    test "unregister_command forwards calls to Commands module" do
-      API.unregister_command("test:cmd")
-      assert_received {:command_unregistered, "test:cmd"}
     end
   end
 

@@ -208,9 +208,26 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   def effective_width(style, char) do
     cond do
       style.double_width -> 2
-      # Handle wide Unicode characters
-      String.length(char) > 1 -> 2
-      true -> 1
+      # Basic check for wide characters (CJK range approximation)
+      case String.to_charlist(char) do
+        [codepoint] ->
+          # CJK Unified Ideographs, Hangul Syllables, Hiragana, Katakana, etc.
+          # This is an approximation and might not cover all wide chars.
+          if (codepoint >= 0x4E00 and codepoint <= 0x9FFF) or # CJK Unified Ideographs
+             (codepoint >= 0xAC00 and codepoint <= 0xD7A3) or # Hangul Syllables
+             (codepoint >= 0x3040 and codepoint <= 0x30FF) or # Hiragana, Katakana
+             (codepoint >= 0xFF00 and codepoint <= 0xFFEF) # Fullwidth Forms
+          do
+            2
+          else
+            1
+          end
+        # Handle multi-grapheme characters or empty string as width 1 (or adjust as needed)
+        _ -> 1
+      end
+      # This case is now handled by the char check above
+      # String.length(char) > 1 -> 2
+      # true -> 1
     end
   end
 

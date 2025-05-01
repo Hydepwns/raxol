@@ -31,8 +31,10 @@ defmodule RaxolWeb.ChannelCase do
   end
 
   setup tags do
-    # Start the Repo if not already started (needed for Sandbox)
-    # {:ok, _} = Ecto.Adapters.SQL.Sandbox.start_owner!(Raxol.Repo, shared: not tags[:async])
+    # Ensure Endpoint is started for channel tests
+    # PubSub should be started by the application tree now
+    # start_supervised!({Phoenix.PubSub, name: Raxol.PubSub}) # Removed
+    start_supervised!(RaxolWeb.Endpoint)
 
     # Setup Ecto sandbox
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)

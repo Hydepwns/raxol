@@ -4,11 +4,12 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   alias Raxol.Core.Runtime.Supervisor
 
   # Mock modules for testing
-  defmodule Mock.StateManager do
-    use GenServer
-    def start_link(_), do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
-    def init(_), do: {:ok, nil}
-  end
+  # REMOVED: Mock.StateManager as it's no longer a child
+  # defmodule Mock.StateManager do
+  #   use GenServer
+  #   def start_link(_), do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+  #   def init(_), do: {:ok, nil}
+  # end
 
   defmodule Mock.EventLoop do
     use GenServer
@@ -37,8 +38,9 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
   describe "supervisor structure" do
     test "starts all runtime child processes" do
       # Restart the supervisor with mocked modules
-      :meck.new(Raxol.Core.Runtime.StateManager, [:passthrough])
-      :meck.expect(Raxol.Core.Runtime.StateManager, :start_link, fn _ -> {:ok, spawn(fn -> :ok end)} end)
+      # REMOVED: Meck setup for StateManager
+      # :meck.new(Raxol.Core.Runtime.StateManager, [:passthrough])
+      # :meck.expect(Raxol.Core.Runtime.StateManager, :start_link, fn _ -> {:ok, spawn(fn -> :ok end)} end)
 
       :meck.new(Raxol.Core.Runtime.EventLoop, [:passthrough])
       :meck.expect(Raxol.Core.Runtime.EventLoop, :start_link, fn _ -> {:ok, spawn(fn -> :ok end)} end)
@@ -64,20 +66,21 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
       # Get child specs to verify structure
       children = Supervisor.which_children(pid)
 
-      # Check correct number of children
-      assert length(children) == 6
+      # Check correct number of children (Now 5)
+      assert length(children) == 5
 
       # Verify expected child processes exist
       child_ids = Enum.map(children, fn {id, _, _, _} -> id end)
       assert Task.Supervisor in child_ids
-      assert Raxol.Core.Runtime.StateManager in child_ids
+      # REMOVED: assert Raxol.Core.Runtime.StateManager in child_ids
       assert Raxol.Core.Runtime.EventLoop in child_ids
       assert Raxol.Core.Runtime.RenderLoop in child_ids
       assert Raxol.Core.Runtime.Plugins.Manager in child_ids
       assert Raxol.Core.Runtime.Plugins.Commands in child_ids
 
       # Clean up
-      :meck.unload(Raxol.Core.Runtime.StateManager)
+      # REMOVED: Meck unload for StateManager
+      # :meck.unload(Raxol.Core.Runtime.StateManager)
       :meck.unload(Raxol.Core.Runtime.EventLoop)
       :meck.unload(Raxol.Core.Runtime.RenderLoop)
       :meck.unload(Raxol.Core.Runtime.Plugins.Manager)

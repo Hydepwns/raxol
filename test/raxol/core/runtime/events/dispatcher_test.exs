@@ -1,39 +1,49 @@
 defmodule Raxol.Core.Runtime.Events.DispatcherTest do
   use ExUnit.Case, async: false
   import ExUnit.CaptureLog
-  import Mox
+  # REMOVE Mox import as it's no longer needed
+  # import Mox
 
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.Events.Dispatcher
+  alias Raxol.Core.Runtime.Command
+  alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
+  # Add Alias for PubSub
+  alias Phoenix.PubSub # Assuming this is the correct PubSub module
 
   # Mock modules for testing
   defmodule Mock.Application do
-    @behaviour Raxol.Core.Runtime.Application # Ensure it implements the behaviour
+    use Raxol.Core.Runtime.Application
 
-    # Default implementation
-    def init(_), do: {%{count: 0}, []}
-    def update(_msg, state), do: {state, []}
-    def view(_state), do: nil
-    def subscribe(_state), do: []
+    def init(_opts), do: {:ok, %{value: 0}}
 
-    # Test-specific implementations can be added here or via meck/mox
-    def handle_event(event, model)
-    # Example: Convert specific event to a message
+    # Group update clauses together
+    def update(:increment, model), do: {:ok, %{model | value: model.value + 1}, []}
+
     def update({:test_message, cmd_list}, model) do
-      {%{model | count: model.count + 1}, cmd_list}
+      {:ok, model, cmd_list}
     end
+
+    # Provide implementation for handle_event/2
+    def handle_event(event, model) do
+      # Simple echo for testing, adjust if specific event handling needed
+      Logger.debug("Mock.Application received event: #{inspect(event)}")
+      {:ok, model, [{:command, {:event_handled, event}}]} # Example command
+    end
+
+    def view(model), do: {:text, "Value: #{model.value}"}
   end
 
-  # Mocks for runtime interactions
-  defmock CommandMock, for: Raxol.Core.Runtime.Command
-  defmock RenderingEngineMock, for: Raxol.Core.Runtime.Rendering.Engine
-  defmock PubSubMock, for: Phoenix.PubSub # Assuming Phoenix PubSub is used
+  # Remove Mox defmock for Command
+  # defmock CommandMock, for: Raxol.Core.Runtime.Command
+
+  # REMOVE Mox defmock for PubSub
+  # defmock PubSubMock, for: Phoenix.PubSub
 
   setup do
     # Setup mocks
-    Mox.stub_with(CommandMock, Raxol.Core.Runtime.Command)
-    Mox.stub_with(RenderingEngineMock, Raxol.Core.Runtime.Rendering.Engine)
-    Mox.stub_with(PubSubMock, Phoenix.PubSub)
+    # REMOVE Mox stub for PubSub
+    # Mox.stub_with(PubSubMock, Phoenix.PubSub)
 
     # Start Dispatcher manually for testing handle_cast/handle_call
     initial_state = %{
@@ -47,29 +57,33 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
     }
     {:ok, dispatcher_pid} = Dispatcher.start_link(initial_state)
 
-    # Verify mocks on exit
-    Mox.verify_on_exit!()
+    # REMOVE Mox verify_on_exit
+    # Mox.verify_on_exit!()
     {:ok, dispatcher: dispatcher_pid, initial_state: initial_state}
   end
 
   # --- Tests for GenServer Callbacks (handle_cast, handle_call) ---
   describe "GenServer Callbacks" do
     test "handle_cast :dispatch dispatches event and updates state", %{dispatcher: dispatcher, initial_state: initial_state} do
-      event = %Event{type: :key, key: :enter, modifiers: []}
+      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
+
+      # Mocks setup for this test
+      :meck.new(Command, [:passthrough]) # Allow non-mocked functions
+      :meck.new(RenderingEngine, [:passthrough])
+      :meck.new(PubSub, [:passthrough])
 
       # Expect interactions based on event dispatch
-      # 1. Application update (potentially returns commands)
-      # For simplicity, assume Mock.Application.update returns the command [:test_cmd]
-      # (Need to adjust Mock.Application or use meck/mox for this)
+      # 1. Application update (assumed to return :test_cmd via Mock.Application)
 
-      # 2. Command execution for any returned commands
-      expect(CommandMock, :execute, fn :test_cmd, ^dispatcher -> :ok end)
+      # 2. Command execution
+      :meck.expect(Command, :execute, fn :test_cmd, _context -> :ok end)
 
       # 3. Notify Renderer
-      expect(RenderingEngineMock, :cast, fn :render_frame -> :ok end)
+      :meck.expect(RenderingEngine, :cast, fn :render_frame -> :ok end)
 
       # 4. Broadcast event via PubSub
-      expect(PubSubMock, :broadcast, fn Raxol.PubSub, "events", {:event, ^event} -> :ok end)
+      # Use :meck.expect for PubSub.broadcast
+      :meck.expect(PubSub, :broadcast, fn Raxol.PubSub, "events", {:event, ^event} -> :ok end)
 
       # Send the cast
       :ok = GenServer.cast(dispatcher, {:dispatch, event})
@@ -80,6 +94,12 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       # Verify state update (model count incremented)
       state = :sys.get_state(dispatcher)
       assert state.model.count == initial_state.model.count + 1
+
+      :meck.unload(Command)
+      :meck.unload(RenderingEngine)
+      # Validate and unload PubSub
+      :meck.validate(PubSub)
+      :meck.unload(PubSub)
     end
 
     test "handle_cast :dispatch handles application update errors", %{dispatcher: dispatcher} do
@@ -93,12 +113,18 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       }
       :sys.replace_state(dispatcher, error_state)
 
-      event = %Event{type: :key, key: :enter, modifiers: []}
+      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
+
+      # Mocks setup
+      :meck.new(Command, [:passthrough])
+      :meck.new(RenderingEngine, [:passthrough])
+      :meck.new(PubSub, [:passthrough])
 
       # Expect only PubSub broadcast (as error happens during update)
-      expect(PubSubMock, :broadcast, fn Raxol.PubSub, "events", {:event, ^event} -> :ok end)
+      :meck.expect(PubSub, :broadcast, fn Raxol.PubSub, "events", {:event, ^event} -> :ok end)
 
       # Ensure Command execution and Renderer notification DON'T happen
+      # (meck will validate this as no expect calls were made for them)
 
       log = capture_log(fn ->
         :ok = GenServer.cast(dispatcher, {:dispatch, event})
@@ -110,6 +136,12 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       # Assert state wasn't significantly changed (or reflects error state)
       current_state = :sys.get_state(dispatcher)
       assert current_state.model == :invalid_model
+
+      :meck.unload(Command)
+      :meck.unload(RenderingEngine)
+      # Validate and unload PubSub
+      :meck.validate(PubSub)
+      :meck.unload(PubSub)
     end
 
     # TODO: Add tests for handle_call (:get_state)
@@ -123,4 +155,13 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
   # describe "dispatch_event/2" do ... end
   # describe "process_system_event/2" do ... end
   # describe "handle_event/2" do ... end
+
+  # Mock the application module's update function
+  # ADD EXPECTATION HERE:
+  # expect(MockApplication, :update, fn _event, model ->
+  #   {model, []} # Return model unchanged, no commands
+  # end)
+
+  # Mock command execution (if needed)
+  # expect(MockCommandHelper, :execute_command, fn _, _, _ -> :ok end)
 end

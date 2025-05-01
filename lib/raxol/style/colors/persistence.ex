@@ -62,72 +62,34 @@ defmodule Raxol.Style.Colors.Persistence do
     theme_path =
       Path.join(Path.join(config_dir(), @themes_dir), "#{theme_name}.json")
 
-    case File.read(theme_path) do
-      {:ok, theme_json} ->
-        # Decode with default string keys
-        case Jason.decode(theme_json) do
-          {:ok, theme_data_map} ->
-            # Process palette: Keep string keys, convert values to Color structs (handling hex)
-            processed_palette =
-              case Map.get(theme_data_map, "palette") do
-                nil ->
-                  %{}
-
-                palette_map when is_map(palette_map) ->
-                  Enum.into(palette_map, %{}, fn {key_str, color_value} ->
-                    # Keep key as string
-                    color_struct =
-                      case color_value do
-                        map when is_map(map) ->
-                          # Convert inner map keys for struct! call if needed, but key_str remains outer key
-                          atom_keyed_color_map =
-                            Enum.into(map, %{}, fn {k, v} ->
-                              {String.to_atom(k), v}
-                            end)
-
-                          struct!(Color, atom_keyed_color_map)
-
-                        hex when is_binary(hex) ->
-                          Color.from_hex(hex)
-
-                        _ ->
-                          nil
-                      end
-
-                    # Use string key
-                    {key_str, color_struct}
-                  end)
-                  |> Enum.reject(fn {_k, v} -> is_nil(v) end)
-                  |> Map.new()
-
-                # Handle unexpected palette type
-                _ ->
-                  %{}
-              end
-
-            # Convert top-level string keys to atoms
-            theme_data_atoms =
-              Enum.into(theme_data_map, %{}, fn {k, v} ->
-                {String.to_atom(k), v}
-              end)
-
-            # Get ui_mappings (should have atom keys from theme_data_atoms conversion, keep string values)
-            processed_ui_mappings = Map.get(theme_data_atoms, :ui_mappings, %{})
-
-            # Create final theme struct data, ensuring correct map structures
-            final_theme_data =
-              theme_data_atoms
-              |> Map.put(:palette, processed_palette)
-              |> Map.put(:ui_mappings, processed_ui_mappings)
-
-            {:ok, struct!(Theme, final_theme_data)}
-
-          {:error, reason} ->
-            {:error, reason}
+    with {:ok, theme_json} <- File.read(theme_path),
+         {:ok, theme_map} <- Jason.decode(theme_json, keys: :atoms) do
+      # Convert palette color values (assuming they are hex strings or maps)
+      processed_palette =
+        case Map.get(theme_map, :palette) do
+          palette_map when is_map(palette_map) ->
+            Enum.into(palette_map, %{}, fn {key_atom, color_value} ->
+              color_struct =
+                case color_value do
+                  hex when is_binary(hex) -> Color.from_hex(hex)
+                  map when is_map(map) -> struct!(Color, map)
+                  _ -> nil # Or handle error
+                end
+              {key_atom, color_struct}
+            end)
+            |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+            |> Map.new()
+          _ -> %{}
         end
 
-      error ->
-        error
+      # Rebuild map for struct!
+      final_theme_data = Map.put(theme_map, :palette, processed_palette)
+
+      # Create the theme struct
+      {:ok, struct!(Theme, final_theme_data)}
+    else
+      {:error, :enoent} -> {:error, :enoent}
+      {:error, reason} -> {:error, reason} # Propagate JSON decode errors or other File errors
     end
   end
 
@@ -142,16 +104,17 @@ defmodule Raxol.Style.Colors.Persistence do
   def load_current_theme do
     case load_user_preferences() do
       {:ok, preferences} ->
-        case Map.get(preferences, "theme") do
-          nil ->
-            {:ok, Theme.standard_theme()}
-
-          theme_name ->
-            load_theme(theme_name)
+        # Get theme name using string key, provide "Default" as fallback
+        theme_name = Map.get(preferences, "theme", "Default")
+        case load_theme(theme_name) do
+          {:ok, theme} -> {:ok, theme}
+          # If loading the preferred theme file fails (e.g., :enoent), load standard theme
+          {:error, _reason} -> {:ok, Theme.standard_theme()}
         end
 
-      error ->
-        error
+      # If loading preferences fails entirely, still fall back to standard theme
+      {:error, _reason} ->
+        {:ok, Theme.standard_theme()}
     end
   end
 

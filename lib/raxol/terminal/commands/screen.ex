@@ -253,8 +253,12 @@ defmodule Raxol.Terminal.Commands.Screen do
   @spec scroll_up(Emulator.t(), integer()) :: Emulator.t()
   def scroll_up(emulator, count) do
     buffer = Emulator.get_active_buffer(emulator)
-    new_buffer = ScreenBuffer.scroll_up(buffer, count)
-    Emulator.update_active_buffer(emulator, new_buffer)
+    # ScreenBuffer.scroll_up returns {updated_cells, scrolled_off_lines}
+    {updated_cells, _scrolled_off_lines} = ScreenBuffer.scroll_up(buffer, count, emulator.scroll_region)
+    # Create the updated buffer struct
+    updated_buffer = %{buffer | cells: updated_cells}
+    # Update the emulator state with the fully updated buffer struct
+    Emulator.update_active_buffer(emulator, updated_buffer)
   end
 
   @doc """

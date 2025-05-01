@@ -33,14 +33,12 @@ defmodule Raxol.Style.Colors.HotReloadTest do
 
     # Start the hot-reload server once for all tests in this file
     # Since it uses a global name, we manage it centrally.
-    # {:ok, pid} = HotReload.start_link() # Use original start_link here
+    {:ok, pid} = HotReload.start_link() # Use original start_link here
     # Ensure the globally started server is watching the test path
     HotReload.watch_path(tmp_dir)
 
     # Store pid and tmp_dir for cleanup and use in tests
-    # context = %{hot_reload_pid: pid, tmp_dir: tmp_dir} # <-- REMOVE PID STORAGE
-    # <-- Keep tmp_dir storage
-    context = %{tmp_dir: tmp_dir}
+    context = %{hot_reload_pid: pid, tmp_dir: tmp_dir}
 
     # Cleanup runs once after all tests
     on_exit(fn ->

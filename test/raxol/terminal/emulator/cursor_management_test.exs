@@ -5,21 +5,16 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
   alias Raxol.Terminal.Cursor.Manager # Keep Manager alias if used directly
 
   describe "Emulator Cursor Management" do
-    test "set_cursor_style delegates to Cursor.Manager" do
-      emulator = Emulator.new(80, 24)
-      # Use direct access - Assuming default shape is :block
-      # Check default shape
+    test "set_cursor_style delegates to Cursor.Manager", %{emulator: emulator} do
+      # Default should be block
       assert emulator.cursor.style.shape == :block
-      # Replace with direct update
-      emulator = %{
-        emulator
-        | cursor: %{
-            emulator.cursor
-            | style: %{emulator.cursor.style | shape: :underline}
-          }
-      }
 
-      # Use direct access
+      # Set to line
+      emulator = Emulator.set_cursor_style(emulator, :line)
+      assert emulator.cursor.style.shape == :line
+
+      # Set to underline
+      emulator = Emulator.set_cursor_style(emulator, :underline)
       assert emulator.cursor.style.shape == :underline
     end
 

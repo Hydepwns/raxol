@@ -16,13 +16,18 @@ defmodule Raxol.Terminal.DriverTest do
     # Example: Mocking IO.ioctl (requires a mocking library or manual setup)
     # Mox.stub(IO, :ioctl, fn :stdio, :winsize -> {:ok, {24, 80}} end)
 
-    # Get original stty settings to restore after test
-    {original_stty, 0} = System.cmd("stty", ["-g"])
-    original_stty = String.trim(original_stty)
+    # Get original stty settings to restore after test, handle failure
+    original_stty =
+      case System.cmd("stty", ["-g"]) do
+        {output, 0} -> String.trim(output)
+        {_error, _exit_code} -> nil # Failed to get stty settings
+      end
 
     on_exit(fn ->
-      # Ensure terminal is restored even if test fails
-      System.cmd("stty", [original_stty])
+      # Ensure terminal is restored only if we got the original settings
+      if original_stty do
+        System.cmd("stty", [original_stty])
+      end
       # Stop any started driver process if necessary
     end)
 

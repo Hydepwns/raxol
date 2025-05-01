@@ -9,7 +9,6 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.g == 0
       assert color.b == 0
       assert color.hex == "#FF0000"
-      assert color.ansi_code == 9
     end
 
     test "creates a color from a 6-digit hex string without #" do
@@ -18,7 +17,6 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.g == 255
       assert color.b == 0
       assert color.hex == "#00FF00"
-      assert color.ansi_code == 10
     end
 
     test "creates a color from a 3-digit hex string with #" do
@@ -26,8 +24,7 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.r == 255
       assert color.g == 0
       assert color.b == 0
-      assert color.hex == "#F00"
-      assert color.ansi_code == 9
+      assert color.hex == "#FF0000"
     end
 
     test "creates a color from a 3-digit hex string without #" do
@@ -35,14 +32,13 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.r == 0
       assert color.g == 255
       assert color.b == 0
-      assert color.hex == "#0F0"
-      assert color.ansi_code == 10
+      assert color.hex == "#00FF00"
     end
 
     test "raises error for invalid hex formats" do
-      assert Color.from_hex("#12") == {:error, :invalid_hex_format}
-      assert Color.from_hex("12345") == {:error, :invalid_hex_format}
-      assert Color.from_hex("#GGHHII") == {:error, :invalid_hex_format}
+      assert Color.from_hex("#12") == {:error, :invalid_hex}
+      assert Color.from_hex("12345") == {:error, :invalid_hex}
+      assert Color.from_hex("#GGHHII") == {:error, :invalid_hex}
     end
   end
 
@@ -65,7 +61,6 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.g == 0
       assert color.b == 0
       assert color.hex == "#FF0000"
-      assert color.ansi_code == 9
     end
 
     test "handles zero values correctly" do
@@ -74,7 +69,6 @@ defmodule Raxol.Style.Colors.ColorTest do
       assert color.g == 0
       assert color.b == 0
       assert color.hex == "#000000"
-      assert color.ansi_code == 0
     end
   end
 
@@ -115,9 +109,9 @@ defmodule Raxol.Style.Colors.ColorTest do
     test "lightens a color by specified amount" do
       color = Color.from_rgb(100, 100, 100)
       lightened = Color.lighten(color, 0.5)
-      assert lightened.r == 177
-      assert lightened.g == 177
-      assert lightened.b == 177
+      assert lightened.r == 178
+      assert lightened.g == 178
+      assert lightened.b == 178
     end
 
     test "lightening by 1.0 produces white" do

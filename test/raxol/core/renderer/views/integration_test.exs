@@ -131,10 +131,9 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       # Combine charts side by side
       view =
-        View.flex(
-          direction: :row,
-          children: [bar_chart, line_chart]
-        )
+        View.flex direction: :row do
+          [bar_chart, line_chart]
+        end
 
       assert view.type == :flex
       assert length(view.children) == 2

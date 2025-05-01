@@ -32,7 +32,7 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   def save_state(stack, state) do
     saved_state = %{
       cursor: state.cursor,
-      attributes: state.attributes,
+      style: state.style,
       charset_state: state.charset_state,
       mode_state: state.mode_state,
       scroll_region: state.scroll_region

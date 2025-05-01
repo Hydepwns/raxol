@@ -1,9 +1,11 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Core.Runtime.Plugins.Commands
+  alias Raxol.Core.Runtime.Plugins.{CommandHelper, CommandRegistry}
+  alias Raxol.Core.Runtime.Plugins.Manager.State, as: ManagerState
 
   # Mock command handler for testing
+  @moduledoc false
   defmodule TestCommandHandler do
     def execute(args, context) do
       # Return args and context to verify they were passed correctly
@@ -19,114 +21,170 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     end
   end
 
-  setup do
-    # Start Commands process with clean state for each test
-    start_supervised!(Commands)
-    :ok
+  # --- Mocks ---
+  @moduledoc false
+  defmodule MockPlugin do
+    @behaviour Raxol.Core.Runtime.Plugins.Plugin
+    def get_commands, do: [{:test_cmd, :handle_test_cmd, 1}]
+    def handle_test_cmd(arg, state), do: {:ok, %{state | handled_arg: arg}, :test_ok}
+    # Add other callbacks if needed by LifecycleHelper/Manager
+    def init(_), do: {:ok, %{initial: true}}
+    def terminate(_, state), do: state
   end
 
-  describe "plugin commands" do
-    test "register adds a command to the registry" do
-      :ok =
-        Commands.register(
-          "test:command",
-          TestCommandHandler,
-          "Test command help"
-        )
+  @moduledoc false
+  defmodule MockErrorPlugin do
+    @behaviour Raxol.Core.Runtime.Plugins.Plugin
+    def get_commands, do: [{:error_cmd, :handle_error_cmd, 0}]
+    def handle_error_cmd(state), do: {:error, :test_failure, %{state | errored: true}}
+    def init(_), do: {:ok, %{initial: true}}
+    def terminate(_, state), do: state
+  end
 
-      commands = Commands.list_commands()
-      assert Map.has_key?(commands, "test:command")
+  @moduledoc false
+  defmodule MockCrashPlugin do
+     @behaviour Raxol.Core.Runtime.Plugins.Plugin
+    def get_commands, do: [{:crash_cmd, :handle_crash_cmd, 0}]
+    def handle_crash_cmd(_state), do: raise "Plugin Crashed!"
+    def init(_), do: {:ok, %{initial: true}}
+    def terminate(_, state), do: state
+  end
 
-      command_info = commands["test:command"]
-      assert command_info.handler == TestCommandHandler
-      assert command_info.help == "Test command help"
+  @moduledoc false
+  defmodule MockMessagePlugin do
+     @behaviour Raxol.Core.Runtime.Plugins.Plugin
+    def get_commands, do: [{:msg_cmd, :handle_msg_cmd, 1}]
+    # Sends message back to caller (test process)
+    def handle_msg_cmd(arg, state) do
+      send(state.test_pid, {:handled, arg, state})
+      {:noreply, %{state | msg_sent: true}}
+    end
+    def init(_), do: {:ok, %{test_pid: nil}} # test_pid will be set in state
+    def terminate(_, state), do: state
+  end
+
+  # --- Setup ---
+  setup context do
+    # Create ETS table for command registry
+    table_name = context.command_table || :raxol_command_registry
+    try do
+      :ets.delete(table_name)
+    rescue
+      ArgumentError -> :ok # Ignore if table doesn't exist
+    end
+    :ets.new(table_name, [:set, :public, :named_table, read_concurrency: true])
+
+    # Create a mock plugin manager state
+    manager_state = context.manager_state || %ManagerState{
+      plugins: %{}, # Populated per test
+      metadata: %{},
+      plugin_states: %{}, # Populated per test
+      load_order: [],
+      initialized: true,
+      command_registry_table: table_name,
+      plugin_config: %{},
+      plugins_dir: "",
+      file_watcher_pid: nil,
+      file_watching_enabled?: false,
+      file_event_timer: nil
+    }
+
+    on_exit(fn ->
+      try do
+        :ets.delete(table_name)
+      rescue
+        ArgumentError -> :ok # Ignore if already deleted
+      end
+    end)
+
+    {:ok, command_table: table_name, manager_state: manager_state}
+  end
+
+  # --- Tests ---
+  describe "Command Registration" do
+    test "register_plugin_commands adds commands to the registry", %{command_table: table} do
+      # Register commands from MockPlugin
+      CommandHelper.register_plugin_commands(MockPlugin, %{}, table)
+
+      # Verify using CommandRegistry lookup
+      assert {:ok, {MockPlugin, :handle_test_cmd, 1}} = CommandRegistry.lookup_command(table, "test_cmd", MockPlugin)
     end
 
-    test "unregister removes a command from the registry" do
+    test "unregister_plugin_commands removes commands from the registry", %{command_table: table} do
       # Register first
-      :ok =
-        Commands.register("test:command", TestCommandHandler, "Test command")
-
-      assert Map.has_key?(Commands.list_commands(), "test:command")
+      CommandHelper.register_plugin_commands(MockPlugin, %{}, table)
+      assert {:ok, _} = CommandRegistry.lookup_command(table, "test_cmd", MockPlugin)
 
       # Then unregister
-      :ok = Commands.unregister("test:command")
-      refute Map.has_key?(Commands.list_commands(), "test:command")
+      CommandHelper.unregister_plugin_commands(table, MockPlugin)
+      assert {:error, :not_found} = CommandRegistry.lookup_command(table, "test_cmd", MockPlugin)
     end
+  end
 
-    test "get_help returns help text for registered command" do
-      Commands.register(
-        "test:help",
-        TestCommandHandler,
-        "Help text for test command"
-      )
+  describe "Command Execution (handle_command)" do
+    test "calls the command handler with args and state", %{command_table: table, manager_state: state} do
+      plugin_id = "mock_message_plugin"
+      initial_plugin_state = %{test_pid: self()}
+      manager_state = %{
+        state |
+        plugins: %{plugin_id => MockMessagePlugin},
+        plugin_states: %{plugin_id => initial_plugin_state}
+      }
 
-      {:ok, help_text} = Commands.get_help("test:help")
-      assert help_text == "Help text for test command"
-    end
-
-    test "get_help returns error for unknown command" do
-      assert {:error, :not_found} = Commands.get_help("unknown:command")
-    end
-
-    test "execute calls the command handler with args and context" do
       # Register command
-      :ok =
-        Commands.register("test:execute", TestCommandHandler, "Execute test")
+      CommandHelper.register_plugin_commands(MockMessagePlugin, initial_plugin_state, table)
 
       # Execute command
-      args = ["arg1", "arg2"]
-      context = %{user: "test_user"}
+      args = ["hello_arg"]
+      assert {:ok, updated_states} = CommandHelper.handle_command(table, "msg_cmd", MockMessagePlugin, args, manager_state)
 
-      {:ok, result} = Commands.execute("test:execute", args, context)
+      # Assert message received by test process
+      assert_receive {:handled, "hello_arg", ^initial_plugin_state}, 500
 
-      # Verify the args and context were passed correctly
-      assert result.args == args
-      assert result.context == context
+      # Assert plugin state was updated
+      assert updated_states[plugin_id].msg_sent == true
     end
 
-    test "execute returns error for unknown command" do
-      assert {:error, :command_not_found} =
-               Commands.execute("unknown:command", [])
+    test "returns :not_found for unknown command", %{command_table: table, manager_state: state} do
+      assert :not_found = CommandHelper.handle_command(table, "unknown_cmd", nil, [], state)
     end
 
-    test "execute handles error results from command handler" do
-      # Register command that returns an error
-      :ok =
-        Commands.register(
-          "test:error",
-          TestCommandHandler,
-          "Error test",
-          function: :execute_error
-        )
+    test "handles error results from command handler", %{command_table: table, manager_state: state} do
+      plugin_id = "mock_error_plugin"
+      initial_plugin_state = %{initial: true}
+      manager_state = %{
+        state |
+        plugins: %{plugin_id => MockErrorPlugin},
+        plugin_states: %{plugin_id => initial_plugin_state}
+      }
 
-      # Execute should return the error from the handler
-      assert {:error, "Command execution failed"} =
-               Commands.execute("test:error", [])
+      # Register command
+      CommandHelper.register_plugin_commands(MockErrorPlugin, initial_plugin_state, table)
+
+      # Execute command that returns an error
+      assert {:error, :test_failure, updated_states} = CommandHelper.handle_command(table, "error_cmd", MockErrorPlugin, [], manager_state)
+
+      # Assert plugin state was updated within the error tuple
+      assert updated_states[plugin_id].errored == true
     end
 
-    test "execute safely handles crashes in command handler" do
+    test "handles exceptions in command handler", %{command_table: table, manager_state: state} do
+      plugin_id = "mock_crash_plugin"
+      initial_plugin_state = %{initial: true}
+      manager_state = %{
+        state |
+        plugins: %{plugin_id => MockCrashPlugin},
+        plugin_states: %{plugin_id => initial_plugin_state}
+      }
+
       # Register command that crashes
-      :ok =
-        Commands.register(
-          "test:crash",
-          TestCommandHandler,
-          "Crash test",
-          function: :execute_crash
-        )
+      CommandHelper.register_plugin_commands(MockCrashPlugin, initial_plugin_state, table)
 
-      # Execute should catch the crash and return an error
-      assert {:error, message} = Commands.execute("test:crash", [])
-      assert String.contains?(message, "Plugin command error")
-    end
+      # Execute command that crashes
+      assert {:error, :exception, original_states} = CommandHelper.handle_command(table, "crash_cmd", MockCrashPlugin, [], manager_state)
 
-    test "plugin_command? correctly identifies plugin commands" do
-      # Use handle_command as a proxy to test plugin_command?
-      assert {:error, :not_plugin_command} =
-               Commands.handle_command("regular_command", [], %{})
-
-      assert {:error, :command_not_found} =
-               Commands.handle_command("plugin:command", [], %{})
+      # Assert original plugin states are returned on exception
+      assert original_states == manager_state.plugin_states
     end
   end
 end

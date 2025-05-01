@@ -1,5 +1,9 @@
 import Config
 
+# Configure Mox
+# Set the mock implementation for the Clipboard Behaviour
+config :raxol, :mocks, ClipboardBehaviour: ClipboardMock
+
 # Configure your database
 # config :raxol, Raxol.Repo,
 #   database: "raxol_test\#{System.get_env(\"MIX_TEST_PARTITION\")}\",
@@ -21,13 +25,20 @@ config :raxol, database_enabled: false
 # you can enable the server option below.
 config :raxol, RaxolWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  server: false
+  server: false,
+  # Remove deprecated :pubsub key
+  # pubsub: [server: Phoenix.PubSub, adapter: Phoenix.PubSub.PG2]
+  # Add pubsub_server key pointing to the registered name
+  pubsub_server: Raxol.PubSub
 
 # In test we don't send emails.
 config :raxol, Raxol.Mailer, adapter: Swoosh.Adapters.Test
 
 # Print only warnings and errors during test
-config :logger, level: :debug
+# config :logger, level: :warn
+
+# Configure default logged metadata
+config :logger, :console, level: :debug, metadata: [:request_id]
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime

@@ -3,6 +3,11 @@ defmodule Raxol.Test.Mocks do
   Container for test mocks.
   """
 
+  require Mox
+
+  # Define the global mock for Clipboard Behaviour
+  Mox.defmock(ClipboardMock, for: Raxol.System.Clipboard.Behaviour)
+
   # Actual mock definitions (like Accessibility.Mock) are commented out here or removed
   # to avoid Mox compilation issues.
 

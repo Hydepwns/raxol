@@ -11,10 +11,11 @@ defmodule RaxolWeb.TerminalChannel do
   """
 
   use RaxolWeb, :channel
-  alias Raxol.Terminal.{Emulator, Renderer, Input}
+  alias Raxol.Terminal.{Emulator, Renderer, Input, ScreenBuffer}
   # alias Phoenix.Channel # Unused
   # alias Raxol.Terminal.Input.InputHandler # Unused (commented out call)
   # alias Phoenix.Socket # Unused
+  # require Logger # <-- Removed
 
   @type t :: %__MODULE__{
           emulator: Emulator.t(),
@@ -32,7 +33,7 @@ defmodule RaxolWeb.TerminalChannel do
     if authorized?(socket) do
       emulator = Emulator.new(80, 24)
       input = Input.new()
-      renderer = Renderer.new(emulator: emulator)
+      renderer = Renderer.new(emulator.main_screen_buffer)
 
       state = %__MODULE__{
         emulator: emulator,
@@ -51,54 +52,67 @@ defmodule RaxolWeb.TerminalChannel do
   @impl true
   def handle_in("input", %{"data" => data}, socket) do
     state = socket.assigns.terminal_state
-    # Process keyboard input using the Input module
-    # We ignore the returned state for now, as we aren't using it elsewhere yet.
-    _ = Input.process_keyboard(state.input, data)
 
-    # Placeholder output for testing
-    # Placeholder
-    push(socket, "output", %{data: "Received: #{data}"})
+    {emulator, _output} = Emulator.process_input(state.emulator, data)
+    renderer = %{state.renderer | screen_buffer: emulator.main_screen_buffer}
 
-    {:noreply, socket}
+    new_state = %{state | emulator: emulator, renderer: renderer}
+    socket = assign(socket, :terminal_state, new_state)
+
+    # Revert: Push the rendered output again
+    {cursor_x, cursor_y} = Emulator.get_cursor_position(emulator)
+    cursor_visible = Emulator.get_cursor_visible(emulator)
+
+    push(socket, "output", %{
+      html: Renderer.render(renderer),
+      cursor: %{
+        x: cursor_x,
+        y: cursor_y,
+        visible: cursor_visible
+      }
+    })
+
+    {:reply, :ok, socket}
   end
 
   @impl true
   @dialyzer {:nowarn_function, handle_in: 3}
   def handle_in("resize", %{"width" => width, "height" => height}, socket) do
     state = socket.assigns.terminal_state
+
     emulator = Emulator.resize(state.emulator, width, height)
-    # Renderer doesn't need explicit resizing; it uses the emulator's buffer
-    renderer = state.renderer
+    renderer = %{state.renderer | screen_buffer: emulator.main_screen_buffer}
 
     new_state = %{state | emulator: emulator, renderer: renderer}
 
     socket = assign(socket, :terminal_state, new_state)
 
-    # Get updated cursor info after emulator resize
     {cursor_x, cursor_y} = Emulator.get_cursor_position(emulator)
     cursor_visible = Emulator.get_cursor_visible(emulator)
 
-    {:reply, :ok,
-     push(socket, "output", %{
-       html: Renderer.render(renderer),
-       cursor: %{
-         x: cursor_x,
-         y: cursor_y,
-         visible: cursor_visible
-       }
-     })}
+    reply = {:reply, :ok, socket}
+
+    push_result = push(socket, "output", %{
+      html: Renderer.render(renderer),
+      cursor: %{
+        x: cursor_x,
+        y: cursor_y,
+        visible: cursor_visible
+      }
+    })
+
+    reply
   end
 
   @impl true
   def handle_in("scroll", %{"offset" => _offset}, socket) do
     state = socket.assigns.terminal_state
 
-    # Renderer doesn't need scroll offset; scrolling is handled by Emulator/ScreenBuffer
-    # Just render the current state
-    {:reply, :ok,
-     push(socket, "output", %{
-       html: Renderer.render(state.renderer)
-     })}
+    push(socket, "output", %{
+      html: Renderer.render(state.renderer)
+    })
+
+    {:reply, :ok, socket}
   end
 
   @impl true
@@ -109,16 +123,15 @@ defmodule RaxolWeb.TerminalChannel do
     new_state = %{state | renderer: renderer}
     socket = assign(socket, :terminal_state, new_state)
 
-    {:reply, :ok,
-     push(socket, "output", %{
-       html: Renderer.render(renderer)
-     })}
+    push(socket, "output", %{
+      html: Renderer.render(renderer)
+    })
+
+    {:reply, :ok, socket}
   end
 
   @impl true
-  def terminate(_reason, socket) do
-    _state = socket.assigns.terminal_state
-    # Clean up terminal session
+  def terminate(reason, socket) do
     :ok
   end
 

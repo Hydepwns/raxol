@@ -76,56 +76,6 @@ defmodule Raxol.Core.Runtime.Plugins.API do
     EventManager.dispatch({event_type, payload})
   end
 
-  @doc """
-  Register a command that can be executed from the terminal.
-
-  ## Parameters
-
-  - `command_name` - String name of the command
-  - `handler` - Module that will handle the command
-  - `help_text` - Description of the command for help documentation
-  - `options` - Additional options for the command
-
-  ## Returns
-
-  - `:ok` if command was registered
-  - `{:error, reason}` if registration failed
-
-  ## Example
-
-  ```elixir
-  API.register_command("myplugin:hello", MyPlugin.Commands,
-    "Displays a hello message from myplugin")
-  ```
-  """
-  @spec register_command(String.t(), module(), String.t(), keyword()) ::
-          :ok | {:error, term()}
-  def register_command(command_name, handler, help_text, options \\ []) do
-    Raxol.Core.Runtime.Plugins.Commands.register(
-      command_name,
-      handler,
-      help_text,
-      options
-    )
-  end
-
-  @doc """
-  Unregister a previously registered command.
-
-  ## Parameters
-
-  - `command_name` - String name of the command to unregister
-
-  ## Returns
-
-  - `:ok` if command was unregistered
-  - `{:error, reason}` if unregistration failed
-  """
-  @spec unregister_command(String.t()) :: :ok | {:error, term()}
-  def unregister_command(command_name) do
-    Raxol.Core.Runtime.Plugins.Commands.unregister(command_name)
-  end
-
   # TODO: Refactor plugin buffer creation. The Core.Runtime.Rendering.Buffer module
   # does not exist. Buffer creation is likely handled by Terminal.ScreenBuffer.
   # def create_buffer(width, height, options \\ []) do

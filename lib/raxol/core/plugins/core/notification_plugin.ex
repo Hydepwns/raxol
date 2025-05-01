@@ -35,46 +35,97 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   # Internal handler for :notify
   # data is expected to be a map like %{title: "Optional Title", message: "Message Body"}
   defp handle_notify(data, state) do
-    message = Map.get(data, :message, "Notification") # Default message if missing
-    title = Map.get(data, :title, "Raxol Notification") # Default title
+    message = Map.get(data, :message, "Notification")
+    title = Map.get(data, :title, "Raxol Notification")
 
-    Logger.debug("NotificationPlugin: Sending notification...")
+    Logger.debug("NotificationPlugin: Sending notification - Title: '#{title}', Message: '#{message}'")
 
-    # Escape message and title for shell commands
-    # Basic escaping for quotes, may need more robust escaping depending on shell
-    safe_message = String.replace(message, "\"", "\\\"")
-    safe_title = String.replace(title, "\"", "\\\"")
+    # Use System.shell_escape for safer argument construction
+    # Note: This assumes System.shell_escape is available (Elixir >= 1.11 approx)
+    safe_message = System.shell_escape(message)
+    safe_title = System.shell_escape(title)
 
-    case :os.type() do
-      {:unix, :linux} ->
-        # Use notify-send on Linux
-        cmd = "notify-send \"#{safe_title}\" \"#{safe_message}\""
-        System.cmd(cmd, [])
-        # We don't strictly need the result, assume fire-and-forget
-        # Could add error checking based on exit code if needed
-        Logger.debug("NotificationPlugin: Used notify-send.")
-        {:ok, state, :notification_sent_linux}
+    # Define commands separately for clarity
+    {executable, args, os_name} =
+      case :os.type() do
+        {:unix, :linux} ->
+          # Check if notify-send exists
+          case System.find_executable("notify-send") do
+            nil -> {nil, :notify_send_not_found, :linux}
+            path -> {path, [safe_title, safe_message], :linux}
+          end
 
-      {:unix, :darwin} ->
-        # Use osascript on macOS
-        script = "display notification \"#{safe_message}\" with title \"#{safe_title}\""
-        cmd = "osascript -e '#{script}'"
-        System.cmd(cmd, [])
-        Logger.debug("NotificationPlugin: Used osascript.")
-        {:ok, state, :notification_sent_macos}
+        {:unix, :darwin} ->
+          # Check if osascript exists
+          case System.find_executable("osascript") do
+             nil -> {nil, :osascript_not_found, :macos}
+             path ->
+               script = "display notification #{safe_message} with title #{safe_title}"
+               {path, ["-e", script], :macos}
+           end
 
-      {:win32, _} ->
-        Logger.warning("NotificationPlugin: Desktop notifications not yet implemented for Windows.")
-        {:ok, state, :notification_skipped_windows}
+        {:win32, _} ->
+          # Use PowerShell with BurntToast module (requires user installation)
+          # Check if powershell exists
+          case System.find_executable("powershell") do
+             nil -> {nil, :powershell_not_found, :windows}
+             path ->
+               # Simple text notification via BurntToast
+               # Note: User needs to install BurntToast: Install-Module -Name BurntToast
+               script = ~s(Import-Module BurntToast; New-BurntToastNotification -Text "#{message}")
+               # Powershell args: -NoProfile, -ExecutionPolicy Bypass (maybe needed), -Command ...
+               {path, ["-NoProfile", "-Command", script], :windows}
+          end
+
+        {_other_family, _other_name} = os_tuple ->
+          {nil, {:unsupported_os, os_tuple}, :unsupported}
+
+      end
+
+    # Execute the command if executable found
+    case executable do
+      nil ->
+        # Handle cases where executable wasn't found or OS is unsupported
+        handle_notification_error(args, state)
 
       _ ->
-        Logger.warning("NotificationPlugin: Desktop notifications not supported on this OS: #{inspect(:os.type())}")
-        {:ok, state, :notification_skipped_unsupported_os}
+        try do
+          Logger.debug("Executing notification command: #{executable} with args: #{inspect(args)}")
+          case System.cmd(executable, args, stderr_to_stdout: true) do
+            {output, 0} ->
+              Logger.debug("Notification command successful (Output: #{output})")
+              {:ok, state, String.to_atom("notification_sent_#{os_name}")}
+            {output, exit_code} ->
+              Logger.error("Notification command failed. Exit Code: #{exit_code}, Output: #{output}")
+              {:error, {:command_failed, exit_code, output}, state}
+          end
+        rescue
+          e ->
+            Logger.error("NotificationPlugin: Error executing notification command: #{inspect(e)}")
+            {:error, {:command_exception, inspect(e.__struct__), Exception.message(e)}, state}
+        end
     end
-  rescue
-    e ->
-      Logger.error("NotificationPlugin: Error executing notification command: #{inspect(e)}")
-      {:error, {:notification_command_failed, inspect(e)}, state}
+  end
+
+  # Helper to handle specific notification errors
+  defp handle_notification_error(reason, state) do
+    case reason do
+      :notify_send_not_found ->
+        Logger.error("NotificationPlugin: Command 'notify-send' not found. Please install it.")
+        {:error, {:command_not_found, :notify_send}, state}
+      :osascript_not_found ->
+        Logger.error("NotificationPlugin: Command 'osascript' not found.")
+        {:error, {:command_not_found, :osascript}, state}
+      :powershell_not_found ->
+        Logger.error("NotificationPlugin: Command 'powershell' not found.")
+        {:error, {:command_not_found, :powershell}, state}
+      {:unsupported_os, os_tuple} ->
+        Logger.warning("NotificationPlugin: Desktop notifications not supported on this OS: #{inspect(os_tuple)}")
+        {:ok, state, :notification_skipped_unsupported_os} # Still ok, just skipped
+      _ -> # Generic fallback
+         Logger.error("NotificationPlugin: Unknown notification error: #{inspect reason}")
+         {:error, {:unknown_notification_error, reason}, state}
+    end
   end
 
   def terminate(_state) do

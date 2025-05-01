@@ -4,15 +4,11 @@ defmodule Raxol.Terminal.CommandsTest do
 
   alias Raxol.Terminal.Commands
   alias Raxol.Terminal.Commands.{History, Parser, Screen}
+  alias Raxol.Terminal.Emulator
 
   setup do
-    # A mock emulator for testing
-    emulator = %{
-      cursor: %{position: {5, 5}},
-      active_buffer_type: :main,
-      main_screen_buffer: %{},
-      alternate_screen_buffer: %{}
-    }
+    # Create a real Emulator struct for testing Screen functions
+    emulator = Emulator.new(80, 24)
 
     {:ok, emulator: emulator}
   end
@@ -67,7 +63,7 @@ defmodule Raxol.Terminal.CommandsTest do
 
       log =
         capture_log(fn ->
-          {command, _updated} = Commands.next_command(history)
+          {command, _updated} = History.next(history)
           assert command == ""
         end)
 
@@ -95,6 +91,8 @@ defmodule Raxol.Terminal.CommandsTest do
         capture_log(fn ->
           value = Commands.get_param(params, 1, 0)
           assert value == 2
+          value0 = Commands.get_param(params, 0, 99)
+          assert value0 == 1
         end)
 
       assert log =~ "is deprecated"

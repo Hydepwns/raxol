@@ -1,119 +1,83 @@
 defmodule Raxol.Components.Progress.ProgressBarTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
+
   alias Raxol.Components.Progress.ProgressBar
+  alias Raxol.Core.Events.Event
 
   describe "init/1" do
     test "initializes with default values when no props provided" do
       state = ProgressBar.init(%{})
       assert state.value == 0
+      assert state.max == 100
       assert state.width == 20
-      assert state.style == :basic
-      assert state.color == :blue
-      assert state.gradient == nil
-      assert state.characters == nil
-      assert state.show_percentage == true
+      assert state.style == %{}
       assert state.label == nil
+      assert state.label_position == :below
+      assert state.show_percentage == false
     end
 
     test "initializes with provided values" do
       props = %{
+        id: :my_bar,
         value: 50,
+        max: 200,
         width: 30,
-        style: :block,
-        color: :green,
-        gradient: [:red, :yellow, :green],
-        characters: %{filled: "#", empty: "."},
-        show_percentage: false,
-        label: "Progress"
+        style: %{filled: %{bg: :blue}},
+        label: "Loading...",
+        label_position: :above,
+        show_percentage: true
       }
 
       state = ProgressBar.init(props)
+      assert state.id == :my_bar
       assert state.value == 50
+      assert state.max == 200
       assert state.width == 30
-      assert state.style == :block
-      assert state.color == :green
-      assert state.gradient == [:red, :yellow, :green]
-      assert state.characters == %{filled: "#", empty: "."}
-      assert state.show_percentage == false
-      assert state.label == "Progress"
+      assert state.style == %{filled: %{bg: :blue}}
+      assert state.label == "Loading..."
+      assert state.label_position == :above
+      assert state.show_percentage == true
     end
   end
 
   describe "update/2" do
     setup do
-      {:ok, state: ProgressBar.init(%{})}
+      state = ProgressBar.init(%{value: 10})
+      {:ok, state: state}
     end
 
     test "updates progress value", %{state: state} do
-      new_state = ProgressBar.update({:set_progress, 75}, state)
+      {new_state, _} = ProgressBar.update({:set_value, 75}, state)
       assert new_state.value == 75
     end
 
-    test "updates style", %{state: state} do
-      new_state = ProgressBar.update({:set_style, :block}, state)
-      assert new_state.style == :block
+    test "clamps progress value to max", %{state: state} do
+      {new_state, _} = ProgressBar.update({:set_value, 150}, state)
+      assert new_state.value == 100 # Clamped to max (default 100)
     end
 
-    test "updates color and clears gradient", %{state: state} do
-      state_with_gradient = %{state | gradient: [:red, :green]}
-      new_state = ProgressBar.update({:set_color, :red}, state_with_gradient)
-      assert new_state.color == :red
-      assert new_state.gradient == nil
+    test "clamps progress value to min", %{state: state} do
+      {new_state, _} = ProgressBar.update({:set_value, -10}, state)
+      assert new_state.value == 0 # Clamped to min 0
     end
 
-    test "updates gradient and clears color", %{state: state} do
-      gradient = [:red, :yellow, :green]
-      new_state = ProgressBar.update({:set_gradient, gradient}, state)
-      assert new_state.gradient == gradient
-      assert new_state.color == nil
-    end
-
-    test "updates custom characters", %{state: state} do
-      chars = %{filled: "#", empty: "."}
-      new_state = ProgressBar.update({:set_characters, chars}, state)
-      assert new_state.characters == chars
-    end
-
-    test "ignores invalid progress values", %{state: state} do
-      assert state == ProgressBar.update({:set_progress, 101}, state)
-      assert state == ProgressBar.update({:set_progress, -1}, state)
+    test "ignores non-numeric progress values", %{state: state} do
+       {new_state, _} = ProgressBar.update({:set_value, "invalid"}, state)
+       assert new_state == state # Should ignore and return original state
     end
   end
 
-  describe "handle_event/2" do
-    setup do
-      {:ok, state: ProgressBar.init(%{})}
+  describe "handle_event/3" do
+     setup do
+      state = ProgressBar.init(%{})
+      {:ok, state: state}
     end
 
-    test "handles progress update events", %{state: state} do
-      event = Raxol.Core.Events.Event.new(:progress_update, %{value: 60})
-      {new_state, _commands} = ProgressBar.handle_event(event, state)
-      assert new_state.value == 60
-    end
-  end
-
-  describe "public API" do
-    test "set_progress/1 returns correct message" do
-      assert ProgressBar.set_progress(50) == {:progress_update, 50}
-    end
-
-    test "set_style/1 returns correct message" do
-      assert ProgressBar.set_style(:block) == {:set_style, :block}
-      assert ProgressBar.set_style(:custom) == {:set_style, :custom}
-    end
-
-    test "set_color/1 returns correct message" do
-      assert ProgressBar.set_color(:red) == {:set_color, :red}
-    end
-
-    test "set_gradient/1 returns correct message" do
-      gradient = [:red, :yellow, :green]
-      assert ProgressBar.set_gradient(gradient) == {:set_gradient, gradient}
-    end
-
-    test "set_characters/2 returns correct message" do
-      assert ProgressBar.set_characters("#", ".") ==
-               {:set_characters, %{filled: "#", empty: "."}}
+    test "ignores events", %{state: state} do
+      event = %Event{type: :key, data: %{key: "a"}}
+      {new_state, commands} = ProgressBar.handle_event(event, %{}, state)
+      assert new_state == state
+      assert commands == []
     end
   end
 end

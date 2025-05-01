@@ -4,6 +4,11 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
   alias Raxol.System.Platform
 
   describe "platform detection" do
+    setup do
+      # No specific setup needed for these tests
+      :ok
+    end
+
     test "identifies current platform" do
       platform = Platform.get_current_platform()
 
@@ -111,6 +116,33 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
 
       # Verify unicode support level
       assert terminal_features.unicode in [:none, :basic, :full]
+    end
+
+    @tag :pending # Mark as pending due to missing key
+    test "platform detection detects environment variables correctly" do
+      platform_info = Platform.get_platform_info()
+
+      assert is_map(platform_info)
+      assert is_map(platform_info.env_vars)
+      assert is_boolean(platform_info.env_vars.true_color)
+    end
+
+    @tag :pending # Mark as pending due to missing key
+    test "platform detection detects system capabilities" do
+      platform_info = Platform.get_platform_info()
+
+      assert is_map(platform_info)
+      assert is_map(platform_info.capabilities)
+      assert is_boolean(platform_info.capabilities.clipboard_support)
+    end
+
+    @tag :pending # Mark as pending due to missing key
+    test "platform detection detects terminal capabilities" do
+      platform_info = Platform.get_platform_info()
+
+      assert is_map(platform_info)
+      assert is_map(platform_info.capabilities)
+      assert is_boolean(platform_info.capabilities.true_color)
     end
   end
 end

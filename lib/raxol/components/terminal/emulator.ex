@@ -11,10 +11,18 @@ defmodule Raxol.Components.Terminal.Emulator do
 
   @doc """
   Initializes a new terminal emulator component state.
+  Accepts an optional map of options, currently supporting `:width` and `:height`.
   """
-  def init do
-    # Initialize the core emulator
-    core_emulator = CoreEmulator.new()
+  def init(opts \\ %{}) do
+    width = Map.get(opts, :width)
+    height = Map.get(opts, :height)
+
+    # Initialize the core emulator, passing options if provided
+    core_emulator =
+      case {width, height} do
+        {w, h} when is_integer(w) and is_integer(h) -> CoreEmulator.new(w, h)
+        _ -> CoreEmulator.new()
+      end
 
     %{
       core_emulator: core_emulator
@@ -23,14 +31,19 @@ defmodule Raxol.Components.Terminal.Emulator do
 
   @doc """
   Processes input and updates terminal state by delegating to the core emulator.
+  Returns a tuple `{updated_state, output_string}`.
   """
   def process_input(input, %{core_emulator: current_emulator} = state) do
     # Delegate processing to the core emulator
-    {updated_emulator, _rest} =
+    # Capture the output returned by the core emulator
+    {updated_emulator, output} =
       CoreEmulator.process_input(current_emulator, input)
 
     # Update the component's state with the updated core emulator state
-    %{state | core_emulator: updated_emulator}
+    updated_state = %{state | core_emulator: updated_emulator}
+
+    # Return the updated state and the output
+    {updated_state, output}
   end
 
   @doc """

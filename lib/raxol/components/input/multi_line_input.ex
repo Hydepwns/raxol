@@ -412,6 +412,77 @@ defmodule Raxol.Components.Input.MultiLineInput do
     end
   end
 
+  # --- Word Movements (Clears Selection) ---
+  def update({:move_cursor_word_left}, %State{} = state) do
+    new_state =
+      NavigationHelper.move_cursor(state, :word_left)
+      |> NavigationHelper.clear_selection()
+
+    {:noreply, ensure_cursor_visible(new_state), nil}
+  end
+
+  def update({:move_cursor_word_right}, %State{} = state) do
+    new_state =
+      NavigationHelper.move_cursor(state, :word_right)
+      |> NavigationHelper.clear_selection()
+
+    {:noreply, ensure_cursor_visible(new_state), nil}
+  end
+
+  # --- Movement Extending Selection ---
+  def update({:move_cursor_select, direction}, %State{} = state)
+      when direction in [:left, :right, :up, :down, :line_start, :line_end, :page_up, :page_down, :doc_start, :doc_end] do
+    original_cursor_pos = state.cursor_pos
+
+    # Determine the new cursor position based on direction
+    moved_state =
+      case direction do
+        :left ->
+          NavigationHelper.move_cursor(state, :left)
+
+        :right ->
+          NavigationHelper.move_cursor(state, :right)
+
+        :up ->
+          NavigationHelper.move_cursor(state, :up)
+
+        :down ->
+          NavigationHelper.move_cursor(state, :down)
+
+        :line_start ->
+          NavigationHelper.move_cursor_line_start(state)
+
+        :line_end ->
+          NavigationHelper.move_cursor_line_end(state)
+
+        :page_up ->
+          NavigationHelper.move_cursor_page(state, :up)
+
+        :page_down ->
+          NavigationHelper.move_cursor_page(state, :down)
+
+        :doc_start ->
+          NavigationHelper.move_cursor_doc_start(state)
+
+        :doc_end ->
+          NavigationHelper.move_cursor_doc_end(state)
+      end
+
+    new_cursor_pos = moved_state.cursor_pos
+
+    # Update selection: If no selection start, set it to original pos.
+    # Always update selection end to the new cursor pos.
+    selection_start = state.selection_start || original_cursor_pos
+
+    final_state = %{
+      moved_state
+      | selection_start: selection_start,
+        selection_end: new_cursor_pos
+    }
+
+    {:noreply, ensure_cursor_visible(final_state), nil}
+  end
+
   # --- Catch-all MUST BE LAST ---
   def update(msg, state) do
     Logger.warning("[MultiLineInput] Unhandled update message: #{inspect(msg)}")
@@ -489,20 +560,33 @@ defmodule Raxol.Components.Input.MultiLineInput do
     %{state | scroll_offset: {new_scroll_row, new_scroll_col}, lines: new_lines}
   end
 
-  # Calls the on_change callback if defined and value changed
-  defp trigger_on_change({:noreply, new_state, cmd}, old_state) do
-    if new_state.value != old_state.value and
-         is_function(new_state.on_change, 1) do
-      # TODO: How to invoke the callback? Needs context or message passing.
-      # Maybe return a specific command or structure?
-      # For now, just logging it.
-      Logger.debug("Value changed, would call on_change: #{new_state.id}")
-      # new_state.on_change.(new_state.value)
-    end
+  # Calls the on_change callback if defined and value changed by returning an event command
+  defp trigger_on_change({:noreply, new_state, existing_cmd}, old_state) do
+    # Check if value actually changed and a callback function exists
+    if new_state.value != old_state.value and is_function(new_state.on_change, 1) do
+      # Create the event to send to the parent
+      change_event_cmd = {:component_event, new_state.id, {:change, new_state.value}}
 
-    {:noreply, new_state, cmd}
+      # Combine with any existing command (e.g., clipboard commands)
+      # Assuming existing_cmd is nil or a list of commands
+      new_cmd =
+        case existing_cmd do
+          nil -> [change_event_cmd]
+          cmd when is_list(cmd) -> [change_event_cmd | cmd]
+          # If existing_cmd is not a list, wrap it? Or assume it's singular?
+          # For now, assume it's nil or a list. Handle errors later if needed.
+          # Let's default to putting the change event first.
+          single_cmd -> [change_event_cmd, single_cmd]
+        end
+
+      Logger.debug("Value changed for #{new_state.id}, queueing :change event.")
+      {:noreply, new_state, new_cmd}
+    else
+      # No change or no callback, just pass through
+      {:noreply, new_state, existing_cmd}
+    end
   end
 
-  # Pass through other results
+  # Pass through other results (e.g., {:reply, ...}, etc.)
   defp trigger_on_change(other, _old_state), do: other
 end

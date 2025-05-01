@@ -35,28 +35,55 @@ defmodule Raxol.Terminal.Commands.Modes do
     enabled = action == :set
 
     params
-    |> Enum.reduce(emulator, fn param, acc ->
+    |> Enum.reduce(emulator, fn param, current_emulator ->
       if is_nil(param) do
-        Logger.warning(
-          "Ignoring nil mode parameter in DEC private mode set/reset"
-        )
-
-        acc
+        Logger.warning("Ignoring nil mode parameter in DEC private mode set/reset")
+        current_emulator
       else
         # Lookup the mode atom
         case ScreenModes.lookup_private(param) do
           nil ->
-            Logger.debug("Ignoring unknown DEC private mode code: #{param}")
-            # Handle special cases not directly mapped by lookup
-            handle_special_dec_mode(acc, param, enabled)
+            # Mode not in lookup table, check if it's a special case
+            Logger.debug("Checking special DEC private mode: #{param}")
+            handle_special_dec_mode(current_emulator, param, enabled)
 
           mode_atom ->
+            # Mode found in lookup table, update the mode_state map
             Logger.debug(
               "#{if enabled, do: "Setting", else: "Resetting"} DEC private mode #{param} (#{inspect(mode_atom)})"
             )
-
-            # Use switch_mode/3 with the looked-up atom
-            ScreenModes.switch_mode(acc, mode_atom, enabled)
+            # Inline ScreenModes.switch_mode logic
+            current_mode_state = current_emulator.mode_state
+            updated_mode_state = if enabled do
+              # Inline ScreenModes.set_mode
+              case mode_atom do
+                :cursor_visible -> %{current_mode_state | cursor_visible: true}
+                :auto_wrap -> %{current_mode_state | auto_wrap: true}
+                :origin_mode -> %{current_mode_state | origin_mode: true}
+                :insert_mode -> %{current_mode_state | insert_mode: true}
+                :line_feed_mode -> %{current_mode_state | line_feed_mode: true}
+                :wide_column -> %{current_mode_state | column_width_mode: :wide}
+                :deccolm_132 -> %{current_mode_state | column_width_mode: :wide}
+                :auto_repeat -> %{current_mode_state | auto_repeat_mode: true}
+                :interlacing -> %{current_mode_state | interlacing_mode: true}
+                _ -> current_mode_state
+              end
+            else
+              # Inline ScreenModes.reset_mode
+              case mode_atom do
+                :cursor_visible -> %{current_mode_state | cursor_visible: false}
+                :auto_wrap -> %{current_mode_state | auto_wrap: false}
+                :origin_mode -> %{current_mode_state | origin_mode: false}
+                :insert_mode -> %{current_mode_state | insert_mode: false}
+                :line_feed_mode -> %{current_mode_state | line_feed_mode: false}
+                :wide_column -> %{current_mode_state | column_width_mode: :normal}
+                :deccolm_132 -> %{current_mode_state | column_width_mode: :normal}
+                :auto_repeat -> %{current_mode_state | auto_repeat_mode: false}
+                :interlacing -> %{current_mode_state | interlacing_mode: false}
+                _ -> current_mode_state
+              end
+            end
+            %{current_emulator | mode_state: updated_mode_state}
         end
       end
     end)
@@ -83,25 +110,54 @@ defmodule Raxol.Terminal.Commands.Modes do
     enabled = action == :set
 
     params
-    |> Enum.reduce(emulator, fn param, acc ->
+    |> Enum.reduce(emulator, fn param, current_emulator ->
       if is_nil(param) do
         Logger.warning("Ignoring nil mode parameter in ANSI mode set/reset")
-        acc
+        current_emulator
       else
         # Lookup the mode atom
         case ScreenModes.lookup_standard(param) do
           nil ->
             Logger.debug("Ignoring unknown ANSI mode code: #{param}")
-            # Return unmodified accumulator for unknown standard modes
-            acc
+            # Return unmodified emulator for unknown standard modes
+            current_emulator
 
           mode_atom ->
             Logger.debug(
               "#{if enabled, do: "Setting", else: "Resetting"} ANSI mode #{param} (#{inspect(mode_atom)})"
             )
-
-            # Use switch_mode/3 with the looked-up atom
-            ScreenModes.switch_mode(acc, mode_atom, enabled)
+            # Inline ScreenModes.switch_mode logic
+            current_mode_state = current_emulator.mode_state
+            updated_mode_state = if enabled do
+              # Inline ScreenModes.set_mode
+              case mode_atom do
+                :cursor_visible -> %{current_mode_state | cursor_visible: true}
+                :auto_wrap -> %{current_mode_state | auto_wrap: true}
+                :origin_mode -> %{current_mode_state | origin_mode: true}
+                :insert_mode -> %{current_mode_state | insert_mode: true}
+                :line_feed_mode -> %{current_mode_state | line_feed_mode: true}
+                :wide_column -> %{current_mode_state | column_width_mode: :wide}
+                :deccolm_132 -> %{current_mode_state | column_width_mode: :wide}
+                :auto_repeat -> %{current_mode_state | auto_repeat_mode: true}
+                :interlacing -> %{current_mode_state | interlacing_mode: true}
+                _ -> current_mode_state
+              end
+            else
+              # Inline ScreenModes.reset_mode
+              case mode_atom do
+                :cursor_visible -> %{current_mode_state | cursor_visible: false}
+                :auto_wrap -> %{current_mode_state | auto_wrap: false}
+                :origin_mode -> %{current_mode_state | origin_mode: false}
+                :insert_mode -> %{current_mode_state | insert_mode: false}
+                :line_feed_mode -> %{current_mode_state | line_feed_mode: false}
+                :wide_column -> %{current_mode_state | column_width_mode: :normal}
+                :deccolm_132 -> %{current_mode_state | column_width_mode: :normal}
+                :auto_repeat -> %{current_mode_state | auto_repeat_mode: false}
+                :interlacing -> %{current_mode_state | interlacing_mode: false}
+                _ -> current_mode_state
+              end
+            end
+            %{current_emulator | mode_state: updated_mode_state}
         end
       end
     end)
@@ -180,8 +236,15 @@ defmodule Raxol.Terminal.Commands.Modes do
       2004 ->
         Logger.debug("Setting bracketed paste mode (Mode 2004) -> #{enabled}")
         # Assuming :bracketed_paste is the correct atom, delegate
-        # If :bracketed_paste is not defined in ANSI.ScreenModes, this will need adjustment
-        ScreenModes.switch_mode(emulator, :bracketed_paste, enabled)
+        # Fix: Call switch_mode with the mode_state map, not the emulator
+        # Inline the logic for :bracketed_paste (assuming it exists)
+        current_mode_state = emulator.mode_state
+        updated_mode_state = if enabled do
+          %{current_mode_state | bracketed_paste: true} # Assuming this field exists
+        else
+          %{current_mode_state | bracketed_paste: false}
+        end
+        %{emulator | mode_state: updated_mode_state}
 
       # Unknown mode code
       _ ->

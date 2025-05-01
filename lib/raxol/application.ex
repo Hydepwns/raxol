@@ -49,8 +49,10 @@ defmodule Raxol.Test.MockApplicationSupervisor do
 
   @impl true
   def init(_args) do
-    Logger.info("Initializing MockApplicationSupervisor with no real terminal drivers")
-    children = []
+    Logger.info("Initializing MockApplicationSupervisor with Phoenix PubSub")
+    # Add Phoenix.PubSub child spec for tests, using the conventional name
+    pubsub_child_spec = {Phoenix.PubSub, name: Raxol.PubSub}
+    children = [pubsub_child_spec]
     Supervisor.init(children, strategy: :one_for_one)
   end
 end

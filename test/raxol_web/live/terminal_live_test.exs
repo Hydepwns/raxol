@@ -11,6 +11,7 @@ defmodule RaxolWeb.TerminalLiveTest do
   defp bypass_auth(%{conn: conn}) do
     conn =
       Plug.Test.init_test_session(conn, %{})
+      |> fetch_flash()
       |> bypass_through(RaxolWeb.Router, :auth)
 
     {:ok, conn: conn}

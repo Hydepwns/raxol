@@ -48,6 +48,9 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
       # Final byte
       <<final_byte, rest_after_final::binary>>
       when final_byte >= 0x40 and final_byte <= 0x7E ->
+        Logger.debug(
+          "CSIIntermediateState: Final byte #{<<final_byte>>}, Params: '#{parser_state.params_buffer}', Intermediates: '#{parser_state.intermediates_buffer}'"
+        )
         new_emulator =
           Executor.execute_csi_command(
             emulator,

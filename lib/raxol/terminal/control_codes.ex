@@ -47,6 +47,7 @@ defmodule Raxol.Terminal.ControlCodes do
 
   @doc "Handle Line Feed (LF), New Line (NL), Vertical Tab (VT)"
   def handle_lf(%Emulator{} = emulator) do
+    Logger.debug("Handling LF at cursor: #{inspect(emulator.cursor.position)}")
     # Behavior depends on New Line Mode (LNM)
     cursor = emulator.cursor
 
@@ -58,12 +59,12 @@ defmodule Raxol.Terminal.ControlCodes do
       # Then move to column 0
       # Use alias
       cursor = Movement.move_to_column(cursor, 0)
-      %{emulator | cursor: cursor} |> maybe_scroll()
+      %{emulator | cursor: cursor} |> Emulator.maybe_scroll()
     else
       # Normal Mode: LF moves down one line in the same column
       # Use alias
       cursor = Movement.move_down(cursor, 1)
-      %{emulator | cursor: cursor} |> maybe_scroll()
+      %{emulator | cursor: cursor} |> Emulator.maybe_scroll()
     end
   end
 
@@ -185,23 +186,25 @@ defmodule Raxol.Terminal.ControlCodes do
   @spec handle_decrc(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   # ESC 8 - Restore Cursor State (DEC specific)
   def handle_decrc(emulator) do
-    # {restored_state_data, new_stack} = TerminalState.pop(emulator.state_stack)
     {new_stack, restored_state_data} = TerminalState.restore_state(emulator.state_stack)
 
     if restored_state_data do
       # Apply the restored state components
-      # emulator = TerminalState.restore(emulator, restored_state_data)
-      new_cursor = %{emulator.cursor | position: restored_state_data.cursor_pos}
-      new_attrs = restored_state_data.attributes
-      new_charsets = restored_state_data.charset_state
-      # Apply other state fields if they were saved
+      # Directly use the restored cursor, style, charset_state, mode_state, scroll_region
+      new_cursor = restored_state_data.cursor
+      new_style = restored_state_data.style
+      new_charset_state = restored_state_data.charset_state
+      new_mode_state = restored_state_data.mode_state
+      new_scroll_region = restored_state_data.scroll_region
 
       %{
         emulator
         | state_stack: new_stack,
           cursor: new_cursor,
-          current_attributes: new_attrs,
-          charsets: new_charsets
+          style: new_style,
+          charset_state: new_charset_state,
+          mode_state: new_mode_state,
+          scroll_region: new_scroll_region
       }
     else
       # Stack was empty, no state to restore
@@ -211,21 +214,22 @@ defmodule Raxol.Terminal.ControlCodes do
 
   # --- Helper Function ---
 
-  defp maybe_scroll(state) do
-    {cursor_row, _} = Emulator.get_cursor_position(state.emulator)
-    # Get scroll region directly from emulator state
-    scroll_region = state.emulator.scroll_region
-    active_buffer = Emulator.get_active_buffer(state.emulator)
-
-    {_top, bottom} = scroll_region || {0, ScreenBuffer.get_height(active_buffer) - 1}
-
-    if cursor_row > bottom do # Check if cursor is *below* the region
-      # Return updated emulator state after scrolling
-      # Raxol.Terminal.Commands.Screen.scroll_up(state.emulator, 1)
-      Logger.debug("Cursor below scroll region, would scroll up (currently commented out)")
-      state # Return original state for now
-    else
-      state # Cursor within region, no scroll needed
-    end
-  end
+  # REMOVE Private maybe_scroll definition
+  # defp maybe_scroll(state) do
+  #   {cursor_row, _} = Emulator.get_cursor_position(state.emulator)
+  #   # Get scroll region directly from emulator state
+  #   scroll_region = state.emulator.scroll_region
+  #   active_buffer = Emulator.get_active_buffer(state.emulator)
+  #
+  #   {_top, bottom} = scroll_region || {0, ScreenBuffer.get_height(active_buffer) - 1}
+  #
+  #   if cursor_row > bottom do # Check if cursor is *below* the region
+  #     # Return updated emulator state after scrolling
+  #     # Raxol.Terminal.Commands.Screen.scroll_up(state.emulator, 1)
+  #     Logger.debug("Cursor below scroll region, would scroll up (currently commented out)")
+  #     state # Return original state for now
+  #   else
+  #     state # Cursor within region, no scroll needed
+  #   end
+  # end
 end

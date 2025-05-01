@@ -148,10 +148,10 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       buffer = ScreenBuffer.start_selection(buffer, 1, 1)
       buffer = ScreenBuffer.update_selection(buffer, 3, 2)
 
-      assert ScreenBuffer.is_in_selection?(buffer, 2, 1)
-      assert ScreenBuffer.is_in_selection?(buffer, 1, 2)
-      refute ScreenBuffer.is_in_selection?(buffer, 0, 0)
-      refute ScreenBuffer.is_in_selection?(buffer, 4, 3)
+      assert ScreenBuffer.in_selection?(buffer, 2, 1)
+      assert ScreenBuffer.in_selection?(buffer, 1, 2)
+      refute ScreenBuffer.in_selection?(buffer, 0, 0)
+      refute ScreenBuffer.in_selection?(buffer, 4, 3)
     end
 
     test "gets selection boundaries" do
