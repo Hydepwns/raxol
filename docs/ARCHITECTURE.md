@@ -100,29 +100,30 @@ Raxol is organized into logical subsystems:
 lib/raxol/
 ├── accounts/              # User accounts related modules
 │   └── ...
+├── accounts.ex            # User accounts entry point
 ├── ai/                    # AI integration modules
 │   └── ...
 ├── animation/             # Animation framework modules
 │   └── ...
 ├── application.ex         # Top-level application definition
-├── auth/
+├── auth/                  # Authentication modules
 │   └── ...
-├── auth.ex                # Authentication logic
+├── auth.ex                # Authentication logic entry point
 ├── benchmarks/            # Performance benchmarks
-│   └── performance/       # Extracted benchmark categories
+│   └── ...
 ├── cli/                   # Command Line Interface modules
 │   └── ...
 ├── cloud/                 # Cloud integration modules
-│   └── monitoring/        # Extracted monitoring sub-modules
-├── cloud.ex               # Cloud integration entry point
-├── components/            # UI Components (appears top-level? might be older structure? - See ui/components/)
 │   └── ...
-├── core/                  # Core runtime, application, plugins, events, rendering
+├── cloud.ex               # Cloud integration entry point
+├── components/            # UI Components (New top-level, distinct from ui/components?)
+│   └── ...
+├── core/                  # Core runtime, application, events, rendering orchestration
 │   ├── accessibility/     # Accessibility features
-│   │   └── theme_integration.ex
+│   │   └── ...
 │   ├── accessibility.ex   # Core Accessibility logic
 │   ├── color_system.ex    # Theme/color management
-│   ├── events/            # Event handling logic
+│   ├── events/            # Event handling logic (distinct from runtime/events?)
 │   │   └── ...
 │   ├── focus_manager.ex   # Focus management logic
 │   ├── i18n.ex            # Internationalization
@@ -131,149 +132,77 @@ lib/raxol/
 │   ├── keyboard_shortcuts.ex # Shortcut management
 │   ├── performance/       # Core performance modules
 │   │   └── ...
-│   ├── plugins/           # Core plugin definitions (distinct from top-level plugins/)
+│   ├── plugins/           # Core plugin definitions (e.g., clipboard, notification)
 │   │   └── ...
 │   ├── preferences/       # User preferences storage
-│   │   └── persistence.ex
+│   │   └── ...
 │   ├── renderer/          # Core rendering logic (distinct from ui/renderer.ex?)
 │   │   └── ...
-│   ├── runtime/           # Runtime application behaviour, lifecycle, etc.
+│   ├── runtime/           # Runtime behaviour, lifecycle, etc. (Primary location)
 │   │   ├── application.ex
-│   │   ├── dispatcher.ex
-│   │   ├── lifecycle.ex
-│   │   ├── plugins/       # Plugin Manager, Loader, Helpers, Registry (nested)
-│   │   └── rendering/     # Rendering Engine & Scheduler (nested)
+│   │   ├── events/        # Runtime event handling (distinct from core/events?)
+│   │   ├── plugins/       # Plugin Manager, Loader, Registry (Primary location)
+│   │   └── rendering/     # Rendering Engine & Scheduler (Primary location)
 │   ├── user_preferences.ex # User preferences GenServer
 │   └── ux_refinement.ex   # UX refinement features
 ├── database/              # Database interaction modules
 │   └── ...
 ├── database.ex            # Database interaction entry point
-├── docs/                  # Embedded documentation generators
+├── docs/                  # Embedded documentation generators & data
+│   ├── catalog_data/
 │   ├── component_catalog.ex
-│   └── interactive_tutorial.ex
+│   ├── interactive_tutorial.ex
+│   └── tutorial_viewer.ex
 ├── dynamic_supervisor.ex  # Dynamic supervisor definition
-├── examples/              # Example applications
-│   ├── accessibility_demo.ex
-│   ├── color_system_demo.ex
-│   ├── form.ex
-│   ├── integrated_accessibility_demo.ex
-│   └── ux_refinement_demo.ex
-├── metrics/
+├── metrics/               # Metrics collection modules
 │   └── ...
-├── metrics.ex             # Metrics collection
-├── plugins/               # Application plugins
-│   ├── core/              # Core plugins (clipboard, notification)
-│   ├── clipboard_plugin.ex
-│   ├── hyperlink_plugin.ex
-│   ├── image_plugin.ex
-│   ├── notification_plugin.ex
+├── metrics.ex             # Metrics collection entry point
+├── plugins/               # Application plugins (distinct from core/plugins?)
+│   ├── visualization/     # Visualization Plugin & Renderers
+│   ├── ...                # Other plugins (clipboard, hyperlink, etc.)
 │   ├── plugin.ex          # Plugin behaviour definition
-│   ├── plugin_config.ex
-│   ├── plugin_dependency.ex
-│   ├── plugin_manager.ex  # Plugin manager (duplicate? see core/runtime/plugins/)
-│   ├── search_plugin.ex
-│   ├── theme_plugin.ex
-│   └── visualization/     # Visualization Plugin Renderers & Helpers
-│       ├── chart_renderer.ex
-│       ├── drawing_utils.ex
-│       ├── image_renderer.ex
-│       └── treemap_renderer.ex
-├── recording/
+│   ├── plugin_manager.ex  # Plugin manager (Duplicate? Primary is core/runtime/plugins/manager.ex)
 │   └── ...
-├── renderer/              # Rendering related modules (top-level)
+├── recording/             # Recording & playback modules
+│   └── ...
+├── renderer/              # Top-level rendering modules (Duplicate? Primary is core/runtime/rendering?)
 │   └── ...
 ├── repo.ex                # Ecto Repo definition
-├── runtime/               # Runtime modules (top-level, duplicate? see core/runtime/)
+├── runtime/               # Top-level runtime modules (Duplicate? Primary is core/runtime/)
 │   └── ...
-├── session.ex             # Session management
+├── session.ex             # Session management entry point
 ├── style/                 # Styling and theming modules
 │   └── ...
-├── system/
+├── system/                # System utilities (updater, platform detection)
 │   └── ...
-├── terminal/              # Terminal I/O and ANSI Processing
-│   ├── ansi/              # ANSI sequence modules
-│   │   ├── character_sets.ex
-│   │   ├── character_translations.ex
-│   │   ├── device_status.ex
-│   │   ├── emitter.ex
-│   │   ├── mouse_events.ex
-│   │   ├── parser.ex          # ANSI Parser state machine
-│   │   ├── processor.ex       # ANSI Processor
-│   │   ├── screen_modes.ex    # ANSI Screen Modes
-│   │   ├── sequence_parser.ex # ANSI Sequence Parser
-│   │   ├── sequences/         # Specific ANSI sequence handlers
-│   │   ├── sixel_graphics.ex  # Stateful sixel parser
-│   │   ├── sixel_palette.ex   # Sixel palette management
-│   │   ├── sixel_pattern_map.ex # Sixel pattern mapping
-│   │   ├── terminal_state.ex  # ANSI Terminal State
-│   │   ├── text_formatting.ex # ANSI Text Formatting
-│   │   └── window_manipulation.ex
-│   ├── ansi.ex              # ANSI helper module
-│   ├── ansi_facade.ex       # Facade for ANSI operations
-│   ├── buffer/              # ScreenBuffer logic
-│   │   └── operations.ex
-│   ├── cell.ex              # Terminal cell representation
-│   ├── character_handling.ex
-│   ├── character_sets/      # Character set specific logic
-│   ├── clipboard.ex         # Clipboard interaction
-│   ├── command_executor.ex  # Command execution within terminal
-│   ├── commands/            # Terminal command related modules
-│   │   └── history.ex
-│   ├── commands.ex          # Terminal command definitions
-│   ├── config/              # Terminal configuration helpers
-│   │   └── utils.ex
-│   ├── config.ex            # Terminal configuration
-│   ├── configuration.ex     # Terminal configuration loading
-│   ├── constants.ex         # Terminal constants (from NIF)
-│   ├── control_codes.ex     # C0/Simple ESC handlers
-│   ├── cursor/              # Cursor management
+├── terminal/              # Terminal I/O, NIF driver, ANSI Processing, Buffer
+│   ├── ansi/              # ANSI sequence modules (Parser, Sixel, etc.)
 │   │   └── ...
-│   ├── display/             # Terminal display modules
+│   ├── buffer/            # ScreenBuffer logic
 │   │   └── ...
-│   ├── driver.ex            # Manages `:rrex_termbox` NIF interface
-│   ├── emulator.ex          # Terminal state management/emulation
-│   ├── escape_sequence.ex   # Escape sequence handling
-│   ├── input/
+│   ├── commands/          # Terminal command related modules
 │   │   └── ...
-│   ├── input.ex             # Input event handling
-│   ├── input_handler.ex     # Input handler process
-│   ├── integration.ex       # Terminal integration logic
-│   ├── manager.ex           # Terminal manager process
-│   ├── memory_manager.ex    # Terminal memory management
-│   ├── modes.ex             # Terminal modes
-│   ├── parser/              # Parser state handlers
-│   │   └── states/
-│   ├── parser.ex            # Main terminal input parser
-│   ├── README.md
-│   ├── registry.ex          # Terminal registry
-│   ├── renderer.ex          # Terminal specific rendering logic
-│   ├── screen_buffer.ex     # Screen buffer implementation
-│   ├── screen_modes.ex      # Screen mode handling
-│   ├── session.ex           # Terminal session management
-│   ├── supervisor.ex        # Terminal supervisor
-│   ├── terminal_utils.ex    # Terminal utility functions
-│   └── text_formatting.ex   # Text formatting helpers
-├── test/                  # Test files and helpers
+│   ├── config/            # Terminal configuration helpers
+│   │   └── ...
+│   ├── ...                # Driver, Emulator, Parser, etc.
+│   └── terminal_utils.ex  # Terminal utility functions
+├── test/                  # Test files and helpers (moved from top-level?)
 │   └── ...
-├── ui/                    # UI Components, Layout, Rendering, Theming
+├── ui/                    # UI Components, Layout, Rendering, Theming (Primary UI layer)
 │   ├── components/        # UI Components (implementing Base.Component)
 │   │   ├── base/          # Base component behaviour
 │   │   ├── display/       # Display components (Table, etc.)
-│   │   ├── input/         # Input components (Button, TextInput, MultiLineInput, etc.)
-│   │   │   └── multi_line_input/ # MultiLineInput Helpers
-│   │   └── navigation/    # Navigation components
+│   │   └── input/         # Input components (Button, TextInput, etc.)
 │   ├── layout/            # Layout Engine (measure/position)
 │   │   └── ...
 │   ├── renderer.ex        # Converts elements to styled cells
-│   ├── rendering/         # Rendering helpers
+│   ├── rendering/         # Rendering helpers (duplicate?)
 │   │   └── ...
-│   ├── terminal.ex        # UI specific terminal interaction?
 │   └── theming/           # Theme definitions and application
 │       └── ...
 ├── view/                  # View Definition DSL
 │   ├── elements.ex        # Macros for UI elements (box, text, etc.)
-│   ├── components.ex
-│   └── layout.ex
+│   └── ...
 └── web/                   # Web interface modules
     └── ...
 ```
