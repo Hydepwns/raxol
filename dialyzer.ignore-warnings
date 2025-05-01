@@ -135,11 +135,11 @@
 { ~r\"lib/raxol/(components/.*|core/renderer/views|view/layout|web/controllers)\\.ex\", :no_return, ~r/Function (render|row|column|panel|view|render_.*)/ },
 
 # Examples and test files that may have intentional Dialyzer warnings
-{ ~r\"lib/raxol/examples/.+\\.ex\", :unused_fun },
+{ ~r\"examples/demos/.+\\.ex\", :unused_fun },
 { ~r\"lib/raxol/test/.+\\.ex\", :unused_fun },
-{ ~r\"lib/raxol/examples/.+\\.ex\", :unmatched_return, ~r/The expression produces multiple types/ },
-{ ~r\"lib/raxol/examples/.+\\.ex\", :pattern_match, ~r/The pattern can never match the type/ },
-{ ~r\"lib/raxol/examples/.+\\.ex\", ~r/callback_/ },
+{ ~r\"examples/demos/.+\\.ex\", :unmatched_return, ~r/The expression produces multiple types/ },
+{ ~r\"examples/demos/.+\\.ex\", :pattern_match, ~r/The pattern can never match the type/ },
+{ ~r\"examples/demos/.+\\.ex\", ~r/callback_/ },
 
 # Configuration and core modules with special needs
 { "lib/raxol/terminal/configuration.ex", :unused_fun },
@@ -157,7 +157,7 @@
 { ~r\"lib/raxol/plugins/.+\\.ex\", ~r/callback_/ },
 { ~r\"lib/raxol/components/.+\\.ex\", ~r/callback_/ },
 { "lib/raxol/runtime_debug.ex", ~r/callback_/ },
-{ "lib/raxol/examples/button.ex", ~r/callback_/ },
+{ "examples/demos/button.ex", ~r/callback_/ },
 
 # Contract and type warnings in specialized modules
 { ~r\"lib/raxol/terminal/ansi/.+\\.ex\", :contract_supertype },

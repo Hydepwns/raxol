@@ -15,6 +15,10 @@ defmodule Raxol.Docs.ComponentCatalog do
   * Search functionality
   """
 
+  # TODO: Consolidate component source directories.
+  # Currently, components exist in both `lib/raxol/components/` and `lib/raxol/ui/components/`.
+  # Need to establish a canonical location and refactor references accordingly.
+
   # Component category
   defmodule Category do
     @moduledoc false
@@ -72,6 +76,9 @@ defmodule Raxol.Docs.ComponentCatalog do
 
   # Process dictionary key for catalog state
   @catalog_key :raxol_component_catalog
+
+  # Import the DSL elements
+  import Raxol.View.Elements
 
   @doc """
   Initializes the component catalog.
@@ -206,18 +213,49 @@ defmodule Raxol.Docs.ComponentCatalog do
     component = get_component(component_id)
 
     if component do
-      module_name =
-        component.module |> to_string() |> String.replace("Elixir.", "")
-
-      # Generate props string
+      # Generate props string suitable for DSL functions
       props_str =
         props
-        |> Enum.map(fn {k, v} -> "#{k}: #{inspect(v)}" end)
+        |> Enum.map(fn {k, v} ->
+          # Handle special cases like content (often the first arg)
+          if k == :content || k == :label do
+            nil # Handled separately or as first arg
+          else
+            "#{k}: #{inspect(v)}"
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
         |> Enum.join(", ")
 
-      # Basic snippet for simple components
+      # Determine the main argument (content or label)
+      main_arg =
+        cond do
+          props[:content] -> inspect(props[:content])
+          props[:label] -> inspect(props[:label])
+          true -> nil
+        end
+
+      # Construct the DSL call
+      dsl_call =
+        if main_arg do
+          if props_str == "" do
+            "#{component.id}(#{main_arg})"
+          else
+            "#{component.id}(#{main_arg}, #{props_str})"
+          end
+        else
+          if props_str == "" do
+            "#{component.id}()" # Or handle components requiring content differently
+          else
+            "#{component.id}(#{props_str})"
+          end
+        end
+
+      # Wrap in a view block for context
       """
-      #{module_name}.#{component.id}(#{if props_str != "", do: props_str})
+      view do
+        #{dsl_call}
+      end
       """
     else
       {:error, "Component not found"}
@@ -262,434 +300,141 @@ defmodule Raxol.Docs.ComponentCatalog do
     Process.get(@catalog_key) || build_catalog()
   end
 
+  # Load component definitions dynamically from files
   defp build_catalog do
-    # Basic components
-    basic_components = [
-      %Component{
-        id: "button",
-        name: "Button",
-        module: Raxol.Components.Button,
-        description: "A standard button component for triggering actions.",
-        examples: [
-          %Example{
-            id: "basic",
-            title: "Basic Button",
-            description: "A simple button with default styling.",
-            code: "Components.button(\"Click me\")",
-            preview_fn: fn props ->
-              Raxol.Components.Button.new(
-                props[:label] || "Click me",
-                Map.drop(props, [:label]) |> Enum.to_list()
-              )
-            end,
-            customizable_props: [
-              %Property{
-                name: :label,
-                type: :string,
-                description: "Button text",
-                default_value: "Click me"
-              },
-              %Property{
-                name: :on_click,
-                type: :function,
-                description: "Function called when clicked",
-                default_value: nil
-              },
-              %Property{
-                name: :disabled,
-                type: :boolean,
-                description: "Whether the button is disabled",
-                default_value: false
-              },
-              %Property{
-                name: :style,
-                type: :atom,
-                description: "Button style",
-                default_value: :primary,
-                options: [
-                  :primary,
-                  :secondary,
-                  :success,
-                  :danger,
-                  :warning,
-                  :info
-                ]
-              }
-            ]
-          },
-          %Example{
-            id: "icon_button",
-            title: "Icon Button",
-            description: "A button with an icon.",
-            code: "Components.button(\"Save\", icon: :save)",
-            preview_fn: fn props ->
-              Raxol.Components.Button.new(
-                props[:label] || "Save",
-                Map.merge(
-                  %{icon: props[:icon] || :save},
-                  Map.drop(props, [:label, :icon])
-                )
-                |> Enum.to_list()
-              )
-            end,
-            customizable_props: [
-              %Property{
-                name: :label,
-                type: :string,
-                description: "Button text",
-                default_value: "Save"
-              },
-              %Property{
-                name: :icon,
-                type: :atom,
-                description: "Icon to display",
-                default_value: :save,
-                options: [:save, :delete, :edit, :add, :cancel, :search]
-              }
-            ]
-          }
-        ],
-        properties: [
-          %Property{
-            name: :label,
-            type: :string,
-            description: "Text to display on the button",
-            required: true
-          },
-          %Property{
-            name: :on_click,
-            type: :function,
-            description: "Function called when the button is clicked",
-            required: false
-          },
-          %Property{
-            name: :disabled,
-            type: :boolean,
-            description: "Whether the button is disabled",
-            default_value: false,
-            required: false
-          },
-          %Property{
-            name: :style,
-            type: :atom,
-            description: "Button style variant",
-            default_value: :primary,
-            options: [:primary, :secondary, :success, :danger, :warning, :info],
-            required: false
-          },
-          %Property{
-            name: :icon,
-            type: :atom,
-            description: "Icon to display next to the text",
-            required: false
-          },
-          %Property{
-            name: :icon_position,
-            type: :atom,
-            description: "Position of the icon",
-            default_value: :left,
-            options: [:left, :right],
-            required: false
-          },
-          %Property{
-            name: :size,
-            type: :atom,
-            description: "Button size",
-            default_value: :medium,
-            options: [:small, :medium, :large],
-            required: false
-          },
-          %Property{
-            name: :full_width,
-            type: :boolean,
-            description: "Whether the button should take full width",
-            default_value: false,
-            required: false
-          },
-          %Property{
-            name: :id,
-            type: :string,
-            description: "Unique identifier for the button",
-            required: false
-          }
-        ],
-        accessibility: %{
-          role: "button",
-          aria_attributes: ["aria-disabled", "aria-pressed", "aria-expanded"],
-          keyboard_support: ["Enter", "Space"],
-          screen_reader_text: "Announces the button label when focused",
-          high_contrast:
-            "Uses high-contrast styles when high-contrast mode is enabled",
-          best_practices: [
-            "Use clear and concise labels",
-            "Avoid using generic labels like 'Click here'",
-            "Use appropriate button styles to indicate purpose"
-          ]
-        },
-        related_components: ["link_button", "icon_button", "dropdown_button"],
-        tags: ["input", "interactive", "action", "basic"],
-        metadata: %{
-          added_in_version: "0.1.0",
-          last_updated: "0.1.2"
-        }
-      },
-      %Component{
-        id: "text_input",
-        name: "Text Input",
-        module: Raxol.Components.TextInput,
-        description: "A text input field for single-line text input.",
-        examples: [
-          %Example{
-            id: "basic",
-            title: "Basic Text Input",
-            description: "A simple text input with default styling.",
-            code: "Components.text_input(placeholder: \"Enter your name\")",
-            preview_fn: fn props ->
-              # Assuming ExampleComponent.TextInput.render exists and handles props
-              # Placeholder: Render the props map for now
-              # ExampleComponent.TextInput.render(props, do: [IO.inspect(props, label: "TextInput Props")])
-              # Use new/1 instead of text_input/1
-              Raxol.Components.TextInput.new(props)
-            end,
-            customizable_props: [
-              %Property{
-                name: :value,
-                type: :string,
-                description: "Current input value",
-                default_value: ""
-              },
-              %Property{
-                name: :placeholder,
-                type: :string,
-                description: "Placeholder text",
-                default_value: "Enter your name"
-              },
-              %Property{
-                name: :disabled,
-                type: :boolean,
-                description: "Whether the input is disabled",
-                default_value: false
-              }
-            ]
-          }
-        ],
-        properties: [
-          %Property{
-            name: :value,
-            type: :string,
-            description: "Current value of the input",
-            required: false
-          },
-          %Property{
-            name: :placeholder,
-            type: :string,
-            description: "Placeholder text when input is empty",
-            required: false
-          },
-          %Property{
-            name: :on_change,
-            type: :function,
-            description: "Function called when the value changes",
-            required: false
-          },
-          %Property{
-            name: :on_submit,
-            type: :function,
-            description: "Function called when Enter is pressed",
-            required: false
-          },
-          %Property{
-            name: :disabled,
-            type: :boolean,
-            description: "Whether the input is disabled",
-            default_value: false,
-            required: false
-          },
-          %Property{
-            name: :type,
-            type: :atom,
-            description: "Input type",
-            default_value: :text,
-            options: [:text, :password, :number, :email],
-            required: false
-          },
-          %Property{
-            name: :id,
-            type: :string,
-            description: "Unique identifier for the input",
-            required: false
-          },
-          %Property{
-            name: :label,
-            type: :string,
-            description: "Label for the input",
-            required: false
-          },
-          %Property{
-            name: :error,
-            type: :string,
-            description: "Error message to display",
-            required: false
-          }
-        ],
-        accessibility: %{
-          role: "textbox",
-          aria_attributes: [
-            "aria-disabled",
-            "aria-required",
-            "aria-invalid",
-            "aria-describedby"
-          ],
-          keyboard_support: ["Tab", "Shift+Tab", "Enter"],
-          screen_reader_text:
-            "Announces the input label, placeholder, and current value",
-          high_contrast:
-            "Uses high-contrast styles when high-contrast mode is enabled",
-          best_practices: [
-            "Always provide a label",
-            "Use placeholder text as supplementary information, not as a replacement for labels",
-            "Provide clear error messages when validation fails"
-          ]
-        },
-        related_components: [
-          "textarea",
-          "number_input",
-          "password_input",
-          "form"
-        ],
-        tags: ["input", "interactive", "form", "basic"],
-        metadata: %{
-          added_in_version: "0.1.0",
-          last_updated: "0.1.2"
-        }
-      }
-    ]
+    catalog_data_path = Path.join(__DIR__, "catalog_data")
 
-    # Layout components
-    layout_components = [
-      %Component{
-        id: "panel",
-        name: "Panel",
-        module: Raxol.Components.Panel,
-        description: "A container component for grouping related UI elements.",
-        examples: [
-          %Example{
-            id: "basic",
-            title: "Basic Panel",
-            description: "A simple panel with default styling.",
-            code: """
-            Components.panel do
-              Components.title("Panel Title")
-              Components.text("Panel content goes here.")
-            end
-            """,
-            preview_fn: fn props ->
-              # Raxol.Components.Panel.panel(props, do: [
-              #   Raxol.Components.Title.title(props[:title] || "Panel Title"),
-              #   Raxol.Components.Text.text(props[:content] || "Panel content goes here.")
-              # ])
-              # Placeholder until components are confirmed available
-              %{type: :panel, props: props}
-            end,
-            customizable_props: [
-              %Property{
-                name: :title,
-                type: :string,
-                description: "Panel title",
-                default_value: "Panel Title"
-              },
-              %Property{
-                name: :style,
-                type: :atom,
-                description: "Panel style",
-                default_value: :default,
-                options: [:default, :primary, :secondary, :bordered, :none]
-              }
-            ]
-          }
-        ],
-        properties: [
-          %Property{
-            name: :title,
-            type: :string,
-            description: "Title of the panel",
-            required: false
-          },
-          %Property{
-            name: :style,
-            type: :atom,
-            description: "Panel style variant",
-            default_value: :default,
-            options: [:default, :primary, :secondary, :bordered, :none],
-            required: false
-          },
-          %Property{
-            name: :padding,
-            type: :atom,
-            description: "Padding inside the panel",
-            default_value: :medium,
-            options: [:none, :small, :medium, :large],
-            required: false
-          },
-          %Property{
-            name: :border,
-            type: :boolean,
-            description: "Whether to show a border",
-            default_value: true,
-            required: false
-          },
-          %Property{
-            name: :shadow,
-            type: :boolean,
-            description: "Whether to show a shadow",
-            default_value: false,
-            required: false
-          },
-          %Property{
-            name: :id,
-            type: :string,
-            description: "Unique identifier for the panel",
-            required: false
-          }
-        ],
-        accessibility: %{
-          role: "region",
-          aria_attributes: ["aria-labelledby"],
-          keyboard_support: [],
-          screen_reader_text:
-            "If a title is provided, it will be announced as the region label",
-          high_contrast:
-            "Uses high-contrast styles when high-contrast mode is enabled",
-          best_practices: [
-            "Always provide a title for the panel",
-            "Group related content within panels",
-            "Use consistent styling for similar panels"
-          ]
-        },
-        related_components: ["card", "box", "container", "grid"],
-        tags: ["layout", "container", "grouping", "structure"],
-        metadata: %{
-          added_in_version: "0.1.0",
-          last_updated: "0.1.1"
-        }
-      }
-    ]
+    component_files = Path.wildcard(Path.join(catalog_data_path, "*/*.exs"))
 
-    # Build the complete catalog
-    %{
-      "basic" => %Category{
-        id: "basic",
+    loaded_components =
+      Enum.map(component_files, fn file_path ->
+        case Code.eval_file(file_path) do
+          {static_component_data, _binding} ->
+            # Attempt Introspection
+            module = static_component_data.module
+            introspected_data = fetch_introspected_data(module)
+
+            # Extract descriptions from constructor docstring if possible
+            constructor_doc = find_constructor_doc(introspected_data.fun_docs)
+            prop_descriptions_from_doc = parse_prop_descriptions(constructor_doc)
+
+            # Enrich static properties with introspected descriptions
+            enriched_properties = enrich_properties(
+              static_component_data.properties,
+              prop_descriptions_from_doc
+            )
+
+            # Merge top-level description (prefer introspected moduledoc)
+            merged_description = introspected_data.description || static_component_data.description
+
+            # Build final component data, prioritizing static data except for enriched fields
+            final_component_data = static_component_data
+            |> Map.put(:description, merged_description)
+            |> Map.put(:properties, enriched_properties)
+
+            # Extract category name from directory path
+            category_id = file_path
+            |> Path.dirname()
+            |> Path.basename()
+            {category_id, final_component_data}
+          {:error, reason} ->
+            # Handle or log error loading file
+            IO.warn("Error loading component definition #{file_path}: #{inspect(reason)}")
+            nil
+        end
+      end)
+      |> Enum.reject(&is_nil/1)
+
+    # Group components by category_id
+    components_by_category =
+      loaded_components
+      |> Enum.group_by(fn {category_id, _component} -> category_id end, fn {_category_id, component} -> component end)
+
+    # Define category metadata (could also be loaded from files)
+    category_definitions = %{
+      "basic" => %{
         name: "Basic Components",
-        description: "Fundamental UI components for building interfaces",
-        components: basic_components
+        description: "Fundamental UI components for building interfaces"
       },
-      "layout" => %Category{
-        id: "layout",
+      "layout" => %{
         name: "Layout Components",
-        description: "Components for structuring and organizing content",
-        components: layout_components
+        description: "Components for structuring and organizing content"
+      },
+      "display" => %{
+        name: "Display Components",
+        description: "Components for presenting data and information"
       }
-      # More categories would be defined here
+      # Add more category definitions as needed
     }
+
+    # Build the final catalog map
+    category_definitions
+    |> Map.new(fn {id, meta} ->
+      components = Map.get(components_by_category, id, [])
+      # Optionally sort components within category here
+      # components = Enum.sort_by(components, & &1.name)
+
+      category_struct = %Category{
+        id: id,
+        name: meta.name,
+        description: meta.description,
+        components: components
+      }
+      {id, category_struct}
+    end)
   end
+
+  # --- Introspection Helpers ---
+
+  # Find the doc entry for the 'new/1' or similar constructor function
+  defp find_constructor_doc(fun_docs) do
+    Enum.find(fun_docs, fn {{_kind, name, arity}, _line, _sigs, _doc_map, _meta} ->
+      # Look for 'new' with arity 0 or 1, common conventions
+      name == :new && (arity == 0 || arity == 1)
+    end)
+  end
+
+  # Simple parser for ## Options style docstrings (adjust regex as needed)
+  # Example: "* `:label` - Text to display on the button"
+  defp parse_prop_descriptions(nil), do: %{}
+  defp parse_prop_descriptions({_, _line, _sigs, %{\"en\" => docstring}, _meta}) when is_binary(docstring) do
+    Regex.scan(~r/^\s*\*\s*`:(?<name>\w+)`\s*-\s*(?<desc>.*)$/m, docstring)
+    |> Enum.reduce(%{}, fn [_, name, desc], acc ->
+      Map.put(acc, String.to_atom(name), String.trim(desc))
+    end)
+  end
+  defp parse_prop_descriptions(_), do: %{}
+
+  # Enrich properties from .exs with descriptions found via introspection
+  defp enrich_properties(static_properties, introspected_descs) do
+    Enum.map(static_properties, fn prop = %Raxol.Docs.ComponentCatalog.Property{} ->
+      # Prefer introspected description if found and static one is missing/generic
+      introspected_desc = Map.get(introspected_descs, prop.name)
+      if introspected_desc && (is_nil(prop.description) || prop.description == "") do
+        %{prop | description: introspected_desc}
+      else
+        prop # Keep the static property data
+      end
+    end)
+  end
+
+  # Helper to fetch introspectable data from a module
+  defp fetch_introspected_data(module) when is_atom(module) do
+    # Ensure the module is loaded before fetching docs
+    Code.ensure_loaded?(module)
+
+    case Code.fetch_docs(module) do
+      {:docs_v1, _annotation, _beam_language, _format, module_doc_map, meta, docs} ->
+        moduledoc = Map.get(module_doc_map, "en")
+        # Extract function docs (focusing on :function type for now)
+        fun_docs = Enum.filter(docs, fn {{kind, _name, _arity}, _line, _signatures, _doc_map, _meta} ->
+          kind == :function
+        end)
+        %{description: moduledoc, fun_docs: fun_docs}
+      _ ->
+        # Module not found or no docs available
+        %{}
+    end
+  end
+  defp fetch_introspected_data(_), do: %{}
 end

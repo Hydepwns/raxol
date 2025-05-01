@@ -53,8 +53,8 @@ Raxol.Cloud.monitor(:error, exception, severity: :warning)
 Raxol.Cloud.monitor(:health)
 
 # Trigger alert
-Raxol.Cloud.monitor(:alert, :high_cpu_usage, 
-  data: %{value: 0.95}, 
+Raxol.Cloud.monitor(:alert, :high_cpu_usage,
+  data: %{value: 0.95},
   severity: :critical
 )
 ```
@@ -112,7 +112,7 @@ Raxol.Cloud.connect(
 
 ## Example
 
-See the `examples/cloud_integration.exs` script for a complete example of using the cloud integration system.
+See the `examples/snippets/showcase/cloud_integration.exs` script for a complete example of using the cloud integration system.
 
 ## Environment Variables
 

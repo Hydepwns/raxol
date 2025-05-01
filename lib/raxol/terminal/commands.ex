@@ -482,4 +482,27 @@ defmodule Raxol.Terminal.Commands do
 
   #   History.next(history)
   # end
+
+  # --- Example Usage (Conceptual) ---
+  def example_usage do
+    # Assuming initial state creation or retrieval
+    initial_state = %{history_buffer: Raxol.Terminal.Commands.History.new(1000)}
+
+    # Adding a command
+    state_after_add = Map.update!(initial_state, :history_buffer, fn history ->
+      Raxol.Terminal.Commands.History.add(history, "ls -la")
+    end)
+
+    # Navigating history (example)
+    {_previous_cmd, state_after_prev} = Map.get_and_update!(state_after_add, :history_buffer, fn history ->
+      Raxol.Terminal.Commands.History.previous(history)
+    end)
+
+    # {command, history} = Raxol.Terminal.CommandHistory.next(history) # Deprecated
+    {_next_cmd, _final_state} = Map.get_and_update!(state_after_prev, :history_buffer, fn history ->
+       Raxol.Terminal.Commands.History.next(history)
+    end)
+
+    # ... other operations ...
+  end
 end

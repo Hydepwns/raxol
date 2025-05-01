@@ -1,29 +1,34 @@
 ---
 title: Raxol Library Documentation
 description: Documentation for using the Raxol TUI library in Elixir projects
-date: 2025-07-26 # TODO: Use file mod time or build time if possible
+date: 2025-05-01
 author: DROO AMOR
 section: overview
 tags: [documentation, overview, library, tui, elixir]
 ---
 
-# Raxol Documentation
+## Raxol Documentation
 
 Welcome to the main documentation index for Raxol, a terminal application toolkit for Elixir.
 
 ## Key Sections
 
-- **[Installation](development/DevelopmentSetup.md):** How to set up your development environment and add Raxol as a dependency.
-- **[Getting Started](guides/quick_start.md):** Build your first simple Raxol application using `Raxol.Core.Runtime.Application`.
+- **[Installation](guides/05_development_and_testing/DevelopmentSetup.md):** How to set up your development environment and add Raxol as a dependency.
+- **[Getting Started](guides/01_getting_started/quick_start.md):** Build your first simple Raxol application using `Raxol.Core.Runtime.Application`.
 - **[Architecture](ARCHITECTURE.md):** Overview of the Raxol system architecture.
-- **[UI Components & Layout](guides/components/README.md):** Documentation for built-in UI components and the layout system.
-- **[Async Operations](guides/async_operations.md):** Using subscriptions and commands for asynchronous tasks.
-- **[Theming](guides/theming.md):** Customizing the appearance of your application.
-- **[Plugin Development](guides/plugin_development.md):** Guide to creating custom plugins.
-- **[Terminal Details](development/terminal/README.md):** Lower-level information on terminal interaction.
-- **Examples:** Explore runnable examples in the main `/examples` directory.
-- **[CHANGELOG](development/changes/CHANGELOG.md):** Log of changes between versions.
-- **[Contributing](../CONTRIBUTING.md):** Guidelines for contributing to Raxol.
+- **[UI Components & Layout](guides/03_components_and_layout/components/README.md):** Documentation for built-in UI components and the layout system.
+- **[Core Concepts:**
+  - [Runtime Options](docs/guides/02_core_concepts/runtime_options.md)
+  - [Async Operations](docs/guides/02_core_concepts/async_operations.md)
+  - [Theming](docs/guides/02_core_concepts/theming.md)
+  - [Terminal Emulator](docs/guides/02_core_concepts/terminal_emulator.md)
+- **[Extending Raxol:**
+  - [Plugin Development](guides/04_extending_raxol/plugin_development.md)
+  - [VS Code Extension](guides/04_extending_raxol/vscode_extension.md)
+- **[Development & Testing](guides/05_development_and_testing/testing.md):** Guide to contributing and testing.
+- **[Terminal Details](guides/05_development_and_testing/development/terminal/README.md):** Lower-level information on terminal interaction.
+- **Examples:** Explore runnable demos and snippets in the top-level `examples/` directory.
+- **[CHANGELOG](changes/CHANGELOG.md):** Log of changes between versions.
 
 ## Navigating the Docs
 
