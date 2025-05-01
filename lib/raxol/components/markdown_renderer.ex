@@ -4,8 +4,7 @@ defmodule Raxol.Components.MarkdownRenderer do
 
   Requires the `earmark` dependency.
   """
-  use Raxol.Core.Runtime.Component # Assuming this is the correct behaviour for a simple component
-  import Raxol.View.Elements
+  use Raxol.UI.Components.Base.Component
 
   @doc """
   Renders the given Markdown string.
@@ -26,40 +25,23 @@ defmodule Raxol.Components.MarkdownRenderer do
   # to handle various Markdown features correctly.
   # It avoids raw HTML but might not render complex Markdown accurately.
 
-  def render(assigns) do
-    # Assuming Earmark is added as a dependency
-    # Use :pure_html option to avoid potential container tags like <p> if rendering line by line.
-    # However, for a block of markdown, parsing once might be better.
+  def render(state, _context) do
+    markdown_text = state[:markdown_text] || ""
+
     case Code.ensure_loaded?(Earmark) do
-      {:module, Earmark} ->
-        # Let's stick to rendering raw HTML for simplicity and correctness,
-        # assuming Raxol has a way to do this.
-        # We'll use a hypothetical `raw_html` function/element.
-        # If this doesn't exist, this component needs rethinking based on Raxol's capabilities.
-        html_content = Earmark.as_html!(@markdown_text, gfm: true, breaks: true, smartypants: true)
+      true ->
+        html_content = Earmark.as_html!(markdown_text, gfm: true, breaks: true, smartypants: true)
+        Raxol.View.Components.text(content: html_content)
 
-        view do
-          # Using a hypothetical `raw_html` element/function.
-          # The actual implementation depends on how Raxol handles embedding HTML.
-          # If raw_html isn't available, this component needs adaptation.
-          # A simple div wrapper for potential styling.
-           div(class: "markdown-body") do
-             raw_html(content: html_content)
-           end
-        end
-
-      {:error, _} ->
-         view do
-           div(style: "color: red; border: 1px solid red; padding: 5px;") do
-             text(content: "[MarkdownRenderer Error: Earmark library not found. Please add :earmark to your deps.]")
-             # Fallback to plain text rendering
-             pre do
-                text(content: @markdown_text)
-             end
-           end
-         end
+      false ->
+        Raxol.View.Components.text(content: markdown_text <> "\n[MarkdownRenderer Error: Earmark library not found.]")
     end
   end
+
+  # Add missing callbacks for Base.Component behaviour
+  def init(props), do: props # Simple init stores props in state
+  def update(_message, state), do: state # No updates handled
+  def handle_event(_event, state, _context), do: {state, []} # No events handled
 
   # Hypothetical raw_html component/function - needed for the above approach
   # If Raxol doesn't have this, the render function needs to change.

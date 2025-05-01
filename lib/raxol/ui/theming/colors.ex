@@ -9,6 +9,8 @@ defmodule Raxol.UI.Theming.Colors do
   - Validating color accessibility
   """
 
+  alias Raxol.Style.Colors.HSL
+
   # Format: "#RRGGBB" or "#RRGGBBAA"
   @type color_hex :: String.t()
   @type color_rgb :: {red :: 0..255, green :: 0..255, blue :: 0..255}
@@ -84,6 +86,8 @@ defmodule Raxol.UI.Theming.Colors do
   @doc """
   Lightens a color by the specified percentage.
 
+  Uses HSL color space for more perceptually uniform lightening.
+
   ## Examples
 
       iex> Colors.lighten("#FF0000", 20)
@@ -92,17 +96,22 @@ defmodule Raxol.UI.Theming.Colors do
   @spec lighten(color_hex | color_name, percentage :: 0..100) :: color_hex
   def lighten(color, percentage) when percentage >= 0 and percentage <= 100 do
     {r, g, b} = to_rgb(color)
+    {h, s, l} = HSL.rgb_to_hsl(r, g, b)
 
-    # Increase each component by the percentage
-    r_new = min(r + trunc((255 - r) * percentage / 100), 255)
-    g_new = min(g + trunc((255 - g) * percentage / 100), 255)
-    b_new = min(b + trunc((255 - b) * percentage / 100), 255)
+    # Adjust lightness, ensuring it stays within 0.0 to 1.0
+    l_adjust = percentage / 100.0
+    new_l = min(l + l_adjust, 1.0)
 
-    to_hex({r_new, g_new, b_new})
+    {new_r, new_g, new_b} = HSL.hsl_to_rgb(h, s, new_l)
+
+    # Convert back to hex
+    to_hex({round(new_r), round(new_g), round(new_b)})
   end
 
   @doc """
   Darkens a color by the specified percentage.
+
+  Uses HSL color space for more perceptually uniform darkening.
 
   ## Examples
 
@@ -112,13 +121,16 @@ defmodule Raxol.UI.Theming.Colors do
   @spec darken(color_hex | color_name, percentage :: 0..100) :: color_hex
   def darken(color, percentage) when percentage >= 0 and percentage <= 100 do
     {r, g, b} = to_rgb(color)
+    {h, s, l} = HSL.rgb_to_hsl(r, g, b)
 
-    # Decrease each component by the percentage
-    r_new = max(r - trunc(r * percentage / 100), 0)
-    g_new = max(g - trunc(g * percentage / 100), 0)
-    b_new = max(b - trunc(b * percentage / 100), 0)
+    # Adjust lightness, ensuring it stays within 0.0 to 1.0
+    l_adjust = percentage / 100.0
+    new_l = max(l - l_adjust, 0.0)
 
-    to_hex({r_new, g_new, b_new})
+    {new_r, new_g, new_b} = HSL.hsl_to_rgb(h, s, new_l)
+
+    # Convert back to hex
+    to_hex({round(new_r), round(new_g), round(new_b)})
   end
 
   @doc """

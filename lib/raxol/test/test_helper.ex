@@ -13,6 +13,7 @@ defmodule Raxol.Test.TestHelper do
   import ExUnit.Callbacks
   alias Raxol.Core.Runtime.{EventLoop}
   alias Raxol.Core.Events.{Event, Manager}
+  alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
   require Logger
 
   @doc """
@@ -24,6 +25,8 @@ defmodule Raxol.Test.TestHelper do
     # Start event system
     {:ok, event_pid} = start_supervised(Manager)
     {:ok, loop_pid} = start_supervised(EventLoop)
+    # Start plugin manager
+    {:ok, plugin_manager_pid} = start_supervised(PluginManager)
 
     # Create test terminal
     terminal = setup_test_terminal()
@@ -31,7 +34,8 @@ defmodule Raxol.Test.TestHelper do
     %{
       event_manager: event_pid,
       event_loop: loop_pid,
-      terminal: terminal
+      terminal: terminal,
+      plugin_manager: plugin_manager_pid
     }
   end
 
@@ -157,6 +161,11 @@ defmodule Raxol.Test.TestHelper do
 
     if context[:event_loop] do
       _ = stop_supervised(EventLoop)
+    end
+
+    # Stop plugin manager if started
+    if context[:plugin_manager] do
+      _ = stop_supervised(PluginManager)
     end
 
     # Clear any remaining messages

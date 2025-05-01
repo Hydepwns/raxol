@@ -57,7 +57,7 @@ defmodule Raxol.Style.Colors.Color do
     15 => {255, 255, 255}
   }
 
-  @derive {Jason.Encoder, only: [:r, :g, :b, :a]}
+  @derive Jason.Encoder
   defstruct [
     # RGB components (0-255)
     :r,

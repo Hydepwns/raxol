@@ -15,7 +15,8 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       Emulator.new(10, 5)
       |> Map.put(:main_screen_buffer, buffer)
       |> Map.put(:alternate_screen_buffer, ScreenBuffer.new(10, 5))
-      |> put_in([:cursor, :position], {2, 2})
+      # Update cursor directly on the struct
+      |> Map.put(:cursor, %{Emulator.new(0,0).cursor | position: {2, 2}})
 
     {:ok, %{emulator: emulator}}
   end
@@ -26,7 +27,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       filled_buffer =
         Enum.reduce(0..4, emulator.main_screen_buffer, fn y, acc ->
           Enum.reduce(0..9, acc, fn x, buf ->
-            ScreenBuffer.put_cell(buf, x, y, "X", %{})
+            ScreenBuffer.write_char(buf, x, y, "X", %{})
           end)
         end)
 
@@ -61,7 +62,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       filled_buffer =
         Enum.reduce(0..4, emulator.main_screen_buffer, fn y, acc ->
           Enum.reduce(0..9, acc, fn x, buf ->
-            ScreenBuffer.put_cell(buf, x, y, "X", %{})
+            ScreenBuffer.write_char(buf, x, y, "X", %{})
           end)
         end)
 
@@ -94,7 +95,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       filled_buffer =
         Enum.reduce(0..4, emulator.main_screen_buffer, fn y, acc ->
           Enum.reduce(0..9, acc, fn x, buf ->
-            ScreenBuffer.put_cell(buf, x, y, "X", %{})
+            ScreenBuffer.write_char(buf, x, y, "X", %{})
           end)
         end)
 
@@ -117,7 +118,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       # Fill buffer with test data
       filled_buffer =
         Enum.reduce(0..9, emulator.main_screen_buffer, fn x, buf ->
-          ScreenBuffer.put_cell(buf, x, 2, "X", %{})
+          ScreenBuffer.write_char(buf, x, 2, "X", %{})
         end)
 
       emulator = %{emulator | main_screen_buffer: filled_buffer}
@@ -142,7 +143,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       # Fill buffer with test data
       filled_buffer =
         Enum.reduce(0..9, emulator.main_screen_buffer, fn x, buf ->
-          ScreenBuffer.put_cell(buf, x, 2, "X", %{})
+          ScreenBuffer.write_char(buf, x, 2, "X", %{})
         end)
 
       emulator = %{emulator | main_screen_buffer: filled_buffer}
@@ -165,7 +166,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
       # Fill buffer with test data
       filled_buffer =
         Enum.reduce(0..9, emulator.main_screen_buffer, fn x, buf ->
-          ScreenBuffer.put_cell(buf, x, 2, "X", %{})
+          ScreenBuffer.write_char(buf, x, 2, "X", %{})
         end)
 
       emulator = %{emulator | main_screen_buffer: filled_buffer}

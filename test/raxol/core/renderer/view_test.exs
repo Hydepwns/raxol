@@ -47,13 +47,21 @@ defmodule Raxol.Core.Renderer.ViewTest do
       view =
         View.flex direction: :row, size: {10, 1} do
           [
-            View.text("A", size: {1, 1}),
-            View.text("B", size: {1, 1})
+            View.text("A", id: :a, size: {1, 1}),
+            View.text("B", id: :b, size: {1, 1})
           ]
         end
 
-      result = View.layout(view, {10, 1})
-      [a, b] = result.children
+      # layout/2 returns a flat list of positioned views
+      result_list = View.layout(view, {10, 1})
+
+      # Find the children by id (or content/type if no id)
+      a = Enum.find(result_list, &(&1.id == :a))
+      b = Enum.find(result_list, &(&1.id == :b))
+
+      # Add checks for nil in case find fails
+      refute is_nil(a)
+      refute is_nil(b)
 
       assert a.position == {0, 0}
       assert b.position == {1, 0}
@@ -70,8 +78,18 @@ defmodule Raxol.Core.Renderer.ViewTest do
           ]
         end
 
-      result = View.layout(view, {4, 2})
-      [one, two, three, four] = result.children
+      result_list = View.layout(view, {4, 2})
+
+      # Find children by content
+      one = Enum.find(result_list, &(&1.content == "1"))
+      two = Enum.find(result_list, &(&1.content == "2"))
+      three = Enum.find(result_list, &(&1.content == "3"))
+      four = Enum.find(result_list, &(&1.content == "4"))
+
+      refute is_nil(one)
+      refute is_nil(two)
+      refute is_nil(three)
+      refute is_nil(four)
 
       assert one.position == {0, 0}
       assert two.position == {2, 0}
@@ -109,8 +127,12 @@ defmodule Raxol.Core.Renderer.ViewTest do
           View.text("Content", size: {10, 5})
         end
 
-      result = View.layout(view, {8, 4})
-      [content] = result.children
+      result_list = View.layout(view, {8, 4})
+
+      # Find the single child content view
+      content = Enum.find(result_list, &(&1.content == "Content"))
+
+      refute is_nil(content)
       assert content.position == {-1, -1}
     end
 
@@ -160,13 +182,21 @@ defmodule Raxol.Core.Renderer.ViewTest do
           ]
         end
 
-      result = View.layout(view, {3, 2})
-      [a, b, c] = result.children
+      result_list = View.layout(view, {3, 2})
+
+      # Find children by content
+      a = Enum.find(result_list, &(&1.content == "A"))
+      b = Enum.find(result_list, &(&1.content == "B"))
+      c = Enum.find(result_list, &(&1.content == "C"))
+
+      refute is_nil(a)
+      refute is_nil(b)
+      refute is_nil(c)
 
       assert a.position == {0, 0}
       # Wraps to next line
       assert b.position == {0, 1}
-      assert c.position == {2, 1}
+      assert c.position == {2, 1} # Note: Check if this position is correct logic for wrapping
     end
 
     test "wrapping in column direction" do
@@ -179,8 +209,16 @@ defmodule Raxol.Core.Renderer.ViewTest do
           ]
         end
 
-      result = View.layout(view, {4, 2})
-      [a, b, c] = result.children
+      result_list = View.layout(view, {4, 2})
+
+      # Find children by content
+      a = Enum.find(result_list, &(&1.content == "A"))
+      b = Enum.find(result_list, &(&1.content == "B"))
+      c = Enum.find(result_list, &(&1.content == "C"))
+
+      refute is_nil(a)
+      refute is_nil(b)
+      refute is_nil(c)
 
       assert a.position == {0, 0}
       assert b.position == {0, 1}

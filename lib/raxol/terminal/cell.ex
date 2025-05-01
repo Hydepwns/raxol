@@ -44,40 +44,11 @@ defmodule Raxol.Terminal.Cell do
       iex> Cell.get_style(cell)
       %{foreground: :red}
   """
-  def new() do
-    %__MODULE__{
-      # Use a space character for empty cells
-      char: " ",
-      style: TextFormatting.new(),
-      dirty: true,
-      is_wide_placeholder: false
-    }
-  end
-
-  def new(style) when not is_binary(style) do
-    %__MODULE__{
-      # Use a space character for empty cells
-      char: " ",
-      style: style,
-      dirty: true,
-      is_wide_placeholder: false
-    }
-  end
-
-  def new(char) when is_binary(char) do
-    %__MODULE__{
-      char: char,
-      style: TextFormatting.new(),
-      dirty: true,
-      is_wide_placeholder: false
-    }
-  end
-
-  def new(char, style) when is_binary(char) do
+  def new(char \\ " ", style \\ TextFormatting.new(), dirty \\ true) do
     %__MODULE__{
       char: char,
       style: style,
-      dirty: true,
+      dirty: dirty,
       is_wide_placeholder: false
     }
   end
@@ -97,14 +68,9 @@ defmodule Raxol.Terminal.Cell do
   end
 
   @doc """
-  Gets the character content of a cell.
-
-  ## Examples
-
-      iex> cell = Cell.new("A")
-      iex> Cell.get_char(cell)
-      "A"
+  Returns the character of the cell.
   """
+  @spec get_char(t()) :: String.t() | char()
   def get_char(%__MODULE__{char: char}), do: char
 
   @doc """

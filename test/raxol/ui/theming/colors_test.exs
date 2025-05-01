@@ -31,7 +31,7 @@ defmodule Raxol.UI.Theming.ColorsTest do
     end
 
     test "converts RGBA to hex colors" do
-      assert Colors.to_hex({255, 0, 0, 128}) == "#FF00008080"
+      assert Colors.to_hex({255, 0, 0, 128}) == "#FF000080"
       assert Colors.to_hex({0, 255, 0, 255}) == "#00FF00FF"
     end
   end

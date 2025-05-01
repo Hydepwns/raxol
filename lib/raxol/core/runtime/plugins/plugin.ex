@@ -66,9 +66,11 @@ defmodule Raxol.Core.Runtime.Plugins.Plugin do
   @doc """
   Optional callback to declare commands provided by the plugin.
 
-  Should return a list of `{namespace, command_name, function_name, arity}` tuples.
-  Example: `[{:my_plugin, :do_something, :handle_do_something_command, 2}]`
-  These will be registered in the CommandRegistry.
+  Should return a list of `{name_atom, function_atom, arity_integer}` tuples.
+  Example: `[{:do_something, :handle_do_something_command, 2}]`
+  The `name_atom` will be converted to a string command name.
+  The plugin module itself will be used as the namespace.
+  These will be registered in the CommandRegistry via CommandHelper.
   """
-  @callback get_commands() :: [{atom(), atom(), atom(), non_neg_integer()}]
+  @callback get_commands() :: [{atom(), atom(), non_neg_integer()}]
 end

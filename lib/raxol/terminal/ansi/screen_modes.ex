@@ -5,6 +5,8 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
   line wrapping, and other terminal modes.
   """
 
+  require Logger
+
   @type screen_mode ::
           :normal | :alternate | :application | :origin | :insert | :replace
 
@@ -230,6 +232,99 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
     Map.get(@standard_modes, code)
   end
 
+  @doc """
+  Handles setting or resetting DEC private modes based on parameters.
+
+  Processes a list of parameters, looks up the corresponding mode atom,
+  and applies the action (:set or :reset) to the emulator's mode_state.
+  """
+  @spec handle_dec_private_mode(Raxol.Terminal.Emulator.t(), list(integer()), :set | :reset) ::
+          Raxol.Terminal.Emulator.t()
+  def handle_dec_private_mode(emulator, params, action) do
+    Enum.reduce(params, emulator, fn param, acc_emulator ->
+      mode_atom = lookup_private(param)
+
+      if mode_atom do
+        Logger.debug("[ScreenModes] #{action} DEC mode #{param} (#{mode_atom})")
+
+        # Special handling for modes affecting more than just mode_state flags
+        case {mode_atom, action} do
+          # Use Alternate Screen Buffer (save/restore state)
+          {:alt_screen_buffer, :set} ->
+            if acc_emulator.active_buffer_type == :main do
+              Logger.debug("Switching to alternate screen buffer (1049h)")
+              # TODO: Save cursor, style etc. according to xterm?
+              # For now, just switch buffer and clear alternate
+              cleared_alt_buffer = ScreenBuffer.erase_in_display(acc_emulator.alternate_screen_buffer, 2, acc_emulator.cursor)
+              new_cursor = CursorManager.move_to(acc_emulator.cursor, 0, 0)
+              %{acc_emulator | active_buffer_type: :alternate, alternate_screen_buffer: cleared_alt_buffer, cursor: new_cursor}
+            else
+              acc_emulator # Already in alt buffer
+            end
+          {:alt_screen_buffer, :reset} ->
+             if acc_emulator.active_buffer_type == :alternate do
+               Logger.debug("Switching back to main screen buffer (1049l)")
+               # TODO: Restore cursor, style etc.?
+               # For now, just switch buffer
+               %{acc_emulator | active_buffer_type: :main}
+             else
+               acc_emulator # Already in main buffer
+             end
+
+          # DECCOLM - 132 Column Mode (affects column_width_mode)
+          {:deccolm_132, :set} ->
+            # TODO: Need to resize buffer? Notify layout?
+            %{acc_emulator | mode_state: %{acc_emulator.mode_state | column_width_mode: :wide}}
+          {:deccolm_132, :reset} ->
+            # TODO: Need to resize buffer? Notify layout?
+            %{acc_emulator | mode_state: %{acc_emulator.mode_state | column_width_mode: :normal}}
+
+          # DECSCNM - Screen Mode (Reverse Video) (affects rendering?)
+          # TODO: Implement reverse video mode effect
+          {:decscnm, _action} ->
+            Logger.warning("DECSCNM (reverse video) not fully implemented")
+            acc_emulator
+
+          # All other modes handled by setting/resetting flags
+          {other_mode, action_type} ->
+            new_mode_state =
+              case action_type do
+                :set -> set_mode(acc_emulator.mode_state, map_mode_to_flag(other_mode))
+                :reset -> reset_mode(acc_emulator.mode_state, map_mode_to_flag(other_mode))
+              end
+            %{acc_emulator | mode_state: new_mode_state}
+        end
+      else
+        Logger.warning("Unknown DEC private mode parameter: #{param}")
+        acc_emulator
+      end
+    end)
+  end
+
+  @doc """
+  Handles setting or resetting standard ANSI modes based on parameters.
+  """
+  @spec handle_ansi_mode(Raxol.Terminal.Emulator.t(), list(integer()), :set | :reset) ::
+          Raxol.Terminal.Emulator.t()
+  def handle_ansi_mode(emulator, params, action) do
+    Enum.reduce(params, emulator, fn param, acc_emulator ->
+      mode_atom = lookup_standard(param)
+
+      if mode_atom do
+        Logger.debug("[ScreenModes] #{action} ANSI mode #{param} (#{mode_atom})")
+        new_mode_state =
+          case action do
+            :set -> set_mode(acc_emulator.mode_state, map_mode_to_flag(mode_atom))
+            :reset -> reset_mode(acc_emulator.mode_state, map_mode_to_flag(mode_atom))
+          end
+        %{acc_emulator | mode_state: new_mode_state}
+      else
+        Logger.warning("Unknown ANSI mode parameter: #{param}")
+        acc_emulator
+      end
+    end)
+  end
+
   # Private helper functions
 
   defp save_current_state(state) do
@@ -258,6 +353,19 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
       interlacing_mode: Map.get(saved_state, :interlacing_mode, false),
       saved_state: nil
     }
+  end
+
+  defp map_mode_to_flag(mode_atom) do
+    case mode_atom do
+      :dectcem -> :cursor_visible
+      :decawm -> :auto_wrap
+      :decom -> :origin_mode
+      :decarm -> :auto_repeat
+      :insert_mode -> :insert_mode # Standard mode 4
+      :line_feed_mode -> :line_feed_mode # Standard mode 20
+      # Add other mappings as needed (e.g., :decckm -> :cursor_key_mode)
+      _ -> mode_atom # Assume flag name matches atom if not explicitly mapped
+    end
   end
 
   @doc """

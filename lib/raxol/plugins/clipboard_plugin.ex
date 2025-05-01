@@ -6,6 +6,8 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   @behaviour Raxol.Plugins.Plugin
   require Logger
 
+  alias Raxol.System.Clipboard # Alias the new consolidated module
+
   @type t :: %__MODULE__{
           # Standard Plugin fields
           name: String.t(),
@@ -109,9 +111,14 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   defp yank_selection(%__MODULE__{} = state) do
     case get_selected_text(state) do
       {:ok, text} ->
-        _clipboard_result = set_clipboard_content(text)
+        # Call the new consolidated module
+        case Clipboard.copy(text) do
+          :ok ->
+            Logger.debug("[Clipboard] Yanked selection to clipboard: #{text}")
+          {:error, reason} ->
+            Logger.error("[Clipboard] Failed to yank selection: #{inspect(reason)}")
+        end
         {:ok, state}
-
       _ ->
         {:ok, state}
     end
@@ -159,67 +166,13 @@ defmodule Raxol.Plugins.ClipboardPlugin do
     end
   end
 
-  defp set_clipboard_content(text) do
-    result =
-      case :os.type() do
-        {:unix, :darwin} ->
-          System.cmd("pbcopy", [], input: text)
-
-        {:unix, _} ->
-          System.cmd("xclip", ["-selection", "clipboard"], input: text)
-
-        {:win32, _} ->
-          System.cmd("clip", [], input: text)
-      end
-
-    case result do
-      {_, 0} ->
-        :ok
-
-      {error_output, exit_code} ->
-        Logger.warning(
-          "Clipboard operation failed with exit code #{exit_code}: #{inspect(error_output)}"
-        )
-
-        {:error, {:clipboard_error, exit_code, error_output}}
-    end
-  end
-
   defp clear_selection(state) do
     %{state | selection_active: false, selection_start: nil, selection_end: nil}
   end
 
-  # Reads content from the system clipboard.
+  # Reads content from the system clipboard using the consolidated module.
   defp get_clipboard_content() do
-    case :os.type() do
-      {:unix, :darwin} ->
-        System.cmd("pbpaste", [])
-        |> handle_cmd_result()
-
-      {:unix, _} ->
-        # Try xclip first, then xsel
-        case System.cmd("xclip", ["-selection", "clipboard", "-o"]) do
-          {output, 0} ->
-            handle_cmd_result({output, 0})
-
-          _ ->
-            # xclip failed or not found, try xsel
-            System.cmd("xsel", ["--clipboard", "--output"])
-            |> handle_cmd_result()
-        end
-
-      {:win32, _} ->
-        # Use PowerShell for potentially better Unicode handling
-        System.cmd("powershell", ["-Command", "Get-Clipboard"])
-        |> handle_cmd_result()
-    end
-  end
-
-  # Helper to process System.cmd result for clipboard content
-  defp handle_cmd_result({output, 0}), do: {:ok, output |> String.trim()}
-
-  defp handle_cmd_result({output, exit_code}) do
-    {:error, "Command failed (exit code: #{exit_code}): #{output}"}
+    Clipboard.paste() # Delegate directly to the new module
   end
 
   @impl true

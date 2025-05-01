@@ -6,8 +6,9 @@ defmodule Raxol.Core.AccessibilityTest do
   alias Raxol.Core.Events.Manager, as: EventManager
 
   setup do
-    # Initialize event manager for tests
-    EventManager.init()
+    # Initialize event handlers registry and subscriptions (mimicking old EventManager.init)
+    Process.put(:event_handlers, %{})
+    Process.put(:subscriptions, %{})
 
     # Clean up accessibility state before and after tests
     Accessibility.disable()

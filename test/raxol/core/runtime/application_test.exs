@@ -4,35 +4,37 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
   # Test implementation of Application behavior
   defmodule TestApp do
     use Raxol.Core.Runtime.Application
+    # import Raxol.View.Elements # Keep for now, but call explicitly
 
-    # Override default implementations
-    def init(_context) do
-      %{count: 0, initialized: true}
+    @impl true
+    def init(_context), do: {:ok, %{count: 0}}
+
+    @impl true
+    def update(message, state) do
+      new_state =
+        case message do
+          :increment -> Map.update!(state, :count, &(&1 + 1))
+          :decrement -> Map.update!(state, :count, &(&1 - 1))
+          _ -> state
+        end
+      {:ok, new_state, []}
     end
 
-    def update(:increment, model) do
-      {%{model | count: model.count + 1}, []}
-    end
-
-    def update(:decrement, model) do
-      {%{model | count: model.count - 1}, []}
+    @impl true
+    def view(state) do
+      # Call elements explicitly assuming locations
+      Raxol.View.Elements.panel title: "Counter" do
+        Raxol.View.Elements.row do
+          Raxol.View.Components.button(label: "-", on_click: :decrement)
+          Raxol.View.Components.text(content: "Count: #{state.count}")
+          Raxol.View.Components.button(label: "+", on_click: :increment)
+        end
+      end
     end
 
     def update({:add, amount}, model) do
       {%{model | count: model.count + amount},
        [{:command, :operation_complete}]}
-    end
-
-    def view(model) do
-      view do
-        panel title: "Counter" do
-          row do
-            button(label: "-", on_click: :decrement)
-            text(content: "Count: #{model.count}")
-            button(label: "+", on_click: :increment)
-          end
-        end
-      end
     end
 
     def subscribe(model) do

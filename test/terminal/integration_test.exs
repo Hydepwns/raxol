@@ -2,6 +2,9 @@ defmodule Raxol.Terminal.IntegrationTest do
   use ExUnit.Case
   alias Raxol.Terminal.Input
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Input.InputHandler
+  alias Raxol.Terminal.Input.InputBuffer
+  alias Raxol.Terminal.Emulator
 
   describe "input to screen buffer integration" do
     test "processes keyboard input and updates screen buffer" do
@@ -67,28 +70,26 @@ defmodule Raxol.Terminal.IntegrationTest do
 
   describe "input to ANSI integration" do
     test "processes ANSI escape sequences" do
-      input = Input.new()
-      buffer = ScreenBuffer.new(80, 24)
+      state = Emulator.new(80, 24)
 
       # Send ANSI sequence for red text
-      input = Input.process_keyboard(input, "\e[31mHello\e[0m")
-      buffer = ScreenBuffer.write_char(buffer, Input.get_buffer(input))
+      {state, _output} = Emulator.process_input(state, "\e[31mHello\e[0m")
 
-      # Verify text color
-      cell = List.first(List.first(buffer.buffer))
+      # Verify text color from the emulator's screen buffer
+      # Access the main screen buffer directly
+      cell = List.first(List.first(state.main_screen_buffer.buffer))
       assert cell.attributes[:foreground] == :red
     end
 
     test "handles multiple ANSI attributes" do
-      input = Input.new()
-      buffer = ScreenBuffer.new(80, 24)
+      state = Emulator.new(80, 24)
 
       # Send ANSI sequence for bold, underlined, red text
-      input = Input.process_keyboard(input, "\e[1;4;31mHello\e[0m")
-      buffer = ScreenBuffer.write_char(buffer, Input.get_buffer(input))
+      {state, _output} = Emulator.process_input(state, "\e[1;4;31mHello\e[0m")
 
-      # Verify text attributes
-      cell = List.first(List.first(buffer.buffer))
+      # Verify text attributes from the emulator's screen buffer
+      # Access the main screen buffer directly
+      cell = List.first(List.first(state.main_screen_buffer.buffer))
       assert cell.attributes[:bold] == true
       assert cell.attributes[:underline] == true
       assert cell.attributes[:foreground] == :red
@@ -126,14 +127,14 @@ defmodule Raxol.Terminal.IntegrationTest do
 
   describe "mouse input integration" do
     test "handles mouse clicks" do
-      input = Input.new()
+      input_handler = InputHandler.new()
       buffer = ScreenBuffer.new(80, 24)
 
       # Enable mouse
-      input = Input.set_mouse_enabled(input, true)
+      input_handler = InputHandler.set_mouse_enabled(input_handler, true)
 
-      # Process mouse click
-      _input = Input.process_mouse(input, :left, :press, 10, 5)
+      # Process mouse click using InputHandler and correct tuple format
+      input_handler = InputHandler.process_mouse(input_handler, {:press, :left, 10, 5})
       buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
 
       # Verify cursor position
@@ -141,15 +142,16 @@ defmodule Raxol.Terminal.IntegrationTest do
     end
 
     test "handles mouse selection" do
-      input = Input.new()
+      input_handler = InputHandler.new()
       buffer = ScreenBuffer.new(80, 24)
 
-      # Write some text
-      input = Input.process_keyboard(input, "Hello World")
-      buffer = ScreenBuffer.write_char(buffer, Input.get_buffer(input))
+      # Write some text using InputHandler
+      input_handler = InputHandler.process_keyboard(input_handler, "Hello World")
+      # Get buffer contents using InputBuffer.get_contents
+      buffer = ScreenBuffer.write_char(buffer, InputBuffer.get_contents(input_handler.buffer))
 
       # Enable mouse and set selection
-      _input = Input.set_mouse_enabled(input, true)
+      input_handler = InputHandler.set_mouse_enabled(input_handler, true)
       buffer = ScreenBuffer.set_selection(buffer, 0, 0, 5, 0)
 
       # Verify selection

@@ -273,8 +273,8 @@ defmodule Raxol.Core.Renderer.View do
     {spacing, spacing, spacing, spacing}
   end
 
-  defp normalize_spacing({h, v}) when is_integer(h) and is_integer(v) do
-    {h, v, h, v}
+  defp normalize_spacing({v, h}) when is_integer(v) and is_integer(h) do
+    {v, h, v, h}
   end
 
   defp normalize_spacing({top, right, bottom, left}) do

@@ -7,11 +7,11 @@ defmodule Raxol.Docs.TutorialViewer do
   use Raxol.Core.Runtime.Application
   import Raxol.View.Elements
 
-  # Import the new components
-  alias Raxol.Components.{MarkdownRenderer, CodeBlock}
+  # Removed unused aliases for CodeBlock, MarkdownRenderer
+  # alias Raxol.Components.{MarkdownRenderer, CodeBlock}
 
   alias Raxol.Docs.InteractiveTutorial
-  alias Raxol.Docs.InteractiveTutorial.{Tutorial, Step, State} # Assuming State is public or needed
+  alias Raxol.Docs.InteractiveTutorial.{Tutorial, Step} # Removed unused State alias
 
   # --- State ---
 
@@ -173,7 +173,7 @@ defmodule Raxol.Docs.TutorialViewer do
 
   # --- View Helpers ---
 
-  defp render_tutorial_selection(tutorials, opts \ []) do
+  defp render_tutorial_selection(tutorials, opts \\ []) do
     error = Keyword.get(opts, :error)
 
     column(gap: 10) do
@@ -213,7 +213,8 @@ defmodule Raxol.Docs.TutorialViewer do
        panel(title: "Content") do
          # Use the MarkdownRenderer component
          # Assuming step.content is the markdown string
-         MarkdownRenderer(markdown_text: step.content || "")
+         # MarkdownRenderer(markdown_text: step.content || "") # Commented out problematic component call
+         text(content: step.content || "", style: "font-family: monospace;") # TEMP: Render as plain text for now
        end
 
        # Render Example Code (if any)
@@ -221,10 +222,10 @@ defmodule Raxol.Docs.TutorialViewer do
          panel(title: "Example Code") do
            # TODO: Use a syntax-highlighting code block component if available
            # Use the CodeBlock component
-           CodeBlock(content: step.example_code, language: step.language || "elixir") # Assuming step might have a :language field, default to elixir
+           # CodeBlock(content: step.example_code, language: step.language || "elixir") # Commented out problematic component call
 
            # Fallback if code_block doesn't exist:
-           # text(content: step.example_code, style: "font-family: monospace;")
+           text(content: step.example_code, style: "font-family: monospace;") # Uncommented fallback
          end
        end
 
@@ -272,5 +273,30 @@ defmodule Raxol.Docs.TutorialViewer do
        end
     end
   end
+
+  # Add missing Application behaviour callbacks
+  @impl true
+  def handle_event(event) do # Correct signature handle_event/1
+    # Handle UI events based on the event structure
+    # IO.inspect(event, label: "TutorialViewer Event") # Optional: Debugging
+    case event do
+      {:ui, _ui_event_details} ->
+        :ok # TODO: Handle UI events if needed
+      _ ->
+        :ok # Ignore other events for now
+    end
+  end
+
+  @impl true
+  def handle_message(_message, state), do: {:ok, state} # No async messages handled yet
+
+  @impl true
+  def handle_tick(_state), do: :ok # No tick handling needed
+
+  @impl true
+  def subscriptions(_state), do: [] # No subscriptions needed
+
+  @impl true
+  def terminate(_reason, _state), do: :ok # Basic terminate
 
 end

@@ -1,17 +1,25 @@
 defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   @moduledoc """
-  Core plugin responsible for handling clipboard operations (:clipboard_write, :clipboard_read).
+  Core plugin providing clipboard read/write commands.
+  Delegates to the configured system clipboard implementation.
   """
-
-  require Logger
 
   @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
+  require Logger
+
+  # Define default state and expected options
+  defstruct clipboard_impl: Raxol.System.Clipboard # Default to real implementation
+
   @impl Raxol.Core.Runtime.Plugins.Plugin
-  def init(_config) do
+  def init(opts) do
+    # Allow overriding the clipboard implementation for testing
+    clipboard_impl = Keyword.get(opts, :clipboard_impl, Raxol.System.Clipboard)
+    state = %__MODULE__{
+      clipboard_impl: clipboard_impl
+    }
     Logger.info("Clipboard Plugin initialized.")
-    # No specific state needed for now
-    {:ok, %{}}
+    {:ok, state}
   end
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
@@ -24,16 +32,14 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
     ]
   end
 
-  @impl Raxol.Core.Runtime.Plugins.Plugin
-  # Consolidate command handling into one function as per behaviour best practice
-  def handle_command(command_name, args, state) do
-    handle_clipboard_command(command_name, args, state)
-  end
+  # Specific clauses are now the primary implementation
 
-  # Central internal handler
-  defp handle_clipboard_command(:clipboard_write, [content], state) when is_binary(content) do
-    Logger.debug("ClipboardPlugin: Writing to clipboard...")
-    case Clipboard.copy(content) do
+  # Central internal handler for :clipboard_write
+  @impl Raxol.Core.Runtime.Plugins.Plugin
+  def handle_command(:clipboard_write, [content], state) when is_binary(content) do
+    Logger.debug("ClipboardPlugin: Writing to clipboard via #{inspect(state.clipboard_impl)}...")
+    # Call the configured implementation
+    case state.clipboard_impl.copy(content) do
       :ok ->
         {:ok, state, :clipboard_write_ok} # Return simple success atom
       {:error, reason} ->
@@ -42,9 +48,11 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
     end
   end
 
-  defp handle_clipboard_command(:clipboard_read, [], state) do
-    Logger.debug("ClipboardPlugin: Reading from clipboard...")
-    case Clipboard.paste() do
+  @impl Raxol.Core.Runtime.Plugins.Plugin
+  def handle_command(:clipboard_read, [], state) do
+    Logger.debug("ClipboardPlugin: Reading from clipboard via #{inspect(state.clipboard_impl)}...")
+    # Call the configured implementation
+    case state.clipboard_impl.paste() do
       {:ok, content} ->
          {:ok, state, {:clipboard_content, content}} # Return content tuple
       {:error, reason} ->
@@ -53,8 +61,9 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
     end
   end
 
-  # Catch-all for incorrect args or unknown commands directed here
-  defp handle_clipboard_command(command, args, state) do
+  # Add back the catch-all clause for handle_command
+  @impl Raxol.Core.Runtime.Plugins.Plugin
+  def handle_command(command, args, state) do
     Logger.warning("ClipboardPlugin received unhandled/invalid command: #{inspect command} with args: #{inspect args}")
     {:error, :unhandled_clipboard_command, state}
   end

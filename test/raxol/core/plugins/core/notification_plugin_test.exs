@@ -1,126 +1,164 @@
 defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
   use ExUnit.Case, async: true
-  import Mox
-
-  # Define a behavior for SystemCommand
-  defmodule SystemCommand do
-    @callback cmd(binary(), [binary()], keyword()) :: {binary(), integer()}
-  end
-
-  # Mock SystemCommand instead of System
-  defmock SystemCommandMock, for: SystemCommand
 
   alias Raxol.Core.Plugins.Core.NotificationPlugin
 
+  # Setup assigns a default state
   setup do
-    # Stub SystemCommandMock to behave like System
-    Mox.stub(SystemCommandMock, :cmd, fn cmd, args, opts -> System.cmd(cmd, args, opts) end)
-    Mox.verify_on_exit!()
-    :ok
+    # Use :meck for mocking system functions
+    # Mock :os.type/0, System.cmd/3, System.find_executable/1
+    :meck.new(:os, [:passthrough])
+    :meck.new(System, [:passthrough, :cmd, :find_executable, :shell_escape])
+
+    state = %{}
+
+    # Ensure meck is unloaded AFTER the test runs
+    on_exit(fn ->
+      :meck.unload(System)
+      :meck.unload(:os)
+    end)
+
+    {:ok, state: state}
   end
 
-  test "init/1 returns ok with initial state" do
-    assert {:ok, %{}} = NotificationPlugin.init([])
-  end
-
-  test "terminate/2 returns ok" do
-    assert :ok = NotificationPlugin.terminate(:shutdown, %{})
-  end
-
-  test "get_commands/0 returns notify command" do
-    expected_commands = [notify: "Send a desktop notification."]
+  test "get_commands/0 returns notify command", %{state: _state} do
+    expected_commands = [{:notify, :handle_command, 1}]
     assert NotificationPlugin.get_commands() == expected_commands
   end
 
-  describe "handle_command/3" do
-    test ":notify calls System.cmd with correct args on macOS" do
-      # Force :mac for testing
-      Application.put_env(:raxol, :os_family, :mac)
-      summary = "Test Summary"
-      body = "Test Body"
-      current_state = %{}
-      opts = []
+  # --- Linux Tests ---
+  test "handle_command :notify calls notify-send on Linux (Success)", %{state: current_state} do
+    title = "Linux Test"
+    message = "Notification works!"
+    escaped_title = System.shell_escape(title)
+    escaped_message = System.shell_escape(message)
+    input_data = %{title: title, message: message}
 
-      expected_cmd = "osascript"
-      expected_args = [
-        "-e",
-        "display notification \"#{body}\" with title \"#{summary}\""
-      ]
+    :meck.expect(:os, :type, fn -> {:unix, :linux} end)
+    :meck.expect(System, :find_executable, fn ("notify-send") -> "/usr/bin/notify-send" end)
+    # Mock System.cmd for notify-send success
+    :meck.expect(System, :cmd, fn "/usr/bin/notify-send", [^escaped_title, ^escaped_message], _opts -> {"", 0} end)
 
-      # Expect System.cmd to be called
-      expect(SystemCommandMock, :cmd, fn ^expected_cmd, ^expected_args, _opts -> {"output", 0} end)
-
-      # Use a module that can access SystemCommandMock
-      original_system = NotificationPlugin.system_module()
-      :meck.new(NotificationPlugin, [:passthrough])
-      :meck.expect(NotificationPlugin, :system_module, fn -> SystemCommandMock end)
-
-      assert {:reply, :ok, current_state} = NotificationPlugin.handle_command(:notify, {summary, body}, current_state, opts)
-
-      :meck.unload(NotificationPlugin)
-      Application.delete_env(:raxol, :os_family)
-    end
-
-    test ":notify calls System.cmd with correct args on linux" do
-        # Force :linux for testing
-      Application.put_env(:raxol, :os_family, :linux)
-      summary = "Test Summary"
-      body = "Test Body"
-      current_state = %{}
-      opts = []
-
-      expected_cmd = "notify-send"
-      expected_args = [summary, body]
-
-      # Expect System.cmd to be called
-      expect(SystemCommandMock, :cmd, fn ^expected_cmd, ^expected_args, _opts -> {"output", 0} end)
-
-      assert {:reply, :ok, current_state} = NotificationPlugin.handle_command(:notify, {summary, body}, current_state, opts)
-      Application.delete_env(:raxol, :os_family)
-    end
-
-     test ":notify handles System.cmd failure" do
-      Application.put_env(:raxol, :os_family, :linux) # Use linux for simplicity
-      summary = "Test Summary"
-      body = "Test Body"
-      current_state = %{}
-      opts = []
-      exit_code = 1
-      output = "Command failed"
-
-      # Expect System.cmd to be called and return non-zero exit code
-      expect(SystemCommandMock, :cmd, fn "notify-send", [^summary, ^body], _ -> {output, exit_code} end)
-
-      # Expect the plugin to return an error tuple
-      assert {:reply, {:error, {:command_failed, output, exit_code}}, current_state} = NotificationPlugin.handle_command(:notify, {summary, body}, current_state, opts)
-      Application.delete_env(:raxol, :os_family)
-    end
-
-     test ":notify logs warning on unsupported OS" do
-      Application.put_env(:raxol, :os_family, :windows) # Use unsupported OS
-      summary = "Test Summary"
-      body = "Test Body"
-      current_state = %{}
-      opts = []
-
-      # Expect System.cmd NOT to be called
-      # Check log output? (More complex)
-      # For now, just assert the return value indicates unsupported
-      # Assuming it returns :ok but logs a warning
-      assert {:reply, :ok, current_state} = NotificationPlugin.handle_command(:notify, {summary, body}, current_state, opts)
-      # We could potentially use ExUnit.CaptureLog here if logging is critical
-      Application.delete_env(:raxol, :os_family)
-    end
-
-    test "returns error for unknown command" do
-      current_state = %{}
-      opts = []
-      assert {:reply, {:error, :unknown_command}, current_state} = NotificationPlugin.handle_command(:unknown_cmd, nil, current_state, opts)
-    end
-
-    # Helper to determine OS family, potentially mockable
-    # defp get_os_family do
-    #   Application.get_env(:raxol, :os_family, :os.type() |> elem(0))
-    # end
+    assert {:ok, ^current_state, :notification_sent_linux} =
+      NotificationPlugin.handle_command(:notify, [input_data], current_state)
+    assert :meck.validate(:os)
+    assert :meck.validate(System)
   end
+
+  test "handle_command :notify handles notify-send not found on Linux", %{state: current_state} do
+    input_data = %{message: "test"}
+    :meck.expect(:os, :type, fn -> {:unix, :linux} end)
+    :meck.expect(System, :find_executable, fn ("notify-send") -> nil end)
+
+    assert {:error, {:command_not_found, :notify_send}, ^current_state} =
+      NotificationPlugin.handle_command(:notify, [input_data], current_state)
+    assert :meck.validate(:os)
+    assert :meck.validate(System)
+  end
+
+  test "handle_command :notify handles notify-send command failure on Linux", %{state: current_state} do
+    input_data = %{message: "test"}
+    escaped_message = System.shell_escape("test")
+    escaped_title = System.shell_escape("Raxol Notification")
+
+    :meck.expect(:os, :type, fn -> {:unix, :linux} end)
+    :meck.expect(System, :find_executable, fn ("notify-send") -> "/bin/notify-send" end)
+    :meck.expect(System, :cmd, fn "/bin/notify-send", [^escaped_title, ^escaped_message], _opts -> {"Error output", 1} end)
+
+    assert {:error, {:command_failed, 1, "Error output"}, ^current_state} =
+      NotificationPlugin.handle_command(:notify, [input_data], current_state)
+    assert :meck.validate(System)
+  end
+
+  # --- macOS Tests ---
+  test "handle_command :notify calls osascript on macOS (Success)", %{state: current_state} do
+    title = "macOS Test"
+    message = "It works!"
+    escaped_message = System.shell_escape(message)
+    escaped_title = System.shell_escape(title)
+    expected_script = "display notification #{escaped_message} with title #{escaped_title}"
+    input_data = %{title: title, message: message}
+
+    :meck.expect(:os, :type, fn -> {:unix, :darwin} end)
+    :meck.expect(System, :find_executable, fn ("osascript") -> "/usr/bin/osascript" end)
+    :meck.expect(System, :cmd, fn "/usr/bin/osascript", ["-e", ^expected_script], _opts -> {"", 0} end)
+
+    assert {:ok, ^current_state, :notification_sent_macos} =
+      NotificationPlugin.handle_command(:notify, [input_data], current_state)
+    assert :meck.validate(System)
+  end
+
+  test "handle_command :notify handles osascript not found on macOS", %{state: current_state} do
+      input_data = %{message: "test"}
+      :meck.expect(:os, :type, fn -> {:unix, :darwin} end)
+      :meck.expect(System, :find_executable, fn ("osascript") -> nil end)
+
+      assert {:error, {:command_not_found, :osascript}, ^current_state} =
+        NotificationPlugin.handle_command(:notify, [input_data], current_state)
+      assert :meck.validate(System)
+    end
+
+  # --- Windows Tests ---
+  test "handle_command :notify calls PowerShell on Windows (Success)", %{state: current_state} do
+    title = "Windows Test"
+    message = "Works here too"
+    # Escaping is handled internally by System.cmd for args, but script needs raw message
+    expected_script = ~s(Import-Module BurntToast; New-BurntToastNotification -Text "#{message}")
+    input_data = %{title: title, message: message} # Title is currently ignored for BurntToast command
+
+    :meck.expect(:os, :type, fn -> {:win32, :nt} end)
+    :meck.expect(System, :find_executable, fn ("powershell") -> "C:\Windows\System32\...\powershell.exe" end)
+    :meck.expect(System, :cmd, fn "C:\Windows\System32\...\powershell.exe", ["-NoProfile", "-Command", ^expected_script], _opts -> {"", 0} end)
+
+    assert {:ok, ^current_state, :notification_sent_windows} =
+      NotificationPlugin.handle_command(:notify, [input_data], current_state)
+    assert :meck.validate(System)
+  end
+
+  test "handle_command :notify handles powershell not found on Windows", %{state: current_state} do
+      input_data = %{message: "test"}
+      :meck.expect(:os, :type, fn -> {:win32, :nt} end)
+      :meck.expect(System, :find_executable, fn ("powershell") -> nil end)
+
+      assert {:error, {:command_not_found, :powershell}, ^current_state} =
+        NotificationPlugin.handle_command(:notify, [input_data], current_state)
+      assert :meck.validate(System)
+  end
+
+  # --- Generic Tests ---
+  test "handle_command :notify handles unsupported OS", %{state: current_state} do
+    input_data = %{message: "test"}
+    unsupported_os = {:unix, :solaris}
+
+    :meck.expect(:os, :type, fn -> unsupported_os end)
+
+    assert {:ok, ^current_state, :notification_skipped_unsupported_os} =
+      NotificationPlugin.handle_command(:notify, [input_data], current_state)
+    assert :meck.validate(:os)
+  end
+
+  test "handle_command :notify handles command execution exception", %{state: current_state} do
+    input_data = %{message: "boom"}
+    error = RuntimeError.exception("Command failed unexpectedly")
+
+    :meck.expect(:os, :type, fn -> {:unix, :linux} end)
+    :meck.expect(System, :find_executable, fn ("notify-send") -> "/bin/notify-send" end)
+    # Mock System.cmd to raise an exception
+    :meck.expect(System, :cmd, fn _cmd, _args, _opts -> raise error end)
+
+    assert {:error, {:command_exception, "Elixir.RuntimeError", "Command failed unexpectedly"}, ^current_state} =
+      NotificationPlugin.handle_command(:notify, [input_data], current_state)
+    assert :meck.validate(System)
+  end
+
+  test "handle_command returns error for unknown command", %{state: current_state} do
+    assert {:error, {:unhandled_notification_command, :unknown}, ^current_state} =
+      NotificationPlugin.handle_command(:unknown, [], current_state)
+  end
+
+  test "handle_command :notify returns error for invalid input type", %{state: current_state} do
+    assert {:error, {:unhandled_notification_command, :notify}, ^current_state} =
+      NotificationPlugin.handle_command(:notify, ["not a map"], current_state)
+  end
+
 end

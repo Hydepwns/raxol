@@ -79,6 +79,15 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
     new_col = col # Keep same column if possible (TODO: handle desired_col?)
     move_cursor(state, {new_row, new_col})
   end
+
+  def move_cursor(state, :word_left) do
+    move_cursor_word_left(state)
+  end
+
+  def move_cursor(state, :word_right) do
+    move_cursor_word_right(state)
+  end
+
   # --- End added heads ---
 
   # Helper for clamping values (Needed by move_cursor)

@@ -177,24 +177,27 @@ defmodule Raxol.Style.Colors.Advanced do
 
   # Private helper functions
 
+  # Reference: https://www.rapidtables.com/convert/color/rgb-to-hsl.html
   defp rgb_to_hsl(%Color{r: r, g: g, b: b}) do
-    r = r / 255
-    g = g / 255
-    b = b / 255
+    r_prime = r / 255
+    g_prime = g / 255
+    b_prime = b / 255
 
-    max = Enum.max([r, g, b])
-    min = Enum.min([r, g, b])
-    delta = max - min
+    c_max = Enum.max([r_prime, g_prime, b_prime])
+    c_min = Enum.min([r_prime, g_prime, b_prime])
+    delta = c_max - c_min
 
     h =
       cond do
         delta == 0 -> 0
-        max == r -> 60 * rem(round((g - b) / delta) + 360, 360)
-        max == g -> 60 * ((b - r) / delta + 2)
-        true -> 60 * ((r - g) / delta + 4)
+        c_max == r_prime -> 60 * rem((g_prime - b_prime) / delta, 6)
+        c_max == g_prime -> 60 * ((b_prime - r_prime) / delta + 2)
+        c_max == b_prime -> 60 * ((r_prime - g_prime) / delta + 4)
       end
+    # Ensure hue is positive
+    h = if h < 0, do: h + 360, else: h
 
-    l = (max + min) / 2
+    l = (c_max + c_min) / 2
 
     s =
       if delta == 0 do
@@ -206,28 +209,30 @@ defmodule Raxol.Style.Colors.Advanced do
     %{h: round(h), s: round(s * 100), l: round(l * 100)}
   end
 
+  # Reference: https://www.rapidtables.com/convert/color/hsl-to-rgb.html
   defp hsl_to_rgb(%{h: h, s: s, l: l}) do
     s = s / 100
     l = l / 100
 
     c = (1 - abs(2 * l - 1)) * s
-    x = c * (1 - abs(rem(round(h / 60.0), 2) - 1))
+    x = c * (1 - abs(rem(h / 60.0, 2) - 1))
     m = l - c / 2
 
-    {r, g, b} =
+    {r_prime, g_prime, b_prime} =
       cond do
-        h < 60 -> {c, x, 0}
-        h < 120 -> {x, c, 0}
-        h < 180 -> {0, c, x}
-        h < 240 -> {0, x, c}
-        h < 300 -> {x, 0, c}
-        true -> {c, 0, x}
+        h >= 0 and h < 60 -> {c, x, 0}
+        h >= 60 and h < 120 -> {x, c, 0}
+        h >= 120 and h < 180 -> {0, c, x}
+        h >= 180 and h < 240 -> {0, x, c}
+        h >= 240 and h < 300 -> {x, 0, c}
+        h >= 300 and h < 360 -> {c, 0, x}
+        true -> {0, 0, 0} # Should not happen for valid H values (0-359)
       end
 
     Color.from_rgb(
-      round((r + m) * 255),
-      round((g + m) * 255),
-      round((b + m) * 255)
+      round((r_prime + m) * 255),
+      round((g_prime + m) * 255),
+      round((b_prime + m) * 255)
     )
   end
 

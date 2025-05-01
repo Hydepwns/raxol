@@ -59,6 +59,7 @@ defmodule Raxol.Terminal.Parser do
   # Accepts emulator, parser_state, and empty input
   defp parse_loop(emulator, parser_state, "") do
     # IO.inspect({:parse_loop_end_of_input, parser_state.state, ""}, label: "DEBUG_PARSER")
+    IO.inspect(emulator.cursor.position, label: "Cursor at end of parse_loop")
     if parser_state.state != :ground do
       Logger.debug("Input ended while in parser state: #{parser_state.state}")
     end

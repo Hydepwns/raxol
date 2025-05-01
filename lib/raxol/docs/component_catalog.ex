@@ -78,7 +78,7 @@ defmodule Raxol.Docs.ComponentCatalog do
   @catalog_key :raxol_component_catalog
 
   # Import the DSL elements
-  import Raxol.View.Elements
+  # import Raxol.View.Elements # Removed unused import
 
   @doc """
   Initializes the component catalog.
@@ -337,10 +337,10 @@ defmodule Raxol.Docs.ComponentCatalog do
             |> Path.dirname()
             |> Path.basename()
             {category_id, final_component_data}
-          {:error, reason} ->
-            # Handle or log error loading file
-            IO.warn("Error loading component definition #{file_path}: #{inspect(reason)}")
-            nil
+          # {:error, reason} -> # Commented out - flagged as unreachable
+          #   # Handle or log error loading file
+          #   IO.warn("Error loading component definition #{file_path}: #{inspect(reason)}")
+          #   nil
         end
       end)
       |> Enum.reject(&is_nil/1)
@@ -397,7 +397,7 @@ defmodule Raxol.Docs.ComponentCatalog do
   # Simple parser for ## Options style docstrings (adjust regex as needed)
   # Example: "* `:label` - Text to display on the button"
   defp parse_prop_descriptions(nil), do: %{}
-  defp parse_prop_descriptions({_, _line, _sigs, %{\"en\" => docstring}, _meta}) when is_binary(docstring) do
+  defp parse_prop_descriptions({_, _line, _sigs, %{"en" => docstring}, _meta}) when is_binary(docstring) do
     Regex.scan(~r/^\s*\*\s*`:(?<name>\w+)`\s*-\s*(?<desc>.*)$/m, docstring)
     |> Enum.reduce(%{}, fn [_, name, desc], acc ->
       Map.put(acc, String.to_atom(name), String.trim(desc))
@@ -424,7 +424,7 @@ defmodule Raxol.Docs.ComponentCatalog do
     Code.ensure_loaded?(module)
 
     case Code.fetch_docs(module) do
-      {:docs_v1, _annotation, _beam_language, _format, module_doc_map, meta, docs} ->
+      {:docs_v1, _annotation, _beam_language, _format, module_doc_map, _meta, docs} ->
         moduledoc = Map.get(module_doc_map, "en")
         # Extract function docs (focusing on :function type for now)
         fun_docs = Enum.filter(docs, fn {{kind, _name, _arity}, _line, _signatures, _doc_map, _meta} ->

@@ -43,13 +43,22 @@ defmodule Raxol.Components.Input.TextInput do
           insert_char(state, char)
 
         {:backspace} ->
-          delete_char(state)
+          delete_char_backward(state)
 
-        {:cursor, :left} ->
+        {:delete} ->
+          delete_char_forward(state)
+
+        {:move_cursor, :left} ->
           move_cursor(state, -1)
 
-        {:cursor, :right} ->
+        {:move_cursor, :right} ->
           move_cursor(state, 1)
+
+        {:move_cursor, :home} ->
+          %{state | cursor: 0}
+
+        {:move_cursor, :end} ->
+          %{state | cursor: String.length(state.value)}
 
         {:focus} ->
           %{state | focused: true}
@@ -66,20 +75,30 @@ defmodule Raxol.Components.Input.TextInput do
 
   @impl true
   def render(%{} = _props, state) do
-    # Render using basic Raxol.View elements
-    display = display_value(state)
-    style = if state.focused, do: [:bold], else: []
-    # Add placeholder styling if needed
+    display_raw = display_value(state) # Get raw text or placeholder/password chars
+    base_style = if state.focused, do: [:bold], else: []
     style =
       if state.value == "" and state.placeholder,
-        do: style ++ [:dim],
-        else: style
+        do: base_style ++ [:dim],
+        else: base_style
 
-    # TODO: Implement visual cursor rendering (e.g., underscore or inverse)
-    # This is complex due to character widths and terminal capabilities.
-    # For now, just render the text content with focus style.
-    dsl_result = Raxol.Core.Renderer.View.text(display, style: style)
-    dsl_result
+    if state.focused and state.value != "" do
+      # Split text around cursor
+      cursor_pos = state.cursor
+      {before_cursor, at_cursor_and_after} = String.split_at(display_raw, cursor_pos)
+      {at_cursor, after_cursor} = String.split_at(at_cursor_and_after, 1)
+
+      # Render parts with cursor highlighted
+      Raxol.Core.Renderer.View.container [
+        Raxol.Core.Renderer.View.text(before_cursor, style: style),
+        # Render cursor char with inverse style
+        Raxol.Core.Renderer.View.text(at_cursor, style: style ++ [:inverse]),
+        Raxol.Core.Renderer.View.text(after_cursor, style: style)
+      ]
+    else
+      # Not focused or empty, render normally
+      Raxol.Core.Renderer.View.text(display_raw, style: style)
+    end
   end
 
   @impl true
@@ -108,13 +127,31 @@ defmodule Raxol.Components.Input.TextInput do
     %{state | value: new_value, cursor: state.cursor + 1}
   end
 
-  defp delete_char(%{cursor: 0} = state), do: state
+  defp delete_char_backward(%{cursor: 0} = state), do: state
 
-  defp delete_char(state) do
+  defp delete_char_backward(state) do
     {before_cursor, after_cursor} =
       String.split_at(state.value, state.cursor - 1)
+    # Delete character *before* cursor
+    new_value = String.slice(before_cursor, 0, state.cursor - 1) <> after_cursor
+    %{state | value: new_value, cursor: state.cursor - 1}
+  end
 
-    %{state | value: before_cursor <> after_cursor, cursor: state.cursor - 1}
+  defp delete_char_forward(state) do
+    cursor = state.cursor
+    value = state.value
+    len = String.length(value)
+
+    if cursor < len do
+      # Delete character *at* cursor
+      {before_cursor, after_cursor} = String.split_at(value, cursor)
+      new_value = before_cursor <> String.slice(after_cursor, 1..-1)
+      # Cursor position doesn't change
+      %{state | value: new_value}
+    else
+      # Cursor at end, nothing to delete
+      state
+    end
   end
 
   defp move_cursor(state, offset) do

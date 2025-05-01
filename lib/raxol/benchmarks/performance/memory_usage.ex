@@ -151,9 +151,14 @@ defmodule Raxol.Benchmarks.Performance.MemoryUsage do
   defp calculate_memory_efficiency_score(simple, medium, complex) do
     # Normalize memory usage into a 0-100 score
     # Lower is better, use logarithmic scale to handle large variations
-    simple_score = 100 - min(100, :math.log(simple) * 10)
-    medium_score = 100 - min(100, :math.log(medium) * 8)
-    complex_score = 100 - min(100, :math.log(complex) * 6)
+    # Ensure inputs to log are positive
+    safe_simple = max(1.0e-6, simple)
+    safe_medium = max(1.0e-6, medium)
+    safe_complex = max(1.0e-6, complex)
+
+    simple_score = 100 - min(100, :math.log(safe_simple) * 10)
+    medium_score = 100 - min(100, :math.log(safe_medium) * 8)
+    complex_score = 100 - min(100, :math.log(safe_complex) * 6)
 
     # Calculate weighted average
     (simple_score * 0.5 + medium_score * 0.3 + complex_score * 0.2)

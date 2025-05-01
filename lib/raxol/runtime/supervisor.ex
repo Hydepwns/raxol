@@ -61,7 +61,7 @@ defmodule Raxol.Runtime.Supervisor do
       %{
         id: RenderingEngine,
         start:
-          {RenderingEngine, :start_link,
+          {Raxol.Core.Runtime.Rendering.Engine, :start_link,
            [
              %{
                # Assume terminal for now
@@ -81,7 +81,7 @@ defmodule Raxol.Runtime.Supervisor do
       %{
         id: TerminalDriver,
         # Passes registered name
-        start: {TerminalDriver, :start_link, [Dispatcher]},
+        start: {Raxol.Terminal.Driver, :start_link, [Dispatcher]},
         restart: :permanent,
         type: :worker
       }

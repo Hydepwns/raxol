@@ -78,4 +78,13 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
         {:handled, emulator}
     end
   end
+
+  # Accepts emulator, parser_state, and empty input
+  defp parse_loop(emulator, parser_state, "") do
+    if parser_state.state != :ground do
+      Logger.debug("Input ended while in parser state: #{parser_state.state}")
+    end
+
+    {:handled, emulator}
+  end
 end

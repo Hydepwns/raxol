@@ -11,8 +11,8 @@ defmodule Raxol.Terminal.Registry do
   # Define the @registry attribute to fix the compiler warning
   # @registry __MODULE__
 
-  def start_link do
-    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
   def init(_) do

@@ -1,50 +1,54 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.Components.Input.MultiLineInput.{State, RenderHelper}
+  alias Raxol.Components.Input.MultiLineInput
+  alias Raxol.Components.Input.MultiLineInput.RenderHelper
   alias Raxol.UI.Style
   alias Raxol.Terminal.Cell
 
   # Helper to create a minimal state for testing
-  defp create_state(lines, cursor \\ {0, 0}, scroll \\ {0, 0}, dimensions \\ {10, 3}, selection \\ nil) do
+  defp create_state(lines, cursor_pos, scroll_offset \\ {0, 0}, selection \\ nil, show_line_numbers \\ false) do
     sel_start = if selection, do: elem(selection, 0), else: nil
     sel_end = if selection, do: elem(selection, 1), else: nil
 
-    %State{
+    %MultiLineInput{
       lines: lines,
-      cursor_pos: cursor,
-      scroll_offset: scroll,
-      dimensions: dimensions,
+      cursor_pos: cursor_pos,
       selection_start: sel_start,
       selection_end: sel_end,
-      history: Raxol.History.new(),
-      clipboard: nil,
-      id: "test_mle"
+      scroll_offset: scroll_offset,
+      style: %{
+        text_color: :white,
+        placeholder_color: :gray,
+        selection_color: :blue,
+        cursor_color: :white,
+        line_numbers: false, # Default
+        line_number_color: :gray
+      } |> Map.put(:line_numbers, show_line_numbers),
+      id: "test_input"
       # Add other required fields if RenderHelper depends on them
       # value: Enum.join(lines, "\n"), # Might be needed if helpers rely on it
       # theme: %Raxol.UI.Theming.Theme{...} # Add a mock theme if needed
     }
   end
 
-  # Mock theme for testing
+  # Helper to create a mock theme
   defp mock_theme do
     %Raxol.UI.Theming.Theme{
-      styles: %{
-        default: Style.new(fg: :white, bg: :black),
-        selection: Style.new(fg: :black, bg: :blue, modifiers: [:reverse]),
-        cursor: Style.new(bg: :white, fg: :black, modifiers: [:underline])
-      },
       component_styles: %{
-        "MultiLineInput" => %{
-          selection: Style.new(fg: :cyan, bg: :magenta),
-          cursor: Style.new(fg: :yellow, bg: :red)
+        multi_line_input: %{
+          text_color: :cyan,
+          selection_color: :magenta,
+          line_number_color: :yellow
         }
-      }
+        # Add other component styles if needed by RenderHelper
+      },
+      # Add other theme fields if needed
+      colors: %{foreground: :white, background: :black}
     }
   end
 
-
-  describe "render_view/2" do
+  describe "render_visible_lines/1" do
     test "renders visible lines within dimensions" do
       state = create_state(["line 0", "line 1", "line 2", "line 3"], {1, 2}, {0, 0}, {8, 3}) # 8x3 viewport
       theme = mock_theme()

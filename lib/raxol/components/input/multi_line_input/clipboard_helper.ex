@@ -15,7 +15,8 @@ defmodule Raxol.Components.Input.MultiLineInput.ClipboardHelper do
       {start_pos, end_pos} = NavigationHelper.normalize_selection(state)
       # This helper needs to be defined or moved
       selected_text = get_text_range(state.value, start_pos, end_pos)
-      command = Command.new(:clipboard_write, selected_text)
+      # Use Command factory function
+      command = Command.clipboard_write(selected_text)
       {state, [command]}
     else
       {state, []} # Nothing selected, no command
@@ -30,10 +31,11 @@ defmodule Raxol.Components.Input.MultiLineInput.ClipboardHelper do
       selected_text = get_text_range(state.value, start_pos, end_pos)
 
       # Delete the selection (returns {new_state, _deleted_text})
+      # Ensure TextHelper.delete_selection uses state.value
       {state_after_delete, _} = TextHelper.delete_selection(state)
 
-      # Create the command
-      command = Command.new(:clipboard_write, selected_text)
+      # Use Command factory function
+      command = Command.clipboard_write(selected_text)
 
       {state_after_delete, [command]}
     else
@@ -44,7 +46,8 @@ defmodule Raxol.Components.Input.MultiLineInput.ClipboardHelper do
   # Returns {state, commands}
   def paste(state) do
     # Request clipboard content
-    command = Command.new(:clipboard_read, nil)
+    # Use Command factory function
+    command = Command.clipboard_read()
     {state, [command]}
     # The actual insertion will happen in MultiLineInput.update/2
     # when {:clipboard_content, text} is received.

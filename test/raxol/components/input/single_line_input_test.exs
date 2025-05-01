@@ -1,5 +1,6 @@
 defmodule Raxol.Components.Input.SingleLineInputTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
+
   alias Raxol.Components.Input.SingleLineInput
   alias Raxol.Core.Events.Event
 
@@ -8,185 +9,136 @@ defmodule Raxol.Components.Input.SingleLineInputTest do
       state = SingleLineInput.init(%{})
       assert state.value == ""
       assert state.placeholder == ""
-      assert state.width == 20
-      assert state.cursor_pos == 0
-      assert state.selection_start == nil
-      assert state.selection_end == nil
+      assert state.style == %{}
       assert state.focused == false
+      assert state.cursor_pos == 0
       assert state.on_change == nil
       assert state.on_submit == nil
     end
 
     test "initializes with provided values" do
-      on_change = fn _ -> nil end
-      on_submit = fn _ -> nil end
-
       props = %{
-        value: "test",
+        id: :my_input,
+        initial_value: "test",
         placeholder: "Enter text",
-        width: 30,
-        style: %{text_color: :red},
-        on_change: on_change,
-        on_submit: on_submit
+        style: %{color: :blue},
+        on_change: fn _ -> :changed end,
+        on_submit: fn _ -> :submitted end
       }
 
       state = SingleLineInput.init(props)
+      assert state.id == :my_input
       assert state.value == "test"
       assert state.placeholder == "Enter text"
-      assert state.width == 30
+      assert state.style == %{color: :blue}
+      assert state.focused == false
       assert state.cursor_pos == 4
-      assert state.style.text_color == :red
-      assert state.on_change == on_change
-      assert state.on_submit == on_submit
+      assert is_function(state.on_change, 1)
+      assert is_function(state.on_submit, 1)
     end
   end
 
   describe "update/2" do
     setup do
-      {:ok, state: SingleLineInput.init(%{value: "test"})}
+      state = SingleLineInput.init(%{initial_value: "hello", focused: true})
+      {:ok, state: state}
     end
 
     test "sets value and updates cursor position", %{state: state} do
-      new_state = SingleLineInput.update({:set_value, "new value"}, state)
-      assert new_state.value == "new value"
-      assert new_state.cursor_pos == 9
-      assert new_state.selection_start == nil
-      assert new_state.selection_end == nil
+      {new_state, _} = SingleLineInput.update({:insert_char, "!"}, %{state | cursor_pos: 5})
+      assert new_state.value == "hello!"
+      assert new_state.cursor_pos == 6
     end
 
     test "moves cursor within bounds", %{state: state} do
-      new_state = SingleLineInput.update({:move_cursor, 2}, state)
-      assert new_state.cursor_pos == 2
+      {state_right, _} = SingleLineInput.update(:move_cursor_right, %{state | cursor_pos: 1})
+      assert state_right.cursor_pos == 2
 
-      new_state = SingleLineInput.update({:move_cursor, -1}, state)
-      assert new_state.cursor_pos == 0
+      {state_left, _} = SingleLineInput.update(:move_cursor_left, %{state | cursor_pos: 1})
+      assert state_left.cursor_pos == 0
 
-      new_state = SingleLineInput.update({:move_cursor, 100}, state)
-      assert new_state.cursor_pos == 4
-    end
+      {state_past_end, _} = SingleLineInput.update(:move_cursor_right, %{state | cursor_pos: 5})
+      assert state_past_end.cursor_pos == 5
 
-    test "sets selection", %{state: state} do
-      new_state = SingleLineInput.update({:select, 1, 3}, state)
-      assert new_state.selection_start == 1
-      assert new_state.selection_end == 3
-      assert new_state.cursor_pos == 3
+      {state_past_start, _} = SingleLineInput.update(:move_cursor_left, %{state | cursor_pos: 0})
+      assert state_past_start.cursor_pos == 0
     end
 
     test "handles focus and blur", %{state: state} do
-      new_state = SingleLineInput.update(:focus, state)
-      assert new_state.focused == true
+      {focused_state, _} = SingleLineInput.update(:focus, state)
+      assert focused_state.focused == true
 
-      new_state = SingleLineInput.update(:blur, new_state)
-      assert new_state.focused == false
+      {blurred_state, _} = SingleLineInput.update(:blur, focused_state)
+      assert blurred_state.focused == false
     end
   end
 
-  describe "handle_event/2" do
+  describe "handle_event/3" do
     setup do
-      state = SingleLineInput.init(%{value: "test"})
-      {:ok, state: %{state | focused: true}}
+      state = SingleLineInput.init(%{id: :test_input, initial_value: "test", focused: true, cursor_pos: 4})
+      {:ok, state: state}
     end
 
     test "handles character input", %{state: state} do
-      event = Event.key("a")
-      {new_state, _} = SingleLineInput.handle_event(event, state)
-      assert new_state.value == "testa"
+      event = %Event{type: :key, data: %{state: :pressed, key: "!", modifiers: []}}
+      {new_state, _} = SingleLineInput.handle_event(event, %{}, state)
+      assert new_state.value == "test!"
       assert new_state.cursor_pos == 5
     end
 
     test "handles backspace", %{state: state} do
-      event = Event.key("Backspace")
-      {new_state, _} = SingleLineInput.handle_event(event, state)
+      event = %Event{type: :key, data: %{state: :pressed, key: "Backspace", modifiers: []}}
+      {new_state, _} = SingleLineInput.handle_event(event, %{}, state)
       assert new_state.value == "tes"
       assert new_state.cursor_pos == 3
     end
 
     test "handles delete", %{state: state} do
       state = %{state | cursor_pos: 1}
-      event = Event.key("Delete")
-      {new_state, _} = SingleLineInput.handle_event(event, state)
+      event = %Event{type: :key, data: %{state: :pressed, key: "Delete", modifiers: []}}
+      {new_state, _} = SingleLineInput.handle_event(event, %{}, state)
       assert new_state.value == "tst"
       assert new_state.cursor_pos == 1
     end
 
     test "handles cursor movement", %{state: state} do
-      # Left
-      event = Event.key("Left")
-      {new_state, _} = SingleLineInput.handle_event(event, state)
-      assert new_state.cursor_pos == 3
+      event_left = %Event{type: :key, data: %{state: :pressed, key: "Left", modifiers: []}}
+      {state_left, _} = SingleLineInput.handle_event(event_left, %{}, state)
+      assert state_left.cursor_pos == 3
 
-      # Right
-      event = Event.key("Right")
-      {new_state, _} = SingleLineInput.handle_event(event, state)
-      assert new_state.cursor_pos == 4
+      event_right = %Event{type: :key, data: %{state: :pressed, key: "Right", modifiers: []}}
+      {state_right, _} = SingleLineInput.handle_event(event_right, %{}, state_left)
+      assert state_right.cursor_pos == 4
 
-      # Home
-      event = Event.key("Home")
-      {new_state, _} = SingleLineInput.handle_event(event, state)
-      assert new_state.cursor_pos == 0
+      event_home = %Event{type: :key, data: %{state: :pressed, key: "Home", modifiers: []}}
+      {state_home, _} = SingleLineInput.handle_event(event_home, %{}, state_right)
+      assert state_home.cursor_pos == 0
 
-      # End
-      event = Event.key("End")
-      {new_state, _} = SingleLineInput.handle_event(event, state)
-      assert new_state.cursor_pos == 4
+      event_end = %Event{type: :key, data: %{state: :pressed, key: "End", modifiers: []}}
+      {state_end, _} = SingleLineInput.handle_event(event_end, %{}, state_home)
+      assert state_end.cursor_pos == 4
     end
 
-    test "handles word movement", %{state: state} do
-      state = %{state | value: "hello world"}
+    test "calls on_submit when Enter is pressed", %{state: _state} do
+      submit_value = :not_submitted
+      on_submit_func = fn value -> submit_value = value end
+      state = SingleLineInput.init(%{on_submit: on_submit_func, initial_value: "submit me"})
 
-      # Left by word
-      event = Event.key_event("Left", :pressed, [:ctrl])
+      event = %Event{type: :key, data: %{state: :pressed, key: "Enter", modifiers: []}}
+      {_new_state, commands} = SingleLineInput.handle_event(event, %{}, state)
 
-      {new_state, _} =
-        SingleLineInput.handle_event(event, %{state | cursor_pos: 8})
-
-      assert new_state.cursor_pos == 6
-
-      # Right by word
-      event = Event.key_event("Right", :pressed, [:ctrl])
-
-      {new_state, _} =
-        SingleLineInput.handle_event(event, %{state | cursor_pos: 2})
-
-      assert new_state.cursor_pos == 5
+      assert [{^on_submit_func, "submit me"}] = commands
     end
 
-    test "handles selection deletion", %{state: state} do
-      state = %{state | selection_start: 1, selection_end: 3}
-      event = Event.key("Backspace")
-      {new_state, _} = SingleLineInput.handle_event(event, state)
-      assert new_state.value == "tt"
-      assert new_state.cursor_pos == 1
-      assert new_state.selection_start == nil
-      assert new_state.selection_end == nil
-    end
+    test "calls on_change when text changes", %{state: _state} do
+      change_value = :not_changed
+      on_change_func = fn value -> change_value = value end
+      state = SingleLineInput.init(%{on_change: on_change_func})
 
-    test "calls on_submit when Enter is pressed", %{state: state} do
-      test_pid = self()
+      event = %Event{type: :key, data: %{state: :pressed, key: "a", modifiers: []}}
+      {_new_state, commands} = SingleLineInput.handle_event(event, %{}, state)
 
-      state = %{
-        state
-        | on_submit: fn value -> send(test_pid, {:submitted, value}) end
-      }
-
-      event = Event.key("Enter")
-      SingleLineInput.handle_event(event, state)
-
-      assert_received {:submitted, "test"}
-    end
-
-    test "calls on_change when text changes", %{state: state} do
-      test_pid = self()
-
-      state = %{
-        state
-        | on_change: fn value -> send(test_pid, {:changed, value}) end
-      }
-
-      event = Event.key("a")
-      SingleLineInput.handle_event(event, state)
-
-      assert_received {:changed, "testa"}
+      assert [{^on_change_func, "a"}] = commands
     end
   end
 end

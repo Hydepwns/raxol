@@ -3,6 +3,29 @@ defmodule Raxol.Style.Colors.AdvancedTest do
   alias Raxol.Style.Colors.Advanced
   alias Raxol.Style.Colors.Color
 
+  # Setup ETS table for adaptive tests
+  setup do
+    table = :raxol_terminal_capabilities
+    try do
+      :ets.delete(table)
+    rescue
+      ArgumentError -> :ok
+    end
+    :ets.new(table, [:set, :public, :named_table])
+    # Insert default capability needed for adapt_color_advanced
+    :ets.insert(table, {:color_support, :truecolor})
+
+    on_exit(fn ->
+      try do
+        :ets.delete(table)
+      rescue
+        ArgumentError -> :ok
+      end
+    end)
+
+    :ok
+  end
+
   describe "blend_colors/3" do
     test "blends red and blue to purple" do
       red = Color.from_hex("#FF0000")
@@ -97,6 +120,8 @@ defmodule Raxol.Style.Colors.AdvancedTest do
 
       assert length(harmony) == 3
       assert Enum.at(harmony, 0).hex == "#FF0000"
+      assert Enum.at(harmony, 1).hex == "#FF0080"
+      assert Enum.at(harmony, 2).hex == "#FF8000"
     end
 
     test "creates triadic harmony" do
@@ -105,6 +130,8 @@ defmodule Raxol.Style.Colors.AdvancedTest do
 
       assert length(harmony) == 3
       assert Enum.at(harmony, 0).hex == "#FF0000"
+      assert Enum.at(harmony, 1).hex == "#00FF00"
+      assert Enum.at(harmony, 2).hex == "#0000FF"
     end
 
     test "creates tetradic harmony" do
@@ -113,6 +140,9 @@ defmodule Raxol.Style.Colors.AdvancedTest do
 
       assert length(harmony) == 4
       assert Enum.at(harmony, 0).hex == "#FF0000"
+      assert Enum.at(harmony, 1).hex == "#80FF00"
+      assert Enum.at(harmony, 2).hex == "#00FFFF"
+      assert Enum.at(harmony, 3).hex == "#8000FF"
     end
   end
 

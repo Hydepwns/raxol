@@ -26,7 +26,7 @@ defmodule Raxol.Core.Runtime.Supervisor do
       {Task.Supervisor, name: Raxol.Core.Runtime.TaskSupervisor},
 
       # Core runtime services
-      {Raxol.Core.Runtime.StateManager, []},
+      # REMOVED: {Raxol.Core.Runtime.StateManager, []}, # Does not exist
       {Raxol.Core.Runtime.EventLoop, []},
       {Raxol.Core.Runtime.RenderLoop, []},
 

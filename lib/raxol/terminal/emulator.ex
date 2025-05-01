@@ -168,6 +168,17 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   @doc """
+  Returns the currently active screen buffer (:main or :alternate).
+  """
+  @spec get_active_buffer(t()) :: ScreenBuffer.t()
+  def get_active_buffer(emulator) do
+    case emulator.active_buffer_type do
+      :main -> emulator.main_screen_buffer
+      :alternate -> emulator.alternate_screen_buffer
+    end
+  end
+
+  @doc """
   Processes input from the user, handling both regular characters and escape sequences.
   Processes the entire input string recursively.
 
@@ -189,14 +200,11 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec process_input(t(), String.t()) :: {t(), String.t()}
   def process_input(emulator, input) when is_binary(input) do
-    # Call the NEW Parser module, passing the current emulator state
-    # <-- Pass emulator directly
-    updated_emulator_state = Parser.parse_chunk(emulator, input)
+    initial_parser_state = %Raxol.Terminal.Parser.State{}
+    # Calls parse_loop recursively
+    updated_emulator_state = Parser.parse_loop(emulator, initial_parser_state, input)
 
-    # Collect the output buffer generated during parsing/command execution
     output_to_send = updated_emulator_state.output_buffer
-
-    # Clear the output buffer in the final state
     final_emulator_state = %{updated_emulator_state | output_buffer: ""}
 
     # Return the final state and the collected output
@@ -204,21 +212,6 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   # --- Active Buffer Helpers ---
-
-  @doc "Gets the currently active screen buffer."
-  @spec get_active_buffer(Raxol.Terminal.Emulator.t()) ::
-          Raxol.Terminal.ScreenBuffer.t()
-  def get_active_buffer(%__MODULE__{
-        active_buffer_type: :main,
-        main_screen_buffer: buffer
-      }),
-      do: buffer
-
-  def get_active_buffer(%__MODULE__{
-        active_buffer_type: :alternate,
-        alternate_screen_buffer: buffer
-      }),
-      do: buffer
 
   @doc "Updates the currently active screen buffer."
   @spec update_active_buffer(
@@ -326,11 +319,12 @@ defmodule Raxol.Terminal.Emulator do
     # Update cursor state
     new_cursor_state = Manager.move_to(emulator.cursor, next_cursor_x, next_cursor_y)
 
-    # Update the emulator state
+    # Update the emulator state, then check for scroll
     emulator
     |> update_active_buffer(updated_active_buffer)
     |> Map.put(:cursor, new_cursor_state)
     |> Map.put(:last_col_exceeded, next_last_col_exceeded)
+    |> maybe_scroll()
   end
 
   # --- Command Handling Delegates (Called by Parser) ---
@@ -443,29 +437,30 @@ defmodule Raxol.Terminal.Emulator do
   # Returns {write_y, write_x, next_cursor_y, next_cursor_x, next_last_col_exceeded}
   defp calculate_write_position(emulator, width) do
     {cursor_x, cursor_y} = emulator.cursor.position
-    decawm_enabled = ScreenModes.mode_enabled?(emulator.mode_state, :decawm_autowrap)
+    autowrap_enabled = emulator.mode_state.auto_wrap
+    last_col_exceeded = emulator.last_col_exceeded
 
-    cond do
+    result = cond do
       # Case 1: Previous character caused wrap flag to be set.
-      emulator.last_col_exceeded ->
-        # Write at start of next line {0, y+1}. Reset flag. Advance cursor to {1, y+1}.
+      last_col_exceeded ->
+        # Conceptual cursor is {cursor_y + 1, 0}. Write there.
+        # Next cursor position is {cursor_y + 1, 1}.
         {cursor_y + 1, 0, cursor_y + 1, 1, false}
 
       # Case 2: Cursor is at the last column (width - 1).
       cursor_x == width - 1 ->
-        if decawm_enabled do
-          # Write at last column {width-1, y}. Set wrap flag. Move cursor to next line {0, y+1}.
+        if autowrap_enabled do
           {cursor_y, cursor_x, cursor_y + 1, 0, true}
         else
-          # DECAWM off: Write at last column {width-1, y}. Don't set flag. Keep cursor at last column {width-1, y}.
           {cursor_y, cursor_x, cursor_y, cursor_x, false}
         end
 
       # Case 3: Normal character write.
       true ->
-        # Write at current position {x,y}. Don't set flag. Advance cursor {x+1, y}.
         {cursor_y, cursor_x, cursor_y, cursor_x + 1, false}
     end
+
+    result
   end
 
   # Calculates default tab stops (every 8 columns, 0-based)
@@ -478,4 +473,29 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   # (handle_ris moved to ControlCodes)
+
+  @doc """
+  Checks if the cursor is below the scroll region and scrolls up if necessary.
+  Called after operations like LF, IND, NEL that might move the cursor off-screen.
+  """
+  def maybe_scroll(%__MODULE__{} = emulator) do
+    {cursor_row, cursor_col} = get_cursor_position(emulator)
+    scroll_region = emulator.scroll_region
+    active_buffer = get_active_buffer(emulator)
+
+    {_top, bottom} =
+      scroll_region || {0, ScreenBuffer.get_height(active_buffer) - 1}
+
+    if cursor_row > bottom do # Check if cursor is *below* the region
+      # Perform scroll up using the Screen command module
+      scrolled_emulator = Raxol.Terminal.Commands.Screen.scroll_up(emulator, 1)
+
+      # After scrolling, clamp cursor Y to the bottom of the scroll region
+      # as the content moved up, the cursor effectively stays at the bottom line.
+      new_cursor = CursorManager.move_to(scrolled_emulator.cursor, cursor_col, bottom)
+      %{scrolled_emulator | cursor: new_cursor}
+    else
+      emulator # Cursor within region or above, no scroll needed
+    end
+  end
 end

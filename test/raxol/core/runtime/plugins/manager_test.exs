@@ -11,7 +11,8 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     @callback ensure_loaded(atom) :: {:module, atom} | {:error, atom}
   end
   defmock CodeMock, for: CodeBehavior
-  defmock LoaderMock, for: Raxol.Core.Runtime.Plugins.Loader
+  # Removed defmock for Loader, as it's not a behaviour
+  # defmock LoaderMock, for: Raxol.Core.Runtime.Plugins.Loader
   defmock MockPluginBehaviour, for: Raxol.Core.Runtime.Plugins.Plugin # Define a behaviour plugins implement
   # Add metadata provider behaviour
   defmock MockPluginMetadataProvider, for: Raxol.Core.Runtime.Plugins.PluginMetadataProvider
@@ -133,20 +134,51 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
   # --- Setup & Teardown ---
 
   setup do
-    # Verify mocks in testing
+    # Start shared ETS table for CommandRegistry for all tests in this file
+    # Use :public to allow test process access
+    :ets.new(:test_cmd_reg, [:set, :public, :named_table, read_concurrency: true])
+    # Ensure the table is deleted after the test
+    on_exit(fn -> :ets.delete(:test_cmd_reg) end)
+
+
+    # Use Meck for modules without defined behaviours or for easier control
+    :meck.new(Raxol.Core.Runtime.Plugins.LifecycleHelper, [:passthrough])
+    :meck.new(Raxol.Core.Runtime.Plugins.CommandHelper, [:passthrough])
+    :meck.new(Raxol.Core.Runtime.Plugins.CommandRegistry, [:passthrough]) # Can mock functions if needed
+    :meck.new(Raxol.Core.Runtime.Plugins.Loader, [:passthrough])
+    :meck.new(Code, [:passthrough]) # Mock Elixir's Code module
+    # Mock FileSystem if available
+    if Code.ensure_loaded?(FileSystem) do
+      :meck.new(FileSystem, [:passthrough])
+    end
+
+
+    # Keep Mox for defined behaviours if preferred
     Mox.verify_on_exit!()
-    # Can't stub_with a behavior, so just set up expectations as needed
 
-    Mox.stub_with(LoaderMock, Raxol.Core.Runtime.Plugins.Loader)
 
-    # Start the CommandRegistry ETS table
-    {:ok, table} = CommandRegistry.start_link()
-    # Start the PluginManager
-    # Ensure PluginManager uses the LoaderMock and potentially CodeMock
-    # This might require passing mocks or using Application env config in Manager
-    # For now, assume Manager calls LoaderMock and CodeMock directly via Module.function()
-    {:ok, manager_pid} = Manager.start_link(command_registry_table: table)
-    %{manager: manager_pid, table: table}
+    # Start the PluginManager, explicitly passing the test table name
+    # Ensure Manager uses our test ETS table via options
+    {:ok, manager_pid} = Manager.start_link(command_registry_table: :test_cmd_reg)
+    %{manager: manager_pid, table: :test_cmd_reg} # Pass table name for direct checks
+  end
+
+  # Ensure meck is unloaded after each test
+  defp unload_meck_mocks do
+    :meck.unload(Raxol.Core.Runtime.Plugins.LifecycleHelper)
+    :meck.unload(Raxol.Core.Runtime.Plugins.CommandHelper)
+    :meck.unload(Raxol.Core.Runtime.Plugins.CommandRegistry)
+    :meck.unload(Raxol.Core.Runtime.Plugins.Loader)
+    :meck.unload(Code)
+    if Code.ensure_loaded?(FileSystem) do
+      :meck.unload(FileSystem)
+    end
+  end
+
+  # Add teardown callback
+  setup do
+    # Existing setup code...
+    on_exit(fn -> unload_meck_mocks() end)
   end
 
   # --- Test Cases ---
@@ -175,7 +207,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       plugin_d_path = "/fake/path/mock_plugin_d.ex" # Depends on non-existent E
 
       # Expect discovery to find A, B, and D
-      expect(LoaderMock, :discover_plugins, fn _dir ->
+      expect(Raxol.Core.Runtime.Plugins.Loader, :discover_plugins, fn _dir ->
         [
           {MockPluginA, plugin_a_path},
           {MockPluginB, plugin_b_path},
@@ -184,7 +216,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       end)
 
       # Expect metadata extraction for all three
-      expect(LoaderMock, :extract_metadata, fn
+      expect(Raxol.Core.Runtime.Plugins.Loader, :extract_metadata, fn
         MockPluginA -> MockPluginA.metadata()
         MockPluginB -> MockPluginB.metadata()
         MockPluginD -> MockPluginD.metadata()
@@ -194,7 +226,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       expect(MockPluginBehaviour, :init, fn
         # Capture the calls to ensure only A and B are initialized
         opts when opts == %{} -> {:ok, %{}}
-      end |> times(2)) # Expect init for A and B
+      end, times: 2) # Expect init for A and B
 
       # Trigger initialization
       assert {:ok, _} = GenServer.call(manager, :initialize)
@@ -216,7 +248,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       circ_b_path = "/fake/path/mock_plugin_circular_b.ex"
 
       # Expect discovery to find Circular A and B
-      expect(LoaderMock, :discover_plugins, fn _dir ->
+      expect(Raxol.Core.Runtime.Plugins.Loader, :discover_plugins, fn _dir ->
         [
           {MockPluginCircularA, circ_a_path},
           {MockPluginCircularB, circ_b_path}
@@ -224,7 +256,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       end)
 
       # Expect metadata extraction for both
-      expect(LoaderMock, :extract_metadata, fn
+      expect(Raxol.Core.Runtime.Plugins.Loader, :extract_metadata, fn
         MockPluginCircularA -> MockPluginCircularA.metadata()
         MockPluginCircularB -> MockPluginCircularB.metadata()
       end)
@@ -251,7 +283,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       plugin_id = MockPluginV1.id()
 
       # 1. Expect discovery to find V1 initially
-      expect(LoaderMock, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
+      expect(Raxol.Core.Runtime.Plugins.Loader, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
       # Expect V1 init to be called via LifecycleHelper (invoked by Manager)
       expect(MockPluginBehaviour, :init, 1, fn _ -> {:ok, %{version: 1}} end)
 
@@ -294,7 +326,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       plugin_id = MockPluginV1.id()
 
       # 1. Load V1 successfully first
-      expect(LoaderMock, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
+      expect(Raxol.Core.Runtime.Plugins.Loader, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
       expect(MockPluginBehaviour, :init, 1, fn _ -> {:ok, %{version: 1}} end)
       assert {:ok, _} = GenServer.call(manager, :initialize)
       assert CommandRegistry.lookup(table, {plugin_id, :command_v1}) == {:ok, MockPluginV1}
@@ -327,7 +359,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       plugin_id = MockPluginV1.id()
 
       # 1. Load V1 successfully first
-      expect(LoaderMock, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
+      expect(Raxol.Core.Runtime.Plugins.Loader, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
       expect(MockPluginBehaviour, :init, 1, fn _ -> {:ok, %{version: 1}} end)
       assert {:ok, _} = GenServer.call(manager, :initialize)
       assert CommandRegistry.lookup(table, {plugin_id, :command_v1}) == {:ok, MockPluginV1}
@@ -374,7 +406,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       plugin_id = MockPluginV1.id()
 
       # 1. Load V1 successfully first
-      expect(LoaderMock, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
+      expect(Raxol.Core.Runtime.Plugins.Loader, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
       expect(MockPluginBehaviour, :init, 1, fn _ -> {:ok, %{version: 1}} end)
       assert {:ok, _} = GenServer.call(manager, :initialize)
       assert CommandRegistry.lookup(table, {plugin_id, :command_v1}) == {:ok, MockPluginV1}
@@ -407,7 +439,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       plugin_id = MockPluginV1.id()
 
       # Expect discovery to find V1
-      expect(LoaderMock, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
+      expect(Raxol.Core.Runtime.Plugins.Loader, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
       # Expect V1 init to be called and succeed
       expect(MockPluginBehaviour, :init, 1, fn _ -> {:ok, %{version: 1, id: plugin_id}} end)
 
@@ -431,7 +463,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       plugin_id = MockPluginV1.id()
 
       # Expect discovery to find V1
-      expect(LoaderMock, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
+      expect(Raxol.Core.Runtime.Plugins.Loader, :discover_plugins, fn _opts -> [{MockPluginV1, fake_plugin_path}] end)
       # Expect V1 init to be called and FAIL
       expect(MockPluginBehaviour, :init, 1, fn _ -> {:error, :init_failed_reason} end)
 
@@ -457,7 +489,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       path_c = "/fake/c.ex"
 
       # Discover plugins out of order
-      expect(LoaderMock, :discover_plugins, fn _opts ->
+      expect(Raxol.Core.Runtime.Plugins.Loader, :discover_plugins, fn _opts ->
         [
           {MockPluginC, path_c},
           {MockPluginA, path_a},
@@ -495,7 +527,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       path_d = "/fake/d.ex"
 
       # Discover plugin D which depends on non-existent E
-      expect(LoaderMock, :discover_plugins, fn _opts -> [{MockPluginD, path_d}] end)
+      expect(Raxol.Core.Runtime.Plugins.Loader, :discover_plugins, fn _opts -> [{MockPluginD, path_d}] end)
       # Expect init NOT to be called for D
       expect(MockPluginBehaviour, :init, 0, fn _ -> {:ok, %{}} end)
 
@@ -514,7 +546,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       path_cb = "/fake/circ_b.ex"
 
       # Discover circular plugins
-      expect(LoaderMock, :discover_plugins, fn _opts ->
+      expect(Raxol.Core.Runtime.Plugins.Loader, :discover_plugins, fn _opts ->
         [{MockPluginCircularA, path_ca}, {MockPluginCircularB, path_cb}]
       end)
       # Expect init NOT to be called for either
@@ -540,8 +572,176 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     end
   end
 
-  # TODO: Add tests for:
-  # - Loading a plugin with dependencies
-  # - Handling missing dependencies
+  describe "Command Handling" do
+    test "handle_cast :handle_command delegates to CommandHelper", %{manager: manager, table: table} do
+      # Expect CommandHelper.handle_command to be called with correct args
+      :meck.expect(Raxol.Core.Runtime.Plugins.CommandHelper, :handle_command, fn _cmd, _data, reg_table, _plugins, _states ->
+        send(self(), {:command_helper_called, reg_table})
+        {:ok, %{}} # Simulate successful handling
+      end)
 
+      # Cast the command to the manager
+      GenServer.cast(manager, {:handle_command, "my_plugin:do_thing", [1, 2]})
+
+      # Assert that CommandHelper was called with the correct table
+      assert_received {:command_helper_called, ^table}
+      :meck.verify(Raxol.Core.Runtime.Plugins.CommandHelper)
+    end
+  end
+
+  describe "Manual Plugin Reloading" do
+    test "reload_plugin successfully reloads via LifecycleHelper", %{manager: manager, table: table} do
+      plugin_id = "test_plugin"
+      initial_state = %Manager.State{
+        initialized: true, # Assume initialized
+        plugins: %{plugin_id => MockPluginA},
+        metadata: %{plugin_id => %{id: plugin_id}},
+        plugin_states: %{plugin_id => %{status: :loaded}},
+        plugin_paths: %{plugin_id => "/fake/plugin.ex"},
+        command_registry_table: table
+      }
+      # Need to set initial state for the test. GenServer.call doesn't allow passing state.
+      # We'll mock the helper instead.
+
+      # Expect the helper to be called and return success
+      :meck.expect(Raxol.Core.Runtime.Plugins.LifecycleHelper, :reload_plugin_from_disk, fn id, _, _, _, _, reg_table, _, paths ->
+          send(self(), {:reload_helper_called, id, reg_table, paths})
+          {:ok, %{ # Simulate updated state from helper
+            plugins: %{id => MockPluginA}, # Keep it simple
+            metadata: %{id => %{id: id, version: "reloaded"}}, # Indicate reload
+            plugin_states: %{id => %{status: :reloaded}},
+            load_order: [id],
+            plugin_config: %{},
+            plugin_paths: paths # Return paths back
+          }}
+        end)
+
+      # Call the manager to reload
+      # Need Manager to be initialized for reload to proceed
+      GenServer.call(manager, :initialize) # Quick initialize (mocks might interfere, adjust if needed)
+
+      assert :ok = Manager.reload_plugin(plugin_id)
+
+      # Verify helper was called
+      assert_received {:reload_helper_called, ^plugin_id, ^table, %{}}
+      :meck.verify(Raxol.Core.Runtime.Plugins.LifecycleHelper)
+
+      # Optional: Verify state was updated (requires getting state or specific query function)
+      # assert Manager.get_plugin_metadata(manager, plugin_id).version == "reloaded"
+    end
+
+    test "reload_plugin handles error from LifecycleHelper", %{manager: manager} do
+       plugin_id = "test_plugin"
+
+      # Expect the helper to be called and return an error
+      :meck.expect(Raxol.Core.Runtime.Plugins.LifecycleHelper, :reload_plugin_from_disk, fn id, _, _, _, _, _, _, _ ->
+          send(self(), {:reload_helper_called_for_error, id})
+          {:error, :init_failed} # Simulate failure during reload
+        end)
+
+      # Initialize manager first
+      GenServer.call(manager, :initialize)
+
+      # Call the manager to reload
+      assert {:error, :init_failed} = Manager.reload_plugin(plugin_id)
+
+      # Verify helper was called
+      assert_received {:reload_helper_called_for_error, ^plugin_id}
+      :meck.verify(Raxol.Core.Runtime.Plugins.LifecycleHelper)
+    end
+  end
+
+  describe "File Watch Reloading (Dev Only)" do
+    # Test requires Mix.env == :dev
+    @tag :dev_only
+    test "starts file watcher when enabled in dev env", %{table: table} do
+      # Expect FileSystem.start_link to be called
+      :meck.expect(FileSystem, :start_link, fn opts ->
+        send(self(), {:fs_start_link, opts})
+        {:ok, :fake_fs_pid}
+      end)
+      :meck.expect(FileSystem, :subscribe, fn pid ->
+        send(self(), {:fs_subscribe, pid})
+        :ok
+      end)
+
+      # Start manager with reloading enabled
+      {:ok, _pid} = Manager.start_link(command_registry_table: table, enable_plugin_reloading: true)
+
+      # Assert FileSystem was started and subscribed
+      assert_received {:fs_start_link, [dirs: ["priv/plugins"]]}
+      assert_received {:fs_subscribe, :fake_fs_pid}
+      :meck.verify(FileSystem)
+    end
+
+    @tag :dev_only
+    test "file change triggers reload after debounce", %{manager: manager, table: table} do
+      plugin_id = "my_plugin"
+      plugin_path = "priv/plugins/my_plugin.ex"
+
+      # Setup initial state with a plugin and path
+      # Mock initialize to return a state with the plugin path
+      :meck.expect(Raxol.Core.Runtime.Plugins.LifecycleHelper, :initialize_plugins, fn _, _, _, _, _, _, _ ->
+        {:ok, %{
+          plugins: %{plugin_id => MockPluginA},
+          metadata: %{plugin_id => MockPluginA.metadata()},
+          plugin_states: %{plugin_id => %{}},
+          load_order: [plugin_id],
+          plugin_config: %{},
+          plugin_paths: %{plugin_id => plugin_path}
+        }}
+      end)
+
+      # Expect file watching to be setup
+      :meck.expect(FileSystem, :watch, fn _pid, path ->
+          send(self(), {:fs_watch, path})
+          :ok
+        end)
+
+      # Expect reload helper to be called eventually
+      :meck.expect(Raxol.Core.Runtime.Plugins.LifecycleHelper, :reload_plugin_from_disk, fn id, _, _, _, _, _, _, _ ->
+          send(self(), {:reload_triggered, id})
+          {:ok, %{ # Minimal ok state
+            plugins: %{id => MockPluginA}, metadata: %{id => %{}}, plugin_states: %{id => %{}},
+            load_order: [id], plugin_config: %{}, plugin_paths: %{id => plugin_path}
+          }}
+        end)
+
+       # Initialize the manager (which should call initialize_plugins and setup watch)
+       {:ok, _state} = Manager.initialize(manager)
+       assert_received {:fs_watch, ^plugin_path}
+
+      # Simulate file system event
+      send(manager, {:fs, :fake_fs_pid, {plugin_path, [:modified]}})
+
+      # Wait for debounce and assert reload helper was called
+      Process.sleep(@file_event_debounce_ms + 100) # Wait longer than debounce
+      assert_received {:reload_triggered, ^plugin_id}
+
+      :meck.verify(Raxol.Core.Runtime.Plugins.LifecycleHelper)
+      :meck.verify(FileSystem)
+    end
+
+     test "does not start file watcher when not in dev env", %{table: table} do
+      # Ensure FileSystem.start_link is NOT called
+      :meck.expect(FileSystem, :start_link, 0) # Expect 0 calls
+
+      # Start manager with reloading enabled but not in dev
+      Mix.env(:prod) # Temporarily change env for this test setup
+      {:ok, _pid} = Manager.start_link(command_registry_table: table, enable_plugin_reloading: true)
+      Mix.env(:test) # Change back
+
+      :meck.verify(FileSystem)
+    end
+
+  end
+
+  # --- Helper Functions/Assertions (If needed) ---
+  # Example: Function to get plugin state might be useful if added to Manager API
+  # defp get_plugin_state(manager, plugin_id) do
+  #   GenServer.call(manager, {:get_plugin_state, plugin_id})
+  # end
+
+  # TODO: Add tests for discovery edge cases
+  # TODO: Add tests for load_plugin edge cases
 end

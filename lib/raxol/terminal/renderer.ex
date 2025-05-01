@@ -134,70 +134,78 @@ defmodule Raxol.Terminal.Renderer do
 
   defp render_cell(cell, renderer) do
     char = Cell.get_char(cell)
-    attributes = cell.attributes
+    style_attrs = cell.style
 
-    style = build_style(attributes, renderer.theme)
+    style = build_style(style_attrs, renderer.theme)
 
-    if style == "" do
-      char
-    else
-      "<span style=\"#{style}\">#{char}</span>"
-    end
+    result =
+      if style == "" do
+        char
+      else
+        "<span style=\"#{style}\">#{char}</span>"
+      end
+
+    result
   end
 
-  defp build_style(attributes, theme) do
-    styles = []
+  defp build_style(style_attrs, theme) do
+    # Start with an empty list of styles
+    initial_styles = []
 
-    styles =
-      if foreground = Map.get(attributes, :foreground) do
-        color = get_theme_color(theme, :foreground, foreground)
-        [{"color", color} | styles]
-      else
-        styles
-      end
+    # Apply styles based on cell attributes, falling back to theme defaults for colors
+    final_styles =
+      initial_styles
+      |> apply_color_style(:foreground, style_attrs, theme)
+      |> apply_color_style(:background, style_attrs, theme)
+      |> apply_flag_style(:bold, style_attrs, "font-weight", "bold")
+      |> apply_flag_style(:underline, style_attrs, "text-decoration", "underline")
+      |> apply_flag_style(:italic, style_attrs, "font-style", "italic")
+      # Add other flag-based styles here
 
-    styles =
-      if background = Map.get(attributes, :background) do
-        color = get_theme_color(theme, :background, background)
-        [{"background-color", color} | styles]
-      else
-        styles
-      end
-
-    styles =
-      if Map.get(attributes, :bold) do
-        [{"font-weight", "bold"} | styles]
-      else
-        styles
-      end
-
-    styles =
-      if Map.get(attributes, :underline) do
-        [{"text-decoration", "underline"} | styles]
-      else
-        styles
-      end
-
-    styles =
-      if Map.get(attributes, :italic) do
-        [{"font-style", "italic"} | styles]
-      else
-        styles
-      end
-
-    styles
+    final_styles
+    |> Enum.reverse() # Reverse to maintain original check order in string
     |> Enum.map(fn {property, value} -> "#{property}: #{value}" end)
     |> Enum.join("; ")
   end
 
+  # Helper to apply color styles (foreground/background)
+  defp apply_color_style(current_styles, key, style_attrs, theme) do
+    # Determine color: Use cell's value if present, otherwise theme default
+    color_name = Map.get(style_attrs, key) || :default
+    color_value = get_theme_color(theme, key, color_name)
+
+    # Determine CSS property name
+    property_name =
+      case key do
+        :foreground -> "color"
+        :background -> "background-color"
+      end
+
+    # Add the style if the color value is not nil (theme might not define defaults)
+    if color_value != nil do
+      [{property_name, color_value} | current_styles]
+    else
+      current_styles
+    end
+  end
+
+  # Helper to apply flag-based styles (bold, italic, etc.)
+  defp apply_flag_style(current_styles, key, style_attrs, property_name, property_value) do
+    if Map.get(style_attrs, key) do
+      [{property_name, property_value} | current_styles]
+    else
+      current_styles
+    end
+  end
+
   defp get_theme_color(theme, type, name) do
+    # Simpler fallback: If name is :default, get theme default. Otherwise get named color.
+    # Return nil if not found anywhere.
     case name do
       :default ->
-        get_in(theme, [type, :default]) || "#FFFFFF"
-
+        get_in(theme, [type, :default])
       _ ->
-        Map.get(theme[type], name) || get_in(theme, [type, :default]) ||
-          "#FFFFFF"
+        Map.get(theme[type] || %{}, name)
     end
   end
 end

@@ -30,81 +30,43 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   Calls the plugin's `get_commands/1` or `get_commands/0` callback
   and registers them in the command table.
   """
-  def register_plugin_commands(plugin_module, plugin_state, command_table) do
-    cond do
-      function_exported?(plugin_module, :get_commands, 1) ->
-        try do
-          commands = plugin_module.get_commands(plugin_state) # Pass state
+  def register_plugin_commands(plugin_module, _plugin_state, command_table) do
+    # Only support get_commands/0 now
+    if function_exported?(plugin_module, :get_commands, 0) do
+      try do
+        commands = plugin_module.get_commands()
 
-          if is_list(commands) do
-            Enum.each(commands, fn
-              # Match command tuple: {name, function_atom, arity}
-              {name, function, arity}
-              when is_atom(name) and is_atom(function) and is_integer(arity) ->
-                CommandRegistry.register_command(
-                  command_table,
-                  plugin_module, # Use module as namespace
-                  Atom.to_string(name),
-                  plugin_module, # Module containing the function
-                  function,
-                  arity
-                )
+        if is_list(commands) do
+          Enum.each(commands, fn
+            # Match standard command tuple: {name_atom, function_atom, arity_integer}
+            {name, function, arity}
+            when is_atom(name) and is_atom(function) and is_integer(arity) and arity >= 0 ->
+              CommandRegistry.register_command(
+                command_table,
+                plugin_module, # Use module as namespace
+                Atom.to_string(name),
+                plugin_module, # Module containing the function
+                function,
+                arity
+              )
 
-              # Match command tuple: {name, arity} (function assumed to be :handle_command)
-              {name, arity} when is_atom(name) and is_integer(arity) ->
-                 CommandRegistry.register_command(
-                  command_table,
-                  plugin_module, # Use module as namespace
-                  Atom.to_string(name),
-                  plugin_module, # Module containing the function
-                  :handle_command, # Default function
-                  arity
-                )
-
-              invalid ->
-                Logger.warning(
-                  "Plugin #{plugin_module} returned invalid command format in get_commands/1: #{inspect(invalid)}. Expected {name_atom, function_atom, arity_integer} or {name_atom, arity_integer}."
-                )
-            end)
-          else
-            Logger.warning("Plugin #{plugin_module} get_commands/1 did not return a list.")
-          end
-        rescue
-          error ->
-            Logger.error("Error calling get_commands/1 on #{plugin_module}: #{inspect(error)}\\\\nStacktrace: #{inspect(__STACKTRACE__)}")
+            invalid ->
+              Logger.warning(
+                "Plugin #{inspect(plugin_module)} returned invalid command format in get_commands/0: #{inspect(invalid)}. Expected {name_atom, function_atom, arity_integer}."
+              )
+          end)
+        else
+          Logger.warning("Plugin #{inspect(plugin_module)} get_commands/0 did not return a list.")
         end
-
-      function_exported?(plugin_module, :get_commands, 0) ->
-         try do
-          commands = plugin_module.get_commands() # Call legacy version
-
-          if is_list(commands) do
-            Enum.each(commands, fn
-              # Match legacy format: {name_atom, description_string} - assume :handle_command/3
-              {name, _description} when is_atom(name) ->
-                CommandRegistry.register_command(
-                  command_table,
-                  plugin_module, # Use module as namespace
-                  Atom.to_string(name),
-                  plugin_module, # Module containing the function
-                  :handle_command,
-                  3 # Assumed arity for handle_command(command_name, data, state)
-                )
-              invalid ->
-                Logger.warning("Plugin #{plugin_module} returned invalid command format in get_commands/0: #{inspect(invalid)}. Expected {name_atom, description_string}."
-                )
-            end)
-          else
-            Logger.warning("Plugin #{plugin_module} get_commands/0 did not return a list.")
-          end
-        rescue
-          error ->
-            Logger.error("Error calling get_commands/0 on #{plugin_module}: #{inspect(error)}\\\\nStacktrace: #{inspect(__STACKTRACE__)}")
-        end
-
-      true ->
-        # No commands to register
-        :ok
+      rescue
+        error ->
+          Logger.error(
+            "Error calling get_commands/0 on #{inspect(plugin_module)}: #{inspect(error)}\\nStacktrace: #{inspect(__STACKTRACE__)}"
+          )
+      end
+    else
+      # No get_commands/0 function exported, nothing to register
+      :ok
     end
   end
 

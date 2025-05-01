@@ -112,6 +112,9 @@ defmodule Raxol.MixProject do
       {:circular_buffer, "~> 0.2"},
       # {:ex_notify, "~> 0.2"}, # REMOVED - Package does not exist / wrong one chosen
 
+      # Optional Plugin Reloading
+      {:file_system, "~> 0.2", only: [:dev, :test]},
+
       # Development tools
       {:phoenix_live_reload, "~> 1.2", only: :dev},
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},

@@ -19,8 +19,6 @@ defmodule Raxol.Docs.InteractiveTutorial do
 
   # Added aliases for parsing
   alias YamlElixir
-  alias Earmark.Ast
-  alias Earmark.Helpers
 
   @type tutorial_id :: String.t()
   @type step_id :: String.t()
@@ -530,7 +528,7 @@ defmodule Raxol.Docs.InteractiveTutorial do
             nil
         catch
           kind, reason ->
-            stacktrace = System.stacktrace()
+            stacktrace = __STACKTRACE__ # Use __STACKTRACE__ instead of System.stacktrace()
             IO.warn("Error parsing tutorial file #{file_path}: #{kind}: #{inspect(reason)}\n#{Exception.format_stacktrace(stacktrace)}. Skipping.")
             nil
         end
@@ -541,7 +539,7 @@ defmodule Raxol.Docs.InteractiveTutorial do
   end
 
   # Parses frontmatter and Markdown body
-  defp parse_markdown_content(content, file_path \\ "") do
+  defp parse_markdown_content(content, file_path) do
     # Split frontmatter (between ---) and body
     parts = String.split(content, "---", parts: 3)
 
@@ -585,16 +583,14 @@ defmodule Raxol.Docs.InteractiveTutorial do
   end
 
   # Parses steps separated by horizontal rules (---)
-  defp parse_steps_from_markdown(markdown_body, file_path \\ "") do
+  defp parse_steps_from_markdown(markdown_body, file_path) do
      markdown_body
-     |> String.split("--- ") # Split by horizontal rule marker
+     |> String.split("---") # Split by horizontal rule marker
      |> Enum.map(&String.trim/1)
      |> Enum.reject(&(&1 == ""))
      |> Enum.map_reduce(1, fn step_md, index ->
-         case parse_single_step(step_md, index, file_path) do
-           nil -> {nil, index} # Skip invalid steps
-           step -> {step, index + 1}
-         end
+         step = parse_single_step(step_md, index, file_path)
+         {step, index + 1}
        end)
      |> elem(0)
      |> Enum.reject(&is_nil/1)
@@ -602,18 +598,23 @@ defmodule Raxol.Docs.InteractiveTutorial do
 
   # Parses a single step's markdown content
   # This is a simplified parser. A more robust approach might use Earmark's AST directly.
-  defp parse_single_step(step_md, _index, file_path \\ "") do
+  defp parse_single_step(step_md, _index, file_path) do
     lines = String.split(step_md, "\n", trim: true)
 
     # Extract Step ID and Title from H2
     {step_id, step_title} =
       case List.first(lines) do
-        h2 when is_binary(h2) and String.starts_with?(h2, "## [") ->
-          case Regex.run(~r/^##\s+\[([a-zA-Z0-9_\-]+)\]\s+(.*)$/, h2) do
-            [_, id, title] -> {id, String.trim(title)}
-            _ ->
-              IO.warn("Invalid step title format in #{file_path}: #{h2}")
-              throw({:error, :invalid_step_title})
+        h2 when is_binary(h2) ->
+          if String.starts_with?(h2, "## [") do
+            case Regex.run(~r/^##\s+\[([a-zA-Z0-9_\-]+)\]\s+(.*)$/, h2) do
+              [_, id, title] -> {id, String.trim(title)}
+              _ ->
+                IO.warn("Invalid step title format in #{file_path}: #{h2}")
+                throw({:error, :invalid_step_title})
+            end
+          else
+            IO.warn("Missing or invalid step title (H2 with [id]) in #{file_path}")
+            throw({:error, :missing_step_title})
           end
         _ ->
            IO.warn("Missing or invalid step title (H2 with [id]) in #{file_path}")
@@ -648,7 +649,7 @@ defmodule Raxol.Docs.InteractiveTutorial do
       title: step_title,
       content: content_md,
       example_code: example_code,
-      exercise: if exercise_desc == "", do: nil, else: exercise_desc,
+      exercise: (if exercise_desc == "", do: nil, else: exercise_desc),
       validation: validation_fun, # Store the atom name
       hints: hints,
       next_steps: [], # Placeholder - could potentially parse from content? Or add explicit marker?
@@ -659,18 +660,17 @@ defmodule Raxol.Docs.InteractiveTutorial do
   # Helper to partition lines by H3 sections (simplistic)
   defp partition_by_h3(lines) do
     Enum.reduce(lines, %{current_section: :content, content: []}, fn line, acc ->
-      case String.trim(line) do
-        h3 when String.starts_with?(h3, "### ") ->
-          section_name = String.replace_prefix(h3, "### ", "") |> String.trim()
-          %{acc | current_section: section_name}
-        _ ->
-          section_key = acc.current_section
-          Map.update(acc, section_key, [line], fn existing -> [line | existing] end)
+      trimmed_line = String.trim(line)
+      if String.starts_with?(trimmed_line, "### ") do
+        section_name = String.replace_prefix(trimmed_line, "### ", "") |> String.trim()
+        %{acc | current_section: section_name}
+      else
+        section_key = acc.current_section
+        Map.update(acc, section_key, [line], fn existing -> [line | existing] end)
       end
     end)
     |> Map.delete(:current_section)
     |> Enum.map(fn {k, v} -> {k, Enum.reverse(v)} end) # Reverse lines back to original order
-    |> Map.new()
   end
 
   # Helper to extract code from the first ``` block (simplistic)
@@ -711,9 +711,9 @@ defmodule Raxol.Docs.InteractiveTutorial do
          "Did you `use Raxol.Core.Runtime.Application`?"
       !String.contains?(submission, "import Raxol.View.Elements") ->
          "Did you `import Raxol.View.Elements`?"
-       !String.contains?(submission, "panel do") ->
+      !String.contains?(submission, "panel do") ->
          "Missing `panel` element."
-      !String.contains?(submission, ~s(text(content: "Welcome to Raxol!"))) ->
+      !String.contains?(submission, "text(content: \"Welcome to Raxol!\")") ->
         "Missing `text` element with the correct content."
       true ->
         :ok

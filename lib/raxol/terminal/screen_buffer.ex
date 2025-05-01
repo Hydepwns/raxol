@@ -166,6 +166,17 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate get_text_in_region(buffer, start_x, start_y, end_x, end_y),
     to: Selection
 
+  @doc """
+  Checks if the buffer contains only default cells.
+  """
+  @spec is_empty?(t()) :: boolean()
+  def is_empty?(buffer) do
+    # Revert to Enum.all? with the simplified check
+    Enum.all?(buffer.cells, fn row ->
+      Enum.all?(row, fn cell -> cell.char == " " end)
+    end)
+  end
+
   # --- Resizing & Dimensions --- (Delegated to Operations)
   @doc "Resizes buffer. See `Raxol.Terminal.Buffer.Operations.resize/3`."
   @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()

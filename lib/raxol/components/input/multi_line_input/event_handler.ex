@@ -120,8 +120,12 @@ defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
           nil
       end
 
-    # Call update on the main component module
-    if msg, do: MultiLineInput.update(msg, state), else: {:noreply, state, nil}
+    # Return the update message directly for the component behaviour
+    if msg do
+      {:update, msg, state}
+    else
+      {:noreply, state, nil}
+    end
   end
 
   # Handle Mouse Events (Placeholder/Basic)
@@ -134,15 +138,17 @@ defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
     col = max(0, x - comp_x + scroll_col)
 
     msg = {:move_cursor_to, {row, col}}
-    MultiLineInput.update(msg, state)
+    # Return the update message for the component behaviour
+    {:update, msg, state}
     # TODO: Handle drag for selection
-    {:noreply, state, nil}
+    # {:noreply, state, nil}
   end
 
   # Catch-all for unhandled events
   def handle_event(event, state) do
     # Rename _event to event
     Logger.debug("Unhandled event: #{inspect(event)}")
-    {:noreply, state}
+    # Ensure the correct tuple arity is returned
+    {:noreply, state, nil}
   end
 end

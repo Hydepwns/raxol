@@ -98,8 +98,8 @@ defmodule Raxol.Terminal.Commands.Parser do
   @spec parse_int(String.t()) :: integer() | nil
   def parse_int(str) do
     case Integer.parse(str) do
-      {val, _} -> val
-      :error -> nil
+      {val, ""} -> val # Only return the value if the remainder is empty
+      _ -> nil        # Return nil for incomplete parses or errors
     end
   end
 end

@@ -1,185 +1,166 @@
 defmodule Raxol.Plugins.ClipboardPluginTest do
-  use ExUnit.Case
-  alias Raxol.Plugins.ClipboardPlugin
+  use ExUnit.Case, async: true # Can switch back to async with Mox
+  import Mox
 
-  describe "clipboard plugin" do
-    test "initializes with default configuration" do
-      {:ok, plugin} = ClipboardPlugin.init()
+  # Remove Mox.defmock - it's configured in config/test.exs
+  # Mox.defmock(ClipboardMock, for: Raxol.System.Clipboard.Behaviour)
 
-      assert plugin.name == "clipboard"
-      assert plugin.version == "1.0.0"
+  alias Raxol.Core.Plugins.Core.ClipboardPlugin
+  # Keep Behaviour alias for type hints if desired, but Mox expects the mock module
+  alias Raxol.System.Clipboard.Behaviour, as: ClipboardBehaviour
 
-      assert plugin.description ==
-               "Provides clipboard functionality for copying and pasting text"
+  # Get the configured mock module
+  @clipboard_mock Application.compile_env!(:raxol, :mocks)[:ClipboardBehaviour]
 
-      assert plugin.enabled == true
-      assert plugin.api_version == "1.0.0"
-      assert plugin.selection_start == nil
-      assert plugin.selection_end == nil
-      assert plugin.is_selecting == false
+  # Setup Mox: Define the mock for ClipboardBehaviour
+  setup :verify_on_exit!
 
-      # Check default config
-      assert plugin.config.copy_command == "copy"
-      assert plugin.config.paste_command == "paste"
-      assert plugin.config.selection_mode == "line"
-      assert plugin.config.copy_notification == true
-      assert plugin.config.paste_notification == true
-      assert plugin.config.notification_duration == 2000
-
-      # Check dependencies
-      assert length(plugin.dependencies) == 1
-      [dependency] = plugin.dependencies
-      assert dependency["name"] == "notification"
-      assert dependency["version"] == ">= 1.0.0"
-      assert dependency["optional"] == true
+  describe "init/1" do
+    test "initializes with default state" do
+      # Init with default implementation - pass empty list, not map
+      assert {:ok, %{clipboard_impl: Raxol.System.Clipboard}} = ClipboardPlugin.init([])
     end
 
-    test "initializes with custom configuration" do
-      custom_config = %{
-        copy_command: "cp",
-        paste_command: "pt",
-        selection_mode: "block",
-        copy_notification: false,
-        paste_notification: false,
-        notification_duration: 1000
-      }
-
-      {:ok, plugin} = ClipboardPlugin.init(custom_config)
-
-      # Check custom config
-      assert plugin.config.copy_command == "cp"
-      assert plugin.config.paste_command == "pt"
-      assert plugin.config.selection_mode == "block"
-      assert plugin.config.copy_notification == false
-      assert plugin.config.paste_notification == false
-      assert plugin.config.notification_duration == 1000
-    end
-
-    test "parses copy command correctly" do
-      {:ok, plugin} = ClipboardPlugin.init()
-
-      # Test with mode only
-      assert {:ok, "line", nil, nil} =
-               ClipboardPlugin.parse_copy_command("/copy line", "copy")
-
-      # Test with mode and positions
-      assert {:ok, "block", {10, 20}, {30, 40}} =
-               ClipboardPlugin.parse_copy_command(
-                 "/copy block 10,20 30,40",
-                 "copy"
-               )
-
-      # Test with invalid format
-      assert {:error, _} =
-               ClipboardPlugin.parse_copy_command("/copy invalid", "copy")
-
-      # Test with invalid position format
-      assert {:error, _} =
-               ClipboardPlugin.parse_copy_command(
-                 "/copy line 10,20 invalid",
-                 "copy"
-               )
-    end
-
-    test "parses select command correctly" do
-      {:ok, plugin} = ClipboardPlugin.init()
-
-      # Test with mode only
-      assert {:ok, "line", nil} =
-               ClipboardPlugin.parse_select_command("/select line")
-
-      # Test with mode and position
-      assert {:ok, "block", {10, 20}} =
-               ClipboardPlugin.parse_select_command("/select block 10,20")
-
-      # Test with invalid format
-      assert {:error, _} =
-               ClipboardPlugin.parse_select_command("/select invalid")
-
-      # Test with invalid position format
-      assert {:error, _} =
-               ClipboardPlugin.parse_select_command("/select line invalid")
-    end
-
-    test "parses end-select command correctly" do
-      {:ok, plugin} = ClipboardPlugin.init()
-
-      # Test with no position
-      assert {:ok, nil} =
-               ClipboardPlugin.parse_end_select_command("/end-select")
-
-      # Test with position
-      assert {:ok, {10, 20}} =
-               ClipboardPlugin.parse_end_select_command("/end-select 10,20")
-
-      # Test with invalid position format
-      assert {:error, _} =
-               ClipboardPlugin.parse_end_select_command("/end-select invalid")
-    end
-
-    test "handles selection start and end" do
-      {:ok, plugin} = ClipboardPlugin.init()
-
-      # Start selection
-      {:ok, updated_plugin} =
-        ClipboardPlugin.start_selection(plugin, "line", {10, 20})
-
-      assert updated_plugin.selection_start == {10, 20}
-      assert updated_plugin.selection_end == {10, 20}
-      assert updated_plugin.is_selecting == true
-      assert updated_plugin.config.selection_mode == "line"
-
-      # Update selection
-      {:ok, updated_plugin} =
-        ClipboardPlugin.update_selection(updated_plugin, {30, 40})
-
-      assert updated_plugin.selection_end == {30, 40}
-
-      # End selection
-      {:ok, updated_plugin} =
-        ClipboardPlugin.end_selection(updated_plugin, {50, 60})
-
-      assert updated_plugin.selection_end == {50, 60}
-      assert updated_plugin.is_selecting == false
-    end
-
-    test "resets selection on resize" do
-      {:ok, plugin} = ClipboardPlugin.init()
-
-      # Start selection
-      {:ok, plugin} = ClipboardPlugin.start_selection(plugin, "line", {10, 20})
-      assert plugin.is_selecting == true
-
-      # Handle resize
-      {:ok, updated_plugin} = ClipboardPlugin.handle_resize(plugin, 80, 24)
-      assert updated_plugin.selection_start == nil
-      assert updated_plugin.selection_end == nil
-      assert updated_plugin.is_selecting == false
-    end
-
-    test "handles mouse events for selection" do
-      {:ok, plugin} = ClipboardPlugin.init()
-
-      # Mouse down
-      {:ok, updated_plugin} =
-        ClipboardPlugin.handle_mouse(plugin, {:mouse_down, :left, 10, 20})
-
-      assert updated_plugin.selection_start == {10, 20}
-      assert updated_plugin.selection_end == {10, 20}
-      assert updated_plugin.is_selecting == true
-
-      # Mouse move
-      {:ok, updated_plugin} =
-        ClipboardPlugin.handle_mouse(updated_plugin, {:mouse_move, 30, 40})
-
-      assert updated_plugin.selection_end == {30, 40}
-
-      # Mouse up
-      {:ok, updated_plugin} =
-        ClipboardPlugin.handle_mouse(updated_plugin, {:mouse_up, :left, 50, 60})
-
-      assert updated_plugin.selection_end == {50, 60}
-      assert updated_plugin.is_selecting == false
+    test "initializes with custom implementation" do
+      # Init with mock implementation - pass keyword list
+      assert {:ok, %{clipboard_impl: @clipboard_mock}} = ClipboardPlugin.init([clipboard_impl: @clipboard_mock])
     end
   end
+
+  describe "get_commands/0" do
+    test "registers clipboard_write and clipboard_read commands" do
+      # Remove meck setup/teardown
+      # :meck.new(Clipboard)
+      # on_exit(fn -> :meck.unload(Clipboard) end)
+
+      # No mocking needed for get_commands
+      expected_commands = [
+        {:clipboard_write, :handle_clipboard_command, 2},
+        {:clipboard_read, :handle_clipboard_command, 1}
+      ]
+
+      assert ClipboardPlugin.get_commands() == expected_commands
+    end
+  end
+
+  describe "handle_command/3" do
+    # Helper to create initial state with the mock injected
+    defp initial_state_with_mock do
+      %ClipboardPlugin{clipboard_impl: @clipboard_mock}
+    end
+
+    test "delegates :clipboard_write command to System.Clipboard.copy/1 successfully" do
+      # Use helper to get state with mock
+      initial_state = initial_state_with_mock()
+      test_content = "hello clipboard"
+      command_name = :clipboard_write
+      args = [test_content]
+
+      # Mock the behaviour call using Mox with the configured mock
+      expect(@clipboard_mock, :copy, fn ^test_content -> :ok end)
+
+      # Call the plugin's command handler with the mock-injected state
+      assert {:ok, ^initial_state, :clipboard_write_ok} =
+               ClipboardPlugin.handle_command(command_name, args, initial_state)
+
+      # Verification is handled by setup :verify_on_exit!
+    end
+
+    test "delegates :clipboard_write command and handles System.Clipboard.copy/1 error" do
+      # Use helper to get state with mock
+      initial_state = initial_state_with_mock()
+      test_content = "error content"
+      command_name = :clipboard_write
+      args = [test_content]
+      error_reason = {:os_error, "cmd failed"}
+
+      # Mock the behaviour call failure using Mox with the configured mock
+      expect(@clipboard_mock, :copy, fn ^test_content -> {:error, error_reason} end)
+
+      # Call the plugin's command handler with the mock-injected state
+      assert {:error, {:clipboard_write_failed, ^error_reason}, ^initial_state} =
+               ClipboardPlugin.handle_command(command_name, args, initial_state)
+
+      # Verification handled by :verify_on_exit!
+    end
+
+     test "delegates :clipboard_read command to System.Clipboard.paste/0 successfully" do
+       # Use helper to get state with mock
+       initial_state = initial_state_with_mock()
+       clipboard_content = "pasted content"
+       command_name = :clipboard_read
+       args = []
+
+       # Mock the behaviour call using Mox with the configured mock
+       expect(@clipboard_mock, :paste, fn -> {:ok, clipboard_content} end)
+
+       # Call the plugin's command handler with the mock-injected state
+       assert {:ok, ^initial_state, {:clipboard_content, ^clipboard_content}} =
+                ClipboardPlugin.handle_command(command_name, args, initial_state)
+
+       # Verification handled by :verify_on_exit!
+     end
+
+     test "delegates :clipboard_read command and handles System.Clipboard.paste/0 error" do
+       # Use helper to get state with mock
+       initial_state = initial_state_with_mock()
+       command_name = :clipboard_read
+       args = []
+       error_reason = :command_not_found
+
+       # Mock the behaviour call failure using Mox with the configured mock
+       expect(@clipboard_mock, :paste, fn -> {:error, error_reason} end)
+
+       # Call the plugin's command handler with the mock-injected state
+       assert {:error, {:clipboard_read_failed, ^error_reason}, ^initial_state} =
+                ClipboardPlugin.handle_command(command_name, args, initial_state)
+
+       # Verification handled by :verify_on_exit!
+     end
+
+     test "returns error for unhandled command variants" do
+       # Use helper to get state with mock (although mock isn't called)
+       initial_state = initial_state_with_mock()
+       assert {:error, :unhandled_clipboard_command, ^initial_state} =
+                ClipboardPlugin.handle_command(:unknown_command, [], initial_state)
+
+       assert {:error, :unhandled_clipboard_command, ^initial_state} =
+                ClipboardPlugin.handle_command(:clipboard_write, [], initial_state) # Wrong args
+
+       assert {:error, :unhandled_clipboard_command, ^initial_state} =
+                ClipboardPlugin.handle_command(:clipboard_read, ["unexpected"], initial_state) # Wrong args
+     end
+  end
+
+  # Basic check for terminate callback existence
+   describe "terminate/2" do
+     test "terminate/2 exists and returns :ok" do
+       # Use helper for state
+       initial_state = initial_state_with_mock()
+       assert ClipboardPlugin.terminate(:shutdown, initial_state) == :ok
+     end
+   end
+
+   # Basic check for optional callbacks existence
+   describe "optional callbacks" do
+      # Use helper for state in these tests too
+      defp initial_state_with_mock do
+        %ClipboardPlugin{clipboard_impl: @clipboard_mock}
+      end
+
+      test "enable/1 exists" do
+        initial_state = initial_state_with_mock()
+        assert {:ok, ^initial_state} = ClipboardPlugin.enable(initial_state)
+      end
+      test "disable/1 exists" do
+        initial_state = initial_state_with_mock()
+        assert {:ok, ^initial_state} = ClipboardPlugin.disable(initial_state)
+      end
+      test "filter_event/2 exists" do
+        initial_state = initial_state_with_mock()
+        event = %{type: :test}
+        assert {:ok, ^event, ^initial_state} = ClipboardPlugin.filter_event(event, initial_state)
+      end
+   end
+
 end

@@ -1,60 +1,57 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.UI.Components.Input.MultiLineInput.{State, EventHandler, TextHelper, NavigationHelper}
-  alias Raxol.Event
+  alias Raxol.Components.Input.MultiLineInput
+  alias Raxol.Components.Input.MultiLineInput.EventHandler
+  alias Raxol.Core.Events.Event
 
-  # Helper to create a minimal state for testing
-  defp create_state(lines, cursor \\ {0, 0}, selection \\ nil) do
+  # Helper to create initial state
+  defp create_state(lines \\ [""], cursor_pos \\ {0, 0}, selection \\ nil) do
+    # Use the main MultiLineInput module struct
     sel_start = if selection, do: elem(selection, 0), else: nil
     sel_end = if selection, do: elem(selection, 1), else: nil
-
-    %State{
+    %MultiLineInput{
       lines: lines,
-      cursor_pos: cursor,
-      scroll_offset: {0, 0},
-      dimensions: {10, 5},
-      selection_start: sel_start,
+      cursor_pos: cursor_pos,
+      selection_start: sel_start, # Use correct fields
       selection_end: sel_end,
-      history: Raxol.History.new(),
-      clipboard: nil,
-      id: "test_mle"
+      id: "test_input",
+      scroll_offset: {0, 0}
     }
   end
 
   describe "handle_event/2" do
     # --- Character Input ---
     test "handles character input event" do
-      state = create_state(["hello"], {0, 2})
-      event = %Event.KeyDown{key: "a"}
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
+      state = create_state(["abc"], {0, 3})
+      # Use Event.key/1 helper to create the event struct
+      event = Event.key("a")
 
-      assert new_state.lines == ["heallo"]
-      assert new_state.cursor_pos == {0, 3}
+      # Call handle_event directly on the helper module
+      {:update, {:input, "a"}, _new_state} = EventHandler.handle_event(event, state)
     end
 
     test "handles newline event" do
-      state = create_state(["hello"], {0, 2})
-      event = %Event.KeyDown{key: :enter}
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
+      state = create_state(["hello", "world"], {0, 5}) # Cursor at end of first line
+      # Use Event.key helper
+      event = Event.key(:enter)
 
-      assert new_state.lines == ["he", "llo"]
-      assert new_state.cursor_pos == {1, 0}
+      {:update, {:enter}, _new_state} = EventHandler.handle_event(event, state)
     end
 
     # --- Deletion ---
     test "handles backspace event" do
-      state = create_state(["hello"], {0, 3})
-      event = %Event.KeyDown{key: :backspace}
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
+      state = create_state(["hello"], {0, 3}) # Cursor after 'l' in "hello"
+      # Use Event.key helper
+      event = Event.key(:backspace)
 
-      assert new_state.lines == ["helo"]
-      assert new_state.cursor_pos == {0, 2}
+      {:update, {:backspace}, _new_state} = EventHandler.handle_event(event, state)
     end
 
     test "handles delete event" do
       state = create_state(["hello"], {0, 2})
-      event = %Event.KeyDown{key: :delete}
+      # Use Event.key/1 helper
+      event = Event.key(:delete)
       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
 
       assert new_state.lines == ["helo"]
@@ -64,7 +61,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
     # --- Basic Navigation ---
     test "handles arrow left event" do
       state = create_state(["hello"], {0, 3})
-      event = %Event.KeyDown{key: :left}
+      # Use Event.key/1 helper
+      event = Event.key(:left)
       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
 
       assert new_state.cursor_pos == {0, 2}
@@ -72,7 +70,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
 
     test "handles arrow right event" do
       state = create_state(["hello"], {0, 3})
-      event = %Event.KeyDown{key: :right}
+      # Use Event.key/1 helper
+      event = Event.key(:right)
       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
 
       assert new_state.cursor_pos == {0, 4}
@@ -80,7 +79,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
 
      test "handles arrow up event" do
       state = create_state(["line1", "line2"], {1, 3})
-      event = %Event.KeyDown{key: :up}
+      # Use Event.key/1 helper
+      event = Event.key(:up)
       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
 
       assert new_state.cursor_pos == {0, 3}
@@ -88,7 +88,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
 
     test "handles arrow down event" do
       state = create_state(["line1", "line2"], {0, 3})
-      event = %Event.KeyDown{key: :down}
+      # Use Event.key/1 helper
+      event = Event.key(:down)
       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
 
       assert new_state.cursor_pos == {1, 3}
@@ -97,7 +98,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
     # --- Advanced Navigation ---
     test "handles home event" do
       state = create_state(["hello"], {0, 4})
-      event = %Event.KeyDown{key: :home}
+      # Use Event.key/1 helper
+      event = Event.key(:home)
       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
 
       assert new_state.cursor_pos == {0, 0}
@@ -105,7 +107,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
 
     test "handles end event" do
       state = create_state(["hello"], {0, 1})
-      event = %Event.KeyDown{key: :end}
+      # Use Event.key/1 helper
+      event = Event.key(:end)
       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
 
       assert new_state.cursor_pos == {0, 5}
@@ -113,7 +116,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
 
      test "handles pageup event" do
       state = create_state(Enum.map(0..10, &"line #{&1}"), {10, 3})
-      event = %Event.KeyDown{key: :pageup}
+      # Use Event.key/1 helper
+      event = Event.key(:pageup)
       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
 
       # Assumes default dimensions height of 5
@@ -122,7 +126,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
 
     test "handles pagedown event" do
       state = create_state(Enum.map(0..10, &"line #{&1}"), {1, 3})
-      event = %Event.KeyDown{key: :pagedown}
+      # Use Event.key/1 helper
+      event = Event.key(:pagedown)
       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
 
       # Assumes default dimensions height of 5
@@ -132,7 +137,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
     # --- Selection Handling (Basic - just clears selection on basic move) ---
     test "clears selection when moving cursor normally" do
        state = create_state(["hello"], {0, 3}, {{0, 1}, {0, 4}})
-       event = %Event.KeyDown{key: :left}
+       # Use Event.key/1 helper
+       event = Event.key(:left)
        {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
 
        assert new_state.cursor_pos == {0, 2}
@@ -154,7 +160,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
     # --- Other Events ---
     test "ignores unknown keydown events" do
       state = create_state(["hello"], {0, 1})
-      event = %Event.KeyDown{key: :f1}
+      # Use Event.key/1 helper
+      event = Event.key(:f1)
       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
 
       assert new_state == state # State should be unchanged
@@ -162,7 +169,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
 
     test "ignores non-keydown events" do
       state = create_state(["hello"], {0, 1})
-      event = %Event.MouseClick{x: 1, y: 1, button: :left}
+      # Use Event.mouse/2 helper
+      event = Event.mouse(:left, {1, 1})
        {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
       # Note: Current implementation *does* handle mouse events. Update test if needed.
       # For now, assuming it passes through if not specifically handled by keys

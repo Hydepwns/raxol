@@ -380,7 +380,7 @@ defmodule Raxol.Terminal.CursorTest do
     # end
   end
 
-  describe "Cursor Manager" do
+  describe "Cursor Manager Blink Enabled Test" do
     test "set_blink_enabled updates cursor blink state" do
       cursor = Manager.new()
       cursor = Manager.set_blink_enabled(cursor, true)
