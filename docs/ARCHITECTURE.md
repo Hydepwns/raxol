@@ -1,7 +1,7 @@
 ---
 title: Raxol Architecture
 description: Overview of the Raxol system architecture
-date: 2024-06-25
+date: 2025-05-01
 author: Raxol Team
 section: documentation
 tags: [architecture, documentation, design]
@@ -15,7 +15,7 @@ This document provides an overview of the Raxol architecture, its components, an
 
 Raxol is designed as a layered architecture with several key subsystems:
 
-```
+```text
 ┌────────────────────────────────────────┐
 │              Application               │
 ├────────────────────────────────────────┤
@@ -98,74 +98,184 @@ Raxol is organized into logical subsystems:
 
 ```bash
 lib/raxol/
+├── accounts/              # User accounts related modules
+│   └── ...
+├── ai/                    # AI integration modules
+│   └── ...
+├── animation/             # Animation framework modules
+│   └── ...
+├── application.ex         # Top-level application definition
+├── auth/
+│   └── ...
+├── auth.ex                # Authentication logic
 ├── benchmarks/            # Performance benchmarks
 │   └── performance/       # Extracted benchmark categories
+├── cli/                   # Command Line Interface modules
+│   └── ...
 ├── cloud/                 # Cloud integration modules
 │   └── monitoring/        # Extracted monitoring sub-modules
-├── core/                  # Core runtime, application, plugins, events, rendering
-│   ├── runtime/
-│   │   ├── application.ex # Application behaviour definition
-│   │   ├── dispatcher.ex  # Event/Command routing & State management
-│   │   ├── plugins/       # Plugin Manager, Loader, Helpers, Registry
-│   │   └── rendering/     # Rendering Engine & Scheduler
+├── cloud.ex               # Cloud integration entry point
+├── components/            # UI Components (appears top-level? might be older structure? - See ui/components/)
 │   └── ...
-├── docs/                  # Project documentation (docs/README.md)
-│   ├── development/
-│   │   └── terminal/      # Detailed terminal subsystem docs (docs/development/terminal/README.md)
-│   │       ├── ANSIProcessing.md
-│   │       ├── CharacterSets.md
-│   │       ├── ClipboardManagement.md
-│   │       ├── ColorManagement.md
-│   │       ├── Cursor.md
-│   │       ├── InputHandling.md
-│   │       ├── KeyboardMapping.md
-│   │       ├── MouseHandling.md
-│   │       ├── ProcessManagement.md
-│   │       ├── ScreenBuffer.md
-│   │       ├── ScrollManagement.md
-│   │       ├── SearchAndHighlight.md
-│   │       ├── WindowManagement.md
-│   │       └── README.md
-│   ├── guides/
-│   │   ├── components/ # UI/Layout component docs
-│   │   └── ...         # Other user guides
-│   ├── ARCHITECTURE.md  # This file
-│   └── README.md        # Main documentation index
-├── plugins/
+├── core/                  # Core runtime, application, plugins, events, rendering
+│   ├── accessibility/     # Accessibility features
+│   │   └── theme_integration.ex
+│   ├── accessibility.ex   # Core Accessibility logic
+│   ├── color_system.ex    # Theme/color management
+│   ├── events/            # Event handling logic
+│   │   └── ...
+│   ├── focus_manager.ex   # Focus management logic
+│   ├── i18n.ex            # Internationalization
+│   ├── id.ex              # Unique ID generation
+│   ├── keyboard_navigator.ex # Keyboard navigation helper
+│   ├── keyboard_shortcuts.ex # Shortcut management
+│   ├── performance/       # Core performance modules
+│   │   └── ...
+│   ├── plugins/           # Core plugin definitions (distinct from top-level plugins/)
+│   │   └── ...
+│   ├── preferences/       # User preferences storage
+│   │   └── persistence.ex
+│   ├── renderer/          # Core rendering logic (distinct from ui/renderer.ex?)
+│   │   └── ...
+│   ├── runtime/           # Runtime application behaviour, lifecycle, etc.
+│   │   ├── application.ex
+│   │   ├── dispatcher.ex
+│   │   ├── lifecycle.ex
+│   │   ├── plugins/       # Plugin Manager, Loader, Helpers, Registry (nested)
+│   │   └── rendering/     # Rendering Engine & Scheduler (nested)
+│   ├── user_preferences.ex # User preferences GenServer
+│   └── ux_refinement.ex   # UX refinement features
+├── database/              # Database interaction modules
+│   └── ...
+├── database.ex            # Database interaction entry point
+├── docs/                  # Embedded documentation generators
+│   ├── component_catalog.ex
+│   └── interactive_tutorial.ex
+├── dynamic_supervisor.ex  # Dynamic supervisor definition
+├── examples/              # Example applications
+│   ├── accessibility_demo.ex
+│   ├── color_system_demo.ex
+│   ├── form.ex
+│   ├── integrated_accessibility_demo.ex
+│   └── ux_refinement_demo.ex
+├── metrics/
+│   └── ...
+├── metrics.ex             # Metrics collection
+├── plugins/               # Application plugins
+│   ├── core/              # Core plugins (clipboard, notification)
+│   ├── clipboard_plugin.ex
+│   ├── hyperlink_plugin.ex
+│   ├── image_plugin.ex
+│   ├── notification_plugin.ex
+│   ├── plugin.ex          # Plugin behaviour definition
+│   ├── plugin_config.ex
+│   ├── plugin_dependency.ex
+│   ├── plugin_manager.ex  # Plugin manager (duplicate? see core/runtime/plugins/)
+│   ├── search_plugin.ex
+│   ├── theme_plugin.ex
 │   └── visualization/     # Visualization Plugin Renderers & Helpers
 │       ├── chart_renderer.ex
-│       ├── treemap_renderer.ex
+│       ├── drawing_utils.ex
 │       ├── image_renderer.ex
-│       └── drawing_utils.ex
-├── ui/                    # Components, Layout, Rendering, Theming
-│   ├── components/        # UI Components (implementing Base.Component)
-│   │   ├── base/
-│   │   ├── display/
-│   │   └── input/
-│   │       └── multi_line_input/ # MultiLineInput Helpers
-│   │           ├── text_helper.ex
-│   │           ├── navigation_helper.ex
-│   │           ├── render_helper.ex
-│   │           ├── event_handler.ex
-│   │           └── clipboard_helper.ex
-│   ├── layout/            # Layout Engine (measure/position)
-│   ├── renderer.ex        # Converts elements to styled cells
-│   └── theming/           # Theme definitions and application
-├── terminal/              # Terminal I/O and ANSI Processing
-│   ├── ansi/              # ANSI sequence modules (Charsets, ScreenModes, etc.)
-│   │   ├── sixel_graphics.ex # Stateful sixel parser
-│   │   ├── sixel_palette.ex  # Sixel palette management
-│   │   └── sixel_pattern_map.ex # Sixel pattern mapping
-│   ├── buffer/            # ScreenBuffer logic
-│   ├── cursor/            # Cursor management
-│   ├── driver.ex          # Manages `:rrex_termbox` NIF interface, receives/translates events
-│   ├── emulator.ex        # Terminal state management
-│   ├── parser.ex          # Main parser state machine
-│   │   └── states/        # Individual state handlers for the parser
-│   ├── control_codes.ex   # C0/Simple ESC handlers
+│       └── treemap_renderer.ex
+├── recording/
 │   └── ...
-└── view/                  # View Definition DSL
-    └── elements.ex        # Macros for UI elements (box, text, etc.)
+├── renderer/              # Rendering related modules (top-level)
+│   └── ...
+├── repo.ex                # Ecto Repo definition
+├── runtime/               # Runtime modules (top-level, duplicate? see core/runtime/)
+│   └── ...
+├── session.ex             # Session management
+├── style/                 # Styling and theming modules
+│   └── ...
+├── system/
+│   └── ...
+├── terminal/              # Terminal I/O and ANSI Processing
+│   ├── ansi/              # ANSI sequence modules
+│   │   ├── character_sets.ex
+│   │   ├── character_translations.ex
+│   │   ├── device_status.ex
+│   │   ├── emitter.ex
+│   │   ├── mouse_events.ex
+│   │   ├── parser.ex          # ANSI Parser state machine
+│   │   ├── processor.ex       # ANSI Processor
+│   │   ├── screen_modes.ex    # ANSI Screen Modes
+│   │   ├── sequence_parser.ex # ANSI Sequence Parser
+│   │   ├── sequences/         # Specific ANSI sequence handlers
+│   │   ├── sixel_graphics.ex  # Stateful sixel parser
+│   │   ├── sixel_palette.ex   # Sixel palette management
+│   │   ├── sixel_pattern_map.ex # Sixel pattern mapping
+│   │   ├── terminal_state.ex  # ANSI Terminal State
+│   │   ├── text_formatting.ex # ANSI Text Formatting
+│   │   └── window_manipulation.ex
+│   ├── ansi.ex              # ANSI helper module
+│   ├── ansi_facade.ex       # Facade for ANSI operations
+│   ├── buffer/              # ScreenBuffer logic
+│   │   └── operations.ex
+│   ├── cell.ex              # Terminal cell representation
+│   ├── character_handling.ex
+│   ├── character_sets/      # Character set specific logic
+│   ├── clipboard.ex         # Clipboard interaction
+│   ├── command_executor.ex  # Command execution within terminal
+│   ├── commands/            # Terminal command related modules
+│   │   └── history.ex
+│   ├── commands.ex          # Terminal command definitions
+│   ├── config/              # Terminal configuration helpers
+│   │   └── utils.ex
+│   ├── config.ex            # Terminal configuration
+│   ├── configuration.ex     # Terminal configuration loading
+│   ├── constants.ex         # Terminal constants (from NIF)
+│   ├── control_codes.ex     # C0/Simple ESC handlers
+│   ├── cursor/              # Cursor management
+│   │   └── ...
+│   ├── display/             # Terminal display modules
+│   │   └── ...
+│   ├── driver.ex            # Manages `:rrex_termbox` NIF interface
+│   ├── emulator.ex          # Terminal state management/emulation
+│   ├── escape_sequence.ex   # Escape sequence handling
+│   ├── input/
+│   │   └── ...
+│   ├── input.ex             # Input event handling
+│   ├── input_handler.ex     # Input handler process
+│   ├── integration.ex       # Terminal integration logic
+│   ├── manager.ex           # Terminal manager process
+│   ├── memory_manager.ex    # Terminal memory management
+│   ├── modes.ex             # Terminal modes
+│   ├── parser/              # Parser state handlers
+│   │   └── states/
+│   ├── parser.ex            # Main terminal input parser
+│   ├── README.md
+│   ├── registry.ex          # Terminal registry
+│   ├── renderer.ex          # Terminal specific rendering logic
+│   ├── screen_buffer.ex     # Screen buffer implementation
+│   ├── screen_modes.ex      # Screen mode handling
+│   ├── session.ex           # Terminal session management
+│   ├── supervisor.ex        # Terminal supervisor
+│   ├── terminal_utils.ex    # Terminal utility functions
+│   └── text_formatting.ex   # Text formatting helpers
+├── test/                  # Test files and helpers
+│   └── ...
+├── ui/                    # UI Components, Layout, Rendering, Theming
+│   ├── components/        # UI Components (implementing Base.Component)
+│   │   ├── base/          # Base component behaviour
+│   │   ├── display/       # Display components (Table, etc.)
+│   │   ├── input/         # Input components (Button, TextInput, MultiLineInput, etc.)
+│   │   │   └── multi_line_input/ # MultiLineInput Helpers
+│   │   └── navigation/    # Navigation components
+│   ├── layout/            # Layout Engine (measure/position)
+│   │   └── ...
+│   ├── renderer.ex        # Converts elements to styled cells
+│   ├── rendering/         # Rendering helpers
+│   │   └── ...
+│   ├── terminal.ex        # UI specific terminal interaction?
+│   └── theming/           # Theme definitions and application
+│       └── ...
+├── view/                  # View Definition DSL
+│   ├── elements.ex        # Macros for UI elements (box, text, etc.)
+│   ├── components.ex
+│   └── layout.ex
+└── web/                   # Web interface modules
+    └── ...
 ```
 
 ## Core Subsystems & Status
@@ -270,7 +380,7 @@ lib/raxol/
 - `./lib/raxol/terminal/driver.ex` (~632 lines) # Updated count
 - `./lib/raxol/terminal/ansi/sixel_graphics.ex` (~628 lines) # Refactored
 - `./lib/raxol/core/focus_manager.ex` (~617 lines)
-- `./docs/guides/examples/typescript/visualization/ChartExample.ts` (~611 lines) # Example file
+- `./examples/snippets/typescript/visualization/ChartExample.ts` (~611 lines) # Example file
 - `./lib/raxol/cloud/monitoring.ex` (~600 lines) # Refactored
 
 **Notable Shrinkage:** Several files previously listed as "Big" have been significantly refactored or had content moved:
@@ -282,12 +392,12 @@ lib/raxol/
 **Newly Extracted/Refactored Modules:** (Counts updated where available in top list)
 
 - `./lib/raxol/plugins/visualization/chart_renderer.ex` (~168 lines)
-- `./lib/raxol/plugins/visualization/treemap_renderer.ex` (~271 lines) # Updated
+- `./lib/raxol/plugins/visualization/treemap_renderer.ex` (~271 lines)
 - `./lib/raxol/plugins/visualization/image_renderer.ex` (~62 lines)
 - `./lib/raxol/plugins/visualization/drawing_utils.ex` (~140 lines)
 - `./lib/raxol/components/input/multi_line_input/text_helper.ex` (~270 lines)
-- `./lib/raxol/components/input/multi_line_input/navigation_helper.ex` (~246 lines)
-- `./lib/raxol/components/input/multi_line_input/render_helper.ex` (~140 lines) # Updated count
+- `./lib/raxol/components/input/multi_line_input/navigation_helper.ex` (~270 lines)
+- `./lib/raxol/components/input/multi_line_input/render_helper.ex` (~139 lines)
 - `./lib/raxol/components/input/multi_line_input/event_handler.ex` (~148 lines)
 - `./lib/raxol/components/input/multi_line_input/clipboard_helper.ex` (~68 lines)
-- `./lib/raxol/terminal/ansi/sixel_palette.ex`
+- `./lib/raxol/terminal/ansi/sixel_palette.ex` (~81 lines)

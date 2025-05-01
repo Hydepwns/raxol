@@ -72,6 +72,11 @@ defmodule Raxol.MixProject do
       # Terminal rendering library
       {:rrex_termbox, "~> 2.0.1"},
 
+      # --- Added for Tutorial Loading ---
+      {:earmark, "~> 1.4"}, # Markdown parser
+      {:yaml_elixir, "~> 2.9"}, # YAML parser for frontmatter
+      # ---------------------------------
+
       # TODO: Review if Phoenix/web dependencies are needed for core library
       # They might be remnants of web UI / VSCode Stdio features.
       {:phoenix, "~> 1.7.20"},

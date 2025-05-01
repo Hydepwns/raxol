@@ -6,7 +6,7 @@
 
 A terminal application toolkit for Elixir, providing components and a runtime for building interactive TUI applications.
 
-> **Note:** Raxol is actively developed (pre-1.0). APIs may evolve.
+> **Note:** Raxol is actively developed (_pre-release-stage_). APIs may evolve.
 
 <!-- TODO: Add a screenshot or GIF demo here -->
 
@@ -32,7 +32,7 @@ def deps do
 end
 ```
 
-Then run `mix deps.get`. See [Development Setup](docs/development/DevelopmentSetup.md) for more.
+Then run `mix deps.get`. See [Development Setup](docs/guides/05_development_and_testing/DevelopmentSetup.md) for more.
 
 ## Getting Started
 
@@ -77,25 +77,32 @@ end
 # Raxol.Core.Runtime.Lifecycle.start_application(MyApp)
 ```
 
-See [Getting Started Tutorial](docs/guides/quick_start.md) and `/examples` for more.
+See [Getting Started Tutorial](docs/guides/01_getting_started/quick_start.md) and `/examples` for more.
 
 ## Documentation
 
 Main documentation index: [docs/README.md](docs/README.md)
 
 - [Architecture Overview](docs/ARCHITECTURE.md)
-- [CHANGELOG](docs/development/changes/CHANGELOG.md)
-- [UI Components & Layout](docs/guides/components/README.md)
-- [Async Operations](docs/guides/async_operations.md)
-- [Runtime Options](docs/guides/runtime_options.md)
-- [Terminal Details](docs/development/terminal/README.md)
-- [Development Setup](docs/development/DevelopmentSetup.md)
+- [CHANGELOG](docs/changes/CHANGELOG.md)
+- [UI Components & Layout](docs/guides/03_components_and_layout/components/README.md)
+- **Core Concepts:**
+  - [Runtime Options](docs/guides/02_core_concepts/runtime_options.md)
+  - [Async Operations](docs/guides/02_core_concepts/async_operations.md)
+  - [Theming](docs/guides/02_core_concepts/theming.md)
+- **Extending Raxol:**
+  - [Plugin Development](docs/guides/04_extending_raxol/plugin_development.md)
+  - [VS Code Extension](docs/guides/04_extending_raxol/vscode_extension.md)
+- **Development & Testing:**
+  - [Development Setup](docs/guides/05_development_and_testing/DevelopmentSetup.md)
+  - [Testing Guide](docs/guides/05_development_and_testing/testing.md)
+- [Terminal Details](docs/guides/05_development_and_testing/development/terminal/README.md)
 
 ## Development
 
-See [Development Setup](docs/development/DevelopmentSetup.md).
+See [Development Setup](docs/guides/05_development_and_testing/DevelopmentSetup.md).
 
-> **Note:** The project recently completed a major refactoring. See `CHANGELOG.md` and `docs/development/planning/handoff_prompt.md` for context.
+> **Note:** The project recently completed a major refactoring. See `CHANGELOG.md` and `docs/guides/05_development_and_testing/development/planning/handoff_prompt.md` for context.
 
 Common commands:
 
@@ -116,8 +123,8 @@ GitHub Actions details: [.github/workflows/README.md](.github/workflows/README.m
 
 - `/assets` -> Processed web assets -> `/priv/static`
 - `/docker` -> Docker configs (`act`)
-- `/docs` -> Guides, development notes, architecture
-- `/examples` -> Sample code
+- `/docs` -> Guides, Components, Architecture
+- `/docs/examples` -> Sample code
 - `/extensions` -> IDE integrations (VS Code)
 - `/lib` -> Core Elixir code (`raxol/core`, `raxol/ui`, `raxol/terminal`, etc.)
 - `/priv` -> Compiled assets (`priv/static`), themes, plugins
