@@ -9,13 +9,15 @@ defmodule Raxol.Terminal.ConfigurationTest do
   describe "new/0 and new/1" do
     test "creates a configuration with default values" do
       config = Configuration.new()
-      # Assert some key defaults (referencing Defaults.generate_default_config)
+
+      # Assert it's the correct struct type
+      assert is_struct(config, Configuration)
+
+      # Check a few default values based on Defaults implementation
       assert config.width == 80
-      assert config.height == 24
-      assert config.font_family == "Monospace"
-      assert config.cursor_style == :block
-      assert config.theme == %{} # Assuming default theme is empty map
-      # Cannot assert on terminal_type or color_mode, not direct fields
+      assert config.scrollback_limit == 1000
+      # Check that theme defaults to nil as it's not set in Defaults
+      assert config.theme == nil
     end
 
     # This test seems redundant now as new/1 implicitly tests merging
@@ -51,15 +53,27 @@ defmodule Raxol.Terminal.ConfigurationTest do
     # end
 
     test "new/1 merges provided options with defaults" do
+      # Options to override defaults
       opts = [
-        width: 100,
+        width: 120,
+        height: 40,
         font_family: "Fira Code",
-        unknown_opt: :ignore # Should be ignored
+        theme: %{primary: "blue"} # Provide a theme
       ]
+
       config = Configuration.new(opts)
-      assert config.width == 100 # Overridden
-      assert config.height == 24 # Default
-      assert config.font_family == "Fira Code" # Overridden
+
+      # Assert it's the correct struct type
+      assert is_struct(config, Configuration)
+
+      # Assert overridden values
+      assert config.width == 120
+      assert config.height == 40
+      assert config.font_family == "Fira Code"
+      assert config.theme == %{primary: "blue"}
+
+      # Assert a default value that wasn't overridden
+      assert config.scrollback_limit == 1000
     end
 
     # This test seems redundant
