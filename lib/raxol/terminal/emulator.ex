@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Emulator do
   """
 
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Buffer.Operations
   alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.ANSI.ScreenModes
   alias Raxol.Terminal.ANSI.TextFormatting
@@ -12,6 +13,9 @@ defmodule Raxol.Terminal.Emulator do
   alias Raxol.Terminal.Cursor.Manager
   alias Raxol.Terminal.Parser
   alias Raxol.Plugins.PluginManager
+  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ControlCodes
+  alias Raxol.Terminal.Style.Manager, as: StyleManager
 
   require Logger
 
@@ -22,31 +26,6 @@ defmodule Raxol.Terminal.Emulator do
        get_cursor_position: 1
      ]}
   ]
-
-  # Constants for simple C0 codes - used by ControlCodes
-  @nul 0
-  @bel 7
-  @bs_char 8
-  @ht 9
-  @lf 10
-  @vt 11
-  @ff 12
-  @cr_char 13
-  @so 14
-  @si 15
-  @can_char 24
-  @sub_char 26
-  @del_char 127
-
-  # Constants for simple control codes - used by parser
-  @compile {:unused_attr, :sp}
-  @compile {:unused_attr, :us}
-
-  # Escape character
-  @esc 27
-
-  # Define escape_char, even if not used currently
-  @escape_char @esc
 
   @type cursor_style_type ::
           :blinking_block
@@ -73,7 +52,8 @@ defmodule Raxol.Terminal.Emulator do
           icon_name: String.t() | nil,
           tab_stops: MapSet.t(),
           output_buffer: String.t(),
-          cursor_style: cursor_style_type()
+          cursor_style: cursor_style_type(),
+          parser_state: Parser.State.t()
         }
 
   # Use Manager struct
@@ -104,6 +84,8 @@ defmodule Raxol.Terminal.Emulator do
             last_col_exceeded: false,
             # Initialize Plugin Manager,
             plugin_manager: PluginManager.new(),
+            # Add parser state
+            parser_state: %Parser.State{},
             options: %{},
             current_hyperlink_url: nil,
             window_title: nil,
@@ -143,6 +125,8 @@ defmodule Raxol.Terminal.Emulator do
     initial_state_stack = TerminalState.new()
     # Generate default tabs
     initial_tab_stops = default_tab_stops(width)
+    # Initialize Parser State
+    initial_parser_state = %Parser.State{}
 
     %__MODULE__{
       cursor: initial_cursor,
@@ -163,7 +147,15 @@ defmodule Raxol.Terminal.Emulator do
       tab_stops: initial_tab_stops,
       last_col_exceeded: false,
       # Assign initialized Plugin Manager
-      plugin_manager: plugin_manager
+      plugin_manager: plugin_manager,
+      # Assign parser state
+      parser_state: initial_parser_state,
+      options: %{},
+      current_hyperlink_url: nil,
+      window_title: nil,
+      icon_name: nil,
+      output_buffer: "",
+      cursor_style: :blinking_block
     }
   end
 
@@ -200,15 +192,29 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec process_input(t(), String.t()) :: {t(), String.t()}
   def process_input(emulator, input) when is_binary(input) do
-    initial_parser_state = %Raxol.Terminal.Parser.State{}
-    # Calls parse_loop recursively
-    updated_emulator_state = Parser.parse_loop(emulator, initial_parser_state, input)
+    # Get the current parser state from the emulator
+    current_parser_state = emulator.parser_state
+    # IO.inspect({:process_input_before_parse, emulator, current_parser_state, input}, label: "DEBUG_EMULATOR")
 
-    output_to_send = updated_emulator_state.output_buffer
-    final_emulator_state = %{updated_emulator_state | output_buffer: ""}
+    # Call the public parse_chunk function
+    parse_result = Parser.parse_chunk(emulator, current_parser_state, input)
+    # IO.inspect({:process_input_after_parse, parse_result}, label: "DEBUG_EMULATOR")
+
+    # parse_chunk returns {final_emulator_state, final_parser_state}
+    # Line 205 (approx):
+    {final_emulator_state, final_parser_state} = parse_result
+
+    # Update the emulator's parser state with the final state from the parser
+    emulator_with_updated_parser_state = %{final_emulator_state | parser_state: final_parser_state}
+
+    output_to_send = emulator_with_updated_parser_state.output_buffer
+    final_emulator_state_no_output = %{emulator_with_updated_parser_state | output_buffer: ""}
 
     # Return the final state and the collected output
-    {final_emulator_state, output_to_send}
+    # --- DEBUG LOG ---
+    # IO.inspect({:proc_input_return, final_emulator_state_no_output.cursor.position}, label: "DEBUG")
+    # --- END DEBUG LOG ---
+    {final_emulator_state_no_output, output_to_send}
   end
 
   # --- Active Buffer Helpers ---
@@ -235,101 +241,48 @@ defmodule Raxol.Terminal.Emulator do
   # --- Character Processing (C0 and Printable) ---
 
   def process_character(emulator, char_codepoint)
-      when char_codepoint >= 0 and char_codepoint <= 31 do
-    # Handle C0 Control Codes -> Delegate to ControlCodes module
-    case char_codepoint do
-      # Ignore NUL
-      @nul ->
-        emulator
-
-      @bel ->
-        Raxol.Terminal.ControlCodes.handle_bel(emulator)
-
-      @bs_char ->
-        Raxol.Terminal.ControlCodes.handle_bs(emulator)
-
-      @ht ->
-        Raxol.Terminal.ControlCodes.handle_ht(emulator)
-
-      # Also handles VT and FF currently
-      @lf ->
-        Raxol.Terminal.ControlCodes.handle_lf(emulator)
-
-      # Treat VT like LF for now
-      @vt ->
-        Raxol.Terminal.ControlCodes.handle_lf(emulator)
-
-      # Treat FF like LF for now
-      @ff ->
-        Raxol.Terminal.ControlCodes.handle_lf(emulator)
-
-      @cr_char ->
-        Raxol.Terminal.ControlCodes.handle_cr(emulator)
-
-      @so ->
-        Raxol.Terminal.ControlCodes.handle_so(emulator)
-
-      @si ->
-        Raxol.Terminal.ControlCodes.handle_si(emulator)
-
-      @can_char ->
-        Raxol.Terminal.ControlCodes.handle_can(emulator)
-
-      @sub_char ->
-        Raxol.Terminal.ControlCodes.handle_sub(emulator)
-
-      # Should be handled by process_chunk, but ignore if it reaches here
-      @escape_char ->
-        emulator
-
-      # Add other C0 codes as needed (e.g., ENQ, ACK, DC1-4, NAK, SYN, ETB, EM, FS, GS, RS, US)
-      _ ->
-        Logger.debug("Unhandled C0 control code: #{char_codepoint}")
-        emulator
-    end
+      when (char_codepoint >= 0 and char_codepoint <= 31) or char_codepoint == 127 do
+    # Handle C0 Control Codes and DEL using the ControlCodes module
+    ControlCodes.handle_c0(emulator, char_codepoint)
   end
 
-  def process_character(emulator, @del_char) do
-    # Handle DEL (Delete) -> Currently Ignored
-    Logger.debug("DEL received, ignoring")
-    emulator
-  end
+  @doc """
+  Processes a single printable character codepoint.
+  Writes the character to the buffer at the calculated position and updates the cursor position.
+  Handles autowrap logic.
+  """
+  def process_character(%__MODULE__{} = emulator, char_codepoint) do
+    # Get character width FIRST
+    char = <<char_codepoint::utf8>>
+    char_width = Raxol.Terminal.CharacterHandling.get_char_width(char)
 
-  def process_character(emulator, char_codepoint) do
-    active_buffer = get_active_buffer(emulator)
-    width = ScreenBuffer.get_width(active_buffer)
+    # 1. Determine where to write the character based on current state
+    # CALL calculate_write_position/2
+    {write_y, write_x, next_cursor_y, next_cursor_x, next_last_col_exceeded} = calculate_write_position(emulator, char_width)
+    # We need the emulator state *before* the cursor moves for writing.
+    # Let's assume calculate_write_position doesn't modify the state itself, only calculates values.
+    emulator_state_before_write = emulator # Use the original state passed in
 
-    # Map character based on current charset state
-    mapped_char = CharacterSets.translate_char(emulator.charset_state, char_codepoint)
+    # 2. Write the character to the buffer at (write_x, write_y)
+    # --- CHANGE: Use the state *before* potential calculation side effects (if any) ---
+    buffer = get_active_buffer(emulator_state_before_write)
+    style = emulator_state_before_write.style # Use current style
+    updated_buffer = Operations.write_char(buffer, write_x, write_y, char, style)
+    updated_emulator = put_active_buffer(emulator_state_before_write, updated_buffer)
 
-    # Determine write position and next cursor state based on autowrap
-    {write_y, write_x, next_cursor_y, next_cursor_x, next_last_col_exceeded} =
-      calculate_write_position(emulator, width)
+    # 4. Move cursor to the calculated NEXT position and update flag
+    # --- CHANGE: Use values directly from calculate_write_position/2 return ---
+    updated_cursor = Manager.move_to(updated_emulator.cursor, next_cursor_x, next_cursor_y)
+    emulator_after_cursor_move = %{updated_emulator | cursor: updated_cursor, last_col_exceeded: next_last_col_exceeded}
 
-    # Write to the active buffer
-    updated_active_buffer =
-      ScreenBuffer.write_char(
-        active_buffer,
-        write_x, # Use calculated write coords
-        write_y,
-        <<mapped_char::utf8>>,
-        emulator.style
-      )
+    # 5. Handle potential scrolling based on next_cursor_y
+    # --- CHANGE: Use next_cursor_y from the calculation ---
+    final_emulator = maybe_scroll(emulator_after_cursor_move, next_cursor_y)
 
-    # Update cursor state
-    new_cursor_state = Manager.move_to(emulator.cursor, next_cursor_x, next_cursor_y)
-
-    # Update the emulator state, then check for scroll
-    emulator
-    |> update_active_buffer(updated_active_buffer)
-    |> Map.put(:cursor, new_cursor_state)
-    |> Map.put(:last_col_exceeded, next_last_col_exceeded)
-    |> maybe_scroll()
+    final_emulator
   end
 
   # --- Command Handling Delegates (Called by Parser) ---
-  # These functions now primarily deal with Emulator state changes
-  # that are NOT sequence execution (which is in CommandExecutor)
 
   # --- C0 Control Code Handlers (Delegated from process_character via ControlCodes) ---
 
@@ -435,32 +388,59 @@ defmodule Raxol.Terminal.Emulator do
   # Calculates the position to write the next character and the resulting
   # cursor position, handling DECAWM (autowrap).
   # Returns {write_y, write_x, next_cursor_y, next_cursor_x, next_last_col_exceeded}
-  defp calculate_write_position(emulator, width) do
+  defp calculate_write_position(emulator, width) do # width here is char_width
     {cursor_x, cursor_y} = emulator.cursor.position
-    autowrap_enabled = emulator.mode_state.auto_wrap
+    autowrap_enabled = emulator.mode_state[:auto_wrap]
     last_col_exceeded = emulator.last_col_exceeded
+    # Get buffer dimensions needed for bounds checks
+    buffer = get_active_buffer(emulator)
+    %{width: buffer_width, height: buffer_height} = buffer # Add this
 
-    result = cond do
+    cond do
       # Case 1: Previous character caused wrap flag to be set.
       last_col_exceeded ->
-        # Conceptual cursor is {cursor_y + 1, 0}. Write there.
-        # Next cursor position is {cursor_y + 1, 1}.
-        {cursor_y + 1, 0, cursor_y + 1, 1, false}
+        # --- FIX START ---
+        # Conceptually move to start of next line FIRST
+        target_y = cursor_y + 1
 
-      # Case 2: Cursor is at the last column (width - 1).
-      cursor_x == width - 1 ->
+        write_x = 0
+        write_y = target_y # Target Y for write
+
+        # Calculate cursor position AFTER writing char at {0, target_y}
+        next_cursor_x = min(width, buffer_width) # Starts at col 0, add char_width (`width`)
+        next_cursor_y = target_y
+
+        # Does this new char itself reach/exceed end?
+        next_last_col_exceeded = autowrap_enabled and (next_cursor_x >= buffer_width)
+
+        # Return calculated positions. The last_col_exceeded flag was consumed.
+        {write_y, write_x, next_cursor_y, next_cursor_x, next_last_col_exceeded}
+        # --- FIX END ---
+
+      # Case 2: Cursor is at the last column.
+      cursor_x == buffer_width - 1 -> # Use buffer_width
         if autowrap_enabled do
-          {cursor_y, cursor_x, cursor_y + 1, 0, true}
+          # Write at current {cursor_y, cursor_x}.
+          # Cursor stays conceptually at end of line, wrap happens on next char.
+          # Flag is set.
+          {cursor_y, cursor_x, cursor_y, cursor_x, true}
         else
+          # Autowrap disabled: Write at current pos, cursor stays.
           {cursor_y, cursor_x, cursor_y, cursor_x, false}
         end
 
-      # Case 3: Normal character write.
+      # Case 3: Normal character write within the line.
       true ->
-        {cursor_y, cursor_x, cursor_y, cursor_x + 1, false}
-    end
+        write_y = cursor_y
+        write_x = cursor_x # Write happens at current cursor pos
 
-    result
+        # Calculate next cursor position
+        next_cursor_x = min(cursor_x + width, buffer_width) # Clamp X
+        next_cursor_y = cursor_y
+        # Set flag if write *reaches or exceeds* the end boundary
+        next_last_col_exceeded = autowrap_enabled and (cursor_x + width >= buffer_width)
+        {write_y, write_x, next_cursor_y, next_cursor_x, next_last_col_exceeded}
+    end
   end
 
   # Calculates default tab stops (every 8 columns, 0-based)
@@ -487,15 +467,90 @@ defmodule Raxol.Terminal.Emulator do
       scroll_region || {0, ScreenBuffer.get_height(active_buffer) - 1}
 
     if cursor_row > bottom do # Check if cursor is *below* the region
-      # Perform scroll up using the Screen command module
+      # FIX: Don't clamp cursor. Return state after scroll.
       scrolled_emulator = Raxol.Terminal.Commands.Screen.scroll_up(emulator, 1)
-
-      # After scrolling, clamp cursor Y to the bottom of the scroll region
-      # as the content moved up, the cursor effectively stays at the bottom line.
-      new_cursor = CursorManager.move_to(scrolled_emulator.cursor, cursor_col, bottom)
-      %{scrolled_emulator | cursor: new_cursor}
+      scrolled_emulator
     else
       emulator # Cursor within region or above, no scroll needed
+    end
+  end
+
+  # --- Removed old calculation logic ---
+
+  # TODO: Add more complex handlers as needed
+
+  # Fallback: Ignore unknown characters
+  def process_control_character(emulator, _char_codepoint), do: emulator
+
+  # --- Helper Functions ---
+
+  @doc """
+  Puts the appropriate buffer (:main or :alt) into the emulator state.
+  """
+  defp put_active_buffer(%__MODULE__{active_buffer_type: :main} = emulator, buffer)
+       when is_struct(buffer, ScreenBuffer) do
+    %{emulator | main_screen_buffer: buffer}
+  end
+
+  defp put_active_buffer(%__MODULE__{active_buffer_type: :alternate} = emulator, buffer)
+       when is_struct(buffer, ScreenBuffer) do
+    %{emulator | alternate_screen_buffer: buffer}
+  end
+
+  @doc """
+  Gets the currently active buffer (:main or :alt) from the emulator state.
+  """
+  def get_active_buffer(%__MODULE__{active_buffer_type: :main, main_screen_buffer: buffer}),
+    do: buffer
+
+  def get_active_buffer(%__MODULE__{active_buffer_type: :alternate, alternate_screen_buffer: buffer}),
+    do: buffer
+
+  # --- Core Processing Logic ---
+
+  @doc """
+  Handles the maybe_scroll logic after character processing or cursor movement.
+  Checks if the cursor's Y position is outside the scroll region (or buffer height) and scrolls if necessary.
+  Returns the potentially updated emulator state.
+  """
+  def maybe_scroll(%__MODULE__{} = emulator, next_cursor_y) do
+    buffer = get_active_buffer(emulator)
+    buffer_height = ScreenBuffer.get_height(buffer)
+    {scroll_top, scroll_bottom_exclusive} = get_effective_scroll_region(emulator, buffer)
+
+    cond do
+      next_cursor_y < scroll_top ->
+        emulator # Cursor target is above the scroll region
+
+      next_cursor_y >= buffer_height ->
+        scroll_amount = next_cursor_y - buffer_height + 1
+        # Use effective scroll region bottom for scroll operation boundary
+        scroll_bottom_inclusive = scroll_bottom_exclusive - 1
+        scrolled_buffer =
+          Buffer.Operations.scroll_up(buffer, scroll_amount, scroll_top, scroll_bottom_inclusive)
+        # --- FIX: Don't modify cursor. Return emulator with scrolled buffer. ---
+        put_active_buffer(emulator, scrolled_buffer)
+
+      true -> # Cursor target is within the buffer bounds (and scroll region)
+        emulator
+    end
+  end
+
+  # --- Command Handling Delegates (Called by Parser) ---
+
+  @doc """
+  Determines the effective scroll region based on DECSTBM settings and buffer height.
+  Returns {top_row_index, bottom_row_index_exclusive}.
+  """
+  defp get_effective_scroll_region(emulator, buffer) do
+    buffer_height = ScreenBuffer.get_height(buffer)
+    case emulator.scroll_region do
+      {top, bottom} when is_integer(top) and is_integer(bottom) and top < bottom and top >= 0 and bottom <= buffer_height ->
+        # Valid region set
+        {top, bottom}
+      _ ->
+        # No valid region set, use full buffer
+        {0, buffer_height}
     end
   end
 end
