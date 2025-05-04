@@ -102,7 +102,7 @@ defmodule Raxol.Components.Input.MultiLineInput do
       # Initialize history
       history: History.new(100),
       shift_held: false,
-      focused: false,
+      focused: props[:focused] || false,
       on_change: props[:on_change],
       lines: lines,
       # Ensure ID
@@ -127,61 +127,53 @@ defmodule Raxol.Components.Input.MultiLineInput do
     {:noreply, new_state, nil}
   end
 
-  def update({:input, char}, %State{} = state) do
-    # Ensure char is a single character codepoint
-    case String.to_charlist(char) do
-      [codepoint] ->
-        # Pass state and codepoint to insert_char
-        state_after_insert = TextHelper.insert_char(state, codepoint)
+  def update({:input, char_codepoint}, %State{} = state)
+      when is_integer(char_codepoint) do
+    # We receive the codepoint directly from EventHandler
+    # Pass state and codepoint to insert_char. It returns the new state including the updated cursor position.
+    new_state = TextHelper.insert_char(state, char_codepoint)
 
-        # Calculate new cursor position based on inserted char STRING
-        {new_row, new_col} = TextHelper.calculate_new_position(state.cursor_pos.row, state.cursor_pos.col, char)
-
-        # Update state with new value and cursor position
-        new_state = %{
-          state_after_insert |
-          cursor_pos: {new_row, new_col}
-        }
-
-        trigger_on_change(
-          {:noreply, ensure_cursor_visible(new_state), nil},
-          state
-        )
-
-      _ ->
-        # Ignore multi-character inputs for now
-        {:noreply, state, nil}
-    end
+    # Trigger change handler with the new state returned by insert_char
+    trigger_on_change(
+      {:noreply, ensure_cursor_visible(new_state), nil},
+      # Pass the original state for comparison in trigger_on_change
+      state
+    )
   end
 
   def update({:backspace}, %State{} = state) do
     # Check for selection first
+    # Corrected check
     new_state =
-      if elem(NavigationHelper.normalize_selection(state), 0) != nil do # Corrected check
+      if elem(NavigationHelper.normalize_selection(state), 0) != nil do
         {s, _deleted} = TextHelper.delete_selection(state)
         s
       else
         TextHelper.handle_backspace_no_selection(state)
       end
+
     trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
   end
 
   def update({:delete}, %State{} = state) do
     # Check for selection first
+    # Corrected check
     new_state =
-      if elem(NavigationHelper.normalize_selection(state), 0) != nil do # Corrected check
+      if elem(NavigationHelper.normalize_selection(state), 0) != nil do
         {s, _deleted} = TextHelper.delete_selection(state)
         s
       else
         TextHelper.handle_delete_no_selection(state)
       end
+
     trigger_on_change({:noreply, ensure_cursor_visible(new_state), nil}, state)
   end
 
   def update({:enter}, %State{} = state) do
     # Check for selection first and delete if present
+    # Corrected check
     {state_after_delete, _} =
-      if elem(NavigationHelper.normalize_selection(state), 0) != nil do # Corrected check
+      if elem(NavigationHelper.normalize_selection(state), 0) != nil do
         TextHelper.delete_selection(state)
       else
         {state, ""}
@@ -255,6 +247,239 @@ defmodule Raxol.Components.Input.MultiLineInput do
 
   # --- Selection Handling ---
   def update({:select_and_move, direction}, %State{} = state) do
+    # Delegate to helper
+    handle_selection_move(state, direction)
+  end
+
+  def update({:select_all}, %State{} = state) do
+    new_state = NavigationHelper.select_all(state)
+    {:noreply, new_state, nil}
+  end
+
+  # --- Clipboard Operations ---
+  def update({:copy}, %State{} = state) do
+    # Check for selection first
+    # Corrected check
+    if elem(NavigationHelper.normalize_selection(state), 0) != nil do
+      ClipboardHelper.copy_selection(state)
+      # No state change needed locally
+      {:noreply, state, nil}
+    else
+      # No selection, do nothing
+      {:noreply, state, nil}
+    end
+  end
+
+  def update({:cut}, %State{} = state) do
+    # Check for selection first
+    # Corrected check
+    if elem(NavigationHelper.normalize_selection(state), 0) != nil do
+      # Cut returns {new_state, cmd}, need to trigger change
+      {new_state, cmd} = ClipboardHelper.cut_selection(state)
+
+      trigger_on_change(
+        {:noreply, ensure_cursor_visible(new_state), cmd},
+        state
+      )
+    else
+      # No selection, do nothing
+      {:noreply, state, nil}
+    end
+  end
+
+  def update({:paste}, %State{} = state) do
+    {state, commands} = ClipboardHelper.paste(state)
+    {state, commands}
+  end
+
+  # This is called when the clipboard content is received (e.g., from plugin)
+  def update({:clipboard_content, content}, %State{} = state)
+      when is_binary(content) do
+    # Handle clipboard content arrival
+    Logger.debug("Received clipboard content: #{inspect(content)}")
+    # Insert the pasted content at the cursor
+    {start_pos, end_pos} =
+      if state.selection_start && state.selection_end do
+        NavigationHelper.normalize_selection(state)
+      else
+        {state.cursor_pos, state.cursor_pos}
+      end
+
+    {new_value, _replaced} =
+      TextHelper.replace_text_range(state.value, start_pos, end_pos, content)
+
+    # Calculate new cursor position after insertion
+    {start_row, start_col} = start_pos
+
+    {new_row, new_col} =
+      TextHelper.calculate_new_position(start_row, start_col, content)
+
+    new_state = %{
+      state
+      | value: new_value,
+        cursor_pos: {new_row, new_col},
+        # Clear selection after paste
+        selection_start: nil,
+        selection_end: nil
+    }
+
+    if state.on_change, do: state.on_change.(new_value)
+    new_state
+  end
+
+  # Ignore non-binary content
+  def update({:clipboard_content, _}, %State{} = state) do
+    {:noreply, state, nil}
+  end
+
+  # --- Focus Handling ---
+  def update(:focus, %State{} = state) do
+    {:noreply, %{state | focused: true}, nil}
+  end
+
+  def update(:blur, %State{} = state) do
+    # Clear selection on blur
+    {:noreply,
+     %{state | focused: false, selection_start: nil, selection_end: nil}, nil}
+  end
+
+  # Handle Shift key state
+  def update({:set_shift_held, held}, %State{} = state) do
+    {:noreply, %{state | shift_held: held}, nil}
+  end
+
+  # Handle delete selection command (triggered by backspace/delete when selection exists)
+  def update({:delete_selection, direction}, state)
+      when direction in [:backward, :forward] do
+    # Check if there is a selection before calling delete helper
+    if elem(NavigationHelper.normalize_selection(state), 0) != nil do
+      TextHelper.delete_selection(state)
+    else
+      # If somehow called without selection, do nothing.
+      {:noreply, state}
+    end
+  end
+
+  # Handle copy selection command
+  def update({:copy_selection}, state) do
+    # Check if there is a selection
+    if elem(NavigationHelper.normalize_selection(state), 0) != nil do
+      # Delegate to clipboard helper
+      ClipboardHelper.copy_selection(state)
+      # Indicate handled, but no state change here
+      {:noreply, state}
+    else
+      # No selection, do nothing
+      {:noreply, state}
+    end
+  end
+
+  # --- Word Movements (Clears Selection) ---
+  def update({:move_cursor_word_left}, %State{} = state) do
+    new_state =
+      NavigationHelper.move_cursor(state, :word_left)
+      |> NavigationHelper.clear_selection()
+
+    {:noreply, ensure_cursor_visible(new_state), nil}
+  end
+
+  def update({:move_cursor_word_right}, %State{} = state) do
+    new_state =
+      NavigationHelper.move_cursor(state, :word_right)
+      |> NavigationHelper.clear_selection()
+
+    {:noreply, ensure_cursor_visible(new_state), nil}
+  end
+
+  # --- Movement Extending Selection ---
+  def update({:move_cursor_select, direction}, %State{} = state)
+      when direction in [
+             :left,
+             :right,
+             :up,
+             :down,
+             :line_start,
+             :line_end,
+             :page_up,
+             :page_down,
+             :doc_start,
+             :doc_end
+           ] do
+    # Delegate to helper
+    handle_selection_move(state, direction)
+  end
+
+  # --- Selection Handling ---
+  # Add clause to handle :select_to message
+  def update({:select_to, {row, col}}, %State{} = state) do
+    original_cursor_pos = state.cursor_pos
+    # Set start if not set
+    selection_start = state.selection_start || original_cursor_pos
+
+    new_state = %{
+      state
+      | selection_start: selection_start,
+        selection_end: {row, col},
+        # Move cursor to end of selection
+        cursor_pos: {row, col}
+    }
+
+    {:noreply, ensure_cursor_visible(new_state), nil}
+  end
+
+  # --- Catch-all MUST BE LAST ---
+  def update(msg, state) do
+    Logger.warning("[MultiLineInput] Unhandled update message: #{inspect(msg)}")
+    {:noreply, state, nil}
+  end
+
+  # Render the component
+  @impl Raxol.UI.Components.Base.Component
+  def render(state, _context) do
+    # Calculate visible range
+    start_row = state.scroll_offset |> elem(0)
+    end_row = min(start_row + state.height - 1, length(state.lines) - 1)
+    visible_lines = Enum.slice(state.lines, start_row..end_row)
+
+    # Generate view elements for each visible line using the helper
+    line_elements =
+      Enum.with_index(visible_lines, start_row)
+      |> Enum.map(fn {line, index} ->
+        RenderHelper.render_line(index, line, state)
+      end)
+
+    # Handle placeholder text if value is empty and not focused
+    placeholder_element =
+      if state.value == "" and not state.focused and state.placeholder != "" do
+        Raxol.View.Elements.label(
+          content: state.placeholder,
+          style: [color: state.style.placeholder_color]
+        )
+      else
+        nil
+      end
+
+    # Prepare children first
+    children =
+      if placeholder_element != nil and visible_lines == [""] do
+        [placeholder_element]
+      else
+        line_elements
+      end
+
+    # Flatten and remove nils *before* passing to the macro
+    processed_children = children |> List.flatten() |> Enum.reject(&is_nil(&1))
+
+    # Call the macro with the processed children list using a do block
+    Raxol.View.Elements.column do
+      processed_children
+    end
+  end
+
+  # --- Internal Helpers ---
+
+  # Helper for handling cursor movement while extending selection
+  defp handle_selection_move(state, direction) do
     original_cursor_pos = state.cursor_pos
 
     # Determine the new cursor position based on direction
@@ -307,230 +532,6 @@ defmodule Raxol.Components.Input.MultiLineInput do
     {:noreply, ensure_cursor_visible(final_state), nil}
   end
 
-  def update({:select_all}, %State{} = state) do
-    new_state = NavigationHelper.select_all(state)
-    {:noreply, new_state, nil}
-  end
-
-  # --- Clipboard Operations ---
-  def update({:copy}, %State{} = state) do
-    # Check for selection first
-    if elem(NavigationHelper.normalize_selection(state), 0) != nil do # Corrected check
-      ClipboardHelper.copy_selection(state)
-      {:noreply, state, nil} # No state change needed locally
-    else
-      {:noreply, state, nil} # No selection, do nothing
-    end
-  end
-
-  def update({:cut}, %State{} = state) do
-    # Check for selection first
-    if elem(NavigationHelper.normalize_selection(state), 0) != nil do # Corrected check
-      # Cut returns {new_state, cmd}, need to trigger change
-      {new_state, cmd} = ClipboardHelper.cut_selection(state)
-      trigger_on_change({:noreply, ensure_cursor_visible(new_state), cmd}, state)
-    else
-       {:noreply, state, nil} # No selection, do nothing
-    end
-  end
-
-  def update({:paste}, %State{} = state) do
-    {state, commands} = ClipboardHelper.paste(state)
-    {state, commands}
-  end
-
-  # This is called when the clipboard content is received (e.g., from plugin)
-  def update({:clipboard_content, content}, %State{} = state)
-      when is_binary(content) do
-    # Handle clipboard content arrival
-    Logger.debug("Received clipboard content: #{inspect(content)}")
-    # Insert the pasted content at the cursor
-    {start_pos, end_pos} = if state.selection_start && state.selection_end do
-      NavigationHelper.normalize_selection(state)
-    else
-      {state.cursor_pos, state.cursor_pos}
-    end
-
-    {new_value, _replaced} = TextHelper.replace_text_range(state.value, start_pos, end_pos, content)
-    # Calculate new cursor position after insertion
-    {start_row, start_col} = start_pos
-    {new_row, new_col} = TextHelper.calculate_new_position(start_row, start_col, content)
-
-    new_state = %{
-      state
-      | value: new_value,
-        cursor_pos: {new_row, new_col},
-        selection_start: nil, # Clear selection after paste
-        selection_end: nil
-    }
-
-    if state.on_change, do: state.on_change.(new_value)
-    new_state
-  end
-
-  # Ignore non-binary content
-  def update({:clipboard_content, _}, %State{} = state) do
-    {:noreply, state, nil}
-  end
-
-  # --- Focus Handling ---
-  def update(:focus, %State{} = state) do
-    {:noreply, %{state | focused: true}, nil}
-  end
-
-  def update(:blur, %State{} = state) do
-    # Clear selection on blur
-    {:noreply,
-     %{state | focused: false, selection_start: nil, selection_end: nil}, nil}
-  end
-
-  # Handle Shift key state
-  def update({:set_shift_held, held}, %State{} = state) do
-     {:noreply, %{state | shift_held: held}, nil}
-  end
-
-  # Handle delete selection command (triggered by backspace/delete when selection exists)
-  def update({:delete_selection, direction}, state) when direction in [:backward, :forward] do
-    # Check if there is a selection before calling delete helper
-    if elem(NavigationHelper.normalize_selection(state), 0) != nil do
-      TextHelper.delete_selection(state)
-    else
-      # If somehow called without selection, do nothing.
-      {:noreply, state}
-    end
-  end
-
-  # Handle copy selection command
-  def update({:copy_selection}, state) do
-    # Check if there is a selection
-    if elem(NavigationHelper.normalize_selection(state), 0) != nil do
-      # Delegate to clipboard helper
-      ClipboardHelper.copy_selection(state)
-      {:noreply, state} # Indicate handled, but no state change here
-    else
-      {:noreply, state} # No selection, do nothing
-    end
-  end
-
-  # --- Word Movements (Clears Selection) ---
-  def update({:move_cursor_word_left}, %State{} = state) do
-    new_state =
-      NavigationHelper.move_cursor(state, :word_left)
-      |> NavigationHelper.clear_selection()
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
-  end
-
-  def update({:move_cursor_word_right}, %State{} = state) do
-    new_state =
-      NavigationHelper.move_cursor(state, :word_right)
-      |> NavigationHelper.clear_selection()
-
-    {:noreply, ensure_cursor_visible(new_state), nil}
-  end
-
-  # --- Movement Extending Selection ---
-  def update({:move_cursor_select, direction}, %State{} = state)
-      when direction in [:left, :right, :up, :down, :line_start, :line_end, :page_up, :page_down, :doc_start, :doc_end] do
-    original_cursor_pos = state.cursor_pos
-
-    # Determine the new cursor position based on direction
-    moved_state =
-      case direction do
-        :left ->
-          NavigationHelper.move_cursor(state, :left)
-
-        :right ->
-          NavigationHelper.move_cursor(state, :right)
-
-        :up ->
-          NavigationHelper.move_cursor(state, :up)
-
-        :down ->
-          NavigationHelper.move_cursor(state, :down)
-
-        :line_start ->
-          NavigationHelper.move_cursor_line_start(state)
-
-        :line_end ->
-          NavigationHelper.move_cursor_line_end(state)
-
-        :page_up ->
-          NavigationHelper.move_cursor_page(state, :up)
-
-        :page_down ->
-          NavigationHelper.move_cursor_page(state, :down)
-
-        :doc_start ->
-          NavigationHelper.move_cursor_doc_start(state)
-
-        :doc_end ->
-          NavigationHelper.move_cursor_doc_end(state)
-      end
-
-    new_cursor_pos = moved_state.cursor_pos
-
-    # Update selection: If no selection start, set it to original pos.
-    # Always update selection end to the new cursor pos.
-    selection_start = state.selection_start || original_cursor_pos
-
-    final_state = %{
-      moved_state
-      | selection_start: selection_start,
-        selection_end: new_cursor_pos
-    }
-
-    {:noreply, ensure_cursor_visible(final_state), nil}
-  end
-
-  # --- Catch-all MUST BE LAST ---
-  def update(msg, state) do
-    Logger.warning("[MultiLineInput] Unhandled update message: #{inspect(msg)}")
-    {:noreply, state, nil}
-  end
-
-  # Render the component
-  @impl Raxol.UI.Components.Base.Component
-  def render(state, _context) do
-    # Calculate visible range
-    start_row = state.scroll_offset |> elem(0)
-    end_row = min(start_row + state.height - 1, length(state.lines) - 1)
-    visible_lines = Enum.slice(state.lines, start_row..end_row)
-
-    # Generate view elements for each visible line using the helper
-    line_elements = Enum.with_index(visible_lines, start_row) |> Enum.map(fn {line, index} ->
-      RenderHelper.render_line(index, line, state)
-    end)
-
-    # Handle placeholder text if value is empty and not focused
-    placeholder_element =
-      if state.value == "" and not state.focused and state.placeholder != "" do
-        Raxol.View.Elements.label(
-          content: state.placeholder,
-          style: [color: state.style.placeholder_color]
-        )
-      else
-        nil
-      end
-
-    # Prepare children first
-    children = if placeholder_element != nil and visible_lines == [""] do
-      [placeholder_element]
-    else
-      line_elements
-    end
-
-    # Flatten and remove nils *before* passing to the macro
-    processed_children = children |> List.flatten() |> Enum.reject(&is_nil(&1))
-
-    # Call the macro with the processed children list using a do block
-    Raxol.View.Elements.column do
-      processed_children
-    end
-  end
-
-  # --- Internal Helpers ---
-
   # Ensures the cursor is visible within the viewport, adjusting scroll_offset.
   # This is a simplified version.
   defp ensure_cursor_visible(%State{} = state) do
@@ -563,9 +564,11 @@ defmodule Raxol.Components.Input.MultiLineInput do
   # Calls the on_change callback if defined and value changed by returning an event command
   defp trigger_on_change({:noreply, new_state, existing_cmd}, old_state) do
     # Check if value actually changed and a callback function exists
-    if new_state.value != old_state.value and is_function(new_state.on_change, 1) do
+    if new_state.value != old_state.value and
+         is_function(new_state.on_change, 1) do
       # Create the event to send to the parent
-      change_event_cmd = {:component_event, new_state.id, {:change, new_state.value}}
+      change_event_cmd =
+        {:component_event, new_state.id, {:change, new_state.value}}
 
       # Combine with any existing command (e.g., clipboard commands)
       # Assuming existing_cmd is nil or a list of commands

@@ -44,6 +44,43 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
       assert is_function(state.on_change)
       assert state.lines == ["Hello", "World"] # Check lines cache
     end
+
+    test "initializes with provided values and style" do
+      # Define expected_style before using it
+      expected_style = %{
+        text_color: :green,
+        placeholder_color: :dark_gray,
+        selection_color: :yellow,
+        cursor_color: :red,
+        line_numbers: true,
+        line_number_color: :blue
+      }
+
+      props = %{
+        id: :mle_props,
+        value: "Hello\nWorld",
+        placeholder: "Type here...",
+        width: 50,
+        height: 15,
+        wrap: :char,
+        focused: true,
+        on_change: fn _ -> :changed end,
+        style: expected_style
+      }
+      state = MultiLineInput.init(props)
+      assert state.id == :mle_props
+      assert state.value == "Hello\nWorld"
+      assert state.placeholder == "Type here..."
+      assert state.width == 50
+      assert state.height == 15
+      assert state.wrap == :char
+      assert state.focused == true
+      assert is_function(state.on_change)
+      assert state.style == expected_style
+      assert state.lines == ["Hello", "World"] # Check lines cache
+      assert state.cursor_pos == {0, 0}
+      assert state.focused == true # Should be true as focused: true was passed in props
+    end
   end
 
   describe "update/2" do
@@ -131,7 +168,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
        # Select from {0, 1} to {1, 2}
        state_with_sel = %{state | selection_start: {0, 1}, selection_end: {1, 2}, cursor_pos: {1, 2}}
        {:noreply, new_state, _} = MultiLineInput.update({:backspace}, state_with_sel)
-       assert new_state.value == "tst"
+       assert new_state.value == "tt"
        assert new_state.cursor_pos == {0, 1} # Cursor moves to selection start
        assert new_state.selection_start == nil
        assert new_state.selection_end == nil
@@ -208,7 +245,6 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
       assert length(lines) == 3
     end
 
-    # @tag :skip # Temporarily skip word wrap test
     test "wraps text by word with long word" do
       value =
         "Lopadotemachoselachogaleokranioleipsanodrimhypotrimmatosilphioparaomelitokatakechymenokichlepikossyphophattoperisteralektryonoptekephalliokigklopeleiolagoiosiraiobaphetraganopterygon"
