@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
       # Printable character
       <<char_codepoint::utf8, rest_after_char::binary>>
       when char_codepoint >= 32 ->
-        # Call back to Emulator
+        # Call back to Emulator's new printable char handler
         new_emulator = Emulator.process_character(emulator, char_codepoint)
         # Continue with same parser state
         {:continue, new_emulator, parser_state, rest_after_char}
@@ -73,18 +73,17 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
           {:continue, emulator, parser_state, rest}
         end
 
-      # Empty input (should be caught by main loop, but handle defensively)
-      "" ->
-        {:handled, emulator}
+      # Empty input is handled by the main parse_loop base case.
+      # Returning {:finished, ...} here would be redundant.
     end
   end
 
   # Accepts emulator, parser_state, and empty input
-  defp parse_loop(emulator, parser_state, "") do
-    if parser_state.state != :ground do
-      Logger.debug("Input ended while in parser state: #{parser_state.state}")
-    end
-
-    {:handled, emulator}
-  end
+  # defp parse_loop(emulator, parser_state, "") do # Remove this unused function
+  #   if parser_state.state != :ground do
+  #     Logger.debug("Input ended while in parser state: #{parser_state.state}")
+  #   end
+  #
+  #   {:handled, emulator}
+  # end
 end

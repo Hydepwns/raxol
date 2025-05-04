@@ -10,26 +10,35 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
 
   @doc """
   Processes input when the parser is in the :csi_param state.
+  Collects parameter digits (0-9) and semicolons (;).
   """
   @spec handle(Emulator.t(), State.t(), binary()) ::
-          {:continue, Emulator.t(), State.t(), binary()} | {:handled, Emulator.t()}
+          {:continue, Emulator.t(), State.t(), binary()}
+          | {:finished, Emulator.t(), State.t()}
+          | {:incomplete, Emulator.t(), State.t()}
   def handle(emulator, %State{state: :csi_param} = parser_state, input) do
+    Logger.debug("CSIParamState ENTER: input=#{inspect(input)}, params_buffer=#{inspect(parser_state.params_buffer)}")
     # IO.inspect({:parse_loop_csi_param, parser_state.state, input}, label: "DEBUG_PARSER")
     case input do
-      # Incomplete
       <<>> ->
-        {:handled, emulator}
+        # Incomplete CSI sequence - return current state
+        {:incomplete, emulator, parser_state}
 
-      # Parameter byte or separator
-      <<param_byte, rest_after_param::binary>>
-      when param_byte >= ?0 and param_byte <= ?; ->
-        # Accumulate parameter directly
+      # Parameter digit
+      <<digit, rest::binary>> when digit >= ?0 and digit <= ?9 ->
         next_parser_state = %{
           parser_state
-          | params_buffer: parser_state.params_buffer <> <<param_byte>>
+          | params_buffer: parser_state.params_buffer <> <<digit>>
         }
-        # Stay in csi_param state
-        {:continue, emulator, next_parser_state, rest_after_param}
+        {:continue, emulator, next_parser_state, rest}
+
+      # Parameter separator
+      <<?;, rest::binary>> ->
+        next_parser_state = %{
+          parser_state
+          | params_buffer: parser_state.params_buffer <> <<?;>>
+        }
+        {:continue, emulator, next_parser_state, rest}
 
       # Intermediate byte
       <<intermediate_byte, rest_after_intermediate::binary>>
@@ -42,21 +51,15 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
         # Transition to csi_intermediate state
         {:continue, emulator, %{next_parser_state | state: :csi_intermediate}, rest_after_intermediate}
 
-      # Final byte
-      <<final_byte, rest_after_final::binary>>
-      when final_byte >= 0x40 and final_byte <= 0x7E ->
-        Logger.debug(
-          "CSIParamState: Final byte #{<<final_byte>>}, Params: '#{parser_state.params_buffer}', Intermediates: '#{parser_state.intermediates_buffer}'"
-        )
-        new_emulator =
-          Executor.execute_csi_command(
-            emulator,
-            parser_state.params_buffer,
-            parser_state.intermediates_buffer,
-            final_byte
-          )
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, new_emulator, next_parser_state, rest_after_final}
+      # Final byte (0x40 - 0x7E) -> Execute command
+      <<final_byte, rest::binary>> when final_byte >= ?@ and final_byte <= ?~ ->
+        # Logger.debug("[CSIParam Final] Calling Executor with intermediates: #{inspect(parser_state.intermediates_buffer)}") # Remove Log
+        final_emulator = Executor.execute_csi_command(emulator, parser_state.params_buffer, parser_state.intermediates_buffer, final_byte)
+        # Logger.debug("CSIParamState: After execute, emulator.scroll_region=#{inspect(final_emulator.scroll_region)}")
+        # Transition back to Ground state
+        next_parser_state = %{parser_state | state: :ground, params_buffer: "", intermediates_buffer: "", final_byte: nil}
+        # Continue processing the rest of the input with the new state
+        {:continue, final_emulator, next_parser_state, rest}
 
       # Ignored byte in CSI Param (e.g., CAN, SUB)
       <<ignored_byte, rest_after_ignored::binary>>

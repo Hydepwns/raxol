@@ -124,20 +124,25 @@ defmodule Raxol.Components.Progress.SpinnerTest do
 
   describe "handle_event/2" do
     test "handles frame events" do
-      # Set speed to 0 to ensure tick happens
       state = Spinner.init(%{speed: 0})
-      event = %Event{type: :frame}
+      event = %Raxol.Core.Events.Event{type: :frame, data: nil}
 
-      {new_state, _} = Spinner.handle_event(event, state)
+      # Advance frame index immediately due to speed: 0
+      {new_state, _} = Spinner.handle_event(event, %{}, state)
       assert new_state.frame_index == 1
+
+      # Test again to ensure wrap-around
+      dots_frames_count = length(Raxol.Components.Progress.Spinner.init(%{}).frames)
+      state_at_end = %{state | frame_index: dots_frames_count - 1}
+      {wrapped_state, _} = Spinner.handle_event(event, %{}, state_at_end)
+      assert wrapped_state.frame_index == 0
     end
 
     test "ignores other events" do
       state = Spinner.init(%{})
-      event = Event.key("x")
-
-      {new_state, _} = Spinner.handle_event(event, state)
-      assert new_state == state
+      event = %Raxol.Core.Events.Event{type: :key, data: %{key: "x", state: :pressed, modifiers: []}}
+      {new_state, _} = Spinner.handle_event(event, %{}, state)
+      assert new_state == state # State should be unchanged
     end
   end
 

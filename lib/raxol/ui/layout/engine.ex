@@ -136,7 +136,7 @@ defmodule Raxol.UI.Layout.Engine do
         type: :box,
         x: space.x,
         y: space.y,
-        width: min(max(String.length(display_text) + 4, 10), space.width),
+        width: min(String.length(display_text) + 4, space.width),
         height: 3,
         attrs: component_attrs
       },
@@ -261,8 +261,9 @@ defmodule Raxol.UI.Layout.Engine do
         placeholder = Map.get(attrs, :placeholder, "")
         display_text = if value == "", do: placeholder, else: value
         padding = 4 # Box: [ Text ]
-        min_width = 10
-        width = min(max(String.length(display_text) + padding, min_width), available_space.width)
+        # min_width = 10 # Remove min_width constraint for now
+        # Calculate width based on text + padding, constrained by available space
+        width = min(String.length(display_text) + padding, available_space.width)
         height = 3 # Fixed height for text input
         %{width: width, height: height}
 

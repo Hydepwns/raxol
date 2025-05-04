@@ -44,7 +44,24 @@ config :raxol, RaxolWeb.Endpoint,
 config :raxol, dev_routes: true
 
 # Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n", level: :debug
+# Add metadata_filter to silence the specific NIF warning
+config :logger, :console,
+  format: "[$level] $message\n",
+  level: :debug,
+  metadata_filter: [
+    # Keys are metadata keys, values are functions that return true to KEEP the message
+    message: fn
+      # Keep messages that DO NOT match the specific warning string
+      {:safe, message_chars} ->
+        message_string = IO.chardata_to_string(message_chars)
+        not String.starts_with?(
+          message_string,
+          "Unexpected return format from :termbox2.tb_peek_event: {-6, 0, 0, 0}"
+        )
+      # Keep other message formats (e.g., non-safe charlists, binaries)
+      _ -> true
+    end
+  ]
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

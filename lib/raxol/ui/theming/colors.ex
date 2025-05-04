@@ -98,9 +98,9 @@ defmodule Raxol.UI.Theming.Colors do
     {r, g, b} = to_rgb(color)
     {h, s, l} = HSL.rgb_to_hsl(r, g, b)
 
-    # Adjust lightness, ensuring it stays within 0.0 to 1.0
-    l_adjust = percentage / 100.0
-    new_l = min(l + l_adjust, 1.0)
+    # Adjust lightness relative to distance to white
+    l_adjust_factor = percentage / 100.0
+    new_l = l + (1.0 - l) * l_adjust_factor
 
     {new_r, new_g, new_b} = HSL.hsl_to_rgb(h, s, new_l)
 
@@ -123,9 +123,9 @@ defmodule Raxol.UI.Theming.Colors do
     {r, g, b} = to_rgb(color)
     {h, s, l} = HSL.rgb_to_hsl(r, g, b)
 
-    # Adjust lightness, ensuring it stays within 0.0 to 1.0
-    l_adjust = percentage / 100.0
-    new_l = max(l - l_adjust, 0.0)
+    # Adjust lightness relative to distance to black
+    l_adjust_factor = percentage / 100.0
+    new_l = l - l * l_adjust_factor
 
     {new_r, new_g, new_b} = HSL.hsl_to_rgb(h, s, new_l)
 

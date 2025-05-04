@@ -59,40 +59,61 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
   # Replaces text within a range ({row, col} tuples) with new text
   # Returns {new_full_text, replaced_text}
   def replace_text_range(text, start_pos_tuple, end_pos_tuple, replacement) do
-    # Needed for index calculation
     lines = String.split(text, "\n")
-
     start_index = pos_to_index(lines, start_pos_tuple)
     end_index = pos_to_index(lines, end_pos_tuple)
 
-    # Ensure start_index is <= end_index
-    {start_index, end_index} = {min(start_index, end_index), max(start_index, end_index)}
-
-    # Ensure indices are within the bounds of the original text length
+    # Normalize & Clamp original indices
+    {norm_start_index, norm_end_index} = {min(start_index, end_index), max(start_index, end_index)}
     text_len = String.length(text)
-    start_index = clamp(start_index, 0, text_len)
-    end_index = clamp(end_index, 0, text_len)
+    clamped_start = clamp(norm_start_index, 0, text_len)
+    clamped_end = clamp(norm_end_index, 0, text_len)
 
-    text_before = String.slice(text, 0, start_index)
-    text_after = String.slice(text, end_index..-1//1)
+    # Text Before: Slice up to the start index
+    text_before = String.slice(text, 0, clamped_start)
 
-    # The actual text being replaced
-    replaced_text = String.slice(text, start_index, max(0, end_index - start_index))
+    # Text After: Needs to start AT the index for insertion, AFTER for deletion/replace
+    is_insertion = (start_pos_tuple == end_pos_tuple and replacement != "")
+    slice_after_start_index = if is_insertion do
+                                clamped_start # Slice from the insertion point
+                              else
+                                min(clamped_end + 1, text_len) # Slice after the replaced range
+                              end
+    text_after = String.slice(text, slice_after_start_index, max(0, text_len - slice_after_start_index))
 
+    # Replaced Text Calculation (for return value, uses original clamped indices)
+    replaced_length = if is_insertion do
+                        0
+                      else
+                        if clamped_start <= clamped_end do
+                          max(0, clamped_end - clamped_start + 1) # Inclusive length
+                        else
+                          0
+                        end
+                      end
+    replaced_length = min(replaced_length, max(0, text_len - clamped_start))
+    replaced_text = String.slice(text, clamped_start, replaced_length)
+
+    # Construct new text
     new_full_text = text_before <> replacement <> text_after
-
     {new_full_text, replaced_text}
   end
 
-
-  def insert_char(state, char) do
+  def insert_char(state, char_or_codepoint) do
     %{value: value, cursor_pos: {row, col}} = state
+    # Convert input char/codepoint to binary string
+    char_binary = case char_or_codepoint do
+      cp when is_integer(cp) -> <<cp::utf8>>
+      bin when is_binary(bin) -> bin
+      _ -> "" # Ignore invalid input for now
+    end
+
     # Use range helper to insert the character, passing tuples
     start_pos = {row, col}
-    {new_value, _} = replace_text_range(value, start_pos, start_pos, char)
+    {new_value, _} = replace_text_range(value, start_pos, start_pos, char_binary)
 
     # Calculate new cursor position based on inserted char
-    {new_row, new_col} = calculate_new_position(row, col, char)
+    {new_row, new_col} = calculate_new_position(row, col, char_binary)
 
     # Use struct syntax
     new_state = %MultiLineInput{
@@ -137,7 +158,7 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
     if row == 0 and col == 0 do
       state
     else
-      # Calculate position before backspace
+      # Calculate position *before* backspace
       {prev_row, prev_col} =
         if col > 0 do
           {row, col - 1}
@@ -149,9 +170,9 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
           {prev_line_index, prev_line_length}
         end
 
-      # Use range helpers with {row, col} tuples
+      # Range should cover ONLY the single character BEFORE the original cursor
       start_pos = {prev_row, prev_col}
-      end_pos = {row, col}
+      end_pos = {prev_row, prev_col} # Corrected: Range is just the previous char position
 
       {new_value, _deleted_text} =
         replace_text_range(value, start_pos, end_pos, "")
@@ -186,19 +207,9 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
       # At the very end, nothing to delete
       state
     else
-      # Calculate position after the character to delete
-      {next_row, next_col} =
-        if col < String.length(current_line) do
-          # Delete char on the same line
-          {row, col + 1}
-        else
-          # Delete the newline character
-          {row + 1, 0}
-        end
-
-      # Use range helpers with {row, col} tuples
+      # Range should cover only the single char AT the cursor
       start_pos = {row, col}
-      end_pos = {next_row, next_col}
+      end_pos = {row, col} # Corrected: Range is just the current char position
 
       {new_value_from_replace, _deleted_text} =
         replace_text_range(value, start_pos, end_pos, "")

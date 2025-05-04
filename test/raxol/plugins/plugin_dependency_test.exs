@@ -66,22 +66,22 @@ defmodule Raxol.Plugins.PluginDependencyTest do
     test "checks version compatibility" do
       # Test various version constraints
       assert :ok ==
-               PluginDependency.check_version_compatibility("1.0.0", ">= 1.0.0")
+               PluginDependency.check_api_compatibility("1.0.0", ">= 1.0.0")
 
       assert :ok ==
-               PluginDependency.check_version_compatibility("1.0.0", ">= 0.9.0")
+               PluginDependency.check_api_compatibility("1.0.0", ">= 0.9.0")
 
       assert :ok ==
-               PluginDependency.check_version_compatibility("1.0.0", "<= 1.1.0")
+               PluginDependency.check_api_compatibility("1.0.0", "<= 1.1.0")
 
       assert :ok ==
-               PluginDependency.check_version_compatibility("1.0.0", "= 1.0.0")
+               PluginDependency.check_api_compatibility("1.0.0", "= 1.0.0")
 
       assert {:error, _} =
-               PluginDependency.check_version_compatibility("1.0.0", ">= 1.1.0")
+               PluginDependency.check_api_compatibility("1.0.0", ">= 1.1.0")
 
       assert {:error, _} =
-               PluginDependency.check_version_compatibility("1.0.0", "<= 0.9.0")
+               PluginDependency.check_api_compatibility("1.0.0", "<= 0.9.0")
     end
 
     test "checks plugin dependencies" do

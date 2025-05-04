@@ -5,6 +5,9 @@ defmodule Raxol.Core.UXRefinementTest do
   alias Raxol.Core.UXRefinement
 
   setup do
+    # Start UserPreferences GenServer
+    {:ok, pref_pid} = Raxol.Core.UserPreferences.start_link([])
+
     # Initialize dependencies
     EventManager.init()
 
@@ -25,6 +28,10 @@ defmodule Raxol.Core.UXRefinementTest do
           UXRefinement.disable_feature(feature)
         end
       end)
+
+      # Ensure UserPreferences is stopped on exit
+      Process.exit(pref_pid, :shutdown)
+      :timer.sleep(100) # Give it a moment to shut down
     end)
 
     :ok

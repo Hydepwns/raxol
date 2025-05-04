@@ -16,7 +16,7 @@ defmodule Raxol.Plugins.PluginSystemTest do
     end
 
     test "loads a plugin" do
-      manager = PluginManager.new()
+      {:ok, manager} = PluginManager.new(%{plugins: [TestPlugin]})
 
       {:ok, updated_manager} =
         PluginManager.load_plugin(manager, HyperlinkPlugin)

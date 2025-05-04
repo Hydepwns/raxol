@@ -15,7 +15,58 @@ defmodule Raxol.Terminal.ControlCodes do
   alias Raxol.Terminal.ANSI.ScreenModes
   alias Raxol.Terminal.ANSI.TerminalState # Needed for RIS
 
+  # C0 Constants
+  @nul 0
+  @bel 7
+  @bs 8
+  @ht 9
+  @lf 10
+  @vt 11
+  @ff 12
+  @cr 13
+  @so 14
+  @si 15
+  @can 24
+  @sub 26
+  @esc 27 # Escape
+  @del 127 # Delete
+
   # --- C0 Control Code Handlers ---
+
+  @doc """
+  Handles a C0 control code (0-31) or DEL (127).
+  Delegates to specific handlers based on the codepoint.
+  """
+  @spec handle_c0(Emulator.t(), non_neg_integer()) :: Emulator.t()
+  def handle_c0(emulator, char_codepoint) do
+    case char_codepoint do
+      @nul ->
+        Logger.trace("NUL received, ignoring")
+        emulator
+      @bel -> handle_bel(emulator)
+      @bs -> handle_bs(emulator)
+      @ht -> handle_ht(emulator)
+      @lf -> handle_lf(emulator)
+      @vt -> handle_lf(emulator) # Treat VT like LF for now
+      @ff -> handle_lf(emulator) # Treat FF like LF for now
+      @cr -> handle_cr(emulator)
+      @so -> handle_so(emulator)
+      @si -> handle_si(emulator)
+      @can -> handle_can(emulator)
+      @sub -> handle_sub(emulator)
+      @esc ->
+        # Should be handled by the parser's state transitions
+        Logger.debug("ESC received unexpectedly in C0 handler, ignoring")
+        emulator
+      @del ->
+        Logger.trace("DEL received, ignoring")
+        emulator
+      # Add other C0 codes as needed (e.g., ENQ, ACK, DC1-4, NAK, SYN, ETB, EM, FS, GS, RS, US)
+      _ ->
+        Logger.debug("Unhandled C0 control code: #{char_codepoint}")
+        emulator
+    end
+  end
 
   @spec handle_bel(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_bel(emulator) do

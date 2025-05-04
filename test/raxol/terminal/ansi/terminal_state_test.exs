@@ -3,6 +3,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.ANSI.ScreenModes
   alias Raxol.Terminal.ANSI.TerminalState
+  alias Raxol.Terminal.ANSI.TextFormatting
 
   describe "new/0" do
     test "creates a new empty terminal state stack" do
@@ -17,9 +18,10 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     test "saves terminal state to the stack" do
       stack = TerminalState.new()
 
+      initial_style = TextFormatting.new() |> TextFormatting.set_foreground(:red) |> TextFormatting.set_background(:black)
       state = %{
         cursor: {10, 5},
-        attributes: %{foreground: :red, background: :black},
+        style: initial_style,
         charset_state: CharacterSets.new(),
         mode_state: ScreenModes.new(),
         scroll_region: {5, 15}
@@ -31,7 +33,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
       [saved_state | _] = stack
       assert saved_state.cursor == {10, 5}
-      assert saved_state.attributes == %{foreground: :red, background: :black}
+      assert saved_state.style == initial_style
       assert saved_state.charset_state == CharacterSets.new()
       assert saved_state.mode_state == ScreenModes.new()
       assert saved_state.scroll_region == {5, 15}
@@ -40,17 +42,19 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     test "saves multiple states to the stack" do
       stack = TerminalState.new()
 
+      style1 = TextFormatting.new() |> TextFormatting.set_foreground(:red)
       state1 = %{
         cursor: {10, 5},
-        attributes: %{foreground: :red},
+        style: style1,
         charset_state: CharacterSets.new(),
         mode_state: ScreenModes.new(),
         scroll_region: {5, 15}
       }
 
+      style2 = TextFormatting.new() |> TextFormatting.set_foreground(:blue)
       state2 = %{
         cursor: {20, 10},
-        attributes: %{foreground: :blue},
+        style: style2,
         charset_state: CharacterSets.new(),
         mode_state: ScreenModes.new(),
         scroll_region: nil
@@ -62,9 +66,9 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
       [saved_state2, saved_state1 | _] = stack
       assert saved_state2.cursor == {20, 10}
-      assert saved_state2.attributes == %{foreground: :blue}
+      assert saved_state2.style == style2
       assert saved_state1.cursor == {10, 5}
-      assert saved_state1.attributes == %{foreground: :red}
+      assert saved_state1.style == style1
     end
   end
 
@@ -72,9 +76,10 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     test "restores the most recently saved state" do
       stack = TerminalState.new()
 
+      initial_style = TextFormatting.new() |> TextFormatting.set_foreground(:red)
       state = %{
         cursor: {10, 5},
-        attributes: %{foreground: :red},
+        style: initial_style,
         charset_state: CharacterSets.new(),
         mode_state: ScreenModes.new(),
         scroll_region: {5, 15}
@@ -85,7 +90,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
       assert TerminalState.empty?(stack) == true
       assert restored_state.cursor == {10, 5}
-      assert restored_state.attributes == %{foreground: :red}
+      assert restored_state.style == initial_style
       assert restored_state.scroll_region == {5, 15}
     end
 
@@ -100,17 +105,19 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     test "restores states in LIFO order" do
       stack = TerminalState.new()
 
+      style1 = TextFormatting.new() |> TextFormatting.set_foreground(:red)
       state1 = %{
         cursor: {10, 5},
-        attributes: %{foreground: :red},
+        style: style1,
         charset_state: CharacterSets.new(),
         mode_state: ScreenModes.new(),
         scroll_region: {5, 15}
       }
 
+      style2 = TextFormatting.new() |> TextFormatting.set_foreground(:blue)
       state2 = %{
         cursor: {20, 10},
-        attributes: %{foreground: :blue},
+        style: style2,
         charset_state: CharacterSets.new(),
         mode_state: ScreenModes.new(),
         scroll_region: nil
@@ -121,11 +128,11 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
 
       {stack, restored_state2} = TerminalState.restore_state(stack)
       assert restored_state2.cursor == {20, 10}
-      assert restored_state2.attributes == %{foreground: :blue}
+      assert restored_state2.style == style2
 
       {stack, restored_state1} = TerminalState.restore_state(stack)
       assert restored_state1.cursor == {10, 5}
-      assert restored_state1.attributes == %{foreground: :red}
+      assert restored_state1.style == style1
 
       assert TerminalState.empty?(stack) == true
     end
@@ -135,9 +142,10 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     test "clears the terminal state stack" do
       stack = TerminalState.new()
 
+      initial_style = TextFormatting.new() |> TextFormatting.set_foreground(:red)
       state = %{
         cursor: {10, 5},
-        attributes: %{foreground: :red},
+        style: initial_style,
         charset_state: CharacterSets.new(),
         mode_state: ScreenModes.new(),
         scroll_region: {5, 15}
@@ -156,9 +164,10 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     test "returns the current terminal state stack" do
       stack = TerminalState.new()
 
+      initial_style = TextFormatting.new() |> TextFormatting.set_foreground(:red)
       state = %{
         cursor: {10, 5},
-        attributes: %{foreground: :red},
+        style: initial_style,
         charset_state: CharacterSets.new(),
         mode_state: ScreenModes.new(),
         scroll_region: {5, 15}

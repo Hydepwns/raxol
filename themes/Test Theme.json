@@ -1,0 +1,99 @@
+{
+  "name": "Test Theme",
+  "palette": {
+    "error": {
+      "name": null,
+      "a": 1.0,
+      "b": 0,
+      "hex": "#CC0000",
+      "r": 204,
+      "g": 0,
+      "ansi_code": null
+    },
+    "info": {
+      "name": null,
+      "a": 1.0,
+      "b": 204,
+      "hex": "#0099CC",
+      "r": 0,
+      "g": 153,
+      "ansi_code": null
+    },
+    "warning": {
+      "name": null,
+      "a": 1.0,
+      "b": 0,
+      "hex": "#FF9900",
+      "r": 255,
+      "g": 153,
+      "ansi_code": null
+    },
+    "primary": {
+      "name": null,
+      "a": 1.0,
+      "b": 204,
+      "hex": "#0077CC",
+      "r": 0,
+      "g": 119,
+      "ansi_code": null
+    },
+    "success": {
+      "name": null,
+      "a": 1.0,
+      "b": 0,
+      "hex": "#009900",
+      "r": 0,
+      "g": 153,
+      "ansi_code": null
+    },
+    "surface": {
+      "name": null,
+      "a": 1.0,
+      "b": 245,
+      "hex": "#F5F5F5",
+      "r": 245,
+      "g": 245,
+      "ansi_code": null
+    },
+    "background": {
+      "name": null,
+      "a": 1.0,
+      "b": 255,
+      "hex": "#FFFFFF",
+      "r": 255,
+      "g": 255,
+      "ansi_code": null
+    },
+    "accent": {
+      "name": null,
+      "a": 1.0,
+      "b": 0,
+      "hex": "#FF9900",
+      "r": 255,
+      "g": 153,
+      "ansi_code": null
+    },
+    "secondary": {
+      "name": null,
+      "a": 1.0,
+      "b": 102,
+      "hex": "#666666",
+      "r": 102,
+      "g": 102,
+      "ansi_code": null
+    }
+  },
+  "high_contrast": false,
+  "dark_mode": false,
+  "ui_mappings": {
+    "app_background": "background",
+    "surface_background": "surface",
+    "primary_button": "primary",
+    "secondary_button": "secondary",
+    "accent_button": "accent",
+    "error_text": "error",
+    "success_text": "success",
+    "warning_text": "warning",
+    "info_text": "info"
+  }
+}

@@ -62,7 +62,7 @@ defmodule Raxol.MixProject do
   end
 
   defp elixirc_paths(:test),
-    do: ["lib", "test/support", "test/raxol", "test/raxol_web"]
+    do: ["lib", "test/support", "test/raxol/core", "test/raxol/terminal", "test/raxol/ui", "test/raxol_web"]
 
   defp elixirc_paths(_), do: ["lib"]
 
@@ -70,7 +70,7 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library
-      {:rrex_termbox, "~> 2.0.1"},
+      {:rrex_termbox, "~> 2.0.4"},
 
       # --- Added for Tutorial Loading ---
       {:earmark, "~> 1.4"}, # Markdown parser

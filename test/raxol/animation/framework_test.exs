@@ -1,10 +1,13 @@
 defmodule Raxol.Animation.FrameworkTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: false # Disable async because we are manipulating GenServers
 
-  alias Raxol.Animation.Framework
+  alias Raxol.Animation.{Animation, Framework}
   alias Raxol.Core.Accessibility
+  alias Raxol.Core.UserPreferences
 
+  # Start UserPreferences for these tests
   setup do
+    {:ok, _pid} = start_supervised(UserPreferences)
     # Initialize required systems for testing
     Framework.init()
     Accessibility.enable()

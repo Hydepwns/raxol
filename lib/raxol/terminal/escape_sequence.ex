@@ -244,6 +244,7 @@ defmodule Raxol.Terminal.EscapeSequence do
     end
   end
 
+  # Restore local parsing functions
   # Parse numeric parameters, defaulting to nil for empty strings
   defp parse_params(""), do: []
 
@@ -268,217 +269,174 @@ defmodule Raxol.Terminal.EscapeSequence do
   end
 
   # Dispatch based on final byte for standard CSI sequences
-  # CUP - Cursor Position
-  defp dispatch_csi(params, "H", rest) do
+  defp dispatch_csi(params, final_byte, remaining) do
+    # Logger.debug("Dispatch CSI: #{inspect(params)}, #{inspect(final_byte)}")
+    case final_byte do
+      "H" ->
+        dispatch_csi_cursor_position(params, remaining)
+      "f" ->
+        dispatch_csi_cursor_position(params, remaining)
+      "A" ->
+        dispatch_csi_cursor_move(params, :up, remaining)
+      "B" ->
+        dispatch_csi_cursor_move(params, :down, remaining)
+      "C" ->
+        dispatch_csi_cursor_move(params, :right, remaining)
+      "D" ->
+        dispatch_csi_cursor_move(params, :left, remaining)
+      "E" ->
+        dispatch_csi_cursor_next_line(params, remaining)
+      "F" ->
+        dispatch_csi_cursor_prev_line(params, remaining)
+      "G" ->
+        dispatch_csi_cursor_horizontal_absolute(params, remaining)
+      "J" ->
+        dispatch_csi_erase_display(params, remaining)
+      "K" ->
+        dispatch_csi_erase_line(params, remaining)
+      "S" ->
+        dispatch_csi_scroll(params, :up, remaining)
+      "T" ->
+        dispatch_csi_scroll(params, :down, remaining)
+      "m" ->
+        dispatch_csi_set_graphic_rendition(params, remaining)
+      "n" ->
+        dispatch_csi_device_status_report(params, remaining)
+      "r" ->
+        dispatch_csi_set_scroll_region(params, remaining)
+      "h" ->
+        dispatch_csi_set_mode(params, :standard, true, remaining)
+      "l" ->
+        dispatch_csi_set_mode(params, :standard, false, remaining)
+      "s" ->
+        dispatch_csi_save_cursor(params, remaining)
+      "u" ->
+        dispatch_csi_restore_cursor(params, remaining)
+      _ ->
+        dispatch_csi_unknown(params, final_byte, remaining)
+    end
+  end
+
+  # Cursor Position
+  defp dispatch_csi_cursor_position(params, remaining) do
     row = param_at(params, 0, 1)
     col = param_at(params, 1, 1)
-    # Adjust to 0-based index for internal use
-    {:ok, {:cursor_position, {max(0, row - 1), max(0, col - 1)}}, rest}
+    {:ok, {:cursor_position, {max(0, row - 1), max(0, col - 1)}}, remaining}
   end
 
-  # HVP - Horizontal Vertical Position (same as CUP)
-  defp dispatch_csi(params, "f", rest) do
-    row = param_at(params, 0, 1)
-    col = param_at(params, 1, 1)
-    {:ok, {:cursor_position, {max(0, row - 1), max(0, col - 1)}}, rest}
-  end
-
-  # CUU - Cursor Up
-  defp dispatch_csi(params, "A", rest) do
+  # Cursor Move
+  defp dispatch_csi_cursor_move(params, direction, remaining) do
     count = param_at(params, 0, 1)
-    {:ok, {:cursor_move, :up, count}, rest}
+    {:ok, {:cursor_move, direction, count}, remaining}
   end
 
-  # CUD - Cursor Down
-  defp dispatch_csi(params, "B", rest) do
+  # Cursor Next Line
+  defp dispatch_csi_cursor_next_line(params, remaining) do
     count = param_at(params, 0, 1)
-    {:ok, {:cursor_move, :down, count}, rest}
+    {:ok, {:cursor_next_line, count}, remaining}
   end
 
-  # CUF - Cursor Forward
-  defp dispatch_csi(params, "C", rest) do
+  # Cursor Previous Line
+  defp dispatch_csi_cursor_prev_line(params, remaining) do
     count = param_at(params, 0, 1)
-    {:ok, {:cursor_move, :right, count}, rest}
+    {:ok, {:cursor_prev_line, count}, remaining}
   end
 
-  # CUB - Cursor Backward
-  defp dispatch_csi(params, "D", rest) do
-    count = param_at(params, 0, 1)
-    {:ok, {:cursor_move, :left, count}, rest}
-  end
-
-  # CNL - Cursor Next Line
-  defp dispatch_csi(params, "E", rest) do
-    count = param_at(params, 0, 1)
-    {:ok, {:cursor_next_line, count}, rest}
-  end
-
-  # CPL - Cursor Previous Line
-  defp dispatch_csi(params, "F", rest) do
-    count = param_at(params, 0, 1)
-    {:ok, {:cursor_prev_line, count}, rest}
-  end
-
-  # CHA - Cursor Horizontal Absolute
-  defp dispatch_csi(params, "G", rest) do
+  # Cursor Horizontal Absolute
+  defp dispatch_csi_cursor_horizontal_absolute(params, remaining) do
     col = param_at(params, 0, 1)
-    {:ok, {:cursor_col_abs, max(0, col - 1)}, rest}
+    {:ok, {:cursor_horizontal_absolute, max(0, col - 1)}, remaining}
   end
 
-  # ED - Erase in Display
-  defp dispatch_csi(params, "J", rest) do
-    n = param_at(params, 0, 0)
-    # 0: End, 1: Beginning, 2: All, 3: All+Scrollback
-    mode =
-      case n do
-        0 -> :to_end
-        1 -> :to_beginning
-        2 -> :all
-        3 -> :all_with_scrollback
-        # Default
-        _ -> :to_end
-      end
-
-    {:ok, {:erase_display, mode}, rest}
+  # Erase in Display
+  defp dispatch_csi_erase_display(params, remaining) do
+    mode = param_at(params, 0, 0)
+    {:ok, {:erase_display, mode}, remaining}
   end
 
-  # EL - Erase in Line
-  defp dispatch_csi(params, "K", rest) do
-    n = param_at(params, 0, 0)
-    # 0: End, 1: Beginning, 2: All
-    mode =
-      case n do
-        0 -> :to_end
-        1 -> :to_beginning
-        2 -> :all
-        # Default
-        _ -> :to_end
-      end
-
-    {:ok, {:erase_line, mode}, rest}
+  # Erase in Line
+  defp dispatch_csi_erase_line(params, remaining) do
+    mode = param_at(params, 0, 0)
+    {:ok, {:erase_line, mode}, remaining}
   end
 
-  # SU - Scroll Up
-  defp dispatch_csi(params, "S", rest) do
+  # Scroll
+  defp dispatch_csi_scroll(params, direction, remaining) do
     count = param_at(params, 0, 1)
-    {:ok, {:scroll, :up, count}, rest}
+    {:ok, {:scroll, direction, count}, remaining}
   end
 
-  # SD - Scroll Down
-  defp dispatch_csi(params, "T", rest) do
-    count = param_at(params, 0, 1)
-    {:ok, {:scroll, :down, count}, rest}
+  # Set Graphic Rendition
+  defp dispatch_csi_set_graphic_rendition(params, remaining) do
+    {:ok, {:set_graphic_rendition, params}, remaining}
   end
 
-  # SGR - Select Graphic Rendition
-  defp dispatch_csi(params, "m", rest) do
-    {:ok, {:set_graphic_rendition, params}, rest}
-  end
-
-  # DSR - Device Status Report (excluding DEC Private)
-  defp dispatch_csi(params, "n", rest) do
+  # Device Status Report
+  defp dispatch_csi_device_status_report(params, remaining) do
     code = param_at(params, 0, 0)
 
     case code do
-      5 -> {:ok, {:device_status_report, :status}, rest}
-      6 -> {:ok, {:device_status_report, :cursor_position}, rest}
-      _ -> {:error, :invalid_sequence, rest}
+      5 -> {:ok, {:device_status_report, :status}, remaining}
+      6 -> {:ok, {:device_status_report, :cursor_position}, remaining}
+      _ -> {:error, :invalid_sequence, remaining}
     end
   end
 
-  # DECSTBM - Set Top and Bottom Margins (Scroll Region)
-  defp dispatch_csi(params, "r", rest) do
+  # Set Scroll Region
+  defp dispatch_csi_set_scroll_region(params, remaining) do
     top = param_at(params, 0, 1)
-    # Default depends on terminal height usually
     bottom = param_at(params, 1, nil)
-    # Adjust to 0-based, handle potential nil bottom
     top_0 = max(0, top - 1)
 
     case bottom do
-      # Reset scroll region
       nil ->
-        {:ok, {:set_scroll_region, nil}, rest}
+        {:ok, {:set_scroll_region, nil}, remaining}
 
       b ->
-        {:ok, {:set_scroll_region, {top_0, max(top_0, b - 1)}}, rest}
+        {:ok, {:set_scroll_region, {top_0, max(top_0, b - 1)}}, remaining}
     end
   end
 
-  # SM - Set Mode
-  defp dispatch_csi(params, "h", rest) do
-    Enum.reduce(params, {:ok, [], rest}, fn
-      # Default param?
-      nil, {:ok, cmds, r} ->
-        {:ok, [{:set_mode, :standard, 0, true} | cmds], r}
+  # Set Mode
+  defp dispatch_csi_set_mode(params, mode, set?, remaining) do
+    # Default mode code might vary, but common default is nil/0
+    mode_code = param_at(params, 0, 0)
 
-      code, {:ok, cmds, r} ->
-        {:ok, [{:set_mode, :standard, code, true} | cmds], r}
+    if mode_code do
+      {:ok, {:set_mode, mode, mode_code, set?}, remaining}
+    else
+      Logger.warning(
+        "Set/Reset Mode sequence missing mode code: #{mode} #{Enum.join(params, ";")}"
+      )
 
-      # Propagate errors
-      _, acc ->
-        acc
-    end)
-    # Reverse commands to apply in order
-    |> case do
-      {:ok, cmds, r} -> {:ok, {:batch, Enum.reverse(cmds)}, r}
-      error -> error
+      {:error, :invalid_sequence, remaining}
     end
   end
 
-  # RM - Reset Mode
-  defp dispatch_csi(params, "l", rest) do
-    Enum.reduce(params, {:ok, [], rest}, fn
-      nil, {:ok, cmds, r} ->
-        {:ok, [{:set_mode, :standard, 0, false} | cmds], r}
-
-      code, {:ok, cmds, r} ->
-        {:ok, [{:set_mode, :standard, code, false} | cmds], r}
-
-      # Propagate errors
-      _, acc ->
-        acc
-    end)
-    |> case do
-      {:ok, cmds, r} -> {:ok, {:batch, Enum.reverse(cmds)}, r}
-      error -> error
-    end
+  # Save Cursor
+  defp dispatch_csi_save_cursor(_params, remaining) do # Mark params as unused
+    {:ok, {:dec_save_cursor, nil}, remaining}
   end
 
-  # DECSC - Save Cursor Position (DEC specific)
-  defp dispatch_csi([], "s", rest) do
-    {:ok, {:dec_save_cursor, nil}, rest}
-  end
-
-  # DECRC - Restore Cursor Position (DEC specific)
-  defp dispatch_csi([], "u", rest) do
-    {:ok, {:dec_restore_cursor, nil}, rest}
+  # Restore Cursor
+  defp dispatch_csi_restore_cursor(_params, remaining) do # Mark params as unused
+    {:ok, {:dec_restore_cursor, nil}, remaining}
   end
 
   # Unknown standard CSI
-  defp dispatch_csi(_params, final_byte, rest) do
+  defp dispatch_csi_unknown(_params, final_byte, remaining) do # Mark params as unused
     Logger.debug("Unknown standard CSI sequence: CSI ... #{final_byte}")
-    {:error, :unknown_sequence, rest}
+    {:error, :unknown_sequence, final_byte <> remaining}
   end
 
-  # Dispatch based on final byte for DEC private CSI sequences
-  defp dispatch_csi_dec_private(params, final_byte, rest) do
-    # Get the first parameter
+  # Dispatch based on final byte for DEC Private sequences (CSI ? ...)
+  defp dispatch_csi_dec_private(params, final_byte, remaining) do
     mode_code = param_at(params, 0, nil)
-
-    # Determine if it's setting (h) or resetting (l)
-    set? = final_byte == "h"
-
-    if mode_code do
-      # Return a structured command data tuple
-      {:ok, {:set_mode, :dec_private, mode_code, set?}, rest}
-    else
-      Logger.warning(
-        "DEC Private Mode sequence missing mode code: ?#{Enum.join(params, ";")}#{final_byte}"
-      )
-
-      # Consider the sequence invalid if no code
-      {:error, :invalid_sequence, rest}
+    action = case final_byte do
+      "h" -> true
+      "l" -> false
     end
+    {:ok, {:set_mode, :dec_private, mode_code, action}, remaining}
   end
 
   # --- Removed old process_* functions ---

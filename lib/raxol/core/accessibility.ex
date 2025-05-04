@@ -65,6 +65,9 @@ defmodule Raxol.Core.Accessibility do
       "Enabling accessibility features with options: #{inspect(opts)}"
     )
 
+    # Clear the disabled flag
+    Process.delete(:accessibility_disabled)
+
     # Get initial options from UserPreferences merged with explicit opts
     initial_options = load_initial_options(opts)
 
@@ -114,6 +117,9 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def disable do
+    # Set disabled flag
+    Process.put(:accessibility_disabled, true)
+
     # Unregister event handlers
     EventManager.unregister_handler(
       :focus_change,
@@ -170,49 +176,52 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def announce(message, opts \\ []) when is_binary(message) do
-    # Check if announcements are silenced globally
-    silenced =
-      UserPreferences.get([:accessibility, :silence_announcements]) || false
+    # Check internal disabled flag first
+    disabled = Process.get(:accessibility_disabled) == true
 
-    unless silenced do
-      priority = Keyword.get(opts, :priority, :normal)
-      interrupt = Keyword.get(opts, :interrupt, false)
+    unless disabled do
+      # Check if announcements are silenced globally using get_option
+      silenced = get_option(:silence_announcements)
 
-      # Only proceed if screen reader is enabled
-      screen_reader_enabled =
-        UserPreferences.get([:accessibility, :screen_reader]) || true
+      unless silenced do
+        priority = Keyword.get(opts, :priority, :normal)
+        interrupt = Keyword.get(opts, :interrupt, false)
 
-      if screen_reader_enabled do
-        Logger.info("Announcing (SR): [#{priority}] #{message}")
+        # Only proceed if screen reader is enabled using get_option
+        screen_reader_enabled = get_option(:screen_reader)
 
-        # Create announcement with metadata
-        announcement = %{
-          message: message,
-          priority: priority,
-          timestamp: System.monotonic_time(:millisecond),
-          interrupt: interrupt
-        }
+        if screen_reader_enabled do
+          Logger.info("Announcing (SR): [#{priority}] #{message}")
 
-        # Add to queue
-        updated_queue =
-          if announcement.interrupt do
-            # Clear queue if interrupt is true
-            [announcement]
-          else
-            # Add to queue based on priority
-            insert_by_priority(
-              Process.get(:accessibility_announcements) || [],
-              announcement
-            )
-          end
+          # Create announcement with metadata
+          announcement = %{
+            message: message,
+            priority: priority,
+            timestamp: System.monotonic_time(:millisecond),
+            interrupt: interrupt
+          }
 
-        # Store updated queue
-        Process.put(:accessibility_announcements, updated_queue)
+          # Add to queue
+          updated_queue =
+            if announcement.interrupt do
+              # Clear queue if interrupt is true
+              [announcement]
+            else
+              # Add to queue based on priority
+              insert_by_priority(
+                Process.get(:accessibility_announcements) || [],
+                announcement
+              )
+            end
 
-        # Dispatch event to notify screen readers
-        # In a real implementation, this would integrate with the system's
-        # accessibility API. For now, we just emit an event.
-        EventManager.dispatch({:accessibility_announce, message})
+          # Store updated queue
+          Process.put(:accessibility_announcements, updated_queue)
+
+          # Dispatch event to notify screen readers
+          # In a real implementation, this would integrate with the system's
+          # accessibility API. For now, we just emit an event.
+          EventManager.dispatch({:accessibility_announce, message})
+        end
       end
     end
 

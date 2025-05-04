@@ -12,6 +12,16 @@ defmodule Raxol.Test.Mocks do
   # to avoid Mox compilation issues.
 
   # Add other non-Mox helper functions or structs for testing if needed.
+
+  # NEW Mocks for Notification Plugin Tests
+  # Mox.defmock(SystemMock, for: System)
+  # Mox.defmock(NotificationPluginMock, for: Raxol.Core.Plugins.Core.NotificationPlugin)
+
+  # Defmock accessibility operations - COMMENT OUT as Raxol.Core.Accessibility is not a behaviour
+  # Mox.defmock(AccessibilityMock, for: Raxol.Core.Accessibility)
+
+  # Mock for the SystemInteraction behaviour
+  Mox.defmock(SystemInteractionMock, for: Raxol.Core.SystemInteraction)
 end
 
 defmodule Raxol.Core.Accessibility.Mock do

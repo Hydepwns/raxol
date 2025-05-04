@@ -10,9 +10,12 @@ defmodule Raxol.Terminal.Parser.States.DesignateCharsetState do
 
   @doc """
   Processes input when the parser is in the :designate_charset state.
+  Expects a single character designating the character set.
   """
   @spec handle(Emulator.t(), State.t(), binary()) ::
-          {:continue, Emulator.t(), State.t(), binary()} | {:handled, Emulator.t()}
+          {:continue, Emulator.t(), State.t(), binary()}
+          | {:finished, Emulator.t(), State.t()}
+          | {:incomplete, Emulator.t(), State.t()}
   def handle(
         emulator,
         %State{state: :designate_charset, designating_gset: gset} = parser_state,
@@ -22,7 +25,8 @@ defmodule Raxol.Terminal.Parser.States.DesignateCharsetState do
     case input do
       # Incomplete
       <<>> ->
-        {:handled, emulator}
+        # Incomplete designate sequence - return current state
+        {:incomplete, emulator, parser_state}
 
       <<charset_code, rest_after_code::binary>> ->
         # Pass explicit gset and charset_code to Emulator

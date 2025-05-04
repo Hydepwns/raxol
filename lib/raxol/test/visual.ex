@@ -28,6 +28,7 @@ defmodule Raxol.Test.Visual do
 
   alias Raxol.Test.TestHelper
   alias Raxol.Core.Renderer.Element
+  alias Raxol.UI.Theming.Theme
 
   defmacro __using__(_opts) do
     quote do
@@ -45,8 +46,8 @@ defmodule Raxol.Test.Visual do
   3. Configures the test terminal
   4. Prepares snapshot directories
   """
-  def setup_visual_component(module, _props \\ %{}) do
-    {:ok, component} = Raxol.Test.Unit.setup_isolated_component(module)
+  def setup_visual_component(module, props \\ %{}) do
+    {:ok, component} = Raxol.Test.Unit.setup_isolated_component(module, props)
 
     # Set up render context
     terminal = TestHelper.setup_test_terminal()
@@ -186,14 +187,41 @@ defmodule Raxol.Test.Visual do
 
   # Private Helpers
 
-  defp render_component(component) do
-    case component.module.render(component.state) do
-      %Element{} = element ->
-        render_element(element, component.render_context)
+  @doc """
+  Renders a component state within a controlled test environment.
+  Accepts an optional context map.
+  """
+  def render_component(component_map, context \\ default_render_context()) do
+    # Extract the actual state and module from the component map
+    state = component_map.state
+    module = component_map.module
 
-      other ->
-        raise "Component returned invalid render result: #{inspect(other)}"
-    end
+    # Pass the *actual* state and the *provided* context to the component's render/2 function
+    rendered_view = module.render(state, context)
+
+    # Return the raw view structure
+    rendered_view
+  end
+
+  # Helper to provide a default context for rendering
+  defp default_render_context do
+    # Get the default theme struct
+    default_theme = Theme.default_theme()
+
+    # Merge theme fields into the context map directly
+    Map.merge(
+      %{ # Base context fields
+        max_width: 80,
+        max_height: 24,
+        focused_component: nil,
+        errors: %{},
+        terminal_size: {80, 24}
+      },
+      # Merge the theme struct's fields (like :component_styles, :colors)
+      Map.from_struct(default_theme)
+      # Add the theme struct itself under :theme key for potential direct access needed elsewhere?
+      # |> Map.put(:theme, default_theme)
+    )
   end
 
   defp render_element(element, _context) do

@@ -192,7 +192,7 @@ defmodule Raxol.Terminal.Commands.Screen do
     if cursor_y >= top && cursor_y <= bottom do
       # Insert count lines at cursor_y
       new_buffer =
-        ScreenBuffer.insert_lines(buffer, cursor_y, count, emulator.style)
+        ScreenBuffer.insert_lines(buffer, cursor_y, count, emulator.scroll_region)
 
       Emulator.update_active_buffer(emulator, new_buffer)
     else
@@ -229,7 +229,7 @@ defmodule Raxol.Terminal.Commands.Screen do
     if cursor_y >= top && cursor_y <= bottom do
       # Delete count lines at cursor_y
       new_buffer =
-        ScreenBuffer.delete_lines(buffer, cursor_y, count, emulator.style)
+        ScreenBuffer.delete_lines(buffer, cursor_y, count, emulator.scroll_region)
 
       Emulator.update_active_buffer(emulator, new_buffer)
     else

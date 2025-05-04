@@ -244,16 +244,15 @@ defmodule Raxol.Terminal.Input.InputHandler do
   Moves to the next history entry (newer / Down Arrow).
   """
   def next_history_entry(
-        %__MODULE__{history_index: index, input_history: history} = handler
+        %__MODULE__{history_index: index, input_history: history, buffer: current_buffer} = handler
       ) do
-    # Check if not already at newest entry
-    if index > 0 do
+    # Check if not already at newest entry (index must be non-nil and > 0)
+    if is_integer(index) and index > 0 do
       new_index = index - 1
       new_input = Enum.at(history, new_index)
-      new_buffer = InputBuffer.set_contents(handler.buffer, new_input)
-      # Move cursor to end
-      new_buffer = InputBuffer.move_cursor_to_end_of_line(new_buffer)
-      {%{handler | history_index: new_index, buffer: new_buffer}, new_input}
+      new_buffer = InputBuffer.set_contents(current_buffer, new_input)
+      new_buffer_after_cursor = InputBuffer.move_cursor_to_end_of_line(new_buffer)
+      {%{handler | history_index: new_index, buffer: new_buffer_after_cursor}, new_input}
     else
       # Already at newest entry (index 0) or not navigating
       {handler, InputBuffer.get_contents(handler.buffer)}
@@ -265,16 +264,18 @@ defmodule Raxol.Terminal.Input.InputHandler do
   If not currently navigating history, it starts from the most recent entry (index 0).
   """
   def previous_history_entry(
-        %__MODULE__{history_index: index, input_history: history} = handler
+        %__MODULE__{history_index: index, input_history: history, buffer: current_buffer} = handler
       ) do
+    # Handle the first press of 'Up Arrow' when index is nil
+    current_index = if is_nil(index), do: -1, else: index
+
     # Check if there's an older entry available
-    if index < length(history) - 1 do
-      new_index = index + 1
+    if length(history) > 0 and current_index < length(history) - 1 do
+      new_index = current_index + 1
       new_input = Enum.at(history, new_index)
-      new_buffer = InputBuffer.set_contents(handler.buffer, new_input)
-      # Move cursor to end
-      new_buffer = InputBuffer.move_cursor_to_end_of_line(new_buffer)
-      {%{handler | history_index: new_index, buffer: new_buffer}, new_input}
+      new_buffer = InputBuffer.set_contents(current_buffer, new_input)
+      new_buffer_after_cursor = InputBuffer.move_cursor_to_end_of_line(new_buffer)
+      {%{handler | history_index: new_index, buffer: new_buffer_after_cursor}, new_input}
     else
       # Already at oldest entry
       {handler, InputBuffer.get_contents(handler.buffer)}

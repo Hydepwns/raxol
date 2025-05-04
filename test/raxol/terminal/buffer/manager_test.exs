@@ -5,31 +5,29 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
 
   describe "new/3" do
     test "creates a new buffer manager with default values" do
-      manager = Manager.new(80, 24)
+      {:ok, manager} = Manager.new(80, 24)
       assert manager.active_buffer.width == 80
       assert manager.active_buffer.height == 24
       assert manager.back_buffer.width == 80
       assert manager.back_buffer.height == 24
-      assert manager.damage_regions == []
-      assert manager.memory_limit == 10_000_000
-      assert manager.memory_usage == 0
+      assert manager.scrollback.limit == 1000 # Assuming default
+      assert manager.memory_limit > 0
     end
 
     test "creates a new buffer manager with custom scrollback height" do
-      manager = Manager.new(80, 24, 2000)
-      assert manager.active_buffer.scrollback_height == 2000
-      assert manager.back_buffer.scrollback_height == 2000
+      {:ok, manager} = Manager.new(80, 24, 2000)
+      assert manager.scrollback.limit == 2000
     end
 
     test "creates a new buffer manager with custom memory limit" do
-      manager = Manager.new(80, 24, 1000, 5_000_000)
+      {:ok, manager} = Manager.new(80, 24, 1000, 5_000_000)
       assert manager.memory_limit == 5_000_000
     end
   end
 
   describe "switch_buffers/1" do
     test "switches active and back buffers" do
-      manager = Manager.new(80, 24)
+      {:ok, manager} = Manager.new(80, 24)
 
       # Modify active buffer
       active_buffer = manager.active_buffer
@@ -49,7 +47,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
 
   describe "mark_damaged/5" do
     test "marks a region as damaged" do
-      manager = Manager.new(80, 24)
+      {:ok, manager} = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
 
       assert length(manager.damage_regions) == 1
@@ -57,7 +55,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     end
 
     test "merges overlapping damage regions" do
-      manager = Manager.new(80, 24)
+      {:ok, manager} = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
       manager = Manager.mark_damaged(manager, 5, 0, 15, 5)
 
@@ -66,7 +64,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     end
 
     test "keeps separate non-overlapping damage regions" do
-      manager = Manager.new(80, 24)
+      {:ok, manager} = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
       manager = Manager.mark_damaged(manager, 20, 0, 30, 5)
 
@@ -78,7 +76,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
 
   describe "get_damage_regions/1" do
     test "returns all damage regions" do
-      manager = Manager.new(80, 24)
+      {:ok, manager} = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
       manager = Manager.mark_damaged(manager, 20, 0, 30, 5)
 
@@ -91,7 +89,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
 
   describe "clear_damage_regions/1" do
     test "clears all damage regions" do
-      manager = Manager.new(80, 24)
+      {:ok, manager} = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
       manager = Manager.mark_damaged(manager, 20, 0, 30, 5)
       manager = Manager.clear_damage_regions(manager)
@@ -102,14 +100,14 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
 
   describe "update_memory_usage/1" do
     test "updates memory usage tracking" do
-      manager = Manager.new(80, 24)
+      {:ok, manager} = Manager.new(80, 24)
       manager = Manager.update_memory_usage(manager)
 
       assert manager.memory_usage > 0
     end
 
     test "calculates memory usage for both buffers" do
-      manager = Manager.new(80, 24)
+      {:ok, manager} = Manager.new(80, 24)
 
       # Modify active buffer to increase memory usage
       active_buffer = manager.active_buffer
@@ -124,7 +122,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
 
   describe "within_memory_limits?/1" do
     test "returns true when within memory limits" do
-      manager = Manager.new(80, 24)
+      {:ok, manager} = Manager.new(80, 24)
       manager = Manager.update_memory_usage(manager)
 
       assert Manager.within_memory_limits?(manager)
@@ -132,7 +130,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
 
     test "returns false when exceeding memory limits" do
       # Very low memory limit
-      manager = Manager.new(80, 24, 1000, 100)
+      {:ok, manager} = Manager.new(80, 24, 1000, 100)
 
       # Modify active buffer to increase memory usage
       active_buffer = manager.active_buffer

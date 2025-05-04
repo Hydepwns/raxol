@@ -241,7 +241,8 @@ defmodule Raxol.Plugins.PluginManager do
             # Save updated config
             case PluginConfig.save(updated_config) do
               {:ok, saved_config} ->
-                %{
+                # Return {:ok, updated_manager}
+                {:ok, %{
                   manager
                   | plugins:
                       Map.put(manager.plugins, plugin.name, %{
@@ -249,18 +250,19 @@ defmodule Raxol.Plugins.PluginManager do
                         | enabled: true
                       }),
                     config: saved_config
-                }
+                }}
 
               {:error, _reason} ->
                 # Continue even if save fails
-                %{
+                # Return {:ok, updated_manager}
+                {:ok, %{
                   manager
                   | plugins:
                       Map.put(manager.plugins, plugin.name, %{
                         plugin
                         | enabled: true
                       })
-                }
+                }}
             end
 
           {:error, reason} ->
@@ -284,7 +286,8 @@ defmodule Raxol.Plugins.PluginManager do
         # Save updated config
         case PluginConfig.save(updated_config) do
           {:ok, saved_config} ->
-            %{
+            # Return {:ok, updated_manager}
+            {:ok, %{
               manager
               | plugins:
                   Map.put(manager.plugins, plugin.name, %{
@@ -292,18 +295,19 @@ defmodule Raxol.Plugins.PluginManager do
                     | enabled: false
                   }),
                 config: saved_config
-            }
+            }}
 
           {:error, _reason} ->
             # Continue even if save fails
-            %{
+            # Return {:ok, updated_manager}
+            {:ok, %{
               manager
               | plugins:
                   Map.put(manager.plugins, plugin.name, %{
                     plugin
                     | enabled: false
                   })
-            }
+            }}
         end
     end
   end
@@ -315,19 +319,28 @@ defmodule Raxol.Plugins.PluginManager do
     Enum.reduce_while(manager.plugins, {:ok, manager}, fn {_name, plugin},
                                                           {:ok, acc_manager} ->
       if plugin.enabled do
-        case plugin.handle_input(input) do
-          {:ok, updated_plugin} ->
-            {:cont,
-             {:ok,
-              %{
-                acc_manager
-                | plugins:
-                    Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-              }}}
+        # Get module from struct
+        module = plugin.__struct__
+        # Check if module implements handle_input/2
+        if function_exported?(module, :handle_input, 2) do
+          # Call handle_input on the module
+          case module.handle_input(plugin, input) do
+            {:ok, updated_plugin} ->
+              {:cont,
+               {:ok,
+                %{
+                  acc_manager
+                  | plugins:
+                      Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+                }}}
 
-          {:error, reason} ->
-            {:halt,
-             {:error, "Plugin #{plugin.name} failed to handle input: #{reason}"}}
+            {:error, reason} ->
+              {:halt,
+               {:error, "Plugin #{plugin.name} failed to handle input: #{reason}"}}
+          end
+        else
+          # Plugin disabled or doesn't implement handle_input/2, continue
+          {:cont, {:ok, acc_manager}}
         end
       else
         {:cont, {:ok, acc_manager}}

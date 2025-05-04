@@ -143,7 +143,12 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
     # This is a placeholder implementation
     # In a real system, we'd query ETS or another storage
     Process.get()
-    |> Enum.filter(fn {{type, _}, _} -> type == :handler end)
+    |> Enum.filter(fn
+      # Only match keys that are specifically {:handler, _}
+      {{:handler, _id}, _value} -> true
+      # Ignore all other keys (atoms, different tuples, etc.)
+      _ -> false
+    end)
     |> Enum.map(fn {{_, _}, handler} -> handler end)
   end
 end
