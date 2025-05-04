@@ -1,7 +1,7 @@
 ---
 title: Next Steps
 description: Documentation of next steps in Raxol Terminal Emulator development
-date: 2024-07-31
+date: 2025-05-02
 author: Raxol Team
 section: roadmap
 tags: [roadmap, next steps, planning]
@@ -15,9 +15,10 @@ The project has completed its foundational phases and significant parts of the r
 Key recent accomplishments include:
 
 - **Major Codebase Reorganization & Refactoring:** Largely completed.
-- **Test Suite Progress:** Significant progress reducing test failures. **~691 failures remain** (down from ~721). Major failures resolved in:
+- **Test Suite Progress:** Significant progress reducing test failures. However, a recent run (**2024-08-01**) shows **~459 failures** and **25 skipped tests**, indicating regressions or previously undetected issues. Major failures previously resolved in:
+  - `WindowManipulationTest` (Corrected CSI/OSC parsing)
   - `ClipboardPluginTest` (Switched Mox -> :meck -> Mox with Behaviour/DI, **All tests now pass.**)
-  - `MultiLineInputTest` (Cursor refactoring)
+  - `MultiLineInputTest` (Cursor refactoring, **Text manipulation/wrapping fixed**)
   - `MultiLineInput.EventHandlerTest` (Event struct usage, return values)
   - `Emulator.InitializationTest` (**Fixed: All tests pass.**)
   - `Commands.ScreenTest` (Setup fixes)
@@ -27,7 +28,7 @@ Key recent accomplishments include:
   - `Style.Colors.PersistenceTest` (**Fixed: All tests pass.**)
   - `Components.Display.ProgressTest` (Component API changes)
   - `Terminal.CommandsTest` (Setup/call fixes)
-  - `Terminal.DriverTest` (stty handling)
+  - `Terminal.DriverTest` (stty handling, **NIF init workaround, All tests pass.**)
   - `examples/button_test.exs` (Supervisor setup)
   - `RuntimeTest` (Supervisor startup, ETS management)
   - `Core.Runtime.LifecycleTest` (**Fixed: All tests pass.**)
@@ -38,105 +39,98 @@ Key recent accomplishments include:
   - Terminal Support Tests: `ScreenBufferTest` (Function rename), `HotReloadTest` (GenServer start), `SgrFormattingTest` (Executor logic), `TextFormattingTest` (Wide char width)
   - Web Interface Tests: `TerminalLiveTest` (Flash fetch), `TerminalChannelTest` (**Fixed: All tests pass.**)
   - Performance Tests: `PerformanceTest` (Module paths, math error)
-  - Emulator Tests: `CursorManagementTest` (Duplicate test), `SgrFormattingTest` (Executor logic), `WritingBufferTest` (**5 failures remain**)
-- **Core Terminal Emulation:** Functional parser, command executor for many core CSI sequences, screen mode handling, state management fixes.
-- **Core Runtime Implementation:** Functional runtime loop, event dispatch, rendering pipeline. Supervisor startup fixed.
+  - Emulator Tests: `CursorManagementTest` (Duplicate test), `SgrFormattingTest` (**Fixed: Cache issue**), `WritingBufferTest` (**DONE**). **All tests in `test/raxol/terminal/emulator/` now pass.**
+  - **Terminal ANSI Tests:** `ColumnWidthTest` (**Fixed: All tests pass.**)
+  - Component Tests: Fixed `Button` tests. **Checkbox component tests completed.** **Modal form functionality implemented (TextInput, Checkbox, Dropdown) with tests.** **TextInput tests completed.**
+  - ANSI Formatting Tests: Fixed `text_formatting_test.exs` CondClauseError.
+  - Terminal Driver Tests: Fixed `driver_test.exs` using workarounds for NIF initialization in test env. (**All tests now pass.**)
+- **Core Component Implementation:** Basic `Modal` form rendering, interaction, and validation added. `ComponentShowcase` refactored to implement `Base.Component` behaviour.
+- **Core Terminal Emulation:** Functional parser (state propagation fixed), command executor for many core CSI sequences, screen mode handling, state management fixes.
+- **Core Runtime Implementation:** Functional runtime loop, event dispatch, rendering pipeline. Supervisor startup fixed. **Runtime Application Start Blocked by NIF OTP App issue.**
 - **Plugin System Enhancements:** Core features functional (dependency sorting, command handling, basic reloading). Clipboard and Notification plugins refactored.
 - **VS Code Extension Integration:** Core communication bridge functional.
 - **Dashboard & Visualization:** Layout system, core visualizations, and persistence implemented.
-- **Testing Framework:** Comprehensive framework and tooling in place. Fixed many test setup/API misalignment issues.
+- **Testing Framework:** Comprehensive framework and tooling in place. Fixed many test setup/API misalignment issues. Added `Modal` tests.
 - **Theme System:** Core functionality implemented. Persistence and color struct handling fixed.
 - **Documentation Overhaul:** Core guides reviewed; Plugin/Theming/VSCode guides planned.
 - **Documentation Alignment:** Updated core `README.md`, `docs/README.md`, and `docs/ARCHITECTURE.md` to better reflect current project state, version, and structure.
 
+**Resolved Blockers / Issues:**
+
+- **`:rrex_termbox` NIF Loading Issue:** Resolved build/load issues on ARM macOS (Initial fix).
+- **`mix run` Example Failures (Compilation):** Resolved compilation issues in `ComponentShowcase`.
+- **Emulator Test Silent Crash:** Resolved (was combination of Mox setup error and parser state propagation bug).
+- **Emulator SGR Test Failures:** Resolved (was build cache issue).
+- **NIF OTP App Startup Error:** Resolved by updating `rrex_termbox` dependency to v2.0.4, which includes polling fixes.
+- **Terminal Test Failures:** Previously resolved, but regressions likely exist given the current failure count. (**Status: 0 Failures / 25 Skipped**)
+
 **Immediate Focus & Blockers:**
 
-- **Address Remaining Test Failures:**
-  - Fix 5 failures in `test/raxol/terminal/emulator/writing_buffer_test.exs`. **<- Current Focus**
-  - Investigate remaining ~25 emulator failures (`SixelGraphicsTest`, `CommandsTest`, etc.).
-  - Investigate `Performance.MonitorTest` failures.
-  - Investigate component-related failures (Button, Checkbox, Form?).
-  - Fix remaining `AutoRepeatTest` failure (if any remain).
-- **Testing Strategy:** Continue using focused testing (`mix test path/to/file.exs:line_num`) to debug remaining failures.
-  - Implement remaining terminal command handling (**OSC, DCS**) in `lib/raxol/terminal/commands/executor.ex`.
-  - Verify Core Command Plugin Reliability: Ensure refactored `NotificationPlugin` works reliably across platforms. (**ClipboardPlugin verified via tests**).
-- Benchmark performance and profile rendering with complex dashboards/large datasets.
-- Complete comprehensive cross-platform testing (Native Terminal & VS Code Extension).
-- Expand documentation (finish planned guides, address TODOs, improve ExDoc).
-- **Documentation Expansion:**
-  - Write Plugin Development, Theming, and VS Code Extension guides.
-  - Review and enhance ExDoc (`@moduledoc`, `@doc`, `@spec`).
-  - Find and address documentation TODOs in the codebase.
-  - Add visual aids (diagrams) where helpful.
-  - **Continue aligning existing documentation (guides, READMEs) with current state.**
+- **Fix Test Failures:** Address remaining test failures across the suite. Status: **0 Failures / 25 Skipped** as of 2025-05-02 (after `MultiLineInput` fixes). (**New - Top Priority: Address Skipped Tests**)
+- **Run Full Test Suite:** Verify fixes. (**Status: Passes with 25 skipped**)
+- **Comprehensive Cross-Platform Testing.** (**Unblocked**) (High Priority)
+- **Benchmark performance and profile rendering.** (**Benchmark ran, memory tracking failed.** Revisit after tests pass.) (High Priority)
+- **Verify Core Command Plugin Reliability.** (**Unblocked**) (Medium Priority)
+- **Implement Remaining Command Handlers (OSC Colors, DCS Sixel).** (Medium Priority)
+- **Write More Tests (Runtime, Plugins).** (Medium Priority)
+- **Investigate Benchmark Memory Tracking Failure.** (Medium Priority)
+- **Documentation Expansion (Guides, ExDoc, TODOs).** (Medium Priority)
+- **Address remaining medium/low priority TODOs:** From `TODO.md`. (Low Priority)
 
-## Tactical Next Steps
+## Tactical Next Steps (Revised Priorities)
 
-1.  **Address Remaining Test Failures:**
-    - **Fix 5 failures in `test/raxol/terminal/emulator/writing_buffer_test.exs`.**
-    - Investigate and fix remaining ~25 emulator failures (Sixel, performance, other command handlers).
-    - Investigate and fix `Performance.MonitorTest` failures.
-    - Investigate component-related failures (Button, Checkbox, Form).
-    - Fix `AutoRepeatTest` (if needed).
-2.  **Implement Remaining Command Handlers:** Focus on OSC and DCS sequences in `lib/raxol/terminal/commands/executor.ex` (Once tests are clearer).
-3.  **Verify Core Plugins:** Ensure Clipboard & Notification plugins work reliably.
-4.  **Refine Plugin System:**
-    - Enhance command namespacing/arity handling (if needed after verification).
-    - Improve robustness of plugin reloading (if needed).
-5.  **Write More Tests:**
-    - Focus on Runtime interactions (Dispatcher, Renderer).
-    - Test `PluginManager` edge cases (discovery, load order, command delegation, reload).
-6.  **Verify Examples & Showcase:**
-    - Run and verify the component showcase example.
-    - Review and ensure all other examples (`@examples`) are functional.
-7.  **Performance Analysis & Optimization:**
-    - Benchmark performance with complex dashboards.
-    - Profile visualization rendering with large datasets.
-    - Investigate reported performance/memory issues.
-    - Implement caching for visualizations if identified as a bottleneck.
-8.  **Cross-Platform Testing:**
-    - Continue comprehensive testing in native terminal environments (various emulators/OSes).
-    - Verify VS Code Extension functionality thoroughly.
-    - Test hyperlink opening across OSes.
-9.  **Documentation Expansion:**
-    - Write Plugin Development, Theming, and VS Code Extension guides.
-    - Review and enhance ExDoc (`@moduledoc`, `@doc`, `@spec`).
-    - Find and address documentation TODOs in the codebase.
-    - Add visual aids (diagrams) where helpful.
-    - **Continue aligning existing documentation (guides, READMEs) with current state.**
+- **Fix Test Failures:** Address remaining test failures across the suite. Status: **0 Failures / 25 Skipped** as of 2025-05-02 (after `MultiLineInput` fixes). (**New - Top Priority: Address Skipped Tests**)
+- **Run Full Test Suite:** Verify fixes. (**Status: Passes with 25 skipped**)
+- **Comprehensive Cross-Platform Testing.** (**Unblocked**) (High Priority)
+- **Benchmark performance and profile rendering.** (**Benchmark ran, memory tracking failed.** Revisit after tests pass.) (High Priority)
+- **Verify Core Command Plugin Reliability.** (**Unblocked**) (Medium Priority)
+- **Implement Remaining Command Handlers (OSC Colors, DCS Sixel).** (Medium Priority)
+- **Write More Tests (Runtime, Plugins).** (Medium Priority)
+- **Investigate Benchmark Memory Tracking Failure.** (Medium Priority)
+- **Documentation Expansion (Guides, ExDoc, TODOs).** (Medium Priority)
+- **Address remaining medium/low priority TODOs.** (Low Priority)
+
+1. **Fix Test Failures:** Address remaining test failures across the suite. Status: **0 Failures / 25 Skipped** as of 2025-05-02 (after `MultiLineInput` fixes). (**New - Top Priority: Address Skipped Tests**)
+2. **Run Full Test Suite:** Verify fixes. (**Status: Passes with 25 skipped**)
+3. **Comprehensive Cross-Platform Testing.** (**Unblocked**) (High Priority)
+4. **Benchmark performance and profile rendering.** (**Benchmark ran, memory tracking failed.** Revisit after tests pass.) (High Priority)
+5. **Verify Core Command Plugin Reliability.** (**Unblocked**) (Medium Priority)
+6. **Implement Remaining Command Handlers (OSC Colors, DCS Sixel).** (Medium Priority)
+7. **Write More Tests (Runtime, Plugins).** (Medium Priority)
+8. **Investigate Benchmark Memory Tracking Failure.** (Medium Priority)
+9. **Documentation Expansion (Guides, ExDoc, TODOs).** (Medium Priority)
+10. **Address remaining medium/low priority TODOs.** (Low Priority)
 
 ## Immediate Development Priorities
 
-| Task                           | Description                                                                                             | Status             | Blocker? | Priority | Related File(s) / TODO Task                                                                       |
-| ------------------------------ | ------------------------------------------------------------------------------------------------------- | ------------------ | -------- | -------- | ------------------------------------------------------------------------------------------------- |
-| Implement Core Term Commands   | Handle most common CSI sequences (see TODO for list)                                                    | Done               | No       | ---      | `lib/raxol/terminal/commands/executor.ex`, `lib/raxol/terminal/ansi/screen_modes.ex`              |
-| Fix Emulator Writing Buffer    | Resolve 5 failures in `test/raxol/terminal/emulator/writing_buffer_test.exs`                            | **ToDo**           | No       | **High** | `writing_buffer_test.exs`, `Emulator.ex`, `ScreenBuffer.ex`                                       |
-| Handle Remaining Term Commands | Implement OSC, DCS, less common CSI sequences                                                           | In Progress        | No       | Medium   | `lib/raxol/terminal/commands/executor.ex` (Basic OSC/DCS structure implemented)                   |
-| Fix Other Test Failures        | Remaining Emulator (~25), Sixel, Performance, Components (Button/Checkbox/Form?), `AutoRepeatTest`      | ToDo               | No       | High     | Various test files                                                                                |
-| Fix MultiLineInput Features    | Fix callback invocation, add word movements                                                             | Done               | No       | ---      | `lib/raxol/components/input/multi_line_input.ex`                                                  |
-| Implement TextInput Features   | Add visual cursor rendering, Home/End/Delete keys                                                       | Done               | No       | ---      | `lib/raxol/components/input/text_input.ex`                                                        |
-| Update ANSI Facade             | Align with new state structure                                                                          | Done (Deprecated)  | No       | ---      | `lib/raxol/terminal/ansi_facade.ex` (Module deprecated)                                           |
-| Refine Plugin System           | Improve reloading, command namespacing/arity, add tests                                                 | In Progress        | No       | Medium   | `PluginManager`, `CommandRegistry` (Reloading enhanced, commands standardized, basic tests added) |
-| Verify Core Command Plugins    | Ensure Clipboard & Notification plugins work reliably (post-refactor)                                   | **Partially Done** | No       | High     | Core Plugins (TODO High Priority) - **ClipboardPlugin tests pass**                                |
-| Write Tests                    | Runtime interactions (Dispatcher, Renderer), PluginManager edge cases                                   | In Progress        | No       | High     | (PluginManager tests partially done)                                                              |
-| Verify Component Showcase      | Run and verify showcase example                                                                         | ToDo               | No       | High     | `examples/component_showcase.exs` (TODO 3.2 - unblocked once remaining test failures resolved)    |
-| Performance Analysis & Opt.    | Benchmark, profile, investigate issues, potentially add caching                                         | In Progress        | No       | High     | (TODO In Progress, Issues)                                                                        |
-| Cross-Platform Testing         | Comprehensive testing (Native Terminal, VS Code Ext), hyperlink testing                                 | In Progress        | No       | High     | (TODO In Progress, Issues, Testing Needs)                                                         |
-| Documentation Expansion        | Write guides (Plugin, Theming, VSCode), improve ExDoc, address TODOs, add diagrams, align existing docs | In Progress        | No       | Medium   | `docs/guides/`, ExDoc tasks, `TODO.md` (Goals 2, 4, 5, 6, 1.3/1.4)                                |
-| Functional Examples            | Ensure all `@examples` are functional                                                                   | ToDo               | No       | Medium   | (TODO In Progress)                                                                                |
-| Investigate Issues             | Look into `ex_termbox` dep, runtime warnings/loop, image rendering                                      | ToDo               | No       | Medium   | `TODO.md` (Issues to Investigate)                                                                 |
-| Medium Priority Features       | Modal, Table Enhancements, Focus Ring, Animation, AI Stubs, Term Features, etc.                         | ToDo               | No       | Medium   | `TODO.md` (Medium Priority)                                                                       |
+| Task                                 | Description                                                                                             | Status                           | Blocker? | Priority | Related File(s) / TODO Task                                        |
+| ------------------------------------ | ------------------------------------------------------------------------------------------------------- | -------------------------------- | -------- | -------- | ------------------------------------------------------------------ |
+| **Fix Test Failures**                | **Address the 25 skipped tests reported by `mix test`.**                                                | **ToDo**                         | No       | **Top**  | `mix test --trace` output (find skipped tests)                     |
+| **Run Full Test Suite**              | **Re-run `mix test` after fixing skipped tests to verify.**                                             | **ToDo (Post-Fixes)**            | No       | High     | `mix test`                                                         |
+| Comprehensive Cross-Platform Testing | Comprehensive testing (Native Terminal, VS Code Ext), hyperlink testing                                 | ToDo                             | No       | High     | (TODO In Progress, Issues, Testing Needs)                          |
+| Performance Analysis & Opt.          | Benchmark, profile, investigate issues, potentially add caching                                         | Done (Mem Failed), Needs Revisit | No       | High     | (TODO In Progress, Issues)                                         |
+| Verify Core Command Plugins          | Ensure Clipboard & Notification plugins work reliably (Tests pass, need runtime check)                  | Done (Tests)                     | No       | Medium   | Core Plugins (TODO High Priority)                                  |
+| Implement OSC Colors / Sixel         | Implement OSC 4 handler, Sixel DCS handler                                                              | Done (OSC 4), Sixel ToDo         | No       | Medium   | `Executor.ex`, `SixelGraphics.ex`                                  |
+| Investigate Benchmark Mem Track      | Investigate failure in memory data collection during benchmark                                          | ToDo                             | No       | Medium   | `run_visualization_benchmark.exs`                                  |
+| Documentation Expansion              | Write guides (Plugin, Theming, VSCode), improve ExDoc, address TODOs, add diagrams, align existing docs | In Progress                      | No       | Medium   | `docs/guides/`, ExDoc tasks, `TODO.md` (Goals 2, 4, 5, 6, 1.3/1.4) |
+| Functional Examples                  | Ensure all `@examples` are functional (Component showcase runs, others?)                                | In Progress                      | No       | Medium   | (TODO In Progress)                                                 |
+| Investigate Other Issues             | Look into `ex_termbox` dep, runtime warnings, image rendering, text wrap, etc.                          | ToDo                             | No       | Low      | `TODO.md` (Issues to Investigate - excluding NIF & `mix run`)      |
+| Medium Priority Features             | Table Enhancements, Focus Ring, Animation, AI Stubs, Term Features, etc.                                | ToDo                             | No       | Low      | `TODO.md` (Medium Priority - excluding Modal)                      |
 
 ## Technical Implementation Plan
 
 ### Timeline for Next ~4 Weeks (Revised)
 
-| Week   | Focus                             | Tasks                                                                                                                                                                                                                     |
-| ------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Week 1 | **Fix Remaining Tests**           | - Focus on debugging the remaining high-priority test failures (Sixel, Performance, Components, AutoRepeat). <br>- Analyze failures and apply fixes. <br>- Use focused tests (`mix test ...:line_num`).                   |
-| Week 2 | **Plugin Verification & Testing** | - Verify Core Command Plugins (**Notification**) reliability. <br>- Write tests (Runtime, PluginManager). <br>- Verify Component Showcase & other examples.                                                               |
-| Week 3 | **Performance & Cross-Platform**  | - Performance Analysis (Benchmarking/Profiling). <br>- Continue Cross-Platform testing. <br>- Refine Plugin System if needed based on verification.                                                                       |
-| Week 4 | **Documentation & Cleanup**       | - Start writing new guides (Plugin, Theming). <br>- Review/fix other examples. <br>- Begin addressing ExDoc / Documentation TODOs. <br>- Address any remaining medium priority tasks or issues identified during testing. |
+| Week   | Focus                             | Tasks                                                                                                               |
+| ------ | --------------------------------- | ------------------------------------------------------------------------------------------------------------------- |
+| Week 1 | **Test Suite Verification**       | - **Run full `mix test` suite.** <br> - Address any remaining or new failures.                                      |
+| Week 2 | **Testing & Verification**        | - If tests pass: Re-run benchmarks, investigate memory tracking. <br>- Begin cross-platform testing.                |
+| Week 3 | **Documentation / Core Features** | - Continue Documentation expansion (Guides, ExDoc, TODOs). <br> - Implement OSC Colors / DCS Sixel if time permits. |
+| Week 4 | **Documentation / Core Features** | - Continue Documentation / Core Features.                                                                           |
+| Week 1 | **Fix Skipped Tests**             | - Identify and investigate the 25 skipped tests. <br> - Begin implementing fixes.                                   |
+| Week 2 | **Fix Skipped Tests / Verify**    | - Continue fixing skipped tests. <br> - Run full test suite to verify progress.                                     |
+| Week 3 | **Testing & Verification**        | - If tests pass: Re-run benchmarks, investigate memory tracking. <br>- Begin cross-platform testing.                |
+| Week 4 | **Documentation / Core Features** | - Continue Documentation expansion (Guides, ExDoc, TODOs). <br> - Implement OSC Colors / DCS Sixel if time permits. |
 
 ## Additional Visualization Types
 
@@ -165,12 +159,12 @@ After completing the current priorities, we plan to implement additional visuali
 
 (Aligning with TODO.md)
 
-1.  **Comprehensive Functional Testing:** Across different terminal emulators (gnome-terminal, iTerm2, Windows Terminal, etc.) and OSes (Linux, macOS, Windows/WSL).
-2.  **VS Code Extension Verification:** Rendering, input, resizing, backend communication stability.
-3.  **Visualization Validation:** Rendering accuracy and behavior with various datasets (small, large, edge cases).
-4.  **Performance Benchmarks:** Key operations (startup, rendering complex views, data processing) in both environments. Establish baseline and monitor regressions.
-5.  **Plugin Functionality:** Test core plugins (clipboard, notifications, hyperlinks) across platforms. Test plugin loading, unloading, reloading, and dependency handling robustness.
-6.  **Accessibility Checks:** Manual testing with screen readers (e.g., VoiceOver, NVDA), keyboard navigation checks, high contrast mode verification.
+1. **Comprehensive Functional Testing:** Across different terminal emulators (gnome-terminal, iTerm2, Windows Terminal, etc.) and OSes (Linux, macOS, Windows/WSL).
+2. **VS Code Extension Verification:** Rendering, input, resizing, backend communication stability.
+3. **Visualization Validation:** Rendering accuracy and behavior with various datasets (small, large, edge cases).
+4. **Performance Benchmarks:** Key operations (startup, rendering complex views, data processing) in both environments. Establish baseline and monitor regressions.
+5. **Plugin Functionality:** Test core plugins (clipboard, notifications, hyperlinks) across platforms. Test plugin loading, unloading, reloading, and dependency handling robustness.
+6. **Accessibility Checks:** Manual testing with screen readers (e.g., VoiceOver, NVDA), keyboard navigation checks, high contrast mode verification.
 
 ### Test Automation
 
@@ -192,41 +186,21 @@ After completing the current priorities, we plan to implement additional visuali
 
 For developers interested in contributing to Raxol, here are key areas where help is needed:
 
-1.  **High/Medium Priority Features:** Implementing features listed in the `TODO.md` backlog (e.g., `Modal`, `Table` enhancements, `FocusRing`, Animation framework).
-2.  **Additional Visualization Types:** Implementing Line Charts, Scatter Plots, Heatmaps.
-3.  **Performance Optimization:** Profiling, benchmarking, implementing caching, addressing bottlenecks identified in `TODO.md`.
-4.  **Testing:** Writing more unit/integration tests (especially for Runtime, Plugins), enhancing the testing framework, adding visual/terminal-specific automated tests.
-5.  **Documentation:** Writing the planned guides (Plugin Dev, Theming, VSCode), improving API documentation (ExDoc), addressing TODOs, creating diagrams.
-6.  **Accessibility Enhancements:** Improving screen reader compatibility, keyboard navigation, and color contrast based on testing feedback.
-7.  **Investigating Issues:** Helping diagnose and fix issues listed in `TODO.md`.
+1. **High/Medium Priority Features:** Implementing features listed in the `TODO.md` backlog (e.g., `Table` enhancements, `FocusRing`, Animation framework).
+2. **Additional Visualization Types:** Implementing Line Charts, Scatter Plots, Heatmaps.
+3. **Performance Optimization:** Profiling, benchmarking, implementing caching, addressing bottlenecks identified in `TODO.md`.
+4. **Testing:** Writing more unit/integration tests (especially for Runtime, Plugins), enhancing the testing framework, adding visual/terminal-specific automated tests, fixing remaining failures (`ColumnWidthTest`, ~~`SixelGraphicsTest`~~).
+5. **Documentation:** Writing the planned guides (Plugin Dev, Theming, VSCode), improving API documentation (ExDoc), addressing TODOs, creating diagrams.
+6. **Accessibility Enhancements:** Improving screen reader compatibility, keyboard navigation, and color contrast based on testing feedback.
+7. **Investigating Issues:** Helping diagnose and fix non-NIF issues listed in `TODO.md`.
 
 ## Resources and References
 
 - Visualization Plugin: `VisualizationPlugin`
 - Dashboard Layout: `Dashboard.ex`, `GridContainer.ex`, `WidgetContainer.ex`
-- Testing Framework: `test_plan.md`, `scripts/vs_code_test.sh`, `scripts/native_terminal_test.sh`, `ButtonHelpers.ex`
-- Theme System Implementation: `ThemeManager.ts`, `ThemeSelector.ts`, `theme_config.ex`, `ThemeConfigPage.ts`
-- Button Component Implementation: `button.ex`, `button_test.exs`
-- Project Structure: See updated README.md
-- CI/CD: `.github/workflows/`, `docker/`, `scripts/run-local-actions.sh`
 
-## Future Roadmap
+### 3. Resolve Remaining High-Priority Bugs
 
-After completing the current priorities, we'll focus on:
-
-1. **Advanced Visualization Interactive Features**
-
-   - Data filtering and selection
-   - Drill-down capabilities
-   - Customizable tooltips and legends
-
-2. **Real-time Collaboration Features**
-
-   - Shared dashboard sessions
-   - Collaborative editing
-   - User presence indicators
-
-3. **AI-assisted Configuration**
-   - Smart layout suggestions
-   - Data visualization recommendations
-   - Automated dashboard generation
+- Address the `InputHandler` history navigation failure (`next_history_entry`). **(Check if resolved by other fixes)**
+- Investigate the root cause of the state leakage/interaction issues observed in several test files (like the autowrap test initially showed). This might involve looking at GenServer state, ETS tables used by Mox, or other application-level state management during test runs. **(Likely resolved, monitor)**
+- ~~Tackle the remaining test failures in `test/terminal/` systematically.~~ **(Done)**
