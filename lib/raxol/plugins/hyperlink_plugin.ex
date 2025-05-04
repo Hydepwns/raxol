@@ -53,6 +53,21 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
+  def handle_output(%__MODULE__{} = plugin, output) do
+    # Find URLs using a simple regex (could be more robust)
+    # Basic URL regex (adjust as needed)
+    url_regex = ~r{(https?://[\w./?=&\-]+)}
+
+    # Replacement function should only take one argument (the match)
+    modified_output = String.replace(output, url_regex, fn url ->
+      create_hyperlink(url) # Wrap found URL
+    end)
+
+    # Return the modified output (or original if no URLs found)
+    {:ok, plugin, modified_output}
+  end
+
+  @impl Raxol.Plugins.Plugin
   def handle_mouse(%__MODULE__{} = plugin_state, event, rendered_cells) do
     # Only handle left clicks for now
     case event do

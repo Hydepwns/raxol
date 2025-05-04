@@ -49,9 +49,9 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
 
       # Access the struct field directly
       charset_state = emulator.charset_state
-      # Check struct fields inside g_sets map
-      assert charset_state.g_sets.g1 == :dec_special_graphics
-      assert charset_state.g_sets.g0 == :us_ascii
+      # Check struct fields directly
+      assert charset_state.g1 == :dec_special_graphics
+      assert charset_state.g0 == :us_ascii
 
       # Invoke G1 (SO)
       {emulator, ""} = Emulator.process_input(emulator, "\\x0E")
@@ -75,5 +75,30 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
 
     # Lock Shift (LS1R, LS2, LS2R, LS3, LS3R) tests might also require specific handling.
     # test "handles lock shift" do ...
+
+    test "handles character set switching and invoking with designator" do
+      emulator = Emulator.new(80, 24)
+      # Set G0 to US ASCII (ESC ( B)
+      {emulator, ""} = Emulator.process_input(emulator, "\\e(B")
+      # Set G1 to DEC Special Graphics (ESC ) 0)
+      {emulator, ""} = Emulator.process_input(emulator, "^[)0") # Designate DEC Special Graphics to G1
+      charset_state = emulator.charset_state # Capture charset state
+      assert charset_state.g1 == :dec_special_graphics
+
+      # Invoke G1 into GL (shift out)
+      {emulator, ""} = Emulator.process_input(emulator, "\\x0E")
+      # Access struct field
+      charset_state_g1 = emulator.charset_state
+      # Use helper
+      assert CharacterSets.get_active_charset(charset_state_g1) ==
+               :dec_special_graphics
+
+      # Invoke G0 (SI)
+      {emulator, ""} = Emulator.process_input(emulator, "\\x0F")
+      # Access struct field
+      charset_state_g0 = emulator.charset_state
+      # Use helper
+      assert CharacterSets.get_active_charset(charset_state_g0) == :us_ascii
+    end
   end
 end

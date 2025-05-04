@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   attributes, character sets, and screen modes.
   """
 
+  require Logger
   alias Raxol.Terminal.ANSI.{CharacterSets, ScreenModes}
 
   @type saved_state :: %{
@@ -84,5 +85,27 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   @spec count(state_stack()) :: non_neg_integer()
   def count(stack) do
     length(stack)
+  end
+
+  @doc """
+  Applies specified fields from restored data onto the current emulator state.
+  """
+  @spec apply_restored_data(map(), map() | nil, list(atom())) :: map()
+  def apply_restored_data(emulator, nil, _fields_to_restore) do
+    # No data to restore, return emulator unchanged
+    Logger.debug("[ApplyRestore] No data to restore.") # Log
+    emulator
+  end
+
+  def apply_restored_data(emulator, restored_data, fields_to_restore) do
+    Logger.debug("[ApplyRestore] Restoring fields: #{inspect(fields_to_restore)} from data: #{inspect(restored_data)}") # Log
+    Enum.reduce(fields_to_restore, emulator, fn field, acc_emulator ->
+      if Map.has_key?(restored_data, field) do
+        Logger.debug("[ApplyRestore] Applying field: #{field} with value: #{inspect(Map.get(restored_data, field))}") # Log
+        Map.put(acc_emulator, field, Map.get(restored_data, field))
+      else
+        acc_emulator
+      end
+    end)
   end
 end

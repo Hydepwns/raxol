@@ -10,9 +10,12 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
 
   @doc """
   Processes input when the parser is in the :osc_string state.
+  Collects the OSC string until ST (ESC \) or BEL.
   """
   @spec handle(Emulator.t(), State.t(), binary()) ::
-          {:continue, Emulator.t(), State.t(), binary()} | {:handled, Emulator.t()}
+          {:continue, Emulator.t(), State.t(), binary()}
+          | {:finished, Emulator.t(), State.t()}
+          | {:incomplete, Emulator.t(), State.t()}
   def handle(
         emulator,
         %State{state: :osc_string} = parser_state,
@@ -20,9 +23,10 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
       ) do
     # IO.inspect({:parse_loop_osc_string, parser_state.state, input}, label: "DEBUG_PARSER")
     case input do
-      # Incomplete
       <<>> ->
-        {:handled, emulator}
+        # Incomplete OSC string - return current state
+        Logger.debug("[Parser] Incomplete OSC string, input ended.")
+        {:incomplete, emulator, parser_state}
 
       # String Terminator (ST - ESC \) -- Use escape_char check first
       <<27, rest_after_esc::binary>> ->

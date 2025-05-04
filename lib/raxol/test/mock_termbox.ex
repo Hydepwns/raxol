@@ -29,6 +29,7 @@ defmodule Raxol.Test.MockTermbox do
     {:ok, 80, 24}
   end
 
+  @spec init(opts :: keyword()) :: {:ok, pid()}
   def init(opts \\ []) do
     owner = Keyword.get(opts, :owner, self())
     Logger.debug("MockTermbox: init called with owner: #{inspect(owner)}")

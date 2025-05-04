@@ -31,7 +31,7 @@ defmodule Raxol.UI.Layout.Panels do
 
     # panel = %{type: :panel, attrs: attrs, children: children}, # Unused
     # TODO: Actual panel processing logic - applying styles, layout, etc.
-    %{type: :processed_panel, attrs: attrs, children: styled_children}
+    [%{type: :processed_panel, attrs: attrs, children: styled_children}]
   end
 
   @doc """
@@ -58,7 +58,9 @@ defmodule Raxol.UI.Layout.Panels do
     }
 
     # Measure children content size (treat as a column for measurement)
-    children_size = Engine.measure_element(%{type: :column, children: children}, content_available_space)
+    # Ensure the map has :attrs for measure_element pattern matching
+    column_for_measurement = %{type: :column, attrs: %{}, children: children}
+    children_size = Engine.measure_element(column_for_measurement, content_available_space)
 
     # Determine base width/height from content + borders
     # Add 2 for left/right borders

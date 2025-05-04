@@ -33,7 +33,7 @@ defmodule RaxolWeb.ConnCase do
 
   setup tags do
     # Start the Repo if not already started (needed for Sandbox)
-    # {:ok, _} = Ecto.Adapters.SQL.Sandbox.start_owner!(Raxol.Repo, shared: not tags[:async])
+    {:ok, _} = Ecto.Adapters.SQL.Sandbox.start_owner!(Raxol.Repo, shared: not tags[:async])
 
     # Setup Ecto sandbox
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)

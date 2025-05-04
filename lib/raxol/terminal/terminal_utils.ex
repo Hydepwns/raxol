@@ -23,7 +23,7 @@ defmodule Raxol.Terminal.TerminalUtils do
 
     # Try to detect dimensions (multiple methods with fallbacks)
     {width, height} =
-      with {:error, _} <- detect_with_io(),
+      with {:error, _} <- detect_with_io(:io),
            {:error, _} <- detect_with_termbox(),
            {:error, _} <- detect_with_stty() do
         Logger.warning("Could not determine terminal dimensions. Using defaults.")
@@ -76,10 +76,10 @@ defmodule Raxol.Terminal.TerminalUtils do
   # Private helper functions
 
   # Try to detect with :io.columns and :io.rows (most reliable)
-  defp detect_with_io do
+  defp detect_with_io(io_facade \\ :io) do
     try do
-      with {:ok, width} when is_integer(width) and width > 0 <- :io.columns(),
-           {:ok, height} when is_integer(height) and height > 0 <- :io.rows() do
+      with {:ok, width} when is_integer(width) and width > 0 <- apply(io_facade, :columns, []),
+           {:ok, height} when is_integer(height) and height > 0 <- apply(io_facade, :rows, []) do
         {:ok, width, height}
       else
         {:error, reason} ->

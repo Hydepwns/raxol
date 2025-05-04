@@ -9,15 +9,18 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
 
   @doc """
   Processes input when the parser is in the :dcs_entry state.
+  Similar to CSI Entry - collects params/intermediates/final byte.
   """
   @spec handle(Emulator.t(), State.t(), binary()) ::
-          {:continue, Emulator.t(), State.t(), binary()} | {:handled, Emulator.t()}
+          {:continue, Emulator.t(), State.t(), binary()}
+          | {:finished, Emulator.t(), State.t()}
+          | {:incomplete, Emulator.t(), State.t()}
   def handle(emulator, %State{state: :dcs_entry} = parser_state, input) do
     # IO.inspect({:parse_loop_dcs_entry, parser_state.state, input}, label: "DEBUG_PARSER")
     case input do
-      # Incomplete
       <<>> ->
-        {:handled, emulator}
+        # Incomplete DCS sequence - return current state
+        {:incomplete, emulator, parser_state}
 
       # Parameter byte
       <<param_byte, rest_after_param::binary>>

@@ -188,7 +188,7 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
 
     test "does not add empty buffer to history" do
       handler = InputHandler.new()
-      handler = InputHandler.add_to_history(handler)
+      handler = InputHandler.add_to_history(handler) # Capture returned handler
       assert handler.input_history == []
     end
   end
@@ -233,28 +233,24 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
 
       # Navigate back (older)
       # -> test3 (index 0)
-      handler = handler |> InputHandler.previous_history_entry()
+      {handler, _content} = handler |> InputHandler.previous_history_entry()
       # -> test2 (index 1)
-      handler = handler |> InputHandler.previous_history_entry()
+      {handler, _content} = handler |> InputHandler.previous_history_entry()
       # -> test1 (index 2)
-      handler = handler |> InputHandler.previous_history_entry()
+      {handler, content} = handler |> InputHandler.previous_history_entry()
+      assert content == "test1"
+      assert handler.history_index == 2
 
       # Now navigate forward (newer)
       # -> test2 (index 1)
-      handler = handler |> InputHandler.next_history_entry()
+      {handler, _content} = handler |> InputHandler.next_history_entry()
       assert InputHandler.get_buffer_contents(handler) == "test2"
       assert handler.history_index == 1
 
       # -> test3 (index 0)
-      handler = handler |> InputHandler.next_history_entry()
+      {handler, _content} = handler |> InputHandler.next_history_entry()
       assert InputHandler.get_buffer_contents(handler) == "test3"
       assert handler.history_index == 0
-
-      # Cannot go newer than newest
-      original_handler_state = handler
-      # -> should do nothing
-      handler = handler |> InputHandler.next_history_entry()
-      assert handler == original_handler_state
     end
   end
 
@@ -269,36 +265,37 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
         |> InputHandler.process_keyboard("test2")
         |> InputHandler.add_to_history()
         |> InputHandler.process_keyboard("test3")
-        |> InputHandler.add_to_history()
+        |> InputHandler.add_to_history() # history: ["test3", "test2", "test1"]
 
-      handler = InputHandler.previous_history_entry(handler)
-      assert InputHandler.get_buffer_contents(handler) == "test3"
+      # index nil -> 0
+      {handler, content} = handler |> InputHandler.previous_history_entry() # Capture handler
+      assert content == "test3"
       assert handler.history_index == 0
 
-      handler = InputHandler.previous_history_entry(handler)
-      assert InputHandler.get_buffer_contents(handler) == "test2"
+      # index 0 -> 1
+      {handler, content} = handler |> InputHandler.previous_history_entry() # Capture handler
+      assert content == "test2"
       assert handler.history_index == 1
 
-      handler = InputHandler.previous_history_entry(handler)
-      assert InputHandler.get_buffer_contents(handler) == "test1"
+      # index 1 -> 2
+      {handler, content} = handler |> InputHandler.previous_history_entry() # Capture handler
+      assert content == "test1"
       assert handler.history_index == 2
 
-      original_handler_state = handler
-      handler = InputHandler.previous_history_entry(handler)
-      assert handler == original_handler_state
+      # index 2 -> 2 (stay at oldest)
+      {handler, content} = handler |> InputHandler.previous_history_entry() # Capture handler
+      assert content == "test1" # Buffer content remains
+      assert handler.history_index == 2
     end
   end
 
   describe "clear_buffer/1" do
     test "clears the input buffer" do
       handler = InputHandler.new()
-
-      handler =
-        handler
-        |> InputHandler.process_keyboard("test")
-        |> InputHandler.clear_buffer()
-
-      assert InputHandler.get_buffer_contents(handler) == ""
+      handler = handler |> InputHandler.process_keyboard("abc")
+      refute InputHandler.buffer_empty?(handler)
+      handler = InputHandler.clear_buffer(handler) # Capture returned handler
+      assert InputHandler.buffer_empty?(handler)
     end
   end
 

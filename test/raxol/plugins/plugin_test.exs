@@ -56,7 +56,7 @@ defmodule Raxol.Plugins.PluginTest do
       {:ok, manager} = PluginManager.load_plugin(manager, HyperlinkPlugin)
 
       {:ok, _manager} =
-        PluginManager.process_mouse(manager, {:click, 1, 10, 10})
+        PluginManager.process_mouse(manager, {:click, 1, 10, 10}, %{})
     end
   end
 
@@ -64,7 +64,7 @@ defmodule Raxol.Plugins.PluginTest do
     test "initializes correctly" do
       {:ok, plugin} = HyperlinkPlugin.init(%{})
       assert plugin.name == "hyperlink"
-      assert plugin.version == "1.0.0"
+      assert plugin.version == "0.1.0"
       assert plugin.enabled == true
     end
 

@@ -103,7 +103,7 @@ defmodule Raxol.UI.Layout.Containers do
           child_elements = Engine.process_element(child, child_space, [])
 
           # Return new x position and accumulated elements
-          {current_x + dims.width + effective_gap, [child_elements | elements]}
+          {current_x + dims.width + effective_gap, child_elements ++ elements}
         end)
 
       # Flatten and add to accumulator
@@ -209,7 +209,7 @@ defmodule Raxol.UI.Layout.Containers do
           child_elements = Engine.process_element(child, child_space, [])
 
           # Return new y position and accumulated elements
-          {current_y + dims.height + effective_gap, [child_elements | elements]}
+          {current_y + dims.height + effective_gap, child_elements ++ elements}
         end)
 
       # Flatten and add to accumulator

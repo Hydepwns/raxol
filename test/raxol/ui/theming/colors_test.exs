@@ -38,9 +38,9 @@ defmodule Raxol.UI.Theming.ColorsTest do
 
   describe "lighten/2" do
     test "lightens colors by percentage" do
-      assert Colors.lighten("#FF0000", 20) == "#FF6666"
+      assert Colors.lighten("#FF0000", 20) == "#FF3333"
       assert Colors.lighten("#00FF00", 50) == "#80FF80"
-      assert Colors.lighten("#0000FF", 10) == "#3333FF"
+      assert Colors.lighten("#0000FF", 10) == "#1A1AFF"
 
       # Black lightened by 50% should be gray
       assert Colors.lighten("#000000", 50) == "#808080"
@@ -50,7 +50,7 @@ defmodule Raxol.UI.Theming.ColorsTest do
     end
 
     test "lightens named colors" do
-      assert Colors.lighten(:red, 20) == "#FF6666"
+      assert Colors.lighten(:red, 20) == "#FF3333"
       assert Colors.lighten(:black, 50) == "#808080"
     end
 

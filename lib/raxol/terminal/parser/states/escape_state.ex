@@ -12,19 +12,22 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
   Processes input when the parser is in the :escape state.
   """
   @spec handle(Emulator.t(), State.t(), binary()) ::
-          {:continue, Emulator.t(), State.t(), binary()} | {:handled, Emulator.t()}
+          {:continue, Emulator.t(), State.t(), binary()}
+          | {:finished, Emulator.t(), State.t()}
+          | {:incomplete, Emulator.t(), State.t()}
   def handle(emulator, %State{state: :escape} = parser_state, input) do
     case input do
       # Empty input
       <<>> ->
         # IO.inspect({:parse_loop_escape_empty, parser_state.state, ""}, label: "DEBUG_PARSER")
-        # Incomplete
-        {:handled, emulator}
+        # Incomplete - return current state
+        {:incomplete, emulator, parser_state}
 
       # CSI
       <<91, rest_after_csi::binary>> ->
         # IO.inspect({:parse_loop_escape_csi, parser_state.state, input}, label: "DEBUG_PARSER")
-        next_parser_state = %{parser_state | state: :csi_entry}
+        # Clear buffers for the new sequence
+        next_parser_state = %{parser_state | state: :csi_entry, params_buffer: "", intermediates_buffer: ""}
         {:continue, emulator, next_parser_state, rest_after_csi}
 
       # OSC

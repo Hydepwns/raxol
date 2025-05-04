@@ -36,11 +36,12 @@ defmodule Raxol.Test.Unit do
       import Raxol.Test.Unit
       import Raxol.Test.Unit.Assertions
 
-      setup do
-        start_supervised!(Manager)
-        start_supervised!(EventLoop)
-        :ok
-      end
+      # setup do
+      #   start_supervised!(Manager)
+      #   start_supervised!(EventLoop)
+      #   :ok
+      # end
+      # The setup block is removed as TestHelper.setup_test_env handles this.
     end
   end
 
@@ -54,17 +55,11 @@ defmodule Raxol.Test.Unit do
   end
 
   @doc """
-  Sets up a component for isolated testing.
-
-  This function:
-  1. Creates a mock event system
-  2. Initializes the component
-  3. Sets up state tracking
-  4. Configures test subscriptions
+  Sets up a component for isolated testing with initial properties.
   """
-  def setup_isolated_component(component) do
+  def setup_isolated_component(component, props) when is_map(props) do
     # Initialize component with test props
-    state = component.init(%{})
+    {:ok, state} = component.init(props)
 
     # Create a test process to track events and state
     test_pid = self()
@@ -84,17 +79,37 @@ defmodule Raxol.Test.Unit do
      }}
   end
 
+  # Keep setup_isolated_component/1 for default props
+  def setup_isolated_component(component) do
+    setup_isolated_component(component, %{})
+  end
+
   @doc """
   Simulates an event being sent to a component.
 
   Returns the updated state and any emitted commands.
   """
   def simulate_event(component, %Event{} = event) do
-    {new_state, commands} =
-      component.module.handle_event(event, component.state)
+    # Call handle_event/3, passing empty map as opts for now
+    IO.puts("Simulating event: #{inspect(event)}")
+    IO.puts("Initial component state: #{inspect(component.state)}")
+    result = component.module.handle_event(event, component.state, %{})
+    IO.puts("handle_event result: #{inspect(result)}")
 
-    # Update component state
-    updated_component = %{component | state: new_state}
+    {new_state_map, commands} =
+      case result do
+        {:update, updated_state, cmds} -> {updated_state, cmds}
+        {:update, updated_state} -> {updated_state, []} # Assume no commands if not specified
+        {:noreply, state} -> {state, []}
+        {:handled, state} -> {state, []}
+        :passthrough -> {component.state, []} # State unchanged, no commands
+        other ->
+          raise "Unexpected return value from handle_event/3: #{inspect(other)}"
+      end
+
+    # Update component map with new state
+    updated_component = %{component | state: new_state_map}
+    IO.puts("Final component state: #{inspect(updated_component.state)}") # Log final state
 
     # Track commands for assertions
     send(self(), {:commands, commands})

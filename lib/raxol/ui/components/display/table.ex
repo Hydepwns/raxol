@@ -123,8 +123,11 @@ defmodule Raxol.UI.Components.Display.Table do
     # Calculate max_height based on style in attrs
     component_style = Map.get(attrs, :style, %{})
     theme = context.theme
-    theme_style = Theme.component_style(theme, :table)
-    base_style = Raxol.Style.merge(theme_style, component_style)
+    theme_style_def = Theme.component_style(theme, :table)
+    # Convert style definitions to Style structs before merging
+    theme_style_struct = Raxol.Style.new(theme_style_def)
+    component_style_struct = Raxol.Style.new(component_style)
+    base_style = Raxol.Style.merge(theme_style_struct, component_style_struct)
     max_height = get_style_prop(base_style, :height)
     current_visible_height = visible_height(%{max_height: max_height})
 
@@ -170,8 +173,11 @@ defmodule Raxol.UI.Components.Display.Table do
     # Use style from attrs, merge with theme default
     component_style = Map.get(attrs, :style, %{})
     theme = context.theme
-    theme_style = Theme.component_style(theme, :table)
-    base_style = Raxol.Style.merge(theme_style, component_style)
+    theme_style_def = Theme.component_style(theme, :table)
+    # Convert style definitions to Style structs before merging
+    theme_style_struct = Raxol.Style.new(theme_style_def)
+    component_style_struct = Raxol.Style.new(component_style)
+    base_style = Raxol.Style.merge(theme_style_struct, component_style_struct)
 
     # Remove header extraction here, Layout.Table should handle it from columns_config
     # headers = Enum.map(columns_config, &Map.get(&1, :header, \"\"))

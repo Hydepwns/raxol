@@ -105,6 +105,9 @@ defmodule Raxol.Terminal.Config.Validation do
   defp validate_type(value, :integer, _path) when is_integer(value),
     do: {:ok, value}
 
+  defp validate_type(value, :float, _path) when is_float(value),
+    do: {:ok, value}
+
   defp validate_type(value, :boolean, _path) when is_boolean(value),
     do: {:ok, value}
 

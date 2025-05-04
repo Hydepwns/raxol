@@ -12,7 +12,7 @@ defmodule Raxol.Test.TestHelper do
   use ExUnit.CaseTemplate
   import ExUnit.Callbacks
   alias Raxol.Core.Runtime.{EventLoop}
-  alias Raxol.Core.Events.{Event, Manager}
+  alias Raxol.Core.Events.{Event}
   alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
   require Logger
 
@@ -23,8 +23,9 @@ defmodule Raxol.Test.TestHelper do
   """
   def setup_test_env do
     # Start event system
-    {:ok, event_pid} = start_supervised(Manager)
-    {:ok, loop_pid} = start_supervised(EventLoop)
+    # {:ok, event_pid} = start_supervised(Raxol.Core.Events.Manager) # REPLACED
+    Raxol.Core.Events.Manager.init()
+    # {:ok, loop_pid} = start_supervised(EventLoop) # REMOVED
     # Start plugin manager
     {:ok, plugin_manager_pid} = start_supervised(PluginManager)
 
@@ -32,8 +33,8 @@ defmodule Raxol.Test.TestHelper do
     terminal = setup_test_terminal()
 
     %{
-      event_manager: event_pid,
-      event_loop: loop_pid,
+      # event_manager: event_pid, # REMOVED
+      # event_loop: loop_pid, # REMOVED
       terminal: terminal,
       plugin_manager: plugin_manager_pid
     }
@@ -155,21 +156,16 @@ defmodule Raxol.Test.TestHelper do
   @dialyzer {:nowarn_function, cleanup_test_env: 1}
   def cleanup_test_env(context) do
     # Stop supervised processes
-    if context[:event_manager] do
-      _ = stop_supervised(Manager)
-    end
+    # NOTE: Removing these as linked processes should stop when the test process exits,
+    # and calling stop_supervised from on_exit callback causes errors.
+    # if context[:plugin_manager] do
+    #   _ = stop_supervised(PluginManager) # REMOVED
+    # end
 
-    if context[:event_loop] do
-      _ = stop_supervised(EventLoop)
-    end
-
-    # Stop plugin manager if started
-    if context[:plugin_manager] do
-      _ = stop_supervised(PluginManager)
-    end
-
-    # Clear any remaining messages
-    flush_messages()
+    # Cleanup test terminal resources if created
+    # if context[:terminal] do
+    #   cleanup_test_terminal(context[:terminal]) # REMOVED - function does not exist
+    # end
 
     :ok
   end

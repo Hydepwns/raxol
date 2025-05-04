@@ -44,8 +44,10 @@ defmodule Raxol.UI.Components.Display.TableTest do
         rows: [[1, "Alice"], [2, "Bob"]]
       }
 
-      component = Table.create(props)
-      elements = Table.render(component, default_context())
+      {:ok, component_state} = Table.init(props)
+      # Assume context has theme
+      context_with_props = Map.put(default_context(), :attrs, props)
+      elements = Table.render(component_state, context_with_props)
 
       # Check header rendering (y=1 assuming top border y=0)
       header_line = get_line_text(elements, 1)
@@ -73,8 +75,9 @@ defmodule Raxol.UI.Components.Display.TableTest do
         border_style: :none
       }
 
-      component = Table.create(props)
-      elements = Table.render(component, default_context())
+      {:ok, component_state} = Table.init(props)
+      context_with_props = Map.put(default_context(), :attrs, props)
+      elements = Table.render(component_state, context_with_props)
 
       # No border elements should exist
       assert Enum.empty?(Enum.filter(elements, &(&1.text =~ ~r/[┌┐└┘─│┼┬┴]/)))
@@ -102,9 +105,9 @@ defmodule Raxol.UI.Components.Display.TableTest do
         width: :auto
       }
 
-      component = Table.create(props)
-      # Use a width that forces calculation but is large enough
-      elements = Table.render(component, default_context(100))
+      {:ok, component_state} = Table.init(props)
+      context_with_props = Map.put(default_context(100), :attrs, props)
+      elements = Table.render(component_state, context_with_props)
 
       # Header line (y=0)
       header_line = get_line_text(elements, 0)
@@ -127,8 +130,9 @@ defmodule Raxol.UI.Components.Display.TableTest do
         width: :auto
       }
 
-      component = Table.create(props)
-      elements = Table.render(component, default_context(100))
+      {:ok, component_state} = Table.init(props)
+      context_with_props = Map.put(default_context(100), :attrs, props)
+      elements = Table.render(component_state, context_with_props)
 
       header_line = get_line_text(elements, 0)
       assert header_line == "H1    H2          "
@@ -147,8 +151,9 @@ defmodule Raxol.UI.Components.Display.TableTest do
         width: :auto
       }
 
-      component = Table.create(props)
-      elements = Table.render(component, default_context(100))
+      {:ok, component_state} = Table.init(props)
+      context_with_props = Map.put(default_context(100), :attrs, props)
+      elements = Table.render(component_state, context_with_props)
 
       header_line = get_line_text(elements, 0)
       assert header_line == "Fixed Auto  Long Auto         "
@@ -168,10 +173,9 @@ defmodule Raxol.UI.Components.Display.TableTest do
         width: :auto
       }
 
-      component = Table.create(props)
-      # Available content width = 20 - (2 columns + 1 border) = 17
-      # Initial widths: 8, 8 (total 16) - fits
-      elements = Table.render(component, default_context(20))
+      {:ok, component_state} = Table.init(props)
+      context_with_props_20 = Map.put(default_context(20), :attrs, props)
+      elements = Table.render(component_state, context_with_props_20)
       header_line = get_line_text(elements, 1)
       # Exact fit
       assert header_line == "│Header A│Header B│"
@@ -179,7 +183,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
       # Available content width = 15 - 3 = 12
       # Initial widths: 8, 8 (total 16) -> needs shrink by 4
       # Should shrink largest first (both 8) -> 7, 7 (total 14) -> needs shrink by 2 -> 6, 6 (total 12)
-      elements_narrow = Table.render(component, default_context(15))
+      context_with_props_15 = Map.put(default_context(15), :attrs, props)
+      elements_narrow = Table.render(component_state, context_with_props_15)
       header_line_narrow = get_line_text(elements_narrow, 1)
       # Truncated to 6, 6
       assert header_line_narrow == "│Header│Header│"
@@ -198,11 +203,12 @@ defmodule Raxol.UI.Components.Display.TableTest do
         width: :auto
       }
 
-      component = Table.create(props)
+      {:ok, component_state} = Table.init(props)
       # Available content width = 15 - 3 = 12
       # Initial widths 1, 1 (total 2) -> needs expand by 10
       # Expands to 6, 6
-      elements = Table.render(component, default_context(15))
+      context_with_props = Map.put(default_context(15), :attrs, props)
+      elements = Table.render(component_state, context_with_props)
       header_line = get_line_text(elements, 1)
       assert header_line == "│A     │B     │"
     end
@@ -216,9 +222,9 @@ defmodule Raxol.UI.Components.Display.TableTest do
         column_widths: [10],
         border_style: :none
       }
-
-      component = Table.create(props)
-      elements = Table.render(component, default_context())
+      {:ok, component_state} = Table.init(props)
+      context_with_props = Map.put(default_context(20), :attrs, props)
+      elements = Table.render(component_state, context_with_props)
       header_line = get_line_text(elements, 0)
       data_line = get_line_text(elements, 1)
       assert header_line == "Header     "
@@ -230,12 +236,12 @@ defmodule Raxol.UI.Components.Display.TableTest do
         headers: ["Header"],
         rows: [["Data"]],
         column_widths: [10],
-        alignments: :right,
-        border_style: :none
+        border_style: :none,
+        alignments: :right
       }
-
-      component = Table.create(props)
-      elements = Table.render(component, default_context())
+      {:ok, component_state} = Table.init(props)
+      context_with_props = Map.put(default_context(20), :attrs, props)
+      elements = Table.render(component_state, context_with_props)
       header_line = get_line_text(elements, 0)
       data_line = get_line_text(elements, 1)
       assert header_line == "    Header"
@@ -247,12 +253,12 @@ defmodule Raxol.UI.Components.Display.TableTest do
         headers: ["Header"],
         rows: [["Data"]],
         column_widths: [10],
-        alignments: :center,
-        border_style: :none
+        border_style: :none,
+        alignments: :center
       }
-
-      component = Table.create(props)
-      elements = Table.render(component, default_context())
+      {:ok, component_state} = Table.init(props)
+      context_with_props = Map.put(default_context(20), :attrs, props)
+      elements = Table.render(component_state, context_with_props)
       # "Header" len 6, pad 4 -> 2 left, 2 right
       header_line = get_line_text(elements, 0)
       # "Data" len 4, pad 6 -> 3 left, 3 right
@@ -284,12 +290,12 @@ defmodule Raxol.UI.Components.Display.TableTest do
         headers: ["Left", "Center", "Right"],
         rows: [["L", "C", "R"]],
         column_widths: [10, 10, 10],
-        alignments: [:left, :center, :right],
-        border_style: :none
+        border_style: :none,
+        alignments: [:left, :center, :right]
       }
-
-      component = Table.create(props)
-      elements = Table.render(component, default_context())
+      {:ok, component_state} = Table.init(props)
+      context_with_props = Map.put(default_context(40), :attrs, props)
+      elements = Table.render(component_state, context_with_props)
 
       header_line = get_line_text(elements, 0)
       data_line = get_line_text(elements, 1)
@@ -301,9 +307,14 @@ defmodule Raxol.UI.Components.Display.TableTest do
 
   describe "Styling Integration" do
     test "applies theme styles to header and data rows" do
-      props = %{headers: ["Head"], rows: [["Data"]], column_widths: [10]}
-      component = Table.create(props)
-      elements = Table.render(component, default_context())
+      props = %{
+        headers: ["Head"],
+        rows: [["Data"]],
+        column_widths: [10]
+      }
+      {:ok, component_state} = Table.init(props)
+      context_with_props = Map.put(default_context(20), :attrs, props)
+      elements = Table.render(component_state, context_with_props)
 
       # Find header cell element (y=1 because of top border)
       # Text includes padding

@@ -4,10 +4,11 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
   # Test implementation of Application behavior
   defmodule TestApp do
     use Raxol.Core.Runtime.Application
-    # import Raxol.View.Elements # Keep for now, but call explicitly
+    require Raxol.View.Elements
+    import Raxol.View.Elements # Import for cleaner syntax
 
     @impl true
-    def init(_context), do: {:ok, %{count: 0}}
+    def init(_context), do: %{count: 0}
 
     @impl true
     def update(message, state) do
@@ -17,16 +18,15 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
           :decrement -> Map.update!(state, :count, &(&1 - 1))
           _ -> state
         end
-      {:ok, new_state, []}
+      {new_state, []}
     end
 
     @impl true
     def view(state) do
-      # Call elements explicitly assuming locations
-      Raxol.View.Elements.panel title: "Counter" do
-        Raxol.View.Elements.row do
+      panel title: "Counter" do
+        row do
           Raxol.View.Components.button(label: "-", on_click: :decrement)
-          Raxol.View.Components.text(content: "Count: #{state.count}")
+          text("Count: #{state.count}")
           Raxol.View.Components.button(label: "+", on_click: :increment)
         end
       end
@@ -54,6 +54,12 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     # Only override init
     def init(_) do
       %{minimal: true}
+    end
+
+    # Override view to ensure correct call to text/1
+    @impl true
+    def view(_state) do
+      Raxol.Core.Renderer.View.text("Default view")
     end
   end
 

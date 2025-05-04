@@ -12,13 +12,15 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
   Processes input when the parser is in the :csi_entry state.
   """
   @spec handle(Emulator.t(), State.t(), binary()) ::
-          {:continue, Emulator.t(), State.t(), binary()} | {:handled, Emulator.t()}
+          {:continue, Emulator.t(), State.t(), binary()}
+          | {:finished, Emulator.t(), State.t()}
+          | {:incomplete, Emulator.t(), State.t()}
   def handle(emulator, %State{state: :csi_entry} = parser_state, input) do
     # IO.inspect({:parse_loop_csi_entry, parser_state.state, input}, label: "DEBUG_PARSER")
     case input do
-      # Incomplete
       <<>> ->
-        {:handled, emulator}
+        # Incomplete CSI sequence - return current state
+        {:incomplete, emulator, parser_state}
 
       # Parameter byte
       <<param_byte, rest_after_param::binary>>
@@ -60,8 +62,8 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
           parser_state
           | intermediates_buffer: parser_state.intermediates_buffer <> <<private_marker>>
         }
-        # Stay in csi_entry state
-        {:continue, emulator, next_parser_state, rest_after_private}
+        # Transition to csi_param state AFTER collecting marker
+        {:continue, emulator, %{next_parser_state | state: :csi_param}, rest_after_private}
 
       # Final byte
       <<final_byte, rest_after_final::binary>>
