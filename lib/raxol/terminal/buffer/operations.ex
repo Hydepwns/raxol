@@ -102,31 +102,47 @@ defmodule Raxol.Terminal.Buffer.Operations do
   @doc """
   Scrolls the buffer up by the specified number of lines, optionally within a specified scroll region.
   Handles cell manipulation.
-  Returns `{updated_cells, scrolled_off_lines}`.
+  Returns `{updated_buffer, scrolled_off_lines}`.
   """
   @spec scroll_up(
           ScreenBuffer.t(),
           non_neg_integer(),
           {non_neg_integer(), non_neg_integer()} | nil
-        ) :: {list(list(Cell.t())), list(list(Cell.t()))}
-  def scroll_up(%ScreenBuffer{} = buffer, lines, scroll_region \\ nil)
+        ) :: {ScreenBuffer.t(), list(list(Cell.t()))}
+  def scroll_up(%ScreenBuffer{} = buffer, lines, scroll_region_arg \\ nil)
       when lines > 0 do
-    effective_scroll_region = scroll_region || buffer.scroll_region
-    buffer_with_region = %{buffer | scroll_region: effective_scroll_region}
-
+    # Determine boundaries based *only* on the scroll_region_arg passed or buffer default
     {scroll_start, scroll_end} =
-      get_scroll_region_boundaries(buffer_with_region)
+      case scroll_region_arg do
+        {start, ending}
+        when is_integer(start) and is_integer(ending) and start <= ending ->
+          # Use valid argument directly, ensure within buffer bounds
+          {max(0, start), min(buffer.height - 1, ending)}
+
+        # Argument is nil or invalid, use buffer default (full height)
+        _ ->
+          {0, buffer.height - 1}
+      end
 
     visible_lines = scroll_end - scroll_start + 1
 
     if lines >= visible_lines do
       # If scrolling more than region size, clear region and return all old lines
-      {scroll_start, scroll_end} =
-        get_scroll_region_boundaries(%{buffer | scroll_region: effective_scroll_region})
       scrolled_off_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
-      empty_region_cells = List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
-      updated_cells = replace_region_content(buffer.cells, scroll_start, scroll_end, empty_region_cells)
-      {updated_cells, scrolled_off_lines}
+
+      empty_region_cells =
+        List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
+
+      updated_cells =
+        replace_region_content(
+          buffer.cells,
+          scroll_start,
+          scroll_end,
+          empty_region_cells
+        )
+
+      # Return the updated buffer struct and scrolled lines
+      {%{buffer | cells: updated_cells}, scrolled_off_lines}
     else
       scroll_region_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
       {scrolled_lines, remaining_lines} = Enum.split(scroll_region_lines, lines)
@@ -136,9 +152,17 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
       new_region_content = remaining_lines ++ empty_lines
 
-      # Return updated cells grid and the lines scrolled off
-      updated_cells = replace_region_content(buffer.cells, scroll_start, scroll_end, new_region_content)
-      {updated_cells, scrolled_lines}
+      # Return updated buffer struct and the lines scrolled off
+      updated_cells =
+        replace_region_content(
+          buffer.cells,
+          scroll_start,
+          scroll_end,
+          new_region_content
+        )
+
+      # Return the updated buffer struct and scrolled lines
+      {%{buffer | cells: updated_cells}, scrolled_lines}
     end
   end
 
@@ -153,7 +177,12 @@ defmodule Raxol.Terminal.Buffer.Operations do
           non_neg_integer(),
           {non_neg_integer(), non_neg_integer()} | nil
         ) :: ScreenBuffer.t()
-  def scroll_down(%ScreenBuffer{} = buffer, lines_to_insert, lines, scroll_region \\ nil)
+  def scroll_down(
+        %ScreenBuffer{} = buffer,
+        lines_to_insert,
+        lines,
+        scroll_region \\ nil
+      )
       when lines > 0 do
     effective_scroll_region = scroll_region || buffer.scroll_region
     buffer_with_region = %{buffer | scroll_region: effective_scroll_region}
@@ -165,54 +194,102 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
     if lines >= visible_lines do
       # If scrolling more than region size, clear region (no lines inserted)
-      empty_region_cells = List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
-      updated_cells = replace_region_content(buffer.cells, scroll_start, scroll_end, empty_region_cells)
+      empty_region_cells =
+        List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
+
+      updated_cells =
+        replace_region_content(
+          buffer.cells,
+          scroll_start,
+          scroll_end,
+          empty_region_cells
+        )
+
       %{buffer | cells: updated_cells}
     else
-      # Only proceed if we actually have lines to insert
+      # Handle scrollback and non-scrollback cases
       if lines_to_insert != [] do
-        # Ensure we don't insert more lines than requested/available space
+        # Insert lines FROM scrollback
         actual_lines_to_insert = Enum.take(lines_to_insert, lines)
-
         scroll_region_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
-        # Drop lines from the end to make space
-        shifted_lines = Enum.drop(scroll_region_lines, -length(actual_lines_to_insert))
+
+        shifted_lines =
+          Enum.drop(scroll_region_lines, -length(actual_lines_to_insert))
+
         new_region_content = actual_lines_to_insert ++ shifted_lines
 
-        updated_cells = replace_region_content(buffer.cells, scroll_start, scroll_end, new_region_content)
+        updated_cells =
+          replace_region_content(
+            buffer.cells,
+            scroll_start,
+            scroll_end,
+            new_region_content
+          )
+
         %{buffer | cells: updated_cells}
       else
-        # No lines provided from scrollback, buffer remains unchanged
-        buffer
+        # Insert BLANK lines (no scrollback)
+        blank_line = List.duplicate(Cell.new(), buffer.width)
+        blank_lines_to_insert = List.duplicate(blank_line, lines)
+
+        scroll_region_lines = Enum.slice(buffer.cells, scroll_start..scroll_end)
+        # Keep lines from the start, dropping lines from the end to make space
+        shifted_lines = Enum.take(scroll_region_lines, visible_lines - lines)
+        new_region_content = blank_lines_to_insert ++ shifted_lines
+
+        updated_cells =
+          replace_region_content(
+            buffer.cells,
+            scroll_start,
+            scroll_end,
+            new_region_content
+          )
+
+        %{buffer | cells: updated_cells}
       end
     end
   end
 
-  # Helper to clear a scroll region (internal)
+  # Helper to clear a scroll region by replacing its content (internal)
+  # This seems to be the CORRECT one used by insert/delete lines
   defp clear_scroll_region(
          %ScreenBuffer{} = buffer,
-         cells, # Pass cells grid explicitly
          scroll_start,
          scroll_end,
-         visible_lines
+         new_region_content,
+         # Scrollback currently unused here, but kept for signature clarity
+         _scrollback
        ) do
-    empty_region =
-      List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
-    # Returns only the updated cells grid
-    replace_region_content(cells, scroll_start, scroll_end, empty_region)
+    # This function should return the full buffer struct, not just cells
+    updated_cells =
+      replace_region_content(
+        buffer.cells,
+        scroll_start,
+        scroll_end,
+        new_region_content
+      )
+
+    %{buffer | cells: updated_cells}
   end
 
   # Helper to replace content within a scroll region (internal)
   # Operates directly on the cells list, returns the updated list.
-  defp replace_region_content(current_cells, scroll_start, scroll_end, new_content) do
+  defp replace_region_content(
+         current_cells,
+         scroll_start,
+         scroll_end,
+         new_content
+       ) do
     buffer_height = length(current_cells)
     lines_before = Enum.slice(current_cells, 0, scroll_start)
+
     lines_after =
       Enum.slice(
         current_cells,
         scroll_end + 1,
         buffer_height - (scroll_end + 1)
       )
+
     lines_before ++ new_content ++ lines_after
   end
 
@@ -393,11 +470,12 @@ defmodule Raxol.Terminal.Buffer.Operations do
         ) :: ScreenBuffer.t()
   def delete_lines(%ScreenBuffer{} = buffer, start_y, n, scroll_region)
       when n > 0 do
-    {scroll_start, scroll_end} =
-      get_scroll_region_boundaries(%{
-        buffer
-        | scroll_region: scroll_region || buffer.scroll_region
-      })
+    effective_buffer = %{
+      buffer
+      | scroll_region: scroll_region || buffer.scroll_region
+    }
+
+    {scroll_start, scroll_end} = get_scroll_region_boundaries(effective_buffer)
 
     if start_y < scroll_start or start_y > scroll_end do
       buffer
@@ -682,15 +760,37 @@ defmodule Raxol.Terminal.Buffer.Operations do
   def insert_characters(%ScreenBuffer{} = buffer, {x, y}, count, style)
       when y >= 0 and y < buffer.height and x >= 0 and x < buffer.width and
              count > 0 do
-    blank_cell = Cell.new(" ", style || %{})
+    # Use default style for inserted blanks, not the current style
+    # Use default cell
+    blank_cell = Cell.new()
     blanks_to_insert = List.duplicate(blank_cell, count)
 
     new_cells =
       List.update_at(buffer.cells, y, fn row ->
+        # Logger.debug("[ICH] Updating row #{y} at x=#{x} with count=#{count}")
+        # Split the row at the insertion point
         {prefix, suffix} = Enum.split(row, x)
-        remaining_suffix_length = max(0, buffer.width - x - count)
-        new_suffix = Enum.take(suffix, remaining_suffix_length)
-        prefix ++ blanks_to_insert ++ new_suffix
+
+        # Logger.debug("[ICH] Prefix: #{inspect(Enum.map(prefix, & &1.char))}, Suffix: #{inspect(Enum.map(suffix, & &1.char))}")
+
+        # Calculate how many original suffix characters can fit after insertion
+        suffix_chars_to_keep_count =
+          max(0, buffer.width - length(prefix) - count)
+
+        # Logger.debug("[ICH] Suffix chars to keep: #{suffix_chars_to_keep_count}")
+
+        # Take only the suffix characters that fit
+        suffix_to_keep = Enum.take(suffix, suffix_chars_to_keep_count)
+
+        # Logger.debug("[ICH] Suffix to keep: #{inspect(Enum.map(suffix_to_keep, & &1.char))}")
+
+        # Combine the parts: prefix + inserted blanks + kept suffix part
+        new_row = prefix ++ blanks_to_insert ++ suffix_to_keep
+
+        # Logger.debug("[ICH] New row content: #{inspect(Enum.map(new_row, & &1.char))}")
+        # Logger.debug("[ICH] New row length: #{length(new_row)}, Buffer width: #{buffer.width}")
+        # Return the updated row
+        new_row
       end)
 
     %{buffer | cells: new_cells}
@@ -755,11 +855,12 @@ defmodule Raxol.Terminal.Buffer.Operations do
         ) :: ScreenBuffer.t()
   def insert_lines(%ScreenBuffer{} = buffer, start_y, n, scroll_region)
       when start_y >= 0 and n > 0 do
-    {scroll_start, scroll_end} =
-      get_scroll_region_boundaries(%{
-        buffer
-        | scroll_region: scroll_region || buffer.scroll_region
-      })
+    effective_buffer = %{
+      buffer
+      | scroll_region: scroll_region || buffer.scroll_region
+    }
+
+    {scroll_start, scroll_end} = get_scroll_region_boundaries(effective_buffer)
 
     visible_lines_in_region = scroll_end - scroll_start + 1
 

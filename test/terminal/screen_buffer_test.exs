@@ -3,6 +3,12 @@ defmodule Raxol.Terminal.ScreenBufferTest do
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ScreenBuffer
 
+  # Helper to convert a list of cells to a string for easier assertions
+  defp line_to_string(line) when is_list(line) do
+    Enum.map_join(line, "", &Cell.get_char/1)
+  end
+  defp line_to_string(nil), do: ""
+
   describe "initialization" do
     test "creates a new buffer with correct dimensions" do
       buffer = ScreenBuffer.new(10, 5)
@@ -66,61 +72,83 @@ defmodule Raxol.Terminal.ScreenBufferTest do
   end
 
   describe "scrolling" do
-    test "scrolls up within scroll region" do
+    test "scrolling up moves lines correctly" do
       buffer = ScreenBuffer.new(10, 5)
-      buffer = ScreenBuffer.set_scroll_region(buffer, 1, 3)
+      buffer = Enum.reduce(0..4, buffer, fn i, buf ->
+        ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
+      end)
 
-      # Write test data
-      buffer = ScreenBuffer.write_string(buffer, 0, 0, "Line 0")
-      buffer = ScreenBuffer.write_string(buffer, 0, 1, "Line 1")
-      buffer = ScreenBuffer.write_string(buffer, 0, 2, "Line 2")
-      buffer = ScreenBuffer.write_string(buffer, 0, 3, "Line 3")
-      buffer = ScreenBuffer.write_string(buffer, 0, 4, "Line 4")
+      {buffer, scrolled_lines} = ScreenBuffer.scroll_up(buffer, 2)
 
-      # Scroll up by 1 line
-      buffer = ScreenBuffer.scroll_up(buffer, 1)
+      assert length(scrolled_lines) == 2
+      # Use helper for scrolled lines
+      assert String.contains?(line_to_string(hd(scrolled_lines)), "Line 0")
+      assert String.contains?(line_to_string(hd(tl(scrolled_lines))), "Line 1")
 
-      # Verify that only the scroll region was affected
-      rows =
-        Enum.map(buffer.cells, fn row ->
-          Enum.map(Enum.take(row, 6), &Cell.get_char/1) |> Enum.join("")
-        end)
-
-      assert Enum.at(rows, 0) == "Line 0"
-      assert Enum.at(rows, 1) == "Line 2"
-      assert Enum.at(rows, 2) == "Line 3"
-      assert String.trim(Enum.at(rows, 3)) == ""
-      assert Enum.at(rows, 4) == "Line 4"
+      # Use helper for remaining lines
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 0)), "Line 2")
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 1)), "Line 3")
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 2)), "Line 4")
+      assert line_to_string(ScreenBuffer.get_line(buffer, 3)) =~ ~r/^\s*$/ # Check for empty/whitespace line
+      assert line_to_string(ScreenBuffer.get_line(buffer, 4)) =~ ~r/^\s*$/ # Check for empty/whitespace line
     end
 
-    test "scrolls down within scroll region" do
+    test "scrolling down inserts lines correctly (no scrollback)" do
       buffer = ScreenBuffer.new(10, 5)
+      buffer = Enum.reduce(0..4, buffer, fn i, buf ->
+        ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
+      end)
+
+      buffer = ScreenBuffer.scroll_down(buffer, [], 2)
+
+      # Use helper
+      assert line_to_string(ScreenBuffer.get_line(buffer, 0)) =~ ~r/^\s*$/
+      assert line_to_string(ScreenBuffer.get_line(buffer, 1)) =~ ~r/^\s*$/
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 2)), "Line 0")
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 3)), "Line 1")
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 4)), "Line 2")
+    end
+
+    test "scrolling scrolls up within scroll region" do
+      buffer = ScreenBuffer.new(10, 5)
+      buffer = Enum.reduce(0..4, buffer, fn i, buf ->
+        ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
+      end)
       buffer = ScreenBuffer.set_scroll_region(buffer, 1, 3)
 
-      # Write test data
-      buffer = ScreenBuffer.write_string(buffer, 0, 0, "Line 0")
-      buffer = ScreenBuffer.write_string(buffer, 0, 1, "Line 1")
-      buffer = ScreenBuffer.write_string(buffer, 0, 2, "Line 2")
-      buffer = ScreenBuffer.write_string(buffer, 0, 3, "Line 3")
-      buffer = ScreenBuffer.write_string(buffer, 0, 4, "Line 4")
+      {buffer, scrolled_lines} = ScreenBuffer.scroll_up(buffer, 1)
 
-      # First scroll up to populate scrollback buffer
-      buffer = ScreenBuffer.scroll_up(buffer, 1)
-      # Then scroll down
-      buffer = ScreenBuffer.scroll_down(buffer, 1)
+      assert length(scrolled_lines) == 1
+      # Use helper
+      assert String.contains?(line_to_string(hd(scrolled_lines)), "Line 1")
 
-      # Verify the content
-      rows =
-        Enum.map(buffer.cells, fn row ->
-          Enum.map(Enum.take(row, 6), &Cell.get_char/1) |> Enum.join("")
-        end)
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 0)), "Line 0")
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 4)), "Line 4")
 
-      assert Enum.at(rows, 0) == "Line 0"
-      assert Enum.at(rows, 1) == "Line 1"
-      assert Enum.at(rows, 2) == "Line 2"
-      assert Enum.at(rows, 3) == "Line 3"
-      assert Enum.at(rows, 4) == "Line 4"
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 1)), "Line 2")
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 2)), "Line 3")
+      assert line_to_string(ScreenBuffer.get_line(buffer, 3)) =~ ~r/^\s*$/
     end
+
+    test "scrolling scrolls down within scroll region" do
+      buffer = ScreenBuffer.new(10, 5)
+      buffer = Enum.reduce(0..4, buffer, fn i, buf ->
+        ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
+      end)
+      buffer = ScreenBuffer.set_scroll_region(buffer, 1, 3)
+
+      buffer = ScreenBuffer.scroll_down(buffer, [], 1)
+
+      # Use helper
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 0)), "Line 0")
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 4)), "Line 4")
+
+      assert line_to_string(ScreenBuffer.get_line(buffer, 1)) =~ ~r/^\s*$/
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 2)), "Line 1")
+      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 3)), "Line 2")
+    end
+
+    # Add more tests for edge cases like scrolling by 0, scrolling full region, etc.
   end
 
   describe "selection" do
