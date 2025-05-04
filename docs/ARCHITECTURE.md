@@ -168,7 +168,9 @@ lib/raxol/
 ├── session.ex             # Session management entry point
 ├── style/                 # Styling and theming modules
 │   └── ...
-├── system/                # System utilities (updater, platform detection)
+├── system/                # System utilities (updater, platform detection, interaction abstraction)
+│   ├── interaction.ex     # Behaviour for system interactions (OS type, commands)
+│   ├── interaction_impl.ex # Default implementation for system interactions
 │   └── ...
 ├── terminal/              # Terminal I/O, NIF driver, ANSI Processing, Buffer
 │   ├── ansi/              # ANSI sequence modules (Parser, Sixel, etc.)
@@ -203,8 +205,8 @@ lib/raxol/
 - **Runtime System (`Core.Runtime.*`)**: Manages application lifecycle (`Application` behaviour), event dispatch (`Dispatcher`), plugin management (`Plugins.Manager`), and rendering orchestration (`Rendering.Engine`). **Largely functional, tested.**
 - **Plugin System (`Core.Runtime.Plugins.*`)**: Handles plugin discovery, loading (`Loader`), lifecycle (`LifecycleHelper`), command registration/execution (`CommandHelper`, `CommandRegistry`), and reloading. **Functional, tested.**
 - **Event Handling (`Terminal.Driver`, `Core.Runtime.Events.Dispatcher`)**: `Driver` receives events from `:rrex_termbox` NIF, translates them, sends to `Dispatcher`. `Dispatcher` manages state and routes events/commands to `Application` or `PluginManager`. **Refactored.**
-- **Rendering Pipeline (`Core.Runtime.Rendering.Engine`, `UI.Layout.Engine`, `UI.Renderer`, `Terminal.Renderer`)**: `Engine` gets view from `Application`, `LayoutEngine` calculates positions (measurement logic implemented for core elements), `Renderer` converts to styled cells using active theme (now includes direct handling for `:table` elements), `Terminal.Renderer` outputs diff to terminal. **Functional, tested.**
-- **Component System (`UI.Components.*`)**: Components implement `UI.Components.Base.Component` behaviour (`init/1`, `update/2`, `handle_event/3`, `render/2`) and use `View.Elements` macros. **Refactoring ongoing; `MultiLineInput` refactored into helpers, `Table` refactored to return raw map for `Renderer`, multiple core components updated.**
+- **Rendering Pipeline (`Core.Runtime.Rendering.Engine`, `UI.Layout.Engine`, `UI.Renderer`, `Terminal.Renderer`)**: `Engine` gets view from `Application`, `LayoutEngine` calculates positions (measurement logic implemented for core elements, panel measurement fixed), `Renderer` converts to styled cells using active theme (now includes direct handling for `:table` elements), `Terminal.Renderer` outputs diff to terminal. **Functional, tested.**
+- **Component System (`UI.Components.*`)**: Components implement `UI.Components.Base.Component` behaviour (`init/1`, `handle_event/3` returns `{new_state, commands}`, `render/1` returns element map/list) and use `View.Elements` macros (e.g., `label`, `panel`). Requires explicit component map rendering (`%{type: ...}`) rather than direct function calls for non-Element components. `ComponentShowcase` example refactored to follow this pattern. **Refactoring ongoing.**
 - **Theming (`UI.Theming.*`, `UI.Renderer`)**: Defines and applies styles. Integrated into `Renderer`. **Functional.**
 - **Benchmarking (`Benchmarks.*`)**: Initial performance benchmark structure refactored into sub-modules. **Refactored.**
 - **Cloud Monitoring (`Cloud.Monitoring.*`)**: Monitoring module refactored into sub-modules (Metrics, Errors, Health, Alerts). **Refactored.**
@@ -215,40 +217,44 @@ lib/raxol/
 - **Visualization Plugin (`Plugins.VisualizationPlugin`):** Extracted rendering logic into helper modules (`ChartRenderer`, `TreemapRenderer`, `ImageRenderer`, `DrawingUtils`). Core plugin now delegates rendering via `handle_placeholder`. **Refactored.**
 - **User Preferences (`Core.Preferences.*`)**: Manages user preference loading, saving, and access via `UserPreferences` GenServer and `Persistence` module. Integrated with core modules. **Functional, Integrated.**
 - **Accessibility (`Core.Accessibility.*`)**: Provides core accessibility features (`announce`, specific setters like `set_high_contrast`). Options are read via `UserPreferences.get/1`. `ThemeIntegration` connects settings to themes. **API usage across codebase needs review/cleanup based on available public functions.**
+- **System Interaction (`Raxol.System.Interaction`)**: Behaviour for abstracting system interactions (commands, OS type, etc.) for testability. **Added.**
+- **System Interaction Implementation (`Raxol.System.InteractionImpl`)**: Default implementation of `System.Interaction` using Elixir/Erlang functions. **Added.**
 
 ## Key Modules
 
-| Module                                         | Description                                                                                     | Status             |
-| ---------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------ |
-| `Raxol.Core.Runtime.Application`               | Defines the application behaviour (init, update, view)                                          | Defined            |
-| `Raxol.Core.Runtime.Events.Dispatcher`         | Manages application state, routes events/commands                                               | Functional         |
-| `Raxol.Core.Runtime.Plugins.Manager`           | Manages plugin lifecycle, command execution, reloading                                          | Functional, Tested |
-| `Raxol.Core.Runtime.Rendering.Engine`          | Orchestrates rendering: App -> Layout -> Renderer -> Terminal                                   | Functional         |
-| `Raxol.UI.Components.Base.Component`           | Base behaviour for UI components                                                                | Defined, Adopted   |
-| `Raxol.UI.Layout.Engine`                       | Calculates element positions                                                                    | Functional, Tested |
-| `Raxol.UI.Renderer`                            | Converts layout elements to styled cells using active theme. Handles `:box`, `:text`, `:table`. | Functional         |
-| `Raxol.UI.Theming.Theme`                       | Theme data structure and retrieval                                                              | Functional         |
-| `Raxol.Terminal.Driver`                        | Manages `:rrex_termbox` NIF interface, receives/translates events to Raxol events.              | Stable             |
-| `Raxol.Terminal.Parser`                        | Main parser state machine and state handlers                                                    | Stable             |
-| `Raxol.Terminal.Commands.Executor`             | Executes parsed CSI commands (SGR, CUP, ED/EL etc.). Basic OSC/DCS placeholders.                | Functional         |
-| `Raxol.Terminal.ANSI.ScreenModes`              | Handles screen mode transitions (SM/RM, Alt Screen, Cursor Vis, Wrap). Incl. handle\_\*\_mode.  | Stable             |
-| `Raxol.Terminal.ControlCodes`                  | Handles C0 and simple ESC control codes                                                         | Stable             |
-| `Raxol.Terminal.ANSI.SixelGraphics`            | Stateful Sixel graphics parser with RLE optimization                                            | Refactored, Opt.   |
-| `Raxol.View.Elements`                          | Macros (`box`, `text`, etc.) for defining UI views                                              | Defined, Used      |
-| `Raxol.Plugins.VisualizationPlugin`            | Handles visualization placeholders, delegates rendering                                         | Refactored         |
-| `Raxol.Plugins.Visualization.ChartRenderer`    | Helper for rendering chart visualizations                                                       | Added              |
-| `Raxol.Plugins.Visualization.TreemapRenderer`  | Helper for rendering treemap visualizations. Uses `DrawingUtils`.                               | Added              |
-| `Raxol.Plugins.Visualization.ImageRenderer`    | Helper for rendering image visualizations                                                       | Added              |
-| `Raxol.Plugins.Visualization.DrawingUtils`     | Shared drawing helpers (`draw_box_borders`, `draw_text_centered/3`, `draw_text/4`, `put_cell`). | Added              |
-| `Raxol.UI.Components.Input.MultiLineInput.*`   | Helper modules for `MultiLineInput` component                                                   | Added, Functional  |
-| `Raxol.UI.Components.Display.Table`            | Displays tabular data via attributes. `render/2` returns map for `Renderer`.                    | Refactored         |
-| `Raxol.Terminal.Integration/memory_manager.ex` | Helper for memory management in Terminal Integration                                            | Added              |
-| `Raxol.Terminal.Config/utils.ex`               | Utilities for terminal configuration merging                                                    | Added              |
-| `Raxol.Core.Preferences.Persistence`           | Handles preference file I/O                                                                     | Stable             |
-| `Raxol.Core.ColorSystem`                       | Centralized theme/accessibility-aware color retrieval                                           | Added, Functional  |
-| `Raxol.Core.Accessibility.ThemeIntegration`    | Connects accessibility settings (read via `UserPreferences`) with themes                        | Refactored         |
-| `Raxol.Core.UserPreferences`                   | GenServer for managing user preferences state (reads/writes via `Persistence`)                  | Refactored         |
-| `Raxol.Core.Accessibility`                     | Core accessibility logic (announcements, setters). Options read via `UserPreferences`.          | Refactored         |
+| Module                                         | Description                                                                                     | Status                                     |
+| ---------------------------------------------- | ----------------------------------------------------------------------------------------------- | ------------------------------------------ |
+| `Raxol.Core.Runtime.Application`               | Defines the application behaviour (init, update, view)                                          | Defined                                    |
+| `Raxol.Core.Runtime.Events.Dispatcher`         | Manages application state, routes events/commands                                               | Functional                                 |
+| `Raxol.Core.Runtime.Plugins.Manager`           | Manages plugin lifecycle, command execution, reloading                                          | Functional, Tested                         |
+| `Raxol.Core.Runtime.Rendering.Engine`          | Orchestrates rendering: App -> Layout -> Renderer -> Terminal                                   | Functional                                 |
+| `Raxol.UI.Components.Base.Component`           | Base behaviour for UI components                                                                | Defined, Adopted                           |
+| `Raxol.UI.Layout.Engine`                       | Calculates element positions                                                                    | Functional, Tested                         |
+| `Raxol.UI.Renderer`                            | Converts layout elements to styled cells using active theme. Handles `:box`, `:text`, `:table`. | Functional                                 |
+| `Raxol.UI.Theming.Theme`                       | Theme data structure and retrieval                                                              | Functional                                 |
+| `Raxol.Terminal.Driver`                        | Manages `:rrex_termbox` NIF interface, receives/translates events to Raxol events.              | Stable (**Test Env. Workaround**)          |
+| `Raxol.Terminal.Parser`                        | Main parser state machine and state handlers                                                    | Stable                                     |
+| `Raxol.Terminal.Commands.Executor`             | Executes parsed CSI commands (SGR, CUP, ED/EL etc.). Basic OSC/DCS placeholders.                | Functional (OSC 0,2,8,52,4,7; DCS DECRQSS) |
+| `Raxol.Terminal.ANSI.ScreenModes`              | Handles screen mode transitions (SM/RM, Alt Screen, Cursor Vis, Wrap). Incl. handle\_\*\_mode.  | Stable                                     |
+| `Raxol.Terminal.ControlCodes`                  | Handles C0 and simple ESC control codes                                                         | Stable                                     |
+| `Raxol.Terminal.ANSI.SixelGraphics`            | Stateful Sixel graphics parser with RLE optimization                                            | Refactored, Opt.                           |
+| `Raxol.View.Elements`                          | Macros (`panel`, `row`, `column`, `box`, `label`, input macros) for defining UI views.          | Defined, Used (Note: `text` not included)  |
+| `Raxol.Plugins.VisualizationPlugin`            | Handles visualization placeholders, delegates rendering                                         | Refactored                                 |
+| `Raxol.Plugins.Visualization.ChartRenderer`    | Helper for rendering chart visualizations                                                       | Added                                      |
+| `Raxol.Plugins.Visualization.TreemapRenderer`  | Helper for rendering treemap visualizations. Uses `DrawingUtils`.                               | Added                                      |
+| `Raxol.Plugins.Visualization.ImageRenderer`    | Helper for rendering image visualizations                                                       | Added                                      |
+| `Raxol.Plugins.Visualization.DrawingUtils`     | Shared drawing helpers (`draw_box_borders`, `draw_text_centered/3`, `draw_text/4`, `put_cell`). | Added                                      |
+| `Raxol.UI.Components.Input.MultiLineInput.*`   | Helper modules for `MultiLineInput` component                                                   | Added, Functional                          |
+| `Raxol.UI.Components.Display.Table`            | Displays tabular data via attributes. `render/2` returns map for `Renderer`.                    | Refactored                                 |
+| `Raxol.Terminal.Integration/memory_manager.ex` | Helper for memory management in Terminal Integration                                            | Added                                      |
+| `Raxol.Terminal.Config/utils.ex`               | Utilities for terminal configuration merging                                                    | Added                                      |
+| `Raxol.Core.Preferences.Persistence`           | Handles preference file I/O                                                                     | Stable                                     |
+| `Raxol.Core.ColorSystem`                       | Centralized theme/accessibility-aware color retrieval                                           | Added, Functional                          |
+| `Raxol.Core.Accessibility.ThemeIntegration`    | Connects accessibility settings (read via `UserPreferences`) with themes                        | Refactored                                 |
+| `Raxol.Core.UserPreferences`                   | GenServer for managing user preferences state (reads/writes via `Persistence`)                  | Refactored                                 |
+| `Raxol.Core.Accessibility`                     | Core accessibility logic (announcements, setters). Options read via `UserPreferences`.          | Refactored                                 |
+| `Raxol.System.Interaction`                     | Behaviour for abstracting system interactions (commands, OS type, etc.) for testability.        | Added                                      |
+| `Raxol.System.InteractionImpl`                 | Default implementation of `System.Interaction` using Elixir/Erlang functions.                   | Added                                      |
 
 ## Plugin System
 
@@ -258,7 +264,7 @@ lib/raxol/
 - **Reloading**:
   - Manual: `PluginManager.reload_plugin/1` calls `LifecycleHelper.reload_plugin_from_disk/8`, which unloads, purges code, recompiles source, reloads, reinitializes, handling failures.
   - Automatic (Dev Only): Optionally uses the `file_system` library to watch plugin source files. Changes trigger the manual reload process after a short debounce. Enabled via `enable_plugin_reloading: true` option to `PluginManager.start_link/1`.
-- **Core Plugins**: `ClipboardPlugin`, `NotificationPlugin` in `lib/raxol/core/plugins/core/`.
+- **Core Plugins**: `ClipboardPlugin`, `NotificationPlugin` in `lib/raxol/core/plugins/core/`. (Tests passing for both after mocking improvements).
 - **Visualization Plugin**: Uses `handle_placeholder` hook to render charts, treemaps, images via helper modules (`ChartRenderer`, `TreemapRenderer`, `ImageRenderer`).
 
 ## Efficient Runtime Flow
@@ -273,20 +279,22 @@ lib/raxol/
 ## Recent Changes Summary
 
 - **Major Refactoring:** Completed significant refactoring across core systems (Runtime, Plugins, Rendering), Terminal subsystem (Parser, Sixel, Driver, Control Codes), UI components (`Table`, `MultiLineInput` extraction), Visualization Plugin (extracted renderers), and support modules (Benchmarking, Cloud Monitoring, User Preferences, Accessibility integration).
-- **Documentation Alignment:** Reviewed and updated key planning documents (`overview.md`, `handoff_prompt.md`, `Roadmap.md`), core documentation (`README.md`, `docs/README.md`), specific guides (`docs/guides/components/README.md`, `docs/development/terminal/README.md`), and architecture documentation (`ARCHITECTURE.md` sections, including codebase size).
-- **Compiler Status:** Addressed numerous compilation errors and warnings during refactoring. However, some warnings persist and require further investigation and cleanup.
-- **Key Component Updates:** `Table` component refactored to take data via attributes; `MultiLineInput` core logic extracted into helper modules; `Renderer` updated to handle `:table` directly.
-- **Feature Enhancements:** Added basic navigation, clipboard, scrolling, selection to `MultiLineInput`; implemented RLE optimization for Sixel graphics.
-- **Dependency Integration:** Adapted terminal handling to use `:rrex_termbox` v2.0.1 NIF API, resolving build issues and refactoring `Terminal.Driver`.
-- **Testing:** Resolved numerous setup, configuration, and logic errors in `RaxolWeb.TerminalChannelTest`, significantly reducing failures.
+- **Documentation Alignment:** Reviewed and updated key planning documents (`overview.md`, `handoff_prompt.md`, `Roadmap.md`), core documentation (`README.md`, `docs/README.md`), specific guides (`docs/guides/components/README.md`, `docs/guides/development/terminal/README.md`), and architecture documentation (`ARCHITECTURE.md` sections, including codebase size).
+- **Compiler Status:** Addressed numerous compilation errors and warnings during refactoring. However, some warnings persist and require further investigation and cleanup. **Critical Runtime Blocker:** A persistent NIF initialization error (`:undef, :termbox2_nif.tb_init/0`) prevents application startup, blocking example execution and native terminal functionality.
+- **Key Component Updates:** `Table` refactored; `MultiLineInput` core logic extracted; `Renderer` updated for `:table`; `ComponentShowcase` example refactored.
+- **Feature Enhancements:** Added basic `MultiLineInput` features; implemented Sixel RLE optimization.
+- **Dependency Integration:** Adapted terminal handling to use `:rrex_termbox` v2.0.1 (which now uses `termbox2_nif` v0.1.7). Refactored `Terminal.Driver`.
+- **Testing:** Resolved `RaxolWeb.TerminalChannelTest` errors. Resolved Emulator SGR test failures (cache issue).
 - **Updated `lib/raxol/terminal/terminal_utils.ex` for NIF-based terminal dimension detection**
 - **Redesigned `lib/raxol/terminal/constants.ex` to directly map to NIF constants**
 - **Rewritten `lib/raxol/core/events/termbox_converter.ex` to handle NIF event format**
 - **Updated `lib/raxol/test/mock_termbox.ex` to match the NIF-based interface for testing**
+- **NIF Integration:** Updated various modules (`terminal_utils.ex`, `constants.ex`, `termbox_converter.ex`, `mock_termbox.ex`) for NIF-based interaction.
+- **Fix Test Failures (`mix test`):** Address the ~~46~~ **0** failures identified in `test/terminal/` (`ColumnWidthTest`, `SixelGraphicsTest`) after fixing issues in `RendererTest`, `ScreenBufferTest`, `CharacterHandlingTest`, `IntegrationTest`, and `LayoutEngineTest`. (**DONE**)
 
 ## Codebase Size & Refactoring Candidates
 
-**Note:** LOC counts are approximate and based on `find . -type f \( -path './lib/*' -or -path './docs/*' \) -not -path '*/.git/*' -exec wc -l {} + | sort -nr`. Thresholds adjusted based on current distribution. Last updated: 2024-07-31
+**Note:** LOC counts are approximate and based on `find . -type f \( -path './lib/*' -or -path './docs/*' \) -not -path '*/.git/*' -exec wc -l {} + | sort -nr`. Thresholds adjusted based on current distribution. Last updated: 2024-07-31 +**Note:** Last updated: 2024-08-01
 
 **Critical (> 1200 LOC):**
 
@@ -333,88 +341,88 @@ lib/raxol/
 
 ## Module Overview
 
-| Module Path                          | Status         | Description                                                                                                      |
-| ------------------------------------ | -------------- | ---------------------------------------------------------------------------------------------------------------- |
-| `lib/raxol/application.ex`           | Stable         | Main application entry point, starts the top-level supervisor.                                                   |
-| `lib/raxol/runtime/supervisor.ex`    | Stable         | Top-level supervisor for the core application runtime (non-web). Starts `PluginManager`, `UserPreferences`, etc. |
-| **Core Runtime**                     |                |                                                                                                                  |
-| `lib/raxol/core/runtime/...`         |                | **Namespace for the core application runtime logic.**                                                            |
-| `.../supervisor.ex`                  | Stable         | Supervisor for core runtime services (`EventLoop`, `RenderLoop`, `PluginManager`).                               |
-| `.../application.ex`                 | Stable         | Defines the application behaviour (`init`, `handle_event`, `render`).                                            |
-| `.../event_loop.ex`                  | Stable         | GenServer responsible for processing incoming events and updating application state.                             |
-| `.../render_loop.ex`                 | Stable         | GenServer responsible for triggering application rendering and outputting to the driver.                         |
-| `.../state_manager.ex`               | **Removed**    | ~~Manages the application's core state.~~                                                                        |
-| `.../dispatcher.ex`                  | Stable         | Handles dispatching events to the correct handler (application, components).                                     |
-| **Core Events**                      |                |                                                                                                                  |
-| `lib/raxol/core/events/...`          |                | **Namespace for defining event types.**                                                                          |
-| `.../event.ex`                       | Stable         | Defines the core `Event` struct.                                                                                 |
-| `.../input_event.ex`                 | Stable         | Defines input-specific event types (key, mouse, paste).                                                          |
-| `.../system_event.ex`                | Stable         | Defines system-level event types (resize, focus, signal).                                                        |
-| `.../clipboard.ex`                   | **Removed**    | ~~Defines clipboard-related events.~~                                                                            |
-| **Core Plugins**                     |                |                                                                                                                  |
-| `lib/raxol/core/runtime/plugins/...` |                | **Namespace for the plugin system.**                                                                             |
-| `.../plugin.ex`                      | Stable         | Defines the `Plugin` behaviour that plugins must implement.                                                      |
-| `.../manager.ex`                     | Development    | GenServer responsible for loading, managing, and coordinating plugins. (Reloading added & tested)                |
-| `.../registry.ex`                    | Stable         | Handles the storage and lookup of loaded plugins.                                                                |
-| `.../dependency_solver.ex`           | Stable         | Resolves plugin load order based on declared dependencies.                                                       |
-| `.../command_registry.ex`            | Stable         | ETS-based registry for commands declared by plugins.                                                             |
-| `.../command_helper.ex`              | Stable         | Helper functions for registering and handling commands from plugins.                                             |
-| `.../commands.ex`                    | **Removed**    | ~~GenServer for managing command registration (replaced by ETS).~~                                               |
-| `lib/raxol/core/plugins/core/...`    |                | **Namespace for built-in core plugins.**                                                                         |
-| `.../clipboard_plugin.ex`            | **Refactored** | Core plugin for clipboard read/write commands. (Uses `System.Clipboard`, Tests Pass)                             |
-| `.../notification_plugin.ex`         | **Refactored** | Core plugin for sending system notifications. (Improved robustness)                                              |
-| `.../filesystem_plugin.ex`           | Stable         | Core plugin providing file system interaction commands.                                                          |
-| `lib/raxol/system/clipboard.ex`      | **New/Stable** | **Consolidated module for system clipboard interaction (macOS, Linux, Windows).**                                |
-| **Terminal**                         |                |                                                                                                                  |
-| `lib/raxol/terminal/...`             |                | **Namespace for terminal emulation and interaction.**                                                            |
-| `.../driver.ex`                      | Stable         | Defines the behaviour for terminal drivers (TTY, Mock).                                                          |
-| `.../drivers/tty.ex`                 | Stable         | Driver for interacting with a real TTY via stdin/stdout. Uses `:rrex_termbox` NIF.                               |
-| `.../emulator.ex`                    | Stable         | Core terminal emulator logic (state, input processing, screen buffer). (Many fixes applied)                      |
-| `.../screen_buffer.ex`               | Stable         | Manages the terminal screen buffer (grid, cells, attributes, scrollback). (Verified via Emulator fixes/tests)    |
-| `.../cell.ex`                        | Stable         | Represents a single cell in the screen buffer.                                                                   |
-| `.../parser.ex`                      | Stable         | Parses incoming byte streams into terminal commands/text.                                                        |
-| `.../commands/executor.ex`           | Stable         | Executes parsed terminal commands, updating emulator state. (Core CSI handlers fixed, basic OSC/DCS)             |
-| `.../commands/modes.ex`              | **Removed**    | ~~Handles terminal mode settings (DECSM, DECRM).~~ (Logic moved into `ScreenModes`)                              |
-| `.../ansi/screen_modes.ex`           | Stable         | Manages ANSI/DEC screen mode state (Alt screen, wrap, cursor visibility, etc.). (Refactored, fixed)              |
-| `.../ansi/terminal_state.ex`         | Stable         | Manages saving/restoring terminal state (cursor, style, modes). (Fixed)                                          |
-| `.../ansi/text_formatting.ex`        | Stable         | Handles SGR attributes and text formatting (colors, styles, width). (Fixed)                                      |
-| `.../cursor/manager.ex`              | Stable         | Manages cursor state (position, style, visibility).                                                              |
-| `.../cursor/movement.ex`             | Stable         | Logic for calculating cursor movements.                                                                          |
-| `.../clipboard.ex`                   | **Removed**    | ~~Handles clipboard interaction.~~                                                                               |
-| `.../input_mapper.ex`                | Stable         | Maps raw input bytes/sequences to `InputEvent` structs.                                                          |
-| `.../output_encoder.ex`              | Stable         | Encodes terminal commands (ANSI sequences) for output.                                                           |
-| **UI Components**                    |                |                                                                                                                  |
-| `lib/raxol/ui/components/...`        |                | **Namespace for reusable UI components.**                                                                        |
-| `.../base/component.ex`              | Stable         | Defines the core `Component` behaviour (`init`, `handle_event`, `render`).                                       |
-| `.../display/text.ex`                | Stable         | Simple text display component.                                                                                   |
-| `.../display/progress.ex`            | Stable         | Progress bar component. (Tests fixed)                                                                            |
-| `.../input/text_input.ex`            | Stable         | Single-line text input component. (Features added, tests fixed)                                                  |
-| `.../input/checkbox.ex`              | Development    | Checkbox component.                                                                                              |
-| `.../input/button.ex`                | Development    | Button component.                                                                                                |
-| `.../layout/box.ex`                  | Stable         | Basic layout container component.                                                                                |
-| `.../selection/list.ex`              | Stable         | List selection component. (Tests fixed)                                                                          |
-| `.../selection/dropdown.ex`          | Stable         | Dropdown selection component. (Tests fixed)                                                                      |
-| **Style & Theming**                  |                |                                                                                                                  |
-| `lib/raxol/style/...`                |                | **Namespace for styling and theming.**                                                                           |
-| `.../colors/color.ex`                | Stable         | Defines color representation and manipulation functions.                                                         |
-| `.../colors/palette.ex`              | Stable         | Represents a theme's color palette.                                                                              |
-| `.../colors/theme.ex`                | Stable         | Defines the `Theme` struct.                                                                                      |
-| `.../colors/persistence.ex`          | Stable         | Handles saving/loading themes and preferences. (Fixed)                                                           |
-| `.../colors/advanced.ex`             | Stable         | Advanced color operations (blending, harmonies). (Fixed)                                                         |
-| `.../border.ex`                      | Stable         | Defines border styles.                                                                                           |
-| `.../style_map.ex`                   | Stable         | Applies styles based on component state/type.                                                                    |
-| **Platform Integration**             |                |                                                                                                                  |
-| `lib/raxol/platform/...`             |                | **Namespace for platform-specific integrations.**                                                                |
-| `.../notification.ex`                | Development    | Platform-agnostic notification interface.                                                                        |
-| **VS Code Extension**                |                |                                                                                                                  |
-| `lib/raxol_vscode/...`               |                | **Namespace for VS Code extension specific logic.**                                                              |
-| `.../bridge.ex`                      | Stable         | Handles communication between Raxol core and the VS Code extension.                                              |
-| **Web Interface (Phoenix)**          |                |                                                                                                                  |
-| `lib/raxol_web/...`                  |                | **Namespace for the optional Phoenix web UI.**                                                                   |
-| `.../live/terminal_live.ex`          | Stable         | Phoenix LiveView for rendering the terminal interface in a browser. (Tests fixed)                                |
-| `.../endpoint.ex`                    | Development    | Phoenix endpoint configuration.                                                                                  |
-| `.../router.ex`                      | Development    | Phoenix router configuration.                                                                                    |
-| `.../channels/terminal_channel.ex`   | Stable         | Phoenix channel for terminal interaction. (Tests pass)                                                           |
-| **Utilities & Helpers**              |                |                                                                                                                  |
-| `lib/raxol/utils/...`                |                | **Namespace for general utility functions.**                                                                     |
-| `lib/raxol/test/...`                 | Stable         | Test helpers and utilities.                                                                                      |
+| Module Path                          | Status         | Description                                                                                                             |
+| ------------------------------------ | -------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `lib/raxol/application.ex`           | Stable         | Main application entry point, starts the top-level supervisor.                                                          |
+| `lib/raxol/runtime/supervisor.ex`    | Stable         | Top-level supervisor for the core application runtime (non-web). Starts `PluginManager`, `UserPreferences`, etc.        |
+| **Core Runtime**                     |                |                                                                                                                         |
+| `lib/raxol/core/runtime/...`         |                | **Namespace for the core application runtime logic.**                                                                   |
+| `.../supervisor.ex`                  | Stable         | Supervisor for core runtime services (`EventLoop`, `RenderLoop`, `PluginManager`).                                      |
+| `.../application.ex`                 | Stable         | Defines the application behaviour (`init`, `handle_event`, `render`).                                                   |
+| `.../event_loop.ex`                  | Stable         | GenServer responsible for processing incoming events and updating application state.                                    |
+| `.../render_loop.ex`                 | Stable         | GenServer responsible for triggering application rendering and outputting to the driver.                                |
+| `.../state_manager.ex`               | **Removed**    | ~~Manages the application's core state.~~                                                                               |
+| `.../dispatcher.ex`                  | Stable         | Handles dispatching events to the correct handler (application, components).                                            |
+| **Core Events**                      |                |                                                                                                                         |
+| `lib/raxol/core/events/...`          |                | **Namespace for defining event types.**                                                                                 |
+| `.../event.ex`                       | Stable         | Defines the core `Event` struct.                                                                                        |
+| `.../input_event.ex`                 | Stable         | Defines input-specific event types (key, mouse, paste).                                                                 |
+| `.../system_event.ex`                | Stable         | Defines system-level event types (resize, focus, signal).                                                               |
+| `.../clipboard.ex`                   | **Removed**    | ~~Defines clipboard-related events.~~                                                                                   |
+| **Core Plugins**                     |                |                                                                                                                         |
+| `lib/raxol/core/runtime/plugins/...` |                | **Namespace for the plugin system.**                                                                                    |
+| `.../plugin.ex`                      | Stable         | Defines the `Plugin` behaviour that plugins must implement.                                                             |
+| `.../manager.ex`                     | Development    | GenServer responsible for loading, managing, and coordinating plugins. (Reloading added & tested)                       |
+| `.../registry.ex`                    | Stable         | Handles the storage and lookup of loaded plugins.                                                                       |
+| `.../dependency_solver.ex`           | Stable         | Resolves plugin load order based on declared dependencies.                                                              |
+| `.../command_registry.ex`            | Stable         | ETS-based registry for commands declared by plugins.                                                                    |
+| `.../command_helper.ex`              | Stable         | Helper functions for registering and handling commands from plugins.                                                    |
+| `.../commands.ex`                    | **Removed**    | ~~GenServer for managing command registration (replaced by ETS).~~                                                      |
+| `lib/raxol/core/plugins/core/...`    |                | **Namespace for built-in core plugins.**                                                                                |
+| `.../clipboard_plugin.ex`            | **Refactored** | Core plugin for clipboard read/write commands. (Uses `System.Clipboard`, Tests Pass)                                    |
+| `.../notification_plugin.ex`         | **Refactored** | Core plugin for sending system notifications. (Improved robustness)                                                     |
+| `.../filesystem_plugin.ex`           | Stable         | Core plugin providing file system interaction commands.                                                                 |
+| `lib/raxol/system/clipboard.ex`      | **New/Stable** | **Consolidated module for system clipboard interaction (macOS, Linux, Windows).**                                       |
+| **Terminal**                         |                |                                                                                                                         |
+| `lib/raxol/terminal/...`             |                | **Namespace for terminal emulation and interaction.**                                                                   |
+| `.../driver.ex`                      | Stable         | Defines the behaviour for terminal drivers (TTY, Mock).                                                                 |
+| `.../drivers/tty.ex`                 | Stable         | Driver for interacting with a real TTY via stdin/stdout. Uses `:rrex_termbox` NIF.                                      |
+| `.../emulator.ex`                    | Stable         | Core terminal emulator logic (state, input processing, screen buffer). (Many fixes applied, added :color_palette state) |
+| `.../screen_buffer.ex`               | Stable         | Manages the terminal screen buffer (grid, cells, attributes, scrollback). (Verified via Emulator fixes/tests)           |
+| `.../cell.ex`                        | Stable         | Represents a single cell in the screen buffer.                                                                          |
+| `.../parser.ex`                      | Stable         | Parses incoming byte streams into terminal commands/text.                                                               |
+| `.../commands/executor.ex`           | Stable         | Executes parsed terminal commands, updating emulator state. (Core CSI handlers fixed, basic OSC/DCS)                    |
+| `.../commands/modes.ex`              | **Removed**    | ~~Handles terminal mode settings (DECSM, DECRM).~~ (Logic moved into `ScreenModes`)                                     |
+| `.../ansi/screen_modes.ex`           | Stable         | Manages ANSI/DEC screen mode state (Alt screen, wrap, cursor visibility, etc.). (Refactored, fixed)                     |
+| `.../ansi/terminal_state.ex`         | Stable         | Manages saving/restoring terminal state (cursor, style, modes). (Fixed)                                                 |
+| `.../ansi/text_formatting.ex`        | Stable         | Handles SGR attributes and text formatting (colors, styles, width). (Fixed)                                             |
+| `.../cursor/manager.ex`              | Stable         | Manages cursor state (position, style, visibility).                                                                     |
+| `.../cursor/movement.ex`             | Stable         | Logic for calculating cursor movements.                                                                                 |
+| `.../clipboard.ex`                   | **Removed**    | ~~Handles clipboard interaction.~~                                                                                      |
+| `.../input_mapper.ex`                | Stable         | Maps raw input bytes/sequences to `InputEvent` structs.                                                                 |
+| `.../output_encoder.ex`              | Stable         | Encodes terminal commands (ANSI sequences) for output.                                                                  |
+| **UI Components**                    |                |                                                                                                                         |
+| `lib/raxol/ui/components/...`        |                | **Namespace for reusable UI components.**                                                                               |
+| `.../base/component.ex`              | Stable         | Defines the core `Component` behaviour (`init`, `handle_event`, `render`).                                              |
+| `.../display/text.ex`                | Stable         | Simple text display component.                                                                                          |
+| `.../display/progress.ex`            | Stable         | Progress bar component. (Tests fixed)                                                                                   |
+| `.../input/text_input.ex`            | Stable         | Single-line text input component. (Features added, tests fixed)                                                         |
+| `.../input/checkbox.ex`              | Development    | Checkbox component.                                                                                                     |
+| `.../input/button.ex`                | Development    | Button component.                                                                                                       |
+| `.../layout/box.ex`                  | Stable         | Basic layout container component.                                                                                       |
+| `.../selection/list.ex`              | Stable         | List selection component. (Tests fixed)                                                                                 |
+| `.../selection/dropdown.ex`          | Stable         | Dropdown selection component. (Tests fixed)                                                                             |
+| **Style & Theming**                  |                |                                                                                                                         |
+| `lib/raxol/style/...`                |                | **Namespace for styling and theming.**                                                                                  |
+| `.../colors/color.ex`                | Stable         | Defines color representation and manipulation functions.                                                                |
+| `.../colors/palette.ex`              | Stable         | Represents a theme's color palette.                                                                                     |
+| `.../colors/theme.ex`                | Stable         | Defines the `Theme` struct.                                                                                             |
+| `.../colors/persistence.ex`          | Stable         | Handles saving/loading themes and preferences. (Fixed)                                                                  |
+| `.../colors/advanced.ex`             | Stable         | Advanced color operations (blending, harmonies). (Fixed)                                                                |
+| `.../border.ex`                      | Stable         | Defines border styles.                                                                                                  |
+| `.../style_map.ex`                   | Stable         | Applies styles based on component state/type.                                                                           |
+| **Platform Integration**             |                |                                                                                                                         |
+| `lib/raxol/platform/...`             |                | **Namespace for platform-specific integrations.**                                                                       |
+| `.../notification.ex`                | Development    | Platform-agnostic notification interface.                                                                               |
+| **VS Code Extension**                |                |                                                                                                                         |
+| `lib/raxol_vscode/...`               |                | **Namespace for VS Code extension specific logic.**                                                                     |
+| `.../bridge.ex`                      | Stable         | Handles communication between Raxol core and the VS Code extension.                                                     |
+| **Web Interface (Phoenix)**          |                |                                                                                                                         |
+| `lib/raxol_web/...`                  |                | **Namespace for the optional Phoenix web UI.**                                                                          |
+| `.../live/terminal_live.ex`          | Stable         | Phoenix LiveView for rendering the terminal interface in a browser. (Tests fixed)                                       |
+| `.../endpoint.ex`                    | Development    | Phoenix endpoint configuration.                                                                                         |
+| `.../router.ex`                      | Development    | Phoenix router configuration.                                                                                           |
+| `.../channels/terminal_channel.ex`   | Stable         | Phoenix channel for terminal interaction. (Tests pass)                                                                  |
+| **Utilities & Helpers**              |                |                                                                                                                         |
+| `lib/raxol/utils/...`                |                | **Namespace for general utility functions.**                                                                            |
+| `lib/raxol/test/...`                 | Stable         | Test helpers and utilities.                                                                                             |
