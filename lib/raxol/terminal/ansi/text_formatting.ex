@@ -22,6 +22,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
           double_width: boolean(),
           double_height: :none | :top | :bottom,
           bold: boolean(),
+          faint: boolean(),
           italic: boolean(),
           underline: boolean(),
           blink: boolean(),
@@ -42,6 +43,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
           double_width: false,
           double_height: :none,
           bold: false,
+          faint: false,
           italic: false,
           underline: false,
           blink: false,
@@ -59,6 +61,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       double_width: false,
       double_height: :none,
       bold: false,
+      faint: false,
       italic: false,
       underline: false,
       blink: false,
@@ -150,7 +153,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       :no_double_width -> %{style | double_width: false}
       :no_double_height -> %{style | double_height: :none}
       :bold -> %{style | bold: true}
-      :faint -> %{style | bold: false}
+      :faint -> %{style | faint: true}
       :italic -> %{style | italic: true}
       :underline -> %{style | underline: true}
       :blink -> %{style | blink: true}
@@ -159,9 +162,11 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       :strikethrough -> %{style | strikethrough: true}
       :fraktur -> %{style | fraktur: true}
       :double_underline -> %{style | double_underline: true}
-      :normal_intensity -> %{style | bold: false}
+      :normal_intensity -> %{style | bold: false, faint: false}
       :no_italic_fraktur -> %{style | italic: false, fraktur: false}
-      :no_underline -> %{style | underline: false, double_underline: false}
+      :no_underline ->
+        new_style = %{style | underline: false, double_underline: false}
+        new_style
       :no_blink -> %{style | blink: false}
       :no_reverse -> %{style | reverse: false}
       :reveal -> %{style | conceal: false}
@@ -207,27 +212,28 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @spec effective_width(text_style(), String.t()) :: integer()
   def effective_width(style, char) do
     cond do
-      style.double_width -> 2
+      style.double_width ->
+        2
+
       # Basic check for wide characters (CJK range approximation)
-      case String.to_charlist(char) do
-        [codepoint] ->
-          # CJK Unified Ideographs, Hangul Syllables, Hiragana, Katakana, etc.
-          # This is an approximation and might not cover all wide chars.
-          if (codepoint >= 0x4E00 and codepoint <= 0x9FFF) or # CJK Unified Ideographs
-             (codepoint >= 0xAC00 and codepoint <= 0xD7A3) or # Hangul Syllables
-             (codepoint >= 0x3040 and codepoint <= 0x30FF) or # Hiragana, Katakana
-             (codepoint >= 0xFF00 and codepoint <= 0xFFEF) # Fullwidth Forms
-          do
-            2
-          else
+      true ->
+        case String.to_charlist(char) do
+          [codepoint] ->
+            # CJK Unified Ideographs, Hangul Syllables, Hiragana, Katakana, etc.
+            # This is an approximation and might not cover all wide chars.
+            if (codepoint >= 0x4E00 and codepoint <= 0x9FFF) or # CJK Unified Ideographs
+               (codepoint >= 0xAC00 and codepoint <= 0xD7A3) or # Hangul Syllables
+               (codepoint >= 0x3040 and codepoint <= 0x30FF) or # Hiragana, Katakana
+               (codepoint >= 0xFF00 and codepoint <= 0xFFEF) # Fullwidth Forms
+            do
+              2
+            else
+              1
+            end
+          # Handle multi-grapheme characters or empty string as width 1 (or adjust as needed)
+          _ ->
             1
-          end
-        # Handle multi-grapheme characters or empty string as width 1 (or adjust as needed)
-        _ -> 1
-      end
-      # This case is now handled by the char check above
-      # String.length(char) > 1 -> 2
-      # true -> 1
+        end
     end
   end
 

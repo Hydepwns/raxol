@@ -21,6 +21,14 @@ defmodule Raxol.Terminal.Parser do
   # --- Define Internal Parser State ---
   defmodule State do
     @moduledoc false
+    @type t :: %__MODULE__{
+          state: atom(),
+          params_buffer: String.t(),
+          intermediates_buffer: String.t(),
+          payload_buffer: String.t(),
+          final_byte: integer() | nil,
+          designating_gset: non_neg_integer() | nil
+        }
     defstruct state: :ground,
               # Raw params string buffer (e.g., "1;31")
               params_buffer: "",
@@ -42,15 +50,13 @@ defmodule Raxol.Terminal.Parser do
   Takes the current emulator state and input binary, returns the updated emulator state
   after processing the input chunk.
 
-  Delegates actual state modification (character writing, command execution)
-  back to the Emulator module.
+  Takes the emulator state, the *current* parser state, and the input binary.
+  Returns `{final_emulator_state, final_parser_state}`.
   """
-  @spec parse_chunk(Emulator.t(), binary()) :: Emulator.t()
-  def parse_chunk(emulator, input) when is_binary(input) do
-    # Start the internal recursive parsing with initial parser state
-    initial_parser_state = %Raxol.Terminal.Parser.State{}
-    # Pass initial emulator, initial parser state, and the input
-    parse_loop(emulator, initial_parser_state, input)
+  @spec parse_chunk(Emulator.t(), State.t(), binary()) :: {Emulator.t(), State.t()}
+  def parse_chunk(emulator, current_parser_state, input) when is_binary(input) do
+    # Start the internal recursive parsing with the provided parser state
+    parse_loop(emulator, current_parser_state, input)
   end
 
   # --- Internal Parsing State Machine (Renamed do_parse_chunk -> parse_loop) ---
@@ -58,28 +64,20 @@ defmodule Raxol.Terminal.Parser do
   # Base case: End of input
   # Accepts emulator, parser_state, and empty input
   defp parse_loop(emulator, parser_state, "") do
-    # IO.inspect({:parse_loop_end_of_input, parser_state.state, ""}, label: "DEBUG_PARSER")
-    IO.inspect(emulator.cursor.position, label: "Cursor at end of parse_loop")
-    if parser_state.state != :ground do
-      Logger.debug("Input ended while in parser state: #{parser_state.state}")
-    end
-
-    emulator
+    # Return the final emulator and the parser state it ended in.
+    {emulator, parser_state}
   end
 
   # --- Ground State ---
   # Delegates to GroundState handler
-  defp parse_loop(
-         emulator,
-         %State{state: :ground} = parser_state,
-         input
-       ) do
+  defp parse_loop(emulator, %State{state: :ground} = parser_state, input) do
     case GroundState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
+        # --- DEBUG LOG ---
+        # IO.inspect({:parse_loop_ground_recurse, next_emulator.cursor.position}, label: "DEBUG")
+        # --- END DEBUG LOG ---
         parse_loop(next_emulator, next_parser_state, next_input)
-
-      {:handled, final_emulator} ->
-        final_emulator
+      # GroundState.handle only returns :continue, so no other cases needed here.
     end
   end
 
@@ -94,8 +92,12 @@ defmodule Raxol.Terminal.Parser do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
 
-      {:handled, final_emulator} ->
-        final_emulator
+      # Add case for incomplete
+      {:incomplete, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
+      # Escape state might return finished after handling a non-transitioning sequence
+      {:finished, final_emulator, final_parser_state} ->
+         {final_emulator, final_parser_state}
     end
   end
 
@@ -110,8 +112,13 @@ defmodule Raxol.Terminal.Parser do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
 
-      {:handled, final_emulator} ->
-        final_emulator
+      # Add case for incomplete
+      {:incomplete, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
+      # Previous version had {:handled, emu, state} - ensure that's covered
+      # Assuming handle now returns :finished if it used to return :handled
+      {:finished, final_emulator, final_parser_state} ->
+         {final_emulator, final_parser_state}
     end
   end
 
@@ -126,8 +133,13 @@ defmodule Raxol.Terminal.Parser do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
 
-      {:handled, final_emulator} ->
-        final_emulator
+      # Add case for incomplete
+      {:incomplete, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
+      # Previous version had {:handled, emu, state} - ensure that's covered
+      # Assuming handle now returns :finished if it used to return :handled
+      {:finished, final_emulator, final_parser_state} ->
+         {final_emulator, final_parser_state}
     end
   end
 
@@ -142,8 +154,10 @@ defmodule Raxol.Terminal.Parser do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
 
-      {:handled, final_emulator} ->
-        final_emulator
+      {:finished, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
+      {:incomplete, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
     end
   end
 
@@ -158,40 +172,36 @@ defmodule Raxol.Terminal.Parser do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
 
-      {:handled, final_emulator} ->
-        final_emulator
+      {:finished, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
+      {:incomplete, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
     end
   end
 
   # --- OSC String State ---
   # Delegates to OSCStringState handler
-  defp parse_loop(
-         emulator,
-         %State{state: :osc_string} = parser_state,
-         input
-       ) do
+  defp parse_loop(emulator, %State{state: :osc_string} = parser_state, input) do
     case OSCStringState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
-
-      {:handled, final_emulator} ->
-        final_emulator
+      {:finished, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
+      {:incomplete, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
     end
   end
 
   # Helper state to check for ST after ESC in OSC String
   # Delegates to OSCStringMaybeSTState handler
-  defp parse_loop(
-         emulator,
-         %State{state: :osc_string_maybe_st} = parser_state,
-         input
-       ) do
+  defp parse_loop(emulator, %State{state: :osc_string_maybe_st} = parser_state, input) do
     case OSCStringMaybeSTState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
-
-      {:handled, final_emulator} ->
-        final_emulator
+      {:finished, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
+      {:incomplete, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
     end
   end
 
@@ -206,8 +216,10 @@ defmodule Raxol.Terminal.Parser do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
 
-      {:handled, final_emulator} ->
-        final_emulator
+      {:finished, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
+      {:incomplete, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
     end
   end
 
@@ -222,24 +234,23 @@ defmodule Raxol.Terminal.Parser do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
 
-      {:handled, final_emulator} ->
-        final_emulator
+      {:finished, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
+      {:incomplete, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
     end
   end
 
   # Helper state to check for ST after ESC in DCS Passthrough
   # Delegates to DCSPassthroughMaybeSTState handler
-  defp parse_loop(
-         emulator,
-         %State{state: :dcs_passthrough_maybe_st} = parser_state,
-         input
-       ) do
+  defp parse_loop(emulator, %State{state: :dcs_passthrough_maybe_st} = parser_state, input) do
     case DCSPassthroughMaybeSTState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
-
-      {:handled, final_emulator} ->
-        final_emulator
+      {:finished, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
+      {:incomplete, final_emulator, final_parser_state} ->
+        {final_emulator, final_parser_state}
     end
   end
 end

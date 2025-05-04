@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
     12 => :att_blink,
     # Text Cursor Enable Mode
     25 => :dectcem,
-    # Use Alternate Screen Buffer
+    # Use Alternate Screen Buffer (Simple)
     47 => :dec_alt_screen,
     # Send Mouse X & Y on button press
     1000 => :mouse_report,
@@ -53,7 +53,11 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
     1004 => :focus_events,
     # SGR Mouse Mode
     1006 => :sgr_mouse,
-    # Save cursor and use Alternate Screen Buffer
+    # Use Alt Screen, Save/Restore State (no clear)
+    1047 => :dec_alt_screen_save,
+    # Save/Restore Cursor Position
+    1048 => :decsc,
+    # Use Alt Screen, Save/Restore State, Clear on switch
     1049 => :alt_screen_buffer
   }
 
@@ -64,6 +68,11 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
     # Line Feed Mode
     20 => :line_feed_mode
   }
+
+  alias Raxol.Terminal.{Emulator, ScreenBuffer, Cell}
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  alias Raxol.Terminal.ANSI.TerminalState
+  require Raxol.Terminal.ANSI.TerminalState
 
   @doc """
   Creates a new screen state with default values.
@@ -146,7 +155,14 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
       :wide_column -> %{state | column_width_mode: :wide}
       # Map DECCOLM to wide column mode
       :deccolm_132 -> %{state | column_width_mode: :wide}
+      # Add missing modes
+      # Mode 8
+      :decarm -> %{state | auto_repeat_mode: true}
+      # Mode 9
+      :decinlm -> %{state | interlacing_mode: true}
+      # Alias if needed
       :auto_repeat -> %{state | auto_repeat_mode: true}
+      # Alias if needed
       :interlacing -> %{state | interlacing_mode: true}
       _ -> state
     end
@@ -166,7 +182,14 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
       :wide_column -> %{state | column_width_mode: :normal}
       # Map DECCOLM to normal column mode
       :deccolm_132 -> %{state | column_width_mode: :normal}
+      # Add missing modes
+      # Mode 8
+      :decarm -> %{state | auto_repeat_mode: false}
+      # Mode 9
+      :decinlm -> %{state | interlacing_mode: false}
+      # Alias if needed
       :auto_repeat -> %{state | auto_repeat_mode: false}
+      # Alias if needed
       :interlacing -> %{state | interlacing_mode: false}
       _ -> state
     end
@@ -237,86 +260,213 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
 
   Processes a list of parameters, looks up the corresponding mode atom,
   and applies the action (:set or :reset) to the emulator's mode_state.
+  Updated to accept only emulator and {param, action}
+  Also handles buffer resizing and screen clearing for relevant modes.
   """
-  @spec handle_dec_private_mode(Raxol.Terminal.Emulator.t(), list(integer()), :set | :reset) ::
+  @spec handle_dec_private_mode(
+          Raxol.Terminal.Emulator.t(),
+          {integer(), :set | :reset}
+        ) ::
           Raxol.Terminal.Emulator.t()
-  def handle_dec_private_mode(emulator, params, action) do
-    Enum.reduce(params, emulator, fn param, acc_emulator ->
-      mode_atom = lookup_private(param)
+  def handle_dec_private_mode(emulator, {param, action}) do
+    # Use the passed emulator directly
+    acc_emulator = emulator
 
-      if mode_atom do
-        Logger.debug("[ScreenModes] #{action} DEC mode #{param} (#{mode_atom})")
+    mode_atom = lookup_private(param)
 
-        # Special handling for modes affecting more than just mode_state flags
-        case {mode_atom, action} do
-          # Use Alternate Screen Buffer (save/restore state)
-          {:alt_screen_buffer, :set} ->
-            if acc_emulator.active_buffer_type == :main do
-              Logger.debug("Switching to alternate screen buffer (1049h)")
-              # TODO: Save cursor, style etc. according to xterm?
-              # For now, just switch buffer and clear alternate
-              cleared_alt_buffer = ScreenBuffer.erase_in_display(acc_emulator.alternate_screen_buffer, 2, acc_emulator.cursor)
-              new_cursor = CursorManager.move_to(acc_emulator.cursor, 0, 0)
-              %{acc_emulator | active_buffer_type: :alternate, alternate_screen_buffer: cleared_alt_buffer, cursor: new_cursor}
-            else
-              acc_emulator # Already in alt buffer
-            end
-          {:alt_screen_buffer, :reset} ->
-             if acc_emulator.active_buffer_type == :alternate do
-               Logger.debug("Switching back to main screen buffer (1049l)")
-               # TODO: Restore cursor, style etc.?
-               # For now, just switch buffer
-               %{acc_emulator | active_buffer_type: :main}
-             else
-               acc_emulator # Already in main buffer
-             end
+    if mode_atom do
+      # Logger.debug("[ScreenModes] #{action} DEC Private Mode ##{param} (#{mode_atom})")
 
-          # DECCOLM - 132 Column Mode (affects column_width_mode)
-          {:deccolm_132, :set} ->
-            # TODO: Need to resize buffer? Notify layout?
-            %{acc_emulator | mode_state: %{acc_emulator.mode_state | column_width_mode: :wide}}
-          {:deccolm_132, :reset} ->
-            # TODO: Need to resize buffer? Notify layout?
-            %{acc_emulator | mode_state: %{acc_emulator.mode_state | column_width_mode: :normal}}
+      # Get current dimensions BEFORE changing state
+      current_buffer = Emulator.get_active_buffer(acc_emulator)
 
-          # DECSCNM - Screen Mode (Reverse Video) (affects rendering?)
-          # TODO: Implement reverse video mode effect
-          {:decscnm, _action} ->
-            Logger.warning("DECSCNM (reverse video) not fully implemented")
-            acc_emulator
+      {_current_width, current_height} =
+        ScreenBuffer.get_dimensions(current_buffer)
 
-          # All other modes handled by setting/resetting flags
-          {other_mode, action_type} ->
-            new_mode_state =
-              case action_type do
-                :set -> set_mode(acc_emulator.mode_state, map_mode_to_flag(other_mode))
-                :reset -> reset_mode(acc_emulator.mode_state, map_mode_to_flag(other_mode))
-              end
-            %{acc_emulator | mode_state: new_mode_state}
-        end
-      else
-        Logger.warning("Unknown DEC private mode parameter: #{param}")
-        acc_emulator
+      # Apply the basic mode state change first
+      updated_mode_state =
+        switch_mode(acc_emulator.mode_state, mode_atom, action == :set)
+
+      emulator_with_mode = %{acc_emulator | mode_state: updated_mode_state}
+
+      # --- Handle side effects based on the specific mode ---
+      case {mode_atom, action} do
+        # --- Column Width (DECCOLM) ---
+        {:deccolm_132, :set} ->
+          apply_column_width_change(emulator_with_mode, 132, current_height)
+
+        {:deccolm_132, :reset} ->
+          apply_column_width_change(emulator_with_mode, 80, current_height)
+
+        # --- Alternate Screen Buffer (DECSCA/DECRARA) ---
+        # Mode 1049: Use Alt Screen, Save/Restore State, Clear on switch
+        {:alt_screen_buffer, :set} ->
+          # Save state BEFORE switching
+          new_stack =
+            TerminalState.save_state(acc_emulator.state_stack, acc_emulator)
+
+          emulator_with_stack = %{emulator_with_mode | state_stack: new_stack}
+          # Clear the alternate buffer
+          cleared_alt_buffer =
+            ScreenBuffer.clear(emulator_with_stack.alternate_screen_buffer)
+
+          emulator_with_cleared_alt = %{
+            emulator_with_stack
+            | alternate_screen_buffer: cleared_alt_buffer
+          }
+
+          # Switch active buffer type and move cursor home
+          %{
+            emulator_with_cleared_alt
+            | active_buffer_type: :alternate,
+              cursor:
+                CursorManager.move_to(emulator_with_cleared_alt.cursor, 0, 0)
+          }
+
+        {:alt_screen_buffer, :reset} ->
+          # Restore state AFTER switching back buffers
+          {restored_state_stack, restored_data} =
+            TerminalState.restore_state(acc_emulator.state_stack)
+
+          restored_emulator =
+            TerminalState.apply_restored_data(
+              emulator_with_mode,
+              restored_data,
+              [:cursor, :style, :charset_state, :mode_state, :scroll_region]
+            )
+
+          # Switch active buffer type (restored_emulator already has mode_state reset)
+          %{
+            restored_emulator
+            | active_buffer_type: :main,
+              state_stack: restored_state_stack
+          }
+
+        # Mode 1047: Use Alt Screen, Save/Restore State (no clear)
+        {:dec_alt_screen_save, :set} ->
+          # Save state BEFORE switching
+          new_stack =
+            TerminalState.save_state(acc_emulator.state_stack, acc_emulator)
+
+          emulator_with_stack = %{emulator_with_mode | state_stack: new_stack}
+          # Switch active buffer type and move cursor home
+          %{
+            emulator_with_stack
+            | active_buffer_type: :alternate,
+              cursor: CursorManager.move_to(emulator_with_stack.cursor, 0, 0)
+          }
+
+        {:dec_alt_screen_save, :reset} ->
+          # Restore state AFTER switching back buffers
+          {restored_state_stack, restored_data} =
+            TerminalState.restore_state(acc_emulator.state_stack)
+
+          restored_emulator =
+            TerminalState.apply_restored_data(
+              emulator_with_mode,
+              restored_data,
+              [:cursor, :style, :charset_state, :mode_state, :scroll_region]
+            )
+
+          # Switch active buffer type
+          %{
+            restored_emulator
+            | active_buffer_type: :main,
+              state_stack: restored_state_stack
+          }
+
+        # Mode 47: Use Alternate Screen Buffer (Simple, no save/restore, clears on switch)
+        {:dec_alt_screen, :set} ->
+          cleared_alt_buffer =
+            ScreenBuffer.clear(emulator_with_mode.alternate_screen_buffer)
+
+          emulator_with_cleared_alt = %{
+            emulator_with_mode
+            | alternate_screen_buffer: cleared_alt_buffer
+          }
+
+          %{
+            emulator_with_cleared_alt
+            | active_buffer_type: :alternate,
+              cursor:
+                CursorManager.move_to(emulator_with_cleared_alt.cursor, 0, 0)
+          }
+
+        {:dec_alt_screen, :reset} ->
+          %{emulator_with_mode | active_buffer_type: :main}
+
+        # Does not restore cursor or clear main buffer per spec
+
+        # --- Cursor Save/Restore (DECSC/DECRC) ---
+        # Note: These are handled slightly differently; DECSC saves, DECRC restores.
+        # Mode 1048 is used for both, action determines behavior.
+        # Corresponds to DECSC command
+        {:decsc, :set} ->
+          # Save cursor state, etc.
+          new_stack =
+            TerminalState.save_state(acc_emulator.state_stack, acc_emulator, [
+              :cursor,
+              :style,
+              :charset_state,
+              :origin_mode
+            ])
+
+          %{emulator_with_mode | state_stack: new_stack}
+
+        # Corresponds to DECRC command
+        {:decsc, :reset} ->
+          # Restore cursor state, etc.
+          {restored_state_stack, restored_data} =
+            TerminalState.restore_state(acc_emulator.state_stack)
+
+          TerminalState.apply_restored_data(emulator_with_mode, restored_data, [
+            :cursor,
+            :style,
+            :charset_state,
+            :origin_mode
+          ])
+          |> Map.put(:state_stack, restored_state_stack)
+
+        # --- Other modes just update mode_state (handled above) ---
+        _ ->
+          emulator_with_mode
       end
-    end)
+    else
+      Logger.warning(
+        "[ScreenModes] Unhandled DEC Private Mode parameter: #{param} action: #{action}"
+      )
+
+      acc_emulator
+    end
   end
 
   @doc """
   Handles setting or resetting standard ANSI modes based on parameters.
   """
-  @spec handle_ansi_mode(Raxol.Terminal.Emulator.t(), list(integer()), :set | :reset) ::
+  @spec handle_ansi_mode(
+          Raxol.Terminal.Emulator.t(),
+          list(integer()),
+          :set | :reset
+        ) ::
           Raxol.Terminal.Emulator.t()
   def handle_ansi_mode(emulator, params, action) do
     Enum.reduce(params, emulator, fn param, acc_emulator ->
       mode_atom = lookup_standard(param)
 
       if mode_atom do
-        Logger.debug("[ScreenModes] #{action} ANSI mode #{param} (#{mode_atom})")
+        Logger.debug(
+          "[ScreenModes] #{action} ANSI mode #{param} (#{mode_atom})"
+        )
+
         new_mode_state =
           case action do
-            :set -> set_mode(acc_emulator.mode_state, map_mode_to_flag(mode_atom))
-            :reset -> reset_mode(acc_emulator.mode_state, map_mode_to_flag(mode_atom))
+            :set ->
+              set_mode(acc_emulator.mode_state, map_mode_to_flag(mode_atom))
+
+            :reset ->
+              reset_mode(acc_emulator.mode_state, map_mode_to_flag(mode_atom))
           end
+
         %{acc_emulator | mode_state: new_mode_state}
       else
         Logger.warning("Unknown ANSI mode parameter: #{param}")
@@ -361,10 +511,13 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
       :decawm -> :auto_wrap
       :decom -> :origin_mode
       :decarm -> :auto_repeat
-      :insert_mode -> :insert_mode # Standard mode 4
-      :line_feed_mode -> :line_feed_mode # Standard mode 20
+      # Standard mode 4
+      :insert_mode -> :insert_mode
+      # Standard mode 20
+      :line_feed_mode -> :line_feed_mode
       # Add other mappings as needed (e.g., :decckm -> :cursor_key_mode)
-      _ -> mode_atom # Assume flag name matches atom if not explicitly mapped
+      # Assume flag name matches atom if not explicitly mapped
+      _ -> mode_atom
     end
   end
 
@@ -511,5 +664,18 @@ defmodule Raxol.Terminal.ANSI.ScreenModes do
 
     # Return the updated emulator
     %{emulator | buffer_key => new_buffer}
+  end
+
+  # --- Private Helper for DECCOLM ---
+  defp apply_column_width_change(emulator, new_width, current_height) do
+    emulator
+    |> Emulator.resize(new_width, current_height)
+    |> Kernel.then(fn emu ->
+      cleared_buffer = ScreenBuffer.clear(Emulator.get_active_buffer(emu))
+      Emulator.put_active_buffer(emu, cleared_buffer)
+    end)
+    |> Kernel.then(fn emu ->
+      %{emu | cursor: CursorManager.move_to(emu.cursor, 0, 0)}
+    end)
   end
 end
