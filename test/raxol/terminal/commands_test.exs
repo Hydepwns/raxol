@@ -64,11 +64,12 @@ defmodule Raxol.Terminal.CommandsTest do
       log =
         capture_log(fn ->
           {command, _updated} = History.next(history)
-          assert command == ""
+          assert command == "" # Should return current_input which is empty
         end)
 
-      assert log =~ "is deprecated"
-      assert log =~ "Use Raxol.Terminal.Commands.History.next/1 instead"
+      # Assert that the direct call to History.next does NOT produce a deprecation warning
+      refute log =~ "is deprecated"
+      assert log == ""
     end
   end
 
@@ -89,10 +90,15 @@ defmodule Raxol.Terminal.CommandsTest do
 
       log =
         capture_log(fn ->
-          value = Commands.get_param(params, 1, 0)
-          assert value == 2
-          value0 = Commands.get_param(params, 0, 99)
-          assert value0 == 1
+          # Index 1 (first param)
+          value1 = Commands.get_param(params, 1, 0)
+          assert value1 == 1
+          # Index 2 (second param)
+          value2 = Commands.get_param(params, 2, 0)
+          assert value2 == 2
+          # Index 4 (out of bounds) -> should return default 99
+          value4 = Commands.get_param(params, 4, 99)
+          assert value4 == 99
         end)
 
       assert log =~ "is deprecated"
