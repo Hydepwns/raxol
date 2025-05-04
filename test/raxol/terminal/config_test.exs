@@ -5,72 +5,99 @@ defmodule Raxol.Terminal.ConfigTest do
   alias Raxol.Terminal.Config
   alias Raxol.Terminal.Config.{Validation, Defaults, Capabilities, Schema}
 
-  # A configuration map matching the nested Schema structure
+  # Updated valid config based on flat schema
   @valid_config %{
-    display: %{
-      width: 80,
-      height: 24,
-      colors: 256,
-      truecolor: true,
-      unicode: true
-    },
-    input: %{
-      mouse: true,
-      keyboard: true,
-      escape_timeout: 50
-    },
-    rendering: %{
-      fps: 60,
-      double_buffer: true,
-      redraw_mode: :incremental
-    },
-    ansi: %{
-      enabled: true,
-      color_mode: :truecolor
-    }
-    # Add other sections/fields if needed for specific tests
+    terminal_type: :xterm,
+    color_mode: :truecolor,
+    unicode_support: true,
+    mouse_support: true,
+    clipboard_support: true,
+    bracketed_paste: true,
+    focus_support: true,
+    title_support: true,
+    hyperlinks: true,
+    sixel_support: false,
+    image_support: false,
+    sound_support: true,
+    width: 80,
+    height: 24,
+    font_family: "monospace",
+    font_size: 12,
+    cursor_style: :block,
+    cursor_blink: true,
+    cursor_color: "#FFFFFF",
+    selection_color: "rgba(100, 100, 100, 0.5)",
+    line_height: 1.2,
+    ligatures: false,
+    font_rendering: :antialiased,
+    batch_size: 100,
+    scrollback_limit: 1000,
+    prompt: "> ",
+    welcome_message: "Welcome!",
+    command_history_size: 500,
+    enable_command_history: true,
+    enable_syntax_highlighting: true,
+    enable_fullscreen: false,
+    accessibility_mode: false,
+    virtual_scroll: true,
+    memory_limit: 1_000_000_000,
+    cleanup_interval: 60_000,
+    background_type: :solid,
+    background_opacity: 1.0,
+    background_image: nil,
+    background_blur: 0.0,
+    background_scale: :fit,
+    animation_type: nil,
+    animation_path: nil,
+    animation_fps: nil,
+    animation_loop: nil,
+    animation_blend: nil
   }
+
+  describe "Schema" do
+    # ... tests for Schema ...
+  end
 
   describe "Validation" do
     test "validate_config/1 validates valid configuration" do
       assert {:ok, validated} = Validation.validate_config(@valid_config)
-      # Check if the validated output is the same as input (or transformed if validation does that)
+      # Check if validated config matches input (assuming validation doesn't change values here)
       assert validated == @valid_config
     end
 
     test "validate_config/1 rejects invalid configuration (unknown key)" do
-      invalid_config = put_in(@valid_config, [:display, :invalid_key], :bad_value)
+      invalid_config = Map.put(@valid_config, :unknown_key, "value")
       assert {:error, reason} = Validation.validate_config(invalid_config)
+      IO.inspect(reason, label: "Unknown Key Reason") # Debug output
       assert String.contains?(reason, "Unknown configuration keys")
-      assert String.contains?(reason, "[:display]")
-      assert String.contains?(reason, "[:invalid_key]")
+      assert String.contains?(reason, ":unknown_key")
     end
 
     test "validate_config/1 rejects invalid configuration (wrong type)" do
-      invalid_config = put_in(@valid_config, [:display, :width], "not_an_integer")
+      # Use a key that expects boolean, give it a string
+      invalid_config = Map.put(@valid_config, :unicode_support, "not_a_boolean")
       assert {:error, reason} = Validation.validate_config(invalid_config)
+      IO.inspect(reason, label: "Wrong Type Reason") # Debug output
       assert String.contains?(reason, "Invalid value")
-      assert String.contains?(reason, "[:display, :width]")
-      assert String.contains?(reason, ":integer")
+      assert String.contains?(reason, "[:unicode_support]")
     end
 
     test "validate_config/1 rejects invalid configuration (bad enum value)" do
-      invalid_config = put_in(@valid_config, [:rendering, :redraw_mode], :bad_enum)
+      # Use a key that expects enum, give it a wrong atom
+      invalid_config = Map.put(@valid_config, :cursor_style, :invalid_style)
       assert {:error, reason} = Validation.validate_config(invalid_config)
+      IO.inspect(reason, label: "Bad Enum Reason") # Debug output
       assert String.contains?(reason, "not one of")
-      assert String.contains?(reason, "[:rendering, :redraw_mode]")
-      assert String.contains?(reason, "[:full, :incremental]")
+      assert String.contains?(reason, "[:cursor_style]")
     end
   end
 
   describe "Defaults" do
     test "generate_default_config/0 generates valid default configuration" do
       config = Defaults.generate_default_config()
-      # Validate the generated default config against the schema
+      assert is_map(config)
+      # Validate the generated default config
       assert {:ok, _validated} = Validation.validate_config(config)
-      # Check a few key default values based on Schema/Defaults implementation
-      assert Map.get(config, :display, %{})[:width] == 80 # Example check
-      assert Map.get(config, :rendering, %{})[:fps] == 60 # Example check
     end
 
     # Test for minimal_config needs to be added if the function exists

@@ -52,9 +52,11 @@ config :raxol, :terminal,
   enable_mouse: false,
   debug_mode: false,
   log_level: :warn,
-  # Disable real termbox for CI/testing
+  # --- REVERT TO MOCK NIF FOR TESTING --- #
   use_termbox: false,
   mock_termbox: true
+
+# --------------------------------------- #
 
 # Flag to control compilation of AI-related tests
 config :raxol, :compile_ai_tests, false
