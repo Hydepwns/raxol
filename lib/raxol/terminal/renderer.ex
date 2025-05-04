@@ -138,14 +138,8 @@ defmodule Raxol.Terminal.Renderer do
 
     style = build_style(style_attrs, renderer.theme)
 
-    result =
-      if style == "" do
-        char
-      else
-        "<span style=\"#{style}\">#{char}</span>"
-      end
-
-    result
+    # Always wrap in a span, even if style is empty
+    "<span style=\"#{style}\">#{char}</span>"
   end
 
   defp build_style(style_attrs, theme) do

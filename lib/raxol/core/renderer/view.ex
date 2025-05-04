@@ -335,8 +335,10 @@ defmodule Raxol.Core.Renderer.View do
       col = rem(i, columns)
       x = col * (cell_width + elem(gap, 1))
       y = row * (height + elem(gap, 0))
-
-      %{child | position: {x, y}, size: {cell_width, height}}
+      # Recursively layout grid children
+      # Assuming cell height is full row height for now
+      layout(child, {cell_width, height})
+      |> Map.put(:position, {x, y})
     end)
   end
 
@@ -364,21 +366,27 @@ defmodule Raxol.Core.Renderer.View do
         end
 
     # Layout child with reduced size
-    inner_size = {width - 2, height - 2}
+    inner_size = {max(0, width - 2), max(0, height - 2)}
     child = List.first(view.children)
 
+    laid_out_child =
+      if child do
+        # Recursively layout the child within the border's inner dimensions
+        layout(child, inner_size)
+        # Position child relative to border
+        |> Map.put(:position, {1, 1})
+      else
+        nil
+      end
+
+    # Return the border cells and the laid-out child
     [
-      # Border cells
       border
       |> List.flatten()
       |> Enum.map(fn {x, y, char} ->
         text(char, position: {x, y})
       end),
-
-      # Child content
-      if child do
-        %{child | position: {1, 1}, size: inner_size}
-      end
+      laid_out_child
     ]
     |> List.flatten()
     |> Enum.reject(&is_nil/1)
@@ -388,159 +396,198 @@ defmodule Raxol.Core.Renderer.View do
     child = List.first(view.children)
     {offset_x, offset_y} = view.offset || {0, 0}
 
-    laid_out_children =
+    # Layout the child using its *intrinsic* size first, if available,
+    # or the scroll container's size otherwise.
+    # This is simplified; real scroll layout is complex.
+    child_layout_size = child.size || size
+
+    laid_out_child_content =
       if child do
-        [%{child | position: {-offset_x, -offset_y}, size: size}]
+        # Layout child first
+        layout(child, child_layout_size)
       else
         []
       end
 
-    %{view | children: laid_out_children}
+    # Position the laid-out content within the scroll view
+    positioned_content =
+      laid_out_child_content
+      # Flatten the child's layout result
+      |> flatten_view_tree()
+      |> Enum.map(fn elem ->
+        {cx, cy} = elem.position || {0, 0}
+        # Adjust child element positions by scroll offset
+        Map.put(elem, :position, {cx - offset_x, cy - offset_y})
+      end)
+
+    # Return the scroll container itself, plus the positioned child content
+    # The renderer will handle clipping based on the scroll container's size.
+    # Don't nest children here
+    [%{view | children: [], size: size} | positioned_content]
   end
 
-  defp layout_shadow(view, {width, height} = _size) do
+  defp layout_shadow(view, {width, height} = size) do
     child = List.first(view.children)
     {offset_x, offset_y} = view.offset || {1, 1}
     shadow_color = view.color || :bright_black
 
-    shadow_views =
-      for x <- offset_x..(width - 1), y <- offset_y..(height - 1) do
-        text(" ", position: {x, y}, bg: shadow_color, style: [:dim])
-      end
+    # Calculate shadow cells based on the final size of the child
+    # First, layout the child to determine its size
+    content_size = {max(0, width - offset_x), max(0, height - offset_y)}
 
-    content_view =
+    laid_out_child_content =
       if child do
-        [
-          %{
-            child
-            | position: {0, 0},
-              size: {width - offset_x, height - offset_y}
-          }
-        ]
+        layout(child, content_size)
+        # Position child at top-left
+        |> Map.put(:position, {0, 0})
       else
-        []
+        nil
       end
 
-    %{view | children: shadow_views ++ content_view}
+    # Determine actual size occupied by the laid-out child
+    actual_child_width =
+      if laid_out_child_content,
+        do: elem(laid_out_child_content.size, 0),
+        else: 0
+
+    actual_child_height =
+      if laid_out_child_content,
+        do: elem(laid_out_child_content.size, 1),
+        else: 0
+
+    shadow_views =
+      for x <- offset_x..(actual_child_width + offset_x - 1),
+          y <- offset_y..(actual_child_height + offset_y - 1) do
+        # Avoid drawing shadow where content is
+        is_content_area = x < actual_child_width and y < actual_child_height
+
+        unless is_content_area do
+          text(" ", position: {x, y}, bg: shadow_color, style: [:dim])
+        end
+      end
+      |> Enum.reject(&is_nil/1)
+
+    # Flatten the laid_out_child_content if it has children
+    flat_child_content =
+      flatten_view_tree(laid_out_child_content)
+      |> Enum.reject(&is_nil/1)
+
+    # Return shadow views and the laid-out child content
+    [shadow_views, flat_child_content]
+    |> List.flatten()
   end
 
   defp layout_basic(view, size) do
-    %{view | size: size}
+    # If basic view has children, layout them too
+    laid_out_children = Enum.map(view.children || [], &layout(&1, size))
+    %{view | size: size, children: laid_out_children}
   end
 
   defp apply_spacing({width, height}, {pt, pr, pb, pl}, {mt, mr, mb, ml}) do
-    {
-      width - (pl + pr + ml + mr),
-      height - (pt + pb + mt + mb)
-    }
+    inner_width = width - (pl + pr + ml + mr)
+    inner_height = height - (pt + pb + mt + mb)
+    # Ensure non-negative
+    {max(0, inner_width), max(0, inner_height)}
   end
 
   defp calculate_child_size(child, parent_size) do
-    child.size || parent_size
+    # Prioritize child's explicit size, fallback to calculated or parent size
+    child.size || calculate_intrinsic_size(child) || parent_size
+  end
+
+  defp calculate_intrinsic_size(view) do
+    case view.type do
+      # Basic text size
+      :text -> {String.length(view.content || ""), 1}
+      # Add calculations for other types if needed
+      _ -> nil
+    end
   end
 
   defp calculate_flex_position({x, y}, {w, h}, :row, true, {container_w, _}) do
     if x + w > container_w do
-      # Wrap to next line
       {0, y + h}
     else
       {x, y}
     end
   end
 
-  defp calculate_flex_position({x, y}, {_w, _h}, :row, false, _) do
-    {x, y}
+  defp calculate_flex_position({x, y}, {w, _h}, :row, false, _) do
+    {x + w, y}
   end
 
   defp calculate_flex_position({x, y}, {w, h}, :column, true, {_, container_h}) do
     if y + h > container_h do
-      # Wrap to next column
       {x + w, 0}
     else
       {x, y}
     end
   end
 
-  defp calculate_flex_position({x, y}, {_w, _h}, :column, false, _) do
-    {x, y}
+  defp calculate_flex_position({x, y}, {_w, h}, :column, false, _) do
+    {x, y + h}
   end
 
-  defp advance_position({x, y}, {_w, _h}, :row) do
-    {x + 1, y}
+  defp advance_position({x, y}, {w, _h}, :row) do
+    {x + w, y}
   end
 
-  defp advance_position({x, y}, {_w, _h}, :column) do
-    {x, y + 1}
+  defp advance_position({x, y}, {_w, h}, :column) do
+    {x, y + h}
   end
 
   defp adjust_flex_positions(
-         positions,
-         _direction,
-         _justify,
-         _align,
-         _container_size
+         positioned_children,
+         direction,
+         justify,
+         align,
+         container_size
        ) do
-    # Implement justification and alignment adjustments
-    positions
+    # Simplified placeholder - Real flexbox alignment/justification is complex!
+    positioned_children
   end
 
+  defp flatten_view_tree(nil), do: []
+  # Handle non-map children (like text content)
+  defp flatten_view_tree(view) when not is_map(view), do: [view]
+
   defp flatten_view_tree(view) do
-    [view | Enum.flat_map(view.children || [], &flatten_view_tree/1)]
+    # For containers like :scroll, :shadow, :border that were handled specially,
+    # their children might already be flattened or positioned correctly.
+    # Others like :flex, :grid might need their children flattened here.
+    # This needs refinement based on how layout functions structure output.
+    # Assuming layout functions now return laid-out children correctly:
+    # Return the container itself without children
+    [
+      Map.put(view, :children, [])
+      | Enum.flat_map(view.children || [], &flatten_view_tree/1)
+    ]
   end
 
   defp sort_by_z_index(views) do
-    Enum.sort_by(views, & &1.z_index)
+    Enum.sort_by(views, &(&1.z_index || 0))
   end
 
   defp apply_position_types(views, viewport_size) do
     Enum.map(views, fn view ->
       case view.position_type do
-        # Already handled by layout functions
+        # Relative positioning handled during layout
         :relative -> view
         :absolute -> apply_absolute_position(view, viewport_size)
         :fixed -> apply_fixed_position(view, viewport_size)
+        _ -> view
       end
     end)
   end
 
   defp apply_absolute_position(view, viewport_size) do
-    case view.position do
-      nil ->
-        view
-
-      {x, y} when is_number(x) and is_number(y) ->
-        %{view | position: {x, y}}
-
-      {:center, direction}
-      when is_atom(direction) and direction in [:horizontal, :vertical, :both] ->
-        center_view(view, viewport_size)
-
-      {:right, x} when is_number(x) ->
-        %{view | position: {elem(viewport_size, 0) - x, elem(view.position, 1)}}
-
-      {:bottom, y} when is_number(y) ->
-        %{view | position: {elem(view.position, 0), elem(viewport_size, 1) - y}}
-
-      # Catch any other position format
-      _ ->
-        view
-    end
+    # Absolute positioning relative to nearest positioned ancestor
+    # Simplified: Assuming relative to the initial viewport for now
+    view
   end
 
   defp apply_fixed_position(view, viewport_size) do
-    # Fixed position is the same as absolute, but relative to the viewport
-    apply_absolute_position(view, viewport_size)
-  end
-
-  defp center_view(view, {width, height}) do
-    case view.size do
-      {view_width, view_height} ->
-        x = div(width - view_width, 2)
-        y = div(height - view_height, 2)
-        %{view | position: {x, y}}
-
-      _ ->
-        view
-    end
+    # Fixed positioning relative to the viewport
+    view
   end
 end

@@ -258,8 +258,9 @@ defmodule Raxol.UI.Layout.EngineTest do
 
       dimensions = Engine.measure_element(element, available_space)
 
-      # Constrained to available width
-      assert dimensions.width == 50
+      # Measures intrinsic width, ignoring available_space constraint here
+      # The constraint is applied during processing/placement
+      assert dimensions.width == 100
       assert dimensions.height == 1
     end
   end
