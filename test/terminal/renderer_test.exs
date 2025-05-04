@@ -1,523 +1,192 @@
 defmodule Raxol.Terminal.RendererTest do
   use ExUnit.Case
-  alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.Renderer
-  alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.{Cell, Renderer, ScreenBuffer}
+
+  defp default_buffer(width \\ 80, height \\ 24) do
+    ScreenBuffer.new(width, height)
+  end
 
   describe "new/1" do
-    test "creates a new renderer with default options" do
-      renderer = Renderer.new()
-      assert renderer.theme.background == "#000000"
-      assert renderer.theme.foreground == "#ffffff"
-      assert renderer.font_family == "Fira Code"
-      assert renderer.font_size == 14
-      assert renderer.line_height == 1.2
-      assert renderer.cursor_style == :block
-      assert renderer.cursor_blink == true
-      assert renderer.cursor_color == "#ffffff"
-      assert renderer.selection_color == "rgba(255, 255, 255, 0.2)"
-      assert renderer.scrollback_limit == 1000
-      assert renderer.batch_size == 100
-      assert renderer.virtual_scroll == true
-      assert renderer.visible_rows == 24
+    test "creates a new renderer with a screen buffer" do
+      buffer = default_buffer()
+      renderer = Renderer.new(buffer)
+      assert renderer.screen_buffer == buffer
+      assert renderer.cursor == nil
+      assert renderer.theme == %{}
+      assert renderer.font_settings == %{}
     end
 
-    test "creates a new renderer with custom options" do
-      theme = %{
-        background: "#111111",
-        foreground: "#eeeeee",
-        red: "#ff0000"
-      }
-
-      renderer =
-        Renderer.new(
-          theme: theme,
-          font_family: "Courier New",
-          font_size: 16,
-          line_height: 1.5,
-          cursor_style: :underline,
-          cursor_blink: false,
-          cursor_color: "#ff0000",
-          selection_color: "rgba(255, 0, 0, 0.2)",
-          scrollback_limit: 500,
-          batch_size: 200,
-          virtual_scroll: false,
-          visible_rows: 30
-        )
-
-      assert renderer.theme.background == "#111111"
-      assert renderer.theme.foreground == "#eeeeee"
-      assert renderer.theme.red == "#ff0000"
-      assert renderer.theme.green == "#00cd00"
-      assert renderer.font_family == "Courier New"
-      assert renderer.font_size == 16
-      assert renderer.line_height == 1.5
-      assert renderer.cursor_style == :underline
-      assert renderer.cursor_blink == false
-      assert renderer.cursor_color == "#ff0000"
-      assert renderer.selection_color == "rgba(255, 0, 0, 0.2)"
-      assert renderer.scrollback_limit == 500
-      assert renderer.batch_size == 200
-      assert renderer.virtual_scroll == false
-      assert renderer.visible_rows == 30
+    test "creates a new renderer with theme and font settings" do
+      buffer = default_buffer()
+      theme = %{foreground: :blue}
+      font_settings = %{size: 12}
+      renderer = Renderer.new(buffer, theme, font_settings)
+      assert renderer.screen_buffer == buffer
+      assert renderer.theme == theme
+      assert renderer.font_settings == font_settings
     end
   end
 
-  describe "render/2" do
+  describe "render/1" do
     test "renders empty screen buffer" do
-      buffer = ScreenBuffer.new(80, 24)
-      renderer = Renderer.new()
-      html = Renderer.render(buffer, renderer)
-
-      assert html =~ ~s(<div class="terminal">)
-
-      assert html =~
-               ~s(style="width: 80ch; height: 24ch; font-family: Fira Code; font-size: 14px; line-height: 1.2;">)
-
-      assert html =~ ~s(<div class="screen">)
+      buffer = default_buffer(10, 1)
+      renderer = Renderer.new(buffer)
+      output = Renderer.render(renderer)
+      expected_span = "<span style=\"\"> </span>"
+      assert output == String.duplicate(expected_span, 10)
     end
 
     test "renders screen buffer with content" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.write_char(buffer, "Hello")
-      renderer = Renderer.new()
+      buffer = default_buffer(5, 1)
+      buffer = ScreenBuffer.write_char(buffer, 0, 0, "H", %{foreground: :red})
+      buffer = ScreenBuffer.write_char(buffer, 1, 0, "i")
 
-      html = Renderer.render(buffer, renderer)
+      renderer = Renderer.new(buffer, %{foreground: %{default: "#FFF", red: "#F00"}})
+      output = Renderer.render(renderer)
 
-      assert html =~ "Hello"
-      assert html =~ ~s(<div class="cell">)
+      expected_output = "<span style=\"color: #F00\">H</span><span style=\"color: #FFF\">i</span>" <> String.duplicate("<span style=\"color: #FFF\"> </span>", 3)
+      assert output == expected_output
     end
 
-    test "renders scrollback buffer" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.write_char(buffer, "Line 1\nLine 2\nLine 3\nLine 4")
-      renderer = Renderer.new()
+    test "renders multiple rows" do
+      buffer = default_buffer(3, 2)
+      buffer = ScreenBuffer.write_char(buffer, 0, 0, "A")
+      buffer = ScreenBuffer.write_char(buffer, 1, 1, "B")
 
-      html = Renderer.render(buffer, renderer)
+      renderer = Renderer.new(buffer, %{foreground: %{default: "#CCC"}})
+      output = Renderer.render(renderer)
 
-      assert html =~ ~s(<div class="scrollback">)
-      assert html =~ "Line 1"
-    end
+      expected_row1 = "<span style=\"color: #CCC\">A</span>" <> String.duplicate("<span style=\"color: #CCC\"> </span>", 2)
+      expected_row2 = "<span style=\"color: #CCC\"> </span><span style=\"color: #CCC\">B</span><span style=\"color: #CCC\"> </span>"
 
-    test "renders cursor" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.move_cursor(buffer, 5, 3)
-      renderer = Renderer.new()
-
-      html = Renderer.render(buffer, renderer)
-
-      assert html =~ ~s(<div class="cursor-block">)
-
-      assert html =~
-               ~s(style="left: 5ch; top: 3ch; background-color: #ffffff; animation: blink 1s step-end infinite;">)
-    end
-
-    test "renders selection" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.set_selection(buffer, 0, 0, 5, 0)
-      renderer = Renderer.new()
-
-      html = Renderer.render(buffer, renderer)
-
-      assert html =~ ~s(<div class="selection">)
-
-      assert html =~
-               "style=\"left: 0ch; top: 0ch; width: 5ch; height: 0ch; background-color: rgba(255, 255, 255, 0.2);\">"
+      assert output == expected_row1 <> "\n" <> expected_row2
     end
   end
 
-  describe "render_screen/2" do
-    test "renders empty screen" do
-      buffer = ScreenBuffer.new(80, 24)
-      renderer = Renderer.new()
-      html = Renderer.render_screen(buffer, renderer)
-
-      assert html =~ ~s(<div class="screen">)
-    end
-
-    test "renders screen with content" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.write_char(buffer, "Hello")
-      renderer = Renderer.new()
-
-      html = Renderer.render_screen(buffer, renderer)
-
-      assert html =~ "Hello"
-      assert html =~ ~s(<div class="row">)
-    end
-
-    test "uses virtual scrolling when enabled" do
-      buffer = ScreenBuffer.new(80, 24)
-      # Fill buffer with 50 rows
-      buffer =
-        Enum.reduce(41..50, buffer, fn i, acc ->
-          ScreenBuffer.append_line(acc, "Line #{i}")
-        end)
-
-      renderer = Renderer.new(visible_rows: 10, virtual_scroll: true)
-      html = Renderer.render_screen(buffer, renderer)
-
-      # Should only render the last 10 rows
-      assert html =~ "Line 41"
-      assert html =~ "Line 50"
-      refute html =~ "Line 40"
-    end
-
-    test "renders all rows when virtual scrolling is disabled" do
-      buffer = ScreenBuffer.new(80, 24)
-      # Fill buffer with 50 rows
-      buffer =
-        Enum.reduce(41..50, buffer, fn i, acc ->
-          ScreenBuffer.append_line(acc, "Line #{i}")
-        end)
-
-      renderer = Renderer.new(virtual_scroll: false)
-      html = Renderer.render_screen(buffer, renderer)
-
-      # Should render all rows
-      assert html =~ "Line 41"
-      assert html =~ "Line 50"
+  describe "set_cursor/2" do
+    test "sets the cursor position" do
+      buffer = default_buffer()
+      renderer = Renderer.new(buffer)
+      renderer = Renderer.set_cursor(renderer, {10, 5})
+      assert renderer.cursor == {10, 5}
     end
   end
 
-  describe "render_scrollback/2" do
-    test "renders empty scrollback" do
-      buffer = ScreenBuffer.new(80, 24)
-      renderer = Renderer.new()
-      html = Renderer.render_scrollback(buffer, renderer)
-
-      assert html == ""
-    end
-
-    test "renders scrollback with content" do
-      buffer = ScreenBuffer.new(80, 24)
-
-      buffer =
-        ScreenBuffer.write_char(buffer, ~s(Line 1\nLine 2\nLine 3\nLine 4))
-
-      renderer = Renderer.new()
-
-      html = Renderer.render_scrollback(buffer, renderer)
-
-      assert html =~ ~s(<div class="scrollback">)
-      assert html =~ "Line 1"
-    end
-
-    test "limits scrollback size" do
-      buffer = ScreenBuffer.new(80, 24)
-      # Fill buffer with 2000 rows
-      buffer =
-        Enum.reduce(1..2000, buffer, fn i, acc ->
-          ScreenBuffer.write_char(acc, ~s(Line #{i}\n))
-        end)
-
-      renderer =
-        Renderer.new(
-          scrollback_limit: 1000,
-          visible_rows: 10,
-          virtual_scroll: true
-        )
-
-      html = Renderer.render_scrollback(buffer, renderer)
-
-      # Should only render the first 1000 rows
-      assert html =~ "Line 1"
-      assert html =~ "Line 1000"
-      refute html =~ "Line 1001"
-      refute html =~ "Line 2000"
-    end
-
-    test "uses virtual scrolling for scrollback when enabled" do
-      buffer = ScreenBuffer.new(80, 24)
-      # Fill buffer with 2000 rows
-      buffer =
-        Enum.reduce(1..2000, buffer, fn i, acc ->
-          ScreenBuffer.write_char(acc, ~s(Line #{i}\n))
-        end)
-
-      renderer =
-        Renderer.new(
-          scrollback_limit: 1000,
-          visible_rows: 10,
-          virtual_scroll: true
-        )
-
-      html = Renderer.render_scrollback(buffer, renderer)
-
-      # Should only render the last 10 rows of the first 1000
-      assert html =~ "Line 991"
-      assert html =~ "Line 1000"
-      refute html =~ "Line 1"
-      refute html =~ "Line 990"
-    end
-  end
-
-  describe "render_cursor/2" do
-    test "renders block cursor" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
-      renderer = Renderer.new(cursor_style: :block)
-
-      html = Renderer.render_cursor(buffer, renderer)
-
-      assert html =~ ~s(<div class="cursor-block">)
-
-      assert html =~
-               ~s(style="left: 10ch; top: 5ch; background-color: #ffffff; animation: blink 1s step-end infinite;">)
-    end
-
-    test "renders underline cursor" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
-      renderer = Renderer.new(cursor_style: :underline)
-
-      html = Renderer.render_cursor(buffer, renderer)
-
-      assert html =~ ~s(<div class="cursor-underline">)
-
-      assert html =~
-               ~s(style="left: 10ch; top: 5ch; background-color: #ffffff; animation: blink 1s step-end infinite;">)
-    end
-
-    test "renders bar cursor" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
-      renderer = Renderer.new(cursor_style: :bar)
-
-      html = Renderer.render_cursor(buffer, renderer)
-
-      assert html =~ ~s(<div class="cursor-bar">)
-
-      assert html =~
-               ~s(style="left: 10ch; top: 5ch; background-color: #ffffff; animation: blink 1s step-end infinite;">)
-    end
-
-    test "renders non-blinking cursor" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
-      renderer = Renderer.new(cursor_blink: false)
-
-      html = Renderer.render_cursor(buffer, renderer)
-
-      assert html =~ ~s(<div class="cursor-block">)
-
-      assert html =~
-               ~s(style="left: 10ch; top: 5ch; background-color: #ffffff;">)
-
-      refute html =~ "animation: blink"
-    end
-
-    test "renders cursor with custom color" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.move_cursor(buffer, 10, 5)
-      renderer = Renderer.new(cursor_color: "#ff0000")
-
-      html = Renderer.render_cursor(buffer, renderer)
-
-      assert html =~
-               ~s(style="left: 10ch; top: 5ch; background-color: #ff0000;">)
-    end
-  end
-
-  describe "render_selection/2" do
-    test "renders no selection" do
-      buffer = ScreenBuffer.new(80, 24)
-      renderer = Renderer.new()
-      html = Renderer.render_selection(buffer, renderer)
-
-      assert html == ""
-    end
-
-    test "renders selection area" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.set_selection(buffer, 0, 0, 10, 2)
-      renderer = Renderer.new()
-
-      html = Renderer.render_selection(buffer, renderer)
-
-      assert html =~ ~s(<div class="selection">)
-
-      assert html =~
-               "style=\"left: 0ch; top: 0ch; width: 10ch; height: 2ch; background-color: rgba(255, 255, 255, 0.2);\">"
-    end
-
-    test "renders selection with custom color" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.set_selection(buffer, 0, 0, 10, 2)
-      renderer = Renderer.new(selection_color: "rgba(255, 0, 0, 0.2)")
-
-      html = Renderer.render_selection(buffer, renderer)
-
-      assert html =~ ~s(<div class="selection">)
-
-      assert html =~
-               "style=\"left: 0ch; top: 0ch; width: 10ch; height: 2ch; background-color: rgba(255, 0, 0, 0.2);\">"
-    end
-  end
-
-  describe "render_row/5" do
-    test "renders empty row" do
-      buffer = ScreenBuffer.new(80, 24)
-      row = List.first(buffer.buffer)
-      renderer = Renderer.new()
-      html = Renderer.render_row(row, 0, buffer, renderer)
-
-      assert html =~ ~s(<div class="row screen">)
-      assert html =~ ~s(data-y="0">)
-    end
-
-    test "renders row with content" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.write_char(buffer, "Hello")
-      row = List.first(buffer.buffer)
-      renderer = Renderer.new()
-      html = Renderer.render_row(row, 0, buffer, renderer)
-
-      assert html =~ ~s(<div class="row screen">)
-      assert html =~ "Hello"
-    end
-
-    test "renders row in scrollback" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.write_char(buffer, ~s(Line 1\nLine 2))
-      row = List.first(buffer.scrollback)
-      renderer = Renderer.new()
-      html = Renderer.render_row(row, 0, buffer, renderer)
-
-      assert html =~ ~s(<div class="row scrollback">)
-      assert html =~ "Line 1"
-    end
-
-    test "batches cells for better performance" do
-      buffer = ScreenBuffer.new(80, 24)
-      buffer = ScreenBuffer.write_char(buffer, String.duplicate("A", 80))
-      row = List.first(buffer.buffer)
-      renderer = Renderer.new(batch_size: 20)
-      html = Renderer.render_row(row, 0, buffer, renderer)
-
-      # Should have 4 batches of 20 cells each
-      assert length(String.split(html, "batch")) == 5
-    end
-  end
-
-  describe "render_cell/4" do
-    test "renders empty cell" do
-      buffer = ScreenBuffer.new(80, 24)
-      cell = Cell.new(" ")
-      renderer = Renderer.new()
-      html = Renderer.render_cell(cell, 0, 0, renderer)
-
-      assert html =~ ~s(<div class="cell">)
-      assert html =~ ~s(data-x="0">)
-      assert html =~ ~s(data-y="0">)
-    end
-
-    test "renders cell with content" do
-      cell = Cell.new("A")
-      renderer = Renderer.new()
-      html = Renderer.render_cell(cell, 0, 0, renderer)
-
-      assert html =~ "A"
-      assert html =~ ~s(<div class="cell">)
-    end
-
-    test "renders cell with styles" do
-      cell = Cell.new("A", %{foreground: :red, background: :black})
-      renderer = Renderer.new()
-      html = Renderer.render_cell(cell, 0, 0, renderer)
-
-      assert html =~ ~s(style="color: #cd0000; background-color: #000000;">)
-    end
-
-    test "renders cell with custom styles" do
-      cell = Cell.new("A", %{foreground: "#ff0000", background: "#000000"})
-      renderer = Renderer.new()
-      html = Renderer.render_cell(cell, 0, 0, renderer)
-
-      assert html =~ ~s(style="color: #ff0000; background-color: #000000;">)
-    end
-
-    test "renders cell with 256-color mode" do
-      buffer = ScreenBuffer.new(80, 24)
-      # Bright red
-      cell = Cell.new("A", %{foreground: 196})
-      renderer = Renderer.new()
-      html = Renderer.render_cell(cell, 0, 0, renderer)
-
-      assert html =~ "color: rgb(255, 0, 0)"
-    end
-
-    test "renders cell with RGB color" do
-      buffer = ScreenBuffer.new(80, 24)
-      cell = Cell.new("A", %{foreground: {255, 0, 0}})
-      renderer = Renderer.new()
-      html = Renderer.render_cell(cell, 0, 0, renderer)
-
-      assert html =~ "color: rgb(255, 0, 0)"
-    end
-
-    test "uses theme colors" do
-      buffer = ScreenBuffer.new(80, 24)
-      cell = Cell.new("A", %{foreground: :red})
-      theme = %{red: "#ff0000"}
-      renderer = Renderer.new(theme: theme)
-      html = Renderer.render_cell(cell, 0, 0, renderer)
-
-      assert html =~ "color: #ff0000"
+  describe "clear_cursor/1" do
+    test "clears the cursor position" do
+      buffer = default_buffer()
+      renderer = Renderer.new(buffer)
+      renderer = Renderer.set_cursor(renderer, {10, 5})
+      renderer = Renderer.clear_cursor(renderer)
+      assert renderer.cursor == nil
     end
   end
 
   describe "set_theme/2" do
-    test "sets theme colors" do
-      renderer = Renderer.new()
-
-      theme = %{
-        background: "#111111",
-        foreground: "#eeeeee",
-        red: "#ff0000"
-      }
-
+    test "updates the theme" do
+      buffer = default_buffer()
+      renderer = Renderer.new(buffer)
+      theme = %{foreground: %{default: "#ABC"}}
       renderer = Renderer.set_theme(renderer, theme)
-
-      assert renderer.theme.background == "#111111"
-      assert renderer.theme.foreground == "#eeeeee"
-      assert renderer.theme.red == "#ff0000"
-      # Default value preserved
-      assert renderer.theme.green == "#00cd00"
+      assert renderer.theme == theme
     end
   end
 
-  describe "set_font/4" do
-    test "sets font settings" do
-      renderer = Renderer.new()
-      renderer = Renderer.set_font(renderer, "Courier New", 16, 1.5)
-
-      assert renderer.font_family == "Courier New"
-      assert renderer.font_size == 16
-      assert renderer.line_height == 1.5
+  describe "set_font_settings/2" do
+    test "updates the font settings" do
+      buffer = default_buffer()
+      renderer = Renderer.new(buffer)
+      settings = %{family: "Fira Code"}
+      renderer = Renderer.set_font_settings(renderer, settings)
+      assert renderer.font_settings == settings
     end
   end
 
-  describe "set_cursor/4" do
-    test "sets cursor settings" do
-      renderer = Renderer.new()
-      renderer = Renderer.set_cursor(renderer, :underline, false, "#ff0000")
-
-      assert renderer.cursor_style == :underline
-      assert renderer.cursor_blink == false
-      assert renderer.cursor_color == "#ff0000"
+  describe "render_cell (via render)" do
+    test "renders basic cell" do
+      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X")
+      renderer = Renderer.new(buffer, %{foreground: %{default: "#FFF"}})
+      output = Renderer.render(renderer)
+      assert output == "<span style=\"color: #FFF\">X</span>"
     end
-  end
 
-  describe "set_performance/5" do
-    test "sets performance settings" do
-      renderer = Renderer.new()
-      renderer = Renderer.set_performance(renderer, 200, 500, false, 30)
+    test "renders cell with foreground color" do
+      style = %{foreground: :red}
+      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+      theme = %{foreground: %{red: "#FF0000"}}
+      renderer = Renderer.new(buffer, theme)
+      output = Renderer.render(renderer)
+      assert output == "<span style=\"color: #FF0000\">X</span>"
+    end
 
-      assert renderer.batch_size == 200
-      assert renderer.scrollback_limit == 500
-      assert renderer.virtual_scroll == false
-      assert renderer.visible_rows == 30
+    test "renders cell with background color" do
+      style = %{background: :blue}
+      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+      theme = %{background: %{blue: "#0000FF"}}
+      renderer = Renderer.new(buffer, theme)
+      output = Renderer.render(renderer)
+      assert output == "<span style=\"background-color: #0000FF\">X</span>"
+    end
+
+    test "renders cell with bold style" do
+      style = %{bold: true}
+      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+      renderer = Renderer.new(buffer)
+      output = Renderer.render(renderer)
+      assert output == "<span style=\"font-weight: bold\">X</span>"
+    end
+
+    test "renders cell with underline style" do
+      style = %{underline: true}
+      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+      renderer = Renderer.new(buffer)
+      output = Renderer.render(renderer)
+      assert output == "<span style=\"text-decoration: underline\">X</span>"
+    end
+
+    test "renders cell with italic style" do
+      style = %{italic: true}
+      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+      renderer = Renderer.new(buffer)
+      output = Renderer.render(renderer)
+      assert output == "<span style=\"font-style: italic\">X</span>"
+    end
+
+    test "renders cell with multiple styles" do
+      style = %{foreground: :green, background: :black, bold: true, italic: true}
+      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+      theme = %{foreground: %{green: "#0F0"}, background: %{black: "#000"}}
+      renderer = Renderer.new(buffer, theme)
+      output = Renderer.render(renderer)
+
+      assert String.contains?(output, "<span style=\"")
+      assert String.contains?(output, "color: #0F0")
+      assert String.contains?(output, "background-color: #000")
+      assert String.contains?(output, "font-weight: bold")
+      assert String.contains?(output, "font-style: italic")
+      assert String.contains?(output, "\">X</span>")
+    end
+
+    test "uses default theme colors when cell style is nil" do
+      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", %{})
+      theme = %{foreground: %{default: "#ABC"}, background: %{default: "#DEF"}}
+      renderer = Renderer.new(buffer, theme)
+      output = Renderer.render(renderer)
+
+      assert String.contains?(output, "<span style=\"")
+      assert String.contains?(output, "color: #ABC")
+      assert String.contains?(output, "background-color: #DEF")
+      assert String.contains?(output, "\">X</span>")
+      refute String.contains?(output, "font-weight")
+      refute String.contains?(output, "font-style")
+      refute String.contains?(output, "text-decoration")
+    end
+
+    test "handles missing theme colors gracefully" do
+      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", %{foreground: :red})
+      renderer = Renderer.new(buffer, %{})
+      output = Renderer.render(renderer)
+      assert output == "<span style=\"\">X</span>"
     end
   end
 end
