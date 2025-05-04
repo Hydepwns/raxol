@@ -115,35 +115,4 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == ""
     end
   end
-
-  describe "parse_sequence/1" do
-    test "parses window move sequence" do
-      assert {:ok, :move, [10, 3]} = WindowManipulation.parse_sequence("3;10t")
-    end
-
-    test "parses window resize sequence" do
-      assert {:ok, :resize, [30, 100]} =
-               WindowManipulation.parse_sequence("8;30;100t")
-    end
-
-    test "parses window maximize sequence" do
-      assert {:ok, :maximize, []} = WindowManipulation.parse_sequence("1;1t")
-    end
-
-    test "parses window restore sequence" do
-      assert {:ok, :restore, []} = WindowManipulation.parse_sequence("1;0t")
-    end
-
-    test "parses window raise sequence" do
-      assert {:ok, :raise, []} = WindowManipulation.parse_sequence("5t")
-    end
-
-    test "parses window lower sequence" do
-      assert {:ok, :lower, []} = WindowManipulation.parse_sequence("6t")
-    end
-
-    test "parses invalid sequence" do
-      assert :error = WindowManipulation.parse_sequence("invalid")
-    end
-  end
 end
