@@ -96,34 +96,32 @@ defmodule PreCommitCheck do
   def check_broken_links do
     IO.puts("Checking for broken links in documentation...")
     markdown_files = Path.wildcard(Path.join(@docs_dir, "**/*.md"))
-    # DEBUG
     IO.inspect(markdown_files, label: "Found markdown files")
     all_files_set = MapSet.new(markdown_files)
-    broken_links = []
 
-    for file <- markdown_files do
-      try do
-        content = File.read!(file)
-        links = Regex.scan(@link_regex, content, capture: :all_but_first)
+    broken_links =
+      Enum.reduce(markdown_files, [], fn file, acc_broken_links ->
+        try do
+          content = File.read!(file)
+          links = Regex.scan(@link_regex, content, capture: :all_but_first)
 
-        for [url] <- links do
-          case check_single_link(url, file, all_files_set) do
-            :ok ->
-              :ok
+          Enum.reduce(links, acc_broken_links, fn [url], inner_acc ->
+            case check_single_link(url, file, all_files_set) do
+              :ok ->
+                inner_acc
 
-            {:error, reason} ->
-              broken_links = [
-                %{file: file, url: url, reason: reason} | broken_links
-              ]
-          end
+              {:error, reason} ->
+                [%{file: file, url: url, reason: reason} | inner_acc]
+            end
+          end)
+        rescue
+          e in File.Error ->
+            IO.puts("Error reading file #{file}: #{inspect(e)}")
+            # Optionally treat read error as a failure
+            # _broken_links = [%{file: file, url: nil, reason: "Could not read file"} | _broken_links]
+            acc_broken_links
         end
-      rescue
-        e in File.Error ->
-          IO.puts("Error reading file #{file}: #{inspect(e)}")
-          # Optionally treat read error as a failure
-          # _broken_links = [%{file: file, url: nil, reason: "Could not read file"} | _broken_links]
-      end
-    end
+      end)
 
     if Enum.empty?(broken_links) do
       IO.puts("Broken links check passed!")
