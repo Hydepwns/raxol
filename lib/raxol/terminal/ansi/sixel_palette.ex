@@ -78,4 +78,93 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
 
   # TODO: Add functions for defining custom colors via Sixel '#' command
   # e.g., define_color(palette, index, format, p1, p2, p3, p4, p5)
+
+  # --- Color Conversion Helpers ---
+
+  @doc """
+  Converts color parameters based on the specified color space.
+
+  Handles clamping values and delegation to specific conversion functions.
+  Supports HLS (1) and RGB (2).
+  """
+  @spec convert_color(integer(), integer(), integer(), integer()) :: {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}} | {:error, atom()}
+  def convert_color(color_space, px, py, pz) do
+    # Clamp values to 0-100 range
+    px = max(0, min(100, px))
+    py = max(0, min(100, py))
+    pz = max(0, min(100, pz))
+
+    case color_space do
+      # HLS (Hue: Px=H/3.6 (0-100), Lightness: Py (0-100), Saturation: Pz (0-100))
+      1 ->
+        # H is 0-360
+        h = px * 3.6
+        # L is 0-1
+        l = py / 100.0
+        # S is 0-1
+        s = pz / 100.0
+        # Clamp h to 0-360 range using fmod for floats
+        h = :math.fmod(h, 360.0)
+        h = if h < 0.0, do: h + 360.0, else: h
+        hls_to_rgb(h, l, s)
+
+      # RGB (R: Px, G: Py, B: Pz - all 0-100)
+      2 ->
+        # Scale 0-100 to 0-255
+        r = round(px * 2.55)
+        g = round(py * 2.55)
+        b = round(pz * 2.55)
+        {:ok, {r, g, b}}
+
+      _ ->
+        {:error, :unknown_color_space}
+    end
+  end
+
+  @doc """
+  Simplified HLS to RGB conversion (based on standard formulas).
+
+  Input: H (0-360), L (0-1), S (0-1)
+  Output: {:ok, {R, G, B}} (0-255)
+  """
+  @spec hls_to_rgb(float(), float(), float()) :: {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}}
+  def hls_to_rgb(h, l, s) do
+    # Clamp inputs
+    h = max(0.0, min(360.0, h))
+    l = max(0.0, min(1.0, l))
+    s = max(0.0, min(1.0, s))
+
+    if s == 0 do
+      # Achromatic
+      grey = round(l * 255)
+      {:ok, {grey, grey, grey}}
+    else
+      c = (1.0 - abs(2.0 * l - 1.0)) * s
+      h_prime = h / 60.0
+      x = c * (1.0 - abs(:math.fmod(h_prime, 2.0) - 1.0))
+      m = l - c / 2.0
+
+      {r1, g1, b1} =
+        cond do
+          h_prime >= 0 and h_prime < 1 -> {c, x, 0.0}
+          h_prime >= 1 and h_prime < 2 -> {x, c, 0.0}
+          h_prime >= 2 and h_prime < 3 -> {0.0, c, x}
+          h_prime >= 3 and h_prime < 4 -> {0.0, x, c}
+          h_prime >= 4 and h_prime < 5 -> {x, 0.0, c}
+          # Fix: Allow h_prime == 6 (Hue 360)
+          h_prime >= 5 and h_prime <= 6 -> {c, 0.0, x}
+          # Should not happen with clamping
+          true -> {0.0, 0.0, 0.0}
+        end
+
+      r = round((r1 + m) * 255)
+      g = round((g1 + m) * 255)
+      b = round((b1 + m) * 255)
+      # Ensure values are within 0-255 after rounding
+      r = max(0, min(255, r))
+      g = max(0, min(255, g))
+      b = max(0, min(255, b))
+      {:ok, {r, g, b}}
+    end
+  end
 end

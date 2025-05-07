@@ -58,7 +58,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
     test "handles OSC sequence (Set Window Title)" do
       emulator = Emulator.new(80, 24)
       title = "My Test Title"
-      # Process OSC 0 ; title ST (ESC ] 0 ; title ESC \\)
+      # Process OSC 0 ; title ST (ESC ] 0 ; title ESC \
       input = "\e]0;" <> title <> "\e\\"
       {emulator, ""} = Emulator.process_input(emulator, input)
 
@@ -80,7 +80,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
     test "handles basic DCS sequence" do
       emulator = Emulator.new(80, 24)
       # Example DCS sequence (content doesn't matter for this test)
-      # \\eP is DCS start, \\e\\\\ is ST (String Terminator)
+      # \eP is DCS start, \e\ is ST (String Terminator)
       dcs_sequence = <<27>> <> "P1;1;1{" <> "hello world" <> <<27>> <> "\\"
       {_emulator, remaining} = Emulator.process_input(emulator, dcs_sequence)
 
@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       # Assert the sequence is consumed
       assert remaining == ""
       # Assert cursor visibility state change (DECTCEM enables cursor)
-      assert emulator.mode_state.cursor_visible == true
+      assert emulator.mode_manager.cursor_visible == true
     end
 
     test "handles incomplete CSI sequence correctly" do
@@ -145,6 +145,16 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       buffer = Emulator.get_active_buffer(emulator)
       assert ScreenBuffer.get_cell_at(buffer, 0, 0).char == "H"
       assert emulator.cursor.position == {5, 0}
+    end
+
+    test "handles alternate screen buffer mode correctly" do
+      emulator = Emulator.new(80, 24)
+      # Assuming DECTCEM (Cursor Enable Mode) is handled
+      {emulator, _} = Emulator.process_input(emulator, "\e[?25h")
+      assert emulator.mode_manager.cursor_visible == true
+
+      {emulator, _} = Emulator.process_input(emulator, "\e[?25l")
+      assert emulator.mode_manager.cursor_visible == false
     end
   end
 end

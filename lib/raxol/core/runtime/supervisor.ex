@@ -20,22 +20,66 @@ defmodule Raxol.Core.Runtime.Supervisor do
 
   @impl true
   def init(init_arg) do
-    Logger.info("[#{__MODULE__}] init called with args: #{inspect(init_arg)}")
+    Logger.debug("[#{__MODULE__}] init called with args: #{inspect(init_arg)}")
+
+    # Allow overriding child modules via init_arg for testing
+    dispatcher_mod = init_arg[:dispatcher_module] || Raxol.Core.Runtime.Events.Dispatcher
+    rendering_engine_mod = init_arg[:rendering_engine_module] || Raxol.Core.Runtime.Rendering.Engine
+    plugin_manager_mod = init_arg[:plugin_manager_module] || Raxol.Core.Runtime.Plugins.Manager
+    # Assuming Task.Supervisor doesn't need mocking/overriding
+
+    # Define the child spec for Dispatcher explicitly
+    # Pass the supervisor's pid (self()) and the full init_arg map
+    dispatcher_spec = %{
+      id: dispatcher_mod, # Use potentially overridden module
+      start: {dispatcher_mod, :start_link, [self(), init_arg]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 5000
+    }
+
+    # Define Rendering Engine spec, extracting needed args from init_arg
+    rendering_engine_args = %{
+      app_module: init_arg[:app_module],
+      # Use the potentially overridden module name for the dispatcher PID lookup if needed,
+      # or pass the actual registered name if that's stable. Using the mod name here.
+      dispatcher_pid: dispatcher_mod,
+      width: init_arg[:width],
+      height: init_arg[:height],
+      environment: init_arg[:environment] || :terminal # Default if not provided
+    }
+
+    rendering_engine_spec = %{
+      id: rendering_engine_mod, # Use potentially overridden module
+      start: {rendering_engine_mod, :start_link, [rendering_engine_args]},
+      type: :worker,
+      restart: :permanent,
+      shutdown: 5000
+    }
+
+    # Define Plugin Manager spec (assuming simple start_link/1)
+    plugin_manager_spec = %{
+      id: plugin_manager_mod, # Use potentially overridden module
+      start: {plugin_manager_mod, :start_link, [[]]}, # Assuming start_link([])
+      type: :worker,
+      restart: :permanent,
+      shutdown: 5000
+    }
+
+    # Note: Terminal.Driver is not directly supervised here, assumed started elsewhere or implicitly by runtime components
+
     children = [
       # Task supervisor for isolated task execution
       {Task.Supervisor, name: Raxol.Core.Runtime.TaskSupervisor},
-
-      # Core runtime services
-      # REMOVED: {Raxol.Core.Runtime.StateManager, []}, # Does not exist
-      {Raxol.Core.Runtime.EventLoop, []},
-      {Raxol.Core.Runtime.RenderLoop, []},
-
-      # Plugin system
-      {Raxol.Core.Runtime.Plugins.Manager, []},
-      {Raxol.Core.Runtime.Plugins.Commands, []}
+      # Core runtime services using potentially overridden modules
+      dispatcher_spec,
+      rendering_engine_spec,
+      plugin_manager_spec
     ]
 
-    Logger.debug("[#{__MODULE__}] Initializing children: #{inspect(children)}")
-    Supervisor.init(children, strategy: :one_for_all)
+    opts = [strategy: :one_for_all, name: __MODULE__] # Add name here for init/1
+
+    Logger.debug("[#{__MODULE__}] Initializing supervisor with children: #{inspect(children)} and opts: #{inspect(opts)}")
+    Supervisor.init(children, strategy: :one_for_all) # Original call format
   end
 end

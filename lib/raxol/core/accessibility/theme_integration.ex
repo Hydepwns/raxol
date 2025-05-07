@@ -85,13 +85,13 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   Apply the current accessibility settings to components.
   This function is typically called during initialization to ensure components
   reflect the persisted preferences.
+  Accepts a keyword list of options (e.g., `[high_contrast: true, ...]`).
   """
-  def apply_current_settings do
-    # Get current accessibility options directly from UserPreferences
-    # Assuming default values are handled by UserPreferences.get/3 or similar
-    high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
-    reduced_motion = UserPreferences.get(pref_key(:reduced_motion)) || false
-    large_text = UserPreferences.get(pref_key(:large_text)) || false
+  def apply_settings(options) when is_list(options) do
+    # Get settings directly from the passed options
+    high_contrast = Keyword.get(options, :high_contrast, false)
+    reduced_motion = Keyword.get(options, :reduced_motion, false)
+    large_text = Keyword.get(options, :large_text, false)
 
     # Apply high contrast setting
     handle_high_contrast({:accessibility_high_contrast, high_contrast})
@@ -170,12 +170,10 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   """
   def handle_large_text({:accessibility_large_text, enabled}) do
     # Update text size based on large text setting
-    text_scale = if enabled, do: 1.5, else: 1.0
+    _text_scale = if enabled, do: 1.5, else: 1.0 # Calculate but don't store
 
-    # Store text scale factor in process dictionary for components to use - REMOVED?
-    # Or should this also be a preference?
-    # For now, keep in process dictionary as it's more transient display state
-    Process.put(:accessibility_text_scale, text_scale)
+    # No longer store in process dictionary
+    # Process.put(:accessibility_text_scale, text_scale)
 
     :ok
   end

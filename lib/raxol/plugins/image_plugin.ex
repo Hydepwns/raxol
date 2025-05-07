@@ -197,7 +197,7 @@ defmodule Raxol.Plugins.ImagePlugin do
       {:ok, decoded_data} ->
         size = byte_size(decoded_data)
 
-        "\\e]1337;File=inline=1;width=#{width_param};height=#{height_param};preserveAspectRatio=#{preserve_aspect_flag};size=#{size};name=image.png;base64,#{base64_data}\\a"
+        "\e]1337;File=inline=1;width=#{width_param};height=#{height_param};preserveAspectRatio=#{preserve_aspect_flag};size=#{size};name=image.png;base64,#{base64_data}\a"
 
       :error ->
         ""

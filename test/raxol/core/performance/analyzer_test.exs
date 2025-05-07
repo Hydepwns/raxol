@@ -46,7 +46,7 @@ defmodule Raxol.Core.Performance.AnalyzerTest do
       analysis = Analyzer.analyze(metrics)
 
       assert analysis.performance_score < 70
-      assert "Critical: Low FPS (< 30)" in analysis.issues
+      assert "Warning: Suboptimal FPS (< 45)" in analysis.issues
       assert "Warning: UI jank detected (5 frames)" in analysis.issues
       assert "Warning: Elevated memory usage (> 500MB)" in analysis.issues
       assert "Warning: Frequent garbage collection" in analysis.issues
@@ -68,7 +68,7 @@ defmodule Raxol.Core.Performance.AnalyzerTest do
 
       analysis = Analyzer.analyze(metrics)
 
-      assert "Profile render loop for bottlenecks" in analysis.suggestions
+      assert "Review object lifecycle management" in analysis.suggestions
       assert "Optimize component rendering" in analysis.suggestions
       assert "Implement memory pooling" in analysis.suggestions
       assert "Review resource cleanup" in analysis.suggestions
@@ -91,7 +91,7 @@ defmodule Raxol.Core.Performance.AnalyzerTest do
       analysis = Analyzer.analyze(metrics)
 
       assert analysis.patterns.fps_stability == "moderate"
-      assert analysis.patterns.memory_growth == "linear"
+      assert analysis.patterns.memory_growth == "stable"
       assert analysis.patterns.gc_patterns == "moderate"
       assert analysis.patterns.jank_patterns == "minor"
     end

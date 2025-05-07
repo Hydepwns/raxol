@@ -10,7 +10,8 @@ defmodule Raxol.Style.Colors.Advanced do
   - Color harmony generation
   """
 
-  alias Raxol.Style.Colors.{Color, Palette, Adaptive}
+  alias Raxol.Style.Colors.{Color, Palette, Theme, Utilities, Adaptive}
+  require :math
 
   @type color :: Color.t()
   @type palette :: Palette.t()
@@ -108,38 +109,71 @@ defmodule Raxol.Style.Colors.Advanced do
       iex> Enum.map(harmony, & &1.hex)
       ["#FF0000", "#00FFFF"]
   """
-  def create_harmony(%Color{} = color, harmony_type) do
-    hsl = rgb_to_hsl(color)
+  def create_harmony(color, type, opts \\ []) do
+    angle = Keyword.get(opts, :angle, harmony_angle(type))
+    %{h: h, s: s_orig, l: l_orig} = rgb_to_hsl(color)
 
-    case harmony_type do
-      :complementary ->
-        [
-          color,
-          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 180.0), 360)})
-        ]
+    # Scale s and l to 0.0-1.0 for hsl_to_rgb which expects this range
+    s = s_orig / 100.0
+    l = l_orig / 100.0
 
-      :analogous ->
-        [
-          color,
-          hsl_to_rgb(%{hsl | h: rem(round(hsl.h - 30.0), 360)}),
-          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 30.0), 360)})
-        ]
+    # Normalize hues to ensure they are in the 0-359 range
+    hue1 = normalize_hue(h - angle)
+    hue2 = normalize_hue(h + angle)
 
-      :triadic ->
-        [
-          color,
-          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 120.0), 360)}),
-          hsl_to_rgb(%{hsl | h: rem(round(hsl.h - 120.0), 360)})
-        ]
+    harmony_colors =
+      case type do
+        :complementary ->
+          [color | [hsl_to_rgb({hue2, s, l})]]
 
-      :tetradic ->
-        [
-          color,
-          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 90.0), 360)}),
-          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 180.0), 360)}),
-          hsl_to_rgb(%{hsl | h: rem(round(hsl.h + 270.0), 360)})
-        ]
+        :analogous ->
+          [color | [hsl_to_rgb({hue1, s, l}), hsl_to_rgb({hue2, s, l})]]
+
+        :triadic ->
+          [color | [hsl_to_rgb({hue1, s, l}), hsl_to_rgb({hue2, s, l})]]
+
+        :split_complementary ->
+          comp_hue = normalize_hue(h + 180)
+          split1 = normalize_hue(comp_hue - angle)
+          split2 = normalize_hue(comp_hue + angle)
+          [color | [hsl_to_rgb({split1, s, l}), hsl_to_rgb({split2, s, l})]]
+
+        :tetradic ->
+          hue3 = normalize_hue(h + 180)
+          hue4 = normalize_hue(hue3 + angle)
+          [color | [hsl_to_rgb({hue2, s, l}), hsl_to_rgb({hue3, s, l}), hsl_to_rgb({hue4, s, l})]]
+
+        :square ->
+          hue2_sq = normalize_hue(h + 90)
+          hue3_sq = normalize_hue(h + 180)
+          hue4_sq = normalize_hue(h + 270)
+          [color | [hsl_to_rgb({hue2_sq, s, l}), hsl_to_rgb({hue3_sq, s, l}), hsl_to_rgb({hue4_sq, s, l})]]
+      end
+
+    preserve_brightness = Keyword.get(opts, :preserve_brightness, false)
+
+    if preserve_brightness do
+      # Adjust lightness of harmony colors to match the original color's lightness
+      Enum.map(harmony_colors, fn harmony_color ->
+        %{h: h_harmony, s: s_harmony} = rgb_to_hsl(harmony_color)
+        hsl_to_rgb({h_harmony, s_harmony, l}) # Use original lightness l
+      end)
+    else
+      harmony_colors
     end
+  end
+
+  defp harmony_angle(:complementary), do: 180
+  defp harmony_angle(:analogous), do: 30
+  defp harmony_angle(:triadic), do: 120
+  defp harmony_angle(:split_complementary), do: 30 # Angle for splitting the complement
+  defp harmony_angle(:tetradic), do: 60 # Smaller angle for rectangular tetrad
+  defp harmony_angle(:square), do: 90
+
+  # Helper to normalize hue to 0-359 range
+  defp normalize_hue(hue) do
+    normalized = rem(round(hue), 360)
+    if normalized < 0, do: normalized + 360, else: normalized
   end
 
   @doc """
@@ -190,7 +224,7 @@ defmodule Raxol.Style.Colors.Advanced do
     h =
       cond do
         delta == 0 -> 0
-        c_max == r_prime -> 60 * rem((g_prime - b_prime) / delta, 6)
+        c_max == r_prime -> 60 * ((g_prime - b_prime) / delta)
         c_max == g_prime -> 60 * ((b_prime - r_prime) / delta + 2)
         c_max == b_prime -> 60 * ((r_prime - g_prime) / delta + 4)
       end
@@ -210,12 +244,9 @@ defmodule Raxol.Style.Colors.Advanced do
   end
 
   # Reference: https://www.rapidtables.com/convert/color/hsl-to-rgb.html
-  defp hsl_to_rgb(%{h: h, s: s, l: l}) do
-    s = s / 100
-    l = l / 100
-
+  defp hsl_to_rgb({h, s, l}) do
     c = (1 - abs(2 * l - 1)) * s
-    x = c * (1 - abs(rem(h / 60.0, 2) - 1))
+    x = c * (1 - abs(:math.fmod(h / 60, 2) - 1))
     m = l - c / 2
 
     {r_prime, g_prime, b_prime} =
@@ -226,14 +257,18 @@ defmodule Raxol.Style.Colors.Advanced do
         h >= 180 and h < 240 -> {0, x, c}
         h >= 240 and h < 300 -> {x, 0, c}
         h >= 300 and h < 360 -> {c, 0, x}
-        true -> {0, 0, 0} # Should not happen for valid H values (0-359)
+        true -> {0, 0, 0}
       end
 
-    Color.from_rgb(
-      round((r_prime + m) * 255),
-      round((g_prime + m) * 255),
-      round((b_prime + m) * 255)
-    )
+    r = round((r_prime + m) * 255)
+    g = round((g_prime + m) * 255)
+    b = round((b_prime + m) * 255)
+
+    r = max(0, min(255, r))
+    g = max(0, min(255, g))
+    b = max(0, min(255, b))
+
+    Color.from_rgb(r, g, b)
   end
 
   defp rgb_to_lab(%Color{} = color) do

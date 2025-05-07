@@ -1,0 +1,73 @@
+defmodule Raxol.Terminal.Buffer.LineEditor do
+  @moduledoc """
+  Handles insertion and deletion of lines within the Raxol.Terminal.ScreenBuffer.
+  """
+
+  alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Cell
+  alias Raxol.Terminal.ANSI.TextFormatting
+
+
+  @doc """
+  Inserts a specified number of blank lines at the given row index using the provided default_style.
+  Existing lines from the insertion point downwards are shifted down.
+  Lines shifted off the bottom of the buffer are discarded.
+  Uses the buffer's default style for new lines.
+  """
+  @spec insert_lines(ScreenBuffer.t(), integer(), integer(), TextFormatting.text_style()) :: ScreenBuffer.t()
+  def insert_lines(%ScreenBuffer{} = buffer, row, count, default_style) when row >= 0 and count > 0 do
+    # Ensure row is within bounds
+    eff_row = min(row, buffer.height - 1)
+
+    # Create blank lines with the provided default style
+    blank_cell = %Cell{style: default_style}
+    blank_line = List.duplicate(blank_cell, buffer.width)
+    blank_lines_to_insert = List.duplicate(blank_line, count)
+
+    # Split the buffer cells at the insertion row
+    {top_part, bottom_part} = Enum.split(buffer.cells, eff_row)
+
+    # Take only the lines from the bottom part that will fit after insertion
+    kept_bottom_part = Enum.take(bottom_part, buffer.height - eff_row - count)
+
+    # Combine the parts
+    new_cells = top_part ++ blank_lines_to_insert ++ kept_bottom_part
+
+    %{buffer | cells: new_cells}
+  end
+  def insert_lines(buffer, _row, _count, _default_style), do: buffer # No-op for invalid input
+
+
+  @doc """
+  Deletes a specified number of lines starting from the given row index.
+  Lines below the deleted lines are shifted up.
+  Blank lines are added at the bottom of the buffer to fill the space using the provided default_style.
+  Uses the buffer's default style for new lines.
+  """
+  @spec delete_lines(ScreenBuffer.t(), integer(), integer(), TextFormatting.text_style()) :: ScreenBuffer.t()
+  def delete_lines(%ScreenBuffer{} = buffer, row, count, default_style) when row >= 0 and count > 0 do
+     # Ensure row is within bounds
+    eff_row = min(row, buffer.height - 1)
+
+    # Calculate actual number of lines to delete
+    eff_count = min(count, buffer.height - eff_row)
+
+    # Create blank lines with the provided default style to add at the bottom
+    blank_cell = %Cell{style: default_style}
+    blank_line = List.duplicate(blank_cell, buffer.width)
+    blank_lines_to_add = List.duplicate(blank_line, eff_count)
+
+    # Split the buffer cells at the deletion row
+    {top_part, part_to_modify} = Enum.split(buffer.cells, eff_row)
+
+    # Skip the deleted lines and take the rest
+    bottom_part_kept = Enum.drop(part_to_modify, eff_count)
+
+    # Combine the parts
+    new_cells = top_part ++ bottom_part_kept ++ blank_lines_to_add
+
+    %{buffer | cells: new_cells}
+  end
+  def delete_lines(buffer, _row, _count, _default_style), do: buffer # No-op for invalid input
+
+end

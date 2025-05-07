@@ -4,35 +4,37 @@ This directory contains the implementation of the Raxol terminal buffer system, 
 
 ## Components
 
-### Buffer Manager (`manager.ex`)
+The buffer system is composed of several modules, each handling specific responsibilities:
 
-The buffer manager handles double buffering and damage tracking for the terminal screen. It maintains two buffers (active and back) and tracks which regions of the screen have been modified.
+### State Management & Core
 
-Key features:
-- Double buffering implementation
-- Damage tracking system
-- Buffer synchronization
-- Memory management
+- **State (`state.ex`)**: Defines the core `State.t()` struct representing the buffer's grid (lines of Cells), dimensions, default style, scroll region, etc. Provides basic state accessors.
+- **Manager (`manager.ex`)**: A `GenServer` that coordinates the overall buffer system. It manages the active/back buffers (`State.t()`), the scrollback buffer (`Scrollback.t()`), damage tracking (`DamageTracker.t()`), cursor position, and memory usage. It orchestrates operations performed by the specialized modules below.
+- **Updater (`updater.ex`)**: Handles low-level updates to the buffer state, such as setting individual cells or entire lines.
+- **Utils (`utils.ex`)**: Provides miscellaneous helper functions used by various buffer modules (e.g., creating blank lines).
 
-### Scroll Buffer (`scroll.ex`)
+### Buffer Operations
 
-The scroll buffer provides virtual scrolling capabilities with memory-efficient buffer management. It handles large scrollback buffers by compressing data when memory usage exceeds limits.
+- **Writer (`writer.ex`)**: Handles writing characters and strings to the buffer state, including handling wide characters.
+- **Eraser (`eraser.ex`)**: Handles erasing parts of the buffer state (specific regions, parts of lines, whole lines, screen areas).
+- **Scroller (`scroller.ex`)**: Handles the logic for scrolling the buffer content up or down within the defined scroll region. Interacts with the Scrollback module.
+- **LineEditor (`line_editor.ex`)**: Handles insertion and deletion of entire lines within the buffer state, respecting the scroll region.
+- **CharEditor (`char_editor.ex`)**: Handles insertion and deletion of individual characters within a line, shifting subsequent characters as needed.
 
-Key features:
-- Virtual scrolling implementation
-- Memory-efficient buffer management
-- Scroll position tracking
-- Buffer compression
+### Supporting Components
 
-### Cursor Manager (`cursor/manager.ex`)
+- **Scrollback (`scrollback.ex`)**: Manages the scrollback buffer, storing lines that scroll off the main view and providing them back when scrolling down. Handles the scrollback limit.
+- **Selection (`selection.ex`)**: Manages the state of text selection within the buffer, including start/end points and retrieving selected text.
+- **DamageTracker (`damage_tracker.ex`)**: Tracks "damaged" regions (areas that have changed and likely need redrawing) using an efficient data structure.
+- **MemoryManager (`memory_manager.ex`)**: Provides functions to calculate the approximate memory usage of buffers and check usage against defined limits.
 
-The cursor manager handles cursor styles, state persistence, and animations. It provides a flexible system for managing cursor appearance and behavior.
+### Legacy / Facade
 
-Key features:
-- Multiple cursor styles (block, underline, bar, custom)
-- State persistence
-- Animation system
-- Position tracking
+- **Operations (`operations.ex`)**: Previously contained implementations for many buffer operations. Now primarily acts as a facade, delegating most calls to the specialized modules listed above.
+
+### (External Component)
+
+- **Cursor Manager (`cursor/manager.ex`)**: Although located in a subdirectory, the cursor manager handles cursor styles, state persistence, and animations. It interacts with the buffer manager to get/set cursor position but is managed separately.
 
 ## Usage
 
@@ -55,21 +57,21 @@ if Raxol.Terminal.Buffer.Manager.within_memory_limits?(manager) do
 end
 ```
 
-### Scroll Buffer
+### Scrollback
 
 ```elixir
-# Create a new scroll buffer
-scroll = Raxol.Terminal.Buffer.Scroll.new(1000)
+# Create a new scrollback buffer
+scrollback = Raxol.Terminal.Buffer.Scrollback.new(1000)
 
 # Add a line to the buffer
-line = [Cell.new("A"), Cell.new("B")]
-scroll = Raxol.Terminal.Buffer.Scroll.add_line(scroll, line)
+line = [%Raxol.Terminal.Cell{char: "A"}, %Raxol.Terminal.Cell{char: "B"}]
+scrollback = Raxol.Terminal.Buffer.Scrollback.add_line(scrollback, line)
 
-# Get a view of the buffer
-view = Raxol.Terminal.Buffer.Scroll.get_view(scroll, 10)
+# Get lines from the scrollback (e.g., for scrolling down)
+{lines_to_restore, scrollback} = Raxol.Terminal.Buffer.Scrollback.take_lines(scrollback, 5)
 
-# Scroll the buffer
-scroll = Raxol.Terminal.Buffer.Scroll.scroll(scroll, 5)
+# Get scrollback size
+size = Raxol.Terminal.Buffer.Scrollback.size(scrollback)
 ```
 
 ### Cursor Manager
@@ -112,14 +114,25 @@ The buffer system includes several memory optimization features:
 Each component includes comprehensive tests:
 
 - `test/raxol/terminal/buffer/manager_test.exs`: Tests for the buffer manager
-- `test/raxol/terminal/buffer/scroll_test.exs`: Tests for the scroll buffer
-- `test/raxol/terminal/cursor/manager_test.exs`: Tests for the cursor manager
+- `test/raxol/terminal/buffer/state_test.exs`: Tests for the buffer state
+- `test/raxol/terminal/buffer/updater_test.exs`: Tests for the buffer updater
+- `test/raxol/terminal/buffer/writer_test.exs`: Tests for the buffer writer
+- `test/raxol/terminal/buffer/eraser_test.exs`: Tests for the buffer eraser
+- `test/raxol/terminal/buffer/scroller_test.exs`: Tests for the buffer scroller
+- `test/raxol/terminal/buffer/line_editor_test.exs`: Tests for the line editor
+- `test/raxol/terminal/buffer/char_editor_test.exs`: Tests for the character editor
+- `test/raxol/terminal/buffer/scrollback_test.exs`: Tests for the scrollback buffer
+- `test/raxol/terminal/buffer/selection_test.exs`: Tests for the selection logic
+- `test/raxol/terminal/buffer/damage_tracker_test.exs`: Tests for the damage tracker
+- `test/raxol/terminal/buffer/memory_manager_test.exs`: Tests for the memory manager
+- `test/raxol/terminal/buffer/utils_test.exs`: Tests for the buffer utilities
+- `test/raxol/terminal/cursor/manager_test.exs`: Tests for the cursor manager (external)
 
 Run the tests with:
 
 ```bash
 mix test test/raxol/terminal/buffer/
-mix test test/raxol/terminal/cursor/
+mix test test/raxol/terminal/cursor/ # For the cursor manager
 ```
 
 ## Future Enhancements
@@ -130,4 +143,4 @@ Planned enhancements for the buffer system:
 2. **Buffer Partitioning**: Split large buffers into smaller chunks for better memory management.
 3. **Lazy Loading**: Load buffer content on demand to reduce initial memory usage.
 4. **Buffer Persistence**: Save buffer state to disk for session restoration.
-5. **Buffer Search**: Efficient text search within the buffer. 
+5. **Buffer Search**: Efficient text search within the buffer.

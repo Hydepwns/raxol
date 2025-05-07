@@ -143,13 +143,13 @@ defmodule Raxol.Components.Terminal.EmulatorTest do
     # DECSET Insert Mode (IRM)
     # Handle tuple return
     {state, _} = EmulatorComponent.process_input("\e[4h", @initial_state)
-    assert state.core_emulator.mode_state.insert_mode == true
+    assert state.core_emulator.mode_manager.insert_mode == true
 
     # Normal mode (resetting insert mode)
     # DECRST Insert Mode (IRM)
     # Handle tuple return
     {state, _} = EmulatorComponent.process_input("\e[4l", state)
-    assert state.core_emulator.mode_state.insert_mode == false
+    assert state.core_emulator.mode_manager.insert_mode == false
   end
 
   test "handles dirty cells" do
@@ -162,5 +162,14 @@ defmodule Raxol.Components.Terminal.EmulatorTest do
 
     # Check if the first 5 cells (for "Hello") are marked dirty (new cells are always dirty)
     assert Enum.all?(Enum.take(first_row, 5), & &1.dirty)
+  end
+
+  test "handles OSC sequences" do
+    {state, _} = EmulatorComponent.process_input("\e]0;New Window Title\e\\", @initial_state)
+
+    # Access the nested window_title field within the core_emulator
+    assert state.core_emulator.window_title == "New Window Title"
+
+    # TODO: Add tests for other OSC sequences (clipboard, colors, etc.)
   end
 end

@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.ControlCodes
+  alias Raxol.Terminal.ANSI.CharacterSets
   require Logger
 
   @doc """
@@ -16,6 +17,9 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
           | {:finished, Emulator.t(), State.t()}
           | {:incomplete, Emulator.t(), State.t()}
   def handle(emulator, %State{state: :escape} = parser_state, input) do
+    # --- REMOVED DEBUG ---
+    # IO.inspect({:escape_state_entry, input}, label: "ESCAPE_STATE_ENTRY_DEBUG")
+    # --- END DEBUG ---
     case input do
       # Empty input
       <<>> ->
@@ -70,12 +74,18 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # Designate G2
       <<?*, rest_after::binary>> ->
+        # --- REMOVED DEBUG ---
+        # IO.inspect({:escape_state_handling_g2, parser_state.designating_gset}, label: "ESCAPE_STATE_DEBUG")
+        # --- END DEBUG ---
         # IO.inspect({:parse_loop_escape_designate_g2, parser_state.state, input}, label: "DEBUG_PARSER")
         next_parser_state = %{
           parser_state
           | state: :designate_charset,
             designating_gset: 2
         }
+        # --- REMOVED DEBUG ---
+        # IO.inspect({:escape_state_g2_return, next_parser_state}, label: "ESCAPE_STATE_DEBUG")
+        # --- END DEBUG ---
         {:continue, emulator, next_parser_state, rest_after}
 
       # Designate G3
@@ -97,14 +107,33 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
         next_parser_state = %{parser_state | state: :ground}
         {:continue, emulator, next_parser_state, rest_after_ss}
 
-      # SS3
-      <<79, rest_after_ss::binary>> ->
-        # IO.inspect({:parse_loop_escape_ss3, parser_state.state, input}, label: "DEBUG_PARSER")
-        Logger.info("[Parser] SS3 received - Not implemented")
-        # TODO: Implement SS3 handling (invoke G3 for next char)
-        # Return to ground after SS3
+      # LS2 (Invoke G2 in GL)
+      <<?n, rest_after::binary>> ->
+        new_charset_state = CharacterSets.set_gl(emulator.charset_state, :g2)
+        new_emulator = %{emulator | charset_state: new_charset_state}
         next_parser_state = %{parser_state | state: :ground}
-        {:continue, emulator, next_parser_state, rest_after_ss}
+        {:continue, new_emulator, next_parser_state, rest_after}
+
+      # LS3 (Invoke G3 in GL)
+      <<?o, rest_after::binary>> ->
+        new_charset_state = CharacterSets.set_gl(emulator.charset_state, :g3)
+        new_emulator = %{emulator | charset_state: new_charset_state}
+        next_parser_state = %{parser_state | state: :ground}
+        {:continue, new_emulator, next_parser_state, rest_after}
+
+      # LS2R (Invoke G2 in GR)
+      <<?~, rest_after::binary>> ->
+        new_charset_state = CharacterSets.set_gr(emulator.charset_state, :g2)
+        new_emulator = %{emulator | charset_state: new_charset_state}
+        next_parser_state = %{parser_state | state: :ground}
+        {:continue, new_emulator, next_parser_state, rest_after}
+
+      # LS3R (Invoke G3 in GR)
+      <<?}, rest_after::binary>> ->
+        new_charset_state = CharacterSets.set_gr(emulator.charset_state, :g3)
+        new_emulator = %{emulator | charset_state: new_charset_state}
+        next_parser_state = %{parser_state | state: :ground}
+        {:continue, new_emulator, next_parser_state, rest_after}
 
       # RIS
       <<?c, rest_after::binary>> ->

@@ -124,7 +124,7 @@ defmodule Raxol.UI.Components.Input.Button do
         focused: button.focused
       },
       events: [
-        Event.new(:click, fn ->
+        Raxol.Core.Events.Event.new(:click, fn ->
           # Access on_click and disabled directly from the button state map
           if button.on_click && !button.disabled, do: button.on_click.()
         end)

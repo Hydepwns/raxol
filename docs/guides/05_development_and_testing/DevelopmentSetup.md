@@ -90,6 +90,48 @@ If the terminal output appears corrupted after running an example:
 reset
 ```
 
+3. **Erlang/OTP Build Failures on macOS (e.g., 'iterator' file not found)**
+
+   If you are using `asdf` to manage Erlang versions on macOS and encounter build failures during `asdf install erlang <version>`, particularly with errors like `fatal error: 'iterator' file not found` or other C++ header issues, it might be due to problems with the Xcode Command Line Tools or conflicts between the system's `clang` compiler and one installed via Homebrew.
+
+   **Symptoms:**
+
+   - `asdf install erlang <version>` fails during the C/C++ compilation stage.
+   - Build logs (often found in `~/.asdf/plugins/erlang/kerl-home/builds/asdf_<version>/otp_build_<version>.log`) show errors related to missing standard C++ headers (e.g., `<iterator>`, `<vector>`).
+
+   **Potential Solution:**
+
+   a. **Clean up any failed installation:**
+   If a previous install attempt failed, `asdf` might still think the version is partially installed or corrupted. Manually remove the problematic installation directory:
+
+   ```bash
+   # Replace <version> with the actual Erlang version, e.g., 26.2.5
+   rm -rf ~/.asdf/installs/erlang/<version>
+   ```
+
+   b. **Explicitly set C and C++ compilers to Homebrew's clang:**
+   Before attempting the installation again, tell the build system to use `clang` and `clang++` from your Homebrew LLVM installation. This often provides a more complete and correctly configured C++ toolchain.
+
+   ```bash
+   export CC=/opt/homebrew/opt/llvm/bin/clang \
+          CXX=/opt/homebrew/opt/llvm/bin/clang++
+
+   # Then try installing Erlang again, e.g., for version 26.2.5:
+   asdf install erlang 26.2.5
+   asdf reshim erlang # Important to update shims after successful install
+   ```
+
+   Ensure that Homebrew and its `llvm` package are up to date (`brew update && brew upgrade llvm`).
+
+   c. **Verify Xcode Command Line Tools:**
+   As a general check, ensure your Xcode Command Line Tools are installed:
+
+   ```bash
+   xcode-select --install
+   ```
+
+   If issues persist after trying the `CC`/`CXX` export, a full reinstall of Command Line Tools might be considered as a more involved step.
+
 ## Editor Integration
 
 ### VS Code

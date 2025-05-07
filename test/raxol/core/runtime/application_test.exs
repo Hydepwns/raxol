@@ -32,6 +32,12 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       end
     end
 
+    @impl true
+    def handle_event(%Raxol.Core.Events.Event{type: :window, data: %{action: :resize, width: _w, height: _h}}, state) do
+      # For testing purposes, just return the state unchanged
+      {state, []}
+    end
+
     def update({:add, amount}, model) do
       {%{model | count: model.count + amount},
        [{:command, :operation_complete}]}

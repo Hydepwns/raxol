@@ -6,16 +6,17 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
 
   # Helper to create initial state
   defp create_state(lines \\ [""], cursor_pos \\ {0, 0}) do
-    # Use the main MultiLineInput module struct
+    # Create a default struct first
+    default_state = %MultiLineInput{}
+    # Then override the necessary fields for the test
     %MultiLineInput{
-      lines: lines,
-      cursor_pos: cursor_pos,
-      # Add other minimal required fields if TextHelper depends on them
-      selection_start: nil,
-      selection_end: nil,
-      id: "test_input",
-      scroll_offset: {0, 0},
-      history: Raxol.Terminal.Commands.History.new(10)
+      default_state # Use default state as base
+      | lines: lines,
+        cursor_pos: cursor_pos,
+        id: "test_input", # Set a consistent ID for tests
+        # Explicitly initialize history as its default is nil
+        history: Raxol.Terminal.Commands.History.new(10)
+        # Other fields will use their defaults from defstruct
     }
   end
 
@@ -45,10 +46,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
     end
   end
 
-  describe "delete_char_before/1" do
+  describe "handle_backspace_no_selection/1" do
     test "deletes character before cursor" do
       state = create_state(["hello", "world"], {0, 3}) # Cursor after 'l' in "hello"
-      new_state = TextHelper.delete_backward(state)
+      new_state = TextHelper.handle_backspace_no_selection(state)
 
       assert new_state.lines == ["helo", "world"]
       assert new_state.cursor_pos == {0, 2}
@@ -56,7 +57,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
 
     test "joins lines when deleting at the beginning of a line" do
       state = create_state(["hello", "world"], {1, 0}) # Cursor at start of "world"
-      new_state = TextHelper.delete_backward(state)
+      new_state = TextHelper.handle_backspace_no_selection(state)
 
       assert new_state.lines == ["helloworld"]
       assert new_state.cursor_pos == {0, 5} # Cursor moves to end of the joined line
@@ -64,17 +65,17 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
 
     test "does nothing at the beginning of the document" do
       state = create_state(["hello", "world"], {0, 0}) # Cursor at start of document
-      new_state = TextHelper.delete_backward(state)
+      new_state = TextHelper.handle_backspace_no_selection(state)
 
       assert new_state.lines == ["hello", "world"]
       assert new_state.cursor_pos == {0, 0}
     end
   end
 
-  describe "delete_forward/1" do
+  describe "handle_delete_no_selection/1" do
     test "deletes character at cursor" do
       state = create_state(["hello", "world"], {0, 2}) # Cursor before 'l' in "hello"
-      new_state = TextHelper.delete_forward(state)
+      new_state = TextHelper.handle_delete_no_selection(state)
 
       assert new_state.lines == ["helo", "world"]
       assert new_state.cursor_pos == {0, 2} # Cursor stays
@@ -82,7 +83,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
 
     test "joins lines when deleting at the end of a line" do
       state = create_state(["hello", "world"], {0, 5}) # Cursor at end of "hello"
-      new_state = TextHelper.delete_forward(state)
+      new_state = TextHelper.handle_delete_no_selection(state)
 
       assert new_state.lines == ["helloworld"]
       assert new_state.cursor_pos == {0, 5} # Cursor stays
@@ -90,7 +91,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
 
     test "does nothing at the end of the document" do
       state = create_state(["hello", "world"], {1, 5}) # Cursor at end of document
-      new_state = TextHelper.delete_forward(state)
+      new_state = TextHelper.handle_delete_no_selection(state)
 
       assert new_state.lines == ["hello", "world"]
       assert new_state.cursor_pos == {1, 5}

@@ -1,9 +1,11 @@
 defmodule Raxol.Terminal.Parser.States.GroundState do
   @moduledoc """
   Handles the :ground state of the terminal parser.
+  Processes plain text and transitions to other states on control codes/escape sequences.
   """
 
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.InputHandler
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.ControlCodes
   require Logger
@@ -18,63 +20,80 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
   @spec handle(Emulator.t(), State.t(), binary()) ::
           {:continue, Emulator.t(), State.t(), binary()} | {:handled, Emulator.t()}
   def handle(emulator, %State{state: :ground} = parser_state, input) do
+    # --- REMOVED DEBUG ---
+    # IO.inspect({:ground_state_entry, input}, label: "GROUND_STATE_ENTRY_DEBUG")
+    # --- END DEBUG ---
     case input do
-      # Base case: Empty input handled by main loop
-
       # ESC
       <<27, rest_after_esc::binary>> ->
-        # Update parser state: change state atom, reset buffers
-        next_parser_state = %State{
-          parser_state
-          | state: :escape,
-            params_buffer: "",
-            payload_buffer: "",
-            intermediates_buffer: ""
-        }
-
+        # Transition to escape state
+        next_parser_state = %{parser_state | state: :escape}
+        # --- REMOVED DEBUG ---
+        # IO.inspect({:ground_state_esc_clause_return, next_parser_state.state}, label: "GROUND_ESC_DEBUG")
+        # --- END DEBUG ---
         {:continue, emulator, next_parser_state, rest_after_esc}
 
-      # LF
+      # LF (C0 Code)
       <<10, rest_after_lf::binary>> ->
-        # Call back to ControlCodes
-        new_emulator = ControlCodes.handle_lf(emulator)
-        # Continue with same parser state
+        # Command History Logic
+        trimmed_command = String.trim(emulator.current_command_buffer)
+        updated_history =
+          if trimmed_command != "" do
+            [trimmed_command | emulator.command_history]
+            |> Enum.take(emulator.max_command_history)
+          else
+            emulator.command_history
+          end
+
+        emulator_with_history = %{
+          emulator
+          | command_history: updated_history,
+            current_command_buffer: ""
+        }
+        # End Command History Logic
+
+        new_emulator = ControlCodes.handle_c0(emulator_with_history, 10)
         {:continue, new_emulator, parser_state, rest_after_lf}
 
-      # CR
+      # CR (C0 Code)
       <<13, rest_after_cr::binary>> ->
-        # Call back to ControlCodes
-        new_emulator = ControlCodes.handle_cr(emulator)
-        # Continue with same parser state
+        # For CR, we might also consider it as command input submission,
+        # or let LF be the sole trigger. For now, let's assume LF is the main trigger
+        # and CR just does its usual control code action.
+        # If CR should also submit commands, the LF logic would be duplicated here.
+        new_emulator = ControlCodes.handle_c0(emulator, 13)
         {:continue, new_emulator, parser_state, rest_after_cr}
+
+      # Other C0 Codes (0-31 excluding ESC, LF, CR)
+      <<control_code, rest_after_control::binary>>
+      when control_code >= 0 and control_code <= 31 and control_code != 27 ->
+        new_emulator = ControlCodes.handle_c0(emulator, control_code)
+        {:continue, new_emulator, parser_state, rest_after_control}
 
       # Printable character
       <<char_codepoint::utf8, rest_after_char::binary>>
       when char_codepoint >= 32 ->
-        # Call back to Emulator's new printable char handler
-        new_emulator = Emulator.process_character(emulator, char_codepoint)
-        # Continue with same parser state
+        # Command History Logic
+        char_as_string = <<char_codepoint::utf8>>
+        updated_command_buffer = emulator.current_command_buffer <> char_as_string
+        emulator_with_buffer = %{emulator | current_command_buffer: updated_command_buffer}
+        # End Command History Logic
+
+        # Call InputHandler instead of non-existent Emulator.write
+        new_emulator = InputHandler.process_printable_character(emulator_with_buffer, char_codepoint)
         {:continue, new_emulator, parser_state, rest_after_char}
 
-      # Fallback for other C0 or invalid UTF-8
+      # Fallback for invalid UTF-8 or other unhandled bytes
       <<byte, rest::binary>> ->
-        if byte >= 0 and byte <= 31 and byte != 10 and byte != 13 do
-          # Call back to Emulator for C0 (needs a generic C0 handler in ControlCodes?)
-          # Or check specific codes and call ControlCodes handlers?
-          # For now, keep calling Emulator.process_character as a placeholder
-          # TODO: Refactor C0 handling here to use ControlCodes module
-          new_emulator = Emulator.process_character(emulator, byte)
-          {:continue, new_emulator, parser_state, rest}
-        else
-          Logger.warning(
-            "[Parser] Unhandled/Ignored byte #{inspect(byte)} in ground state. Skipping."
-          )
+        Logger.warning(
+          "[Parser] Unhandled/Ignored byte #{inspect(byte)} in ground state. Skipping."
+        )
+        {:continue, emulator, parser_state, rest}
 
-          {:continue, emulator, parser_state, rest}
-        end
+      # Base case: Empty input (should be handled by main loop, but good to have)
+      <<>> ->
+         {:continue, emulator, parser_state, <<>>}
 
-      # Empty input is handled by the main parse_loop base case.
-      # Returning {:finished, ...} here would be redundant.
     end
   end
 

@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Emulator.StateStackTest do
   use ExUnit.Case
-  @tag :skip # Temporarily skip due to persistent UndefinedFunctionError
+  # @tag :skip # Temporarily skip due to persistent UndefinedFunctionError
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Cursor.Manager
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       emulator1 = %{emulator1 | style: %{emulator1.style | bold: true}}
       # Designate G1 (ESC ) 0)
       {emulator1, ""} = Emulator.process_input(emulator1, "\e)0")
-      mode_state1 = emulator1.mode_state
+      mode_manager_state1 = emulator1.mode_manager
       charset_state1 = emulator1.charset_state # Capture charset state
 
       # Save state (DECSC - ESC 7)
@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       emulator2 = %{emulator2 | style: %{emulator2.style | underline: true}}
       # Designate G1 back to ASCII (ESC ) B)
       {emulator2, ""} = Emulator.process_input(emulator2, "\e)B")
-      mode_state2 = emulator2.mode_state
+      mode_manager_state2 = emulator2.mode_manager
       charset_state2 = emulator2.charset_state # Capture charset state
 
       # Check stack count (indirectly, by testing restore)
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       assert emulator_restored1.charset_state == charset_state1
       assert emulator_restored1.charset_state.g1 == :dec_special_graphics # Verify specific field if needed
       # Check mode state restored
-      assert emulator_restored1.mode_state == mode_state1
+      assert emulator_restored1.mode_manager == mode_manager_state1
 
       # Restore again (should do nothing if stack empty)
       initial_state_before_second_restore = emulator_restored1
@@ -75,8 +75,8 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       assert emulator_restored_again.charset_state ==
                initial_state_before_second_restore.charset_state
 
-      assert emulator_restored_again.mode_state ==
-               initial_state_before_second_restore.mode_state
+      assert emulator_restored_again.mode_manager ==
+               initial_state_before_second_restore.mode_manager
     end
 
     test "DEC mode 1048 saves/restores cursor state only (no buffer switch)" do
@@ -96,7 +96,12 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
 
       # Verify buffer did NOT switch
       assert emulator.active_buffer_type == :main
-      # Verify buffer content did NOT change
+      # Verify buffer content is unchanged (DECSC/DECRC should not affect it for mode 1048)
+      active_buffer_after_op = Emulator.get_active_buffer(emulator)
+      line_cells = ScreenBuffer.get_line(active_buffer_after_op, 0)
+      line_text = if line_cells, do: Enum.map_join(line_cells, &(&1.char)), else: ""
+      assert line_text == "MainBuf" <> String.duplicate(" ", 73) # Check content roughly
+
       assert Emulator.get_active_buffer(emulator) == main_buffer_snapshot
 
       # 3. Modify cursor and style on main buffer
@@ -112,7 +117,10 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       assert emulator.active_buffer_type == :main
       # Verify main buffer content is unchanged from before restore
       # (Buffer content itself is not saved/restored by 1048)
-      assert ScreenBuffer.get_line_text(Emulator.get_active_buffer(emulator), 0) == "MainBuf" <> String.duplicate(" ", 73) # Check content roughly
+      active_buffer_after_restore = Emulator.get_active_buffer(emulator)
+      line_cells_after_restore = ScreenBuffer.get_line(active_buffer_after_restore, 0)
+      line_text_after_restore = if line_cells_after_restore, do: Enum.map_join(line_cells_after_restore, &(&1.char)), else: ""
+      assert line_text_after_restore == "MainBuf" <> String.duplicate(" ", 73)
 
       # Verify cursor position IS restored
       assert emulator.cursor.position == cursor_snapshot.position # Compare position tuple directly

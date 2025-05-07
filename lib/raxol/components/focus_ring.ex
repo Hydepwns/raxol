@@ -1,6 +1,12 @@
 defmodule Raxol.Components.FocusRing do
   @moduledoc """
   Handles drawing the focus ring around focused components.
+
+  This component dynamically styles the focus ring based on:
+  - Component state (focused, active, disabled)
+  - User preferences (high contrast, reduced motion)
+  - Theming settings
+  - Animation effects
   """
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
@@ -9,7 +15,7 @@ defmodule Raxol.Components.FocusRing do
   # Require View Elements macros
   require Raxol.View.Elements
 
-  # Define state struct
+  # Define state struct with enhanced styling options
   defstruct visible: true,
             position: nil, # {x, y, width, height} of focused element
             prev_position: nil,
@@ -17,12 +23,16 @@ defmodule Raxol.Components.FocusRing do
             color: :yellow,
             thickness: 1,
             high_contrast: false,
-            animation: :pulse, # :pulse, :blink, :none
+            animation: :pulse, # :pulse, :blink, :fade, :glow, :bounce, :none
             animation_duration: 500, # ms
             animation_phase: 0,
-            transition_effect: :fade, # :fade, :slide, :none
+            animation_frames: 100, # total animation frames
+            transition_effect: :fade, # :fade, :slide, :grow, :none
             offset: {0, 0}, # {offset_x, offset_y}
-            style: %{}
+            style: %{},
+            component_type: nil, # button, text_input, checkbox, etc. - affects styling
+            state: :normal, # :normal, :active, :disabled
+            last_tick: nil # timestamp for animation timing
 
   # --- Component Behaviour Callbacks ---
 
@@ -37,44 +47,107 @@ defmodule Raxol.Components.FocusRing do
       high_contrast: false,
       animation: :pulse,
       animation_duration: 500,
+      animation_frames: 100,
       transition_effect: :fade,
-      offset: {0, 0}
+      offset: {0, 0},
+      state: :normal,
+      animation_phase: 0,
+      last_tick: System.monotonic_time(:millisecond)
     }
     struct!(__MODULE__, Map.merge(defaults, opts))
   end
 
   @impl true
   def update(msg, state) do
-    # Handle internal messages (animation ticks, focus changes maybe)
+    # Handle internal messages (animation ticks, focus changes)
     Logger.debug("FocusRing received message: #{inspect msg}")
     case msg do
-      # Example: Focus change info could be passed via message
+      # Focus change with component type and state information
+      {:focus_changed, _old_elem_id, new_elem_id, new_position, component_info} ->
+        component_type = Map.get(component_info, :type, nil)
+        component_state = Map.get(component_info, :state, :normal)
+
+        {%{state |
+          focused_element: new_elem_id,
+          prev_position: state.position,
+          position: new_position,
+          animation_phase: 0,
+          component_type: component_type,
+          state: component_state,
+          last_tick: System.monotonic_time(:millisecond)
+        }, []}
+
+      # Basic focus change without component info
       {:focus_changed, _old_elem_id, new_elem_id, new_position} ->
-        %{state | focused_element: new_elem_id, prev_position: state.position, position: new_position, animation_phase: 0}
+        {%{state |
+          focused_element: new_elem_id,
+          prev_position: state.position,
+          position: new_position,
+          animation_phase: 0,
+          last_tick: System.monotonic_time(:millisecond)
+        }, []}
+
+      # Animation tick handling with timing
       {:animation_tick} ->
-        new_phase = rem(state.animation_phase + 1, 100)
-        {%{state | animation_phase: new_phase}, []}
+        current_time = System.monotonic_time(:millisecond)
+        time_passed = current_time - (state.last_tick || current_time)
+
+        # Calculate how many phases to advance based on time and duration
+        phase_delta = trunc(time_passed / (state.animation_duration / state.animation_frames))
+        new_phase = rem(state.animation_phase + max(1, phase_delta), state.animation_frames)
+
+        # Schedule next animation tick
+        commands =
+          if state.animation != :none and state.visible do
+            [schedule({:animation_tick}, 16)] # ~60fps
+          else
+            []
+          end
+
+        {%{state |
+          animation_phase: new_phase,
+          last_tick: current_time
+        }, commands}
+
       # Allow external configuration updates
-      {:configure, opts} when is_list(opts) ->
-        new_state = Keyword.merge(state, opts)
-        {new_state, []}
+      {:configure, opts} when is_map(opts) ->
+        new_state = Map.merge(state, opts)
+
+        # Start animation if needed
+        commands =
+          if new_state.animation != :none and new_state.visible and
+             (new_state.animation != state.animation or not state.visible) do
+            [schedule({:animation_tick}, 16)]
+          else
+            []
+          end
+
+        {new_state, commands}
+
       _ -> {state, []}
     end
   end
 
   @impl true
   def handle_event(event, %{} = _props, state) do
-    # FocusRing might not directly handle primary events, but could listen to focus changes
-    # Or it could receive :focus_change messages via update/2
+    # FocusRing might listen to focus changes or accessibility events
     Logger.debug("FocusRing received event: #{inspect event}")
-    {state, []}
+    case event do
+      {:accessibility_high_contrast, enabled} ->
+        {%{state | high_contrast: enabled}, []}
+      {:accessibility_reduced_motion, enabled} ->
+        animation = if enabled, do: :none, else: :pulse
+        {%{state | animation: animation}, []}
+      _ ->
+        {state, []}
+    end
   end
 
   # --- Render Logic ---
 
   @impl true
-  def render(state, %{} = _props) do # Correct arity
-    dsl_result = render_focus_ring(state)
+  def render(state, %{} = props) do
+    dsl_result = render_focus_ring(state, props)
     # Result can be nil or a box element map
     if dsl_result do
       dsl_result # Return element map directly
@@ -85,47 +158,163 @@ defmodule Raxol.Components.FocusRing do
 
   # --- Internal Render Helper ---
 
-  defp render_focus_ring(state) do
+  defp render_focus_ring(state, props) do
     if state.visible and is_tuple(state.position) do
       # Extract position and apply offset
       {x, y, width, height} = state.position
       {offset_x, offset_y} = state.offset
 
-      # TODO: Determine effective style based on high_contrast, animation, component type
-      effective_color = if state.high_contrast, do: :white, else: state.color
-      # Convert style list to atom if needed by box macro
-      effective_border_style = hd(List.wrap(state.style)) # Example: take first style
+      # Apply styling based on state, component type, and animation
+      style_attrs = calculate_style_attributes(state, props)
 
-      # Use View Elements box macro (requires Raxol.View.Elements)
+      # Use View Elements box macro
       Raxol.View.Elements.box x: x + offset_x,
                              y: y + offset_y,
                              width: width,
                              height: height,
-                             style: [
-                               border: effective_border_style,
-                               border_color: effective_color
-                               # TODO: Apply thickness, animation effects (might need more complex rendering)
-                             ] do
+                             style: style_attrs do
         # Empty block needed as the macro expects it
       end
     else
-      nil # Return nil if not visible or no position map
+      nil # Return nil if not visible or no position
     end
   end
 
-  # --- Other Functions (Potentially move or make part of update/init) ---
+  # Helper to calculate style attributes based on state
+  defp calculate_style_attributes(state, props) do
+    # Get theme configuration if available
+    theme = Map.get(props, :theme, %{})
 
-  # Removed old render/1 function
-  # Removed old subscriptions/1 (subscriptions handled by runtime/application)
-  # Removed old handle_focus_change/2
-  # Removed old set/get_component_style (config via init/update)
-  # Removed old cleanup (lifecycle handled by runtime)
-  # Removed configure/1 (use update({:configure, opts}, state))
-  # Removed set_high_contrast (use update({:configure, [high_contrast: true]}, state))
-  # Removed register_custom_position
-  # Removed get_element_position (position passed via :focus_changed message)
+    # Base styling from component type
+    base_style = get_component_specific_style(state.component_type, state.state)
 
-  # Removed default_config (integrated into init)
-  # Removed get_config (state holds config)
+    # Determine color based on high contrast, component type, and state
+    color = determine_color(state, theme)
 
+    # Apply animation effects
+    animation_style = apply_animation_effects(state, color)
+
+    # Merge all style attributes
+    style_attrs = Map.merge(base_style, animation_style)
+
+    # Apply theme overrides if present
+    theme_overrides = Map.get(theme, :focus_ring, %{})
+    Map.merge(style_attrs, theme_overrides)
+  end
+
+  # Determine appropriate color based on context
+  defp determine_color(state, theme) do
+    cond do
+      # High contrast mode always uses high visibility colors
+      state.high_contrast ->
+        :white
+
+      # Component state-based colors
+      state.state == :disabled ->
+        Map.get(theme, :disabled_color, :dark_gray)
+
+      state.state == :active ->
+        Map.get(theme, :active_color, :cyan)
+
+      # Component type-specific colors
+      state.component_type == :button ->
+        Map.get(theme, :button_focus_color, :blue)
+
+      state.component_type == :text_input ->
+        Map.get(theme, :input_focus_color, :green)
+
+      state.component_type == :checkbox ->
+        Map.get(theme, :checkbox_focus_color, :magenta)
+
+      # Default color from state or theme
+      true ->
+        state.color
+    end
+  end
+
+  # Get component-specific styling
+  defp get_component_specific_style(component_type, component_state) do
+    base_style = %{border: :single}
+
+    case {component_type, component_state} do
+      {:button, :normal} ->
+        %{border: :double, bold: true}
+
+      {:text_input, :normal} ->
+        %{border: :single, italic: false}
+
+      {:checkbox, :normal} ->
+        %{border: :single, bold: false}
+
+      {_, :disabled} ->
+        %{border: :dotted, bold: false}
+
+      {_, :active} ->
+        %{border: :double, bold: true}
+
+      _ ->
+        base_style
+    end
+  end
+
+  # Apply animation effects based on animation type and phase
+  defp apply_animation_effects(state, color) do
+    case state.animation do
+      :none ->
+        %{border_color: color}
+
+      :pulse ->
+        # Pulse effect: varying opacity/intensity
+        phase_percent = state.animation_phase / state.animation_frames
+        # Simple sine wave for pulsing (0.7-1.0 intensity range)
+        intensity = 0.7 + 0.3 * :math.sin(phase_percent * 2 * :math.pi)
+
+        # Apply intensity through color - actual implementation would
+        # handle this differently - this is a placeholder
+        %{border_color: color, intensity: intensity}
+
+      :blink ->
+        # Blink effect: visible/invisible
+        phase_percent = state.animation_phase / state.animation_frames
+        visible = phase_percent < 0.5
+
+        if visible do
+          %{border_color: color}
+        else
+          %{border_color: :black} # "Invisible" - would use transparency in real impl
+        end
+
+      :glow ->
+        # Glow effect: expanded border with gradient
+        phase_percent = state.animation_phase / state.animation_frames
+        glow_size = 1 + :math.sin(phase_percent * 2 * :math.pi) * 0.5
+
+        %{
+          border_color: color,
+          glow: true,
+          glow_size: glow_size,
+          glow_color: color
+        }
+
+      :bounce ->
+        # Bounce effect: slight size changes
+        phase_percent = state.animation_phase / state.animation_frames
+        bounce_offset = :math.sin(phase_percent * 2 * :math.pi) * 0.5
+
+        %{
+          border_color: color,
+          offset_x: bounce_offset,
+          offset_y: bounce_offset
+        }
+
+      :fade ->
+        # Fade effect: color interpolation
+        phase_percent = state.animation_phase / state.animation_frames
+        # In a real implementation, would interpolate between colors
+        %{border_color: color, opacity: 0.5 + phase_percent * 0.5}
+
+      _ ->
+        %{border_color: color}
+    end
+  end
 end

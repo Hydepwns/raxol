@@ -119,7 +119,7 @@ defmodule Raxol.Style.Colors.PaletteManager do
 
   ## Parameters
 
-  * `base_color` - The starting color (hex string like "#0077CC")
+  * `base_color_hex` - The starting color (hex string like "#0077CC")
   * `steps` - The number of steps in the scale (default: 9)
   * `opts` - Additional options
 
@@ -137,7 +137,7 @@ defmodule Raxol.Style.Colors.PaletteManager do
         "#80B3E6", "#66A3E0", "#4D94DB", "#3385D6", "#0077CC"
       ]
   """
-  def generate_scale(base_color, steps \\ 9, opts \\ []) do
+  def generate_scale(base_color_hex, steps \\ 9, opts \\ []) when is_binary(base_color_hex) do
     # Default range of lightness from light to dark
     {min_lightness, max_lightness} =
       Keyword.get(opts, :lightness_range, {0.1, 0.9})
@@ -145,76 +145,50 @@ defmodule Raxol.Style.Colors.PaletteManager do
     # Get saturation adjustment (slightly more saturated for midtones)
     saturation_adjust = Keyword.get(opts, :saturation_adjust, 0.05)
 
-    # Convert base color to HSL for manipulation
-    %Color{r: r, g: g, b: b} = base_color
-    base_hsl = Raxol.Style.Colors.HSL.rgb_to_hsl(r, g, b)
-    _is_dark_base = elem(base_hsl, 2) < 0.5
+    # Convert base color hex to struct and handle errors
+    case Color.from_hex(base_color_hex) do
+      {:error, reason} ->
+        {:error, {:invalid_base_color, reason}}
 
-    # Calculate lightness step size
-    lightness_step = (max_lightness - min_lightness) / (steps - 1)
+      %Color{r: r, g: g, b: b} = base_color_struct ->
+        # Convert base color to HSL for manipulation
+        {base_h, base_s, base_l} = Raxol.Style.Colors.HSL.rgb_to_hsl(r, g, b)
 
-    # Generate colors
-    scale =
-      for i <- 0..(steps - 1) do
-        # Calculate target lightness for this step (start from lightest)
-        target_lightness = max_lightness - i * lightness_step
-        _lightness_diff = target_lightness - elem(base_hsl, 2)
+        # Calculate lightness step size
+        lightness_step = if steps > 1, do: (max_lightness - min_lightness) / (steps - 1), else: 0
 
-        # Calculate target saturation (parabolic curve, peaked in middle)
-        target_saturation_factor =
-          1.0 +
-            saturation_adjust *
-              (1.0 - :math.pow(2.0 * (i / (steps - 1)) - 1.0, 2))
+        # Generate colors
+        scale =
+          for i <- 0..(steps - 1) do
+            # Calculate target lightness for this step (start from lightest)
+            target_lightness = max(0.0, min(1.0, max_lightness - i * lightness_step))
 
-        target_saturation = elem(base_hsl, 1) * target_saturation_factor
-        saturation_diff = target_saturation - elem(base_hsl, 1)
+            # Calculate target saturation (parabolic curve, peaked in middle)
+            target_saturation_factor =
+              if steps > 1 do
+                1.0 + saturation_adjust * (1.0 - :math.pow(2.0 * (i / (steps - 1)) - 1.0, 2))
+              else
+                1.0 # No adjustment for single step
+              end
 
-        # Apply lightness adjustment
-        # Assume HSL module exists for from_hsl! and manipulation
-        adjusted_lightness_hsl = {elem(base_hsl, 0), elem(base_hsl, 1), target_lightness}
+            target_saturation = max(0.0, min(1.0, base_s * target_saturation_factor))
 
-        # This line causes an error if HSL module or from_hsl! is missing
-        # adjusted_lightness_color = Raxol.Style.Colors.HSL.from_hsl!(adjusted_lightness_hsl)
-        adjusted_lightness_color = base_color # Placeholder
+            # Convert back to RGB from adjusted HSL
+            {new_r, new_g, new_b} = Raxol.Style.Colors.HSL.hsl_to_rgb(base_h, target_saturation, target_lightness)
 
-        # Apply saturation adjustment
-        _final_hsl =
-          case saturation_diff do
-            # Handle float comparison carefully
-            diff when abs(diff) < 0.001 ->
-              adjusted_lightness_hsl
-
-            _diff when saturation_diff > 0 ->
-              # Increase saturation (towards target)
-              # Raxol.Style.Colors.HSL.saturate(adjusted_lightness_hsl, saturation_diff * 100) # Assuming saturate takes 0-100
-              adjusted_lightness_hsl # Placeholder
-
-            _ -> # Decrease saturation
-              # Raxol.Style.Colors.HSL.desaturate(adjusted_lightness_hsl, abs(saturation_diff * 100))
-              adjusted_lightness_hsl # Placeholder
+            # Convert back to hex string
+            Color.to_hex(%Color{base_color_struct | r: new_r, g: new_g, b: new_b})
           end
 
-        # This line causes an error if HSL module or from_hsl! is missing
-        # adjusted_saturation_color = Raxol.Style.Colors.HSL.from_hsl!(final_hsl)
-        adjusted_saturation_color = adjusted_lightness_color # Placeholder
+        # Store the scale if a name was provided
+        if name = Keyword.get(opts, :name) do
+          scales = Process.get(:palette_manager_scales, %{})
+          updated_scales = Map.put(scales, name, scale)
+          Process.put(:palette_manager_scales, updated_scales)
+        end
 
-        # Ensure contrast if required
-        _min_contrast = Keyword.get(opts, :min_contrast, 4.5) # Prefixed unused
-        _contrast_target_color = Color.from_rgb(255, 255, 255) # Fixed Color.new call, prefixed unused
-        # TODO: Re-implement logic using _min_contrast and potentially _contrast_target_color
-        # The original logic was likely using these vars
-        # For now, return base color as placeholder
-        adjusted_saturation_color
-      end
-
-    # Store the scale if a name was provided
-    if name = Keyword.get(opts, :name) do
-      scales = Process.get(:palette_manager_scales, %{})
-      updated_scales = Map.put(scales, name, scale)
-      Process.put(:palette_manager_scales, updated_scales)
+        scale # Return the list of hex strings
     end
-
-    scale
   end
 
   @doc """

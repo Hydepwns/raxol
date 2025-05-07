@@ -35,30 +35,33 @@ defmodule Raxol.Plugins.PluginDependency do
       when is_map(plugin) and is_list(loaded_plugins) do
     dependencies = plugin.dependencies || []
 
-    Enum.reduce_while(dependencies, {:ok, []}, fn dependency, {:ok, missing} ->
+    # Check each dependency, stopping at the first error
+    Enum.reduce_while(dependencies, {:ok, []}, fn dependency, {:ok, _acc} ->
       plugin_name = dependency["name"]
       version_constraint = dependency["version"] || ">= 0.0.0"
       optional = dependency["optional"] || false
 
       case find_plugin(loaded_plugins, plugin_name) do
         nil ->
+          # Return error if required dependency is missing
           if optional do
-            {:cont, {:ok, missing}}
+            {:cont, {:ok, []}}
           else
             {:halt, {:error, "Required dependency '#{plugin_name}' not found"}}
           end
 
         loaded_plugin ->
+          # Check version compatibility
           case check_version_compatibility(
                  loaded_plugin.version,
                  version_constraint
                ) do
             :ok ->
-              {:cont, {:ok, missing}}
+              {:cont, {:ok, []}}
 
             {:error, reason} ->
               if optional do
-                {:cont, {:ok, missing}}
+                {:cont, {:ok, []}}
               else
                 {:halt,
                  {:error, "Version mismatch for '#{plugin_name}': #{reason}"}}
@@ -223,8 +226,9 @@ defmodule Raxol.Plugins.PluginDependency do
     end)
   end
 
-  defp find_plugin(plugins, name) do
-    Enum.find(plugins, fn plugin -> plugin.name == name end)
+  defp find_plugin(loaded_plugins, plugin_name)
+       when is_list(loaded_plugins) and is_binary(plugin_name) do
+    Enum.find(loaded_plugins, fn plugin -> plugin.name == plugin_name end)
   end
 
   defp check_version_compatibility(version, constraint) do
@@ -232,15 +236,14 @@ defmodule Raxol.Plugins.PluginDependency do
     # In a real implementation, this would use a proper version comparison library
     case Regex.run(~r/^([<>=]+)\s*([0-9.]+)$/, constraint) do
       [_, op, version_str] ->
-        case compare_versions(version, version_str) do
-          :lt when op in [">", ">="] ->
-            :ok
+        comparison = compare_versions(version, version_str)
 
-          :eq when op in [">=", "<=", "="] ->
-            :ok
-
-          :gt when op in ["<", "<="] ->
-            :ok
+        case {comparison, op} do
+          # v1 >= v2
+          {:gt, op} when op in [">=", ">", "="] -> :ok
+          {:eq, op} when op in [">=", "<=", "="] -> :ok
+          # v1 <= v2
+          {:lt, op} when op in ["<=", "<"] -> :ok
 
           _ ->
             {:error,

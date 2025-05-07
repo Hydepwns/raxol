@@ -50,26 +50,16 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   # Handle :notify with [level_string, message_string] arguments
   def handle_command(:notify, [level, message], state)
       when is_binary(level) and is_binary(message) do
-    # Extract here
     interaction_mod = state.interaction_module
-    # Construct the data map expected by handle_notify
-    # Using level as title for simplicity, could be refined
     data_map = %{title: level, message: message}
     handle_notify(interaction_mod, data_map, state)
   end
 
-  # Catch-all for missing interaction module in state (shouldn't happen)
-  # def handle_command(:notify, [data], state) when is_map(data) do
-  #    Logger.error("NotificationPlugin state missing :interaction_module!")
-  #    {:error, :internal_plugin_error, state}
-  # end
-
-  # Catch-all for incorrect args or unknown commands directed here
+  # Catch-all for incorrect args or unknown commands - Reverting to Arity 3
   def handle_command(command, args, state) do
     Logger.warning(
       "NotificationPlugin received unhandled/invalid command: #{inspect(command)} with args: #{inspect(args)}"
     )
-
     {:error, {:unhandled_notification_command, command}, state}
   end
 
@@ -84,16 +74,14 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     )
 
     # Determine the command and arguments based on the OS using injected module
-    {executable, args, os_name} =
+    os_lookup_result =
       case interaction_mod.get_os_type() do
         {:unix, :linux} ->
           # Check if notify-send exists
           case interaction_mod.find_executable("notify-send") do
             nil ->
-              {:error, {:command_not_found, :notify_send}, nil}
-
+              {:error, {:command_not_found, :notify_send}}
             path ->
-              # Use raw title/message
               {path, [title, message], :linux}
           end
 
@@ -101,74 +89,54 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
           # Check if osascript exists
           case interaction_mod.find_executable("osascript") do
             nil ->
-              {:error, {:command_not_found, :osascript}, nil}
-
+              {:error, {:command_not_found, :osascript}}
             path ->
-              # Construct the AppleScript command
-              script =
-                if title do
-                  ~s(display notification \"#{message}\" with title \"#{title}\")
-                else
-                  ~s(display notification \"#{message}\")
-                end
-
+              script = if title, do: ~s(display notification \"#{message}\" with title \"#{title}\"), else: ~s(display notification \"#{message}\")
               {path, ["-e", script], :macos}
           end
 
         {:win32, :nt} ->
-          # Use PowerShell with BurntToast module (requires user installation)
           # Check if powershell exists
           case interaction_mod.find_executable("powershell") do
             nil ->
-              # Corrected error tuple
-              {:error, {:command_not_found, :powershell}, nil}
-
+              {:error, {:command_not_found, :powershell}}
             path ->
-              # Simple text notification via BurntToast
-              # Note: User needs to install BurntToast: Install-Module -Name BurntToast
-              script =
-                ~s(Import-Module BurntToast; New-BurntToastNotification -Text "#{message}")
-
-              # Powershell args: -NoProfile, -ExecutionPolicy Bypass (maybe needed), -Command ...
+              script = ~s(Import-Module BurntToast; New-BurntToastNotification -Text "#{message}")
               {path, ["-NoProfile", "-Command", script], :windows}
           end
 
-        # Other OS types are currently unsupported
         other_os ->
-          # Pass OS tuple in error
-          {:error, {:unsupported_os, other_os}, nil}
+          {:error, {:unsupported_os, other_os}}
       end
 
-    # Execute the command if executable found
-    case executable do
-      # Handle cases where executable wasn't found or OS is unsupported *before* trying system_cmd
-      :error ->
-        # 'args' here is the error tuple
-        handle_notification_error(args, state)
+    # Handle pre-execution errors first
+    case os_lookup_result do
+      {:error, reason_tuple} ->
+        handle_notification_error(reason_tuple, state)
 
-      # Valid executable path found
-      _ ->
+      # Execute the command if executable found
+      {executable, args, _os_name} ->
         try do
           Logger.debug(
             "Executing notification command: #{executable} with args: #{inspect(args)}"
           )
-
           # Use injected module
-          case interaction_mod.system_cmd(executable, args,
-                 stderr_to_stdout: true
-               ) do
-            {output, 0} ->
-              Logger.debug(
-                "Notification command successful (Output: #{output})"
-              )
-
-              {:ok, state, :notification_sent}
+          case interaction_mod.system_cmd(executable, args, stderr_to_stdout: true) do
+            {_output, 0} ->
+              # Logger.debug("Notification command successful (Output: #{output})")
+              # Return the specific OS success atom for easier testing
+              success_atom = case _os_name do
+                  :linux -> :notification_sent_linux
+                  :macos -> :notification_sent_macos
+                  :windows -> :notification_sent_windows
+                  _ -> :notification_sent # Fallback
+              end
+              {:ok, state, success_atom}
 
             {output, exit_code} ->
               Logger.error(
                 "Notification command failed. Exit Code: #{exit_code}, Output: #{output}"
               )
-
               {:error, {:command_failed, exit_code, output}, state}
           end
         rescue
@@ -176,10 +144,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
             Logger.error(
               "NotificationPlugin: Error executing notification command: #{inspect(e)}"
             )
-
-            {:error,
-             {:command_exception, inspect(e.__struct__), Exception.message(e)},
-             state}
+            {:error, {:command_exception, Exception.format(:error, e, __STACKTRACE__)}, state}
         end
     end
   end
@@ -219,13 +184,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.Plugin
-  def terminate(_state) do
-    Logger.info("Notification Plugin terminated.")
-    :ok
-  end
-
-  # Keep both terminate clauses if needed by different supervisor strategies
   @impl Raxol.Core.Runtime.Plugins.Plugin
   def terminate(_reason, _state) do
     Logger.info("Notification Plugin terminated (Behaviour callback).")

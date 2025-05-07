@@ -11,7 +11,8 @@ defmodule Raxol.Components.Input.TextInput do
   """
 
   use Raxol.UI.Components.Base.Component
-  require Raxol.Core.Renderer.View
+  import Raxol.View.Elements
+  alias Raxol.UI.Theming.Theme
 
   @type state :: %{
           value: String.t(),
@@ -74,30 +75,48 @@ defmodule Raxol.Components.Input.TextInput do
   end
 
   @impl true
-  def render(%{} = _props, state) do
-    display_raw = display_value(state) # Get raw text or placeholder/password chars
-    base_style = if state.focused, do: [:bold], else: []
-    style =
-      if state.value == "" and state.placeholder,
-        do: base_style ++ [:dim],
-        else: base_style
+  def render(%{assigns: assigns}, context) do
+    # Get the theme struct using the context config (assuming it's the theme ID)
+    # Fallback to default theme if not found
+    theme_id = context.theme_config || :default
+    theme = Theme.get(theme_id) || Theme.default_theme()
 
-    if state.focused and state.value != "" do
-      # Split text around cursor
-      cursor_pos = state.cursor
-      {before_cursor, at_cursor_and_after} = String.split_at(display_raw, cursor_pos)
-      {at_cursor, after_cursor} = String.split_at(at_cursor_and_after, 1)
+    display_raw = display_value(assigns)
+    # Get base style for text_input from the theme
+    base_style = Theme.component_style(theme, :text_input)
 
-      # Render parts with cursor highlighted
-      Raxol.Core.Renderer.View.container [
-        Raxol.Core.Renderer.View.text(before_cursor, style: style),
-        # Render cursor char with inverse style
-        Raxol.Core.Renderer.View.text(at_cursor, style: style ++ [:inverse]),
-        Raxol.Core.Renderer.View.text(after_cursor, style: style)
-      ]
+    # Add dim style if placeholder is shown
+    placeholder_style = if assigns.value == "" and assigns.placeholder, do: %{intensity: :dim}, else: %{}
+    # Merge base style with placeholder style
+    text_style = Map.merge(base_style, placeholder_style)
+
+    # Determine box style based on focus
+    box_style = if assigns.focused do
+      # Potentially use a focused variant from theme, or just override border/bg
+      Map.merge(base_style, %{border_color: Map.get(theme.colors, :primary, :blue)})
     else
-      # Not focused or empty, render normally
-      Raxol.Core.Renderer.View.text(display_raw, style: style)
+      base_style
+    end
+
+    # Use the box macro for the container
+    box padding: {0, 1}, border: assigns.focused, border_style: :single, style: box_style do
+      if assigns.focused and assigns.value != "" do
+        # Split text around cursor
+        cursor_pos = assigns.cursor
+        {before_cursor, at_cursor_and_after} = String.split_at(display_raw, cursor_pos)
+        {at_cursor, after_cursor} = String.split_at(at_cursor_and_after, 1)
+
+        # Render parts with cursor highlighted (using label macro)
+        [ # Return a list of elements for the box children
+          label(content: before_cursor, style: text_style),
+          # Render cursor char with inverse style merged into base style
+          label(content: at_cursor, style: Map.merge(text_style, %{inverse: true})),
+          label(content: after_cursor, style: text_style)
+        ]
+      else
+        # Not focused or empty, render normally (using label macro)
+        label(content: display_raw, style: text_style)
+      end
     end
   end
 

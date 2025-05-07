@@ -11,6 +11,7 @@ defmodule Raxol.Terminal.Driver do
   - Restoring terminal state on exit
   """
   use GenServer
+  @behaviour Raxol.Terminal.Driver.Behaviour
 
   require Logger
   import Bitwise # Import Bitwise for bitwise operations
@@ -30,8 +31,10 @@ defmodule Raxol.Terminal.Driver do
 
   # --- Public API ---
 
-  @doc "Starts the Terminal Driver process."
-  @spec start_link(dispatcher_pid()) :: GenServer.on_start() # Spec updated implicitly by type change
+  @doc """
+  Starts the GenServer.
+  """
+  @impl true
   def start_link(dispatcher_pid) do # Allow nil or pid
     Logger.info("[#{__MODULE__}] start_link called for dispatcher: #{inspect(dispatcher_pid)}")
     GenServer.start_link(__MODULE__, dispatcher_pid, name: __MODULE__)
@@ -109,6 +112,13 @@ defmodule Raxol.Terminal.Driver do
     # Send initial size event now that we have the PID
     send_initial_resize_event(pid)
     {:noreply, %{state | dispatcher_pid: pid}}
+  end
+
+  # Catch-all for unexpected messages
+  @impl true
+  def handle_info(unhandled_message, state) do
+    Logger.warning("#{__MODULE__} received unhandled message: #{inspect(unhandled_message)}")
+    {:noreply, state}
   end
 
   @impl true

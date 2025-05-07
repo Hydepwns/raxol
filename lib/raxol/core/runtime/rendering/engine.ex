@@ -10,6 +10,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   require Logger
   use GenServer
+  @behaviour Raxol.Core.Runtime.Rendering.Engine.Behaviour
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.UI.Layout.Engine, as: LayoutEngine
@@ -33,7 +34,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # --- Public API ---
 
   @doc "Starts the Rendering Engine process."
-  @spec start_link(map()) :: GenServer.on_start()
+  @impl true
   def start_link(initial_state_map) when is_map(initial_state_map) do
     GenServer.start_link(__MODULE__, initial_state_map, name: __MODULE__)
   end

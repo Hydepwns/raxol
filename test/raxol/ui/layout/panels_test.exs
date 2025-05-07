@@ -13,7 +13,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
 
       available_space = %{width: 80, height: 24}
 
-      dimensions = Panels.measure(panel, available_space)
+      dimensions = Panels.measure_panel(panel, available_space)
 
       # Uses full available width by default
       assert dimensions.width == 80
@@ -30,7 +30,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
 
       available_space = %{width: 80, height: 24}
 
-      dimensions = Panels.measure(panel, available_space)
+      dimensions = Panels.measure_panel(panel, available_space)
 
       assert dimensions.width == 40
       assert dimensions.height == 10
@@ -45,7 +45,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
 
       available_space = %{width: 80, height: 24}
 
-      dimensions = Panels.measure(panel, available_space)
+      dimensions = Panels.measure_panel(panel, available_space)
 
       # Minimum width and height for a panel should be enforced
       # Minimum width to accommodate borders
@@ -63,7 +63,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
 
       available_space = %{width: 80, height: 24}
 
-      dimensions = Panels.measure(panel, available_space)
+      dimensions = Panels.measure_panel(panel, available_space)
 
       # Should be constrained to available space
       assert dimensions.width == 80

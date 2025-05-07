@@ -36,11 +36,11 @@ defmodule Raxol.Core.Renderer.ViewTest do
   end
 
   describe "layout/2" do
-    test "basic text layout" do
-      view = View.text("Hello", position: {0, 0})
+    test "layout/2 basic text layout" do
+      view = View.text("Hello", id: :hello)
       result = View.layout(view, {10, 1})
-      assert result.position == {0, 0}
-      assert result.size == {10, 1}
+      # layout always returns a list of flattened views
+      assert [%{position: {0, 0}, size: {5, 1}, type: :text, content: "Hello"}] = result
     end
 
     test "flex layout with row direction" do
@@ -155,17 +155,19 @@ defmodule Raxol.Core.Renderer.ViewTest do
   end
 
   describe "spacing normalization" do
-    test "single integer becomes uniform spacing" do
-      view = View.new(:box, padding: 2)
+    test "spacing normalization single integer becomes uniform spacing" do
+      view = View.new(:box, padding: 2, margin: 1)
       assert view.padding == {2, 2, 2, 2}
+      assert view.margin == {1, 1, 1, 1}
     end
 
-    test "horizontal/vertical pair expands correctly" do
-      view = View.new(:box, margin: {1, 2})
-      assert view.margin == {1, 2, 1, 2}
+    test "spacing normalization horizontal/vertical pair expands correctly" do
+      view = View.new(:box, padding: {1, 2}, margin: {3, 4})
+      assert view.padding == {1, 2, 1, 2}
+      assert view.margin == {3, 4, 3, 4}
     end
 
-    test "four values remain unchanged" do
+    test "spacing normalization four-tuple remains unchanged" do
       view = View.new(:box, padding: {1, 2, 3, 4})
       assert view.padding == {1, 2, 3, 4}
     end

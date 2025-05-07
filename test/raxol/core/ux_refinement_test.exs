@@ -1,13 +1,11 @@
 defmodule Raxol.Core.UXRefinementTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.UXRefinement
+  alias Raxol.Core.UserPreferences
 
   setup do
-    # Start UserPreferences GenServer
-    {:ok, pref_pid} = Raxol.Core.UserPreferences.start_link([])
-
     # Initialize dependencies
     EventManager.init()
 
@@ -30,8 +28,7 @@ defmodule Raxol.Core.UXRefinementTest do
       end)
 
       # Ensure UserPreferences is stopped on exit
-      Process.exit(pref_pid, :shutdown)
-      :timer.sleep(100) # Give it a moment to shut down
+      # if pid && Process.alive?(pid), do: Process.exit(pid, :shutdown)
     end)
 
     :ok

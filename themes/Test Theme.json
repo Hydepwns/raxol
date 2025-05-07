@@ -1,5 +1,6 @@
 {
   "name": "Test Theme",
+  "high_contrast": false,
   "palette": {
     "error": {
       "name": null,
@@ -64,15 +65,6 @@
       "g": 255,
       "ansi_code": null
     },
-    "accent": {
-      "name": null,
-      "a": 1.0,
-      "b": 0,
-      "hex": "#FF9900",
-      "r": 255,
-      "g": 153,
-      "ansi_code": null
-    },
     "secondary": {
       "name": null,
       "a": 1.0,
@@ -81,10 +73,17 @@
       "r": 102,
       "g": 102,
       "ansi_code": null
+    },
+    "accent": {
+      "name": null,
+      "a": 1.0,
+      "b": 0,
+      "hex": "#FF9900",
+      "r": 255,
+      "g": 153,
+      "ansi_code": null
     }
   },
-  "high_contrast": false,
-  "dark_mode": false,
   "ui_mappings": {
     "app_background": "background",
     "surface_background": "surface",
@@ -95,5 +94,6 @@
     "success_text": "success",
     "warning_text": "warning",
     "info_text": "info"
-  }
+  },
+  "dark_mode": false
 }

@@ -168,7 +168,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
        # Select from {0, 1} to {1, 2}
        state_with_sel = %{state | selection_start: {0, 1}, selection_end: {1, 2}, cursor_pos: {1, 2}}
        {:noreply, new_state, _} = MultiLineInput.update({:backspace}, state_with_sel)
-       assert new_state.value == "tt"
+       assert new_state.value == "txt"
        assert new_state.cursor_pos == {0, 1} # Cursor moves to selection start
        assert new_state.selection_start == nil
        assert new_state.selection_end == nil

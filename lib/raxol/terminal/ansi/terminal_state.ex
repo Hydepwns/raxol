@@ -5,6 +5,8 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   attributes, character sets, and screen modes.
   """
 
+  @behaviour Raxol.Terminal.ANSI.TerminalStateBehaviour
+
   require Logger
   alias Raxol.Terminal.ANSI.{CharacterSets, ScreenModes}
 
@@ -12,8 +14,9 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
           cursor: {non_neg_integer(), non_neg_integer()},
           attributes: map(),
           charset_state: CharacterSets.charset_state(),
-          mode_state: ScreenModes.screen_state(),
-          scroll_region: {non_neg_integer(), non_neg_integer()} | nil
+          mode_manager: ScreenModes.screen_state(),
+          scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
+          cursor_style: atom()
         }
 
   @type state_stack :: [saved_state()]
@@ -30,13 +33,15 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   Saves the current terminal state to the stack.
   """
   @spec save_state(state_stack(), map()) :: state_stack()
+  @impl Raxol.Terminal.ANSI.TerminalStateBehaviour
   def save_state(stack, state) do
     saved_state = %{
       cursor: state.cursor,
       style: state.style,
       charset_state: state.charset_state,
-      mode_state: state.mode_state,
-      scroll_region: state.scroll_region
+      mode_manager: state.mode_manager,
+      scroll_region: state.scroll_region,
+      cursor_style: state.cursor_style
     }
 
     [saved_state | stack]
@@ -47,6 +52,7 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   Returns the updated stack and the restored state.
   """
   @spec restore_state(state_stack()) :: {state_stack(), map() | nil}
+  @impl Raxol.Terminal.ANSI.TerminalStateBehaviour
   def restore_state([]) do
     {[], nil}
   end
@@ -91,6 +97,7 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   Applies specified fields from restored data onto the current emulator state.
   """
   @spec apply_restored_data(map(), map() | nil, list(atom())) :: map()
+  @impl Raxol.Terminal.ANSI.TerminalStateBehaviour
   def apply_restored_data(emulator, nil, _fields_to_restore) do
     # No data to restore, return emulator unchanged
     Logger.debug("[ApplyRestore] No data to restore.") # Log

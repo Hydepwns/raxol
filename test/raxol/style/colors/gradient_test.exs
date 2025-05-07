@@ -172,12 +172,15 @@ defmodule Raxol.Style.Colors.GradientTest do
 
       colored_text = Gradient.apply_to_text(gradient, text)
 
-      # Check that the result contains ANSI escape sequences
-      assert colored_text =~ "\e["
-      # Check that the original text is preserved
-      String.graphemes(text)
-      |> Enum.all?(fn char -> colored_text =~ char end)
-      |> assert
+      # Expected output for 5 steps (Red -> #C00040 -> #800080 -> #4000C0 -> Blue)
+      expected_output =
+        "\e[38;2;255;0;0mH\e[0m" <>
+          "\e[38;2;191;0;64me\e[0m" <>
+          "\e[38;2;128;0;128ml\e[0m" <>
+          "\e[38;2;64;0;191ml\e[0m" <>
+          "\e[38;2;0;0;255mo\e[0m"
+
+      assert colored_text == expected_output
     end
 
     test "handles empty text" do

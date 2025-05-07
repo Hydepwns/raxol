@@ -58,6 +58,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   end
 
   use GenServer
+  @behaviour Raxol.Core.Runtime.Plugins.Manager.Behaviour
 
   require Logger
 
@@ -65,13 +66,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   @file_event_debounce_ms 500
 
   @doc """
-  Starts the plugin manager process.
-
-  Options:
-  - `:plugin_config`: Initial configuration map for plugins.
-  - `:plugins_dir`: Directory to discover plugins from.
-  - `:enable_plugin_reloading`: Boolean flag to enable automatic reloading via file watching (dev only). Defaults to `false`.
+  Starts the Plugin Manager GenServer.
   """
+  @impl true
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -291,39 +288,35 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     # Use new/0 instead of create_table/0
     command_table = Raxol.Core.Runtime.Plugins.CommandRegistry.new()
 
-    # Delegate discovery, sorting, and loading loop to LifecycleHelper
-    case LifecycleHelper.initialize_plugins(
-           state.plugins, # Pass initial empty maps
-           state.metadata,
-           state.plugin_states,
-           state.load_order,
-           command_table, # Pass the newly created table
-           state.plugin_config, # Pass config loaded in init
-           state.plugins_dir    # Pass plugins_dir for discovery
-         ) do
-      {:ok, final_state_maps} ->
-        # Update manager state with results from helper
-        new_state = %{
-          state
-          | initialized: true,
-            command_registry_table: command_table,
-            plugins: final_state_maps.plugins,
-            metadata: final_state_maps.metadata,
-            plugin_states: final_state_maps.plugin_states,
-            load_order: final_state_maps.load_order,
-            plugin_config: final_state_maps.plugin_config,
-            plugin_paths: final_state_maps.plugin_paths # Store the returned paths
-        }
+    # Trigger plugin initialization
+    {:ok, initialized_plugins, initialized_state} =
+      LifecycleHelper.initialize_plugins(
+        state.plugin_specs,
+        state.plugin_config,
+        self(),
+        state.event_handler_pid,
+        state.cell_processor_pid,
+        state.command_helper_pid
+        # Removed state.command_registry_pid
+      )
 
-        # Build reverse path map and watch files if enabled
-        final_state = update_file_watcher(new_state)
+    # Update manager state with results from helper
+    new_state = %{
+      state
+      | initialized: true,
+        command_registry_table: command_table,
+        plugins: initialized_plugins.plugins,
+        metadata: initialized_plugins.metadata,
+        plugin_states: initialized_plugins.plugin_states,
+        load_order: initialized_plugins.load_order,
+        plugin_config: initialized_plugins.plugin_config,
+        plugin_paths: initialized_plugins.plugin_paths # Store the returned paths
+    }
 
-        {:reply, :ok, final_state}
+    # Build reverse path map and watch files if enabled
+    final_state = update_file_watcher(new_state)
 
-      {:error, reason} ->
-        # Error already logged by helper
-        {:reply, {:error, reason}, state} # Return original state on error
-    end
+    {:reply, :ok, final_state}
   end
 
   @impl true
@@ -351,8 +344,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
            state.plugin_states,
            state.load_order,
            state.command_registry_table,
-           state.plugin_config,
-           state.plugin_paths # Pass paths for potential updates during load_by_id
+           state.plugin_config # Removed plugin_paths for arity 8
          ) do
       {:ok, updated_maps} ->
         # Merge updated maps back into the state
@@ -362,8 +354,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
             metadata: updated_maps.metadata,
             plugin_states: updated_maps.plugin_states,
             load_order: updated_maps.load_order,
-            plugin_config: updated_maps.plugin_config,
-            plugin_paths: updated_maps.plugin_paths # Update paths map
+            plugin_config: updated_maps.plugin_config
         }
         # Update watcher for the newly loaded plugin
         final_state = update_file_watcher(new_state)
@@ -390,7 +381,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     # Stop file watcher if it was started
     if state.file_watcher_pid do
       Logger.debug("[#{__MODULE__}] Stopping file watcher (PID: #{inspect(state.file_watcher_pid)}).")
-      FileSystem.stop(state.file_watcher_pid)
+      # Use GenServer.stop for clean shutdown
+      GenServer.stop(state.file_watcher_pid, :normal, :infinity)
     end
 
     # Cancel any pending debounce timer
@@ -431,8 +423,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
               metadata: updated_maps.metadata,
               plugin_states: updated_maps.plugin_states,
               load_order: updated_maps.load_order,
-              plugin_config: updated_maps.plugin_config,
-              plugin_paths: updated_maps.plugin_paths
+              plugin_config: updated_maps.plugin_config
           }
            # Ensure watcher is up-to-date after reload (path might change theoretically)
            final_state = update_file_watcher(reloaded_state)
@@ -446,42 +437,17 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
-  # Updates the reverse path map and tells FileSystem to watch/unwatch files
+  # Updates the reverse path map. FileSystem process watches the directory specified in init.
   defp update_file_watcher(state) do
-    if state.file_watching_enabled? and state.file_watcher_pid do
+    if state.file_watching_enabled? do
        # Calculate new reverse map {path => plugin_id}
       new_reverse_paths =
         Enum.into(state.plugin_paths, %{}, fn {plugin_id, path} -> {path, plugin_id} end)
 
-      # Files currently watched (keys of old reverse map)
-      old_watched_files = Map.keys(state.reverse_plugin_paths)
-      # Files that should be watched (keys of new reverse map)
-      new_watched_files = Map.keys(new_reverse_paths)
-
-      # Watch new files
-      files_to_watch = new_watched_files -- old_watched_files
-      Enum.each(files_to_watch, fn path ->
-        Logger.debug("[#{__MODULE__}] Watching plugin file: #{path}")
-        FileSystem.watch(state.file_watcher_pid, path)
-      end)
-
-      # Unwatch removed files
-      files_to_unwatch = old_watched_files -- new_watched_files
-      Enum.each(files_to_unwatch, fn path ->
-         Logger.debug("[#{__MODULE__}] Unwatching plugin file: #{path}")
-        # Use FileSystem.unwatch! or handle potential errors if needed
-         try do
-           FileSystem.unwatch!(state.file_watcher_pid, path)
-         rescue
-           # Log error if unwatch fails (e.g., file already unwatched)
-           e in FileSystem.Error -> Logger.warning("[#{__MODULE__}] Error unwatching #{path}: #{inspect(e)}")
-         end
-      end)
-
-       # Return state with updated reverse map
-       %{state | reverse_plugin_paths: new_reverse_paths}
+      # Return state with updated reverse map
+      %{state | reverse_plugin_paths: new_reverse_paths}
     else
-      # File watching not enabled or watcher not started
+      # File watching not enabled
       state
     end
   end

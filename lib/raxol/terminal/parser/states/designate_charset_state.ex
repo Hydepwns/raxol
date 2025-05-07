@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Parser.States.DesignateCharsetState do
         {:incomplete, emulator, parser_state}
 
       <<charset_code, rest_after_code::binary>> ->
-        # Pass explicit gset and charset_code to Emulator
+        # Call CharacterSets module to update the state
         new_charset_state =
           CharacterSets.designate_charset(
             emulator.charset_state,
@@ -37,13 +37,21 @@ defmodule Raxol.Terminal.Parser.States.DesignateCharsetState do
             charset_code
           )
 
+        # Update the emulator state
         new_emulator = %{emulator | charset_state: new_charset_state}
+        # IO.inspect({:designate_charset_handle_return, new_emulator.charset_state}, label: "DEBUG")
+        # IO.inspect(new_emulator.charset_state, label: "[DesignateCharsetState] Returning charset_state:")
 
+        # Transition back to ground state
         next_parser_state = %{
           parser_state
           | state: :ground,
             designating_gset: nil
         }
+
+        # --- ADDED DEBUG ---
+        IO.inspect({:designate_handle_return, gset, charset_code, new_emulator.charset_state}, label: "DESIGNATE_DEBUG")
+        # --- END DEBUG ---
 
         {:continue, new_emulator, next_parser_state, rest_after_code}
     end

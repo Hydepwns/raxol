@@ -43,10 +43,6 @@ defmodule Raxol.MixProject do
         # plt_add_apps: [:mix], # Specify apps to add to PLT list
         # plt_file: {:no_warn, "priv/plts/core"},
         ignore_modules: [
-          # Example:
-          # Raxol.ExampleModule,
-          # Phoenix.HTML.Form, # Ignore specific modules if needed
-          # Ignore NIF module wrappers
           # Suppress persistent spurious warnings
         ]
       ]
@@ -62,7 +58,7 @@ defmodule Raxol.MixProject do
   end
 
   defp elixirc_paths(:test),
-    do: ["lib", "test/support", "test/raxol/core", "test/raxol/terminal", "test/raxol/ui", "test/raxol_web"]
+    do: ["lib", "test/support"]
 
   defp elixirc_paths(_), do: ["lib"]
 
@@ -128,6 +124,7 @@ defmodule Raxol.MixProject do
       {:meck, "~> 0.9.2", only: :test},
       {:elixir_make, "~> 0.6", runtime: false},
       {:floki, ">= 0.30.0", only: :test},
+      {:briefly, "~> 0.3", only: :test},
 
       # Utilities
       {:uuid, "~> 1.1"},

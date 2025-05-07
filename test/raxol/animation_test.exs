@@ -7,15 +7,48 @@ defmodule Raxol.AnimationTest do
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
 
+  # Helper to setup Accessibility and UserPreferences
+  setup :configure_env do
+    # REMOVE GLOBAL START
+    # case Process.whereis(Raxol.Core.UserPreferences) do
+    #   nil -> {:ok, pid} = Raxol.Core.UserPreferences.start_link([])
+    #   _pid -> IO.puts("UserPreferences already running for animation_test") # Ignore if already started
+    # end
+
+    # Ensure Accessibility is enabled using the potentially existing UserPreferences
+    # Accessibility.enable()
+    :ok
+  end
+
+  # Helper to cleanup Accessibility and UserPreferences
+  setup :reset_settings do
+    # # This might be problematic if UserPreferences wasn't started or is shared
+    # UserPreferences.reset()
+    # Accessibility.disable()
+    :ok
+  end
+
   # Start UserPreferences for these tests
   setup do
-    {:ok, _pid} = start_supervised(UserPreferences)
+    pref_pid = setup_accessibility()
     # Initialize the framework (might be needed)
     Framework.init(%{})
     Accessibility.enable()
     UserPreferences.init()
 
-    :ok
+    # Reset relevant prefs before each test
+    UserPreferences.set("accessibility.reduced_motion", false)
+    UserPreferences.set("accessibility.screen_reader", true)
+    UserPreferences.set("accessibility.silence_announcements", false)
+    Accessibility.clear_announcements()
+    Process.sleep(50)
+
+    cleanup_func = fn ->
+      cleanup_accessibility(pref_pid)
+      # Optional: Reset prefs after test if needed, though setup does it before
+    end
+
+    {:ok, on_exit: cleanup_func}
   end
 
   describe "Animation Framework with accessibility integration" do
@@ -174,4 +207,36 @@ defmodule Raxol.AnimationTest do
       assert cognitive_animation.duration > animation.duration
     end
   end
+
+  # --- Private Test Helpers ---
+
+  defp setup_accessibility() do
+    # Ensure UserPreferences is started (might be redundant due to test_helper.exs)
+    case Process.whereis(UserPreferences) do
+      nil ->
+        {:ok, pid} = UserPreferences.start_link([])
+        pid
+      pid when is_pid(pid) ->
+        # Already started, return existing pid
+        pid
+    end
+  end
+
+  defp cleanup_accessibility(pid) when is_pid(pid) do
+    # Attempt to stop the process started by this test setup.
+    # Be cautious if this process is globally shared.
+    ref = Process.monitor(pid)
+    Process.exit(pid, :shutdown)
+    # Wait for the process to exit, or timeout
+    receive do
+      {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
+    after
+      500 -> IO.puts("Warning: UserPreferences process #{inspect pid} did not shut down cleanly in cleanup_accessibility")
+    end
+    :ok
+  catch
+    :exit, _ -> :ok # Ignore if process already exited
+  end
+
+  defp cleanup_accessibility(_), do: :ok # Ignore if pid is not valid
 end

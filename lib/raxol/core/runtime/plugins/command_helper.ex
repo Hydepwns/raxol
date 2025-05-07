@@ -61,7 +61,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
       rescue
         error ->
           Logger.error(
-            "Error calling get_commands/0 on #{inspect(plugin_module)}: #{inspect(error)}\\nStacktrace: #{inspect(__STACKTRACE__)}"
+            "Error calling get_commands/0 on #{inspect(plugin_module)}: #{inspect(error)}
+            Stacktrace: #{inspect(__STACKTRACE__)}"
           )
       end
     else
@@ -120,7 +121,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
             end
           rescue
             error ->
-              Logger.error("Exception handling command '#{command_name_str}' in #{inspect plugin_module}: #{inspect error}\\\\nStacktrace: #{inspect(__STACKTRACE__)}")
+              Logger.error("Exception handling command '#{command_name_str}' in #{inspect plugin_module}: #{inspect error}
+              Stacktrace: #{inspect(__STACKTRACE__)}")
               {:error, :exception, state.plugin_states} # Return original state
           end
         else

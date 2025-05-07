@@ -17,6 +17,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
       selection_end: sel_end,
       id: "test_input",
       scroll_offset: {0, 0}
+      # Removed meta field as it's not in the MultiLineInput struct
     }
   end
 
@@ -24,160 +25,145 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
     # --- Character Input ---
     test "handles character input event" do
       state = create_state(["abc"], {0, 3})
-      # Use Event.key/1 helper to create the event struct
       event = Event.key("a")
-
-      # Call handle_event directly on the helper module
-      {:update, {:input, "a"}, _new_state} = EventHandler.handle_event(event, state)
+      # Update assertion to match actual handler behavior
+      assert {:update, {:input, "a"}, state} == EventHandler.handle_event(event, state)
     end
 
     test "handles newline event" do
-      state = create_state(["hello", "world"], {0, 5}) # Cursor at end of first line
-      # Use Event.key helper
+      state = create_state(["hello", "world"], {0, 5})
       event = Event.key(:enter)
-
-      {:update, {:enter}, _new_state} = EventHandler.handle_event(event, state)
+      # Update assertion
+      assert {:update, {:enter}, state} == EventHandler.handle_event(event, state)
     end
 
     # --- Deletion ---
     test "handles backspace event" do
-      state = create_state(["hello"], {0, 3}) # Cursor after 'l' in "hello"
-      # Use Event.key helper
+      state = create_state(["hello"], {0, 3})
       event = Event.key(:backspace)
-
-      {:update, {:backspace}, _new_state} = EventHandler.handle_event(event, state)
+      # Update assertion
+      assert {:update, {:backspace}, state} == EventHandler.handle_event(event, state)
     end
 
     test "handles delete event" do
       state = create_state(["hello"], {0, 2})
-      # Use Event.key/1 helper
       event = Event.key(:delete)
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
-
-      assert new_state.lines == ["helo"]
-      assert new_state.cursor_pos == {0, 2}
+      # Update assertion
+      assert {:update, {:delete}, state} == EventHandler.handle_event(event, state)
     end
 
     # --- Basic Navigation ---
     test "handles arrow left event" do
       state = create_state(["hello"], {0, 3})
-      # Use Event.key/1 helper
       event = Event.key(:left)
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
-
-      assert new_state.cursor_pos == {0, 2}
+      # Update assertion
+      assert {:update, {:move_cursor, :left}, state} == EventHandler.handle_event(event, state)
     end
 
     test "handles arrow right event" do
       state = create_state(["hello"], {0, 3})
-      # Use Event.key/1 helper
       event = Event.key(:right)
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
-
-      assert new_state.cursor_pos == {0, 4}
+      # Update assertion
+      assert {:update, {:move_cursor, :right}, state} == EventHandler.handle_event(event, state)
     end
 
-     test "handles arrow up event" do
+    test "handles arrow up event" do
       state = create_state(["line1", "line2"], {1, 3})
-      # Use Event.key/1 helper
       event = Event.key(:up)
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
-
-      assert new_state.cursor_pos == {0, 3}
+      # Update assertion
+      assert {:update, {:move_cursor, :up}, state} == EventHandler.handle_event(event, state)
     end
 
     test "handles arrow down event" do
       state = create_state(["line1", "line2"], {0, 3})
-      # Use Event.key/1 helper
       event = Event.key(:down)
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
-
-      assert new_state.cursor_pos == {1, 3}
+      # Update assertion
+      assert {:update, {:move_cursor, :down}, state} == EventHandler.handle_event(event, state)
     end
 
     # --- Advanced Navigation ---
     test "handles home event" do
       state = create_state(["hello"], {0, 4})
-      # Use Event.key/1 helper
       event = Event.key(:home)
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
-
-      assert new_state.cursor_pos == {0, 0}
+      # Update assertion
+      assert {:update, {:move_cursor_line_start}, state} == EventHandler.handle_event(event, state)
     end
 
     test "handles end event" do
       state = create_state(["hello"], {0, 1})
-      # Use Event.key/1 helper
       event = Event.key(:end)
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
-
-      assert new_state.cursor_pos == {0, 5}
+      # Update assertion
+      assert {:update, {:move_cursor_line_end}, state} == EventHandler.handle_event(event, state)
     end
 
-     test "handles pageup event" do
+    # Page navigation now properly implemented
+    test "handles pageup event" do
       state = create_state(Enum.map(0..10, &"line #{&1}"), {10, 3})
-      # Use Event.key/1 helper
-      event = Event.key(:pageup)
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
+      event = Event.key_event(:pageup, :pressed)
 
-      # Assumes default dimensions height of 5
-      assert new_state.cursor_pos == {5, 3}
+      # EventHandler returns the update message with {:move_cursor_page, :up}
+      assert {:update, {:move_cursor_page, :up}, state} == EventHandler.handle_event(event, state)
     end
 
     test "handles pagedown event" do
       state = create_state(Enum.map(0..10, &"line #{&1}"), {1, 3})
-      # Use Event.key/1 helper
-      event = Event.key(:pagedown)
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
+      event = Event.key_event(:pagedown, :pressed)
 
-      # Assumes default dimensions height of 5
-      assert new_state.cursor_pos == {6, 3}
+      # EventHandler returns the update message with {:move_cursor_page, :down}
+      assert {:update, {:move_cursor_page, :down}, state} == EventHandler.handle_event(event, state)
     end
 
-    # --- Selection Handling (Basic - just clears selection on basic move) ---
-    test "clears selection when moving cursor normally" do
-       state = create_state(["hello"], {0, 3}, {{0, 1}, {0, 4}})
-       # Use Event.key/1 helper
-       event = Event.key(:left)
-       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
+    # --- Selection Handling ---
+    # Remove test that checks state change, as EventHandler doesn't change state
+    # test "clears selection when moving cursor normally" do ... end
 
-       assert new_state.cursor_pos == {0, 2}
-       assert new_state.selection_start == nil
-       assert new_state.selection_end == nil
+    # Selection with shift key
+    test "handles shift + arrow left event" do
+      state = create_state(["hello"], {0, 3})
+      event = Event.key_event(:left, :pressed, [:shift])
+      assert {:update, {:select_and_move, :left}, state} == EventHandler.handle_event(event, state)
     end
 
-    # --- Selection with Shift ---
-    # TODO: Test shift + arrow keys to extend selection
-    # TODO: Test shift + home/end/pageup/pagedown
-    # TODO: Test character input replaces selection
-    # TODO: Test backspace/delete deletes selection
+    test "handles shift + arrow right event" do
+      state = create_state(["hello"], {0, 3})
+      event = Event.key_event(:right, :pressed, [:shift])
+      assert {:update, {:select_and_move, :right}, state} == EventHandler.handle_event(event, state)
+    end
 
-    # --- Clipboard ---
-    # TODO: Test Ctrl+C (Copy)
-    # TODO: Test Ctrl+X (Cut)
-    # TODO: Test Ctrl+V (Paste)
+    test "handles shift + arrow up event" do
+      state = create_state(["line1", "line2"], {1, 3})
+      event = Event.key_event(:up, :pressed, [:shift])
+      assert {:update, {:select_and_move, :up}, state} == EventHandler.handle_event(event, state)
+    end
+
+    test "handles shift + arrow down event" do
+      state = create_state(["line1", "line2"], {0, 3})
+      event = Event.key_event(:down, :pressed, [:shift])
+      assert {:update, {:select_and_move, :down}, state} == EventHandler.handle_event(event, state)
+    end
 
     # --- Other Events ---
     test "ignores unknown keydown events" do
       state = create_state(["hello"], {0, 1})
-      # Use Event.key/1 helper
       event = Event.key(:f1)
-      {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
-
-      assert new_state == state # State should be unchanged
+      # No handler for f1, so should return noreply
+      assert {:noreply, state, nil} == EventHandler.handle_event(event, state)
     end
 
-    test "ignores non-keydown events" do
+    test "handles mouse click event" do
       state = create_state(["hello"], {0, 1})
-      # Use Event.mouse/2 helper
-      event = Event.mouse(:left, {1, 1})
-       {:noreply, new_state, _cmd} = EventHandler.handle_event(event, state)
-      # Note: Current implementation *does* handle mouse events. Update test if needed.
-      # For now, assuming it passes through if not specifically handled by keys
-      assert new_state == state # Assuming no mouse logic implemented yet
+      # Use a mouse event that matches what the handler expects
+      event = Event.mouse_event(:left, {5, 2}, :pressed)
+      # Assert it returns the update message matching the handler
+      assert {:update, {:move_cursor_to, {2, 5}}, state} == EventHandler.handle_event(event, state)
     end
 
-    # TODO: Add tests for mouse events (click to move cursor, drag to select)
+    # Test for unhandled non-key/mouse events (e.g., focus gain/loss, resize)
+    test "ignores other event types" do
+      state = create_state(["hello"], {0, 1})
+      event = %Event{type: :focus_gained, data: %{}}
+      assert {:noreply, state, nil} == EventHandler.handle_event(event, state)
+    end
 
   end
 end

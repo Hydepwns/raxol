@@ -44,14 +44,14 @@ defmodule Raxol.Terminal.ConfigTest do
     cleanup_interval: 60_000,
     background_type: :solid,
     background_opacity: 1.0,
-    background_image: nil,
+    background_image: "",
     background_blur: 0.0,
     background_scale: :fit,
-    animation_type: nil,
-    animation_path: nil,
-    animation_fps: nil,
-    animation_loop: nil,
-    animation_blend: nil
+    animation_type: :gif,
+    animation_path: "",
+    animation_fps: 30,
+    animation_loop: true,
+    animation_blend: 0.0
   }
 
   describe "Schema" do

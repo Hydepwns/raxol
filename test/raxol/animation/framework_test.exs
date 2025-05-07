@@ -7,7 +7,8 @@ defmodule Raxol.Animation.FrameworkTest do
 
   # Start UserPreferences for these tests
   setup do
-    {:ok, _pid} = start_supervised(UserPreferences)
+    # Use a test-specific name to avoid conflicts
+    {:ok, _pid} = start_supervised({UserPreferences, name: __MODULE__.UserPreferences})
     # Initialize required systems for testing
     Framework.init()
     Accessibility.enable()
@@ -71,23 +72,35 @@ defmodule Raxol.Animation.FrameworkTest do
     end
 
     test "handles reduced motion preferences" do
-      # Enable reduced motion
+      # Enable reduced motion *before* creating/starting
       Framework.init(%{reduced_motion: true})
 
+      # Create initial state
+      initial_state = %{
+        elements: %{
+          "test_element" => %{
+            opacity: 0 # Initial value
+          }
+        }
+      }
+
       # Create a test animation
-      animation =
+      _animation =
         Framework.create_animation(:test_animation, %{
           type: :fade,
-          duration: 300,
-          from: 0,
-          to: 1
+          duration: 300, # Original duration doesn't matter now
+          from: 0, # Matches initial state
+          to: 1 # Final value
         })
 
       # Start the animation
       :ok = Framework.start_animation(:test_animation, "test_element")
 
-      # Verify animation is adapted for reduced motion
-      assert animation.duration == 0
+      # Apply animation immediately
+      updated_state = Framework.apply_animations_to_state(initial_state)
+
+      # Verify the final state was applied immediately due to reduced motion
+      assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
     end
 
     test "announces animations to screen readers when configured" do
@@ -104,8 +117,9 @@ defmodule Raxol.Animation.FrameworkTest do
       # Start the animation
       :ok = Framework.start_animation(:test_animation, "test_element")
 
-      # Verify announcement was made
-      assert Accessibility.was_announced?("Test animation")
+      # Verify announcement was made by checking the process dictionary queue
+      announcements = Process.get(:accessibility_announcements, [])
+      assert Enum.any?(announcements, &(&1.message == "Test animation"))
     end
 
     test "applies animation values to state" do
@@ -118,10 +132,11 @@ defmodule Raxol.Animation.FrameworkTest do
         }
       }
 
-      # Create and start a fade animation
+      # Create and start a fade animation with zero duration for instant result
       _animation =
         Framework.create_animation(:fade_in, %{
           type: :fade,
+          duration: 0, # Set duration to 0
           from: 0,
           to: 1
         })
@@ -146,10 +161,11 @@ defmodule Raxol.Animation.FrameworkTest do
         }
       }
 
-      # Create and start multiple animations
+      # Create and start multiple animations with zero duration
       _fade_animation =
         Framework.create_animation(:fade_in, %{
           type: :fade,
+          duration: 0, # Set duration to 0
           from: 0,
           to: 1
         })
@@ -157,6 +173,7 @@ defmodule Raxol.Animation.FrameworkTest do
       _slide_animation =
         Framework.create_animation(:slide_in, %{
           type: :slide,
+          duration: 0, # Set duration to 0
           from: 0,
           to: 100
         })

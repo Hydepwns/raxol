@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   """
 
   alias Raxol.Terminal.ANSI.CharacterTranslations
+  alias Logger
 
   @type charset ::
           :us_ascii
@@ -34,41 +35,35 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
           | :latin14
           | :latin15
 
-  @type charset_state :: %{
+  @type gset_name :: :g0 | :g1 | :g2 | :g3
+  @type gl_gr_target :: :gl | :gr
+
+  @type charset_state :: %__MODULE__{
           g0: charset(),
           g1: charset(),
           g2: charset(),
           g3: charset(),
-          gl: :g0 | :g1 | :g2 | :g3,
-          gr: :g0 | :g1 | :g2 | :g3,
-          single_shift: :g0 | :g1 | :g2 | :g3 | nil,
+          gl: gset_name(),
+          gr: gset_name(),
+          single_shift: char() | nil,
           locked_shift: boolean()
         }
+
+  defstruct g0: :us_ascii,
+            g1: :us_ascii,
+            g2: :us_ascii,
+            g3: :us_ascii,
+            gl: :g0,
+            gr: :g1,
+            single_shift: nil,
+            locked_shift: false
 
   @doc """
   Creates a new character set state with default values.
   """
-  @spec new() :: %{
-          g0: :us_ascii,
-          g1: :us_ascii,
-          g2: :us_ascii,
-          g3: :us_ascii,
-          gl: :g0,
-          gr: :g1,
-          single_shift: nil,
-          locked_shift: false
-        }
-  def new do
-    %{
-      g0: :us_ascii,
-      g1: :us_ascii,
-      g2: :us_ascii,
-      g3: :us_ascii,
-      gl: :g0,
-      gr: :g1,
-      single_shift: nil,
-      locked_shift: false
-    }
+  @spec new() :: charset_state()
+  def new() do
+    %__MODULE__{}
   end
 
   @doc """
@@ -77,7 +72,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   @spec switch_charset(charset_state(), :g0 | :g1 | :g2 | :g3, charset()) ::
           charset_state()
   def switch_charset(state, set, charset) do
-    Map.put(state, set, charset)
+    %{state | set => charset}
   end
 
   @doc """
@@ -85,7 +80,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   """
   @spec set_gl(charset_state(), :g0 | :g1 | :g2 | :g3) :: charset_state()
   def set_gl(state, set) do
-    Map.put(state, :gl, set)
+    %{state | gl: set}
   end
 
   @doc """
@@ -93,16 +88,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   """
   @spec set_gr(charset_state(), :g0 | :g1 | :g2 | :g3) :: charset_state()
   def set_gr(state, set) do
-    Map.put(state, :gr, set)
-  end
-
-  @doc """
-  Sets the single shift character set.
-  """
-  @spec set_single_shift(charset_state(), :g0 | :g1 | :g2 | :g3 | nil) ::
-          charset_state()
-  def set_single_shift(state, set) do
-    Map.put(state, :single_shift, set)
+    %{state | gr: set}
   end
 
   @doc """
@@ -151,7 +137,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     target_g_set = index_to_gset(gset_index)
 
     if charset_atom && target_g_set do
-      Map.put(state, target_g_set, charset_atom)
+      # Assign the result of Map.put back
+      new_state = Map.put(state, target_g_set, charset_atom)
+      new_state # Return the new state
     else
       # Log or ignore unknown charset code / gset index
       state

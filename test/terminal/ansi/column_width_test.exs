@@ -22,11 +22,10 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
       assert ScreenBuffer.get_width(active_buffer) == 132
 
       # Check that the mode_state reflects the change
-      # Using ScreenModes alias - need to import or fully qualify
-      # Assuming ScreenModes is aliased or available
-      assert Raxol.Terminal.ANSI.ScreenModes.mode_enabled?(
-               new_emulator.mode_state,
-               :wide_column
+      # Corrected to use ModeManager and correct field/atom
+      assert Raxol.Terminal.ModeManager.mode_enabled?(
+               new_emulator.mode_manager, # Check the mode_manager struct
+               :deccolm_132 # Use the correct mode atom
              )
     end
 
@@ -48,9 +47,10 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
       assert ScreenBuffer.get_width(active_buffer_80) == 80
 
       # Check that the column width mode is set back to normal
-      refute Raxol.Terminal.ANSI.ScreenModes.mode_enabled?(
-               new_emulator.mode_state,
-               :wide_column
+      # Corrected to use ModeManager and correct field/atom
+      refute Raxol.Terminal.ModeManager.mode_enabled?(
+               new_emulator.mode_manager, # Check the mode_manager struct
+               :deccolm_132 # Use the correct mode atom
              )
     end
 

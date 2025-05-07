@@ -7,30 +7,36 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
 
   # Helper to initialize component state with optional props
   # Mimics how the component manager might hold state
-  defp create_component_struct(props \\ %{}) do
+  defp create_component_state(props \\ %{}) do
     {:ok, initial_state} = TextInput.init(props)
-    %{module: TextInput, props: props, state: initial_state}
+    initial_state # Return only the state map
   end
 
   describe "init/1" do
     test "creates a text input with default state" do
-      # {:ok, state} = TextInput.init(%{})
-      component = create_component_struct()
-      # Assertions on the state field within the component struct
-      assert component.state.cursor_pos == 0
-      assert component.state.focused == false
-      # Assertions on props (passed during creation)
-      assert component.props == %{}
+      state = create_component_state()
+      assert state.value == ""
+      assert state.cursor_pos == 0
+      assert state.focused == false
+      assert state.placeholder == ""
+      assert state.max_length == nil
+      assert state.validator == nil
     end
 
-    test "creates a text input and stores initial props" do
-      props = %{value: "Initial", max_length: 10}
-      component = create_component_struct(props)
-      assert component.state.cursor_pos == 0
-      assert component.state.focused == false
-      # Props are stored alongside state
-      assert component.props.value == "Initial"
-      assert component.props.max_length == 10
+    test "creates a text input and stores initial props in state" do
+      props = %{
+        value: "Initial",
+        max_length: 10,
+        placeholder: "Enter text",
+        validator: fn _ -> true end
+      }
+      state = create_component_state(props)
+      assert state.value == "Initial"
+      assert state.max_length == 10
+      assert state.placeholder == "Enter text"
+      assert is_function(state.validator, 1)
+      assert state.cursor_pos == 0
+      assert state.focused == false
     end
   end
 
@@ -45,117 +51,113 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
     # ... (setup callback helper) ...
 
     test "handles character input" do
-      component = create_component_struct(%{value: "Hello"})
-      # {:ok, updated_state} = TextInput.handle_event(state, Event.key("X"), %{})
-      {:ok, updated_component} = TextInput.handle_event(component, Event.key("X"))
-      # Assert on props/state within the returned component struct
-      assert updated_component.props.value == "HelloX" # Assuming handle_event updates props
-      assert updated_component.state.cursor_pos == 6
+      state = create_component_state(%{value: "Hello"})
+      # Set cursor to end of string before inserting
+      state = %{state | cursor_pos: 5}
+      {updated_state, _commands} = TextInput.handle_event(state, Event.key("X"), %{})
+      assert updated_state.value == "HelloX"
+      assert updated_state.cursor_pos == 6
     end
 
     test "handles backspace" do
-      component = create_component_struct(%{value: "Hello"})
-      component = %{component | state: %{component.state | cursor_pos: 5}}
-      {:ok, updated_component} = TextInput.handle_event(component, Event.key(:backspace))
-      assert updated_component.props.value == "Hell"
-      assert updated_component.state.cursor_pos == 4
+      state = create_component_state(%{value: "Hello"})
+      state = %{state | cursor_pos: 5}
+      {updated_state, _commands} = TextInput.handle_event(state, Event.key(:backspace), %{})
+      assert updated_state.value == "Hell"
+      assert updated_state.cursor_pos == 4
     end
 
     test "handles delete" do
-      component = create_component_struct(%{value: "Hello"})
-      component = %{component | state: %{component.state | cursor_pos: 2}}
-      {:ok, updated_component} = TextInput.handle_event(component, Event.key(:delete))
-      assert updated_component.props.value == "Helo"
-      assert updated_component.state.cursor_pos == 2 # Cursor stays
+      state = create_component_state(%{value: "Hello"})
+      state = %{state | cursor_pos: 2}
+      {updated_state, _commands} = TextInput.handle_event(state, Event.key(:delete), %{})
+      assert updated_state.value == "Helo"
+      assert updated_state.cursor_pos == 2 # Cursor stays
     end
 
     test "handles cursor movement" do
-      component = create_component_struct(%{value: "Hello"})
-      component = %{component | state: %{component.state | cursor_pos: 2}}
-      {:ok, state_left_comp} = TextInput.handle_event(component, Event.key(:left))
-      assert state_left_comp.state.cursor_pos == 1
-      {:ok, state_right_comp} = TextInput.handle_event(state_left_comp, Event.key(:right))
-      assert state_right_comp.state.cursor_pos == 2
-      {:ok, state_home_comp} = TextInput.handle_event(state_right_comp, Event.key(:home))
-      assert state_home_comp.state.cursor_pos == 0
-      {:ok, state_end_comp} = TextInput.handle_event(state_home_comp, Event.key(:end))
-      assert state_end_comp.state.cursor_pos == 5 # End of "Hello"
+      state = create_component_state(%{value: "Hello"})
+      state = %{state | cursor_pos: 2}
+      {state_left, _} = TextInput.handle_event(state, Event.key(:left), %{})
+      assert state_left.cursor_pos == 1
+      {state_right, _} = TextInput.handle_event(state_left, Event.key(:right), %{})
+      assert state_right.cursor_pos == 2
+      {state_home, _} = TextInput.handle_event(state_right, Event.key(:home), %{})
+      assert state_home.cursor_pos == 0
+      {state_end, _} = TextInput.handle_event(state_home, Event.key(:end), %{})
+      assert state_end.cursor_pos == 5 # End of "Hello"
     end
 
     test "handles enter key" do
-      # Define the callback function to send a message to the test process
       parent_pid = self()
       callback = fn value -> send(parent_pid, {:submitted, value}) end
-
-      component = create_component_struct(%{value: "Submit me", on_submit: callback})
-      {:ok, _updated_component} = TextInput.handle_event(component, Event.key(:enter))
+      state = create_component_state(%{value: "Submit me", on_submit: callback})
+      {_updated_state, _commands} = TextInput.handle_event(state, Event.key(:enter), %{})
       assert_receive {:submitted, "Submit me"}
     end
 
     test "handles escape key (blur)" do
-      component = create_component_struct(%{})
-      component = %{component | state: %{component.state | focused: true}}
-      {:ok, updated_component} = TextInput.handle_event(component, Event.key(:escape))
-      assert updated_component.state.focused == false
+      state = create_component_state()
+      state = %{state | focused: true}
+      {updated_state, _commands} = TextInput.handle_event(state, Event.key(:escape), %{})
+      assert updated_state.focused == false
     end
 
     test "handles mouse click (focus)" do
-      component = create_component_struct(%{})
-      {:ok, updated_component} = TextInput.handle_event(component, Event.mouse_click(0, 0))
-      assert updated_component.state.focused == true
+      state = create_component_state()
+      mouse_event = Event.mouse(:left, {0, 0})
+      {updated_state, _commands} = TextInput.handle_event(state, mouse_event, %{})
+      assert updated_state.focused == true
     end
 
     test "respects max_length constraint" do
-      component = create_component_struct(%{value: "12345", max_length: 5})
-      {:ok, updated_component} = TextInput.handle_event(component, Event.key("6"))
-      assert updated_component.props.value == "12345" # Should not change
-      assert updated_component.state.cursor_pos == 5
+      state = create_component_state(%{value: "12345", max_length: 5})
+      state = %{state | cursor_pos: 5}
+      {updated_state, _commands} = TextInput.handle_event(state, Event.key("6"), %{})
+      assert updated_state.value == "12345" # Should not change
+      assert updated_state.cursor_pos == 5
     end
 
     test "handles validation function" do
       validate = fn value -> String.match?(value, ~r/^\d*$/) end
-      component = create_component_struct(%{value: "123", validate: validate})
-      {:ok, valid_component} = TextInput.handle_event(component, Event.key("4"))
-      assert valid_component.props.value == "1234"
-      {:ok, invalid_component} = TextInput.handle_event(valid_component, Event.key("a"))
-      assert invalid_component.props.value == "1234" # Should not change
+      state = create_component_state(%{value: "123", validator: validate})
+      state = %{state | cursor_pos: 3}
+      {valid_state, _} = TextInput.handle_event(state, Event.key("4"), %{})
+      assert valid_state.value == "1234"
+      # Pass the updated state to the next event
+      valid_state = %{valid_state | cursor_pos: 4}
+      {invalid_state, _} = TextInput.handle_event(valid_state, Event.key("a"), %{})
+      assert invalid_state.value == "1234" # Should not change
     end
   end
 
-  describe "render/2" do
+  describe "render/1" do
     test "renders input box with text" do
-      component = create_component_struct(%{value: "Hello", width: 10})
-      # context = %{}
-      # elements = TextInput.render(state, context)
-      elements = TextInput.render(component) # Assumes render takes component struct
-      assert is_list(elements) or is_map(elements)
-      # Add more specific assertions about the render output
+      state = create_component_state(%{value: "Hello"})
+      elements = TextInput.render(state)
+      assert elements.text == "Hello"
+      assert elements.type == :text_input
     end
 
     test "renders placeholder when value is empty" do
-      component = create_component_struct(%{placeholder: "Type here"})
-      # context = %{}
-      # elements = TextInput.render(state, context)
-      elements = TextInput.render(component)
-      assert is_list(elements) or is_map(elements)
+      state = create_component_state(%{placeholder: "Type here"})
+      elements = TextInput.render(state)
+      assert elements.text == "Type here"
     end
 
     test "renders password input as masked" do
-      component = create_component_struct(%{value: "secret", is_password: true})
-      # context = %{}
-      # elements = TextInput.render(state, context)
-      elements = TextInput.render(component)
-      assert is_list(elements) or is_map(elements)
+      state = create_component_state(%{value: "secret", mask_char: "*"})
+      elements = TextInput.render(state)
+      assert elements.text == "******"
     end
 
     test "renders cursor when focused" do
-      component = create_component_struct(%{value: "Hello"})
-      # context = %{}
-      component = %{component | state: %{component.state | focused: true, cursor_pos: 3}}
-      # elements = TextInput.render(state, context)
-      elements = TextInput.render(component)
-      assert is_list(elements) or is_map(elements)
-      # Assert presence of cursor style/character
+      state = create_component_state(%{value: "Hello"})
+      state = %{state | focused: true, cursor_pos: 3}
+      elements = TextInput.render(state)
+      assert elements.focused == true
+      assert elements.cursor_pos == 3
+      # Actual cursor rendering might be handled higher up
     end
   end
 end

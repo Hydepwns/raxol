@@ -159,7 +159,7 @@ defmodule Raxol.Terminal.Config.Defaults do
       # Added from configuration.ex
       background_opacity: 1.0,
       # Added from configuration.ex
-      background_image: nil,
+      background_image: "",
       # Added from configuration.ex
       background_blur: 0.0,
       # Added from configuration.ex
@@ -177,9 +177,9 @@ defmodule Raxol.Terminal.Config.Defaults do
   def default_animation_config do
     %{
       # Added from configuration.ex
-      animation_type: nil,
+      animation_type: :gif,
       # Added from configuration.ex
-      animation_path: nil,
+      animation_path: "",
       # Added from configuration.ex
       animation_fps: 30,
       # Added from configuration.ex

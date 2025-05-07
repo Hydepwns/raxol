@@ -264,7 +264,7 @@ defmodule Raxol.Style.Colors.Gradient do
       iex> blue = Raxol.Style.Colors.Color.from_hex("#0000FF")
       iex> gradient = Raxol.Style.Colors.Gradient.linear(red, blue, 5)
       iex> Raxol.Style.Colors.Gradient.apply_to_text(gradient, "Hello")
-      # Returns ANSI-colored text with each character a different color
+      "\e[38;2;255;0;0mH\e[0m\e[38;2;191;0;64me\e[0m\e[38;2;128;0;128ml\e[0m\e[38;2;64;0;191ml\e[0m\e[38;2;0;0;255mo\e[0m"
   """
   def apply_to_text(%__MODULE__{colors: colors}, text) when is_binary(text) do
     # Split the text into graphemes
@@ -317,14 +317,20 @@ defmodule Raxol.Style.Colors.Gradient do
 
   # Distribute steps across segments
   defp distribute_steps(total_steps, segment_count) do
-    # Calculate base steps per segment
-    base_steps = div(total_steps, segment_count)
-    # Calculate remaining steps
-    remainder = rem(total_steps, segment_count)
+    # Calculate the number of intervals to distribute
+    total_intervals = max(0, total_steps - 1)
 
-    # Distribute steps, giving one extra to segments until remainder is used
+    # Calculate base intervals per segment
+    base_intervals = div(total_intervals, segment_count)
+    # Calculate remaining intervals
+    remainder_intervals = rem(total_intervals, segment_count)
+
+    # Distribute intervals, giving one extra to segments until remainder is used
+    # Then add 1 to get the number of *colors* needed for each segment's generation
     Enum.map(1..segment_count, fn segment_index ->
-      if segment_index <= remainder, do: base_steps + 1, else: base_steps
+      intervals_for_segment = if segment_index <= remainder_intervals, do: base_intervals + 1, else: base_intervals
+      # Need intervals + 1 colors to cover the intervals
+      intervals_for_segment + 1
     end)
   end
 

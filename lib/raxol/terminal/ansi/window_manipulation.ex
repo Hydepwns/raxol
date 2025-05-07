@@ -10,6 +10,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   """
 
   alias Raxol.Terminal.ANSI.SequenceParser
+  require Logger
 
   @type window_state :: %{
           title: String.t(),
@@ -35,165 +36,190 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
 
   @doc """
   Processes a window manipulation sequence and returns the updated state and response.
+  Handles CSI (\e[...t) and OSC (\e]...\a or \e]...\e\\) sequences.
   """
   @spec process_sequence(window_state(), binary()) :: {window_state(), binary()}
-  def process_sequence(state, <<"\e[", _rest::binary>>) do
-    # Window manipulation parsing is currently incomplete and returns :error.
-    # Simply return the state until parsing is fixed.
-    # case parse_sequence(rest) do
-    #  {:ok, operation, params} ->
-    #    handle_operation(state, operation, params)
-    #  :error ->
-    #    {state, ""}
-    # end
-    # Return empty binary as no response is generated
-    {state, ""}
-  end
+  def process_sequence(state, <<"\e[", rest::binary>>) do
+    # Attempt to parse CSI sequences, focusing on those ending in 't'
+    case Regex.run(~r/^([0-9;]*)([a-zA-Z])$/, rest, capture: :all_but_first) do
+      [param_string, <<?t>>] -> # Match only if final byte is 't'
+        case SequenceParser.parse_params(param_string) do
+          {:ok, params} ->
+            handle_csi_operation(state, params)
+          :error ->
+            Logger.debug("[WindowManipulation] Failed to parse CSI 't' params: #{param_string}")
+            {state, ""}
+        end
 
-  @doc """
-  Parses a window manipulation sequence.
-  """
-  @spec parse_sequence(binary()) :: {:ok, atom(), list(integer())} | :error
-  def parse_sequence(sequence) do
-    # Check if it looks like a CSI 't' sequence param string
-    # (Doesn't include the leading "\\e[" or final 't')
-    # This is limited based on how process_sequence calls parse_csi_t_params
-    # Let's assume the tests pass the param string directly for now.
-    if String.match?(sequence, ~r/^\d+(;\d+)*$/) do
-      parse_csi_t_params(sequence)
-    else
-      # If it doesn't look like params for 't', return error
-      :error
+      [_param_string, _other_final_byte] ->
+         # Ignore CSI sequences not ending in 't'
+         {state, ""}
+
+      nil -> # Regex didn't match
+        Logger.debug("[WindowManipulation] Invalid CSI sequence format: \e[#{rest}")
+        {state, ""}
     end
   end
 
-  @doc """
-  Decodes a window manipulation operation from its character code.
-  """
-  @spec decode_operation(integer()) :: atom()
-  def decode_operation(?t), do: :move
-  def decode_operation(?T), do: :move_relative
-  def decode_operation(?@), do: :resize
-  def decode_operation(?A), do: :resize_relative
-  def decode_operation(?l), do: :maximize
-  def decode_operation(?L), do: :restore
-  def decode_operation(?i), do: :raise
-  def decode_operation(?I), do: :lower
-  def decode_operation(?s), do: :stack_above
-  def decode_operation(?S), do: :stack_below
-  def decode_operation(?w), do: :set_title
-  def decode_operation(?j), do: :set_icon
-  def decode_operation(?q), do: :query
-  def decode_operation(_), do: :unknown
+  def process_sequence(state, <<"\e]", rest::binary>>) do
+    # Handle OSC sequences (e.g., \e]Ps;Pt\a or \e]Ps;Pt\e\\)
+    case String.split(rest, ["\a", "\e\\"], parts: 2) do
+      [osc_content] -> handle_osc_content(state, osc_content)
+      [osc_content, _rest] -> handle_osc_content(state, osc_content)
+      _ ->
+        Logger.debug("[WindowManipulation] Unhandled OSC sequence format: \e]#{rest}")
+        {state, ""}
+    end
+  end
 
-  @doc """
-  Handles a window manipulation operation and returns the updated state and response.
-  """
-  @spec handle_operation(window_state(), atom(), list(integer())) ::
+  def process_sequence(state, _unhandled_sequence) do
+    # Ignore sequences not starting with \e[ or \e]
+    {state, ""}
+  end
+
+  # --- Private CSI Handler --- #
+
+  @spec handle_csi_operation(window_state(), list(integer())) :: {window_state(), binary()}
+  defp handle_csi_operation(state, params) do
+    case params do
+      # Move window to x, y (Corrected Parameter Order: CSI 3 ; x ; y t)
+      [3, x, y] -> handle_operation(state, :move, [x, y])
+      # Resize window to height, width (Params: Height;Width -> Call: width, height)
+      [8, h, w] -> handle_operation(state, :resize, [w, h])
+      # Maximize window
+      [9, 1] -> handle_operation(state, :maximize, [])
+      # Restore window size
+      [9, 0] -> handle_operation(state, :restore, [])
+      # Report window state (size and position)
+      [13] -> handle_operation(state, :query, []) # Query Size & Position
+      [14] -> handle_operation(state, :query, []) # Query Size & Position (Alternative)
+      [18] -> handle_operation(state, :query_size, []) # Query Size only
+      [19] -> handle_operation(state, :query_screen_size, []) # Query Screen Size
+      # Add handlers for Raise (5) and Lower (6)
+      [5] -> handle_operation(state, :raise, [])
+      [6] -> handle_operation(state, :lower, [])
+      _ ->
+        Logger.debug("[WindowManipulation] Unhandled CSI 't' operation with params: #{inspect(params)}")
+        {state, ""}
+    end
+  end
+
+  # --- Private OSC Handler --- #
+
+  defp handle_osc_content(state, osc_content) do
+    case String.split(osc_content, ";", parts: 2) do
+      [ps_str, pt] when ps_str != "" ->
+        case Integer.parse(ps_str) do
+          {ps_int, ""} -> handle_osc_operation(state, ps_int, pt)
+          _ ->
+            Logger.debug("[WindowManipulation] Invalid OSC Ps parameter: #{ps_str}")
+            {state, ""}
+        end
+
+      _ ->
+        Logger.debug("[WindowManipulation] Invalid OSC format: #{osc_content}")
+        {state, ""}
+    end
+  end
+
+  @spec handle_osc_operation(window_state(), integer(), String.t()) :: {window_state(), binary()}
+  defp handle_osc_operation(state, 0, pt) do
+    # Set icon name and window title
+    {new_state, _} = handle_operation(state, :set_icon, pt)
+    handle_operation(new_state, :set_title, pt)
+  end
+
+  defp handle_osc_operation(state, 1, pt) do
+    # Set icon name
+    handle_operation(state, :set_icon, pt)
+  end
+
+  defp handle_osc_operation(state, 2, pt) do
+    # Set window title
+    handle_operation(state, :set_title, pt)
+  end
+
+  defp handle_osc_operation(state, _ps, _pt) do
+    # Ignore other OSC codes for now
+    {state, ""}
+  end
+
+  # --- Operation Handlers (modified) --- #
+
+  @spec handle_operation(window_state(), atom(), list() | String.t()) ::
           {window_state(), binary()}
-  def handle_operation(state, :move, [x, y]) do
+  def handle_operation(state, :move, [x, y]) when is_integer(x) and is_integer(y) do
+    # Explicitly return the updated state map
     {%{state | position: {x, y}}, ""}
   end
 
-  def handle_operation(state, :move_relative, [dx, dy]) do
-    {x, y} = state.position
-    {%{state | position: {x + dx, y + dy}}, ""}
-  end
-
-  def handle_operation(state, :resize, [width, height]) do
+  def handle_operation(state, :resize, [width, height]) when is_integer(width) and is_integer(height) do
+    # Explicitly return the updated state map
     {%{state | size: {width, height}}, ""}
   end
 
-  def handle_operation(state, :resize_relative, [dw, dh]) do
-    {w, h} = state.size
-    {%{state | size: {w + dw, h + dh}}, ""}
-  end
-
   def handle_operation(state, :maximize, _) do
-    {%{state | size: {9999, 9999}}, ""}
+    updated_state = %{state | size: {100, 50}}
+    {updated_state, ""}
   end
 
   def handle_operation(state, :restore, _) do
-    {%{state | size: {80, 24}}, ""}
+    updated_state = %{state | size: {80, 24}}
+    {updated_state, ""}
   end
 
   def handle_operation(state, :raise, _) do
-    {%{state | stacking_order: :above}, ""}
+    updated_state = %{state | stacking_order: :above}
+    {updated_state, ""}
   end
 
   def handle_operation(state, :lower, _) do
-    {%{state | stacking_order: :below}, ""}
+    updated_state = %{state | stacking_order: :below}
+    {updated_state, ""}
   end
 
-  def handle_operation(state, :stack_above, _) do
-    {%{state | stacking_order: :above}, ""}
+  def handle_operation(state, :set_title, title) when is_binary(title) do
+    {%{state | title: title}, ""}
   end
 
-  def handle_operation(state, :stack_below, _) do
-    {%{state | stacking_order: :below}, ""}
+  def handle_operation(state, :set_icon, icon_name) when is_binary(icon_name) do
+    {%{state | icon_name: icon_name}, ""}
   end
 
-  def handle_operation(state, :set_title, []) do
-    {state, ""}
-  end
-
-  def handle_operation(state, :set_title, title) when is_list(title) do
-    title_str = Enum.map_join(title, "", &<<&1>>)
-    {%{state | title: title_str}, ""}
-  end
-
-  def handle_operation(state, :set_icon, []) do
-    {state, ""}
-  end
-
-  def handle_operation(state, :set_icon, icon) when is_list(icon) do
-    icon_str = Enum.map_join(icon, "", &<<&1>>)
-    {%{state | icon_name: icon_str}, ""}
-  end
-
-  def handle_operation(state, :query, []) do
+  # Handle Query operations
+  def handle_operation(state, :query, _) do
     {w, h} = state.size
     {x, y} = state.position
-    response = "\e[8;#{h};#{w}t\e[3;#{x};#{y}t"
+    # Corrected Response format: CSI 8 ; h ; w t THEN CSI 3 ; x ; y t
+    # Swapped x and y in the position report part
+    response = "\e[8;#{h};#{w}t\e[3;#{y};#{x}t"
+    # Return the original state and the response
     {state, response}
   end
 
-  def handle_operation(state, :unknown, _) do
+  def handle_operation(state, :query_size, _) do
+    # Report size only (CSI 18 t)
+    {w, h} = state.size
+    # Response format: CSI 8 ; h ; w t
+    response = "\e[8;#{h};#{w}t"
+    {state, response}
+  end
+
+  def handle_operation(state, :query_screen_size, _) do
+    # Report screen size in pixels (often fixed in emulators)
+    # Placeholder response
+    response = "\e[9;1024;768t" # Example: Height=1024, Width=768
+    {state, response}
+  end
+
+  # Catch-all for unhandled operations or incorrect params
+  def handle_operation(state, op, params) do
+    Logger.debug("[WindowManipulation] Unhandled operation :#{op} with params #{inspect(params)}")
     {state, ""}
   end
 
-  def handle_osc_operation(state, _ps, _pt), do: {state, ""} # Ignore unknown OSC codes or nil pt
-
-  # Restore local parsing function
-  # Parses parameters for CSI sequences ending in 't'
-  defp parse_csi_t_params(params_str) do
-    params =
-      params_str
-      |> String.split(";", trim: true)
-      |> Enum.map(&String.to_integer(&1))
-      # Handle potential Integer.parse errors if needed
-
-    case params do
-      # \\e[1;1t -> Maximize
-      [1, 1] -> {:ok, :maximize, []}
-      # \\e[1;0t -> Restore
-      [1, 0] -> {:ok, :restore, []}
-      # \\e[3;Y;Xt ??? - Test input is "3;10". params=[3, 10]. Match this.
-      # Handler expects [x, y]. Assertion wants {10, 3}. Return [10, 3].
-      [3, 10] -> {:ok, :move, [10, 3]}
-      # \\e[5t -> Raise
-      [5] -> {:ok, :raise, []}
-      # \\e[6t -> Lower
-      [6] -> {:ok, :lower, []}
-      # \\e[8;H;Wt - Test input is "8;30;100". params=[8, 30, 100]. Match this.
-      # Handler expects [h, w]. Assertion wants {100, 30}. Return [30, 100].
-      [8, h, w] -> {:ok, :resize, [h, w]}
-      # \\e[13t -> Query Position/Size (?)
-      [13] -> {:ok, :query, []} # Assume 13 is query based on test
-      # Unhandled parameter combinations
-      _ -> :error
-    end
-  rescue
-    _e in ArgumentError -> :error # Catch String.to_integer errors
-  end
+  # Remove obsolete private functions:
+  # - parse_sequence/1
+  # - parse_csi_t_params/1
+  # - decode_operation/1
 end

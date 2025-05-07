@@ -1,82 +1,90 @@
 defmodule Raxol.Terminal.Emulator.GettersSettersTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.ANSI.TextFormatting
 
-  describe "Emulator Getters/Setters" do
-    test "get/set scroll region via ANSI" do
-      emulator = Emulator.new(80, 24)
-      # Check initial direct access
-      assert emulator.scroll_region == nil
-      # Use process_input for CSI r sequence to set
-      # Set scroll region 5-15 (1-based -> 6, 16 in sequence)
-      {emulator, ""} = Emulator.process_input(emulator, "\e[6;16r")
-      # Direct access check (0-based)
-      assert emulator.scroll_region == {5, 15}
-      # Use process_input for CSI r sequence with no params to clear
-      {emulator, ""} = Emulator.process_input(emulator, "\e[r")
-      # Direct access check
-      assert emulator.scroll_region == nil
-    end
+  test "get_scroll_region/1 returns nil by default" do
+    emulator = Emulator.new(80, 24)
+    # Expect the default full buffer dimensions instead of nil
+    assert Emulator.get_scroll_region(emulator) == {0, 23}
+  end
 
-    test "get/set text style via ANSI SGR" do
-      emulator = Emulator.new(80, 24)
-      # Check initial direct access
-      assert emulator.style == TextFormatting.new()
+  test "set_scroll_region/2 updates the scroll region" do
+    emulator = Emulator.new(80, 24)
+    # DECSTBM uses 1-based indexing, so region (2, 10) -> {1, 9} 0-based
+    {emulator_after_set, _} = Emulator.process_input(emulator, "\e[2;10r")
+    assert Emulator.get_scroll_region(emulator_after_set) == {1, 9}
+    # Resetting with \e[r should restore to full viewport {0, height - 1}
+    {emulator_after_reset, _} = Emulator.process_input(emulator_after_set, "\e[r")
+    assert Emulator.get_scroll_region(emulator_after_reset) == {0, 23}
+  end
 
-      # Use process_input for SGR sequence
-      # Bold, Red
-      {emulator, ""} = Emulator.process_input(emulator, "\e[1;31m")
+  test "get_cursor_position/1 returns the current cursor position" do
+    emulator = Emulator.new(80, 24)
+    assert Emulator.get_cursor_position(emulator) == {0, 0}
+  end
 
-      # Direct access check
-      style = emulator.style
-      assert style.bold == true
-      assert style.foreground == :red
+  test "set_cursor_position/2 updates the cursor position" do
+    emulator = Emulator.new(80, 24)
+    {emulator_after_set, _} = Emulator.process_input(emulator, "\e[2;10H")
+    assert Emulator.get_cursor_position(emulator_after_set) == {1, 9}
+  end
 
-      # Use process_input to reset (SGR 0)
-      {emulator, ""} = Emulator.process_input(emulator, "\e[0m")
-      # Direct access check
-      assert emulator.style == TextFormatting.new()
-    end
+  test "get_cursor_visible/1 returns true by default" do
+    emulator = Emulator.new(80, 24)
+    assert Emulator.get_cursor_visible(emulator) == true
+  end
 
-    test "get/set options directly" do
-      emulator = Emulator.new(80, 24)
-      # Direct access check
-      assert emulator.options == %{}
-      # Set options directly (no standard ANSI for arbitrary options)
-      emulator = %{emulator | options: %{foo: :bar}}
-      # Direct access check
-      assert emulator.options == %{foo: :bar}
-    end
+  test "set_cursor_visible/2 updates cursor visibility" do
+    emulator = Emulator.new(80, 24)
+    # Hide cursor with DECTCEM
+    {emulator_after_hide, _} = Emulator.process_input(emulator, "\e[?25l")
+    assert Emulator.get_cursor_visible(emulator_after_hide) == false
 
-    test "get dimensions and resize buffer" do
-      emulator = Emulator.new(80, 24)
-      # Use ScreenBuffer functions via get_active_buffer
-      assert {ScreenBuffer.get_width(Emulator.get_active_buffer(emulator)),
-              ScreenBuffer.get_height(Emulator.get_active_buffer(emulator))} ==
-               {80, 24}
+    # Show cursor with DECTCEM
+    {emulator_after_show, _} = Emulator.process_input(emulator_after_hide, "\e[?25h")
+    assert Emulator.get_cursor_visible(emulator_after_show) == true
+  end
 
-      # Resize the main buffer directly (Emulator itself doesn't handle resize)
-      new_buffer =
-        ScreenBuffer.resize(Emulator.get_active_buffer(emulator), 100, 30)
+  test "get_style/1 returns the default style initially" do
+    emulator = Emulator.new(80, 24)
+    style = Emulator.get_style(emulator)
+    assert style.foreground == nil
+    assert style.background == nil
+    assert style.bold == false
+    assert style.italic == false
+    assert style.underline == false
+    assert style.blink == false
+    assert style.reverse == false
+    assert style.conceal == false
+    assert style.strike == false
+  end
 
-      # Update the emulator state with the resized buffer
-      emulator = %{emulator | main_screen_buffer: new_buffer}
+  test "set_style/2 updates the current text style" do
+    emulator = Emulator.new(80, 24)
+    # Set red foreground, bold, and underline
+    {emulator_after_set, _} = Emulator.process_input(emulator, "\e[31;1;4m")
+    style = Emulator.get_style(emulator_after_set)
+    assert style.foreground == :red
+    assert style.bold == true
+    assert style.underline == true
+  end
 
-      # Use ScreenBuffer functions again to check new dimensions
-      assert {ScreenBuffer.get_width(Emulator.get_active_buffer(emulator)),
-              ScreenBuffer.get_height(Emulator.get_active_buffer(emulator))} ==
-               {100, 30}
-
-      # Verify buffer properties directly
-      buffer = Emulator.get_active_buffer(emulator)
-      assert buffer.width == 100
-      assert buffer.height == 30
-    end
-
-    # Specific getters like get_mode_state, get_charset_state aren't typical;
-    # state is usually accessed directly or tested via behavior (ANSI sequences).
+  test "reset_style/1 resets the style to default" do
+    emulator = Emulator.new(80, 24)
+    # First set some styles
+    {emulator_after_set, _} = Emulator.process_input(emulator, "\e[31;1;4m")
+    # Then reset
+    {emulator_after_reset, _} = Emulator.process_input(emulator_after_set, "\e[0m")
+    style = Emulator.get_style(emulator_after_reset)
+    assert style.foreground == nil
+    assert style.background == nil
+    assert style.bold == false
+    assert style.italic == false
+    assert style.underline == false
+    assert style.blink == false
+    assert style.reverse == false
+    assert style.conceal == false
+    assert style.strike == false
   end
 end

@@ -30,14 +30,7 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
       # Access style field directly and compare with default using constructor
       assert emulator.style == TextFormatting.new()
       # Access mode_state field directly
-      mode_state = emulator.mode_state
-      # Check it's the correct struct type --> Check it's a map
-      # assert is_struct(mode_state, ScreenModes)
-      assert is_map(mode_state)
-      # Check some default values within the map
-      assert mode_state.cursor_visible == true
-      assert mode_state.auto_wrap == true
-      assert mode_state.origin_mode == false
+      assert emulator.mode_manager == Raxol.Terminal.ModeManager.new()
 
       # Direct access ok
       assert is_list(emulator.state_stack)

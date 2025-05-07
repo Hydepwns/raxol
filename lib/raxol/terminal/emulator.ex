@@ -7,10 +7,10 @@ defmodule Raxol.Terminal.Emulator do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Operations
   alias Raxol.Terminal.ANSI.CharacterSets
-  alias Raxol.Terminal.ANSI.ScreenModes
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.Cursor.Manager
+  alias Raxol.Terminal.ModeManager
   alias Raxol.Terminal.Parser
   alias Raxol.Plugins.PluginManager
   alias Raxol.Terminal.Cell
@@ -44,7 +44,7 @@ defmodule Raxol.Terminal.Emulator do
           style: TextFormatting.text_style(),
           memory_limit: non_neg_integer(),
           charset_state: CharacterSets.charset_state(),
-          mode_state: ScreenModes.screen_state(),
+          mode_manager: ModeManager.t(),
           plugin_manager: PluginManager.t(),
           options: map(),
           current_hyperlink_url: String.t() | nil,
@@ -53,7 +53,10 @@ defmodule Raxol.Terminal.Emulator do
           tab_stops: MapSet.t(),
           output_buffer: String.t(),
           cursor_style: cursor_style_type(),
-          parser_state: Parser.State.t()
+          parser_state: Parser.State.t(),
+          command_history: list(),
+          max_command_history: non_neg_integer(),
+          current_command_buffer: String.t()
         }
 
   # Use Manager struct
@@ -64,7 +67,7 @@ defmodule Raxol.Terminal.Emulator do
             # Manages G0-G3 designation and invocation
             charset_state: CharacterSets.new(),
             # Tracks various modes (like DECCKM, DECOM)
-            mode_state: ScreenModes.new(),
+            mode_manager: ModeManager.new(),
             # Set default tab stops
             # Initialize tab_stops
             tab_stops: MapSet.new(),
@@ -91,7 +94,11 @@ defmodule Raxol.Terminal.Emulator do
             window_title: nil,
             icon_name: nil,
             output_buffer: "",
-            cursor_style: :blinking_block
+            cursor_style: :blinking_block,
+            # Command History
+            command_history: [],
+            max_command_history: 100, # Default, overridden in new/3
+            current_command_buffer: ""
 
   @doc """
   Creates a new terminal emulator instance with the specified dimensions and options.
@@ -112,6 +119,7 @@ defmodule Raxol.Terminal.Emulator do
   def new(width \\ 80, height \\ 24, opts \\ []) do
     scrollback_limit = Keyword.get(opts, :scrollback, 1000)
     memory_limit = Keyword.get(opts, :memorylimit, 1_000_000)
+    max_command_history_opt = Keyword.get(opts, :max_command_history, 100)
     plugin_manager = PluginManager.new()
     # Initialize Manager
     initial_cursor = Manager.new()
@@ -120,7 +128,7 @@ defmodule Raxol.Terminal.Emulator do
     main_buffer = ScreenBuffer.new(width, height, scrollback_limit)
     # Alternate buffer usually has no scrollback
     alternate_buffer = ScreenBuffer.new(width, height, 0)
-    initial_modes = ScreenModes.new()
+    initial_mode_manager = ModeManager.new()
     initial_charset_state = CharacterSets.new()
     initial_state_stack = TerminalState.new()
     # Generate default tabs
@@ -134,7 +142,7 @@ defmodule Raxol.Terminal.Emulator do
       saved_cursor: {1, 1},
       style: TextFormatting.new(),
       charset_state: initial_charset_state,
-      mode_state: initial_modes,
+      mode_manager: initial_mode_manager,
       # Store both buffers
       main_screen_buffer: main_buffer,
       alternate_screen_buffer: alternate_buffer,
@@ -155,7 +163,11 @@ defmodule Raxol.Terminal.Emulator do
       window_title: nil,
       icon_name: nil,
       output_buffer: "",
-      cursor_style: :blinking_block
+      cursor_style: :blinking_block,
+      # Initialize command history fields
+      command_history: [],
+      max_command_history: max_command_history_opt,
+      current_command_buffer: ""
     }
   end
 
@@ -164,9 +176,22 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec get_active_buffer(t()) :: ScreenBuffer.t()
   def get_active_buffer(emulator) do
-    case emulator.active_buffer_type do
-      :main -> emulator.main_screen_buffer
-      :alternate -> emulator.alternate_screen_buffer
+    Logger.debug("[get_active_buffer] Type: #{inspect(emulator.active_buffer_type)}, Keys: #{inspect(Map.keys(emulator))}")
+    # Defensive check instead of case statement
+    type = emulator.active_buffer_type
+    if type == :main do
+      emulator.main_screen_buffer
+    else # Assuming type must be :alternate if not :main
+      # Check key exists before accessing, to provide a better error if needed
+      if Map.has_key?(emulator, :alternate_screen_buffer) do
+        emulator.alternate_screen_buffer
+      else
+        # This should NOT happen based on Emulator.new, but helps diagnose
+        Logger.error("[get_active_buffer] CRITICAL: Type is :alternate but :alternate_screen_buffer key is missing!")
+        # Raise a more informative error or return nil/main buffer?
+        # Raising here to make the problem explicit if this path is hit.
+        raise KeyError, key: :alternate_screen_buffer, term: emulator
+      end
     end
   end
 
@@ -182,11 +207,11 @@ defmodule Raxol.Terminal.Emulator do
       iex> emulator.cursor.position
       {1, 1}
       iex> emulator = Raxol.Terminal.Emulator.new()
-      iex> {emulator, _} = Raxol.Terminal.Emulator.process_input(emulator, "\\e[1;31mRed\\e[0m Text")
+      iex> {emulator, _} = Raxol.Terminal.Emulator.process_input(emulator, "\e[1;31mRed\e[0m Text")
       iex> {x, y} = emulator.cursor.position
       iex> x # Length of "Red Text" (8 chars) + starting at 1 = 9
       9
-      iex> emulator.style.foreground # Should be reset by \\e[0m
+      iex> emulator.style.foreground # Should be reset by \e[0m
       nil
 
   """
@@ -194,27 +219,33 @@ defmodule Raxol.Terminal.Emulator do
   def process_input(emulator, input) when is_binary(input) do
     # Get the current parser state from the emulator
     current_parser_state = emulator.parser_state
-    # IO.inspect({:process_input_before_parse, emulator, current_parser_state, input}, label: "DEBUG_EMULATOR")
 
-    # Call the public parse_chunk function
-    parse_result = Parser.parse_chunk(emulator, current_parser_state, input)
-    # IO.inspect({:process_input_after_parse, parse_result}, label: "DEBUG_EMULATOR")
+    # === BRACKETED PASTE CHECK ===
+    if ModeManager.mode_enabled?(emulator.mode_manager, :bracketed_paste) do
+      wrapped_paste = <<"\e[200~", input::binary, "\e[201~">>
+      state_after_paste_event = %{emulator | output_buffer: ""}
+      {state_after_paste_event, wrapped_paste}
+    else
+      # Call the public parse_chunk function (if not in bracketed paste mode)
+      parse_result = Parser.parse_chunk(emulator, current_parser_state, input)
 
-    # parse_chunk returns {final_emulator_state, final_parser_state}
-    # Line 205 (approx):
-    {final_emulator_state, final_parser_state} = parse_result
+      # Inspect the raw result from the parser
+      # IO.inspect(parse_result, label: "[Emulator.process_input] Parser.parse_chunk returned:")
 
-    # Update the emulator's parser state with the final state from the parser
-    emulator_with_updated_parser_state = %{final_emulator_state | parser_state: final_parser_state}
+      {final_emulator, final_parser_state} = parse_result
 
-    output_to_send = emulator_with_updated_parser_state.output_buffer
-    final_emulator_state_no_output = %{emulator_with_updated_parser_state | output_buffer: ""}
+      # Directly update the parser state on the result and return
+      final_emulator_updated = %{final_emulator | parser_state: final_parser_state}
 
-    # Return the final state and the collected output
-    # --- DEBUG LOG ---
-    # IO.inspect({:proc_input_return, final_emulator_state_no_output.cursor.position}, label: "DEBUG")
-    # --- END DEBUG LOG ---
-    {final_emulator_state_no_output, output_to_send}
+      # For debugging, inspect right before return
+      # IO.inspect(final_emulator_updated.charset_state, label: "[Emulator.process_input simplified] Returning charset_state:")
+      # IO.inspect(final_emulator_updated.charset_state, label: "[Emulator.process_input] Returning charset_state:")
+
+      # Restore original logic
+      output_to_send = final_emulator_updated.output_buffer
+      final_emulator_state_no_output = %{final_emulator_updated | output_buffer: ""}
+      {final_emulator_state_no_output, output_to_send}
+    end
   end
 
   # --- Active Buffer Helpers ---
@@ -240,70 +271,12 @@ defmodule Raxol.Terminal.Emulator do
 
   # --- Character Processing (C0 and Printable) ---
 
-  def process_character(emulator, char_codepoint)
-      when (char_codepoint >= 0 and char_codepoint <= 31) or char_codepoint == 127 do
-    # Handle C0 Control Codes and DEL using the ControlCodes module
-    ControlCodes.handle_c0(emulator, char_codepoint)
-  end
+  # Removed process_character/2 - Moved to InputHandler
 
-  @doc """
-  Processes a single printable character codepoint.
-  Writes the character to the buffer at the calculated position and updates the cursor position.
-  Handles autowrap logic.
-  """
-  def process_character(%__MODULE__{} = emulator, char_codepoint) do
-    # Get character width FIRST
-    char = <<char_codepoint::utf8>>
-    char_width = Raxol.Terminal.CharacterHandling.get_char_width(char)
+  # Removed process_printable_character/2 - Moved to InputHandler
 
-    # 1. Determine where to write the character based on current state
-    # CALL calculate_write_position/2
-    {write_y, write_x, next_cursor_y, next_cursor_x, next_last_col_exceeded} = calculate_write_position(emulator, char_width)
-    # We need the emulator state *before* the cursor moves for writing.
-    # Let's assume calculate_write_position doesn't modify the state itself, only calculates values.
-    emulator_state_before_write = emulator # Use the original state passed in
-
-    # 2. Write the character to the buffer at (write_x, write_y)
-    # --- CHANGE: Use the state *before* potential calculation side effects (if any) ---
-    buffer = get_active_buffer(emulator_state_before_write)
-    style = emulator_state_before_write.style # Use current style
-    updated_buffer = Operations.write_char(buffer, write_x, write_y, char, style)
-    updated_emulator = put_active_buffer(emulator_state_before_write, updated_buffer)
-
-    # 4. Move cursor to the calculated NEXT position and update flag
-    # --- CHANGE: Use values directly from calculate_write_position/2 return ---
-    updated_cursor = Manager.move_to(updated_emulator.cursor, next_cursor_x, next_cursor_y)
-    emulator_after_cursor_move = %{updated_emulator | cursor: updated_cursor, last_col_exceeded: next_last_col_exceeded}
-
-    # 5. Handle potential scrolling based on next_cursor_y
-    # --- CHANGE: Use next_cursor_y from the calculation ---
-    final_emulator = maybe_scroll(emulator_after_cursor_move, next_cursor_y)
-
-    final_emulator
-  end
-
-  # --- Command Handling Delegates (Called by Parser) ---
-
-  # --- C0 Control Code Handlers (Delegated from process_character via ControlCodes) ---
-
-  # (handle_lf moved to ControlCodes)
-  # (handle_cr moved to ControlCodes)
-  # (handle_bs moved to ControlCodes)
-  # (handle_ht moved to ControlCodes)
-  # (handle_so moved to ControlCodes)
-  # (handle_si moved to ControlCodes)
-
-  # --- Other ESC Sequence Handlers (Moved to ControlCodes) ---
-
-  # (handle_ind moved to ControlCodes)
-  # (handle_nel moved to ControlCodes)
-  # (handle_hts moved to ControlCodes)
-  # (handle_ri moved to ControlCodes)
-  # (handle_decsc moved to ControlCodes)
-  # (handle_decrc moved to ControlCodes)
-
-  # --- Parameterized Command Handlers (Called by Parser/CommandExecutor) ---
-  # These modify the Emulator state based on parsed CSI, OSC, etc. commands.
+  # --- CSI Sequence Handling ---
+  # TODO: Move CSI handling logic to InputHandler
 
   @doc """
   Resizes the emulator's screen buffers.
@@ -385,62 +358,70 @@ defmodule Raxol.Terminal.Emulator do
   # --- Private Helpers ---
 
   @doc false
-  # Calculates the position to write the next character and the resulting
-  # cursor position, handling DECAWM (autowrap).
-  # Returns {write_y, write_x, next_cursor_y, next_cursor_x, next_last_col_exceeded}
-  defp calculate_write_position(emulator, width) do # width here is char_width
+  # Helper to calculate the position where the next character should be written
+  # and the subsequent cursor position, considering autowrap mode.
+  # Returns: {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
+  defp calculate_write_position(%__MODULE__{} = emulator, width) do
     {cursor_x, cursor_y} = emulator.cursor.position
-    autowrap_enabled = emulator.mode_state[:auto_wrap]
+    autowrap_enabled = emulator.mode_manager.auto_wrap
     last_col_exceeded = emulator.last_col_exceeded
-    # Get buffer dimensions needed for bounds checks
     buffer = get_active_buffer(emulator)
-    %{width: buffer_width, height: buffer_height} = buffer # Add this
+    %{width: buffer_width, height: buffer_height} = buffer
 
-    cond do
-      # Case 1: Previous character caused wrap flag to be set.
-      last_col_exceeded ->
-        # --- FIX START ---
-        # Conceptually move to start of next line FIRST
-        target_y = cursor_y + 1
+    Logger.debug(
+      "[calc_write] Input: cursor={#{cursor_x}, #{cursor_y}}, width=#{width}, buffer_w=#{buffer_width}, wrap=#{autowrap_enabled}, last_exceeded=#{last_col_exceeded}"
+    )
 
-        write_x = 0
-        write_y = target_y # Target Y for write
+    result =
+      cond do
+        # Case 1: Previous character caused wrap flag to be set.
+        last_col_exceeded ->
+          Logger.debug("[calc_write] Case 1: Last col exceeded")
+          target_y = cursor_y + 1
+          write_x = 0
+          write_y = target_y
+          next_cursor_x = min(width, buffer_width) # Start at col 0, add char width
+          next_cursor_y = target_y
+          next_last_col_exceeded = autowrap_enabled and (next_cursor_x >= buffer_width)
+          {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
 
-        # Calculate cursor position AFTER writing char at {0, target_y}
-        next_cursor_x = min(width, buffer_width) # Starts at col 0, add char_width (`width`)
-        next_cursor_y = target_y
+        # Case 2: Current write would exceed right margin
+        cursor_x + width > buffer_width - 1 -> # Note: Using > width-1 means hitting the last column counts
+          Logger.debug("[calc_write] Case 2: Exceeds right margin (cursor_x=#{cursor_x}, width=#{width}, buffer_w=#{buffer_width})")
+          if autowrap_enabled do
+            Logger.debug("[calc_write] Case 2a: Autowrap enabled")
+            # Write at current pos (may be clipped by write_char), SET flag
+            # Cursor ADVANCES conceptually for next char wrap
+            write_x = cursor_x
+            write_y = cursor_y
+            next_cursor_x = cursor_x # Cursor stays visually, flag indicates wrap needed
+            next_cursor_y = cursor_y
+            next_last_col_exceeded = true # Set flag for next character
+            {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
+          else
+            Logger.debug("[calc_write] Case 2b: Autowrap disabled")
+            # Autowrap disabled: Write at current pos (may clip), cursor stays at last valid pos.
+            write_x = cursor_x
+            write_y = cursor_y
+            next_cursor_x = buffer_width - 1 # Clamp cursor to last column
+            next_cursor_y = cursor_y
+            next_last_col_exceeded = false
+            {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
+          end
 
-        # Does this new char itself reach/exceed end?
-        next_last_col_exceeded = autowrap_enabled and (next_cursor_x >= buffer_width)
+        # Case 3: Normal character write within the line.
+        true ->
+          Logger.debug("[calc_write] Case 3: Normal write")
+          write_x = cursor_x
+          write_y = cursor_y
+          next_cursor_x = min(cursor_x + width, buffer_width)
+          next_cursor_y = cursor_y
+          next_last_col_exceeded = autowrap_enabled and (cursor_x + width >= buffer_width)
+          {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
+      end
 
-        # Return calculated positions. The last_col_exceeded flag was consumed.
-        {write_y, write_x, next_cursor_y, next_cursor_x, next_last_col_exceeded}
-        # --- FIX END ---
-
-      # Case 2: Cursor is at the last column.
-      cursor_x == buffer_width - 1 -> # Use buffer_width
-        if autowrap_enabled do
-          # Write at current {cursor_y, cursor_x}.
-          # Cursor stays conceptually at end of line, wrap happens on next char.
-          # Flag is set.
-          {cursor_y, cursor_x, cursor_y, cursor_x, true}
-        else
-          # Autowrap disabled: Write at current pos, cursor stays.
-          {cursor_y, cursor_x, cursor_y, cursor_x, false}
-        end
-
-      # Case 3: Normal character write within the line.
-      true ->
-        write_y = cursor_y
-        write_x = cursor_x # Write happens at current cursor pos
-
-        # Calculate next cursor position
-        next_cursor_x = min(cursor_x + width, buffer_width) # Clamp X
-        next_cursor_y = cursor_y
-        # Set flag if write *reaches or exceeds* the end boundary
-        next_last_col_exceeded = autowrap_enabled and (cursor_x + width >= buffer_width)
-        {write_y, write_x, next_cursor_y, next_cursor_x, next_last_col_exceeded}
-    end
+    Logger.debug("[calc_write] Output: write={#{elem(result, 0)}, #{elem(result, 1)}}, next_cursor={#{elem(result, 2)}, #{elem(result, 3)}}, next_last_exceeded=#{elem(result, 4)}")
+    result
   end
 
   # Calculates default tab stops (every 8 columns, 0-based)
@@ -457,30 +438,52 @@ defmodule Raxol.Terminal.Emulator do
   @doc """
   Checks if the cursor is below the scroll region and scrolls up if necessary.
   Called after operations like LF, IND, NEL that might move the cursor off-screen.
+  Version called with no specific target Y - checks current cursor position.
   """
+  @spec maybe_scroll(t()) :: t()
   def maybe_scroll(%__MODULE__{} = emulator) do
-    {cursor_row, cursor_col} = get_cursor_position(emulator)
-    scroll_region = emulator.scroll_region
+    {cursor_col, cursor_row} = get_cursor_position(emulator)
     active_buffer = get_active_buffer(emulator)
+    buffer_height = ScreenBuffer.get_height(active_buffer)
 
-    {_top, bottom} =
-      scroll_region || {0, ScreenBuffer.get_height(active_buffer) - 1}
+    {top_margin, bottom_margin} =
+      case emulator.scroll_region do
+        {top, bottom} when is_integer(top) and top >= 0 and is_integer(bottom) and bottom > top ->
+          {top, min(bottom, buffer_height - 1)}
+        _ -> {0, buffer_height - 1} # Default: full buffer
+      end
 
-    if cursor_row > bottom do # Check if cursor is *below* the region
-      # FIX: Don't clamp cursor. Return state after scroll.
-      scrolled_emulator = Raxol.Terminal.Commands.Screen.scroll_up(emulator, 1)
-      scrolled_emulator
+    Logger.debug(
+      "[maybe_scroll] Check: cursor={#{cursor_col}, #{cursor_row}}, region={#{top_margin}, #{bottom_margin}}, scroll?=#{cursor_row > bottom_margin}"
+    )
+
+    if cursor_row > bottom_margin do
+      Logger.debug("[maybe_scroll] SCROLLING TRIGGERED!")
+
+      scroll_region_tuple = {top_margin, bottom_margin}
+
+      # Calls ScreenBuffer.scroll_up (which calls Scroller.scroll_up)
+      {buffer_after_scroll_cells, scrolled_lines} =
+        ScreenBuffer.scroll_up(active_buffer, 1, scroll_region_tuple) # Scrolls up by 1 line
+
+      # Adds scrolled line(s) to scrollback
+      new_scrollback = scrolled_lines ++ active_buffer.scrollback
+      limited_scrollback = Enum.take(new_scrollback, active_buffer.scrollback_limit)
+      buffer_with_scrollback = %{buffer_after_scroll_cells | scrollback: limited_scrollback}
+
+      # Update emulator state (use original cursor, let caller handle movement)
+      emulator_with_scrolled_buffer = update_active_buffer(emulator, buffer_with_scrollback)
+      emulator_with_scrolled_buffer # Return state with scrolled buffer but original cursor
     else
-      emulator # Cursor within region or above, no scroll needed
+      Logger.debug("[maybe_scroll] No scroll needed.")
+      emulator # No scroll needed
     end
   end
-
-  # --- Removed old calculation logic ---
 
   # TODO: Add more complex handlers as needed
 
   # Fallback: Ignore unknown characters
-  def process_control_character(emulator, _char_codepoint), do: emulator
+  # def process_control_character(emulator, _char_codepoint), do: emulator # Seems unused/obsolete
 
   # --- Helper Functions ---
 
@@ -508,33 +511,8 @@ defmodule Raxol.Terminal.Emulator do
 
   # --- Core Processing Logic ---
 
-  @doc """
-  Handles the maybe_scroll logic after character processing or cursor movement.
-  Checks if the cursor's Y position is outside the scroll region (or buffer height) and scrolls if necessary.
-  Returns the potentially updated emulator state.
-  """
-  def maybe_scroll(%__MODULE__{} = emulator, next_cursor_y) do
-    buffer = get_active_buffer(emulator)
-    buffer_height = ScreenBuffer.get_height(buffer)
-    {scroll_top, scroll_bottom_exclusive} = get_effective_scroll_region(emulator, buffer)
-
-    cond do
-      next_cursor_y < scroll_top ->
-        emulator # Cursor target is above the scroll region
-
-      next_cursor_y >= buffer_height ->
-        scroll_amount = next_cursor_y - buffer_height + 1
-        # Use effective scroll region bottom for scroll operation boundary
-        scroll_bottom_inclusive = scroll_bottom_exclusive - 1
-        scrolled_buffer =
-          Buffer.Operations.scroll_up(buffer, scroll_amount, scroll_top, scroll_bottom_inclusive)
-        # --- FIX: Don't modify cursor. Return emulator with scrolled buffer. ---
-        put_active_buffer(emulator, scrolled_buffer)
-
-      true -> # Cursor target is within the buffer bounds (and scroll region)
-        emulator
-    end
-  end
+  # Removed maybe_scroll/2 as it seemed unused and potentially confusing
+  # If needed later, re-evaluate its purpose and implementation clearly.
 
   # --- Command Handling Delegates (Called by Parser) ---
 

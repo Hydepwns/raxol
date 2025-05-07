@@ -1,36 +1,55 @@
 defmodule RaxolWeb.TerminalLiveTest do
-  use RaxolWeb.ConnCase
+  use RaxolWeb.ConnCase, async: true # Keep async: true if tests don't need DB
   import Phoenix.LiveViewTest
   alias RaxolWeb.TerminalLive
+  import RaxolWeb.ConnCase # Ensure ConnCase helpers are imported
 
-  setup :start_endpoint
-  # Bypass authentication for tests
-  setup :bypass_auth
+  # Add setup block for authentication
+  setup %{conn: conn} do
+    user = %{id: 1, role: :user} # Dummy user
+    conn = log_in_user(conn, user) # Use the helper from ConnCase
+    {:ok, conn: conn, user: user}
+  end
+
+  # Comment out or remove the old bypass_auth helper
+  # defp bypass_auth(%{conn: conn}) do
+  #   conn =
+  #     Plug.Test.init_test_session(conn, %{})
+  #     |> fetch_flash()
+  #     |> bypass_through(RaxolWeb.Router, :auth)
+  #
+  #   {:ok, conn: conn}
+  # end
+
+  # Remove old setup helpers if they exist
+  # setup :start_endpoint # Keep this if endpoint needs starting
+  # setup :bypass_auth # Remove this if it exists
 
   # Helper to bypass auth pipeline
-  defp bypass_auth(%{conn: conn}) do
-    conn =
-      Plug.Test.init_test_session(conn, %{})
-      |> fetch_flash()
-      |> bypass_through(RaxolWeb.Router, :auth)
-
-    {:ok, conn: conn}
-  end
+  # defp bypass_auth(context) do
+  #   conn = Plug.Test.init_test_session(context.conn, %{})
+  #   user = %{id: 1} # Example user
+  #   conn = Plug.Conn.assign(conn, :current_user, user)
+  #   %{context | conn: conn}
+  # end
 
   describe "mount/3" do
     test "mounts successfully when disconnected", %{conn: conn} do
+      # Use the authenticated conn from setup
       {:ok, view, _html} = live(conn, "/terminal/test-session")
       assert view.module == TerminalLive
       assert view.assigns.connected == false
     end
 
     test "mounts successfully when connected", %{conn: conn} do
+      # Use the authenticated conn from setup
       {:ok, view, _html} = live(conn, "/terminal/test-session")
       assert view.module == TerminalLive
       assert view.assigns.session_id
       assert view.assigns.dimensions == %{width: 80, height: 24}
       assert view.assigns.scroll_offset == 0
       assert view.assigns.theme
+      # Connect test happens implicitly or via separate setup if needed
     end
   end
 
@@ -97,7 +116,7 @@ defmodule RaxolWeb.TerminalLiveTest do
 
   describe "render/1" do
     test "renders terminal container", %{conn: conn} do
-      {:ok, view, html} = live(conn, "/terminal/test-session")
+      {:ok, _view, html} = live(conn, "/terminal/test-session")
 
       assert html =~ ~r/<div class="terminal-container"/
       assert html =~ ~r/<div class="terminal-header"/
@@ -106,7 +125,7 @@ defmodule RaxolWeb.TerminalLiveTest do
     end
 
     test "renders terminal controls", %{conn: conn} do
-      {:ok, view, html} = live(conn, "/terminal/test-session")
+      {:ok, _view, html} = live(conn, "/terminal/test-session")
 
       assert html =~ ~r/<button.*Reset Size/
       assert html =~ ~r/<button.*Dark Theme/

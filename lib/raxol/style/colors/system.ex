@@ -39,6 +39,7 @@ defmodule Raxol.Style.Colors.System do
   alias Raxol.Style.Colors.Utilities
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Style.Colors.HSL
+  alias Raxol.Style.Colors.Color
 
   defstruct [
     # ... existing code ...
@@ -256,157 +257,143 @@ defmodule Raxol.Style.Colors.System do
   end
 
   defp get_standard_color(theme_name, color_name, variant) do
-    themes = Process.get(:color_system_themes, %{})
+    case Process.get(:color_system_themes, %{}) do
+      %{^theme_name => theme} ->
+        # Try variant first, then base color
+        Map.get(theme.variants, {color_name, variant}) ||
+          Map.get(theme.colors, color_name) ||
+          # Fallback to a default color if not found
+          default_color(color_name)
 
-    case Map.get(themes, theme_name) do
-      # Default to black if theme not found
-      nil ->
-        "#000000"
-
-      theme ->
-        base_color = get_in(theme, [:colors, color_name])
-
-        if variant == :base do
-          base_color
-        else
-          # Get variant-specific color if available
-          variant_color = get_in(theme, [:variants, color_name, variant])
-
-          if variant_color do
-            variant_color
-          else
-            # Generate variant color algorithmically
-            generate_variant_color(base_color, variant)
-          end
-        end
+      _ ->
+        # Theme not found, fallback
+        default_color(color_name)
     end
   end
 
   defp get_high_contrast_color(theme_name, color_name, variant) do
-    themes = Process.get(:color_system_themes, %{})
+    case Process.get(:color_system_themes, %{}) do
+      %{^theme_name => theme} ->
+        # Try high contrast variant first, then high contrast base color
+        Map.get(theme.variants, {color_name, variant, :high_contrast}) ||
+          Map.get(theme.high_contrast_colors, color_name) ||
+          # Fallback to standard color if high contrast not defined
+          get_standard_color(theme_name, color_name, variant) ||
+          # Further fallback
+          default_color(color_name)
 
-    case Map.get(themes, theme_name) do
-      # Default to white if theme not found
-      nil ->
-        "#FFFFFF"
-
-      theme ->
-        base_color = get_in(theme, [:high_contrast_colors, color_name])
-
-        if variant == :base do
-          base_color
-        else
-          # Get variant-specific high contrast color if available
-          variant_color =
-            get_in(theme, [
-              :variants,
-              String.to_atom("high_contrast_#{color_name}"),
-              variant
-            ])
-
-          if variant_color do
-            variant_color
-          else
-            # Generate high contrast variant algorithmically
-            generate_high_contrast_variant(base_color, variant)
-          end
-        end
-    end
-  end
-
-  defp generate_variant_color(base_color, variant) do
-    # Default algorithm for generating variants if not explicitly defined
-    case variant do
-      # :hover -> Utilities.lighten(base_color, 0.1)
-      :hover -> HSL.lighten(base_color, 0.1)
-      # :active -> Utilities.darken(base_color, 0.1)
-      :active -> HSL.darken(base_color, 0.1)
-      # :focus -> Utilities.saturate(base_color, 0.1)
-      :focus -> HSL.saturate(base_color, 0.1)
-      # :disabled -> Utilities.desaturate(base_color, 0.3)
-      :disabled -> HSL.desaturate(base_color, 0.3)
-      _ -> base_color # Default to base color if variant is unknown
-    end
-  end
-
-  defp generate_high_contrast_variant(base_color, variant) do
-    # High contrast variants often need more drastic changes
-    case variant do
-      # :hover -> Utilities.lighten(base_color, 0.2)
-      :hover -> HSL.lighten(base_color, 0.2)
-      # :active -> Utilities.darken(base_color, 0.2)
-      :active -> HSL.darken(base_color, 0.2)
-      # :focus -> Utilities.saturate(base_color, 0.2)
-      :focus -> HSL.saturate(base_color, 0.2)
-      # :disabled -> Utilities.desaturate(base_color, 0.5)
-      :disabled -> HSL.desaturate(base_color, 0.5)
-      _ -> base_color
+      _ ->
+        # Theme not found, fallback
+        default_color(color_name)
     end
   end
 
   defp generate_high_contrast_colors(colors) do
-    # Generate high contrast alternatives for each color
-    Enum.reduce(colors, %{}, fn {name, color}, acc ->
-      high_contrast_color = make_high_contrast(color)
-      Map.put(acc, name, high_contrast_color)
+    # Assume background is either explicitly defined or defaults to black/white
+    bg_color_hex = Map.get(colors, :background, "#000000")
+
+    # Correctly handle the return from Color.from_hex for background
+    bg_color_struct =
+      case Color.from_hex(bg_color_hex) do
+        %Color{} = color -> color
+        {:error, _} -> Color.from_hex("#000000") # Fallback to black on error
+      end
+
+    bg_lightness = HSL.rgb_to_hsl(bg_color_struct.r, bg_color_struct.g, bg_color_struct.b) |> elem(2)
+
+    # Adjust colors for high contrast based on background lightness
+    Enum.into(colors, %{}, fn {name, color_hex} ->
+      # Correctly handle the return from Color.from_hex in the loop
+      case Color.from_hex(color_hex) do
+        %Color{} = color_struct -> # Match the struct directly
+          # Correctly assign the result from HSL functions
+          contrast_color_struct =
+            if bg_lightness > 0.5 do
+              # Dark background: Darken colors (assuming light text)
+              HSL.darken(color_struct, 0.5)
+            else
+              # Light background: Lighten colors (assuming dark text)
+              HSL.lighten(color_struct, 0.5)
+            end
+
+          {name, Color.to_hex(contrast_color_struct)} # Convert back to hex for storage
+
+        {:error, _} ->
+          # Keep original if invalid
+          {name, color_hex}
+      end
     end)
   end
 
-  defp make_high_contrast(color) do
-    # Placeholder logic for making a color high contrast
-    # This should involve checking luminance and adjusting
-    if Utilities.dark_color?(color) do
-      # Make it much lighter
-      # Utilities.lighten(color, 0.5)
-      HSL.lighten(color, 0.5)
-    else
-      # Make it much darker
-      # Utilities.darken(color, 0.5)
-      HSL.darken(color, 0.5)
+  defp default_color(color_name) do
+    # Define some basic fallback colors
+    case color_name do
+      :foreground -> "#FFFFFF"
+      :background -> "#000000"
+      :primary -> "#0077CC"
+      :secondary -> "#6C757D"
+      :success -> "#28A745"
+      :danger -> "#DC3545"
+      :warning -> "#FFC107"
+      :info -> "#17A2B8"
+      _ -> "#CCCCCC" # Generic fallback
     end
   end
 
   defp register_standard_themes do
-    # Register standard theme
-    register_theme(:standard, %{
-      primary: "#4B9CD3",
-      secondary: "#5FBCD3",
-      success: "#28A745",
-      warning: "#FFC107",
-      error: "#DC3545",
-      info: "#17A2B8",
-      background: "#FFFFFF",
-      foreground: "#212529",
-      border: "#DEE2E6",
-      accent: "#FF5722"
-    })
+    # Define standard theme
+    register_theme(
+      :standard,
+      %{
+        foreground: "#333333",
+        background: "#FFFFFF",
+        primary: "#007bff",
+        secondary: "#6c757d",
+        success: "#28a745",
+        danger: "#dc3545",
+        warning: "#ffc107",
+        info: "#17a2b8",
+        light: "#f8f9fa",
+        dark: "#343a40",
+        accent: "#ff6b6b" # Example accent
+      }
+      # Define variants if needed
+    )
 
-    # Register dark theme
-    register_theme(:dark, %{
-      primary: "#4B9CD3",
-      secondary: "#5FBCD3",
-      success: "#28A745",
-      warning: "#FFC107",
-      error: "#DC3545",
-      info: "#17A2B8",
-      background: "#121212",
-      foreground: "#E1E1E1",
-      border: "#333333",
-      accent: "#FF5722"
-    })
+    # Define dark theme
+    register_theme(
+      :dark,
+      %{
+        foreground: "#e9ecef",
+        background: "#212529",
+        primary: "#0d6efd", # Slightly brighter blue for dark mode
+        secondary: "#6c757d",
+        success: "#198754",
+        danger: "#dc3545",
+        warning: "#ffc107",
+        info: "#0dcaf0",
+        light: "#f8f9fa", # Often kept light for contrast elements
+        dark: "#343a40", # Base dark color
+        accent: "#f7a072" # Example accent
+      }
+    )
 
-    # Register high contrast theme
-    register_theme(:high_contrast, %{
-      primary: "#FFFFFF",
-      secondary: "#FFFF00",
-      success: "#00FF00",
-      warning: "#FFFF00",
-      error: "#FF0000",
-      info: "#00FFFF",
-      background: "#000000",
-      foreground: "#FFFFFF",
-      border: "#FFFFFF",
-      accent: "#FF00FF"
-    })
+    # Define high contrast theme (often black and white with bright accents)
+    register_theme(
+      :high_contrast,
+      %{
+        foreground: "#FFFFFF",
+        background: "#000000",
+        primary: "#FFFF00", # Bright yellow
+        secondary: "#00FFFF", # Bright cyan
+        success: "#00FF00", # Bright green
+        danger: "#FF0000", # Bright red
+        warning: "#FF00FF", # Bright magenta
+        info: "#00FFFF", # Bright cyan (reused)
+        light: "#FFFFFF", # Pure white
+        dark: "#000000", # Pure black
+        accent: "#FF00FF" # Example accent
+      }
+    )
   end
 end

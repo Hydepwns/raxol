@@ -284,6 +284,7 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
 
       # index 2 -> 2 (stay at oldest)
       {handler, content} = handler |> InputHandler.previous_history_entry() # Capture handler
+      # When at the oldest, it should return the current buffer content, which is still "test1"
       assert content == "test1" # Buffer content remains
       assert handler.history_index == 2
     end
