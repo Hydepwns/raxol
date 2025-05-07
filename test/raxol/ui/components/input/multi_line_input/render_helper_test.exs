@@ -1,4 +1,4 @@
-defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
+defmodule Raxol.Components.Input.MultiLineInput.RenderHelperTest do
   use ExUnit.Case, async: true
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.RenderHelper
@@ -46,19 +46,62 @@ end
 
 # Helper function to create default state
 defp create_state(opts \\ []) do
-  default_opts = %{id: "test_input"}
-  all_opts = Map.merge(default_opts, Keyword.to_map(opts))
-  {:ok, state} = Raxol.Components.Input.MultiLineInput.init(all_opts)
-  state
+  # Start with a default state
+  state = %Raxol.Components.Input.MultiLineInput{
+    value: "",
+    placeholder: "",
+    width: 40,
+    height: 10,
+    style: %{
+      text_color: :white,
+      placeholder_color: :gray,
+      selection_color: :blue,
+      cursor_color: :white,
+      line_numbers: false,
+      line_number_color: :gray
+    },
+    wrap: :word,
+    cursor_pos: {0, 0},
+    scroll_offset: {0, 0},
+    selection_start: nil,
+    selection_end: nil,
+    history: %Raxol.Terminal.Commands.History{commands: [], current_index: -1, max_size: 100, current_input: ""},
+    shift_held: false,
+    focused: false,
+    on_change: nil,
+    id: "test_input",
+    lines: [""]
+  }
+
+  # Apply each option from the provided opts list
+  Enum.reduce(opts, state, fn {key, value}, acc ->
+    Map.put(acc, key, value)
+  end)
 end
 
 # Helper function to create default theme
 defp default_theme do
-  # ... existing theme setup ...
+  %{
+    components: %{
+      multi_line_input: %{
+        text_color: :white,
+        selection_color: :blue,
+        cursor_color: :white
+      }
+    }
+  }
 end
 
 # Helper function to create theme with component style
 defp theme_with_component_style do
-  # ... existing theme setup ...
+  %{
+    components: %{
+      multi_line_input: %{
+        text_color: :green,
+        selection_color: :blue,
+        cursor_color: :red
+      }
+    }
+  }
 end
 end

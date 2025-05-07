@@ -36,9 +36,10 @@ defmodule Raxol.Core.UserPreferences do
   ## Examples
       UserPreferences.get(:theme) #=> "dark"
       UserPreferences.get([:accessibility, :high_contrast]) #=> true
+      UserPreferences.get(:theme, my_prefs_pid) #=> "dark"
   """
-  def get(key_or_path) do
-    GenServer.call(__MODULE__, {:get, key_or_path})
+  def get(key_or_path, pid_or_name \\ __MODULE__) do
+    GenServer.call(pid_or_name, {:get, key_or_path})
   end
 
   @doc """
@@ -48,13 +49,13 @@ defmodule Raxol.Core.UserPreferences do
   Triggers an automatic save after a short delay.
 
   ## Examples
-      UserPreferences.set(:theme, "light")
+      UserPreferences.set(:theme, \"light\")
       UserPreferences.set([:accessibility, :high_contrast], false)
+      UserPreferences.set(:theme, \"light\", my_prefs_pid)
   """
-  @spec set(atom | list(atom), any()) :: :ok
-  def set(key_or_path, value) do
-    GenServer.cast(__MODULE__, {:set, key_or_path, value})
-    :ok # Cast is async, reply immediately
+  @spec set(atom | list(atom), any(), GenServer.server() | atom() | nil) :: :ok
+  def set(key_or_path, value, pid_or_name \\ __MODULE__) do
+    GenServer.call(pid_or_name, {:set, key_or_path, value})
   end
 
   @doc """
@@ -66,9 +67,13 @@ defmodule Raxol.Core.UserPreferences do
 
   @doc """
   Retrieves the entire preferences map.
+  Accepts an optional PID or registered name
+  ## Examples
+      UserPreferences.get_all()
+      UserPreferences.get_all(my_prefs_pid)
   """
-  def get_all do
-    GenServer.call(__MODULE__, :get_all)
+  def get_all(pid_or_name \\ __MODULE__) do
+    GenServer.call(pid_or_name, :get_all)
   end
 
   # --- Server Callbacks ---
@@ -93,7 +98,8 @@ defmodule Raxol.Core.UserPreferences do
 
   @impl true
   def handle_call({:get, key_or_path}, _from, state) do
-    value = get_in(state.preferences, List.wrap(key_or_path))
+    path = normalize_path(key_or_path)
+    value = get_in(state.preferences, path)
     {:reply, value, state}
   end
 
@@ -118,20 +124,20 @@ defmodule Raxol.Core.UserPreferences do
     end
   end
 
-  # Handle setting a value (using cast for async operation)
+  # Handle setting a value (now using call)
   @impl true
-  def handle_cast({:set, key_or_path, value}, state) do
-    keys = List.wrap(key_or_path)
-    current_value = get_in(state.preferences, keys)
+  def handle_call({:set, key_or_path, value}, _from, state) do
+    path = normalize_path(key_or_path)
+    current_value = get_in(state.preferences, path)
 
     if current_value != value do
-      new_preferences = put_in(state.preferences, keys, value)
-      Logger.debug("Preference updated: #{inspect keys} = #{inspect value}")
+      new_preferences = put_in(state.preferences, path, value)
+      Logger.debug("Preference updated: #{inspect path} = #{inspect value}")
       new_state = %{state | preferences: new_preferences}
       # Schedule a save after a delay
-      {:noreply, schedule_save(new_state)}
+      {:reply, :ok, schedule_save(new_state)}
     else
-      {:noreply, state} # Value didn't change, do nothing
+      {:reply, :ok, state} # Value didn't change, do nothing, but still reply :ok
     end
   end
 
@@ -188,6 +194,18 @@ defmodule Raxol.Core.UserPreferences do
   # Cancels a Process.send_after timer if it exists
   defp cancel_save_timer(timer_ref) do
     if timer_ref, do: Process.cancel_timer(timer_ref)
+  end
+
+  # Helper to normalize key paths to a list of atoms
+  defp normalize_path(path) when is_atom(path), do: [path]
+  defp normalize_path(path) when is_list(path), do: path # Assume list is already correct
+  defp normalize_path(path) when is_binary(path) do
+    String.split(path, ".")
+    |> Enum.map(&String.to_existing_atom/1) # Use existing_atom for safety
+  catch
+    ArgumentError ->
+      Logger.error("Invalid preference path string: #{inspect path} - cannot convert segments to atoms.")
+      [] # Return empty path on error to avoid crash, get_in/put_in will likely fail gracefully
   end
 
 end

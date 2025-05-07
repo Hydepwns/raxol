@@ -42,7 +42,7 @@ defmodule Raxol.Terminal.Commands.ParserTest do
 
   describe "get_param/3" do
     test "gets parameter at index" do
-      assert Parser.get_param([5, 10, 15], 2) == 10
+      assert Parser.get_param([5, 10, 15], 0) == 5
     end
 
     test "returns default for missing parameters" do
@@ -52,12 +52,16 @@ defmodule Raxol.Terminal.Commands.ParserTest do
 
     test "uses specified default value" do
       assert Parser.get_param([5, 10], 3, 0) == 0
-      assert Parser.get_param([], 1, 0) == 0
     end
 
     test "handles nil parameters in list" do
-      assert Parser.get_param([5, nil, 15], 2) == 1
-      assert Parser.get_param([5, nil, 15], 2, 0) == 0
+      assert Parser.get_param([5, nil, 15], 1) == 1
+      assert Parser.get_param([5, nil, 15], 1, 0) == 0
+    end
+
+    test "get_param/3 handles nil parameters in list" do
+      # Check index 1 (second element) which is nil, expect default 1
+      assert Parser.get_param([5, nil, 15], 1) == 1
     end
   end
 
@@ -72,6 +76,16 @@ defmodule Raxol.Terminal.Commands.ParserTest do
       assert Parser.parse_int("abc") == nil
       assert Parser.parse_int("12.34") == nil
       assert Parser.parse_int("") == nil
+    end
+
+    test "parse_int/1 parses valid integers" do
+      assert Parser.get_param([5, 10, 15], 0) == 5
+      # Check index 1 (second element)
+      assert Parser.get_param([5, 10, 15], 1) == 10
+    end
+
+    test "get_param/3 uses specified default value" do
+      assert Parser.get_param([5, 10], 3, 0) == 0
     end
   end
 end

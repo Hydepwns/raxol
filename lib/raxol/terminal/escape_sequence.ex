@@ -81,7 +81,7 @@ defmodule Raxol.Terminal.EscapeSequence do
   # TODO: Add other ESC sequences (RIS, OSC, etc.)
   defp parse_after_esc(<<_c, _rest::binary>> = unknown) do
     # Consider single char ESC sequences like ESC D, E, M, 7, 8 etc.
-    Logger.debug("Unknown sequence after ESC: \\e#{unknown}")
+    Logger.debug("Unknown sequence after ESC: \e#{unknown}")
     {:error, :unknown_sequence, unknown}
   end
 

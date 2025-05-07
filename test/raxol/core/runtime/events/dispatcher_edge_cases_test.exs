@@ -1,0 +1,395 @@
+defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
+  use ExUnit.Case, async: false
+  require Logger
+
+  alias Raxol.Core.Events.Event
+  alias Raxol.Core.Runtime.Command
+  alias Raxol.Core.Runtime.Events.Dispatcher
+  alias Raxol.Core.Runtime.Plugins.Manager
+  alias Phoenix.PubSub
+
+  # Mock Application module that implements Application behavior
+  defmodule MockApp do
+    @behaviour Raxol.Core.Runtime.Application
+
+    def init(_app_module, _context) do
+      {:ok, %{count: 0, last_event: nil}, []}
+    end
+
+    def update(msg, state) do
+      case msg do
+        {:key_press, :crash, _} ->
+          raise "Simulated crash in application update"
+
+        {:key_press, :error, _} ->
+          {:error, :simulated_error}
+
+        {:key_press, :timeout, _} ->
+          # Simulate long computation
+          Process.sleep(200)
+          {%{state | count: state.count + 1, last_event: msg}, []}
+
+        _ ->
+          {%{state | count: state.count + 1, last_event: msg}, []}
+      end
+    end
+
+    def view(model) do
+      # Simple view
+      [%{type: :text, content: "Count: #{model.count}", x: 0, y: 0}]
+    end
+  end
+
+  # Mock Plugin Manager module
+  defmodule MockPluginManager do
+    use GenServer
+
+    def start_link(_) do
+      GenServer.start_link(__MODULE__, %{}, [])
+    end
+
+    def init(_) do
+      {:ok, %{filter_mode: :passthrough, events: []}}
+    end
+
+    def handle_call({:filter_event, event}, _from, state) do
+      state = %{state | events: [event | state.events]}
+
+      case state.filter_mode do
+        :passthrough -> {:reply, {:ok, event}, state}
+        :modify -> {:reply, {:ok, %{event | data: Map.put(event.data, :modified, true)}}, state}
+        :block -> {:reply, :halt, state}
+        :crash -> raise "Simulated plugin manager crash"
+      end
+    end
+
+    def handle_call(:get_events, _from, state) do
+      {:reply, state.events, state}
+    end
+
+    def handle_cast({:set_filter_mode, mode}, state) do
+      {:noreply, %{state | filter_mode: mode}}
+    end
+  end
+
+  setup do
+    # Setup mocks
+    :meck.new(UserPreferences, [:non_strict, :passthrough])
+    :meck.expect(UserPreferences, :get, fn "theme.active_id" -> :default end)
+    :meck.expect(UserPreferences, :get, fn [:theme, :active_id] -> :default end)
+
+    :meck.new(Theme, [:non_strict])
+    :meck.expect(Theme, :get_theme, fn _ -> {:ok, %{}} end)
+
+    # Registry for events
+    Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions)
+
+    # ETS for command registry
+    :ets.new(:raxol_command_registry, [:set, :public, :named_table, read_concurrency: true])
+
+    # Start Mock Plugin Manager
+    {:ok, mock_pm_pid} = MockPluginManager.start_link([])
+
+    # Setup Phoenix PubSub for tests
+    :meck.new(PubSub, [:passthrough])
+    :meck.expect(PubSub, :broadcast, fn _, _, _ -> :ok end)
+
+    # Define initial state for Dispatcher
+    initial_state = %{
+      app_module: MockApp,
+      model: %{count: 0, last_event: nil},
+      runtime_pid: self(),
+      width: 80,
+      height: 24,
+      focused: true,
+      debug_mode: false,
+      plugin_manager: mock_pm_pid,
+      command_registry_table: :raxol_command_registry,
+      pubsub_server: Raxol.PubSub,
+      rendering_engine: Raxol.Core.Runtime.Rendering.Engine,
+      initial_commands: []
+    }
+
+    # Start Dispatcher for this test
+    {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state)
+
+    on_exit(fn ->
+      :meck.validate(UserPreferences)
+      :meck.unload(UserPreferences)
+      :meck.validate(Theme)
+      :meck.unload(Theme)
+      :meck.validate(PubSub)
+      :meck.unload(PubSub)
+      if Process.alive?(dispatcher), do: GenServer.stop(dispatcher)
+      if Process.alive?(mock_pm_pid), do: GenServer.stop(mock_pm_pid)
+    end)
+
+    # Return test context
+    %{
+      dispatcher: dispatcher,
+      plugin_manager: mock_pm_pid
+    }
+  end
+
+  describe "plugin filtering" do
+    test "passes events through when plugins don't block", %{dispatcher: dispatcher, plugin_manager: pm} do
+      # Create a basic event
+      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
+
+      # Dispatch the event
+      GenServer.cast(dispatcher, {:dispatch, event})
+      Process.sleep(50) # Allow event to process
+
+      # Verify the event passed through
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.model.count == 1
+      assert current_state.model.last_event == {:key_press, :enter, []}
+
+      # Check that plugin manager was called with event
+      events = GenServer.call(pm, :get_events)
+      assert Enum.any?(events, fn e -> e.data.key == :enter end)
+    end
+
+    test "modifies events when plugin transforms them", %{dispatcher: dispatcher, plugin_manager: pm} do
+      # Set plugin manager to modify events
+      GenServer.cast(pm, {:set_filter_mode, :modify})
+
+      # Create a basic event
+      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
+
+      # Dispatch the event
+      GenServer.cast(dispatcher, {:dispatch, event})
+      Process.sleep(50) # Allow event to process
+
+      # Verify the event was modified by plugin
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.model.count == 1
+
+      # Verify the plugin was called
+      events = GenServer.call(pm, :get_events)
+      assert Enum.any?(events, fn e -> e.data.key == :enter end)
+    end
+
+    test "blocks events when plugin halts event processing", %{dispatcher: dispatcher, plugin_manager: pm} do
+      # Set plugin manager to block events
+      GenServer.cast(pm, {:set_filter_mode, :block})
+
+      # Create a basic event
+      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
+
+      # Dispatch the event
+      GenServer.cast(dispatcher, {:dispatch, event})
+      Process.sleep(50) # Allow event to process
+
+      # Verify the event was blocked (state unchanged)
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.model.count == 0
+      assert current_state.model.last_event == nil
+
+      # Verify plugin was called with event
+      events = GenServer.call(pm, :get_events)
+      assert Enum.any?(events, fn e -> e.data.key == :enter end)
+    end
+  end
+
+  describe "error handling" do
+    test "handles application update errors gracefully", %{dispatcher: dispatcher} do
+      # Create an event that will cause an error in update
+      event = %Event{type: :key, data: %{key: :error, state: :pressed, modifiers: []}}
+
+      # Dispatch the event
+      GenServer.cast(dispatcher, {:dispatch, event})
+      Process.sleep(50) # Allow event to process
+
+      # Verify that state is unchanged after error
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.model.count == 0
+      assert current_state.model.last_event == nil
+    end
+
+    test "handles application update crashes", %{dispatcher: dispatcher} do
+      Process.flag(:trap_exit, true)
+
+      # Create an event that will cause a crash in update
+      event = %Event{type: :key, data: %{key: :crash, state: :pressed, modifiers: []}}
+
+      # Dispatch the event
+      GenServer.cast(dispatcher, {:dispatch, event})
+      Process.sleep(50) # Allow event to process
+
+      # Verify the process is still alive
+      assert Process.alive?(dispatcher)
+
+      # Verify that state is unchanged after crash
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.model.count == 0
+      assert current_state.model.last_event == nil
+    end
+
+    test "handles plugin filter crashes", %{dispatcher: dispatcher, plugin_manager: pm} do
+      # Set plugin manager to crash during filtering
+      GenServer.cast(pm, {:set_filter_mode, :crash})
+
+      # Create a basic event
+      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
+
+      # Dispatch the event
+      GenServer.cast(dispatcher, {:dispatch, event})
+      Process.sleep(50) # Allow event to process
+
+      # Verify that state is unchanged after crash
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.model.count == 0
+      assert current_state.model.last_event == nil
+
+      # Ensure dispatcher is still alive
+      assert Process.alive?(dispatcher)
+    end
+  end
+
+  describe "system events" do
+    test "handles resize events", %{dispatcher: dispatcher} do
+      # Create resize event
+      event = %Event{type: :resize, data: %{width: 100, height: 50}}
+
+      # Dispatch the event
+      GenServer.cast(dispatcher, {:dispatch, event})
+      Process.sleep(50) # Allow event to process
+
+      # Verify state is updated
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.width == 100
+      assert current_state.height == 50
+    end
+
+    test "handles focus events", %{dispatcher: dispatcher} do
+      # Create focus event (focus lost)
+      event = %Event{type: :focus, data: %{focused: false}}
+
+      # Dispatch the event
+      GenServer.cast(dispatcher, {:dispatch, event})
+      Process.sleep(50) # Allow event to process
+
+      # Verify state is updated
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.focused == false
+
+      # Create focus event (focus gained)
+      event = %Event{type: :focus, data: %{focused: true}}
+
+      # Dispatch the event
+      GenServer.cast(dispatcher, {:dispatch, event})
+      Process.sleep(50) # Allow event to process
+
+      # Verify state is updated
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.focused == true
+    end
+
+    test "handles quit events", %{dispatcher: dispatcher} do
+      Process.flag(:trap_exit, true)
+
+      # Create quit event
+      event = %Event{type: :quit, data: %{}}
+
+      # Monitor the dispatcher
+      ref = Process.monitor(dispatcher)
+
+      # Dispatch the event
+      GenServer.cast(dispatcher, {:dispatch, event})
+
+      # Wait for DOWN message
+      receive do
+        {:DOWN, ^ref, :process, _, _} ->
+          assert true
+      after
+        1000 ->
+          flunk("Dispatcher did not shutdown within timeout")
+      end
+    end
+  end
+
+  describe "performance edge cases" do
+    test "handles slow application updates", %{dispatcher: dispatcher} do
+      # Create an event that will cause a slow update
+      event = %Event{type: :key, data: %{key: :timeout, state: :pressed, modifiers: []}}
+
+      # Start measuring time
+      start_time = :os.system_time(:millisecond)
+
+      # Dispatch the event
+      GenServer.cast(dispatcher, {:dispatch, event})
+
+      # Wait for update to complete (tracking time)
+      Process.sleep(300)
+
+      end_time = :os.system_time(:millisecond)
+      elapsed = end_time - start_time
+
+      # Verify update occurred
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.model.count == 1
+      assert current_state.model.last_event == {:key_press, :timeout, []}
+
+      # Verify the operation took at least the sleep time
+      assert elapsed >= 200
+    end
+
+    test "handles rapid sequential events", %{dispatcher: dispatcher} do
+      # Create multiple events in quick succession
+      events = for i <- 1..10 do
+        %Event{type: :key, data: %{key: "key#{i}", state: :pressed, modifiers: []}}
+      end
+
+      # Dispatch events in rapid succession
+      Enum.each(events, fn event ->
+        GenServer.cast(dispatcher, {:dispatch, event})
+      end)
+
+      # Allow time for processing all events
+      Process.sleep(100)
+
+      # Verify all events were processed
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.model.count == 10
+      assert current_state.model.last_event == {:key_press, "key10", []}
+    end
+  end
+
+  describe "command handling" do
+    test "executes commands returned from application update", %{dispatcher: dispatcher} do
+      # Mock Command module for execution
+      :meck.new(Command, [:passthrough])
+      command_executed = false
+
+      # Set up a command that will be executed
+      test_command = %Command{type: :system, data: {:test_cmd, []}}
+
+      # Mock the execute function
+      :meck.expect(Command, :execute, fn cmd, _context ->
+        assert cmd == test_command
+        command_executed = true
+        :ok
+      end)
+
+      # Mock the application to return a command
+      :meck.new(MockApp, [:passthrough])
+      :meck.expect(MockApp, :update, fn _msg, state ->
+        {%{state | count: state.count + 1}, [test_command]}
+      end)
+
+      # Create and dispatch event
+      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
+      GenServer.cast(dispatcher, {:dispatch, event})
+      Process.sleep(50)
+
+      # Verify state updated
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.model.count == 1
+
+      # Cleanup
+      :meck.unload(Command)
+      :meck.unload(MockApp)
+    end
+  end
+end

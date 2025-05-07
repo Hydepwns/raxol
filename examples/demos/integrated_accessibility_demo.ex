@@ -21,8 +21,16 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
     :tutorials
   ]
 
-  @available_themes [:standard, :dark, :light, :solarized_dark, :solarized_light] # Example themes
-  @available_locales ["en", "es", "fr", "de"] # Example locales
+  # Example themes
+  @available_themes [
+    :standard,
+    :dark,
+    :light,
+    :solarized_dark,
+    :solarized_light
+  ]
+  # Example locales
+  @available_locales ["en", "es", "fr", "de"]
 
   # Define the struct based on @initial_state fields
   defstruct active_section: :welcome,
@@ -33,11 +41,14 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
             animation_speed: :normal,
             preferences_saved: false,
             focus_index: 0,
-            sections: @demo_sections, # Use the module attribute defined above
+            # Use the module attribute defined above
+            sections: @demo_sections,
             sample_animation: nil,
             loading_progress: 0,
-            animation_frame: 0, # Added for animation section
-            shortcuts: %{ # Corresponds to @initial_state.shortcuts
+            # Added for animation section
+            animation_frame: 0,
+            # Corresponds to @initial_state.shortcuts
+            shortcuts: %{
               "Alt+H" => "Toggle High Contrast",
               "Alt+M" => "Toggle Reduced Motion",
               "Alt+T" => "Switch Theme",
@@ -56,11 +67,12 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
     # initial_state = %__MODULE__{} # Uses defaults from defstruct
     # Load preferences, falling back to defaults
     initial_state = %__MODULE__{
-      theme: UserPreferences.get("demo.theme") || :standard, # Use get/1 and || for default
-      locale: UserPreferences.get("demo.locale") || "en", # Use get/1 and || for default
-      high_contrast: UserPreferences.get("demo.high_contrast") || false, # Use get/1 and || for default
-      reduced_motion: UserPreferences.get("demo.reduced_motion") || false # Use get/1 and || for default
+      theme: UserPreferences.get([:demo, :theme]) || :standard,
+      locale: UserPreferences.get([:demo, :locale]) || "en",
+      high_contrast: UserPreferences.get([:demo, :high_contrast]) || false,
+      reduced_motion: UserPreferences.get([:demo, :reduced_motion]) || false
     }
+
     {initial_state, []}
   end
 
@@ -95,10 +107,12 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
           UserPreferences.set("demo.high_contrast", state.high_contrast)
           UserPreferences.set("demo.reduced_motion", state.reduced_motion)
           Logger.info("Preferences saved via UserPreferences.")
-          %{state | preferences_saved: true} # Keep flag for UI feedback
+          # Keep flag for UI feedback
+          %{state | preferences_saved: true}
 
         :advance_animation_frame ->
-          new_frame = rem(state.animation_frame + 1, 100) # Simple counter 0-99
+          # Simple counter 0-99
+          new_frame = rem(state.animation_frame + 1, 100)
           %{state | animation_frame: new_frame}
 
         # Handle other messages if needed
@@ -106,7 +120,8 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
           state
       end
 
-    {new_state, []} # Return updated state and potentially new commands
+    # Return updated state and potentially new commands
+    {new_state, []}
   end
 
   # Helper function to cycle through a list of options
@@ -115,7 +130,10 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
     current_index = Enum.find_index(options, &(&1 == current_value))
 
     if is_nil(current_index) do
-      Logger.warning("Could not find index for current \#{key}: \#{current_value}")
+      Logger.warning(
+        "Could not find index for current \#{key}: \#{current_value}"
+      )
+
       state
     else
       num_options = Enum.count(options)
@@ -132,8 +150,12 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
 
     if is_nil(current_index) do
       # Should not happen if active_section is always valid
-      Logger.warning("Could not find index for active section: \#{state.active_section}")
-      state # Return unchanged state
+      Logger.warning(
+        "Could not find index for active section: \#{state.active_section}"
+      )
+
+      # Return unchanged state
+      state
     else
       num_sections = Enum.count(sections)
       # Calculate new index with wrap-around
@@ -196,6 +218,7 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
     # Return a command to update the animation frame
     [{:send_update, :advance_animation_frame}]
   end
+
   def handle_tick(_) do
     # Ignore other ticks if any
     []
@@ -214,11 +237,12 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
   def view(state) do
     # Use Raxol.View.Elements DSL to build the view
     # Display active section and basic status information
-    UI.box(direction: :column, padding: 1, border: :rounded) do
+    UI.box direction: :column, padding: 1, border: :rounded do
       # Top section: Active Section Name and Status
-      UI.box(direction: :row, justify: :between) do
+      UI.box direction: :row, justify: :between do
         UI.label("Active Section: #{state.active_section}")
-        UI.box(direction: :row, gap: 2) do
+
+        UI.box direction: :row, gap: 2 do
           UI.label("[Theme: #{state.theme}]")
           UI.label("[Locale: #{state.locale}]")
           UI.label("[HC: #{state.high_contrast}]")
@@ -230,7 +254,7 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
       UI.label(String.duplicate("─", 80))
 
       # Main Content Area - Render based on active section
-      UI.box(grow: 1, padding: {1, 0, 0, 0}) do
+      UI.box grow: 1, padding: {1, 0, 0, 0} do
         render_section_content(state)
       end
 
@@ -251,13 +275,13 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
       :internationalization -> render_internationalization_section(state)
       :user_preferences -> render_user_preferences_section(state)
       :keyboard_shortcuts -> render_keyboard_shortcuts_section(state)
-      :tutorials -> TutorialViewer()
+      :tutorials -> %{type: TutorialViewer}
       _ -> UI.label("Unknown section: \#{state.active_section}")
     end
   end
 
   defp render_welcome_section(_state) do
-    UI.box(direction: :column, align: :center, gap: 1) do
+    UI.box direction: :column, align: :center, gap: 1 do
       UI.label("Welcome to the Integrated Accessibility Demo!", style: :bold)
       UI.label("This demo showcases how various Raxol features work together.")
       UI.label("Navigate using the Up/Down arrow keys.")
@@ -266,44 +290,94 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
   end
 
   defp render_color_system_section(state) do
-    alias Raxol.Core.ColorSystem # Required for getting theme colors
+    # Required for getting theme colors
+    alias Raxol.Core.ColorSystem
 
     # Get color based on theme/accessibility settings
-    get_color = fn role -> ColorSystem.get(role, %{theme: state.theme, high_contrast: state.high_contrast}) end
+    get_color = fn role ->
+      ColorSystem.get(role, %{
+        theme: state.theme,
+        high_contrast: state.high_contrast
+      })
+    end
 
-    UI.box(direction: :column, align: :start, gap: 1, width: :fill) do
+    UI.box direction: :column, align: :start, gap: 1, width: :fill do
       UI.label("Color System Features", style: :bold)
-      UI.label("This section shows how elements adapt to the current theme and accessibility settings.")
-      UI.label("Current Theme: \#{state.theme} | High Contrast: \#{state.high_contrast}")
+
+      UI.label(
+        "This section shows how elements adapt to the current theme and accessibility settings."
+      )
+
+      UI.label(
+        "Current Theme: \#{state.theme} | High Contrast: \#{state.high_contrast}"
+      )
+
       UI.label("Use Alt+T to cycle themes, Alt+H to toggle high contrast.")
       UI.label(String.duplicate("─", 80))
 
       UI.label("Sample Semantic Colors:")
-      UI.box(direction: :row, gap: 2, padding: {1, 0, 0, 0}) do
+
+      UI.box direction: :row, gap: 2, padding: {1, 0, 0, 0} do
         # Example boxes using semantic color roles
-        UI.box(width: 15, height: 3, border: :single, style: [bg: get_color.(:primary)]) do
-          UI.label(content: "Primary", align: :center, style: [fg: get_color.(:on_primary)])
+        UI.box width: 15,
+               height: 3,
+               border: :single,
+               style: [bg: get_color.(:primary)] do
+          UI.label(
+            content: "Primary",
+            align: :center,
+            style: [fg: get_color.(:on_primary)]
+          )
         end
-        UI.box(width: 15, height: 3, border: :single, style: [bg: get_color.(:secondary)]) do
-          UI.label(content: "Secondary", align: :center, style: [fg: get_color.(:on_secondary)])
+
+        UI.box width: 15,
+               height: 3,
+               border: :single,
+               style: [bg: get_color.(:secondary)] do
+          UI.label(
+            content: "Secondary",
+            align: :center,
+            style: [fg: get_color.(:on_secondary)]
+          )
         end
-        UI.box(width: 15, height: 3, border: :single, style: [bg: get_color.(:accent)]) do
-          UI.label(content: "Accent", align: :center, style: [fg: get_color.(:on_accent)])
+
+        UI.box width: 15,
+               height: 3,
+               border: :single,
+               style: [bg: get_color.(:accent)] do
+          UI.label(
+            content: "Accent",
+            align: :center,
+            style: [fg: get_color.(:on_accent)]
+          )
         end
-        UI.box(width: 15, height: 3, border: :single, style: [bg: get_color.(:background)]) do
-          UI.label(content: "Background", align: :center, style: [fg: get_color.(:text)])
+
+        UI.box width: 15,
+               height: 3,
+               border: :single,
+               style: [bg: get_color.(:background)] do
+          UI.label(
+            content: "Background",
+            align: :center,
+            style: [fg: get_color.(:text)]
+          )
         end
       end
     end
   end
 
   defp render_animation_section(state) do
-    percentage = state.animation_frame # Frame is 0-99
+    # Frame is 0-99
+    percentage = state.animation_frame
 
-    UI.box(direction: :column, align: :center, gap: 1) do
+    UI.box direction: :column, align: :center, gap: 1 do
       UI.label(content: "Animation Example (Progress Bar)", style: :bold)
       UI.label(content: "Demonstrates timer ticks and respects Reduced Motion.")
-      UI.label(content: "Reduced Motion: #{state.reduced_motion} (Toggle: Alt+M)")
+
+      UI.label(
+        content: "Reduced Motion: #{state.reduced_motion} (Toggle: Alt+M)"
+      )
+
       UI.label(content: " ")
 
       if state.reduced_motion do
@@ -311,16 +385,19 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
         UI.label(content: "Progress: #{percentage}%")
       else
         # Normal Motion: Show progress bar
-        bar_width = 40 # Fixed width for the bar
+        # Fixed width for the bar
+        bar_width = 40
         filled_width = round(bar_width * percentage / 100)
         empty_width = bar_width - filled_width
 
         filled_char = "█"
         empty_char = "░"
 
-        bar = String.duplicate(filled_char, filled_width) <> String.duplicate(empty_char, empty_width)
+        bar =
+          String.duplicate(filled_char, filled_width) <>
+            String.duplicate(empty_char, empty_width)
 
-        UI.box(direction: :row, gap: 1) do
+        UI.box direction: :row, gap: 1 do
           UI.label("[#{bar}]")
           UI.label("#{percentage}%")
         end
@@ -332,7 +409,7 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
     # Use I18n.t/2 for translations
     t = fn key -> I18n.t(key, locale: state.locale) end
 
-    UI.box(direction: :column, align: :start, gap: 1, width: :fill) do
+    UI.box direction: :column, align: :start, gap: 1, width: :fill do
       UI.label(t.("demo.i18n.settings"), style: :bold)
       UI.label("Current Locale: #{state.locale}")
       UI.label("(Translations via Raxol.Core.I18n)")
@@ -344,10 +421,17 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
   end
 
   defp render_user_preferences_section(state) do
-    UI.box(direction: :column, align: :start, gap: 1, width: :fill) do
+    UI.box direction: :column, align: :start, gap: 1, width: :fill do
       UI.label("User Preferences Management", style: :bold)
-      UI.label("This section shows the current preference settings managed by the application state.")
-      UI.label("Preferences are loaded on startup and saved using Raxol.Core.UserPreferences.")
+
+      UI.label(
+        "This section shows the current preference settings managed by the application state."
+      )
+
+      UI.label(
+        "Preferences are loaded on startup and saved using Raxol.Core.UserPreferences."
+      )
+
       UI.label(String.duplicate("─", 80))
 
       UI.label(content: "Current Settings (Loaded at start):")
@@ -357,21 +441,29 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
       UI.label(~s"  Reduced Motion: #{state.reduced_motion}")
       UI.label(String.duplicate("─", 80))
 
-      UI.label(content: "Use shortcuts (Alt+T, Alt+L, Alt+H, Alt+M) to change settings.")
+      UI.label(
+        content:
+          "Use shortcuts (Alt+T, Alt+L, Alt+H, Alt+M) to change settings."
+      )
+
       UI.label(content: "Press Alt+S to simulate saving these preferences.")
-      UI.label(content: "Preferences Saved Status: \#{state.preferences_saved}", style: (if state.preferences_saved, do: :bold))
+
+      UI.label(
+        content: "Preferences Saved Status: \#{state.preferences_saved}",
+        style: if(state.preferences_saved, do: :bold)
+      )
     end
   end
 
   defp render_keyboard_shortcuts_section(state) do
-    UI.box(direction: :column, align: :start, gap: 1, width: :fill) do
+    UI.box direction: :column, align: :start, gap: 1, width: :fill do
       UI.label("Keyboard Shortcut Overview", style: :bold)
       UI.label("Available shortcuts in this demo:")
       UI.label(String.duplicate("─", 80))
 
       # Iterate over the shortcuts map and display them
       Enum.map(state.shortcuts, fn {key, description} ->
-        UI.box(direction: :row, width: :fill, justify: :between) do
+        UI.box direction: :row, width: :fill, justify: :between do
           UI.label(key, width: 15)
           UI.label(description)
         end

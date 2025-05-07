@@ -56,45 +56,37 @@ defmodule Raxol.UI.Components.Display.Progress do
     # Initialize state by merging normalized props with default internal state
     normalized_props = normalize_props(props)
 
-    Map.merge(normalized_props, %{
+    state = Map.merge(normalized_props, %{
       animation_frame: 0,
       last_update: System.monotonic_time(:millisecond)
     })
+    {:ok, state}
   end
 
   @impl Component
   def update({:update_props, new_props}, state) do
-    # Update props within the state
-    updated_props = Map.merge(state, normalize_props(new_props))
-    # Assuming props are nested under :props key? No, merged directly.
-    %{state | props: updated_props}
-    # Let's re-read init. init merges props directly into the state map.
-    # So, merge new_props directly into the current state.
-    updated_state_props = Map.merge(state, normalize_props(new_props))
+    # Merge normalized new props into the current state
+    updated_state = Map.merge(state, normalize_props(new_props))
 
-    # Update animation state if needed (logic moved from old update/2)
-    now = System.monotonic_time(:millisecond)
-    time_diff = now - state.last_update
+    # Handle animation tick based on the potentially updated state
+    final_state = maybe_update_animation(updated_state)
 
-    updated_state_animation =
-      if state.animated and time_diff >= @animation_speed do
-        # Advance animation frame
-        new_frame = rem(state.animation_frame + 1, length(@animation_chars))
-        %{state | animation_frame: new_frame, last_update: now}
-      else
-        # No animation update needed
-        state
-      end
-
-    # Merge prop updates and animation updates
-    Map.merge(updated_state_props, %{
-      animation_frame: updated_state_animation.animation_frame,
-      last_update: updated_state_animation.last_update
-    })
+    {:noreply, final_state, []}
   end
 
+  # Handle the :tick message for animation
+  def update(:tick, state) do
+    updated_state = maybe_update_animation(state)
+    {:noreply, updated_state, []}
+  end
+
+  # Ignore other messages
   def update(_message, state) do
-    # Handle potential animation updates even if no other message is processed
+    {:noreply, state, []}
+  end
+
+  # Helper to update animation frame if needed
+  defp maybe_update_animation(state) do
     now = System.monotonic_time(:millisecond)
     time_diff = now - state.last_update
 
@@ -102,7 +94,7 @@ defmodule Raxol.UI.Components.Display.Progress do
       new_frame = rem(state.animation_frame + 1, length(@animation_chars))
       %{state | animation_frame: new_frame, last_update: now}
     else
-      # Return unchanged state for unknown messages
+      # No animation update needed
       state
     end
   end

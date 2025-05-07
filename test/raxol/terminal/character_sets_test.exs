@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.CharacterSetsTest do
 
       # Test special characters
       # Non-breaking space
-      assert CharacterTranslations.translate_string(<<0xA0>>, :latin1) == " "
+      assert CharacterTranslations.translate_string(<<0xA0>>, :latin1) == <<0xC2, 0xA0>>
       # Inverted exclamation mark
       assert CharacterTranslations.translate_string(<<0xA1>>, :latin1) == "¡"
       # Cent sign

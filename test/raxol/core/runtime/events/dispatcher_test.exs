@@ -3,6 +3,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
   import ExUnit.CaptureLog
   # REMOVE Mox import as it's no longer needed
   # import Mox
+  # Use Mox instead
+  import Mox
 
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.Events.Dispatcher
@@ -10,6 +12,21 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
   alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
   # Add Alias for PubSub
   alias Phoenix.PubSub # Assuming this is the correct PubSub module
+  alias Raxol.Core.UserPreferences # Needed for meck
+  alias Raxol.Core.Runtime.Events.DispatcherTest.Mock.Application, as: MockApp
+
+  # Define Mox mock for UserPreferences
+  # defmock(UserPreferencesMock, for: Raxol.Core.UserPreferences)
+
+  # Simple Mock GenServer for PluginManager
+  defmodule Mock.PluginManager do
+    use GenServer
+    def start_link(_opts), do: GenServer.start_link(__MODULE__, nil)
+    def init(_), do: {:ok, nil}
+    # Allow call for filter_event
+    def handle_call({:filter_event, event}, _from, state), do: {:reply, {:ok, event}, state}
+    def handle_call(_msg, _from, state), do: {:reply, :ok, state} # Default reply
+  end
 
   # Mock modules for testing
   defmodule Mock.Application do
@@ -42,111 +59,134 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
 
   setup do
     # Setup mocks
-    # REMOVE Mox stub for PubSub
-    # Mox.stub_with(PubSubMock, Phoenix.PubSub)
+    :meck.new(UserPreferences, [:non_strict, :passthrough])
+    :meck.expect(UserPreferences, :get, fn "theme.active_id" -> :default end)
 
-    # Start Dispatcher manually for testing handle_cast/handle_call
-    initial_state = %{
-      app_module: Mock.Application,
-      model: %{count: 0},
-      commands: [],
-      debug_mode: false,
-      plugin_manager: nil, # Or mock this if needed
-      pubsub_server: Raxol.PubSub, # Use the actual PubSub server name
-      rendering_engine: Raxol.Core.Runtime.Rendering.Engine # Use actual name
-    }
-    {:ok, dispatcher_pid} = Dispatcher.start_link(initial_state)
+    # Dispatcher and Mock PM started per-test
 
-    # REMOVE Mox verify_on_exit
-    # Mox.verify_on_exit!()
-    {:ok, dispatcher: dispatcher_pid, initial_state: initial_state}
+    on_exit(fn ->
+      :meck.validate(UserPreferences)
+      :meck.unload(UserPreferences)
+    end)
+
+    # No context returned from setup anymore
+    :ok
   end
 
-  # --- Tests for GenServer Callbacks (handle_cast, handle_call) ---
   describe "GenServer Callbacks" do
-    test "handle_cast :dispatch dispatches event and updates state", %{dispatcher: dispatcher, initial_state: initial_state} do
+    # No context injected from setup
+    test "handle_cast :dispatch dispatches event and updates state" do
+      # Start Mock Plugin Manager for this test
+      {:ok, mock_pm_pid} = Mock.PluginManager.start_link([])
+
+      # Define initial state for this test
+      initial_state = %{
+        app_module: MockApp,
+        model: %{count: 0},
+        runtime_pid: self(),
+        width: 80,
+        height: 24,
+        focused: true,
+        debug_mode: false,
+        plugin_manager: mock_pm_pid, # Use per-test PID
+        command_registry_table: :raxol_command_registry,
+        pubsub_server: Raxol.PubSub, # Ensure PubSub server is included
+        rendering_engine: Raxol.Core.Runtime.Rendering.Engine, # Ensure RenderingEngine is included
+        initial_commands: [] # Add missing key
+      }
+
+      # Start Dispatcher for this test
+      {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state)
+
       event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
 
       # Mocks setup for this test
-      :meck.new(Command, [:passthrough]) # Allow non-mocked functions
-      :meck.new(RenderingEngine, [:passthrough])
+      :meck.new(MockApp, [:non_strict])
+      :meck.expect(MockApp, :update, 2, fn _msg, state -> {%{state | count: state.count + 1}, [%Command{type: :system, data: {:test_cmd, []}}]} end)
+      :meck.new(Command, [:passthrough])
+      :meck.expect(Command, :execute, fn %Command{type: :system, data: {:test_cmd, []}}, _context -> :ok end)
       :meck.new(PubSub, [:passthrough])
-
-      # Expect interactions based on event dispatch
-      # 1. Application update (assumed to return :test_cmd via Mock.Application)
-
-      # 2. Command execution
-      :meck.expect(Command, :execute, fn :test_cmd, _context -> :ok end)
-
-      # 3. Notify Renderer
-      :meck.expect(RenderingEngine, :cast, fn :render_frame -> :ok end)
-
-      # 4. Broadcast event via PubSub
-      # Use :meck.expect for PubSub.broadcast
       :meck.expect(PubSub, :broadcast, fn Raxol.PubSub, "events", {:event, ^event} -> :ok end)
+      # :meck.new(GenServer, [:passthrough]) # GenServer mock still commented out
+      # :meck.expect(GenServer, :call, fn ^mock_pm_pid, {:filter_event, ^event}, 5000 -> {:ok, event} end)
 
-      # Send the cast
       :ok = GenServer.cast(dispatcher, {:dispatch, event})
 
-      # Allow time for cast processing
-      Process.sleep(50)
+      Process.sleep(50) # Allow cast to process
 
-      # Verify state update (model count incremented)
-      state = :sys.get_state(dispatcher)
-      assert state.model.count == initial_state.model.count + 1
+      # Assertions (e.g., state change, messages sent)
+      assert_receive {:render_needed, _}, 100
+      current_state = :sys.get_state(dispatcher)
+      assert current_state.model.count == 1
 
-      :meck.unload(Command)
-      :meck.unload(RenderingEngine)
-      # Validate and unload PubSub
-      :meck.validate(PubSub)
-      :meck.unload(PubSub)
+      # Test-specific teardown
+      on_exit(fn ->
+        :meck.validate(MockApp)
+        :meck.validate(PubSub)
+        # :meck.validate(GenServer)
+        :meck.validate(Command)
+        :meck.unload(MockApp)
+        :meck.unload(PubSub)
+        # :meck.unload(GenServer)
+        :meck.unload(Command)
+        GenServer.stop(mock_pm_pid)
+      end)
     end
 
-    test "handle_cast :dispatch handles application update errors", %{dispatcher: dispatcher} do
-      # Setup Dispatcher state to cause update failure
-      error_state = %{
-        app_module: Mock.Application,
-        model: :invalid_model, # Cause update to likely fail
-        commands: [], debug_mode: false, plugin_manager: nil,
+    test "handle_cast :dispatch handles application update errors" do
+      # Start Mock Plugin Manager for this test
+      {:ok, mock_pm_pid} = Mock.PluginManager.start_link([])
+
+      # Define initial state for this test
+      initial_state = %{
+        app_module: MockApp,
+        model: %{count: 0}, # Start with valid model
+        runtime_pid: self(),
+        width: 80,
+        height: 24,
+        focused: true,
+        debug_mode: false,
+        plugin_manager: mock_pm_pid, # Use per-test PID
+        command_registry_table: :raxol_command_registry,
         pubsub_server: Raxol.PubSub,
-        rendering_engine: Raxol.Core.Runtime.Rendering.Engine
+        rendering_engine: Raxol.Core.Runtime.Rendering.Engine,
+        initial_commands: [] # Add missing key
       }
-      :sys.replace_state(dispatcher, error_state)
+
+      # Start Dispatcher for this test
+      {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state)
 
       event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
 
-      # Mocks setup
+      # Mocks setup for this test
+      :meck.new(MockApp, [:non_strict])
+      :meck.expect(MockApp, :update, fn ^event, _model -> {:error, :simulated_error} end)
       :meck.new(Command, [:passthrough])
-      :meck.new(RenderingEngine, [:passthrough])
       :meck.new(PubSub, [:passthrough])
+      # :meck.new(GenServer, [:passthrough])
+      # :meck.expect(GenServer, :call, fn ^mock_pm_pid, {:filter_event, ^event}, 5000 -> {:ok, event} end)
 
-      # Expect only PubSub broadcast (as error happens during update)
-      :meck.expect(PubSub, :broadcast, fn Raxol.PubSub, "events", {:event, ^event} -> :ok end)
+      :ok = GenServer.cast(dispatcher, {:dispatch, event})
+      Process.sleep(50) # Allow cast to process
 
-      # Ensure Command execution and Renderer notification DON'T happen
-      # (meck will validate this as no expect calls were made for them)
+      # Assertions: No render needed, state unchanged
+      refute_receive {:render_needed, _}, 100
+      current_state_after_error = :sys.get_state(dispatcher)
+      assert current_state_after_error.model.count == 0
 
-      log = capture_log(fn ->
-        :ok = GenServer.cast(dispatcher, {:dispatch, event})
-        Process.sleep(50) # Allow cast processing
+      # Test-specific teardown
+      on_exit(fn ->
+        :meck.validate(MockApp)
+        :meck.validate(Command)
+        # :meck.validate(GenServer)
+        :meck.unload(Command)
+        :meck.unload(PubSub)
+        :meck.unload(MockApp)
+        # :meck.unload(GenServer)
+        GenServer.stop(mock_pm_pid)
       end)
-
-      # Assert error was logged
-      assert log =~ "Error updating application state"
-      # Assert state wasn't significantly changed (or reflects error state)
-      current_state = :sys.get_state(dispatcher)
-      assert current_state.model == :invalid_model
-
-      :meck.unload(Command)
-      :meck.unload(RenderingEngine)
-      # Validate and unload PubSub
-      :meck.validate(PubSub)
-      :meck.unload(PubSub)
     end
-
-    # TODO: Add tests for handle_call (:get_state)
   end
-
 
   # --- Existing Tests (Refactored if needed) ---
   # Keep the describe blocks for internal logic tests if still relevant

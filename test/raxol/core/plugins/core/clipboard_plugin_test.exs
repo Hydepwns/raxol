@@ -1,29 +1,36 @@
 defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false # Run synchronously for :meck
 
   alias Raxol.Core.Plugins.Core.ClipboardPlugin
   alias Raxol.System.Clipboard # Alias the module we now need to mock
 
+  # Setup all for module-level meck initialization
+  setup_all do
+    :meck.new(Clipboard, [:non_strict])
+    # Register module-level on_exit here, explicitly passing self()
+    on_exit(self(), fn ->
+      :meck.unload(Clipboard)
+    end)
+    :ok
+  end
+
+  # Module-level on_exit to unload meck - REMOVE
+  # on_exit(fn ->
+  #  :meck.unload(Clipboard)
+  # end)
+
   # Setup assigns a default state and opts
   setup do
-    # Mock Raxol.System.Clipboard functions using :meck
-    # Remove :passthrough as we are providing explicit mocks/expectations
-    :meck.new(Clipboard, [:copy, :paste])
+    # Mocking moved to setup_all
+    # Initialize state with the clipboard implementation module
+    state = %{clipboard_impl: Clipboard}
 
-    state = %{}
-
-    # Ensure meck is unloaded AFTER the test runs
-    on_exit(fn -> :meck.unload(Clipboard) end)
+    # Unload moved to module on_exit
 
     {:ok, state: state}
   end
 
-  # Ensure :meck is unloaded after each test
-  # It's often better to put this in setup_all/on_exit for the module
-  # if :meck is used across multiple tests in the file.
-  # For simplicity here, we'll assume it's okay per test, but
-  # a module-level on_exit is generally preferred.
-  # on_exit fn -> :meck.unload(Clipboard) end
+  # Ensure :meck is unloaded after each test - REMOVED
 
   test "terminate/2 returns ok", %{state: state} do
     assert :ok = ClipboardPlugin.terminate(:shutdown, state)

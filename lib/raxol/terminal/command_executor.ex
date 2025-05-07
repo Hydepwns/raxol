@@ -15,7 +15,10 @@ defmodule Raxol.Terminal.CommandExecutor do
   alias Raxol.Terminal.Commands.Screen
   alias Raxol.Terminal.Commands.Parser
   alias Raxol.Terminal.Commands.Executor
-  alias Raxol.Terminal.Commands.Modes
+  alias Raxol.Terminal.Commands.CSIHandlers
+  alias Raxol.Terminal.Commands.OSCHandlers
+  alias Raxol.Terminal.Commands.DCSHandlers
+  alias Raxol.Terminal.ModeManager
 
   # Display a compile-time deprecation warning
   @deprecated "This module is deprecated. Use Raxol.Terminal.Commands.* modules instead."
@@ -84,39 +87,27 @@ defmodule Raxol.Terminal.CommandExecutor do
   end
 
   @doc """
-  Handles DEC private mode setting or resetting.
-
-  DEPRECATED: Use Raxol.Terminal.Commands.Modes.handle_dec_private_mode/3 instead.
+  Handles DEC Private Mode Set (CSI ? Pn h) and Reset (CSI ? Pn l).
   """
-  @spec handle_dec_private_mode(Emulator.t(), list(integer()), :set | :reset) ::
-          Emulator.t()
+  @spec handle_dec_private_mode(Emulator.t(), list(integer()), :set | :reset) :: Emulator.t()
   def handle_dec_private_mode(emulator, params, action) do
-    Logger.warning(
-      "Raxol.Terminal.CommandExecutor.handle_dec_private_mode/3 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Modes.handle_dec_private_mode/3 instead."
-    )
-
-    Modes.handle_dec_private_mode(
-      emulator,
-      params,
-      action
-    )
+    modes = Enum.map(params, &ModeManager.lookup_private/1) |> Enum.reject(&is_nil/1)
+    case action do
+      :set -> ModeManager.set_mode(emulator, modes)
+      :reset -> ModeManager.reset_mode(emulator, modes)
+    end
   end
 
   @doc """
-  Handles ANSI mode setting or resetting.
-
-  DEPRECATED: Use Raxol.Terminal.Commands.Modes.handle_ansi_mode/3 instead.
+  Handles Standard Mode Set (CSI Pn h) and Reset (CSI Pn l).
   """
-  @spec handle_ansi_mode(Emulator.t(), list(integer()), :set | :reset) ::
-          Emulator.t()
+  @spec handle_ansi_mode(Emulator.t(), list(integer()), :set | :reset) :: Emulator.t()
   def handle_ansi_mode(emulator, params, action) do
-    Logger.warning(
-      "Raxol.Terminal.CommandExecutor.handle_ansi_mode/3 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Modes.handle_ansi_mode/3 instead."
-    )
-
-    Modes.handle_ansi_mode(emulator, params, action)
+    modes = Enum.map(params, &ModeManager.lookup_standard/1) |> Enum.reject(&is_nil/1)
+    case action do
+      :set -> ModeManager.set_mode(emulator, modes)
+      :reset -> ModeManager.reset_mode(emulator, modes)
+    end
   end
 
   @doc """

@@ -188,17 +188,26 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
   # Moves cursor up or down by one page (component height)
   def move_cursor_page(state, direction) do
     {row, col} = state.cursor_pos
-    page_amount = state.height
+    # Use component height as page size, defaulting to 10 if not available
+    page_size = Map.get(state, :height, 10)
+
     target_row =
       case direction do
-        :up -> row - page_amount
-        :down -> row + page_amount
+        :up -> max(0, row - page_size)
+        :down ->
+          # Calculate max row based on number of lines
+          max_row = max(0, length(state.lines) - 1)
+          min(max_row, row + page_size)
         _ -> row
       end
 
-    # Use existing move_cursor logic for clamping
-    move_cursor(state, {target_row, col})
-    # Note: Does not handle scroll_offset changes yet.
+    # Keep the same column position if possible
+    # but ensure it's valid for the target line
+    target_line = Enum.at(state.lines, target_row, "")
+    target_col = min(col, String.length(target_line))
+
+    # Create a new state with the updated cursor position
+    %{state | cursor_pos: {target_row, target_col}}
   end
 
   # Moves cursor to the beginning of the current line

@@ -47,20 +47,26 @@ defmodule Raxol.Plugins.SearchPlugin do
   @impl true
   def handle_input(%__MODULE__{} = plugin, input) do
     case input do
-      "/" <> search_term ->
+      # Correctly match the /search command and extract the term
+      "/search " <> search_term ->
         start_search(plugin, search_term)
 
-      "n" when plugin.search_term != nil ->
+      # Existing clauses for next/prev/clear - ensure they match correctly too
+      # Might need adjustment based on actual UI/interaction design
+      "/n" when plugin.search_term != nil ->
         next_result(plugin)
 
-      "N" when plugin.search_term != nil ->
+      "/N" when plugin.search_term != nil ->
         prev_result(plugin)
 
-      # Escape key
-      "\e" ->
+      "/clear" -> # Assuming a /clear command exists
         clear_search(plugin)
 
-      # Return the full plugin state
+      # Escape key might be handled differently (e.g., as a key event)
+      # "\e" ->
+      #   clear_search(plugin)
+
+      # Return the full plugin state if no command matched
       _ ->
         {:ok, plugin}
     end

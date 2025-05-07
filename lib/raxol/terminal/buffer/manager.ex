@@ -14,6 +14,8 @@ defmodule Raxol.Terminal.Buffer.Manager do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.DamageTracker
   alias Raxol.Terminal.Buffer.Scrollback
+  alias Raxol.Terminal.Buffer.MemoryManager
+  alias Raxol.Terminal.ANSI.TextFormatting
 
   @type t :: %__MODULE__{
           active_buffer: ScreenBuffer.t(),
@@ -157,34 +159,19 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @doc """
   Updates memory usage tracking.
-
-  ## Examples
-
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.update_memory_usage(manager)
-      iex> manager.memory_usage > 0
-      true
+  Delegates calculation to `MemoryManager.get_total_usage/2`.
   """
   def update_memory_usage(%__MODULE__{} = manager) do
-    # Calculate memory usage based on buffer sizes
-    active_usage = calculate_buffer_memory_usage(manager.active_buffer)
-    back_usage = calculate_buffer_memory_usage(manager.back_buffer)
-    total_usage = active_usage + back_usage
-
+    total_usage = MemoryManager.get_total_usage(manager.active_buffer, manager.back_buffer)
     %{manager | memory_usage: total_usage}
   end
 
   @doc """
   Checks if memory usage is within limits.
-
-  ## Examples
-
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> Buffer.Manager.within_memory_limits?(manager)
-      true
+  Delegates check to `MemoryManager.is_within_limit?/2`.
   """
   def within_memory_limits?(%__MODULE__{} = manager) do
-    manager.memory_usage <= manager.memory_limit
+    MemoryManager.is_within_limit?(manager.memory_usage, manager.memory_limit)
   end
 
   @doc """
@@ -217,196 +204,164 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   @doc """
   Erases from the beginning of the display to the cursor.
-
-  ## Examples
-
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.set_cursor_position(manager, 10, 5)
-      iex> manager = Buffer.Manager.erase_from_beginning_to_cursor(manager)
-      iex> manager.damage_regions
-      [{0, 0, 10, 5}]
+  Marks the cleared region as damaged.
+  Requires the default_style to use for clearing.
   """
-  def erase_from_beginning_to_cursor(%__MODULE__{} = manager) do
+  @spec erase_from_beginning_to_cursor(t(), TextFormatting.text_style()) :: t()
+  def erase_from_beginning_to_cursor(%__MODULE__{} = manager, default_style) do
     {x, y} = manager.cursor_position
 
-    # Mark the region as damaged
-    manager = mark_damaged(manager, 0, 0, x, y)
-
-    # Clear the cells in the active buffer
+    # Call ScreenBuffer function (which uses Eraser)
     new_active_buffer =
-      ScreenBuffer.clear_region(
-        manager.active_buffer,
-        0,
-        0,
-        x,
-        y
-      )
+      ScreenBuffer.erase_in_display(manager.active_buffer, {x,y}, :to_beginning, default_style)
 
-    %{manager | active_buffer: new_active_buffer}
+    # Determine damage region (assuming erase returns the buffer)
+    # TODO: Refine damage tracking if erase functions no longer return region
+    {cx1, cy1, cx2, cy2} = {0, 0, x, y} # Approximate damage
+
+    # Mark the region as damaged
+    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
+
+    # Update the active buffer state
+    %{manager_with_damage | active_buffer: new_active_buffer}
   end
 
   @doc """
   Clears the visible portion of the display (viewport) without affecting the scrollback buffer.
-
-  ## Examples
-
-      iex> manager = Buffer.Manager.new(80, 24)
-      # ... (write some data) ...
-      iex> manager = Buffer.Manager.clear_visible_display(manager)
-      iex> manager.damage_regions
-      [{0, 0, 79, 23}]
-      # Assert buffer contents are cleared, scrollback remains
+  Marks the cleared region as damaged.
+  Requires the default_style to use for clearing.
   """
-  def clear_visible_display(%__MODULE__{active_buffer: buffer} = manager) do
-    width = buffer.width
-    height = buffer.height
+  @spec clear_visible_display(t(), TextFormatting.text_style()) :: t()
+  def clear_visible_display(%__MODULE__{active_buffer: buffer} = manager, default_style) do
+    # Call ScreenBuffer.clear (which uses Eraser.clear_screen)
+    new_active_buffer = ScreenBuffer.clear(buffer, default_style)
 
-    # Mark the entire visible region as damaged
-    manager = mark_damaged(manager, 0, 0, width - 1, height - 1)
+    # Determine damage region
+    {cx1, cy1, cx2, cy2} = {0, 0, ScreenBuffer.get_width(buffer) - 1, ScreenBuffer.get_height(buffer) - 1}
 
-    # Clear the cells in the active buffer's viewport
-    new_active_buffer =
-      ScreenBuffer.clear_region(
-        buffer,
-        0,
-        0,
-        width - 1,
-        height - 1
-      )
+    # Mark the entire visible region as damaged (using region from clear)
+    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
 
-    %{manager | active_buffer: new_active_buffer}
+    # Update the active buffer state
+    %{manager_with_damage | active_buffer: new_active_buffer}
   end
 
   @doc """
   Clears the entire display including the scrollback buffer.
-
-  ## Examples
-
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.clear_entire_display_with_scrollback(manager)
-      iex> manager.damage_regions
-      [{0, 0, 79, 23}]
-      iex> manager.scrollback_buffer
-      []
+  Marks the cleared region as damaged.
+  Requires the default_style to use for clearing.
   """
-  def clear_entire_display_with_scrollback(%__MODULE__{} = manager) do
-    width = manager.active_buffer.width
-    height = manager.active_buffer.height
+  @spec clear_entire_display_with_scrollback(t(), TextFormatting.text_style()) :: t()
+  def clear_entire_display_with_scrollback(%__MODULE__{} = manager, default_style) do
+    # Clear the active buffer cells
+    new_active_buffer = ScreenBuffer.clear(manager.active_buffer, default_style)
+
+    # Determine damage region
+    {buffer_width, buffer_height} = ScreenBuffer.get_dimensions(new_active_buffer)
+    {cx1, cy1, cx2, cy2} = {0, 0, buffer_width - 1, buffer_height - 1}
 
     # Mark the region as damaged
-    manager = mark_damaged(manager, 0, 0, width - 1, height - 1)
-
-    # Clear the cells in the active buffer (using ScreenBuffer.clear)
-    active_buffer = ScreenBuffer.clear(manager.active_buffer)
+    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
 
     # Clear the scrollback state
     new_scrollback = Scrollback.clear(manager.scrollback)
 
-    %{manager | active_buffer: active_buffer, scrollback: new_scrollback}
+    %{manager_with_damage | active_buffer: new_active_buffer, scrollback: new_scrollback}
   end
 
   @doc """
   Erases from the cursor to the end of the current line.
-
-  ## Examples
-
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.set_cursor_position(manager, 10, 5)
-      iex> manager = Buffer.Manager.erase_from_cursor_to_end_of_line(manager)
-      iex> manager.damage_regions
-      [{10, 5, 79, 5}]
+  Marks the cleared region as damaged.
+  Requires the default_style to use for clearing.
   """
-  def erase_from_cursor_to_end_of_line(%__MODULE__{} = manager) do
+  @spec erase_from_cursor_to_end_of_line(t(), TextFormatting.text_style()) :: t()
+  def erase_from_cursor_to_end_of_line(%__MODULE__{} = manager, default_style) do
     {x, y} = manager.cursor_position
-    width = manager.active_buffer.width
+    buffer_width = ScreenBuffer.get_width(manager.active_buffer)
+
+    # Call ScreenBuffer function
+    new_active_buffer =
+      ScreenBuffer.erase_in_line(manager.active_buffer, {x,y}, :to_end, default_style)
+
+    # Determine damage region
+    {cx1, cy1, cx2, cy2} = {x, y, buffer_width - 1, y} # Approximate damage
 
     # Mark the region as damaged
-    manager = mark_damaged(manager, x, y, width - 1, y)
+    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
 
-    # Clear the cells in the active buffer
-    active_buffer =
-      ScreenBuffer.clear_region(manager.active_buffer, x, y, width - 1, y)
-
-    %{manager | active_buffer: active_buffer}
+    # Update the active buffer state
+    %{manager_with_damage | active_buffer: new_active_buffer}
   end
 
   @doc """
-  Erases from the beginning of the current line to the cursor.
-
-  ## Examples
-
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.set_cursor_position(manager, 10, 5)
-      iex> manager = Buffer.Manager.erase_from_beginning_of_line_to_cursor(manager)
-      iex> manager.damage_regions
-      [{0, 5, 10, 5}]
+  Erases from the beginning of the current line to the cursor position.
+  Marks the cleared region as damaged.
+  Requires the default_style to use for clearing.
   """
-  def erase_from_beginning_of_line_to_cursor(%__MODULE__{} = manager) do
+  @spec erase_from_beginning_of_line_to_cursor(t(), TextFormatting.text_style()) :: t()
+  def erase_from_beginning_of_line_to_cursor(%__MODULE__{} = manager, default_style) do
     {x, y} = manager.cursor_position
 
-    # Mark the region as damaged
-    manager = mark_damaged(manager, 0, y, x, y)
+    # Call ScreenBuffer function
+    new_active_buffer =
+      ScreenBuffer.erase_in_line(manager.active_buffer, {x,y}, :to_beginning, default_style)
 
-    # Clear the cells in the active buffer
-    active_buffer = ScreenBuffer.clear_region(manager.active_buffer, 0, y, x, y)
-    %{manager | active_buffer: active_buffer}
+    # Determine damage region
+    {cx1, cy1, cx2, cy2} = {0, y, x, y} # Approximate damage
+
+    # Mark the region as damaged
+    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
+
+    # Update the active buffer state
+    %{manager_with_damage | active_buffer: new_active_buffer}
   end
 
   @doc """
-  Clears the current line.
-
-  ## Examples
-
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.set_cursor_position(manager, 10, 5)
-      iex> manager = Buffer.Manager.clear_current_line(manager)
-      iex> manager.damage_regions
-      [{0, 5, 79, 5}]
+  Clears the entire current line where the cursor is located.
+  Marks the cleared region as damaged.
+  Requires the default_style to use for clearing.
   """
-  def clear_current_line(%__MODULE__{} = manager) do
-    {_, y} = manager.cursor_position
-    width = manager.active_buffer.width
+  @spec clear_current_line(t(), TextFormatting.text_style()) :: t()
+  def clear_current_line(%__MODULE__{} = manager, default_style) do
+    {x, y} = manager.cursor_position
+    buffer_width = ScreenBuffer.get_width(manager.active_buffer)
+
+    # Call ScreenBuffer function
+    new_active_buffer =
+      ScreenBuffer.erase_in_line(manager.active_buffer, {x,y}, :all, default_style)
+
+    # Determine damage region
+    {cx1, cy1, cx2, cy2} = {0, y, buffer_width - 1, y} # Approximate damage
 
     # Mark the region as damaged
-    manager = mark_damaged(manager, 0, y, width - 1, y)
+    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
 
-    # Clear the cells in the active buffer
-    active_buffer =
-      ScreenBuffer.clear_region(manager.active_buffer, 0, y, width - 1, y)
-
-    %{manager | active_buffer: active_buffer}
+    # Update the active buffer state
+    %{manager_with_damage | active_buffer: new_active_buffer}
   end
 
   @doc """
   Erases from the cursor position to the end of the display.
-
-  ## Examples
-
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.set_cursor_position(manager, 10, 5)
-      iex> manager = Buffer.Manager.erase_from_cursor_to_end(manager)
-      iex> manager.damage_regions
-      [{10, 5, 79, 23}]
+  Marks the cleared region as damaged.
+  Requires the default_style to use for clearing.
   """
-  def erase_from_cursor_to_end(%__MODULE__{} = manager) do
+  @spec erase_from_cursor_to_end(t(), TextFormatting.text_style()) :: t()
+  def erase_from_cursor_to_end(%__MODULE__{} = manager, default_style) do
     {x, y} = manager.cursor_position
-    width = manager.active_buffer.width
-    height = manager.active_buffer.height
+    {buffer_width, buffer_height} = ScreenBuffer.get_dimensions(manager.active_buffer)
+
+    # Call ScreenBuffer function (which uses Eraser)
+    new_active_buffer =
+      ScreenBuffer.erase_in_display(manager.active_buffer, {x,y}, :to_end, default_style)
+
+    # Determine damage region
+    {cx1, cy1, cx2, cy2} = {x, y, buffer_width - 1, buffer_height - 1} # Approximate damage
 
     # Mark the region as damaged
-    manager = mark_damaged(manager, x, y, width - 1, height - 1)
+    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
 
-    # Clear the cells in the active buffer
-    active_buffer =
-      ScreenBuffer.clear_region(
-        manager.active_buffer,
-        x,
-        y,
-        width - 1,
-        height - 1
-      )
-
-    %{manager | active_buffer: active_buffer}
+    # Update the active buffer state
+    %{manager_with_damage | active_buffer: new_active_buffer}
   end
 
   @doc """
@@ -517,13 +472,4 @@ defmodule Raxol.Terminal.Buffer.Manager do
     ScreenBuffer.get_selection_boundaries(manager.active_buffer)
   end
 
-  # Private functions
-
-  defp calculate_buffer_memory_usage(buffer) do
-    # Rough estimation of memory usage based on buffer size and content
-    buffer_size = buffer.width * buffer.height
-    # Estimated bytes per cell
-    cell_size = 100
-    buffer_size * cell_size
-  end
 end

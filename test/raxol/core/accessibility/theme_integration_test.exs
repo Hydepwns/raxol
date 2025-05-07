@@ -298,21 +298,5 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
     end
   end
 
-  # Commenting out test for get_high_contrast_colors/0 as it no longer exists
-  # test "get_high_contrast_colors/0 returns high contrast color scheme" do
-  #   # Setup: Register a theme first
-  #   colors = %{primary: "#007bff", background: "#ffffff"}
-  #   System.register_theme(:test_hc, colors)
-  #   System.apply_theme(:test_hc)
-
-  #   # Call the function
-  #   hc_colors = ThemeIntegration.get_high_contrast_colors()
-
-  #   # Assertions
-  #   assert is_map(hc_colors)
-  #   # Assert contrast ratio between primary and background is high enough
-  #   primary_hc = hc_colors.primary
-  #   background_hc = hc_colors.background
-  #   assert Accessibility.contrast_ratio(primary_hc, background_hc) >= 4.5
-  # end
+  defp pref_key(key), do: "accessibility.#{key}"
 end

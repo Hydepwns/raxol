@@ -4,6 +4,8 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   """
 
   require Logger
+  use Supervisor
+  @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelperBehaviour
 
   alias Raxol.Core.Runtime.Plugins.Loader
   # alias Raxol.Core.Runtime.Plugins.CommandRegistry # Unused
@@ -92,7 +94,8 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
                     end
                   rescue
                     error ->
-                    Logger.error("Error during plugin init for #{effective_plugin_id}: #{inspect(error)}\\\\nStacktrace: #{inspect(__STACKTRACE__)}")
+                    Logger.error("Error during plugin init for #{effective_plugin_id}: #{inspect(error)}
+                    Stacktrace: #{inspect(__STACKTRACE__)}")
                     {:error, {:init_exception, error}}
                   end
                 else
@@ -168,7 +171,8 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
               end
             rescue
               error ->
-                Logger.error("Exception during plugin #{plugin_id} init/1: #{inspect(error)}\\nStacktrace: #{inspect(__STACKTRACE__)}")
+                Logger.error("Exception during plugin #{plugin_id} init/1: #{inspect(error)}
+                Stacktrace: #{inspect(__STACKTRACE__)}")
                 {:error, {:init_exception, error}}
             end
           else
@@ -205,7 +209,8 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
             _ = plugin_module.terminate(reason, plugin_state)
           rescue
             error ->
-              Logger.error("Error calling terminate/2 on #{plugin_module}: #{inspect(error)}\\n#{inspect(__STACKTRACE__)}")
+              Logger.error("Error calling terminate/2 on #{plugin_module}: #{inspect(error)}
+              Stacktrace: #{inspect(__STACKTRACE__)}")
           end
         end
 
@@ -300,7 +305,8 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
                 end
               rescue
                 error ->
-                  Logger.error("Exception during plugin reload (purge/compile/load) for #{plugin_id}: #{inspect error}\\nStacktrace: #{inspect(__STACKTRACE__)}")
+                  Logger.error("Exception during plugin reload (purge/compile/load) for #{plugin_id}: #{inspect error}
+                  Stacktrace: #{inspect(__STACKTRACE__)}")
                   {:error, {:reload_exception, error}}
               after
                 # Ensure soft purge happens even if compilation/load fails

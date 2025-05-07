@@ -8,6 +8,114 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
   require Logger
   require Raxol.View.Elements # Add require for macros
 
+  @doc """
+  Renders the multi-line input component with proper styling based on the state.
+  Returns a grid of cell data for the visible portion of text.
+
+  ## Parameters
+  - state: The MultiLineInput state
+  - context: The render context
+  - theme: The theme containing style information
+  """
+  def render(state, _context, theme) do
+    # Calculate visible range based on scroll offset and height
+    {scroll_row, _scroll_col} = state.scroll_offset
+    visible_range_end = min(scroll_row + state.height - 1, max(0, length(state.lines) - 1))
+    visible_rows = scroll_row..visible_range_end
+
+    # Map the rows to grid cells with proper styling
+    cells =
+      for row <- visible_rows, col <- 0..(state.width - 1), into: %{} do
+        # Default styling from theme
+        default_style = theme.components[:multi_line_input] || %{
+          text_color: state.style.text_color || :white,
+          selection_color: state.style.selection_color || :blue,
+          cursor_color: state.style.cursor_color || :white
+        }
+
+        pos = {row, col}
+        cell_content = get_cell_content(state, row, col)
+        cell_style = get_cell_style(state, row, col, default_style)
+
+        {pos, %{content: cell_content, style: cell_style}}
+      end
+
+    cells
+  end
+
+  # Get the character at the specified position or empty string if outside text bounds
+  defp get_cell_content(state, row, col) do
+    if row < length(state.lines) do
+      line = Enum.at(state.lines, row)
+      if col < String.length(line) do
+        String.at(line, col)
+      else
+        " " # Empty space beyond text
+      end
+    else
+      " " # Empty space beyond text
+    end
+  end
+
+  # Determine the appropriate style for the cell based on selection and cursor state
+  defp get_cell_style(state, row, col, default_style) do
+    cursor_pos = state.cursor_pos
+
+    cond do
+      # Cell has cursor - highest priority
+      state.focused && cursor_pos == {row, col} ->
+        %{
+          foreground: default_style.text_color,
+          background: default_style.cursor_color
+        }
+
+      # Cell is in selection range
+      state.focused && state.selection_start != nil && state.selection_end != nil &&
+      is_position_in_selection?(state, row, col) ->
+        %{
+          foreground: default_style.text_color,
+          background: default_style.selection_color
+        }
+
+      # Regular text styling
+      true ->
+        %{foreground: default_style.text_color}
+    end
+  end
+
+  # Check if a position is within the current selection range
+  defp is_position_in_selection?(state, row, col) do
+    if state.selection_start != nil && state.selection_end != nil do
+      {start_pos, end_pos} = NavigationHelper.normalize_selection(state)
+      {start_row, start_col} = start_pos
+      {end_row, end_col} = end_pos
+
+      cond do
+        # Single line selection
+        start_row == end_row && row == start_row ->
+          col >= start_col && col < end_col
+
+        # First line of multi-line selection
+        row == start_row ->
+          col >= start_col
+
+        # Last line of multi-line selection
+        row == end_row ->
+          col < end_col
+
+        # Complete line in middle of selection
+        row > start_row && row < end_row ->
+          true
+
+        # Not in selection
+        true ->
+          false
+      end
+    else
+      false
+    end
+  end
+
   def render_line(line_index, line, state) do
     line_number_text =
       if state.style.line_numbers do

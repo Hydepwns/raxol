@@ -35,12 +35,12 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
     def restore_terminal, do: :ok
   end
 
-  setup do
+  setup_all do
     # Ensure application registry is started for our tests
     start_supervised!(Raxol.DynamicSupervisor)
     start_supervised!(Raxol.Terminal.Registry)
-    # Start UserPreferences GenServer
-    start_supervised!(Raxol.Core.UserPreferences)
+    # Do NOT start UserPreferences globally here, let the app start it
+    # start_supervised!(Raxol.Core.UserPreferences)
     :ok
   end
 
@@ -176,7 +176,7 @@ defmodule Raxol.Core.Runtime.LifecycleTest do
           assert result == :ok
         end)
 
-      assert log =~ "Lifecycle cleaning up"
+      assert log =~ "Lifecycle cleaning up for app: test_app"
     end
   end
 end

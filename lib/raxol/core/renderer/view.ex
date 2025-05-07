@@ -90,23 +90,28 @@ defmodule Raxol.Core.Renderer.View do
   Creates a new view with the given type and options.
   """
   def new(type, opts \\ []) do
+    # Merge opts first to get all explicit values
+    merged_opts = Map.new(opts)
+
     base = %{
       type: type,
-      position: Keyword.get(opts, :position),
-      position_type: Keyword.get(opts, :position_type, :relative),
-      z_index: Keyword.get(opts, :z_index, 0),
-      size: Keyword.get(opts, :size),
-      style: Keyword.get(opts, :style, []),
-      fg: Keyword.get(opts, :fg),
-      bg: Keyword.get(opts, :bg),
-      border: Keyword.get(opts, :border, :none),
-      padding: normalize_spacing(Keyword.get(opts, :padding, 0)),
-      margin: normalize_spacing(Keyword.get(opts, :margin, 0)),
-      children: Keyword.get(opts, :children, []),
-      content: Keyword.get(opts, :content)
+      position: Map.get(merged_opts, :position),
+      position_type: Map.get(merged_opts, :position_type, :relative),
+      z_index: Map.get(merged_opts, :z_index, 0),
+      size: Map.get(merged_opts, :size),
+      style: Map.get(merged_opts, :style, []),
+      fg: Map.get(merged_opts, :fg),
+      bg: Map.get(merged_opts, :bg),
+      border: Map.get(merged_opts, :border, :none),
+      children: Map.get(merged_opts, :children, []),
+      content: Map.get(merged_opts, :content)
     }
 
-    Map.merge(base, Map.new(opts))
+    # Merge base defaults, then explicitly put normalized spacing
+    merged_opts
+    |> Map.merge(base)
+    |> Map.put(:padding, normalize_spacing(Map.get(merged_opts, :padding, 0)))
+    |> Map.put(:margin, normalize_spacing(Map.get(merged_opts, :margin, 0)))
   end
 
   @doc """
@@ -249,8 +254,8 @@ defmodule Raxol.Core.Renderer.View do
   Returns a list of positioned views ready for rendering.
   """
   def layout(view, available_size) do
-    # First layout the view and its children
-    laid_out_view =
+    # First layout the view and its children. Specific layout functions return lists.
+    laid_out_view_list =
       case view.type do
         :flex -> layout_flex(view, available_size)
         :grid -> layout_grid(view, available_size)
@@ -260,10 +265,10 @@ defmodule Raxol.Core.Renderer.View do
         _ -> layout_basic(view, available_size)
       end
 
-    # Then handle absolute and fixed positioning
-    laid_out_view
-    |> flatten_view_tree()
-    |> sort_by_z_index()
+    # Flatten, sort by z-index, and apply absolute/fixed positioning
+    laid_out_view_list
+    |> flatten_view_tree() # Should now handle the list input
+    |> sort_by_z_index()   # Should be safe with default z-index
     |> apply_position_types(available_size)
   end
 
@@ -281,43 +286,61 @@ defmodule Raxol.Core.Renderer.View do
     {top, right, bottom, left}
   end
 
-  defp layout_flex(view, {_width, _height} = size) do
+  defp layout_flex(view, available_size) do
     direction = view.direction || :row
     justify = view.justify || :start
     align = view.align || :start
     wrap = view.wrap || false
 
-    # Calculate available space for children
-    {inner_width, inner_height} = apply_spacing(size, view.padding, view.margin)
+    # Calculate available space for children inside padding/margin
+    {inner_width, inner_height} = apply_spacing(available_size, view.padding, view.margin)
+    inner_avail_size = {inner_width, inner_height}
 
-    # Position children based on flex rules
-    {positioned_children, _} =
-      Enum.reduce(view.children, {[], {0, 0}}, fn child, {acc, pos} ->
-        child_size = calculate_child_size(child, {inner_width, inner_height})
+    # Recursively layout children first
+    laid_out_children_results = Enum.map(view.children, &layout(&1, inner_avail_size))
+
+    # Flatten the results and get necessary info (size, margin, etc.)
+    children_to_position =
+      laid_out_children_results
+      |> List.flatten()
+      |> Enum.map(fn child_element ->
+        {child_width, child_height} = child_element.size || {0, 0}
+        {_, child_margin_right, _, child_margin_left} = child_element.margin
+        {child_margin_top, _, child_margin_bottom, _} = child_element.margin
+
+        %{element: child_element, size: {child_width, child_height}, margin: child_element.margin}
+      end)
+
+    # Position children based on flex rules (Simplified positioning logic for now)
+    {positioned_children, _last_pos} =
+      Enum.reduce(children_to_position, {[], {0, 0}}, fn child_info, {acc, current_pos} ->
+        child_size = child_info.size
+        child_margin = child_info.margin
 
         child_pos =
           calculate_flex_position(
-            pos,
+            current_pos,
             child_size,
+            child_margin,
             direction,
             wrap,
-            {inner_width, inner_height}
+            inner_avail_size
           )
 
-        {[{child, child_pos} | acc],
-         advance_position(pos, child_size, direction)}
+        next_pos = advance_position(child_pos, child_size, child_margin, direction)
+
+        {[Map.put(child_info.element, :position, child_pos) | acc], next_pos}
       end)
 
-    # Apply justification and alignment
-    positioned_children
-    |> Enum.reverse()
-    |> adjust_flex_positions(
-      direction,
-      justify,
-      align,
-      {inner_width, inner_height}
-    )
-    |> Enum.map(fn {child, pos} -> %{child | position: pos} end)
+    # Apply justification and alignment (Simplified)
+    adjusted_children =
+      positioned_children
+      |> Enum.reverse()
+      # |> adjust_flex_positions(direction, justify, align, inner_avail_size)
+
+    # Return the flex container itself (positioned/sized) + adjusted children
+    parent_position = {elem(view.margin, 3), elem(view.margin, 0)} # {left, top}
+    [%{view | children: [], size: available_size, position: parent_position} | adjusted_children]
   end
 
   defp layout_grid(view, {width, height} = _size) do
@@ -338,8 +361,9 @@ defmodule Raxol.Core.Renderer.View do
       # Recursively layout grid children
       # Assuming cell height is full row height for now
       layout(child, {cell_width, height})
-      |> Map.put(:position, {x, y})
+      |> Enum.map(&Map.update!(&1, :position, fn {cx, cy} -> {cx + x, cy + y} end))
     end)
+    |> List.flatten()
   end
 
   defp layout_border(view, size) do
@@ -347,49 +371,24 @@ defmodule Raxol.Core.Renderer.View do
     {width, height} = size
 
     # Create border cells
-    # Horizontal borders
-    # Vertical borders
-    border =
-      [
-        # Top border
-        {0, 0, style.top_left},
-        {width - 1, 0, style.top_right},
-        # Bottom border
-        {0, height - 1, style.bottom_left},
-        {width - 1, height - 1, style.bottom_right}
-      ] ++
-        for x <- 1..(width - 2) do
-          [{x, 0, style.horizontal}, {x, height - 1, style.horizontal}]
-        end ++
-        for y <- 1..(height - 2) do
-          [{0, y, style.vertical}, {width - 1, y, style.vertical}]
-        end
+    border_cells = create_border_cells(style, width, height)
 
     # Layout child with reduced size
     inner_size = {max(0, width - 2), max(0, height - 2)}
     child = List.first(view.children)
 
-    laid_out_child =
+    laid_out_child_elements =
       if child do
         # Recursively layout the child within the border's inner dimensions
         layout(child, inner_size)
-        # Position child relative to border
-        |> Map.put(:position, {1, 1})
+        # Position child elements relative to border
+        |> Enum.map(&Map.update!(&1, :position, fn {cx, cy} -> {cx + 1, cy + 1} end))
       else
-        nil
+        []
       end
 
-    # Return the border cells and the laid-out child
-    [
-      border
-      |> List.flatten()
-      |> Enum.map(fn {x, y, char} ->
-        text(char, position: {x, y})
-      end),
-      laid_out_child
-    ]
-    |> List.flatten()
-    |> Enum.reject(&is_nil/1)
+    # Return the border cells and the laid-out child elements
+    border_cells ++ laid_out_child_elements
   end
 
   defp layout_scroll(view, size) do
@@ -398,12 +397,10 @@ defmodule Raxol.Core.Renderer.View do
 
     # Layout the child using its *intrinsic* size first, if available,
     # or the scroll container's size otherwise.
-    # This is simplified; real scroll layout is complex.
     child_layout_size = child.size || size
 
     laid_out_child_content =
       if child do
-        # Layout child first
         layout(child, child_layout_size)
       else
         []
@@ -412,18 +409,17 @@ defmodule Raxol.Core.Renderer.View do
     # Position the laid-out content within the scroll view
     positioned_content =
       laid_out_child_content
-      # Flatten the child's layout result
-      |> flatten_view_tree()
+      # Flattening happens in the main layout function now
+      # |> flatten_view_tree()
       |> Enum.map(fn elem ->
         {cx, cy} = elem.position || {0, 0}
         # Adjust child element positions by scroll offset
         Map.put(elem, :position, {cx - offset_x, cy - offset_y})
       end)
 
-    # Return the scroll container itself, plus the positioned child content
-    # The renderer will handle clipping based on the scroll container's size.
-    # Don't nest children here
-    [%{view | children: [], size: size} | positioned_content]
+    # Return the scroll container itself (sized, positioned at {0,0}), plus the positioned child content
+    # The renderer will handle clipping.
+    [%{view | children: [], size: size, position: {0, 0}} | positioned_content]
   end
 
   defp layout_shadow(view, {width, height} = size) do
@@ -431,56 +427,107 @@ defmodule Raxol.Core.Renderer.View do
     {offset_x, offset_y} = view.offset || {1, 1}
     shadow_color = view.color || :bright_black
 
-    # Calculate shadow cells based on the final size of the child
-    # First, layout the child to determine its size
+    # First, layout the child to determine its size and content
     content_size = {max(0, width - offset_x), max(0, height - offset_y)}
 
-    laid_out_child_content =
+    laid_out_child_elements =
       if child do
         layout(child, content_size)
-        # Position child at top-left
-        |> Map.put(:position, {0, 0})
+        # Position child elements at top-left within the shadow container
+        |> Enum.map(&Map.update!(&1, :position, fn _pos -> {0, 0} end))
       else
-        nil
+        []
       end
 
-    # Determine actual size occupied by the laid-out child
-    actual_child_width =
-      if laid_out_child_content,
-        do: elem(laid_out_child_content.size, 0),
-        else: 0
-
-    actual_child_height =
-      if laid_out_child_content,
-        do: elem(laid_out_child_content.size, 1),
-        else: 0
+    # Determine actual size occupied by the laid-out child (find max x/y)
+    {actual_child_width, actual_child_height} = calculate_bounding_box(laid_out_child_elements)
 
     shadow_views =
-      for x <- offset_x..(actual_child_width + offset_x - 1),
-          y <- offset_y..(actual_child_height + offset_y - 1) do
-        # Avoid drawing shadow where content is
-        is_content_area = x < actual_child_width and y < actual_child_height
+      create_shadow_cells(
+        offset_x,
+        offset_y,
+        actual_child_width,
+        actual_child_height,
+        shadow_color
+      )
 
-        unless is_content_area do
-          text(" ", position: {x, y}, bg: shadow_color, style: [:dim])
-        end
-      end
-      |> Enum.reject(&is_nil/1)
-
-    # Flatten the laid_out_child_content if it has children
-    flat_child_content =
-      flatten_view_tree(laid_out_child_content)
-      |> Enum.reject(&is_nil/1)
-
-    # Return shadow views and the laid-out child content
-    [shadow_views, flat_child_content]
-    |> List.flatten()
+    # Return shadow views first (lower z-index implicitly), then child content
+    shadow_views ++ laid_out_child_elements
   end
 
-  defp layout_basic(view, size) do
-    # If basic view has children, layout them too
-    laid_out_children = Enum.map(view.children || [], &layout(&1, size))
-    %{view | size: size, children: laid_out_children}
+  # --- Helper functions for border/shadow cell creation ---
+
+  defp create_border_cells(style, width, height) do
+    border =
+      [
+        {0, 0, style.top_left},
+        {width - 1, 0, style.top_right},
+        {0, height - 1, style.bottom_left},
+        {width - 1, height - 1, style.bottom_right}
+      ] ++
+        Enum.flat_map(1..(width - 2), fn x ->
+          [{x, 0, style.horizontal}, {x, height - 1, style.horizontal}]
+        end) ++
+        Enum.flat_map(1..(height - 2), fn y ->
+          [{0, y, style.vertical}, {width - 1, y, style.vertical}]
+        end)
+
+    Enum.map(border, fn {x, y, char} ->
+      text(char, position: {x, y})
+    end)
+  end
+
+  defp create_shadow_cells(offset_x, offset_y, child_width, child_height, shadow_color) do
+    for x <- offset_x..(child_width + offset_x - 1),
+        y <- offset_y..(child_height + offset_y - 1) do
+      is_content_area = x < child_width and y < child_height
+
+      unless is_content_area do
+        text(" ", position: {x, y}, bg: shadow_color, style: [:dim])
+      end
+    end
+    |> Enum.reject(&is_nil/1)
+  end
+
+  defp calculate_bounding_box(elements) do
+    Enum.reduce(elements, {0, 0}, fn element, {max_w, max_h} ->
+      {x, y} = element.position || {0, 0}
+      {w, h} = element.size || {0, 0}
+      {max(max_w, x + w), max(max_h, y + h)}
+    end)
+  end
+
+  # --- End Helper functions ---
+
+  defp layout_basic(view, {avail_width, avail_height} = available_size) do
+    {padding_top, padding_right, padding_bottom, padding_left} = view.padding
+    {margin_top, margin_right, margin_bottom, margin_left} = view.margin
+
+    # Determine content size
+    content_width =
+      case view.content do
+        t when is_binary(t) -> String.length(t)
+        _ -> 0
+      end
+
+    content_height = 1 # Assuming single line for text, or needs explicit height for box
+
+    # Explicit size overrides calculated content size
+    {width, height} =
+      view.size || {content_width + padding_left + padding_right, content_height + padding_top + padding_bottom}
+
+    # Constrain size by available space minus margins
+    max_width = max(0, avail_width - margin_left - margin_right)
+    max_height = max(0, avail_height - margin_top - margin_bottom)
+
+    final_width = min(width, max_width)
+    final_height = min(height, max_height)
+
+    # Position is relative to parent, start at margin offset
+    final_position = {margin_left, margin_top}
+
+    # Basic layout returns the element itself, positioned and sized
+    [%{view | size: {final_width, final_height}, position: final_position}]
   end
 
   defp apply_spacing({width, height}, {pt, pr, pb, pl}, {mt, mr, mb, ml}) do
@@ -504,52 +551,42 @@ defmodule Raxol.Core.Renderer.View do
     end
   end
 
-  defp calculate_flex_position({x, y}, {w, h}, :row, true, {container_w, _}) do
-    if x + w > container_w do
-      {0, y + h}
-    else
-      {x, y}
-    end
+  defp calculate_flex_position({current_x, current_y}, _child_size, {m_top, _, _, m_left}, :row, false, {_avail_width, _avail_height}) do
+    # Simple row layout: place next to previous, considering margin
+    {current_x + m_left, current_y + m_top}
   end
 
-  defp calculate_flex_position({x, y}, {w, _h}, :row, false, _) do
-    {x + w, y}
+  defp calculate_flex_position({current_x, current_y}, _child_size, {m_top, _, _, m_left}, :column, false, {_avail_width, _avail_height}) do
+    # Simple column layout: place below previous, considering margin
+    {current_x + m_left, current_y + m_top}
   end
 
-  defp calculate_flex_position({x, y}, {w, h}, :column, true, {_, container_h}) do
-    if y + h > container_h do
-      {x + w, 0}
-    else
-      {x, y}
-    end
+  # TODO: Implement wrap logic for calculate_flex_position
+  defp calculate_flex_position(current_pos, _child_size, child_margin, direction, _wrap, _inner_avail_size) do
+    calculate_flex_position(current_pos, nil, child_margin, direction, false, nil)
   end
 
-  defp calculate_flex_position({x, y}, {_w, h}, :column, false, _) do
-    {x, y + h}
+  defp advance_position({pos_x, pos_y}, {child_w, child_h}, {m_top, m_right, m_bottom, m_left}, :row) do
+    {pos_x + child_w + m_right, pos_y}
   end
 
-  defp advance_position({x, y}, {w, _h}, :row) do
-    {x + w, y}
+  defp advance_position({pos_x, pos_y}, {child_w, child_h}, {m_top, m_right, m_bottom, m_left}, :column) do
+    {pos_x, pos_y + child_h + m_bottom}
   end
 
-  defp advance_position({x, y}, {_w, h}, :column) do
-    {x, y + h}
-  end
-
-  defp adjust_flex_positions(
-         positioned_children,
-         direction,
-         justify,
-         align,
-         container_size
-       ) do
-    # Simplified placeholder - Real flexbox alignment/justification is complex!
-    positioned_children
+  # Placeholder for more complex flex logic
+  defp adjust_flex_positions(positioned_children, _direction, _justify, _align, _container_size) do
+    # TODO: Implement actual justification and alignment logic
+    positioned_children # Return as is for now
   end
 
   defp flatten_view_tree(nil), do: []
   # Handle non-map children (like text content)
   defp flatten_view_tree(view) when not is_map(view), do: [view]
+  # Add clause for list input
+  defp flatten_view_tree(views) when is_list(views) do
+    Enum.flat_map(views, &flatten_view_tree/1)
+  end
 
   defp flatten_view_tree(view) do
     # For containers like :scroll, :shadow, :border that were handled specially,
@@ -565,7 +602,15 @@ defmodule Raxol.Core.Renderer.View do
   end
 
   defp sort_by_z_index(views) do
-    Enum.sort_by(views, &(&1.z_index || 0))
+    # Default to z_index 0 if missing
+    Enum.sort_by(views, fn view ->
+      case Map.fetch(view, :z_index) do
+        {:ok, z} -> z
+        :error ->
+          IO.inspect(view, label: "View missing z_index in sort_by_z_index")
+          0 # Default to 0
+      end
+    end, :asc)
   end
 
   defp apply_position_types(views, viewport_size) do

@@ -11,9 +11,11 @@ defmodule Raxol.Terminal.ControlCodes do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.Movement
-  alias Raxol.Terminal.CharacterSets
-  alias Raxol.Terminal.ANSI.ScreenModes
+  alias Raxol.Terminal.Cursor.Manager
+  alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ModeManager
   alias Raxol.Terminal.ANSI.TerminalState # Needed for RIS
+  alias Raxol.System.Interaction # Added alias for system interactions
 
   # C0 Constants
   @nul 0
@@ -28,8 +30,8 @@ defmodule Raxol.Terminal.ControlCodes do
   @si 15
   @can 24
   @sub 26
-  @esc 27 # Escape
-  @del 127 # Delete
+  @esc 27
+  @del 127
 
   # --- C0 Control Code Handlers ---
 
@@ -41,7 +43,7 @@ defmodule Raxol.Terminal.ControlCodes do
   def handle_c0(emulator, char_codepoint) do
     case char_codepoint do
       @nul ->
-        Logger.trace("NUL received, ignoring")
+        Logger.debug("NUL received, ignoring")
         emulator
       @bel -> handle_bel(emulator)
       @bs -> handle_bs(emulator)
@@ -59,7 +61,7 @@ defmodule Raxol.Terminal.ControlCodes do
         Logger.debug("ESC received unexpectedly in C0 handler, ignoring")
         emulator
       @del ->
-        Logger.trace("DEL received, ignoring")
+        Logger.debug("DEL received, ignoring")
         emulator
       # Add other C0 codes as needed (e.g., ENQ, ACK, DC1-4, NAK, SYN, ETB, EM, FS, GS, RS, US)
       _ ->
@@ -70,8 +72,8 @@ defmodule Raxol.Terminal.ControlCodes do
 
   @spec handle_bel(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_bel(emulator) do
-    Logger.info("BEL received - Action TBD (e.g., emit event, play sound)")
-    # TODO: Implement Bell action (e.g., emit :bell event)
+    Logger.info("BEL received - Ringing bell.")
+    Interaction.ring_bell()
     emulator
   end
 
@@ -98,45 +100,157 @@ defmodule Raxol.Terminal.ControlCodes do
 
   @doc "Handle Line Feed (LF), New Line (NL), Vertical Tab (VT)"
   def handle_lf(%Emulator{} = emulator) do
-    Logger.debug("Handling LF at cursor: #{inspect(emulator.cursor.position)}")
-    # Behavior depends on New Line Mode (LNM)
-    cursor = emulator.cursor
+    Logger.debug(
+      "[handle_lf] Input: cursor=#{inspect(emulator.cursor.position)}, last_exceeded=#{emulator.last_col_exceeded}"
+    )
 
-    if ScreenModes.mode_enabled?(emulator.mode_state, :lnm) do
-      # LNM: LF acts like CRLF
-      # Move down first
-      # Use alias
-      cursor = Movement.move_down(cursor, 1)
-      # Then move to column 0
-      # Use alias
-      cursor = Movement.move_to_column(cursor, 0)
-      %{emulator | cursor: cursor} |> Emulator.maybe_scroll()
+    # 1. Handle pending wrap if necessary, then check for scrolling *once*
+    emulator_after_wrap_and_scroll =
+      if emulator.last_col_exceeded do
+        Logger.debug("[handle_lf] Pending wrap detected")
+        # Perform the deferred wrap: move cursor to col 0, next line
+        {_cx, cy} = emulator.cursor.position
+        wrapped_cursor = Movement.move_to_position(emulator.cursor, 0, cy + 1)
+        Logger.debug("[handle_lf] Cursor after wrap: #{inspect(wrapped_cursor.position)}")
+
+        # Create intermediate state *after* wrap but *before* scroll check
+        emulator_after_wrap = %{
+          emulator
+          | cursor: wrapped_cursor,
+            last_col_exceeded: false # Clear flag immediately after handling wrap
+        }
+
+        # Now check if scrolling is needed in this post-wrap state
+        Logger.debug("[handle_lf] Checking maybe_scroll after wrap")
+        scrolled_emulator = Emulator.maybe_scroll(emulator_after_wrap)
+        Logger.debug(
+          "[handle_lf] State after wrap scroll check: cursor=#{inspect(scrolled_emulator.cursor.position)}"
+        )
+        scrolled_emulator # This state is now ready for the final cursor move
+      else
+        Logger.debug("[handle_lf] No pending wrap")
+        # No wrap needed, just check if scrolling is needed based on current state
+        Logger.debug("[handle_lf] Checking maybe_scroll (no wrap)")
+        scrolled_emulator = Emulator.maybe_scroll(emulator)
+        Logger.debug(
+          "[handle_lf] State after no-wrap scroll check: cursor=#{inspect(scrolled_emulator.cursor.position)}"
+        )
+        scrolled_emulator # This state is ready for the final cursor move
+      end
+
+    # 2. Now proceed with standard LF cursor movement logic on the (potentially) scrolled state
+    cursor_after_scroll = emulator_after_wrap_and_scroll.cursor
+    active_buffer = Emulator.get_active_buffer(emulator_after_wrap_and_scroll)
+    {_buffer_width, buffer_height} = ScreenBuffer.get_dimensions(active_buffer)
+
+    # Get effective scroll region (used for clamping Y after move)
+    {scroll_top, scroll_bottom_inclusive} =
+      case emulator_after_wrap_and_scroll.scroll_region do
+        {top, bottom} when is_integer(top) and top >= 0 and is_integer(bottom) and bottom > top ->
+          {top, min(bottom, buffer_height - 1)}
+        _ -> {0, buffer_height - 1} # Default: full buffer
+      end
+
+    # Perform the move down
+    lnm_enabled = ModeManager.mode_enabled?(emulator_after_wrap_and_scroll.mode_manager, :lnm)
+    Logger.debug("[handle_lf] Performing move down (LNM enabled: #{lnm_enabled})")
+    final_cursor_before_clamp =
+      if lnm_enabled do
+        # LNM: LF acts like CRLF (move down, then to column 0)
+        moved_down = Movement.move_down(cursor_after_scroll, 1)
+        Movement.move_to_column(moved_down, 0)
+      else
+        # Normal Mode: LF moves down one line in the same column
+        Movement.move_down(cursor_after_scroll, 1)
+      end
+    Logger.debug("[handle_lf] Cursor after move down (before clamp): #{inspect(final_cursor_before_clamp.position)}")
+
+    # 3. Clamp the final Y position
+    {final_x, final_y_unclamped} = final_cursor_before_clamp.position
+    effective_bottom = min(buffer_height - 1, scroll_bottom_inclusive)
+    final_y_clamped = min(final_y_unclamped, effective_bottom)
+    final_cursor = Manager.move_to(final_cursor_before_clamp, final_x, final_y_clamped)
+    Logger.debug("[handle_lf] Final cursor (after clamp): #{inspect(final_cursor.position)}")
+
+    # Ensure cursor stays within scroll region (may already be handled by clamp above)
+    final_cursor_clamped_region = clamp_cursor_to_scroll_region(emulator_after_wrap_and_scroll, final_cursor)
+    Logger.debug(
+      "[handle_lf] Cursor After Move (After Region Clamp): #{inspect(final_cursor_clamped_region.position)}"
+    )
+
+    # Return final state (Note: last_col_exceeded was already reset if wrap occurred)
+    %{emulator_after_wrap_and_scroll | cursor: final_cursor_clamped_region}
+  end
+
+  defp clamp_cursor_to_scroll_region(emulator, cursor) do
+    active_buffer = Emulator.get_active_buffer(emulator)
+    buffer_height = ScreenBuffer.get_height(active_buffer)
+
+    {scroll_top, scroll_bottom_inclusive} =
+      case emulator.scroll_region do
+        {top, bottom} when is_integer(top) and top >= 0 and is_integer(bottom) and bottom > top ->
+          {top, min(bottom, buffer_height - 1)}
+        _ -> {0, buffer_height - 1} # Default: full buffer
+      end
+
+    {x, y} = cursor.position
+    clamped_y = max(scroll_top, min(y, scroll_bottom_inclusive))
+
+    if y != clamped_y do
+      Logger.debug("[clamp_cursor] Clamped Y from #{y} to #{clamped_y} (region #{scroll_top}-#{scroll_bottom_inclusive}) ")
+      Manager.move_to(cursor, x, clamped_y)
     else
-      # Normal Mode: LF moves down one line in the same column
-      # Use alias
-      cursor = Movement.move_down(cursor, 1)
-      %{emulator | cursor: cursor} |> Emulator.maybe_scroll()
+      cursor
     end
   end
 
   @doc "Handle Carriage Return (CR)"
   def handle_cr(%Emulator{} = emulator) do
-    # Move cursor to column 0
-    # Use alias
-    new_cursor = Movement.move_to_column(emulator.cursor, 0)
-    %{emulator | cursor: new_cursor}
+    Logger.debug(
+      "[handle_cr] Input: cursor=#{inspect(emulator.cursor.position)}, last_exceeded=#{emulator.last_col_exceeded}"
+    )
+    # 1. Check for pending wrap
+    emulator_after_pending_wrap =
+      if emulator.last_col_exceeded do
+        Logger.debug("[handle_cr] Pending wrap detected")
+        # Perform the deferred wrap: move cursor to col 0, next line
+        {_cx, cy} = emulator.cursor.position
+        wrapped_cursor = Movement.move_to_position(emulator.cursor, 0, cy + 1)
+        Logger.debug("[handle_cr] Cursor after wrap: #{inspect(wrapped_cursor.position)}")
+        # Also scroll if needed after wrap (use maybe_scroll on potentially wrapped state)
+        maybe_scrolled_emulator = Emulator.maybe_scroll(%{
+          emulator
+          | cursor: wrapped_cursor,
+            last_col_exceeded: false
+        })
+        Logger.debug(
+          "[handle_cr] State after pending wrap + scroll: cursor=#{inspect(maybe_scrolled_emulator.cursor.position)}, last_exceeded=#{maybe_scrolled_emulator.last_col_exceeded}"
+        )
+        maybe_scrolled_emulator
+      else
+        Logger.debug("[handle_cr] No pending wrap")
+        emulator
+      end
+
+    # 2. Perform CR logic on potentially updated state
+    Logger.debug("[handle_cr] Moving cursor to column 0")
+    {_cx, cy} = emulator_after_pending_wrap.cursor.position # Get current Y coordinate
+    final_cursor = Movement.move_to_position(emulator_after_pending_wrap.cursor, 0, cy)
+    Logger.debug("[handle_cr] Final cursor: #{inspect(final_cursor.position)}")
+
+    %{emulator_after_pending_wrap | cursor: final_cursor}
   end
 
   @spec handle_so(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_so(emulator) do
     # SO: Shift Out. Invoke G1 character set.
-    %{emulator | charset_state: CharacterSets.invoke_designator(emulator.charset_state, :g1)}
+    %{emulator | charset_state: CharacterSets.invoke_charset(emulator.charset_state, :g1)}
   end
 
   @spec handle_si(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_si(emulator) do
     # SI: Shift In. Invoke G0 character set.
-    %{emulator | charset_state: CharacterSets.invoke_designator(emulator.charset_state, :g0)}
+    %{emulator | charset_state: CharacterSets.invoke_charset(emulator.charset_state, :g0)}
   end
 
   @spec handle_can(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
@@ -149,8 +263,9 @@ defmodule Raxol.Terminal.ControlCodes do
 
   @spec handle_sub(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   def handle_sub(emulator) do
-    # SUB: Substitute. Often treated as CAN or ignored.
-    Logger.debug("SUB received outside escape sequence, ignoring")
+    Logger.info("SUB received - Triggering substitute action.")
+    Interaction.substitute_character()
+    # TODO: Should SUB potentially cancel the current escape sequence in the parser state?
     emulator
   end
 
@@ -241,12 +356,14 @@ defmodule Raxol.Terminal.ControlCodes do
 
     if restored_state_data do
       # Apply the restored state components
-      # Directly use the restored cursor, style, charset_state, mode_state, scroll_region
+      # Directly use the restored cursor, style, charset_state, mode_manager, scroll_region
       new_cursor = restored_state_data.cursor
       new_style = restored_state_data.style
       new_charset_state = restored_state_data.charset_state
-      new_mode_state = restored_state_data.mode_state
+      new_mode_manager_state = restored_state_data.mode_manager # Corrected key
       new_scroll_region = restored_state_data.scroll_region
+      # Assuming cursor_style was also saved by TerminalState.save_state if it's part of full DECRC
+      new_cursor_style = Map.get(restored_state_data, :cursor_style, emulator.cursor_style)
 
       %{
         emulator
@@ -254,8 +371,9 @@ defmodule Raxol.Terminal.ControlCodes do
           cursor: new_cursor,
           style: new_style,
           charset_state: new_charset_state,
-          mode_state: new_mode_state,
-          scroll_region: new_scroll_region
+          mode_manager: new_mode_manager_state, # Corrected field
+          scroll_region: new_scroll_region,
+          cursor_style: new_cursor_style # Ensure cursor_style is restored
       }
     else
       # Stack was empty, no state to restore
@@ -263,24 +381,4 @@ defmodule Raxol.Terminal.ControlCodes do
     end
   end
 
-  # --- Helper Function ---
-
-  # REMOVE Private maybe_scroll definition
-  # defp maybe_scroll(state) do
-  #   {cursor_row, _} = Emulator.get_cursor_position(state.emulator)
-  #   # Get scroll region directly from emulator state
-  #   scroll_region = state.emulator.scroll_region
-  #   active_buffer = Emulator.get_active_buffer(state.emulator)
-  #
-  #   {_top, bottom} = scroll_region || {0, ScreenBuffer.get_height(active_buffer) - 1}
-  #
-  #   if cursor_row > bottom do # Check if cursor is *below* the region
-  #     # Return updated emulator state after scrolling
-  #     # Raxol.Terminal.Commands.Screen.scroll_up(state.emulator, 1)
-  #     Logger.debug("Cursor below scroll region, would scroll up (currently commented out)")
-  #     state # Return original state for now
-  #   else
-  #     state # Cursor within region, no scroll needed
-  #   end
-  # end
 end

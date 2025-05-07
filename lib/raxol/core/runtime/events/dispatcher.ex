@@ -5,6 +5,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   """
 
   use GenServer
+  @behaviour Raxol.Core.Runtime.Events.Dispatcher.Behaviour
 
   require Logger
   require Raxol.Core.Events.Event
@@ -43,6 +44,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   # --- Public API ---
 
+  @impl true
   def start_link(runtime_pid, initial_state) do
     # Start the Registry for subscriptions
     {:ok, _pid} = Registry.start_link(keys: :duplicate, name: @registry_name)
@@ -58,8 +60,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     Logger.info("Dispatcher starting...")
     Logger.debug("Dispatcher init: runtime_pid=#{inspect(runtime_pid)}, initial_state_map=#{inspect(initial_state_map)}")
 
-    # Load initial theme from preferences
-    initial_theme_id = UserPreferences.get("theme.active_id") || :default
+    # Load initial theme or default
+    # TODO: Integrate properly with Theme subsystem if it manages UserPreferences
+    initial_theme_id = UserPreferences.get([:theme, :active_id]) || :default
     Logger.debug("Dispatcher init: Loaded initial theme ID: #{inspect(initial_theme_id)}")
 
     # Ensure model has the loaded theme ID if not provided explicitly
@@ -132,7 +135,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     # Convert event to message for app update
     message = default_event_to_message(event)
 
-    # Call application update
+    # Delegate event processing to the application module
     case Application.delegate_update(
            app_module,
            message,
@@ -156,16 +159,30 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
           if new_theme_id != current_theme_id do
             Logger.debug("Theme changed in model: #{current_theme_id} -> #{new_theme_id}. Updating preferences.")
             # Save the new theme preference
+            # Use :meck passthrough for this in tests if needed
             :ok = UserPreferences.set("theme.active_id", new_theme_id)
             %{state | model: updated_model, current_theme_id: new_theme_id}
           else
             %{state | model: updated_model}
           end
 
-        {:ok, updated_state}
+        # Inform RenderingEngine about the state change
+        Logger.debug("State changed, sending :render_needed to Runtime")
+        send(state.runtime_pid, :render_needed)
 
-      # Handle other potential return values from delegate_update if necessary
-      # e.g., {:error, reason}
+        # Return tuple indicating success, the new state, and commands
+        {:ok, updated_state, commands}
+
+      {:error, reason} ->
+        # Application update failed
+        Logger.error("Application update failed: #{inspect reason}")
+        # Return tuple indicating handled error
+        {:error, reason}
+
+      other ->
+        Logger.warning("Unexpected return from #{app_module}.update: #{inspect other}")
+        # Return tuple indicating handled error
+        {:error, {:unexpected_return, other}}
     end
   end
 
@@ -236,32 +253,47 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   # --- GenServer Callbacks ---
 
   @impl true
-  def handle_cast({:dispatch, event}, %State{} = state) do
-    # Dispatch event internally
-    case do_dispatch_event(event, state) do
-      {:ok, updated_state} ->
-        # Check if state actually changed before rendering?
-        if updated_state != state do
-          # Signal Runtime to render
-          Logger.debug("State changed, sending :render_needed to Runtime")
-          send(state.runtime_pid, :render_needed)
-          {:noreply, updated_state}
+  def handle_cast({:dispatch, event}, state) do
+    Logger.debug("[Dispatcher] handle_cast :dispatch event: #{inspect(event)}")
+
+    # Delegate to the main event handling logic
+    case handle_event(event, state) do
+      {:ok, new_state, _commands} ->
+        # Broadcast event globally if successfully handled by app logic
+        # Ensure event.type and event.data are appropriate for broadcast
+        if is_atom(event.type) and is_map(event.data) do
+          Logger.debug("[Dispatcher] Broadcasting event: #{inspect(event.type)} via internal broadcast")
+          :ok = __MODULE__.broadcast(event.type, event.data)
         else
-          # No change, no render
-          {:noreply, state}
+          Logger.warning("[Dispatcher] Event not broadcast due to invalid type/data: #{inspect(event)}")
         end
 
-      {:quit, final_state} ->
-        # TODO: How to signal Runtime to quit?
-        Logger.info("Quit requested via event dispatch.")
-        # Send message to runtime to handle shutdown
-        send(state.runtime_pid, :quit_runtime)
-        {:noreply, final_state}
+        {:noreply, new_state}
 
-      {:error, _reason, final_state} ->
-        # Error already logged by do_dispatch_event
-        {:noreply, final_state}
+      {:error, reason} ->
+        Logger.error("[Dispatcher] Error handling event in handle_cast: #{inspect(reason)}")
+        {:noreply, state} # Or handle error more gracefully
+
+      other ->
+        Logger.warning("[Dispatcher] Unexpected return from handle_event in handle_cast: #{inspect(other)}")
+        {:noreply, state}
     end
+  end
+
+  @impl true
+  def handle_cast({:register_dispatcher, _pid}, state) do
+    # This message is from Terminal.Driver to register itself.
+    # No specific action needed here other than acknowledging it if necessary.
+    # Or, if the dispatcher needs to know about the driver's PID, store it.
+    Logger.debug("[Dispatcher] Received :register_dispatcher (already registered via init)")
+    {:noreply, state}
+  end
+
+  # Catch-all for other cast messages
+  @impl true
+  def handle_cast(unhandled_message, state) do
+    Logger.warning("[Dispatcher] Unhandled cast message: #{inspect(unhandled_message)}")
+    {:noreply, state}
   end
 
   @impl GenServer

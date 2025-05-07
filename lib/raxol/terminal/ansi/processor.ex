@@ -88,12 +88,6 @@ defmodule Raxol.Terminal.ANSI.Processor do
       {:text_attributes, attrs} ->
         handle_text_attributes(attrs, emulator)
 
-      {:set_mode, mode_atom, enabled} when is_atom(mode_atom) ->
-        new_mode_state =
-          ANSIScreenModes.switch_mode(emulator.mode_state, mode_atom, enabled)
-
-        %{emulator | mode_state: new_mode_state}
-
       {:charset, gset_num, charset} ->
         new_charset_state =
           CharacterSets.switch_charset(
@@ -172,6 +166,7 @@ defmodule Raxol.Terminal.ANSI.Processor do
        buffer_manager: nil,
        current_sequence: nil,
        sequence_buffer: "",
+       current_style: TextFormatting.new(),
        terminal_state: %{
          cursor_position: {0, 0},
          attributes: %{},
@@ -423,17 +418,18 @@ defmodule Raxol.Terminal.ANSI.Processor do
     new_buffer_manager =
       case mode do
         0 ->
-          BufferManager.erase_from_cursor_to_end(state.buffer_manager)
+          BufferManager.erase_from_cursor_to_end(state.buffer_manager, state.current_style)
 
         1 ->
-          BufferManager.erase_from_beginning_to_cursor(state.buffer_manager)
+          BufferManager.erase_from_beginning_to_cursor(state.buffer_manager, state.current_style)
 
         2 ->
-          BufferManager.clear_visible_display(state.buffer_manager)
+          BufferManager.clear_visible_display(state.buffer_manager, state.current_style)
 
         3 ->
           BufferManager.clear_entire_display_with_scrollback(
-            state.buffer_manager
+            state.buffer_manager,
+            state.current_style
           )
 
         _ ->
@@ -452,15 +448,16 @@ defmodule Raxol.Terminal.ANSI.Processor do
     new_buffer_manager =
       case mode do
         0 ->
-          BufferManager.erase_from_cursor_to_end_of_line(state.buffer_manager)
+          BufferManager.erase_from_cursor_to_end_of_line(state.buffer_manager, state.current_style)
 
         1 ->
           BufferManager.erase_from_beginning_of_line_to_cursor(
-            state.buffer_manager
+            state.buffer_manager,
+            state.current_style
           )
 
         2 ->
-          BufferManager.clear_current_line(state.buffer_manager)
+          BufferManager.clear_current_line(state.buffer_manager, state.current_style)
 
         _ ->
           state.buffer_manager
@@ -555,5 +552,16 @@ defmodule Raxol.Terminal.ANSI.Processor do
         :error -> default
       end
     end)
+  end
+
+  # Add this clause to handle SGR sequences
+  defp handle_sequence({:text_attributes, attrs}, state) do
+    # Update the style stored in the GenServer state
+    # Iterate through attributes and apply them individually
+    new_style = Enum.reduce(attrs, state.current_style, fn attr, current_style ->
+      # Use apply_attribute/2 instead of apply_attributes/2
+      TextFormatting.apply_attribute(current_style, attr)
+    end)
+    %{state | current_style: new_style}
   end
 end

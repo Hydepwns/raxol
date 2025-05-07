@@ -22,14 +22,18 @@ defmodule Raxol.Test.Mocks do
 
   # Mock for the SystemInteraction behaviour
   Mox.defmock(SystemInteractionMock, for: Raxol.Core.SystemInteraction)
+
+  # Mock for the Accessibility Behaviour
+  Mox.defmock(AccessibilityMock, for: Raxol.Core.Accessibility.Behaviour)
 end
 
-defmodule Raxol.Core.Accessibility.Mock do
-  @moduledoc false
-  require Mox
-
-  # use Mox # <-- Temporarily commented out due to persistent UndefinedFunctionError
-
-  # Assuming this signature based on usage
-  # Mox.defmock(__MODULE__, [announce: 2], for: Raxol.Core.Accessibility)
-end
+# The Raxol.Core.Accessibility.Mock module definition below should be removed.
+# defmodule Raxol.Core.Accessibility.Mock do
+#   @moduledoc false
+#   require Mox
+#
+#   # use Mox # <-- Temporarily commented out due to persistent UndefinedFunctionError
+#
+#   # Assuming this signature based on usage
+#   # Mox.defmock(__MODULE__, [announce: 2], for: Raxol.Core.Accessibility)
+# end

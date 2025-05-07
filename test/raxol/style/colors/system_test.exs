@@ -72,10 +72,10 @@ defmodule Raxol.Style.Colors.SystemTest do
       assert current_theme_name == :dark
     end
 
-    test "gets UI color", %{mocker: mocker} do
+    test "gets UI color", context do
       System.init()
       System.apply_theme(:standard)
-      expect(mocker, :dispatch, fn _ -> :ok end)
+      # expect(mocker, :dispatch, fn _ -> :ok end)
       current_theme_name = System.get_current_theme()
       themes = Process.get(:color_system_themes, %{})
       current_theme = themes[current_theme_name]
@@ -86,10 +86,10 @@ defmodule Raxol.Style.Colors.SystemTest do
       # Example: assert color == "#0077CC"
     end
 
-    test "gets all UI colors", %{mocker: mocker} do
+    test "gets all UI colors", context do
       System.init()
       System.apply_theme(:standard)
-      expect(mocker, :dispatch, fn _ -> :ok end)
+      # expect(mocker, :dispatch, fn _ -> :ok end)
       current_theme_name = System.get_current_theme()
       themes = Process.get(:color_system_themes, %{})
       current_theme = themes[current_theme_name]

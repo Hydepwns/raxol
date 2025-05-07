@@ -22,13 +22,14 @@ defmodule Raxol.Components.Terminal do
 
   @impl Raxol.UI.Components.Base.Component
   def init(props) do
-    # Initialize terminal emulator state, buffer, etc.
+    # Initialize terminal state using props, providing defaults
     %__MODULE__{
       id: props[:id],
       width: props[:width] || 80,
       height: props[:height] || 24,
+      buffer: props[:buffer] || [], # Use buffer from props or default to []
       style: props[:style] || %{}
-      # Initialize buffer, etc.
+      # Initialize other relevant fields if added later
     }
   end
 
@@ -60,21 +61,30 @@ defmodule Raxol.Components.Terminal do
 
   @impl Raxol.UI.Components.Base.Component
   def render(state, %{} = _props) do
-    # Render the terminal buffer content
-    # Assuming buffer is a list of strings
-    # Needs proper cell grid rendering based on actual emulator state
+    # Generate label elements
+    label_elements =
+      Enum.map(state.buffer, fn line_content ->
+        # Still use label macro for consistency, or build map directly
+        Raxol.View.Elements.label(content: line_content)
+      end)
 
-    # Use View Elements macros
-    lines = Enum.map(state.buffer, &Raxol.View.Elements.label(content: &1))
+    # Create column element map explicitly
+    column_element = %{
+      type: :column,
+      attrs: [], # Assuming no specific attrs for column here
+      children: label_elements # Assign the list of labels
+    }
 
-    dsl_result = Raxol.View.Elements.box id: state.id, width: state.width, height: state.height, style: state.style do
-      Raxol.View.Elements.column do
-        lines
-      end
-    end
+    # Create box element map explicitly, using column as child
+    box_element = %{
+      type: :box,
+      # Ensure attrs is a Keyword list as expected by test
+      attrs: [id: state.id, width: state.width, height: state.height, style: state.style],
+      children: column_element # Assign the column map
+    }
 
-    # Return the element structure directly
-    dsl_result
+    # Return the final element structure
+    box_element
   end
 
   # --- Internal Helpers ---

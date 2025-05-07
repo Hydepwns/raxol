@@ -68,7 +68,7 @@ defmodule Mix.Tasks.Benchmark.Visualization do
       end
 
     # Set output directory
-    output_dir = "benchmark_results/visualization/#{Atom.to_string(test_size)}"
+    output_dir = "test/performance/benchmark_results/visualization/#{Atom.to_string(test_size)}"
 
     # Print header
     IO.puts("""

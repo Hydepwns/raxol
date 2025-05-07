@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.Parser do
   # --- Public API ---
 
   @doc """
-  Parses a chunk of input using a state machine.
+  Parses a chunk of input data, updating the parser state and emulator.
 
   Takes the current emulator state and input binary, returns the updated emulator state
   after processing the input chunk.
@@ -53,10 +53,18 @@ defmodule Raxol.Terminal.Parser do
   Takes the emulator state, the *current* parser state, and the input binary.
   Returns `{final_emulator_state, final_parser_state}`.
   """
-  @spec parse_chunk(Emulator.t(), State.t(), binary()) :: {Emulator.t(), State.t()}
-  def parse_chunk(emulator, current_parser_state, input) when is_binary(input) do
-    # Start the internal recursive parsing with the provided parser state
-    parse_loop(emulator, current_parser_state, input)
+  @spec parse_chunk(Emulator.t(), State.t(), String.t()) :: {Emulator.t(), State.t(), String.t()}
+  def parse_chunk(emulator, state, data) do
+    IO.inspect(emulator.main_screen_buffer, label: "PARSER_CHUNK_ENTRY: main_screen_buffer")
+    IO.inspect(state, label: "PARSER_CHUNK_ENTRY: state")
+    IO.inspect(data, label: "PARSER_CHUNK_ENTRY: data")
+    parse_loop(emulator, state, data)
+  end
+
+  def parse(emulator, input) do
+    initial_parser_state = %State{}
+    result = parse_loop(emulator, initial_parser_state, input)
+    result
   end
 
   # --- Internal Parsing State Machine (Renamed do_parse_chunk -> parse_loop) ---
@@ -73,11 +81,10 @@ defmodule Raxol.Terminal.Parser do
   defp parse_loop(emulator, %State{state: :ground} = parser_state, input) do
     case GroundState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
-        # --- DEBUG LOG ---
-        # IO.inspect({:parse_loop_ground_recurse, next_emulator.cursor.position}, label: "DEBUG")
-        # --- END DEBUG LOG ---
+        # --- REMOVED DEBUG ---
+        # IO.inspect({:parse_loop_ground_return, next_parser_state.state}, label: "PARSE_LOOP_GROUND_DEBUG")
+        # --- END DEBUG ---
         parse_loop(next_emulator, next_parser_state, next_input)
-      # GroundState.handle only returns :continue, so no other cases needed here.
     end
   end
 
@@ -88,6 +95,9 @@ defmodule Raxol.Terminal.Parser do
          %State{state: :escape} = parser_state,
          input
        ) do
+    # --- REMOVED DEBUG ---
+    # IO.inspect({:parse_loop_escape_entry, parser_state.state, input}, label: "PARSE_LOOP_DEBUG")
+    # --- END DEBUG ---
     case EscapeState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
@@ -96,8 +106,9 @@ defmodule Raxol.Terminal.Parser do
       {:incomplete, final_emulator, final_parser_state} ->
         {final_emulator, final_parser_state}
       # Escape state might return finished after handling a non-transitioning sequence
-      {:finished, final_emulator, final_parser_state} ->
-         {final_emulator, final_parser_state}
+      # Clause removed as compiler indicates it's unreachable
+      # {:finished, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
     end
   end
 
@@ -110,6 +121,9 @@ defmodule Raxol.Terminal.Parser do
        ) do
     case DesignateCharsetState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
+        # --- REMOVED DEBUG ---
+        # IO.inspect({:parse_loop_after_designate, next_emulator.charset_state}, label: "DESIGNATE_DEBUG")
+        # --- END DEBUG ---
         parse_loop(next_emulator, next_parser_state, next_input)
 
       # Add case for incomplete
@@ -117,8 +131,9 @@ defmodule Raxol.Terminal.Parser do
         {final_emulator, final_parser_state}
       # Previous version had {:handled, emu, state} - ensure that's covered
       # Assuming handle now returns :finished if it used to return :handled
-      {:finished, final_emulator, final_parser_state} ->
-         {final_emulator, final_parser_state}
+      # Clause removed as compiler indicates it's unreachable
+      # {:finished, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
     end
   end
 
@@ -129,17 +144,21 @@ defmodule Raxol.Terminal.Parser do
          %State{state: :csi_entry} = parser_state,
          input
        ) do
+    IO.inspect(emulator.main_screen_buffer, label: "PRE_CSI_ENTRY_HANDLE: main_screen_buffer")
     case CSIEntryState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
+        IO.inspect(next_emulator.main_screen_buffer, label: "POST_CSI_ENTRY_HANDLE (continue): main_screen_buffer")
         parse_loop(next_emulator, next_parser_state, next_input)
 
       # Add case for incomplete
       {:incomplete, final_emulator, final_parser_state} ->
+        IO.inspect(final_emulator.main_screen_buffer, label: "POST_CSI_ENTRY_HANDLE (incomplete): main_screen_buffer")
         {final_emulator, final_parser_state}
       # Previous version had {:handled, emu, state} - ensure that's covered
       # Assuming handle now returns :finished if it used to return :handled
-      {:finished, final_emulator, final_parser_state} ->
-         {final_emulator, final_parser_state}
+      # Clause removed as compiler indicates it's unreachable
+      # {:finished, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
     end
   end
 
@@ -154,8 +173,9 @@ defmodule Raxol.Terminal.Parser do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
 
-      {:finished, final_emulator, final_parser_state} ->
-        {final_emulator, final_parser_state}
+      # Clause removed as compiler indicates it's unreachable
+      # {:finished, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
       {:incomplete, final_emulator, final_parser_state} ->
         {final_emulator, final_parser_state}
     end
@@ -168,13 +188,17 @@ defmodule Raxol.Terminal.Parser do
          %State{state: :csi_intermediate} = parser_state,
          input
        ) do
+    IO.inspect(emulator.main_screen_buffer, label: "PRE_CSI_INTERMEDIATE_HANDLE: main_screen_buffer")
     case CSIIntermediateState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
+        IO.inspect(next_emulator.main_screen_buffer, label: "POST_CSI_INTERMEDIATE_HANDLE (continue): main_screen_buffer")
         parse_loop(next_emulator, next_parser_state, next_input)
 
-      {:finished, final_emulator, final_parser_state} ->
-        {final_emulator, final_parser_state}
+      # Clause removed as compiler indicates it's unreachable
+      # {:finished, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
       {:incomplete, final_emulator, final_parser_state} ->
+        IO.inspect(final_emulator.main_screen_buffer, label: "POST_CSI_INTERMEDIATE_HANDLE (incomplete): main_screen_buffer")
         {final_emulator, final_parser_state}
     end
   end
@@ -185,8 +209,9 @@ defmodule Raxol.Terminal.Parser do
     case OSCStringState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
-      {:finished, final_emulator, final_parser_state} ->
-        {final_emulator, final_parser_state}
+      # Clause removed as compiler indicates it's unreachable
+      # {:finished, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
       {:incomplete, final_emulator, final_parser_state} ->
         {final_emulator, final_parser_state}
     end
@@ -198,10 +223,11 @@ defmodule Raxol.Terminal.Parser do
     case OSCStringMaybeSTState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
-      {:finished, final_emulator, final_parser_state} ->
-        {final_emulator, final_parser_state}
-      {:incomplete, final_emulator, final_parser_state} ->
-        {final_emulator, final_parser_state}
+      # Clauses removed as compiler indicates they are unreachable
+      # {:finished, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
+      # {:incomplete, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
     end
   end
 
@@ -216,8 +242,9 @@ defmodule Raxol.Terminal.Parser do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
 
-      {:finished, final_emulator, final_parser_state} ->
-        {final_emulator, final_parser_state}
+      # Clause removed as compiler indicates it's unreachable
+      # {:finished, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
       {:incomplete, final_emulator, final_parser_state} ->
         {final_emulator, final_parser_state}
     end
@@ -234,23 +261,30 @@ defmodule Raxol.Terminal.Parser do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
 
-      {:finished, final_emulator, final_parser_state} ->
-        {final_emulator, final_parser_state}
+      # Clause removed as compiler indicates it's unreachable
+      # {:finished, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
       {:incomplete, final_emulator, final_parser_state} ->
         {final_emulator, final_parser_state}
     end
   end
 
-  # Helper state to check for ST after ESC in DCS Passthrough
+  # --- DCS Passthrough Maybe ST State ---
   # Delegates to DCSPassthroughMaybeSTState handler
-  defp parse_loop(emulator, %State{state: :dcs_passthrough_maybe_st} = parser_state, input) do
+  defp parse_loop(
+         emulator,
+         %State{state: :dcs_passthrough_maybe_st} = parser_state,
+         input
+       ) do
     case DCSPassthroughMaybeSTState.handle(emulator, parser_state, input) do
       {:continue, next_emulator, next_parser_state, next_input} ->
         parse_loop(next_emulator, next_parser_state, next_input)
-      {:finished, final_emulator, final_parser_state} ->
-        {final_emulator, final_parser_state}
-      {:incomplete, final_emulator, final_parser_state} ->
-        {final_emulator, final_parser_state}
+
+      # Clauses removed as compiler indicates they are unreachable
+      # {:finished, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
+      # {:incomplete, final_emulator, final_parser_state} ->
+      #   {final_emulator, final_parser_state}
     end
   end
 end

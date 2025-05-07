@@ -1,5 +1,8 @@
 import Config
 
+# Set the overall default log level for the test environment to :debug
+config :logger, level: :debug
+
 # Configure Mox
 # Set the mock implementation for the Clipboard Behaviour
 config :raxol, :mocks, ClipboardBehaviour: ClipboardMock
@@ -25,6 +28,7 @@ config :raxol, database_enabled: false
 # you can enable the server option below.
 config :raxol, RaxolWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
+  secret_key_base: "your_very_long_and_secure_secret_key_base_for_testing",
   server: false,
   # Remove deprecated :pubsub key
   # pubsub: [server: Phoenix.PubSub, adapter: Phoenix.PubSub.PG2]
@@ -34,11 +38,13 @@ config :raxol, RaxolWeb.Endpoint,
 # In test we don't send emails.
 config :raxol, Raxol.Mailer, adapter: Swoosh.Adapters.Test
 
-# Print only warnings and errors during test
-# config :logger, level: :warn
-
-# Configure default logged metadata
-config :logger, :console, level: :debug, metadata: [:request_id]
+# Configure console logger for tests:
+# - Set to :debug level for verbose output.
+# - Include detailed metadata (time, module, function, line) for easier debugging.
+config :logger, :console,
+  level: :debug,
+  format: "$time $metadata[$level] $message\n",
+  metadata: [:module, :function, :line]
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
@@ -63,7 +69,7 @@ config :raxol, :compile_ai_tests, false
 
 # Configure web interface settings for testing
 config :raxol, :web,
-  default_theme: "light",
+  default_theme: "dark",
   enable_websockets: false,
   session_timeout: 60,
   debug_mode: false,
@@ -90,3 +96,9 @@ config :swoosh, :api_client, Raxol.Finch
 config :swoosh,
   log_level: :warning,
   api_client: Raxol.Finch
+
+# Configure Mox for testing behaviours
+config :mox, :exclude_compilation, true
+
+# To set specific log level for a module:
+# config :logger, Raxol.Terminal.Buffer.Eraser, level: :debug

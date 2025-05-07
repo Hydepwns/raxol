@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Delegates operations to specialized modules in Raxol.Terminal.Buffer.*
   """
 
+  @behaviour Raxol.Terminal.ScreenBufferBehaviour
+
   require Logger
 
   alias Raxol.Terminal.Cell
@@ -13,6 +15,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
   alias Raxol.Terminal.Buffer.Selection
   alias Raxol.Terminal.Buffer.Scrollback
   alias Raxol.Terminal.Buffer.Operations
+  alias Raxol.Terminal.Buffer.LineEditor
+  alias Raxol.Terminal.Buffer.CharEditor
+  alias Raxol.Terminal.Buffer.Eraser
 
   defstruct [
     # The main grid of cells
@@ -39,6 +44,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
   Creates a new screen buffer with the specified dimensions.
   """
   @spec new(non_neg_integer(), non_neg_integer(), non_neg_integer()) :: t()
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   def new(width, height, scrollback_limit \\ 1000) do
     # Validation logic remains here as it's about initialization
     actual_width = if is_number(width) and width > 0, do: width, else: 80
@@ -171,15 +177,16 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
   @spec is_empty?(t()) :: boolean()
   def is_empty?(buffer) do
-    # Revert to Enum.all? with the simplified check
+    # Use Cell.is_empty? for a more accurate check
     Enum.all?(buffer.cells, fn row ->
-      Enum.all?(row, fn cell -> cell.char == " " end)
+      Enum.all?(row, &Cell.is_empty?/1)
     end)
   end
 
   # --- Resizing & Dimensions --- (Delegated to Operations)
   @doc "Resizes buffer. See `Raxol.Terminal.Buffer.Operations.resize/3`."
   @spec resize(t(), non_neg_integer(), non_neg_integer()) :: t()
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate resize(buffer, new_width, new_height), to: Operations
 
   @doc "Gets width. See `Raxol.Terminal.Buffer.Operations.get_width/1`."
@@ -192,6 +199,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   @doc "Gets dimensions. See `Raxol.Terminal.Buffer.Operations.get_dimensions/1`."
   @spec get_dimensions(t()) :: {non_neg_integer(), non_neg_integer()}
+  @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate get_dimensions(buffer), to: Operations
 
   # --- Cell/Line Access --- (Delegated to Operations)
@@ -207,69 +215,150 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @spec get_cell_at(t(), non_neg_integer(), non_neg_integer()) :: Cell.t() | nil
   defdelegate get_cell_at(buffer, x, y), to: Operations
 
-  # --- Clearing/Erasing --- (Delegated to Operations)
-  @doc "Clears region. See `Raxol.Terminal.Buffer.Operations.clear_region/5`."
+  # --- Clearing/Erasing --- (Delegated to Eraser)
+  @doc "Clears region. See `Raxol.Terminal.Buffer.Eraser.clear_region/6`."
   @spec clear_region(
           t(),
           non_neg_integer(),
           non_neg_integer(),
           non_neg_integer(),
-          non_neg_integer()
+          non_neg_integer(),
+          TextFormatting.text_style()
         ) :: t()
-  defdelegate clear_region(buffer, start_x, start_y, end_x, end_y),
-    to: Operations
+  defdelegate clear_region(buffer, start_x, start_y, end_x, end_y, default_style),
+    to: Eraser
 
-  @doc "Erases in display. See `Raxol.Terminal.Buffer.Operations.erase_in_display/3`."
-  @spec erase_in_display(t(), {non_neg_integer(), non_neg_integer()}, atom()) ::
-          t()
-  defdelegate erase_in_display(buffer, cursor_pos, type), to: Operations
+  @doc "Erases in display. See `Raxol.Terminal.Buffer.Eraser.erase_in_display/4`."
+  @spec erase_in_display(
+          t(),
+          {non_neg_integer(), non_neg_integer()},
+          atom(),
+          TextFormatting.text_style()
+        ) :: t()
+  defdelegate erase_in_display(buffer, cursor_pos, type, default_style), to: Eraser
 
-  @doc "Erases in line. See `Raxol.Terminal.Buffer.Operations.erase_in_line/3`."
-  @spec erase_in_line(t(), {non_neg_integer(), non_neg_integer()}, atom()) ::
-          t()
-  defdelegate erase_in_line(buffer, cursor_pos, type), to: Operations
+  @doc "Erases in line. See `Raxol.Terminal.Buffer.Eraser.erase_in_line/4`."
+  @spec erase_in_line(
+          t(),
+          {non_neg_integer(), non_neg_integer()},
+          atom(),
+          TextFormatting.text_style()
+        ) :: t()
+  defdelegate erase_in_line(buffer, cursor_pos, type, default_style), to: Eraser
 
-  @doc "Clears buffer. See `Raxol.Terminal.Buffer.Operations.clear/1`."
-  @spec clear(t()) :: t()
-  defdelegate clear(buffer), to: Operations
+  @doc "Clears buffer. See `Raxol.Terminal.Buffer.Eraser.clear_screen/2`."
+  @spec clear(t(), TextFormatting.text_style()) :: t()
+  @impl Raxol.Terminal.ScreenBufferBehaviour
+  defdelegate clear(buffer, default_style), to: Eraser, as: :clear_screen
 
-  # --- Deleting --- (Delegated to Operations)
-  @doc "Deletes lines. See `Raxol.Terminal.Buffer.Operations.delete_lines/4`."
+  # --- Deleting --- (Delegated to LineEditor/CharEditor)
+  @doc """
+  Deletes `n` lines starting at `start_y`.
+  Optionally operates only within the given `scroll_region` {top, bottom}.
+  """
   @spec delete_lines(
           t(),
           non_neg_integer(),
           non_neg_integer(),
+          TextFormatting.text_style(),
           {non_neg_integer(), non_neg_integer()} | nil
         ) :: t()
-  defdelegate delete_lines(buffer, start_y, n, scroll_region), to: Operations
+  def delete_lines(%__MODULE__{} = buffer, start_y, count, default_style, scroll_region \\ nil)
+      when start_y >= 0 and count > 0 do
+    {region_top, region_bottom} =
+      case scroll_region do
+        {t, b} when is_integer(t) and t >= 0 and is_integer(b) and b >= t and b < buffer.height ->
+          {t, b}
+        _ -> # No valid region provided, use full buffer height
+          {0, buffer.height - 1}
+      end
 
-  @doc "Deletes characters. See `Raxol.Terminal.Buffer.Operations.delete_characters/3`."
+    # Ensure the operation start is within the effective region
+    if start_y >= region_top && start_y <= region_bottom do
+      # Calculate how many lines to actually delete within the region
+      lines_in_region_from_start = region_bottom - start_y + 1
+      effective_count = min(count, lines_in_region_from_start)
+
+      blank_line = List.duplicate(%Cell{char: " ", style: default_style}, buffer.width)
+      blank_lines = List.duplicate(blank_line, effective_count)
+
+      # Extract the lines within the scroll region
+      region_cells = Enum.slice(buffer.cells, region_top..(region_top + (region_bottom - region_top)))
+      # Calculate relative start within the extracted region
+      relative_start_y = start_y - region_top
+
+      # Split the region lines
+      {region_before, region_after_inclusive} = Enum.split(region_cells, relative_start_y)
+      # Keep lines after deletion within the region
+      region_after_kept = Enum.drop(region_after_inclusive, effective_count)
+
+      # Combine parts within the region, adding blank lines at the end *of the region*
+      new_region_cells = region_before ++ region_after_kept ++ blank_lines
+
+      # Splice the modified region back into the full buffer cells
+      cells_before_region = Enum.slice(buffer.cells, 0, region_top)
+      cells_after_region = Enum.slice(buffer.cells, region_bottom + 1, buffer.height - (region_bottom + 1))
+      final_cells = cells_before_region ++ new_region_cells ++ cells_after_region
+
+      %{buffer | cells: final_cells}
+    else
+      # Start is outside the region, no operation
+      buffer
+    end
+  end
+
+  def delete_lines(buffer, _, _, _, _), do: buffer # No-op for invalid input
+
+  @doc """
+  Deletes `count` characters starting at `{row, col}`.
+
+  Characters to the right are shifted left.
+  Blank cells are inserted at the end of the line.
+
+  Delegates to `CharEditor.delete_characters/5`. Requires default_style.
+  """
   @spec delete_characters(
           t(),
-          {non_neg_integer(), non_neg_integer()},
-          non_neg_integer()
-        ) :: t()
-  defdelegate delete_characters(buffer, pos, count), to: Operations
-
-  # --- Inserting --- (Delegated to Operations)
-  @doc "Inserts characters. See `Raxol.Terminal.Buffer.Operations.insert_characters/4`."
-  @spec insert_characters(
-          t(),
-          {non_neg_integer(), non_neg_integer()},
           non_neg_integer(),
-          TextFormatting.text_style() | nil
+          non_neg_integer(),
+          non_neg_integer(),
+          TextFormatting.text_style()
         ) :: t()
-  defdelegate insert_characters(buffer, pos, count, style \\ nil),
-    to: Operations
+  defdelegate delete_characters(buffer, row, col, count, default_style), to: CharEditor
 
-  @doc "Inserts lines. See `Raxol.Terminal.Buffer.Operations.insert_lines/4`."
+  # --- Inserting --- (Delegated to CharEditor/LineEditor)
+  @doc """
+  Inserts `count` blank lines at `row`.
+
+  Lines from `row` down are shifted down.
+  Lines shifted off the bottom are discarded.
+
+  Delegates to `LineEditor.insert_lines/4`. Requires default_style.
+  """
   @spec insert_lines(
           t(),
           non_neg_integer(),
           non_neg_integer(),
-          {non_neg_integer(), non_neg_integer()} | nil
+          TextFormatting.text_style()
         ) :: t()
-  defdelegate insert_lines(buffer, start_y, n, scroll_region), to: Operations
+  defdelegate insert_lines(buffer, row, count, default_style), to: LineEditor
+
+  @doc """
+  Inserts `count` blank characters at `{row, col}`.
+
+  Characters from `col` right are shifted right.
+  Characters shifted off the end of the line are discarded.
+
+  Delegates to `CharEditor.insert_characters/5`. Requires default_style.
+  """
+  @spec insert_characters(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          TextFormatting.text_style()
+        ) :: t()
+  defdelegate insert_characters(buffer, row, col, count, default_style), to: CharEditor
 
   # --- Diffing & Updating --- (Delegated to Operations)
   @doc "Calculates diff. See `Raxol.Terminal.Buffer.Operations.diff/2`."

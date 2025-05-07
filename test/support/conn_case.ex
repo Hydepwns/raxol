@@ -1,4 +1,7 @@
 defmodule RaxolWeb.ConnCase do
+  # Add import for Plug.Conn functions used in helpers
+  import Plug.Conn
+
   @moduledoc """
   This module defines the test case to be used by
   tests that require setting up a connection.
@@ -32,15 +35,21 @@ defmodule RaxolWeb.ConnCase do
   end
 
   setup tags do
-    # Start the Repo if not already started (needed for Sandbox)
-    {:ok, _} = Ecto.Adapters.SQL.Sandbox.start_owner!(Raxol.Repo, shared: not tags[:async])
+    # Conditionally start the Ecto Sandbox only if the database is enabled
+    if Application.get_env(:raxol, :database_enabled, false) do
+      # Start the Repo if not already started (needed for Sandbox)
+      {:ok, _} = Ecto.Adapters.SQL.Sandbox.start_owner!(Raxol.Repo, shared: not tags[:async])
 
-    # Setup Ecto sandbox
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+      # Setup Ecto sandbox
+      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
 
-    if !tags[:async] do
-      Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
+      if !tags[:async] do
+        Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
+      end
     end
+
+    # Ensure Endpoint is started for LiveView tests
+    start_endpoint(tags)
 
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
@@ -86,5 +95,17 @@ defmodule RaxolWeb.ConnCase do
         |> to_string()
       end)
     end)
+  end
+
+  @doc """
+  Logs the given user into the connection for testing.
+  Mimics the behaviour of RaxolWeb.UserAuth.log_in_user/2.
+  """
+  def log_in_user(conn, user) do
+    session_token = "placeholder_id_#{user.id}"
+
+    conn
+    |> put_session(:user_token, session_token)
+    |> configure_session(renew: true)
   end
 end

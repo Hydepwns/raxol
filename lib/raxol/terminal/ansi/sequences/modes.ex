@@ -6,7 +6,8 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   including screen modes, input modes, and rendering modes.
   """
 
-  alias Raxol.Terminal.ANSI.ScreenModes
+  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.ModeManager
   require Logger
 
   @doc """
@@ -23,77 +24,23 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   Updated emulator state
   """
   def set_screen_mode(emulator, mode, enabled) do
-    case ScreenModes.get_mode(mode) do
-      nil ->
-        Logger.debug("Unknown screen mode: #{mode}")
-        emulator
+    # ModeManager uses integer codes. Assume 'mode' is the integer code.
+    # Determine if it's private (starts with '?') or standard
+    # NOTE: This function seems to be called with the *integer* mode code.
+    # The logic needs clarification on whether it handles standard vs private.
+    # Assuming 'mode' is just the integer code for now.
+    # Let's find the corresponding mode atom.
+    mode_atom = ModeManager.lookup_private(mode) || ModeManager.lookup_standard(mode)
 
-      mode_def ->
-        mode_name = mode_def.name
-
-        # Update the screen modes map in the emulator state
-        updated_modes = Map.put(emulator.screen_modes, mode_name, enabled)
-        emulator = %{emulator | screen_modes: updated_modes}
-
-        # Handle special mode actions if needed
-        handle_special_mode_action(emulator, mode_name, enabled)
-    end
-  end
-
-  @doc """
-  Handle special mode actions that require additional state changes.
-
-  ## Parameters
-
-  * `emulator` - The terminal emulator state
-  * `mode_name` - The name of the mode
-  * `enabled` - Boolean indicating if mode is enabled or disabled
-
-  ## Returns
-
-  Updated emulator state
-  """
-  def handle_special_mode_action(emulator, mode_name, enabled) do
-    case {mode_name, enabled} do
-      {:alternate_screen, true} ->
-        # Switch to alternate screen buffer
-        %{emulator | active_buffer_type: :alternate}
-
-      {:alternate_screen, false} ->
-        # Switch back to main screen buffer
-        %{emulator | active_buffer_type: :main}
-
-      {:origin_mode, _} ->
-        # Reset cursor position when origin mode changes
-        %{emulator | cursor_x: 0, cursor_y: 0}
-
-      {:cursor_visible, enabled} ->
-        # Update cursor visibility
-        %{emulator | cursor_visible: enabled}
-
-      {:auto_wrap, _} ->
-        # Auto-wrap mode only affects text output behavior, no state change needed
-        emulator
-
-      {:insert_mode, _} ->
-        # Insert mode affects text insertion behavior, no state change needed
-        emulator
-
-      {:bracketed_paste, _} ->
-        # Bracketed paste affects input handling, no state change needed
-        emulator
-
-      {:mouse_tracking, _} ->
-        # Mouse tracking affects input handling, no state change needed
-        emulator
-
-      {:focus_events, _} ->
-        # Focus events affects window behavior, no state change needed
-        emulator
-
-      _ ->
-        # Other modes don't require special handling
-        emulator
+    if mode_atom do
+      if enabled do
+        ModeManager.set_mode(emulator, [mode_atom])
+      else
+        ModeManager.reset_mode(emulator, [mode_atom])
+      end
+    else
+      Logger.warning("[Sequences.Modes] Unknown mode code: #{mode}")
+      emulator
     end
   end
 

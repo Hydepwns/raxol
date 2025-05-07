@@ -43,7 +43,8 @@ defmodule PreCommitCheck do
   """
   def check_code_style do
     IO.puts("Checking code style...")
-    status = :ok # Assume ok initially
+    # Assume ok initially
+    status = :ok
 
     # Only check files that are staged for commit
     {staged_files_output, exit_code} =
@@ -59,7 +60,8 @@ defmodule PreCommitCheck do
 
     if exit_code != 0 do
       IO.puts("Error getting staged files.")
-      :error # Return error
+      # Return error
+      :error
     else
       staged_files = String.split(staged_files_output, "\n", trim: true)
 
@@ -82,7 +84,9 @@ defmodule PreCommitCheck do
           IO.puts("Code style check passed!")
         end
       end
-       status # Return the status (:ok)
+
+      # Return the status (:ok)
+      status
     end
   end
 
@@ -92,7 +96,8 @@ defmodule PreCommitCheck do
   def check_broken_links do
     IO.puts("Checking for broken links in documentation...")
     markdown_files = Path.wildcard(Path.join(@docs_dir, "**/*.md"))
-    IO.inspect(markdown_files, label: "Found markdown files") # DEBUG
+    # DEBUG
+    IO.inspect(markdown_files, label: "Found markdown files")
     all_files_set = MapSet.new(markdown_files)
     broken_links = []
 
@@ -103,15 +108,20 @@ defmodule PreCommitCheck do
 
         for [url] <- links do
           case check_single_link(url, file, all_files_set) do
-            :ok -> :ok
-            {:error, reason} -> broken_links = [%{file: file, url: url, reason: reason} | broken_links]
+            :ok ->
+              :ok
+
+            {:error, reason} ->
+              broken_links = [
+                %{file: file, url: url, reason: reason} | broken_links
+              ]
           end
         end
       rescue
         e in File.Error ->
           IO.puts("Error reading file #{file}: #{inspect(e)}")
           # Optionally treat read error as a failure
-          # broken_links = [%{file: file, url: nil, reason: "Could not read file"} | broken_links]
+          # _broken_links = [%{file: file, url: nil, reason: "Could not read file"} | _broken_links]
       end
     end
 
@@ -120,9 +130,11 @@ defmodule PreCommitCheck do
       :ok
     else
       IO.puts("Found #{length(broken_links)} broken links:")
+
       for %{file: file, url: url, reason: reason} <- Enum.reverse(broken_links) do
         IO.puts("  - In `#{file}`: Link `#{url}` (#{reason})")
       end
+
       :error
     end
   end
@@ -132,7 +144,8 @@ defmodule PreCommitCheck do
   defp check_single_link(url, source_file, all_files_set) do
     cond do
       # Skip external links
-      String.starts_with?(url, "http://") or String.starts_with?(url, "https://") or String.starts_with?(url, "//") ->
+      String.starts_with?(url, "http://") or
+        String.starts_with?(url, "https://") or String.starts_with?(url, "//") ->
         :ok
 
       # Handle anchor-only links (within the same file)
@@ -143,7 +156,8 @@ defmodule PreCommitCheck do
       # Handle links with file path and potentially anchor
       true ->
         [path_part | anchor_part_list] = String.split(url, "#", parts: 2)
-        anchor = List.first(anchor_part_list) # nil if no anchor
+        # nil if no anchor
+        anchor = List.first(anchor_part_list)
 
         # Determine the target file path to check against the set
         target_file =
@@ -152,11 +166,13 @@ defmodule PreCommitCheck do
             String.starts_with?(path_part, "/") ->
               # Remove leading / for comparison with wildcard results
               String.trim_leading(path_part, "/")
+
             # Link likely relative to project root (e.g., "docs/file.md")
             # Heuristic: Check if it starts with a known top-level dir like 'docs'
             # This might need adjustment based on project structure
             String.match?(path_part, ~r"^[a-zA-Z0-9_]+/") ->
               path_part
+
             # Link relative to the source file
             true ->
               source_dir = Path.dirname(source_file)
@@ -166,17 +182,20 @@ defmodule PreCommitCheck do
           end
 
         # Normalize for good measure before checking
-        normalized_target_file = Path.expand(target_file) |> Path.relative_to_cwd()
+        normalized_target_file =
+          Path.expand(target_file) |> Path.relative_to_cwd()
 
         if MapSet.member?(all_files_set, normalized_target_file) do
           if anchor do
             check_anchor(normalized_target_file, anchor)
           else
-            :ok # File exists, no anchor to check
+            # File exists, no anchor to check
+            :ok
           end
         else
           # IO.inspect(%{check: normalized_target_file, against: all_files_set}, label: "File Check Failed")
-          {:error, "Target file `#{normalized_target_file}` (resolved from `#{url}` in `#{source_file}`) not found"}
+          {:error,
+           "Target file `#{normalized_target_file}` (resolved from `#{url}` in `#{source_file}`) not found"}
         end
     end
   end
@@ -187,8 +206,9 @@ defmodule PreCommitCheck do
       # Simple check for Markdown header: #{1,6} Anchor Title
       # More robust parsing would require a Markdown library
       # Need to construct the pattern string due to {1,6}
-      pattern = "^#\{1,6\}\\\\s+#{Regex.escape(anchor)}\\\\b"
-      anchor_regex = Regex.compile!(pattern, "m") # Compile with multiline option
+      pattern = "^#\{1,6\}\\s+#{Regex.escape(anchor)}\\b"
+      # Compile with multiline option
+      anchor_regex = Regex.compile!(pattern, "m")
 
       if Regex.match?(anchor_regex, content) do
         :ok
@@ -197,7 +217,8 @@ defmodule PreCommitCheck do
       end
     rescue
       e in File.Error ->
-        {:error, "Could not read target file `#{target_file}` to check anchor: #{inspect(e)}"}
+        {:error,
+         "Could not read target file `#{target_file}` to check anchor: #{inspect(e)}"}
     end
   end
 end

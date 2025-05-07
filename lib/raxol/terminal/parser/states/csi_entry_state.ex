@@ -67,16 +67,83 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
 
       # Final byte
       <<final_byte, rest_after_final::binary>>
-      when final_byte >= 0x40 and final_byte <= 0x7E ->
-        new_emulator =
-          Executor.execute_csi_command(
-            emulator,
-            parser_state.params_buffer,
-            parser_state.intermediates_buffer,
-            final_byte
+      when final_byte >= ?@ and final_byte <= ?~ ->
+        # Check for X10 Mouse Report: CSI M Cb Cx Cy ( ESC [ M Cb Cx Cy )
+        # This is identified by final_byte == ?M, empty params, and empty intermediates.
+        if final_byte == ?M and parser_state.params_buffer == "" and
+           parser_state.intermediates_buffer == "" do
+          active_mouse_mode = emulator.mode_manager.mouse_report_mode
+
+          # Relevant modes that might expect to echo/process raw X10 reports:
+          # :normal (set by \e[?1000h for X10 reporting) - Note: ModeManager now sets :x10 for 1000h
+          # :cell_motion (set by \e[?1002h for X11 button-event)
+          # :all_motion (set by \e[?1003h for X11 all-motion)
+          if active_mouse_mode in [:x10, :normal, :cell_motion, :all_motion] do
+            # Try to consume Cb, Cx, Cy (3 bytes) from the rest of the input
+            case rest_after_final do
+              <<cb, cx, cy, actual_rest::binary>> ->
+                # Successfully got 3 bytes for mouse report
+                mouse_report_sequence = <<27, 91, ?M, cb, cx, cy>> # Construct \e[MCbCxCy
+
+                Logger.debug(
+                  "[CSIEntryState] X10-style Mouse Report detected. Mode: #{active_mouse_mode}. Echoing: #{inspect(mouse_report_sequence)}"
+                )
+
+                new_output_buffer = emulator.output_buffer <> mouse_report_sequence
+                new_emulator = %{emulator | output_buffer: new_output_buffer}
+                # Transition back to Ground state, clearing buffers
+                next_parser_state = %{parser_state | state: :ground, params_buffer: "", intermediates_buffer: "", final_byte: nil}
+                {:continue, new_emulator, next_parser_state, actual_rest}
+
+              _ ->
+                # Not enough bytes for a full CbCxCy mouse report.
+                # This could be an incomplete sequence or just CSI M (DL).
+                # Fallback to default M (e.g., Delete Character via Executor).
+                Logger.debug(
+                  "[CSIEntryState] CSI M with active mouse mode, but not enough bytes for X10 CbCxCy. Falling back to Executor."
+                )
+                new_emulator_fallback =
+                  Executor.execute_csi_command(
+                    emulator,
+                    "", # params_buffer is empty
+                    "", # intermediates_buffer is empty
+                    final_byte # ?M
+                  )
+                next_parser_state_fallback = %{parser_state | state: :ground, params_buffer: "", intermediates_buffer: "", final_byte: nil}
+                {:continue, new_emulator_fallback, next_parser_state_fallback, rest_after_final}
+            end
+          else
+            # Not a mouse mode that processes raw X10, or it's CSI M intended for DL.
+            # Proceed with normal execution for M (Delete Character).
+            Logger.debug(
+              "[CSIEntryState] CSI M detected, but not in a relevant X10-echoing mouse mode (mode: #{active_mouse_mode}) or params/intermediates were present. Executing."
+            )
+            new_emulator_default =
+              Executor.execute_csi_command(
+                emulator,
+                parser_state.params_buffer, # Will be empty here
+                parser_state.intermediates_buffer, # Will be empty here
+                final_byte # ?M
+              )
+            next_parser_state_default = %{parser_state | state: :ground, params_buffer: "", intermediates_buffer: "", final_byte: nil}
+            {:continue, new_emulator_default, next_parser_state_default, rest_after_final}
+          end
+        else
+          # Not (final_byte == ?M with empty params/intermediates). Handle all other final bytes normally.
+          Logger.debug(
+            "[CSIEntryState] Standard CSI Final Byte: #{<<final_byte>>}. Params: '#{parser_state.params_buffer}', Intermediates: '#{parser_state.intermediates_buffer}'. Executing."
           )
-        next_parser_state = %{parser_state | state: :ground}
-        {:continue, new_emulator, next_parser_state, rest_after_final}
+          new_emulator_other =
+            Executor.execute_csi_command(
+              emulator,
+              parser_state.params_buffer,
+              parser_state.intermediates_buffer,
+              final_byte
+            )
+          # Transition back to Ground state, clearing buffers for the next sequence
+          next_parser_state_other = %{parser_state | state: :ground, params_buffer: "", intermediates_buffer: "", final_byte: nil}
+          {:continue, new_emulator_other, next_parser_state_other, rest_after_final}
+        end
 
       # Ignored byte in CSI Entry (e.g., CAN, SUB)
       <<ignored_byte, rest_after_ignored::binary>>

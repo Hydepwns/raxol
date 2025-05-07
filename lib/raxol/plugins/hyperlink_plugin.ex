@@ -53,18 +53,29 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   end
 
   @impl Raxol.Plugins.Plugin
-  def handle_output(%__MODULE__{} = plugin, output) do
+  def handle_output(%Raxol.Plugins.HyperlinkPlugin{} = plugin, output) do
     # Find URLs using a simple regex (could be more robust)
     # Basic URL regex (adjust as needed)
     url_regex = ~r{(https?://[\w./?=&\-]+)}
 
-    # Replacement function should only take one argument (the match)
-    modified_output = String.replace(output, url_regex, fn url ->
-      create_hyperlink(url) # Wrap found URL
-    end)
+    # Simpler check: Does the output contain a potential URL?
+    if String.contains?(output, "http://") or String.contains?(output, "https://") do
+      # Attempt replacement if potential URL found
+      modified_output = String.replace(output, url_regex, fn url ->
+        create_hyperlink(url)
+      end)
 
-    # Return the modified output (or original if no URLs found)
-    {:ok, plugin, modified_output}
+      # Return 3-tuple only if replacement actually happened
+      if modified_output != output do
+        {:ok, plugin, modified_output}
+      else
+        # If replace didn't change anything (e.g., malformed URL), return 2-tuple
+        {:ok, plugin}
+      end
+    else
+      # No http:// or https:// found, definitely no change
+      {:ok, plugin} # Return 2-tuple
+    end
   end
 
   @impl Raxol.Plugins.Plugin

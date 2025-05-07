@@ -88,15 +88,13 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   Sets the background color.
   """
   @spec set_background(text_style(), color()) :: text_style()
-  def set_background(style, color) do
-    %{style | background: color}
-  end
+  def set_background(style, color) do %{style | background: color} end
 
   @doc """
   Gets the foreground color.
   """
   @spec get_foreground(text_style()) :: color()
-  def get_foreground(style) do
+  def get_foreground(%{} = style) do
     style.foreground
   end
 
@@ -104,7 +102,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   Gets the background color.
   """
   @spec get_background(text_style()) :: color()
-  def get_background(style) do
+  def get_background(%{} = style) do
     style.background
   end
 
@@ -210,7 +208,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   Calculates the effective width of a character based on the current style.
   """
   @spec effective_width(text_style(), String.t()) :: integer()
-  def effective_width(style, char) do
+  def effective_width(%{} = style, char) do
     cond do
       style.double_width ->
         2
@@ -241,20 +239,16 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   Determines if the current line needs a paired line (for double-height mode).
   """
   @spec needs_paired_line?(text_style()) :: boolean()
-  def needs_paired_line?(style) do
+  def needs_paired_line?(%{} = style) do
     style.double_height != :none
   end
 
   @doc """
   Gets the paired line type for double-height mode.
   """
-  @spec paired_line_type(text_style()) :: :top | :bottom | nil
-  def paired_line_type(style) do
-    case style.double_height do
-      :top -> :bottom
-      :bottom -> :top
-      :none -> nil
-    end
+  @spec get_paired_line_type(text_style()) :: :top | :bottom | :none
+  def get_paired_line_type(%{} = style) do
+    style.double_height
   end
 
   @doc """
@@ -304,5 +298,126 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @spec reset(text_style()) :: text_style()
   def reset(_style) do
     new()
+  end
+
+  def set_hyperlink(style, url) do %{style | hyperlink: url} end
+
+  @doc """
+  Reconstructs the SGR parameter string corresponding to the given style attributes.
+  Used primarily for DECRQSS responses.
+  """
+  @spec format_sgr_params(text_style()) :: String.t()
+  def format_sgr_params(attrs) do
+    # Reconstruct SGR parameters from current attributes map
+    params = []
+    params = if attrs.bold, do: [1 | params], else: params
+    params = if attrs.faint, do: [2 | params], else: params # Added faint
+    params = if attrs.italic, do: [3 | params], else: params
+    params = if attrs.underline, do: [4 | params], else: params
+    params = if attrs.blink, do: [5 | params], else: params # Added blink
+    params = if attrs.reverse, do: [7 | params], else: params # Renamed from inverse
+    params = if attrs.conceal, do: [8 | params], else: params # Added conceal
+    params = if attrs.strikethrough, do: [9 | params], else: params # Added strikethrough
+    params = if attrs.fraktur, do: [20 | params], else: params # Added fraktur
+    params = if attrs.double_underline, do: [21 | params], else: params # Added double_underline
+    # Note: Resets (like 22, 24, 25 etc.) aren't typically included when reporting state.
+
+    # Add foreground color
+    params = case attrs.fg do
+      {:ansi, n} when n >= 0 and n <= 7 -> [30 + n | params]
+      {:ansi, n} when n >= 8 and n <= 15 -> [90 + (n - 8) | params]
+      {:color_256, n} -> [38, 5, n | params]
+      {:rgb, r, g, b} -> [38, 2, r, g, b | params]
+      :default -> params # or maybe 39? Needs verification based on terminal behavior.
+    end
+    # Add background color
+    params = case attrs.bg do
+      {:ansi, n} when n >= 0 and n <= 7 -> [40 + n | params]
+      {:ansi, n} when n >= 8 and n <= 15 -> [100 + (n - 8) | params]
+      {:color_256, n} -> [48, 5, n | params]
+      {:rgb, r, g, b} -> [48, 2, r, g, b | params]
+      :default -> params # or maybe 49? Needs verification.
+    end
+
+    # Handle reset case (if no attributes set, send 0)
+    if params == [] do
+      "0"
+    else
+      Enum.reverse(params) |> Enum.map_join(&Integer.to_string/1, ";")
+    end
+  end
+
+  @doc """
+  Gets the hyperlink URI.
+  """
+  @spec get_hyperlink(text_style()) :: String.t() | nil
+  def get_hyperlink(%{} = style) do
+    style.hyperlink
+  end
+
+  @doc """
+  Helper to parse a single SGR parameter.
+  """
+  defp parse_sgr_param(param, %{} = current_style) do
+    case param do
+      # Reset
+      0 -> new() # Reset all attributes
+      1 -> apply_attribute(current_style, :bold)
+      2 -> apply_attribute(current_style, :faint)
+      3 -> apply_attribute(current_style, :italic)
+      4 -> apply_attribute(current_style, :underline)
+      5 -> apply_attribute(current_style, :blink)
+      7 -> apply_attribute(current_style, :reverse)
+      8 -> apply_attribute(current_style, :conceal)
+      9 -> apply_attribute(current_style, :strikethrough)
+      20 -> apply_attribute(current_style, :fraktur)
+      21 -> apply_attribute(current_style, :double_underline)
+      22 -> apply_attribute(current_style, :normal_intensity)
+      23 -> apply_attribute(current_style, :no_italic_fraktur)
+      24 -> apply_attribute(current_style, :no_underline)
+      25 -> apply_attribute(current_style, :no_blink)
+      27 -> apply_attribute(current_style, :no_reverse)
+      28 -> apply_attribute(current_style, :reveal)
+      29 -> apply_attribute(current_style, :no_strikethrough)
+      30 -> apply_attribute(current_style, :black)
+      31 -> apply_attribute(current_style, :red)
+      32 -> apply_attribute(current_style, :green)
+      33 -> apply_attribute(current_style, :yellow)
+      34 -> apply_attribute(current_style, :blue)
+      35 -> apply_attribute(current_style, :magenta)
+      36 -> apply_attribute(current_style, :cyan)
+      37 -> apply_attribute(current_style, :white)
+      38 -> apply_attribute(current_style, :default_fg)
+      39 -> apply_attribute(current_style, :default_fg)
+      40 -> apply_attribute(current_style, :bg_black)
+      41 -> apply_attribute(current_style, :bg_red)
+      42 -> apply_attribute(current_style, :bg_green)
+      43 -> apply_attribute(current_style, :bg_yellow)
+      44 -> apply_attribute(current_style, :bg_blue)
+      45 -> apply_attribute(current_style, :bg_magenta)
+      46 -> apply_attribute(current_style, :bg_cyan)
+      47 -> apply_attribute(current_style, :bg_white)
+      48 -> apply_attribute(current_style, :default_bg)
+      49 -> apply_attribute(current_style, :default_bg)
+      # Set Foreground Color (8-bit)
+      {:fg_8bit, index} when index >= 0 and index <= 255 ->
+        apply_color(current_style, :foreground, {:index, index})
+
+      # Set Background Color (8-bit)
+      {:bg_8bit, index} when index >= 0 and index <= 255 ->
+        apply_color(current_style, :background, {:index, index})
+
+      # Set Foreground Color (24-bit)
+      {:fg_rgb, r, g, b} ->
+        apply_color(current_style, :foreground, {:rgb, r, g, b})
+
+      # Set Background Color (24-bit)
+      {:bg_rgb, r, g, b} ->
+        apply_color(current_style, :background, {:rgb, r, g, b})
+
+      # Unknown/Ignored
+      _ ->
+        current_style
+    end
   end
 end

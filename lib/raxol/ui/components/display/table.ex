@@ -173,25 +173,14 @@ defmodule Raxol.UI.Components.Display.Table do
     # Use style from attrs, merge with theme default
     component_style = Map.get(attrs, :style, %{})
     theme = context.theme
-    theme_style_def = Theme.component_style(theme, :table)
+
+    # Handle different theme types
+    theme_style_def = get_theme_style(theme, :table)
+
     # Convert style definitions to Style structs before merging
     theme_style_struct = Raxol.Style.new(theme_style_def)
     component_style_struct = Raxol.Style.new(component_style)
     base_style = Raxol.Style.merge(theme_style_struct, component_style_struct)
-
-    # Remove header extraction here, Layout.Table should handle it from columns_config
-    # headers = Enum.map(columns_config, &Map.get(&1, :header, \"\"))
-
-    # Remove row data extraction here, Layout/Renderer should handle it
-    # rows_data = Enum.map(original_data, fn data_item ->
-    #   Enum.map(columns_config, fn col -> Map.get(data_item, col.key) end)
-    # end)
-
-    # Remove scroll/visibility slicing logic here - Layout/Renderer responsibility
-    # max_height = get_style_prop(base_style, :height)
-    # visible_row_count = visible_height(%{max_height: max_height})
-    # actual_scroll_top = if state.scroll_top >= length(rows_data), do: 0, else: state.scroll_top
-    # visible_rows = Enum.slice(rows_data, actual_scroll_top, visible_row_count)
 
     # Use the Elements.table macro, passing the original data and columns definition
     # The Layout.Table module will extract headers and calculate layout.
@@ -203,10 +192,8 @@ defmodule Raxol.UI.Components.Display.Table do
       data: original_data,
       # Pass the column definitions
       columns: columns_config,
-      # Pass scroll state so Renderer can use it?
-      # This needs clarification - how does Renderer know scroll offset?
-      # For now, let's assume Layout/Renderer handle this based on height/state.
-      _scroll_top: state.scroll_top # Pass internal state via underscored attr?
+      # Pass scroll state so Renderer can use it
+      _scroll_top: state.scroll_top
     )
   end
 
@@ -242,14 +229,49 @@ defmodule Raxol.UI.Components.Display.Table do
   defp update_column_widths(state) do
     # Calculate widths based on headers and potentially sample data rows
     # TODO: This state update might not be necessary if widths calculated in render
-    header_widths = Enum.map(state.headers, &str_width/1)
+    header_widths = case state.headers do
+      nil -> []
+      [] -> []
+      headers when is_list(headers) -> Enum.map(headers, &str_width/1)
+      _ -> []
+    end
     # TODO: Sample data rows for more accurate widths?
     # For now, just use header widths
     %{state | column_widths: header_widths}
   end
 
-  defp str_width(s) when is_binary(s), do: String.length(s)
-  defp str_width(s), do: String.length(to_string(s)) # Handle non-binaries
+  # Calculate string width, handling wide characters
+  defp str_width(str) when is_binary(str) do
+    String.length(str)
+  end
+
+  defp str_width(value) do
+    value |> to_string() |> String.length()
+  end
+
+  # Helper to get theme style for either Theme type
+  defp get_theme_style(theme, component_type) do
+    cond do
+      # Check for Raxol.UI.Theming.Theme
+      is_map(theme) && Map.has_key?(theme, :component_styles) ->
+        Map.get(theme.component_styles, component_type, %{})
+
+      # Check for Raxol.Style.Colors.Theme
+      is_map(theme) && Map.has_key?(theme, :palette) ->
+        %{
+          header_fg: :cyan,
+          header_bg: :default,
+          row_fg: :default,
+          row_bg: :default,
+          alternate_row_bg: :default,
+          border: :white
+        }
+
+      # Fallback
+      true ->
+        %{}
+    end
+  end
 
   # --- Removed Unused Render Helpers ---
   # defp render_header(...) ... end

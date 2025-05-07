@@ -13,8 +13,10 @@ defmodule Raxol.Terminal.ANSI do
   This module is maintained for backward compatibility and will be removed in a future release.
   """
 
-  alias Raxol.Terminal.ANSIFacade
+  # alias Raxol.Terminal.ANSIFacade # Removed
   alias Raxol.Terminal.ANSI.Sequences.Colors
+  alias Raxol.Terminal.ANSI.Parser
+  alias Raxol.Terminal.ANSI.Processor
 
   @doc """
   Returns a map of ANSI color codes.
@@ -64,7 +66,8 @@ defmodule Raxol.Terminal.ANSI do
   ```
   """
   def parse(input) do
-    ANSIFacade.parse(input)
+    # ANSIFacade.parse(input) # Old call
+    Parser.parse(input) # Delegate to the Parser module
   end
 
   @doc """
@@ -93,6 +96,8 @@ defmodule Raxol.Terminal.ANSI do
   ```
   """
   def process_escape(sequence, state) do
-    ANSIFacade.process_escape(sequence, state)
+    # ANSIFacade.process_escape(sequence, state) # Old call
+    # Delegate to the Processor module. Assumes sequence is already parsed appropriately.
+    Processor.process(sequence, state)
   end
 end

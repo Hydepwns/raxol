@@ -138,8 +138,11 @@ defmodule Raxol.Terminal.Renderer do
 
     style = build_style(style_attrs, renderer.theme)
 
+    # Escape basic HTML characters manually
+    escaped_char = escape_html(char || " ")
+
     # Always wrap in a span, even if style is empty
-    "<span style=\"#{style}\">#{char}</span>"
+    "<span style=\"#{style}\">#{escaped_char}</span>"
   end
 
   defp build_style(style_attrs, theme) do
@@ -201,5 +204,14 @@ defmodule Raxol.Terminal.Renderer do
       _ ->
         Map.get(theme[type] || %{}, name)
     end
+  end
+
+  # Simple HTML escaper
+  defp escape_html(binary) when is_binary(binary) do
+    binary
+    |> String.replace("&", "&amp;")
+    |> String.replace("<", "&lt;")
+    |> String.replace(">", "&gt;")
+    |> String.replace("\"", "&quot;")
   end
 end

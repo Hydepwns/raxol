@@ -6,7 +6,7 @@ defmodule Raxol.Plugins.ThemePlugin do
 
   @behaviour Raxol.Plugins.Plugin
 
-  defstruct [:name, :enabled, :config, :current_theme]
+  defstruct [:name, :enabled, :config, :current_theme, :api_version, :dependencies]
 
   @default_themes %{
     "default" => %{
@@ -111,7 +111,9 @@ defmodule Raxol.Plugins.ThemePlugin do
        name: "theme",
        enabled: true,
        config: config,
-       current_theme: theme
+       current_theme: theme,
+       api_version: get_api_version(),
+       dependencies: get_dependencies()
      }}
   end
 

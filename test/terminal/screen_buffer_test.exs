@@ -2,6 +2,8 @@ defmodule Raxol.Terminal.ScreenBufferTest do
   use ExUnit.Case
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Buffer.Eraser
+  alias Raxol.Terminal.ANSI.TextFormatting
 
   # Helper to convert a list of cells to a string for easier assertions
   defp line_to_string(line) when is_list(line) do
@@ -56,18 +58,15 @@ defmodule Raxol.Terminal.ScreenBufferTest do
     end
 
     test "writes a string with wide characters" do
-      buffer = ScreenBuffer.new(10, 5)
+      buffer = ScreenBuffer.new(10, 1)
       buffer = ScreenBuffer.write_string(buffer, 0, 0, "Hi 中国")
-      first_row = Enum.at(buffer.cells, 0)
+      first_row = ScreenBuffer.get_line(buffer, 0)
 
-      assert Enum.map(Enum.take(first_row, 6), &Cell.get_char/1) == [
-               "H",
-               "i",
-               " ",
-               "中",
-               "国",
-               " "
-             ]
+      # Wide characters take up two cells
+      assert Enum.map(Enum.take(first_row, 6), &Cell.get_char/1) == ["H", "i", " ", "中", " ", "国"]
+      assert (Enum.at(first_row, 4) |> Cell.get_char()) == " "
+      assert (Enum.at(first_row, 3) |> Cell.get_char()) == "中"
+      assert (Enum.at(first_row, 5) |> Cell.get_char()) == "国"
     end
   end
 
@@ -208,5 +207,29 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       buffer = ScreenBuffer.set_scroll_region(buffer, 1, 3)
       assert ScreenBuffer.get_scroll_region_boundaries(buffer) == {1, 3}
     end
+  end
+
+  describe "clearing" do
+    test "clears the screen buffer" do
+      # Setup: Create a buffer and fill it
+      initial_buffer = ScreenBuffer.new(10, 5)
+      filled_buffer = Enum.reduce(0..4, initial_buffer, fn y, buf ->
+        Enum.reduce(0..9, buf, fn x, buf ->
+          # Use TextFormatting.new() for the default style here when writing
+          ScreenBuffer.write_char(buf, x, y, "X", TextFormatting.new())
+        end)
+      end)
+
+      # The action being tested: clear the buffer using the correct function and style
+      default_style = TextFormatting.new()
+      buffer = ScreenBuffer.clear(filled_buffer, default_style) # Renamed clear_buffer -> clear and added style
+
+      # The assertion: check if the cleared buffer matches a newly created one's cells
+      initial_cells = ScreenBuffer.new(10, 5).cells
+      assert buffer.cells == initial_cells
+    end
+
+    # Maybe add a test specifically for Eraser.clear_screen if direct testing is desired
+    # test "Eraser.clear_screen resets cells" do ... end
   end
 end

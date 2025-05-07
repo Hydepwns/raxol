@@ -41,20 +41,17 @@ defmodule Raxol.Terminal.CharacterHandling do
   end
 
   @doc """
-  Gets the width of a character in terminal cells.
-  Returns 1 for narrow characters, 2 for wide characters.
+  Determine the display width of a given character code point or string.
   """
-  @spec get_char_width(String.t()) :: 0 | 1 | 2
-  @dialyzer {:nowarn_function, get_char_width: 1}
-  def get_char_width(char_str) when is_binary(char_str) do
-    # Check the first codepoint of the grapheme
-    case String.first(char_str) do
-      nil ->
-        # Empty string has width 0
-        0
+  @spec get_char_width(codepoint :: integer() | String.t()) :: 1 | 2
+  def get_char_width(codepoint) when is_integer(codepoint) do
+    if is_wide_char?(codepoint), do: 2, else: 1
+  end
 
-      codepoint ->
-        if is_wide_char?(codepoint), do: 2, else: 1
+  def get_char_width(str) when is_binary(str) do
+    case String.to_charlist(str) do
+      [cp | _] -> get_char_width(cp)
+      [] -> 1  # Empty string or grapheme returns width 1
     end
   end
 
@@ -86,28 +83,25 @@ defmodule Raxol.Terminal.CharacterHandling do
     cond do
       is_combining_char?(char) -> :COMBINING
       # Right-to-left scripts
-      # Hebrew
-      char >= 0x0590 and char <= 0x05FF -> :RTL
-      # Arabic
-      char >= 0x0600 and char <= 0x06FF -> :RTL
-      # Arabic Supplement
-      char >= 0x0750 and char <= 0x077F -> :RTL
-      # Arabic Extended-A
-      char >= 0x08A0 and char <= 0x08FF -> :RTL
-      # Arabic Presentation Forms-A
-      char >= 0xFB50 and char <= 0xFDFF -> :RTL
-      # Arabic Presentation Forms-B
-      char >= 0xFE70 and char <= 0xFEFF -> :RTL
-      # Left-to-right scripts (most Latin-based scripts)
-      # Basic Latin
-      char >= 0x0000 and char <= 0x007F -> :LTR
-      # Latin-1 Supplement
-      char >= 0x0080 and char <= 0x00FF -> :LTR
-      # Latin Extended-A
-      char >= 0x0100 and char <= 0x017F -> :LTR
-      # Latin Extended-B
-      char >= 0x0180 and char <= 0x024F -> :LTR
-      # Neutral characters (spaces, punctuation, etc.)
+      (char >= 0x0590 and char <= 0x05FF) or # Hebrew
+      (char >= 0x0600 and char <= 0x06FF) or # Arabic
+      (char >= 0x0750 and char <= 0x077F) or # Arabic Supplement
+      (char >= 0x08A0 and char <= 0x08FF) or # Arabic Extended-A
+      (char >= 0xFB50 and char <= 0xFDFF) or # Arabic Presentation Forms-A
+      (char >= 0xFE70 and char <= 0xFEFF) -> :RTL # Arabic Presentation Forms-B
+
+      # Left-to-right scripts (explicitly list common ranges)
+      (char >= 0x0041 and char <= 0x005A) or # Basic Latin Uppercase (A-Z)
+      (char >= 0x0061 and char <= 0x007A) or # Basic Latin Lowercase (a-z)
+      (char >= 0x00C0 and char <= 0x00FF) or # Latin-1 Supplement (common accented chars)
+      (char >= 0x0100 and char <= 0x024F) -> :LTR # Latin Extended-A & B
+
+      # Treat digits and basic punctuation/space as LTR for simplicity here
+      # (though some are technically neutral or European Number)
+      (char >= 0x0030 and char <= 0x0039) or # Digits 0-9
+       char == 0x0020 -> :LTR # Space
+
+      # Default to Neutral for anything else (punctuation, symbols, etc.)
       true -> :NEUTRAL
     end
   end
@@ -115,47 +109,58 @@ defmodule Raxol.Terminal.CharacterHandling do
   @doc """
   Processes a string for bidirectional text rendering.
   Returns a list of segments with their rendering order.
+  WARNING: Simplified implementation.
   """
   @spec process_bidi_text(String.t()) ::
           list({:LTR | :RTL | :NEUTRAL, String.t()})
   @dialyzer {:nowarn_function, process_bidi_text: 1}
   def process_bidi_text(text) do
-    text
-    |> String.graphemes()
-    |> Enum.filter(&(&1 != ""))
-    |> Enum.reduce([], fn char, acc ->
-      bidi_type =
-        case String.first(char) do
-          nil -> :NEUTRAL
-          codepoint -> get_bidi_type(codepoint)
-        end
+    # Simplified BIDI processing - handles basic LTR/RTL grouping and RLO (U+202E)
+    initial_acc = {[], false} # {list_of_segments, in_rtl_override_flag}
 
-      case acc do
-        [{type, segment} | rest] when type == bidi_type ->
-          [{type, segment <> char} | rest]
+    {final_segments, _} =
+      text
+      |> String.graphemes()
+      |> Enum.filter(&(&1 != ""))
+      |> Enum.reduce(initial_acc, fn grapheme, {current_segments, in_rtl} ->
+          codepoint = String.first(grapheme)
 
-        _ ->
-          [{bidi_type, char} | acc]
-      end
-    end)
-    |> Enum.reverse()
+          case codepoint do
+            # Start RTL override
+            0x202E -> {current_segments, true}
+
+            # Add LRO/PDF handling here if needed
+            # 0x202D -> {current_segments, false} # LRO
+            # 0x202C -> {current_segments, false} # PDF
+
+            _ -> # Process normal grapheme
+              inherent_type = if is_nil(codepoint), do: :NEUTRAL, else: get_bidi_type(codepoint)
+              current_type = if in_rtl, do: :RTL, else: inherent_type
+
+              case current_segments do
+                 # Append to last segment if type matches
+                [{type, segment} | rest] when type == current_type ->
+                   {[{type, segment <> grapheme} | rest], in_rtl}
+                 # Start new segment
+                _ ->
+                   {[{current_type, grapheme} | current_segments], in_rtl}
+              end
+          end
+      end)
+
+    Enum.reverse(final_segments)
   end
 
   @doc """
-  Gets the effective width of a string, taking into account wide characters.
+  Gets the effective width of a string, taking into account wide characters
+  and ignoring combining characters.
   """
   @spec get_string_width(String.t()) :: non_neg_integer()
   def get_string_width(string) do
     string
     |> String.graphemes()
-    |> Enum.filter(&(&1 != ""))
-    |> Enum.map(fn grapheme ->
-      case String.first(grapheme) do
-        # Grapheme was unexpectedly empty, treat as width 0.
-        nil -> 0
-        first_char -> get_char_width(first_char)
-      end
-    end)
+    # Use the corrected get_char_width for each grapheme
+    |> Enum.map(&get_char_width/1)
     |> Enum.sum()
   end
 
@@ -179,15 +184,15 @@ defmodule Raxol.Terminal.CharacterHandling do
          current_width,
          acc
        ) do
-    # Pass the character as a binary string
-    char_width = get_char_width(<<char::utf8>>)
+    # Pass the integer character codepoint directly
+    char_width = get_char_width(char)
 
     if current_width + char_width <= width do
       do_split_at_width(
         rest,
         width,
         current_width + char_width,
-        acc <> <<char::utf8>>
+        acc <> <<char::utf8>> # Append the character back as binary
       )
     else
       {acc, <<char::utf8, rest::binary>>}

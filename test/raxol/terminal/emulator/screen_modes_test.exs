@@ -3,28 +3,12 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.ModeManager
 
   describe "screen mode functionality" do
     test "initializes with default screen modes" do
       emulator = Emulator.new(80, 24)
-
-      # Expected defaults based on ScreenModes.new()
-      expected_default_modes = %{
-        mode: :normal,
-        cursor_visible: true,
-        auto_wrap: true,
-        origin_mode: false,
-        insert_mode: false,
-        line_feed_mode: false,
-        column_width_mode: :normal,
-        auto_repeat_mode: false,
-        interlacing_mode: false,
-        saved_state: nil
-      }
-
-      # Use getter and assert correct map
-      # Access mode_state field directly
-      assert emulator.mode_state == expected_default_modes
+      assert emulator.mode_manager == Raxol.Terminal.ModeManager.new()
     end
 
     test "switches between normal and alternate screen buffer" do
@@ -45,22 +29,17 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       main_buffer_content = Emulator.get_active_buffer(emulator)
 
       # Switch to alternate buffer (DECSET ?1049h)
-      # Use process_input
-      {emulator, ""} = Emulator.process_input(emulator, "\\e[?1049h")
-      # Access mode_state field directly
-      mode_state_alt = emulator.mode_state
-      # Assumes ScreenModes struct uses this key
-      assert mode_state_alt[:alternate_screen] == true
+      {emulator_alt, ""} = Emulator.process_input(emulator, "\e[?1049h")
+      assert ModeManager.mode_enabled?(emulator_alt.mode_manager, :alt_screen_buffer) == true
       # Check active buffer is now the alternate one (if getter exists)
       # assert Emulator.get_active_buffer_type(emulator) == :alternate
       # Check the alternate buffer is empty
-      # Check alternate buffer
-      assert ScreenBuffer.is_empty?(Emulator.get_active_buffer(emulator))
+      assert ScreenBuffer.is_empty?(Emulator.get_active_buffer(emulator_alt))
 
       # Write content to alternate buffer
-      {emulator, _} = Emulator.process_input(emulator, "xy")
+      {emulator_alt, _} = Emulator.process_input(emulator_alt, "xy")
       # Access alternate_screen_buffer field directly
-      buffer_alt = Emulator.get_active_buffer(emulator)
+      buffer_alt = Emulator.get_active_buffer(emulator_alt)
       cell_x = ScreenBuffer.get_cell_at(buffer_alt, 0, 0)
       cell_y = ScreenBuffer.get_cell_at(buffer_alt, 1, 0)
       # Access :char field
@@ -69,19 +48,17 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       assert cell_y.char == "y"
 
       # Switch back to normal buffer (DECRST ?1049l)
-      # Use process_input
-      {emulator, ""} = Emulator.process_input(emulator, "\\e[?1049l")
-      # Access mode_state field directly
-      mode_state_normal = emulator.mode_state
+      {emulator_normal, ""} = Emulator.process_input(emulator_alt, "\e[?1049l")
+      assert ModeManager.mode_enabled?(emulator_normal.mode_manager, :alt_screen_buffer) == false
 
-      # Check mode state key again
-      assert mode_state_normal[:alternate_screen] == nil or
-               mode_state_normal[:alternate_screen] == false
-
-      # Check active buffer is main
+      # Check active buffer is now the main one
       # assert Emulator.get_active_buffer_type(emulator) == :main
-      # Check that main buffer content is restored, access field directly
-      assert Emulator.get_active_buffer(emulator) == main_buffer_content
+      # Access main_screen_buffer field directly
+      buffer_after = Emulator.get_active_buffer(emulator_normal)
+      cell_a = ScreenBuffer.get_cell_at(buffer_after, 0, 0)
+      cell_b = ScreenBuffer.get_cell_at(buffer_after, 1, 0)
+      # Access :char field
+      assert Emulator.get_active_buffer(emulator_normal) == main_buffer_content
     end
 
     test "switches between normal and alternate screen buffer (DEC mode 1047 - no clear)" do
@@ -92,7 +69,7 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       main_buffer_content_snapshot = Emulator.get_active_buffer(emulator)
 
       # Switch to alternate buffer (DECSET ?1047h)
-      {emulator, ""} = Emulator.process_input(emulator, "\\\\e[?1047h")
+      {emulator, ""} = Emulator.process_input(emulator, "\e[?1047h")
       assert emulator.active_buffer_type == :alternate
       # Write something to alternate buffer
       {emulator, _} = Emulator.process_input(emulator, "alt")
@@ -102,14 +79,14 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       assert cell_a.char == "a"
 
       # Switch back to main buffer (DECRST ?1047l)
-      {emulator, ""} = Emulator.process_input(emulator, "\\\\e[?1047l")
+      {emulator, ""} = Emulator.process_input(emulator, "\e[?1047l")
       assert emulator.active_buffer_type == :main
       # Verify main buffer content is restored
       assert Emulator.get_active_buffer(emulator) ==
                main_buffer_content_snapshot
 
       # Switch back to alternate buffer (DECSET ?1047h) AGAIN
-      {emulator, ""} = Emulator.process_input(emulator, "\\\\e[?1047h")
+      {emulator, ""} = Emulator.process_input(emulator, "\e[?1047h")
       assert emulator.active_buffer_type == :alternate
 
       # *** Verify alternate buffer content was NOT cleared and still matches previous alt content ***
@@ -119,35 +96,25 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
     test "sets and resets screen modes (Insert Mode - IRM)" do
       emulator = Emulator.new(80, 24)
 
-      # Set insert mode (SM IRM - CSI 4 h)
-      # Use process_input
-      {emulator, ""} = Emulator.process_input(emulator, "\\e[4h")
-      # Access mode_state field directly
-      assert emulator.mode_state[:insert_mode] == true
+      # Set insert mode (SM 4)
+      {emulator_insert, ""} = Emulator.process_input(emulator, "\e[4h")
+      assert ModeManager.mode_enabled?(emulator_insert.mode_manager, :irm) == true
 
-      # Reset insert mode (RM IRM - CSI 4 l)
-      # Use process_input
-      {emulator, ""} = Emulator.process_input(emulator, "\\e[4l")
-      # Access mode_state field directly
-      assert emulator.mode_state[:insert_mode] == nil or
-               emulator.mode_state[:insert_mode] == false
+      # Reset insert mode (RM 4)
+      {emulator_reset, ""} = Emulator.process_input(emulator_insert, "\e[4l")
+      assert ModeManager.mode_enabled?(emulator_reset.mode_manager, :irm) == false
     end
 
     test "sets and resets screen modes (Origin Mode - DECOM)" do
       emulator = Emulator.new(80, 24)
 
       # Set origin mode (DECSET ?6h)
-      # Use process_input
-      {emulator, ""} = Emulator.process_input(emulator, "\\e[?6h")
-      # Access mode_state field directly
-      assert emulator.mode_state[:origin_mode] == true
+      {emulator_origin, ""} = Emulator.process_input(emulator, "\e[?6h")
+      assert ModeManager.mode_enabled?(emulator_origin.mode_manager, :decom) == true
 
       # Reset origin mode (DECRST ?6l)
-      # Use process_input
-      {emulator, ""} = Emulator.process_input(emulator, "\\e[?6l")
-      # Access mode_state field directly
-      assert emulator.mode_state[:origin_mode] == nil or
-               emulator.mode_state[:origin_mode] == false
+      {emulator_reset, ""} = Emulator.process_input(emulator_origin, "\e[?6l")
+      assert ModeManager.mode_enabled?(emulator_reset.mode_manager, :decom) == false
     end
 
     test "handles cursor visibility (DECTCEM)" do
@@ -157,53 +124,45 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       # Hide cursor (DECRST ?25l)
       # Use process_input
-      {emulator, ""} = Emulator.process_input(emulator, "\\e[?25l")
+      {emulator, ""} = Emulator.process_input(emulator, "\e[?25l")
+      assert ModeManager.mode_enabled?(emulator.mode_manager, :dectcem) == false
       # Check state directly
       assert emulator.cursor.state == :hidden
 
       # Show cursor (DECSET ?25h)
       # Use process_input
-      {emulator, ""} = Emulator.process_input(emulator, "\\e[?25h")
+      {emulator, ""} = Emulator.process_input(emulator, "\e[?25h")
+      assert ModeManager.mode_enabled?(emulator.mode_manager, :dectcem) == true
       # Check state directly
       assert emulator.cursor.state == :visible
     end
 
     test "handles application keypad mode (DECKPAM/DECKPNM)" do
       emulator = Emulator.new(80, 24)
-      # Access mode_state field directly
-      mode_state_initial = emulator.mode_state
-      # Access key directly
-      assert mode_state_initial[:application_keypad] == nil or
-               mode_state_initial[:application_keypad] == false
+      assert ModeManager.mode_enabled?(emulator.mode_manager, :decckm) == false
 
       # Set application keypad mode (DECKPAM - CSI = ?1h - Note: CSI = is often mapped to ESC =)
       # Using ESC = as per vttest
       # Use process_input
-      {emulator, ""} = Emulator.process_input(emulator, "\\e=")
-      # Access mode_state field directly
-      assert emulator.mode_state[:application_keypad] == true
+      {emulator_app, ""} = Emulator.process_input(emulator, "\e=")
+      assert ModeManager.mode_enabled?(emulator_app.mode_manager, :decckm) == true
 
       # Reset application keypad mode (DECKPNM - CSI = ?1l or ESC >)
       # Using ESC > as per vttest
       # Use process_input
-      {emulator, ""} = Emulator.process_input(emulator, "\\e>")
-      # Access mode_state field directly
-      assert emulator.mode_state[:application_keypad] == nil or
-               emulator.mode_state[:application_keypad] == false
+      {emulator_norm, ""} = Emulator.process_input(emulator_app, "\e>")
+      assert ModeManager.mode_enabled?(emulator_norm.mode_manager, :decckm) == false
     end
 
     test "handles terminal modes (standard modes like IRM)" do
       emulator = Emulator.new(80, 24)
       # Insert mode (Set Standard Mode 4)
       {state_after_set, _} = Emulator.process_input(emulator, "\e[4h")
-      # Access mode_state directly
-      assert state_after_set.mode_state[:insert_mode] == true
+      assert ModeManager.mode_enabled?(state_after_set.mode_manager, :irm) == true
 
       # Normal mode (Reset Standard Mode 4)
       {state_after_reset, _} = Emulator.process_input(state_after_set, "\e[4l")
-      # Access mode_state directly
-      assert state_after_reset.mode_state[:insert_mode] == nil or
-               state_after_reset.mode_state[:insert_mode] == false
+      assert ModeManager.mode_enabled?(state_after_reset.mode_manager, :irm) == false
     end
   end
 end
