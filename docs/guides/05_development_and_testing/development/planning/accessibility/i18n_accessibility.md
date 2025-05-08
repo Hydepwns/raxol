@@ -125,7 +125,7 @@ with_locale("fr") do
   with_screen_reader_spy fn ->
     # Trigger action that should make announcement
     UserPreferences.set(:high_contrast, true)
-    
+
     # Assert announcement in French
     assert_announced("Mode contraste élevé activé")
   end
@@ -186,5 +186,5 @@ For languages with extensive use of diacritical marks:
 
 - [W3C Internationalization and Accessibility](https://www.w3.org/WAI/about/translating/)
 - [RTL UI Best Practices](https://material.io/design/usability/bidirectionality.html)
-- [Raxol Internationalization Guide](../guides/i18n_guide.md)
-- [Raxol Accessibility Guide](./accessibility_guide.md) 
+- [Raxol Internationalization Guide](/docs/guides/02_core_concepts/i18n_guide.md)
+- [Raxol Accessibility Guide](/docs/guides/02_core_concepts/accessibility_guide.md)
