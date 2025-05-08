@@ -73,7 +73,8 @@ defmodule Raxol.Terminal.Commands.Parser do
       iex> Parser.get_param([5, 10], 3, 0)
       0
   """
-  @spec get_param(list(integer() | nil), non_neg_integer(), integer()) :: integer()
+  @spec get_param(list(integer() | nil), non_neg_integer(), integer()) ::
+          integer()
   def get_param(params, index, default \\ 1) do
     # Get the parameter at 0-based index, with default value
     case Enum.at(params, index) do
@@ -98,8 +99,10 @@ defmodule Raxol.Terminal.Commands.Parser do
   @spec parse_int(String.t()) :: integer() | nil
   def parse_int(str) do
     case Integer.parse(str) do
-      {val, ""} -> val # Only return the value if the remainder is empty
-      _ -> nil        # Return nil for incomplete parses or errors
+      # Only return the value if the remainder is empty
+      {val, ""} -> val
+      # Return nil for incomplete parses or errors
+      _ -> nil
     end
   end
 end

@@ -13,7 +13,8 @@ defmodule Raxol.Core.Performance.MonitorTest do
       {:ok, monitor} = Monitor.start_link()
 
       # Allow time for the first memory check to occur
-      Process.sleep(5100) # Default interval is 5000ms
+      # Default interval is 5000ms
+      Process.sleep(5100)
 
       metrics = Monitor.get_metrics(monitor)
 
@@ -25,7 +26,8 @@ defmodule Raxol.Core.Performance.MonitorTest do
       # :erlang.statistics(:garbage_collection) returns a tuple {Count, Reclaimed, StackReclaimed}
       assert is_tuple(metrics.gc_stats)
       assert tuple_size(metrics.gc_stats) == 3
-      assert elem(metrics.gc_stats, 0) >= 0 # Check GC count is non-negative integer
+      # Check GC count is non-negative integer
+      assert elem(metrics.gc_stats, 0) >= 0
 
       GenServer.stop(monitor)
     end
@@ -51,10 +53,12 @@ defmodule Raxol.Core.Performance.MonitorTest do
     end
 
     test "tracks memory usage" do
-      {:ok, monitor} = Monitor.start_link(memory_check_interval: 100) # Faster interval for testing
+      # Faster interval for testing
+      {:ok, monitor} = Monitor.start_link(memory_check_interval: 100)
 
       # Allow time for initial memory check
-      Process.sleep(300) # Increased sleep
+      # Increased sleep
+      Process.sleep(300)
 
       initial_metrics = Monitor.get_metrics(monitor)
       initial_memory = initial_metrics.memory_usage
@@ -62,11 +66,13 @@ defmodule Raxol.Core.Performance.MonitorTest do
       assert is_integer(initial_memory)
 
       # Simulate memory allocation (e.g., create a large binary)
-      _large_binary = :binary.copy(" ", 1024 * 1024) # Allocate 1MB
+      # Allocate 1MB
+      _large_binary = :binary.copy(" ", 1024 * 1024)
       :erlang.garbage_collect()
 
       # Allow time for another memory check
-      Process.sleep(300) # Increased sleep
+      # Increased sleep
+      Process.sleep(300)
 
       updated_metrics = Monitor.get_metrics(monitor)
       updated_memory = updated_metrics.memory_usage
@@ -112,7 +118,8 @@ defmodule Raxol.Core.Performance.MonitorTest do
     end
 
     test "tracks garbage collection statistics" do
-      {:ok, monitor} = Monitor.start_link(memory_check_interval: 100) # Faster interval
+      # Faster interval
+      {:ok, monitor} = Monitor.start_link(memory_check_interval: 100)
 
       # Allow time for initial check (Increased sleep)
       Process.sleep(300)

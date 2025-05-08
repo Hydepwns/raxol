@@ -139,7 +139,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     if charset_atom && target_g_set do
       # Assign the result of Map.put back
       new_state = Map.put(state, target_g_set, charset_atom)
-      new_state # Return the new state
+      # Return the new state
+      new_state
     else
       # Log or ignore unknown charset code / gset index
       state

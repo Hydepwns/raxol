@@ -5,7 +5,8 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
 %Component{
   id: :select_list,
   name: "Select List",
-  module: Raxol.UI.Components.SelectList, # Assuming module path
+  # Assuming module path
+  module: Raxol.UI.Components.SelectList,
   description: "A dropdown list for selecting one option from many.",
   examples: [
     %Example{

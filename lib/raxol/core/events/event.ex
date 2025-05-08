@@ -14,9 +14,9 @@ defmodule Raxol.Core.Events.Event do
   @type event_data :: any()
 
   @type t :: %__MODULE__{
-    type: event_type(),
-    data: event_data()
-  }
+          type: event_type(),
+          data: event_data()
+        }
 
   defstruct [:type, :data]
 

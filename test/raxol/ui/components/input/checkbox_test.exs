@@ -29,6 +29,7 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
         style: %{color: :green},
         on_toggle: on_toggle_func
       ]
+
       # init returns {:ok, state}
       assert {:ok, state} = Checkbox.init(props)
 
@@ -118,10 +119,14 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       {:ok, initial_state} = Checkbox.init(id: :cb_update)
       assert initial_state.checked == false
 
-      {:ok, updated_state, _cmds} = Checkbox.update(%{checked: true}, initial_state)
+      {:ok, updated_state, _cmds} =
+        Checkbox.update(%{checked: true}, initial_state)
+
       assert updated_state.checked == true
 
-      {:ok, final_state, _cmds} = Checkbox.update(%{checked: false}, updated_state)
+      {:ok, final_state, _cmds} =
+        Checkbox.update(%{checked: false}, updated_state)
+
       assert final_state.checked == false
     end
 
@@ -129,7 +134,9 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       {:ok, initial_state} = Checkbox.init(id: :cb_update, label: "Initial")
       assert initial_state.label == "Initial"
 
-      {:ok, updated_state, _cmds} = Checkbox.update(%{label: "Updated"}, initial_state)
+      {:ok, updated_state, _cmds} =
+        Checkbox.update(%{label: "Updated"}, initial_state)
+
       assert updated_state.label == "Updated"
     end
 
@@ -137,7 +144,9 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       {:ok, initial_state} = Checkbox.init(id: :cb_update, disabled: false)
       assert initial_state.disabled == false
 
-      {:ok, updated_state, _cmds} = Checkbox.update(%{disabled: true}, initial_state)
+      {:ok, updated_state, _cmds} =
+        Checkbox.update(%{disabled: true}, initial_state)
+
       assert updated_state.disabled == true
     end
 
@@ -147,7 +156,9 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       {:ok, initial_state} = Checkbox.init(id: :cb_update, on_toggle: cb_func_1)
       assert initial_state.on_toggle == cb_func_1
 
-      {:ok, updated_state, _cmds} = Checkbox.update(%{on_toggle: cb_func_2}, initial_state)
+      {:ok, updated_state, _cmds} =
+        Checkbox.update(%{on_toggle: cb_func_2}, initial_state)
+
       assert updated_state.on_toggle == cb_func_2
     end
   end
@@ -165,13 +176,15 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     # Helper to create a click event
     defp click_event() do
       %Event{
-        type: :mouse, # Use :mouse type
+        # Use :mouse type
+        type: :mouse,
         data: %{
           button: :left,
           action: :press,
           row: 0,
           col: 0,
-          x: 0, # Add x/y for termbox compatibility if needed, or adjust based on component needs
+          # Add x/y for termbox compatibility if needed, or adjust based on component needs
+          x: 0,
           y: 0,
           ctrl: false,
           alt: false,
@@ -183,10 +196,13 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     # Helper to create a space keypress event
     defp space_keypress_event() do
       %Event{
-        type: :key, # Use :key type
+        # Use :key type
+        type: :key,
         data: %{
-          key: :space, # Use key atom
-          char: " ", # Include char
+          # Use key atom
+          key: :space,
+          # Include char
+          char: " ",
           ctrl: false,
           alt: false,
           shift: false
@@ -197,10 +213,13 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     # Helper to create some other keypress event
     defp other_keypress_event() do
       %Event{
-        type: :key, # Use :key type
+        # Use :key type
+        type: :key,
         data: %{
-          key: :char, # Use :char for general characters
-          char: "a", # Include char
+          # Use :char for general characters
+          key: :char,
+          # Include char
+          char: "a",
           ctrl: false,
           alt: false,
           shift: false
@@ -210,77 +229,122 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
 
     test "toggles state from unchecked to checked on click" do
       state = init_state(checked: false)
-      {:noreply, new_state, _cmds} = Checkbox.handle_event(click_event(), %{}, state)
+
+      {:noreply, new_state, _cmds} =
+        Checkbox.handle_event(click_event(), %{}, state)
+
       assert new_state.checked == true
     end
 
     test "toggles state from checked to unchecked on click" do
       state = init_state(checked: true)
-      {:noreply, new_state, _cmds} = Checkbox.handle_event(click_event(), %{}, state)
+
+      {:noreply, new_state, _cmds} =
+        Checkbox.handle_event(click_event(), %{}, state)
+
       assert new_state.checked == false
     end
 
     test "toggles state from unchecked to checked on space keypress" do
       state = init_state(checked: false)
-      {:noreply, new_state, _cmds} = Checkbox.handle_event(space_keypress_event(), %{}, state)
+
+      {:noreply, new_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), %{}, state)
+
       assert new_state.checked == true
     end
 
     test "toggles state from checked to unchecked on space keypress" do
       state = init_state(checked: true)
-      {:noreply, new_state, _cmds} = Checkbox.handle_event(space_keypress_event(), %{}, state)
+
+      {:noreply, new_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), %{}, state)
+
       assert new_state.checked == false
     end
 
     test "does not toggle state on other keypress" do
       state = init_state(checked: false)
-      {:noreply, new_state, _cmds} = Checkbox.handle_event(other_keypress_event(), %{}, state)
+
+      {:noreply, new_state, _cmds} =
+        Checkbox.handle_event(other_keypress_event(), %{}, state)
+
       assert new_state.checked == false
 
       state_checked = init_state(checked: true)
-      {:noreply, new_state_checked, _cmds} = Checkbox.handle_event(other_keypress_event(), %{}, state_checked)
+
+      {:noreply, new_state_checked, _cmds} =
+        Checkbox.handle_event(other_keypress_event(), %{}, state_checked)
+
       assert new_state_checked.checked == true
     end
 
     test "does not toggle when disabled (click)" do
       state = init_state(checked: false, disabled: true)
-      {:noreply, new_state, _cmds} = Checkbox.handle_event(click_event(), %{}, state)
+
+      {:noreply, new_state, _cmds} =
+        Checkbox.handle_event(click_event(), %{}, state)
+
       assert new_state.checked == false
     end
 
     test "does not toggle when disabled (space keypress)" do
       state = init_state(checked: false, disabled: true)
-      {:noreply, new_state, _cmds} = Checkbox.handle_event(space_keypress_event(), %{}, state)
+
+      {:noreply, new_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), %{}, state)
+
       assert new_state.checked == false
     end
 
     test "calls on_toggle callback with new state when toggled" do
       # Use Process dictionary to track if callback was called
-      on_toggle_func = fn checked_state -> Process.put(:toggled_to, checked_state) end
+      on_toggle_func = fn checked_state ->
+        Process.put(:toggled_to, checked_state)
+      end
+
       state = init_state(checked: false, on_toggle: on_toggle_func)
 
-      Process.put(:toggled_to, nil) # Reset tracker
-      {:noreply, new_state, _cmds} = Checkbox.handle_event(click_event(), %{}, state)
+      # Reset tracker
+      Process.put(:toggled_to, nil)
+
+      {:noreply, new_state, _cmds} =
+        Checkbox.handle_event(click_event(), %{}, state)
+
       assert new_state.checked == true
       assert Process.get(:toggled_to) == true
 
-      Process.put(:toggled_to, nil) # Reset tracker
-      {:noreply, final_state, _cmds} = Checkbox.handle_event(space_keypress_event(), %{}, new_state)
+      # Reset tracker
+      Process.put(:toggled_to, nil)
+
+      {:noreply, final_state, _cmds} =
+        Checkbox.handle_event(space_keypress_event(), %{}, new_state)
+
       assert final_state.checked == false
       assert Process.get(:toggled_to) == false
     end
 
-     test "does not call on_toggle callback when not toggled" do
+    test "does not call on_toggle callback when not toggled" do
       # Use Process dictionary to track if callback was called
       on_toggle_func = fn _ -> Process.put(:toggle_called, true) end
-      state = init_state(checked: false, disabled: true, on_toggle: on_toggle_func)
 
-      Process.put(:toggle_called, false) # Reset tracker
-      {:noreply, _new_state, _cmds} = Checkbox.handle_event(click_event(), %{}, state)
+      state =
+        init_state(checked: false, disabled: true, on_toggle: on_toggle_func)
+
+      # Reset tracker
+      Process.put(:toggle_called, false)
+
+      {:noreply, _new_state, _cmds} =
+        Checkbox.handle_event(click_event(), %{}, state)
+
       assert Process.get(:toggle_called) == false
 
-      Process.put(:toggle_called, false) # Reset tracker
-      {:noreply, _final_state, _cmds} = Checkbox.handle_event(other_keypress_event(), %{}, state)
+      # Reset tracker
+      Process.put(:toggle_called, false)
+
+      {:noreply, _final_state, _cmds} =
+        Checkbox.handle_event(other_keypress_event(), %{}, state)
+
       assert Process.get(:toggle_called) == false
     end
   end

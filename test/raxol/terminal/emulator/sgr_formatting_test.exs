@@ -10,7 +10,8 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
     test "handles SGR reset (0)" do
       emulator = Emulator.new()
       # Set some attributes
-      {emulator, _} = Emulator.process_input(emulator, "\e[1;31m") # Bold, Red FG
+      # Bold, Red FG
+      {emulator, _} = Emulator.process_input(emulator, "\e[1;31m")
       assert emulator.style.bold == true
       assert emulator.style.foreground == :red
 
@@ -153,28 +154,48 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       emulator = Emulator.new()
 
       # TEST 1: Ensure SGR 24 correctly sets defaults from scratch
-      {emulator_after_24_only, _} = Emulator.process_input(emulator, "\e[24m") # Apply ONLY SGR 24
-      assert emulator_after_24_only.style.underline == false, "[SGR 24 Only] Underline should be false"
-      assert emulator_after_24_only.style.double_underline == false, "[SGR 24 Only] Double underline should be false"
+      # Apply ONLY SGR 24
+      {emulator_after_24_only, _} = Emulator.process_input(emulator, "\e[24m")
+
+      assert emulator_after_24_only.style.underline == false,
+             "[SGR 24 Only] Underline should be false"
+
+      assert emulator_after_24_only.style.double_underline == false,
+             "[SGR 24 Only] Double underline should be false"
 
       # TEST 2: Original test - Apply double underline first
-      {emulator, _} = Emulator.process_input(emulator, "\e[21m") # Start with fresh emulator again
-      assert emulator.style.double_underline == true, "Double underline should be true after SGR 21"
+      # Start with fresh emulator again
+      {emulator, _} = Emulator.process_input(emulator, "\e[21m")
+
+      assert emulator.style.double_underline == true,
+             "Double underline should be true after SGR 21"
 
       # Apply not underlined (should reset both single and double)
       {emulator, _} = Emulator.process_input(emulator, "\e[24m")
-      assert emulator.style.underline == false, "Underline should be false after SGR 24"
-      assert emulator.style.double_underline == false, "Double underline should be false after SGR 24"
+
+      assert emulator.style.underline == false,
+             "Underline should be false after SGR 24"
+
+      assert emulator.style.double_underline == false,
+             "Double underline should be false after SGR 24"
 
       # Ensure single underline also works after SGR 24
       {emulator, _} = Emulator.process_input(emulator, "\e[4m")
-      assert emulator.style.underline == true, "Underline should be true after SGR 4"
-      assert emulator.style.double_underline == false, "Double underline should still be false after SGR 4"
+
+      assert emulator.style.underline == true,
+             "Underline should be true after SGR 4"
+
+      assert emulator.style.double_underline == false,
+             "Double underline should still be false after SGR 4"
 
       # Ensure resetting works again
       {emulator, _} = Emulator.process_input(emulator, "\e[24m")
-      assert emulator.style.underline == false, "Underline should be false after second SGR 24"
-      assert emulator.style.double_underline == false, "Double underline should be false after second SGR 24"
+
+      assert emulator.style.underline == false,
+             "Underline should be false after second SGR 24"
+
+      assert emulator.style.double_underline == false,
+             "Double underline should be false after second SGR 24"
     end
 
     test "handles SGR bright foreground colors (90-97)" do
@@ -182,7 +203,8 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       # Bright red (expect red + bold)
       {emulator, _} = Emulator.process_input(emulator, "\e[91m")
       assert emulator.style.foreground == :red
-      assert emulator.style.bold == true # Bright implies bold
+      # Bright implies bold
+      assert emulator.style.bold == true
       # Reset style
       {emulator, _} = Emulator.process_input(emulator, "\e[0m")
       # Bright cyan (expect cyan + bold)

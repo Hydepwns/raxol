@@ -12,7 +12,8 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState do
   Processes input when the parser is in the :dcs_passthrough_maybe_st state.
   """
   @spec handle(Emulator.t(), State.t(), binary()) ::
-          {:continue, Emulator.t(), State.t(), binary()} | {:handled, Emulator.t()}
+          {:continue, Emulator.t(), State.t(), binary()}
+          | {:handled, Emulator.t()}
   def handle(
         emulator,
         %State{state: :dcs_passthrough_maybe_st} = parser_state,
@@ -31,6 +32,7 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState do
             parser_state.final_byte,
             parser_state.payload_buffer
           )
+
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after_st}
 
@@ -39,6 +41,7 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState do
         Logger.warning(
           "Malformed DCS termination: ESC not followed by ST. Returning to ground."
         )
+
         # Discard sequence, go to ground
         next_parser_state = %{parser_state | state: :ground}
         # Continue parsing AFTER the unexpected byte
@@ -49,6 +52,7 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState do
         Logger.warning(
           "Malformed DCS termination: Input ended after ESC. Returning to ground."
         )
+
         # Go to ground, return emulator as is
         {:handled, emulator}
     end

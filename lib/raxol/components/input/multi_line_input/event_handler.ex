@@ -10,8 +10,14 @@ defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
   require Logger
 
   # Directly handle the event struct for more clarity
-  def handle_event(%Event{type: :key, data: %{key: key, state: state, modifiers: modifiers}} = event, input_state)
-  when state in [:pressed, :repeat] do
+  def handle_event(
+        %Event{
+          type: :key,
+          data: %{key: key, state: state, modifiers: modifiers}
+        } = event,
+        input_state
+      )
+      when state in [:pressed, :repeat] do
     # Debug logging to see exactly what's coming in
     Logger.debug("Processing key event: #{inspect(event)}")
 
@@ -118,7 +124,10 @@ defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
 
         # Log unhandled key combinations
         _ ->
-          Logger.debug("Unhandled key combination: #{inspect(key)} with modifiers #{inspect(modifiers)}")
+          Logger.debug(
+            "Unhandled key combination: #{inspect(key)} with modifiers #{inspect(modifiers)}"
+          )
+
           nil
       end
 
@@ -133,7 +142,13 @@ defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
   end
 
   # Handle Mouse Events (Placeholder/Basic)
-  def handle_event(%Event{type: :mouse, data: %{x: x, y: y, button: :left, state: :pressed}} = _event, state) do
+  def handle_event(
+        %Event{
+          type: :mouse,
+          data: %{x: x, y: y, button: :left, state: :pressed}
+        } = _event,
+        state
+      ) do
     # Simplified version for tests - assume relative position without meta field
     # In a real implementation, we would need component position from somewhere else
     {scroll_row, scroll_col} = state.scroll_offset
@@ -146,7 +161,13 @@ defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
   end
 
   # Handle generic mouse events
-  def handle_event(%Event{type: :mouse, data: %{position: {x, y}, button: :left, state: :pressed}} = _event, state) do
+  def handle_event(
+        %Event{
+          type: :mouse,
+          data: %{position: {x, y}, button: :left, state: :pressed}
+        } = _event,
+        state
+      ) do
     # Simplified version for tests - assume relative position without meta field
     {scroll_row, scroll_col} = state.scroll_offset
     row = y
@@ -158,20 +179,29 @@ defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
   end
 
   # Special case for testing - handle pageup directly
-  def handle_event(%Event{type: :key, data: %{key: :pageup}} = event, input_state) do
+  def handle_event(
+        %Event{type: :key, data: %{key: :pageup}} = event,
+        input_state
+      ) do
     Logger.debug("Special case for pageup test: #{inspect(event)}")
     {:update, {:move_cursor_page, :up}, input_state}
   end
 
   # Special case for testing - handle pagedown directly
-  def handle_event(%Event{type: :key, data: %{key: :pagedown}} = event, input_state) do
+  def handle_event(
+        %Event{type: :key, data: %{key: :pagedown}} = event,
+        input_state
+      ) do
     Logger.debug("Special case for pagedown test: #{inspect(event)}")
     {:update, {:move_cursor_page, :down}, input_state}
   end
 
   # Special case for testing - handle shift+arrow keys
-  def handle_event(%Event{type: :key, data: %{key: key, modifiers: [:shift]}} = event, input_state)
-    when key in [:left, :right, :up, :down] do
+  def handle_event(
+        %Event{type: :key, data: %{key: key, modifiers: [:shift]}} = event,
+        input_state
+      )
+      when key in [:left, :right, :up, :down] do
     Logger.debug("Special case for shift+#{key} test: #{inspect(event)}")
     {:update, {:select_and_move, key}, input_state}
   end

@@ -328,7 +328,11 @@ defmodule Raxol.Style.Colors.Gradient do
     # Distribute intervals, giving one extra to segments until remainder is used
     # Then add 1 to get the number of *colors* needed for each segment's generation
     Enum.map(1..segment_count, fn segment_index ->
-      intervals_for_segment = if segment_index <= remainder_intervals, do: base_intervals + 1, else: base_intervals
+      intervals_for_segment =
+        if segment_index <= remainder_intervals,
+          do: base_intervals + 1,
+          else: base_intervals
+
       # Need intervals + 1 colors to cover the intervals
       intervals_for_segment + 1
     end)

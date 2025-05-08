@@ -4,9 +4,11 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
   """
 
   # alias Raxol.Components.Input.MultiLineInput # May need state struct definition
-  alias Raxol.Components.Input.MultiLineInput.NavigationHelper # Need normalize_selection
+  # Need normalize_selection
+  alias Raxol.Components.Input.MultiLineInput.NavigationHelper
   require Logger
-  require Raxol.View.Elements # Add require for macros
+  # Add require for macros
+  require Raxol.View.Elements
 
   @doc """
   Renders the multi-line input component with proper styling based on the state.
@@ -20,18 +22,23 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
   def render(state, _context, theme) do
     # Calculate visible range based on scroll offset and height
     {scroll_row, _scroll_col} = state.scroll_offset
-    visible_range_end = min(scroll_row + state.height - 1, max(0, length(state.lines) - 1))
+
+    visible_range_end =
+      min(scroll_row + state.height - 1, max(0, length(state.lines) - 1))
+
     visible_rows = scroll_row..visible_range_end
 
     # Map the rows to grid cells with proper styling
     cells =
       for row <- visible_rows, col <- 0..(state.width - 1), into: %{} do
         # Default styling from theme
-        default_style = theme.components[:multi_line_input] || %{
-          text_color: state.style.text_color || :white,
-          selection_color: state.style.selection_color || :blue,
-          cursor_color: state.style.cursor_color || :white
-        }
+        default_style =
+          theme.components[:multi_line_input] ||
+            %{
+              text_color: state.style.text_color || :white,
+              selection_color: state.style.selection_color || :blue,
+              cursor_color: state.style.cursor_color || :white
+            }
 
         pos = {row, col}
         cell_content = get_cell_content(state, row, col)
@@ -47,13 +54,16 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
   defp get_cell_content(state, row, col) do
     if row < length(state.lines) do
       line = Enum.at(state.lines, row)
+
       if col < String.length(line) do
         String.at(line, col)
       else
-        " " # Empty space beyond text
+        # Empty space beyond text
+        " "
       end
     else
-      " " # Empty space beyond text
+      # Empty space beyond text
+      " "
     end
   end
 
@@ -70,8 +80,9 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
         }
 
       # Cell is in selection range
-      state.focused && state.selection_start != nil && state.selection_end != nil &&
-      is_position_in_selection?(state, row, col) ->
+      state.focused && state.selection_start != nil &&
+        state.selection_end != nil &&
+          is_position_in_selection?(state, row, col) ->
         %{
           foreground: default_style.text_color,
           background: default_style.selection_color
@@ -121,16 +132,26 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
       if state.style.line_numbers do
         # Assuming state.style.line_number_padding >= 0
         padding = String.duplicate(" ", state.style.line_number_padding)
-        Raxol.View.Elements.label(content: padding <> " ", style: [color: state.style.line_number_color])
+
+        Raxol.View.Elements.label(
+          content: padding <> " ",
+          style: [color: state.style.line_number_color]
+        )
       else
-        nil # No line number element if disabled
+        # No line number element if disabled
+        nil
       end
 
     # Render based on focus and selection state
     line_content_element =
       cond do
-        state.focused and state.selection_start != nil and state.selection_end != nil and
-            NavigationHelper.is_line_in_selection?(line_index, state.selection_start, state.selection_end) ->
+        state.focused and state.selection_start != nil and
+          state.selection_end != nil and
+            NavigationHelper.is_line_in_selection?(
+              line_index,
+              state.selection_start,
+              state.selection_end
+            ) ->
           # Selection rendering logic (needs state as arg)
           render_line_with_selection(line_index, line, state)
 
@@ -141,14 +162,18 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
         true ->
           # Normal line rendering
           # Use label macro
-          Raxol.View.Elements.label(content: line, style: [color: state.style.text_color])
+          Raxol.View.Elements.label(
+            content: line,
+            style: [color: state.style.text_color]
+          )
       end
 
-    elements = if state.style.line_numbers do
-      [line_number_text, line_content_element] |> Enum.reject(&is_nil/1)
-    else
-      [line_content_element]
-    end
+    elements =
+      if state.style.line_numbers do
+        [line_number_text, line_content_element] |> Enum.reject(&is_nil/1)
+      else
+        [line_content_element]
+      end
 
     Raxol.View.Elements.row [] do
       elements
@@ -161,13 +186,23 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
 
     padding = String.pad_leading(Integer.to_string(state.cursor_row + 1), 3)
     # Use label macro
-    line_num_element = Raxol.View.Elements.label(content: padding <> " ", style: [color: state.style.line_number_color])
+    line_num_element =
+      Raxol.View.Elements.label(
+        content: padding <> " ",
+        style: [color: state.style.line_number_color]
+      )
+
     # Use label macro
-    before_element = Raxol.View.Elements.label(content: before_cursor, style: state.style)
+    before_element =
+      Raxol.View.Elements.label(content: before_cursor, style: state.style)
+
     # Use label macro
-    cursor_element = Raxol.View.Elements.label(content: "│", style: state.style.cursor)
+    cursor_element =
+      Raxol.View.Elements.label(content: "│", style: state.style.cursor)
+
     # Use label macro
-    after_element = Raxol.View.Elements.label(content: after_cursor, style: state.style)
+    after_element =
+      Raxol.View.Elements.label(content: after_cursor, style: state.style)
 
     [
       line_num_element,
@@ -192,13 +227,29 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
 
         padding = String.pad_leading(Integer.to_string(line_index + 1), 3)
         # Use label macro
-        line_num_element = Raxol.View.Elements.label(content: padding <> " ", style: [color: state.style.line_number_color])
+        line_num_element =
+          Raxol.View.Elements.label(
+            content: padding <> " ",
+            style: [color: state.style.line_number_color]
+          )
 
         [
           line_num_element,
-          Raxol.View.Elements.label(content: before_selection, style: [color: state.style.text_color]),
-          Raxol.View.Elements.label(content: selected, style: [color: state.style.text_color, background: state.style.selection_color]),
-          Raxol.View.Elements.label(content: after_selection, style: [color: state.style.text_color])
+          Raxol.View.Elements.label(
+            content: before_selection,
+            style: [color: state.style.text_color]
+          ),
+          Raxol.View.Elements.label(
+            content: selected,
+            style: [
+              color: state.style.text_color,
+              background: state.style.selection_color
+            ]
+          ),
+          Raxol.View.Elements.label(
+            content: after_selection,
+            style: [color: state.style.text_color]
+          )
         ]
 
       line_index == start_row ->
@@ -208,12 +259,25 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
 
         padding = String.pad_leading(Integer.to_string(line_index + 1), 3)
         # Use label macro
-        line_num_element = Raxol.View.Elements.label(content: padding <> " ", style: [color: state.style.line_number_color])
+        line_num_element =
+          Raxol.View.Elements.label(
+            content: padding <> " ",
+            style: [color: state.style.line_number_color]
+          )
 
         [
           line_num_element,
-          Raxol.View.Elements.label(content: before_selection, style: [color: state.style.text_color]),
-          Raxol.View.Elements.label(content: selected, style: [color: state.style.text_color, background: state.style.selection_color])
+          Raxol.View.Elements.label(
+            content: before_selection,
+            style: [color: state.style.text_color]
+          ),
+          Raxol.View.Elements.label(
+            content: selected,
+            style: [
+              color: state.style.text_color,
+              background: state.style.selection_color
+            ]
+          )
         ]
 
       line_index == end_row ->
@@ -223,25 +287,48 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
 
         padding = String.pad_leading(Integer.to_string(line_index + 1), 3)
         # Use label macro
-        line_num_element = Raxol.View.Elements.label(content: padding <> " ", style: [color: state.style.line_number_color])
+        line_num_element =
+          Raxol.View.Elements.label(
+            content: padding <> " ",
+            style: [color: state.style.line_number_color]
+          )
 
         [
           line_num_element,
-          Raxol.View.Elements.label(content: selected, style: [color: state.style.text_color, background: state.style.selection_color]),
-          Raxol.View.Elements.label(content: after_selection, style: [color: state.style.text_color])
+          Raxol.View.Elements.label(
+            content: selected,
+            style: [
+              color: state.style.text_color,
+              background: state.style.selection_color
+            ]
+          ),
+          Raxol.View.Elements.label(
+            content: after_selection,
+            style: [color: state.style.text_color]
+          )
         ]
 
-      true -> # Middle line of selection (between start_row and end_row)
+      # Middle line of selection (between start_row and end_row)
+      true ->
         padding = String.pad_leading(Integer.to_string(line_index + 1), 3)
         # Use label macro
-        line_num_element = Raxol.View.Elements.label(content: padding <> " ", style: [color: state.style.line_number_color])
+        line_num_element =
+          Raxol.View.Elements.label(
+            content: padding <> " ",
+            style: [color: state.style.line_number_color]
+          )
 
         # Entire line is selected
         [
           line_num_element,
-          Raxol.View.Elements.label(content: line, style: [color: state.style.text_color, background: state.style.selection_color])
+          Raxol.View.Elements.label(
+            content: line,
+            style: [
+              color: state.style.text_color,
+              background: state.style.selection_color
+            ]
+          )
         ]
     end
   end
-
 end

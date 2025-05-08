@@ -30,6 +30,7 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
           parser_state
           | params_buffer: parser_state.params_buffer <> <<param_byte>>
         }
+
         # Stay in dcs_entry while collecting params/intermediates
         {:continue, emulator, next_parser_state, rest_after_param}
 
@@ -40,6 +41,7 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
           parser_state
           | params_buffer: parser_state.params_buffer <> <<?;>>
         }
+
         {:continue, emulator, next_parser_state, rest_after_param}
 
       # Intermediate byte
@@ -48,8 +50,10 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
         # Collect intermediate directly
         next_parser_state = %{
           parser_state
-          | intermediates_buffer: parser_state.intermediates_buffer <> <<intermediate_byte>>
+          | intermediates_buffer:
+              parser_state.intermediates_buffer <> <<intermediate_byte>>
         }
+
         {:continue, emulator, next_parser_state, rest_after_intermediate}
 
       # Final byte (ends DCS header, moves to passthrough)
@@ -61,6 +65,7 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
             final_byte: final_byte,
             payload_buffer: ""
         }
+
         {:continue, emulator, next_parser_state, rest_after_final}
 
       # Ignored byte in DCS Entry (e.g., CAN, SUB)
@@ -84,6 +89,7 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
         Logger.warning(
           "Unhandled byte #{unhandled_byte} in DCS Entry state, returning to ground."
         )
+
         next_parser_state = %{parser_state | state: :ground}
         {:continue, emulator, next_parser_state, rest_after_unhandled}
     end

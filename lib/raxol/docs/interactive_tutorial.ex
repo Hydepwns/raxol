@@ -513,27 +513,41 @@ defmodule Raxol.Docs.InteractiveTutorial do
 
     Path.wildcard(tutorials_path)
     |> Enum.map(&parse_tutorial_file/1)
-    |> Enum.reject(&is_nil/1) # Filter out files that failed to parse
+    # Filter out files that failed to parse
+    |> Enum.reject(&is_nil/1)
   end
 
   defp parse_tutorial_file(file_path) do
     IO.puts("Parsing tutorial: #{file_path}")
+
     case File.read(file_path) do
       {:ok, content} ->
         try do
           parse_markdown_content(content, file_path)
         rescue
           e ->
-            IO.warn("Error parsing tutorial file #{file_path}: #{inspect(e)}. Skipping.")
+            IO.warn(
+              "Error parsing tutorial file #{file_path}: #{inspect(e)}. Skipping."
+            )
+
             nil
         catch
           kind, reason ->
-            stacktrace = __STACKTRACE__ # Use __STACKTRACE__ instead of System.stacktrace()
-            IO.warn("Error parsing tutorial file #{file_path}: #{kind}: #{inspect(reason)}\n#{Exception.format_stacktrace(stacktrace)}. Skipping.")
+            # Use __STACKTRACE__ instead of System.stacktrace()
+            stacktrace = __STACKTRACE__
+
+            IO.warn(
+              "Error parsing tutorial file #{file_path}: #{kind}: #{inspect(reason)}\n#{Exception.format_stacktrace(stacktrace)}. Skipping."
+            )
+
             nil
         end
+
       {:error, reason} ->
-        IO.warn("Could not read tutorial file #{file_path}: #{reason}. Skipping.")
+        IO.warn(
+          "Could not read tutorial file #{file_path}: #{reason}. Skipping."
+        )
+
         nil
     end
   end
@@ -545,25 +559,36 @@ defmodule Raxol.Docs.InteractiveTutorial do
 
     {metadata_str, body_md} =
       case parts do
-        ["", yaml, md] -> {yaml, String.trim(md)}
+        ["", yaml, md] ->
+          {yaml, String.trim(md)}
+
         # Handle case with no leading --- or no frontmatter?
         _ ->
-           IO.warn("Invalid frontmatter format in #{file_path}. Skipping.")
-           throw({:error, :invalid_frontmatter})
+          IO.warn("Invalid frontmatter format in #{file_path}. Skipping.")
+          throw({:error, :invalid_frontmatter})
       end
 
     metadata =
       case YamlElixir.read_from_string(metadata_str) do
-        {:ok, data} -> Map.new(data)
+        {:ok, data} ->
+          Map.new(data)
+
         {:error, reason} ->
-          IO.warn("YAML parsing error in #{file_path}: #{inspect(reason)}. Skipping.")
+          IO.warn(
+            "YAML parsing error in #{file_path}: #{inspect(reason)}. Skipping."
+          )
+
           throw({:error, :yaml_parse_error})
       end
 
     # Basic metadata validation
     required_keys = [:id, :title, :description]
+
     unless Enum.all?(required_keys, &Map.has_key?(metadata, &1)) do
-      IO.warn("Missing required metadata (#{inspect required_keys}) in #{file_path}. Skipping.")
+      IO.warn(
+        "Missing required metadata (#{inspect(required_keys)}) in #{file_path}. Skipping."
+      )
+
       throw({:error, :missing_metadata})
     end
 
@@ -574,26 +599,37 @@ defmodule Raxol.Docs.InteractiveTutorial do
       title: Map.get(metadata, :title),
       description: Map.get(metadata, :description),
       tags: Map.get(metadata, :tags, []),
-      difficulty: Map.get(metadata, :difficulty, :intermediate) |> String.to_atom(),
+      difficulty:
+        Map.get(metadata, :difficulty, :intermediate) |> String.to_atom(),
       estimated_time: Map.get(metadata, :time),
       prerequisites: Map.get(metadata, :prerequisites, []),
       steps: steps,
-      metadata: Map.drop(metadata, [:id, :title, :description, :tags, :difficulty, :time, :prerequisites])
+      metadata:
+        Map.drop(metadata, [
+          :id,
+          :title,
+          :description,
+          :tags,
+          :difficulty,
+          :time,
+          :prerequisites
+        ])
     }
   end
 
   # Parses steps separated by horizontal rules (---)
   defp parse_steps_from_markdown(markdown_body, file_path) do
-     markdown_body
-     |> String.split("---") # Split by horizontal rule marker
-     |> Enum.map(&String.trim/1)
-     |> Enum.reject(&(&1 == ""))
-     |> Enum.map_reduce(1, fn step_md, index ->
-         step = parse_single_step(step_md, index, file_path)
-         {step, index + 1}
-       end)
-     |> elem(0)
-     |> Enum.reject(&is_nil/1)
+    markdown_body
+    # Split by horizontal rule marker
+    |> String.split("---")
+    |> Enum.map(&String.trim/1)
+    |> Enum.reject(&(&1 == ""))
+    |> Enum.map_reduce(1, fn step_md, index ->
+      step = parse_single_step(step_md, index, file_path)
+      {step, index + 1}
+    end)
+    |> elem(0)
+    |> Enum.reject(&is_nil/1)
   end
 
   # Parses a single step's markdown content
@@ -607,18 +643,27 @@ defmodule Raxol.Docs.InteractiveTutorial do
         h2 when is_binary(h2) ->
           if String.starts_with?(h2, "## [") do
             case Regex.run(~r/^##\s+\[([a-zA-Z0-9_\-]+)\]\s+(.*)$/, h2) do
-              [_, id, title] -> {id, String.trim(title)}
+              [_, id, title] ->
+                {id, String.trim(title)}
+
               _ ->
                 IO.warn("Invalid step title format in #{file_path}: #{h2}")
                 throw({:error, :invalid_step_title})
             end
           else
-            IO.warn("Missing or invalid step title (H2 with [id]) in #{file_path}")
+            IO.warn(
+              "Missing or invalid step title (H2 with [id]) in #{file_path}"
+            )
+
             throw({:error, :missing_step_title})
           end
+
         _ ->
-           IO.warn("Missing or invalid step title (H2 with [id]) in #{file_path}")
-           throw({:error, :missing_step_title})
+          IO.warn(
+            "Missing or invalid step title (H2 with [id]) in #{file_path}"
+          )
+
+          throw({:error, :missing_step_title})
       end
 
     # Simple section parsing based on H3 markers
@@ -627,15 +672,23 @@ defmodule Raxol.Docs.InteractiveTutorial do
     content_md = Map.get(sections, :content, []) |> Enum.join("\n")
     example_code = Map.get(sections, "Example", []) |> extract_code_block()
     exercise_lines = Map.get(sections, "Exercise", [])
-    exercise_desc = Enum.reject(exercise_lines, &String.starts_with?(&1, "> Validation:")) |> Enum.join("\n")
-    validation_str = Enum.find_value(exercise_lines, fn line ->
-      if String.starts_with?(line, "> Validation:") do
-        String.trim(String.replace(line, "> Validation:", ""))
-      end
-    end)
-    validation_fun = if validation_str, do: String.to_atom(validation_str), else: nil
+
+    exercise_desc =
+      Enum.reject(exercise_lines, &String.starts_with?(&1, "> Validation:"))
+      |> Enum.join("\n")
+
+    validation_str =
+      Enum.find_value(exercise_lines, fn line ->
+        if String.starts_with?(line, "> Validation:") do
+          String.trim(String.replace(line, "> Validation:", ""))
+        end
+      end)
+
+    validation_fun =
+      if validation_str, do: String.to_atom(validation_str), else: nil
 
     hints_md = Map.get(sections, "Hints", []) |> Enum.join("\n")
+
     # Earmark can parse the list later if needed, or we can do basic list extraction
     hints =
       hints_md
@@ -649,35 +702,47 @@ defmodule Raxol.Docs.InteractiveTutorial do
       title: step_title,
       content: content_md,
       example_code: example_code,
-      exercise: (if exercise_desc == "", do: nil, else: exercise_desc),
-      validation: validation_fun, # Store the atom name
+      exercise: if(exercise_desc == "", do: nil, else: exercise_desc),
+      # Store the atom name
+      validation: validation_fun,
       hints: hints,
-      next_steps: [], # Placeholder - could potentially parse from content? Or add explicit marker?
-      interactive_elements: [] # Placeholder
+      # Placeholder - could potentially parse from content? Or add explicit marker?
+      next_steps: [],
+      # Placeholder
+      interactive_elements: []
     }
   end
 
   # Helper to partition lines by H3 sections (simplistic)
   defp partition_by_h3(lines) do
-    Enum.reduce(lines, %{current_section: :content, content: []}, fn line, acc ->
+    Enum.reduce(lines, %{current_section: :content, content: []}, fn line,
+                                                                     acc ->
       trimmed_line = String.trim(line)
+
       if String.starts_with?(trimmed_line, "### ") do
-        section_name = String.replace_prefix(trimmed_line, "### ", "") |> String.trim()
+        section_name =
+          String.replace_prefix(trimmed_line, "### ", "") |> String.trim()
+
         %{acc | current_section: section_name}
       else
         section_key = acc.current_section
-        Map.update(acc, section_key, [line], fn existing -> [line | existing] end)
+
+        Map.update(acc, section_key, [line], fn existing ->
+          [line | existing]
+        end)
       end
     end)
     |> Map.delete(:current_section)
-    |> Enum.map(fn {k, v} -> {k, Enum.reverse(v)} end) # Reverse lines back to original order
+    # Reverse lines back to original order
+    |> Enum.map(fn {k, v} -> {k, Enum.reverse(v)} end)
   end
 
   # Helper to extract code from the first ``` block (simplistic)
   defp extract_code_block(lines) do
     lines
     |> Enum.drop_while(&(!String.starts_with?(&1, "```")))
-    |> Enum.drop(1) # Drop the opening ```
+    # Drop the opening ```
+    |> Enum.drop(1)
     |> Enum.take_while(&(!String.starts_with?(&1, "```")))
     |> Enum.join("\n")
     |> case do
@@ -695,10 +760,13 @@ defmodule Raxol.Docs.InteractiveTutorial do
     cond do
       !String.contains?(submission, "Raxol.Core.UXRefinement.init()") ->
         "Missing `Raxol.Core.UXRefinement.init()` call."
+
       !String.contains?(submission, "enable_feature(:focus_management)") ->
         "Missing `enable_feature(:focus_management)`."
-       !String.contains?(submission, "enable_feature(:keyboard_navigation)") ->
-         "Missing `enable_feature(:keyboard_navigation)`."
+
+      !String.contains?(submission, "enable_feature(:keyboard_navigation)") ->
+        "Missing `enable_feature(:keyboard_navigation)`."
+
       true ->
         :ok
     end
@@ -708,13 +776,17 @@ defmodule Raxol.Docs.InteractiveTutorial do
     # Basic check for keywords. More robust validation might involve parsing.
     cond do
       !String.contains?(submission, "use Raxol.Core.Runtime.Application") ->
-         "Did you `use Raxol.Core.Runtime.Application`?"
+        "Did you `use Raxol.Core.Runtime.Application`?"
+
       !String.contains?(submission, "import Raxol.View.Elements") ->
-         "Did you `import Raxol.View.Elements`?"
+        "Did you `import Raxol.View.Elements`?"
+
       !String.contains?(submission, "panel do") ->
-         "Missing `panel` element."
+        "Missing `panel` element."
+
       !String.contains?(submission, "text(content: \"Welcome to Raxol!\")") ->
         "Missing `text` element with the correct content."
+
       true ->
         :ok
     end

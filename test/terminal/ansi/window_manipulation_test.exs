@@ -50,6 +50,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
 
       {new_state, response} =
         WindowManipulation.process_sequence(state, "\e[9;0t")
+
       assert new_state.size == {80, 24}
       assert response == ""
     end
@@ -59,6 +60,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
 
       {new_state, response} =
         WindowManipulation.process_sequence(state, "\e[5t")
+
       assert new_state.stacking_order == :above
       assert response == ""
     end
@@ -68,6 +70,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
 
       {new_state, response} =
         WindowManipulation.process_sequence(state, "\e[6t")
+
       assert new_state.stacking_order == :below
       assert response == ""
     end

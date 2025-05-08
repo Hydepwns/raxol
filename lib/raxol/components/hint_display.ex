@@ -11,9 +11,11 @@ defmodule Raxol.Components.HintDisplay do
 
   # Define state struct
   defstruct id: nil,
-            hints: [], # List of hint strings or {key, description} tuples
+            # List of hint strings or {key, description} tuples
+            hints: [],
             visible: true,
-            position: :bottom, # :top, :bottom, :left, :right
+            # :top, :bottom, :left, :right
+            position: :bottom,
             style: %{}
 
   # --- Component Behaviour Callbacks ---
@@ -33,50 +35,66 @@ defmodule Raxol.Components.HintDisplay do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages to update hints or visibility
-    Logger.debug("HintDisplay #{state.id} received message: #{inspect msg}")
+    Logger.debug("HintDisplay #{state.id} received message: #{inspect(msg)}")
+
     case msg do
       {:set_hints, hints} when is_list(hints) ->
         {%{state | hints: hints}, []}
-      :show -> {%{state | visible: true}, []}
-      :hide -> {%{state | visible: false}, []}
-      _ -> {state, []}
+
+      :show ->
+        {%{state | visible: true}, []}
+
+      :hide ->
+        {%{state | visible: false}, []}
+
+      _ ->
+        {state, []}
     end
   end
 
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
     # Typically doesn't handle direct events
-    Logger.debug("HintDisplay #{state.id} received event: #{inspect event}")
+    Logger.debug("HintDisplay #{state.id} received event: #{inspect(event)}")
     {state, []}
   end
 
   # --- Render Logic ---
 
   @impl Raxol.UI.Components.Base.Component
-  def render(state, %{} = _props) do # Correct arity
+  # Correct arity
+  def render(state, %{} = _props) do
     if state.visible and state.hints != [] do
       # Format hints (example: key: desc)
-      hint_texts = Enum.map(state.hints, fn
-        {key, desc} -> "#{key}: #{desc}"
-        hint when is_binary(hint) -> hint
-        _ -> ""
-      end)
+      hint_texts =
+        Enum.map(state.hints, fn
+          {key, desc} -> "#{key}: #{desc}"
+          hint when is_binary(hint) -> hint
+          _ -> ""
+        end)
 
       # Join hints with a separator
       display_text = Enum.join(hint_texts, " | ")
 
       # Use View Elements macros
-      dsl_result = Raxol.View.Elements.box id: state.id, style: Map.merge(%{width: :fill, height: 1}, state.style) do
-        Raxol.View.Elements.label(content: display_text)
-      end
+      dsl_result =
+        Raxol.View.Elements.box id: state.id,
+                                style:
+                                  Map.merge(
+                                    %{width: :fill, height: 1},
+                                    state.style
+                                  ) do
+          Raxol.View.Elements.label(content: display_text)
+        end
 
-      dsl_result # Return element map directly
+      # Return element map directly
+      dsl_result
     else
-      nil # Render nothing if not visible or no hints
+      # Render nothing if not visible or no hints
+      nil
     end
   end
 
   # Remove old render/2, render_title, render_hints, render_shortcuts, render_footer
   # Remove old @impl Component annotations
-
 end

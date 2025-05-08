@@ -3,7 +3,8 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
   import ExUnit.CaptureLog
 
   alias Raxol.Core.Runtime.ComponentManager
-  alias Raxol.Core.Runtime.ComponentManagerTest.TestComponent # Need alias now
+  # Need alias now
+  alias Raxol.Core.Runtime.ComponentManagerTest.TestComponent
 
   # Mock component module for testing
   # REMOVED - Moved to test/support/component_manager_test_mocks.ex
@@ -141,7 +142,11 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       {:ok, component_id} = ComponentManager.mount(TestComponent)
 
       # Manually schedule the message that mount_with_commands would have
-      Process.send_after(ComponentManager, {:update, component_id, :delayed_message}, 50)
+      Process.send_after(
+        ComponentManager,
+        {:update, component_id, :delayed_message},
+        50
+      )
 
       # Wait for delayed message to be processed
       Process.sleep(100)
@@ -162,7 +167,9 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
 
       # Wait for broadcasting to complete (via async cast potentially)
       # Robust waiting: Check state periodically
-      wait_for_state(component_id2, fn state -> state.last_message == :broadcast_message end)
+      wait_for_state(component_id2, fn state ->
+        state.last_message == :broadcast_message
+      end)
 
       # Verify both components received the broadcast via update
       component1 = ComponentManager.get_component(component_id1)
@@ -175,7 +182,12 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
   end
 
   # Helper function for robust waiting
-  defp wait_for_state(component_id, condition_fun, timeout \\ 500, interval \\ 10) do
+  defp wait_for_state(
+         component_id,
+         condition_fun,
+         timeout \\ 500,
+         interval \\ 10
+       ) do
     start_time = System.monotonic_time(:millisecond)
 
     check_state = fn ->
@@ -186,12 +198,16 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
     unless check_state.() do
       Process.sleep(interval)
       elapsed = System.monotonic_time(:millisecond) - start_time
+
       if elapsed < timeout do
         wait_for_state(component_id, condition_fun, timeout - elapsed, interval)
       else
         # Timeout reached, fail the test
         component = ComponentManager.get_component(component_id)
-        flunk("Timeout waiting for condition on component #{component_id}. Last state: #{inspect(component)}")
+
+        flunk(
+          "Timeout waiting for condition on component #{component_id}. Last state: #{inspect(component)}"
+        )
       end
     end
   end

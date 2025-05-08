@@ -89,9 +89,12 @@ defmodule Raxol.Terminal.CommandExecutor do
   @doc """
   Handles DEC Private Mode Set (CSI ? Pn h) and Reset (CSI ? Pn l).
   """
-  @spec handle_dec_private_mode(Emulator.t(), list(integer()), :set | :reset) :: Emulator.t()
+  @spec handle_dec_private_mode(Emulator.t(), list(integer()), :set | :reset) ::
+          Emulator.t()
   def handle_dec_private_mode(emulator, params, action) do
-    modes = Enum.map(params, &ModeManager.lookup_private/1) |> Enum.reject(&is_nil/1)
+    modes =
+      Enum.map(params, &ModeManager.lookup_private/1) |> Enum.reject(&is_nil/1)
+
     case action do
       :set -> ModeManager.set_mode(emulator, modes)
       :reset -> ModeManager.reset_mode(emulator, modes)
@@ -101,9 +104,12 @@ defmodule Raxol.Terminal.CommandExecutor do
   @doc """
   Handles Standard Mode Set (CSI Pn h) and Reset (CSI Pn l).
   """
-  @spec handle_ansi_mode(Emulator.t(), list(integer()), :set | :reset) :: Emulator.t()
+  @spec handle_ansi_mode(Emulator.t(), list(integer()), :set | :reset) ::
+          Emulator.t()
   def handle_ansi_mode(emulator, params, action) do
-    modes = Enum.map(params, &ModeManager.lookup_standard/1) |> Enum.reject(&is_nil/1)
+    modes =
+      Enum.map(params, &ModeManager.lookup_standard/1) |> Enum.reject(&is_nil/1)
+
     case action do
       :set -> ModeManager.set_mode(emulator, modes)
       :reset -> ModeManager.reset_mode(emulator, modes)
@@ -323,7 +329,7 @@ defmodule Raxol.Terminal.CommandExecutor do
   def handle_sixel_graphics(emulator, payload) do
     Logger.warning(
       "Sixel graphics received (payload length: #{String.length(payload)}), but Sixel decoding is NOT IMPLEMENTED. " <>
-      "This functionality should be moved to a dedicated Sixel handler module."
+        "This functionality should be moved to a dedicated Sixel handler module."
     )
 
     # TODO: Implement Sixel parsing and rendering to screen buffer
@@ -339,7 +345,7 @@ defmodule Raxol.Terminal.CommandExecutor do
   def handle_ed(emulator, mode \\ 0) do
     Logger.warning(
       "Raxol.Terminal.CommandExecutor.handle_ed/2 is deprecated. " <>
-      "This functionality should be moved to Raxol.Terminal.Commands.Screen."
+        "This functionality should be moved to Raxol.Terminal.Commands.Screen."
     )
 
     # TODO: Move this implementation to Screen.erase_display/2
@@ -434,7 +440,7 @@ defmodule Raxol.Terminal.CommandExecutor do
   def handle_el(emulator, mode \\ 0) do
     Logger.warning(
       "Raxol.Terminal.CommandExecutor.handle_el/2 is deprecated. " <>
-      "This functionality should be moved to Raxol.Terminal.Commands.Screen."
+        "This functionality should be moved to Raxol.Terminal.Commands.Screen."
     )
 
     # TODO: Move this implementation to Screen.erase_line/2

@@ -81,7 +81,8 @@ defmodule Raxol.UI.Components.Input.Checkbox do
 
   @impl true
   def init(props) do
-    id = Keyword.get(props, :id, "checkbox-#{:erlang.unique_integer([:positive])}")
+    id =
+      Keyword.get(props, :id, "checkbox-#{:erlang.unique_integer([:positive])}")
 
     state = %{
       # Core state
@@ -91,9 +92,11 @@ defmodule Raxol.UI.Components.Input.Checkbox do
       # Props influencing state/rendering
       label: Keyword.get(props, :label, ""),
       style: Keyword.get(props, :style, %{}),
-      on_toggle: Keyword.get(props, :on_toggle), # Callback prop
+      # Callback prop
+      on_toggle: Keyword.get(props, :on_toggle),
       # Internal state
-      focused: false # Default internal state
+      # Default internal state
+      focused: false
       # TODO: Consider other props like tooltip, required, aria_label
       # tooltip: Keyword.get(props, :tooltip),
       # required: Keyword.get(props, :required, false),
@@ -118,16 +121,25 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   @impl true
   def update(message, state) do
     IO.inspect(message, label: "Unhandled Checkbox update (ignored)")
-    {:ok, state, []} # Return ok to avoid crashing test if unexpected message sent
+    # Return ok to avoid crashing test if unexpected message sent
+    {:ok, state, []}
   end
 
   @impl true
-  def handle_event(%Event{type: :mouse, data: %{action: :press}} = event, _context, state)
+  def handle_event(
+        %Event{type: :mouse, data: %{action: :press}} = event,
+        _context,
+        state
+      )
       when not state.disabled do
     toggle_state(event, state)
   end
 
-  def handle_event(%Event{type: :key, data: %{key: :space}} = event, _context, state)
+  def handle_event(
+        %Event{type: :key, data: %{key: :space}} = event,
+        _context,
+        state
+      )
       when not state.disabled do
     toggle_state(event, state)
   end
@@ -139,6 +151,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   defp toggle_state(_event, state) do
     new_checked_state = !state.checked
     new_state = %{state | checked: new_checked_state}
+
     commands =
       if is_function(state.on_toggle, 1) do
         # Potentially create a command if the callback needs to trigger one,
@@ -150,6 +163,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
       else
         []
       end
+
     {:noreply, new_state, commands}
   end
 
@@ -165,14 +179,17 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     {fg, bg} =
       cond do
         state.disabled ->
-          { Map.get(base_style, :disabled_fg, Map.get(base_style, :fg, :gray)), # Fallback chain
-            Map.get(base_style, :disabled_bg, Map.get(base_style, :bg, :default)) }
+          # Fallback chain
+          {Map.get(base_style, :disabled_fg, Map.get(base_style, :fg, :gray)),
+           Map.get(base_style, :disabled_bg, Map.get(base_style, :bg, :default))}
+
         state.focused ->
-           { Map.get(base_style, :focused_fg, Map.get(base_style, :fg, :default)),
-            Map.get(base_style, :focused_bg, Map.get(base_style, :bg, :default)) }
+          {Map.get(base_style, :focused_fg, Map.get(base_style, :fg, :default)),
+           Map.get(base_style, :focused_bg, Map.get(base_style, :bg, :default))}
+
         true ->
-          { Map.get(base_style, :fg, :default),
-            Map.get(base_style, :bg, :default) }
+          {Map.get(base_style, :fg, :default),
+           Map.get(base_style, :bg, :default)}
       end
 
     # TODO: Handle other style attributes like :bold, :underline based on state/theme?
@@ -185,13 +202,12 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     # Apply the calculated style to the hbox
     Element.new(
       :hbox,
-      %{style: final_attrs_style}, # Apply calculated fg/bg
-      [
-        do: [
-          # Maybe apply style individually? For now, apply to hbox.
-          Element.new(:text, %{id: "#{state.id}-check", text: check_char}),
-          Element.new(:text, %{id: "#{state.id}-label", text: " " <> label_text})
-        ]
+      # Apply calculated fg/bg
+      %{style: final_attrs_style},
+      do: [
+        # Maybe apply style individually? For now, apply to hbox.
+        Element.new(:text, %{id: "#{state.id}-check", text: check_char}),
+        Element.new(:text, %{id: "#{state.id}-label", text: " " <> label_text})
       ]
     )
   end

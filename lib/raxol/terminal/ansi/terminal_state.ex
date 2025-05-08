@@ -100,15 +100,24 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   @impl Raxol.Terminal.ANSI.TerminalStateBehaviour
   def apply_restored_data(emulator, nil, _fields_to_restore) do
     # No data to restore, return emulator unchanged
-    Logger.debug("[ApplyRestore] No data to restore.") # Log
+    # Log
+    Logger.debug("[ApplyRestore] No data to restore.")
     emulator
   end
 
   def apply_restored_data(emulator, restored_data, fields_to_restore) do
-    Logger.debug("[ApplyRestore] Restoring fields: #{inspect(fields_to_restore)} from data: #{inspect(restored_data)}") # Log
+    # Log
+    Logger.debug(
+      "[ApplyRestore] Restoring fields: #{inspect(fields_to_restore)} from data: #{inspect(restored_data)}"
+    )
+
     Enum.reduce(fields_to_restore, emulator, fn field, acc_emulator ->
       if Map.has_key?(restored_data, field) do
-        Logger.debug("[ApplyRestore] Applying field: #{field} with value: #{inspect(Map.get(restored_data, field))}") # Log
+        # Log
+        Logger.debug(
+          "[ApplyRestore] Applying field: #{field} with value: #{inspect(Map.get(restored_data, field))}"
+        )
+
         Map.put(acc_emulator, field, Map.get(restored_data, field))
       else
         acc_emulator

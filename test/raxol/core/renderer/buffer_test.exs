@@ -65,21 +65,24 @@ defmodule Raxol.Core.Renderer.BufferTest do
 
   describe "swap_buffers/1" do
     setup do
-      # Use very low FPS to make frame_time huge
+      # Use very low FPS to make frame_time huge - REVERT: Use default FPS
+      # Use default FPS 60
       buffer =
-        Buffer.new(2, 2, 0.0001)
+        Buffer.new(2, 2)
         |> Buffer.put_cell({0, 0}, "a")
 
       {:ok, buffer: buffer}
     end
 
-    # Skipping due to persistent, undiagnosed failure (should_render is false)
-    @tag :skip
+    # Skipping due to persistent, undiagnosed failure (should_render is false) - REVERTING to fix timing logic
+    # @tag :skip # REMOVING
     test "swaps buffers when enough time has passed", %{buffer: buffer} do
       # Ensure last_frame_time is not exactly now
+      # Needs to be older than frame_time (1000/60 ~= 16.67ms)
       buffer = %{
         buffer
-        | last_frame_time: System.monotonic_time(:millisecond) - 10
+        | # Set 100ms ago
+          last_frame_time: System.monotonic_time(:millisecond) - 100
       }
 
       {new_buffer, should_render} = Buffer.swap_buffers(buffer)
@@ -101,8 +104,8 @@ defmodule Raxol.Core.Renderer.BufferTest do
   end
 
   describe "get_damage/1" do
-    # Skipping due to persistent, undiagnosed failure (damage set is empty after swap)
-    @tag :skip
+    # Skipping due to persistent, undiagnosed failure (damage set is empty after swap) - Unskipping, logic seems correct now
+    # @tag :skip # REMOVING
     test "returns list of damaged cells" do
       buffer =
         Buffer.new(2, 2)

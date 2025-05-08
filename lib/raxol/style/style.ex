@@ -49,7 +49,80 @@ defmodule Raxol.Style do
   end
 
   def new(map) when is_map(map) do
-    struct(new(), map)
+    # Extract layout attributes
+    layout_attrs = %{}
+
+    layout_attrs =
+      if Map.has_key?(map, :padding),
+        do: Map.put(layout_attrs, :padding, map.padding),
+        else: layout_attrs
+
+    layout_attrs =
+      if Map.has_key?(map, :margin),
+        do: Map.put(layout_attrs, :margin, map.margin),
+        else: layout_attrs
+
+    layout_attrs =
+      if Map.has_key?(map, :width),
+        do: Map.put(layout_attrs, :width, map.width),
+        else: layout_attrs
+
+    layout_attrs =
+      if Map.has_key?(map, :height),
+        do: Map.put(layout_attrs, :height, map.height),
+        else: layout_attrs
+
+    layout_attrs =
+      if Map.has_key?(map, :alignment),
+        do: Map.put(layout_attrs, :alignment, map.alignment),
+        else: layout_attrs
+
+    layout_attrs =
+      if Map.has_key?(map, :overflow),
+        do: Map.put(layout_attrs, :overflow, map.overflow),
+        else: layout_attrs
+
+    # Attributes for the main Style struct (excluding layout ones already handled)
+    # and explicitly excluding border for now, as it's handled specially.
+    style_specific_attrs =
+      Map.drop(map, [
+        :padding,
+        :margin,
+        :width,
+        :height,
+        :alignment,
+        :overflow,
+        :border
+      ])
+
+    # Create the initial Style struct with its specific attrs
+    initial_style = struct(new(), style_specific_attrs)
+
+    # Set the layout field
+    final_style = %{initial_style | layout: Layout.new(layout_attrs)}
+
+    # Handle border separately
+    case Map.get(map, :border) do
+      atom when is_atom(atom) ->
+        border_struct =
+          case atom do
+            :none -> %Borders{style: :none, width: 0}
+            :single -> %Borders{style: :solid, width: 1}
+            :solid -> %Borders{style: :solid, width: 1}
+            :double -> %Borders{style: :double, width: 1}
+            _ -> Borders.new()
+          end
+
+        %{final_style | border: border_struct}
+
+      # If it's already a Borders struct
+      %Borders{} = border_struct ->
+        %{final_style | border: border_struct}
+
+      # No border or nil, or other map format for border (which might need more handling if supported)
+      _ ->
+        final_style
+    end
   end
 
   @doc """

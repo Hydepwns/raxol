@@ -9,6 +9,7 @@ defmodule Raxol.Components.MarkdownRenderer do
   @doc """
   Renders the given Markdown string.
   """
+
   # Option 1: Render as raw HTML (Simpler, relies on browser rendering)
   # Requires Raxol to have a way to render raw HTML, e.g., a `raw_html` element
   # or specific handling in the rendering engine.
@@ -30,21 +31,33 @@ defmodule Raxol.Components.MarkdownRenderer do
 
     case Code.ensure_loaded?(Earmark) do
       true ->
-        html_content = Earmark.as_html!(markdown_text, gfm: true, breaks: true, smartypants: true)
+        html_content =
+          Earmark.as_html!(markdown_text,
+            gfm: true,
+            breaks: true,
+            smartypants: true
+          )
+
         Raxol.View.Components.text(content: html_content)
 
       false ->
-        Raxol.View.Components.text(content: markdown_text <> "\n[MarkdownRenderer Error: Earmark library not found.]")
+        Raxol.View.Components.text(
+          content:
+            markdown_text <>
+              "\n[MarkdownRenderer Error: Earmark library not found.]"
+        )
     end
   end
 
   # Add missing callbacks for Base.Component behaviour
-  def init(props), do: props # Simple init stores props in state
-  def update(_message, state), do: state # No updates handled
-  def handle_event(_event, state, _context), do: {state, []} # No events handled
+  # Simple init stores props in state
+  def init(props), do: props
+  # No updates handled
+  def update(_message, state), do: state
+  # No events handled
+  def handle_event(_event, state, _context), do: {state, []}
 
   # Hypothetical raw_html component/function - needed for the above approach
   # If Raxol doesn't have this, the render function needs to change.
   # defp raw_html(assigns), do: # ... implementation depends on Raxol internals
-
 end

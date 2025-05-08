@@ -66,6 +66,7 @@ defmodule Raxol.Core.Events.TermboxConverter do
               shift: (mod_code &&& 1) > 0
             }
           }
+
           {:ok, event}
 
         %{type: :resize, width: w, height: h} ->
@@ -113,7 +114,8 @@ defmodule Raxol.Core.Events.TermboxConverter do
       c when c in [@f10] -> :f10
       c when c in [@f11] -> :f11
       c when c in [@f12] -> :f12
-      0 -> :char  # When key is 0, it's a regular character input
+      # When key is 0, it's a regular character input
+      0 -> :char
       _ -> :unknown
     end
   end
@@ -121,29 +123,32 @@ defmodule Raxol.Core.Events.TermboxConverter do
   # Translates termbox mouse events to Raxol mouse event maps
   defp translate_mouse_event(x, y, button_code) do
     # Simple example mapping - will need to be expanded based on actual rrex_termbox codes
-    button = case button_code do
-      0 -> :left
-      1 -> :middle
-      2 -> :right
-      3 -> :release
-      4 -> :wheel_up
-      5 -> :wheel_down
-      _ -> :unknown
-    end
+    button =
+      case button_code do
+        0 -> :left
+        1 -> :middle
+        2 -> :right
+        3 -> :release
+        4 -> :wheel_up
+        5 -> :wheel_down
+        _ -> :unknown
+      end
 
-    action = case button do
-      :wheel_up -> :scroll_up
-      :wheel_down -> :scroll_down
-      :release -> :release
-      _ -> :press
-    end
+    action =
+      case button do
+        :wheel_up -> :scroll_up
+        :wheel_down -> :scroll_down
+        :release -> :release
+        _ -> :press
+      end
 
     %{
       x: x,
       y: y,
       button: button,
       action: action,
-      ctrl: false,  # These would come from mod flags in a real implementation
+      # These would come from mod flags in a real implementation
+      ctrl: false,
       alt: false,
       shift: false
     }

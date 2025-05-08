@@ -6,7 +6,8 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   @behaviour Raxol.Plugins.Plugin
   require Logger
 
-  alias Raxol.System.Clipboard # Alias the new consolidated module
+  # Alias the new consolidated module
+  alias Raxol.System.Clipboard
 
   @type t :: %__MODULE__{
           # Standard Plugin fields
@@ -115,10 +116,15 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         case Clipboard.copy(text) do
           :ok ->
             Logger.debug("[Clipboard] Yanked selection to clipboard: #{text}")
+
           {:error, reason} ->
-            Logger.error("[Clipboard] Failed to yank selection: #{inspect(reason)}")
+            Logger.error(
+              "[Clipboard] Failed to yank selection: #{inspect(reason)}"
+            )
         end
+
         {:ok, state}
+
       _ ->
         {:ok, state}
     end
@@ -172,7 +178,8 @@ defmodule Raxol.Plugins.ClipboardPlugin do
 
   # Reads content from the system clipboard using the consolidated module.
   defp get_clipboard_content() do
-    Clipboard.paste() # Delegate directly to the new module
+    # Delegate directly to the new module
+    Clipboard.paste()
   end
 
   @impl true

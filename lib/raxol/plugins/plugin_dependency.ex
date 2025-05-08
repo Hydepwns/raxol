@@ -240,10 +240,15 @@ defmodule Raxol.Plugins.PluginDependency do
 
         case {comparison, op} do
           # v1 >= v2
-          {:gt, op} when op in [">=", ">", "="] -> :ok
-          {:eq, op} when op in [">=", "<=", "="] -> :ok
+          {:gt, op} when op in [">=", ">", "="] ->
+            :ok
+
+          {:eq, op} when op in [">=", "<=", "="] ->
+            :ok
+
           # v1 <= v2
-          {:lt, op} when op in ["<=", "<"] -> :ok
+          {:lt, op} when op in ["<=", "<"] ->
+            :ok
 
           _ ->
             {:error,

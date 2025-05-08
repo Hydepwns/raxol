@@ -1,10 +1,13 @@
 defmodule Raxol.Components.ModalTest do
   # use ExUnit.Case, async: true
-  use ExUnit.Case # Run synchronously
+  # Run synchronously
+  use ExUnit.Case
 
   alias Raxol.Components.Modal
-  alias Raxol.Core.Runtime.Application # Used for component struct creation helper
-  import Raxol.View.Elements # For checking rendered elements
+  # Used for component struct creation helper
+  alias Raxol.Core.Runtime.Application
+  # For checking rendered elements
+  import Raxol.View.Elements
 
   # --- Alert/Confirm Tests (Basic) ---
   test "init initializes alert modal" do
@@ -18,7 +21,9 @@ defmodule Raxol.Components.ModalTest do
   end
 
   test "init initializes confirm modal" do
-    props = Modal.confirm(:my_confirm, "Confirm?", "Are you sure?", :yes_msg, :no_msg)
+    props =
+      Modal.confirm(:my_confirm, "Confirm?", "Are you sure?", :yes_msg, :no_msg)
+
     state = Modal.init(Map.new(props))
     assert state.id == :my_confirm
     assert state.title == "Confirm?"
@@ -42,13 +47,15 @@ defmodule Raxol.Components.ModalTest do
       style: %{},
       form_state: %{fields: [], focus_index: 0}
     }
+
     refute state.visible
 
     # Show it and check state/commands
     {show_state, show_cmds} = Modal.update(:show, state)
     :timer.sleep(10)
     assert show_state.visible
-    assert show_cmds == [{:set_focus, :my_alert}] # Focus alert itself
+    # Focus alert itself
+    assert show_cmds == [{:set_focus, :my_alert}]
 
     # Hide it and check state/commands
     {hide_state, hide_cmds} = Modal.update(:hide, show_state)
@@ -70,14 +77,24 @@ defmodule Raxol.Components.ModalTest do
   # --- Prompt Modal Tests ---
 
   test "init initializes prompt modal" do
-    props = Modal.prompt(:my_prompt, "Enter Value", "Your Name:", :prompt_submit, :prompt_cancel, default_value: "Test")
+    props =
+      Modal.prompt(
+        :my_prompt,
+        "Enter Value",
+        "Your Name:",
+        :prompt_submit,
+        :prompt_cancel,
+        default_value: "Test"
+      )
+
     state = Modal.init(Map.new(props))
 
     assert state.id == :my_prompt
     assert state.title == "Enter Value"
     assert state.type == :prompt
     assert state.visible == true
-    assert state.content == nil # Content moved to field label
+    # Content moved to field label
+    assert state.content == nil
     assert state.form_state.focus_index == 0
     assert state.form_state.fields |> length() == 1
     prompt_field = state.form_state.fields |> hd()
@@ -86,35 +103,48 @@ defmodule Raxol.Components.ModalTest do
     assert prompt_field.label == "Your Name:"
     assert prompt_field.value == "Test"
     assert prompt_field.validate == nil
-    assert state.buttons == [{"Submit", {:submit, :prompt_submit}}, {"Cancel", :prompt_cancel}]
+
+    assert state.buttons == [
+             {"Submit", {:submit, :prompt_submit}},
+             {"Cancel", :prompt_cancel}
+           ]
   end
 
   test "prompt update handles :field_update" do
     props = Modal.prompt(:my_prompt, "Enter Value", "Your Name:")
     state = Modal.init(Map.new(props))
-    {new_state, commands} = Modal.update({:field_update, :prompt_input, "New Value"}, state)
+
+    {new_state, commands} =
+      Modal.update({:field_update, :prompt_input, "New Value"}, state)
 
     assert commands == []
     assert new_state.form_state.fields |> hd() |> Map.get(:value) == "New Value"
   end
 
   test "prompt handle_event submits on Enter" do
-    props = Modal.prompt(:my_prompt, "Enter Value", "Your Name:", :prompt_submit)
+    props =
+      Modal.prompt(:my_prompt, "Enter Value", "Your Name:", :prompt_submit)
+
     state = Modal.init(Map.new(props))
     # Simulate user typing
-    {state, _} = Modal.update({:field_update, :prompt_input, "Entered Name"}, state)
+    {state, _} =
+      Modal.update({:field_update, :prompt_input, "Entered Name"}, state)
 
-    props_map = %{} # Required by handle_event_component
+    # Required by handle_event_component
+    props_map = %{}
     enter_event = %{type: :key, data: %{key: "Enter"}}
     {new_state, commands} = Modal.handle_event(enter_event, props_map, state)
 
     assert new_state.visible == false
-    expected_payload = %{prompt_input: "Entered Name"} # Value from the single field
+    # Value from the single field
+    expected_payload = %{prompt_input: "Entered Name"}
     assert commands == [{:prompt_submit, expected_payload}]
   end
 
   test "prompt handle_event cancels on Escape" do
-    props = Modal.prompt(:my_prompt, "Enter Value", "Name", :submit, :prompt_cancel)
+    props =
+      Modal.prompt(:my_prompt, "Enter Value", "Name", :submit, :prompt_cancel)
+
     state = Modal.init(Map.new(props))
     props_map = %{}
     escape_event = %{type: :key, data: %{key: "Escape"}}
@@ -130,7 +160,13 @@ defmodule Raxol.Components.ModalTest do
     [
       %{id: :name, type: :text_input, label: "Name", value: "Initial"},
       %{id: :agree, type: :checkbox, label: "Agree?", value: false},
-      %{id: :option, type: :dropdown, label: "Choose", value: "b", options: [{"A", "a"}, {"B", "b"}]}
+      %{
+        id: :option,
+        type: :dropdown,
+        label: "Choose",
+        value: "b",
+        options: [{"A", "a"}, {"B", "b"}]
+      }
     ]
   end
 
@@ -147,9 +183,18 @@ defmodule Raxol.Components.ModalTest do
     assert state.type == :form
     assert state.visible == true
     # Check normalized fields include error: nil and validate: nil by default
-    assert state.form_state.fields == default_form_fields() |> Enum.map(&Map.merge(&1, %{props: %{}, validate: nil, error: nil}))
+    assert state.form_state.fields ==
+             default_form_fields()
+             |> Enum.map(
+               &Map.merge(&1, %{props: %{}, validate: nil, error: nil})
+             )
+
     assert state.form_state.focus_index == 0
-    assert state.buttons == [{"Submit", {:submit, :form_submitted}}, {"Cancel", :form_canceled}]
+
+    assert state.buttons == [
+             {"Submit", {:submit, :form_submitted}},
+             {"Cancel", :form_canceled}
+           ]
   end
 
   test "form render generates form fields" do
@@ -159,24 +204,34 @@ defmodule Raxol.Components.ModalTest do
 
     # Correctly navigate the view structure
     # view = %{type: :box, attrs: %{id: "my_form-box", ...}, children: inner_column_map}
-    inner_column_map = view.children # This should be the %{type: :column, ...} map
+    # This should be the %{type: :column, ...} map
+    inner_column_map = view.children
     assert inner_column_map.type == :column
-    list_of_elements = inner_column_map.children # This is the list [title, spacer, content, spacer, buttons]
+    # This is the list [title, spacer, content, spacer, buttons]
+    list_of_elements = inner_column_map.children
 
-    content_element = Enum.at(list_of_elements, 2) # Assuming content is 3rd element
-    assert content_element.type == :column # The form content itself is a column
-    field_columns = content_element.children # The children of the content column IS the list of field columns
+    # Assuming content is 3rd element
+    content_element = Enum.at(list_of_elements, 2)
+    # The form content itself is a column
+    assert content_element.type == :column
+    # The children of the content column IS the list of field columns
+    field_columns = content_element.children
 
-    assert length(field_columns) == 3 # One column per field
+    # One column per field
+    assert length(field_columns) == 3
 
     # Check first field column contains label+input row
     field1_column = Enum.at(field_columns, 0)
     assert field1_column.type == :column
-    field1_row_map = Enum.at(field1_column.children, 0) # The %{type: :row, ...} map
+    # The %{type: :row, ...} map
+    field1_row_map = Enum.at(field1_column.children, 0)
     assert field1_row_map.type == :row
-    field1_row_children = field1_row_map.children # The list [label_map, input_map]
-    input_map = Enum.at(field1_row_children, 1) # Assuming input is second
-    assert input_map.type == :text_input # Check input type
+    # The list [label_map, input_map]
+    field1_row_children = field1_row_map.children
+    # Assuming input is second
+    input_map = Enum.at(field1_row_children, 1)
+    # Check input type
+    assert input_map.type == :text_input
 
     # Check second field column
     field2_column = Enum.at(field_columns, 1)
@@ -201,10 +256,15 @@ defmodule Raxol.Components.ModalTest do
   test "form update handles :field_update for text_input" do
     props = default_form_props()
     state = Modal.init(Map.new(props))
-    {new_state, commands} = Modal.update({:field_update, :name, "New Name"}, state)
+
+    {new_state, commands} =
+      Modal.update({:field_update, :name, "New Name"}, state)
 
     assert commands == []
-    assert new_state.form_state.fields |> Enum.at(0) |> Map.get(:value) == "New Name"
+
+    assert new_state.form_state.fields |> Enum.at(0) |> Map.get(:value) ==
+             "New Name"
+
     # Check others unchanged
     assert new_state.form_state.fields |> Enum.at(1) |> Map.get(:value) == false
     assert new_state.form_state.fields |> Enum.at(2) |> Map.get(:value) == "b"
@@ -261,11 +321,15 @@ defmodule Raxol.Components.ModalTest do
   test "form handle_event triggers focus changes on Tab/Shift+Tab" do
     props = default_form_props()
     initial_state = Modal.init(Map.new(props))
-    props_map = %{} # Props might be needed if handle_event uses them
+    # Props might be needed if handle_event uses them
+    props_map = %{}
 
     # Tab (0 -> 1)
     tab_event = %{type: :key, data: %{key: "Tab", shift: false}}
-    {state_1, commands_1} = Modal.handle_event(tab_event, props_map, initial_state)
+
+    {state_1, commands_1} =
+      Modal.handle_event(tab_event, props_map, initial_state)
+
     :timer.sleep(10)
     assert state_1.form_state.focus_index == 1
     assert commands_1 == [{:set_focus, "my_form.agree"}]
@@ -284,22 +348,33 @@ defmodule Raxol.Components.ModalTest do
 
     # Shift+Tab (0 -> 2, wrap)
     shift_tab_event = %{type: :key, data: %{key: "Tab", shift: true}}
-    {state_prev, commands_prev} = Modal.handle_event(shift_tab_event, props_map, state_0)
+
+    {state_prev, commands_prev} =
+      Modal.handle_event(shift_tab_event, props_map, state_0)
+
     :timer.sleep(10)
     assert state_prev.form_state.focus_index == 2
     assert commands_prev == [{:set_focus, "my_form.option"}]
   end
 
   test "form handle_event submits form on Enter when valid" do
-    fields = [%{id: :name, type: :text_input, label: "Name", value: "Final Name"}] # Single valid field
-    props = Modal.form(:my_form, "Test Form", fields, :form_submitted, :form_canceled)
+    # Single valid field
+    fields = [
+      %{id: :name, type: :text_input, label: "Name", value: "Final Name"}
+    ]
+
+    props =
+      Modal.form(:my_form, "Test Form", fields, :form_submitted, :form_canceled)
+
     state = Modal.init(Map.new(props))
     props_map = %{}
     enter_event = %{type: :key, data: %{key: "Enter"}}
     {new_state, commands} = Modal.handle_event(enter_event, props_map, state)
 
-    assert new_state.visible == false # Modal should hide on submit
-    expected_payload = %{name: "Final Name"} # Extracted value
+    # Modal should hide on submit
+    assert new_state.visible == false
+    # Extracted value
+    expected_payload = %{name: "Final Name"}
     assert commands == [{:form_submitted, expected_payload}]
   end
 
@@ -310,29 +385,52 @@ defmodule Raxol.Components.ModalTest do
     escape_event = %{type: :key, data: %{key: "Escape"}}
     {new_state, commands} = Modal.handle_event(escape_event, props_map, state)
     :timer.sleep(10)
-    assert new_state.visible == false # Modal should hide on cancel
-    assert commands == [:form_canceled] # Cancel message triggered
+    # Modal should hide on cancel
+    assert new_state.visible == false
+    # Cancel message triggered
+    assert commands == [:form_canceled]
   end
 
   # --- Validation Tests ---
 
   test "form validation prevents submission and shows errors on Enter" do
     fields = [
-      %{id: :name, type: :text_input, label: "Name", value: "", validate: ~r/.+/}, # Required
-      %{id: :email, type: :text_input, label: "Email", value: "bad-email", validate: &String.contains?(&1, "@")}
+      # Required
+      %{
+        id: :name,
+        type: :text_input,
+        label: "Name",
+        value: "",
+        validate: ~r/.+/
+      },
+      %{
+        id: :email,
+        type: :text_input,
+        label: "Email",
+        value: "bad-email",
+        validate: &String.contains?(&1, "@")
+      }
     ]
-    props = Modal.form(:val_form, "Validation Test", fields, :submit_ok, :cancel_ok)
+
+    props =
+      Modal.form(:val_form, "Validation Test", fields, :submit_ok, :cancel_ok)
+
     state = Modal.init(Map.new(props))
     props_map = %{}
     enter_event = %{type: :key, data: %{key: "Enter"}}
 
     {new_state, commands} = Modal.handle_event(enter_event, props_map, state)
 
-    assert new_state.visible == true # Should NOT hide
-    assert commands == [] # No submit command
+    # Should NOT hide
+    assert new_state.visible == true
+    # No submit command
+    assert commands == []
     # Check errors are set
-    assert new_state.form_state.fields |> Enum.at(0) |> Map.get(:error) == "Invalid input"
-    assert new_state.form_state.fields |> Enum.at(1) |> Map.get(:error) == "Invalid input"
+    assert new_state.form_state.fields |> Enum.at(0) |> Map.get(:error) ==
+             "Invalid input"
+
+    assert new_state.form_state.fields |> Enum.at(1) |> Map.get(:error) ==
+             "Invalid input"
 
     # Render view and check for error messages
     view = Modal.render(new_state, %{})
@@ -344,22 +442,30 @@ defmodule Raxol.Components.ModalTest do
     list_of_elements = inner_column_map.children
 
     # content_column = list_of_elements |> Enum.find(&(&1.type == :column))
-    content_element = Enum.at(list_of_elements, 2) # Assuming content is 3rd element
-    # field_columns_container = content_element.children |> Enum.find(&(&1.type == :column))
-    field_columns = content_element.children # The children of the content column IS the list of field columns
+    # Assuming content is 3rd element
+    content_element = Enum.at(list_of_elements, 2)
 
-    assert length(field_columns) == 2 # Only 2 fields in this test
+    # field_columns_container = content_element.children |> Enum.find(&(&1.type == :column))
+    # The children of the content column IS the list of field columns
+    field_columns = content_element.children
+
+    # Only 2 fields in this test
+    assert length(field_columns) == 2
 
     # Check first field's column for error row
     # field1_column = field_columns |> Enum.find(&(&1.type == :column)) # Need better way to find field
     field1_column = Enum.at(field_columns, 0)
+
     # field1_elements = field1_column.children |> Enum.find(&(&1.type == :row)) # Find the row first?
     # Assuming structure: column -> [row, error_row]
     field1_elements = field1_column.children
-    assert field1_elements |> Enum.count() == 2 # Row + Error Row
-    error1_row = Enum.at(field1_elements, 1) # Error is second element
+    # Row + Error Row
+    assert field1_elements |> Enum.count() == 2
+    # Error is second element
+    error1_row = Enum.at(field1_elements, 1)
     # Error row structure: %{type: :row, children: %{type: :label, ...}}
-    error1_label_map = error1_row.children # The label map IS the child of the row
+    # The label map IS the child of the row
+    error1_label_map = error1_row.children
     assert error1_label_map.type == :label
     # assert error1_label_map.attrs.content == "Invalid input"
     assert Keyword.get(error1_label_map.attrs, :content) == "Invalid input"
@@ -369,17 +475,30 @@ defmodule Raxol.Components.ModalTest do
     # Check second field's column for error row
     field2_column = Enum.at(field_columns, 1)
     field2_elements = field2_column.children
-    assert field2_elements |> Enum.count() == 2 # Row + Error Row
+    # Row + Error Row
+    assert field2_elements |> Enum.count() == 2
     error2_row = Enum.at(field2_elements, 1)
-    error2_label_map = error2_row.children # The label map IS the child of the row
+    # The label map IS the child of the row
+    error2_label_map = error2_row.children
     assert error2_label_map.type == :label
     # assert error2_label_map.attrs.content == "Invalid input"
     assert Keyword.get(error2_label_map.attrs, :content) == "Invalid input"
   end
 
   test "form validation allows submission when fixed" do
-    fields = [%{id: :name, type: :text_input, label: "Name", value: "", validate: ~r/.+/}]
-    props = Modal.form(:val_form, "Validation Test", fields, :submit_ok, :cancel_ok)
+    fields = [
+      %{
+        id: :name,
+        type: :text_input,
+        label: "Name",
+        value: "",
+        validate: ~r/.+/
+      }
+    ]
+
+    props =
+      Modal.form(:val_form, "Validation Test", fields, :submit_ok, :cancel_ok)
+
     state = Modal.init(Map.new(props))
     props_map = %{}
     enter_event = %{type: :key, data: %{key: "Enter"}}
@@ -390,14 +509,17 @@ defmodule Raxol.Components.ModalTest do
     assert state.form_state.fields |> hd() |> Map.get(:error) == "Invalid input"
 
     # Fix the field
-    {state, _commands} = Modal.update({:field_update, :name, "Valid Name"}, state)
+    {state, _commands} =
+      Modal.update({:field_update, :name, "Valid Name"}, state)
+
     # Error should be cleared by update
     assert state.form_state.fields |> hd() |> Map.get(:error) == nil
 
     # Second attempt: submit valid form
     {new_state, commands} = Modal.handle_event(enter_event, props_map, state)
 
-    assert new_state.visible == false # Should hide now
+    # Should hide now
+    assert new_state.visible == false
     assert commands == [{:submit_ok, %{name: "Valid Name"}}]
     # Check error is still nil after successful submit
     assert new_state.form_state.fields |> hd() |> Map.get(:error) == nil
@@ -405,7 +527,9 @@ defmodule Raxol.Components.ModalTest do
 
   # --- Edge Case Tests ---
   test "form with no fields initializes and submits correctly" do
-    props = Modal.form(:no_fields_form, "No Fields", [], :submit_empty, :cancel_empty)
+    props =
+      Modal.form(:no_fields_form, "No Fields", [], :submit_empty, :cancel_empty)
+
     state = Modal.init(Map.new(props))
 
     assert state.form_state.fields == []
@@ -421,7 +545,15 @@ defmodule Raxol.Components.ModalTest do
   end
 
   test "modal without id handles focus correctly" do
-    props = Modal.form(nil, "No ID Form", [%{id: :field1, type: :text_input}], :submit, :cancel)
+    props =
+      Modal.form(
+        nil,
+        "No ID Form",
+        [%{id: :field1, type: :text_input}],
+        :submit,
+        :cancel
+      )
+
     state = Modal.init(Map.new(props))
 
     # Show sends focus command without prefix
@@ -430,7 +562,8 @@ defmodule Raxol.Components.ModalTest do
     assert commands == [{:set_focus, :field1}]
 
     # Focus change sends focus command without prefix
-    {_state, commands} = Modal.update(:focus_next_field, state) # wrap around
+    # wrap around
+    {_state, commands} = Modal.update(:focus_next_field, state)
     :timer.sleep(10)
     assert commands == [{:set_focus, :field1}]
   end

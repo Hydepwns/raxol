@@ -24,8 +24,10 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
       # Check that the mode_state reflects the change
       # Corrected to use ModeManager and correct field/atom
       assert Raxol.Terminal.ModeManager.mode_enabled?(
-               new_emulator.mode_manager, # Check the mode_manager struct
-               :deccolm_132 # Use the correct mode atom
+               # Check the mode_manager struct
+               new_emulator.mode_manager,
+               # Use the correct mode atom
+               :deccolm_132
              )
     end
 
@@ -49,8 +51,10 @@ defmodule Raxol.Terminal.ANSI.ColumnWidthTest do
       # Check that the column width mode is set back to normal
       # Corrected to use ModeManager and correct field/atom
       refute Raxol.Terminal.ModeManager.mode_enabled?(
-               new_emulator.mode_manager, # Check the mode_manager struct
-               :deccolm_132 # Use the correct mode atom
+               # Check the mode_manager struct
+               new_emulator.mode_manager,
+               # Use the correct mode atom
+               :deccolm_132
              )
     end
 

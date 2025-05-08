@@ -41,19 +41,29 @@ defmodule Raxol.Terminal.Emulator.InitializationTest do
     test "move_cursor moves cursor and clamps within bounds" do
       emulator = Emulator.new(80, 24)
       # Use the aliased Manager module function
-      emulator = %{emulator | cursor: CursorManager.move_to(emulator.cursor, 10, 5)}
+      emulator = %{
+        emulator
+        | cursor: CursorManager.move_to(emulator.cursor, 10, 5)
+      }
+
       # Use direct access
       assert emulator.cursor.position == {10, 5}
 
       # Use the aliased Manager module function
-      emulator = %{emulator | cursor: CursorManager.move_to(emulator.cursor, 90, 30)}
+      emulator = %{
+        emulator
+        | cursor: CursorManager.move_to(emulator.cursor, 90, 30)
+      }
 
       # Use direct access - Check clamping logic (CursorManager.move_to doesn't clamp)
       # Assert actual non-clamped values
       assert emulator.cursor.position == {90, 30}
 
       # Use the aliased Manager module function
-      emulator = %{emulator | cursor: CursorManager.move_to(emulator.cursor, -5, -2)}
+      emulator = %{
+        emulator
+        | cursor: CursorManager.move_to(emulator.cursor, -5, -2)
+      }
 
       # Use direct access - move_to doesn't clamp negative, but later stages might
       # For this test, assert the direct result of move_to

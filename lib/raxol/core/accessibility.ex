@@ -94,7 +94,9 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def enable(options \\ [], user_preferences_pid_or_name \\ nil) do
-    Logger.debug("Enabling accessibility features with options: #{inspect(options)} and pid_or_name: #{inspect(user_preferences_pid_or_name)}")
+    Logger.debug(
+      "Enabling accessibility features with options: #{inspect(options)} and pid_or_name: #{inspect(user_preferences_pid_or_name)}"
+    )
 
     # Start with the default options
     full_options = [
@@ -110,17 +112,49 @@ defmodule Raxol.Core.Accessibility do
     # Override with custom options
     updated_options = Keyword.merge(full_options, options)
 
-    Logger.debug("[Accessibility] Enabling with options: #{inspect(updated_options)}")
+    Logger.debug(
+      "[Accessibility] Enabling with options: #{inspect(updated_options)}"
+    )
 
     # Apply all settings
     # Important: Use true/false values directly, not process names
     set_pref(:enabled, true, user_preferences_pid_or_name)
-    set_pref(:screen_reader, Keyword.get(updated_options, :screen_reader), user_preferences_pid_or_name)
-    set_pref(:high_contrast, Keyword.get(updated_options, :high_contrast), user_preferences_pid_or_name)
-    set_pref(:reduced_motion, Keyword.get(updated_options, :reduced_motion), user_preferences_pid_or_name)
-    set_pref(:keyboard_focus, Keyword.get(updated_options, :keyboard_focus), user_preferences_pid_or_name)
-    set_pref(:large_text, Keyword.get(updated_options, :large_text), user_preferences_pid_or_name)
-    set_pref(:silence_announcements, Keyword.get(updated_options, :silence_announcements), user_preferences_pid_or_name)
+
+    set_pref(
+      :screen_reader,
+      Keyword.get(updated_options, :screen_reader),
+      user_preferences_pid_or_name
+    )
+
+    set_pref(
+      :high_contrast,
+      Keyword.get(updated_options, :high_contrast),
+      user_preferences_pid_or_name
+    )
+
+    set_pref(
+      :reduced_motion,
+      Keyword.get(updated_options, :reduced_motion),
+      user_preferences_pid_or_name
+    )
+
+    set_pref(
+      :keyboard_focus,
+      Keyword.get(updated_options, :keyboard_focus),
+      user_preferences_pid_or_name
+    )
+
+    set_pref(
+      :large_text,
+      Keyword.get(updated_options, :large_text),
+      user_preferences_pid_or_name
+    )
+
+    set_pref(
+      :silence_announcements,
+      Keyword.get(updated_options, :silence_announcements),
+      user_preferences_pid_or_name
+    )
 
     # Reset internal state
     Process.put(:accessibility_disabled, false)
@@ -211,24 +245,44 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.announce("Error occurred", priority: :high, interrupt: true)
       :ok
   """
-  def announce(message, opts \\ [], user_preferences_pid_or_name \\ nil) when is_binary(message) do
+  def announce(message, opts \\ [], user_preferences_pid_or_name \\ nil)
+      when is_binary(message) do
     # Don't use get_option here to avoid potential issues
     # Just check if explicitly disabled
     disabled = Process.get(:accessibility_disabled) == true
 
     # Check silenced and screen_reader settings - explicitly check in both test and non-test
-    silenced = UserPreferences.get(pref_key(:silence_announcements), user_preferences_pid_or_name || @default_prefs_name)
-    screen_reader_enabled = UserPreferences.get(pref_key(:screen_reader), user_preferences_pid_or_name || @default_prefs_name)
+    silenced =
+      UserPreferences.get(
+        pref_key(:silence_announcements),
+        user_preferences_pid_or_name || @default_prefs_name
+      )
+
+    screen_reader_enabled =
+      UserPreferences.get(
+        pref_key(:screen_reader),
+        user_preferences_pid_or_name || @default_prefs_name
+      )
 
     # Ensure proper boolean conversion
     silenced = silenced == true
-    screen_reader_enabled = screen_reader_enabled != false  # Default to true if nil
+    # Default to true if nil
+    screen_reader_enabled = screen_reader_enabled != false
 
     # In test environment, we need to be strict about these checks to make tests pass
     cond do
-      disabled -> :ok  # Do nothing if accessibility is disabled
-      silenced -> :ok  # Do nothing if announcements are silenced
-      not screen_reader_enabled -> :ok  # Do nothing if screen reader is disabled
+      # Do nothing if accessibility is disabled
+      disabled ->
+        :ok
+
+      # Do nothing if announcements are silenced
+      silenced ->
+        :ok
+
+      # Do nothing if screen reader is disabled
+      not screen_reader_enabled ->
+        :ok
+
       true ->
         # Settings allow announcements, proceed
         priority = Keyword.get(opts, :priority, :normal)
@@ -243,12 +297,14 @@ defmodule Raxol.Core.Accessibility do
 
         # Add to queue - Ensure we're getting the current state of announcements
         current_queue = Process.get(:accessibility_announcements, [])
+
         updated_queue =
           if announcement.interrupt do
             [announcement]
           else
             insert_by_priority(current_queue, announcement, priority)
           end
+
         Process.put(:accessibility_announcements, updated_queue)
 
         # Dispatch event to notify screen readers
@@ -308,7 +364,8 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.set_high_contrast(true)
       :ok
   """
-  def set_high_contrast(enabled, user_preferences_pid_or_name \\ nil) when is_boolean(enabled) do
+  def set_high_contrast(enabled, user_preferences_pid_or_name \\ nil)
+      when is_boolean(enabled) do
     target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
     set_pref(:high_contrast, enabled, target_pid_or_name)
 
@@ -331,8 +388,10 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.set_reduced_motion(true)
       :ok
   """
-  def set_reduced_motion(enabled, user_preferences_pid_or_name \\ nil) when is_boolean(enabled) do
+  def set_reduced_motion(enabled, user_preferences_pid_or_name \\ nil)
+      when is_boolean(enabled) do
     set_pref(:reduced_motion, enabled, user_preferences_pid_or_name)
+
     # Trigger potential side effects using the correct format for handle_preference_changed
     key_path = pref_key(:reduced_motion)
     handle_preference_changed({key_path, enabled}, user_preferences_pid_or_name)
@@ -352,8 +411,10 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.set_large_text(true)
       :ok
   """
-  def set_large_text(enabled, user_preferences_pid_or_name \\ nil) when is_boolean(enabled) do
+  def set_large_text(enabled, user_preferences_pid_or_name \\ nil)
+      when is_boolean(enabled) do
     set_pref(:large_text, enabled, user_preferences_pid_or_name)
+
     # Trigger potential side effects using the correct format for handle_preference_changed
     key_path = pref_key(:large_text)
     handle_preference_changed({key_path, enabled}, user_preferences_pid_or_name)
@@ -377,9 +438,12 @@ defmodule Raxol.Core.Accessibility do
     # Explicitly handle test environment to ensure consistent behavior
     if Mix.env() == :test do
       target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
+
       case UserPreferences.get(pref_key(:large_text), target_pid_or_name) do
-        true -> 1.5  # Always return 1.5 when explicitly true
-        _ -> 1.0     # Default to 1.0 for any other value
+        # Always return 1.5 when explicitly true
+        true -> 1.5
+        # Default to 1.0 for any other value
+        _ -> 1.0
       end
     else
       large_text_enabled = get_option(:large_text, user_preferences_pid_or_name)
@@ -423,7 +487,8 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.register_element_metadata("search_button", %{label: "Search"})
       :ok
   """
-  def register_element_metadata(element_id, metadata) when is_binary(element_id) and is_map(metadata) do
+  def register_element_metadata(element_id, metadata)
+      when is_binary(element_id) and is_map(metadata) do
     # Store the metadata in process dictionary for simplicity
     element_metadata = Process.get(:accessibility_element_metadata) || %{}
     updated_metadata = Map.put(element_metadata, element_id, metadata)
@@ -465,7 +530,8 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.register_component_style(:button, %{background: :blue})
       :ok
   """
-  def register_component_style(component_type, style) when is_atom(component_type) and is_map(style) do
+  def register_component_style(component_type, style)
+      when is_atom(component_type) and is_map(style) do
     # Store the component styles in process dictionary for simplicity
     component_styles = Process.get(:accessibility_component_styles) || %{}
     updated_styles = Map.put(component_styles, component_type, style)
@@ -513,6 +579,7 @@ defmodule Raxol.Core.Accessibility do
 
       Logger.debug("Focus changed to: #{inspect(new_element)}")
     end
+
     :ok
   end
 
@@ -522,7 +589,10 @@ defmodule Raxol.Core.Accessibility do
       is_binary(element) ->
         # If element is a string ID, look up its metadata
         metadata = get_element_metadata(element)
-        if metadata, do: Map.get(metadata, :label) || "Element #{element}", else: nil
+
+        if metadata,
+          do: Map.get(metadata, :label) || "Element #{element}",
+          else: nil
 
       is_map(element) && Map.has_key?(element, :label) ->
         # If element is a map with a label key, use that
@@ -531,7 +601,10 @@ defmodule Raxol.Core.Accessibility do
       is_map(element) && Map.has_key?(element, :id) ->
         # If element has an ID, try to get metadata by ID
         metadata = get_element_metadata(element.id)
-        if metadata, do: Map.get(metadata, :label) || "Element #{element.id}", else: nil
+
+        if metadata,
+          do: Map.get(metadata, :label) || "Element #{element.id}",
+          else: nil
 
       true ->
         # Default fallback
@@ -600,11 +673,16 @@ defmodule Raxol.Core.Accessibility do
         option_key = Enum.at(key_path, 1)
 
         if pref_root == :accessibility and is_atom(option_key) do
-           Logger.debug("[Accessibility] Handling internal pref change: #{option_key} = #{inspect(value)} via pid: #{inspect(user_preferences_pid_or_name)}")
-           # Trigger side effects
-           trigger_side_effects(option_key, value, user_preferences_pid_or_name)
+          Logger.debug(
+            "[Accessibility] Handling internal pref change: #{option_key} = #{inspect(value)} via pid: #{inspect(user_preferences_pid_or_name)}"
+          )
+
+          # Trigger side effects
+          trigger_side_effects(option_key, value, user_preferences_pid_or_name)
         else
-           Logger.debug("[Accessibility] Ignoring internal pref change (non-accessibility key path): #{inspect key_path}")
+          Logger.debug(
+            "[Accessibility] Ignoring internal pref change (non-accessibility key path): #{inspect(key_path)}"
+          )
         end
 
       # Case 2: EventManager call ({:preference_changed, key_path_list, value})
@@ -613,17 +691,29 @@ defmodule Raxol.Core.Accessibility do
         option_key = Enum.at(List.wrap(key_path), 1)
 
         if pref_root == :accessibility and is_atom(option_key) do
-          Logger.debug("[Accessibility] Handling event pref change: #{option_key} = #{inspect(new_value)}")
+          Logger.debug(
+            "[Accessibility] Handling event pref change: #{option_key} = #{inspect(new_value)}"
+          )
+
           # Trigger side effects
-          trigger_side_effects(option_key, new_value, user_preferences_pid_or_name)
+          trigger_side_effects(
+            option_key,
+            new_value,
+            user_preferences_pid_or_name
+          )
         else
-          Logger.debug("[Accessibility] Ignoring preference change event (not accessibility): #{inspect key_path}")
+          Logger.debug(
+            "[Accessibility] Ignoring preference change event (not accessibility): #{inspect(key_path)}"
+          )
         end
 
       # Case 3: Catch-all for unexpected event formats
       _ ->
-        Logger.warning("[Accessibility] Received unexpected event format in handle_preference_changed: #{inspect(event)}")
+        Logger.warning(
+          "[Accessibility] Received unexpected event format in handle_preference_changed: #{inspect(event)}"
+        )
     end
+
     :ok
   end
 
@@ -631,12 +721,18 @@ defmodule Raxol.Core.Accessibility do
   defp trigger_side_effects(option_key, value, _user_preferences_pid_or_name) do
     case option_key do
       :high_contrast ->
-        ThemeIntegration.handle_high_contrast({:accessibility_high_contrast, value})
+        ThemeIntegration.handle_high_contrast(
+          {:accessibility_high_contrast, value}
+        )
+
         Process.put(:accessibility_high_contrast, value)
         EventManager.dispatch({:accessibility_high_contrast_changed, value})
 
       :reduced_motion ->
-        ThemeIntegration.handle_reduced_motion({:accessibility_reduced_motion, value})
+        ThemeIntegration.handle_reduced_motion(
+          {:accessibility_reduced_motion, value}
+        )
+
         Process.put(:accessibility_reduced_motion, value)
         Logger.info("[Accessibility] Reduced motion set to: #{value}")
         EventManager.dispatch({:accessibility_reduced_motion_changed, value})
@@ -655,12 +751,19 @@ defmodule Raxol.Core.Accessibility do
   def handle_locale_changed({:locale_changed, _locale_info}) do
     # Apply locale-specific accessibility settings (e.g., RTL direction)
     # apply_locale_settings() # Removed call to undefined function
-    Logger.debug("Locale changed event received.") # Add log for now
+    # Add log for now
+    Logger.debug("Locale changed event received.")
   end
 
   # Handles theme changes
-  def handle_theme_changed({:theme_changed, %{theme: theme_name}}, _pid_or_name \\ nil) do
-    Logger.info("[Test Log - Accessibility] handle_theme_changed triggered for theme: #{inspect(theme_name)}")
+  def handle_theme_changed(
+        {:theme_changed, %{theme: theme_name}},
+        _pid_or_name \\ nil
+      ) do
+    Logger.info(
+      "[Test Log - Accessibility] handle_theme_changed triggered for theme: #{inspect(theme_name)}"
+    )
+
     announce_message = "Theme changed to #{theme_name}"
     announce(announce_message)
     :ok
@@ -679,12 +782,14 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.get_option(:high_contrast)
       false
   """
-  @spec get_option(atom(), GenServer.name() | pid() | nil, any()) :: any() | :error
+  @spec get_option(atom(), GenServer.name() | pid() | nil, any()) ::
+          any() | :error
   def get_option(key, user_preferences_pid_or_name \\ nil, default \\ nil) do
     # Special case for test environment to ensure consistent returns
     if Mix.env() == :test do
       # Use direct access for tests
       target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
+
       case key do
         :high_contrast ->
           # Check if we've set this specific value in the test
@@ -695,6 +800,7 @@ defmodule Raxol.Core.Accessibility do
             # Ignore process name or other non-boolean values
             _ -> default || false
           end
+
         :large_text ->
           case UserPreferences.get(pref_key(key), target_pid_or_name) do
             true -> true
@@ -702,6 +808,7 @@ defmodule Raxol.Core.Accessibility do
             nil -> default || false
             _ -> default || false
           end
+
         :reduced_motion ->
           case UserPreferences.get(pref_key(key), target_pid_or_name) do
             true -> true
@@ -709,20 +816,25 @@ defmodule Raxol.Core.Accessibility do
             nil -> default || false
             _ -> default || false
           end
+
         :screen_reader ->
           case UserPreferences.get(pref_key(key), target_pid_or_name) do
             true -> true
             false -> false
-            nil -> default || true  # Default true for screen reader
+            # Default true for screen reader
+            nil -> default || true
             _ -> default || true
           end
+
         :enabled ->
           case UserPreferences.get(pref_key(key), target_pid_or_name) do
             true -> true
             false -> false
-            nil -> default || true  # Default true for enabled
+            # Default true for enabled
+            nil -> default || true
             _ -> default || true
           end
+
         _ ->
           # For other keys, just get the value directly
           value = UserPreferences.get(pref_key(key), target_pid_or_name)
@@ -748,17 +860,25 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.set_option(:high_contrast, true)
       :ok
   """
-  def set_option(key, value, user_preferences_pid_or_name \\ nil) when is_atom(key) do
+  def set_option(key, value, user_preferences_pid_or_name \\ nil)
+      when is_atom(key) do
     # Use our existing functions for specific settings when available
     case key do
       # Pass the pid_or_name down to the specific setters
-      :high_contrast -> set_high_contrast(value, user_preferences_pid_or_name)
-      :reduced_motion -> set_reduced_motion(value, user_preferences_pid_or_name)
-      :large_text -> set_large_text(value, user_preferences_pid_or_name)
+      :high_contrast ->
+        set_high_contrast(value, user_preferences_pid_or_name)
+
+      :reduced_motion ->
+        set_reduced_motion(value, user_preferences_pid_or_name)
+
+      :large_text ->
+        set_large_text(value, user_preferences_pid_or_name)
+
       _ ->
         # For other settings, save directly to preferences using the pid_or_name
         set_pref(key, value, user_preferences_pid_or_name)
     end
+
     :ok
   end
 
@@ -790,7 +910,9 @@ defmodule Raxol.Core.Accessibility do
     # Build list of preferences found, using default_opts to know which keys to check
     prefs_found =
       Enum.reduce(Keyword.keys(default_opts), [], fn key, acc ->
-        pref_value = Map.get(all_prefs, pref_key(key), user_preferences_pid_or_name)
+        pref_value =
+          Map.get(all_prefs, pref_key(key), user_preferences_pid_or_name)
+
         # If a value was found in prefs (and is not nil), add it to the list
         if !is_nil(pref_value) do
           [{key, pref_value} | acc]
@@ -801,18 +923,21 @@ defmodule Raxol.Core.Accessibility do
 
     # Merge order: defaults -> found preferences -> explicit opts
     default_opts
-    |> Keyword.merge(prefs_found) # Merge found prefs over defaults
-    |> Keyword.merge(opts) # Merge explicit opts over the result
+    # Merge found prefs over defaults
+    |> Keyword.merge(prefs_found)
+    # Merge explicit opts over the result
+    |> Keyword.merge(opts)
   end
 
   # Inserting announcement into queue by priority
   defp insert_by_priority(queue, announcement, priority) do
-    priority_order = %{high: 3, normal: 2, medium: 2, low: 1} # medium == normal
+    # medium == normal
+    priority_order = %{high: 3, normal: 2, medium: 2, low: 1}
     announcement_priority = Map.get(priority_order, priority, 2)
 
     Enum.sort_by(queue ++ [announcement], fn item ->
-      Map.get(priority_order, item.priority, 2) * -1 # Sort descending by priority
+      # Sort descending by priority
+      Map.get(priority_order, item.priority, 2) * -1
     end)
   end
-
 end

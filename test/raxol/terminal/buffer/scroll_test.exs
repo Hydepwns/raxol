@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
       assert hd(tl(scroll.buffer)) == [Cell.new("B")]
     end
 
-    # TODO: Revisit compression logic and test - Current logic doesn't compress test case.
+    # TODO: Revisit compression logic and test - Current logic only compresses runs of *empty* cells or minimizes attributes on non-empty runs (which has no effect in this test case where cells only have fg/bg). Needs more advanced RLE or other compression.
     @tag :skip
     test "compresses buffer when memory usage exceeds limit" do
       # Very low memory limit
@@ -112,7 +112,6 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
   end
 
   describe "scroll/2" do
-    @tag :skip
     test "scrolls the buffer by the given amount" do
       scroll = Scroll.new(1000)
       scroll = Scroll.scroll(scroll, 5)
@@ -145,7 +144,6 @@ defmodule Raxol.Terminal.Buffer.ScrollTest do
   end
 
   describe "get_position/1" do
-    @tag :skip
     test "gets the current scroll position" do
       scroll = Scroll.new(1000)
       scroll = Scroll.scroll(scroll, 5)

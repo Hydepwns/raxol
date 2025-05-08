@@ -39,7 +39,8 @@ defmodule Raxol.Style.Colors.Accessibility do
     # Allow hex string input for convenience
     case Color.from_hex(color) do
       %Color{} = c -> relative_luminance(c)
-      _ -> 0.0 # Or handle error? Defaulting to black for invalid hex.
+      # Or handle error? Defaulting to black for invalid hex.
+      _ -> 0.0
     end
   end
 
@@ -53,7 +54,8 @@ defmodule Raxol.Style.Colors.Accessibility do
   end
 
   # WCAG formula for converting sRGB channel to linear value
-  defp _channel_to_linear(channel_val) when channel_val >= 0 and channel_val <= 255 do
+  defp _channel_to_linear(channel_val)
+       when channel_val >= 0 and channel_val <= 255 do
     v = channel_val / 255
     if v <= 0.03928, do: v / 12.92, else: :math.pow((v + 0.055) / 1.055, 2.4)
   end
@@ -87,7 +89,10 @@ defmodule Raxol.Style.Colors.Accessibility do
   end
 
   def contrast_ratio(%Color{} = color1, %Color{} = color2) do
-    contrast_ratio({color1.r, color1.g, color1.b}, {color2.r, color2.g, color2.b})
+    contrast_ratio(
+      {color1.r, color1.g, color1.b},
+      {color2.r, color2.g, color2.b}
+    )
   end
 
   @doc """
@@ -111,7 +116,11 @@ defmodule Raxol.Style.Colors.Accessibility do
       iex> Raxol.Style.Colors.Accessibility.readable?(bg, fg, :aaa)
       false
   """
-  @spec readable?(Color.t() | String.t(), Color.t() | String.t(), :aa | :aaa | :aa_large | :aaa_large) ::
+  @spec readable?(
+          Color.t() | String.t(),
+          Color.t() | String.t(),
+          :aa | :aaa | :aa_large | :aaa_large
+        ) ::
           boolean()
   def readable?(background, foreground, level \\ :aa) do
     ratio = contrast_ratio(background, foreground)
@@ -147,7 +156,8 @@ defmodule Raxol.Style.Colors.Accessibility do
   def suggest_text_color(background) when is_binary(background) do
     case Color.from_hex(background) do
       %Color{} = c -> suggest_text_color(c)
-      _ -> Color.from_hex("#000000") # Default to black for invalid bg
+      # Default to black for invalid bg
+      _ -> Color.from_hex("#000000")
     end
   end
 
@@ -159,7 +169,8 @@ defmodule Raxol.Style.Colors.Accessibility do
     ratio_with_black = contrast_ratio(background, black)
 
     if ratio_with_white >= ratio_with_black do
-      white # Prefer white if contrast is equal or better
+      # Prefer white if contrast is equal or better
+      white
     else
       black
     end
@@ -182,9 +193,10 @@ defmodule Raxol.Style.Colors.Accessibility do
       true
   """
   def suggest_contrast_color(color) when is_binary(color) do
-     case Color.from_hex(color) do
+    case Color.from_hex(color) do
       %Color{} = c -> suggest_contrast_color(c)
-      _ -> Color.from_hex("#000000") # Default to black for invalid base
+      # Default to black for invalid base
+      _ -> Color.from_hex("#000000")
     end
   end
 
@@ -199,7 +211,8 @@ defmodule Raxol.Style.Colors.Accessibility do
       complement
     else
       # If not, try black or white (whichever has better contrast)
-      suggest_text_color(color) # This chooses black/white based on contrast
+      # This chooses black/white based on contrast
+      suggest_text_color(color)
     end
   end
 
@@ -220,14 +233,21 @@ defmodule Raxol.Style.Colors.Accessibility do
   """
   def accessible_color_pair(base_color, level \\ :aa)
 
-  #@doc false # Silence @doc warning for the first clause
+  # @doc false # Silence @doc warning for the first clause
   # Clause for binary (string) input
   def accessible_color_pair(base_color, level) when is_binary(base_color) do
     case Color.from_hex(base_color) do
-      %Color{} = c -> accessible_color_pair(c, level) # Delegate to Color struct clause
+      # Delegate to Color struct clause
+      %Color{} = c ->
+        accessible_color_pair(c, level)
+
       _ ->
-        Logger.warning("Invalid hex color for accessible_color_pair: #{inspect(base_color)}")
-        nil # Return nil for invalid base color
+        Logger.warning(
+          "Invalid hex color for accessible_color_pair: #{inspect(base_color)}"
+        )
+
+        # Return nil for invalid base color
+        nil
     end
   end
 
@@ -243,20 +263,30 @@ defmodule Raxol.Style.Colors.Accessibility do
 
     cond do
       contrast_with_white >= min_ratio ->
-        {white, base_color} # White text on base_color background
+        # White text on base_color background
+        {white, base_color}
 
       contrast_with_black >= min_ratio ->
-        {black, base_color} # Black text on base_color background
+        # Black text on base_color background
+        {black, base_color}
 
-      contrast_with_white >= min_ratio -> # Same check, interpretation differs
-        {base_color, white} # Base_color text on white background
+      # Same check, interpretation differs
+      contrast_with_white >= min_ratio ->
+        # Base_color text on white background
+        {base_color, white}
 
-      contrast_with_black >= min_ratio -> # Same check, interpretation differs
-        {base_color, black} # Base_color text on black background
+      # Same check, interpretation differs
+      contrast_with_black >= min_ratio ->
+        # Base_color text on black background
+        {base_color, black}
 
       true ->
-        Logger.debug("Could not find accessible pair for color: #{inspect(base_color)}")
-        nil # Could not find a simple black/white contrast pair
+        Logger.debug(
+          "Could not find accessible pair for color: #{inspect(base_color)}"
+        )
+
+        # Could not find a simple black/white contrast pair
+        nil
     end
   end
 
@@ -281,30 +311,50 @@ defmodule Raxol.Style.Colors.Accessibility do
   - A Color struct representing the darkened color
   """
   @spec darken_until_contrast(Color.t(), Color.t(), number()) :: Color.t()
-  def darken_until_contrast(%Color{} = color, %Color{} = background, target_ratio) do
+  def darken_until_contrast(
+        %Color{} = color,
+        %Color{} = background,
+        target_ratio
+      ) do
     if contrast_ratio(color, background) >= target_ratio do
       color
     else
       # Need Raxol.Style.Colors.HSL.darken/2
-      _darken_step = 0.05 # Adjust step as needed, prefixed unused
-      Logger.warning("HSL.darken/2 not implemented, returning original color in darken_until_contrast") # Added warning
+      # Adjust step as needed, prefixed unused
+      _darken_step = 0.05
+      # Added warning
+      Logger.warning(
+        "HSL.darken/2 not implemented, returning original color in darken_until_contrast"
+      )
+
       # TODO: Re-implement the loop logic using _darken_step
       # Ensure the implementation uses the step and respects MAX_ADJUSTMENT_STEPS
-      color # Return original color as placeholder
+      # Return original color as placeholder
+      color
     end
   end
 
   @spec lighten_until_contrast(Color.t(), Color.t(), number()) :: Color.t()
-  def lighten_until_contrast(%Color{} = color, %Color{} = background, target_ratio) do
-     if contrast_ratio(color, background) >= target_ratio do
+  def lighten_until_contrast(
+        %Color{} = color,
+        %Color{} = background,
+        target_ratio
+      ) do
+    if contrast_ratio(color, background) >= target_ratio do
       color
     else
       # Need Raxol.Style.Colors.HSL.lighten/2
-      _lighten_step = 0.05 # Adjust step as needed, prefixed unused
-      Logger.warning("HSL.lighten/2 not implemented, returning original color in lighten_until_contrast") # Added warning
+      # Adjust step as needed, prefixed unused
+      _lighten_step = 0.05
+      # Added warning
+      Logger.warning(
+        "HSL.lighten/2 not implemented, returning original color in lighten_until_contrast"
+      )
+
       # TODO: Re-implement the loop logic using _lighten_step
       # Ensure the implementation uses the step and respects MAX_ADJUSTMENT_STEPS
-      color # Return original color as placeholder
+      # Return original color as placeholder
+      color
     end
   end
 
@@ -313,5 +363,4 @@ defmodule Raxol.Style.Colors.Accessibility do
   # defp find_accessible_pair(_base_color, _base_hsl, _target_contrast, _is_dark_target, attempts) do
   # Removed unused function
   # end
-
 end

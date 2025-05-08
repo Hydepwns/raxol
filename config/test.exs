@@ -98,7 +98,34 @@ config :swoosh,
   api_client: Raxol.Finch
 
 # Configure Mox for testing behaviours
-config :mox, :exclude_compilation, true
+config :mox, :exclude_compilation, false
+
+# Configure the KeyboardShortcuts module to use for testing
+config :raxol, :keyboard_shortcuts_module, Raxol.Mocks.KeyboardShortcutsMock
 
 # To set specific log level for a module:
 # config :logger, Raxol.Terminal.Buffer.Eraser, level: :debug
+
+# Configure Mox for testing
+config :elixir, :mox_test_pid, self()
+
+# Configure Raxol specific test settings
+config :raxol, :env, :test
+# Enable debug mode for tests if needed
+config :raxol, :debug_mode, true
+
+# Configure mock implementations for behaviours
+config :raxol, :keyboard_shortcuts_impl, Raxol.Mocks.KeyboardShortcutsMock
+
+config :raxol,
+       :delta_updater_system_adapter_impl,
+       Raxol.Mocks.DeltaUpdaterSystemAdapterMock
+
+config :raxol, :environment_adapter_impl, Raxol.Mocks.EnvironmentAdapterMock
+
+# Note: This was not Raxol.Mocks.SystemInteractionMock, may need consistency check
+config :raxol, :system_interaction_impl, SystemInteractionMock
+config :raxol, :focus_manager_impl, Raxol.Mocks.FocusManagerMock
+config :raxol, :accessibility_impl, Raxol.Mocks.AccessibilityMock
+
+# Configure default user preferences for tests if needed

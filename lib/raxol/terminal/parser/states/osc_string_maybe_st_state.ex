@@ -12,7 +12,8 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
   Processes input when the parser is in the :osc_string_maybe_st state.
   """
   @spec handle(Emulator.t(), State.t(), binary()) ::
-          {:continue, Emulator.t(), State.t(), binary()} | {:handled, Emulator.t()}
+          {:continue, Emulator.t(), State.t(), binary()}
+          | {:handled, Emulator.t()}
   def handle(
         emulator,
         %State{state: :osc_string_maybe_st} = parser_state,
@@ -27,17 +28,20 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
             emulator,
             parser_state.payload_buffer
           )
+
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after_bel}
 
       # ST (ESC \) terminates OSC string
-      <<?\\, rest_after_st::binary>> -> # Use ?\\ for clarity
+      # Use ?\\ for clarity
+      <<?\\, rest_after_st::binary>> ->
         # Call the dispatcher function
         new_emulator =
           Executor.execute_osc_command(
             emulator,
             parser_state.payload_buffer
           )
+
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after_st}
 
@@ -46,6 +50,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
         Logger.warning(
           "Malformed OSC termination: ESC not followed by ST. Returning to ground."
         )
+
         # Discard sequence, go to ground
         next_parser_state = %{parser_state | state: :ground}
         # Continue parsing AFTER the unexpected byte
@@ -56,6 +61,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
         Logger.warning(
           "Malformed OSC termination: Input ended after ESC. Returning to ground."
         )
+
         # Go to ground, return emulator as is
         {:handled, emulator}
 

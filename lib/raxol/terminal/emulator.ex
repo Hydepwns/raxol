@@ -97,7 +97,8 @@ defmodule Raxol.Terminal.Emulator do
             cursor_style: :blinking_block,
             # Command History
             command_history: [],
-            max_command_history: 100, # Default, overridden in new/3
+            # Default, overridden in new/3
+            max_command_history: 100,
             current_command_buffer: ""
 
   @doc """
@@ -176,18 +177,25 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec get_active_buffer(t()) :: ScreenBuffer.t()
   def get_active_buffer(emulator) do
-    Logger.debug("[get_active_buffer] Type: #{inspect(emulator.active_buffer_type)}, Keys: #{inspect(Map.keys(emulator))}")
+    Logger.debug(
+      "[get_active_buffer] Type: #{inspect(emulator.active_buffer_type)}, Keys: #{inspect(Map.keys(emulator))}"
+    )
+
     # Defensive check instead of case statement
     type = emulator.active_buffer_type
+    # Assuming type must be :alternate if not :main
     if type == :main do
       emulator.main_screen_buffer
-    else # Assuming type must be :alternate if not :main
+    else
       # Check key exists before accessing, to provide a better error if needed
       if Map.has_key?(emulator, :alternate_screen_buffer) do
         emulator.alternate_screen_buffer
       else
         # This should NOT happen based on Emulator.new, but helps diagnose
-        Logger.error("[get_active_buffer] CRITICAL: Type is :alternate but :alternate_screen_buffer key is missing!")
+        Logger.error(
+          "[get_active_buffer] CRITICAL: Type is :alternate but :alternate_screen_buffer key is missing!"
+        )
+
         # Raise a more informative error or return nil/main buffer?
         # Raising here to make the problem explicit if this path is hit.
         raise KeyError, key: :alternate_screen_buffer, term: emulator
@@ -235,7 +243,10 @@ defmodule Raxol.Terminal.Emulator do
       {final_emulator, final_parser_state} = parse_result
 
       # Directly update the parser state on the result and return
-      final_emulator_updated = %{final_emulator | parser_state: final_parser_state}
+      final_emulator_updated = %{
+        final_emulator
+        | parser_state: final_parser_state
+      }
 
       # For debugging, inspect right before return
       # IO.inspect(final_emulator_updated.charset_state, label: "[Emulator.process_input simplified] Returning charset_state:")
@@ -243,7 +254,12 @@ defmodule Raxol.Terminal.Emulator do
 
       # Restore original logic
       output_to_send = final_emulator_updated.output_buffer
-      final_emulator_state_no_output = %{final_emulator_updated | output_buffer: ""}
+
+      final_emulator_state_no_output = %{
+        final_emulator_updated
+        | output_buffer: ""
+      }
+
       {final_emulator_state_no_output, output_to_send}
     end
   end
@@ -380,33 +396,50 @@ defmodule Raxol.Terminal.Emulator do
           target_y = cursor_y + 1
           write_x = 0
           write_y = target_y
-          next_cursor_x = min(width, buffer_width) # Start at col 0, add char width
+          # Start at col 0, add char width
+          next_cursor_x = min(width, buffer_width)
           next_cursor_y = target_y
-          next_last_col_exceeded = autowrap_enabled and (next_cursor_x >= buffer_width)
-          {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
+
+          next_last_col_exceeded =
+            autowrap_enabled and next_cursor_x >= buffer_width
+
+          {write_x, write_y, next_cursor_x, next_cursor_y,
+           next_last_col_exceeded}
 
         # Case 2: Current write would exceed right margin
-        cursor_x + width > buffer_width - 1 -> # Note: Using > width-1 means hitting the last column counts
-          Logger.debug("[calc_write] Case 2: Exceeds right margin (cursor_x=#{cursor_x}, width=#{width}, buffer_w=#{buffer_width})")
+        # Note: Using > width-1 means hitting the last column counts
+        cursor_x + width > buffer_width - 1 ->
+          Logger.debug(
+            "[calc_write] Case 2: Exceeds right margin (cursor_x=#{cursor_x}, width=#{width}, buffer_w=#{buffer_width})"
+          )
+
           if autowrap_enabled do
             Logger.debug("[calc_write] Case 2a: Autowrap enabled")
             # Write at current pos (may be clipped by write_char), SET flag
             # Cursor ADVANCES conceptually for next char wrap
             write_x = cursor_x
             write_y = cursor_y
-            next_cursor_x = cursor_x # Cursor stays visually, flag indicates wrap needed
+            # Cursor stays visually, flag indicates wrap needed
+            next_cursor_x = cursor_x
             next_cursor_y = cursor_y
-            next_last_col_exceeded = true # Set flag for next character
-            {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
+            # Set flag for next character
+            next_last_col_exceeded = true
+
+            {write_x, write_y, next_cursor_x, next_cursor_y,
+             next_last_col_exceeded}
           else
             Logger.debug("[calc_write] Case 2b: Autowrap disabled")
+
             # Autowrap disabled: Write at current pos (may clip), cursor stays at last valid pos.
             write_x = cursor_x
             write_y = cursor_y
-            next_cursor_x = buffer_width - 1 # Clamp cursor to last column
+            # Clamp cursor to last column
+            next_cursor_x = buffer_width - 1
             next_cursor_y = cursor_y
             next_last_col_exceeded = false
-            {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
+
+            {write_x, write_y, next_cursor_x, next_cursor_y,
+             next_last_col_exceeded}
           end
 
         # Case 3: Normal character write within the line.
@@ -416,11 +449,18 @@ defmodule Raxol.Terminal.Emulator do
           write_y = cursor_y
           next_cursor_x = min(cursor_x + width, buffer_width)
           next_cursor_y = cursor_y
-          next_last_col_exceeded = autowrap_enabled and (cursor_x + width >= buffer_width)
-          {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
+
+          next_last_col_exceeded =
+            autowrap_enabled and cursor_x + width >= buffer_width
+
+          {write_x, write_y, next_cursor_x, next_cursor_y,
+           next_last_col_exceeded}
       end
 
-    Logger.debug("[calc_write] Output: write={#{elem(result, 0)}, #{elem(result, 1)}}, next_cursor={#{elem(result, 2)}, #{elem(result, 3)}}, next_last_exceeded=#{elem(result, 4)}")
+    Logger.debug(
+      "[calc_write] Output: write={#{elem(result, 0)}, #{elem(result, 1)}}, next_cursor={#{elem(result, 2)}, #{elem(result, 3)}}, next_last_exceeded=#{elem(result, 4)}"
+    )
+
     result
   end
 
@@ -430,7 +470,8 @@ defmodule Raxol.Terminal.Emulator do
     # 0-based calculation, stop at 1, 9, 17, ...
     Enum.to_list(0..div(width - 1, 8))
     |> Enum.map(&(&1 * 8))
-    |> MapSet.new() # Ensure it's a MapSet
+    # Ensure it's a MapSet
+    |> MapSet.new()
   end
 
   # (handle_ris moved to ControlCodes)
@@ -448,9 +489,14 @@ defmodule Raxol.Terminal.Emulator do
 
     {top_margin, bottom_margin} =
       case emulator.scroll_region do
-        {top, bottom} when is_integer(top) and top >= 0 and is_integer(bottom) and bottom > top ->
+        {top, bottom}
+        when is_integer(top) and top >= 0 and is_integer(bottom) and
+               bottom > top ->
           {top, min(bottom, buffer_height - 1)}
-        _ -> {0, buffer_height - 1} # Default: full buffer
+
+        # Default: full buffer
+        _ ->
+          {0, buffer_height - 1}
       end
 
     Logger.debug(
@@ -463,20 +509,31 @@ defmodule Raxol.Terminal.Emulator do
       scroll_region_tuple = {top_margin, bottom_margin}
 
       # Calls ScreenBuffer.scroll_up (which calls Scroller.scroll_up)
+      # Scrolls up by 1 line
       {buffer_after_scroll_cells, scrolled_lines} =
-        ScreenBuffer.scroll_up(active_buffer, 1, scroll_region_tuple) # Scrolls up by 1 line
+        ScreenBuffer.scroll_up(active_buffer, 1, scroll_region_tuple)
 
       # Adds scrolled line(s) to scrollback
       new_scrollback = scrolled_lines ++ active_buffer.scrollback
-      limited_scrollback = Enum.take(new_scrollback, active_buffer.scrollback_limit)
-      buffer_with_scrollback = %{buffer_after_scroll_cells | scrollback: limited_scrollback}
+
+      limited_scrollback =
+        Enum.take(new_scrollback, active_buffer.scrollback_limit)
+
+      buffer_with_scrollback = %{
+        buffer_after_scroll_cells
+        | scrollback: limited_scrollback
+      }
 
       # Update emulator state (use original cursor, let caller handle movement)
-      emulator_with_scrolled_buffer = update_active_buffer(emulator, buffer_with_scrollback)
-      emulator_with_scrolled_buffer # Return state with scrolled buffer but original cursor
+      emulator_with_scrolled_buffer =
+        update_active_buffer(emulator, buffer_with_scrollback)
+
+      # Return state with scrolled buffer but original cursor
+      emulator_with_scrolled_buffer
     else
       Logger.debug("[maybe_scroll] No scroll needed.")
-      emulator # No scroll needed
+      # No scroll needed
+      emulator
     end
   end
 
@@ -490,12 +547,18 @@ defmodule Raxol.Terminal.Emulator do
   @doc """
   Puts the appropriate buffer (:main or :alt) into the emulator state.
   """
-  defp put_active_buffer(%__MODULE__{active_buffer_type: :main} = emulator, buffer)
+  defp put_active_buffer(
+         %__MODULE__{active_buffer_type: :main} = emulator,
+         buffer
+       )
        when is_struct(buffer, ScreenBuffer) do
     %{emulator | main_screen_buffer: buffer}
   end
 
-  defp put_active_buffer(%__MODULE__{active_buffer_type: :alternate} = emulator, buffer)
+  defp put_active_buffer(
+         %__MODULE__{active_buffer_type: :alternate} = emulator,
+         buffer
+       )
        when is_struct(buffer, ScreenBuffer) do
     %{emulator | alternate_screen_buffer: buffer}
   end
@@ -503,11 +566,17 @@ defmodule Raxol.Terminal.Emulator do
   @doc """
   Gets the currently active buffer (:main or :alt) from the emulator state.
   """
-  def get_active_buffer(%__MODULE__{active_buffer_type: :main, main_screen_buffer: buffer}),
-    do: buffer
+  def get_active_buffer(%__MODULE__{
+        active_buffer_type: :main,
+        main_screen_buffer: buffer
+      }),
+      do: buffer
 
-  def get_active_buffer(%__MODULE__{active_buffer_type: :alternate, alternate_screen_buffer: buffer}),
-    do: buffer
+  def get_active_buffer(%__MODULE__{
+        active_buffer_type: :alternate,
+        alternate_screen_buffer: buffer
+      }),
+      do: buffer
 
   # --- Core Processing Logic ---
 
@@ -522,10 +591,14 @@ defmodule Raxol.Terminal.Emulator do
   """
   defp get_effective_scroll_region(emulator, buffer) do
     buffer_height = ScreenBuffer.get_height(buffer)
+
     case emulator.scroll_region do
-      {top, bottom} when is_integer(top) and is_integer(bottom) and top < bottom and top >= 0 and bottom <= buffer_height ->
+      {top, bottom}
+      when is_integer(top) and is_integer(bottom) and top < bottom and top >= 0 and
+             bottom <= buffer_height ->
         # Valid region set
         {top, bottom}
+
       _ ->
         # No valid region set, use full buffer
         {0, buffer_height}

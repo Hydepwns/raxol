@@ -1,9 +1,15 @@
 defmodule Raxol.Terminal.ConfigTest do
   use ExUnit.Case, async: true
+  import Mox
 
   # Aliases for the modules under test
   alias Raxol.Terminal.Config
   alias Raxol.Terminal.Config.{Validation, Defaults, Capabilities, Schema}
+  # Added for mocking
+  alias Raxol.System.EnvironmentAdapterBehaviour
+
+  # Define the mock for the EnvironmentAdapterBehaviour
+  Mox.defmock(EnvironmentAdapterMock, for: EnvironmentAdapterBehaviour)
 
   # Updated valid config based on flat schema
   @valid_config %{
@@ -61,6 +67,7 @@ defmodule Raxol.Terminal.ConfigTest do
   describe "Validation" do
     test "validate_config/1 validates valid configuration" do
       assert {:ok, validated} = Validation.validate_config(@valid_config)
+
       # Check if validated config matches input (assuming validation doesn't change values here)
       assert validated == @valid_config
     end
@@ -68,7 +75,8 @@ defmodule Raxol.Terminal.ConfigTest do
     test "validate_config/1 rejects invalid configuration (unknown key)" do
       invalid_config = Map.put(@valid_config, :unknown_key, "value")
       assert {:error, reason} = Validation.validate_config(invalid_config)
-      IO.inspect(reason, label: "Unknown Key Reason") # Debug output
+      # Debug output
+      IO.inspect(reason, label: "Unknown Key Reason")
       assert String.contains?(reason, "Unknown configuration keys")
       assert String.contains?(reason, ":unknown_key")
     end
@@ -77,7 +85,8 @@ defmodule Raxol.Terminal.ConfigTest do
       # Use a key that expects boolean, give it a string
       invalid_config = Map.put(@valid_config, :unicode_support, "not_a_boolean")
       assert {:error, reason} = Validation.validate_config(invalid_config)
-      IO.inspect(reason, label: "Wrong Type Reason") # Debug output
+      # Debug output
+      IO.inspect(reason, label: "Wrong Type Reason")
       assert String.contains?(reason, "Invalid value")
       assert String.contains?(reason, "[:unicode_support]")
     end
@@ -86,7 +95,8 @@ defmodule Raxol.Terminal.ConfigTest do
       # Use a key that expects enum, give it a wrong atom
       invalid_config = Map.put(@valid_config, :cursor_style, :invalid_style)
       assert {:error, reason} = Validation.validate_config(invalid_config)
-      IO.inspect(reason, label: "Bad Enum Reason") # Debug output
+      # Debug output
+      IO.inspect(reason, label: "Bad Enum Reason")
       assert String.contains?(reason, "not one of")
       assert String.contains?(reason, "[:cursor_style]")
     end
@@ -114,16 +124,54 @@ defmodule Raxol.Terminal.ConfigTest do
   end
 
   describe "Capabilities" do
-    # Tests for Capabilities.optimized_config might need setup/mocking
-    # test "optimized_config/0 generates optimized configuration" do
-    #   # Mocking :ets or system calls might be required here
-    #   # Example: :meck.expect(:ets, :lookup, fn(:raxol_terminal_capabilities, :truecolor) -> {:ok, true} end)
-    #   # config = Capabilities.optimized_config()
-    #   # assert {:ok, _validated} = Validation.validate_config(config)
-    #   # assert config.rendering == ... # Check optimized values
-    #   # :meck.unload(:ets)
-    #   assert true # Placeholder
-    # end
+    # Add Mox verification
+    setup :verify_on_exit!
+
+    test "optimized_config/1 generates optimized configuration based on detected capabilities" do
+      # Mock adapter calls
+      EnvironmentAdapterMock
+      |> expect(:get_env, fn
+        "COLUMNS" -> "120"
+        "LINES" -> "40"
+        "COLORTERM" -> "truecolor"
+        "TERM" -> "xterm-256color"
+        "LANG" -> "en_US.UTF-8"
+        "DISPLAY" -> ":0"
+        _ -> nil
+      end)
+      |> expect(:cmd, fn
+        # Fallback if COLORTERM is not truecolor
+        "tput", ["colors"], _ -> {"256", 0}
+        # Default for other tput calls if COLUMNS/LINES not set
+        "tput", _, _ -> {"", 1}
+      end)
+
+      # Get the optimized config using the mock adapter
+      config = Capabilities.optimized_config(EnvironmentAdapterMock)
+
+      # Validate the generated config
+      assert {:ok, validated_config} = Validation.validate_config(config)
+
+      # Assert specific capabilities reflected in the config
+      # These assertions depend on how `optimize_config_for_capabilities` and `deep_merge_capabilities` work
+      # We are primarily testing that the detection part, which now uses the mock, influences the config.
+
+      # Assertions based on mocked environment:
+      assert validated_config.width == 120
+      assert validated_config.height == 40
+      # Directly from COLORTERM="truecolor"
+      assert validated_config.color_mode == :truecolor
+      # From COLORTERM="truecolor"
+      assert validated_config.truecolor == true
+      # From LANG="en_US.UTF-8"
+      assert validated_config.unicode_support == true
+      # From TERM="xterm-256color"
+      assert validated_config.mouse_support == true
+      # From DISPLAY=":0"
+      assert validated_config.clipboard_support == true
+      # From TERM="xterm-256color"
+      assert validated_config.ansi_enabled == true
+    end
   end
 
   describe "Config Facade (if applicable)" do

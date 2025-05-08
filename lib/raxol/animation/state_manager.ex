@@ -8,7 +8,8 @@ defmodule Raxol.Animation.StateManager do
 
   require Logger
 
-  alias Raxol.Animation.Framework # Assuming Framework might hold struct defs later
+  # Assuming Framework might hold struct defs later
+  alias Raxol.Animation.Framework
 
   @settings_key :animation_framework_settings
   @animations_key :animation_framework_animations
@@ -54,8 +55,13 @@ defmodule Raxol.Animation.StateManager do
   def put_active_animation(element_id, animation_name, instance) do
     active_animations = Process.get(@active_animations_key, %{})
     element_animations = Map.get(active_animations, element_id, %{})
-    updated_element_animations = Map.put(element_animations, animation_name, instance)
-    updated_active_animations = Map.put(active_animations, element_id, updated_element_animations)
+
+    updated_element_animations =
+      Map.put(element_animations, animation_name, instance)
+
+    updated_active_animations =
+      Map.put(active_animations, element_id, updated_element_animations)
+
     Process.put(@active_animations_key, updated_active_animations)
   end
 
@@ -94,5 +100,4 @@ defmodule Raxol.Animation.StateManager do
     Process.delete(@active_animations_key)
     :ok
   end
-
 end

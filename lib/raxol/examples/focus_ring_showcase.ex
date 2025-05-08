@@ -30,7 +30,8 @@ defmodule Raxol.Examples.FocusRingShowcase do
       # Focus ring state
       focus_ring: %{
         visible: true,
-        position: {5, 5, 30, 5}, # Initial position
+        # Initial position
+        position: {5, 5, 30, 5},
         color: :yellow,
         animation: :pulse,
         component_type: :button,
@@ -66,10 +67,11 @@ defmodule Raxol.Examples.FocusRingShowcase do
           end
 
         # Update focus ring
-        updated_focus_ring = Map.merge(state.focus_ring, %{
-          animation: next_animation,
-          component_type: next_component_type
-        })
+        updated_focus_ring =
+          Map.merge(state.focus_ring, %{
+            animation: next_animation,
+            component_type: next_component_type
+          })
 
         # Schedule next cycle if demo is running
         commands =
@@ -79,12 +81,13 @@ defmodule Raxol.Examples.FocusRingShowcase do
             []
           end
 
-        {%{state |
-          current_animation: next_animation,
-          current_component_type: next_component_type,
-          cycle_index: next_index,
-          focus_ring: updated_focus_ring
-        }, commands}
+        {%{
+           state
+           | current_animation: next_animation,
+             current_component_type: next_component_type,
+             cycle_index: next_index,
+             focus_ring: updated_focus_ring
+         }, commands}
 
       _ ->
         {state, []}
@@ -97,23 +100,48 @@ defmodule Raxol.Examples.FocusRingShowcase do
       # Animation type selection
       {:select_animation, animation} when animation in @animation_types ->
         updated_focus_ring = Map.put(state.focus_ring, :animation, animation)
-        {%{state | current_animation: animation, focus_ring: updated_focus_ring}, []}
+
+        {%{
+           state
+           | current_animation: animation,
+             focus_ring: updated_focus_ring
+         }, []}
 
       # Component type selection
-      {:select_component_type, component_type} when component_type in @component_types ->
-        updated_focus_ring = Map.put(state.focus_ring, :component_type, component_type)
-        {%{state | current_component_type: component_type, focus_ring: updated_focus_ring}, []}
+      {:select_component_type, component_type}
+      when component_type in @component_types ->
+        updated_focus_ring =
+          Map.put(state.focus_ring, :component_type, component_type)
+
+        {%{
+           state
+           | current_component_type: component_type,
+             focus_ring: updated_focus_ring
+         }, []}
 
       # Component state selection
-      {:select_component_state, component_state} when component_state in @component_states ->
+      {:select_component_state, component_state}
+      when component_state in @component_states ->
         updated_focus_ring = Map.put(state.focus_ring, :state, component_state)
-        {%{state | current_component_state: component_state, focus_ring: updated_focus_ring}, []}
+
+        {%{
+           state
+           | current_component_state: component_state,
+             focus_ring: updated_focus_ring
+         }, []}
 
       # Toggle high contrast mode
       {:toggle_high_contrast} ->
         high_contrast = !state.high_contrast
-        updated_focus_ring = Map.put(state.focus_ring, :high_contrast, high_contrast)
-        {%{state | high_contrast: high_contrast, focus_ring: updated_focus_ring}, []}
+
+        updated_focus_ring =
+          Map.put(state.focus_ring, :high_contrast, high_contrast)
+
+        {%{
+           state
+           | high_contrast: high_contrast,
+             focus_ring: updated_focus_ring
+         }, []}
 
       # Toggle reduced motion
       {:toggle_reduced_motion} ->
@@ -121,10 +149,12 @@ defmodule Raxol.Examples.FocusRingShowcase do
         # When reduced motion is enabled, set animation to :none
         animation = if reduced_motion, do: :none, else: state.current_animation
         updated_focus_ring = Map.put(state.focus_ring, :animation, animation)
-        {%{state |
-          reduced_motion: reduced_motion,
-          focus_ring: updated_focus_ring
-        }, []}
+
+        {%{
+           state
+           | reduced_motion: reduced_motion,
+             focus_ring: updated_focus_ring
+         }, []}
 
       # Toggle auto-cycling demo
       {:toggle_demo} ->
@@ -142,14 +172,17 @@ defmodule Raxol.Examples.FocusRingShowcase do
 
       # Position focus ring on a component
       {:focus_component, component_type, position} ->
-        updated_focus_ring = Map.merge(state.focus_ring, %{
-          component_type: component_type,
-          position: position
-        })
-        {%{state |
-          current_component_type: component_type,
-          focus_ring: updated_focus_ring
-        }, []}
+        updated_focus_ring =
+          Map.merge(state.focus_ring, %{
+            component_type: component_type,
+            position: position
+          })
+
+        {%{
+           state
+           | current_component_type: component_type,
+             focus_ring: updated_focus_ring
+         }, []}
 
       _ ->
         {state, []}
@@ -161,7 +194,10 @@ defmodule Raxol.Examples.FocusRingShowcase do
     panel title: "FocusRing Component Showcase", border: :single, width: 80 do
       column padding: 1, gap: 1 do
         # Description
-        label text: "This showcase demonstrates the enhanced FocusRing component with various styling options."
+        label(
+          text:
+            "This showcase demonstrates the enhanced FocusRing component with various styling options."
+        )
 
         # Controls section
         panel title: "Controls", border: :single do
@@ -169,49 +205,86 @@ defmodule Raxol.Examples.FocusRingShowcase do
             row gap: 2 do
               # Animation type selector
               column do
-                label text: "Animation Type:"
+                label(text: "Animation Type:")
+
                 for animation <- @animation_types do
-                  button label: to_string(animation),
-                        on_click: {:select_animation, animation},
-                        style: if(state.current_animation == animation, do: [bg: :blue, fg: :white], else: [])
+                  button(
+                    label: to_string(animation),
+                    on_click: {:select_animation, animation},
+                    style:
+                      if(state.current_animation == animation,
+                        do: [bg: :blue, fg: :white],
+                        else: []
+                      )
+                  )
                 end
               end
 
               # Component type selector
               column do
-                label text: "Component Type:"
+                label(text: "Component Type:")
+
                 for component_type <- @component_types do
-                  button label: to_string(component_type),
-                        on_click: {:select_component_type, component_type},
-                        style: if(state.current_component_type == component_type, do: [bg: :blue, fg: :white], else: [])
+                  button(
+                    label: to_string(component_type),
+                    on_click: {:select_component_type, component_type},
+                    style:
+                      if(state.current_component_type == component_type,
+                        do: [bg: :blue, fg: :white],
+                        else: []
+                      )
+                  )
                 end
               end
 
               # Component state selector
               column do
-                label text: "Component State:"
+                label(text: "Component State:")
+
                 for component_state <- @component_states do
-                  button label: to_string(component_state),
-                        on_click: {:select_component_state, component_state},
-                        style: if(state.current_component_state == component_state, do: [bg: :blue, fg: :white], else: [])
+                  button(
+                    label: to_string(component_state),
+                    on_click: {:select_component_state, component_state},
+                    style:
+                      if(state.current_component_state == component_state,
+                        do: [bg: :blue, fg: :white],
+                        else: []
+                      )
+                  )
                 end
               end
 
               # Accessibility options
               column do
-                label text: "Accessibility:"
-                button label: "High Contrast: #{state.high_contrast}",
-                      on_click: {:toggle_high_contrast}
-                button label: "Reduced Motion: #{state.reduced_motion}",
-                      on_click: {:toggle_reduced_motion}
+                label(text: "Accessibility:")
+
+                button(
+                  label: "High Contrast: #{state.high_contrast}",
+                  on_click: {:toggle_high_contrast}
+                )
+
+                button(
+                  label: "Reduced Motion: #{state.reduced_motion}",
+                  on_click: {:toggle_reduced_motion}
+                )
               end
             end
 
             # Auto-cycle demo
             row do
-              button label: if(state.demo_running, do: "Stop Demo", else: "Start Auto-Cycle Demo"),
-                    on_click: {:toggle_demo},
-                    style: if(state.demo_running, do: [bg: :red, fg: :white], else: [bg: :green, fg: :white])
+              button(
+                label:
+                  if(state.demo_running,
+                    do: "Stop Demo",
+                    else: "Start Auto-Cycle Demo"
+                  ),
+                on_click: {:toggle_demo},
+                style:
+                  if(state.demo_running,
+                    do: [bg: :red, fg: :white],
+                    else: [bg: :green, fg: :white]
+                  )
+              )
             end
           end
         end
@@ -220,24 +293,38 @@ defmodule Raxol.Examples.FocusRingShowcase do
         panel title: "Preview", border: :single do
           column padding: 1, gap: 2 do
             # Current configuration
-            label text: "Current Configuration:"
-            label text: "Animation: #{state.current_animation}, Component: #{state.current_component_type}, State: #{state.current_component_state}"
-            label text: "High Contrast: #{state.high_contrast}, Reduced Motion: #{state.reduced_motion}"
+            label(text: "Current Configuration:")
+
+            label(
+              text:
+                "Animation: #{state.current_animation}, Component: #{state.current_component_type}, State: #{state.current_component_state}"
+            )
+
+            label(
+              text:
+                "High Contrast: #{state.high_contrast}, Reduced Motion: #{state.reduced_motion}"
+            )
 
             # Example components
             row gap: 4 do
               # Button example
-              button label: state.button_text,
-                    on_click: {:focus_component, :button, {5, 20, 20, 3}}
+              button(
+                label: state.button_text,
+                on_click: {:focus_component, :button, {5, 20, 20, 3}}
+              )
 
               # Text input example
-              text_input value: state.input_value,
-                        on_click: {:focus_component, :text_input, {30, 20, 25, 3}}
+              text_input(
+                value: state.input_value,
+                on_click: {:focus_component, :text_input, {30, 20, 25, 3}}
+              )
 
               # Checkbox example
-              checkbox checked: state.checkbox_checked,
-                      label: "Check me",
-                      on_click: {:focus_component, :checkbox, {60, 20, 15, 3}}
+              checkbox(
+                checked: state.checkbox_checked,
+                label: "Check me",
+                on_click: {:focus_component, :checkbox, {60, 20, 15, 3}}
+              )
             end
           end
         end

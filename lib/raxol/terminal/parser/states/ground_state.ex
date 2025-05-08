@@ -18,7 +18,8 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
     - `{:handled, final_emulator}` if the input is fully processed or an error occurs.
   """
   @spec handle(Emulator.t(), State.t(), binary()) ::
-          {:continue, Emulator.t(), State.t(), binary()} | {:handled, Emulator.t()}
+          {:continue, Emulator.t(), State.t(), binary()}
+          | {:handled, Emulator.t()}
   def handle(emulator, %State{state: :ground} = parser_state, input) do
     # --- REMOVED DEBUG ---
     # IO.inspect({:ground_state_entry, input}, label: "GROUND_STATE_ENTRY_DEBUG")
@@ -37,6 +38,7 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
       <<10, rest_after_lf::binary>> ->
         # Command History Logic
         trimmed_command = String.trim(emulator.current_command_buffer)
+
         updated_history =
           if trimmed_command != "" do
             [trimmed_command | emulator.command_history]
@@ -50,6 +52,7 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
           | command_history: updated_history,
             current_command_buffer: ""
         }
+
         # End Command History Logic
 
         new_emulator = ControlCodes.handle_c0(emulator_with_history, 10)
@@ -75,12 +78,24 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
       when char_codepoint >= 32 ->
         # Command History Logic
         char_as_string = <<char_codepoint::utf8>>
-        updated_command_buffer = emulator.current_command_buffer <> char_as_string
-        emulator_with_buffer = %{emulator | current_command_buffer: updated_command_buffer}
+
+        updated_command_buffer =
+          emulator.current_command_buffer <> char_as_string
+
+        emulator_with_buffer = %{
+          emulator
+          | current_command_buffer: updated_command_buffer
+        }
+
         # End Command History Logic
 
         # Call InputHandler instead of non-existent Emulator.write
-        new_emulator = InputHandler.process_printable_character(emulator_with_buffer, char_codepoint)
+        new_emulator =
+          InputHandler.process_printable_character(
+            emulator_with_buffer,
+            char_codepoint
+          )
+
         {:continue, new_emulator, parser_state, rest_after_char}
 
       # Fallback for invalid UTF-8 or other unhandled bytes
@@ -88,12 +103,12 @@ defmodule Raxol.Terminal.Parser.States.GroundState do
         Logger.warning(
           "[Parser] Unhandled/Ignored byte #{inspect(byte)} in ground state. Skipping."
         )
+
         {:continue, emulator, parser_state, rest}
 
       # Base case: Empty input (should be handled by main loop, but good to have)
       <<>> ->
-         {:continue, emulator, parser_state, <<>>}
-
+        {:continue, emulator, parser_state, <<>>}
     end
   end
 

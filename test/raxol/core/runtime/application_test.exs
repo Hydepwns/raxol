@@ -5,7 +5,8 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
   defmodule TestApp do
     use Raxol.Core.Runtime.Application
     require Raxol.View.Elements
-    import Raxol.View.Elements # Import for cleaner syntax
+    # Import for cleaner syntax
+    import Raxol.View.Elements
 
     @impl true
     def init(_context), do: %{count: 0}
@@ -18,6 +19,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
           :decrement -> Map.update!(state, :count, &(&1 - 1))
           _ -> state
         end
+
       {new_state, []}
     end
 
@@ -33,7 +35,13 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     end
 
     @impl true
-    def handle_event(%Raxol.Core.Events.Event{type: :window, data: %{action: :resize, width: _w, height: _h}}, state) do
+    def handle_event(
+          %Raxol.Core.Events.Event{
+            type: :window,
+            data: %{action: :resize, width: _w, height: _h}
+          },
+          state
+        ) do
       # For testing purposes, just return the state unchanged
       {state, []}
     end

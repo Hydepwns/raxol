@@ -137,7 +137,8 @@ defmodule Raxol.Style.Colors.PaletteManager do
         "#80B3E6", "#66A3E0", "#4D94DB", "#3385D6", "#0077CC"
       ]
   """
-  def generate_scale(base_color_hex, steps \\ 9, opts \\ []) when is_binary(base_color_hex) do
+  def generate_scale(base_color_hex, steps \\ 9, opts \\ [])
+      when is_binary(base_color_hex) do
     # Default range of lightness from light to dark
     {min_lightness, max_lightness} =
       Keyword.get(opts, :lightness_range, {0.1, 0.9})
@@ -155,29 +156,47 @@ defmodule Raxol.Style.Colors.PaletteManager do
         {base_h, base_s, base_l} = Raxol.Style.Colors.HSL.rgb_to_hsl(r, g, b)
 
         # Calculate lightness step size
-        lightness_step = if steps > 1, do: (max_lightness - min_lightness) / (steps - 1), else: 0
+        lightness_step =
+          if steps > 1,
+            do: (max_lightness - min_lightness) / (steps - 1),
+            else: 0
 
         # Generate colors
         scale =
           for i <- 0..(steps - 1) do
             # Calculate target lightness for this step (start from lightest)
-            target_lightness = max(0.0, min(1.0, max_lightness - i * lightness_step))
+            target_lightness =
+              max(0.0, min(1.0, max_lightness - i * lightness_step))
 
             # Calculate target saturation (parabolic curve, peaked in middle)
             target_saturation_factor =
               if steps > 1 do
-                1.0 + saturation_adjust * (1.0 - :math.pow(2.0 * (i / (steps - 1)) - 1.0, 2))
+                1.0 +
+                  saturation_adjust *
+                    (1.0 - :math.pow(2.0 * (i / (steps - 1)) - 1.0, 2))
               else
-                1.0 # No adjustment for single step
+                # No adjustment for single step
+                1.0
               end
 
-            target_saturation = max(0.0, min(1.0, base_s * target_saturation_factor))
+            target_saturation =
+              max(0.0, min(1.0, base_s * target_saturation_factor))
 
             # Convert back to RGB from adjusted HSL
-            {new_r, new_g, new_b} = Raxol.Style.Colors.HSL.hsl_to_rgb(base_h, target_saturation, target_lightness)
+            {new_r, new_g, new_b} =
+              Raxol.Style.Colors.HSL.hsl_to_rgb(
+                base_h,
+                target_saturation,
+                target_lightness
+              )
 
             # Convert back to hex string
-            Color.to_hex(%Color{base_color_struct | r: new_r, g: new_g, b: new_b})
+            Color.to_hex(%Color{
+              base_color_struct
+              | r: new_r,
+                g: new_g,
+                b: new_b
+            })
           end
 
         # Store the scale if a name was provided
@@ -187,7 +206,8 @@ defmodule Raxol.Style.Colors.PaletteManager do
           Process.put(:palette_manager_scales, updated_scales)
         end
 
-        scale # Return the list of hex strings
+        # Return the list of hex strings
+        scale
     end
   end
 

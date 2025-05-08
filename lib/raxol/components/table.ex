@@ -21,8 +21,10 @@ defmodule Raxol.Components.Table do
             page_size: 10,
             filter_term: "",
             # Add any other necessary state fields
-            width: 80, # Example default
-            height: 20 # Example default
+            # Example default
+            width: 80,
+            # Example default
+            height: 20
 
   # --- Component Behaviour Callbacks ---
 
@@ -49,14 +51,18 @@ defmodule Raxol.Components.Table do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages for sorting, pagination, filtering, etc.
-    Logger.debug("Table #{state.id} received message: #{inspect msg}")
+    Logger.debug("Table #{state.id} received message: #{inspect(msg)}")
 
     case msg do
       {:set_page, page} when is_integer(page) and page > 0 ->
         {%{state | current_page: page}, []}
 
       {:sort, column_id} ->
-        new_direction = if state.sort_by == column_id and state.sort_direction == :asc, do: :desc, else: :asc
+        new_direction =
+          if state.sort_by == column_id and state.sort_direction == :asc,
+            do: :desc,
+            else: :asc
+
         {%{state | sort_by: column_id, sort_direction: new_direction}, []}
 
       {:filter, term} ->
@@ -71,7 +77,7 @@ defmodule Raxol.Components.Table do
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = props, state) do
     # Handle key events for navigation, selection, etc. if needed
-    Logger.debug("Table #{state.id} received event: #{inspect event}")
+    Logger.debug("Table #{state.id} received event: #{inspect(event)}")
 
     # Create search field ID constant for comparison
     search_field_id = "#{state.id}_search"
@@ -83,6 +89,7 @@ defmodule Raxol.Components.Table do
         if is_map_key(state.options, :paginate) && state.options.paginate do
           # If paginate is enabled, go to previous page
           current_page = state.current_page
+
           if current_page > 1 do
             {%{state | current_page: current_page - 1}, []}
           else
@@ -111,7 +118,8 @@ defmodule Raxol.Components.Table do
 
       # Handle text input for search field
       {:text_input, id, value} ->
-        if id == search_field_id && is_map_key(state.options, :searchable) && state.options.searchable do
+        if id == search_field_id && is_map_key(state.options, :searchable) &&
+             state.options.searchable do
           # Update filter term and reset to first page
           {%{state | filter_term: value, current_page: 1}, []}
         else
@@ -128,13 +136,23 @@ defmodule Raxol.Components.Table do
           id == "#{state.id}_next_page" ->
             total_items = length(state.data)
             total_pages = max(1, ceil(total_items / state.page_size))
-            {%{state | current_page: min(total_pages, state.current_page + 1)}, []}
+
+            {%{state | current_page: min(total_pages, state.current_page + 1)},
+             []}
 
           # Column header sort button clicks
-          String.starts_with?(id, "#{state.id}_sort_") and state.options[:sortable] ->
+          String.starts_with?(id, "#{state.id}_sort_") and
+              state.options[:sortable] ->
             # Extract column id from button id
-            column_id = String.replace_prefix(id, "#{state.id}_sort_", "") |> String.to_atom()
-            new_direction = if state.sort_by == column_id and state.sort_direction == :asc, do: :desc, else: :asc
+            column_id =
+              String.replace_prefix(id, "#{state.id}_sort_", "")
+              |> String.to_atom()
+
+            new_direction =
+              if state.sort_by == column_id and state.sort_direction == :asc,
+                do: :desc,
+                else: :asc
+
             {%{state | sort_by: column_id, sort_direction: new_direction}, []}
 
           true ->
@@ -150,7 +168,8 @@ defmodule Raxol.Components.Table do
 
   # Main render function implementing Component behaviour
   @impl Raxol.UI.Components.Base.Component
-  def render(state, %{} = _props) do # Changed arity to 2
+  # Changed arity to 2
+  def render(state, %{} = _props) do
     # Prepare data (filter, sort, paginate)
     processed_data = process_data(state)
 
@@ -158,7 +177,9 @@ defmodule Raxol.Components.Table do
     col_widths = calculate_column_widths(state.columns, state.width)
 
     # Use View Elements macros
-    Raxol.View.Elements.column id: state.id, width: state.width, height: state.height do
+    Raxol.View.Elements.column id: state.id,
+                               width: state.width,
+                               height: state.height do
       # Render Search Bar if searchable
       if state.options[:searchable] do
         render_search_bar(state)
@@ -180,16 +201,17 @@ defmodule Raxol.Components.Table do
         render_pagination_footer(state)
       end
     end
+
     # Note: Raxol.View.Elements.column returns the element structure directly
     # No need for to_element here unless the result needs wrapping.
   end
-
 
   # --- Internal Render Helpers (Simplified) ---
 
   defp render_search_bar(state) do
     Raxol.View.Elements.row do
       Raxol.View.Elements.label(content: "Search: ")
+
       Raxol.View.Elements.text_input(
         id: "#{state.id}_search",
         value: state.filter_term,
@@ -208,13 +230,15 @@ defmodule Raxol.Components.Table do
 
         # Determine if this column is the sort column and the direction
         is_sort_column = state.sort_by == id
-        sort_indicator = cond do
-          not state.options[:sortable] -> ""
-          not is_sort_column -> " "
-          state.sort_direction == :asc -> " ▲"
-          state.sort_direction == :desc -> " ▼"
-          true -> " "
-        end
+
+        sort_indicator =
+          cond do
+            not state.options[:sortable] -> ""
+            not is_sort_column -> " "
+            state.sort_direction == :asc -> " ▲"
+            state.sort_direction == :desc -> " ▼"
+            true -> " "
+          end
 
         # Calculate adjusted width to account for sort indicator
         adjusted_width = width - String.length(sort_indicator)
@@ -235,13 +259,15 @@ defmodule Raxol.Components.Table do
             style: %{
               bold: true,
               underline: is_sort_column,
-              width: width + 1 # Account for space separator
+              # Account for space separator
+              width: width + 1
             }
           )
         else
           Raxol.View.Elements.label(
             content: full_text,
-            style: %{bold: true, width: width + 1} # Account for space separator
+            # Account for space separator
+            style: %{bold: true, width: width + 1}
           )
         end
       end)
@@ -255,16 +281,18 @@ defmodule Raxol.Components.Table do
   end
 
   defp render_single_row(row_data, columns, col_widths, _state) do
-     row_cells = Enum.map(columns, fn %{id: id} ->
-       cell_value = Map.get(row_data, id, "") |> to_string()
-       width = Map.get(col_widths, id, 10)
-       # Pad/truncate value
-       String.pad_trailing(cell_value, width) <> " " # Add space separator
-     end)
+    row_cells =
+      Enum.map(columns, fn %{id: id} ->
+        cell_value = Map.get(row_data, id, "") |> to_string()
+        width = Map.get(col_widths, id, 10)
+        # Pad/truncate value
+        # Add space separator
+        String.pad_trailing(cell_value, width) <> " "
+      end)
 
-     Raxol.View.Elements.row do
-        Raxol.View.Elements.label(content: Enum.join(row_cells))
-     end
+    Raxol.View.Elements.row do
+      Raxol.View.Elements.label(content: Enum.join(row_cells))
+    end
   end
 
   defp render_pagination_footer(state) do
@@ -310,21 +338,25 @@ defmodule Raxol.Components.Table do
 
   defp process_data(state) do
     # Apply filtering, sorting, pagination based on state.options and state fields
-    data = state.data # Start with raw data
+    # Start with raw data
+    data = state.data
 
     # Apply filtering if filter_term is present and filtering is enabled
-    data = if state.options[:searchable] && state.filter_term && state.filter_term != "" do
-      filter_data(data, state.filter_term)
-    else
-      data
-    end
+    data =
+      if state.options[:searchable] && state.filter_term &&
+           state.filter_term != "" do
+        filter_data(data, state.filter_term)
+      else
+        data
+      end
 
     # Apply sorting if sort_by is present and sorting is enabled
-    data = if state.options[:sortable] && state.sort_by do
-      sort_data(data, state.sort_by, state.sort_direction)
-    else
-      data
-    end
+    data =
+      if state.options[:sortable] && state.sort_by do
+        sort_data(data, state.sort_by, state.sort_direction)
+      else
+        data
+      end
 
     # Apply pagination if enabled
     if state.options[:paginate] do
@@ -349,9 +381,13 @@ defmodule Raxol.Components.Table do
   end
 
   defp sort_data(data, sort_by, direction) do
-    Enum.sort_by(data, fn row ->
-      Map.get(row, sort_by)
-    end, sort_direction_to_comparator(direction))
+    Enum.sort_by(
+      data,
+      fn row ->
+        Map.get(row, sort_by)
+      end,
+      sort_direction_to_comparator(direction)
+    )
   end
 
   defp sort_direction_to_comparator(:asc), do: &<=/2
@@ -365,7 +401,10 @@ defmodule Raxol.Components.Table do
   defp calculate_column_widths(columns, total_width) do
     # Placeholder: Distribute width evenly
     num_cols = length(columns)
-    each_width = if num_cols > 0, do: div(total_width, num_cols), else: total_width
+
+    each_width =
+      if num_cols > 0, do: div(total_width, num_cols), else: total_width
+
     Map.new(columns, fn %{id: id} -> {id, each_width} end)
   end
 
@@ -377,5 +416,4 @@ defmodule Raxol.Components.Table do
 
   # Example: Original pagination helper (adapt or remove)
   # defp paginated(data, page, page_size, sort_by, sort_direction, filter_term) do ... end
-
 end

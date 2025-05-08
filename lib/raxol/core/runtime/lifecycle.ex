@@ -16,7 +16,11 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   """
   def start_application(app_module, options \\ []) do
     Logger.debug("[Lifecycle] Entered start_application/2")
-    Logger.info("[#{__MODULE__}] start_application called for #{inspect(app_module)} with options: #{inspect(options)}")
+
+    Logger.info(
+      "[#{__MODULE__}] start_application called for #{inspect(app_module)} with options: #{inspect(options)}"
+    )
+
     app_name = get_app_name(app_module)
     Logger.debug("[#{__MODULE__}] Determined app_name: #{inspect(app_name)}")
 
@@ -29,11 +33,15 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       width: Keyword.get(options, :width, 80),
       height: Keyword.get(options, :height, 24),
       # TODO: Where does plugin_manager and command_registry_table come from?
-      plugin_manager: nil, # Placeholder
-      command_registry_table: nil, # Placeholder
+      # Placeholder
+      plugin_manager: nil,
+      # Placeholder
+      command_registry_table: nil,
       # TODO: Get initial commands if any
-      initial_commands: [], # Placeholder
-      model: %{} # Assuming Application.init provides the initial model map
+      # Placeholder
+      initial_commands: [],
+      # Assuming Application.init provides the initial model map
+      model: %{}
     }
 
     # Define the child spec map
@@ -41,7 +49,9 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       id: Raxol.Core.Runtime.Events.Dispatcher,
       # Call start_link/2 explicitly
       # TODO: Determine the correct runtime_pid
-      start: {Raxol.Core.Runtime.Events.Dispatcher, :start_link, [nil, dispatcher_initial_state]}
+      start:
+        {Raxol.Core.Runtime.Events.Dispatcher, :start_link,
+         [nil, dispatcher_initial_state]}
       # type: :worker, # Default
       # restart: :permanent # Default
     }
@@ -49,15 +59,29 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     case DynamicSupervisor.start_child(
            Raxol.DynamicSupervisor,
            # {Raxol.Core.Runtime.Events.Dispatcher, {app_module, app_name, options}} # Old tuple format
-           child_spec # Use map-based spec
+           # Use map-based spec
+           child_spec
          ) do
       {:ok, pid} ->
-        Logger.debug("[Lifecycle] DynamicSupervisor.start_child returned {:ok, pid}")
-        Logger.info("[#{__MODULE__}] Application process started successfully. PID: #{inspect(pid)}")
+        Logger.debug(
+          "[Lifecycle] DynamicSupervisor.start_child returned {:ok, pid}"
+        )
+
+        Logger.info(
+          "[#{__MODULE__}] Application process started successfully. PID: #{inspect(pid)}"
+        )
+
         {:ok, pid}
+
       {:error, reason} ->
-        Logger.debug("[Lifecycle] DynamicSupervisor.start_child returned {:error, reason}")
-        Logger.error("[#{__MODULE__}] Failed to start application process. Reason: #{inspect(reason)}")
+        Logger.debug(
+          "[Lifecycle] DynamicSupervisor.start_child returned {:error, reason}"
+        )
+
+        Logger.error(
+          "[#{__MODULE__}] Failed to start application process. Reason: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -71,6 +95,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   def stop_application(app_name)
       when is_binary(app_name) or is_atom(app_name) do
     Logger.info("Stopping application: #{app_name}")
+
     # Simplified: Assume stopping logic doesn't require lookup via AppRegistry anymore
     # case lookup_app(app_name) do
     #   {:ok, pid} ->
@@ -82,7 +107,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     #     Logger.error("Application not found: #{app_name}")
     #     {:error, :not_found}
     # end
-    :ok # Return OK assuming stop was requested
+    # Return OK assuming stop was requested
+    :ok
   end
 
   @doc """
@@ -90,7 +116,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   """
   def register_application(app_name, pid) do
     # Use CommandRegistry or another mechanism if needed, AppRegistry removed
-    Logger.info("Application registered: #{app_name} with PID: #{inspect pid}")
+    Logger.info("Application registered: #{app_name} with PID: #{inspect(pid)}")
     # AppRegistry.register(app_name, pid)
     :ok
   end
@@ -104,7 +130,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     # AppRegistry removed, lookup might not be needed or done differently
     Logger.info("Looking up application: #{app_name}")
     # AppRegistry.lookup(app_name)
-    {:error, :not_found} # Return error tuple instead of nil
+    # Return error tuple instead of nil
+    {:error, :not_found}
   end
 
   @doc """
@@ -121,7 +148,8 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     #   Logger.info("Native terminal environment detected.")
     #   # Native terminal setup
     # end
-    state # Return unchanged state
+    # Return unchanged state
+    state
   end
 
   @doc """
@@ -180,7 +208,10 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   # Comment out @impl true as no behaviour is declared
   # @impl true
   def init(init_arg) do
-    Logger.info("Starting Raxol.Core.Runtime.Lifecycle with args: #{inspect init_arg}")
+    Logger.info(
+      "Starting Raxol.Core.Runtime.Lifecycle with args: #{inspect(init_arg)}"
+    )
+
     # TODO: Implement proper initialization based on init_arg
     # For now, just return a basic state map
     {:ok,

@@ -30,7 +30,8 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
     # The logic needs clarification on whether it handles standard vs private.
     # Assuming 'mode' is just the integer code for now.
     # Let's find the corresponding mode atom.
-    mode_atom = ModeManager.lookup_private(mode) || ModeManager.lookup_standard(mode)
+    mode_atom =
+      ModeManager.lookup_private(mode) || ModeManager.lookup_standard(mode)
 
     if mode_atom do
       if enabled do

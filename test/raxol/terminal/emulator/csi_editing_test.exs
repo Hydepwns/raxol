@@ -7,7 +7,8 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.Manager
-  alias Raxol.Terminal.Cell # Needed for style check
+  # Needed for style check
+  alias Raxol.Terminal.Cell
 
   describe "CSI editing functions" do
     # Tests focus on buffer manipulation via CSI sequences processed by Emulator
@@ -52,8 +53,10 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
 
       Enum.each(0..9, fn x ->
         cell = ScreenBuffer.get_cell_at(buffer, x, 0)
+
         assert cell.char == Enum.at(expected_content, x),
                "Mismatch at index #{x}: Expected #{Enum.at(expected_content, x)}, got #{cell.char}"
+
         # Verify trailing blanks have default style
         if x >= 8 do
           # Use TextFormatting.new() for comparison
@@ -65,7 +68,8 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
     test "IL - Insert Line inserts blank lines within scroll region" do
       # 5 wide, 5 high
       emulator = Emulator.new(5, 5)
-      emulator = fill_buffer(emulator, 0, 5) # Use local helper
+      # Use local helper
+      emulator = fill_buffer(emulator, 0, 5)
 
       # Set scroll region rows 2-4 (indices 1-3)
       {emulator, _} = Emulator.process_input(emulator, "\e[2;4r")
@@ -79,6 +83,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       {emulator, _} = Emulator.process_input(emulator, "\e[2L")
 
       buffer = Emulator.get_active_buffer(emulator)
+
       # Revised expected lines based on IL inserting AT cursor within region AND 5-char width truncation
       expected_lines = ["Line ", "Line ", "     ", "     ", "Line "]
 
@@ -87,6 +92,7 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
         line_text = Enum.map_join(line_cells, &(&1.char || " "))
         expected_line_trimmed = String.trim(Enum.at(expected_lines, y))
         actual_line_trimmed = String.trim(line_text)
+
         assert actual_line_trimmed == expected_line_trimmed,
                "Mismatch at line #{y}: Expected '#{expected_line_trimmed}', got '#{actual_line_trimmed}'"
       end)
@@ -98,10 +104,14 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
     test "DL - Delete Line deletes current line and shifts lines up" do
       # Revert to using process_input for setup
       emulator = Emulator.new(80, 5)
-      {emulator, _} = Emulator.process_input(emulator, "\e[1;1HLine 0") # Write to line 0
-      {emulator, _} = Emulator.process_input(emulator, "\e[2;1HLine 1") # Write to line 1
-      {emulator, _} = Emulator.process_input(emulator, "\e[3;1HLine 2") # Write to line 2
-      {emulator, _} = Emulator.process_input(emulator, "\e[4;1HLine 3") # Write to line 3
+      # Write to line 0
+      {emulator, _} = Emulator.process_input(emulator, "\e[1;1HLine 0")
+      # Write to line 1
+      {emulator, _} = Emulator.process_input(emulator, "\e[2;1HLine 1")
+      # Write to line 2
+      {emulator, _} = Emulator.process_input(emulator, "\e[3;1HLine 2")
+      # Write to line 3
+      {emulator, _} = Emulator.process_input(emulator, "\e[4;1HLine 3")
       # Move cursor to line 1 (index 1) for the DL operation
       {emulator, _} = Emulator.process_input(emulator, "\e[2;1H")
       assert emulator.cursor.position == {0, 1}
@@ -134,7 +144,8 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       # Use fill_buffer helper
       emulator = fill_buffer(emulator, 0, 5)
       # Use process_input with CUP instead of direct update
-      {emulator, _} = Emulator.process_input(emulator, "\e[2;1H") # Move cursor to line 1 (index 1)
+      # Move cursor to line 1 (index 1)
+      {emulator, _} = Emulator.process_input(emulator, "\e[2;1H")
 
       line3_before = get_line_text(emulator, 3)
       line4_before = get_line_text(emulator, 4)
@@ -160,7 +171,8 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       # Set scroll region line 2 to 4 (index 1 to 3)
       {emulator, _} = Emulator.process_input(emulator, "\e[2;4r")
       # Use process_input with CUP instead of direct update
-      {emulator, _} = Emulator.process_input(emulator, "\e[2;1H") # Move cursor to line 2 (index 1)
+      # Move cursor to line 2 (index 1)
+      {emulator, _} = Emulator.process_input(emulator, "\e[2;1H")
 
       line0_before = get_line_text(emulator, 0)
       line2_before = get_line_text(emulator, 2)
@@ -193,7 +205,8 @@ defmodule Raxol.Terminal.Emulator.CsiEditingTest do
       # Set scroll region lines 2 to 4 (index 1 to 3)
       {emulator, _} = Emulator.process_input(emulator, "\e[2;4r")
       # Use process_input with CUP instead of direct update
-      {emulator, _} = Emulator.process_input(emulator, "\e[1;1H") # Move cursor to line 0 (index 0)
+      # Move cursor to line 0 (index 0)
+      {emulator, _} = Emulator.process_input(emulator, "\e[1;1H")
 
       buffer_before = Emulator.get_active_buffer(emulator)
 

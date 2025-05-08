@@ -10,14 +10,17 @@ defmodule Raxol.UI.Layout.Table do
   """
   def measure_and_position(%{attrs: attrs} = _table_element, space, acc) do
     # Extract attributes passed from the View/Component via Elements.table/1
-    original_data = Map.get(attrs, :data, [])       # Use :data attribute
-    columns_config = Map.get(attrs, :columns, []) # Get column config
+    # Use :data attribute
+    original_data = Map.get(attrs, :data, [])
+    # Get column config
+    columns_config = Map.get(attrs, :columns, [])
 
     # Extract headers from the columns config
     headers = Enum.map(columns_config, fn col -> Map.get(col, :header, "") end)
 
     num_cols = length(columns_config)
-    num_rows = length(original_data) # Use length of original data
+    # Use length of original data
+    num_rows = length(original_data)
 
     # Column width calculation using :columns config preferentially
     col_widths =
@@ -25,32 +28,46 @@ defmodule Raxol.UI.Layout.Table do
         Enum.map(columns_config, fn col_conf ->
           # Use explicit width from config, fallback calculation if needed
           # Add padding
-          Map.get(col_conf, :width, 10) # Default width if not specified
+          # Default width if not specified
+          Map.get(col_conf, :width, 10)
         end)
       else
         # Fallback if :columns is empty/missing (less robust)
-        fallback_num_cols = if headers != [], do: length(headers), else: (hd(original_data) |> then(&length(&1)) || 0)
+        fallback_num_cols =
+          if headers != [],
+            do: length(headers),
+            else: hd(original_data) |> then(&length(&1)) || 0
+
         if fallback_num_cols > 0 do
           Enum.map(0..(fallback_num_cols - 1), fn col_index ->
-            header_width = if headers != [], do: String.length(Enum.at(headers, col_index, "")), else: 0
+            header_width =
+              if headers != [],
+                do: String.length(Enum.at(headers, col_index, "")),
+                else: 0
+
             # Use original_data for fallback calculation
-            max_data_width = Enum.reduce(original_data, 0, fn data_item, max_w ->
-              # Extract cell data based on column key for fallback
-              # This assumes data_item is a map and column config has :key
-              # TODO: This fallback might need refinement based on actual data structure
-              key = columns_config |> Enum.at(col_index) |> Map.get(:key)
-              cell_content = Map.get(data_item, key, "") |> to_string()
-              max(String.length(cell_content), max_w)
-            end)
-            max(header_width, max_data_width) + 2 # Add 2 for padding
+            max_data_width =
+              Enum.reduce(original_data, 0, fn data_item, max_w ->
+                # Extract cell data based on column key for fallback
+                # This assumes data_item is a map and column config has :key
+                # TODO: This fallback might need refinement based on actual data structure
+                key = columns_config |> Enum.at(col_index) |> Map.get(:key)
+                cell_content = Map.get(data_item, key, "") |> to_string()
+                max(String.length(cell_content), max_w)
+              end)
+
+            # Add 2 for padding
+            max(header_width, max_data_width) + 2
           end)
         else
-          [] # No columns found
+          # No columns found
+          []
         end
       end
 
     # Calculate total width (sum of cols + separators)
-    separator_width = if num_cols > 1, do: (num_cols - 1) * 3, else: 0 # " | "
+    # " | "
+    separator_width = if num_cols > 1, do: (num_cols - 1) * 3, else: 0
     total_content_width = Enum.sum(col_widths) + separator_width
     # Clamp width to available space
     final_width = min(total_content_width, space.width)
@@ -65,8 +82,9 @@ defmodule Raxol.UI.Layout.Table do
 
     # --- Logging ---
     Logger.debug(
-      "[Layout.Table] Measured table: W=#{final_width}, H=#{final_height}, ColWidths=#{inspect col_widths}"
+      "[Layout.Table] Measured table: W=#{final_width}, H=#{final_height}, ColWidths=#{inspect(col_widths)}"
     )
+
     # ---------------
 
     # Create the single positioned table element for the Renderer
@@ -81,16 +99,23 @@ defmodule Raxol.UI.Layout.Table do
       # The renderer will need this info.
       attrs:
         Map.merge(attrs, %{
-          _component_type: Map.get(attrs, :component_type, :table), # Ensure component_type is present
-          _headers: headers, # Pass the extracted headers
-          _data: original_data, # Pass the original data
-          _col_widths: col_widths # Pass calculated widths
+          # Ensure component_type is present
+          _component_type: Map.get(attrs, :component_type, :table),
+          # Pass the extracted headers
+          _headers: headers,
+          # Pass the original data
+          _data: original_data,
+          # Pass calculated widths
+          _col_widths: col_widths
           # Keep other original attrs like _scroll_top if passed
         })
     }
 
     # --- Logging ---
-    Logger.debug("[Layout.Table] Returning positioned element: #{inspect positioned_table}")
+    Logger.debug(
+      "[Layout.Table] Returning positioned element: #{inspect(positioned_table)}"
+    )
+
     # ---------------
 
     [positioned_table | acc]
@@ -98,7 +123,10 @@ defmodule Raxol.UI.Layout.Table do
 
   # Fallback for invalid table data?
   def measure_and_position(element, _space, acc) do
-    Logger.warning("Layout.Table: Received unexpected element: #{inspect(element)}")
+    Logger.warning(
+      "Layout.Table: Received unexpected element: #{inspect(element)}"
+    )
+
     acc
   end
 end

@@ -4,7 +4,8 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
   """
 
   # alias Raxol.Components.Input.MultiLineInput # May need state struct definition
-  alias Raxol.Components.Input.MultiLineInput.TextHelper # Need pos_to_index
+  # Need pos_to_index
+  alias Raxol.Components.Input.MultiLineInput.TextHelper
   require Logger
 
   # Implements cursor movement logic
@@ -19,7 +20,12 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
     target_line_length = String.length(Enum.at(lines, clamped_row, ""))
     clamped_col = clamp(target_col, 0, target_line_length)
 
-    %{state | cursor_pos: {clamped_row, clamped_col}, selection_start: nil, selection_end: nil}
+    %{
+      state
+      | cursor_pos: {clamped_row, clamped_col},
+        selection_start: nil,
+        selection_end: nil
+    }
   end
 
   # --- Add heads for directional movement ---
@@ -67,7 +73,8 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
   def move_cursor(state, :up) do
     {row, col} = state.cursor_pos
     new_row = max(0, row - 1)
-    new_col = col # Keep same column if possible (TODO: handle desired_col?)
+    # Keep same column if possible (TODO: handle desired_col?)
+    new_col = col
     move_cursor(state, {new_row, new_col})
   end
 
@@ -76,7 +83,8 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
     num_lines = length(lines)
     new_row = min(num_lines - 1, row + 1)
-    new_col = col # Keep same column if possible (TODO: handle desired_col?)
+    # Keep same column if possible (TODO: handle desired_col?)
+    new_col = col
     move_cursor(state, {new_row, new_col})
   end
 
@@ -113,10 +121,15 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
 
       # Find the start of the previous word (regex for non-whitespace preceded by whitespace or start)
       # This is a simplified regex; a more robust one would handle punctuation.
-      case :binary.match(text_before_cursor, ~r/\S+$/, [:global, :capture_original]) do
-        [] -> # No non-whitespace found before cursor (e.g., only spaces)
-              # Move to beginning of the current line if possible
-              move_cursor(state, {current_row, 0})
+      case :binary.match(text_before_cursor, ~r/\S+$/, [
+             :global,
+             :capture_original
+           ]) do
+        # No non-whitespace found before cursor (e.g., only spaces)
+        [] ->
+          # Move to beginning of the current line if possible
+          move_cursor(state, {current_row, 0})
+
         matches ->
           # Find the last match (closest non-whitespace sequence)
           last_match = List.last(matches)
@@ -140,15 +153,19 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
 
     # Find the start of the next word (whitespace followed by non-whitespace)
     case Regex.run(~r/^\s*(\S)/, text_after_cursor, capture: :first) do
-      nil -> # No more words on this or subsequent lines
-             # Move to end of document
-             move_cursor_doc_end(state)
+      # No more words on this or subsequent lines
+      nil ->
+        # Move to end of document
+        move_cursor_doc_end(state)
+
       [_full_match, _first_char] ->
         # Find the position of the *start* of the *next* word sequence
         # Search for first non-space AFTER current position, potentially after spaces
         case Regex.scan(~r/\S+/, text_after_cursor, return: :index) do
-          [] -> # Should not happen if the run matched, but handle defensively
+          # Should not happen if the run matched, but handle defensively
+          [] ->
             move_cursor_doc_end(state)
+
           [{word_start_offset, _word_len} | _] ->
             new_flat_index = flat_index + word_start_offset
             new_pos = index_to_pos(lines, new_flat_index)
@@ -161,22 +178,30 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
   # Inefficient: Converts flat index back to {row, col}.
   # TODO: Optimize this if performance becomes an issue.
   defp index_to_pos(text_lines, target_index) do
-    Enum.reduce_while(Enum.with_index(text_lines), {0, 0, 0}, fn {line, row_idx}, {current_index, _found_row, _found_col} ->
+    Enum.reduce_while(Enum.with_index(text_lines), {0, 0, 0}, fn {line, row_idx},
+                                                                 {current_index,
+                                                                  _found_row,
+                                                                  _found_col} ->
       line_len = String.length(line)
       # Index at the end of this line (including newline char if not last line)
-      end_of_line_index = current_index + line_len + (if row_idx < length(text_lines) - 1, do: 1, else: 0)
+      end_of_line_index =
+        current_index + line_len +
+          if row_idx < length(text_lines) - 1, do: 1, else: 0
 
       if target_index <= current_index + line_len do
         # Target is within this line
         col = target_index - current_index
-        {:halt, {0, row_idx, col}} # Use 0 in first element to signal found
+        # Use 0 in first element to signal found
+        {:halt, {0, row_idx, col}}
       else
         # Target is after this line
         {:cont, {end_of_line_index, 0, 0}}
       end
     end)
     |> case do
-      {0, found_row, found_col} -> {found_row, found_col}
+      {0, found_row, found_col} ->
+        {found_row, found_col}
+
       # Fallback if not found (e.g., index out of bounds), return end of doc
       _ ->
         last_row = max(0, length(text_lines) - 1)
@@ -193,12 +218,16 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
 
     target_row =
       case direction do
-        :up -> max(0, row - page_size)
+        :up ->
+          max(0, row - page_size)
+
         :down ->
           # Calculate max row based on number of lines
           max_row = max(0, length(state.lines) - 1)
           min(max_row, row + page_size)
-        _ -> row
+
+        _ ->
+          row
       end
 
     # Keep the same column position if possible
@@ -221,7 +250,13 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
     {row, _col} = state.cursor_pos
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
     current_line_length = String.length(Enum.at(lines, row, ""))
-    %{state | cursor_pos: {row, current_line_length}, selection_start: nil, selection_end: nil}
+
+    %{
+      state
+      | cursor_pos: {row, current_line_length},
+        selection_start: nil,
+        selection_end: nil
+    }
   end
 
   # Moves cursor to the beginning of the document
@@ -234,7 +269,13 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
     last_row = max(0, length(lines) - 1)
     last_col = String.length(Enum.at(lines, last_row, ""))
-    %{state | cursor_pos: {last_row, last_col}, selection_start: nil, selection_end: nil}
+
+    %{
+      state
+      | cursor_pos: {last_row, last_col},
+        selection_start: nil,
+        selection_end: nil
+    }
   end
 
   # Clears the selection
@@ -255,8 +296,12 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
   # Returns the normalized selection {start_pos, end_pos} or {nil, nil} if no selection
   def normalize_selection(state) do
     case {state.selection_start, state.selection_end} do
-      {nil, _} -> {nil, nil}
-      {_, nil} -> {nil, nil}
+      {nil, _} ->
+        {nil, nil}
+
+      {_, nil} ->
+        {nil, nil}
+
       {start_pos, end_pos} ->
         # Compare positions to ensure start <= end
         start_index = TextHelper.pos_to_index(state.lines, start_pos)
@@ -273,16 +318,20 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
   # Checks if the given line index is within the selection
   def is_line_in_selection?(line_index, start_pos, end_pos) do
     case {start_pos, end_pos} do
-      {nil, _} -> false
-      {_, nil} -> false
+      {nil, _} ->
+        false
+
+      {_, nil} ->
+        false
+
       {{start_row, _}, {end_row, _}} ->
         # Ensure start_row <= end_row (normalize)
-        {min_row, max_row} = if start_row <= end_row,
-                               do: {start_row, end_row},
-                               else: {end_row, start_row}
+        {min_row, max_row} =
+          if start_row <= end_row,
+            do: {start_row, end_row},
+            else: {end_row, start_row}
 
         line_index >= min_row && line_index <= max_row
     end
   end
-
 end

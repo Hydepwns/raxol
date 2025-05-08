@@ -5,7 +5,8 @@ defmodule Raxol.Components.Dashboard.Widgets.InfoWidget do
 
   use Raxol.UI.Components.Base.Component
   require Raxol.View.Elements
-  alias Raxol.View.Elements, as: UI # Use UI alias for consistency
+  # Use UI alias for consistency
+  alias Raxol.View.Elements, as: UI
 
   defstruct title: "Info", content: "No info available", id: :info_widget
 
@@ -19,10 +20,12 @@ defmodule Raxol.Components.Dashboard.Widgets.InfoWidget do
   end
 
   @impl Raxol.UI.Components.Base.Component
-  def update(_msg, state), do: {state, []} # Placeholder
+  # Placeholder
+  def update(_msg, state), do: {state, []}
 
   @impl Raxol.UI.Components.Base.Component
-  def handle_event(_event, _props, state), do: {state, []} # Placeholder
+  # Placeholder
+  def handle_event(_event, _props, state), do: {state, []}
 
   @impl Raxol.UI.Components.Base.Component
   def render(state, _props) do
@@ -32,9 +35,9 @@ defmodule Raxol.Components.Dashboard.Widgets.InfoWidget do
           UI.label(content: state.content || ""),
           UI.label(content: "This is static info."),
           UI.label(content: "More details...")
-        ] |> Enum.reject(&(&1 == nil || &1 == %{}))
+        ]
+        |> Enum.reject(&(&1 == nil || &1 == %{}))
       end
     end
   end
-
 end

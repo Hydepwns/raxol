@@ -8,7 +8,8 @@ defmodule Raxol.Core.ColorSystem do
 
   alias Raxol.UI.Theming.Theme
   alias Raxol.Core.Accessibility.ThemeIntegration
-  alias Raxol.UI.Theming.Colors # For color parsing/manipulation if needed
+  # For color parsing/manipulation if needed
+  alias Raxol.UI.Theming.Colors
   require Logger
 
   @doc """
@@ -24,7 +25,8 @@ defmodule Raxol.Core.ColorSystem do
   Returns the color value (e.g., :red, {:rgb, r, g, b}) or nil if not found.
   """
   @spec get(atom(), atom()) :: Raxol.Style.Colors.color_value() | nil
-  def get(theme_id, color_name) when is_atom(theme_id) and is_atom(color_name) do
+  def get(theme_id, color_name)
+      when is_atom(theme_id) and is_atom(color_name) do
     # Get the theme struct using the correct alias
     theme = Theme.get(theme_id)
 
@@ -33,20 +35,26 @@ defmodule Raxol.Core.ColorSystem do
       active_variant_id = ThemeIntegration.get_active_variant()
 
       # Check variant palette first, then base palette
-      variant_palette = theme.variants[active_variant_id] |> Map.get(:palette) # Get variant palette safely
+      # Get variant palette safely
+      variant_palette = theme.variants[active_variant_id] |> Map.get(:palette)
       base_palette = theme.colors
 
       cond do
         variant_palette && Map.has_key?(variant_palette, color_name) ->
           Map.get(variant_palette, color_name)
+
         Map.has_key?(base_palette, color_name) ->
           Map.get(base_palette, color_name)
+
         true ->
           # Color not found in either palette
           nil
       end
     else
-      Logger.warning("ColorSystem: Theme with ID '#{theme_id}' not found. Falling back.")
+      Logger.warning(
+        "ColorSystem: Theme with ID '#{theme_id}' not found. Falling back."
+      )
+
       nil
     end
   end
@@ -71,14 +79,23 @@ defmodule Raxol.Core.ColorSystem do
     case color_value do
       nil ->
         nil
+
       _ ->
         case format do
-          :rgb_tuple -> Colors.to_rgb(color_value)
-          :hex_string -> Colors.to_hex(color_value)
-          :term -> color_value # Return the raw term (:red, {:rgb, ...}, etc.)
+          :rgb_tuple ->
+            Colors.to_rgb(color_value)
+
+          :hex_string ->
+            Colors.to_hex(color_value)
+
+          # Return the raw term (:red, {:rgb, ...}, etc.)
+          :term ->
+            color_value
+
           _ ->
             # Log warning about unsupported format?
-            color_value # Fallback to raw term
+            # Fallback to raw term
+            color_value
         end
     end
   end

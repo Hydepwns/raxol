@@ -274,44 +274,64 @@ defmodule Raxol.Terminal.EscapeSequence do
     case final_byte do
       "H" ->
         dispatch_csi_cursor_position(params, remaining)
+
       "f" ->
         dispatch_csi_cursor_position(params, remaining)
+
       "A" ->
         dispatch_csi_cursor_move(params, :up, remaining)
+
       "B" ->
         dispatch_csi_cursor_move(params, :down, remaining)
+
       "C" ->
         dispatch_csi_cursor_move(params, :right, remaining)
+
       "D" ->
         dispatch_csi_cursor_move(params, :left, remaining)
+
       "E" ->
         dispatch_csi_cursor_next_line(params, remaining)
+
       "F" ->
         dispatch_csi_cursor_prev_line(params, remaining)
+
       "G" ->
         dispatch_csi_cursor_horizontal_absolute(params, remaining)
+
       "J" ->
         dispatch_csi_erase_display(params, remaining)
+
       "K" ->
         dispatch_csi_erase_line(params, remaining)
+
       "S" ->
         dispatch_csi_scroll(params, :up, remaining)
+
       "T" ->
         dispatch_csi_scroll(params, :down, remaining)
+
       "m" ->
         dispatch_csi_set_graphic_rendition(params, remaining)
+
       "n" ->
         dispatch_csi_device_status_report(params, remaining)
+
       "r" ->
         dispatch_csi_set_scroll_region(params, remaining)
+
       "h" ->
         dispatch_csi_set_mode(params, :standard, true, remaining)
+
       "l" ->
         dispatch_csi_set_mode(params, :standard, false, remaining)
+
       "s" ->
         dispatch_csi_save_cursor(params, remaining)
+
       "u" ->
         dispatch_csi_restore_cursor(params, remaining)
+
       _ ->
         dispatch_csi_unknown(params, final_byte, remaining)
     end
@@ -414,17 +434,20 @@ defmodule Raxol.Terminal.EscapeSequence do
   end
 
   # Save Cursor
-  defp dispatch_csi_save_cursor(_params, remaining) do # Mark params as unused
+  # Mark params as unused
+  defp dispatch_csi_save_cursor(_params, remaining) do
     {:ok, {:dec_save_cursor, nil}, remaining}
   end
 
   # Restore Cursor
-  defp dispatch_csi_restore_cursor(_params, remaining) do # Mark params as unused
+  # Mark params as unused
+  defp dispatch_csi_restore_cursor(_params, remaining) do
     {:ok, {:dec_restore_cursor, nil}, remaining}
   end
 
   # Unknown standard CSI
-  defp dispatch_csi_unknown(_params, final_byte, remaining) do # Mark params as unused
+  # Mark params as unused
+  defp dispatch_csi_unknown(_params, final_byte, remaining) do
     Logger.debug("Unknown standard CSI sequence: CSI ... #{final_byte}")
     {:error, :unknown_sequence, final_byte <> remaining}
   end
@@ -432,10 +455,13 @@ defmodule Raxol.Terminal.EscapeSequence do
   # Dispatch based on final byte for DEC Private sequences (CSI ? ...)
   defp dispatch_csi_dec_private(params, final_byte, remaining) do
     mode_code = param_at(params, 0, nil)
-    action = case final_byte do
-      "h" -> true
-      "l" -> false
-    end
+
+    action =
+      case final_byte do
+        "h" -> true
+        "l" -> false
+      end
+
     {:ok, {:set_mode, :dec_private, mode_code, action}, remaining}
   end
 

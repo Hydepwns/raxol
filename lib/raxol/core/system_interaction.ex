@@ -10,5 +10,6 @@ defmodule Raxol.Core.SystemInteraction do
   @callback find_executable(binary()) :: binary() | nil
 
   @doc "Executes a system command like System.cmd/3"
-  @callback system_cmd(binary(), [binary()], keyword()) :: {binary(), non_neg_integer()}
+  @callback system_cmd(binary(), [binary()], keyword()) ::
+              {binary(), non_neg_integer()}
 end

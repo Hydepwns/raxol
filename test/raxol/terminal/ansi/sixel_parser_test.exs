@@ -13,7 +13,8 @@ defmodule Raxol.Terminal.ANSI.SixelParserTest do
       color_index: 0,
       repeat_count: 1,
       palette: SixelPalette.initialize_palette(),
-      raster_attrs: %{}, # Initial empty map
+      # Initial empty map
+      raster_attrs: %{},
       pixel_buffer: %{},
       max_x: 0,
       max_y: 0
@@ -21,12 +22,18 @@ defmodule Raxol.Terminal.ANSI.SixelParserTest do
 
     # DCS " Pn1 ; Pn2 ; Pn3 ; Pn4 q DATA ST
     # Pn1 = Pan, Pn2 = Pad, Pn3 = Ph, Pn4 = Pv
-    sixel_data = "\\\"1;1;123;456?" # Example data with raster attributes then a pixel command
+    # Example data with raster attributes then a pixel command
+    sixel_data = "\\\"1;1;123;456?"
 
     {:ok, actual_state} = SixelParser.parse(sixel_data, initial_state)
 
     # Updated expectation: A map with width and height keys
-    expected_attributes = %{aspect_num: 1, aspect_den: 1, width: 123, height: 456}
+    expected_attributes = %{
+      aspect_num: 1,
+      aspect_den: 1,
+      width: 123,
+      height: 456
+    }
 
     # Assert that the raster_attrs field in the state is the expected map
     assert actual_state.raster_attrs == expected_attributes
@@ -46,12 +53,19 @@ defmodule Raxol.Terminal.ANSI.SixelParserTest do
     }
 
     # DCS " Pn1 q DATA ST (Missing Pad, Ph, Pv)
-    sixel_data = "\\\"1?" # Only Pan provided, then pixel data
+    # Only Pan provided, then pixel data
+    sixel_data = "\\\"1?"
 
     {:ok, actual_state} = SixelParser.parse(sixel_data, initial_state)
 
     # Expect aspect_den to default to 1, width/height to be nil
-    expected_attributes = %{aspect_num: 1, aspect_den: 1, width: nil, height: nil}
+    expected_attributes = %{
+      aspect_num: 1,
+      aspect_den: 1,
+      width: nil,
+      height: nil
+    }
+
     assert actual_state.raster_attrs == expected_attributes
   end
 
@@ -69,12 +83,19 @@ defmodule Raxol.Terminal.ANSI.SixelParserTest do
     }
 
     # DCS " q DATA ST (No parameters)
-    sixel_data = "\\\"?" # No params, just pixel data
+    # No params, just pixel data
+    sixel_data = "\\\"?"
 
     {:ok, actual_state} = SixelParser.parse(sixel_data, initial_state)
 
     # Expect aspect ratio 1/1, width/height nil
-    expected_attributes = %{aspect_num: 1, aspect_den: 1, width: nil, height: nil}
+    expected_attributes = %{
+      aspect_num: 1,
+      aspect_den: 1,
+      width: nil,
+      height: nil
+    }
+
     assert actual_state.raster_attrs == expected_attributes
   end
 end

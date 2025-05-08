@@ -69,12 +69,12 @@ defmodule Raxol.MixProject do
       {:rrex_termbox, "~> 2.0.4"},
 
       # --- Added for Tutorial Loading ---
-      {:earmark, "~> 1.4"}, # Markdown parser
-      {:yaml_elixir, "~> 2.9"}, # YAML parser for frontmatter
+      # Markdown parser
+      {:earmark, "~> 1.4"},
+      # YAML parser for frontmatter
+      {:yaml_elixir, "~> 2.9"},
       # ---------------------------------
 
-      # TODO: Review if Phoenix/web dependencies are needed for core library
-      # They might be remnants of web UI / VSCode Stdio features.
       {:phoenix, "~> 1.7.20"},
       {:phoenix_live_view, "~> 1.0.0"},
       {:surface, "~> 0.12"},
@@ -99,14 +99,10 @@ defmodule Raxol.MixProject do
       {:phoenix_html, "~> 4.2"},
       {:phoenix_html_helpers, "~> 1.0"},
 
-      # Components & Layout (Using local path for now)
-      # {:raxol_view_components, path: "../raxol_view_components"}, # Example if extracted
-
       # Core Plugins Dependencies
       # System clipboard access
       {:clipboard, "~> 0.2.1"},
       {:circular_buffer, "~> 0.2"},
-      # {:ex_notify, "~> 0.2"}, # REMOVED - Package does not exist / wrong one chosen
 
       # Optional Plugin Reloading
       {:file_system, "~> 0.2", only: [:dev, :test]},
@@ -120,8 +116,7 @@ defmodule Raxol.MixProject do
       {:ex_doc, "~> 0.31", only: [:dev, :test], runtime: false},
 
       # Testing
-      {:mox, "~> 1.0", only: :test},
-      {:meck, "~> 0.9.2", only: :test},
+      {:mox, "~> 1.1.0", only: :test},
       {:elixir_make, "~> 0.6", runtime: false},
       {:floki, ">= 0.30.0", only: :test},
       {:briefly, "~> 0.3", only: :test},

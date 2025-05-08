@@ -102,7 +102,8 @@ defmodule Raxol.Components.Terminal.EmulatorTest do
 
   test "maintains cell attributes" do
     # Set some attributes
-    {state, _} = EmulatorComponent.process_input("\e[1;31mBold Red\e[0m", @initial_state)
+    {state, _} =
+      EmulatorComponent.process_input("\e[1;31mBold Red\e[0m", @initial_state)
 
     # Check cell attributes in the core emulator's screen buffer
     [first_row | _] = CoreEmulator.get_active_buffer(state.core_emulator).cells
@@ -122,7 +123,8 @@ defmodule Raxol.Components.Terminal.EmulatorTest do
 
   test "preserves content during resize" do
     # Direct call for testing
-    {state, _output} = EmulatorComponent.process_input("Line 1\n", @initial_state)
+    {state, _output} =
+      EmulatorComponent.process_input("Line 1\n", @initial_state)
 
     # Resize - Component's handle_resize is a placeholder, re-initializes core
     state = EmulatorComponent.handle_resize({40, 12}, state)
@@ -158,14 +160,24 @@ defmodule Raxol.Components.Terminal.EmulatorTest do
     [first_row | _] = CoreEmulator.get_active_buffer(state.core_emulator).cells
 
     # Check that the first 5 cells contain the correct characters
-    assert Enum.map(Enum.take(first_row, 5), & &1.char) == ["H", "e", "l", "l", "o"]
+    assert Enum.map(Enum.take(first_row, 5), & &1.char) == [
+             "H",
+             "e",
+             "l",
+             "l",
+             "o"
+           ]
 
     # Check if the first 5 cells (for "Hello") are marked dirty (new cells are always dirty)
     assert Enum.all?(Enum.take(first_row, 5), & &1.dirty)
   end
 
   test "handles OSC sequences" do
-    {state, _} = EmulatorComponent.process_input("\e]0;New Window Title\e\\", @initial_state)
+    {state, _} =
+      EmulatorComponent.process_input(
+        "\e]0;New Window Title\e\\",
+        @initial_state
+      )
 
     # Access the nested window_title field within the core_emulator
     assert state.core_emulator.window_title == "New Window Title"

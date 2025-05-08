@@ -41,10 +41,15 @@ defmodule Raxol.Terminal.RendererTest do
       buffer = ScreenBuffer.write_char(buffer, 0, 0, "H", %{foreground: :red})
       buffer = ScreenBuffer.write_char(buffer, 1, 0, "i")
 
-      renderer = Renderer.new(buffer, %{foreground: %{default: "#FFF", red: "#F00"}})
+      renderer =
+        Renderer.new(buffer, %{foreground: %{default: "#FFF", red: "#F00"}})
+
       output = Renderer.render(renderer)
 
-      expected_output = "<span style=\"color: #F00\">H</span><span style=\"color: #FFF\">i</span>" <> String.duplicate("<span style=\"color: #FFF\"> </span>", 3)
+      expected_output =
+        "<span style=\"color: #F00\">H</span><span style=\"color: #FFF\">i</span>" <>
+          String.duplicate("<span style=\"color: #FFF\"> </span>", 3)
+
       assert output == expected_output
     end
 
@@ -56,8 +61,12 @@ defmodule Raxol.Terminal.RendererTest do
       renderer = Renderer.new(buffer, %{foreground: %{default: "#CCC"}})
       output = Renderer.render(renderer)
 
-      expected_row1 = "<span style=\"color: #CCC\">A</span>" <> String.duplicate("<span style=\"color: #CCC\"> </span>", 2)
-      expected_row2 = "<span style=\"color: #CCC\"> </span><span style=\"color: #CCC\">B</span><span style=\"color: #CCC\"> </span>"
+      expected_row1 =
+        "<span style=\"color: #CCC\">A</span>" <>
+          String.duplicate("<span style=\"color: #CCC\"> </span>", 2)
+
+      expected_row2 =
+        "<span style=\"color: #CCC\"> </span><span style=\"color: #CCC\">B</span><span style=\"color: #CCC\"> </span>"
 
       assert output == expected_row1 <> "\n" <> expected_row2
     end
@@ -112,7 +121,10 @@ defmodule Raxol.Terminal.RendererTest do
 
     test "renders cell with foreground color" do
       style = %{foreground: :red}
-      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+
+      buffer =
+        ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+
       theme = %{foreground: %{red: "#FF0000"}}
       renderer = Renderer.new(buffer, theme)
       output = Renderer.render(renderer)
@@ -121,7 +133,10 @@ defmodule Raxol.Terminal.RendererTest do
 
     test "renders cell with background color" do
       style = %{background: :blue}
-      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+
+      buffer =
+        ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+
       theme = %{background: %{blue: "#0000FF"}}
       renderer = Renderer.new(buffer, theme)
       output = Renderer.render(renderer)
@@ -130,7 +145,10 @@ defmodule Raxol.Terminal.RendererTest do
 
     test "renders cell with bold style" do
       style = %{bold: true}
-      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+
+      buffer =
+        ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+
       renderer = Renderer.new(buffer)
       output = Renderer.render(renderer)
       assert output == "<span style=\"font-weight: bold\">X</span>"
@@ -138,7 +156,10 @@ defmodule Raxol.Terminal.RendererTest do
 
     test "renders cell with underline style" do
       style = %{underline: true}
-      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+
+      buffer =
+        ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+
       renderer = Renderer.new(buffer)
       output = Renderer.render(renderer)
       assert output == "<span style=\"text-decoration: underline\">X</span>"
@@ -146,15 +167,26 @@ defmodule Raxol.Terminal.RendererTest do
 
     test "renders cell with italic style" do
       style = %{italic: true}
-      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+
+      buffer =
+        ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+
       renderer = Renderer.new(buffer)
       output = Renderer.render(renderer)
       assert output == "<span style=\"font-style: italic\">X</span>"
     end
 
     test "renders cell with multiple styles" do
-      style = %{foreground: :green, background: :black, bold: true, italic: true}
-      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+      style = %{
+        foreground: :green,
+        background: :black,
+        bold: true,
+        italic: true
+      }
+
+      buffer =
+        ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", style)
+
       theme = %{foreground: %{green: "#0F0"}, background: %{black: "#000"}}
       renderer = Renderer.new(buffer, theme)
       output = Renderer.render(renderer)
@@ -183,7 +215,10 @@ defmodule Raxol.Terminal.RendererTest do
     end
 
     test "handles missing theme colors gracefully" do
-      buffer = ScreenBuffer.new(1, 1) |> ScreenBuffer.write_char(0, 0, "X", %{foreground: :red})
+      buffer =
+        ScreenBuffer.new(1, 1)
+        |> ScreenBuffer.write_char(0, 0, "X", %{foreground: :red})
+
       renderer = Renderer.new(buffer, %{})
       output = Renderer.render(renderer)
       assert output == "<span style=\"\">X</span>"

@@ -74,6 +74,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
         if is_function(state.on_submit, 1) do
           state.on_submit.(state.value)
         end
+
         {state, []}
 
       {:escape, _} ->
@@ -103,7 +104,10 @@ defmodule Raxol.UI.Components.Input.TextInput do
 
         if current_pos < String.length(current_value) do
           before = String.slice(current_value, 0, current_pos)
-          after_text = String.slice(current_value, (current_pos + 1)..-1//1) || ""
+
+          after_text =
+            String.slice(current_value, (current_pos + 1)..-1//1) || ""
+
           new_value = before <> after_text
           new_state = %{state | value: new_value}
           emit_change_side_effect(state, new_value)
@@ -123,6 +127,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
 
       {:right, _} ->
         current_value = state.value || ""
+
         if state.cursor_pos < String.length(current_value) do
           new_cursor_pos = state.cursor_pos + 1
           new_state = %{state | cursor_pos: new_cursor_pos}
@@ -143,9 +148,15 @@ defmodule Raxol.UI.Components.Input.TextInput do
       {char_key, []} ->
         char_str =
           cond do
-            is_binary(char_key) and String.length(char_key) == 1 and String.printable?(char_key) -> char_key
-            is_integer(char_key) and char_key >= 32 and char_key <= 126 -> <<char_key::utf8>>
-            true -> nil
+            is_binary(char_key) and String.length(char_key) == 1 and
+                String.printable?(char_key) ->
+              char_key
+
+            is_integer(char_key) and char_key >= 32 and char_key <= 126 ->
+              <<char_key::utf8>>
+
+            true ->
+              nil
           end
 
         if char_str do
@@ -156,9 +167,10 @@ defmodule Raxol.UI.Components.Input.TextInput do
             {state, []}
           else
             validator = state.validator
+
             should_reject =
               is_function(validator, 1) &&
-              !validator.(char_str)
+                !validator.(char_str)
 
             if should_reject do
               {state, []}
@@ -170,7 +182,12 @@ defmodule Raxol.UI.Components.Input.TextInput do
               new_value = before <> char_str <> after_text
               new_cursor_pos = cursor_pos + 1
 
-              new_state = %{state | cursor_pos: new_cursor_pos, value: new_value}
+              new_state = %{
+                state
+                | cursor_pos: new_cursor_pos,
+                  value: new_value
+              }
+
               emit_change_side_effect(state, new_value)
               {new_state, []}
             end
@@ -233,6 +250,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
     if is_function(state.on_change, 1) do
       state.on_change.(new_value)
     end
+
     :ok
   end
 
@@ -240,7 +258,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
     if is_function(state.on_change, 1) do
       state.on_change.(new_value)
     end
+
     :ok
   end
 end
-

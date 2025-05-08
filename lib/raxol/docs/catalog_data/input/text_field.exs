@@ -5,7 +5,8 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
 %Component{
   id: :text_field,
   name: "Text Field",
-  module: Raxol.UI.Components.TextField, # Assuming module path
+  # Assuming module path
+  module: Raxol.UI.Components.TextField,
   description: "A single-line text input field.",
   examples: [
     %Example{

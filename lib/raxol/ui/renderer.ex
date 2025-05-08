@@ -38,7 +38,10 @@ defmodule Raxol.UI.Renderer do
         ) :: list(cell())
   # Accept theme struct or map, provide default theme if needed
   # Use the full module name for clarity and to avoid alias issues
-  def render_to_cells(elements_or_element, theme \\ Raxol.UI.Theming.Theme.default_theme())
+  def render_to_cells(
+        elements_or_element,
+        theme \\ Raxol.UI.Theming.Theme.default_theme()
+      )
 
   # Clause for list of elements
   def render_to_cells(elements, theme) when is_list(elements) do
@@ -55,20 +58,40 @@ defmodule Raxol.UI.Renderer do
   defp render_element(element, theme) do
     # Dispatch based on element type found in the layout engine output
     case element do
-      %{type: :text, x: x, y: y, text: text, attrs: attrs} ->
-        render_text(x, y, text, attrs, theme)
+      %{type: :text, x: x, y: y, text: text} = text_element ->
+        # Pass the full element map to potentially use other attrs
+        render_text(x, y, text, Map.get(text_element, :attrs, %{}), theme)
 
-      %{type: :box, x: x, y: y, width: w, height: h, attrs: attrs} ->
-        render_box(x, y, w, h, attrs, theme)
+      %{type: :box, x: x, y: y, width: w, height: h} = box_element ->
+        # Pass the full element map
+        render_box(x, y, w, h, Map.get(box_element, :attrs, %{}), theme)
 
-      # Add new clause for :table elements
-      %{type: :table, x: x, y: y, width: w, height: h, attrs: attrs} = table_element ->
+      # Match necessary keys for table rendering
+      %{type: :table, x: x, y: y, width: w, height: h} = table_element ->
         # --- Logging ---
-        Logger.debug("[Renderer] Received :table element: #{inspect table_element}")
-        # ---------------
-        render_table(x, y, w, h, attrs, theme)
+        Logger.debug(
+          "[Renderer] Received :table element: #{inspect(table_element)}"
+        )
 
-      # TODO: Add cases for other element types (:panel, :button, :input, :table etc.)
+        # ---------------
+        render_table(x, y, w, h, Map.get(table_element, :attrs, %{}), theme)
+
+      # Match necessary keys for panel rendering
+      %{type: :panel, x: x, y: y, width: w, height: h} = panel_element ->
+        # Render the panel's background/border as a box
+        panel_box_cells =
+          render_box(x, y, w, h, Map.get(panel_element, :attrs, %{}), theme)
+
+        # Render children
+        children = Map.get(panel_element, :children)
+
+        children_cells =
+          Enum.flat_map(children || [], &render_element(&1, theme))
+
+        # Render children on top of the panel box
+        panel_box_cells ++ children_cells
+
+      # TODO: Add cases for other element types (:button, :input, etc.)
       # These might be decomposed into :text and :box primitives by the layout engine,
       # or we might need to handle them directly here, applying component-specific styles.
 
@@ -154,14 +177,14 @@ defmodule Raxol.UI.Renderer do
         # Draw horizontal lines (if width > 1)
         horizontal_cells =
           if w > 1 do
-            (for cur_x <- (x + 1)..(x + w - 2) do
-               [
-                 # Top
-                 {cur_x, y, border_chars.horizontal, fg, bg, style_attrs},
-                 # Bottom
-                 {cur_x, y + h - 1, border_chars.horizontal, fg, bg, style_attrs}
-               ]
-             end)
+            for cur_x <- (x + 1)..(x + w - 2) do
+              [
+                # Top
+                {cur_x, y, border_chars.horizontal, fg, bg, style_attrs},
+                # Bottom
+                {cur_x, y + h - 1, border_chars.horizontal, fg, bg, style_attrs}
+              ]
+            end
             |> List.flatten()
           else
             []
@@ -170,14 +193,14 @@ defmodule Raxol.UI.Renderer do
         # Draw vertical lines (if height > 1)
         vertical_cells =
           if h > 1 do
-            (for cur_y <- (y + 1)..(y + h - 2) do
-               [
-                 # Left
-                 {x, cur_y, border_chars.vertical, fg, bg, style_attrs},
-                 # Right
-                 {x + w - 1, cur_y, border_chars.vertical, fg, bg, style_attrs}
-               ]
-             end)
+            for cur_y <- (y + 1)..(y + h - 2) do
+              [
+                # Left
+                {x, cur_y, border_chars.vertical, fg, bg, style_attrs},
+                # Right
+                {x + w - 1, cur_y, border_chars.vertical, fg, bg, style_attrs}
+              ]
+            end
             |> List.flatten()
           else
             []
@@ -206,18 +229,23 @@ defmodule Raxol.UI.Renderer do
     {_fg, _bg, _style_attrs} = resolve_styles(attrs, component_type, theme)
 
     # Get specific styles for header, separator, data rows from theme
-    table_base_styles = Raxol.UI.Theming.Theme.component_style(theme, component_type)
+    table_base_styles =
+      Raxol.UI.Theming.Theme.component_style(theme, component_type)
 
     header_style = %{
       fg: Map.get(table_base_styles, :header_fg, :cyan),
       bg: Map.get(table_base_styles, :header_bg, :default)
       # Add other header-specific attributes if needed
     }
+
     separator_style = %{
-      fg: Map.get(table_base_styles, :border, :white), # Use border color for separator
-      bg: Map.get(table_base_styles, :bg, :default) # Use base table bg
+      # Use border color for separator
+      fg: Map.get(table_base_styles, :border, :white),
+      # Use base table bg
+      bg: Map.get(table_base_styles, :bg, :default)
       # Add other separator-specific attributes if needed
     }
+
     data_style = %{
       fg: Map.get(table_base_styles, :row_fg, :default),
       bg: Map.get(table_base_styles, :row_bg, :default)
@@ -226,99 +254,142 @@ defmodule Raxol.UI.Renderer do
 
     # TODO: Alternate row styling?
 
-    all_cells = [] # Collect all cells here
+    # Collect all cells here
+    all_cells = []
 
     # --- Logging ---
     Logger.debug(
-      "[Renderer.render_table] Rendering table at (#{x},#{y}) W=#{width}. Headers: #{inspect headers}, DataRows: #{length(data)}, ColWidths: #{inspect col_widths}"
+      "[Renderer.render_table] Rendering table at (#{x},#{y}) W=#{width}. Headers: #{inspect(headers)}, DataRows: #{length(data)}, ColWidths: #{inspect(col_widths)}"
     )
+
     # ---------------
 
     current_y = y
 
     # --- Render Headers ---
-    header_cells = if headers != [] do
-      render_table_row(x, current_y, headers, col_widths, header_style, width, theme)
-    else
-      []
-    end
+    header_cells =
+      if headers != [] do
+        render_table_row(
+          x,
+          current_y,
+          headers,
+          col_widths,
+          header_style,
+          width,
+          theme
+        )
+      else
+        []
+      end
+
     all_cells = all_cells ++ header_cells
     current_y = if headers != [], do: current_y + 1, else: current_y
 
     # --- Render Separator ---
-    separator_cells = if headers != [] do
-      # Create a separator line using box drawing characters or simple dashes
-      # Use col_widths to generate the line with appropriate separators
-      separator_char = Map.get(separator_style, :char, "─") # Default to simple line
-      # Simple full-width separator for now
-      sep_text = String.duplicate(separator_char, width)
-      render_text(x, current_y, sep_text, separator_style, theme)
-      # TODO: Make separator respect column widths using junction characters?
-    else
-      []
-    end
+    separator_cells =
+      if headers != [] do
+        # Create a separator line using box drawing characters or simple dashes
+        # Use col_widths to generate the line with appropriate separators
+        # Default to simple line
+        separator_char = Map.get(separator_style, :char, "─")
+        # Simple full-width separator for now
+        sep_text = String.duplicate(separator_char, width)
+        render_text(x, current_y, sep_text, separator_style, theme)
+        # TODO: Make separator respect column widths using junction characters?
+      else
+        []
+      end
+
     all_cells = all_cells ++ separator_cells
     current_y = if headers != [], do: current_y + 1, else: current_y
 
     # --- Render Data Rows ---
-    data_cells = Enum.flat_map(Enum.with_index(data), fn {row_data, index} ->
-      row_y = current_y + index
-      # Alternate styling could be applied here based on index
-      render_table_row(x, row_y, row_data, col_widths, data_style, width, theme)
-    end)
+    data_cells =
+      Enum.flat_map(Enum.with_index(data), fn {row_data, index} ->
+        row_y = current_y + index
+        # Alternate styling could be applied here based on index
+        render_table_row(
+          x,
+          row_y,
+          row_data,
+          col_widths,
+          data_style,
+          width,
+          theme
+        )
+      end)
+
     all_cells = all_cells ++ data_cells
 
     all_cells
   end
 
   # Helper to render a single row (header or data)
-  defp render_table_row(start_x, y, row_items, col_widths, style, max_width, theme) do
+  defp render_table_row(
+         start_x,
+         y,
+         row_items,
+         col_widths,
+         style,
+         max_width,
+         theme
+       ) do
     {row_fg, row_bg, row_attrs} = resolve_styles(style, nil, theme)
 
-    initial_acc = {start_x, []} # {current_x, cells}
+    # {current_x, cells}
+    initial_acc = {start_x, []}
 
     # Use reduce_while to generate cells and handle early termination
     # Rename lambda vars to avoid shadowing warnings
-    {_final_x, cells} = Enum.reduce_while(Enum.with_index(row_items), initial_acc, fn {item, col_index}, {iter_x, iter_cells} ->
-      col_width = Enum.at(col_widths, col_index, 0)
-      item_text = to_string(item)
+    {_final_x, cells} =
+      Enum.reduce_while(Enum.with_index(row_items), initial_acc, fn {item,
+                                                                     col_index},
+                                                                    {iter_x,
+                                                                     iter_cells} ->
+        col_width = Enum.at(col_widths, col_index, 0)
+        item_text = to_string(item)
 
-      # Check if adding this column exceeds max_width BEFORE processing
-      # Separator width needs to be considered too
-      is_last_col = col_index == length(row_items) - 1
-      projected_width = if is_last_col, do: col_width, else: col_width + 3 # +3 for " | "
+        # Check if adding this column exceeds max_width BEFORE processing
+        # Separator width needs to be considered too
+        is_last_col = col_index == length(row_items) - 1
+        # +3 for " | "
+        projected_width = if is_last_col, do: col_width, else: col_width + 3
 
-      if iter_x + projected_width <= start_x + max_width do
-        # Truncate or pad text
-        content_width = max(0, col_width - 2)
-        display_text = " " <> String.slice(item_text, 0, content_width)
-        padded_text = String.pad_trailing(display_text, col_width)
+        if iter_x + projected_width <= start_x + max_width do
+          # Truncate or pad text
+          content_width = max(0, col_width - 2)
+          display_text = " " <> String.slice(item_text, 0, content_width)
+          padded_text = String.pad_trailing(display_text, col_width)
 
-        # Generate item cells
-        item_cells = for {char, char_index} <- Enum.with_index(String.graphemes(padded_text)) do
-           {iter_x + char_index, y, char, row_fg, row_bg, row_attrs}
-        end
+          # Generate item cells
+          item_cells =
+            for {char, char_index} <-
+                  Enum.with_index(String.graphemes(padded_text)) do
+              {iter_x + char_index, y, char, row_fg, row_bg, row_attrs}
+            end
 
-        new_cells_acc = iter_cells ++ item_cells
-        new_x = iter_x + col_width
+          new_cells_acc = iter_cells ++ item_cells
+          new_x = iter_x + col_width
 
-        # Add separator if not the last column
-        if !is_last_col do
-          sep_x = new_x
-          separator_cells = [
-            {sep_x,     y, " ", row_fg, row_bg, row_attrs},
-            {sep_x + 1, y, "|", row_fg, row_bg, row_attrs},
-            {sep_x + 2, y, " ", row_fg, row_bg, row_attrs}
-          ]
-          {:cont, {new_x + 3, new_cells_acc ++ separator_cells}}
+          # Add separator if not the last column
+          if !is_last_col do
+            sep_x = new_x
+
+            separator_cells = [
+              {sep_x, y, " ", row_fg, row_bg, row_attrs},
+              {sep_x + 1, y, "|", row_fg, row_bg, row_attrs},
+              {sep_x + 2, y, " ", row_fg, row_bg, row_attrs}
+            ]
+
+            {:cont, {new_x + 3, new_cells_acc ++ separator_cells}}
+          else
+            {:cont, {new_x, new_cells_acc}}
+          end
         else
-          {:cont, {new_x, new_cells_acc}}
+          # Stop rendering this row
+          {:halt, {iter_x, iter_cells}}
         end
-      else
-        # Stop rendering this row
-        {:halt, {iter_x, iter_cells}}
-      end
-    end)
+      end)
 
     cells
   end
@@ -411,12 +482,13 @@ defmodule Raxol.UI.Renderer do
     # Determine style attributes (bold, underline, etc.)
     # Priority: explicit attrs -> component styles
     explicit_style_attrs = Map.get(attrs, :style, [])
-    component_style_attrs = Map.get(component_styles, :style, []) # Assuming style is list of atoms
+    # Assuming style is list of atoms
+    component_style_attrs = Map.get(component_styles, :style, [])
     # Merge: explicit attrs take precedence (simple list concatenation for now)
     # A proper merge might be needed depending on how styles are defined
-    final_style_attrs = explicit_style_attrs ++ component_style_attrs |> Enum.uniq()
+    final_style_attrs =
+      (explicit_style_attrs ++ component_style_attrs) |> Enum.uniq()
 
     {fg_color, bg_color, final_style_attrs}
   end
-
 end

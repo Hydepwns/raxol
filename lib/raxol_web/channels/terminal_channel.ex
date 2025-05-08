@@ -92,14 +92,15 @@ defmodule RaxolWeb.TerminalChannel do
 
     reply = {:reply, :ok, socket}
 
-    push_result = push(socket, "output", %{
-      html: Renderer.render(renderer),
-      cursor: %{
-        x: cursor_x,
-        y: cursor_y,
-        visible: cursor_visible
-      }
-    })
+    push_result =
+      push(socket, "output", %{
+        html: Renderer.render(renderer),
+        cursor: %{
+          x: cursor_x,
+          y: cursor_y,
+          visible: cursor_visible
+        }
+      })
 
     reply
   end

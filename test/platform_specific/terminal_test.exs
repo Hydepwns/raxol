@@ -37,9 +37,13 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
   describe "platform-specific rendering" do
     test "renders with platform-specific colors" do
       buffer = ScreenBuffer.new(80, 24)
-      buffer = Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
-        {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
-      end) |> elem(0)
+
+      buffer =
+        Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
+          {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
+        end)
+        |> elem(0)
+
       renderer = Renderer.new(buffer)
 
       html = Renderer.render(renderer)
@@ -50,9 +54,13 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
 
     test "handles platform-specific terminal features" do
       buffer = ScreenBuffer.new(80, 24)
-      buffer = Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
-        {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
-      end) |> elem(0)
+
+      buffer =
+        Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
+          {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
+        end)
+        |> elem(0)
+
       renderer = Renderer.new(buffer)
 
       html = Renderer.render(renderer)
@@ -65,9 +73,13 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
   describe "platform-specific input handling" do
     test "handles platform-specific key codes" do
       buffer = ScreenBuffer.new(80, 24)
-      buffer = Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
-        {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
-      end) |> elem(0)
+
+      buffer =
+        Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
+          {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
+        end)
+        |> elem(0)
+
       renderer = Renderer.new(buffer)
 
       html = Renderer.render(renderer)
@@ -78,9 +90,13 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
 
     test "handles platform-specific mouse events" do
       buffer = ScreenBuffer.new(80, 24)
-      buffer = Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
-        {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
-      end) |> elem(0)
+
+      buffer =
+        Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
+          {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
+        end)
+        |> elem(0)
+
       renderer = Renderer.new(buffer)
 
       html = Renderer.render(renderer)

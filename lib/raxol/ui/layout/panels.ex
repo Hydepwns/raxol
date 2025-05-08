@@ -24,14 +24,113 @@ defmodule Raxol.UI.Layout.Panels do
 
   A list of positioned elements with absolute coordinates.
   """
-  def process(attrs, children, context) do
-    styled_children =
-      children
-      |> Enum.map(&Engine.process_element(&1, context, []))
+  def process(
+        %{type: :panel, attrs: attrs, children: children_input} = panel_element,
+        space,
+        acc
+      ) do
+    # Measure the panel first to get its actual dimensions
+    panel_dimensions = measure_panel(panel_element, space)
 
-    # panel = %{type: :panel, attrs: attrs, children: children}, # Unused
-    # TODO: Actual panel processing logic - applying styles, layout, etc.
-    [%{type: :processed_panel, attrs: attrs, children: styled_children}]
+    # Original attributes from the panel element
+    panel_input_attrs = attrs
+    actual_border_style = Map.get(panel_input_attrs, :border, :single)
+
+    # Construct final attributes for the panel's box representation
+    final_box_attrs =
+      panel_input_attrs
+      # Ensure border_style is correctly set
+      |> Map.put(:border_style, actual_border_style)
+      |> then(fn current_attrs ->
+        if actual_border_style == :none do
+          # For test: attrs.border should be nil for :none style
+          Map.put(current_attrs, :border, nil)
+        else
+          # For other styles, ensure :border attribute also reflects the style
+          Map.put(current_attrs, :border, actual_border_style)
+        end
+      end)
+
+    # Create the main panel box element
+    panel_box = %{
+      type: :box,
+      x: space.x,
+      y: space.y,
+      width: panel_dimensions.width,
+      height: panel_dimensions.height,
+      # Use the constructed attributes
+      attrs: final_box_attrs
+    }
+
+    elements = [panel_box]
+
+    # Create title element if present
+    title_elements =
+      case Map.get(attrs, :title) do
+        nil ->
+          []
+
+        "" ->
+          []
+
+        title_text ->
+          [
+            %{
+              type: :text,
+              # Position inside left border, after a space
+              x: space.x + 2,
+              # On the top border line
+              y: space.y,
+              # Add padding around title
+              text: " #{title_text} ",
+              # Allow styling title
+              attrs: Map.get(attrs, :title_attrs, %{})
+            }
+          ]
+      end
+
+    # Define inner space for children (inside borders)
+    inner_space = %{
+      x: space.x + 1,
+      y: space.y + 1,
+      width: max(0, panel_dimensions.width - 2),
+      height: max(0, panel_dimensions.height - 2)
+    }
+
+    # Ensure children_input is a list for Enum.map
+    children_to_process =
+      case children_input do
+        nil ->
+          []
+
+        c when is_list(c) ->
+          c
+
+        # Wrap single child map in a list
+        c when is_map(c) ->
+          [c]
+
+        _ ->
+          # Should not happen based on Panel definition if type specs are followed
+          # but good to be defensive.
+          Logger.warning(
+            "Panels.process received unexpected children format: #{inspect(children_input)}"
+          )
+
+          []
+      end
+
+    # Process children by calling Engine.process_element for each one
+    processed_children_elements =
+      children_to_process
+      |> Enum.map(fn child_element ->
+        # Pass an empty accumulator for each child, as process_element appends to it.
+        Engine.process_element(child_element, inner_space, [])
+      end)
+      |> List.flatten()
+
+    # Combine all elements and add to accumulator
+    elements ++ title_elements ++ processed_children_elements ++ acc
   end
 
   @doc """
@@ -53,14 +152,18 @@ defmodule Raxol.UI.Layout.Panels do
     # Calculate space available for content (inside borders)
     content_available_space = %{
       available_space
-      | width: max(0, available_space.width - 2), # 1 cell border left/right
-        height: max(0, available_space.height - 2) # 1 cell border top/bottom
+      | # 1 cell border left/right
+        width: max(0, available_space.width - 2),
+        # 1 cell border top/bottom
+        height: max(0, available_space.height - 2)
     }
 
     # Measure children content size (treat as a column for measurement)
     # Ensure the map has :attrs for measure_element pattern matching
     column_for_measurement = %{type: :column, attrs: %{}, children: children}
-    children_size = Engine.measure_element(column_for_measurement, content_available_space)
+
+    children_size =
+      Engine.measure_element(column_for_measurement, content_available_space)
 
     # Determine base width/height from content + borders
     # Add 2 for left/right borders
@@ -68,16 +171,31 @@ defmodule Raxol.UI.Layout.Panels do
     # Add 2 for top/bottom borders
     content_height = children_size.height + 2
 
-    # Use explicit width/height if provided, otherwise use content size
+    # Use explicit width/height if provided, otherwise use content size or available if no content
     explicit_width = Map.get(attrs, :width)
     explicit_height = Map.get(attrs, :height)
 
-    width = explicit_width || content_width
-    height = explicit_height || content_height
+    # Default to available space if no explicit size and no (or zero-sized) children
+    base_width =
+      if children_size.width == 0 and is_nil(explicit_width) do
+        available_space.width
+      else
+        content_width
+      end
 
-    # Ensure minimum dimensions (e.g., for borders)
-    min_width = 2
-    min_height = 2
+    base_height =
+      if children_size.height == 0 and is_nil(explicit_height) do
+        available_space.height
+      else
+        content_height
+      end
+
+    width = explicit_width || base_width
+    height = explicit_height || base_height
+
+    # Ensure minimum dimensions (e.g., for borders and minimal content)
+    min_width = 4
+    min_height = 3
     width = max(width, min_width)
     height = max(height, min_height)
 

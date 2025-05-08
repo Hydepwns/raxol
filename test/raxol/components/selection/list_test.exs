@@ -22,6 +22,7 @@ defmodule Raxol.Components.Selection.ListTest do
     test "initializes with provided values" do
       on_select_func = fn _ -> :selected end
       item_renderer_func = fn i -> "Item-#{i}" end
+
       props = %{
         id: :my_list,
         items: ["one", "two", "three"],
@@ -33,6 +34,7 @@ defmodule Raxol.Components.Selection.ListTest do
         on_select: on_select_func,
         item_renderer: item_renderer_func
       }
+
       state = List.init(props)
       assert state.id == :my_list
       assert state.items == ["one", "two", "three"]
@@ -56,8 +58,10 @@ defmodule Raxol.Components.Selection.ListTest do
       # Items are usually set via init props, not update messages
       # This test might need rethinking based on component usage pattern
       # For now, asserting basic state remains consistent
-      {:ok, unchanged_state} = List.update({:set_items, ["a", "b"]}, state)
-      assert unchanged_state == state # Assuming :set_items isn't handled
+      {unchanged_state, commands} = List.update({:set_items, ["a", "b"]}, state)
+      # Assuming :set_items isn't handled
+      assert unchanged_state == state
+      assert commands == []
     end
 
     test "selects index within bounds", %{state: state} do
@@ -65,19 +69,22 @@ defmodule Raxol.Components.Selection.ListTest do
       assert new_state.selected_index == 2
       # Select out of bounds (high)
       {new_state_high, _} = List.update({:select_index, 10}, new_state)
-      assert new_state_high.selected_index == 2 # Stays at max index (2)
+      # Stays at max index (2)
+      assert new_state_high.selected_index == 2
       # Select out of bounds (low)
       {new_state_low, _} = List.update({:select_index, -5}, new_state_high)
-      assert new_state_low.selected_index == 0 # Stays at min index (0)
+      # Stays at min index (0)
+      assert new_state_low.selected_index == 0
     end
 
     test "handles scrolling via selection change", %{state: state} do
       state_h5 = %{state | height: 2, items: ["a", "b", "c", "d", "e"]}
+
       # Select index 3, should scroll offset to 2 (to keep 3 and 4 visible in height 2)
       {new_state, _} = List.update({:select_index, 3}, state_h5)
       assert new_state.selected_index == 3
       assert new_state.scroll_offset == 2
-       # Select index 0, should scroll offset back to 0
+      # Select index 0, should scroll offset back to 0
       {new_state_0, _} = List.update({:select_index, 0}, new_state)
       assert new_state_0.selected_index == 0
       assert new_state_0.scroll_offset == 0
@@ -90,13 +97,21 @@ defmodule Raxol.Components.Selection.ListTest do
       assert blurred_state.focused == false
     end
 
-    test "calls on_select when confirming selection (via Enter event)", %{state: state} do
+    test "calls on_select when confirming selection (via Enter event)", %{
+      state: state
+    } do
       test_pid = self()
       on_select_func = fn item -> send(test_pid, {:selected, item}) end
-      state_with_cb = %{state | on_select: on_select_func, selected_index: 2} # Select "three"
+      # Select "three"
+      state_with_cb = %{state | on_select: on_select_func, selected_index: 2}
 
       # Simulate Enter key press triggering confirmation
-      {_final_state, commands} = List.handle_event(%Event{type: :key, data: %{key: "Enter"}}, %{}, state_with_cb)
+      {_final_state, commands} =
+        List.handle_event(
+          %Event{type: :key, data: %{key: "Enter"}},
+          %{},
+          state_with_cb
+        )
 
       # Check if the command to call on_select was returned
       assert [{^on_select_func, "three"}] = commands
@@ -109,8 +124,14 @@ defmodule Raxol.Components.Selection.ListTest do
 
   describe "handle_event/3" do
     setup do
-       state = List.init(%{id: :list_event, items: ["one", "two", "three"], focused: true})
-       {:ok, state: state}
+      state =
+        List.init(%{
+          id: :list_event,
+          items: ["one", "two", "three"],
+          focused: true
+        })
+
+      {:ok, state: state}
     end
 
     test "handles arrow keys", %{state: state} do
@@ -127,37 +148,53 @@ defmodule Raxol.Components.Selection.ListTest do
     # Removed page navigation test as it's not directly handled
 
     test "handles Enter key (triggers confirm_selection)", %{state: state} do
-       state_sel_1 = %{state | selected_index: 1} # Select "two"
-       event = %Event{type: :key, data: %{key: "Enter"}}
-       {_new_state, commands} = List.handle_event(event, %{}, state_sel_1)
-       # Check if commands include the on_select callback if set
-       # Here, on_select is nil, so commands should be empty
-       assert commands == []
+      # Select "two"
+      state_sel_1 = %{state | selected_index: 1}
+      event = %Event{type: :key, data: %{key: "Enter"}}
+      {_new_state, commands} = List.handle_event(event, %{}, state_sel_1)
+      # Check if commands include the on_select callback if set
+      # Here, on_select is nil, so commands should be empty
+      assert commands == []
 
-       # Test with callback
-       cb = fn item -> IO.inspect(item) end
-       state_with_cb = %{state_sel_1 | on_select: cb}
-       {_new_state_cb, commands_cb} = List.handle_event(event, %{}, state_with_cb)
-       assert [{^cb, "two"}] = commands_cb
+      # Test with callback
+      cb = fn item -> IO.inspect(item) end
+      state_with_cb = %{state_sel_1 | on_select: cb}
+
+      {_new_state_cb, commands_cb} =
+        List.handle_event(event, %{}, state_with_cb)
+
+      assert [{^cb, "two"}] = commands_cb
     end
 
     # Removed type-ahead test
 
     test "handles scroll events (via mouse click simulation)", %{state: state} do
       state_5_items = %{state | items: Enum.map(1..5, &"Item #{&1}"), height: 2}
-      # Click on the second visible row (y=1), which corresponds to index 1 initially
-      click_event = %Event{type: :mouse, data: %{button: :left, action: :press, y: 1}}
-      {state_clicked_1, _commands_1} = List.handle_event(click_event, %{}, state_5_items)
-      assert state_clicked_1.selected_index == 1
-      assert state_clicked_1.scroll_offset == 0 # No scroll yet
 
-      # Click on the second visible row again, now representing index 2
-      {state_clicked_2, _commands_2} = List.handle_event(click_event, %{}, state_clicked_1)
-      assert state_clicked_2.selected_index == 2
-      assert state_clicked_2.scroll_offset == 1 # Should scroll
+      # Click on the second visible row (y=1), which corresponds to index 1 initially
+      click_event = %Event{
+        type: :mouse,
+        data: %{button: :left, action: :press, y: 1}
+      }
+
+      {state_clicked_1, _commands_1} =
+        List.handle_event(click_event, %{}, state_5_items)
+
+      assert state_clicked_1.selected_index == 1
+      # No scroll yet
+      assert state_clicked_1.scroll_offset == 0
+
+      # Click on the second visible row again. Since no scroll occurred,
+      # this should still select the item at index 1.
+      {state_clicked_2, _commands_2} =
+        List.handle_event(click_event, %{}, state_clicked_1)
+
+      # Should remain 1
+      assert state_clicked_2.selected_index == 1
+      # Should remain 0
+      assert state_clicked_2.scroll_offset == 0
     end
   end
 
   # Removed tests for filtering and rendering
-
 end

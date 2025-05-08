@@ -59,7 +59,8 @@ defmodule Raxol.Plugins.SearchPlugin do
       "/N" when plugin.search_term != nil ->
         prev_result(plugin)
 
-      "/clear" -> # Assuming a /clear command exists
+      # Assuming a /clear command exists
+      "/clear" ->
         clear_search(plugin)
 
       # Escape key might be handled differently (e.g., as a key event)

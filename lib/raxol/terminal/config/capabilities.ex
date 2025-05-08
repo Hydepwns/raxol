@@ -7,48 +7,53 @@ defmodule Raxol.Terminal.Config.Capabilities do
   """
 
   alias Raxol.Terminal.Config.Defaults
+  alias Raxol.System.EnvironmentAdapterBehaviour
+  alias Raxol.System.EnvironmentAdapterImpl
 
   @doc """
-  Detects terminal capabilities based on the environment.
+  Detects terminal capabilities based on the environment using a specific adapter.
 
   This examines environment variables, terminal responses, and other indicators
   to determine capabilities of the current terminal.
+
+  ## Parameters
+  * `adapter_module` - The module implementing `EnvironmentAdapterBehaviour`.
 
   ## Returns
 
   A map of detected capabilities.
   """
-  def detect_capabilities do
+  def detect_capabilities(adapter_module) do
     %{
-      display: detect_display_capabilities(),
-      input: detect_input_capabilities(),
-      ansi: detect_ansi_capabilities()
+      display: detect_display_capabilities(adapter_module),
+      input: detect_input_capabilities(adapter_module),
+      ansi: detect_ansi_capabilities(adapter_module)
     }
   end
 
   @doc """
-  Merges detected capabilities with configuration.
+  Merges detected capabilities with configuration using a specific adapter.
 
   Takes a terminal configuration and enhances it with detected capabilities
   where those capabilities aren't already explicitly configured.
 
   ## Parameters
-
   * `config` - The existing configuration
+  * `adapter_module` - The module implementing `EnvironmentAdapterBehaviour`.
 
   ## Returns
 
   The configuration enhanced with detected capabilities.
   """
-  def apply_capabilities(config) do
-    capabilities = detect_capabilities()
+  def apply_capabilities(config, adapter_module) do
+    capabilities = detect_capabilities(adapter_module)
 
     # Merge capabilities into config, only overriding if not explicitly set
     deep_merge_capabilities(config, capabilities)
   end
 
   @doc """
-  Creates an optimized configuration based on detected capabilities.
+  Creates an optimized configuration based on detected capabilities using the default adapter.
 
   This generates a configuration that's optimized for the current terminal
   environment, balancing features and performance.
@@ -58,11 +63,25 @@ defmodule Raxol.Terminal.Config.Capabilities do
   An optimized configuration for the current terminal.
   """
   def optimized_config do
+    optimized_config(EnvironmentAdapterImpl)
+  end
+
+  @doc """
+  Creates an optimized configuration based on detected capabilities using a specific adapter.
+
+  ## Parameters
+  * `adapter_module` - The module implementing `EnvironmentAdapterBehaviour`.
+
+  ## Returns
+
+  An optimized configuration for the current terminal.
+  """
+  def optimized_config(adapter_module) do
     # Start with defaults
     defaults = Defaults.generate_default_config()
 
     # Enhance with detected capabilities
-    capabilities = detect_capabilities()
+    capabilities = detect_capabilities(adapter_module)
     config = deep_merge_capabilities(defaults, capabilities)
 
     # Apply optimizations based on capabilities
@@ -71,37 +90,37 @@ defmodule Raxol.Terminal.Config.Capabilities do
 
   # Private functions
 
-  defp detect_display_capabilities do
+  defp detect_display_capabilities(adapter_module) do
     %{
-      width: detect_width(),
-      height: detect_height(),
-      colors: detect_color_support(),
-      truecolor: detect_truecolor_support(),
-      unicode: detect_unicode_support()
+      width: detect_width(adapter_module),
+      height: detect_height(adapter_module),
+      colors: detect_color_support(adapter_module),
+      truecolor: detect_truecolor_support(adapter_module),
+      unicode: detect_unicode_support(adapter_module)
     }
   end
 
-  defp detect_input_capabilities do
+  defp detect_input_capabilities(adapter_module) do
     %{
-      mouse: detect_mouse_support(),
+      mouse: detect_mouse_support(adapter_module),
       # All terminals support basic keyboard
       keyboard: true,
-      clipboard: detect_clipboard_support()
+      clipboard: detect_clipboard_support(adapter_module)
     }
   end
 
-  defp detect_ansi_capabilities do
+  defp detect_ansi_capabilities(adapter_module) do
     %{
-      enabled: detect_ansi_support(),
-      color_mode: detect_color_mode()
+      enabled: detect_ansi_support(adapter_module),
+      color_mode: detect_color_mode(adapter_module)
     }
   end
 
-  defp detect_width do
-    case System.get_env("COLUMNS") do
+  defp detect_width(adapter_module) do
+    case adapter_module.get_env("COLUMNS") do
       nil ->
         # Try to get from tput if available
-        case System.cmd("tput", ["cols"], stderr_to_stdout: true) do
+        case adapter_module.cmd("tput", ["cols"], stderr_to_stdout: true) do
           {cols, 0} -> String.to_integer(String.trim(cols))
           # Default fallback
           _ -> 80
@@ -115,11 +134,11 @@ defmodule Raxol.Terminal.Config.Capabilities do
     _ -> 80
   end
 
-  defp detect_height do
-    case System.get_env("LINES") do
+  defp detect_height(adapter_module) do
+    case adapter_module.get_env("LINES") do
       nil ->
         # Try to get from tput if available
-        case System.cmd("tput", ["lines"], stderr_to_stdout: true) do
+        case adapter_module.cmd("tput", ["lines"], stderr_to_stdout: true) do
           {lines, 0} -> String.to_integer(String.trim(lines))
           # Default fallback
           _ -> 24
@@ -133,9 +152,9 @@ defmodule Raxol.Terminal.Config.Capabilities do
     _ -> 24
   end
 
-  defp detect_color_support do
+  defp detect_color_support(adapter_module) do
     # Check environment variables first
-    case System.get_env("COLORTERM") do
+    case adapter_module.get_env("COLORTERM") do
       # 24-bit color
       "truecolor" ->
         16_777_216
@@ -146,7 +165,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
 
       _ ->
         # Get the TERM environment variable
-        term = System.get_env("TERM")
+        term = adapter_module.get_env("TERM")
 
         cond do
           term == "xterm-256color" ->
@@ -160,7 +179,7 @@ defmodule Raxol.Terminal.Config.Capabilities do
 
           true ->
             # Try to get from tput if available
-            case System.cmd("tput", ["colors"], stderr_to_stdout: true) do
+            case adapter_module.cmd("tput", ["colors"], stderr_to_stdout: true) do
               {colors, 0} ->
                 case String.trim(colors) do
                   "-1" -> 0
@@ -178,17 +197,17 @@ defmodule Raxol.Terminal.Config.Capabilities do
     _ -> 8
   end
 
-  defp detect_truecolor_support do
-    case System.get_env("COLORTERM") do
+  defp detect_truecolor_support(adapter_module) do
+    case adapter_module.get_env("COLORTERM") do
       "truecolor" -> true
       "24bit" -> true
       _ -> false
     end
   end
 
-  defp detect_unicode_support do
+  defp detect_unicode_support(adapter_module) do
     # Get the LANG environment variable
-    lang = System.get_env("LANG")
+    lang = adapter_module.get_env("LANG")
 
     cond do
       is_binary(lang) && String.contains?(lang, "UTF-8") -> true
@@ -197,10 +216,10 @@ defmodule Raxol.Terminal.Config.Capabilities do
     end
   end
 
-  defp detect_mouse_support do
+  defp detect_mouse_support(adapter_module) do
     # Simple heuristic - most modern terminal emulators support mouse
     # Get the TERM environment variable
-    term = System.get_env("TERM")
+    term = adapter_module.get_env("TERM")
 
     cond do
       is_binary(term) && String.contains?(term, "xterm") -> true
@@ -210,24 +229,24 @@ defmodule Raxol.Terminal.Config.Capabilities do
     end
   end
 
-  defp detect_clipboard_support do
+  defp detect_clipboard_support(adapter_module) do
     # Check if in GUI environment
-    case System.get_env("DISPLAY") do
+    case adapter_module.get_env("DISPLAY") do
       nil -> false
       _ -> true
     end
   end
 
-  defp detect_ansi_support do
-    case System.get_env("TERM") do
+  defp detect_ansi_support(adapter_module) do
+    case adapter_module.get_env("TERM") do
       "dumb" -> false
       nil -> false
       _ -> true
     end
   end
 
-  defp detect_color_mode do
-    colors = detect_color_support()
+  defp detect_color_mode(adapter_module) do
+    colors = detect_color_support(adapter_module)
 
     cond do
       colors >= 16_777_216 -> :truecolor

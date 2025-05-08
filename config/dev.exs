@@ -54,12 +54,15 @@ config :logger, :console,
       # Keep messages that DO NOT match the specific warning string
       {:safe, message_chars} ->
         message_string = IO.chardata_to_string(message_chars)
+
         not String.starts_with?(
           message_string,
           "Unexpected return format from :termbox2.tb_peek_event: {-6, 0, 0, 0}"
         )
+
       # Keep other message formats (e.g., non-safe charlists, binaries)
-      _ -> true
+      _ ->
+        true
     end
   ]
 

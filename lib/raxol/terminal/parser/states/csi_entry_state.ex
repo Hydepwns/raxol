@@ -30,8 +30,10 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
           parser_state
           | params_buffer: parser_state.params_buffer <> <<param_byte>>
         }
+
         # Transition to csi_param state
-        {:continue, emulator, %{next_parser_state | state: :csi_param}, rest_after_param}
+        {:continue, emulator, %{next_parser_state | state: :csi_param},
+         rest_after_param}
 
       # Semicolon parameter separator
       <<?;, rest_after_param::binary>> ->
@@ -40,8 +42,10 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
           parser_state
           | params_buffer: parser_state.params_buffer <> <<?;>>
         }
+
         # Transition to csi_param state
-        {:continue, emulator, %{next_parser_state | state: :csi_param}, rest_after_param}
+        {:continue, emulator, %{next_parser_state | state: :csi_param},
+         rest_after_param}
 
       # Intermediate byte
       <<intermediate_byte, rest_after_intermediate::binary>>
@@ -49,10 +53,13 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
         # Collect intermediate directly
         next_parser_state = %{
           parser_state
-          | intermediates_buffer: parser_state.intermediates_buffer <> <<intermediate_byte>>
+          | intermediates_buffer:
+              parser_state.intermediates_buffer <> <<intermediate_byte>>
         }
+
         # Transition to csi_intermediate state
-        {:continue, emulator, %{next_parser_state | state: :csi_intermediate}, rest_after_intermediate}
+        {:continue, emulator, %{next_parser_state | state: :csi_intermediate},
+         rest_after_intermediate}
 
       # Private marker / CSI leader byte (? > = <)
       <<private_marker, rest_after_private::binary>>
@@ -60,10 +67,13 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
         # Collect private marker as intermediate directly
         next_parser_state = %{
           parser_state
-          | intermediates_buffer: parser_state.intermediates_buffer <> <<private_marker>>
+          | intermediates_buffer:
+              parser_state.intermediates_buffer <> <<private_marker>>
         }
+
         # Transition to csi_param state AFTER collecting marker
-        {:continue, emulator, %{next_parser_state | state: :csi_param}, rest_after_private}
+        {:continue, emulator, %{next_parser_state | state: :csi_param},
+         rest_after_private}
 
       # Final byte
       <<final_byte, rest_after_final::binary>>
@@ -71,7 +81,7 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
         # Check for X10 Mouse Report: CSI M Cb Cx Cy ( ESC [ M Cb Cx Cy )
         # This is identified by final_byte == ?M, empty params, and empty intermediates.
         if final_byte == ?M and parser_state.params_buffer == "" and
-           parser_state.intermediates_buffer == "" do
+             parser_state.intermediates_buffer == "" do
           active_mouse_mode = emulator.mode_manager.mouse_report_mode
 
           # Relevant modes that might expect to echo/process raw X10 reports:
@@ -83,16 +93,26 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
             case rest_after_final do
               <<cb, cx, cy, actual_rest::binary>> ->
                 # Successfully got 3 bytes for mouse report
-                mouse_report_sequence = <<27, 91, ?M, cb, cx, cy>> # Construct \e[MCbCxCy
+                # Construct \e[MCbCxCy
+                mouse_report_sequence = <<27, 91, ?M, cb, cx, cy>>
 
                 Logger.debug(
                   "[CSIEntryState] X10-style Mouse Report detected. Mode: #{active_mouse_mode}. Echoing: #{inspect(mouse_report_sequence)}"
                 )
 
-                new_output_buffer = emulator.output_buffer <> mouse_report_sequence
+                new_output_buffer =
+                  emulator.output_buffer <> mouse_report_sequence
+
                 new_emulator = %{emulator | output_buffer: new_output_buffer}
                 # Transition back to Ground state, clearing buffers
-                next_parser_state = %{parser_state | state: :ground, params_buffer: "", intermediates_buffer: "", final_byte: nil}
+                next_parser_state = %{
+                  parser_state
+                  | state: :ground,
+                    params_buffer: "",
+                    intermediates_buffer: "",
+                    final_byte: nil
+                }
+
                 {:continue, new_emulator, next_parser_state, actual_rest}
 
               _ ->
@@ -102,15 +122,28 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
                 Logger.debug(
                   "[CSIEntryState] CSI M with active mouse mode, but not enough bytes for X10 CbCxCy. Falling back to Executor."
                 )
+
                 new_emulator_fallback =
                   Executor.execute_csi_command(
                     emulator,
-                    "", # params_buffer is empty
-                    "", # intermediates_buffer is empty
-                    final_byte # ?M
+                    # params_buffer is empty
+                    "",
+                    # intermediates_buffer is empty
+                    "",
+                    # ?M
+                    final_byte
                   )
-                next_parser_state_fallback = %{parser_state | state: :ground, params_buffer: "", intermediates_buffer: "", final_byte: nil}
-                {:continue, new_emulator_fallback, next_parser_state_fallback, rest_after_final}
+
+                next_parser_state_fallback = %{
+                  parser_state
+                  | state: :ground,
+                    params_buffer: "",
+                    intermediates_buffer: "",
+                    final_byte: nil
+                }
+
+                {:continue, new_emulator_fallback, next_parser_state_fallback,
+                 rest_after_final}
             end
           else
             # Not a mouse mode that processes raw X10, or it's CSI M intended for DL.
@@ -118,21 +151,35 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
             Logger.debug(
               "[CSIEntryState] CSI M detected, but not in a relevant X10-echoing mouse mode (mode: #{active_mouse_mode}) or params/intermediates were present. Executing."
             )
+
             new_emulator_default =
               Executor.execute_csi_command(
                 emulator,
-                parser_state.params_buffer, # Will be empty here
-                parser_state.intermediates_buffer, # Will be empty here
-                final_byte # ?M
+                # Will be empty here
+                parser_state.params_buffer,
+                # Will be empty here
+                parser_state.intermediates_buffer,
+                # ?M
+                final_byte
               )
-            next_parser_state_default = %{parser_state | state: :ground, params_buffer: "", intermediates_buffer: "", final_byte: nil}
-            {:continue, new_emulator_default, next_parser_state_default, rest_after_final}
+
+            next_parser_state_default = %{
+              parser_state
+              | state: :ground,
+                params_buffer: "",
+                intermediates_buffer: "",
+                final_byte: nil
+            }
+
+            {:continue, new_emulator_default, next_parser_state_default,
+             rest_after_final}
           end
         else
           # Not (final_byte == ?M with empty params/intermediates). Handle all other final bytes normally.
           Logger.debug(
             "[CSIEntryState] Standard CSI Final Byte: #{<<final_byte>>}. Params: '#{parser_state.params_buffer}', Intermediates: '#{parser_state.intermediates_buffer}'. Executing."
           )
+
           new_emulator_other =
             Executor.execute_csi_command(
               emulator,
@@ -140,9 +187,18 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
               parser_state.intermediates_buffer,
               final_byte
             )
+
           # Transition back to Ground state, clearing buffers for the next sequence
-          next_parser_state_other = %{parser_state | state: :ground, params_buffer: "", intermediates_buffer: "", final_byte: nil}
-          {:continue, new_emulator_other, next_parser_state_other, rest_after_final}
+          next_parser_state_other = %{
+            parser_state
+            | state: :ground,
+              params_buffer: "",
+              intermediates_buffer: "",
+              final_byte: nil
+          }
+
+          {:continue, new_emulator_other, next_parser_state_other,
+           rest_after_final}
         end
 
       # Ignored byte in CSI Entry (e.g., CAN, SUB)
@@ -166,6 +222,7 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
         Logger.warning(
           "Unhandled byte #{unhandled_byte} in CSI Entry state, returning to ground."
         )
+
         next_parser_state = %{parser_state | state: :ground}
         {:continue, emulator, next_parser_state, rest_after_unhandled}
     end

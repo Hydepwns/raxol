@@ -32,13 +32,20 @@ defmodule Raxol.Components.Dashboard.LayoutPersistence do
         :ok ->
           Logger.info("Dashboard layout saved to #{layout_file}")
           :ok
+
         {:error, reason} ->
-          Logger.error("Failed to save dashboard layout to #{layout_file}: #{inspect(reason)}")
+          Logger.error(
+            "Failed to save dashboard layout to #{layout_file}: #{inspect(reason)}"
+          )
+
           {:error, reason}
       end
     rescue
       e ->
-        Logger.error("Failed to save dashboard layout to #{layout_file}: #{inspect(e)}")
+        Logger.error(
+          "Failed to save dashboard layout to #{layout_file}: #{inspect(e)}"
+        )
+
         # Consider wrapping the specific exception
         {:error, {:exception, e}}
     end
@@ -61,19 +68,26 @@ defmodule Raxol.Components.Dashboard.LayoutPersistence do
             Logger.info("Dashboard layout loaded from #{layout_file}")
             # Basic validation: is it a list?
             if is_list(layout_data), do: layout_data, else: nil
+
           {:error, reason} ->
-             Logger.error("Failed to read dashboard layout file #{layout_file}: #{inspect(reason)}")
-             nil
+            Logger.error(
+              "Failed to read dashboard layout file #{layout_file}: #{inspect(reason)}"
+            )
+
+            nil
         end
       rescue
         e ->
-          Logger.error("Failed to deserialize dashboard layout from #{layout_file}: #{inspect(e)}")
+          Logger.error(
+            "Failed to deserialize dashboard layout from #{layout_file}: #{inspect(e)}"
+          )
+
           nil
       end
     else
       Logger.info("No saved dashboard layout found at #{layout_file}")
-      nil # Return nil explicitly if file doesn't exist
+      # Return nil explicitly if file doesn't exist
+      nil
     end
   end
-
 end

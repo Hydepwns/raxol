@@ -132,7 +132,7 @@ defmodule Raxol.Terminal.Configuration do
     merged_config_map =
       Enum.reduce(opts, base_config_map, fn {key, value}, acc ->
         if Map.has_key?(acc, key) or
-             (key in __MODULE__.__struct__()) |> Map.keys() do
+             Map.has_key?(__MODULE__.__struct__(), key) do
           Map.put(acc, key, value)
         else
           Logger.warning(

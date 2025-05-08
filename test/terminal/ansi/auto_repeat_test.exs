@@ -40,18 +40,21 @@ defmodule Raxol.Terminal.ANSI.AutoRepeatTest do
       {terminal_on, _output1} = Emulator.process_input(terminal, "\x1b[?8h")
 
       # Switch to alternate mode (saves state)
-      {terminal_alt, _output2} = Emulator.process_input(terminal_on, "\x1b[?1049h")
+      {terminal_alt, _output2} =
+        Emulator.process_input(terminal_on, "\x1b[?1049h")
 
       # Check that auto-repeat mode is still enabled (should be false in fresh alt mode?)
       # Let's verify the expected behavior. Alt screen usually starts fresh.
       # Let's assume it SHOULD be false after switching to alt mode.
+      # Alt screen should start with default modes
       assert Raxol.Terminal.ModeManager.mode_enabled?(
                terminal_alt.mode_manager,
                :decarm
-             ) == false # Alt screen should start with default modes
+             ) == false
 
       # Switch back to normal mode (restores state)
-      {terminal_normal, _output3} = Emulator.process_input(terminal_alt, "\x1b[?1049l")
+      {terminal_normal, _output3} =
+        Emulator.process_input(terminal_alt, "\x1b[?1049l")
 
       # Check that auto-repeat mode is restored to true
       assert Raxol.Terminal.ModeManager.mode_enabled?(

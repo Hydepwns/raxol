@@ -4,7 +4,8 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest.TestComponent do
   # Moved from component_manager_test.exs
 
   def init(props) do
-    Map.merge(%{counter: 0, last_message: nil, event_value: nil}, props) # Ensure all keys are present
+    # Ensure all keys are present
+    Map.merge(%{counter: 0, last_message: nil, event_value: nil}, props)
   end
 
   def mount(state) do
@@ -25,12 +26,14 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest.TestComponent do
 
   def update(:trigger_broadcast, state) do
     # Return state unchanged, but issue broadcast command
-    {Map.put(state, :last_message, :trigger_broadcast), [{:broadcast, :broadcast_message}]}
+    {Map.put(state, :last_message, :trigger_broadcast),
+     [{:broadcast, :broadcast_message}]}
   end
 
   def update(msg, state) do
     # Just return the message in the state for testing
-    {Map.put(state, :last_message, msg), []} # Return empty command list by default
+    # Return empty command list by default
+    {Map.put(state, :last_message, msg), []}
   end
 
   def handle_event({:test_event, value}, state) do
@@ -50,6 +53,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest.TestComponent do
       {:command, {:subscribe, [:test_event]}},
       {:schedule, :delayed_message, 50}
     ]
+
     {state, commands}
   end
 
@@ -57,6 +61,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest.TestComponent do
     commands = [
       {:broadcast, :broadcast_message}
     ]
+
     {state, commands}
   end
 end

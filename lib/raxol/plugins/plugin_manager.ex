@@ -6,7 +6,14 @@ defmodule Raxol.Plugins.PluginManager do
 
   require Logger
 
-  alias Raxol.Plugins.{Plugin, PluginConfig, PluginDependency, CellProcessor, EventHandler, Lifecycle}
+  alias Raxol.Plugins.{
+    Plugin,
+    PluginConfig,
+    PluginDependency,
+    CellProcessor,
+    EventHandler,
+    Lifecycle
+  }
 
   @type t :: %__MODULE__{
           plugins: %{String.t() => Plugin.t()},
@@ -39,7 +46,8 @@ defmodule Raxol.Plugins.PluginManager do
   Loads a plugin module and initializes it with the given configuration.
   Delegates to `Raxol.Plugins.Lifecycle.load_plugin/3`.
   """
-  def load_plugin(%__MODULE__{} = manager, module, config \\ %{}) when is_atom(module) do
+  def load_plugin(%__MODULE__{} = manager, module, config \\ %{})
+      when is_atom(module) do
     Lifecycle.load_plugin(manager, module, config)
   end
 

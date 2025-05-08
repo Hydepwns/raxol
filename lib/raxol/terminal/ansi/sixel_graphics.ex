@@ -82,7 +82,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
             # Logger.debug("process_sequence: Parsed initial params: #{inspect(initial_params)}, sixel_data: #{inspect(sixel_data)}")
 
             # TODO: Use initial_params if needed (e.g., P1=pixel aspect ratio, P2=background color mode)
-            _initial_params_map = SixelParser.parse_dcs_params_list(initial_params)
+            _initial_params_map =
+              SixelParser.parse_dcs_params_list(initial_params)
 
             # Initialize parser state using the new module
             initial_parser_state = %SixelParser.ParserState{
@@ -106,7 +107,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
             case sixel_data do
               <<"q", rest_after_q::binary>> ->
                 # Delegate parsing to the new module
-                parse_result = SixelParser.parse(rest_after_q, initial_parser_state)
+                parse_result =
+                  SixelParser.parse(rest_after_q, initial_parser_state)
 
                 # Logger.debug("process_sequence: parse_sixel_data result: #{inspect(parse_result)}")
 
@@ -163,5 +165,4 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
 
     {state, {:error, :invalid_sequence}}
   end
-
 end

@@ -1,14 +1,28 @@
 defmodule Raxol.System.DeltaUpdaterTest do
-  use ExUnit.Case
+  # Enable async for Mox
+  use ExUnit.Case, async: true
+  import Mox
 
   alias Raxol.System.DeltaUpdater
+  alias Raxol.System.DeltaUpdaterSystemAdapterBehaviour
 
-  # Mock HTTP client for testing
-  defmodule MockHTTP do
-    def request(:get, {url, _headers}, _, _) do
-      cond do
-        String.contains?(url, "releases/tags/v1.2.0") ->
-          # Return successful response with mock release data
+  # Define the mock for the adapter behaviour
+  Mox.defmock(DeltaUpdaterSystemAdapterMock,
+    for: DeltaUpdaterSystemAdapterBehaviour
+  )
+
+  describe "check_delta_availability/1" do
+    # Add Mox verification
+    setup :verify_on_exit!
+
+    test "returns delta info when delta is available" do
+      # Mock the adapter behaviour
+      DeltaUpdaterSystemAdapterMock
+      |> expect(:current_version, fn -> "1.1.0" end)
+      |> expect(:os_type, fn -> {:unix, :darwin} end)
+      |> expect(:http_get, fn url ->
+        # Simulate response for release v1.2.0
+        if String.contains?(url, "releases/tags/v1.2.0") do
           body = """
           {
             "assets": [
@@ -18,30 +32,37 @@ defmodule Raxol.System.DeltaUpdaterTest do
                 "browser_download_url": "https://github.com/username/raxol/releases/download/v1.2.0/raxol-1.2.0-macos.tar.gz"
               },
               {
-                "name": "raxol-1.2.0-linux.tar.gz",
-                "size": 14000000,
-                "browser_download_url": "https://github.com/username/raxol/releases/download/v1.2.0/raxol-1.2.0-linux.tar.gz"
-              },
-              {
                 "name": "raxol-delta-1.1.0-1.2.0-macos.bin",
                 "size": 1500000,
                 "browser_download_url": "https://github.com/username/raxol/releases/download/v1.2.0/raxol-delta-1.1.0-1.2.0-macos.bin"
-              },
-              {
-                "name": "raxol-delta-1.1.0-1.2.0-linux.bin",
-                "size": 1400000,
-                "browser_download_url": "https://github.com/username/raxol/releases/download/v1.2.0/raxol-delta-1.1.0-1.2.0-linux.bin"
               }
             ]
           }
           """
 
-          {:ok,
-           {{:http, 200, ~c"OK"}, [{~c"content-type", ~c"application/json"}],
-            body}}
+          {:ok, body}
+        else
+          {:error, :unexpected_url}
+        end
+      end)
 
-        String.contains?(url, "releases/tags/v1.3.0") ->
-          # Return successful response with no delta assets
+      # Test with a version that has delta available
+      result = DeltaUpdater.check_delta_availability("1.2.0")
+
+      assert {:ok, delta_info} = result
+      assert delta_info.delta_size == 1_500_000
+      assert delta_info.full_size == 15_000_000
+      assert delta_info.savings_percent == 90
+    end
+
+    test "returns error when delta is not available" do
+      # Mock the adapter behaviour
+      DeltaUpdaterSystemAdapterMock
+      |> expect(:current_version, fn -> "1.1.0" end)
+      |> expect(:os_type, fn -> {:unix, :darwin} end)
+      |> expect(:http_get, fn url ->
+        # Simulate response for release v1.3.0
+        if String.contains?(url, "releases/tags/v1.3.0") do
           body = """
           {
             "assets": [
@@ -59,82 +80,16 @@ defmodule Raxol.System.DeltaUpdaterTest do
           }
           """
 
-          {:ok,
-           {{:http, 200, ~c"OK"}, [{~c"content-type", ~c"application/json"}],
-            body}}
-
-        String.contains?(url, "releases/download") ->
-          # Simulate download
-          {:ok,
-           {{:http, 200, ~c"OK"},
-            [{~c"content-type", ~c"application/octet-stream"}], "BINARY_DATA"}}
-
-        true ->
-          # Return error for any other URL
-          {:error,
-           {:failed_connect,
-            [{:to_address, {~c"example.com", 80}}, {:inet, [:inet], :timeout}]}}
-      end
-    end
-  end
-
-  describe "check_delta_availability/1" do
-    test "returns delta info when delta is available" do
-      # Replace :httpc with mock for this test
-      _original_httpc = :httpc
-      :meck.new(:httpc, [:passthrough])
-
-      :meck.expect(:httpc, :request, fn method, url, opts1, opts2 ->
-        MockHTTP.request(method, url, opts1, opts2)
+          {:ok, body}
+        else
+          {:error, :unexpected_url}
+        end
       end)
 
-      try do
-        # Mock the current version and OS detection
-        :meck.new(Mix.Project, [:passthrough])
-        :meck.expect(Mix.Project, :config, fn -> [version: "1.1.0"] end)
+      # Test with a version that doesn't have delta available
+      result = DeltaUpdater.check_delta_availability("1.3.0")
 
-        :meck.new(:os, [:passthrough])
-        :meck.expect(:os, :type, fn -> {:unix, :darwin} end)
-
-        # Test with a version that has delta available
-        result = DeltaUpdater.check_delta_availability("1.2.0")
-
-        assert {:ok, delta_info} = result
-        assert delta_info.delta_size == 1_500_000
-        assert delta_info.full_size == 15_000_000
-        assert delta_info.savings_percent == 90
-      after
-        :meck.unload(:httpc)
-        :meck.unload(Mix.Project)
-        :meck.unload(:os)
-      end
-    end
-
-    test "returns error when delta is not available" do
-      # Replace :httpc with mock for this test
-      :meck.new(:httpc, [:passthrough])
-
-      :meck.expect(:httpc, :request, fn method, url, opts1, opts2 ->
-        MockHTTP.request(method, url, opts1, opts2)
-      end)
-
-      try do
-        # Mock the current version and OS detection
-        :meck.new(Mix.Project, [:passthrough])
-        :meck.expect(Mix.Project, :config, fn -> [version: "1.1.0"] end)
-
-        :meck.new(:os, [:passthrough])
-        :meck.expect(:os, :type, fn -> {:unix, :darwin} end)
-
-        # Test with a version that doesn't have delta available
-        result = DeltaUpdater.check_delta_availability("1.3.0")
-
-        assert {:error, _reason} = result
-      after
-        :meck.unload(:httpc)
-        :meck.unload(Mix.Project)
-        :meck.unload(:os)
-      end
+      assert {:error, _reason} = result
     end
   end
 

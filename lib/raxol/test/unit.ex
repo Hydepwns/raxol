@@ -98,18 +98,31 @@ defmodule Raxol.Test.Unit do
 
     {new_state_map, commands} =
       case result do
-        {:update, updated_state, cmds} -> {updated_state, cmds}
-        {:update, updated_state} -> {updated_state, []} # Assume no commands if not specified
-        {:noreply, state} -> {state, []}
-        {:handled, state} -> {state, []}
-        :passthrough -> {component.state, []} # State unchanged, no commands
+        {:update, updated_state, cmds} ->
+          {updated_state, cmds}
+
+        # Assume no commands if not specified
+        {:update, updated_state} ->
+          {updated_state, []}
+
+        {:noreply, state} ->
+          {state, []}
+
+        {:handled, state} ->
+          {state, []}
+
+        # State unchanged, no commands
+        :passthrough ->
+          {component.state, []}
+
         other ->
           raise "Unexpected return value from handle_event/3: #{inspect(other)}"
       end
 
     # Update component map with new state
     updated_component = %{component | state: new_state_map}
-    IO.puts("Final component state: #{inspect(updated_component.state)}") # Log final state
+    # Log final state
+    IO.puts("Final component state: #{inspect(updated_component.state)}")
 
     # Track commands for assertions
     send(self(), {:commands, commands})

@@ -1,4 +1,3 @@
-\
 # defmodule Raxol.Examples.ButtonPerformanceTest do
 #   use ExUnit.Case, async: false # Use async: false if tests modify shared resources
 #

@@ -1,5 +1,6 @@
 defmodule Raxol.Animation.FrameworkTest do
-  use ExUnit.Case, async: false # Disable async because we are manipulating GenServers
+  # Disable async because we are manipulating GenServers
+  use ExUnit.Case, async: false
 
   alias Raxol.Animation.{Animation, Framework}
   alias Raxol.Core.Accessibility
@@ -8,7 +9,9 @@ defmodule Raxol.Animation.FrameworkTest do
   # Start UserPreferences for these tests
   setup do
     # Use a test-specific name to avoid conflicts
-    {:ok, _pid} = start_supervised({UserPreferences, name: __MODULE__.UserPreferences})
+    {:ok, _pid} =
+      start_supervised({UserPreferences, name: __MODULE__.UserPreferences})
+
     # Initialize required systems for testing
     Framework.init()
     Accessibility.enable()
@@ -79,7 +82,8 @@ defmodule Raxol.Animation.FrameworkTest do
       initial_state = %{
         elements: %{
           "test_element" => %{
-            opacity: 0 # Initial value
+            # Initial value
+            opacity: 0
           }
         }
       }
@@ -88,9 +92,12 @@ defmodule Raxol.Animation.FrameworkTest do
       _animation =
         Framework.create_animation(:test_animation, %{
           type: :fade,
-          duration: 300, # Original duration doesn't matter now
-          from: 0, # Matches initial state
-          to: 1 # Final value
+          # Original duration doesn't matter now
+          duration: 300,
+          # Matches initial state
+          from: 0,
+          # Final value
+          to: 1
         })
 
       # Start the animation
@@ -136,7 +143,8 @@ defmodule Raxol.Animation.FrameworkTest do
       _animation =
         Framework.create_animation(:fade_in, %{
           type: :fade,
-          duration: 0, # Set duration to 0
+          # Set duration to 0
+          duration: 0,
           from: 0,
           to: 1
         })
@@ -165,7 +173,8 @@ defmodule Raxol.Animation.FrameworkTest do
       _fade_animation =
         Framework.create_animation(:fade_in, %{
           type: :fade,
-          duration: 0, # Set duration to 0
+          # Set duration to 0
+          duration: 0,
           from: 0,
           to: 1
         })
@@ -173,7 +182,8 @@ defmodule Raxol.Animation.FrameworkTest do
       _slide_animation =
         Framework.create_animation(:slide_in, %{
           type: :slide,
-          duration: 0, # Set duration to 0
+          # Set duration to 0
+          duration: 0,
           from: 0,
           to: 100
         })

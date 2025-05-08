@@ -14,20 +14,25 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
 
     # Calculate lines from value (assuming default width/wrap for simplicity)
     # Might need adjustment if tests rely on specific wrapping
-    lines = TextHelper.split_into_lines(value, 40, :word) # Use default width/wrap
+    # Use default width/wrap
+    lines = TextHelper.split_into_lines(value, 40, :word)
 
     %MultiLineInput{
-      value: value, # Primarily use value
-      lines: lines, # Keep lines cache updated
+      # Primarily use value
+      value: value,
+      # Keep lines cache updated
+      lines: lines,
       cursor_pos: cursor_pos,
       selection_start: sel_start,
       selection_end: sel_end,
       id: "test_input",
-      width: 40, # Provide defaults for calculation
+      # Provide defaults for calculation
+      width: 40,
       height: 10,
       wrap: :word,
       scroll_offset: {0, 0},
-      history: nil # Assuming history not needed for clipboard tests
+      # Assuming history not needed for clipboard tests
+      history: nil
     }
   end
 
@@ -37,7 +42,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
       state = create_state("hello\nworld", {0, 4}, {{0, 1}, {0, 4}})
       {new_state, commands} = ClipboardHelper.copy_selection(state)
 
-      assert new_state == state # State shouldn't change on copy
+      # State shouldn't change on copy
+      assert new_state == state
       expected_cmd = Command.clipboard_write("ell")
       assert commands == [expected_cmd]
     end
@@ -60,7 +66,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
     end
 
     test "handles reversed selection" do
-      state = create_state("hello\nworld", {0, 0}, {{1, 2}, {0, 2}}) # Reversed selection
+      # Reversed selection
+      state = create_state("hello\nworld", {0, 0}, {{1, 2}, {0, 2}})
       {new_state, commands} = ClipboardHelper.copy_selection(state)
       assert new_state == state
       expected_cmd = Command.clipboard_write("llo\nwo")
@@ -109,8 +116,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
   describe "paste/1" do
     test "returns state and :clipboard_read command" do
       state = create_state("hello", {0, 2})
-      {new_state, commands} = ClipboardHelper.paste(state) # Call paste/1
-      assert new_state == state # State doesn't change yet
+      # Call paste/1
+      {new_state, commands} = ClipboardHelper.paste(state)
+      # State doesn't change yet
+      assert new_state == state
       expected_cmd = Command.clipboard_read()
       assert commands == [expected_cmd]
     end

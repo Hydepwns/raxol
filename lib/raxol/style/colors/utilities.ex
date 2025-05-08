@@ -130,7 +130,8 @@ defmodule Raxol.Style.Colors.Utilities do
     # Delegate to Accessibility module for consistent calculation
     case Color.from_hex(color) do
       %Color{} = c -> dark_color?(c)
-      _ -> true # Treat invalid hex as dark?
+      # Treat invalid hex as dark?
+      _ -> true
     end
   end
 
@@ -161,7 +162,8 @@ defmodule Raxol.Style.Colors.Utilities do
   def brightness(color) when is_binary(color) do
     case Color.from_hex(color) do
       %Color{} = c -> brightness(c)
-      _ -> 0 # Default to black brightness for invalid hex
+      # Default to black brightness for invalid hex
+      _ -> 0
     end
   end
 

@@ -47,20 +47,22 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   end
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
-  # Handle :notify with [level_string, message_string] arguments
-  def handle_command(:notify, [level, message], state)
-      when is_binary(level) and is_binary(message) do
+  # Handle :notify command. Expects [title_string, message_string] as args.
+  def handle_command([title, message], state)
+      when is_binary(title) and is_binary(message) do
     interaction_mod = state.interaction_module
-    data_map = %{title: level, message: message}
+    data_map = %{title: title, message: message}
     handle_notify(interaction_mod, data_map, state)
   end
 
-  # Catch-all for incorrect args or unknown commands - Reverting to Arity 3
-  def handle_command(command, args, state) do
+  # Catch-all for incorrect args if a command somehow gets routed here
+  # with a different signature than what get_commands implies.
+  def handle_command(args, state) do
     Logger.warning(
-      "NotificationPlugin received unhandled/invalid command: #{inspect(command)} with args: #{inspect(args)}"
+      "NotificationPlugin :handle_command received unexpected args format: #{inspect(args)}"
     )
-    {:error, {:unhandled_notification_command, command}, state}
+
+    {:error, {:unexpected_command_args, args}, state}
   end
 
   # Internal handler for :notify
@@ -81,6 +83,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
           case interaction_mod.find_executable("notify-send") do
             nil ->
               {:error, {:command_not_found, :notify_send}}
+
             path ->
               {path, [title, message], :linux}
           end
@@ -90,8 +93,14 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
           case interaction_mod.find_executable("osascript") do
             nil ->
               {:error, {:command_not_found, :osascript}}
+
             path ->
-              script = if title, do: ~s(display notification \"#{message}\" with title \"#{title}\"), else: ~s(display notification \"#{message}\")
+              script =
+                if title,
+                  do:
+                    ~s(display notification \"#{message}\" with title \"#{title}\"),
+                  else: ~s(display notification \"#{message}\")
+
               {path, ["-e", script], :macos}
           end
 
@@ -100,8 +109,11 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
           case interaction_mod.find_executable("powershell") do
             nil ->
               {:error, {:command_not_found, :powershell}}
+
             path ->
-              script = ~s(Import-Module BurntToast; New-BurntToastNotification -Text "#{message}")
+              script =
+                ~s(Import-Module BurntToast; New-BurntToastNotification -Text "#{message}")
+
               {path, ["-NoProfile", "-Command", script], :windows}
           end
 
@@ -120,23 +132,30 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
           Logger.debug(
             "Executing notification command: #{executable} with args: #{inspect(args)}"
           )
+
           # Use injected module
-          case interaction_mod.system_cmd(executable, args, stderr_to_stdout: true) do
+          case interaction_mod.system_cmd(executable, args,
+                 stderr_to_stdout: true
+               ) do
             {_output, 0} ->
               # Logger.debug("Notification command successful (Output: #{output})")
               # Return the specific OS success atom for easier testing
-              success_atom = case _os_name do
+              success_atom =
+                case _os_name do
                   :linux -> :notification_sent_linux
                   :macos -> :notification_sent_macos
                   :windows -> :notification_sent_windows
-                  _ -> :notification_sent # Fallback
-              end
+                  # Fallback
+                  _ -> :notification_sent
+                end
+
               {:ok, state, success_atom}
 
             {output, exit_code} ->
               Logger.error(
                 "Notification command failed. Exit Code: #{exit_code}, Output: #{output}"
               )
+
               {:error, {:command_failed, exit_code, output}, state}
           end
         rescue
@@ -144,7 +163,10 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
             Logger.error(
               "NotificationPlugin: Error executing notification command: #{inspect(e)}"
             )
-            {:error, {:command_exception, Exception.format(:error, e, __STACKTRACE__)}, state}
+
+            {:error,
+             {:command_exception, Exception.format(:error, e, __STACKTRACE__)},
+             state}
         end
     end
   end

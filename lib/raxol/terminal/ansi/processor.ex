@@ -418,13 +418,22 @@ defmodule Raxol.Terminal.ANSI.Processor do
     new_buffer_manager =
       case mode do
         0 ->
-          BufferManager.erase_from_cursor_to_end(state.buffer_manager, state.current_style)
+          BufferManager.erase_from_cursor_to_end(
+            state.buffer_manager,
+            state.current_style
+          )
 
         1 ->
-          BufferManager.erase_from_beginning_to_cursor(state.buffer_manager, state.current_style)
+          BufferManager.erase_from_beginning_to_cursor(
+            state.buffer_manager,
+            state.current_style
+          )
 
         2 ->
-          BufferManager.clear_visible_display(state.buffer_manager, state.current_style)
+          BufferManager.clear_visible_display(
+            state.buffer_manager,
+            state.current_style
+          )
 
         3 ->
           BufferManager.clear_entire_display_with_scrollback(
@@ -448,7 +457,10 @@ defmodule Raxol.Terminal.ANSI.Processor do
     new_buffer_manager =
       case mode do
         0 ->
-          BufferManager.erase_from_cursor_to_end_of_line(state.buffer_manager, state.current_style)
+          BufferManager.erase_from_cursor_to_end_of_line(
+            state.buffer_manager,
+            state.current_style
+          )
 
         1 ->
           BufferManager.erase_from_beginning_of_line_to_cursor(
@@ -457,7 +469,10 @@ defmodule Raxol.Terminal.ANSI.Processor do
           )
 
         2 ->
-          BufferManager.clear_current_line(state.buffer_manager, state.current_style)
+          BufferManager.clear_current_line(
+            state.buffer_manager,
+            state.current_style
+          )
 
         _ ->
           state.buffer_manager
@@ -558,10 +573,12 @@ defmodule Raxol.Terminal.ANSI.Processor do
   defp handle_sequence({:text_attributes, attrs}, state) do
     # Update the style stored in the GenServer state
     # Iterate through attributes and apply them individually
-    new_style = Enum.reduce(attrs, state.current_style, fn attr, current_style ->
-      # Use apply_attribute/2 instead of apply_attributes/2
-      TextFormatting.apply_attribute(current_style, attr)
-    end)
+    new_style =
+      Enum.reduce(attrs, state.current_style, fn attr, current_style ->
+        # Use apply_attribute/2 instead of apply_attributes/2
+        TextFormatting.apply_attribute(current_style, attr)
+      end)
+
     %{state | current_style: new_style}
   end
 end

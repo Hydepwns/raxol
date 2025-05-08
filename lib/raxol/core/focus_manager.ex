@@ -1,4 +1,5 @@
 defmodule Raxol.Core.FocusManager do
+  @behaviour Raxol.Core.FocusManager.Behaviour
   @moduledoc """
   Focus management system for Raxol terminal UI applications.
 
@@ -45,6 +46,7 @@ defmodule Raxol.Core.FocusManager do
       iex> FocusManager.register_focusable("submit_button", 2, group: :form_actions)
       :ok
   """
+  @impl true
   def register_focusable(component_id, tab_index, opts \\ []) do
     group = Keyword.get(opts, :group, :default)
     disabled = Keyword.get(opts, :disabled, false)
@@ -80,6 +82,7 @@ defmodule Raxol.Core.FocusManager do
       iex> FocusManager.unregister_focusable("search_input")
       :ok
   """
+  @impl true
   def unregister_focusable(component_id) do
     focusables = get_focusables()
 
@@ -105,6 +108,7 @@ defmodule Raxol.Core.FocusManager do
       iex> FocusManager.set_initial_focus("search_input")
       :ok
   """
+  @impl true
   def set_initial_focus(component_id) do
     focus_state = get_focus_state()
 
@@ -124,6 +128,7 @@ defmodule Raxol.Core.FocusManager do
       iex> FocusManager.set_focus("submit_button")
       :ok
   """
+  @impl true
   def set_focus(component_id) do
     focus_state = get_focus_state()
     old_focus = focus_state[:active_element]
@@ -177,6 +182,7 @@ defmodule Raxol.Core.FocusManager do
       iex> FocusManager.focus_next(group: :form_actions)
       :ok
   """
+  @impl true
   def focus_next(opts \\ []) do
     focus_state = get_focus_state()
     current_focus = focus_state[:active_element]
@@ -232,6 +238,7 @@ defmodule Raxol.Core.FocusManager do
       iex> FocusManager.focus_previous()
       :ok
   """
+  @impl true
   def focus_previous(opts \\ []) do
     focus_state = get_focus_state()
     current_focus = focus_state[:active_element]
@@ -283,6 +290,7 @@ defmodule Raxol.Core.FocusManager do
       iex> FocusManager.get_focused_element()
       "my_button"
   """
+  @impl true
   def get_focused_element do
     get_focus_state()[:active_element]
   end
@@ -290,6 +298,7 @@ defmodule Raxol.Core.FocusManager do
   @doc """
   Alias for get_focused_element/0.
   """
+  @impl true
   @spec get_current_focus() :: String.t() | nil
   def get_current_focus() do
     get_focused_element()
@@ -299,6 +308,7 @@ defmodule Raxol.Core.FocusManager do
   Get the next focusable element after the given one.
   (Placeholder implementation - mirrors focus_next logic)
   """
+  @impl true
   @spec get_next_focusable(String.t() | nil) :: String.t() | nil
   def get_next_focusable(current_focus_id) do
     focus_state = get_focus_state()
@@ -334,6 +344,7 @@ defmodule Raxol.Core.FocusManager do
   Get the previous focusable element before the given one.
   Mirrors the logic of `get_next_focusable/1` but searches backwards.
   """
+  @impl true
   @spec get_previous_focusable(String.t() | nil) :: String.t() | nil
   def get_previous_focusable(current_focus_id) do
     focus_state = get_focus_state()
@@ -374,6 +385,7 @@ defmodule Raxol.Core.FocusManager do
       iex> FocusManager.has_focus?("search_input")
       true
   """
+  @impl true
   def has_focus?(component_id) do
     get_focused_element() == component_id
   end
@@ -386,6 +398,7 @@ defmodule Raxol.Core.FocusManager do
       iex> FocusManager.return_to_previous()
       :ok
   """
+  @impl true
   def return_to_previous do
     focus_state = get_focus_state()
     history = focus_state[:focus_history] || []
@@ -428,6 +441,7 @@ defmodule Raxol.Core.FocusManager do
       iex> FocusManager.enable_component("submit_button")
       :ok
   """
+  @impl true
   def enable_component(component_id) do
     update_component_state(component_id, :disabled, false)
   end
@@ -440,6 +454,7 @@ defmodule Raxol.Core.FocusManager do
       iex> FocusManager.disable_component("submit_button")
       :ok
   """
+  @impl true
   def disable_component(component_id) do
     update_component_state(component_id, :disabled, true)
 
@@ -457,8 +472,11 @@ defmodule Raxol.Core.FocusManager do
   The handler function should accept two arguments: `old_focus` and `new_focus`.
   (Placeholder implementation)
   """
-  @spec register_focus_change_handler((String.t() | nil, String.t() | nil ->
-                                         any())) :: :ok
+  @impl true
+  @spec register_focus_change_handler(
+          (String.t() | nil, String.t() | nil ->
+             any())
+        ) :: :ok
   def register_focus_change_handler(handler_fun)
       when is_function(handler_fun, 2) do
     handlers = Process.get(:focus_manager_change_handlers, [])
@@ -471,8 +489,11 @@ defmodule Raxol.Core.FocusManager do
   Unregister a focus change handler function.
   (Placeholder implementation)
   """
-  @spec unregister_focus_change_handler((String.t() | nil, String.t() | nil ->
-                                           any())) :: :ok
+  @impl true
+  @spec unregister_focus_change_handler(
+          (String.t() | nil, String.t() | nil ->
+             any())
+        ) :: :ok
   def unregister_focus_change_handler(handler_fun)
       when is_function(handler_fun, 2) do
     handlers = Process.get(:focus_manager_change_handlers, [])

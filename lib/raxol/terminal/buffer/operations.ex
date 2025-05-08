@@ -64,17 +64,18 @@ defmodule Raxol.Terminal.Buffer.Operations do
           non_neg_integer(),
           {non_neg_integer(), non_neg_integer()} | nil
         ) :: ScreenBuffer.t()
-  defdelegate scroll_down(buffer, lines_to_insert, lines, scroll_region \\ nil), to: Scroller
+  defdelegate scroll_down(buffer, lines_to_insert, lines, scroll_region \\ nil),
+    to: Scroller
 
   # Helper to replace content within a scroll region (internal)
   # Operates directly on the cells list, returns the updated list.
   @doc false
   def replace_region_content(
-          current_cells,
-          scroll_start,
-          scroll_end,
-          new_content
-        ) do
+        current_cells,
+        scroll_start,
+        scroll_end,
+        new_content
+      ) do
     buffer_height = length(current_cells)
     lines_before = Enum.slice(current_cells, 0, scroll_start)
 
@@ -187,7 +188,13 @@ defmodule Raxol.Terminal.Buffer.Operations do
           atom(),
           Cell.Style.t() | nil
         ) :: ScreenBuffer.t()
-  defdelegate erase_in_display(buffer, cursor_pos, type, style \\ TextFormatting.new()), to: Eraser
+  defdelegate erase_in_display(
+                buffer,
+                cursor_pos,
+                type,
+                style \\ TextFormatting.new()
+              ),
+              to: Eraser
 
   @doc """
   Erases parts of the current line based on cursor position (:to_end, :to_beginning, :all).
@@ -199,13 +206,21 @@ defmodule Raxol.Terminal.Buffer.Operations do
           atom(),
           Cell.Style.t() | nil
         ) :: ScreenBuffer.t()
-  defdelegate erase_in_line(buffer, cursor_pos, type, style \\ TextFormatting.new()), to: Eraser
+  defdelegate erase_in_line(
+                buffer,
+                cursor_pos,
+                type,
+                style \\ TextFormatting.new()
+              ),
+              to: Eraser
 
   @doc """
   Clears the entire screen buffer (excluding scrollback) with empty cells.
   """
   @spec clear(ScreenBuffer.t(), Cell.Style.t() | nil) :: ScreenBuffer.t()
-  defdelegate clear(buffer, style \\ TextFormatting.new()), to: Eraser, as: :clear_screen
+  defdelegate clear(buffer, style \\ TextFormatting.new()),
+    to: Eraser,
+    as: :clear_screen
 
   @doc """
   Inserts blank characters at the cursor position {x, y}, shifting existing chars right.
@@ -218,7 +233,14 @@ defmodule Raxol.Terminal.Buffer.Operations do
           count :: non_neg_integer(),
           style :: Cell.Style.t() | nil
         ) :: State.t()
-  defdelegate insert_characters(buffer, row, col, count, style \\ TextFormatting.new()), to: CharEditor
+  defdelegate insert_characters(
+                buffer,
+                row,
+                col,
+                count,
+                style \\ TextFormatting.new()
+              ),
+              to: CharEditor
 
   @doc """
   Deletes characters at the cursor position {x, y}, shifting remaining chars left.
@@ -231,7 +253,14 @@ defmodule Raxol.Terminal.Buffer.Operations do
           count :: non_neg_integer(),
           style :: Cell.Style.t() | nil
         ) :: State.t()
-  defdelegate delete_characters(buffer, row, col, count, style \\ TextFormatting.new()), to: CharEditor
+  defdelegate delete_characters(
+                buffer,
+                row,
+                col,
+                count,
+                style \\ TextFormatting.new()
+              ),
+              to: CharEditor
 
   @doc """
   Converts the screen buffer content to a plain text string.
@@ -258,5 +287,13 @@ defmodule Raxol.Terminal.Buffer.Operations do
           non_neg_integer(),
           Cell.Style.t() | nil
         ) :: ScreenBuffer.t()
-  defdelegate clear_region(buffer, start_x, start_y, end_x, end_y, style \\ TextFormatting.new()), to: Eraser
+  defdelegate clear_region(
+                buffer,
+                start_x,
+                start_y,
+                end_x,
+                end_y,
+                style \\ TextFormatting.new()
+              ),
+              to: Eraser
 end

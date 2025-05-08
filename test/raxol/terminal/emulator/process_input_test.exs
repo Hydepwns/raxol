@@ -86,11 +86,13 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
 
       # For now, assert that the sequence is consumed completely
       assert remaining == ""
+
       # More specific assertions could be added if Emulator state tracks DCS processing
     end
 
     test "handles CSI with intermediate character (Private Mode DECTCEM Show Cursor)" do
       emulator = Emulator.new(80, 24)
+
       # Ensure cursor starts hidden for the test to be meaningful (if default is visible)
       # Note: We might need a function like Emulator.set_mode(emulator, :cursor_visible, false) if available
       # Or assume a reset sequence was processed: emulator = process_input(emulator, "\e[?25l") first
@@ -109,7 +111,9 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
     test "handles incomplete CSI sequence correctly" do
       emulator = Emulator.new(80, 24)
       partial_input = "\e["
-      {emulator_after, _output1} = Emulator.process_input(emulator, partial_input)
+
+      {emulator_after, _output1} =
+        Emulator.process_input(emulator, partial_input)
 
       # Check that the parser didn't crash and returned the partial input
       # (or indicated incomplete state somehow?)
@@ -127,13 +131,16 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
       # Expect the sequence to be completed and consumed
       assert remaining2 == ""
       # We can check the final cursor position after the completed sequence
-      assert emulator.cursor.position == {0, 0} # Assuming initial {0,0} and Up clamps
+      # Assuming initial {0,0} and Up clamps
+      assert emulator.cursor.position == {0, 0}
     end
 
     test "resets state after incomplete sequence followed by text" do
       emulator = Emulator.new(80, 24)
       partial_input = "\e["
-      {emulator_after_partial, _output1} = Emulator.process_input(emulator, partial_input)
+
+      {emulator_after_partial, _output1} =
+        Emulator.process_input(emulator, partial_input)
 
       # Process subsequent normal text
       text_input = "Hello"

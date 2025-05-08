@@ -23,19 +23,22 @@ defmodule Raxol.Runtime.Supervisor do
     #   initial_commands: [],
     #   initial_term_size: %{width: w, height: h}
     # }
-    app_module = init_args.app_module
-    initial_model = init_args.initial_model
-    initial_commands = init_args.initial_commands
-    initial_term_size = init_args.initial_term_size
-    # Runtime PID is needed by Dispatcher
-    runtime_pid = init_args.runtime_pid
+    app_module = Map.fetch!(init_args, :app_module)
+    initial_model = Map.fetch!(init_args, :initial_model)
+    initial_commands = Map.fetch!(init_args, :initial_commands)
+    initial_term_size = Map.fetch!(init_args, :initial_term_size)
+    runtime_pid = Map.fetch!(init_args, :runtime_pid)
+    debug_mode = Map.get(init_args, :debug_mode, false)
 
     children = [
       # 0. User Preferences (needs to start early)
       {Raxol.Core.UserPreferences, []},
 
+      # ADDED: Start the Registry under supervision
+      {Registry, keys: :duplicate, name: :raxol_event_subscriptions},
+
       # 1. Plugin Manager (needed by Dispatcher)
-      {Manager, []},
+      {Manager, [runtime_pid: runtime_pid]},
       # 2. Dispatcher (needs PluginManager, app_module, model, runtime_pid, commands)
       %{
         id: Dispatcher,
@@ -51,7 +54,8 @@ defmodule Raxol.Runtime.Supervisor do
                height: initial_term_size.height,
                # Uses registered name
                plugin_manager: Manager,
-               command_registry_table: :raxol_command_registry
+               command_registry_table: :raxol_command_registry,
+               debug_mode: debug_mode
              }
            ]},
         restart: :permanent,

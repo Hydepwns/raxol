@@ -5,7 +5,8 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
 %Component{
   id: :progress_bar,
   name: "Progress Bar",
-  module: Raxol.UI.Components.Progress, # Assuming module path (could be Progress or ProgressBar)
+  # Assuming module path (could be Progress or ProgressBar)
+  module: Raxol.UI.Components.Progress,
   description: "Visually displays the progress of an operation.",
   examples: [
     %Example{
@@ -22,7 +23,7 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
   ],
   properties: [
     %Property{name: :value, type: :number, required: true},
-    %Property{name: :max, type: :number, default_value: 100},
+    %Property{name: :max, type: :number, default_value: 100}
     # Add other props like indeterminate state, styling
   ],
   tags: ["display", "feedback", "indicator"]

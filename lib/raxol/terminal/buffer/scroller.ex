@@ -30,13 +30,17 @@ defmodule Raxol.Terminal.Buffer.Scroller do
         {start, ending}
         when is_integer(start) and start >= 0 and is_integer(ending) and
                ending >= start ->
-          {start, min(buffer.height - 1, ending)} # Clamp end to buffer height
+          # Clamp end to buffer height
+          {start, min(buffer.height - 1, ending)}
 
         # 2. If arg is nil or invalid, use buffer.scroll_region if set and valid
         _ when is_tuple(buffer.scroll_region) ->
           {start, ending} = buffer.scroll_region
-          if is_integer(start) and start >= 0 and is_integer(ending) and ending >= start do
-            {start, min(buffer.height - 1, ending)} # Clamp end to buffer height
+
+          if is_integer(start) and start >= 0 and is_integer(ending) and
+               ending >= start do
+            # Clamp end to buffer height
+            {start, min(buffer.height - 1, ending)}
           else
             # Buffer region invalid, use full height
             {0, buffer.height - 1}
@@ -56,8 +60,9 @@ defmodule Raxol.Terminal.Buffer.Scroller do
       empty_region_cells =
         List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
 
+      # Use imported helper
       updated_cells =
-        replace_region_content( # Use imported helper
+        replace_region_content(
           buffer.cells,
           scroll_start,
           scroll_end,
@@ -76,8 +81,9 @@ defmodule Raxol.Terminal.Buffer.Scroller do
       new_region_content = remaining_lines ++ empty_lines
 
       # Return updated buffer struct and the lines scrolled off
+      # Use imported helper
       updated_cells =
-        replace_region_content( # Use imported helper
+        replace_region_content(
           buffer.cells,
           scroll_start,
           scroll_end,
@@ -104,10 +110,10 @@ defmodule Raxol.Terminal.Buffer.Scroller do
         %ScreenBuffer{} = buffer,
         lines_to_insert,
         lines,
-        scroll_region_arg \\ nil # Changed name from scroll_region
+        # Changed name from scroll_region
+        scroll_region_arg \\ nil
       )
       when lines > 0 do
-
     # Determine effective scroll region boundaries (Same logic as scroll_up)
     {scroll_start, scroll_end} =
       case scroll_region_arg do
@@ -115,13 +121,17 @@ defmodule Raxol.Terminal.Buffer.Scroller do
         {start, ending}
         when is_integer(start) and start >= 0 and is_integer(ending) and
                ending >= start ->
-          {start, min(buffer.height - 1, ending)} # Clamp end to buffer height
+          # Clamp end to buffer height
+          {start, min(buffer.height - 1, ending)}
 
         # 2. If arg is nil or invalid, use buffer.scroll_region if set and valid
         _ when is_tuple(buffer.scroll_region) ->
           {start, ending} = buffer.scroll_region
-          if is_integer(start) and start >= 0 and is_integer(ending) and ending >= start do
-            {start, min(buffer.height - 1, ending)} # Clamp end to buffer height
+
+          if is_integer(start) and start >= 0 and is_integer(ending) and
+               ending >= start do
+            # Clamp end to buffer height
+            {start, min(buffer.height - 1, ending)}
           else
             # Buffer region invalid, use full height
             {0, buffer.height - 1}
@@ -139,8 +149,9 @@ defmodule Raxol.Terminal.Buffer.Scroller do
       empty_region_cells =
         List.duplicate(List.duplicate(Cell.new(), buffer.width), visible_lines)
 
+      # Use imported helper
       updated_cells =
-        replace_region_content( # Use imported helper
+        replace_region_content(
           buffer.cells,
           scroll_start,
           scroll_end,
@@ -160,8 +171,9 @@ defmodule Raxol.Terminal.Buffer.Scroller do
 
         new_region_content = actual_lines_to_insert ++ shifted_lines
 
+        # Use imported helper
         updated_cells =
-          replace_region_content( # Use imported helper
+          replace_region_content(
             buffer.cells,
             scroll_start,
             scroll_end,
@@ -179,8 +191,9 @@ defmodule Raxol.Terminal.Buffer.Scroller do
         shifted_lines = Enum.take(scroll_region_lines, visible_lines - lines)
         new_region_content = blank_lines_to_insert ++ shifted_lines
 
+        # Use imported helper
         updated_cells =
-          replace_region_content( # Use imported helper
+          replace_region_content(
             buffer.cells,
             scroll_start,
             scroll_end,

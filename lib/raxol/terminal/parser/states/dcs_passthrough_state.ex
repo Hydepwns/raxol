@@ -30,7 +30,8 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
 
       # String Terminator (ST - ESC \) -- Use escape_char check first
       <<27, rest_after_esc::binary>> ->
-        {:continue, emulator, %{parser_state | state: :dcs_passthrough_maybe_st}, rest_after_esc}
+        {:continue, emulator,
+         %{parser_state | state: :dcs_passthrough_maybe_st}, rest_after_esc}
 
       # Collect payload bytes (>= 0x20), excluding DEL (0x7F)
       <<byte, rest_after_byte::binary>> when byte >= 0x20 and byte != 0x7F ->
@@ -38,6 +39,7 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
           parser_state
           | payload_buffer: parser_state.payload_buffer <> <<byte>>
         }
+
         {:continue, emulator, next_parser_state, rest_after_byte}
 
       # CAN/SUB abort DCS passthrough

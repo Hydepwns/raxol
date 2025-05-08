@@ -14,7 +14,9 @@ defmodule Raxol.Components.Input.MultiLineInput.ClipboardHelper do
   Returns a tuple with the state (unchanged) and a list of commands to execute.
   """
   def copy_selection(%State{} = state) do
-    case Raxol.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(state) do
+    case Raxol.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
+           state
+         ) do
       {nil, nil} ->
         {state, []}
 
@@ -32,7 +34,9 @@ defmodule Raxol.Components.Input.MultiLineInput.ClipboardHelper do
   Returns a tuple with the updated state and a list of commands to execute.
   """
   def cut_selection(%State{} = state) do
-    case Raxol.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(state) do
+    case Raxol.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
+           state
+         ) do
       {nil, nil} ->
         {state, []}
 

@@ -10,25 +10,26 @@ defmodule Raxol.Application do
   def start(_type, _args) do
     Logger.info("No preferences file found, using defaults.")
 
-    children = if Mix.env() == :test do
-      # Use mock version for tests
-      [
-        # Use a mock version of the Terminal.Driver if in test env
-        {Raxol.Test.MockApplicationSupervisor, []}
-      ]
-    else
-      # Use real version for dev/prod
-      [
-        # Start the Dynamic Supervisor for Raxol applications
-        Raxol.DynamicSupervisor,
-        # Start the UserPreferences GenServer
-        Raxol.Core.UserPreferences,
-        # Start the Terminal Driver
-        # TODO: Pass the actual Dispatcher PID later
-        {Raxol.Terminal.Driver, nil}
-        # Add other core persistent processes here if needed (e.g., PluginManager, TerminalDriver? Check ARCHITECTURE)
-      ]
-    end
+    children =
+      if Mix.env() == :test do
+        # Use mock version for tests
+        [
+          # Use a mock version of the Terminal.Driver if in test env
+          {Raxol.Test.MockApplicationSupervisor, []}
+        ]
+      else
+        # Use real version for dev/prod
+        [
+          # Start the Dynamic Supervisor for Raxol applications
+          Raxol.DynamicSupervisor,
+          # Start the UserPreferences GenServer
+          Raxol.Core.UserPreferences,
+          # Start the Terminal Driver
+          # TODO: Pass the actual Dispatcher PID later
+          {Raxol.Terminal.Driver, nil}
+          # Add other core persistent processes here if needed (e.g., PluginManager, TerminalDriver? Check ARCHITECTURE)
+        ]
+      end
 
     # See https://hexdocs.pm/elixir/Supervisor.html
     # for other strategies and supported options

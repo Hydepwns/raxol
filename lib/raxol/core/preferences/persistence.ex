@@ -28,10 +28,12 @@ defmodule Raxol.Core.Preferences.Persistence do
   """
   def load do
     path = preferences_path()
+
     case File.read(path) do
       {:ok, binary_data} ->
         try do
           preferences = :erlang.binary_to_term(binary_data, [:safe])
+
           if is_map(preferences) do
             {:ok, preferences}
           else
@@ -41,13 +43,18 @@ defmodule Raxol.Core.Preferences.Persistence do
         rescue
           # Catches errors during binary_to_term (e.g., corrupt data)
           error ->
-            Logger.error("Failed to decode preferences file #{path}: #{inspect error}")
+            Logger.error(
+              "Failed to decode preferences file #{path}: #{inspect(error)}"
+            )
+
             {:error, :decoding_failed}
         end
+
       {:error, :enoent} ->
         {:error, :file_not_found}
+
       {:error, reason} ->
-         Logger.error("Failed to read preferences file #{path}: #{reason}")
+        Logger.error("Failed to read preferences file #{path}: #{reason}")
         {:error, reason}
     end
   end
@@ -63,18 +70,24 @@ defmodule Raxol.Core.Preferences.Persistence do
   """
   def save(preferences) when is_map(preferences) do
     path = preferences_path()
+
     try do
       binary_data = :erlang.term_to_binary(preferences)
       File.write(path, binary_data)
     rescue
       error ->
-        Logger.error("Failed to encode preferences for saving: #{inspect error}")
+        Logger.error(
+          "Failed to encode preferences for saving: #{inspect(error)}"
+        )
+
         {:error, :encoding_failed}
     catch
       :exit, reason ->
-        Logger.error("Failed to write preferences file #{path}: #{inspect reason}")
+        Logger.error(
+          "Failed to write preferences file #{path}: #{inspect(reason)}"
+        )
+
         {:error, :write_failed}
     end
   end
-
 end

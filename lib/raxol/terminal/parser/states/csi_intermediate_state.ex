@@ -33,8 +33,10 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
         # Collect intermediate directly
         next_parser_state = %{
           parser_state
-          | intermediates_buffer: parser_state.intermediates_buffer <> <<intermediate_byte>>
+          | intermediates_buffer:
+              parser_state.intermediates_buffer <> <<intermediate_byte>>
         }
+
         {:continue, emulator, next_parser_state, rest_after_intermediate}
 
       # Parameter byte or separator
@@ -45,18 +47,44 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
           parser_state
           | params_buffer: parser_state.params_buffer <> <<param_byte>>
         }
+
         # Transition back to csi_param state to continue collecting params
-        {:continue, emulator, %{next_parser_state | state: :csi_param}, rest_after_param}
+        {:continue, emulator, %{next_parser_state | state: :csi_param},
+         rest_after_param}
 
       # Final byte (0x40 - 0x7E)
-      <<final_byte, rest_after_final::binary>> when final_byte >= ?@ and final_byte <= ?~ ->
+      <<final_byte, rest_after_final::binary>>
+      when final_byte >= ?@ and final_byte <= ?~ ->
         # Execute the command
-        IO.inspect(emulator.main_screen_buffer, label: "CSI_INTERMEDIATE_PRE_EXECUTE: main_screen_buffer")
-        final_emulator = Executor.execute_csi_command(emulator, parser_state.params_buffer, parser_state.intermediates_buffer, final_byte)
-        IO.inspect(final_emulator.main_screen_buffer, label: "CSI_INTERMEDIATE_POST_EXECUTE: main_screen_buffer")
-        Logger.debug("CSIIntermediate: After execute, emulator.scroll_region=#{inspect(final_emulator.scroll_region)}")
+        IO.inspect(emulator.main_screen_buffer,
+          label: "CSI_INTERMEDIATE_PRE_EXECUTE: main_screen_buffer"
+        )
+
+        final_emulator =
+          Executor.execute_csi_command(
+            emulator,
+            parser_state.params_buffer,
+            parser_state.intermediates_buffer,
+            final_byte
+          )
+
+        IO.inspect(final_emulator.main_screen_buffer,
+          label: "CSI_INTERMEDIATE_POST_EXECUTE: main_screen_buffer"
+        )
+
+        Logger.debug(
+          "CSIIntermediate: After execute, emulator.scroll_region=#{inspect(final_emulator.scroll_region)}"
+        )
+
         # Transition back to Ground state
-        next_parser_state = %{parser_state | state: :ground, params_buffer: "", intermediates_buffer: "", final_byte: nil}
+        next_parser_state = %{
+          parser_state
+          | state: :ground,
+            params_buffer: "",
+            intermediates_buffer: "",
+            final_byte: nil
+        }
+
         # Continue processing the rest of the input with the new state
         {:continue, final_emulator, next_parser_state, rest_after_final}
 
@@ -81,6 +109,7 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
         Logger.warning(
           "Unhandled byte #{unhandled_byte} in CSI Intermediate state, returning to ground."
         )
+
         next_parser_state = %{parser_state | state: :ground}
         {:continue, emulator, next_parser_state, rest_after_unhandled}
     end

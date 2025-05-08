@@ -53,22 +53,25 @@ defmodule Raxol.Components.Progress.ProgressBarTest do
 
     test "clamps progress value to max", %{state: state} do
       {new_state, _} = ProgressBar.update({:set_value, 150}, state)
-      assert new_state.value == 100 # Clamped to max (default 100)
+      # Clamped to max (default 100)
+      assert new_state.value == 100
     end
 
     test "clamps progress value to min", %{state: state} do
       {new_state, _} = ProgressBar.update({:set_value, -10}, state)
-      assert new_state.value == 0 # Clamped to min 0
+      # Clamped to min 0
+      assert new_state.value == 0
     end
 
     test "ignores non-numeric progress values", %{state: state} do
-       {new_state, _} = ProgressBar.update({:set_value, "invalid"}, state)
-       assert new_state == state # Should ignore and return original state
+      {new_state, _} = ProgressBar.update({:set_value, "invalid"}, state)
+      # Should ignore and return original state
+      assert new_state == state
     end
   end
 
   describe "handle_event/3" do
-     setup do
+    setup do
       state = ProgressBar.init(%{})
       {:ok, state: state}
     end

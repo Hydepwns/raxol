@@ -76,7 +76,8 @@ defmodule Raxol.Terminal.Buffer.Writer do
     |> elem(0)
   end
 
-  @doc false # Private helper, now public within this module scope
+  # Private helper, now public within this module scope
+  @doc false
   # Silence potential spurious no_return warning
   @dialyzer {:nowarn_function, write_segment: 4}
   @spec write_segment(

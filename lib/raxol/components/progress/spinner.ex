@@ -106,14 +106,17 @@ defmodule Raxol.Components.Progress.Spinner do
     spinner_char = Enum.at(state.frames, state.frame_index)
     spinner_color = Enum.at(state.colors, state.color_index)
     spinner_style = [color: spinner_color]
-    label_style = [color: :white] # Assuming a default label style
+    # Assuming a default label style
+    label_style = [color: :white]
 
     # Use label macro from imported Raxol.View.Elements
+    # Use the imported row macro
     dsl_result =
-      row do # Use the imported row macro
+      row do
         if state.text do
           spinner_content = label(content: spinner_char, style: spinner_style)
           label_content = label(content: state.text, style: label_style)
+
           case state.text_position do
             :left -> [label_content, label(content: " "), spinner_content]
             _ -> [spinner_content, label(content: " "), label_content]
@@ -124,11 +127,16 @@ defmodule Raxol.Components.Progress.Spinner do
       end
 
     # Convert to Element struct
-    dsl_result # Return the DSL map directly, LayoutEngine handles it
+    # Return the DSL map directly, LayoutEngine handles it
+    dsl_result
   end
 
   @impl Raxol.UI.Components.Base.Component
-  def handle_event(%{type: :timer, data: %{id: _timer_id}} = _event, %{} = _props, state) do
+  def handle_event(
+        %{type: :timer, data: %{id: _timer_id}} = _event,
+        %{} = _props,
+        state
+      ) do
     # Access event fields using dot notation if needed
     # Logger.debug("Spinner timer event: #{inspect event.data}")
     next_frame = rem(state.frame_index + 1, length(state.frames))

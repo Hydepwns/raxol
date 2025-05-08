@@ -174,10 +174,15 @@ defmodule Raxol.Core.Runtime.Application do
           {model(), list(Command.t())} | {:error, term()}
   def delegate_init(app_module, context) when is_atom(app_module) do
     Logger.info("[#{__MODULE__}] Delegating init to #{inspect(app_module)}...")
+
     if function_exported?(app_module, :init, 1) do
       try do
         result = app_module.init(context)
-        Logger.debug("[#{__MODULE__}] #{inspect(app_module)}.init/1 returned: #{inspect(result)}")
+
+        Logger.debug(
+          "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned: #{inspect(result)}"
+        )
+
         case result do
           {model, commands} when is_map(model) and is_list(commands) ->
             {model, commands}
@@ -269,13 +274,16 @@ defmodule Raxol.Core.Runtime.Application do
 
   @callback view(model :: model()) :: Raxol.UI.Layout.element() | nil
 
-  @callback subscriptions(model :: model()) :: [Raxol.Core.Runtime.Subscription.t()] | Raxol.Core.Runtime.Subscription.t() | []
+  @callback subscriptions(model :: model()) ::
+              [Raxol.Core.Runtime.Subscription.t()]
+              | Raxol.Core.Runtime.Subscription.t()
+              | []
 
   # Optional callbacks
   @callback handle_event(Raxol.Core.Events.Event.t()) :: message() | :halt | nil
   @callback handle_tick(model :: model()) :: {model(), [command()]}
   @callback handle_message(message :: any(), model :: model()) ::
-             {model(), [command()]}
+              {model(), [command()]}
 
   @callback terminate(reason :: any(), model :: model()) :: any()
 
@@ -315,21 +323,26 @@ defmodule Raxol.Core.Runtime.Application do
   """
   def update(app_module, message, model) do
     if function_exported?(app_module, :update, 2) do
-       case app_module.update(message, model) do
-        {updated_model, commands} when is_list(commands) -> {updated_model, commands}
-        {updated_model, command} -> {updated_model, [command]}
-        updated_model when is_map(updated_model) -> {updated_model, []}
+      case app_module.update(message, model) do
+        {updated_model, commands} when is_list(commands) ->
+          {updated_model, commands}
+
+        {updated_model, command} ->
+          {updated_model, [command]}
+
+        updated_model when is_map(updated_model) ->
+          {updated_model, []}
+
         # Allow returning only commands? Maybe not standard TEA.
         _ ->
           # Assume no change if return value is unexpected
           {model, []}
       end
     else
-       # Default implementation if update/2 is not defined
+      # Default implementation if update/2 is not defined
       {model, []}
     end
   end
 
   # Add other delegating functions as needed (view, subscriptions, handle_event)
-
 end

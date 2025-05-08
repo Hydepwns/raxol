@@ -1,7 +1,9 @@
 defmodule Raxol.Terminal.CharacterSetsTest do
   use ExUnit.Case
-  alias Raxol.Terminal.CharacterSets # Keep this alias for state management if needed later
-  alias Raxol.Terminal.ANSI.CharacterTranslations # Add alias for translation functions
+  # Keep this alias for state management if needed later
+  alias Raxol.Terminal.CharacterSets
+  # Add alias for translation functions
+  alias Raxol.Terminal.ANSI.CharacterTranslations
 
   describe "character set translation" do
     test "translates Latin-1 characters" do
@@ -13,7 +15,9 @@ defmodule Raxol.Terminal.CharacterSetsTest do
 
       # Test special characters
       # Non-breaking space
-      assert CharacterTranslations.translate_string(<<0xA0>>, :latin1) == <<0xC2, 0xA0>>
+      assert CharacterTranslations.translate_string(<<0xA0>>, :latin1) ==
+               <<0xC2, 0xA0>>
+
       # Inverted exclamation mark
       assert CharacterTranslations.translate_string(<<0xA1>>, :latin1) == "¡"
       # Cent sign

@@ -38,7 +38,7 @@ defmodule Raxol.Components.TabBar do
 
   @behaviour Raxol.ComponentBehaviour
 
-  @doc """
+  @doc \"""
   Renders a tab bar with the given tabs, highlighting the active tab.
 
   ## Parameters
@@ -83,7 +83,7 @@ defmodule Raxol.Components.TabBar do
     active_tab_style =
       Keyword.get(opts, :active_tab_style, %{fg: :white, bg: :blue})
 
-    Raxol.View.Elements.row [style: style, id: focus_key] do
+    Raxol.View.Elements.row style: style, id: focus_key do
       tab_buttons =
         Enum.map(tabs, fn %{id: id, label: label} = tab ->
           is_active = id == active_tab
@@ -167,9 +167,9 @@ defmodule Raxol.Components.TabBar do
 
     content_style = Keyword.get(opts, :content_style, %{})
 
-    Raxol.View.Elements.row [style: style, id: focus_key] do
+    Raxol.View.Elements.row style: style, id: focus_key do
       tab_bar =
-        Raxol.View.Elements.row [style: tab_bar_style] do
+        Raxol.View.Elements.row style: tab_bar_style do
           tab_bar_result =
             render(tabs, active_tab, on_change,
               focus_key: focus_key,
@@ -183,7 +183,7 @@ defmodule Raxol.Components.TabBar do
         end
 
       content =
-        Raxol.View.Elements.row [style: content_style] do
+        Raxol.View.Elements.row style: content_style do
           # Find and render the content for the active tab
           active_tab_content =
             case Enum.find(tabs, fn %{id: id} -> id == active_tab end) do

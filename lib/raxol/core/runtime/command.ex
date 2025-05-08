@@ -60,6 +60,7 @@ defmodule Raxol.Core.Runtime.Command do
   """
 
   alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
+  require Logger
 
   @type t :: %__MODULE__{
           type:
@@ -198,6 +199,10 @@ defmodule Raxol.Core.Runtime.Command do
   system and should not be called directly by applications.
   """
   def execute(%__MODULE__{} = command, context) do
+    Logger.debug(
+      "[Command.execute] Executing command: #{inspect(command)} with context: #{inspect(context)}"
+    )
+
     case command do
       %{type: :none} ->
         :ok
@@ -215,30 +220,42 @@ defmodule Raxol.Core.Runtime.Command do
         Process.send_after(context.pid, {:command_result, msg}, delay)
 
       %{type: :broadcast, data: msg} ->
-        Raxol.Core.Events.Manager.broadcast(msg)
+        Raxol.Core.Runtime.Events.Dispatcher.broadcast(msg)
 
       %{type: :system, data: {operation, opts}} ->
         execute_system_operation(operation, opts, context)
 
       %{type: :quit} ->
+        Logger.debug(
+          "[Command.execute] Matched :quit. Sending :quit_runtime to #{inspect(context.runtime_pid)}"
+        )
+
         # Signal the main Runtime process to quit
         send(context.runtime_pid, :quit_runtime)
 
       %{type: :clipboard_write, data: text} ->
-        # Delegate to PluginManager
-        GenServer.cast(PluginManager, {:handle_command, :clipboard_write, text})
-
-      %{type: :clipboard_read} ->
-        # Delegate to PluginManager, expects a result back via {:command_result, ...}
-        # PluginManager needs to know who to send the result back to (context.pid)
+        # Delegate to PluginManager with namespace, data as a list, and dispatcher_pid
         GenServer.cast(
           PluginManager,
-          {:handle_command, :clipboard_read, context.pid}
+          {:handle_command, :clipboard_write,
+           Raxol.Core.Plugins.Core.ClipboardPlugin, [text], context.pid}
+        )
+
+      %{type: :clipboard_read} ->
+        # Delegate to PluginManager with namespace, data as nil, and dispatcher_pid
+        GenServer.cast(
+          PluginManager,
+          {:handle_command, :clipboard_read,
+           Raxol.Core.Plugins.Core.ClipboardPlugin, nil, context.pid}
         )
 
       %{type: :notify, data: {title, body}} ->
-        # Delegate to PluginManager
-        GenServer.cast(PluginManager, {:handle_command, :notify, {title, body}})
+        # Delegate to PluginManager with namespace, data as a list [title, body], and dispatcher_pid
+        GenServer.cast(
+          PluginManager,
+          {:handle_command, :notify, Raxol.Core.Plugins.Core.NotificationPlugin,
+           [title, body], context.pid}
+        )
     end
   end
 
@@ -246,7 +263,13 @@ defmodule Raxol.Core.Runtime.Command do
   defp execute_system_operation(operation, opts, context) do
     case operation do
       :file_write ->
-        File.write(opts[:path], opts[:content])
+        case File.write(opts[:path], opts[:content]) do
+          :ok ->
+            :ok
+
+          {:error, reason} ->
+            Logger.error("System command file_write failed: #{reason}")
+        end
 
       :file_read ->
         case File.read(opts[:path]) do
@@ -259,7 +282,7 @@ defmodule Raxol.Core.Runtime.Command do
 
       # Add more system operations as needed
       _ ->
-        {:error, :unknown_operation}
+        Logger.warning("Unhandled system operation: #{inspect(operation)}")
     end
   end
 end

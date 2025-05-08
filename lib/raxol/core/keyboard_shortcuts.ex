@@ -38,9 +38,12 @@ defmodule Raxol.Core.KeyboardShortcuts do
       KeyboardShortcuts.show_shortcuts_help()
   """
 
+  @behaviour Raxol.Core.KeyboardShortcutsBehaviour
+
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.Accessibility
 
+  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Initialize the keyboard shortcuts manager.
 
@@ -69,6 +72,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     :ok
   end
 
+  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Clean up the keyboard shortcuts manager.
 
@@ -94,6 +98,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     :ok
   end
 
+  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Register a keyboard shortcut with a callback function.
 
@@ -168,6 +173,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     :ok
   end
 
+  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Unregister a keyboard shortcut.
 
@@ -216,6 +222,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     :ok
   end
 
+  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Set the current context for shortcuts.
 
@@ -243,6 +250,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     :ok
   end
 
+  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Get the current active context for shortcuts.
 
@@ -255,6 +263,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     Process.get(:keyboard_shortcuts_context, :global)
   end
 
+  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Get all shortcuts for a specific context.
 
@@ -301,6 +310,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     end)
   end
 
+  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Display help for available shortcuts.
 
@@ -342,6 +352,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
     {:ok, full_message}
   end
 
+  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Trigger a shortcut programmatically.
 
@@ -385,6 +396,7 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
   # Private functions
 
+  @impl Raxol.Core.KeyboardShortcutsBehaviour
   # Make handle_keyboard_event public and uncomment it and helpers
   def handle_keyboard_event({:keyboard_event, {:key, key, modifiers}}) do
     # Get current shortcuts registry

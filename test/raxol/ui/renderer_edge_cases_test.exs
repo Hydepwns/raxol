@@ -26,7 +26,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Render empty elements
-      result = Renderer.render(elements, theme)
+      result = Renderer.render_to_cells(elements, theme)
 
       # Should return an empty list of cells
       assert result == []
@@ -43,7 +43,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Render nil elements
-      result = Renderer.render(elements, theme)
+      result = Renderer.render_to_cells(elements, theme)
 
       # Should return an empty list of cells
       assert result == []
@@ -52,10 +52,14 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
     test "handles elements with missing required attributes" do
       # Create elements with missing required attributes
       elements = [
-        %{type: :text}, # Missing content
-        %{type: :panel, x: 0, y: 0}, # Missing width/height
-        %{type: :box, width: 10, height: 5}, # Missing x/y
-        %{type: :unknown_type, x: 0, y: 0, width: 10, height: 5} # Unknown type
+        # Missing content
+        %{type: :text},
+        # Missing width/height
+        %{type: :panel, x: 0, y: 0},
+        # Missing x/y
+        %{type: :box, width: 10, height: 5},
+        # Unknown type
+        %{type: :unknown_type, x: 0, y: 0, width: 10, height: 5}
       ]
 
       # Create a test theme
@@ -66,7 +70,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Should not crash
-      result = Renderer.render(elements, theme)
+      result = Renderer.render_to_cells(elements, theme)
 
       # It may render some parts (e.g., box outline) but should gracefully handle missing attributes
       # The exact result depends on implementation details, but it should not crash
@@ -76,8 +80,22 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
     test "handles overlapping elements" do
       # Create overlapping elements
       elements = [
-        %{type: :box, x: 0, y: 0, width: 10, height: 5, style: %{background: :blue}},
-        %{type: :box, x: 5, y: 2, width: 10, height: 5, style: %{background: :red}}
+        %{
+          type: :box,
+          x: 0,
+          y: 0,
+          width: 10,
+          height: 5,
+          style: %{background: :blue}
+        },
+        %{
+          type: :box,
+          x: 5,
+          y: 2,
+          width: 10,
+          height: 5,
+          style: %{background: :red}
+        }
       ]
 
       # Create a test theme
@@ -88,7 +106,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Render overlapping elements
-      result = Renderer.render(elements, theme)
+      result = Renderer.render_to_cells(elements, theme)
 
       # Should have cells for both boxes
       # The overlapping cells should use the style of the last element (red box)
@@ -130,7 +148,13 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
             height: 5,
             style: %{background: :red},
             children: [
-              %{type: :text, x: 1, y: 1, content: "Nested", style: %{foreground: :yellow}}
+              %{
+                type: :text,
+                x: 1,
+                y: 1,
+                content: "Nested",
+                style: %{foreground: :yellow}
+              }
             ]
           }
         ]
@@ -143,7 +167,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Render nested elements
-      result = Renderer.render([parent], theme)
+      result = Renderer.render_to_cells([parent], theme)
 
       # Check that the nesting is handled correctly
 
@@ -178,7 +202,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       element = %{type: :text, x: 0, y: 0, content: "Test"}
 
       # Render with nil theme
-      result = Renderer.render([element], nil)
+      result = Renderer.render_to_cells([element], nil)
 
       # Should still render using default styles
       assert result != []
@@ -187,8 +211,21 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
     test "handles missing theme colors" do
       # Create elements with styles referencing missing theme colors
       elements = [
-        %{type: :text, x: 0, y: 0, content: "Test", style: %{foreground: :missing_color}},
-        %{type: :box, x: 5, y: 0, width: 10, height: 5, style: %{background: :another_missing}}
+        %{
+          type: :text,
+          x: 0,
+          y: 0,
+          content: "Test",
+          style: %{foreground: :missing_color}
+        },
+        %{
+          type: :box,
+          x: 5,
+          y: 0,
+          width: 10,
+          height: 5,
+          style: %{background: :another_missing}
+        }
       ]
 
       # Create a theme with limited colors
@@ -198,7 +235,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Render with missing theme colors
-      result = Renderer.render(elements, theme)
+      result = Renderer.render_to_cells(elements, theme)
 
       # Should fall back to default colors when specific colors are missing
 
@@ -239,9 +276,123 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Render with style overrides
-      result = Renderer.render([element], theme)
+      result = Renderer.render_to_cells([element], theme)
 
       # Check that style overrides are applied
+      cell = get_cell_at(result, 0, 0)
+      assert cell != nil
+      {_, _, "T", fg, bg, modifiers} = cell
+
+      # Custom foreground and background should be applied
+      assert fg == :magenta
+      assert bg == :cyan
+
+      # Modifiers should include bold and underline
+      assert modifiers[:bold] == true
+      assert modifiers[:underline] == true
+    end
+
+    test "handles explicit border style override" do
+      # Create element with style that should override theme defaults
+      element = %{
+        type: :text,
+        x: 0,
+        y: 0,
+        content: "Test",
+        style: %{
+          foreground: :custom_fg,
+          background: :custom_bg,
+          bold: true,
+          underline: true
+        }
+      }
+
+      # Create a theme with custom colors
+      theme = %{
+        foreground: %{default: :white, custom_fg: :magenta},
+        background: %{default: :black, custom_bg: :cyan}
+      }
+
+      # Render with explicit border style override
+      result = Renderer.render_to_cells([element], theme)
+
+      # Check that the text has a heavy border
+      cell = get_cell_at(result, 0, 0)
+      assert cell != nil
+      {_, _, "T", fg, bg, modifiers} = cell
+
+      # Custom foreground and background should be applied
+      assert fg == :magenta
+      assert bg == :cyan
+
+      # Modifiers should include bold and underline
+      assert modifiers[:bold] == true
+      assert modifiers[:underline] == true
+    end
+
+    test "handles default border style" do
+      # Create element with style that should override theme defaults
+      element = %{
+        type: :text,
+        x: 0,
+        y: 0,
+        content: "Test",
+        style: %{
+          foreground: :custom_fg,
+          background: :custom_bg,
+          bold: true,
+          underline: true
+        }
+      }
+
+      # Create a theme with custom colors
+      theme = %{
+        foreground: %{default: :white, custom_fg: :magenta},
+        background: %{default: :black, custom_bg: :cyan}
+      }
+
+      # Render with default border style
+      result = Renderer.render_to_cells([element], theme)
+
+      # Check that the text has the default border style from the theme
+      cell = get_cell_at(result, 0, 0)
+      assert cell != nil
+      {_, _, "T", fg, bg, modifiers} = cell
+
+      # Custom foreground and background should be applied
+      assert fg == :magenta
+      assert bg == :cyan
+
+      # Modifiers should include bold and underline
+      assert modifiers[:bold] == true
+      assert modifiers[:underline] == true
+    end
+
+    test "handles no border" do
+      # Create element with style that should override theme defaults
+      element = %{
+        type: :text,
+        x: 0,
+        y: 0,
+        content: "Test",
+        style: %{
+          foreground: :custom_fg,
+          background: :custom_bg,
+          bold: true,
+          underline: true
+        }
+      }
+
+      # Create a theme with custom colors
+      theme = %{
+        foreground: %{default: :white, custom_fg: :magenta},
+        background: %{default: :black, custom_bg: :cyan}
+      }
+
+      # Render with no border
+      result = Renderer.render_to_cells([element], theme)
+
+      # Check that no border cells are rendered
       cell = get_cell_at(result, 0, 0)
       assert cell != nil
       {_, _, "T", fg, bg, modifiers} = cell
@@ -265,9 +416,11 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
         y: 0,
         headers: ["Col 1", "Col 2", "Col 3"],
         data: [
-          ["Row 1-1", "Row 1-2"], # Missing third column
+          # Missing third column
+          ["Row 1-1", "Row 1-2"],
           ["Row 2-1", "Row 2-2", "Row 2-3"],
-          ["Row 3-1"] # Missing second and third columns
+          # Missing second and third columns
+          ["Row 3-1"]
         ],
         style: %{}
       }
@@ -280,7 +433,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Render table
-      result = Renderer.render([table], theme)
+      result = Renderer.render_to_cells([table], theme)
 
       # Should handle varying row lengths without crashing
       assert result != []
@@ -309,7 +462,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Render large element
-      result = Renderer.render([large_box], theme)
+      result = Renderer.render_to_cells([large_box], theme)
 
       # Should handle large dimensions without crashing
       assert result != []
@@ -340,15 +493,16 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Render text with unicode
-      result = Renderer.render([text], theme)
+      result = Renderer.render_to_cells([text], theme)
 
       # Should handle Unicode characters
       assert result != []
 
       # Verify some Unicode characters are rendered
-      unicode_chars = get_cells_with_char(result, "ä") ++
-                     get_cells_with_char(result, "你") ++
-                     get_cells_with_char(result, "👋")
+      unicode_chars =
+        get_cells_with_char(result, "ä") ++
+          get_cells_with_char(result, "你") ++
+          get_cells_with_char(result, "👋")
 
       # At least some of these should be rendered
       assert length(unicode_chars) > 0
@@ -419,7 +573,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Render deeply nested components
-      result = Renderer.render([deep_nesting], theme)
+      result = Renderer.render_to_cells([deep_nesting], theme)
 
       # Should handle deep nesting without crashing
       assert result != []
@@ -435,22 +589,26 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       assert fg == :magenta
 
       # Check that backgrounds at each level are rendered correctly
-      level1_cell = get_cell_at(result, 2, 1) # In outermost panel
+      # In outermost panel
+      level1_cell = get_cell_at(result, 2, 1)
       assert level1_cell != nil
       {_, _, _, _, bg1, _} = level1_cell
       assert bg1 == :blue
 
-      level2_cell = get_cell_at(result, 7, 4) # In second level panel
+      # In second level panel
+      level2_cell = get_cell_at(result, 7, 4)
       assert level2_cell != nil
       {_, _, _, _, bg2, _} = level2_cell
       assert bg2 == :green
 
-      level3_cell = get_cell_at(result, 12, 7) # In third level panel
+      # In third level panel
+      level3_cell = get_cell_at(result, 12, 7)
       assert level3_cell != nil
       {_, _, _, _, bg3, _} = level3_cell
       assert bg3 == :cyan
 
-      level4_cell = get_cell_at(result, 17, 7) # In fourth level panel
+      # In fourth level panel
+      level4_cell = get_cell_at(result, 17, 7)
       assert level4_cell != nil
       {_, _, _, _, bg4, _} = level4_cell
       assert bg4 == :red
@@ -459,7 +617,9 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
     test "handles recursive composition" do
       # Create a function that builds a recursive tree of boxes
       build_recursive_box = fn
-        _, 0 -> nil
+        _, 0 ->
+          nil
+
         build_fn, depth ->
           %{
             type: :box,
@@ -490,18 +650,20 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       }
 
       # Render recursive structure
-      result = Renderer.render([recursive_box], theme)
+      result = Renderer.render_to_cells([recursive_box], theme)
 
       # Should handle recursive composition without crashing
       assert result != []
 
       # Verify cells from each level
-      level5_cell = get_cell_at(result, 10, 5) # In level 5 box
+      # In level 5 box
+      level5_cell = get_cell_at(result, 10, 5)
       assert level5_cell != nil
       {_, _, _, _, bg5, _} = level5_cell
       assert bg5 == :cyan
 
-      level3_cell = get_cell_at(result, 6, 3) # In level 3 box
+      # In level 3 box
+      level3_cell = get_cell_at(result, 6, 3)
       assert level3_cell != nil
       {_, _, _, _, bg3, _} = level3_cell
       assert bg3 == :blue

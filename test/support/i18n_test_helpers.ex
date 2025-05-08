@@ -282,7 +282,8 @@ defmodule Raxol.I18nTestHelpers do
       # Mock implementation for tests
       settings = get_mock_locale_accessibility_settings()
 
-      assert is_map(settings), "Expected locale-specific accessibility settings for '#{locale}'"
+      assert is_map(settings),
+             "Expected locale-specific accessibility settings for '#{locale}'"
     end)
   end
 

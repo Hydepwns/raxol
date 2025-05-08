@@ -34,19 +34,21 @@ defmodule Raxol.Terminal.Commands.Screen do
     {cursor_x, cursor_y} = emulator.cursor.position
     default_style = emulator.style
 
-    Logger.debug(
-      "[Screen.clear_screen] default_style for mode: #{mode}"
-    )
+    Logger.debug("[Screen.clear_screen] default_style for mode: #{mode}")
 
     case mode do
       # Clear from cursor to end of screen
       0 ->
-        new_buffer = Eraser.clear_screen_from(buffer, cursor_y, cursor_x, default_style)
+        new_buffer =
+          Eraser.clear_screen_from(buffer, cursor_y, cursor_x, default_style)
+
         Emulator.update_active_buffer(emulator, new_buffer)
 
       # Clear from beginning of screen to cursor
       1 ->
-        new_buffer = Eraser.clear_screen_to(buffer, cursor_y, cursor_x, default_style)
+        new_buffer =
+          Eraser.clear_screen_to(buffer, cursor_y, cursor_x, default_style)
+
         Emulator.update_active_buffer(emulator, new_buffer)
 
       # Clear entire screen
@@ -57,8 +59,10 @@ defmodule Raxol.Terminal.Commands.Screen do
       # Clear entire screen including scrollback
       3 ->
         new_buffer = Eraser.clear_screen(buffer, default_style)
+
         # TODO: Re-implement scrollback clearing if needed, likely by calling a ScreenBuffer or Emulator function
-        Emulator.update_active_buffer(emulator, new_buffer) # Ensure buffer is updated
+        # Ensure buffer is updated
+        Emulator.update_active_buffer(emulator, new_buffer)
 
       # Unknown mode, do nothing
       _ ->
@@ -86,7 +90,11 @@ defmodule Raxol.Terminal.Commands.Screen do
   def clear_line(emulator, mode) do
     buffer = Emulator.get_active_buffer(emulator)
     {cursor_x, cursor_y} = emulator.cursor.position
-    Logger.debug("[Screen.clear_line] CALLED with mode: #{mode}, cursor_x: #{cursor_x}, cursor_y from emulator: #{cursor_y}")
+
+    Logger.debug(
+      "[Screen.clear_line] CALLED with mode: #{mode}, cursor_x: #{cursor_x}, cursor_y from emulator: #{cursor_y}"
+    )
+
     default_style = emulator.style
 
     new_buffer =
@@ -177,7 +185,13 @@ defmodule Raxol.Terminal.Commands.Screen do
     if cursor_y >= top && cursor_y <= bottom do
       # Delete count lines at cursor_y, passing the scroll region
       new_buffer =
-        ScreenBuffer.delete_lines(buffer, cursor_y, count, emulator.style, {top, bottom})
+        ScreenBuffer.delete_lines(
+          buffer,
+          cursor_y,
+          count,
+          emulator.style,
+          {top, bottom}
+        )
 
       Emulator.update_active_buffer(emulator, new_buffer)
     else
@@ -202,7 +216,9 @@ defmodule Raxol.Terminal.Commands.Screen do
   def scroll_up(emulator, count) do
     buffer = Emulator.get_active_buffer(emulator)
     # ScreenBuffer.scroll_up returns {updated_cells, scrolled_off_lines}
-    {updated_cells, _scrolled_off_lines} = ScreenBuffer.scroll_up(buffer, count, emulator.scroll_region)
+    {updated_cells, _scrolled_off_lines} =
+      ScreenBuffer.scroll_up(buffer, count, emulator.scroll_region)
+
     # Create the updated buffer struct
     updated_buffer = %{buffer | cells: updated_cells}
     # Update the emulator state with the fully updated buffer struct

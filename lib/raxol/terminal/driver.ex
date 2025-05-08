@@ -14,13 +14,15 @@ defmodule Raxol.Terminal.Driver do
   @behaviour Raxol.Terminal.Driver.Behaviour
 
   require Logger
-  import Bitwise # Import Bitwise for bitwise operations
+  # Import Bitwise for bitwise operations
+  import Bitwise
 
   alias Raxol.Core.Events.Event
   # Use ExTermbox instead of :rrex_termbox
   alias ExTermbox
 
-  @type dispatcher_pid :: pid() | nil # Allow nil initially
+  # Allow nil initially
+  @type dispatcher_pid :: pid() | nil
   @type original_stty :: String.t()
 
   defmodule State do
@@ -35,15 +37,20 @@ defmodule Raxol.Terminal.Driver do
   Starts the GenServer.
   """
   @impl true
-  def start_link(dispatcher_pid) do # Allow nil or pid
-    Logger.info("[#{__MODULE__}] start_link called for dispatcher: #{inspect(dispatcher_pid)}")
+  # Allow nil or pid
+  def start_link(dispatcher_pid) do
+    Logger.info(
+      "[#{__MODULE__}] start_link called for dispatcher: #{inspect(dispatcher_pid)}"
+    )
+
     GenServer.start_link(__MODULE__, dispatcher_pid, name: __MODULE__)
   end
 
   # --- GenServer Callbacks ---
 
   @impl true
-  def init(dispatcher_pid) do # dispatcher_pid can be nil here
+  # dispatcher_pid can be nil here
+  def init(dispatcher_pid) do
     Logger.info("[#{__MODULE__}] init starting...")
     Process.flag(:trap_exit, true)
 
@@ -56,6 +63,7 @@ defmodule Raxol.Terminal.Driver do
     else
       # Start rrex_termbox NIF in non-test environments
       Logger.debug("[#{__MODULE__}] Initializing rrex_termbox...")
+
       case ExTermbox.init(owner: self()) do
         {:ok, _tb_pid} ->
           Logger.info("[#{__MODULE__}] rrex_termbox initialized successfully.")
@@ -69,7 +77,10 @@ defmodule Raxol.Terminal.Driver do
           {:ok, %State{dispatcher_pid: dispatcher_pid, original_stty: nil}}
 
         {:error, reason} ->
-          Logger.error("[#{__MODULE__}] Failed to initialize rrex_termbox: #{inspect(reason)}. Halting init.")
+          Logger.error(
+            "[#{__MODULE__}] Failed to initialize rrex_termbox: #{inspect(reason)}. Halting init."
+          )
+
           {:stop, {:termbox_init_failed, reason}}
       end
     end
@@ -78,23 +89,31 @@ defmodule Raxol.Terminal.Driver do
   @impl true
   def handle_info({:system_event, _pid, :sigwinch}, state) do
     Logger.debug("Ignoring legacy :system_event :sigwinch message.")
-    {:noreply, state} # Keep the function clause but make it do nothing
+    # Keep the function clause but make it do nothing
+    {:noreply, state}
   end
 
   # --- Handle events from rrex_termbox NIF ---
   @impl true
   def handle_info({:termbox_event, event_map}, state) do
     Logger.debug("Received termbox event: #{inspect(event_map)}")
+
     case translate_termbox_event(event_map) do
       {:ok, %Event{} = event} ->
         # Only send if dispatcher_pid is known
-        if state.dispatcher_pid, do: GenServer.cast(state.dispatcher_pid, {:dispatch, event})
+        if state.dispatcher_pid,
+          do: GenServer.cast(state.dispatcher_pid, {:dispatch, event})
+
       :ignore ->
         # Event type we don't care about or couldn't translate
         :ok
+
       {:error, reason} ->
-        Logger.warning("Failed to translate termbox event: #{inspect(reason)}. Event: #{inspect(event_map)}")
+        Logger.warning(
+          "Failed to translate termbox event: #{inspect(reason)}. Event: #{inspect(event_map)}"
+        )
     end
+
     {:noreply, state}
   end
 
@@ -114,18 +133,55 @@ defmodule Raxol.Terminal.Driver do
     {:noreply, %{state | dispatcher_pid: pid}}
   end
 
+  # --- Test Environment Input Simulation ---
+  # This clause is only intended for use in the :test environment
+  # to simulate raw input events without relying on the NIF.
+  @impl true
+  def handle_cast({:test_input, input_data}, %{dispatcher_pid: nil} = state) do
+    Logger.warning(
+      "Received test input before dispatcher registration: #{inspect(input_data)}"
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast({:test_input, input_data}, state) do
+    # Construct a basic event. Tests might need more specific event types later.
+    # We need to parse the input_data into something the MockApp expects.
+    Logger.debug(
+      "[TerminalDriver.handle_cast - :test_input] Received input_data: #{inspect(input_data)}, state: #{inspect(state)}"
+    )
+
+    event = parse_test_input(input_data)
+
+    Logger.debug(
+      "[TerminalDriver.handle_cast - :test_input] Parsed event: #{inspect(event)}"
+    )
+
+    Logger.debug("[TEST] Dispatching simulated event: #{inspect(event)}")
+    GenServer.cast(state.dispatcher_pid, {:dispatch, event})
+    {:noreply, state}
+  end
+
   # Catch-all for unexpected messages
   @impl true
   def handle_info(unhandled_message, state) do
-    Logger.warning("#{__MODULE__} received unhandled message: #{inspect(unhandled_message)}")
+    Logger.warning(
+      "#{__MODULE__} received unhandled message: #{inspect(unhandled_message)}"
+    )
+
     {:noreply, state}
   end
 
   @impl true
   def terminate(_reason, _state) do
     Logger.info("Terminal Driver terminating.")
-    # Ensure rrex_termbox is shut down
-    _ = ExTermbox.shutdown()
+    # Only attempt shutdown if not in test environment
+    if Mix.env() != :test do
+      _ = ExTermbox.shutdown()
+    end
+
     :ok
   end
 
@@ -133,7 +189,8 @@ defmodule Raxol.Terminal.Driver do
 
   defp get_terminal_size do
     if Mix.env() == :test do
-      {:ok, 80, 24} # Default predictable size for tests
+      # Default predictable size for tests
+      {:ok, 80, 24}
     else
       # Try to get size from rrex_termbox first
       with {:ok, width} <- ExTermbox.width(),
@@ -144,16 +201,24 @@ defmodule Raxol.Terminal.Driver do
           # Fall back to stty if rrex_termbox fails
           try do
             output = String.trim(:os.cmd("stty size"))
+
             case String.split(output) do
               [rows, cols] ->
                 {:ok, String.to_integer(cols), String.to_integer(rows)}
+
               _ ->
-                Logger.warning("Unexpected output from 'stty size': #{inspect(output)}")
+                Logger.warning(
+                  "Unexpected output from 'stty size': #{inspect(output)}"
+                )
+
                 {:error, :invalid_format}
             end
           catch
             type, reason ->
-              Logger.error("Error getting terminal size via 'stty size': #{type}: #{inspect(reason)}")
+              Logger.error(
+                "Error getting terminal size via 'stty size': #{type}: #{inspect(reason)}"
+              )
+
               Logger.error(Exception.format_stacktrace(__STACKTRACE__))
               {:error, reason}
           end
@@ -168,11 +233,20 @@ defmodule Raxol.Terminal.Driver do
         Logger.info("Initial terminal size: #{width}x#{height}")
         event = %Event{type: :resize, data: %{width: width, height: height}}
         GenServer.cast(dispatcher_pid, {:dispatch, event})
+
       {:error, reason} ->
-        Logger.warning("Failed to get initial terminal size (#{inspect(reason)}). Using default 80x24.")
+        Logger.warning(
+          "Failed to get initial terminal size (#{inspect(reason)}). Using default 80x24."
+        )
+
         default_width = 80
         default_height = 24
-        event = %Event{type: :resize, data: %{width: default_width, height: default_height}}
+
+        event = %Event{
+          type: :resize,
+          data: %{width: default_width, height: default_height}
+        }
+
         GenServer.cast(dispatcher_pid, {:dispatch, event})
     end
   end
@@ -195,7 +269,11 @@ defmodule Raxol.Terminal.Driver do
         # Translate rrex_termbox mouse button codes and potentially event types (press, release, move)
         translated_button = translate_mouse_button(btn_code)
         # Add button info to the data
-        event = %Event{type: :mouse, data: %{x: x, y: y, button: translated_button}}
+        event = %Event{
+          type: :mouse,
+          data: %{x: x, y: y, button: translated_button}
+        }
+
         {:ok, event}
 
       # Add cases for other event types rrex_termbox might send
@@ -206,20 +284,28 @@ defmodule Raxol.Terminal.Driver do
     end
   catch
     # Catch potential errors during translation
-    type, reason -> {:error, {type, reason, Exception.format_stacktrace(__STACKTRACE__)}}
+    type, reason ->
+      {:error, {type, reason, Exception.format_stacktrace(__STACKTRACE__)}}
   end
 
   # Helper for key translation
   defp translate_key(key_code, char_code, mod_code) do
     # Actual implementation based on test simulations and potential NIF values
     # Modifiers: Shift=1, Ctrl=2, Alt=4, Meta=8 (assuming standard bitflags)
-    shift = (Bitwise.&&&(mod_code, 1)) != 0
-    ctrl = (Bitwise.&&&(mod_code, 2)) != 0
-    alt = (Bitwise.&&&(mod_code, 4)) != 0
-    meta = (Bitwise.&&&(mod_code, 8)) != 0
+    shift = Bitwise.&&&(mod_code, 1) != 0
+    ctrl = Bitwise.&&&(mod_code, 2) != 0
+    alt = Bitwise.&&&(mod_code, 4) != 0
+    meta = Bitwise.&&&(mod_code, 8) != 0
 
     # Base data map
-    data = %{shift: shift, ctrl: ctrl, alt: alt, meta: meta, char: nil, key: nil}
+    data = %{
+      shift: shift,
+      ctrl: ctrl,
+      alt: alt,
+      meta: meta,
+      char: nil,
+      key: nil
+    }
 
     # Character or Special Key
     cond do
@@ -228,12 +314,24 @@ defmodule Raxol.Terminal.Driver do
         Map.put(data, :char, <<char_code::utf8>>)
 
       # Special keys based on simulated key_codes
-      key_code == 65 -> Map.put(data, :key, :up)
-      key_code == 66 -> Map.put(data, :key, :down)
-      key_code == 67 -> Map.put(data, :key, :right)
-      key_code == 68 -> Map.put(data, :key, :left)
-      key_code == 265 -> Map.put(data, :key, :f1)
-      key_code == 266 -> Map.put(data, :key, :f2)
+      key_code == 65 ->
+        Map.put(data, :key, :up)
+
+      key_code == 66 ->
+        Map.put(data, :key, :down)
+
+      key_code == 67 ->
+        Map.put(data, :key, :right)
+
+      key_code == 68 ->
+        Map.put(data, :key, :left)
+
+      key_code == 265 ->
+        Map.put(data, :key, :f1)
+
+      key_code == 266 ->
+        Map.put(data, :key, :f2)
+
       # Add other special key translations here if needed
 
       # Unknown key
@@ -247,12 +345,104 @@ defmodule Raxol.Terminal.Driver do
     # Based on test simulation (button: 0 -> left?)
     # Actual mapping depends on rrex_termbox v2.0.1 constants/values
     case btn_code do
-      0 -> :left # Assuming 0 is left click based on test
+      # Assuming 0 is left click based on test
+      0 -> :left
       1 -> :middle
       2 -> :right
       3 -> :wheel_up
       4 -> :wheel_down
       _ -> :unknown
+    end
+  end
+
+  # Helper for parsing test input
+  # This function translates simple string inputs from tests into Event structs.
+  # It's a simplified version for testing purposes.
+  defp parse_test_input(input_data) when is_binary(input_data) do
+    # Basic parsing: assume simple characters or known ctrl sequences
+    # This is a simplified parser for test inputs.
+    Logger.debug(
+      "[TerminalDriver.parse_test_input] Parsing: #{inspect(input_data)}"
+    )
+
+    case input_data do
+      # Ctrl+Q (ASCII 17)
+      <<17>> ->
+        %Event{
+          type: :key,
+          data: %{
+            key: :char,
+            char: <<17>>,
+            ctrl: true,
+            alt: false,
+            shift: false,
+            meta: false
+          }
+        }
+
+      # Ctrl+V (ASCII 22)
+      <<22>> ->
+        %Event{
+          type: :key,
+          data: %{
+            key: :char,
+            char: <<22>>,
+            ctrl: true,
+            alt: false,
+            shift: false,
+            meta: false
+          }
+        }
+
+      # Ctrl+X (ASCII 24)
+      <<24>> ->
+        %Event{
+          type: :key,
+          data: %{
+            key: :char,
+            char: <<24>>,
+            ctrl: true,
+            alt: false,
+            shift: false,
+            meta: false
+          }
+        }
+
+      # Ctrl+N (ASCII 14)
+      <<14>> ->
+        %Event{
+          type: :key,
+          data: %{
+            key: :char,
+            char: <<14>>,
+            ctrl: true,
+            alt: false,
+            shift: false,
+            meta: false
+          }
+        }
+
+      # Other ASCII characters (simplified)
+      <<char>> when char >= 32 and char <= 126 ->
+        %Event{
+          type: :key,
+          data: %{
+            key: :char,
+            char: <<char>>,
+            ctrl: false,
+            alt: false,
+            shift: false,
+            meta: false
+          }
+        }
+
+      _ ->
+        Logger.warning(
+          "[TerminalDriver.parse_test_input] Unhandled test input: #{inspect(input_data)}"
+        )
+
+        # Return a generic event or handle error as appropriate
+        %Event{type: :unknown_test_input, data: %{raw: input_data}}
     end
   end
 end

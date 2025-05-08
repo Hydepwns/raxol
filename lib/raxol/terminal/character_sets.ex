@@ -116,7 +116,8 @@ defmodule Raxol.Terminal.CharacterSets do
   @doc """
   Translates a codepoint based on the *currently active* character set in the state.
   """
-  @spec translate_active(charset_state(), non_neg_integer()) :: non_neg_integer()
+  @spec translate_active(charset_state(), non_neg_integer()) ::
+          non_neg_integer()
   def translate_active(%__MODULE__{active_set: active_set}, codepoint) do
     # Delegate to the appropriate translation function based on the active set
     Translator.translate_codepoint(codepoint, active_set)

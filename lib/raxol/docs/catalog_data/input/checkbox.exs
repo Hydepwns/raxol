@@ -6,7 +6,8 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
 %Component{
   id: :checkbox,
   name: "Checkbox",
-  module: Raxol.UI.Components.Checkbox, # Assuming this is the component module
+  # Assuming this is the component module
+  module: Raxol.UI.Components.Checkbox,
   description: "A checkbox input element.",
   examples: [
     %Example{

@@ -14,7 +14,8 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   # UK character set (G1)
   @uk_map %{
     # £ symbol (0x23) in UK character set
-    0x23 => 163 # ?£ -> 163
+    # ?£ -> 163
+    0x23 => 163
     # Other characters are the same as US ASCII
   }
 
@@ -22,54 +23,76 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   @french_map %{
     # French-specific characters
     # £ symbol
-    0x23 => 163, # ?£ -> 163
+    # ?£ -> 163
+    0x23 => 163,
     # à
-    0x40 => 224, # ?à -> 224
+    # ?à -> 224
+    0x40 => 224,
     # é
-    0x5B => 233, # ?é -> 233
+    # ?é -> 233
+    0x5B => 233,
     # ê
-    0x5C => 234, # ?ê -> 234
+    # ?ê -> 234
+    0x5C => 234,
     # è
-    0x5D => 232, # ?è -> 232
+    # ?è -> 232
+    0x5D => 232,
     # ë
-    0x5E => 235, # ?ë -> 235
+    # ?ë -> 235
+    0x5E => 235,
     # ï
-    0x5F => 239, # ?ï -> 239
+    # ?ï -> 239
+    0x5F => 239,
     # î
-    0x60 => 238, # ?î -> 238
+    # ?î -> 238
+    0x60 => 238,
     # ù
-    0x7B => 249, # ?ù -> 249
+    # ?ù -> 249
+    0x7B => 249,
     # ô
-    0x7C => 244, # ?ô -> 244
+    # ?ô -> 244
+    0x7C => 244,
     # è (Duplicate mapping, assuming 0x7D should be something else? Let's keep it as è for now)
-    0x7D => 232, # ?è -> 232 (Note: same as 0x5D)
+    # ?è -> 232 (Note: same as 0x5D)
+    0x7D => 232,
     # û
-    0x7E => 251  # ?û -> 251
+    # ?û -> 251
+    0x7E => 251
   }
 
   # German character set (G1)
   @german_map %{
     # German-specific characters
     # Ä
-    0x5B => 196, # ?Ä -> 196
+    # ?Ä -> 196
+    0x5B => 196,
     # Ö
-    0x5C => 214, # ?Ö -> 214
+    # ?Ö -> 214
+    0x5C => 214,
     # Ü
-    0x5D => 220, # ?Ü -> 220
+    # ?Ü -> 220
+    0x5D => 220,
     # ^ (Keep as integer)
-    0x5E => 94,  # ?^ -> 94
+    # ?^ -> 94
+    0x5E => 94,
     # _ (Keep as integer)
-    0x5F => 95,  # ?_ -> 95
+    # ?_ -> 95
+    0x5F => 95,
     # ` (Keep as integer)
-    0x60 => 96,  # ?` -> 96
+    # ?` -> 96
+    0x60 => 96,
     # ä
-    0x7B => 228, # ?ä -> 228
+    # ?ä -> 228
+    0x7B => 228,
     # ö
-    0x7C => 246, # ?ö -> 246
+    # ?ö -> 246
+    0x7C => 246,
     # ü
-    0x7D => 252, # ?ü -> 252
+    # ?ü -> 252
+    0x7D => 252,
     # ß
-    0x7E => 223 # ?ß -> 223
+    # ?ß -> 223
+    0x7E => 223
   }
 
   # Latin-1 character set (ISO-8859-1)
@@ -78,233 +101,359 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
     # NO-BREAK SPACE
     0xA0 => 32,
     # INVERTED EXCLAMATION MARK
-    0xA1 => 161, # ?¡ -> 161
+    # ?¡ -> 161
+    0xA1 => 161,
     # CENT SIGN
-    0xA2 => 162, # ?¢ -> 162
+    # ?¢ -> 162
+    0xA2 => 162,
     # POUND SIGN
-    0xA3 => 163, # ?£ -> 163
+    # ?£ -> 163
+    0xA3 => 163,
     # CURRENCY SIGN
-    0xA4 => 164, # ?¤ -> 164
+    # ?¤ -> 164
+    0xA4 => 164,
     # YEN SIGN
-    0xA5 => 165, # ?¥ -> 165
+    # ?¥ -> 165
+    0xA5 => 165,
     # BROKEN BAR
-    0xA6 => 166, # ?¦ -> 166
+    # ?¦ -> 166
+    0xA6 => 166,
     # SECTION SIGN
-    0xA7 => 167, # ?§ -> 167
+    # ?§ -> 167
+    0xA7 => 167,
     # DIAERESIS
-    0xA8 => 168, # ?¨ -> 168
+    # ?¨ -> 168
+    0xA8 => 168,
     # COPYRIGHT SIGN
-    0xA9 => 169, # ?© -> 169
+    # ?© -> 169
+    0xA9 => 169,
     # FEMININE ORDINAL INDICATOR
-    0xAA => 170, # ?ª -> 170
+    # ?ª -> 170
+    0xAA => 170,
     # LEFT-POINTING DOUBLE ANGLE QUOTATION MARK
-    0xAB => 171, # ?« -> 171
+    # ?« -> 171
+    0xAB => 171,
     # NOT SIGN
-    0xAC => 172, # ?¬ -> 172
+    # ?¬ -> 172
+    0xAC => 172,
     # SOFT HYPHEN
     0xAD => 32,
     # REGISTERED SIGN
-    0xAE => 174, # ?® -> 174
+    # ?® -> 174
+    0xAE => 174,
     # MACRON
-    0xAF => 175, # ?¯ -> 175
+    # ?¯ -> 175
+    0xAF => 175,
     # DEGREE SIGN
-    0xB0 => 176, # ?° -> 176
+    # ?° -> 176
+    0xB0 => 176,
     # PLUS-MINUS SIGN
-    0xB1 => 177, # ?± -> 177
+    # ?± -> 177
+    0xB1 => 177,
     # SUPERSCRIPT TWO
-    0xB2 => 178, # ?² -> 178
+    # ?² -> 178
+    0xB2 => 178,
     # SUPERSCRIPT THREE
-    0xB3 => 179, # ?³ -> 179
+    # ?³ -> 179
+    0xB3 => 179,
     # ACUTE ACCENT
-    0xB4 => 180, # ?´ -> 180
+    # ?´ -> 180
+    0xB4 => 180,
     # MICRO SIGN
-    0xB5 => 181, # ?µ -> 181
+    # ?µ -> 181
+    0xB5 => 181,
     # PILCROW SIGN
-    0xB6 => 182, # ?¶ -> 182
+    # ?¶ -> 182
+    0xB6 => 182,
     # MIDDLE DOT
-    0xB7 => 183, # ?· -> 183
+    # ?· -> 183
+    0xB7 => 183,
     # CEDILLA
-    0xB8 => 184, # ?¸ -> 184
+    # ?¸ -> 184
+    0xB8 => 184,
     # SUPERSCRIPT ONE
-    0xB9 => 185, # ?¹ -> 185
+    # ?¹ -> 185
+    0xB9 => 185,
     # MASCULINE ORDINAL INDICATOR
-    0xBA => 186, # ?º -> 186
+    # ?º -> 186
+    0xBA => 186,
     # RIGHT-POINTING DOUBLE ANGLE QUOTATION MARK
-    0xBB => 187, # ?» -> 187
+    # ?» -> 187
+    0xBB => 187,
     # VULGAR FRACTION ONE QUARTER
-    0xBC => 188, # ?¼ -> 188
+    # ?¼ -> 188
+    0xBC => 188,
     # VULGAR FRACTION ONE HALF
-    0xBD => 189, # ?½ -> 189
+    # ?½ -> 189
+    0xBD => 189,
     # VULGAR FRACTION THREE QUARTERS
-    0xBE => 190, # ?¾ -> 190
+    # ?¾ -> 190
+    0xBE => 190,
     # INVERTED QUESTION MARK
-    0xBF => 191, # ?¿ -> 191
+    # ?¿ -> 191
+    0xBF => 191,
     # LATIN CAPITAL LETTER A WITH GRAVE
-    0xC0 => 192, # ?À -> 192
+    # ?À -> 192
+    0xC0 => 192,
     # LATIN CAPITAL LETTER A WITH ACUTE
-    0xC1 => 193, # ?Á -> 193
+    # ?Á -> 193
+    0xC1 => 193,
     # LATIN CAPITAL LETTER A WITH CIRCUMFLEX
-    0xC2 => 194, # ?Â -> 194
+    # ?Â -> 194
+    0xC2 => 194,
     # LATIN CAPITAL LETTER A WITH TILDE
-    0xC3 => 195, # ?Ã -> 195
+    # ?Ã -> 195
+    0xC3 => 195,
     # LATIN CAPITAL LETTER A WITH DIAERESIS
-    0xC4 => 196, # ?Ä -> 196
+    # ?Ä -> 196
+    0xC4 => 196,
     # LATIN CAPITAL LETTER A WITH RING ABOVE
-    0xC5 => 197, # ?Å -> 197
+    # ?Å -> 197
+    0xC5 => 197,
     # LATIN CAPITAL LETTER AE
-    0xC6 => 198, # ?Æ -> 198
+    # ?Æ -> 198
+    0xC6 => 198,
     # LATIN CAPITAL LETTER C WITH CEDILLA
-    0xC7 => 199, # ?Ç -> 199
+    # ?Ç -> 199
+    0xC7 => 199,
     # LATIN CAPITAL LETTER E WITH GRAVE
-    0xC8 => 200, # ?È -> 200
+    # ?È -> 200
+    0xC8 => 200,
     # LATIN CAPITAL LETTER E WITH ACUTE
-    0xC9 => 201, # ?É -> 201
+    # ?É -> 201
+    0xC9 => 201,
     # LATIN CAPITAL LETTER E WITH CIRCUMFLEX
-    0xCA => 202, # ?Ê -> 202
+    # ?Ê -> 202
+    0xCA => 202,
     # LATIN CAPITAL LETTER E WITH DIAERESIS
-    0xCB => 203, # ?Ë -> 203
+    # ?Ë -> 203
+    0xCB => 203,
     # LATIN CAPITAL LETTER I WITH GRAVE
-    0xCC => 204, # ?Ì -> 204
+    # ?Ì -> 204
+    0xCC => 204,
     # LATIN CAPITAL LETTER I WITH ACUTE
-    0xCD => 205, # ?Í -> 205
+    # ?Í -> 205
+    0xCD => 205,
     # LATIN CAPITAL LETTER I WITH CIRCUMFLEX
-    0xCE => 206, # ?Î -> 206
+    # ?Î -> 206
+    0xCE => 206,
     # LATIN CAPITAL LETTER I WITH DIAERESIS
-    0xCF => 207, # ?Ï -> 207
+    # ?Ï -> 207
+    0xCF => 207,
     # LATIN CAPITAL LETTER ETH
-    0xD0 => 208, # ?Ð -> 208
+    # ?Ð -> 208
+    0xD0 => 208,
     # LATIN CAPITAL LETTER N WITH TILDE
-    0xD1 => 209, # ?Ñ -> 209
+    # ?Ñ -> 209
+    0xD1 => 209,
     # LATIN CAPITAL LETTER O WITH GRAVE
-    0xD2 => 210, # ?Ò -> 210
+    # ?Ò -> 210
+    0xD2 => 210,
     # LATIN CAPITAL LETTER O WITH ACUTE
-    0xD3 => 211, # ?Ó -> 211
+    # ?Ó -> 211
+    0xD3 => 211,
     # LATIN CAPITAL LETTER O WITH CIRCUMFLEX
-    0xD4 => 212, # ?Ô -> 212
+    # ?Ô -> 212
+    0xD4 => 212,
     # LATIN CAPITAL LETTER O WITH TILDE
-    0xD5 => 213, # ?Õ -> 213
+    # ?Õ -> 213
+    0xD5 => 213,
     # LATIN CAPITAL LETTER O WITH DIAERESIS
-    0xD6 => 214, # ?Ö -> 214
+    # ?Ö -> 214
+    0xD6 => 214,
     # MULTIPLICATION SIGN
-    0xD7 => 215, # ?× -> 215
+    # ?× -> 215
+    0xD7 => 215,
     # LATIN CAPITAL LETTER O WITH STROKE
-    0xD8 => 216, # ?Ø -> 216
+    # ?Ø -> 216
+    0xD8 => 216,
     # LATIN CAPITAL LETTER U WITH GRAVE
-    0xD9 => 217, # ?Ù -> 217
+    # ?Ù -> 217
+    0xD9 => 217,
     # LATIN CAPITAL LETTER U WITH ACUTE
-    0xDA => 218, # ?Ú -> 218
+    # ?Ú -> 218
+    0xDA => 218,
     # LATIN CAPITAL LETTER U WITH CIRCUMFLEX
-    0xDB => 219, # ?Û -> 219
+    # ?Û -> 219
+    0xDB => 219,
     # LATIN CAPITAL LETTER U WITH DIAERESIS
-    0xDC => 220, # ?Ü -> 220
+    # ?Ü -> 220
+    0xDC => 220,
     # LATIN CAPITAL LETTER Y WITH ACUTE
-    0xDD => 221, # ?Ý -> 221
+    # ?Ý -> 221
+    0xDD => 221,
     # LATIN CAPITAL LETTER THORN
-    0xDE => 222, # ?Þ -> 222
+    # ?Þ -> 222
+    0xDE => 222,
     # LATIN SMALL LETTER SHARP S
-    0xDF => 223, # ?ß -> 223
+    # ?ß -> 223
+    0xDF => 223,
     # LATIN SMALL LETTER A WITH GRAVE
-    0xE0 => 224, # ?à -> 224
+    # ?à -> 224
+    0xE0 => 224,
     # LATIN SMALL LETTER A WITH ACUTE
-    0xE1 => 225, # ?á -> 225
+    # ?á -> 225
+    0xE1 => 225,
     # LATIN SMALL LETTER A WITH CIRCUMFLEX
-    0xE2 => 226, # ?â -> 226
+    # ?â -> 226
+    0xE2 => 226,
     # LATIN SMALL LETTER A WITH TILDE
-    0xE3 => 227, # ?ã -> 227
+    # ?ã -> 227
+    0xE3 => 227,
     # LATIN SMALL LETTER A WITH DIAERESIS
-    0xE4 => 228, # ?ä -> 228
+    # ?ä -> 228
+    0xE4 => 228,
     # LATIN SMALL LETTER A WITH RING ABOVE
-    0xE5 => 229, # ?å -> 229
+    # ?å -> 229
+    0xE5 => 229,
     # LATIN SMALL LETTER AE
-    0xE6 => 230, # ?æ -> 230
+    # ?æ -> 230
+    0xE6 => 230,
     # LATIN SMALL LETTER C WITH CEDILLA
-    0xE7 => 231, # ?ç -> 231
+    # ?ç -> 231
+    0xE7 => 231,
     # LATIN SMALL LETTER E WITH GRAVE
-    0xE8 => 232, # ?è -> 232
+    # ?è -> 232
+    0xE8 => 232,
     # LATIN SMALL LETTER E WITH ACUTE
-    0xE9 => 233, # ?é -> 233
+    # ?é -> 233
+    0xE9 => 233,
     # LATIN SMALL LETTER E WITH CIRCUMFLEX
-    0xEA => 234, # ?ê -> 234
+    # ?ê -> 234
+    0xEA => 234,
     # LATIN SMALL LETTER E WITH DIAERESIS
-    0xEB => 235, # ?ë -> 235
+    # ?ë -> 235
+    0xEB => 235,
     # LATIN SMALL LETTER I WITH GRAVE
-    0xEC => 236, # ?ì -> 236
+    # ?ì -> 236
+    0xEC => 236,
     # LATIN SMALL LETTER I WITH ACUTE
-    0xED => 237, # ?í -> 237
+    # ?í -> 237
+    0xED => 237,
     # LATIN SMALL LETTER I WITH CIRCUMFLEX
-    0xEE => 238, # ?î -> 238
+    # ?î -> 238
+    0xEE => 238,
     # LATIN SMALL LETTER I WITH DIAERESIS
-    0xEF => 239, # ?ï -> 239
+    # ?ï -> 239
+    0xEF => 239,
     # LATIN SMALL LETTER ETH
-    0xF0 => 240, # ?ð -> 240
+    # ?ð -> 240
+    0xF0 => 240,
     # LATIN SMALL LETTER N WITH TILDE
-    0xF1 => 241, # ?ñ -> 241
+    # ?ñ -> 241
+    0xF1 => 241,
     # LATIN SMALL LETTER O WITH GRAVE
-    0xF2 => 242, # ?ò -> 242
+    # ?ò -> 242
+    0xF2 => 242,
     # LATIN SMALL LETTER O WITH ACUTE
-    0xF3 => 243, # ?ó -> 243
+    # ?ó -> 243
+    0xF3 => 243,
     # LATIN SMALL LETTER O WITH CIRCUMFLEX
-    0xF4 => 244, # ?ô -> 244
+    # ?ô -> 244
+    0xF4 => 244,
     # LATIN SMALL LETTER O WITH TILDE
-    0xF5 => 245, # ?õ -> 245
+    # ?õ -> 245
+    0xF5 => 245,
     # LATIN SMALL LETTER O WITH DIAERESIS
-    0xF6 => 246, # ?ö -> 246
+    # ?ö -> 246
+    0xF6 => 246,
     # DIVISION SIGN
-    0xF7 => 247, # ?÷ -> 247
+    # ?÷ -> 247
+    0xF7 => 247,
     # LATIN SMALL LETTER O WITH STROKE
-    0xF8 => 248, # ?ø -> 248
+    # ?ø -> 248
+    0xF8 => 248,
     # LATIN SMALL LETTER U WITH GRAVE
-    0xF9 => 249, # ?ù -> 249
+    # ?ù -> 249
+    0xF9 => 249,
     # LATIN SMALL LETTER U WITH ACUTE
-    0xFA => 250, # ?ú -> 250
+    # ?ú -> 250
+    0xFA => 250,
     # LATIN SMALL LETTER U WITH CIRCUMFLEX
-    0xFB => 251, # ?û -> 251
+    # ?û -> 251
+    0xFB => 251,
     # LATIN SMALL LETTER U WITH DIAERESIS
-    0xFC => 252, # ?ü -> 252
+    # ?ü -> 252
+    0xFC => 252,
     # LATIN SMALL LETTER Y WITH ACUTE
-    0xFD => 253, # ?ý -> 253
+    # ?ý -> 253
+    0xFD => 253,
     # LATIN SMALL LETTER THORN
-    0xFE => 254, # ?þ -> 254
+    # ?þ -> 254
+    0xFE => 254,
     # LATIN SMALL LETTER Y WITH DIAERESIS
-    0xFF => 255 # ?ÿ -> 255
+    # ?ÿ -> 255
+    0xFF => 255
   }
 
   # DEC Special Graphics Character Set
   # Mapping based on https://vt100.net/docs/vt100-ug/table3-5.html
   # and https://en.wikipedia.org/wiki/DEC_Special_Graphics
   @dec_special_graphics_map %{
-    0x5F => 0xA0, # _ -> Non-breaking space (often blank)
-    0x60 => 0x25C6, # ` -> Diamond (◆)
-    0x61 => 0x2592, # a -> Checkerboard (▒)
-    0x62 => 0x2409, # b -> HT symbol (HT)
-    0x63 => 0x240C, # c -> FF symbol (FF)
-    0x64 => 0x240D, # d -> CR symbol (CR)
-    0x65 => 0x240A, # e -> LF symbol (LF)
-    0x66 => 0x00B0, # f -> Degree sign (°)
-    0x67 => 0x00B1, # g -> Plus/minus sign (±)
-    0x68 => 0x2424, # h -> NL symbol (NL)
-    0x69 => 0x240B, # i -> VT symbol (VT)
-    0x6A => 0x2518, # j -> Lower right corner (┘)
-    0x6B => 0x2510, # k -> Upper right corner (┐)
-    0x6C => 0x250C, # l -> Upper left corner (┌)
-    0x6D => 0x2514, # m -> Lower left corner (└)
-    0x6E => 0x253C, # n -> Crossing lines (+) (┼)
-    0x6F => 0x23BA, # o -> Scan line 1 (⎺) - Horizontal bar top
-    0x70 => 0x23BB, # p -> Scan line 3 (⎻) - Horizontal bar middle
-    0x71 => 0x2500, # q -> Scan line 5 / Horizontal line (─)
-    0x72 => 0x23BC, # r -> Scan line 7 (⎼) - Horizontal bar bottom
-    0x73 => 0x23BD, # s -> Scan line 9 (⎽) - Horizontal bar underscore
-    0x74 => 0x251C, # t -> Tee pointing right (├)
-    0x75 => 0x2524, # u -> Tee pointing left (┤)
-    0x76 => 0x2534, # v -> Tee pointing up (┴)
-    0x77 => 0x252C, # w -> Tee pointing down (┬)
-    0x78 => 0x2502, # x -> Vertical line (│)
-    0x79 => 0x2264, # y -> Less than or equal to (≤)
-    0x7A => 0x2265, # z -> Greater than or equal to (≥)
-    0x7B => 0x03C0, # { -> Pi (π)
-    0x7C => 0x2260, # | -> Not equal to (≠)
-    0x7D => 0x00A3, # } -> Pound sign (£)
-    0x7E => 0x00B7 # ~ -> Centered dot (·)
+    # _ -> Non-breaking space (often blank)
+    0x5F => 0xA0,
+    # ` -> Diamond (◆)
+    0x60 => 0x25C6,
+    # a -> Checkerboard (▒)
+    0x61 => 0x2592,
+    # b -> HT symbol (HT)
+    0x62 => 0x2409,
+    # c -> FF symbol (FF)
+    0x63 => 0x240C,
+    # d -> CR symbol (CR)
+    0x64 => 0x240D,
+    # e -> LF symbol (LF)
+    0x65 => 0x240A,
+    # f -> Degree sign (°)
+    0x66 => 0x00B0,
+    # g -> Plus/minus sign (±)
+    0x67 => 0x00B1,
+    # h -> NL symbol (NL)
+    0x68 => 0x2424,
+    # i -> VT symbol (VT)
+    0x69 => 0x240B,
+    # j -> Lower right corner (┘)
+    0x6A => 0x2518,
+    # k -> Upper right corner (┐)
+    0x6B => 0x2510,
+    # l -> Upper left corner (┌)
+    0x6C => 0x250C,
+    # m -> Lower left corner (└)
+    0x6D => 0x2514,
+    # n -> Crossing lines (+) (┼)
+    0x6E => 0x253C,
+    # o -> Scan line 1 (⎺) - Horizontal bar top
+    0x6F => 0x23BA,
+    # p -> Scan line 3 (⎻) - Horizontal bar middle
+    0x70 => 0x23BB,
+    # q -> Scan line 5 / Horizontal line (─)
+    0x71 => 0x2500,
+    # r -> Scan line 7 (⎼) - Horizontal bar bottom
+    0x72 => 0x23BC,
+    # s -> Scan line 9 (⎽) - Horizontal bar underscore
+    0x73 => 0x23BD,
+    # t -> Tee pointing right (├)
+    0x74 => 0x251C,
+    # u -> Tee pointing left (┤)
+    0x75 => 0x2524,
+    # v -> Tee pointing up (┴)
+    0x76 => 0x2534,
+    # w -> Tee pointing down (┬)
+    0x77 => 0x252C,
+    # x -> Vertical line (│)
+    0x78 => 0x2502,
+    # y -> Less than or equal to (≤)
+    0x79 => 0x2264,
+    # z -> Greater than or equal to (≥)
+    0x7A => 0x2265,
+    # { -> Pi (π)
+    0x7B => 0x03C0,
+    # | -> Not equal to (≠)
+    0x7C => 0x2260,
+    # } -> Pound sign (£)
+    0x7D => 0x00A3,
+    # ~ -> Centered dot (·)
+    0x7E => 0x00B7
   }
 
   # Map of character set names to their translation tables
@@ -323,19 +472,22 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   Translates a character from the source character set to the target character set.
   Returns the translated character or the original if no translation exists.
   """
-  @spec translate_char(char_codepoint :: integer(), charset :: atom()) :: integer()
+  @spec translate_char(char_codepoint :: integer(), charset :: atom()) ::
+          integer()
   def translate_char(char, charset) when is_integer(char) do
     # Select the correct map based on charset atom
-    map = case charset do
-            :us_ascii -> @us_ascii_map
-            :uk -> @uk_map
-            :french -> @french_map
-            :german -> @german_map
-            :latin1 -> @latin1_map
-            :dec_special_graphics -> @dec_special_graphics_map
-            # Add other charsets as needed
-            _ -> %{} # Unknown charset, return original char below
-          end
+    map =
+      case charset do
+        :us_ascii -> @us_ascii_map
+        :uk -> @uk_map
+        :french -> @french_map
+        :german -> @german_map
+        :latin1 -> @latin1_map
+        :dec_special_graphics -> @dec_special_graphics_map
+        # Add other charsets as needed
+        # Unknown charset, return original char below
+        _ -> %{}
+      end
 
     # Lookup the character code in the selected map
     # Return the translated integer codepoint or the original if not found or map is empty
