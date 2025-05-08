@@ -174,3 +174,9 @@ mix run scripts/release.exs --env prod --platform [macos|linux|windows]
 - **PATH issues**: Ensure installation directory is in your PATH
 - **Color rendering**: Use Windows Terminal for best experience
 - **Unicode problems**: Set PowerShell to UTF-8 with `[console]::OutputEncoding = [System.Text.Encoding]::UTF8`
+
+```bash
+mix deps.get
+```
+
+For more details, see the [Development Setup](/docs/guides/05_development_and_testing/DevelopmentSetup.md).

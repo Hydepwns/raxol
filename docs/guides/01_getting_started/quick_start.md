@@ -42,7 +42,7 @@ Then, fetch the dependency:
 mix deps.get
 ```
 
-For more details, see the [Development Setup](../05_development_and_testing/DevelopmentSetup.md).
+For more details, see the [Development Setup](/docs/guides/05_development_and_testing/DevelopmentSetup.md).
 
 ## 2. Create Your Application Module
 
@@ -170,7 +170,7 @@ end
 
 **Subscriptions (`subscribe/1`)**
 
-For handling external events like timers or keyboard events not tied to specific components, you can implement the `subscribe/1` callback. It returns subscriptions that send messages to `update/2`. See `examples/basic/subscriptions.exs` for details and the [Async Operations Guide](async_operations.md) for a full explanation.
+For handling external events like timers or keyboard events not tied to specific components, you can implement the `subscribe/1` callback. It returns subscriptions that send messages to `update/2`. See `examples/basic/subscriptions.exs` for details and the [Async Operations Guide](/docs/guides/02_core_concepts/async_operations.md) for a full explanation.
 
 ## 3. Start the Application
 
@@ -205,7 +205,7 @@ Make sure `MyRaxolApp.Application` is listed in your `mix.exs` `application/0` f
 
 Congratulations! You've built and run your first Raxol application.
 
-- Explore the different built-in [UI Components](components.md).
-- Dive deeper into [Asynchronous Operations (Subscriptions & Commands)](async_operations.md).
-- Configure the application startup using [Runtime Options](runtime_options.md).
+- Explore the different built-in [UI Components](/docs/guides/03_components_and_layout/components/README.md).
+- Dive deeper into [Asynchronous Operations (Subscriptions & Commands)](/docs/guides/02_core_concepts/async_operations.md).
+- Configure the application startup using [Runtime Options](/docs/guides/02_core_concepts/runtime_options.md).
 - Check out the `/examples` directory in the Raxol repository for more advanced use cases.
