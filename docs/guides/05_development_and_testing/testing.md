@@ -48,7 +48,7 @@ end
 
 - Test one behavior per test.
 - Use descriptive test names.
-- Mock external dependencies where necessary (e.g., using Mox).
+- Mock external dependencies where necessary (e.g., using Mox). Consider leveraging the "System Interaction Adapter" pattern (see ARCHITECTURE.md) for modules with OS or external service interactions, allowing these adapters to be easily mocked with Mox for better test isolation.
 - Test edge cases and error conditions.
 
 ### Integration Testing

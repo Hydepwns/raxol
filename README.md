@@ -89,9 +89,9 @@ Main documentation index: [docs/README.md](docs/README.md)
 - **Core Concepts:**
   - [Runtime Options](docs/guides/02_core_concepts/runtime_options.md)
   - [Async Operations](docs/guides/02_core_concepts/async_operations.md)
-  - [Theming](docs/guides/02_core_concepts/theming.md) (Planned)
+  - [Theming](docs/guides/02_core_concepts/theming.md)
 - **Extending Raxol:**
-  - [Plugin Development](docs/guides/04_extending_raxol/plugin_development.md) (Planned)
+  - [Plugin Development](docs/guides/04_extending_raxol/plugin_development.md)
   - [VS Code Extension](docs/guides/04_extending_raxol/vscode_extension.md) (Planned)
 - **Development & Testing:**
   - [Development Setup](docs/guides/05_development_and_testing/DevelopmentSetup.md)
@@ -102,7 +102,7 @@ Main documentation index: [docs/README.md](docs/README.md)
 
 See [Development Setup](docs/guides/05_development_and_testing/DevelopmentSetup.md).
 
-> **Note:** The project recently completed a major refactoring. See `CHANGELOG.md` and `docs/guides/05_development_and_testing/development/planning/handoff_prompt.md` for context.
+> **Note:** The project recently completed a major refactoring. See `CHANGELOG.md` for context.
 
 Common commands:
 
