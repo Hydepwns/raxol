@@ -56,10 +56,12 @@ defmodule Raxol.UI.Components.Display.Progress do
     # Initialize state by merging normalized props with default internal state
     normalized_props = normalize_props(props)
 
-    state = Map.merge(normalized_props, %{
-      animation_frame: 0,
-      last_update: System.monotonic_time(:millisecond)
-    })
+    state =
+      Map.merge(normalized_props, %{
+        animation_frame: 0,
+        last_update: System.monotonic_time(:millisecond)
+      })
+
     {:ok, state}
   end
 

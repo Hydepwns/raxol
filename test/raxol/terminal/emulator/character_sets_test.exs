@@ -62,7 +62,9 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
       # Note: We didn't invoke G2 into GL earlier, so GL should still be G0.
       {emulator, ""} = Emulator.process_input(emulator, "\x0F")
       charset_state_g0_in_gl = emulator.charset_state
-      assert CharacterSets.get_active_charset(charset_state_g0_in_gl) == :us_ascii
+
+      assert CharacterSets.get_active_charset(charset_state_g0_in_gl) ==
+               :us_ascii
     end
 
     # Single Shift (SS2, SS3) tests might require specific Emulator functions
@@ -77,19 +79,25 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
       # Set G0 to US ASCII (ESC ( B)
       {emulator, ""} = Emulator.process_input(emulator, "\e(B")
       # Set G2 to DEC Special Graphics (ESC * 0)
-      {emulator, ""} = Emulator.process_input(emulator, "\e*0") # Designate DEC Special Graphics to G2
-      charset_state = emulator.charset_state # Capture charset state
+      # Designate DEC Special Graphics to G2
+      {emulator, ""} = Emulator.process_input(emulator, "\e*0")
+      # Capture charset state
+      charset_state = emulator.charset_state
       assert charset_state.g2 == :dec_special_graphics
 
       # Invoke G2 into GL (Locking Shift 2: LS2 / ESC n)
       {emulator, ""} = Emulator.process_input(emulator, "\en")
       charset_state_g2_in_gl = emulator.charset_state
-      assert CharacterSets.get_active_charset(charset_state_g2_in_gl) == :dec_special_graphics
+
+      assert CharacterSets.get_active_charset(charset_state_g2_in_gl) ==
+               :dec_special_graphics
 
       # Invoke G0 into GL (Shift In: SI)
       {emulator, ""} = Emulator.process_input(emulator, "\x0F")
       charset_state_g0_in_gl = emulator.charset_state
-      assert CharacterSets.get_active_charset(charset_state_g0_in_gl) == :us_ascii
+
+      assert CharacterSets.get_active_charset(charset_state_g0_in_gl) ==
+               :us_ascii
     end
 
     test "designate G2 works in isolation" do

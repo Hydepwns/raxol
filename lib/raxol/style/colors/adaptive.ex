@@ -214,7 +214,8 @@ defmodule Raxol.Style.Colors.Adaptive do
       # Although, the main issue is likely in the caller handling the :true_color Color struct.
       # For now, just ensure this case doesn't crash.
       other ->
-         color # Return original color if support level is unknown/unexpected
+        # Return original color if support level is unknown/unexpected
+        color
     end
   end
 
@@ -345,8 +346,10 @@ defmodule Raxol.Style.Colors.Adaptive do
       # Check other indicators
       check_if_other_true_color_indicators() ->
         :true_color
+
       check_if_256_colors_supported() ->
         :ansi_256
+
       check_if_16_colors_supported() ->
         :ansi_16
 
@@ -359,11 +362,14 @@ defmodule Raxol.Style.Colors.Adaptive do
   defp check_if_other_true_color_indicators() do
     # Check TERM_PROGRAM first, as it's often more specific
     term_program = System.get_env("TERM_PROGRAM")
-    term_program_check = term_program in ["iTerm.app", "vscode", "Apple_Terminal", "WezTerm"] # Add other known truecolor programs
+    # Add other known truecolor programs
+    term_program_check =
+      term_program in ["iTerm.app", "vscode", "Apple_Terminal", "WezTerm"]
 
     # Then check TERM if TERM_PROGRAM didn't match
     term = System.get_env("TERM")
-    term_check = term in ["xterm-truecolor", "iterm", "kitty"] # Add other known truecolor TERM values
+    # Add other known truecolor TERM values
+    term_check = term in ["xterm-truecolor", "iterm", "kitty"]
 
     term_program_check or term_check
     # Consider checking for VTE_VERSION or similar environment variables
@@ -373,18 +379,19 @@ defmodule Raxol.Style.Colors.Adaptive do
   defp check_if_256_colors_supported() do
     term = System.get_env("TERM")
     # Check TERM against known 256-color terminals
+    # Check tput colors (more reliable but requires tput)
+    # This is a simplification; real tput check is more involved
+    # check_tput_colors(256)
+    # Heuristic: Check if TERM string contains "256"
     term in @ansi_256_terminals or
-      # Check tput colors (more reliable but requires tput)
-      # This is a simplification; real tput check is more involved
-      # check_tput_colors(256)
-      # Heuristic: Check if TERM string contains "256"
       (term != nil && String.contains?(term, "256"))
   end
 
   defp check_if_16_colors_supported() do
     term = System.get_env("TERM")
     # Check TERM against known 16-color terminals
-    term in @ansi_16_terminals # or check_tput_colors(16) ...
+    # or check_tput_colors(16) ...
+    term in @ansi_16_terminals
     # Many terminals support at least 16 colors by default
   end
 
@@ -394,20 +401,26 @@ defmodule Raxol.Style.Colors.Adaptive do
       # Format is usually "fg;bg" or "fg;bg;attrs"
       fgbg when is_binary(fgbg) ->
         case String.split(fgbg, ";") do
-           # Check background part (second element)
+          # Check background part (second element)
           [_fg, bg | _] ->
             case Integer.parse(bg) do
               # 0-7 are typically dark colors in standard ANSI palette
               {val, ""} when val >= 0 and val <= 7 -> :dark
               # 8-15 are typically light colors
               {val, ""} when val >= 8 and val <= 15 -> :light
-              _ -> :unknown # Cannot parse or out of range
+              # Cannot parse or out of range
+              _ -> :unknown
             end
-           _ -> :unknown # Unexpected format
+
+          # Unexpected format
+          _ ->
+            :unknown
         end
+
       nil ->
         # Add other detection methods here if needed (e.g., OSC 11 query, specific terminal env vars)
-        :unknown # Default if no information found
+        # Default if no information found
+        :unknown
     end
   end
 
@@ -415,7 +428,8 @@ defmodule Raxol.Style.Colors.Adaptive do
     # Implementation depends on how you store the cache (ETS assumed)
     case :ets.lookup(@capabilities_cache_name, key) do
       [{^key, value}] -> value
-      [] -> nil # Not found
+      # Not found
+      [] -> nil
     end
   end
 

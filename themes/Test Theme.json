@@ -2,86 +2,59 @@
   "name": "Test Theme",
   "high_contrast": false,
   "palette": {
-    "error": {
-      "name": null,
+    "accent": {
       "a": 1.0,
-      "b": 0,
-      "hex": "#CC0000",
-      "r": 204,
-      "g": 0,
-      "ansi_code": null
-    },
-    "info": {
-      "name": null,
-      "a": 1.0,
-      "b": 204,
-      "hex": "#0099CC",
-      "r": 0,
-      "g": 153,
-      "ansi_code": null
-    },
-    "warning": {
-      "name": null,
-      "a": 1.0,
-      "b": 0,
-      "hex": "#FF9900",
       "r": 255,
-      "g": 153,
-      "ansi_code": null
-    },
-    "primary": {
-      "name": null,
-      "a": 1.0,
-      "b": 204,
-      "hex": "#0077CC",
-      "r": 0,
-      "g": 119,
-      "ansi_code": null
-    },
-    "success": {
-      "name": null,
-      "a": 1.0,
       "b": 0,
-      "hex": "#009900",
-      "r": 0,
-      "g": 153,
-      "ansi_code": null
-    },
-    "surface": {
-      "name": null,
-      "a": 1.0,
-      "b": 245,
-      "hex": "#F5F5F5",
-      "r": 245,
-      "g": 245,
-      "ansi_code": null
+      "g": 153
     },
     "background": {
-      "name": null,
       "a": 1.0,
-      "b": 255,
-      "hex": "#FFFFFF",
       "r": 255,
-      "g": 255,
-      "ansi_code": null
+      "b": 255,
+      "g": 255
+    },
+    "error": {
+      "a": 1.0,
+      "r": 204,
+      "b": 0,
+      "g": 0
+    },
+    "info": {
+      "a": 1.0,
+      "r": 0,
+      "b": 204,
+      "g": 153
+    },
+    "primary": {
+      "a": 1.0,
+      "r": 0,
+      "b": 204,
+      "g": 119
     },
     "secondary": {
-      "name": null,
       "a": 1.0,
-      "b": 102,
-      "hex": "#666666",
       "r": 102,
-      "g": 102,
-      "ansi_code": null
+      "b": 102,
+      "g": 102
     },
-    "accent": {
-      "name": null,
+    "success": {
       "a": 1.0,
+      "r": 0,
       "b": 0,
-      "hex": "#FF9900",
+      "g": 153
+    },
+    "surface": {
+      "a": 1.0,
+      "r": 245,
+      "b": 245,
+      "g": 245
+    },
+    "warning": {
+      "a": 1.0,
       "r": 255,
-      "g": 153,
-      "ansi_code": null
+      "b": 0,
+      "g": 153
     }
   },
   "ui_mappings": {

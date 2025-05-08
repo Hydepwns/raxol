@@ -27,7 +27,14 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
     end
 
     test "initializes with custom props" do
-      props = %{progress: 0.5, width: 30, label: "Loading", show_percentage: true, animated: true}
+      props = %{
+        progress: 0.5,
+        width: 30,
+        label: "Loading",
+        show_percentage: true,
+        animated: true
+      }
+
       state = init_component(props)
       assert state.progress == 0.5
       assert state.width == 30
@@ -64,14 +71,18 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
     end
 
     test "updates props", %{state: state} do
-      {:noreply, updated, _cmd} = Progress.update({:update_props, %{progress: 0.6, width: 40}}, state)
+      {:noreply, updated, _cmd} =
+        Progress.update({:update_props, %{progress: 0.6, width: 40}}, state)
+
       assert updated.progress == 0.6
       assert updated.width == 40
     end
 
     test "updates animation state when animated", %{state: state} do
       assert {:noreply, updated_state, _cmd} = Progress.update(:tick, state)
-      assert updated_state.animation_frame > state.animation_frame or updated_state.animation_frame == 0
+
+      assert updated_state.animation_frame > state.animation_frame or
+               updated_state.animation_frame == 0
     end
 
     test "doesn't update animation when not animated" do
@@ -95,7 +106,14 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
 
     test "renders percentage text when enabled", %{context: context} do
       initial_state = init_component()
-      state = %{initial_state | show_percentage: true, progress: 0.75, width: 20}
+
+      state = %{
+        initial_state
+        | show_percentage: true,
+          progress: 0.75,
+          width: 20
+      }
+
       elements = Progress.render(state, context)
 
       # Example: "[#######       ] 75%"
@@ -104,10 +122,14 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
       # Empty: 14 - 11 = 3
       # Padding for text: (20 - 3) / 2 = 8.5 -> 8? No, text length first.
       text = "75%"
-      text_length = String.length(text) # 3
-      bar_width_available = state.width - 2 - 1 - text_length # 20 - 2 - 1 - 3 = 14
-      filled_count = round(bar_width_available * state.progress) # round(14 * 0.75) = round(10.5) = 11
-      empty_count = bar_width_available - filled_count # 14 - 11 = 3
+      # 3
+      text_length = String.length(text)
+      # 20 - 2 - 1 - 3 = 14
+      bar_width_available = state.width - 2 - 1 - text_length
+      # round(14 * 0.75) = round(10.5) = 11
+      filled_count = round(bar_width_available * state.progress)
+      # 14 - 11 = 3
+      empty_count = bar_width_available - filled_count
 
       # Center the text within the total width (20)
       # total_padding = state.width - text_length # 20 - 3 = 17
@@ -122,8 +144,13 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
       # Check overall structure first
       assert Regex.match?(~r/^\[#+\s+\]\s+\d+%$/, text_element.text)
       # Check specific counts and placement
-      expected_text = "[" <> String.duplicate("#", filled_count) <> String.duplicate(" ", empty_count) <> "] " <> text
-      assert text_element.text == expected_text # "[###########   ] 75%"
+      expected_text =
+        "[" <>
+          String.duplicate("#", filled_count) <>
+          String.duplicate(" ", empty_count) <> "] " <> text
+
+      # "[###########   ] 75%"
+      assert text_element.text == expected_text
 
       # Check centering roughly (Exact position depends on render logic not tested here)
       # We can check if the text appears *after* some padding
@@ -131,12 +158,20 @@ defmodule Raxol.UI.Components.Display.ProgressTest do
     end
 
     test "renders label when provided", %{context: context} do
-      state = init_component(%{progress: 0.3, width: 20, label: "Downloading..."})
+      state =
+        init_component(%{progress: 0.3, width: 20, label: "Downloading..."})
+
       elements = Progress.render(state, context)
-      assert Enum.any?(elements, fn el -> is_map(el) && el.type == :text && String.contains?(el.text || "", "Downloading...") end)
+
+      assert Enum.any?(elements, fn el ->
+               is_map(el) && el.type == :text &&
+                 String.contains?(el.text || "", "Downloading...")
+             end)
     end
 
-    test "generates correct bar content for different progress values", %{context: context} do
+    test "generates correct bar content for different progress values", %{
+      context: context
+    } do
       empty_state = init_component(%{progress: 0.0, width: 10})
       half_state = init_component(%{progress: 0.5, width: 10})
       full_state = init_component(%{progress: 1.0, width: 10})

@@ -31,56 +31,254 @@ defmodule Raxol.Examples.SelectListShowcase do
 
       # Sample data
       users: [
-        %{id: 1, name: "Alice Smith", email: "alice@example.com", role: "Admin"},
+        %{
+          id: 1,
+          name: "Alice Smith",
+          email: "alice@example.com",
+          role: "Admin"
+        },
         %{id: 2, name: "Bob Johnson", email: "bob@example.com", role: "User"},
-        %{id: 3, name: "Carol Williams", email: "carol@example.com", role: "User"},
-        %{id: 4, name: "Dave Brown", email: "dave@example.com", role: "Moderator"},
+        %{
+          id: 3,
+          name: "Carol Williams",
+          email: "carol@example.com",
+          role: "User"
+        },
+        %{
+          id: 4,
+          name: "Dave Brown",
+          email: "dave@example.com",
+          role: "Moderator"
+        },
         %{id: 5, name: "Eve Davis", email: "eve@example.com", role: "Admin"},
-        %{id: 6, name: "Frank Miller", email: "frank@example.com", role: "User"},
-        %{id: 7, name: "Grace Wilson", email: "grace@example.com", role: "User"},
-        %{id: 8, name: "Heidi Moore", email: "heidi@example.com", role: "Moderator"},
+        %{
+          id: 6,
+          name: "Frank Miller",
+          email: "frank@example.com",
+          role: "User"
+        },
+        %{
+          id: 7,
+          name: "Grace Wilson",
+          email: "grace@example.com",
+          role: "User"
+        },
+        %{
+          id: 8,
+          name: "Heidi Moore",
+          email: "heidi@example.com",
+          role: "Moderator"
+        },
         %{id: 9, name: "Ivan Taylor", email: "ivan@example.com", role: "User"},
         %{id: 10, name: "Judy White", email: "judy@example.com", role: "Admin"},
-        %{id: 11, name: "Kevin Lewis", email: "kevin@example.com", role: "User"},
-        %{id: 12, name: "Laura Harris", email: "laura@example.com", role: "Moderator"},
+        %{
+          id: 11,
+          name: "Kevin Lewis",
+          email: "kevin@example.com",
+          role: "User"
+        },
+        %{
+          id: 12,
+          name: "Laura Harris",
+          email: "laura@example.com",
+          role: "Moderator"
+        },
         %{id: 13, name: "Mike Clark", email: "mike@example.com", role: "User"},
-        %{id: 14, name: "Nancy Young", email: "nancy@example.com", role: "User"},
-        %{id: 15, name: "Oscar Scott", email: "oscar@example.com", role: "Admin"}
+        %{
+          id: 14,
+          name: "Nancy Young",
+          email: "nancy@example.com",
+          role: "User"
+        },
+        %{
+          id: 15,
+          name: "Oscar Scott",
+          email: "oscar@example.com",
+          role: "Admin"
+        }
       ],
-
       countries: [
-        %{code: "US", name: "United States", population: "331 million", continent: "North America"},
-        %{code: "CN", name: "China", population: "1.4 billion", continent: "Asia"},
-        %{code: "IN", name: "India", population: "1.38 billion", continent: "Asia"},
-        %{code: "ID", name: "Indonesia", population: "273 million", continent: "Asia"},
-        %{code: "PK", name: "Pakistan", population: "220 million", continent: "Asia"},
-        %{code: "BR", name: "Brazil", population: "212 million", continent: "South America"},
-        %{code: "NG", name: "Nigeria", population: "206 million", continent: "Africa"},
-        %{code: "BD", name: "Bangladesh", population: "164 million", continent: "Asia"},
-        %{code: "RU", name: "Russia", population: "144 million", continent: "Europe/Asia"},
-        %{code: "MX", name: "Mexico", population: "128 million", continent: "North America"},
-        %{code: "JP", name: "Japan", population: "126 million", continent: "Asia"},
-        %{code: "ET", name: "Ethiopia", population: "114 million", continent: "Africa"},
-        %{code: "PH", name: "Philippines", population: "109 million", continent: "Asia"},
-        %{code: "EG", name: "Egypt", population: "102 million", continent: "Africa"},
-        %{code: "VN", name: "Vietnam", population: "97 million", continent: "Asia"},
-        %{code: "DE", name: "Germany", population: "83 million", continent: "Europe"},
-        %{code: "IR", name: "Iran", population: "83 million", continent: "Asia"},
-        %{code: "TR", name: "Turkey", population: "83 million", continent: "Europe/Asia"},
-        %{code: "FR", name: "France", population: "67 million", continent: "Europe"},
-        %{code: "GB", name: "United Kingdom", population: "67 million", continent: "Europe"},
-        %{code: "TH", name: "Thailand", population: "66 million", continent: "Asia"},
-        %{code: "IT", name: "Italy", population: "60 million", continent: "Europe"},
-        %{code: "ZA", name: "South Africa", population: "59 million", continent: "Africa"},
-        %{code: "MM", name: "Myanmar", population: "54 million", continent: "Asia"},
-        %{code: "KR", name: "South Korea", population: "51 million", continent: "Asia"},
-        %{code: "CO", name: "Colombia", population: "50 million", continent: "South America"},
-        %{code: "KE", name: "Kenya", population: "53 million", continent: "Africa"},
-        %{code: "ES", name: "Spain", population: "47 million", continent: "Europe"},
-        %{code: "AR", name: "Argentina", population: "45 million", continent: "South America"},
-        %{code: "DZ", name: "Algeria", population: "43 million", continent: "Africa"}
+        %{
+          code: "US",
+          name: "United States",
+          population: "331 million",
+          continent: "North America"
+        },
+        %{
+          code: "CN",
+          name: "China",
+          population: "1.4 billion",
+          continent: "Asia"
+        },
+        %{
+          code: "IN",
+          name: "India",
+          population: "1.38 billion",
+          continent: "Asia"
+        },
+        %{
+          code: "ID",
+          name: "Indonesia",
+          population: "273 million",
+          continent: "Asia"
+        },
+        %{
+          code: "PK",
+          name: "Pakistan",
+          population: "220 million",
+          continent: "Asia"
+        },
+        %{
+          code: "BR",
+          name: "Brazil",
+          population: "212 million",
+          continent: "South America"
+        },
+        %{
+          code: "NG",
+          name: "Nigeria",
+          population: "206 million",
+          continent: "Africa"
+        },
+        %{
+          code: "BD",
+          name: "Bangladesh",
+          population: "164 million",
+          continent: "Asia"
+        },
+        %{
+          code: "RU",
+          name: "Russia",
+          population: "144 million",
+          continent: "Europe/Asia"
+        },
+        %{
+          code: "MX",
+          name: "Mexico",
+          population: "128 million",
+          continent: "North America"
+        },
+        %{
+          code: "JP",
+          name: "Japan",
+          population: "126 million",
+          continent: "Asia"
+        },
+        %{
+          code: "ET",
+          name: "Ethiopia",
+          population: "114 million",
+          continent: "Africa"
+        },
+        %{
+          code: "PH",
+          name: "Philippines",
+          population: "109 million",
+          continent: "Asia"
+        },
+        %{
+          code: "EG",
+          name: "Egypt",
+          population: "102 million",
+          continent: "Africa"
+        },
+        %{
+          code: "VN",
+          name: "Vietnam",
+          population: "97 million",
+          continent: "Asia"
+        },
+        %{
+          code: "DE",
+          name: "Germany",
+          population: "83 million",
+          continent: "Europe"
+        },
+        %{
+          code: "IR",
+          name: "Iran",
+          population: "83 million",
+          continent: "Asia"
+        },
+        %{
+          code: "TR",
+          name: "Turkey",
+          population: "83 million",
+          continent: "Europe/Asia"
+        },
+        %{
+          code: "FR",
+          name: "France",
+          population: "67 million",
+          continent: "Europe"
+        },
+        %{
+          code: "GB",
+          name: "United Kingdom",
+          population: "67 million",
+          continent: "Europe"
+        },
+        %{
+          code: "TH",
+          name: "Thailand",
+          population: "66 million",
+          continent: "Asia"
+        },
+        %{
+          code: "IT",
+          name: "Italy",
+          population: "60 million",
+          continent: "Europe"
+        },
+        %{
+          code: "ZA",
+          name: "South Africa",
+          population: "59 million",
+          continent: "Africa"
+        },
+        %{
+          code: "MM",
+          name: "Myanmar",
+          population: "54 million",
+          continent: "Asia"
+        },
+        %{
+          code: "KR",
+          name: "South Korea",
+          population: "51 million",
+          continent: "Asia"
+        },
+        %{
+          code: "CO",
+          name: "Colombia",
+          population: "50 million",
+          continent: "South America"
+        },
+        %{
+          code: "KE",
+          name: "Kenya",
+          population: "53 million",
+          continent: "Africa"
+        },
+        %{
+          code: "ES",
+          name: "Spain",
+          population: "47 million",
+          continent: "Europe"
+        },
+        %{
+          code: "AR",
+          name: "Argentina",
+          population: "45 million",
+          continent: "South America"
+        },
+        %{
+          code: "DZ",
+          name: "Algeria",
+          population: "43 million",
+          continent: "Africa"
+        }
       ],
-
       fruits: [
         {"Apple", :apple},
         {"Banana", :banana},
@@ -110,7 +308,11 @@ defmodule Raxol.Examples.SelectListShowcase do
     # For multiple selection
     if state.multiple_selected |> Enum.member?(user_id) do
       # Remove from selection
-      {%{state | multiple_selected: state.multiple_selected |> Enum.reject(&(&1 == user_id))}, []}
+      {%{
+         state
+         | multiple_selected:
+             state.multiple_selected |> Enum.reject(&(&1 == user_id))
+       }, []}
     else
       # Add to selection
       {%{state | multiple_selected: [user_id | state.multiple_selected]}, []}
@@ -157,25 +359,51 @@ defmodule Raxol.Examples.SelectListShowcase do
     panel title: "SelectList Component Showcase", border: :single, width: 100 do
       column padding: 1, gap: 1 do
         # Description
-        label "This showcase demonstrates the enhanced SelectList component with various features."
+        label(
+          "This showcase demonstrates the enhanced SelectList component with various features."
+        )
 
         # Tab navigation
         row gap: 2 do
-          button label: "Basic",
-                on_click: {:select_tab, :basic},
-                style: if(state.active_tab == :basic, do: [bg: :blue, fg: :white], else: [])
+          button(
+            label: "Basic",
+            on_click: {:select_tab, :basic},
+            style:
+              if(state.active_tab == :basic,
+                do: [bg: :blue, fg: :white],
+                else: []
+              )
+          )
 
-          button label: "Multiple Selection",
-                on_click: {:select_tab, :multiple},
-                style: if(state.active_tab == :multiple, do: [bg: :blue, fg: :white], else: [])
+          button(
+            label: "Multiple Selection",
+            on_click: {:select_tab, :multiple},
+            style:
+              if(state.active_tab == :multiple,
+                do: [bg: :blue, fg: :white],
+                else: []
+              )
+          )
 
-          button label: "Search & Filter",
-                on_click: {:select_tab, :search},
-                style: if(state.active_tab == :search, do: [bg: :blue, fg: :white], else: [])
+          button(
+            label: "Search & Filter",
+            on_click: {:select_tab, :search},
+            style:
+              if(state.active_tab == :search,
+                do: [bg: :blue, fg: :white],
+                else: []
+              )
+          )
 
-          button label: "Pagination",
-                on_click: {:select_tab, :pagination},
-                style: if(state.active_tab == :pagination, do: [bg: :blue, fg: :white], else: [])
+          button(
+            label: "Pagination",
+            on_click: {:select_tab, :pagination},
+            style:
+              if(state.active_tab == :pagination,
+                do: [bg: :blue, fg: :white],
+                else: []
+              )
+          )
         end
 
         # Content based on selected tab
@@ -196,45 +424,55 @@ defmodule Raxol.Examples.SelectListShowcase do
             case state.active_tab do
               :basic ->
                 if state.basic_selected do
-                  label text: "Selected fruit: #{state.basic_selected}"
+                  label(text: "Selected fruit: #{state.basic_selected}")
                 else
-                  label text: "No fruit selected"
+                  label(text: "No fruit selected")
                 end
 
               :multiple ->
                 if Enum.empty?(state.multiple_selected) do
-                  label text: "No users selected"
+                  label(text: "No users selected")
                 else
-                  selected_users = state.users
-                    |> Enum.filter(&(Enum.member?(state.multiple_selected, &1.id)))
-                    |> Enum.map(&(&1.name))
+                  selected_users =
+                    state.users
+                    |> Enum.filter(
+                      &Enum.member?(state.multiple_selected, &1.id)
+                    )
+                    |> Enum.map(& &1.name)
                     |> Enum.join(", ")
 
-                  label text: "Selected users: #{selected_users}"
+                  label(text: "Selected users: #{selected_users}")
                 end
 
               :search ->
                 if state.search_selected do
                   column do
-                    label text: "Selected user:"
-                    label text: "Name: #{state.search_selected.name}"
-                    label text: "Email: #{state.search_selected.email}"
-                    label text: "Role: #{state.search_selected.role}"
+                    label(text: "Selected user:")
+                    label(text: "Name: #{state.search_selected.name}")
+                    label(text: "Email: #{state.search_selected.email}")
+                    label(text: "Role: #{state.search_selected.role}")
                   end
                 else
-                  label text: "No user selected"
+                  label(text: "No user selected")
                 end
 
               :pagination ->
                 if state.pagination_selected do
                   column do
-                    label text: "Selected country:"
-                    label text: "Name: #{state.pagination_selected.name}"
-                    label text: "Population: #{state.pagination_selected.population}"
-                    label text: "Continent: #{state.pagination_selected.continent}"
+                    label(text: "Selected country:")
+                    label(text: "Name: #{state.pagination_selected.name}")
+
+                    label(
+                      text:
+                        "Population: #{state.pagination_selected.population}"
+                    )
+
+                    label(
+                      text: "Continent: #{state.pagination_selected.continent}"
+                    )
                   end
                 else
-                  label text: "No country selected"
+                  label(text: "No country selected")
                 end
             end
           end
@@ -243,14 +481,19 @@ defmodule Raxol.Examples.SelectListShowcase do
         # Instructions panel
         panel title: "Keyboard Navigation", border: :single do
           column padding: 1 do
-            label text: "Arrow Up/Down: Navigate items"
-            label text: "Page Up/Down: Navigate pages"
-            label text: "Home/End: Jump to first/last item"
-            label text: "Tab: Switch between search box and list (when search enabled)"
-            label text: "Enter: Select item"
-            label text: "Space: Toggle selection (in multiple selection mode)"
-            label text: "Backspace: Delete search text (when search focused)"
-            label text: "Type any text: Incremental search in list"
+            label(text: "Arrow Up/Down: Navigate items")
+            label(text: "Page Up/Down: Navigate pages")
+            label(text: "Home/End: Jump to first/last item")
+
+            label(
+              text:
+                "Tab: Switch between search box and list (when search enabled)"
+            )
+
+            label(text: "Enter: Select item")
+            label(text: "Space: Toggle selection (in multiple selection mode)")
+            label(text: "Backspace: Delete search text (when search focused)")
+            label(text: "Type any text: Incremental search in list")
           end
         end
       end
@@ -261,7 +504,7 @@ defmodule Raxol.Examples.SelectListShowcase do
 
   defp render_basic_tab(state, theme) do
     column gap: 1 do
-      label text: "Basic single-selection list with fruits:"
+      label(text: "Basic single-selection list with fruits:")
 
       # Convert fruits to expected format for SelectList options
       options = Enum.map(state.fruits, fn {label, value} -> {label, value} end)
@@ -282,10 +525,13 @@ defmodule Raxol.Examples.SelectListShowcase do
 
   defp render_multiple_tab(state, theme) do
     column gap: 1 do
-      label text: "Multiple selection list with users:"
+      label(text: "Multiple selection list with users:")
 
       # Convert users to expected format for SelectList options
-      options = Enum.map(state.users, fn user -> {"#{user.name} (#{user.role})", user.id} end)
+      options =
+        Enum.map(state.users, fn user ->
+          {"#{user.name} (#{user.role})", user.id}
+        end)
 
       %{
         type: Raxol.UI.Components.Input.SelectList,
@@ -304,10 +550,13 @@ defmodule Raxol.Examples.SelectListShowcase do
 
   defp render_search_tab(state, theme) do
     column gap: 1 do
-      label text: "Searchable list with users:"
+      label(text: "Searchable list with users:")
 
       # Convert users to expected format for SelectList options
-      options = Enum.map(state.users, fn user -> {"#{user.name} (#{user.email})", user.id} end)
+      options =
+        Enum.map(state.users, fn user ->
+          {"#{user.name} (#{user.email})", user.id}
+        end)
 
       %{
         type: Raxol.UI.Components.Input.SelectList,
@@ -328,10 +577,13 @@ defmodule Raxol.Examples.SelectListShowcase do
 
   defp render_pagination_tab(state, theme) do
     column gap: 1 do
-      label text: "Paginated list with countries:"
+      label(text: "Paginated list with countries:")
 
       # Convert countries to expected format for SelectList options
-      options = Enum.map(state.countries, fn country -> {"#{country.name} (#{country.continent})", country.code} end)
+      options =
+        Enum.map(state.countries, fn country ->
+          {"#{country.name} (#{country.continent})", country.code}
+        end)
 
       %{
         type: Raxol.UI.Components.Input.SelectList,

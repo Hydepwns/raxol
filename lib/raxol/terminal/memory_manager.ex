@@ -17,6 +17,7 @@ defmodule Raxol.Terminal.MemoryManager do
   def init(init_arg) do
     {:ok, init_arg}
   end
+
   # --- Public API ---
 
   @doc """
@@ -33,6 +34,7 @@ defmodule Raxol.Terminal.MemoryManager do
       Logger.debug(
         "Performing terminal memory check. Interval: #{integration.config.cleanup_interval}ms"
       )
+
       perform_cleanup(%{integration | last_cleanup: now})
     else
       integration
@@ -47,35 +49,57 @@ defmodule Raxol.Terminal.MemoryManager do
   @spec perform_cleanup(Integration.t()) :: Integration.t()
   def perform_cleanup(%Integration{} = integration) do
     # Update usage and get the value
-    updated_buffer_manager = BufferManager.update_memory_usage(integration.buffer_manager)
+    updated_buffer_manager =
+      BufferManager.update_memory_usage(integration.buffer_manager)
+
     current_usage = updated_buffer_manager.memory_usage
     memory_limit = integration.config.memory_limit_bytes
 
     # Update integration with the potentially updated buffer manager (with new usage)
-    integration_with_updated_manager = %{integration | buffer_manager: updated_buffer_manager}
+    integration_with_updated_manager = %{
+      integration
+      | buffer_manager: updated_buffer_manager
+    }
 
     if current_usage > memory_limit do
       bytes_over_limit = current_usage - memory_limit
-      Logger.debug("Memory usage (#{current_usage} bytes) exceeds limit (#{memory_limit} bytes). Over by #{bytes_over_limit} bytes.")
+
+      Logger.debug(
+        "Memory usage (#{current_usage} bytes) exceeds limit (#{memory_limit} bytes). Over by #{bytes_over_limit} bytes."
+      )
 
       # Remove the attempt to trim scrollback manually, as it trims on add_lines
       # The main buffer update itself might free memory implicitly.
       updated_integration = integration_with_updated_manager
 
       # Recalculate usage (in case buffer update changed it, though update_memory_usage already did)
-      final_buffer_manager = BufferManager.update_memory_usage(updated_integration.buffer_manager)
+      final_buffer_manager =
+        BufferManager.update_memory_usage(updated_integration.buffer_manager)
+
       new_usage = final_buffer_manager.memory_usage
 
       if new_usage > memory_limit do
-        Logger.warning("Memory usage still high after check. Current: #{new_usage}, Limit: #{memory_limit}. Need more aggressive cleanup.")
+        Logger.warning(
+          "Memory usage still high after check. Current: #{new_usage}, Limit: #{memory_limit}. Need more aggressive cleanup."
+        )
+
         # TODO: Implement more aggressive cleanup (e.g., clear parts of main buffer?)
       else
-        Logger.debug("Memory usage within limits after check. Current usage: #{new_usage} bytes.")
+        Logger.debug(
+          "Memory usage within limits after check. Current usage: #{new_usage} bytes."
+        )
       end
 
-      %{updated_integration | buffer_manager: final_buffer_manager, last_cleanup: System.monotonic_time(:millisecond)}
+      %{
+        updated_integration
+        | buffer_manager: final_buffer_manager,
+          last_cleanup: System.monotonic_time(:millisecond)
+      }
     else
-      Logger.debug("Memory usage (#{current_usage} bytes) within limit (#{memory_limit} bytes). No cleanup needed.")
+      Logger.debug(
+        "Memory usage (#{current_usage} bytes) within limit (#{memory_limit} bytes). No cleanup needed."
+      )
+
       # No cleanup needed, just update timestamp and potentially the manager if usage was recalculated
       # No cleanup needed, just update timestamp
       %{integration | last_cleanup: System.monotonic_time(:millisecond)}

@@ -47,15 +47,29 @@ defmodule Raxol.Plugins.VisualizationPlugin do
     {:noreply, plugin_state}
   end
 
-  def handle_placeholder(%{type: :placeholder, value: value, data: data, opts: opts, bounds: bounds},
-                       _plugin_meta, plugin_state)
+  def handle_placeholder(
+        %{
+          type: :placeholder,
+          value: value,
+          data: data,
+          opts: opts,
+          bounds: bounds
+        },
+        _plugin_meta,
+        plugin_state
+      )
       when value in [:chart, :treemap, :image] do
     case value do
       :chart ->
         ChartRenderer.render_chart_content(data, opts, bounds, plugin_state)
 
       :treemap ->
-        Raxol.Plugins.Visualization.TreemapRenderer.render_treemap_content(data, opts, bounds, plugin_state)
+        Raxol.Plugins.Visualization.TreemapRenderer.render_treemap_content(
+          data,
+          opts,
+          bounds,
+          plugin_state
+        )
 
       :image ->
         ImageRenderer.render_image_content(data, opts, bounds, plugin_state)

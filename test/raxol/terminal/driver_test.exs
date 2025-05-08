@@ -3,7 +3,8 @@ defmodule Raxol.Terminal.DriverTest do
 
   alias Raxol.Terminal.Driver
   alias Raxol.Core.Events.Event
-  import Mox # Import Mox for easy calling
+  # Import Mox for easy calling
+  import Mox
 
   # Helper to start the Driver process for testing
   defp start_driver(test_pid) do
@@ -21,7 +22,8 @@ defmodule Raxol.Terminal.DriverTest do
     original_stty =
       case System.cmd("stty", ["-g"]) do
         {output, 0} -> String.trim(output)
-        {_error, _exit_code} -> nil # Failed to get stty settings
+        # Failed to get stty settings
+        {_error, _exit_code} -> nil
       end
 
     on_exit(fn ->
@@ -29,6 +31,7 @@ defmodule Raxol.Terminal.DriverTest do
       if original_stty do
         System.cmd("stty", [original_stty])
       end
+
       # Stop any started driver process if necessary
     end)
 
@@ -38,7 +41,8 @@ defmodule Raxol.Terminal.DriverTest do
   describe "init/1" do
     test "initializes correctly, configures terminal, and sends initial resize event",
          %{original_stty: _} do
-      Process.flag(:trap_exit, true) # Trap exits to prevent crash on clean shutdown
+      # Trap exits to prevent crash on clean shutdown
+      Process.flag(:trap_exit, true)
       test_pid = self()
       driver_pid = start_driver(test_pid)
 
@@ -47,8 +51,10 @@ defmodule Raxol.Terminal.DriverTest do
 
       # Check if initial resize event was sent (expect the wrapped :dispatch cast)
       assert_receive {:"$gen_cast",
-                      {:dispatch, %Event{type: :resize, data: %{height: _h, width: _w}}}},
-                     500 # Increased timeout slightly just in case
+                      {:dispatch,
+                       %Event{type: :resize, data: %{height: _h, width: _w}}}},
+                     # Increased timeout slightly just in case
+                     500
 
       # Check if terminal is in raw mode (hard to check directly without complex mocking)
       # We rely on the Driver's internal logging or side effects for now.
@@ -75,25 +81,54 @@ defmodule Raxol.Terminal.DriverTest do
       receive do
         {:"$gen_cast", {:dispatch, %Event{type: :resize}}} -> :ok
       after
-        500 -> flunk("Did not receive initial resize event") # Increased timeout
+        # Increased timeout
+        500 -> flunk("Did not receive initial resize event")
       end
 
       # Add a small delay to allow the Driver process to initialize and cast
       :timer.sleep(100)
 
       # Simulate receiving 'a' key event from rrex_termbox NIF
-      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?a, mod: 0}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 0, char: ?a, mod: 0}}
+      )
 
       assert_receive {:"$gen_cast",
-                      {:dispatch, %Event{type: :key, data: %{char: "a", key: nil, shift: false, ctrl: false, alt: false, meta: false}}}},
-                      500
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           char: "a",
+                           key: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       # Simulate receiving 'b' key event from rrex_termbox NIF
-      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?b, mod: 0}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 0, char: ?b, mod: 0}}
+      )
 
       assert_receive {:"$gen_cast",
-                      {:dispatch, %Event{type: :key, data: %{char: "b", key: nil, shift: false, ctrl: false, alt: false, meta: false}}}},
-                      500
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           char: "b",
+                           key: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -112,29 +147,88 @@ defmodule Raxol.Terminal.DriverTest do
       :timer.sleep(100)
 
       # Up Arrow key from rrex_termbox NIF (using placeholder key code 65)
-      send(driver_pid, {:termbox_event, %{type: :key, key: 65, char: 0, mod: 0}})
-
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{key: :up, char: nil, shift: false, ctrl: false, alt: false, meta: false}}}},
-                      500
-
-      # Down Arrow key from rrex_termbox NIF (using placeholder key code 66)
-      send(driver_pid, {:termbox_event, %{type: :key, key: 66, char: 0, mod: 0}})
-
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{key: :down, char: nil, shift: false, ctrl: false, alt: false, meta: false}}}},
-                      500
-
-      # Right Arrow key from rrex_termbox NIF (using placeholder key code 67)
-      send(driver_pid, {:termbox_event, %{type: :key, key: 67, char: 0, mod: 0}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 65, char: 0, mod: 0}}
+      )
 
       assert_receive {:"$gen_cast",
-                      {:dispatch, %Event{type: :key, data: %{key: :right, char: nil, shift: false, ctrl: false, alt: false, meta: false}}}},
-                      500
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           key: :up,
+                           char: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
+
+      # Down Arrow key from rrex_termbox NIF (using placeholder key code 66)
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 66, char: 0, mod: 0}}
+      )
+
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           key: :down,
+                           char: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
+
+      # Right Arrow key from rrex_termbox NIF (using placeholder key code 67)
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 67, char: 0, mod: 0}}
+      )
+
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           key: :right,
+                           char: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       # Left Arrow key from rrex_termbox NIF (using placeholder key code 68)
-      send(driver_pid, {:termbox_event, %{type: :key, key: 68, char: 0, mod: 0}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 68, char: 0, mod: 0}}
+      )
 
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{key: :left, char: nil, shift: false, ctrl: false, alt: false, meta: false}}}},
-                      500
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           key: :left,
+                           char: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -156,16 +250,46 @@ defmodule Raxol.Terminal.DriverTest do
 
       # Function Keys (using placeholder key codes for rrex_termbox v2.0.1 NIF)
       # F1 key from rrex_termbox NIF
-      send(driver_pid, {:termbox_event, %{type: :key, key: 265, char: 0, mod: 0}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 265, char: 0, mod: 0}}
+      )
 
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{key: :f1, char: nil, shift: false, ctrl: false, alt: false, meta: false}}}},
-                      500
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           key: :f1,
+                           char: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       # F2 key from rrex_termbox NIF
-      send(driver_pid, {:termbox_event, %{type: :key, key: 266, char: 0, mod: 0}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 266, char: 0, mod: 0}}
+      )
 
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{key: :f2, char: nil, shift: false, ctrl: false, alt: false, meta: false}}}},
-                      500
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           key: :f2,
+                           char: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -184,18 +308,46 @@ defmodule Raxol.Terminal.DriverTest do
       :timer.sleep(100)
 
       # Ctrl+Up Arrow from rrex_termbox NIF (using placeholder key code and mod value)
-      send(driver_pid, {:termbox_event, %{type: :key, key: 65, char: 0, mod: 2}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 65, char: 0, mod: 2}}
+      )
 
       assert_receive {:"$gen_cast",
-                      {:dispatch, %Event{type: :key, data: %{key: :up, char: nil, shift: false, ctrl: true, alt: false, meta: false}}}},
-                      500
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           key: :up,
+                           char: nil,
+                           shift: false,
+                           ctrl: true,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       # Shift+Down Arrow from rrex_termbox NIF (using placeholder key code and mod value)
-      send(driver_pid, {:termbox_event, %{type: :key, key: 66, char: 0, mod: 1}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 66, char: 0, mod: 1}}
+      )
 
       assert_receive {:"$gen_cast",
-                      {:dispatch, %Event{type: :key, data: %{key: :down, char: nil, shift: true, ctrl: false, alt: false, meta: false}}}},
-                      500
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           key: :down,
+                           char: nil,
+                           shift: true,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -214,11 +366,15 @@ defmodule Raxol.Terminal.DriverTest do
       :timer.sleep(100)
 
       # Left mouse button press from rrex_termbox NIF
-      send(driver_pid, {:termbox_event, %{type: :mouse, x: 10, y: 5, button: 0}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :mouse, x: 10, y: 5, button: 0}}
+      )
 
       assert_receive {:"$gen_cast",
-                      {:dispatch, %Event{type: :mouse, data: %{x: 10, y: 5, button: :left}}}},
-                      500
+                      {:dispatch,
+                       %Event{type: :mouse, data: %{x: 10, y: 5, button: :left}}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -238,11 +394,15 @@ defmodule Raxol.Terminal.DriverTest do
       :timer.sleep(100)
 
       # Resize event from rrex_termbox NIF
-      send(driver_pid, {:termbox_event, %{type: :resize, width: 100, height: 50}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :resize, width: 100, height: 50}}
+      )
 
       assert_receive {:"$gen_cast",
-                      {:dispatch, %Event{type: :resize, data: %{width: 100, height: 50}}}},
-                      500
+                      {:dispatch,
+                       %Event{type: :resize, data: %{width: 100, height: 50}}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -261,7 +421,10 @@ defmodule Raxol.Terminal.DriverTest do
       # Simpler: Since we bypassed NIF, let's just send a resize event directly
       # This assumes the signal handler would fetch size and send event.
       # This test becomes less about signal handling and more about event dispatch.
-      send(driver_pid, {:termbox_event, %{type: :resize, width: 90, height: 30}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :resize, width: 90, height: 30}}
+      )
     end
 
     test "sends resize event when SIGWINCH is received", %{original_stty: _} do
@@ -282,8 +445,9 @@ defmodule Raxol.Terminal.DriverTest do
 
       # Assert that a resize event is dispatched
       assert_receive {:"$gen_cast",
-                      {:dispatch, %Event{type: :resize, data: %{height: 30, width: 90}}}},
-                      500
+                      {:dispatch,
+                       %Event{type: :resize, data: %{height: 30, width: 90}}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -291,7 +455,8 @@ defmodule Raxol.Terminal.DriverTest do
 
   describe "terminate/2" do
     test "restores terminal settings on exit", %{original_stty: original_stty} do
-      Process.flag(:trap_exit, true) # Trap exits to allow assertion on :DOWN message
+      # Trap exits to allow assertion on :DOWN message
+      Process.flag(:trap_exit, true)
       test_pid = self()
       driver_pid = start_driver(test_pid)
       # Consume initial resize event (expect the wrapped :dispatch cast)
@@ -309,7 +474,8 @@ defmodule Raxol.Terminal.DriverTest do
 
       # Exit the process
       Process.exit(driver_pid, :shutdown)
-      :timer.sleep(50) # Give time for terminate/cleanup
+      # Give time for terminate/cleanup
+      :timer.sleep(50)
 
       # Verify the process terminated cleanly (no crash)
       # The actual stty restore is handled by the on_exit in setup for robustness.
@@ -318,7 +484,8 @@ defmodule Raxol.Terminal.DriverTest do
   end
 
   # This test suite requires a different setup as it relies on :erlang.system_monitor
-  @tag :skip # Skipping until reliable signal/monitor mocking is implemented
+  # Skipping until reliable signal/monitor mocking is implemented. Testing OS signal handling is complex.
+  @tag :skip
   describe "handle_info({:signal, :SIGWINCH})" do
     test "sends resize event when SIGWINCH is received", %{original_stty: _} do
       test_pid = self()
@@ -357,8 +524,9 @@ defmodule Raxol.Terminal.DriverTest do
       #                    500
       # end
       assert_receive {:"$gen_cast",
-                      {:dispatch, %Event{type: :resize, data: %{height: 30, width: 90}}}},
-                      500
+                      {:dispatch,
+                       %Event{type: :resize, data: %{height: 30, width: 90}}}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end
@@ -366,7 +534,8 @@ defmodule Raxol.Terminal.DriverTest do
 
   describe "Input Buffering / Partial Sequences" do
     test "correctly requests more input if buffer is empty", %{original_stty: _} do
-      Process.flag(:trap_exit, true) # Trap exits
+      # Trap exits
+      Process.flag(:trap_exit, true)
       test_pid = self()
       driver_pid = start_driver(test_pid)
 
@@ -384,20 +553,37 @@ defmodule Raxol.Terminal.DriverTest do
       # or similar mechanism that interacts with :io device for input requests.
       # Since we bypassed NIF, this interaction might not happen.
       # Let's just send an event and see if it's processed.
-      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?x, mod: 0}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 0, char: ?x, mod: 0}}
+      )
+
       assert_receive {:"$gen_cast",
-                      {:dispatch, %Event{type: :key, data: %{char: "x", key: nil, shift: false, ctrl: false, alt: false, meta: false}}}},
-                      500
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           char: "x",
+                           key: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       # How to assert :io_request was sent? Needs specific driver impl knowledge or mocking :io
 
       Process.exit(driver_pid, :shutdown)
-      ref = Process.monitor(driver_pid) # Monitor the process before asserting
+      # Monitor the process before asserting
+      ref = Process.monitor(driver_pid)
       assert_receive {:DOWN, ^ref, :process, _, :shutdown}, 500
     end
 
     test "correctly buffers partial input sequences", %{original_stty: _} do
-      Process.flag(:trap_exit, true) # Trap exits
+      # Trap exits
+      Process.flag(:trap_exit, true)
       test_pid = self()
       driver_pid = start_driver(test_pid)
 
@@ -412,27 +598,80 @@ defmodule Raxol.Terminal.DriverTest do
       :timer.sleep(100)
 
       # Send partial escape seq (testing individual dispatch, not buffering)
-      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?e, mod: 0}})
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{char: "e", key: nil, shift: false, ctrl: false, alt: false, meta: false}}}}, 500
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 0, char: ?e, mod: 0}}
+      )
 
-      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?[, mod: 0}})
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{char: "[", key: nil, shift: false, ctrl: false, alt: false, meta: false}}}}, 500
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           char: "e",
+                           key: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
+
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 0, char: ?[, mod: 0}}
+      )
+
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           char: "[",
+                           key: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       # Send final part
-      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?A, mod: 0}})
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{char: "A", key: nil, shift: false, ctrl: false, alt: false, meta: false}}}}, 500
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 0, char: ?A, mod: 0}}
+      )
+
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           char: "A",
+                           key: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       # Test another sequence buffering (Ctrl+A = SOH = 1)
       # send(driver_pid, {:termbox_event, %{type: :key, key: 1, char: 1, mod: 2}}) # Example Ctrl+A
       # assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{char: "A", key: nil, shift: false, ctrl: true, alt: false, meta: false}}}}, 500
 
       Process.exit(driver_pid, :shutdown)
-      ref_buffer = Process.monitor(driver_pid) # Monitor the process before asserting
+      # Monitor the process before asserting
+      ref_buffer = Process.monitor(driver_pid)
       assert_receive {:DOWN, ^ref_buffer, :process, _, :shutdown}, 500
     end
 
     test "handles intermingled input correctly", %{original_stty: _} do
-      Process.flag(:trap_exit, true) # Trap exits
+      # Trap exits
+      Process.flag(:trap_exit, true)
       test_pid = self()
       driver_pid = start_driver(test_pid)
 
@@ -446,18 +685,110 @@ defmodule Raxol.Terminal.DriverTest do
       :timer.sleep(100)
 
       # Send "x\e[Ay"
-      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?x, mod: 0}})
-      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?\e, mod: 0}})
-      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?[, mod: 0}})
-      send(driver_pid, {:termbox_event, %{type: :key, key: 65, char: 0, mod: 0}}) # Simulate Up Key after ESC [
-      send(driver_pid, {:termbox_event, %{type: :key, key: 0, char: ?y, mod: 0}})
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 0, char: ?x, mod: 0}}
+      )
+
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 0, char: ?\e, mod: 0}}
+      )
+
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 0, char: ?[, mod: 0}}
+      )
+
+      # Simulate Up Key after ESC [
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 65, char: 0, mod: 0}}
+      )
+
+      send(
+        driver_pid,
+        {:termbox_event, %{type: :key, key: 0, char: ?y, mod: 0}}
+      )
 
       # Expect :char x, then :up, then :char y (based on implemented simple translation)
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{char: "x", key: nil, shift: false, ctrl: false, alt: false, meta: false}}}}, 500
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{char: "\e", key: nil, shift: false, ctrl: false, alt: false, meta: false}}}}, 500 # Expect raw ESC
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{char: "[", key: nil, shift: false, ctrl: false, alt: false, meta: false}}}}, 500 # Expect raw [
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{key: :up, char: nil, shift: false, ctrl: false, alt: false, meta: false}}}}, 500 # Expect Up Key
-      assert_receive {:"$gen_cast", {:dispatch, %Event{type: :key, data: %{char: "y", key: nil, shift: false, ctrl: false, alt: false, meta: false}}}}, 500
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           char: "x",
+                           key: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
+
+      # Expect raw ESC
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           char: "\e",
+                           key: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
+
+      # Expect raw [
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           char: "[",
+                           key: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
+
+      # Expect Up Key
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           key: :up,
+                           char: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
+
+      assert_receive {:"$gen_cast",
+                      {:dispatch,
+                       %Event{
+                         type: :key,
+                         data: %{
+                           char: "y",
+                           key: nil,
+                           shift: false,
+                           ctrl: false,
+                           alt: false,
+                           meta: false
+                         }
+                       }}},
+                     500
 
       Process.exit(driver_pid, :shutdown)
     end

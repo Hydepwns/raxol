@@ -251,20 +251,26 @@ defmodule Raxol.UI.Layout.Engine do
 
       :button ->
         text = Map.get(attrs, :label, "Button")
-        padding = 4 # Box: [ Text ]
+        # Box: [ Text ]
+        padding = 4
         width = min(String.length(text) + padding, available_space.width)
-        height = 3 # Fixed height for button
+        # Fixed height for button
+        height = 3
         %{width: width, height: height}
 
       :text_input ->
         value = Map.get(attrs, :value, "")
         placeholder = Map.get(attrs, :placeholder, "")
         display_text = if value == "", do: placeholder, else: value
-        padding = 4 # Box: [ Text ]
+        # Box: [ Text ]
+        padding = 4
         # min_width = 10 # Remove min_width constraint for now
         # Calculate width based on text + padding, constrained by available space
-        width = min(String.length(display_text) + padding, available_space.width)
-        height = 3 # Fixed height for text input
+        width =
+          min(String.length(display_text) + padding, available_space.width)
+
+        # Fixed height for text input
+        height = 3
         %{width: width, height: height}
 
       :checkbox ->
@@ -307,29 +313,43 @@ defmodule Raxol.UI.Layout.Engine do
         headers = Map.get(attrs, :headers, [])
         data = Map.get(attrs, :data, [])
 
-        header_width = if headers == [], do: 0, else: String.length(Enum.join(headers, " | "))
+        header_width =
+          if headers == [],
+            do: 0,
+            else: String.length(Enum.join(headers, " | "))
+
         max_data_width =
           data
           |> Enum.map(fn row -> String.length(Enum.join(row, " | ")) end)
           |> Enum.max(fn -> 0 end)
 
         width = max(header_width, max_data_width)
-        header_height = if headers == [], do: 0, else: 2 # Header + separator
+        # Header + separator
+        header_height = if headers == [], do: 0, else: 2
         data_height = length(data)
         height = header_height + data_height
 
-        %{width: min(width, available_space.width), height: min(height, available_space.height)}
+        %{
+          width: min(width, available_space.width),
+          height: min(height, available_space.height)
+        }
 
       _ ->
         # Fallback for unknown or unmeasurable elements
-        Logger.warning("LayoutEngine: Cannot measure element type: #{inspect(type)}")
+        Logger.warning(
+          "LayoutEngine: Cannot measure element type: #{inspect(type)}"
+        )
+
         %{width: 0, height: 0}
     end
   end
 
   # Catch-all for non-element data or invalid elements
   def measure_element(other, _available_space) do
-    Logger.warning("LayoutEngine: Cannot measure non-element or invalid element: #{inspect(other)}")
+    Logger.warning(
+      "LayoutEngine: Cannot measure non-element or invalid element: #{inspect(other)}"
+    )
+
     %{width: 0, height: 0}
   end
 

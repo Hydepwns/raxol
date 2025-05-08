@@ -5,7 +5,8 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
 %Component{
   id: :table,
   name: "Table",
-  module: Raxol.UI.Components.Table, # Assuming module path
+  # Assuming module path
+  module: Raxol.UI.Components.Table,
   description: "Displays tabular data.",
   examples: [
     %Example{

@@ -15,7 +15,8 @@ defmodule Raxol.Components.Terminal do
             width: 80,
             height: 24,
             # Add buffer, emulator state, etc.
-            buffer: [], # Example: List of lines
+            # Example: List of lines
+            buffer: [],
             style: %{}
 
   # --- Component Behaviour Callbacks ---
@@ -27,7 +28,8 @@ defmodule Raxol.Components.Terminal do
       id: props[:id],
       width: props[:width] || 80,
       height: props[:height] || 24,
-      buffer: props[:buffer] || [], # Use buffer from props or default to []
+      # Use buffer from props or default to []
+      buffer: props[:buffer] || [],
       style: props[:style] || %{}
       # Initialize other relevant fields if added later
     }
@@ -36,24 +38,28 @@ defmodule Raxol.Components.Terminal do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages to write to terminal, clear, etc.
-    Logger.debug("Terminal #{state.id} received message: #{inspect msg}")
+    Logger.debug("Terminal #{state.id} received message: #{inspect(msg)}")
     # Placeholder
     {state, []}
   end
 
   @impl Raxol.UI.Components.Base.Component
-  def handle_event(%{type: :key} = event, %{} = _props, state) do # Use map matching
+  # Use map matching
+  def handle_event(%{type: :key} = event, %{} = _props, state) do
     # Process key event, send to terminal emulator/process
-    Logger.debug("Terminal #{state.id} received key event: #{inspect event.data}")
+    Logger.debug(
+      "Terminal #{state.id} received key event: #{inspect(event.data)}"
+    )
+
     # Placeholder: Append key to buffer for simple echo
-    new_buffer = state.buffer ++ ["Key: #{inspect event.data.key}"]
+    new_buffer = state.buffer ++ ["Key: #{inspect(event.data.key)}"]
     {%{state | buffer: new_buffer}, []}
   end
 
   # Catch-all handle_event
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
-    Logger.debug("Terminal #{state.id} received event: #{inspect event.type}")
+    Logger.debug("Terminal #{state.id} received event: #{inspect(event.type)}")
     {state, []}
   end
 
@@ -71,16 +77,24 @@ defmodule Raxol.Components.Terminal do
     # Create column element map explicitly
     column_element = %{
       type: :column,
-      attrs: [], # Assuming no specific attrs for column here
-      children: label_elements # Assign the list of labels
+      # Assuming no specific attrs for column here
+      attrs: [],
+      # Assign the list of labels
+      children: label_elements
     }
 
     # Create box element map explicitly, using column as child
     box_element = %{
       type: :box,
       # Ensure attrs is a Keyword list as expected by test
-      attrs: [id: state.id, width: state.width, height: state.height, style: state.style],
-      children: column_element # Assign the column map
+      attrs: [
+        id: state.id,
+        width: state.width,
+        height: state.height,
+        style: state.style
+      ],
+      # Assign the column map
+      children: column_element
     }
 
     # Return the final element structure
@@ -90,5 +104,4 @@ defmodule Raxol.Components.Terminal do
   # --- Internal Helpers ---
 
   # Remove old handle_event/3 with @impl Component
-
 end

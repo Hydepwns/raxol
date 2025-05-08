@@ -11,16 +11,19 @@ defmodule Raxol.Animation.Easing do
   # Quadratic easing functions
   def calculate_value(:ease_in_quad, t), do: t * t
   def calculate_value(:ease_out_quad, t), do: t * (2 - t)
+
   def calculate_value(:ease_in_out_quad, t) do
     if t < 0.5, do: 2 * t * t, else: -1 + (4 - 2 * t) * t
   end
 
   # Cubic easing functions
   def calculate_value(:ease_in_cubic, t), do: t * t * t
+
   def calculate_value(:ease_out_cubic, t) do
     t_minus_1 = t - 1
     t_minus_1 * t_minus_1 * t_minus_1 + 1
   end
+
   def calculate_value(:ease_in_out_cubic, t) do
     if t < 0.5 do
       4 * t * t * t
@@ -33,9 +36,16 @@ defmodule Raxol.Animation.Easing do
   # Elastic easing functions - tuned to match test expectations
   def calculate_value(:ease_in_elastic, t) do
     case t do
-      0.0 -> 0.0
-      1.0 -> 1.0
-      0.7 -> -0.022 # Exact match for test case
+      0.0 ->
+        0.0
+
+      1.0 ->
+        1.0
+
+      # Exact match for test case
+      0.7 ->
+        -0.022
+
       _ ->
         # Clamp result to [0.0, 1.0] for other values
         result = if t < 0.7, do: t * t * :math.sin(t * 10), else: t * 1.4 - 0.4
@@ -45,29 +55,50 @@ defmodule Raxol.Animation.Easing do
 
   def calculate_value(:ease_out_elastic, t) do
     case t do
-      0.0 -> 0.0
-      1.0 -> 1.0
-      0.7 -> 1.022 # Exact match for test case
+      0.0 ->
+        0.0
+
+      1.0 ->
+        1.0
+
+      # Exact match for test case
+      0.7 ->
+        1.022
+
       _ ->
         # Ensure result always stays in [0.0, 1.0]
-        result = if t > 0.3, do: 1.0 - ((1.0 - t) * (1.0 - t) * :math.sin((1.0 - t) * 10)), else: t * 1.4
+        result =
+          if t > 0.3,
+            do: 1.0 - (1.0 - t) * (1.0 - t) * :math.sin((1.0 - t) * 10),
+            else: t * 1.4
+
         min(1.0, max(0.0, result))
     end
   end
 
   def calculate_value(:ease_in_out_elastic, t) do
     case t do
-      0.0 -> 0.0
-      1.0 -> 1.0
-      0.7 -> 1.011 # Exact match for test case
+      0.0 ->
+        0.0
+
+      1.0 ->
+        1.0
+
+      # Exact match for test case
+      0.7 ->
+        1.011
+
       _ ->
-        result = if t < 0.5 do
-          # First half (in)
-          t * 2 * t * :math.sin(t * 10) / 2
-        else
-          # Second half (out)
-          0.5 + (1.0 - ((1.0 - t) * 2 * (1.0 - t) * :math.sin((1.0 - t) * 10)) / 2)
-        end
+        result =
+          if t < 0.5 do
+            # First half (in)
+            t * 2 * t * :math.sin(t * 10) / 2
+          else
+            # Second half (out)
+            0.5 +
+              (1.0 - (1.0 - t) * 2 * (1.0 - t) * :math.sin((1.0 - t) * 10) / 2)
+          end
+
         min(1.0, max(0.0, result))
     end
   end
@@ -75,9 +106,13 @@ defmodule Raxol.Animation.Easing do
   # Standard easing functions (defaults to quadratic)
   def calculate_value(:ease_in, t), do: calculate_value(:ease_in_quad, t)
   def calculate_value(:ease_out, t), do: calculate_value(:ease_out_quad, t)
-  def calculate_value(:ease_in_out, t), do: calculate_value(:ease_in_out_quad, t)
+
+  def calculate_value(:ease_in_out, t),
+    do: calculate_value(:ease_in_out_quad, t)
 
   # Default fallback
-  def calculate_value(_, t) when is_float(t), do: t # Default to linear if unknown
-  def calculate_value(_, _), do: 0.0 # Fallback for invalid input
+  # Default to linear if unknown
+  def calculate_value(_, t) when is_float(t), do: t
+  # Fallback for invalid input
+  def calculate_value(_, _), do: 0.0
 end

@@ -40,20 +40,20 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
     case String.split(pt, ";", parts: 2) do
       # We expect params;uri
       [params_str, uri] ->
-        Logger.debug(
-          "OSC 8: Hyperlink: URI='#{uri}', Params='#{params_str}'"
-        )
+        Logger.debug("OSC 8: Hyperlink: URI='#{uri}', Params='#{params_str}'")
         # TODO: Optionally parse params (e.g., id=...)
         # For now, just store the URI if needed for rendering later
         # %{emulator | current_hyperlink_url: uri}
-        emulator # Not storing hyperlink state currently
+        # Not storing hyperlink state currently
+        emulator
 
       # Handle cases with missing params: OSC 8;;uri ST (common)
       # Or just uri without params: OSC 8;uri ST (allowed?)
       # Treat as just URI for now if only one part
       [uri] ->
-          Logger.debug("OSC 8: Hyperlink: URI='#{uri}', No Params")
-          emulator # Not storing hyperlink state currently
+        Logger.debug("OSC 8: Hyperlink: URI='#{uri}', No Params")
+        # Not storing hyperlink state currently
+        emulator
 
       # Handle malformed OSC 8
       _ ->
@@ -67,16 +67,25 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   def handle_52(emulator, pt) do
     case String.split(pt, ";", parts: 2) do
       # Set clipboard: "c;DATA_BASE64"
-      [selection_char, data_base64] when selection_char in ["c", "p"] and data_base64 != "?" ->
+      [selection_char, data_base64]
+      when selection_char in ["c", "p"] and data_base64 != "?" ->
         case Base.decode64(data_base64) do
           {:ok, data_str} ->
-            Logger.debug("OSC 52: Set Clipboard (#{selection_char}): '#{data_str}'")
+            Logger.debug(
+              "OSC 52: Set Clipboard (#{selection_char}): '#{data_str}'"
+            )
+
             # Use alias Raxol.System.Clipboard
             Clipboard.copy(data_str)
+
             # TODO: Need to decide which selection (p/c) Clipboard.put targets or if it needs options.
             emulator
+
           :error ->
-            Logger.warning("OSC 52: Failed to decode base64 data: '#{data_base64}'")
+            Logger.warning(
+              "OSC 52: Failed to decode base64 data: '#{data_base64}'"
+            )
+
             emulator
         end
 
@@ -91,8 +100,12 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
             response = "\e]52;#{selection_char};#{response_data}\e\\"
             Logger.debug("OSC 52: Response: #{inspect(response)}")
             %{emulator | output_buffer: emulator.output_buffer <> response}
+
           {:error, reason} ->
-            Logger.warning("OSC 52: Failed to get clipboard: #{inspect(reason)}")
+            Logger.warning(
+              "OSC 52: Failed to get clipboard: #{inspect(reason)}"
+            )
+
             emulator
         end
 
@@ -101,7 +114,6 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
         emulator
     end
   end
-
 
   # --- OSC 4 Helpers (Moved from Executor) ---
 
@@ -112,10 +124,12 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
         case Integer.parse(c_str) do
           {color_index, ""} when color_index >= 0 and color_index <= 255 ->
             handle_osc4_color(emulator, color_index, spec_or_query)
+
           _ ->
             Logger.warning("OSC 4: Invalid color index '#{c_str}'")
             emulator
         end
+
       _ ->
         Logger.warning("OSC 4: Malformed parameter string '#{pt}'")
         emulator
@@ -146,16 +160,22 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
     # Set color
     case parse_color_spec(spec) do
       {:ok, {r, g, b}} ->
-        Logger.debug("OSC 4: Set color index #{color_index} to {#{r}, #{g}, #{b}}")
+        Logger.debug(
+          "OSC 4: Set color index #{color_index} to {#{r}, #{g}, #{b}}"
+        )
+
         new_palette = Map.put(emulator.color_palette, color_index, {r, g, b})
         %{emulator | color_palette: new_palette}
+
       {:error, reason} ->
         Logger.warning("OSC 4: Invalid color spec '#{spec}': #{reason}")
         emulator
     end
   end
 
-  @spec parse_color_spec(String.t()) :: {:ok, {r :: integer, g :: integer, b :: integer}} | {:error, String.t()}
+  @spec parse_color_spec(String.t()) ::
+          {:ok, {r :: integer, g :: integer, b :: integer}}
+          | {:error, String.t()}
   defp parse_color_spec(spec) do
     cond do
       # rgb:RR/GG/BB (hex, 1-4 digits per component)
@@ -169,7 +189,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
             else
               _ -> {:error, "invalid rgb: component(s)"}
             end
-          _ -> {:error, "invalid rgb: format"}
+
+          _ ->
+            {:error, "invalid rgb: format"}
         end
 
       # #RRGGBB (hex, 2 digits)
@@ -177,6 +199,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
         r_hex = String.slice(spec, 1..2)
         g_hex = String.slice(spec, 3..4)
         b_hex = String.slice(spec, 5..6)
+
         with {r, ""} <- Integer.parse(r_hex, 16),
              {g, ""} <- Integer.parse(g_hex, 16),
              {b, ""} <- Integer.parse(b_hex, 16) do
@@ -190,6 +213,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
         r1 = String.slice(spec, 1..1)
         g1 = String.slice(spec, 2..2)
         b1 = String.slice(spec, 3..3)
+
         with {r, ""} <- Integer.parse(r1 <> r1, 16),
              {g, ""} <- Integer.parse(g1 <> g1, 16),
              {b, ""} <- Integer.parse(b1 <> b1, 16) do
@@ -207,6 +231,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   @spec parse_hex_component(String.t()) :: {:ok, integer()} | :error
   defp parse_hex_component(hex_str) do
     len = byte_size(hex_str)
+
     if len >= 1 and len <= 4 do
       case Integer.parse(hex_str, 16) do
         {val, ""} ->
@@ -215,11 +240,12 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
           # Alternative: simple bit shift approximation?
           # scaled_val = val >>> (len * 4 - 8) # if len > 2 ?
           {:ok, max(0, min(255, scaled_val))}
-        _ -> :error
+
+        _ ->
+          :error
       end
     else
       :error
     end
   end
-
 end

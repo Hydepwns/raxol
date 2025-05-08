@@ -6,11 +6,13 @@ defmodule Raxol.Style.Colors.AdvancedTest do
   # Setup ETS table for adaptive tests
   setup do
     table = :raxol_terminal_capabilities
+
     try do
       :ets.delete(table)
     rescue
       ArgumentError -> :ok
     end
+
     :ets.new(table, [:set, :public, :named_table])
     # Insert default capability needed for adapt_color_advanced
     :ets.insert(table, {:color_support, :truecolor})
@@ -132,9 +134,11 @@ defmodule Raxol.Style.Colors.AdvancedTest do
       assert Enum.at(harmony, 0) == red
 
       # Check that both expected harmony colors are present, order doesn't matter
-      harmony_hexes = Enum.map(Enum.drop(harmony, 1), &(&1.hex))
-      assert Enum.member?(harmony_hexes, "#00FF00") # Green
-      assert Enum.member?(harmony_hexes, "#0000FF") # Blue
+      harmony_hexes = Enum.map(Enum.drop(harmony, 1), & &1.hex)
+      # Green
+      assert Enum.member?(harmony_hexes, "#00FF00")
+      # Blue
+      assert Enum.member?(harmony_hexes, "#0000FF")
     end
 
     test "create_harmony/2 creates tetradic harmony" do

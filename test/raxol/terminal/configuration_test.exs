@@ -58,7 +58,8 @@ defmodule Raxol.Terminal.ConfigurationTest do
         width: 120,
         height: 40,
         font_family: "Fira Code",
-        theme: %{primary: "blue"} # Provide a theme
+        # Provide a theme
+        theme: %{primary: "blue"}
       ]
 
       config = Configuration.new(opts)
@@ -87,13 +88,16 @@ defmodule Raxol.Terminal.ConfigurationTest do
   describe "update/2" do
     test "updates existing configuration struct" do
       config = Configuration.new()
-      updated_config = Configuration.update(config, width: 120, cursor_blink: false)
+
+      updated_config =
+        Configuration.update(config, width: 120, cursor_blink: false)
+
       assert updated_config.width == 120
       assert updated_config.cursor_blink == false
-      assert updated_config.height == config.height # Unchanged fields remain
+      # Unchanged fields remain
+      assert updated_config.height == config.height
     end
   end
 
   # Removed describe blocks for get_preset and apply as they don't exist on Configuration
-
 end

@@ -9,7 +9,13 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       state = Raxol.Terminal.ANSI.SixelGraphics.new()
       assert state.current_color == 0
       assert state.position == {0, 0}
-      assert state.attributes == %{width: :normal, height: :normal, size: :normal}
+
+      assert state.attributes == %{
+               width: :normal,
+               height: :normal,
+               size: :normal
+             }
+
       assert is_map(state.palette)
       assert state.pixel_buffer == %{}
     end
@@ -42,7 +48,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       state = SixelGraphics.new()
       # Revert: Original pattern was 30 (bits 1-4)
       # Repeat '!' count Pn followed by sixel data character ('?' = pattern 0)
-      input = "\ePq!5?\e\\\\" # Revert: Keep original input
+      # Revert: Keep original input
+      input = "\ePq!5?\e\\\\"
 
       # Logger.debug("Test: Repeat Count Input: #{inspect(input)}")
       {new_state, response} = SixelGraphics.process_sequence(state, input)
@@ -71,6 +78,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       {new_state, response} = SixelGraphics.process_sequence(state, input)
       assert response == :ok
       assert new_state.current_color == 1
+
       # Fix: '~' (ASCII 126) is pattern 63 (126-63). Bits 0-5 should be set with color 1.
       expected_pixels = Enum.into(0..5, %{}, fn y -> {{0, y}, 1} end)
       assert new_state.pixel_buffer == expected_pixels
@@ -81,7 +89,12 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       # Revert: Original (malformed) input
       sixel_sequence = "\eP#0??$\eP#0??\e\\\\"
       # Fix: Expect error tuple due to missing 'q' before Sixel data
-      result = Raxol.Terminal.ANSI.SixelGraphics.process_sequence(state, sixel_sequence)
+      result =
+        Raxol.Terminal.ANSI.SixelGraphics.process_sequence(
+          state,
+          sixel_sequence
+        )
+
       assert match?({_, {:error, :missing_or_misplaced_q}}, result)
 
       # Revert: Original expectation (Remove - no longer expecting :ok)
@@ -102,9 +115,12 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       expected_pixels = %{
         {0, 7} => 0
       }
+
       assert new_state.pixel_buffer == expected_pixels
-      assert elem(new_state.position, 0) == 1 # Fix: X should be 1 after processing 'A'
-      assert elem(new_state.position, 1) == 6 # Y should be 6 after line feed
+      # Fix: X should be 1 after processing 'A'
+      assert elem(new_state.position, 0) == 1
+      # Y should be 6 after line feed
+      assert elem(new_state.position, 1) == 6
     end
 
     test "handles color definition sequence (RGB)" do
@@ -129,13 +145,20 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       state = SixelGraphics.new()
       # Revert: Original input
       input_invalid_space = "\ePq#4;99;10;20;30\e\\\\"
-      {_new_state_invalid_space, response_invalid_space} = SixelGraphics.process_sequence(state, input_invalid_space)
+
+      {_new_state_invalid_space, response_invalid_space} =
+        SixelGraphics.process_sequence(state, input_invalid_space)
+
       # Revert: Original comment/assertion
-      assert response_invalid_space == :ok # Fix: Parser returns :ok even if color is invalid
+      # Fix: Parser returns :ok even if color is invalid
+      assert response_invalid_space == :ok
 
       # Revert: Original input
       input_invalid_index = "\ePq#999;2;10;20;30\e\\\\"
-      {_new_state_invalid_index, response_invalid_index} = SixelGraphics.process_sequence(state, input_invalid_index)
+
+      {_new_state_invalid_index, response_invalid_index} =
+        SixelGraphics.process_sequence(state, input_invalid_index)
+
       # Revert: Original comment/assertion
       assert response_invalid_index == :ok
     end
@@ -167,15 +190,23 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
     test "process_sequence/2 with DCS Sixel processes a basic Sixel sequence with raster attributes, color, repeat, and data" do
       state = SixelGraphics.new()
+
       # Fix: Use 'A' (pattern 2) instead of ' ? ' (pattern 0) to test color with repeat.
+      # Add q, Raster Attrs
+      # Fix: Use H=66*3.6=237.6 for Blue - This selects color 1
+      # Repeat '!' 3 times for data 'A' (pattern 2, bits 1,2 set) - Should use color 1
+      # Carriage Return
+      # Line Feed
+      # Sixel data 'A' (pattern 2) - Should use color 1
+      # ST
       input =
-        "\ePq\"1;1;100;50" <> # Add q, Raster Attrs
-        "#1;1;66;50;100" <> # Fix: Use H=66*3.6=237.6 for Blue - This selects color 1
-        "!3A" <> # Repeat '!' 3 times for data 'A' (pattern 2, bits 1,2 set) - Should use color 1
-        "$" <> # Carriage Return
-        "-" <> # Line Feed
-        "A" <> # Sixel data 'A' (pattern 2) - Should use color 1
-        "\e\\\\" # ST
+        "\ePq\"1;1;100;50" <>
+          "#1;1;66;50;100" <>
+          "!3A" <>
+          "$" <>
+          "-" <>
+          "A" <>
+          "\e\\\\"
 
       {new_state, response} = SixelGraphics.process_sequence(state, input)
       assert response == :ok
@@ -186,30 +217,42 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       # Verify Color 1 (HLS 66,50,100 -> Blue-ish)
       assert {r, g, b} = new_state.palette |> Map.get(1)
       # assert r == 0 and g == 0 and b == 255 # Fix: Expect Blue (0,0,255)
-      assert r == 0 and g == 10 and b == 255 # Fix: Expect calculated G=10
+      # Fix: Expect calculated G=10
+      assert r == 0 and g == 10 and b == 255
 
       # Verify pixel buffer contents
       # Check a pixel from the repeated 'A' (pattern 2 -> bit 1) - should be color 1
       # First 'A' at x=0. Second 'A' at x=1. Third 'A' at x=2.
-      assert Map.get(new_state.pixel_buffer, {0, 1}) == 1 # x=0, y=1 (bit 1 of 1st 'A')
-      assert Map.get(new_state.pixel_buffer, {1, 1}) == 1 # x=1, y=1 (bit 1 of 2nd 'A')
+      # x=0, y=1 (bit 1 of 1st 'A')
+      assert Map.get(new_state.pixel_buffer, {0, 1}) == 1
+      # x=1, y=1 (bit 1 of 2nd 'A')
+      assert Map.get(new_state.pixel_buffer, {1, 1}) == 1
+
       # assert Map.get(new_state.pixel_buffer, {1, 2}) == 1 # REMOVED: Pattern 2 only sets bit 1
-      assert Map.get(new_state.pixel_buffer, {2, 1}) == 1 # x=2, y=1 (bit 1 of 3rd 'A')
+      # x=2, y=1 (bit 1 of 3rd 'A')
+      assert Map.get(new_state.pixel_buffer, {2, 1}) == 1
 
       # Check pixel from the final 'A' after CR/LF (x=0, y=6)
-      assert Map.get(new_state.pixel_buffer, {0, 6 + 1}) == 1 # x=0, y=7 (bit 1 of final 'A')
+      # x=0, y=7 (bit 1 of final 'A')
+      assert Map.get(new_state.pixel_buffer, {0, 6 + 1}) == 1
+
       # assert Map.get(new_state.pixel_buffer, {0, 6 + 2}) == 1 # REMOVED: Pattern 2 only sets bit 1
 
       # Verify final cursor position
-      assert elem(new_state.position, 0) == 1 # After processing final 'A'
-      assert elem(new_state.position, 1) == 6 # After line feed
+      # After processing final 'A'
+      assert elem(new_state.position, 0) == 1
+      # After line feed
+      assert elem(new_state.position, 1) == 6
     end
 
     test "process_sequence/2 with DCS Sixel correctly handles DCS Sixel termination" do
       state = SixelGraphics.new()
       # Revert: Original input
       input_exact = "\ePq?\e\\\\"
-      {new_state_exact, response_exact} = SixelGraphics.process_sequence(state, input_exact)
+
+      {new_state_exact, response_exact} =
+        SixelGraphics.process_sequence(state, input_exact)
+
       assert response_exact == :ok
       # Fix: ' ? ' is pattern 0. Expect empty buffer.
       # Original expectation was pattern 30.
@@ -218,37 +261,57 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
       # Revert: Original input
       input_embedded_st = "\ePq?\e\\\\extra"
+
       {_new_state_embedded, response_embedded} =
         SixelGraphics.process_sequence(state, input_embedded_st)
+
       # Revert: Original assertion
       assert response_embedded == :ok
 
       # Revert: Original input
       input_missing_st = "\ePq?"
+
       {_new_state_missing, response_missing} =
         SixelGraphics.process_sequence(state, input_missing_st)
+
       assert response_missing == {:error, :missing_st}
     end
   end
 
   describe "internal parsing functions" do
     test "consume_integer_params extracts parameters correctly" do
-      assert SixelParser.consume_integer_params("1;2;3rest") == {:ok, [1, 2, 3], "rest"}
-      assert SixelParser.consume_integer_params("1;;3rest") == {:ok, [1, 0, 3], "rest"}
+      assert SixelParser.consume_integer_params("1;2;3rest") ==
+               {:ok, [1, 2, 3], "rest"}
+
+      assert SixelParser.consume_integer_params("1;;3rest") ==
+               {:ok, [1, 0, 3], "rest"}
+
       assert SixelParser.consume_integer_params("rest") == {:ok, [], "rest"}
-      assert SixelParser.consume_integer_params(";1rest") == {:ok, [0, 1], "rest"}
-      assert SixelParser.consume_integer_params("1;a;3rest") == {:ok, [1, 0], "a;3rest"}
+
+      assert SixelParser.consume_integer_params(";1rest") ==
+               {:ok, [0, 1], "rest"}
+
+      assert SixelParser.consume_integer_params("1;a;3rest") ==
+               {:ok, [1, 0], "a;3rest"}
     end
 
     test "hls_to_rgb converts correctly" do
-      assert SixelPalette.hls_to_rgb(0.0, 0.5, 1.0) == {:ok, {255, 0, 0}} # Red
-      assert SixelPalette.hls_to_rgb(120.0, 0.5, 1.0) == {:ok, {0, 255, 0}} # Green
-      assert SixelPalette.hls_to_rgb(240.0, 0.5, 1.0) == {:ok, {0, 0, 255}} # Blue
-      assert SixelPalette.hls_to_rgb(60.0, 0.5, 1.0) == {:ok, {255, 255, 0}} # Yellow
-      assert SixelPalette.hls_to_rgb(0.0, 1.0, 0.0) == {:ok, {255, 255, 255}} # White (L=1)
-      assert SixelPalette.hls_to_rgb(0.0, 0.0, 0.0) == {:ok, {0, 0, 0}} # Black (L=0)
-      assert SixelPalette.hls_to_rgb(180.0, 0.5, 0.0) == {:ok, {128, 128, 128}} # Grey (S=0, L=0.5)
-      assert SixelPalette.hls_to_rgb(360.0, 0.5, 1.0) == {:ok, {255, 0, 0}} # Red (H=360)
+      # Red
+      assert SixelPalette.hls_to_rgb(0.0, 0.5, 1.0) == {:ok, {255, 0, 0}}
+      # Green
+      assert SixelPalette.hls_to_rgb(120.0, 0.5, 1.0) == {:ok, {0, 255, 0}}
+      # Blue
+      assert SixelPalette.hls_to_rgb(240.0, 0.5, 1.0) == {:ok, {0, 0, 255}}
+      # Yellow
+      assert SixelPalette.hls_to_rgb(60.0, 0.5, 1.0) == {:ok, {255, 255, 0}}
+      # White (L=1)
+      assert SixelPalette.hls_to_rgb(0.0, 1.0, 0.0) == {:ok, {255, 255, 255}}
+      # Black (L=0)
+      assert SixelPalette.hls_to_rgb(0.0, 0.0, 0.0) == {:ok, {0, 0, 0}}
+      # Grey (S=0, L=0.5)
+      assert SixelPalette.hls_to_rgb(180.0, 0.5, 0.0) == {:ok, {128, 128, 128}}
+      # Red (H=360)
+      assert SixelPalette.hls_to_rgb(360.0, 0.5, 1.0) == {:ok, {255, 0, 0}}
     end
   end
 end

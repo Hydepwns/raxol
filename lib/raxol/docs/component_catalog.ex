@@ -219,7 +219,8 @@ defmodule Raxol.Docs.ComponentCatalog do
         |> Enum.map(fn {k, v} ->
           # Handle special cases like content (often the first arg)
           if k == :content || k == :label do
-            nil # Handled separately or as first arg
+            # Handled separately or as first arg
+            nil
           else
             "#{k}: #{inspect(v)}"
           end
@@ -245,7 +246,8 @@ defmodule Raxol.Docs.ComponentCatalog do
           end
         else
           if props_str == "" do
-            "#{component.id}()" # Or handle components requiring content differently
+            # Or handle components requiring content differently
+            "#{component.id}()"
           else
             "#{component.id}(#{props_str})"
           end
@@ -316,31 +318,38 @@ defmodule Raxol.Docs.ComponentCatalog do
 
             # Extract descriptions from constructor docstring if possible
             constructor_doc = find_constructor_doc(introspected_data.fun_docs)
-            prop_descriptions_from_doc = parse_prop_descriptions(constructor_doc)
+
+            prop_descriptions_from_doc =
+              parse_prop_descriptions(constructor_doc)
 
             # Enrich static properties with introspected descriptions
-            enriched_properties = enrich_properties(
-              static_component_data.properties,
-              prop_descriptions_from_doc
-            )
+            enriched_properties =
+              enrich_properties(
+                static_component_data.properties,
+                prop_descriptions_from_doc
+              )
 
             # Merge top-level description (prefer introspected moduledoc)
-            merged_description = introspected_data.description || static_component_data.description
+            merged_description =
+              introspected_data.description || static_component_data.description
 
             # Build final component data, prioritizing static data except for enriched fields
-            final_component_data = static_component_data
-            |> Map.put(:description, merged_description)
-            |> Map.put(:properties, enriched_properties)
+            final_component_data =
+              static_component_data
+              |> Map.put(:description, merged_description)
+              |> Map.put(:properties, enriched_properties)
 
             # Extract category name from directory path
-            category_id = file_path
-            |> Path.dirname()
-            |> Path.basename()
+            category_id =
+              file_path
+              |> Path.dirname()
+              |> Path.basename()
+
             {category_id, final_component_data}
-          # {:error, reason} -> # Commented out - flagged as unreachable
-          #   # Handle or log error loading file
-          #   IO.warn("Error loading component definition #{file_path}: #{inspect(reason)}")
-          #   nil
+            # {:error, reason} -> # Commented out - flagged as unreachable
+            #   # Handle or log error loading file
+            #   IO.warn("Error loading component definition #{file_path}: #{inspect(reason)}")
+            #   nil
         end
       end)
       |> Enum.reject(&is_nil/1)
@@ -348,7 +357,10 @@ defmodule Raxol.Docs.ComponentCatalog do
     # Group components by category_id
     components_by_category =
       loaded_components
-      |> Enum.group_by(fn {category_id, _component} -> category_id end, fn {_category_id, component} -> component end)
+      |> Enum.group_by(
+        fn {category_id, _component} -> category_id end,
+        fn {_category_id, component} -> component end
+      )
 
     # Define category metadata (could also be loaded from files)
     category_definitions = %{
@@ -380,6 +392,7 @@ defmodule Raxol.Docs.ComponentCatalog do
         description: meta.description,
         components: components
       }
+
       {id, category_struct}
     end)
   end
@@ -397,25 +410,34 @@ defmodule Raxol.Docs.ComponentCatalog do
   # Simple parser for ## Options style docstrings (adjust regex as needed)
   # Example: "* `:label` - Text to display on the button"
   defp parse_prop_descriptions(nil), do: %{}
-  defp parse_prop_descriptions({_, _line, _sigs, %{"en" => docstring}, _meta}) when is_binary(docstring) do
+
+  defp parse_prop_descriptions({_, _line, _sigs, %{"en" => docstring}, _meta})
+       when is_binary(docstring) do
     Regex.scan(~r/^\s*\*\s*`:(?<name>\w+)`\s*-\s*(?<desc>.*)$/m, docstring)
     |> Enum.reduce(%{}, fn [_, name, desc], acc ->
       Map.put(acc, String.to_atom(name), String.trim(desc))
     end)
   end
+
   defp parse_prop_descriptions(_), do: %{}
 
   # Enrich properties from .exs with descriptions found via introspection
   defp enrich_properties(static_properties, introspected_descs) do
-    Enum.map(static_properties, fn prop = %Raxol.Docs.ComponentCatalog.Property{} ->
-      # Prefer introspected description if found and static one is missing/generic
-      introspected_desc = Map.get(introspected_descs, prop.name)
-      if introspected_desc && (is_nil(prop.description) || prop.description == "") do
-        %{prop | description: introspected_desc}
-      else
-        prop # Keep the static property data
+    Enum.map(
+      static_properties,
+      fn prop = %Raxol.Docs.ComponentCatalog.Property{} ->
+        # Prefer introspected description if found and static one is missing/generic
+        introspected_desc = Map.get(introspected_descs, prop.name)
+
+        if introspected_desc &&
+             (is_nil(prop.description) || prop.description == "") do
+          %{prop | description: introspected_desc}
+        else
+          # Keep the static property data
+          prop
+        end
       end
-    end)
+    )
   end
 
   # Helper to fetch introspectable data from a module
@@ -424,17 +446,23 @@ defmodule Raxol.Docs.ComponentCatalog do
     Code.ensure_loaded?(module)
 
     case Code.fetch_docs(module) do
-      {:docs_v1, _annotation, _beam_language, _format, module_doc_map, _meta, docs} ->
+      {:docs_v1, _annotation, _beam_language, _format, module_doc_map, _meta,
+       docs} ->
         moduledoc = Map.get(module_doc_map, "en")
         # Extract function docs (focusing on :function type for now)
-        fun_docs = Enum.filter(docs, fn {{kind, _name, _arity}, _line, _signatures, _doc_map, _meta} ->
-          kind == :function
-        end)
+        fun_docs =
+          Enum.filter(docs, fn {{kind, _name, _arity}, _line, _signatures,
+                                _doc_map, _meta} ->
+            kind == :function
+          end)
+
         %{description: moduledoc, fun_docs: fun_docs}
+
       _ ->
         # Module not found or no docs available
         %{}
     end
   end
+
   defp fetch_introspected_data(_), do: %{}
 end

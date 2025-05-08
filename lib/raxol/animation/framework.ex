@@ -59,6 +59,7 @@ defmodule Raxol.Animation.Framework do
   ## Options
 
   * `:reduced_motion` - Start with reduced motion (default: from accessibility settings)
+  * `:cognitive_accessibility` - Start with cognitive accessibility (default: from accessibility settings)
   * `:default_duration` - Default animation duration in milliseconds (default: 300)
   * `:frame_ms` - Frame duration in milliseconds (default: #{@animation_frame_ms})
 
@@ -74,8 +75,18 @@ defmodule Raxol.Animation.Framework do
     Logger.debug("Initializing animation framework...")
 
     # Read reduced_motion preference
-    reduced_motion_pref = Raxol.Core.UserPreferences.get([:accessibility, :reduced_motion]) || false
+    reduced_motion_pref =
+      Raxol.Core.UserPreferences.get([:accessibility, :reduced_motion]) || false
+
     reduced_motion = Map.get(opts, :reduced_motion, reduced_motion_pref)
+
+    # Read cognitive_accessibility preference
+    cognitive_accessibility_pref =
+      Raxol.Core.UserPreferences.get([:accessibility, :cognitive_accessibility]) ||
+        false
+
+    cognitive_accessibility =
+      Map.get(opts, :cognitive_accessibility, cognitive_accessibility_pref)
 
     default_duration = Map.get(opts, :default_duration, 300)
     frame_ms = Map.get(opts, :frame_ms, @animation_frame_ms)
@@ -83,9 +94,11 @@ defmodule Raxol.Animation.Framework do
     # Store framework settings via StateManager
     settings = %{
       reduced_motion: reduced_motion,
+      cognitive_accessibility: cognitive_accessibility,
       default_duration: default_duration,
       frame_ms: frame_ms
     }
+
     StateManager.init(settings)
 
     :ok
@@ -177,17 +190,26 @@ defmodule Raxol.Animation.Framework do
   """
   def start_animation(animation_name, element_id, opts \\ %{}) do
     # Get animation definition via StateManager
-    animation = StateManager.get_animation(animation_name)
+    animation_def = StateManager.get_animation(animation_name)
 
-    if animation do
-      # Check if reduced motion is enabled via StateManager
+    if animation_def do
+      # Check accessibility settings via StateManager
       settings = StateManager.get_settings()
+      reduce_motion? = Map.get(settings, :reduced_motion, false)
+
+      cognitive_accessibility? =
+        Map.get(settings, :cognitive_accessibility, false)
 
       adapted_animation =
-        if Map.get(settings, :reduced_motion, false) do
-          AnimAccessibility.adapt_for_reduced_motion(animation)
-        else
-          animation
+        cond do
+          reduce_motion? ->
+            AnimAccessibility.adapt_for_reduced_motion(animation_def)
+
+          cognitive_accessibility? ->
+            AnimAccessibility.adapt_for_cognitive_accessibility(animation_def)
+
+          true ->
+            animation_def
         end
 
       # Create animation instance
@@ -201,11 +223,21 @@ defmodule Raxol.Animation.Framework do
       # Store active animation via StateManager
       StateManager.put_active_animation(element_id, animation_name, instance)
 
-      # Announce to screen reader if configured
-      if Map.get(animation, :announce_to_screen_reader, false) do
-        Accessibility.announce(
-          Map.get(animation, :description, "Animation started")
-        )
+      # Announce to screen reader if configured and not fully disabled by reduced motion
+      should_announce =
+        Map.get(adapted_animation, :announce_to_screen_reader, false) and
+          not (reduce_motion? and
+                 Map.get(adapted_animation, :disabled, false) == true)
+
+      if should_announce do
+        description = Map.get(adapted_animation, :description)
+
+        message =
+          if description,
+            do: "#{description} started",
+            else: "Animation started"
+
+        Accessibility.announce(message)
       end
 
       :ok
@@ -232,17 +264,33 @@ defmodule Raxol.Animation.Framework do
 
     # Process animations, collecting new state and completed animations
     {new_state, completed} =
-      Enum.reduce(active_animations, {state, []}, fn {element_id, element_animations}, {current_state, completed_list} ->
-        Enum.reduce(element_animations, {current_state, completed_list}, fn {animation_name, instance}, {elem_state, elem_completed} ->
-          # Call the modified apply_animation_to_state/6 (or similar) which returns status
-          case apply_animation_to_state_internal(elem_state, element_id, animation_name, instance, now) do
-            {:ok, updated_elem_state} ->
-              {updated_elem_state, elem_completed} # Continue with updated state
-            {:completed, updated_elem_state} ->
-              # Add to completed list and continue with updated state
-              {updated_elem_state, [{element_id, animation_name} | elem_completed]}
+      Enum.reduce(active_animations, {state, []}, fn {element_id,
+                                                      element_animations},
+                                                     {current_state,
+                                                      completed_list} ->
+        Enum.reduce(
+          element_animations,
+          {current_state, completed_list},
+          fn {animation_name, instance}, {elem_state, elem_completed} ->
+            # Call the modified apply_animation_to_state/6 (or similar) which returns status
+            case apply_animation_to_state_internal(
+                   elem_state,
+                   element_id,
+                   animation_name,
+                   instance,
+                   now
+                 ) do
+              {:ok, updated_elem_state} ->
+                # Continue with updated state
+                {updated_elem_state, elem_completed}
+
+              {:completed, updated_elem_state} ->
+                # Add to completed list and continue with updated state
+                {updated_elem_state,
+                 [{element_id, animation_name} | elem_completed]}
+            end
           end
-        end)
+        )
       end)
 
     # Remove completed animations from state manager
@@ -253,7 +301,13 @@ defmodule Raxol.Animation.Framework do
     new_state
   end
 
-  defp apply_animation_to_state_internal(state, element_id, animation_name, instance, now) do
+  defp apply_animation_to_state_internal(
+         state,
+         element_id,
+         animation_name,
+         instance,
+         now
+       ) do
     animation = instance.animation
     start_time = instance.start_time
     duration = animation.duration
@@ -266,44 +320,77 @@ defmodule Raxol.Animation.Framework do
       final_value = animation.to
       # Ensure target_path exists in the animation map
       path = Map.get(animation, :target_path)
-      unless path do
-        Logger.error("Animation #{animation_name} for element #{element_id} is missing :target_path.")
-        # Decide how to handle this error - skip update? return error?
-        # For now, just log and skip update
-        {:completed, state} # Return original state but mark as completed
-      else
-        updated_state = set_in_state(state, path, final_value)
 
-        # Call on_complete callback if provided
-        if instance.on_complete do
-          try do
-            instance.on_complete.(%{
-              element_id: element_id,
-              animation_name: animation_name,
-              context: instance.context
-            })
-          rescue
-            e -> Logger.error("Error in on_complete callback for animation #{animation_name}: #{inspect(e)}")
-          end
+      updated_state =
+        if path do
+          set_in_state(state, path, final_value)
+        else
+          Logger.error(
+            "Animation #{animation_name} for element #{element_id} is missing :target_path."
+          )
+
+          # Return original state if path is missing
+          state
         end
 
-        {:completed, updated_state}
+      # Announce completion if needed
+      if Map.get(animation, :announce_to_screen_reader, false) do
+        description = Map.get(animation, :description)
+
+        message =
+          if description,
+            do: "#{description} completed",
+            else: "Animation completed"
+
+        Accessibility.announce(message)
       end
+
+      # Call on_complete callback if provided
+      if instance.on_complete do
+        try do
+          instance.on_complete.(%{
+            element_id: element_id,
+            animation_name: animation_name,
+            context: instance.context
+          })
+        rescue
+          e ->
+            Logger.error(
+              "Error in on_complete callback for animation #{animation_name}: #{inspect(e)}"
+            )
+        end
+      end
+
+      {:completed, updated_state}
     else
       # Animation in progress
       progress = if duration <= 0, do: 1.0, else: min(1.0, elapsed / duration)
-      eased_progress = Raxol.Animation.Easing.calculate_value(animation.easing, progress)
-      current_value = Raxol.Animation.Interpolate.value(animation.from, animation.to, eased_progress)
+
+      eased_progress =
+        Raxol.Animation.Easing.calculate_value(animation.easing, progress)
+
+      current_value =
+        Raxol.Animation.Interpolate.value(
+          animation.from,
+          animation.to,
+          eased_progress
+        )
 
       # Ensure target_path exists in the animation map
       path = Map.get(animation, :target_path)
+
       unless path do
-        Logger.error("Animation #{animation_name} for element #{element_id} is missing :target_path.")
+        Logger.error(
+          "Animation #{animation_name} for element #{element_id} is missing :target_path."
+        )
+
         # Skip update
-        {:ok, state} # Indicate normal progress
+        # Indicate normal progress
+        {:ok, state}
       else
         updated_state = set_in_state(state, path, current_value)
-        {:ok, updated_state} # Indicate normal progress
+        # Indicate normal progress
+        {:ok, updated_state}
       end
     end
   end
@@ -324,6 +411,8 @@ defmodule Raxol.Animation.Framework do
   def stop_animation(animation_name, element_id) do
     # Use StateManager to remove the animation
     StateManager.remove_active_animation(element_id, animation_name)
+    # Ensure function returns something, :ok seems appropriate
+    :ok
   end
 
   @doc """
@@ -368,13 +457,21 @@ defmodule Raxol.Animation.Framework do
           {animation.to, true}
         else
           # Calculate progress (0.0 to 1.0)
-          progress = elapsed / duration # duration already checked > 0
+          # duration already checked > 0
+          progress = elapsed / duration
 
           # Apply easing function (using Interpolate module as seen elsewhere)
-          eased_progress = Raxol.Animation.Easing.calculate_value(animation.easing, progress)
+          eased_progress =
+            Raxol.Animation.Easing.calculate_value(animation.easing, progress)
 
           # Interpolate value (using Interpolate module)
-          value = Raxol.Animation.Interpolate.value(animation.from, animation.to, eased_progress)
+          value =
+            Raxol.Animation.Interpolate.value(
+              animation.from,
+              animation.to,
+              eased_progress
+            )
+
           {value, false}
         end
     end
@@ -384,43 +481,71 @@ defmodule Raxol.Animation.Framework do
   # This is a simplified version, might need more robust implementation
   # Consider using Kernel.get_in/2 with Access syntax if paths are lists of keys
   defp get_in_state(state, path) when is_list(path) do
-    get_in(state, path) # Use Kernel.get_in for list paths
+    # Use Kernel.get_in for list paths
+    get_in(state, path)
   catch
-     # Catch potential errors if path is invalid for the state structure
-     :error, reason ->
-       Logger.warning("[Animation] Failed to get path #{inspect path} from state: #{inspect reason}")
-       nil # Or return an appropriate default/error indicator
+    # Catch potential errors if path is invalid for the state structure
+    :error, reason ->
+      Logger.warning(
+        "[Animation] Failed to get path #{inspect(path)} from state: #{inspect(reason)}"
+      )
+
+      # Or return an appropriate default/error indicator
+      nil
   end
+
   # Handle potential non-list paths if necessary (e.g., single atom key)
   defp get_in_state(state, key) when not is_list(key) do
-      # Assuming it might be a single key for a top-level map access
-      Map.get(state, key)
+    # Assuming it might be a single key for a top-level map access
+    Map.get(state, key)
   end
 
   # Helper function to set value in nested state (might move later)
   # Consider using Kernel.put_in/3 with Access syntax if paths are lists of keys
   defp set_in_state(state, path, value) when is_list(path) do
-    put_in(state, path, value) # Use Kernel.put_in for list paths
+    # Use Kernel.put_in for list paths
+    put_in(state, path, value)
   catch
-      # Catch potential errors if path is invalid for the state structure
-     :error, reason ->
-       Logger.warning("[Animation] Failed to set path #{inspect path} in state: #{inspect reason}")
-       state # Return original state on error
-  end
-   # Handle potential non-list paths if necessary
-   defp set_in_state(state, key, value) when not is_list(key) and is_map(state) do
-       Map.put(state, key, value)
-   end
-   defp set_in_state(state, key, _value) when not is_list(key) and not is_map(state) do
-      # If key is not a list and state is not a map, we cannot proceed
-      # This might happen if the path is incorrect or points to a scalar value
-      Logger.warning("[Animation] Path #{inspect key} is not a list and state is not a map. Cannot set value.")
+    # Catch potential errors if path is invalid for the state structure
+    :error, reason ->
+      Logger.warning(
+        "[Animation] Failed to set path #{inspect(path)} in state: #{inspect(reason)}"
+      )
+
+      # Return original state on error
       state
-   end
+  end
+
+  # Handle potential non-list paths if necessary
+  defp set_in_state(state, key, value)
+       when not is_list(key) and is_map(state) do
+    Map.put(state, key, value)
+  end
+
+  defp set_in_state(state, key, _value)
+       when not is_list(key) and not is_map(state) do
+    # If key is not a list and state is not a map, we cannot proceed
+    # This might happen if the path is incorrect or points to a scalar value
+    Logger.warning(
+      "[Animation] Path #{inspect(key)} is not a list and state is not a map. Cannot set value."
+    )
+
+    state
+  end
 
   def should_reduce_motion? do
     # TODO: Use Accessibility module helper?
-    reduced_motion_pref = Raxol.Core.UserPreferences.get([:accessibility, :reduced_motion]) || false
+    reduced_motion_pref =
+      Raxol.Core.UserPreferences.get([:accessibility, :reduced_motion]) || false
+
     reduced_motion_pref
+  end
+
+  def should_apply_cognitive_accessibility? do
+    cognitive_pref =
+      Raxol.Core.UserPreferences.get([:accessibility, :cognitive_accessibility]) ||
+        false
+
+    cognitive_pref
   end
 end

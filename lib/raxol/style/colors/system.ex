@@ -260,9 +260,9 @@ defmodule Raxol.Style.Colors.System do
     case Process.get(:color_system_themes, %{}) do
       %{^theme_name => theme} ->
         # Try variant first, then base color
+        # Fallback to a default color if not found
         Map.get(theme.variants, {color_name, variant}) ||
           Map.get(theme.colors, color_name) ||
-          # Fallback to a default color if not found
           default_color(color_name)
 
       _ ->
@@ -275,11 +275,11 @@ defmodule Raxol.Style.Colors.System do
     case Process.get(:color_system_themes, %{}) do
       %{^theme_name => theme} ->
         # Try high contrast variant first, then high contrast base color
+        # Fallback to standard color if high contrast not defined
+        # Further fallback
         Map.get(theme.variants, {color_name, variant, :high_contrast}) ||
           Map.get(theme.high_contrast_colors, color_name) ||
-          # Fallback to standard color if high contrast not defined
           get_standard_color(theme_name, color_name, variant) ||
-          # Further fallback
           default_color(color_name)
 
       _ ->
@@ -296,16 +296,20 @@ defmodule Raxol.Style.Colors.System do
     bg_color_struct =
       case Color.from_hex(bg_color_hex) do
         %Color{} = color -> color
-        {:error, _} -> Color.from_hex("#000000") # Fallback to black on error
+        # Fallback to black on error
+        {:error, _} -> Color.from_hex("#000000")
       end
 
-    bg_lightness = HSL.rgb_to_hsl(bg_color_struct.r, bg_color_struct.g, bg_color_struct.b) |> elem(2)
+    bg_lightness =
+      HSL.rgb_to_hsl(bg_color_struct.r, bg_color_struct.g, bg_color_struct.b)
+      |> elem(2)
 
     # Adjust colors for high contrast based on background lightness
     Enum.into(colors, %{}, fn {name, color_hex} ->
       # Correctly handle the return from Color.from_hex in the loop
       case Color.from_hex(color_hex) do
-        %Color{} = color_struct -> # Match the struct directly
+        # Match the struct directly
+        %Color{} = color_struct ->
           # Correctly assign the result from HSL functions
           contrast_color_struct =
             if bg_lightness > 0.5 do
@@ -316,7 +320,8 @@ defmodule Raxol.Style.Colors.System do
               HSL.lighten(color_struct, 0.5)
             end
 
-          {name, Color.to_hex(contrast_color_struct)} # Convert back to hex for storage
+          # Convert back to hex for storage
+          {name, Color.to_hex(contrast_color_struct)}
 
         {:error, _} ->
           # Keep original if invalid
@@ -336,7 +341,8 @@ defmodule Raxol.Style.Colors.System do
       :danger -> "#DC3545"
       :warning -> "#FFC107"
       :info -> "#17A2B8"
-      _ -> "#CCCCCC" # Generic fallback
+      # Generic fallback
+      _ -> "#CCCCCC"
     end
   end
 
@@ -355,7 +361,8 @@ defmodule Raxol.Style.Colors.System do
         info: "#17a2b8",
         light: "#f8f9fa",
         dark: "#343a40",
-        accent: "#ff6b6b" # Example accent
+        # Example accent
+        accent: "#ff6b6b"
       }
       # Define variants if needed
     )
@@ -366,15 +373,19 @@ defmodule Raxol.Style.Colors.System do
       %{
         foreground: "#e9ecef",
         background: "#212529",
-        primary: "#0d6efd", # Slightly brighter blue for dark mode
+        # Slightly brighter blue for dark mode
+        primary: "#0d6efd",
         secondary: "#6c757d",
         success: "#198754",
         danger: "#dc3545",
         warning: "#ffc107",
         info: "#0dcaf0",
-        light: "#f8f9fa", # Often kept light for contrast elements
-        dark: "#343a40", # Base dark color
-        accent: "#f7a072" # Example accent
+        # Often kept light for contrast elements
+        light: "#f8f9fa",
+        # Base dark color
+        dark: "#343a40",
+        # Example accent
+        accent: "#f7a072"
       }
     )
 
@@ -384,16 +395,33 @@ defmodule Raxol.Style.Colors.System do
       %{
         foreground: "#FFFFFF",
         background: "#000000",
-        primary: "#FFFF00", # Bright yellow
-        secondary: "#00FFFF", # Bright cyan
-        success: "#00FF00", # Bright green
-        danger: "#FF0000", # Bright red
-        warning: "#FF00FF", # Bright magenta
-        info: "#00FFFF", # Bright cyan (reused)
-        light: "#FFFFFF", # Pure white
-        dark: "#000000", # Pure black
-        accent: "#FF00FF" # Example accent
+        # Bright yellow
+        primary: "#FFFF00",
+        # Bright cyan
+        secondary: "#00FFFF",
+        # Bright green
+        success: "#00FF00",
+        # Bright red
+        danger: "#FF0000",
+        # Bright magenta
+        warning: "#FF00FF",
+        # Bright cyan (reused)
+        info: "#00FFFF",
+        # Pure white
+        light: "#FFFFFF",
+        # Pure black
+        dark: "#000000",
+        # Example accent
+        accent: "#FF00FF"
       }
     )
+  end
+
+  @doc """
+  Gets the name (atom) of the currently applied theme.
+  """
+  @spec get_current_theme_name() :: atom()
+  def get_current_theme_name do
+    Process.get(:color_system_current_theme, @default_theme)
   end
 end

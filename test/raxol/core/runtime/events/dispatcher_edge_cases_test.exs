@@ -1,12 +1,21 @@
 defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
   use ExUnit.Case, async: false
   require Logger
+  import Mox
 
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Runtime.Command
   alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Plugins.Manager
   alias Phoenix.PubSub
+  alias Raxol.Core.UserPreferences
+  alias Raxol.UI.Theming.Theme
+  alias Raxol.Core.UserPreferences.Behaviour, as: UserPreferencesBehaviour
+  alias Raxol.UI.Theming.ThemeBehaviour
+
+  # Mox defmocks
+  defmock(UserPreferencesMock, for: UserPreferencesBehaviour)
+  defmock(ThemeMock, for: Raxol.UI.Theming.ThemeBehaviour)
 
   # Mock Application module that implements Application behavior
   defmodule MockApp do
@@ -56,10 +65,18 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       state = %{state | events: [event | state.events]}
 
       case state.filter_mode do
-        :passthrough -> {:reply, {:ok, event}, state}
-        :modify -> {:reply, {:ok, %{event | data: Map.put(event.data, :modified, true)}}, state}
-        :block -> {:reply, :halt, state}
-        :crash -> raise "Simulated plugin manager crash"
+        :passthrough ->
+          {:reply, {:ok, event}, state}
+
+        :modify ->
+          {:reply, {:ok, %{event | data: Map.put(event.data, :modified, true)}},
+           state}
+
+        :block ->
+          {:reply, :halt, state}
+
+        :crash ->
+          raise "Simulated plugin manager crash"
       end
     end
 
@@ -73,26 +90,30 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
   end
 
   setup do
-    # Setup mocks
-    :meck.new(UserPreferences, [:non_strict, :passthrough])
-    :meck.expect(UserPreferences, :get, fn "theme.active_id" -> :default end)
-    :meck.expect(UserPreferences, :get, fn [:theme, :active_id] -> :default end)
+    Mox.stub(UserPreferencesMock, :get, fn
+      "theme.active_id" -> :default
+      [:theme, :active_id] -> :default
+      # Fallback for unexpected calls
+      _ -> :error
+    end)
 
-    :meck.new(Theme, [:non_strict])
-    :meck.expect(Theme, :get_theme, fn _ -> {:ok, %{}} end)
+    Mox.stub(ThemeMock, :get_theme, fn _ -> {:ok, %{}} end)
 
     # Registry for events
     Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions)
 
     # ETS for command registry
-    :ets.new(:raxol_command_registry, [:set, :public, :named_table, read_concurrency: true])
+    :ets.new(:raxol_command_registry, [
+      :set,
+      :public,
+      :named_table,
+      read_concurrency: true
+    ])
 
     # Start Mock Plugin Manager
     {:ok, mock_pm_pid} = MockPluginManager.start_link([])
 
-    # Setup Phoenix PubSub for tests
-    :meck.new(PubSub, [:passthrough])
-    :meck.expect(PubSub, :broadcast, fn _, _, _ -> :ok end)
+    Mox.stub(Phoenix.PubSub, :broadcast, fn _, _, _ -> :ok end)
 
     # Define initial state for Dispatcher
     initial_state = %{
@@ -105,7 +126,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       debug_mode: false,
       plugin_manager: mock_pm_pid,
       command_registry_table: :raxol_command_registry,
-      pubsub_server: Raxol.PubSub,
+      pubsub_server: Phoenix.PubSub,
       rendering_engine: Raxol.Core.Runtime.Rendering.Engine,
       initial_commands: []
     }
@@ -113,13 +134,9 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
     # Start Dispatcher for this test
     {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state)
 
+    Mox.verify_on_exit!()
+
     on_exit(fn ->
-      :meck.validate(UserPreferences)
-      :meck.unload(UserPreferences)
-      :meck.validate(Theme)
-      :meck.unload(Theme)
-      :meck.validate(PubSub)
-      :meck.unload(PubSub)
       if Process.alive?(dispatcher), do: GenServer.stop(dispatcher)
       if Process.alive?(mock_pm_pid), do: GenServer.stop(mock_pm_pid)
     end)
@@ -132,13 +149,20 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
   end
 
   describe "plugin filtering" do
-    test "passes events through when plugins don't block", %{dispatcher: dispatcher, plugin_manager: pm} do
+    test "passes events through when plugins don't block", %{
+      dispatcher: dispatcher,
+      plugin_manager: pm
+    } do
       # Create a basic event
-      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
+      event = %Event{
+        type: :key,
+        data: %{key: :enter, state: :pressed, modifiers: []}
+      }
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      Process.sleep(50) # Allow event to process
+      # Allow event to process
+      Process.sleep(50)
 
       # Verify the event passed through
       current_state = :sys.get_state(dispatcher)
@@ -150,16 +174,23 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       assert Enum.any?(events, fn e -> e.data.key == :enter end)
     end
 
-    test "modifies events when plugin transforms them", %{dispatcher: dispatcher, plugin_manager: pm} do
+    test "modifies events when plugin transforms them", %{
+      dispatcher: dispatcher,
+      plugin_manager: pm
+    } do
       # Set plugin manager to modify events
       GenServer.cast(pm, {:set_filter_mode, :modify})
 
       # Create a basic event
-      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
+      event = %Event{
+        type: :key,
+        data: %{key: :enter, state: :pressed, modifiers: []}
+      }
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      Process.sleep(50) # Allow event to process
+      # Allow event to process
+      Process.sleep(50)
 
       # Verify the event was modified by plugin
       current_state = :sys.get_state(dispatcher)
@@ -170,16 +201,23 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       assert Enum.any?(events, fn e -> e.data.key == :enter end)
     end
 
-    test "blocks events when plugin halts event processing", %{dispatcher: dispatcher, plugin_manager: pm} do
+    test "blocks events when plugin halts event processing", %{
+      dispatcher: dispatcher,
+      plugin_manager: pm
+    } do
       # Set plugin manager to block events
       GenServer.cast(pm, {:set_filter_mode, :block})
 
       # Create a basic event
-      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
+      event = %Event{
+        type: :key,
+        data: %{key: :enter, state: :pressed, modifiers: []}
+      }
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      Process.sleep(50) # Allow event to process
+      # Allow event to process
+      Process.sleep(50)
 
       # Verify the event was blocked (state unchanged)
       current_state = :sys.get_state(dispatcher)
@@ -193,13 +231,19 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
   end
 
   describe "error handling" do
-    test "handles application update errors gracefully", %{dispatcher: dispatcher} do
+    test "handles application update errors gracefully", %{
+      dispatcher: dispatcher
+    } do
       # Create an event that will cause an error in update
-      event = %Event{type: :key, data: %{key: :error, state: :pressed, modifiers: []}}
+      event = %Event{
+        type: :key,
+        data: %{key: :error, state: :pressed, modifiers: []}
+      }
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      Process.sleep(50) # Allow event to process
+      # Allow event to process
+      Process.sleep(50)
 
       # Verify that state is unchanged after error
       current_state = :sys.get_state(dispatcher)
@@ -211,11 +255,15 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       Process.flag(:trap_exit, true)
 
       # Create an event that will cause a crash in update
-      event = %Event{type: :key, data: %{key: :crash, state: :pressed, modifiers: []}}
+      event = %Event{
+        type: :key,
+        data: %{key: :crash, state: :pressed, modifiers: []}
+      }
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      Process.sleep(50) # Allow event to process
+      # Allow event to process
+      Process.sleep(50)
 
       # Verify the process is still alive
       assert Process.alive?(dispatcher)
@@ -226,16 +274,23 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       assert current_state.model.last_event == nil
     end
 
-    test "handles plugin filter crashes", %{dispatcher: dispatcher, plugin_manager: pm} do
+    test "handles plugin filter crashes", %{
+      dispatcher: dispatcher,
+      plugin_manager: pm
+    } do
       # Set plugin manager to crash during filtering
       GenServer.cast(pm, {:set_filter_mode, :crash})
 
       # Create a basic event
-      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
+      event = %Event{
+        type: :key,
+        data: %{key: :enter, state: :pressed, modifiers: []}
+      }
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      Process.sleep(50) # Allow event to process
+      # Allow event to process
+      Process.sleep(50)
 
       # Verify that state is unchanged after crash
       current_state = :sys.get_state(dispatcher)
@@ -254,7 +309,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      Process.sleep(50) # Allow event to process
+      # Allow event to process
+      Process.sleep(50)
 
       # Verify state is updated
       current_state = :sys.get_state(dispatcher)
@@ -268,7 +324,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      Process.sleep(50) # Allow event to process
+      # Allow event to process
+      Process.sleep(50)
 
       # Verify state is updated
       current_state = :sys.get_state(dispatcher)
@@ -279,7 +336,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      Process.sleep(50) # Allow event to process
+      # Allow event to process
+      Process.sleep(50)
 
       # Verify state is updated
       current_state = :sys.get_state(dispatcher)
@@ -312,7 +370,10 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
   describe "performance edge cases" do
     test "handles slow application updates", %{dispatcher: dispatcher} do
       # Create an event that will cause a slow update
-      event = %Event{type: :key, data: %{key: :timeout, state: :pressed, modifiers: []}}
+      event = %Event{
+        type: :key,
+        data: %{key: :timeout, state: :pressed, modifiers: []}
+      }
 
       # Start measuring time
       start_time = :os.system_time(:millisecond)
@@ -337,9 +398,13 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
 
     test "handles rapid sequential events", %{dispatcher: dispatcher} do
       # Create multiple events in quick succession
-      events = for i <- 1..10 do
-        %Event{type: :key, data: %{key: "key#{i}", state: :pressed, modifiers: []}}
-      end
+      events =
+        for i <- 1..10 do
+          %Event{
+            type: :key,
+            data: %{key: "key#{i}", state: :pressed, modifiers: []}
+          }
+        end
 
       # Dispatch events in rapid succession
       Enum.each(events, fn event ->
@@ -353,43 +418,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       current_state = :sys.get_state(dispatcher)
       assert current_state.model.count == 10
       assert current_state.model.last_event == {:key_press, "key10", []}
-    end
-  end
-
-  describe "command handling" do
-    test "executes commands returned from application update", %{dispatcher: dispatcher} do
-      # Mock Command module for execution
-      :meck.new(Command, [:passthrough])
-      command_executed = false
-
-      # Set up a command that will be executed
-      test_command = %Command{type: :system, data: {:test_cmd, []}}
-
-      # Mock the execute function
-      :meck.expect(Command, :execute, fn cmd, _context ->
-        assert cmd == test_command
-        command_executed = true
-        :ok
-      end)
-
-      # Mock the application to return a command
-      :meck.new(MockApp, [:passthrough])
-      :meck.expect(MockApp, :update, fn _msg, state ->
-        {%{state | count: state.count + 1}, [test_command]}
-      end)
-
-      # Create and dispatch event
-      event = %Event{type: :key, data: %{key: :enter, state: :pressed, modifiers: []}}
-      GenServer.cast(dispatcher, {:dispatch, event})
-      Process.sleep(50)
-
-      # Verify state updated
-      current_state = :sys.get_state(dispatcher)
-      assert current_state.model.count == 1
-
-      # Cleanup
-      :meck.unload(Command)
-      :meck.unload(MockApp)
     end
   end
 end

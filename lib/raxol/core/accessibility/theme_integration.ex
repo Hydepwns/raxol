@@ -135,6 +135,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   def get_active_variant() do
     # Read using UserPreferences
     is_high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
+
     if is_high_contrast do
       # Return the variant atom directly
       :high_contrast
@@ -170,7 +171,8 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   """
   def handle_large_text({:accessibility_large_text, enabled}) do
     # Update text size based on large text setting
-    _text_scale = if enabled, do: 1.5, else: 1.0 # Calculate but don't store
+    # Calculate but don't store
+    _text_scale = if enabled, do: 1.5, else: 1.0
 
     # No longer store in process dictionary
     # Process.put(:accessibility_text_scale, text_scale)

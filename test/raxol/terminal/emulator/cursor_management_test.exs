@@ -2,7 +2,8 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
   use ExUnit.Case
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Cursor.Manager # Keep Manager alias if used directly
+  # Keep Manager alias if used directly
+  alias Raxol.Terminal.Cursor.Manager
 
   setup do
     emulator = Emulator.new(80, 24)
@@ -24,7 +25,11 @@ defmodule Raxol.Terminal.Emulator.CursorManagementTest do
       # assert emulator.cursor_style == :steady_bar
 
       # Let's test setting Manager style directly if Emulator.set_cursor_style is not the target
-      emulator = %{emulator | cursor: Manager.set_style(emulator.cursor, :underline)}
+      emulator = %{
+        emulator
+        | cursor: Manager.set_style(emulator.cursor, :underline)
+      }
+
       assert emulator.cursor.style == :underline
 
       emulator = %{emulator | cursor: Manager.set_style(emulator.cursor, :bar)}

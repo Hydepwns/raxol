@@ -9,13 +9,16 @@ defmodule Raxol.Components.Dashboard.WidgetContainer do
   use Raxol.UI.Components.Base.Component
 
   require Logger
-  require Raxol.View.Elements # Require Elements
-  alias Raxol.View.Elements, as: UI # Use UI alias
+  # Require Elements
+  require Raxol.View.Elements
+  # Use UI alias
+  alias Raxol.View.Elements, as: UI
 
   # --- Component Behaviour Placeholders ---
 
   @impl Raxol.UI.Components.Base.Component
-  def init(props), do: props # Simple state passthrough for now
+  # Simple state passthrough for now
+  def init(props), do: props
 
   @impl Raxol.UI.Components.Base.Component
   def update(_msg, state), do: {state, []}
@@ -37,29 +40,28 @@ defmodule Raxol.Components.Dashboard.WidgetContainer do
   - `content`: The actual View element(s) representing the widget's content.
   """
   @impl Raxol.UI.Components.Base.Component
-  def render(state, _props) do # Add props argument, use state instead of props directly
+  # Add props argument, use state instead of props directly
+  def render(state, _props) do
     # Assuming state *is* the props map passed from Dashboard for now
     # This needs refinement if WidgetContainer has its own state
     %{bounds: bounds, widget_config: widget_config, content: content} = state
     title = Map.get(widget_config, :title, "Widget")
 
     # Use View Elements macros
-    UI.box [
-      x: bounds.x,
-      y: bounds.y,
-      width: bounds.width,
-      height: bounds.height,
-      border: :rounded
-    ] do
+    UI.box x: bounds.x,
+           y: bounds.y,
+           width: bounds.width,
+           height: bounds.height,
+           border: :rounded do
       [
         # Optional: Title bar
-        UI.box [x: 0, y: 0, width: :fill, height: 1, style: %{bg: :blue}] do
-           UI.label(content: title, align: :center)
+        UI.box x: 0, y: 0, width: :fill, height: 1, style: %{bg: :blue} do
+          UI.label(content: title, align: :center)
         end,
 
         # Widget content
-        UI.box [x: 0, y: 1, width: :fill, height: :fill] do
-           content
+        UI.box x: 0, y: 1, width: :fill, height: :fill do
+          content
         end,
 
         # Resize handle
@@ -77,7 +79,7 @@ defmodule Raxol.Components.Dashboard.WidgetContainer do
     handle_y = bounds.height - 1
 
     # Use UI.box and UI.label
-    UI.box [x: handle_x, y: handle_y, width: 1, height: 1] do
+    UI.box x: handle_x, y: handle_y, width: 1, height: 1 do
       UI.label(content: "\u21F2")
     end
   end

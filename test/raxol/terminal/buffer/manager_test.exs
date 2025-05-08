@@ -10,7 +10,8 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       assert manager.active_buffer.height == 24
       assert manager.back_buffer.width == 80
       assert manager.back_buffer.height == 24
-      assert manager.scrollback.limit == 1000 # Assuming default
+      # Assuming default
+      assert manager.scrollback.limit == 1000
       assert manager.memory_limit > 0
     end
 
@@ -26,7 +27,6 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
   end
 
   describe "switch_buffers/1" do
-    @tag :skip
     test "switches active and back buffers" do
       {:ok, initial_manager} = Manager.new(80, 24)
 
@@ -38,9 +38,11 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
 
       # Check that buffers were switched (cursor is on manager, not buffer)
       # Also check that damage regions were cleared by switch_buffers
-      assert Manager.get_cursor_position(manager) == {10, 5} # Cursor position should remain
+      # Cursor position should remain
+      assert Manager.get_cursor_position(manager) == {10, 5}
       assert Manager.get_damage_regions(manager) == []
-      assert manager.active_buffer != initial_manager.active_buffer # Buffers themselves should have swapped
+      # Buffers themselves should have swapped
+      assert manager.active_buffer != initial_manager.active_buffer
       assert manager.back_buffer == initial_manager.active_buffer
     end
   end

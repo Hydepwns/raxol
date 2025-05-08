@@ -13,32 +13,32 @@ defmodule Raxol.ColorSystemTest do
 
   # Helper to setup Accessibility and UserPreferences
   # setup :configure_env do
-    # REMOVE THE GLOBAL START
-    # case Process.whereis(Raxol.Core.UserPreferences) do
-    #   nil -> {:ok, pid} = Raxol.Core.UserPreferences.start_link([])
-    #   _pid -> IO.puts("UserPreferences already running for color_system_test") # Ignore if already started
-    # end
+  # REMOVE THE GLOBAL START
+  # case Process.whereis(Raxol.Core.UserPreferences) do
+  #   nil -> {:ok, pid} = Raxol.Core.UserPreferences.start_link([])
+  #   _pid -> IO.puts("UserPreferences already running for color_system_test") # Ignore if already started
+  # end
 
-    # Configure Accessibility settings (assuming UserPreferences exists)
-    # UserPreferences.set("accessibility.high_contrast", false)
-    # UserPreferences.set("accessibility.screen_reader", true)
-    # UserPreferences.set("accessibility.silence_announcements", false)
-    # :ok
+  # Configure Accessibility settings (assuming UserPreferences exists)
+  # UserPreferences.set("accessibility.high_contrast", false)
+  # UserPreferences.set("accessibility.screen_reader", true)
+  # UserPreferences.set("accessibility.silence_announcements", false)
+  # :ok
   # end
 
   # Helper to cleanup Accessibility and UserPreferences
   # setup :reset_settings do
-    # Reset settings
-    # UserPreferences.set(:theme, nil)
-    # UserPreferences.set(:accent_color, nil)
-    # UserPreferences.set("accessibility.high_contrast", nil)
-    # UserPreferences.set("accessibility.screen_reader", nil)
-    # UserPreferences.set("accessibility.silence_announcements", nil)
-    # UserPreferences.set("accessibility.reduced_motion", nil)
+  # Reset settings
+  # UserPreferences.set(:theme, nil)
+  # UserPreferences.set(:accent_color, nil)
+  # UserPreferences.set("accessibility.high_contrast", nil)
+  # UserPreferences.set("accessibility.screen_reader", nil)
+  # UserPreferences.set("accessibility.silence_announcements", nil)
+  # UserPreferences.set("accessibility.reduced_motion", nil)
 
-    # Ensure preferences file is cleaned up if created
-    # File.rm(UserPreferences.preference_file_path())
-    # :ok
+  # Ensure preferences file is cleaned up if created
+  # File.rm(UserPreferences.preference_file_path())
+  # :ok
   # end
 
   setup do
@@ -51,16 +51,24 @@ defmodule Raxol.ColorSystemTest do
     # Ensure defaults are set for tests, targeting the specific UserPreferences instance
     UserPreferences.set([:accessibility, :high_contrast], false, pref_pid)
     UserPreferences.set([:accessibility, :screen_reader], true, pref_pid)
-    UserPreferences.set([:accessibility, :silence_announcements], false, pref_pid)
 
-    ColorSystem.apply_theme(:default) # Fixed: Use apply_theme
-    Process.sleep(50) # Allow changes to propagate
+    UserPreferences.set(
+      [:accessibility, :silence_announcements],
+      false,
+      pref_pid
+    )
 
-    on_exit fn ->
+    # Fixed: Use apply_theme
+    ColorSystem.apply_theme(:default)
+    # Allow changes to propagate
+    Process.sleep(50)
+
+    on_exit(fn ->
       cleanup_accessibility_and_prefs(pref_pid)
       Accessibility.disable()
-      ColorSystem.apply_theme(:default) # Fixed: Use apply_theme
-    end
+      # Fixed: Use apply_theme
+      ColorSystem.apply_theme(:default)
+    end)
 
     {:ok, pref_pid: pref_pid}
   end
@@ -76,10 +84,12 @@ defmodule Raxol.ColorSystemTest do
 
       # Enable high contrast mode
       Accessibility.set_high_contrast(true)
-      Process.sleep(50) # Ensure changes propagate if async operations are involved
+      # Ensure changes propagate if async operations are involved
+      Process.sleep(50)
 
       # Get the primary color after high contrast
       high_contrast_primary = ColorSystem.get_color(:primary)
+
       # Logger.info("[Test Log] High contrast primary: #{inspect(high_contrast_primary)}")
 
       # Verify colors are different in high contrast mode
@@ -87,11 +97,17 @@ defmodule Raxol.ColorSystemTest do
 
       # Get the background color (also after high contrast is enabled)
       background = ColorSystem.get_color(:background)
+
       # Logger.info("[Test Log] Background (post high-contrast): #{inspect(background)}")
 
       # Log the calculated ratio before asserting
       # Ensure Raxol.Style.Colors.Utilities is available or use the test helper's path
-      ratio_for_log = Raxol.Style.Colors.Utilities.contrast_ratio(high_contrast_primary, background)
+      ratio_for_log =
+        Raxol.Style.Colors.Utilities.contrast_ratio(
+          high_contrast_primary,
+          background
+        )
+
       # Logger.info("[Test Log] Calculated contrast ratio for high_contrast_primary vs background: #{inspect(ratio_for_log)}")
 
       assert_sufficient_contrast(high_contrast_primary, background)
@@ -113,8 +129,9 @@ defmodule Raxol.ColorSystemTest do
       # Assert announcement was made (should contain theme name)
       # assert_announced("dark theme") # Remove spy assertion
       assert Enum.any?(announcements, fn announcement ->
-        announcement.message == "Theme changed to dark"
-      end), "Expected announcement 'Theme changed to dark' not found in #{inspect(announcements)}"
+               announcement.message == "Theme changed to dark"
+             end),
+             "Expected announcement 'Theme changed to dark' not found in #{inspect(announcements)}"
     end
 
     test "maintains user color preferences" do
@@ -132,7 +149,8 @@ defmodule Raxol.ColorSystemTest do
 
       # Verify preference was maintained
       # assert UserPreferences.get([:theme, :accent_color]) == "#FF5722"
-      assert UserPreferences.get(:accent_color) == "#FF5722" # Fixed path
+      # Fixed path
+      assert UserPreferences.get(:accent_color) == "#FF5722"
     end
 
     test "generates accessible color scales" do
@@ -161,11 +179,13 @@ defmodule Raxol.ColorSystemTest do
 
     test "adapts focus ring color for high contrast mode" do
       # Initialize a default focus ring state
-      initial_state = Raxol.Components.FocusRing.init(%{
-        position: {10, 5, 20, 3}, # Example position
-        color: :blue,
-        high_contrast: false
-      })
+      initial_state =
+        Raxol.Components.FocusRing.init(%{
+          # Example position
+          position: {10, 5, 20, 3},
+          color: :blue,
+          high_contrast: false
+        })
 
       # Render with initial state
       initial_render = Raxol.Components.FocusRing.render(initial_state, %{})
@@ -176,11 +196,15 @@ defmodule Raxol.ColorSystemTest do
       high_contrast_state = %{initial_state | high_contrast: true}
 
       # Render with high contrast state
-      high_contrast_render = Raxol.Components.FocusRing.render(high_contrast_state, %{})
-      high_contrast_color = get_in(high_contrast_render, [:attrs, :style, :border_color])
+      high_contrast_render =
+        Raxol.Components.FocusRing.render(high_contrast_state, %{})
+
+      high_contrast_color =
+        get_in(high_contrast_render, [:attrs, :style, :border_color])
 
       # Verify high contrast color is different (e.g., white)
-      assert high_contrast_color == :white # Based on internal render logic
+      # Based on internal render logic
+      assert high_contrast_color == :white
       assert high_contrast_color != initial_color
     end
 
@@ -192,7 +216,8 @@ defmodule Raxol.ColorSystemTest do
 
       # Verify standard dark theme color
       assert ColorSystem.get_color(:primary) == "#0d6efd",
-        "Expected dark theme primary color"
+             "Expected dark theme primary color"
+
       refute Accessibility.get_option(:high_contrast)
 
       # --- Test 2: Apply dark theme WITH high contrast ---
@@ -212,8 +237,11 @@ defmodule Raxol.ColorSystemTest do
       # High contrast theme primary IS #FFFF00, but generate_high_contrast_colors is used for *other* themes
       # when high_contrast is true. For dark theme bg (#212529), generate func darkens colors.
       # Let's check the generated color instead of hardcoding #FFFF00.
-      assert primary != "#0d6efd", "Expected primary color to change in high contrast mode"
-      assert background != "#212529", "Expected background color to change in high contrast mode"
+      assert primary != "#0d6efd",
+             "Expected primary color to change in high contrast mode"
+
+      assert background != "#212529",
+             "Expected background color to change in high contrast mode"
 
       # Contrast check is likely complex here, maybe remove for now or adjust?
       # Utilities.assert_sufficient_contrast(primary, background)
@@ -321,6 +349,7 @@ defmodule Raxol.ColorSystemTest do
       nil ->
         {:ok, pid} = UserPreferences.start_link([])
         pid
+
       pid when is_pid(pid) ->
         # Already started, return existing pid
         pid
@@ -336,12 +365,18 @@ defmodule Raxol.ColorSystemTest do
     receive do
       {:DOWN, ^ref, :process, ^pid, _reason} -> :ok
     after
-      500 -> IO.puts("Warning: UserPreferences process #{inspect pid} did not shut down cleanly in cleanup_accessibility_and_prefs")
+      500 ->
+        IO.puts(
+          "Warning: UserPreferences process #{inspect(pid)} did not shut down cleanly in cleanup_accessibility_and_prefs"
+        )
     end
+
     :ok
   catch
-    :exit, _ -> :ok # Ignore if process already exited
+    # Ignore if process already exited
+    :exit, _ -> :ok
   end
 
-  defp cleanup_accessibility_and_prefs(_), do: :ok # Ignore if pid is not valid
+  # Ignore if pid is not valid
+  defp cleanup_accessibility_and_prefs(_), do: :ok
 end

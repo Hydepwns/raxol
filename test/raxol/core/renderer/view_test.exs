@@ -40,7 +40,8 @@ defmodule Raxol.Core.Renderer.ViewTest do
       view = View.text("Hello", id: :hello)
       result = View.layout(view, {10, 1})
       # layout always returns a list of flattened views
-      assert [%{position: {0, 0}, size: {5, 1}, type: :text, content: "Hello"}] = result
+      assert [%{position: {0, 0}, size: {5, 1}, type: :text, content: "Hello"}] =
+               result
     end
 
     test "flex layout with row direction" do
@@ -198,7 +199,8 @@ defmodule Raxol.Core.Renderer.ViewTest do
       assert a.position == {0, 0}
       # Wraps to next line
       assert b.position == {0, 1}
-      assert c.position == {2, 1} # Note: Check if this position is correct logic for wrapping
+      # Note: Check if this position is correct logic for wrapping
+      assert c.position == {2, 1}
     end
 
     test "wrapping in column direction" do

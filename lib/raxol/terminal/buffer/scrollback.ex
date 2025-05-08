@@ -29,7 +29,8 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   Lines are prepended. The buffer is trimmed to the limit if necessary.
   """
   @spec add_lines(t(), list(Line.t())) :: t()
-  def add_lines(%__MODULE__{limit: limit} = scrollback, new_lines) when is_list(new_lines) do
+  def add_lines(%__MODULE__{limit: limit} = scrollback, new_lines)
+      when is_list(new_lines) do
     # Prepend new lines (they scrolled off the *top* of the screen)
     combined = new_lines ++ scrollback.lines
     trimmed_lines = Enum.take(combined, limit)
@@ -44,7 +45,8 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   Fewer lines than requested may be returned if the buffer is smaller.
   """
   @spec take_lines(t(), non_neg_integer()) :: {list(Line.t()), t()}
-  def take_lines(%__MODULE__{} = scrollback, count) when is_integer(count) and count >= 0 do
+  def take_lines(%__MODULE__{} = scrollback, count)
+      when is_integer(count) and count >= 0 do
     {lines_to_restore, remaining_lines} = Enum.split(scrollback.lines, count)
     updated_scrollback = %__MODULE__{scrollback | lines: remaining_lines}
     {lines_to_restore, updated_scrollback}

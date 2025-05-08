@@ -4,7 +4,12 @@ defmodule Raxol.System.Interaction do
   finding executables, and getting OS type. Allows for easier testing.
   """
 
-  @type os_type :: {:unix, :linux} | {:unix, :darwin} | {:win32, :nt} | {:unix, atom()} | {:win32, atom()}
+  @type os_type ::
+          {:unix, :linux}
+          | {:unix, :darwin}
+          | {:win32, :nt}
+          | {:unix, atom()}
+          | {:win32, atom()}
 
   @doc """
   Returns the OS type.
@@ -22,5 +27,6 @@ defmodule Raxol.System.Interaction do
   Can raise exceptions on errors depending on the implementation.
   Options can be passed to control execution (e.g., `stderr_to_stdout`).
   """
-  @callback system_cmd(binary(), list(binary()), list(atom() | tuple())) :: {binary(), integer()}
+  @callback system_cmd(binary(), list(binary()), list(atom() | tuple())) ::
+              {binary(), integer()}
 end

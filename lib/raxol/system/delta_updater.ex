@@ -5,7 +5,15 @@ defmodule Raxol.System.DeltaUpdater do
 
   require Logger
 
+  # Called via adapter now
   alias Raxol.System.Updater
+  alias Raxol.System.DeltaUpdaterSystemAdapterImpl
+
+  @system_adapter Application.get_env(
+                    :raxol,
+                    :system_adapter,
+                    DeltaUpdaterSystemAdapterImpl
+                  )
 
   def check_delta_availability(target_version) do
     with {:ok, releases} <- get_releases(),
@@ -27,36 +35,42 @@ defmodule Raxol.System.DeltaUpdater do
   end
 
   def apply_delta_update(delta_url, target_version) do
-    # Create a temporary directory for the update
-    tmp_dir =
-      Path.join(System.tmp_dir!(), "raxol_update_#{:rand.uniform(1_000_000)}")
+    # Generate a temporary directory path component
+    random_suffix = :rand.uniform(1_000_000)
 
-    File.mkdir_p!(tmp_dir)
+    case @system_adapter.system_tmp_dir() do
+      {:error, reason_systmp} ->
+        {:error, reason_systmp}
 
-    try do
-      # 1. Get the current executable path
-      current_exe = get_current_executable()
+      {:ok, base_tmp_dir} ->
+        tmp_dir_path = Path.join(base_tmp_dir, "raxol_update_#{random_suffix}")
 
-      # 2. Download the delta update
-      delta_file = Path.join(tmp_dir, "update.delta")
-      :ok = download_delta(delta_url, delta_file)
+        case @system_adapter.file_mkdir_p(tmp_dir_path) do
+          :ok ->
+            # Temporary directory created. Proceed with operations and ensure cleanup.
+            try do
+              with {:ok, current_exe} <- get_current_executable(),
+                   delta_file = Path.join(tmp_dir_path, "update.delta"),
+                   :ok <- download_delta(delta_url, delta_file),
+                   new_exe = Path.join(tmp_dir_path, "raxol.new"),
+                   :ok <- apply_binary_delta(current_exe, delta_file, new_exe),
+                   :ok <- verify_patched_executable(new_exe, target_version),
+                   :ok <- replace_executable(current_exe, new_exe) do
+                {:ok, :update_applied}
+              else
+                error_term ->
+                  # Pass through any error from the 'with' chain
+                  error_term
+              end
+            after
+              # Cleanup the temporary directory
+              @system_adapter.file_rm_rf(tmp_dir_path)
+            end
 
-      # 3. Create a new executable by applying the delta
-      new_exe = Path.join(tmp_dir, "raxol.new")
-      :ok = apply_binary_delta(current_exe, delta_file, new_exe)
-
-      # 4. Verify the patched executable
-      :ok = verify_patched_executable(new_exe, target_version)
-
-      # 5. Replace the current executable with the new one
-      :ok = replace_executable(current_exe, new_exe)
-
-      :ok
-    catch
-      {:error, reason} -> {:error, reason}
-    after
-      # Clean up temporary files
-      _ = File.rm_rf(tmp_dir)
+          {:error, reason_mkdir} ->
+            # Failed to create the specific temporary directory
+            {:error, reason_mkdir}
+        end
     end
   end
 
@@ -82,88 +96,119 @@ defmodule Raxol.System.DeltaUpdater do
   end
 
   defp download_delta(url, destination) do
-    case :httpc.request(:get, {String.to_charlist(url), []}, [], [
-           {:stream, String.to_charlist(destination)}
-         ]) do
+    case @system_adapter.httpc_request(
+           :get,
+           {String.to_charlist(url), []},
+           [],
+           [{:stream, String.to_charlist(destination)}]
+         ) do
       {:ok, :saved_to_file} ->
         :ok
 
       {:error, reason} ->
-        throw({:error, "Failed to download delta update: #{inspect(reason)}"})
+        # Return error tuple instead of throwing
+        {:error, {:download_failed, reason}}
     end
   end
 
   defp get_current_executable do
-    exe =
-      System.get_env("BURRITO_EXECUTABLE_PATH") || System.argv() |> List.first()
+    # Use adapter for system calls
+    exe_path_env = @system_adapter.system_get_env("BURRITO_EXECUTABLE_PATH")
+    argv = @system_adapter.system_argv()
+
+    exe = exe_path_env || List.first(argv)
 
     if is_nil(exe) do
-      throw({:error, "Cannot determine executable path"})
+      # Return error tuple
+      {:error, :cannot_determine_executable_path}
     else
-      exe
+      {:ok, exe}
     end
   end
 
   defp apply_binary_delta(original_file, delta_file, output_file) do
     # We use bsdiff/bspatch for binary deltas
     # This assumes bspatch is available on the system
-    case System.cmd("bspatch", [original_file, output_file, delta_file]) do
-      {_, 0} -> :ok
-      {error, _} -> throw({:error, "Failed to apply delta update: #{error}"})
+    case @system_adapter.system_cmd(
+           "bspatch",
+           [original_file, output_file, delta_file],
+           []
+         ) do
+      {_output, 0} ->
+        :ok
+
+      {error_output, _exit_status} ->
+        # Return error tuple
+        {:error, {:apply_delta_failed, error_output}}
     end
   end
 
   defp verify_patched_executable(exe_path, expected_version) do
-    # Make the patched file executable
-    File.chmod!(exe_path, 0o755)
+    with :ok <- @system_adapter.file_chmod(exe_path, 0o755) do
+      # Run the new executable with --version to verify it reports the correct version
+      case @system_adapter.system_cmd(exe_path, ["--version"],
+             stderr_to_stdout: true
+           ) do
+        {output, 0} ->
+          if String.contains?(output, expected_version) do
+            :ok
+          else
+            # Return error tuple
+            {:error, :version_verification_failed}
+          end
 
-    # Run the new executable with --version to verify it reports the correct version
-    case System.cmd(exe_path, ["--version"], stderr_to_stdout: true) do
-      {output, 0} ->
-        if String.contains?(output, expected_version) do
-          :ok
-        else
-          throw({:error, "Version verification failed for patched executable"})
-        end
-
-      {error, _} ->
-        throw({:error, "Failed to verify patched executable: #{error}"})
+        {error_output, _exit_status} ->
+          # Return error tuple
+          {:error, {:verify_failed_to_run, error_output}}
+      end
+    else
+      {:error, reason} -> {:error, {:chmod_failed, reason}}
+      # Catch any other unexpected error from file_chmod
+      error -> error
     end
   end
 
   defp replace_executable(current_exe, new_exe) do
-    # Determine platform
+    # Determine platform using adapter
     platform =
-      case :os.type() do
+      case @system_adapter.os_type() do
         {:win32, _} -> "windows"
-        # Or be more specific if needed
+        # Default to unix for other :os.type() results
         _ -> "unix"
       end
 
-    # Call the shared helper function
-    Updater.do_replace_executable(current_exe, new_exe, platform)
+    # Call the shared helper function via adapter
+    @system_adapter.updater_do_replace_executable(
+      current_exe,
+      new_exe,
+      platform
+    )
   end
 
   defp get_releases do
     url = "https://api.github.com/repos/raxol/raxol/releases"
+    headers = [{~c"User-Agent", ~c"Raxol-Updater"}]
 
-    case :httpc.request(
+    case @system_adapter.httpc_request(
            :get,
-           {String.to_charlist(url),
-            [
-              {~c"User-Agent", ~c"Raxol-Updater"}
-            ]},
+           {String.to_charlist(url), headers},
            [],
            []
          ) do
-      {:ok, {{_, 200, _}, _, body}} ->
-        {:ok, Jason.decode!(body)}
+      {:ok, {{_http_vsn, 200, _reason_phrase}, _response_headers, body}} ->
+        # Assuming body is a string that needs decoding
+        try do
+          {:ok, Jason.decode!(body)}
+        rescue
+          Jason.DecodeError -> {:error, :json_decode_error}
+        end
 
-      {:ok, {{_, status, _}, _, _}} ->
-        {:error, "Failed to fetch releases: HTTP #{status}"}
+      {:ok,
+       {{_http_vsn, status_code, _reason_phrase}, _response_headers, _body}} ->
+        {:error, {:fetch_releases_failed_status, status_code}}
 
       {:error, reason} ->
-        {:error, "Failed to fetch releases: #{reason}"}
+        {:error, {:fetch_releases_failed, reason}}
     end
   end
 end

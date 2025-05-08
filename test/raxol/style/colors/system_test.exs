@@ -2,7 +2,6 @@ defmodule Raxol.Style.Colors.SystemTest do
   use ExUnit.Case, async: true
   import Mox
 
-  @tag :skip # Skip: Module Raxol.Style.Colors.System is missing required functions
   alias Raxol.Style.Colors.System
   alias Raxol.Style.Colors.Persistence
   alias Raxol.Style.Colors.Theme
@@ -46,9 +45,11 @@ defmodule Raxol.Style.Colors.SystemTest do
 
   describe "theme management" do
     test "applies a theme" do
-      assert :ok == System.apply_theme(@test_theme)
+      # Use Theme.apply_theme which handles saving and calling System.apply_theme
+      # assert :ok == System.apply_theme(@test_theme)
+      assert :ok == Theme.apply_theme(@test_theme)
 
-      # Verify theme was saved
+      # Verify theme was saved (Assuming Persistence module works)
       assert {:ok, saved_theme} = Persistence.load_theme(@test_theme.name)
       assert saved_theme.name == @test_theme.name
       assert saved_theme.palette == @test_theme.palette
@@ -58,13 +59,15 @@ defmodule Raxol.Style.Colors.SystemTest do
     test "gets current theme", %{mocker: mocker} do
       # Setup: Ensure a theme is applied
       System.init()
-      # Apply a specific theme for predictability
+
+      # Apply a specific theme for predictability using System.apply_theme with name
       System.apply_theme(:dark)
 
       # Mock EventManager dispatch to prevent side effects
       expect(mocker, :dispatch, fn _ -> :ok end)
 
-      current_theme_name = System.get_current_theme()
+      # Use the new function
+      current_theme_name = System.get_current_theme_name()
       # Fetch the actual theme details if needed for deeper assertions
       # themes = Process.get(:color_system_themes, %{})
       # current_theme_details = themes[current_theme_name]
@@ -76,13 +79,16 @@ defmodule Raxol.Style.Colors.SystemTest do
       System.init()
       System.apply_theme(:standard)
       # expect(mocker, :dispatch, fn _ -> :ok end)
-      current_theme_name = System.get_current_theme()
+      # Use the new function
+      current_theme_name = System.get_current_theme_name()
+      # Still need theme details
       themes = Process.get(:color_system_themes, %{})
       current_theme = themes[current_theme_name]
 
       # Standard theme structure might differ now, adjust assertion as needed
       color = Theme.get_ui_color(current_theme, :primary_button)
-      assert color != nil # Adjust assertion based on actual theme structure
+      # Adjust assertion based on actual theme structure
+      assert color != nil
       # Example: assert color == "#0077CC"
     end
 
@@ -90,7 +96,9 @@ defmodule Raxol.Style.Colors.SystemTest do
       System.init()
       System.apply_theme(:standard)
       # expect(mocker, :dispatch, fn _ -> :ok end)
-      current_theme_name = System.get_current_theme()
+      # Use the new function
+      current_theme_name = System.get_current_theme_name()
+      # Still need theme details
       themes = Process.get(:color_system_themes, %{})
       current_theme = themes[current_theme_name]
 
@@ -115,7 +123,8 @@ defmodule Raxol.Style.Colors.SystemTest do
 
       dark_theme = Theme.create_dark_theme(standard_theme)
 
-      assert dark_theme != nil # Basic check
+      # Basic check
+      assert dark_theme != nil
       assert dark_theme.dark_mode == true
       # Add assertions comparing colors if needed
     end

@@ -210,7 +210,8 @@ defmodule Raxol.Test.Visual do
 
     # Merge theme fields into the context map directly
     Map.merge(
-      %{ # Base context fields
+      # Base context fields
+      %{
         max_width: 80,
         max_height: 24,
         focused_component: nil,

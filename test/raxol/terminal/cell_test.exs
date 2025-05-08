@@ -191,7 +191,8 @@ defmodule Raxol.Terminal.CellTest do
       # Instead of assigning to an unused variable, just make the calls
       Cell.set_char(copied_cell, "C")
       |> Cell.merge_style(
-        TextFormatting.new() |> TextFormatting.apply_attribute(:reverse)
+        TextFormatting.new()
+        |> TextFormatting.apply_attribute(:reverse)
       )
 
       # Check if original cell remains unchanged (after its initial modification)

@@ -11,7 +11,8 @@ defmodule Raxol.Components.Progress do
 
   # Define state struct (example - might need merging/refactoring existing logic)
   defstruct id: nil,
-            type: :bar, # :bar, :spinner, :indeterminate, :circular
+            # :bar, :spinner, :indeterminate, :circular
+            type: :bar,
             value: 0,
             max: 100,
             label: nil,
@@ -19,8 +20,10 @@ defmodule Raxol.Components.Progress do
             # State for spinner
             frames: [],
             frame_index: 0,
-            interval: 100 # ms
-            # Add other fields as needed (width, height, etc.)
+            # ms
+            interval: 100
+
+  # Add other fields as needed (width, height, etc.)
 
   # --- Component Behaviour Callbacks ---
 
@@ -37,22 +40,25 @@ defmodule Raxol.Components.Progress do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages to update value, change type, etc.
-    Logger.debug("Progress #{state.id} received message: #{inspect msg}")
+    Logger.debug("Progress #{state.id} received message: #{inspect(msg)}")
     # Placeholder
     case msg do
       {:set_value, value} when is_number(value) ->
         {%{state | value: clamp(value, 0, state.max)}, []}
+
       :tick when state.type == :spinner ->
         next_frame = rem(state.frame_index + 1, length(state.frames))
         {%{state | frame_index: next_frame}, []}
-      _ -> {state, []}
+
+      _ ->
+        {state, []}
     end
   end
 
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
     # Handle events if needed
-    Logger.debug("Progress #{state.id} received event: #{inspect event}")
+    Logger.debug("Progress #{state.id} received event: #{inspect(event)}")
     {state, []}
   end
 
@@ -77,43 +83,58 @@ defmodule Raxol.Components.Progress do
     filled_width = round(state.width * percentage)
     empty_width = state.width - filled_width
 
-    bar_content = String.duplicate("█", filled_width) <> String.duplicate("░", empty_width)
+    bar_content =
+      String.duplicate("█", filled_width) <> String.duplicate("░", empty_width)
 
     content = [
       Raxol.View.Elements.label(content: bar_content)
     ]
 
-    content = if state.label do
-      [Raxol.View.Elements.label(content: state.label) | content]
-    else
-      content
-    end
+    content =
+      if state.label do
+        [Raxol.View.Elements.label(content: state.label) | content]
+      else
+        content
+      end
 
     # Use row or column based on desired layout
     Raxol.View.Elements.row id: state.id, style: state.style do
-       content
+      content
     end
   end
 
   defp render_spinner(state) do
-     # Based on original spinner logic
-     frame = Enum.at(state.frames, state.frame_index, "?")
-     Raxol.View.Elements.row id: state.id, style: state.style do
-        Raxol.View.Elements.label(content: frame)
-        if state.label do
-          Raxol.View.Elements.label(content: state.label, style: %{margin_left: 1})
-        end
-     end
+    # Based on original spinner logic
+    frame = Enum.at(state.frames, state.frame_index, "?")
+
+    Raxol.View.Elements.row id: state.id, style: state.style do
+      Raxol.View.Elements.label(content: frame)
+
+      if state.label do
+        Raxol.View.Elements.label(
+          content: state.label,
+          style: %{margin_left: 1}
+        )
+      end
+    end
   end
 
   defp render_indeterminate(state) do
     # Based on original indeterminate logic - needs state tracking for animation
-    Raxol.View.Elements.label(content: "[ <=> ]", id: state.id, style: state.style)
+    Raxol.View.Elements.label(
+      content: "[ <=> ]",
+      id: state.id,
+      style: state.style
+    )
   end
 
   defp render_circular(state) do
     # Based on original circular logic - complex, needs state + drawing
-    Raxol.View.Elements.label(content: "( O )", id: state.id, style: state.style)
+    Raxol.View.Elements.label(
+      content: "( O )",
+      id: state.id,
+      style: state.style
+    )
   end
 
   # --- Original Helper Functions (May need removal/refactoring) ---
@@ -224,7 +245,12 @@ defmodule Raxol.Components.Progress do
 
         elements =
           if filled_width > 0 do
-            filled_text = Raxol.View.Elements.label(content: filled_portion, style: filled_style)
+            filled_text =
+              Raxol.View.Elements.label(
+                content: filled_portion,
+                style: filled_style
+              )
+
             [filled_text | elements]
           else
             elements
@@ -232,7 +258,12 @@ defmodule Raxol.Components.Progress do
 
         elements =
           if empty_width > 0 do
-            empty_text = Raxol.View.Elements.label(content: empty_portion, style: empty_style)
+            empty_text =
+              Raxol.View.Elements.label(
+                content: empty_portion,
+                style: empty_style
+              )
+
             [empty_text | elements]
           else
             elements
@@ -301,11 +332,15 @@ defmodule Raxol.Components.Progress do
         Raxol.View.Elements.column id: id do
           header_row =
             Raxol.View.Elements.row style: %{justify: :space_between} do
-              label_text = Raxol.View.Elements.label(content: label, style: label_style)
+              label_text =
+                Raxol.View.Elements.label(content: label, style: label_style)
 
               percentage_element =
                 if percentage_text do
-                  Raxol.View.Elements.label(content: percentage_text, style: percentage_style)
+                  Raxol.View.Elements.label(
+                    content: percentage_text,
+                    style: percentage_style
+                  )
                 else
                   nil
                 end
@@ -332,11 +367,15 @@ defmodule Raxol.Components.Progress do
 
           footer_row =
             Raxol.View.Elements.row style: %{justify: :space_between} do
-              label_text = Raxol.View.Elements.label(content: label, style: label_style)
+              label_text =
+                Raxol.View.Elements.label(content: label, style: label_style)
 
               percentage_element =
                 if percentage_text do
-                  Raxol.View.Elements.label(content: percentage_text, style: percentage_style)
+                  Raxol.View.Elements.label(
+                    content: percentage_text,
+                    style: percentage_style
+                  )
                 else
                   nil
                 end
@@ -372,11 +411,15 @@ defmodule Raxol.Components.Progress do
               Keyword.put(opts, :width, adjusted_width)
             )
 
-          label_text = Raxol.View.Elements.label(content: " #{label}", style: label_style)
+          label_text =
+            Raxol.View.Elements.label(content: " #{label}", style: label_style)
 
           percentage_element =
             if percentage_text do
-              Raxol.View.Elements.label(content: " #{percentage_text}", style: percentage_style)
+              Raxol.View.Elements.label(
+                content: " #{percentage_text}",
+                style: percentage_style
+              )
             else
               nil
             end
@@ -455,12 +498,19 @@ defmodule Raxol.Components.Progress do
     Raxol.View.Elements.row([id: id, style: style],
       do: fn ->
         # Create spinner character element
-        spinner_element = Raxol.View.Elements.label(content: current_frame, style: spinner_style)
+        spinner_element =
+          Raxol.View.Elements.label(
+            content: current_frame,
+            style: spinner_style
+          )
 
         # Create message element if provided
         message_element =
           if message do
-            Raxol.View.Elements.label(content: " #{message}", style: message_style)
+            Raxol.View.Elements.label(
+              content: " #{message}",
+              style: message_style
+            )
           else
             nil
           end
@@ -549,7 +599,8 @@ defmodule Raxol.Components.Progress do
         elements =
           if left_width > 0 do
             left_element =
-              Raxol.View.Elements.label(content: String.duplicate(" ", left_width),
+              Raxol.View.Elements.label(
+                content: String.duplicate(" ", left_width),
                 style: background_style
               )
 
@@ -560,7 +611,10 @@ defmodule Raxol.Components.Progress do
 
         # Add animated bar segment
         bar_element =
-          Raxol.View.Elements.label(content: String.duplicate(" ", bar_width), style: bar_style)
+          Raxol.View.Elements.label(
+            content: String.duplicate(" ", bar_width),
+            style: bar_style
+          )
 
         elements = [bar_element | elements]
 
@@ -568,7 +622,8 @@ defmodule Raxol.Components.Progress do
         elements =
           if right_width > 0 do
             right_element =
-              Raxol.View.Elements.label(content: String.duplicate(" ", right_width),
+              Raxol.View.Elements.label(
+                content: String.duplicate(" ", right_width),
                 style: background_style
               )
 
@@ -640,7 +695,8 @@ defmodule Raxol.Components.Progress do
     Raxol.View.Elements.row([id: id],
       do: fn ->
         # Create progress char element
-        char_element = Raxol.View.Elements.label(content: progress_char, style: style)
+        char_element =
+          Raxol.View.Elements.label(content: progress_char, style: style)
 
         # Create percentage element if needed
         elements = [char_element]
@@ -648,7 +704,10 @@ defmodule Raxol.Components.Progress do
         elements =
           if show_percentage do
             percentage_element =
-              Raxol.View.Elements.label(content: percentage_text, style: percentage_style)
+              Raxol.View.Elements.label(
+                content: percentage_text,
+                style: percentage_style
+              )
 
             elements ++ [percentage_element]
           else

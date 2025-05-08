@@ -9,6 +9,8 @@ defmodule Raxol.UI.Theming.Theme do
   * Color scheme management
   """
 
+  @behaviour Raxol.UI.Theming.ThemeBehaviour
+
   @type t :: %__MODULE__{
           id: atom(),
           name: String.t(),
@@ -23,10 +25,13 @@ defmodule Raxol.UI.Theming.Theme do
   defstruct id: :default,
             name: "Default Theme",
             description: "The default Raxol theme",
-            colors: %{}, # Base color palette
+            # Base color palette
+            colors: %{},
             fonts: %{},
-            component_styles: %{}, # Base component styles
-            variants: %{} # Map of variant_id => %{palette: map(), component_styles: map()}
+            # Base component styles
+            component_styles: %{},
+            # Map of variant_id => %{palette: map(), component_styles: map()}
+            variants: %{}
 
   # Store registered themes
   @themes_table :themes
@@ -34,6 +39,7 @@ defmodule Raxol.UI.Theming.Theme do
   @doc """
   Initializes the theme system.
   """
+  @impl Raxol.UI.Theming.ThemeBehaviour
   def init do
     # Set up ETS table for themes
     :ets.new(@themes_table, [:set, :public, :named_table])
@@ -56,6 +62,7 @@ defmodule Raxol.UI.Theming.Theme do
 
   `:ok`
   """
+  @impl Raxol.UI.Theming.ThemeBehaviour
   def register(%__MODULE__{} = theme) do
     :ets.insert(@themes_table, {theme.id, theme})
     :ok
@@ -72,6 +79,7 @@ defmodule Raxol.UI.Theming.Theme do
 
   The theme struct or nil if not found
   """
+  @impl Raxol.UI.Theming.ThemeBehaviour
   def get(theme_id) do
     case :ets.lookup(@themes_table, theme_id) do
       [{^theme_id, theme}] -> theme
@@ -86,6 +94,7 @@ defmodule Raxol.UI.Theming.Theme do
 
   A list of theme structs
   """
+  @impl Raxol.UI.Theming.ThemeBehaviour
   def list do
     :ets.tab2list(@themes_table)
     |> Enum.map(fn {_id, theme} -> theme end)
@@ -98,6 +107,7 @@ defmodule Raxol.UI.Theming.Theme do
 
   The default theme struct
   """
+  @impl Raxol.UI.Theming.ThemeBehaviour
   def default_theme do
     %__MODULE__{
       id: :default,
@@ -160,6 +170,7 @@ defmodule Raxol.UI.Theming.Theme do
 
   The dark theme struct
   """
+  @impl Raxol.UI.Theming.ThemeBehaviour
   def dark_theme do
     %__MODULE__{
       id: :dark,
@@ -227,6 +238,7 @@ defmodule Raxol.UI.Theming.Theme do
 
   A map of style properties for the component, or an empty map if not found
   """
+  @impl Raxol.UI.Theming.ThemeBehaviour
   def component_style(%__MODULE__{} = theme, component_type) do
     Map.get(theme.component_styles, component_type, %{})
   end
@@ -243,6 +255,7 @@ defmodule Raxol.UI.Theming.Theme do
 
   The color value, or a default color if not found
   """
+  @impl Raxol.UI.Theming.ThemeBehaviour
   def color(%__MODULE__{} = theme, color_name) do
     Map.get(theme.colors, color_name, :white)
   end
@@ -253,7 +266,9 @@ defmodule Raxol.UI.Theming.Theme do
   Looks up the color in the variant's palette first, then falls back
   to the theme's base palette.
   """
-  @spec get_color(t(), atom(), atom() | nil) :: Raxol.Style.Colors.color_value() | nil
+  @spec get_color(t(), atom(), atom() | nil) ::
+          Raxol.Style.Colors.color_value() | nil
+  @impl Raxol.UI.Theming.ThemeBehaviour
   def get_color(%__MODULE__{} = theme, color_name, variant_id \\ nil) do
     variant_palette = get_in(theme, [:variants, variant_id, :palette])
     base_palette = theme.colors
@@ -262,12 +277,15 @@ defmodule Raxol.UI.Theming.Theme do
       # Check variant palette first
       variant_palette && Map.has_key?(variant_palette, color_name) ->
         Map.get(variant_palette, color_name)
+
       # Fallback to base palette
       Map.has_key?(base_palette, color_name) ->
         Map.get(base_palette, color_name)
+
       # Not found anywhere
       true ->
-        nil # Or return a default like :white or :default?
+        # Or return a default like :white or :default?
+        nil
     end
   end
 
@@ -283,6 +301,7 @@ defmodule Raxol.UI.Theming.Theme do
 
   The element tree with theme applied
   """
+  @impl Raxol.UI.Theming.ThemeBehaviour
   def apply_theme(element, %__MODULE__{} = theme) do
     apply_theme_to_element(element, theme)
   end

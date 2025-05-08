@@ -32,6 +32,7 @@ defmodule Raxol.Test.EmulatorHelpers do
     # IO.puts("get_line_text(#{line_index}):") # DEBUG
     buffer = Emulator.get_active_buffer(emulator)
     line_cells = ScreenBuffer.get_line(buffer, line_index)
+
     # IO.inspect(line_cells, label: "  -> line_cells for #{line_index}", limit: :infinity) # DEBUG
     text = Enum.map_join(line_cells, &(&1.char || " "))
     # IO.inspect(text, label: "  -> joined text for #{line_index}") # DEBUG

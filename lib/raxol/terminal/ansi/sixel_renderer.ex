@@ -6,13 +6,16 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
   require Logger
   import Bitwise
 
-  alias Raxol.Terminal.ANSI.SixelGraphics # For sixel_state type
-  alias Raxol.Terminal.ANSI.SixelPalette # Needed?
+  # For sixel_state type
+  alias Raxol.Terminal.ANSI.SixelGraphics
+  # Needed?
+  alias Raxol.Terminal.ANSI.SixelPalette
 
   @doc """
   Renders the image stored in the pixel_buffer as a Sixel data stream.
   """
-  @spec render_image(SixelGraphics.sixel_state()) :: {:ok, binary()} | {:error, atom()}
+  @spec render_image(SixelGraphics.sixel_state()) ::
+          {:ok, binary()} | {:error, atom()}
   def render_image(state) do
     %{pixel_buffer: pixel_buffer, palette: palette, attributes: attrs} = state
 
@@ -270,5 +273,4 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
 
     IO.iodata_to_binary(List.flatten(final_data))
   end
-
 end

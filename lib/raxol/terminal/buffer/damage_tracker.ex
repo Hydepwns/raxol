@@ -6,7 +6,9 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
   for efficient redrawing.
   """
 
-  @type region :: {non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()}
+  @type region ::
+          {non_neg_integer(), non_neg_integer(), non_neg_integer(),
+           non_neg_integer()}
   @type t :: %__MODULE__{
           regions: list(region())
         }
@@ -24,7 +26,13 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
 
   Merges the new region with any existing overlapping regions.
   """
-  @spec mark_damaged(t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer()) :: t()
+  @spec mark_damaged(
+          t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: t()
   def mark_damaged(%__MODULE__{} = tracker, x1, y1, x2, y2) do
     new_region = {x1, y1, x2, y2}
     merged_regions = merge_damage_regions([new_region | tracker.regions])
@@ -57,25 +65,26 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
     Enum.reduce(regions, [], fn region, acc ->
       merge_or_append(region, acc)
     end)
-    |> Enum.reverse() # Reduce builds the list in reverse
+    # Reduce builds the list in reverse
+    |> Enum.reverse()
   end
 
   # Helper to merge a region into a list of existing non-overlapping regions
   defp merge_or_append(new_region, existing_regions) do
-    {overlapping, non_overlapping} = Enum.split_with(existing_regions, &regions_overlap?(new_region, &1))
+    {overlapping, non_overlapping} =
+      Enum.split_with(existing_regions, &regions_overlap?(new_region, &1))
 
     case overlapping do
       [] ->
         # No overlap, just add the new region
         [new_region | non_overlapping]
+
       _ ->
         # Merge the new region with all overlapping regions found
         merged = Enum.reduce(overlapping, new_region, &merge_two_regions/2)
         [merged | non_overlapping]
     end
-
   end
-
 
   defp regions_overlap?({x1, y1, x2, y2}, {rx1, ry1, rx2, ry2}) do
     # Check for overlap: !(left || right || above || below)
@@ -90,5 +99,4 @@ defmodule Raxol.Terminal.Buffer.DamageTracker do
       max(y2, ry2)
     }
   end
-
 end

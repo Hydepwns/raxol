@@ -1,10 +1,13 @@
 defmodule Raxol.Core.AccessibilityTest do
-  use ExUnit.Case, async: false # Disable async due to state manipulation
+  # Disable async due to state manipulation
+  use ExUnit.Case, async: false
 
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
-  alias Raxol.Core.Events.Manager, as: EventManager # Keep alias
-  alias Raxol.Core.Accessibility.ThemeIntegration # Keep alias
+  # Keep alias
+  alias Raxol.Core.Events.Manager, as: EventManager
+  # Keep alias
+  alias Raxol.Core.Accessibility.ThemeIntegration
   require Logger
 
   # Helper function to build preference key path list
@@ -19,15 +22,20 @@ defmodule Raxol.Core.AccessibilityTest do
       if announcement do
         # Directly add to announcements queue without broadcasting
         current_queue = Process.get(:accessibility_announcements, [])
+
         new_announcement = %{
           message: announcement,
           priority: :normal,
           timestamp: System.monotonic_time(:millisecond),
           interrupt: false
         }
-        Process.put(:accessibility_announcements, [new_announcement | current_queue])
+
+        Process.put(:accessibility_announcements, [
+          new_announcement | current_queue
+        ])
       end
     end
+
     :ok
   end
 
@@ -37,7 +45,10 @@ defmodule Raxol.Core.AccessibilityTest do
       is_binary(element) ->
         # If element is a string ID, look up its metadata
         metadata = Accessibility.get_element_metadata(element)
-        if metadata, do: Map.get(metadata, :label) || "Element #{element}", else: nil
+
+        if metadata,
+          do: Map.get(metadata, :label) || "Element #{element}",
+          else: nil
 
       is_map(element) && Map.has_key?(element, :label) ->
         # If element is a map with a label key, use that
@@ -46,7 +57,10 @@ defmodule Raxol.Core.AccessibilityTest do
       is_map(element) && Map.has_key?(element, :id) ->
         # If element has an ID, try to get metadata by ID
         metadata = Accessibility.get_element_metadata(element.id)
-        if metadata, do: Map.get(metadata, :label) || "Element #{element.id}", else: nil
+
+        if metadata,
+          do: Map.get(metadata, :label) || "Element #{element.id}",
+          else: nil
 
       true ->
         # Default fallback
@@ -70,7 +84,9 @@ defmodule Raxol.Core.AccessibilityTest do
       {:ok, prefs_name: prefs_name}
     end
 
-    test "enable/1 applies default preferences if none are set", %{prefs_name: prefs_name} do
+    test "enable/1 applies default preferences if none are set", %{
+      prefs_name: prefs_name
+    } do
       # Set prefs to nil initially using the name
       UserPreferences.set(pref_key(:high_contrast), nil, prefs_name)
       UserPreferences.set(pref_key(:reduced_motion), nil, prefs_name)
@@ -79,10 +95,12 @@ defmodule Raxol.Core.AccessibilityTest do
 
       # Disable first to clear handlers etc.
       Accessibility.disable()
-      Process.sleep(50) # Give disable time
+      # Give disable time
+      Process.sleep(50)
       # Enable reads preferences via the *test* name now
       Accessibility.enable([], prefs_name)
-      Process.sleep(50) # Give enable time
+      # Give enable time
+      Process.sleep(50)
 
       # Assert against the test prefs_name
       assert UserPreferences.get(pref_key(:high_contrast), prefs_name) == false
@@ -92,7 +110,9 @@ defmodule Raxol.Core.AccessibilityTest do
       assert Accessibility.get_text_scale(prefs_name) == 1.0
     end
 
-    test "enable/1 applies custom options over defaults", %{prefs_name: prefs_name} do
+    test "enable/1 applies custom options over defaults", %{
+      prefs_name: prefs_name
+    } do
       # Set prefs to nil initially
       UserPreferences.set(pref_key(:high_contrast), nil, prefs_name)
       UserPreferences.set(pref_key(:reduced_motion), nil, prefs_name)
@@ -101,7 +121,13 @@ defmodule Raxol.Core.AccessibilityTest do
 
       Accessibility.disable()
       Process.sleep(50)
-      custom_opts = [high_contrast: true, reduced_motion: true, screen_reader: false]
+
+      custom_opts = [
+        high_contrast: true,
+        reduced_motion: true,
+        screen_reader: false
+      ]
+
       # Enable uses the *test* name now and applies custom_opts over defaults/prefs
       Accessibility.enable(custom_opts, prefs_name)
       Process.sleep(50)
@@ -111,10 +137,13 @@ defmodule Raxol.Core.AccessibilityTest do
       assert Accessibility.get_option(:reduced_motion, prefs_name) == true
       # screen_reader=false in opts *should* override the default true
       assert Accessibility.get_option(:screen_reader, prefs_name) == false
-      assert Accessibility.get_text_scale(prefs_name) == 1.0 # large_text defaults to false
+      # large_text defaults to false
+      assert Accessibility.get_text_scale(prefs_name) == 1.0
     end
 
-    test "disable/0 stops functionality (check option, announcement)", %{prefs_name: prefs_name} do
+    test "disable/0 stops functionality (check option, announcement)", %{
+      prefs_name: prefs_name
+    } do
       # Ensure enabled state is set via test name before check
       Accessibility.enable([], prefs_name)
       Process.sleep(50)
@@ -144,6 +173,7 @@ defmodule Raxol.Core.AccessibilityTest do
       catch
         :exit, _ -> :ok
       end
+
       Process.sleep(50)
 
       prefs_name = UserPreferencesAnnounceTest
@@ -175,13 +205,16 @@ defmodule Raxol.Core.AccessibilityTest do
 
     test "announce/2 adds announcement to queue", %{prefs_name: prefs_name} do
       Accessibility.announce("Test announcement", [], prefs_name)
+
       # Assert based on expected side effect (e.g., event dispatch or internal queue state)
       # This test might need refinement depending on how announcements are verifiable
       # For now, just runs the code.
       :ok
     end
 
-    test "get_next_announcement/0 retrieves and removes announcement", %{prefs_name: prefs_name} do
+    test "get_next_announcement/0 retrieves and removes announcement", %{
+      prefs_name: prefs_name
+    } do
       Accessibility.announce("First", [], prefs_name)
       Accessibility.announce("Second", [], prefs_name)
       Process.sleep(50)
@@ -198,15 +231,20 @@ defmodule Raxol.Core.AccessibilityTest do
     end
 
     # This test works with get_next_announcement() to verify behavior without needing to mock EventManager
-    test "announce/2 does nothing when screen reader is disabled", %{prefs_name: prefs_name} do
+    test "announce/2 does nothing when screen reader is disabled", %{
+      prefs_name: prefs_name
+    } do
       UserPreferences.set(pref_key(:screen_reader), false, prefs_name)
       Process.sleep(50)
       Accessibility.announce("Should not be announced", [], prefs_name)
       # Assert no announcement was queued
-      assert Accessibility.get_next_announcement() == nil # Queue should remain empty
+      # Queue should remain empty
+      assert Accessibility.get_next_announcement() == nil
     end
 
-    test "announce/2 handles priority and interrupt options", %{prefs_name: prefs_name} do
+    test "announce/2 handles priority and interrupt options", %{
+      prefs_name: prefs_name
+    } do
       Accessibility.announce("Normal", [], prefs_name)
       Accessibility.announce("High", [priority: :high], prefs_name)
       Accessibility.announce("Low", [priority: :low], prefs_name)
@@ -224,15 +262,19 @@ defmodule Raxol.Core.AccessibilityTest do
       # 4. Pop High -> Queue: [Normal, Low]
       # 5. Announce Interrupting -> Queue: [Interrupting]
       # 6. Pop Interrupting -> Queue: []
-      assert Accessibility.get_next_announcement() == nil # Should be empty after interrupt
+      # Should be empty after interrupt
+      assert Accessibility.get_next_announcement() == nil
     end
 
     # This test also works with get_next_announcement() to verify behavior without needing to mock EventManager
-    test "announce/2 respects :silence_announcements setting", %{prefs_name: prefs_name} do
+    test "announce/2 respects :silence_announcements setting", %{
+      prefs_name: prefs_name
+    } do
       UserPreferences.set(pref_key(:silence_announcements), true, prefs_name)
       Process.sleep(50)
       Accessibility.announce("Should not be announced", [], prefs_name)
-      assert Accessibility.get_next_announcement() == nil # Queue should remain empty
+      # Queue should remain empty
+      assert Accessibility.get_next_announcement() == nil
     end
   end
 
@@ -284,7 +326,9 @@ defmodule Raxol.Core.AccessibilityTest do
       {:ok, prefs_name: prefs_name}
     end
 
-    test "updates large text preference and text scale", %{prefs_name: prefs_name} do
+    test "updates large text preference and text scale", %{
+      prefs_name: prefs_name
+    } do
       initial_scale = Accessibility.get_text_scale(prefs_name)
       Accessibility.set_large_text(true, prefs_name)
       assert UserPreferences.get(pref_key(:large_text), prefs_name) == true
@@ -306,17 +350,23 @@ defmodule Raxol.Core.AccessibilityTest do
       {:ok, prefs_name: prefs_name}
     end
 
-    test "returns default text scale when large_text is false", %{prefs_name: prefs_name} do
+    test "returns default text scale when large_text is false", %{
+      prefs_name: prefs_name
+    } do
       # Set pref using name
       UserPreferences.set(pref_key(:large_text), false, prefs_name)
       Process.sleep(50)
+
       # We need to ensure the set_pref side effect (handle_preference_changed) has run
-      Accessibility.set_large_text(false, prefs_name) # Explicitly trigger update logic
+      # Explicitly trigger update logic
+      Accessibility.set_large_text(false, prefs_name)
       Process.sleep(50)
       assert Accessibility.get_text_scale(prefs_name) == 1.0
     end
 
-    test "returns current text scale when large_text is true", %{prefs_name: prefs_name} do
+    test "returns current text scale when large_text is true", %{
+      prefs_name: prefs_name
+    } do
       # Set pref using name
       UserPreferences.set(pref_key(:large_text), true, prefs_name)
       Process.sleep(50)
@@ -326,57 +376,6 @@ defmodule Raxol.Core.AccessibilityTest do
       assert Accessibility.get_text_scale(prefs_name) > 1.0
     end
   end
-
-  # Commented out describe "get_color_scheme/0" - Re-enable when Theme struct issues resolved
-  # describe "get_color_scheme/0" do
-  #   setup do
-  #     # Mock ThemeIntegration.get_active_variant
-  #     :meck.new(ThemeIntegration, [:passthrough])
-  #     :meck.expect(ThemeIntegration, :get_active_variant, fn -> :default end)
-  #
-  #     # Mock Theme.current() - This is tricky, requires a valid Theme struct
-  #     # Need to define a mock theme struct first
-  #     # mock_theme = %Raxol.Style.Theme{
-  #     #   id: :mock_theme, # Added missing :id
-  #     #   name: "Mock Theme",
-  #     #   color_palette: %{background: :black, foreground: :white},
-  #     #   variants: %{
-  #     #     high_contrast: %{color_palette: %{background: :white, foreground: :black}}
-  #     #   },
-  #     #   component_styles: %{},
-  #     #   raw_terminal_colors: %{}
-  #     # }
-  #     # :meck.new(Raxol.Style.Theme) # Cannot mock record/struct module like this
-  #     # Need a different approach, maybe mock a function that *returns* the theme
-  #
-  #     # Let's skip mocking Theme.current for now and focus on variant logic
-  #
-  #     on_exit fn ->
-  #       :meck.unload(ThemeIntegration)
-  #     end
-  #     :ok
-  #   end
-  #
-  #   # Test currently fails due to inability to easily mock Theme.current()
-  #   @tag :skip
-  #   test "returns base theme palette when high contrast is off" do
-  #     # Mock ThemeIntegration to return :default variant
-  #     :meck.expect(ThemeIntegration, :get_active_variant, fn -> :default end)
-  #     # Assuming a mock theme could be provided...
-  #     # assert Accessibility.get_color_scheme() == mock_theme.color_palette
-  #     assert true # Placeholder
-  #   end
-  #
-  #   # Test currently fails due to inability to easily mock Theme.current()
-  #   @tag :skip
-  #   test "returns high contrast palette when high contrast is on" do
-  #     # Mock ThemeIntegration to return :high_contrast variant
-  #     :meck.expect(ThemeIntegration, :get_active_variant, fn -> :high_contrast end)
-  #     # Assuming a mock theme could be provided...
-  #     # assert Accessibility.get_color_scheme() == mock_theme.variants[:high_contrast].color_palette
-  #     assert true # Placeholder
-  #   end
-  # end
 
   describe "Feature Flags / Status Checks (Original Functions - Deprecated)" do
     # Add setup block to initialize UserPreferences
@@ -390,14 +389,16 @@ defmodule Raxol.Core.AccessibilityTest do
       {:ok, prefs_name: prefs_name}
     end
 
-    test "high_contrast_enabled?/0, reduced_motion_enabled?/0, large_text_enabled?/0 return false by default", %{prefs_name: prefs_name} do
+    test "high_contrast_enabled?/0, reduced_motion_enabled?/0, large_text_enabled?/0 return false by default",
+         %{prefs_name: prefs_name} do
       # These functions exist and should be tested
       assert Accessibility.high_contrast_enabled?(prefs_name) == false
       assert Accessibility.reduced_motion_enabled?(prefs_name) == false
       assert Accessibility.large_text_enabled?(prefs_name) == false
     end
 
-    test "high_contrast_enabled?/0, reduced_motion_enabled?/0, large_text_enabled?/0 return current settings when enabled", %{prefs_name: prefs_name} do
+    test "high_contrast_enabled?/0, reduced_motion_enabled?/0, large_text_enabled?/0 return current settings when enabled",
+         %{prefs_name: prefs_name} do
       Accessibility.set_high_contrast(true, prefs_name)
       Accessibility.set_reduced_motion(true, prefs_name)
       Accessibility.set_large_text(true, prefs_name)
@@ -446,6 +447,7 @@ defmodule Raxol.Core.AccessibilityTest do
       catch
         :exit, _ -> :ok
       end
+
       Process.sleep(50)
 
       # Set up a fresh UserPreferences process
@@ -466,9 +468,13 @@ defmodule Raxol.Core.AccessibilityTest do
       {:ok, prefs_name: prefs_name}
     end
 
-    test "handle_focus_change/2 announces element when it receives focus", %{prefs_name: prefs_name} do
+    test "handle_focus_change/2 announces element when it receives focus", %{
+      prefs_name: prefs_name
+    } do
       # Register test element metadata with label
-      Accessibility.register_element_metadata("search_button", %{label: "Search"})
+      Accessibility.register_element_metadata("search_button", %{
+        label: "Search"
+      })
 
       # Clear any announcements
       Process.put(:accessibility_announcements, [])
@@ -482,7 +488,8 @@ defmodule Raxol.Core.AccessibilityTest do
       assert hd(announcements).message == "Search"
     end
 
-    test "handle_focus_change/2 does nothing when element has no announcement", %{prefs_name: prefs_name} do
+    test "handle_focus_change/2 does nothing when element has no announcement",
+         %{prefs_name: prefs_name} do
       # Clear any announcements
       Process.put(:accessibility_announcements, [])
 
@@ -509,16 +516,22 @@ defmodule Raxol.Core.AccessibilityTest do
       UserPreferences.set(pref_key(:keyboard_focus), true, prefs_name)
       UserPreferences.set(pref_key(:large_text), false, prefs_name)
       UserPreferences.set(pref_key(:silence_announcements), false, prefs_name)
-      Process.sleep(50) # Allow casts to process
+      # Allow casts to process
+      Process.sleep(50)
       # Pass the name in the context
       {:ok, prefs_name: prefs_name}
     end
 
-    test "get_option/1 returns default value if not set", %{prefs_name: prefs_name} do
+    test "get_option/1 returns default value if not set", %{
+      prefs_name: prefs_name
+    } do
       # Ensure a key is not set (or set to nil)
-      UserPreferences.set(pref_key(:screen_reader), nil, prefs_name) # Example
-      UserPreferences.set(pref_key(:high_contrast), nil, prefs_name) # Example
+      # Example
+      UserPreferences.set(pref_key(:screen_reader), nil, prefs_name)
+      # Example
+      UserPreferences.set(pref_key(:high_contrast), nil, prefs_name)
       Process.sleep(50)
+
       # Accessibility.get_option uses the global UserPreferences, test is flawed without mock/change
       # Let's assert against the test prefs_name directly
       assert UserPreferences.get(pref_key(:screen_reader), prefs_name) == nil
@@ -534,22 +547,32 @@ defmodule Raxol.Core.AccessibilityTest do
       assert UserPreferences.get(pref_key(:reduced_motion), prefs_name) == true
     end
 
-    test "set_option/2 sets specific preference if available", %{prefs_name: prefs_name} do
+    test "set_option/2 sets specific preference if available", %{
+      prefs_name: prefs_name
+    } do
       Accessibility.set_option(:reduced_motion, true, prefs_name)
       Process.sleep(50)
       # Assert against test prefs_name
       assert UserPreferences.get(pref_key(:reduced_motion), prefs_name) == true
     end
 
-    test "set_option/2 sets generic preference otherwise", %{prefs_name: prefs_name} do
+    test "set_option/2 sets generic preference otherwise", %{
+      prefs_name: prefs_name
+    } do
       Accessibility.set_option(:some_generic_pref, "value", prefs_name)
       Process.sleep(50)
-      assert UserPreferences.get(pref_key(:some_generic_pref), prefs_name) == "value"
+
+      assert UserPreferences.get(pref_key(:some_generic_pref), prefs_name) ==
+               "value"
     end
 
-    test "set_option/2 handles unknown keys by setting preference", %{prefs_name: prefs_name} do
-      Accessibility.set_option(:invalid_option, true, prefs_name) # Pass prefs_name
-      Process.sleep(200) # Increase sleep time significantly
+    test "set_option/2 handles unknown keys by setting preference", %{
+      prefs_name: prefs_name
+    } do
+      # Pass prefs_name
+      Accessibility.set_option(:invalid_option, true, prefs_name)
+      # Increase sleep time significantly
+      Process.sleep(200)
       # Get the whole map and assert the key exists
       all_prefs = UserPreferences.get_all(prefs_name)
       key_path = pref_key(:invalid_option)

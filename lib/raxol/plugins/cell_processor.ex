@@ -32,11 +32,11 @@ defmodule Raxol.Plugins.CellProcessor do
   """
   @spec process(PluginManager.t(), list(map()), map()) ::
           {:ok, PluginManager.t(), list(map()), list(binary())}
-          | {:error, any()} # In case of error during processing
-  def process(%PluginManager{} = manager, cells, emulator_state) when is_list(cells) do
-    Logger.debug(
-      "[CellProcessor.process] Processing #{length(cells)} cells..."
-    )
+          # In case of error during processing
+          | {:error, any()}
+  def process(%PluginManager{} = manager, cells, emulator_state)
+      when is_list(cells) do
+    Logger.debug("[CellProcessor.process] Processing #{length(cells)} cells...")
 
     # Accumulator: {updated_manager, processed_cells_list_reversed, collected_commands_list}
     initial_acc = {manager, [], []}
@@ -68,6 +68,7 @@ defmodule Raxol.Plugins.CellProcessor do
                 Logger.warning(
                   "[CellProcessor.process] Unknown placeholder value: #{placeholder_value}. Skipping."
                 )
+
                 # Return the accumulator state unchanged if no plugin is found
                 {acc_manager, [], []}
               end
@@ -107,7 +108,12 @@ defmodule Raxol.Plugins.CellProcessor do
 
   # Handles the interaction with a specific plugin for a given placeholder.
   # Returns {updated_manager, replacement_cells, new_commands}
-  @spec handle_placeholder_with_plugin(PluginManager.t(), String.t(), map(), map()) ::
+  @spec handle_placeholder_with_plugin(
+          PluginManager.t(),
+          String.t(),
+          map(),
+          map()
+        ) ::
           {PluginManager.t(), list(map()), list(binary())}
   defp handle_placeholder_with_plugin(
          manager,
@@ -120,18 +126,24 @@ defmodule Raxol.Plugins.CellProcessor do
         Logger.warning(
           "[CellProcessor.process] Plugin '#{plugin_name}' not loaded for placeholder '#{Map.get(placeholder_cell, :value)}'. Skipping."
         )
+
         # Return default accumulator if plugin not found
         {manager, [], []}
 
       plugin ->
         # Call only the relevant plugin's handle_cells
-        if plugin.enabled and function_exported?(plugin.__struct__, :handle_cells, 3) do
+        if plugin.enabled and
+             function_exported?(plugin.__struct__, :handle_cells, 3) do
           log_plugin_call_details(plugin_name, plugin, placeholder_cell)
 
           try do
             # Call the plugin's handle_cells function
             handle_cells_result =
-              plugin.__struct__.handle_cells(placeholder_cell, emulator_state, plugin)
+              plugin.__struct__.handle_cells(
+                placeholder_cell,
+                emulator_state,
+                plugin
+              )
 
             # Process the result from the plugin
             process_plugin_handle_cells_result(
@@ -144,6 +156,7 @@ defmodule Raxol.Plugins.CellProcessor do
               Logger.error(
                 "[CellProcessor.process] RESCUED Error calling #{plugin_name}.handle_cells: #{inspect(e)}. Placeholder was: #{inspect(placeholder_cell)}"
               )
+
               # Return default accumulator on error
               {manager, [], []}
           end
@@ -152,6 +165,7 @@ defmodule Raxol.Plugins.CellProcessor do
           Logger.debug(
             "[CellProcessor.process] Plugin '#{plugin_name}' disabled or does not implement handle_cells/3. Skipping."
           )
+
           {manager, [], []}
         end
     end
@@ -188,8 +202,14 @@ CELL DATA: #{inspect(placeholder_cell)}"
        ) do
     case handle_cells_result do
       # Plugin handled it, returning cells and commands
-      {:ok, updated_plugin_state, plugin_cells, plugin_commands} when is_list(plugin_cells) ->
-        log_plugin_handled_details(plugin_name, updated_plugin_state, plugin_cells, plugin_commands)
+      {:ok, updated_plugin_state, plugin_cells, plugin_commands}
+      when is_list(plugin_cells) ->
+        log_plugin_handled_details(
+          plugin_name,
+          updated_plugin_state,
+          plugin_cells,
+          plugin_commands
+        )
 
         # Update manager state
         updated_manager = %{
@@ -205,10 +225,12 @@ CELL DATA: #{inspect(placeholder_cell)}"
         Logger.warning(
           "[CellProcessor.process] Plugin #{plugin_name} handled placeholder but returned invalid cell format. Treating as decline."
         )
+
         updated_manager = %{
           manager
           | plugins: Map.put(manager.plugins, plugin_name, updated_plugin_state)
         }
+
         # Return default accumulator (handled = false), but with updated manager and commands
         {updated_manager, [], plugin_commands}
 
@@ -220,6 +242,7 @@ CELL DATA: #{inspect(placeholder_cell)}"
           manager
           | plugins: Map.put(manager.plugins, plugin_name, updated_plugin_state)
         }
+
         # Return default accumulator (handled = false), but with updated manager
         {updated_manager, [], []}
 
@@ -228,36 +251,44 @@ CELL DATA: #{inspect(placeholder_cell)}"
         Logger.warning(
           "[CellProcessor.process] Plugin #{plugin_name} returned unexpected value from handle_cells. Skipping."
         )
+
         # Return default accumulator
         {manager, [], []}
     end
   end
 
   # Logs details when a plugin successfully handles a placeholder
-  defp log_plugin_handled_details(plugin_name, updated_plugin_state, plugin_cells, plugin_commands) do
-      if plugin_name == "image" do
-        Logger.debug(
-          "[CellProcessor.process] After ImagePlugin.handle_cells returned {:ok, ...}. sequence_just_generated: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
-        )
-      end
+  defp log_plugin_handled_details(
+         plugin_name,
+         updated_plugin_state,
+         plugin_cells,
+         plugin_commands
+       ) do
+    if plugin_name == "image" do
       Logger.debug(
-        "[CellProcessor.process] Plugin #{plugin_name} handled placeholder. Cells: #{length(plugin_cells)}, Commands: #{length(plugin_commands)}"
+        "[CellProcessor.process] After ImagePlugin.handle_cells returned {:ok, ...}. sequence_just_generated: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
       )
+    end
+
+    Logger.debug(
+      "[CellProcessor.process] Plugin #{plugin_name} handled placeholder. Cells: #{length(plugin_cells)}, Commands: #{length(plugin_commands)}"
+    )
   end
 
   # Logs details when a plugin declines to handle a placeholder
   defp log_plugin_declined_details(plugin_name, updated_plugin_state) do
-      Logger.debug(
-        "[CellProcessor.process] Plugin #{plugin_name} returned :cont. State Flag: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
-      )
-      if plugin_name == "image" do
-        Logger.debug(
-          "[CellProcessor.process] After ImagePlugin.handle_cells returned {:cont, ...}. sequence_just_generated: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
-        )
-      end
-      Logger.debug(
-        "[CellProcessor.process] Plugin #{plugin_name} declined placeholder."
-      )
-  end
+    Logger.debug(
+      "[CellProcessor.process] Plugin #{plugin_name} returned :cont. State Flag: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
+    )
 
+    if plugin_name == "image" do
+      Logger.debug(
+        "[CellProcessor.process] After ImagePlugin.handle_cells returned {:cont, ...}. sequence_just_generated: #{inspect(Map.get(updated_plugin_state, :sequence_just_generated))}"
+      )
+    end
+
+    Logger.debug(
+      "[CellProcessor.process] Plugin #{plugin_name} declined placeholder."
+    )
+  end
 end

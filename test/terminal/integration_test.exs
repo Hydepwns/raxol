@@ -2,6 +2,7 @@ defmodule Raxol.Terminal.IntegrationTest do
   use ExUnit.Case
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.ModeManager
 
   # Helper to extract text from a ScreenBuffer
   defp buffer_text(buffer) do
@@ -19,14 +20,20 @@ defmodule Raxol.Terminal.IntegrationTest do
       %{state: emulator_instance}
     end
 
-    test "processes keyboard input and updates screen buffer", %{state: initial_state} do
+    test "processes keyboard input and updates screen buffer", %{
+      state: initial_state
+    } do
       # Initial state and dimensions
       # emulator = Emulator.new(80, 24) # This line is removed
       # Write "Hello"
       {state, _output} = Emulator.process_input(initial_state, "Hello")
 
       # Check only the beginning of the first line
-      first_line_text = state.main_screen_buffer |> ScreenBuffer.get_line(0) |> Enum.map_join(&(&1.char || " "))
+      first_line_text =
+        state.main_screen_buffer
+        |> ScreenBuffer.get_line(0)
+        |> Enum.map_join(&(&1.char || " "))
+
       assert String.starts_with?(first_line_text, "Hello")
     end
 
@@ -53,7 +60,8 @@ defmodule Raxol.Terminal.IntegrationTest do
       state = Emulator.new(5, 3)
 
       # Input 4 lines (no final newline), should force one line into scrollback
-      {state, _output} = Emulator.process_input(state, "Line1\nLine2\nLine3\nLine4")
+      {state, _output} =
+        Emulator.process_input(state, "Line1\nLine2\nLine3\nLine4")
 
       # Expect 2 lines in scrollback after inputting 4 lines into a 3-line buffer
       assert length(state.main_screen_buffer.scrollback) == 2
@@ -68,19 +76,28 @@ defmodule Raxol.Terminal.IntegrationTest do
     end
 
     test "processes ANSI escape sequences" do
-      state = Emulator.new(80, 24) # This test creates its own state
+      # This test creates its own state
+      state = Emulator.new(80, 24)
 
       {state, _output} = Emulator.process_input(state, "\e[31mHello\e[0m")
 
-      first_cell = state.main_screen_buffer.cells |> List.first() |> List.first()
+      first_cell =
+        state.main_screen_buffer.cells |> List.first() |> List.first()
+
       assert first_cell.style.foreground == :red
     end
 
     test "handles multiple ANSI attributes", %{state: initial_state} do
       # Test enabling multiple attributes: bold, red foreground, underline
-      {state, _output_attrs_on} = Emulator.process_input(initial_state, "\e[1;31;4mRed Underlined Bold\e[0m")
+      {state, _output_attrs_on} =
+        Emulator.process_input(
+          initial_state,
+          "\e[1;31;4mRed Underlined Bold\e[0m"
+        )
 
-      first_cell = state.main_screen_buffer.cells |> List.first() |> List.first()
+      first_cell =
+        state.main_screen_buffer.cells |> List.first() |> List.first()
+
       assert first_cell.style.bold == true
       assert first_cell.style.underline == true
       assert first_cell.style.foreground == :red
@@ -119,8 +136,11 @@ defmodule Raxol.Terminal.IntegrationTest do
       # Cb = 0 (left press) + 32 = 32 (space)
       # Cx = 1 (col) + 32 = 33 (!)
       # Cy = 1 (row) + 32 = 33 (!)
-      mouse_click_sequence = "\e[M !!" # ESC [ M <space> ! !
-      {_state, output_mouse_click} = Emulator.process_input(state, mouse_click_sequence)
+      # ESC [ M <space> ! !
+      mouse_click_sequence = "\e[M !!"
+
+      {_state, output_mouse_click} =
+        Emulator.process_input(state, mouse_click_sequence)
 
       # The emulator should output the same sequence when mouse reporting is on
       assert output_mouse_click == mouse_click_sequence
@@ -168,7 +188,9 @@ defmodule Raxol.Terminal.IntegrationTest do
 
     test "maintains command history", %{state: initial_state} do
       # Process some commands
-      {state_after_cmd1, _} = Emulator.process_input(initial_state, "command1\n")
+      {state_after_cmd1, _} =
+        Emulator.process_input(initial_state, "command1\n")
+
       assert state_after_cmd1.command_history == ["command1"]
 
       # Process an empty command (should be ignored)
@@ -176,39 +198,73 @@ defmodule Raxol.Terminal.IntegrationTest do
       assert state_after_empty.command_history == ["command1"]
 
       # Add more commands
-      {state_after_cmd2, _} = Emulator.process_input(state_after_empty, "command2\n")
+      {state_after_cmd2, _} =
+        Emulator.process_input(state_after_empty, "command2\n")
+
       assert state_after_cmd2.command_history == ["command1", "command2"]
 
-      {state_after_cmd3, _} = Emulator.process_input(state_after_cmd2, "command3\n")
-      assert state_after_cmd3.command_history == ["command1", "command2", "command3"]
+      {state_after_cmd3, _} =
+        Emulator.process_input(state_after_cmd2, "command3\n")
+
+      assert state_after_cmd3.command_history == [
+               "command1",
+               "command2",
+               "command3"
+             ]
 
       # Add another command, should push out the oldest ("command1")
-      {state_after_cmd4, _} = Emulator.process_input(state_after_cmd3, "command4\n")
-      assert state_after_cmd4.command_history == ["command2", "command3", "command4"]
+      {state_after_cmd4, _} =
+        Emulator.process_input(state_after_cmd3, "command4\n")
+
+      assert state_after_cmd4.command_history == [
+               "command2",
+               "command3",
+               "command4"
+             ]
 
       # Add a command with no trailing newline (should not be added to history yet)
-      {state_no_newline, _} = Emulator.process_input(state_after_cmd4, "pending")
-      assert state_no_newline.command_history == ["command2", "command3", "command4"]
+      {state_no_newline, _} =
+        Emulator.process_input(state_after_cmd4, "pending")
+
+      assert state_no_newline.command_history == [
+               "command2",
+               "command3",
+               "command4"
+             ]
 
       # Add the newline, now "pending" should be added, pushing out "command2"
       {state_after_pending, _} = Emulator.process_input(state_no_newline, "\n")
-      assert state_after_pending.command_history == ["command3", "command4", "pending"]
+
+      assert state_after_pending.command_history == [
+               "command3",
+               "command4",
+               "pending"
+             ]
     end
   end
 
   describe "mode switching integration" do
-    @tag :skip # Temporarily skip due to persistent KeyError
+    # @tag :skip # Temporarily skip due to persistent KeyError - Will unskip
     test "handles mode transitions", %{state: initial_state} do
       # Test DECOM (Origin Mode)
       # Set Origin Mode (CSI ?6h)
-      {state, _output_set} = Emulator.process_input(initial_state, "\e[?6h")
-      assert state.mode_manager.origin_mode == true
+      {state_after_set, _output_set} =
+        Emulator.process_input(initial_state, "\e[?6h")
+
+      # assert state_after_set.mode_manager.origin_mode == true
+      assert ModeManager.mode_enabled?(state_after_set.mode_manager, :decom) ==
+               true
 
       # Reset Origin Mode (CSI ?6l)
-      {_state, _output_reset} = Emulator.process_input(state, "\e[?6l")
-      assert _state.mode_manager.origin_mode == false
+      {state_after_reset, _output_reset} =
+        Emulator.process_input(state_after_set, "\e[?6l")
+
+      # assert state_after_reset.mode_manager.origin_mode == false
+      assert ModeManager.mode_enabled?(state_after_reset.mode_manager, :decom) ==
+               false
 
       # Test SGR mouse reporting (mode 1006)
+      # Enable SGR Mouse Mode (CSI ?1006h)
       # ... (assertions for SGR mouse mode)
     end
   end
@@ -221,30 +277,58 @@ defmodule Raxol.Terminal.IntegrationTest do
 
     test "handles bracketed paste", %{state: initial_state} do
       # Enable bracketed paste mode
-      {state, _output_enable} = Emulator.process_input(initial_state, "\e[?2004h")
-      assert state.mode_manager.bracketed_paste_mode # Assert mode is enabled
+      {state, _output_enable} =
+        Emulator.process_input(initial_state, "\e[?2004h")
+
+      # Assert mode is enabled
+      assert state.mode_manager.bracketed_paste_mode
 
       paste_text = "multi\nline\npaste"
       # When bracketed paste mode is on, the Emulator should wrap the raw text
       {_final_state, output_paste} = Emulator.process_input(state, paste_text)
       expected_output = "\e[200~multi\nline\npaste\e[201~"
+
       # IO.inspect({output_paste, expected_output}, label: "[IntegrationTest] PASTE ASSERTION CHECK") # DEBUG
       assert inspect(output_paste) == inspect(expected_output)
     end
   end
 
   describe "modifier key integration" do
+    # Skipped: Feature not fully implemented. Requires design for modifier key sequence parsing (e.g., CSI u or XTerm-style) and how Emulator surfaces these events.
     @tag :skip
     test "handles modifier keys" do
-      # ... original code ...
+      # TODO: Implement test once modifier key handling in Emulator is designed/implemented.
+      # Example considerations:
+      # 1. Define expected input sequence (e.g., CSI value;modifier u, or other common terminal extension).
+      # 2. Define how Emulator makes this parsed key + modifier available (e.g., internal event, output sequence for driver).
+      # 3. Write assertions based on that.
+      # Placeholder until implemented
+      assert true
     end
   end
 
   describe "sixel graphics integration" do
+    # Skipped: Feature not fully implemented. Emulator's DCS handler needs to integrate with SixelGraphics.process_sequence and then render the parsed sixel data to the screen buffer.
     @tag :skip
     test "handles sixel graphics", %{state: initial_state} do
-      # Minimal SIXEL data for a 1x1 black pixel
-      # DCS P s ; p ; q  # ... data ... ST
+      # TODO: Implement test once SIXEL handling in Emulator is complete.
+      # Steps:
+      # 1. Ensure Emulator's DCS handler calls SixelGraphics.process_sequence.
+      # 2. Ensure Emulator has a mechanism to render the SixelGraphics.pixel_buffer to its ScreenBuffer.
+      # 3. Send a simple SIXEL sequence via Emulator.process_input.
+      #    Example (1x1 black pixel): "\eP0;0;1q#0;2;0;0;0#0?\e\\" (DCS params q #color_def #sixel_data ST)
+      # 4. Assert the expected cell(s) in initial_state.main_screen_buffer are modified (e.g., background color).
+
+      # Minimal: define color 0 as black, draw 1 pixel with it.
+      sixel_sequence = "\ePq#0;2;0;0;0#0?\e\\"
+
+      # {final_state, _output} = Emulator.process_input(initial_state, sixel_sequence)
+
+      # Example assertion (depends on how sixels are rendered to cells):
+      # first_cell = ScreenBuffer.get_cell_at(final_state.main_screen_buffer, 0, 0)
+      # assert first_cell.style.background == {0,0,0} # or whatever the black representation is
+      # Placeholder until implemented
+      assert true
     end
   end
 end

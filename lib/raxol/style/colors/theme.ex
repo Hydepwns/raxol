@@ -95,7 +95,8 @@ defmodule Raxol.Style.Colors.Theme do
       iex> theme.palette["polar_night_1"]
       %{r: 46, g: 52, b: 64, a: 1.0}
   """
-  @spec from_palette(map() | Raxol.Style.Colors.Palette.t(), String.t()) :: theme()
+  @spec from_palette(map() | Raxol.Style.Colors.Palette.t(), String.t()) ::
+          theme()
   def from_palette(palette_data, name \\ "Custom") do
     default_theme = standard_theme()
 
@@ -104,7 +105,8 @@ defmodule Raxol.Style.Colors.Theme do
       case palette_data do
         %Raxol.Style.Colors.Palette{colors: colors} -> colors
         map when is_map(map) -> map
-        _ -> %{} # Or raise error for invalid input
+        # Or raise error for invalid input
+        _ -> %{}
       end
 
     # Ensure input palette values are Color structs

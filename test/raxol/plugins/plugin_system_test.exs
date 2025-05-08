@@ -12,7 +12,12 @@ defmodule Raxol.Plugins.PluginSystemTest do
     test "creates a new plugin manager" do
       manager = PluginManager.new()
       assert manager.plugins == %{}
-      assert manager.config == %Raxol.Plugins.PluginConfig{enabled_plugins: [], plugin_configs: %{}}
+
+      assert manager.config == %Raxol.Plugins.PluginConfig{
+               enabled_plugins: [],
+               plugin_configs: %{}
+             }
+
       assert manager.api_version == "1.0"
     end
 
@@ -107,7 +112,8 @@ defmodule Raxol.Plugins.PluginSystemTest do
 
     test "processes mouse events through plugins" do
       manager = PluginManager.new()
-      emulator = %Emulator{} # Create a basic emulator struct
+      # Create a basic emulator struct
+      emulator = %Emulator{}
 
       {:ok, manager_with_plugin} =
         PluginManager.load_plugin(manager, HyperlinkPlugin)
@@ -115,7 +121,11 @@ defmodule Raxol.Plugins.PluginSystemTest do
       # Test with a mouse event, passing the arguments in the correct order
       # process_mouse(manager, event, emulator_state)
       {:ok, updated_manager} =
-        PluginManager.process_mouse(manager_with_plugin, {:click, 1, 2, 1}, emulator)
+        PluginManager.process_mouse(
+          manager_with_plugin,
+          {:click, 1, 2, 1},
+          emulator
+        )
 
       # Assertion might need refinement depending on what process_mouse actually does
       # For now, just assert the plugin is still loaded/enabled
@@ -161,9 +171,16 @@ defmodule Raxol.Plugins.PluginSystemTest do
       # Verify the output was transformed
       {:ok, _final_manager, transformed_output} = result
       # Check for the OSC 8 start sequence and URL
-      assert String.contains?(transformed_output, "\e]8;;https://example.com\e\\")
+      assert String.contains?(
+               transformed_output,
+               "\e]8;;https://example.com\e\\"
+             )
+
       # Check for the URL text itself followed by the OSC 8 termination sequence
-      assert String.contains?(transformed_output, "https://example.com\e]8;;\e\\")
+      assert String.contains?(
+               transformed_output,
+               "https://example.com\e]8;;\e\\"
+             )
     end
   end
 
@@ -253,10 +270,17 @@ defmodule Raxol.Plugins.PluginSystemTest do
       plugin_manager = emulator.plugin_manager
 
       # Load plugins using PluginManager
-      {:ok, plugin_manager} = PluginManager.load_plugin(plugin_manager, HyperlinkPlugin)
-      {:ok, plugin_manager} = PluginManager.load_plugin(plugin_manager, ImagePlugin)
-      {:ok, plugin_manager} = PluginManager.load_plugin(plugin_manager, ThemePlugin)
-      {:ok, plugin_manager} = PluginManager.load_plugin(plugin_manager, SearchPlugin)
+      {:ok, plugin_manager} =
+        PluginManager.load_plugin(plugin_manager, HyperlinkPlugin)
+
+      {:ok, plugin_manager} =
+        PluginManager.load_plugin(plugin_manager, ImagePlugin)
+
+      {:ok, plugin_manager} =
+        PluginManager.load_plugin(plugin_manager, ThemePlugin)
+
+      {:ok, plugin_manager} =
+        PluginManager.load_plugin(plugin_manager, SearchPlugin)
 
       # Update the emulator with the modified plugin manager
       emulator = %{emulator | plugin_manager: plugin_manager}

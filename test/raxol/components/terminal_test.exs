@@ -22,7 +22,8 @@ defmodule Raxol.Components.TerminalTest do
       terminal = initial_terminal_state()
       event = %Event{type: :resize, data: %{cols: 100, rows: 50}}
 
-      {new_terminal_state, _commands} = Terminal.handle_event(event, %{}, terminal)
+      {new_terminal_state, _commands} =
+        Terminal.handle_event(event, %{}, terminal)
 
       assert new_terminal_state.width == 80
       assert new_terminal_state.height == 24
@@ -31,7 +32,9 @@ defmodule Raxol.Components.TerminalTest do
     test "switches to insert mode on 'i' key (Placeholder - checks buffer)" do
       terminal = initial_terminal_state()
       event = %Event{type: :key, data: %{key: :i}}
-      {new_terminal_state, _commands} = Terminal.handle_event(event, %{}, terminal)
+
+      {new_terminal_state, _commands} =
+        Terminal.handle_event(event, %{}, terminal)
 
       assert new_terminal_state.buffer == ["Key: :i"]
     end
@@ -39,7 +42,9 @@ defmodule Raxol.Components.TerminalTest do
     test "switches to command mode on ':' key (Placeholder - checks buffer)" do
       terminal = initial_terminal_state()
       event = %Event{type: :key, data: %{key: :colon}}
-      {new_terminal_state, _commands} = Terminal.handle_event(event, %{}, terminal)
+
+      {new_terminal_state, _commands} =
+        Terminal.handle_event(event, %{}, terminal)
 
       assert new_terminal_state.buffer == ["Key: :colon"]
     end
@@ -48,10 +53,14 @@ defmodule Raxol.Components.TerminalTest do
       terminal = initial_terminal_state()
 
       insert_mode_event = %Event{type: :key, data: %{key: :i}}
-      {insert_mode_state, _} = Terminal.handle_event(insert_mode_event, %{}, terminal)
+
+      {insert_mode_state, _} =
+        Terminal.handle_event(insert_mode_event, %{}, terminal)
 
       char_event = %Event{type: :key, data: %{key: "a"}}
-      {final_state, _} = Terminal.handle_event(char_event, %{}, insert_mode_state)
+
+      {final_state, _} =
+        Terminal.handle_event(char_event, %{}, insert_mode_state)
 
       assert final_state.buffer == ["Key: :i", "Key: \"a\""]
     end
@@ -60,11 +69,17 @@ defmodule Raxol.Components.TerminalTest do
       terminal = initial_terminal_state()
 
       insert_mode_event = %Event{type: :key, data: %{key: :i}}
-      {insert_mode_state, _} = Terminal.handle_event(insert_mode_event, %{}, terminal)
+
+      {insert_mode_state, _} =
+        Terminal.handle_event(insert_mode_event, %{}, terminal)
+
       assert insert_mode_state.buffer == ["Key: :i"]
 
       escape_event = %Event{type: :key, data: %{key: :escape}}
-      {final_state, _} = Terminal.handle_event(escape_event, %{}, insert_mode_state)
+
+      {final_state, _} =
+        Terminal.handle_event(escape_event, %{}, insert_mode_state)
+
       assert final_state.buffer == ["Key: :i", "Key: :escape"]
     end
 

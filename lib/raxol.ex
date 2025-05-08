@@ -206,7 +206,8 @@ defmodule Raxol do
   def terminal_info do
     # Assuming capabilities are now handled differently, maybe via Driver or Config?
     # Platform.get_terminal_capabilities()
-    %{width: 80, height: 24, colors: 256} # Placeholder
+    # Placeholder
+    %{width: 80, height: 24, colors: 256}
   end
 
   @doc """

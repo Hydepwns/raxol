@@ -29,6 +29,7 @@ defmodule Raxol.I18nAccessibilityTest do
   use ExUnit.Case, async: false
   # use Raxol.Test.DataCase # Use DataCase if DB interaction is needed
 
+  require Raxol.I18nTestHelpers
   import Raxol.I18nTestHelpers
   # Ensure mocks are compiled/available
   import Raxol.Test.Mocks

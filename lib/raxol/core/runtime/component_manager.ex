@@ -13,7 +13,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   use GenServer
   require Logger
 
-  alias UUID # Use standard Elixir UUID library
+  # Use standard Elixir UUID library
+  alias UUID
   # alias Raxol.Core.Events.EventManager # Unused
   # alias Raxol.Core.Renderer.Manager, as: RendererManager # Unused
   alias Raxol.Core.Runtime.Subscription
@@ -129,15 +130,25 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
       # Handle different return types ({state, commands} or just state)
       case update_result do
-        {updated_comp_state, commands} when is_map(updated_comp_state) and is_list(commands) ->
+        {updated_comp_state, commands}
+        when is_map(updated_comp_state) and is_list(commands) ->
           # Update component struct with new state
           updated_component = %{component | state: updated_comp_state}
           # Update the manager's state map
-          state_with_comp_updated = put_in(state.components[component_id], updated_component)
+          state_with_comp_updated =
+            put_in(state.components[component_id], updated_component)
+
           # Add component to render queue
-          state_after_render = update_in(state_with_comp_updated.render_queue, &[component_id | &1])
+          state_after_render =
+            update_in(
+              state_with_comp_updated.render_queue,
+              &[component_id | &1]
+            )
+
           # Process commands returned by the component
-          final_state = process_commands(commands, component_id, state_after_render)
+          final_state =
+            process_commands(commands, component_id, state_after_render)
+
           # Reply with just the component's updated state, but use the final manager state internally
           {:reply, {:ok, updated_comp_state}, final_state}
 
@@ -147,11 +158,20 @@ defmodule Raxol.Core.Runtime.ComponentManager do
           # Update component struct with new state
           updated_component = %{component | state: updated_comp_state}
           # Update the manager's state map
-          state_with_comp_updated = put_in(state.components[component_id], updated_component)
+          state_with_comp_updated =
+            put_in(state.components[component_id], updated_component)
+
           # Add component to render queue
-          state_after_render = update_in(state_with_comp_updated.render_queue, &[component_id | &1])
+          state_after_render =
+            update_in(
+              state_with_comp_updated.render_queue,
+              &[component_id | &1]
+            )
+
           # Process empty command list (no-op)
-          final_state = process_commands(commands, component_id, state_after_render)
+          final_state =
+            process_commands(commands, component_id, state_after_render)
+
           # Reply with the component's updated state, use final manager state internally
           {:reply, {:ok, updated_comp_state}, final_state}
 
@@ -160,6 +180,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
           Logger.error(
             "Component #{component.module}.update for ID #{component_id} returned invalid value: #{inspect(invalid_return)}"
           )
+
           # Return error, keep original state
           {:reply, {:error, :invalid_component_return}, state}
       end
@@ -189,13 +210,17 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     case Map.get(state.components, component_id) do
       nil ->
         # Component might have been unmounted before message arrived
-        Logger.warning("Received scheduled update for unknown component: #{component_id}")
+        Logger.warning(
+          "Received scheduled update for unknown component: #{component_id}"
+        )
+
         {:noreply, state}
 
       component ->
         # Reuse update logic (similar to handle_call)
         # Destructure return value, ignore commands from info update
-        {new_state, _commands} = component.module.update(message, component.state)
+        {new_state, _commands} =
+          component.module.update(message, component.state)
 
         # Store updated state (only the state map)
         state = put_in(state.components[component_id].state, new_state)
@@ -253,21 +278,26 @@ defmodule Raxol.Core.Runtime.ComponentManager do
           Enum.reduce(Map.keys(acc.components), acc, fn id, acc_state ->
             # Skip update for the component that initiated the broadcast
             if id == component_id do
-              acc_state # Return accumulator unchanged
+              # Return accumulator unchanged
+              acc_state
             else
               if component = Map.get(acc_state.components, id) do
                 # Directly call component update
                 # Destructure the return value, ignore commands from broadcast update
-                {updated_comp_state, _commands} = component.module.update(msg, component.state)
+                {updated_comp_state, _commands} =
+                  component.module.update(msg, component.state)
 
                 # Update component in state (store only the state map)
                 updated_component = %{component | state: updated_comp_state}
-                state_with_updated_comp = put_in(acc_state.components[id], updated_component)
+
+                state_with_updated_comp =
+                  put_in(acc_state.components[id], updated_component)
 
                 # Add to render queue
                 update_in(state_with_updated_comp.render_queue, &[id | &1])
               else
-                acc_state # Component not found, ignore
+                # Component not found, ignore
+                acc_state
               end
             end
           end)

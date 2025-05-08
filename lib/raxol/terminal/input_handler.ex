@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.InputHandler do
   alias Raxol.Terminal.ControlCodes
   alias Raxol.Terminal.Style.Manager, as: StyleManager
   alias Raxol.Terminal.CharacterHandling
-  alias Raxol.Terminal.Clipboard
+  alias Raxol.System.Clipboard
 
   require Logger
 
@@ -27,7 +27,6 @@ defmodule Raxol.Terminal.InputHandler do
   @type t :: %__MODULE__{
           buffer: String.t(),
           cursor_position: non_neg_integer(),
-          clipboard: Clipboard.t(),
           tab_completion: map(),
           tab_completion_index: non_neg_integer(),
           tab_completion_matches: list(String.t()),
@@ -37,7 +36,6 @@ defmodule Raxol.Terminal.InputHandler do
   defstruct [
     :buffer,
     :cursor_position,
-    :clipboard,
     :tab_completion,
     :tab_completion_index,
     :tab_completion_matches,
@@ -52,7 +50,6 @@ defmodule Raxol.Terminal.InputHandler do
     %__MODULE__{
       buffer: "",
       cursor_position: 0,
-      clipboard: Clipboard.new(),
       tab_completion: %{},
       tab_completion_index: 0,
       tab_completion_matches: [],
@@ -65,14 +62,16 @@ defmodule Raxol.Terminal.InputHandler do
   """
   @spec handle_paste(t()) :: {:ok, t()} | {:error, any()}
   def handle_paste(%__MODULE__{} = handler) do
-    case Clipboard.paste() do # Call Raxol.System.Clipboard.paste/0
+    # Call Raxol.System.Clipboard.paste/0
+    case Clipboard.paste() do
       {:ok, text} ->
         new_buffer = insert_text(handler.buffer, handler.cursor_position, text)
         new_position = handler.cursor_position + String.length(text)
         {:ok, %{handler | buffer: new_buffer, cursor_position: new_position}}
 
       {:error, reason} ->
-        {:error, reason} # Pass through error
+        # Pass through error
+        {:error, reason}
     end
   end
 
@@ -82,11 +81,15 @@ defmodule Raxol.Terminal.InputHandler do
   """
   @spec handle_copy(t()) :: {:ok, t()} | {:error, any()}
   def handle_copy(%__MODULE__{} = handler) do
-    case Clipboard.copy(handler.buffer) do # Call Raxol.System.Clipboard.copy/1
+    # Call Raxol.System.Clipboard.copy/1
+    case Clipboard.copy(handler.buffer) do
       :ok ->
-        {:ok, handler} # Return handler unchanged on success
+        # Return handler unchanged on success
+        {:ok, handler}
+
       {:error, reason} ->
-        {:error, reason} # Pass through error
+        # Pass through error
+        {:error, reason}
     end
   end
 
@@ -96,7 +99,8 @@ defmodule Raxol.Terminal.InputHandler do
   """
   @spec handle_cut(t()) :: {:ok, t()} | {:error, any()}
   def handle_cut(%__MODULE__{} = handler) do
-    with :ok <- Clipboard.copy(handler.buffer), # Call Raxol.System.Clipboard.copy/1
+    # Call Raxol.System.Clipboard.copy/1
+    with :ok <- Clipboard.copy(handler.buffer),
          new_buffer = "",
          new_position = 0 do
       {:ok,
@@ -104,7 +108,7 @@ defmodule Raxol.Terminal.InputHandler do
          handler
          | buffer: new_buffer,
            cursor_position: new_position
-         # No clipboard state to update
+           # No clipboard state to update
        }}
     else
       {:error, reason} -> {:error, reason}
@@ -129,7 +133,8 @@ defmodule Raxol.Terminal.InputHandler do
   """
   @spec process_character(Emulator.t(), integer()) :: Emulator.t()
   def process_character(emulator, char_codepoint)
-      when (char_codepoint >= 0 and char_codepoint <= 31) or char_codepoint == 127 do
+      when (char_codepoint >= 0 and char_codepoint <= 31) or
+             char_codepoint == 127 do
     # Handle C0 Control Codes and DEL using the ControlCodes module
     # ControlCodes functions should now take InputHandler as the first arg if they need
     # to call back for further processing, or just return the updated emulator state.
@@ -154,7 +159,9 @@ defmodule Raxol.Terminal.InputHandler do
     buffer_height = ScreenBuffer.get_height(active_buffer)
 
     # Translate character based on current charset state
-    translated_codepoint = CharacterSets.translate_char(emulator.charset_state, char_codepoint)
+    translated_codepoint =
+      CharacterSets.translate_char(emulator.charset_state, char_codepoint)
+
     # Pass the integer codepoint to get_char_width
     char_width = CharacterHandling.get_char_width(translated_codepoint)
 
@@ -177,7 +184,9 @@ defmodule Raxol.Terminal.InputHandler do
     emulator_after_write =
       if write_y < buffer_height do
         # Use Operations module for buffer modifications
-        Logger.debug("[InputHandler] Writing char codepoint '#{translated_codepoint}' with style: #{inspect(emulator.style)}")
+        Logger.debug(
+          "[InputHandler] Writing char codepoint '#{translated_codepoint}' with style: #{inspect(emulator.style)}"
+        )
 
         # Convert codepoint back to binary for writing
         char_to_write = <<translated_codepoint::utf8>>
@@ -186,13 +195,14 @@ defmodule Raxol.Terminal.InputHandler do
         buffer_for_write = Emulator.get_active_buffer(emulator)
 
         # Write the character to the buffer - only pass 5 parameters, not 6
-        buffer_after_write = Operations.write_char(
-          buffer_for_write,
-          write_x,
-          write_y,
-          char_to_write,
-          emulator.style
-        )
+        buffer_after_write =
+          Operations.write_char(
+            buffer_for_write,
+            write_x,
+            write_y,
+            char_to_write,
+            emulator.style
+          )
 
         # Update the emulator with the modified buffer
         Emulator.update_active_buffer(emulator, buffer_after_write)
@@ -200,7 +210,9 @@ defmodule Raxol.Terminal.InputHandler do
         Logger.warning(
           "Attempted write out of bounds (y=#{write_y}, height=#{buffer_height}), skipping write."
         )
-        emulator # No change to emulator if write is skipped
+
+        # No change to emulator if write is skipped
+        emulator
       end
 
     # --- Update Cursor & State ---
@@ -214,7 +226,8 @@ defmodule Raxol.Terminal.InputHandler do
     # Update the emulator state with the new cursor and the flag
     %{
       emulator_after_write
-      | cursor: new_cursor, # Put the newly created cursor struct back
+      | # Put the newly created cursor struct back
+        cursor: new_cursor,
         last_col_exceeded: next_last_col_exceeded,
         mode_manager: emulator.mode_manager,
         style: emulator.style,
@@ -233,7 +246,8 @@ defmodule Raxol.Terminal.InputHandler do
         current_y,
         buffer_width,
         char_width,
-        last_col_exceeded, # Parameter name changed here
+        # Parameter name changed here
+        last_col_exceeded,
         auto_wrap_mode
       ) do
     cond do
@@ -243,18 +257,23 @@ defmodule Raxol.Terminal.InputHandler do
         # Cursor position is after writing the char on the new line.
         # Reset flag unless the new char itself fills the line.
         write_y = current_y + 1
-        {0, write_y, char_width, write_y, auto_wrap_mode and (char_width >= buffer_width)}
+
+        {0, write_y, char_width, write_y,
+         auto_wrap_mode and char_width >= buffer_width}
 
       # Case 0.5: Previous char caused wrap flag BUT autowrap is OFF
       last_col_exceeded and not auto_wrap_mode ->
         # Write OVER the last character of the current line.
         # Cursor stays clamped at the last column index.
         # The wrap flag remains true because we are still at the edge.
-        write_x = buffer_width - 1 # Overwrite last cell
+        # Overwrite last cell
+        write_x = buffer_width - 1
         write_y = current_y
-        next_cursor_x = buffer_width - 1 # Clamp cursor
+        # Clamp cursor
+        next_cursor_x = buffer_width - 1
         next_cursor_y = current_y
-        next_flag = true # Still at the edge
+        # Still at the edge
+        next_flag = true
         {write_x, write_y, next_cursor_x, next_cursor_y, next_flag}
 
       # Case 1: Character fits fully before the right margin (wrap flag is false here)
@@ -263,7 +282,8 @@ defmodule Raxol.Terminal.InputHandler do
         {current_x, current_y, current_x + char_width, current_y, false}
 
       # Case 2: Character write *reaches* or *exceeds* the right margin (wrap flag is false here)
-      true -> # This implies current_x + char_width >= buffer_width
+      # This implies current_x + char_width >= buffer_width
+      true ->
         if auto_wrap_mode do
           # Autowrap ON: Write char at current position (it lands in the last cell).
           # Cursor visually stays at the *last* column index.
@@ -272,11 +292,11 @@ defmodule Raxol.Terminal.InputHandler do
         else
           # Autowrap OFF: Write char at current position (it lands in the last cell).
           # Clamp cursor at the last column index. Flag is set because we hit the edge.
-          {current_x, current_y, buffer_width - 1, current_y, true} # Set flag to true
+          # Set flag to true
+          {current_x, current_y, buffer_width - 1, current_y, true}
         end
     end
   end
 
   # TODO: Move CSI, OSC, and other handlers here
-
 end

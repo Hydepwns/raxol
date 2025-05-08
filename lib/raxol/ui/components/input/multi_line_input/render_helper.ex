@@ -4,7 +4,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelper do
   Raxol.Components.Input.MultiLineInput.RenderHelper.
   """
 
-  alias Raxol.Components.Input.MultiLineInput.RenderHelper, as: ComponentRenderHelper
+  alias Raxol.Components.Input.MultiLineInput.RenderHelper,
+    as: ComponentRenderHelper
 
   @doc """
   Renders the multi-line input component with proper styling based on the state.

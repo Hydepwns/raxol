@@ -27,13 +27,19 @@ defmodule Raxol.Terminal.Buffer.State do
 
     # Create a new empty grid of the correct size, initialize with non-dirty cells
     default_padding_cell = Cell.new(" ", TextFormatting.new(), false)
-    new_grid = List.duplicate(List.duplicate(default_padding_cell, new_width), new_height)
+
+    new_grid =
+      List.duplicate(
+        List.duplicate(default_padding_cell, new_width),
+        new_height
+      )
 
     # Efficiently copy the relevant part of the old grid
     updated_grid =
       Enum.reduce(0..(copy_height - 1), new_grid, fn y, current_grid ->
         # Get the corresponding row slice from the old grid (preserving original cells)
-        old_row_slice_to_copy = buffer.cells |> Enum.at(y) |> Enum.slice(0, copy_width)
+        old_row_slice_to_copy =
+          buffer.cells |> Enum.at(y) |> Enum.slice(0, copy_width)
 
         # Update the new row, replacing the beginning part with the copied slice
         List.update_at(current_grid, y, fn _row_placeholder ->

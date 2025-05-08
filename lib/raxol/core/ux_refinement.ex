@@ -17,13 +17,24 @@ defmodule Raxol.Core.UXRefinement do
 
   require Logger
 
-  alias Raxol.Core.FocusManager
+  # alias Raxol.Core.FocusManager # Removed as it's called via helper
   alias Raxol.Components.FocusRing
-  alias Raxol.Core.Accessibility
+  # alias Raxol.Core.Accessibility # Removed as it's called via helper
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.KeyboardShortcuts
   alias Raxol.Components.HintDisplay
   alias Raxol.Core.KeyboardNavigator
+
+  # --- Module Helpers for Dependencies ---
+  defp focus_manager_module do
+    Application.get_env(:raxol, :focus_manager_impl, Raxol.Core.FocusManager)
+  end
+
+  defp accessibility_module do
+    Application.get_env(:raxol, :accessibility_impl, Raxol.Core.Accessibility)
+  end
+
+  # --- End Module Helpers ---
 
   @doc """
   Initialize the UX refinement system.
@@ -84,9 +95,6 @@ defmodule Raxol.Core.UXRefinement do
     # Ensure events are initialized first
     ensure_feature_enabled(:events)
 
-    # Initialize focus manager - state is implicitly initialized via Process.get
-    # FocusManager.init()
-
     # Register the feature as enabled
     _ = register_enabled_feature(:focus_management)
 
@@ -143,14 +151,14 @@ defmodule Raxol.Core.UXRefinement do
     ensure_feature_enabled(:events)
 
     # Initialize accessibility features
-    Accessibility.enable(opts)
+    accessibility_module().enable(opts)
 
     # Initialize metadata registry if not already done
     Process.put(:ux_refinement_metadata, %{})
 
     # Register focus change handler
     _ =
-      FocusManager.register_focus_change_handler(
+      focus_manager_module().register_focus_change_handler(
         &handle_accessibility_focus_change/2
       )
 
@@ -165,7 +173,7 @@ defmodule Raxol.Core.UXRefinement do
     ensure_feature_enabled(:events)
 
     # Initialize keyboard shortcuts
-    KeyboardShortcuts.init()
+    keyboard_shortcuts_module().init()
 
     # Register the feature as enabled
     _ = register_enabled_feature(:keyboard_shortcuts)
@@ -202,9 +210,6 @@ defmodule Raxol.Core.UXRefinement do
   def disable_feature(feature)
 
   def disable_feature(:focus_management) do
-    # Clean up focus manager
-    # FocusManager.cleanup() # Function seems undefined
-
     # Unregister the feature
     unregister_enabled_feature(:focus_management)
 
@@ -212,9 +217,6 @@ defmodule Raxol.Core.UXRefinement do
   end
 
   def disable_feature(:keyboard_navigation) do
-    # Clean up keyboard navigator
-    # KeyboardNavigator.cleanup() # Function seems undefined
-
     # Unregister the feature
     unregister_enabled_feature(:keyboard_navigation)
 
@@ -222,9 +224,6 @@ defmodule Raxol.Core.UXRefinement do
   end
 
   def disable_feature(:hints) do
-    # Clean up hint display
-    # HintDisplay.cleanup()
-
     # Clear hint registry
     Process.put(:ux_refinement_hints, %{})
 
@@ -235,9 +234,6 @@ defmodule Raxol.Core.UXRefinement do
   end
 
   def disable_feature(:focus_ring) do
-    # Clean up focus ring
-    # FocusRing.cleanup()
-
     # Unregister the feature
     unregister_enabled_feature(:focus_ring)
 
@@ -246,13 +242,13 @@ defmodule Raxol.Core.UXRefinement do
 
   def disable_feature(:accessibility) do
     # Clean up accessibility features
-    Accessibility.disable()
+    accessibility_module().disable()
 
     # Clear metadata registry
     Process.put(:ux_refinement_metadata, %{})
 
     # Unregister focus change handler
-    FocusManager.unregister_focus_change_handler(
+    focus_manager_module().unregister_focus_change_handler(
       &handle_accessibility_focus_change/2
     )
 
@@ -264,7 +260,7 @@ defmodule Raxol.Core.UXRefinement do
 
   def disable_feature(:keyboard_shortcuts) do
     # Clean up keyboard shortcuts
-    KeyboardShortcuts.cleanup()
+    keyboard_shortcuts_module().cleanup()
 
     # Unregister the feature
     unregister_enabled_feature(:keyboard_shortcuts)
@@ -364,7 +360,7 @@ defmodule Raxol.Core.UXRefinement do
       ...> })
       :ok
   """
-  def register_component_hint(component_id, hint_info) do
+  def register_component_hint(component_id, hint_info) when is_map(hint_info) do
     # Ensure hints feature is enabled
     ensure_feature_enabled(:hints)
 
@@ -471,34 +467,19 @@ defmodule Raxol.Core.UXRefinement do
     if hint_info, do: hint_info.shortcuts, else: []
   end
 
-  # # @doc """
-  # # Register accessibility metadata for a component.
-  # # ... (documentation removed due to syntax error from previous edit)
-  # # """
-  # # def register_accessibility_metadata(component_id, metadata) do
-  # #   # Ensure accessibility feature is enabled
-  # #   ensure_feature_enabled(:accessibility)
-  # #   # Register metadata with Accessibility module
-  # #   Accessibility.register_element_metadata(component_id, metadata)
-  # #   # Register shortcut if provided
-  # #   if Map.has_key?(metadata, :shortcut) && feature_enabled?(:keyboard_shortcuts) do
-  # #     register_component_shortcut(component_id, metadata.shortcut, metadata)
-  # #   end
-  # #   :ok
-  # # end
-
   @doc """
   Get accessibility metadata for a component.
   """
   def get_accessibility_metadata(component_id) do
-    # Ensure accessibility feature is enabled
-    ensure_feature_enabled(:accessibility)
+    if feature_enabled?(:accessibility) do
+      accessibility_module().get_element_metadata(component_id)
+    else
+      Logger.debug(
+        "[UXRefinement] Accessibility not enabled, metadata retrieval skipped for #{component_id}"
+      )
 
-    # Get metadata registry
-    metadata = Process.get(:ux_refinement_metadata)
-
-    # Get metadata for component
-    Map.get(metadata, component_id)
+      nil
+    end
   end
 
   # Private helper functions (Placeholders added to fix compilation)
@@ -521,9 +502,30 @@ defmodule Raxol.Core.UXRefinement do
     :ok
   end
 
-  defp handle_accessibility_focus_change(_previous_focus, _current_focus) do
-    # Placeholder: Delegate to Accessibility module if it exists
-    # Accessibility.handle_focus_change(previous_focus, current_focus)
+  defp handle_accessibility_focus_change(old_focus, new_focus) do
+    # This function is called by FocusManager when focus changes
+    # It should make an announcement using the Accessibility module
+    # (Consider moving this logic directly into Accessibility.handle_focus_change if appropriate)
+
+    if feature_enabled?(:accessibility) do
+      # Get accessible name/label for the new_focus element
+      # Prefer metadata registered via UXRefinement or Accessibility
+      metadata = get_accessibility_metadata(new_focus) || %{}
+      # Fallback to ID if no label
+      label = Map.get(metadata, :label, new_focus)
+
+      announcement_message =
+        if is_nil(old_focus) do
+          "Focus set to #{label}"
+        else
+          "Focus moved from #{get_accessibility_metadata(old_focus)[:label] || old_focus} to #{label}"
+        end
+
+      # Use the announce function which checks for :silence_announcements
+      # Low priority for general focus changes
+      announce(announcement_message, priority: :low)
+    end
+
     :ok
   end
 
@@ -538,10 +540,126 @@ defmodule Raxol.Core.UXRefinement do
     %{basic: hint, detailed: nil, examples: nil, shortcuts: []}
   end
 
-  defp maybe_register_shortcuts(_component_id, _hint_info) do
-    # Placeholder: Register shortcuts if feature enabled (actual logic missing)
-    # if feature_enabled?(:keyboard_shortcuts) && hint_info.shortcuts != [] do
-    #   ...
-    :ok
+  defp maybe_register_shortcuts(component_id, %{shortcuts: shortcuts})
+       when is_list(shortcuts) do
+    ensure_feature_enabled(:keyboard_shortcuts)
+    # Use the helper
+    ks_module = keyboard_shortcuts_module()
+
+    Enum.each(shortcuts, fn
+      {key, description} when is_binary(key) and is_binary(description) ->
+        shortcut_name = generate_shortcut_name(component_id, key)
+        callback = shortcut_callback(component_id, description)
+
+        ks_module.register_shortcut(key, shortcut_name, callback,
+          description: description,
+          context: component_id
+        )
+
+      _invalid_shortcut_format ->
+        Logger.warn(
+          "Invalid shortcut format for component #{component_id}: must be {key_string, description_string}"
+        )
+    end)
+  end
+
+  # No shortcuts to register
+  defp maybe_register_shortcuts(_component_id, _hint_info), do: :ok
+
+  defp generate_shortcut_name(component_id, key) do
+    "#{component_id}_shortcut_#{key}"
+  end
+
+  defp shortcut_callback(component_id, description) do
+    fn ->
+      IO.inspect("Shortcut activated for #{component_id}: #{description}")
+      # Placeholder for actual action. For example, sending an event:
+      # Raxol.Core.Runtime.Events.Dispatcher.dispatch_event(%Raxol.Core.Events.Event{type: :shortcut, data: %{component_id: component_id, description: description}})
+      :ok
+    end
+  end
+
+  defp keyboard_shortcuts_module do
+    Application.get_env(
+      :raxol,
+      :keyboard_shortcuts_module,
+      Raxol.Core.KeyboardShortcuts
+    )
+  end
+
+  defp get_hints do
+    Process.get(:ux_refinement_hints)
+  end
+
+  @doc """
+  Display help for available keyboard shortcuts.
+  """
+  def show_shortcuts_help do
+    ensure_feature_enabled(:keyboard_shortcuts)
+    keyboard_shortcuts_module().show_shortcuts_help()
+  end
+
+  @doc """
+  Set the active context for keyboard shortcuts.
+  """
+  def set_shortcuts_context(context) do
+    ensure_feature_enabled(:keyboard_shortcuts)
+    keyboard_shortcuts_module().set_context(context)
+  end
+
+  @doc """
+  Get all available shortcuts for a given context.
+  If no context is provided, returns shortcuts for the current active context.
+  """
+  def get_available_shortcuts(context \\ nil) do
+    ensure_feature_enabled(:keyboard_shortcuts)
+    keyboard_shortcuts_module().get_shortcuts_for_context(context)
+  end
+
+  @doc """
+  Make an announcement for screen readers.
+  """
+  def announce(message, opts \\ []) do
+    if feature_enabled?(:accessibility) do
+      accessibility_module().announce(message, opts)
+    else
+      Logger.debug(
+        "[UXRefinement] Accessibility not enabled, announcement skipped: #{message}"
+      )
+
+      :ok
+    end
+  end
+
+  @doc """
+  Register accessibility metadata for a component.
+
+  ## Parameters
+
+  * `component_id` - The ID of the component
+  * `metadata` - The metadata to register
+
+  ## Examples
+
+      iex> UXRefinement.register_accessibility_metadata("search_button", %{label: "Search"})
+      :ok
+  """
+  def register_accessibility_metadata(component_id, metadata) do
+    # Ensure accessibility feature is enabled or at least initialized for metadata storage
+    # This function acts as a convenience wrapper.
+    # The actual storage might be managed within Accessibility module or here.
+    # For now, assuming it calls the accessibility_module if enabled.
+    if feature_enabled?(:accessibility) do
+      accessibility_module().register_element_metadata(component_id, metadata)
+    else
+      # If accessibility is not fully enabled, we might still want to store metadata
+      # This depends on the desired behavior. For now, log and no-op.
+      Logger.debug(
+        "[UXRefinement] Accessibility not enabled, metadata registration skipped for #{component_id}"
+      )
+
+      # Or store in Process.put(:ux_refinement_metadata, ...) directly if needed
+      :ok
+    end
   end
 end

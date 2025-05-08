@@ -57,7 +57,12 @@ defmodule Raxol.Terminal.Commands.Executor do
       # 'h' - Set Mode (SM)
       # 'l' - Reset Mode (RM)
       final_byte when final_byte in [?h, ?l] ->
-        CSIHandlers.handle_h_or_l(emulator, params, intermediates_buffer, final_byte)
+        CSIHandlers.handle_h_or_l(
+          emulator,
+          params,
+          intermediates_buffer,
+          final_byte
+        )
 
       ?J ->
         CSIHandlers.handle_J(emulator, params)
@@ -128,6 +133,7 @@ defmodule Raxol.Terminal.Commands.Executor do
           "Unhandled CSI sequence: params=#{inspect(params_buffer)}, " <>
             "intermediates=#{inspect(intermediates_buffer)}, final=#{<<final_byte>>}"
         )
+
         emulator
     end
   end
@@ -149,12 +155,23 @@ defmodule Raxol.Terminal.Commands.Executor do
             # Dispatch based on Ps parameter code
             case ps_code do
               # Delegate to OSCHandlers
-              0 -> OSCHandlers.handle_0_or_2(emulator, pt)
-              2 -> OSCHandlers.handle_0_or_2(emulator, pt)
-              4 -> OSCHandlers.handle_4(emulator, pt)
-              7 -> OSCHandlers.handle_7(emulator, pt)
-              8 -> OSCHandlers.handle_8(emulator, pt)
-              52 -> OSCHandlers.handle_52(emulator, pt)
+              0 ->
+                OSCHandlers.handle_0_or_2(emulator, pt)
+
+              2 ->
+                OSCHandlers.handle_0_or_2(emulator, pt)
+
+              4 ->
+                OSCHandlers.handle_4(emulator, pt)
+
+              7 ->
+                OSCHandlers.handle_7(emulator, pt)
+
+              8 ->
+                OSCHandlers.handle_8(emulator, pt)
+
+              52 ->
+                OSCHandlers.handle_52(emulator, pt)
 
               # OSC 8: Hyperlink
               # Params: id=<id>;<key>=<value>...
@@ -167,21 +184,27 @@ defmodule Raxol.Terminal.Commands.Executor do
                     Logger.debug(
                       "OSC 8: Hyperlink: URI='#{uri}', Params='#{params_str}'"
                     )
+
                     # TODO: Optionally parse params (e.g., id=...)
                     # For now, just store the URI if needed for rendering later
                     # %{emulator | current_hyperlink_url: uri}
-                    emulator # Not storing hyperlink state currently
+                    # Not storing hyperlink state currently
+                    emulator
 
                   # Handle cases with missing params: OSC 8;;uri ST (common)
                   # Or just uri without params: OSC 8;uri ST (allowed?)
                   # Treat as just URI for now if only one part
                   [uri] ->
-                     Logger.debug("OSC 8: Hyperlink: URI='#{uri}', No Params")
-                     emulator # Not storing hyperlink state currently
+                    Logger.debug("OSC 8: Hyperlink: URI='#{uri}', No Params")
+                    # Not storing hyperlink state currently
+                    emulator
 
                   # Handle malformed OSC 8
                   _ ->
-                    Logger.warning("Malformed OSC 8 sequence: '#{command_string}'")
+                    Logger.warning(
+                      "Malformed OSC 8 sequence: '#{command_string}'"
+                    )
+
                     emulator
                 end
 
@@ -201,6 +224,7 @@ defmodule Raxol.Terminal.Commands.Executor do
                 Logger.warning(
                   "Unhandled OSC command code: #{ps_code}, String: '#{command_string}'"
                 )
+
                 emulator
             end
 
@@ -209,6 +233,7 @@ defmodule Raxol.Terminal.Commands.Executor do
             Logger.warning(
               "Invalid OSC command code: '#{ps_str}', String: '#{command_string}'"
             )
+
             emulator
         end
 
@@ -218,6 +243,7 @@ defmodule Raxol.Terminal.Commands.Executor do
         Logger.warning(
           "Unhandled or malformed OSC sequence format: '#{command_string}'"
         )
+
         emulator
     end
   end
@@ -227,14 +253,32 @@ defmodule Raxol.Terminal.Commands.Executor do
 
   Params: `params_buffer`, `intermediates_buffer`, `data_string` (content between DCS and ST).
   """
-  @spec execute_dcs_command(Emulator.t(), String.t(), String.t(), non_neg_integer(), String.t()) ::
+  @spec execute_dcs_command(
+          Emulator.t(),
+          String.t(),
+          String.t(),
+          non_neg_integer(),
+          String.t()
+        ) ::
           Emulator.t()
-  def execute_dcs_command(emulator, params_buffer, intermediates_buffer, final_byte, data_string) do
+  def execute_dcs_command(
+        emulator,
+        params_buffer,
+        intermediates_buffer,
+        final_byte,
+        data_string
+      ) do
     # Parse parameters (similar to CSI)
     params = Parser.parse_params(params_buffer)
 
     # Delegate to DCSHandlers
-    DCSHandlers.handle_dcs(emulator, params, intermediates_buffer, final_byte, data_string)
+    DCSHandlers.handle_dcs(
+      emulator,
+      params,
+      intermediates_buffer,
+      final_byte,
+      data_string
+    )
   end
 
   # ============================================================================
@@ -243,7 +287,12 @@ defmodule Raxol.Terminal.Commands.Executor do
 
   # --- DCS Response Helper ---
 
-  defp send_dcs_response(emulator, validity, _requested_status, response_payload) do
+  defp send_dcs_response(
+         emulator,
+         validity,
+         _requested_status,
+         response_payload
+       ) do
     # Format: DCS <validity> ! | <response_payload> ST
     # Note: The original request (e.g., "m") is NOT part of the standard response payload format P...$r...
     # The payload itself contains the terminating character (m, r, q, etc.)
@@ -263,21 +312,24 @@ defmodule Raxol.Terminal.Commands.Executor do
     params = if attrs.underline, do: [4 | params], else: params
     params = if attrs.inverse, do: [7 | params], else: params
     # Add foreground color
-    params = case attrs.fg do
-      {:ansi, n} when n >= 0 and n <= 7 -> [30 + n | params]
-      {:ansi, n} when n >= 8 and n <= 15 -> [90 + (n - 8) | params]
-      {:color_256, n} -> [38, 5, n | params]
-      {:rgb, r, g, b} -> [38, 2, r, g, b | params]
-      :default -> params
-    end
+    params =
+      case attrs.fg do
+        {:ansi, n} when n >= 0 and n <= 7 -> [30 + n | params]
+        {:ansi, n} when n >= 8 and n <= 15 -> [90 + (n - 8) | params]
+        {:color_256, n} -> [38, 5, n | params]
+        {:rgb, r, g, b} -> [38, 2, r, g, b | params]
+        :default -> params
+      end
+
     # Add background color
-    params = case attrs.bg do
-      {:ansi, n} when n >= 0 and n <= 7 -> [40 + n | params]
-      {:ansi, n} when n >= 8 and n <= 15 -> [100 + (n - 8) | params]
-      {:color_256, n} -> [48, 5, n | params]
-      {:rgb, r, g, b} -> [48, 2, r, g, b | params]
-      :default -> params
-    end
+    params =
+      case attrs.bg do
+        {:ansi, n} when n >= 0 and n <= 7 -> [40 + n | params]
+        {:ansi, n} when n >= 8 and n <= 15 -> [100 + (n - 8) | params]
+        {:color_256, n} -> [48, 5, n | params]
+        {:rgb, r, g, b} -> [48, 2, r, g, b | params]
+        :default -> params
+      end
 
     # Handle reset case (if no attributes set, send 0)
     if params == [] do

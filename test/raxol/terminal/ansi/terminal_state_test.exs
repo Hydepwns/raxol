@@ -7,7 +7,12 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Cursor.Manager
 
-  defp create_test_emulator(cursor_pos, style, scroll_region \\ nil, cursor_style \\ :blinking_block) do
+  defp create_test_emulator(
+         cursor_pos,
+         style,
+         scroll_region \\ nil,
+         cursor_style \\ :blinking_block
+       ) do
     %Emulator{
       cursor: %Manager{position: cursor_pos},
       style: style,
@@ -31,7 +36,11 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     test "saves terminal state to the stack" do
       stack = TerminalState.new()
 
-      initial_style = TextFormatting.new() |> TextFormatting.set_foreground(:red) |> TextFormatting.set_background(:black)
+      initial_style =
+        TextFormatting.new()
+        |> TextFormatting.set_foreground(:red)
+        |> TextFormatting.set_background(:black)
+
       emulator_state = create_test_emulator({10, 5}, initial_style, {5, 15})
 
       stack = TerminalState.save_state(stack, emulator_state)
@@ -54,7 +63,9 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       emulator_state1 = create_test_emulator({10, 5}, style1, {5, 15})
 
       style2 = TextFormatting.new() |> TextFormatting.set_foreground(:blue)
-      emulator_state2 = create_test_emulator({20, 10}, style2, nil, :steady_block)
+
+      emulator_state2 =
+        create_test_emulator({20, 10}, style2, nil, :steady_block)
 
       stack = TerminalState.save_state(stack, emulator_state1)
       stack = TerminalState.save_state(stack, emulator_state2)
@@ -74,7 +85,9 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     test "restores the most recently saved state" do
       stack = TerminalState.new()
 
-      initial_style = TextFormatting.new() |> TextFormatting.set_foreground(:red)
+      initial_style =
+        TextFormatting.new() |> TextFormatting.set_foreground(:red)
+
       emulator_state = create_test_emulator({10, 5}, initial_style, {5, 15})
 
       stack = TerminalState.save_state(stack, emulator_state)
@@ -102,7 +115,9 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       emulator_state1 = create_test_emulator({10, 5}, style1, {5, 15})
 
       style2 = TextFormatting.new() |> TextFormatting.set_foreground(:blue)
-      emulator_state2 = create_test_emulator({20, 10}, style2, nil, :steady_block)
+
+      emulator_state2 =
+        create_test_emulator({20, 10}, style2, nil, :steady_block)
 
       stack = TerminalState.save_state(stack, emulator_state1)
       stack = TerminalState.save_state(stack, emulator_state2)
@@ -125,7 +140,9 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     test "clears the terminal state stack" do
       stack = TerminalState.new()
 
-      initial_style = TextFormatting.new() |> TextFormatting.set_foreground(:red)
+      initial_style =
+        TextFormatting.new() |> TextFormatting.set_foreground(:red)
+
       emulator_state = create_test_emulator({10, 5}, initial_style, {5, 15})
 
       stack = TerminalState.save_state(stack, emulator_state)
@@ -141,7 +158,9 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     test "returns the current terminal state stack" do
       stack = TerminalState.new()
 
-      initial_style = TextFormatting.new() |> TextFormatting.set_foreground(:red)
+      initial_style =
+        TextFormatting.new() |> TextFormatting.set_foreground(:red)
+
       emulator_state = create_test_emulator({10, 5}, initial_style, {5, 15})
 
       stack = TerminalState.save_state(stack, emulator_state)

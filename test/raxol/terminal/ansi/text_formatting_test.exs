@@ -220,17 +220,18 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert TextFormatting.get_paired_line_type(style) == nil
     end
 
-    test "double-height line pairing get_paired_line_type returns :top for :bottom", %{style: style} do
-      style = Map.put(style, :double_height, :bottom)
+    test "double-height line pairing get_paired_line_type returns :top for :bottom" do
+      style = TextFormatting.new() |> TextFormatting.set_double_height_bottom()
       assert TextFormatting.get_paired_line_type(style) == :top
     end
 
-    test "double-height line pairing get_paired_line_type returns nil for :none", %{style: style} do
-      style = Map.put(style, :double_height, :none)
+    test "double-height line pairing get_paired_line_type returns nil for :none" do
+      style = TextFormatting.new()
       assert TextFormatting.get_paired_line_type(style) == nil
     end
 
-    test "apply_attribute/2 adds a text attribute to the style", %{style: style} do
+    test "apply_attribute/2 adds a text attribute to the style" do
+      style = TextFormatting.new()
       style = TextFormatting.apply_attribute(style, :bold)
       assert style.bold == true
     end

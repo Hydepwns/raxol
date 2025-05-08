@@ -14,63 +14,100 @@ defmodule Raxol.Terminal.Config.Schema do
   def config_schema do
     %{
       # Base settings
-      terminal_type: {:enum, [:unknown, :xterm, :linux, :vt100, :vt220, :vt52, :rxvt, :screen, :konsole, :iterm, :windows], "Detected terminal type"},
-      color_mode: {:enum, [:basic, :extended, :truecolor], "Supported color mode"},
-      unicode_support: {:boolean, "Whether the terminal supports unicode characters"},
+      terminal_type:
+        {:enum,
+         [
+           :unknown,
+           :xterm,
+           :linux,
+           :vt100,
+           :vt220,
+           :vt52,
+           :rxvt,
+           :screen,
+           :konsole,
+           :iterm,
+           :windows
+         ], "Detected terminal type"},
+      color_mode:
+        {:enum, [:basic, :extended, :truecolor], "Supported color mode"},
+      unicode_support:
+        {:boolean, "Whether the terminal supports unicode characters"},
       mouse_support: {:boolean, "Whether mouse support is enabled"},
       clipboard_support: {:boolean, "Whether clipboard integration is enabled"},
       bracketed_paste: {:boolean, "Whether bracketed paste mode is supported"},
       focus_support: {:boolean, "Whether focus reporting is supported"},
-      title_support: {:boolean, "Whether setting the terminal title is supported"},
-      hyperlinks: {:boolean, "Whether terminal hyperlinks (OSC 8) are supported"},
+      title_support:
+        {:boolean, "Whether setting the terminal title is supported"},
+      hyperlinks:
+        {:boolean, "Whether terminal hyperlinks (OSC 8) are supported"},
       sixel_support: {:boolean, "Whether Sixel graphics are supported"},
-      image_support: {:boolean, "Whether other image protocols (e.g., iTerm) are supported"},
+      image_support:
+        {:boolean, "Whether other image protocols (e.g., iTerm) are supported"},
       sound_support: {:boolean, "Whether terminal bell/sound is supported"},
 
       # Display settings
-        width: {:integer, "Terminal width in columns"},
-        height: {:integer, "Terminal height in rows"},
+      width: {:integer, "Terminal width in columns"},
+      height: {:integer, "Terminal height in rows"},
       font_family: {:string, "Default font family"},
       font_size: {:integer, "Default font size"},
       cursor_style: {:enum, [:block, :underline, :bar], "Default cursor style"},
       cursor_blink: {:boolean, "Whether the cursor should blink"},
       cursor_color: {:string, "Default cursor color (hex or name)"},
-      selection_color: {:string, "Default selection background color (hex or name, supports RGBA)"},
+      selection_color:
+        {:string,
+         "Default selection background color (hex or name, supports RGBA)"},
 
       # Rendering settings
       line_height: {:float, "Line height multiplier"},
       ligatures: {:boolean, "Whether font ligatures should be enabled"},
-      font_rendering: {:enum, [:normal, :antialiased, :subpixel], "Font rendering mode"},
+      font_rendering:
+        {:enum, [:normal, :antialiased, :subpixel], "Font rendering mode"},
       batch_size: {:integer, "Number of operations to batch before rendering"},
 
       # Behavior settings
-      scrollback_limit: {:integer, "Maximum number of lines in the scrollback buffer"},
+      scrollback_limit:
+        {:integer, "Maximum number of lines in the scrollback buffer"},
       prompt: {:string, "Default command prompt string"},
       welcome_message: {:string, "Message displayed on terminal start"},
-      command_history_size: {:integer, "Maximum number of commands to store in history"},
+      command_history_size:
+        {:integer, "Maximum number of commands to store in history"},
       enable_command_history: {:boolean, "Whether to save command history"},
-      enable_syntax_highlighting: {:boolean, "Whether to enable syntax highlighting in inputs"},
+      enable_syntax_highlighting:
+        {:boolean, "Whether to enable syntax highlighting in inputs"},
       enable_fullscreen: {:boolean, "Whether to allow fullscreen mode"},
-      accessibility_mode: {:boolean, "Whether accessibility features are enabled by default"},
-      virtual_scroll: {:boolean, "Whether to enable virtual scrolling for large outputs"},
+      accessibility_mode:
+        {:boolean, "Whether accessibility features are enabled by default"},
+      virtual_scroll:
+        {:boolean, "Whether to enable virtual scrolling for large outputs"},
 
       # System/Performance settings
-      memory_limit: {:integer, "Memory limit for the terminal process in bytes"},
-      cleanup_interval: {:integer, "Interval for periodic cleanup tasks in milliseconds"},
+      memory_limit:
+        {:integer, "Memory limit for the terminal process in bytes"},
+      cleanup_interval:
+        {:integer, "Interval for periodic cleanup tasks in milliseconds"},
 
       # Background settings
-      background_type: {:enum, [:solid, :image, :animation], "Type of terminal background"},
+      background_type:
+        {:enum, [:solid, :image, :animation], "Type of terminal background"},
       background_opacity: {:float, "Background opacity (0.0 to 1.0)"},
-      background_image: {:string, "Path to background image file (if type is :image)"},
+      background_image:
+        {:string, "Path to background image file (if type is :image)"},
       background_blur: {:float, "Background blur radius (pixels)"},
-      background_scale: {:enum, [:fit, :fill, :stretch, :tile], "How to scale the background image"},
+      background_scale:
+        {:enum, [:fit, :fill, :stretch, :tile],
+         "How to scale the background image"},
 
       # Animation settings
-      animation_type: {:enum, [:gif, :apng, :video], "Type of background animation (if type is :animation)"},
+      animation_type:
+        {:enum, [:gif, :apng, :video],
+         "Type of background animation (if type is :animation)"},
       animation_path: {:string, "Path to background animation file"},
       animation_fps: {:integer, "Target FPS for background animation"},
-      animation_loop: {:boolean, "Whether the background animation should loop"},
-      animation_blend: {:float, "Opacity blend factor for background animation (0.0 to 1.0)"}
+      animation_loop:
+        {:boolean, "Whether the background animation should loop"},
+      animation_blend:
+        {:float, "Opacity blend factor for background animation (0.0 to 1.0)"}
     }
   end
 

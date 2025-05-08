@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.ScreenBufferTest do
   defp line_to_string(line) when is_list(line) do
     Enum.map_join(line, "", &Cell.get_char/1)
   end
+
   defp line_to_string(nil), do: ""
 
   describe "initialization" do
@@ -63,19 +64,29 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       first_row = ScreenBuffer.get_line(buffer, 0)
 
       # Wide characters take up two cells
-      assert Enum.map(Enum.take(first_row, 6), &Cell.get_char/1) == ["H", "i", " ", "中", " ", "国"]
-      assert (Enum.at(first_row, 4) |> Cell.get_char()) == " "
-      assert (Enum.at(first_row, 3) |> Cell.get_char()) == "中"
-      assert (Enum.at(first_row, 5) |> Cell.get_char()) == "国"
+      assert Enum.map(Enum.take(first_row, 6), &Cell.get_char/1) == [
+               "H",
+               "i",
+               " ",
+               "中",
+               " ",
+               "国"
+             ]
+
+      assert Enum.at(first_row, 4) |> Cell.get_char() == " "
+      assert Enum.at(first_row, 3) |> Cell.get_char() == "中"
+      assert Enum.at(first_row, 5) |> Cell.get_char() == "国"
     end
   end
 
   describe "scrolling" do
     test "scrolling up moves lines correctly" do
       buffer = ScreenBuffer.new(10, 5)
-      buffer = Enum.reduce(0..4, buffer, fn i, buf ->
-        ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
-      end)
+
+      buffer =
+        Enum.reduce(0..4, buffer, fn i, buf ->
+          ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
+        end)
 
       {buffer, scrolled_lines} = ScreenBuffer.scroll_up(buffer, 2)
 
@@ -85,34 +96,65 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       assert String.contains?(line_to_string(hd(tl(scrolled_lines))), "Line 1")
 
       # Use helper for remaining lines
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 0)), "Line 2")
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 1)), "Line 3")
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 2)), "Line 4")
-      assert line_to_string(ScreenBuffer.get_line(buffer, 3)) =~ ~r/^\s*$/ # Check for empty/whitespace line
-      assert line_to_string(ScreenBuffer.get_line(buffer, 4)) =~ ~r/^\s*$/ # Check for empty/whitespace line
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 0)),
+               "Line 2"
+             )
+
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 1)),
+               "Line 3"
+             )
+
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 2)),
+               "Line 4"
+             )
+
+      # Check for empty/whitespace line
+      assert line_to_string(ScreenBuffer.get_line(buffer, 3)) =~ ~r/^\s*$/
+      # Check for empty/whitespace line
+      assert line_to_string(ScreenBuffer.get_line(buffer, 4)) =~ ~r/^\s*$/
     end
 
     test "scrolling down inserts lines correctly (no scrollback)" do
       buffer = ScreenBuffer.new(10, 5)
-      buffer = Enum.reduce(0..4, buffer, fn i, buf ->
-        ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
-      end)
+
+      buffer =
+        Enum.reduce(0..4, buffer, fn i, buf ->
+          ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
+        end)
 
       buffer = ScreenBuffer.scroll_down(buffer, [], 2)
 
       # Use helper
       assert line_to_string(ScreenBuffer.get_line(buffer, 0)) =~ ~r/^\s*$/
       assert line_to_string(ScreenBuffer.get_line(buffer, 1)) =~ ~r/^\s*$/
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 2)), "Line 0")
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 3)), "Line 1")
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 4)), "Line 2")
+
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 2)),
+               "Line 0"
+             )
+
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 3)),
+               "Line 1"
+             )
+
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 4)),
+               "Line 2"
+             )
     end
 
     test "scrolling scrolls up within scroll region" do
       buffer = ScreenBuffer.new(10, 5)
-      buffer = Enum.reduce(0..4, buffer, fn i, buf ->
-        ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
-      end)
+
+      buffer =
+        Enum.reduce(0..4, buffer, fn i, buf ->
+          ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
+        end)
+
       buffer = ScreenBuffer.set_scroll_region(buffer, 1, 3)
 
       {buffer, scrolled_lines} = ScreenBuffer.scroll_up(buffer, 1)
@@ -121,30 +163,63 @@ defmodule Raxol.Terminal.ScreenBufferTest do
       # Use helper
       assert String.contains?(line_to_string(hd(scrolled_lines)), "Line 1")
 
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 0)), "Line 0")
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 4)), "Line 4")
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 0)),
+               "Line 0"
+             )
 
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 1)), "Line 2")
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 2)), "Line 3")
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 4)),
+               "Line 4"
+             )
+
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 1)),
+               "Line 2"
+             )
+
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 2)),
+               "Line 3"
+             )
+
       assert line_to_string(ScreenBuffer.get_line(buffer, 3)) =~ ~r/^\s*$/
     end
 
     test "scrolling scrolls down within scroll region" do
       buffer = ScreenBuffer.new(10, 5)
-      buffer = Enum.reduce(0..4, buffer, fn i, buf ->
-        ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
-      end)
+
+      buffer =
+        Enum.reduce(0..4, buffer, fn i, buf ->
+          ScreenBuffer.write_string(buf, 0, i, "Line #{i}")
+        end)
+
       buffer = ScreenBuffer.set_scroll_region(buffer, 1, 3)
 
       buffer = ScreenBuffer.scroll_down(buffer, [], 1)
 
       # Use helper
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 0)), "Line 0")
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 4)), "Line 4")
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 0)),
+               "Line 0"
+             )
+
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 4)),
+               "Line 4"
+             )
 
       assert line_to_string(ScreenBuffer.get_line(buffer, 1)) =~ ~r/^\s*$/
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 2)), "Line 1")
-      assert String.contains?(line_to_string(ScreenBuffer.get_line(buffer, 3)), "Line 2")
+
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 2)),
+               "Line 1"
+             )
+
+      assert String.contains?(
+               line_to_string(ScreenBuffer.get_line(buffer, 3)),
+               "Line 2"
+             )
     end
 
     # Add more tests for edge cases like scrolling by 0, scrolling full region, etc.
@@ -213,16 +288,19 @@ defmodule Raxol.Terminal.ScreenBufferTest do
     test "clears the screen buffer" do
       # Setup: Create a buffer and fill it
       initial_buffer = ScreenBuffer.new(10, 5)
-      filled_buffer = Enum.reduce(0..4, initial_buffer, fn y, buf ->
-        Enum.reduce(0..9, buf, fn x, buf ->
-          # Use TextFormatting.new() for the default style here when writing
-          ScreenBuffer.write_char(buf, x, y, "X", TextFormatting.new())
+
+      filled_buffer =
+        Enum.reduce(0..4, initial_buffer, fn y, buf ->
+          Enum.reduce(0..9, buf, fn x, buf ->
+            # Use TextFormatting.new() for the default style here when writing
+            ScreenBuffer.write_char(buf, x, y, "X", TextFormatting.new())
+          end)
         end)
-      end)
 
       # The action being tested: clear the buffer using the correct function and style
       default_style = TextFormatting.new()
-      buffer = ScreenBuffer.clear(filled_buffer, default_style) # Renamed clear_buffer -> clear and added style
+      # Renamed clear_buffer -> clear and added style
+      buffer = ScreenBuffer.clear(filled_buffer, default_style)
 
       # The assertion: check if the cleared buffer matches a newly created one's cells
       initial_cells = ScreenBuffer.new(10, 5).cells

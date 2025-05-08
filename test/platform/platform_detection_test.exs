@@ -44,7 +44,8 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
       assert Map.has_key?(env_vars, "PATH")
 
       # At least one of these should exist
-      assert Map.has_key?(env_vars, "HOME") || Map.has_key?(env_vars, "USERPROFILE")
+      assert Map.has_key?(env_vars, "HOME") ||
+               Map.has_key?(env_vars, "USERPROFILE")
     end
 
     test "detects system capabilities" do
@@ -75,7 +76,8 @@ defmodule Raxol.Test.Platform.PlatformDetectionTest do
     end
 
     test "detects terminal capabilities" do
-      terminal_features = Raxol.System.TerminalPlatform.get_terminal_capabilities()
+      terminal_features =
+        Raxol.System.TerminalPlatform.get_terminal_capabilities()
 
       # Check structure in a more flexible way
       assert is_map(terminal_features)

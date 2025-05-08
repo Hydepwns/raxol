@@ -19,9 +19,12 @@ defmodule Raxol.UI.Components.Display.Table do
   @type rows :: [row()]
   @type props :: %{
           optional(:id) => String.t(),
-          optional(:columns) => list(), # From macro
-          optional(:data) => list(), # From macro
-          optional(:style) => map(), # From macro
+          # From macro
+          optional(:columns) => list(),
+          # From macro
+          optional(:data) => list(),
+          # From macro
+          optional(:style) => map(),
           # Internal state props, maybe?
           optional(:headers) => [header()],
           optional(:rows) => [row()],
@@ -92,8 +95,10 @@ defmodule Raxol.UI.Components.Display.Table do
       scroll_top: 0,
       scroll_left: 0,
       # ... other non-data internal defaults ...
-      style: %{} # Base style state, specific styles come from attrs
+      # Base style state, specific styles come from attrs
+      style: %{}
     }
+
     {:ok, internal_state}
   end
 
@@ -128,7 +133,8 @@ defmodule Raxol.UI.Components.Display.Table do
     theme_style_struct = Raxol.Style.new(theme_style_def)
     component_style_struct = Raxol.Style.new(component_style)
     base_style = Raxol.Style.merge(theme_style_struct, component_style_struct)
-    max_height = get_style_prop(base_style, :height)
+    # Correctly access height from the layout field of the Style struct
+    max_height = base_style.layout.height
     current_visible_height = visible_height(%{max_height: max_height})
 
     case event do
@@ -212,9 +218,11 @@ defmodule Raxol.UI.Components.Display.Table do
   defp get_style_prop(style, key) when is_list(style) do
     Keyword.get(style, key)
   end
+
   defp get_style_prop(style, key) when is_map(style) do
     Map.get(style, key)
   end
+
   defp get_style_prop(_, _), do: nil
 
   defp visible_height(state)
@@ -223,18 +231,24 @@ defmodule Raxol.UI.Components.Display.Table do
   # Subtract 1 for header row?
   # Needs border calculation too if borders take space
   # Corrected: Ensure height is at least 1 if set
-  defp visible_height(%{max_height: h}) when is_integer(h) and h >= 1, do: max(1, h - 1) # Adjust for header, ensure min 1
-  defp visible_height(%{max_height: _}), do: 1 # Minimum 1 row if height is set
+  # Adjust for header, ensure min 1
+  defp visible_height(%{max_height: h}) when is_integer(h) and h >= 1,
+    do: max(1, h - 1)
+
+  # Minimum 1 row if height is set
+  defp visible_height(%{max_height: _}), do: 1
 
   defp update_column_widths(state) do
     # Calculate widths based on headers and potentially sample data rows
     # TODO: This state update might not be necessary if widths calculated in render
-    header_widths = case state.headers do
-      nil -> []
-      [] -> []
-      headers when is_list(headers) -> Enum.map(headers, &str_width/1)
-      _ -> []
-    end
+    header_widths =
+      case state.headers do
+        nil -> []
+        [] -> []
+        headers when is_list(headers) -> Enum.map(headers, &str_width/1)
+        _ -> []
+      end
+
     # TODO: Sample data rows for more accurate widths?
     # For now, just use header widths
     %{state | column_widths: header_widths}
@@ -264,7 +278,8 @@ defmodule Raxol.UI.Components.Display.Table do
           row_fg: :default,
           row_bg: :default,
           alternate_row_bg: :default,
-          border: :white
+          # Return a default border struct instead of just an atom
+          border: %Raxol.Style.Borders{color: :white, style: :solid, width: 1}
         }
 
       # Fallback
@@ -272,10 +287,4 @@ defmodule Raxol.UI.Components.Display.Table do
         %{}
     end
   end
-
-  # --- Removed Unused Render Helpers ---
-  # defp render_header(...) ... end
-  # defp render_rows(...) ... end
-  # defp render_row(...) ... end
-  # defp render_cell(...) ... end
 end

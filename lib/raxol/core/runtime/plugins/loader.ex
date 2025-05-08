@@ -1,13 +1,157 @@
 defmodule Raxol.Core.Runtime.Plugins.Loader do
   @moduledoc """
-  Placeholder for the plugin loader.
-  Handles loading plugin code and dependencies.
+  Handles loading plugin code, metadata, and discovery.
+  Implements the `Raxol.Core.Runtime.Plugins.LoaderBehaviour`.
   """
+  @behaviour Raxol.Core.Runtime.Plugins.LoaderBehaviour
 
   require Logger
 
+  # --- LoaderBehaviour Callbacks ---
+
+  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  def discover_plugins(plugin_dirs) when is_list(plugin_dirs) do
+    Logger.debug(
+      "[#{__MODULE__}] Discovering plugins in: #{inspect(plugin_dirs)}"
+    )
+
+    discovered_plugins =
+      Enum.flat_map(plugin_dirs, fn directory ->
+        plugin_files = Path.wildcard(Path.join(directory, "**/*.ex"))
+
+        Enum.map(plugin_files, fn file_path ->
+          module_name_str =
+            file_path
+            |> Path.relative_to(directory)
+            |> Path.rootname()
+            |> String.split("/")
+            |> Enum.map(&Macro.camelize/1)
+            |> Enum.join(".")
+
+          module_atom =
+            try do
+              String.to_existing_atom("Elixir." <> module_name_str)
+            rescue
+              ArgumentError ->
+                Logger.warning(
+                  "[#{__MODULE__}] Could not convert derived module name '#{module_name_str}' to existing atom for file: #{file_path}. Skipping file."
+                )
+
+                nil
+            end
+
+          if module_atom do
+            # Derive a default ID from the module atom
+            plugin_id = module_to_default_id(module_atom)
+            %{module: module_atom, path: file_path, id: plugin_id}
+          else
+            nil
+          end
+        end)
+        |> Enum.reject(&is_nil/1)
+      end)
+
+    Logger.info(
+      "[#{__MODULE__}] Discovered #{length(discovered_plugins)} potential plugins."
+    )
+
+    {:ok, discovered_plugins}
+  rescue
+    e ->
+      Logger.error(
+        "[#{__MODULE__}] Error during plugin discovery: #{inspect(e)}"
+      )
+
+      {:error, :discovery_failed}
+  end
+
+  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  def load_plugin_metadata(module_atom) when is_atom(module_atom) do
+    # For now, we assume metadata is intrinsically part of the module or accessed via it.
+    # The primary goal here is to ensure the module providing metadata is "loaded" or accessible.
+    # If the module has a `metadata/0` function (checked by PluginMetadataProvider), that's preferred.
+    if Code.ensure_loaded?(module_atom) do
+      # Attempt to call metadata/0 if module implements PluginMetadataProvider
+      # This is more for verification; the actual metadata might be read by LifecycleHelper
+      cond do
+        function_exported?(module_atom, :behaviour_info, 1) and
+          Enum.any?(module_atom.behaviour_info(:callbacks), fn {b, _} ->
+            b == Raxol.Core.Runtime.Plugins.PluginMetadataProvider
+          end) and
+            function_exported?(module_atom, :metadata, 0) ->
+          try do
+            _metadata = module_atom.metadata()
+
+            Logger.debug(
+              "[#{__MODULE__}] Successfully called metadata/0 on #{inspect(module_atom)}."
+            )
+
+            # Return the module itself, as per callback expectation
+            {:ok, module_atom}
+          rescue
+            e ->
+              Logger.error(
+                "[#{__MODULE__}] Error calling metadata/0 on #{inspect(module_atom)}: #{inspect(e)}"
+              )
+
+              {:error, :metadata_call_failed}
+          end
+
+        true ->
+          # Module doesn't provide metadata via PluginMetadataProvider, but it's loaded.
+          Logger.debug(
+            "[#{__MODULE__}] Module #{inspect(module_atom)} loaded, metadata to be handled by caller or defaults."
+          )
+
+          {:ok, module_atom}
+      end
+    else
+      Logger.error(
+        "[#{__MODULE__}] Failed to ensure module for metadata is loaded: #{inspect(module_atom)}"
+      )
+
+      {:error, :module_not_found_for_metadata}
+    end
+  end
+
+  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  def load_plugin_module(module_atom) when is_atom(module_atom) do
+    if Code.ensure_loaded?(module_atom) do
+      Logger.debug(
+        "[#{__MODULE__}] Module code ensured loaded for: #{inspect(module_atom)}"
+      )
+
+      {:ok, module_atom}
+    else
+      Logger.error(
+        "[#{__MODULE__}] Failed to ensure module code is loaded: #{inspect(module_atom)}"
+      )
+
+      {:error, :module_not_found}
+    end
+  end
+
+  # --- Existing Helper Functions (modified or kept as is) ---
+
   @doc """
-  Loads a plugin module based on its ID.
+  Helper to derive a default plugin ID from the module name.
+  Example: `MyOrg.MyPlugin` becomes `:my_plugin`.
+  """
+  def module_to_default_id(plugin_module) when is_atom(plugin_module) do
+    plugin_module
+    |> Module.split()
+    |> List.last()
+    |> Macro.underscore()
+    # Example: remove a common suffix like _plugin, if desired by convention
+    # |> String.replace_suffix("_plugin", "")
+    |> String.to_atom()
+  end
+
+  # --- Potentially Deprecated or Internal Functions ---
+  # Review if these are still needed or if their logic is now part of the behaviour implementations.
+
+  @doc """
+  Loads a plugin module based on its ID (Original function - consider for removal or refactor).
 
   Assumes the plugin ID corresponds to an existing module atom.
   Returns the module atom, placeholder metadata, and config.
@@ -18,72 +162,42 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
   def load_plugin(plugin_id, config) when is_atom(plugin_id) do
     Logger.debug(
-      "[#{__MODULE__}] Attempting to load plugin: #{inspect(plugin_id)}"
+      "[#{__MODULE__}] Attempting to load plugin (legacy): #{inspect(plugin_id)}"
     )
 
-    # Ensure the module code is loaded.
-    # In a more complex system, this could involve dynamic compilation or loading .beam files.
-    if Code.ensure_loaded?(plugin_id) do
-      # TODO: Load actual metadata (e.g., from a manifest file or @behaviour)
-      metadata = %{name: plugin_id, version: "0.1.0-dev"}
+    # This function's logic might be superseded by the behaviour implementations.
+    # For now, it can delegate or be kept for specific internal uses not covered by behaviour.
+    case load_plugin_module(plugin_id) do
+      {:ok, module} ->
+        # Simplified metadata fetching for this legacy function
+        # Uses a simplified default
+        metadata = default_metadata(module)
 
-      Logger.info(
-        "[#{__MODULE__}] Successfully loaded plugin: #{inspect(plugin_id)}"
-      )
+        Logger.info(
+          "[#{__MODULE__}] Successfully loaded plugin (legacy): #{inspect(plugin_id)}"
+        )
 
-      {:ok, plugin_id, metadata, config}
-    else
-      Logger.error(
-        "[#{__MODULE__}] Failed to load plugin module: #{inspect(plugin_id)}"
-      )
+        {:ok, module, metadata, config}
 
-      {:error, :module_not_found}
+      {:error, reason} ->
+        Logger.error(
+          "[#{__MODULE__}] Failed to load plugin module (legacy): #{inspect(plugin_id)}, reason: #{inspect(reason)}"
+        )
+
+        {:error, reason}
     end
   end
 
   def load_plugin(plugin_id, _config) do
     Logger.error(
-      "[#{__MODULE__}] Invalid plugin ID: #{inspect(plugin_id)}. Must be an atom."
+      "[#{__MODULE__}] Invalid plugin ID (legacy): #{inspect(plugin_id)}. Must be an atom."
     )
 
     {:error, :invalid_plugin_id}
   end
 
   @doc """
-  Discovers potential plugin modules in a given directory.
-
-  Scans for `.ex` files and attempts to derive module names.
-  Returns a list of `{potential_module_atom, file_path}` tuples.
-  """
-  def discover_plugins(directory) do
-    Logger.debug("[#{__MODULE__}] Discovering plugins in: #{directory}")
-    plugin_files = Path.wildcard(Path.join(directory, "**/*.ex"))
-
-    Enum.map(plugin_files, fn file_path ->
-      # Basic module name derivation (Assumes standard lib/ structure mapping)
-      # Example: priv/plugins/my_plugin/core.ex -> MyPlugin.Core (Needs adjustment based on actual structure)
-      # This is a placeholder and likely needs a more robust implementation.
-      module_name = file_path
-                    |> Path.relative_to(directory) # Get path relative to discovery dir
-                    |> Path.rootname() # Remove .ex
-                    |> String.split("/")
-                    |> Enum.map(&Macro.camelize/1)
-                    |> Enum.join(".")
-
-      module_atom = try do
-        String.to_existing_atom("Elixir." <> module_name)
-      rescue ArgumentError ->
-        Logger.warning("[#{__MODULE__}] Could not convert derived module name '#{module_name}' to existing atom for file: #{file_path}. Skipping file.")
-        nil # Indicate failure for this file
-      end
-
-      {module_atom, file_path}
-    end)
-    |> Enum.filter(fn {module_atom, _file_path} -> !is_nil(module_atom) end) # Filter out failures
-  end
-
-  @doc """
-  Sorts plugins based on dependencies (Placeholder).
+  Sorts plugins based on dependencies (Placeholder - consider for removal or refactor).
 
   Currently returns the input list unsorted.
   Requires metadata extraction to be implemented first for actual sorting.
@@ -91,64 +205,73 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   """
   def sort_plugins(plugin_list) do
     # TODO: Implement topological sort based on dependencies extracted from metadata.
-    Logger.debug("[#{__MODULE__}] Sorting plugins (placeholder - returning original order).")
+    Logger.debug(
+      "[#{__MODULE__}] Sorting plugins (placeholder - returning original order)."
+    )
+
     {:ok, plugin_list}
   end
 
   @doc """
-  Extracts metadata for a given plugin module.
+  Extracts metadata for a given plugin module (Original function - consider for removal or refactor).
 
   Checks if the plugin implements `Raxol.Core.Runtime.Plugins.PluginMetadataProvider`.
   If so, it calls `get_metadata/0` on the module.
   Otherwise, it returns a default metadata map derived from the module name.
   """
   def extract_metadata(plugin_module) when is_atom(plugin_module) do
-    # Check using standard behaviour introspection
+    # This logic is partially integrated into load_plugin_metadata, but kept for reference
     provider_behaviour = Raxol.Core.Runtime.Plugins.PluginMetadataProvider
-    has_behaviour = function_exported?(plugin_module, :behaviour_info, 1) and
-                  Enum.member?(plugin_module.behaviour_info(:callbacks), {:behaviour, [provider_behaviour]}) # Check callbacks instead
 
-    if has_behaviour do
+    has_provider_behaviour =
+      function_exported?(plugin_module, :behaviour_info, 1) &&
+        Enum.any?(plugin_module.behaviour_info(:callbacks), fn {b, _} ->
+          b == provider_behaviour
+        end)
+
+    if has_provider_behaviour && function_exported?(plugin_module, :metadata, 0) do
       try do
-        Logger.debug("[#{__MODULE__}] Found #{inspect(provider_behaviour)} implementation for #{inspect(plugin_module)}. Calling get_metadata/0.")
-        plugin_module.get_metadata()
+        Logger.debug(
+          "[#{__MODULE__}] Found #{inspect(provider_behaviour)} (legacy check). Calling metadata/0."
+        )
+
+        plugin_module.metadata()
       rescue
         e ->
-          Logger.error("[#{__MODULE__}] Error calling get_metadata/0 for #{inspect(plugin_module)}: #{inspect(e)}")
-          # Fallback to default if get_metadata fails
+          Logger.error(
+            "[#{__MODULE__}] Error calling metadata/0 (legacy check) for #{inspect(plugin_module)}: #{inspect(e)}"
+          )
+
           default_metadata(plugin_module)
       end
     else
-      Logger.debug("[#{__MODULE__}] #{inspect(provider_behaviour)} not implemented by #{inspect(plugin_module)}. Using default metadata.")
+      Logger.debug(
+        "[#{__MODULE__}] #{inspect(provider_behaviour)} not implemented or metadata/0 not exported (legacy check). Using default metadata."
+      )
+
       default_metadata(plugin_module)
     end
   end
 
-  # Helper to generate default metadata
+  # Helper to generate default metadata (used by legacy and potentially new functions)
   defp default_metadata(plugin_module) do
     plugin_id = module_to_default_id(plugin_module)
     %{id: plugin_id, version: "0.0.0-dev", dependencies: []}
   end
 
-  # Helper to derive a default plugin ID from the module name (basic example)
-  def module_to_default_id(plugin_module) do
-    plugin_module
-    |> Module.split()
-    |> List.last()
-    |> Macro.underscore()
-    |> String.replace_suffix("_plugin", "") # Optional: remove common suffix
-    |> String.to_atom()
-  end
-
   @doc """
-  Ensures the code for a given plugin module is loaded.
+  Ensures the code for a given plugin module is loaded (Original function - renamed to load_code).
   Returns `:ok` or `{:error, :module_not_found}`.
   """
   def load_code(plugin_module) when is_atom(plugin_module) do
+    # This is essentially what load_plugin_module does now.
     if Code.ensure_loaded?(plugin_module) do
       :ok
     else
-      Logger.error("[#{__MODULE__}] Failed to ensure module code is loaded: #{inspect(plugin_module)}")
+      Logger.error(
+        "[#{__MODULE__}] Failed to ensure module code is loaded (legacy load_code): #{inspect(plugin_module)}"
+      )
+
       {:error, :module_not_found}
     end
   end

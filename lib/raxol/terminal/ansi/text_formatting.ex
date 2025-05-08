@@ -88,7 +88,9 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   Sets the background color.
   """
   @spec set_background(text_style(), color()) :: text_style()
-  def set_background(style, color) do %{style | background: color} end
+  def set_background(style, color) do
+    %{style | background: color}
+  end
 
   @doc """
   Gets the foreground color.
@@ -144,50 +146,132 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   @spec apply_attribute(text_style(), atom()) :: text_style()
   def apply_attribute(style, attribute) do
     case attribute do
-      :reset -> new()
-      :double_width -> set_double_width(style)
-      :double_height_top -> set_double_height_top(style)
-      :double_height_bottom -> set_double_height_bottom(style)
-      :no_double_width -> %{style | double_width: false}
-      :no_double_height -> %{style | double_height: :none}
-      :bold -> %{style | bold: true}
-      :faint -> %{style | faint: true}
-      :italic -> %{style | italic: true}
-      :underline -> %{style | underline: true}
-      :blink -> %{style | blink: true}
-      :reverse -> %{style | reverse: true}
-      :conceal -> %{style | conceal: true}
-      :strikethrough -> %{style | strikethrough: true}
-      :fraktur -> %{style | fraktur: true}
-      :double_underline -> %{style | double_underline: true}
-      :normal_intensity -> %{style | bold: false, faint: false}
-      :no_italic_fraktur -> %{style | italic: false, fraktur: false}
+      :reset ->
+        new()
+
+      :double_width ->
+        set_double_width(style)
+
+      :double_height_top ->
+        set_double_height_top(style)
+
+      :double_height_bottom ->
+        set_double_height_bottom(style)
+
+      :no_double_width ->
+        %{style | double_width: false}
+
+      :no_double_height ->
+        %{style | double_height: :none}
+
+      :bold ->
+        %{style | bold: true}
+
+      :faint ->
+        %{style | faint: true}
+
+      :italic ->
+        %{style | italic: true}
+
+      :underline ->
+        %{style | underline: true}
+
+      :blink ->
+        %{style | blink: true}
+
+      :reverse ->
+        %{style | reverse: true}
+
+      :conceal ->
+        %{style | conceal: true}
+
+      :strikethrough ->
+        %{style | strikethrough: true}
+
+      :fraktur ->
+        %{style | fraktur: true}
+
+      :double_underline ->
+        %{style | double_underline: true}
+
+      :normal_intensity ->
+        %{style | bold: false, faint: false}
+
+      :no_italic_fraktur ->
+        %{style | italic: false, fraktur: false}
+
       :no_underline ->
         new_style = %{style | underline: false, double_underline: false}
         new_style
-      :no_blink -> %{style | blink: false}
-      :no_reverse -> %{style | reverse: false}
-      :reveal -> %{style | conceal: false}
-      :no_strikethrough -> %{style | strikethrough: false}
-      :black -> %{style | foreground: :black}
-      :red -> %{style | foreground: :red}
-      :green -> %{style | foreground: :green}
-      :yellow -> %{style | foreground: :yellow}
-      :blue -> %{style | foreground: :blue}
-      :magenta -> %{style | foreground: :magenta}
-      :cyan -> %{style | foreground: :cyan}
-      :white -> %{style | foreground: :white}
-      :bg_black -> %{style | background: :black}
-      :bg_red -> %{style | background: :red}
-      :bg_green -> %{style | background: :green}
-      :bg_yellow -> %{style | background: :yellow}
-      :bg_blue -> %{style | background: :blue}
-      :bg_magenta -> %{style | background: :magenta}
-      :bg_cyan -> %{style | background: :cyan}
-      :bg_white -> %{style | background: :white}
-      :default_fg -> %{style | foreground: nil}
-      :default_bg -> %{style | background: nil}
-      _ -> style
+
+      :no_blink ->
+        %{style | blink: false}
+
+      :no_reverse ->
+        %{style | reverse: false}
+
+      :reveal ->
+        %{style | conceal: false}
+
+      :no_strikethrough ->
+        %{style | strikethrough: false}
+
+      :black ->
+        %{style | foreground: :black}
+
+      :red ->
+        %{style | foreground: :red}
+
+      :green ->
+        %{style | foreground: :green}
+
+      :yellow ->
+        %{style | foreground: :yellow}
+
+      :blue ->
+        %{style | foreground: :blue}
+
+      :magenta ->
+        %{style | foreground: :magenta}
+
+      :cyan ->
+        %{style | foreground: :cyan}
+
+      :white ->
+        %{style | foreground: :white}
+
+      :bg_black ->
+        %{style | background: :black}
+
+      :bg_red ->
+        %{style | background: :red}
+
+      :bg_green ->
+        %{style | background: :green}
+
+      :bg_yellow ->
+        %{style | background: :yellow}
+
+      :bg_blue ->
+        %{style | background: :blue}
+
+      :bg_magenta ->
+        %{style | background: :magenta}
+
+      :bg_cyan ->
+        %{style | background: :cyan}
+
+      :bg_white ->
+        %{style | background: :white}
+
+      :default_fg ->
+        %{style | foreground: nil}
+
+      :default_bg ->
+        %{style | background: nil}
+
+      _ ->
+        style
     end
   end
 
@@ -219,15 +303,19 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
           [codepoint] ->
             # CJK Unified Ideographs, Hangul Syllables, Hiragana, Katakana, etc.
             # This is an approximation and might not cover all wide chars.
-            if (codepoint >= 0x4E00 and codepoint <= 0x9FFF) or # CJK Unified Ideographs
-               (codepoint >= 0xAC00 and codepoint <= 0xD7A3) or # Hangul Syllables
-               (codepoint >= 0x3040 and codepoint <= 0x30FF) or # Hiragana, Katakana
-               (codepoint >= 0xFF00 and codepoint <= 0xFFEF) # Fullwidth Forms
-            do
+            # CJK Unified Ideographs
+            # Hangul Syllables
+            # Hiragana, Katakana
+            # Fullwidth Forms
+            if (codepoint >= 0x4E00 and codepoint <= 0x9FFF) or
+                 (codepoint >= 0xAC00 and codepoint <= 0xD7A3) or
+                 (codepoint >= 0x3040 and codepoint <= 0x30FF) or
+                 (codepoint >= 0xFF00 and codepoint <= 0xFFEF) do
               2
             else
               1
             end
+
           # Handle multi-grapheme characters or empty string as width 1 (or adjust as needed)
           _ ->
             1
@@ -247,8 +335,22 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   Gets the paired line type for double-height mode.
   """
   @spec get_paired_line_type(text_style()) :: :top | :bottom | :none
-  def get_paired_line_type(%{} = style) do
-    style.double_height
+  def get_paired_line_type(%{double_height: :top}) do
+    :bottom
+  end
+
+  def get_paired_line_type(%{double_height: :bottom}) do
+    :top
+  end
+
+  def get_paired_line_type(%{double_height: :none}) do
+    # The test "paired_line_type returns nil for :none" expects nil
+    nil
+  end
+
+  # Fallback for any other style, though ideally covered by :none
+  def get_paired_line_type(_style) do
+    nil
   end
 
   @doc """
@@ -300,7 +402,9 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     new()
   end
 
-  def set_hyperlink(style, url) do %{style | hyperlink: url} end
+  def set_hyperlink(style, url) do
+    %{style | hyperlink: url}
+  end
 
   @doc """
   Reconstructs the SGR parameter string corresponding to the given style attributes.
@@ -311,33 +415,46 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     # Reconstruct SGR parameters from current attributes map
     params = []
     params = if attrs.bold, do: [1 | params], else: params
-    params = if attrs.faint, do: [2 | params], else: params # Added faint
+    # Added faint
+    params = if attrs.faint, do: [2 | params], else: params
     params = if attrs.italic, do: [3 | params], else: params
     params = if attrs.underline, do: [4 | params], else: params
-    params = if attrs.blink, do: [5 | params], else: params # Added blink
-    params = if attrs.reverse, do: [7 | params], else: params # Renamed from inverse
-    params = if attrs.conceal, do: [8 | params], else: params # Added conceal
-    params = if attrs.strikethrough, do: [9 | params], else: params # Added strikethrough
-    params = if attrs.fraktur, do: [20 | params], else: params # Added fraktur
-    params = if attrs.double_underline, do: [21 | params], else: params # Added double_underline
+    # Added blink
+    params = if attrs.blink, do: [5 | params], else: params
+    # Renamed from inverse
+    params = if attrs.reverse, do: [7 | params], else: params
+    # Added conceal
+    params = if attrs.conceal, do: [8 | params], else: params
+    # Added strikethrough
+    params = if attrs.strikethrough, do: [9 | params], else: params
+    # Added fraktur
+    params = if attrs.fraktur, do: [20 | params], else: params
+    # Added double_underline
+    params = if attrs.double_underline, do: [21 | params], else: params
+
     # Note: Resets (like 22, 24, 25 etc.) aren't typically included when reporting state.
 
     # Add foreground color
-    params = case attrs.fg do
-      {:ansi, n} when n >= 0 and n <= 7 -> [30 + n | params]
-      {:ansi, n} when n >= 8 and n <= 15 -> [90 + (n - 8) | params]
-      {:color_256, n} -> [38, 5, n | params]
-      {:rgb, r, g, b} -> [38, 2, r, g, b | params]
-      :default -> params # or maybe 39? Needs verification based on terminal behavior.
-    end
+    params =
+      case attrs.fg do
+        {:ansi, n} when n >= 0 and n <= 7 -> [30 + n | params]
+        {:ansi, n} when n >= 8 and n <= 15 -> [90 + (n - 8) | params]
+        {:color_256, n} -> [38, 5, n | params]
+        {:rgb, r, g, b} -> [38, 2, r, g, b | params]
+        # or maybe 39? Needs verification based on terminal behavior.
+        :default -> params
+      end
+
     # Add background color
-    params = case attrs.bg do
-      {:ansi, n} when n >= 0 and n <= 7 -> [40 + n | params]
-      {:ansi, n} when n >= 8 and n <= 15 -> [100 + (n - 8) | params]
-      {:color_256, n} -> [48, 5, n | params]
-      {:rgb, r, g, b} -> [48, 2, r, g, b | params]
-      :default -> params # or maybe 49? Needs verification.
-    end
+    params =
+      case attrs.bg do
+        {:ansi, n} when n >= 0 and n <= 7 -> [40 + n | params]
+        {:ansi, n} when n >= 8 and n <= 15 -> [100 + (n - 8) | params]
+        {:color_256, n} -> [48, 5, n | params]
+        {:rgb, r, g, b} -> [48, 2, r, g, b | params]
+        # or maybe 49? Needs verification.
+        :default -> params
+      end
 
     # Handle reset case (if no attributes set, send 0)
     if params == [] do
@@ -361,44 +478,121 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   defp parse_sgr_param(param, %{} = current_style) do
     case param do
       # Reset
-      0 -> new() # Reset all attributes
-      1 -> apply_attribute(current_style, :bold)
-      2 -> apply_attribute(current_style, :faint)
-      3 -> apply_attribute(current_style, :italic)
-      4 -> apply_attribute(current_style, :underline)
-      5 -> apply_attribute(current_style, :blink)
-      7 -> apply_attribute(current_style, :reverse)
-      8 -> apply_attribute(current_style, :conceal)
-      9 -> apply_attribute(current_style, :strikethrough)
-      20 -> apply_attribute(current_style, :fraktur)
-      21 -> apply_attribute(current_style, :double_underline)
-      22 -> apply_attribute(current_style, :normal_intensity)
-      23 -> apply_attribute(current_style, :no_italic_fraktur)
-      24 -> apply_attribute(current_style, :no_underline)
-      25 -> apply_attribute(current_style, :no_blink)
-      27 -> apply_attribute(current_style, :no_reverse)
-      28 -> apply_attribute(current_style, :reveal)
-      29 -> apply_attribute(current_style, :no_strikethrough)
-      30 -> apply_attribute(current_style, :black)
-      31 -> apply_attribute(current_style, :red)
-      32 -> apply_attribute(current_style, :green)
-      33 -> apply_attribute(current_style, :yellow)
-      34 -> apply_attribute(current_style, :blue)
-      35 -> apply_attribute(current_style, :magenta)
-      36 -> apply_attribute(current_style, :cyan)
-      37 -> apply_attribute(current_style, :white)
-      38 -> apply_attribute(current_style, :default_fg)
-      39 -> apply_attribute(current_style, :default_fg)
-      40 -> apply_attribute(current_style, :bg_black)
-      41 -> apply_attribute(current_style, :bg_red)
-      42 -> apply_attribute(current_style, :bg_green)
-      43 -> apply_attribute(current_style, :bg_yellow)
-      44 -> apply_attribute(current_style, :bg_blue)
-      45 -> apply_attribute(current_style, :bg_magenta)
-      46 -> apply_attribute(current_style, :bg_cyan)
-      47 -> apply_attribute(current_style, :bg_white)
-      48 -> apply_attribute(current_style, :default_bg)
-      49 -> apply_attribute(current_style, :default_bg)
+      # Reset all attributes
+      0 ->
+        new()
+
+      1 ->
+        apply_attribute(current_style, :bold)
+
+      2 ->
+        apply_attribute(current_style, :faint)
+
+      3 ->
+        apply_attribute(current_style, :italic)
+
+      4 ->
+        apply_attribute(current_style, :underline)
+
+      5 ->
+        apply_attribute(current_style, :blink)
+
+      7 ->
+        apply_attribute(current_style, :reverse)
+
+      8 ->
+        apply_attribute(current_style, :conceal)
+
+      9 ->
+        apply_attribute(current_style, :strikethrough)
+
+      20 ->
+        apply_attribute(current_style, :fraktur)
+
+      21 ->
+        apply_attribute(current_style, :double_underline)
+
+      22 ->
+        apply_attribute(current_style, :normal_intensity)
+
+      23 ->
+        apply_attribute(current_style, :no_italic_fraktur)
+
+      24 ->
+        apply_attribute(current_style, :no_underline)
+
+      25 ->
+        apply_attribute(current_style, :no_blink)
+
+      27 ->
+        apply_attribute(current_style, :no_reverse)
+
+      28 ->
+        apply_attribute(current_style, :reveal)
+
+      29 ->
+        apply_attribute(current_style, :no_strikethrough)
+
+      30 ->
+        apply_attribute(current_style, :black)
+
+      31 ->
+        apply_attribute(current_style, :red)
+
+      32 ->
+        apply_attribute(current_style, :green)
+
+      33 ->
+        apply_attribute(current_style, :yellow)
+
+      34 ->
+        apply_attribute(current_style, :blue)
+
+      35 ->
+        apply_attribute(current_style, :magenta)
+
+      36 ->
+        apply_attribute(current_style, :cyan)
+
+      37 ->
+        apply_attribute(current_style, :white)
+
+      38 ->
+        apply_attribute(current_style, :default_fg)
+
+      39 ->
+        apply_attribute(current_style, :default_fg)
+
+      40 ->
+        apply_attribute(current_style, :bg_black)
+
+      41 ->
+        apply_attribute(current_style, :bg_red)
+
+      42 ->
+        apply_attribute(current_style, :bg_green)
+
+      43 ->
+        apply_attribute(current_style, :bg_yellow)
+
+      44 ->
+        apply_attribute(current_style, :bg_blue)
+
+      45 ->
+        apply_attribute(current_style, :bg_magenta)
+
+      46 ->
+        apply_attribute(current_style, :bg_cyan)
+
+      47 ->
+        apply_attribute(current_style, :bg_white)
+
+      48 ->
+        apply_attribute(current_style, :default_bg)
+
+      49 ->
+        apply_attribute(current_style, :default_bg)
+
       # Set Foreground Color (8-bit)
       {:fg_8bit, index} when index >= 0 and index <= 255 ->
         apply_color(current_style, :foreground, {:index, index})

@@ -152,6 +152,7 @@ defmodule Raxol.Terminal.Integration do
       else
         integration
       end
+
     MemoryManager.check_and_cleanup(integration)
   end
 
@@ -212,7 +213,10 @@ defmodule Raxol.Terminal.Integration do
 
       {:error, reason} ->
         # Log the validation error
-        Logger.error("Terminal configuration update failed validation: #{inspect(reason)}")
+        Logger.error(
+          "Terminal configuration update failed validation: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end

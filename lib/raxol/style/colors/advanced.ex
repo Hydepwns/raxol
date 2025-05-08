@@ -141,13 +141,29 @@ defmodule Raxol.Style.Colors.Advanced do
         :tetradic ->
           hue3 = normalize_hue(h + 180)
           hue4 = normalize_hue(hue3 + angle)
-          [color | [hsl_to_rgb({hue2, s, l}), hsl_to_rgb({hue3, s, l}), hsl_to_rgb({hue4, s, l})]]
+
+          [
+            color
+            | [
+                hsl_to_rgb({hue2, s, l}),
+                hsl_to_rgb({hue3, s, l}),
+                hsl_to_rgb({hue4, s, l})
+              ]
+          ]
 
         :square ->
           hue2_sq = normalize_hue(h + 90)
           hue3_sq = normalize_hue(h + 180)
           hue4_sq = normalize_hue(h + 270)
-          [color | [hsl_to_rgb({hue2_sq, s, l}), hsl_to_rgb({hue3_sq, s, l}), hsl_to_rgb({hue4_sq, s, l})]]
+
+          [
+            color
+            | [
+                hsl_to_rgb({hue2_sq, s, l}),
+                hsl_to_rgb({hue3_sq, s, l}),
+                hsl_to_rgb({hue4_sq, s, l})
+              ]
+          ]
       end
 
     preserve_brightness = Keyword.get(opts, :preserve_brightness, false)
@@ -156,7 +172,8 @@ defmodule Raxol.Style.Colors.Advanced do
       # Adjust lightness of harmony colors to match the original color's lightness
       Enum.map(harmony_colors, fn harmony_color ->
         %{h: h_harmony, s: s_harmony} = rgb_to_hsl(harmony_color)
-        hsl_to_rgb({h_harmony, s_harmony, l}) # Use original lightness l
+        # Use original lightness l
+        hsl_to_rgb({h_harmony, s_harmony, l})
       end)
     else
       harmony_colors
@@ -166,8 +183,10 @@ defmodule Raxol.Style.Colors.Advanced do
   defp harmony_angle(:complementary), do: 180
   defp harmony_angle(:analogous), do: 30
   defp harmony_angle(:triadic), do: 120
-  defp harmony_angle(:split_complementary), do: 30 # Angle for splitting the complement
-  defp harmony_angle(:tetradic), do: 60 # Smaller angle for rectangular tetrad
+  # Angle for splitting the complement
+  defp harmony_angle(:split_complementary), do: 30
+  # Smaller angle for rectangular tetrad
+  defp harmony_angle(:tetradic), do: 60
   defp harmony_angle(:square), do: 90
 
   # Helper to normalize hue to 0-359 range
@@ -228,6 +247,7 @@ defmodule Raxol.Style.Colors.Advanced do
         c_max == g_prime -> 60 * ((b_prime - r_prime) / delta + 2)
         c_max == b_prime -> 60 * ((r_prime - g_prime) / delta + 4)
       end
+
     # Ensure hue is positive
     h = if h < 0, do: h + 360, else: h
 

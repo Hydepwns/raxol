@@ -122,7 +122,9 @@ defmodule Raxol.Terminal.Buffer.Manager do
       1
   """
   def mark_damaged(%__MODULE__{} = manager, x1, y1, x2, y2) do
-    new_tracker = DamageTracker.mark_damaged(manager.damage_tracker, x1, y1, x2, y2)
+    new_tracker =
+      DamageTracker.mark_damaged(manager.damage_tracker, x1, y1, x2, y2)
+
     %{manager | damage_tracker: new_tracker}
   end
 
@@ -162,7 +164,9 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Delegates calculation to `MemoryManager.get_total_usage/2`.
   """
   def update_memory_usage(%__MODULE__{} = manager) do
-    total_usage = MemoryManager.get_total_usage(manager.active_buffer, manager.back_buffer)
+    total_usage =
+      MemoryManager.get_total_usage(manager.active_buffer, manager.back_buffer)
+
     %{manager | memory_usage: total_usage}
   end
 
@@ -175,29 +179,17 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   @doc """
-  Sets the cursor position.
-
-  ## Examples
-
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.set_cursor_position(manager, 10, 5)
-      iex> manager.cursor_position
-      {10, 5}
+  Sets the cursor position managed by the Buffer Manager.
   """
+  @spec set_cursor_position(t(), non_neg_integer(), non_neg_integer()) :: t()
   def set_cursor_position(%__MODULE__{} = manager, x, y) do
     %{manager | cursor_position: {x, y}}
   end
 
   @doc """
-  Gets the cursor position.
-
-  ## Examples
-
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.set_cursor_position(manager, 10, 5)
-      iex> Buffer.Manager.get_cursor_position(manager)
-      {10, 5}
+  Gets the cursor position managed by the Buffer Manager.
   """
+  @spec get_cursor_position(t()) :: {non_neg_integer(), non_neg_integer()}
   def get_cursor_position(%__MODULE__{} = manager) do
     manager.cursor_position
   end
@@ -213,11 +205,17 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
     # Call ScreenBuffer function (which uses Eraser)
     new_active_buffer =
-      ScreenBuffer.erase_in_display(manager.active_buffer, {x,y}, :to_beginning, default_style)
+      ScreenBuffer.erase_in_display(
+        manager.active_buffer,
+        {x, y},
+        :to_beginning,
+        default_style
+      )
 
     # Determine damage region (assuming erase returns the buffer)
     # TODO: Refine damage tracking if erase functions no longer return region
-    {cx1, cy1, cx2, cy2} = {0, 0, x, y} # Approximate damage
+    # Approximate damage
+    {cx1, cy1, cx2, cy2} = {0, 0, x, y}
 
     # Mark the region as damaged
     manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
@@ -232,12 +230,17 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Requires the default_style to use for clearing.
   """
   @spec clear_visible_display(t(), TextFormatting.text_style()) :: t()
-  def clear_visible_display(%__MODULE__{active_buffer: buffer} = manager, default_style) do
+  def clear_visible_display(
+        %__MODULE__{active_buffer: buffer} = manager,
+        default_style
+      ) do
     # Call ScreenBuffer.clear (which uses Eraser.clear_screen)
     new_active_buffer = ScreenBuffer.clear(buffer, default_style)
 
     # Determine damage region
-    {cx1, cy1, cx2, cy2} = {0, 0, ScreenBuffer.get_width(buffer) - 1, ScreenBuffer.get_height(buffer) - 1}
+    {cx1, cy1, cx2, cy2} =
+      {0, 0, ScreenBuffer.get_width(buffer) - 1,
+       ScreenBuffer.get_height(buffer) - 1}
 
     # Mark the entire visible region as damaged (using region from clear)
     manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
@@ -251,13 +254,19 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Marks the cleared region as damaged.
   Requires the default_style to use for clearing.
   """
-  @spec clear_entire_display_with_scrollback(t(), TextFormatting.text_style()) :: t()
-  def clear_entire_display_with_scrollback(%__MODULE__{} = manager, default_style) do
+  @spec clear_entire_display_with_scrollback(t(), TextFormatting.text_style()) ::
+          t()
+  def clear_entire_display_with_scrollback(
+        %__MODULE__{} = manager,
+        default_style
+      ) do
     # Clear the active buffer cells
     new_active_buffer = ScreenBuffer.clear(manager.active_buffer, default_style)
 
     # Determine damage region
-    {buffer_width, buffer_height} = ScreenBuffer.get_dimensions(new_active_buffer)
+    {buffer_width, buffer_height} =
+      ScreenBuffer.get_dimensions(new_active_buffer)
+
     {cx1, cy1, cx2, cy2} = {0, 0, buffer_width - 1, buffer_height - 1}
 
     # Mark the region as damaged
@@ -266,7 +275,11 @@ defmodule Raxol.Terminal.Buffer.Manager do
     # Clear the scrollback state
     new_scrollback = Scrollback.clear(manager.scrollback)
 
-    %{manager_with_damage | active_buffer: new_active_buffer, scrollback: new_scrollback}
+    %{
+      manager_with_damage
+      | active_buffer: new_active_buffer,
+        scrollback: new_scrollback
+    }
   end
 
   @doc """
@@ -274,17 +287,24 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Marks the cleared region as damaged.
   Requires the default_style to use for clearing.
   """
-  @spec erase_from_cursor_to_end_of_line(t(), TextFormatting.text_style()) :: t()
+  @spec erase_from_cursor_to_end_of_line(t(), TextFormatting.text_style()) ::
+          t()
   def erase_from_cursor_to_end_of_line(%__MODULE__{} = manager, default_style) do
     {x, y} = manager.cursor_position
     buffer_width = ScreenBuffer.get_width(manager.active_buffer)
 
     # Call ScreenBuffer function
     new_active_buffer =
-      ScreenBuffer.erase_in_line(manager.active_buffer, {x,y}, :to_end, default_style)
+      ScreenBuffer.erase_in_line(
+        manager.active_buffer,
+        {x, y},
+        :to_end,
+        default_style
+      )
 
     # Determine damage region
-    {cx1, cy1, cx2, cy2} = {x, y, buffer_width - 1, y} # Approximate damage
+    # Approximate damage
+    {cx1, cy1, cx2, cy2} = {x, y, buffer_width - 1, y}
 
     # Mark the region as damaged
     manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
@@ -298,16 +318,26 @@ defmodule Raxol.Terminal.Buffer.Manager do
   Marks the cleared region as damaged.
   Requires the default_style to use for clearing.
   """
-  @spec erase_from_beginning_of_line_to_cursor(t(), TextFormatting.text_style()) :: t()
-  def erase_from_beginning_of_line_to_cursor(%__MODULE__{} = manager, default_style) do
+  @spec erase_from_beginning_of_line_to_cursor(t(), TextFormatting.text_style()) ::
+          t()
+  def erase_from_beginning_of_line_to_cursor(
+        %__MODULE__{} = manager,
+        default_style
+      ) do
     {x, y} = manager.cursor_position
 
     # Call ScreenBuffer function
     new_active_buffer =
-      ScreenBuffer.erase_in_line(manager.active_buffer, {x,y}, :to_beginning, default_style)
+      ScreenBuffer.erase_in_line(
+        manager.active_buffer,
+        {x, y},
+        :to_beginning,
+        default_style
+      )
 
     # Determine damage region
-    {cx1, cy1, cx2, cy2} = {0, y, x, y} # Approximate damage
+    # Approximate damage
+    {cx1, cy1, cx2, cy2} = {0, y, x, y}
 
     # Mark the region as damaged
     manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
@@ -328,10 +358,16 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
     # Call ScreenBuffer function
     new_active_buffer =
-      ScreenBuffer.erase_in_line(manager.active_buffer, {x,y}, :all, default_style)
+      ScreenBuffer.erase_in_line(
+        manager.active_buffer,
+        {x, y},
+        :all,
+        default_style
+      )
 
     # Determine damage region
-    {cx1, cy1, cx2, cy2} = {0, y, buffer_width - 1, y} # Approximate damage
+    # Approximate damage
+    {cx1, cy1, cx2, cy2} = {0, y, buffer_width - 1, y}
 
     # Mark the region as damaged
     manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
@@ -348,14 +384,22 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @spec erase_from_cursor_to_end(t(), TextFormatting.text_style()) :: t()
   def erase_from_cursor_to_end(%__MODULE__{} = manager, default_style) do
     {x, y} = manager.cursor_position
-    {buffer_width, buffer_height} = ScreenBuffer.get_dimensions(manager.active_buffer)
+
+    {buffer_width, buffer_height} =
+      ScreenBuffer.get_dimensions(manager.active_buffer)
 
     # Call ScreenBuffer function (which uses Eraser)
     new_active_buffer =
-      ScreenBuffer.erase_in_display(manager.active_buffer, {x,y}, :to_end, default_style)
+      ScreenBuffer.erase_in_display(
+        manager.active_buffer,
+        {x, y},
+        :to_end,
+        default_style
+      )
 
     # Determine damage region
-    {cx1, cy1, cx2, cy2} = {x, y, buffer_width - 1, buffer_height - 1} # Approximate damage
+    # Approximate damage
+    {cx1, cy1, cx2, cy2} = {x, y, buffer_width - 1, buffer_height - 1}
 
     # Mark the region as damaged
     manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
@@ -371,10 +415,12 @@ defmodule Raxol.Terminal.Buffer.Manager do
   def scroll_up(manager, lines) do
     # Call modified ScreenBuffer.scroll_up (which delegates to Operations.scroll_up)
     # It now returns {updated_cells, scrolled_off_lines}
-    {updated_cells, scrolled_off_lines} = ScreenBuffer.scroll_up(manager.active_buffer, lines)
+    {updated_cells, scrolled_off_lines} =
+      ScreenBuffer.scroll_up(manager.active_buffer, lines)
 
     # Add scrolled lines to our scrollback state
-    new_scrollback = Scrollback.add_lines(manager.scrollback, scrolled_off_lines)
+    new_scrollback =
+      Scrollback.add_lines(manager.scrollback, scrolled_off_lines)
 
     # Update manager state
     %{
@@ -390,11 +436,13 @@ defmodule Raxol.Terminal.Buffer.Manager do
   """
   def scroll_down(manager, lines) do
     # Take lines from our scrollback state
-    {lines_to_restore, new_scrollback} = Scrollback.take_lines(manager.scrollback, lines)
+    {lines_to_restore, new_scrollback} =
+      Scrollback.take_lines(manager.scrollback, lines)
 
     # Call modified ScreenBuffer.scroll_down (delegating to Operations.scroll_down)
     # passing the lines to insert
-    updated_active_buffer = ScreenBuffer.scroll_down(manager.active_buffer, lines_to_restore, lines)
+    updated_active_buffer =
+      ScreenBuffer.scroll_down(manager.active_buffer, lines_to_restore, lines)
 
     # Update manager state
     %{
@@ -471,5 +519,4 @@ defmodule Raxol.Terminal.Buffer.Manager do
   def get_selection_boundaries(manager) do
     ScreenBuffer.get_selection_boundaries(manager.active_buffer)
   end
-
 end

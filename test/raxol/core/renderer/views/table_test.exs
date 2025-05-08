@@ -124,7 +124,8 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       assert view.border == :double
     end
 
-    @tag :pending # Mark as pending due to style assertion failure
+    # Mark as pending due to style assertion failure
+    @tag :pending
     test "new/1 applies custom header style", %{table_data: data, columns: cols} do
       custom_style = [bold: true, underline: true]
       view = Table.new(data: data, columns: cols, header_style: custom_style)

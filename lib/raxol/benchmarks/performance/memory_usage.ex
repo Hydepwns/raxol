@@ -68,17 +68,23 @@ defmodule Raxol.Benchmarks.Performance.MemoryUsage do
     initial_memory = :erlang.memory(:total)
 
     # Create simple components
-    simple_components = for _ <- 1..1000, do: RenderingBenchmark.generate_test_component(:simple)
+    simple_components =
+      for _ <- 1..1000, do: RenderingBenchmark.generate_test_component(:simple)
+
     :erlang.garbage_collect()
     after_simple = :erlang.memory(:total)
 
     # Create medium components
-    medium_components = for _ <- 1..100, do: RenderingBenchmark.generate_test_component(:medium)
+    medium_components =
+      for _ <- 1..100, do: RenderingBenchmark.generate_test_component(:medium)
+
     :erlang.garbage_collect()
     after_medium = :erlang.memory(:total)
 
     # Create complex components
-    complex_components = for _ <- 1..10, do: RenderingBenchmark.generate_test_component(:complex)
+    complex_components =
+      for _ <- 1..10, do: RenderingBenchmark.generate_test_component(:complex)
+
     :erlang.garbage_collect()
     after_complex = :erlang.memory(:total)
 

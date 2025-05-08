@@ -17,7 +17,9 @@ defmodule Raxol.PerformanceTest do
       render_results = Rendering.benchmark_rendering()
 
       # Example assertions (adjust thresholds as needed)
-      assert render_results.average_render_time_ms < 16, "Average render time too high"
+      assert render_results.average_render_time_ms < 16,
+             "Average render time too high"
+
       assert render_results.p95_render_time_ms < 30, "P95 render time too high"
       assert render_results.fps_estimate > 30, "Estimated FPS too low"
     end
@@ -28,9 +30,14 @@ defmodule Raxol.PerformanceTest do
       event_results = EventHandling.benchmark_event_handling()
 
       # Example assertions
-      assert event_results.average_event_latency_ms < 5, "Average event latency too high"
-      assert event_results.p95_event_latency_ms < 10, "P95 event latency too high"
-      assert event_results.event_throughput_per_sec > 100, "Event throughput too low"
+      assert event_results.average_event_latency_ms < 5,
+             "Average event latency too high"
+
+      assert event_results.p95_event_latency_ms < 10,
+             "P95 event latency too high"
+
+      assert event_results.event_throughput_per_sec > 100,
+             "Event throughput too low"
     end
   end
 
@@ -39,10 +46,17 @@ defmodule Raxol.PerformanceTest do
       memory_results = MemoryUsage.benchmark_memory_usage()
 
       # Example assertions
-      assert memory_results.base_memory_usage_kb < 50_000, "Base memory usage too high"
-      assert memory_results.rendering_memory_growth_kb < 10_000, "Rendering memory growth too high"
-      refute memory_results.memory_leak_detected, "Potential memory leak detected"
-      assert memory_results.memory_efficiency_score > 70, "Memory efficiency score too low"
+      assert memory_results.base_memory_usage_kb < 50_000,
+             "Base memory usage too high"
+
+      assert memory_results.rendering_memory_growth_kb < 10_000,
+             "Rendering memory growth too high"
+
+      refute memory_results.memory_leak_detected,
+             "Potential memory leak detected"
+
+      assert memory_results.memory_efficiency_score > 70,
+             "Memory efficiency score too low"
     end
   end
 
@@ -51,9 +65,13 @@ defmodule Raxol.PerformanceTest do
       animation_results = Animation.benchmark_animation_performance()
 
       # Example assertions
-      assert animation_results.average_frame_time_ms < 16, "Average frame time too high for animation"
+      assert animation_results.average_frame_time_ms < 16,
+             "Average frame time too high for animation"
+
       assert animation_results.jitter_ms < 5, "Animation jitter too high"
-      assert animation_results.frames_dropped_percentage < 1, "Animation frames dropped percentage too high"
+
+      assert animation_results.frames_dropped_percentage < 1,
+             "Animation frames dropped percentage too high"
     end
   end
 
@@ -77,7 +95,8 @@ defmodule Raxol.PerformanceTest do
 
       # Assert no significant regressions
       # refute regressions_found, "Significant performance regressions detected"
-      assert true # Placeholder until baseline comparison is implemented
+      # Placeholder until baseline comparison is implemented
+      assert true
     end
   end
 end

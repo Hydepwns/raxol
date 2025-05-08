@@ -7,7 +7,8 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   import Bitwise
 
   alias Raxol.Terminal.ANSI.SixelPatternMap
-  alias Raxol.Terminal.ANSI.SixelPalette # Needed for color definitions/selection
+  # Needed for color definitions/selection
+  alias Raxol.Terminal.ANSI.SixelPalette
 
   # Represents the state during the parsing of a Sixel stream
   defmodule ParserState do
@@ -46,7 +47,8 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   end
 
   # Placeholder for the main parsing function to be moved here
-  @spec parse(binary(), ParserState.t()) :: {:ok, ParserState.t()} | {:error, atom()}
+  @spec parse(binary(), ParserState.t()) ::
+          {:ok, ParserState.t()} | {:error, atom()}
   # Main recursive Sixel data parser
   def parse(data, state) when is_binary(data) do
     # Handle end-of-stream, space, or other characters
@@ -329,42 +331,60 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
                 start_x = state.x
                 y = state.y
                 color = state.color_index
-                repeat = state.repeat_count # Capture repeat count before loop
+                # Capture repeat count before loop
+                repeat = state.repeat_count
 
                 # Loop 'repeat' times to generate pixels for repeated character
                 {final_buffer, final_x, final_max_x} =
-                  Enum.reduce(0..(repeat - 1), {state.pixel_buffer, start_x, state.max_x}, fn i, {current_buffer, current_x, current_max_x} ->
-                    # Generate pixels for the pattern at the current column (current_x)
-                    pixels_for_this_column =
-                      Enum.reduce(0..5, %{}, fn bit_index, acc ->
-                        is_set = Bitwise.band(pattern_int, Bitwise.bsl(1, bit_index)) != 0
-                        if is_set do
-                          Map.put(acc, {current_x, y + bit_index}, color)
-                        else
-                          acc
-                        end
-                      end)
+                  Enum.reduce(
+                    0..(repeat - 1),
+                    {state.pixel_buffer, start_x, state.max_x},
+                    fn i, {current_buffer, current_x, current_max_x} ->
+                      # Generate pixels for the pattern at the current column (current_x)
+                      pixels_for_this_column =
+                        Enum.reduce(0..5, %{}, fn bit_index, acc ->
+                          is_set =
+                            Bitwise.band(pattern_int, Bitwise.bsl(1, bit_index)) !=
+                              0
 
-                    # Merge into buffer and update max_x
-                    merged_buffer = Map.merge(current_buffer, pixels_for_this_column)
-                    new_max_x = max(current_max_x, current_x)
+                          if is_set do
+                            Map.put(acc, {current_x, y + bit_index}, color)
+                          else
+                            acc
+                          end
+                        end)
 
-                    # Return updated buffer, next x, and max_x for next iteration
-                    {merged_buffer, current_x + 1, new_max_x}
-                  end)
+                      # Merge into buffer and update max_x
+                      merged_buffer =
+                        Map.merge(current_buffer, pixels_for_this_column)
 
+                      new_max_x = max(current_max_x, current_x)
+
+                      # Return updated buffer, next x, and max_x for next iteration
+                      {merged_buffer, current_x + 1, new_max_x}
+                    end
+                  )
 
                 # Update state after the loop
                 updated_state = %{
                   state
-                  | x: final_x, # Final x position after repeats
-                    repeat_count: 1, # Reset repeat count after use
-                    pixel_buffer: final_buffer, # Use buffer accumulated in the loop
-                    max_x: final_max_x, # Use max_x calculated in the loop
+                  | # Final x position after repeats
+                    x: final_x,
+                    # Reset repeat count after use
+                    repeat_count: 1,
+                    # Use buffer accumulated in the loop
+                    pixel_buffer: final_buffer,
+                    # Use max_x calculated in the loop
+                    max_x: final_max_x,
                     max_y: max(state.max_y, y + 5),
                     color_index: state.color_index
                 }
-                IO.inspect({char_byte, remaining_data, updated_state.pixel_buffer}, label: "Before Recurse Data Char")
+
+                IO.inspect(
+                  {char_byte, remaining_data, updated_state.pixel_buffer},
+                  label: "Before Recurse Data Char"
+                )
+
                 parse(remaining_data, updated_state)
 
               # Character is not a valid Sixel data char (e.g., outside ?-~ or a command char handled elsewhere)
@@ -373,6 +393,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
                 Logger.warning(
                   "Sixel Parser: Invalid sixel character byte #{char_byte}. Stopping parsing."
                 )
+
                 {:error, :invalid_sixel_char}
             end
         end
@@ -431,5 +452,4 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
       p3: Enum.at(params_list, 2)
     }
   end
-
 end

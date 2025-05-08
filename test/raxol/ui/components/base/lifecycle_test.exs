@@ -97,8 +97,9 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       rendered_element_map =
         component
         |> TestComponent.render(context)
-        # |> TestComponent.render(context) # Cannot pipe element map back to render
-        # |> TestComponent.render(context)
+
+      # |> TestComponent.render(context) # Cannot pipe element map back to render
+      # |> TestComponent.render(context)
 
       # We cannot easily assert the internal count change with this structure.
       # Asserting on the returned element map instead.
@@ -190,7 +191,8 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       # Handle events - Pass the state BEFORE render (mounted)
       {:update, after_event} =
         TestComponent.handle_event(
-          mounted, # Pass the state, not the rendered map
+          # Pass the state, not the rendered map
+          mounted,
           %{type: :test, value: "updated"},
           context
         )
@@ -199,7 +201,8 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       re_rendered_element_map = TestComponent.render(after_event, context)
 
       # Update props
-      updated = TestComponent.update(after_event, %{value: "final"}) # Pass state
+      # Pass state
+      updated = TestComponent.update(after_event, %{value: "final"})
 
       # Unmount
       unmounted = TestComponent.unmount(updated)

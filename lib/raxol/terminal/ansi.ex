@@ -67,7 +67,8 @@ defmodule Raxol.Terminal.ANSI do
   """
   def parse(input) do
     # ANSIFacade.parse(input) # Old call
-    Parser.parse(input) # Delegate to the Parser module
+    # Delegate to the Parser module
+    Parser.parse(input)
   end
 
   @doc """

@@ -49,12 +49,13 @@ defmodule Raxol.Terminal.Config.Utils do
 
   # Helper to build the nested map structure from a path list
   defp path_to_nested_map([key], value) when is_atom(key) do
-     %{key => value}
-   end
+    %{key => value}
+  end
 
-  defp path_to_nested_map([head | tail], value) when is_atom(head) and is_list(tail) do
-     %{head => path_to_nested_map(tail, value)}
-   end
+  defp path_to_nested_map([head | tail], value)
+       when is_atom(head) and is_list(tail) do
+    %{head => path_to_nested_map(tail, value)}
+  end
 
   @doc """
   Merges configuration options into an existing configuration map.

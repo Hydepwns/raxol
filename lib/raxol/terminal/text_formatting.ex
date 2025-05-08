@@ -34,10 +34,13 @@ defmodule Raxol.Terminal.TextFormatting do
   defdelegate effective_width(style, char),
     to: Raxol.Terminal.ANSI.TextFormatting
 
-  defdelegate get_default_style(), to: Raxol.Terminal.ANSI.TextFormatting, as: :new
+  defdelegate get_default_style(),
+    to: Raxol.Terminal.ANSI.TextFormatting,
+    as: :new
 
   @doc "Gets the paired line type for double-height mode."
-  defdelegate get_paired_line_type(style), to: Raxol.Terminal.ANSI.TextFormatting
+  defdelegate get_paired_line_type(style),
+    to: Raxol.Terminal.ANSI.TextFormatting
 
   @doc "Checks if the current style needs a paired line for double-height mode."
   defdelegate needs_paired_line?(style), to: Raxol.Terminal.ANSI.TextFormatting

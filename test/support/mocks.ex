@@ -24,7 +24,14 @@ defmodule Raxol.Test.Mocks do
   Mox.defmock(SystemInteractionMock, for: Raxol.Core.SystemInteraction)
 
   # Mock for the Accessibility Behaviour
-  Mox.defmock(AccessibilityMock, for: Raxol.Core.Accessibility.Behaviour)
+  Mox.defmock(Raxol.Mocks.AccessibilityMock,
+    for: Raxol.Core.Accessibility.Behaviour
+  )
+
+  # Mock for the FocusManager Behaviour
+  Mox.defmock(Raxol.Mocks.FocusManagerMock,
+    for: Raxol.Core.FocusManager.Behaviour
+  )
 end
 
 # The Raxol.Core.Accessibility.Mock module definition below should be removed.

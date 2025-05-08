@@ -225,8 +225,15 @@ defmodule Raxol.Terminal.ScreenBuffer do
           non_neg_integer(),
           TextFormatting.text_style()
         ) :: t()
-  defdelegate clear_region(buffer, start_x, start_y, end_x, end_y, default_style),
-    to: Eraser
+  defdelegate clear_region(
+                buffer,
+                start_x,
+                start_y,
+                end_x,
+                end_y,
+                default_style
+              ),
+              to: Eraser
 
   @doc "Erases in display. See `Raxol.Terminal.Buffer.Eraser.erase_in_display/4`."
   @spec erase_in_display(
@@ -235,7 +242,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
           atom(),
           TextFormatting.text_style()
         ) :: t()
-  defdelegate erase_in_display(buffer, cursor_pos, type, default_style), to: Eraser
+  defdelegate erase_in_display(buffer, cursor_pos, type, default_style),
+    to: Eraser
 
   @doc "Erases in line. See `Raxol.Terminal.Buffer.Eraser.erase_in_line/4`."
   @spec erase_in_line(
@@ -263,13 +271,23 @@ defmodule Raxol.Terminal.ScreenBuffer do
           TextFormatting.text_style(),
           {non_neg_integer(), non_neg_integer()} | nil
         ) :: t()
-  def delete_lines(%__MODULE__{} = buffer, start_y, count, default_style, scroll_region \\ nil)
+  def delete_lines(
+        %__MODULE__{} = buffer,
+        start_y,
+        count,
+        default_style,
+        scroll_region \\ nil
+      )
       when start_y >= 0 and count > 0 do
     {region_top, region_bottom} =
       case scroll_region do
-        {t, b} when is_integer(t) and t >= 0 and is_integer(b) and b >= t and b < buffer.height ->
+        {t, b}
+        when is_integer(t) and t >= 0 and is_integer(b) and b >= t and
+               b < buffer.height ->
           {t, b}
-        _ -> # No valid region provided, use full buffer height
+
+        # No valid region provided, use full buffer height
+        _ ->
           {0, buffer.height - 1}
       end
 
@@ -279,16 +297,25 @@ defmodule Raxol.Terminal.ScreenBuffer do
       lines_in_region_from_start = region_bottom - start_y + 1
       effective_count = min(count, lines_in_region_from_start)
 
-      blank_line = List.duplicate(%Cell{char: " ", style: default_style}, buffer.width)
+      blank_line =
+        List.duplicate(%Cell{char: " ", style: default_style}, buffer.width)
+
       blank_lines = List.duplicate(blank_line, effective_count)
 
       # Extract the lines within the scroll region
-      region_cells = Enum.slice(buffer.cells, region_top..(region_top + (region_bottom - region_top)))
+      region_cells =
+        Enum.slice(
+          buffer.cells,
+          region_top..(region_top + (region_bottom - region_top))
+        )
+
       # Calculate relative start within the extracted region
       relative_start_y = start_y - region_top
 
       # Split the region lines
-      {region_before, region_after_inclusive} = Enum.split(region_cells, relative_start_y)
+      {region_before, region_after_inclusive} =
+        Enum.split(region_cells, relative_start_y)
+
       # Keep lines after deletion within the region
       region_after_kept = Enum.drop(region_after_inclusive, effective_count)
 
@@ -297,8 +324,16 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
       # Splice the modified region back into the full buffer cells
       cells_before_region = Enum.slice(buffer.cells, 0, region_top)
-      cells_after_region = Enum.slice(buffer.cells, region_bottom + 1, buffer.height - (region_bottom + 1))
-      final_cells = cells_before_region ++ new_region_cells ++ cells_after_region
+
+      cells_after_region =
+        Enum.slice(
+          buffer.cells,
+          region_bottom + 1,
+          buffer.height - (region_bottom + 1)
+        )
+
+      final_cells =
+        cells_before_region ++ new_region_cells ++ cells_after_region
 
       %{buffer | cells: final_cells}
     else
@@ -307,7 +342,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
     end
   end
 
-  def delete_lines(buffer, _, _, _, _), do: buffer # No-op for invalid input
+  # No-op for invalid input
+  def delete_lines(buffer, _, _, _, _), do: buffer
 
   @doc """
   Deletes `count` characters starting at `{row, col}`.
@@ -324,7 +360,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
           non_neg_integer(),
           TextFormatting.text_style()
         ) :: t()
-  defdelegate delete_characters(buffer, row, col, count, default_style), to: CharEditor
+  defdelegate delete_characters(buffer, row, col, count, default_style),
+    to: CharEditor
 
   # --- Inserting --- (Delegated to CharEditor/LineEditor)
   @doc """
@@ -358,7 +395,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
           non_neg_integer(),
           TextFormatting.text_style()
         ) :: t()
-  defdelegate insert_characters(buffer, row, col, count, default_style), to: CharEditor
+  defdelegate insert_characters(buffer, row, col, count, default_style),
+    to: CharEditor
 
   # --- Diffing & Updating --- (Delegated to Operations)
   @doc "Calculates diff. See `Raxol.Terminal.Buffer.Operations.diff/2`."

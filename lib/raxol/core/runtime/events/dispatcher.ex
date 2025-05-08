@@ -38,7 +38,8 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       command_registry_table: nil,
       # Add current theme ID
       # Fetched from UserPreferences on init
-      current_theme_id: :default # Will be overwritten in init
+      # Will be overwritten in init
+      current_theme_id: :default
     ]
   end
 
@@ -46,10 +47,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl true
   def start_link(runtime_pid, initial_state) do
-    # Start the Registry for subscriptions
-    {:ok, _pid} = Registry.start_link(keys: :duplicate, name: @registry_name)
-    Logger.info("Event Dispatcher starting...")
-
     GenServer.start_link(__MODULE__, {runtime_pid, initial_state},
       name: __MODULE__
     )
@@ -57,53 +54,94 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl true
   def init({runtime_pid, initial_state_map}) do
-    Logger.info("Dispatcher starting...")
-    Logger.debug("Dispatcher init: runtime_pid=#{inspect(runtime_pid)}, initial_state_map=#{inspect(initial_state_map)}")
+    Logger.info("Dispatcher initializing...")
 
-    # Load initial theme or default
-    # TODO: Integrate properly with Theme subsystem if it manages UserPreferences
-    initial_theme_id = UserPreferences.get([:theme, :active_id]) || :default
-    Logger.debug("Dispatcher init: Loaded initial theme ID: #{inspect(initial_theme_id)}")
+    # Ensure necessary modules are loaded to prevent runtime errors with function_exported?
+    # Elixir's Application module
+    true = Code.ensure_loaded?(Application)
+    true = Code.ensure_loaded?(initial_state_map.app_module)
 
-    # Ensure model has the loaded theme ID if not provided explicitly
-    initial_model =
-      Map.put_new(initial_state_map.model, :current_theme_id, initial_theme_id)
+    # Call the application's init function
+    # Determine arity and call appropriately
+    # Expect {:ok, model, commands}
+    {:ok, app_model, app_commands} =
+      cond do
+        function_exported?(initial_state_map.app_module, :init, 1) ->
+          # Pass full map for context
+          initial_state_map.app_module.init(initial_state_map)
 
-    # Extract initial commands
-    initial_commands = initial_state_map.initial_commands
+        function_exported?(initial_state_map.app_module, :init, 2) ->
+          # Legacy or specific arity
+          initial_state_map.app_module.init(
+            initial_state_map,
+            initial_state_map.model
+          )
 
-    # Build the final initial state struct
-    initial_state = %State{
+        true ->
+          Logger.error(
+            "Application module #{inspect(initial_state_map.app_module)} does not implement init/1 or init/2."
+          )
+
+          # TODO: Return proper error to supervisor
+          raise "Application module #{initial_state_map.app_module} does not implement init/1 or init/2."
+      end
+
+    # Merge UserPreferences into the model (Theme specific)
+    # UserPreferences name
+    user_prefs_pid = Process.whereis(UserPreferences)
+
+    current_theme_id_string =
+      if user_prefs_pid do
+        # Get the theme NAME directly using the correct key
+        UserPreferences.get(:theme, user_prefs_pid) || "Default Theme"
+      else
+        Logger.warning(
+          "UserPreferences PID not found during Dispatcher init. Using default theme."
+        )
+
+        # Fallback default theme ID
+        "Default Theme"
+      end
+
+    Logger.debug(
+      "Dispatcher init: Loaded initial theme ID: \"#{current_theme_id_string}\""
+    )
+
+    model_with_theme =
+      Map.put(app_model, :current_theme_id, current_theme_id_string)
+
+    state = %State{
       runtime_pid: runtime_pid,
       app_module: initial_state_map.app_module,
-      model: initial_model,
+      # Use the model returned by app's init, with theme
+      model: model_with_theme,
       width: initial_state_map.width,
       height: initial_state_map.height,
+      # Default focus state
+      focused: true,
+      debug_mode: initial_state_map.debug_mode || false,
+      # This is an atom (registered name)
       plugin_manager: initial_state_map.plugin_manager,
+      # This is an atom
       command_registry_table: initial_state_map.command_registry_table,
-      current_theme_id: initial_theme_id # Set from preferences
-      # Add other fields from initial_state_map if needed, setting defaults
+      # Store the theme ID string
+      current_theme_id: current_theme_id_string
     }
 
-    Logger.info("Dispatcher initialized with theme: #{inspect(initial_state.current_theme_id)}")
+    Logger.debug(
+      "Dispatcher init: Processing initial commands: #{inspect(app_commands)}"
+    )
 
-    # Process initial commands after state is set up
-    context = %{
-      pid: self(),
-      command_registry_table: initial_state.command_registry_table,
-      runtime_pid: initial_state.runtime_pid
-    }
+    # Process any initial commands returned by the application's init
+    # These are processed after the main state is set up.
+    if Enum.any?(app_commands) do
+      # self() is the Dispatcher's own PID
+      # Using cast to avoid blocking init
+      GenServer.cast(self(), {:process_commands, app_commands})
+    end
 
-    Logger.debug("Dispatcher init: Processing initial commands: #{inspect(initial_commands)}")
-    process_commands(initial_commands, context)
-    Logger.debug("Dispatcher init: Finished processing initial commands.")
-
-    # Register self with Terminal.Driver
-    GenServer.cast(Raxol.Terminal.Driver, {:register_dispatcher, self()})
-
-    Logger.debug("Dispatcher init complete. Final state: #{inspect(initial_state)}")
-
-    {:ok, initial_state}
+    Logger.info("Dispatcher init complete.")
+    {:ok, state}
   end
 
   @doc """
@@ -157,7 +195,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
         updated_state =
           if new_theme_id != current_theme_id do
-            Logger.debug("Theme changed in model: #{current_theme_id} -> #{new_theme_id}. Updating preferences.")
+            Logger.debug(
+              "Theme changed in model: #{current_theme_id} -> #{new_theme_id}. Updating preferences."
+            )
+
             # Save the new theme preference
             # Use :meck passthrough for this in tests if needed
             :ok = UserPreferences.set("theme.active_id", new_theme_id)
@@ -175,12 +216,15 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
       {:error, reason} ->
         # Application update failed
-        Logger.error("Application update failed: #{inspect reason}")
+        Logger.error("Application update failed: #{inspect(reason)}")
         # Return tuple indicating handled error
         {:error, reason}
 
       other ->
-        Logger.warning("Unexpected return from #{app_module}.update: #{inspect other}")
+        Logger.warning(
+          "Unexpected return from #{app_module}.update: #{inspect(other)}"
+        )
+
         # Return tuple indicating handled error
         {:error, {:unexpected_return, other}}
     end
@@ -262,20 +306,32 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         # Broadcast event globally if successfully handled by app logic
         # Ensure event.type and event.data are appropriate for broadcast
         if is_atom(event.type) and is_map(event.data) do
-          Logger.debug("[Dispatcher] Broadcasting event: #{inspect(event.type)} via internal broadcast")
-          :ok = __MODULE__.broadcast(event.type, event.data)
+          Logger.debug(
+            "[Dispatcher] Broadcasting event: #{inspect(event.type)} via internal broadcast"
+          )
+
+          _ = __MODULE__.broadcast(event.type, event.data)
         else
-          Logger.warning("[Dispatcher] Event not broadcast due to invalid type/data: #{inspect(event)}")
+          Logger.warning(
+            "[Dispatcher] Event not broadcast due to invalid type/data: #{inspect(event)}"
+          )
         end
 
         {:noreply, new_state}
 
       {:error, reason} ->
-        Logger.error("[Dispatcher] Error handling event in handle_cast: #{inspect(reason)}")
-        {:noreply, state} # Or handle error more gracefully
+        Logger.error(
+          "[Dispatcher] Error handling event in handle_cast: #{inspect(reason)}"
+        )
+
+        # Or handle error more gracefully
+        {:noreply, state}
 
       other ->
-        Logger.warning("[Dispatcher] Unexpected return from handle_event in handle_cast: #{inspect(other)}")
+        Logger.warning(
+          "[Dispatcher] Unexpected return from handle_event in handle_cast: #{inspect(other)}"
+        )
+
         {:noreply, state}
     end
   end
@@ -285,14 +341,20 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     # This message is from Terminal.Driver to register itself.
     # No specific action needed here other than acknowledging it if necessary.
     # Or, if the dispatcher needs to know about the driver's PID, store it.
-    Logger.debug("[Dispatcher] Received :register_dispatcher (already registered via init)")
+    Logger.debug(
+      "[Dispatcher] Received :register_dispatcher (already registered via init)"
+    )
+
     {:noreply, state}
   end
 
   # Catch-all for other cast messages
   @impl true
   def handle_cast(unhandled_message, state) do
-    Logger.warning("[Dispatcher] Unhandled cast message: #{inspect(unhandled_message)}")
+    Logger.warning(
+      "[Dispatcher] Unhandled cast message: #{inspect(unhandled_message)}"
+    )
+
     {:noreply, state}
   end
 
@@ -300,10 +362,19 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   def handle_info({:command_result, msg}, %State{} = state) do
     # A command executed via Command.execute (e.g., a Task or Delay) has finished
     # We need to feed this message back into the application's update loop
-    Logger.debug("[#{__MODULE__}] Received command result: #{inspect(msg)}")
+    # Construct the full message tuple
+    full_message = {:command_result, msg}
+
+    Logger.debug(
+      "[#{__MODULE__}] Received command result, forwarding to app: #{inspect(full_message)}"
+    )
 
     # Call Application.update with the received message
-    case Application.delegate_update(state.app_module, msg, state.model) do
+    case Application.delegate_update(
+           state.app_module,
+           full_message,
+           state.model
+         ) do
       {updated_model, commands} ->
         # Execute any new commands generated by the update
         context = %{
@@ -312,8 +383,36 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
           runtime_pid: state.runtime_pid
         }
 
-        process_commands(commands, context)
+        # Wrap process_commands to prevent crashes here from losing state update
+        try do
+          process_commands(commands, context)
+        rescue
+          error ->
+            Logger.error(
+              "[Dispatcher] Error processing commands from command result: #{inspect(error)}\\nStacktrace: #{inspect(__STACKTRACE__)}"
+            )
+
+            # Decide if we should still update the model or not. Usually yes.
+        end
+
         {:noreply, %{state | model: updated_model}}
+
+      # Handle cases where delegate_update itself might fail
+      {:error, reason} ->
+        Logger.error(
+          "[Dispatcher] Error calling delegate_update in handle_info: #{inspect(reason)}"
+        )
+
+        # Keep old state
+        {:noreply, state}
+
+      other ->
+        Logger.warning(
+          "[Dispatcher] Unexpected return from delegate_update in handle_info: #{inspect(other)}"
+        )
+
+        # Keep old state
+        {:noreply, state}
     end
   end
 
@@ -331,13 +430,29 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl true
   def handle_call(:get_render_context, _from, state) do
-    Logger.debug("Dispatcher received :get_render_context call. State: #{inspect(state)}")
+    Logger.debug(
+      "Dispatcher received :get_render_context call. State: #{inspect(state)}"
+    )
+
     render_context = %{
       model: state.model,
       theme_id: state.current_theme_id
     }
-    Logger.debug("Dispatcher returning render context: #{inspect(render_context)}")
+
+    Logger.debug(
+      "Dispatcher returning render context: #{inspect(render_context)}"
+    )
+
     {:reply, {:ok, render_context}, state}
+  end
+
+  @impl GenServer
+  def terminate(reason, _state) do
+    Logger.info("Event Dispatcher terminating. Reason: #{inspect(reason)}")
+    # The linked Registry process (named @registry_name) should be automatically
+    # terminated by OTP when this Dispatcher process exits, due to the link
+    # established in init/1. No explicit stop is needed here for the registry.
+    :ok
   end
 
   # Private functions
@@ -411,6 +526,10 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   # --- Command Processing ---
 
   defp process_commands(commands, context) when is_list(commands) do
+    Logger.debug(
+      "[Dispatcher.process_commands] Processing commands: #{inspect(commands)} with context: #{inspect(context)}"
+    )
+
     Enum.each(commands, fn command ->
       # Use the Command module's execution logic
       # Add error handling around execute if needed

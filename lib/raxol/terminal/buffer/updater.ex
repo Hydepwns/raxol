@@ -97,8 +97,12 @@ defmodule Raxol.Terminal.Buffer.Updater do
           # Handle cases like nil, empty string, or non-binary char if they occur
           # Defaulting to width 1 for space might be reasonable
           # Or log a warning and assume width 1
-          Logger.warning("Cell char is not a valid string: #{inspect(cell.char)}, assuming width 1")
-          32 # Codepoint for space
+          Logger.warning(
+            "Cell char is not a valid string: #{inspect(cell.char)}, assuming width 1"
+          )
+
+          # Codepoint for space
+          32
         end
 
       # Use the integer codepoint for width calculation

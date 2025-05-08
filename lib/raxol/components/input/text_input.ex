@@ -70,6 +70,7 @@ defmodule Raxol.Components.Input.TextInput do
         _ ->
           state
       end
+
     # Return {state, commands}
     {new_state, []}
   end
@@ -86,31 +87,48 @@ defmodule Raxol.Components.Input.TextInput do
     base_style = Theme.component_style(theme, :text_input)
 
     # Add dim style if placeholder is shown
-    placeholder_style = if assigns.value == "" and assigns.placeholder, do: %{intensity: :dim}, else: %{}
+    placeholder_style =
+      if assigns.value == "" and assigns.placeholder,
+        do: %{intensity: :dim},
+        else: %{}
+
     # Merge base style with placeholder style
     text_style = Map.merge(base_style, placeholder_style)
 
     # Determine box style based on focus
-    box_style = if assigns.focused do
-      # Potentially use a focused variant from theme, or just override border/bg
-      Map.merge(base_style, %{border_color: Map.get(theme.colors, :primary, :blue)})
-    else
-      base_style
-    end
+    box_style =
+      if assigns.focused do
+        # Potentially use a focused variant from theme, or just override border/bg
+        Map.merge(base_style, %{
+          border_color: Map.get(theme.colors, :primary, :blue)
+        })
+      else
+        base_style
+      end
 
     # Use the box macro for the container
-    box padding: {0, 1}, border: assigns.focused, border_style: :single, style: box_style do
+    box padding: {0, 1},
+        border: assigns.focused,
+        border_style: :single,
+        style: box_style do
       if assigns.focused and assigns.value != "" do
         # Split text around cursor
         cursor_pos = assigns.cursor
-        {before_cursor, at_cursor_and_after} = String.split_at(display_raw, cursor_pos)
+
+        {before_cursor, at_cursor_and_after} =
+          String.split_at(display_raw, cursor_pos)
+
         {at_cursor, after_cursor} = String.split_at(at_cursor_and_after, 1)
 
         # Render parts with cursor highlighted (using label macro)
-        [ # Return a list of elements for the box children
+        # Return a list of elements for the box children
+        [
           label(content: before_cursor, style: text_style),
           # Render cursor char with inverse style merged into base style
-          label(content: at_cursor, style: Map.merge(text_style, %{inverse: true})),
+          label(
+            content: at_cursor,
+            style: Map.merge(text_style, %{inverse: true})
+          ),
           label(content: after_cursor, style: text_style)
         ]
       else
@@ -151,6 +169,7 @@ defmodule Raxol.Components.Input.TextInput do
   defp delete_char_backward(state) do
     {before_cursor, after_cursor} =
       String.split_at(state.value, state.cursor - 1)
+
     # Delete character *before* cursor
     new_value = String.slice(before_cursor, 0, state.cursor - 1) <> after_cursor
     %{state | value: new_value, cursor: state.cursor - 1}
@@ -194,7 +213,8 @@ defmodule Raxol.Components.Input.TextInput do
   defp handle_key_event(key_data, state) do
     msg =
       case key_data do
-        %{key: char, modifiers: []} when is_binary(char) and byte_size(char) == 1 ->
+        %{key: char, modifiers: []}
+        when is_binary(char) and byte_size(char) == 1 ->
           {:input, char}
 
         %{key: :backspace, modifiers: []} ->
@@ -217,7 +237,8 @@ defmodule Raxol.Components.Input.TextInput do
           {:delete}
 
         _ ->
-          nil # Ignore other keys
+          # Ignore other keys
+          nil
       end
 
     if msg do

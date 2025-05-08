@@ -9,15 +9,18 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   require Logger
 
   # Define default state and expected options
-  defstruct clipboard_impl: Raxol.System.Clipboard # Default to real implementation
+  # Default to real implementation
+  defstruct clipboard_impl: Raxol.System.Clipboard
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
   def init(opts) do
     # Allow overriding the clipboard implementation for testing
     clipboard_impl = Keyword.get(opts, :clipboard_impl, Raxol.System.Clipboard)
+
     state = %__MODULE__{
       clipboard_impl: clipboard_impl
     }
+
     Logger.info("Clipboard Plugin initialized.")
     {:ok, state}
   end
@@ -26,9 +29,10 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   def get_commands() do
     [
       # Command name (atom), Function name (atom), Arity
-      # CommandHelper will call Module.function(args, state)
-      {:clipboard_write, :handle_clipboard_command, 2},
-      {:clipboard_read, :handle_clipboard_command, 1}
+      # CommandHelper will call Module.function(args_list, state)
+      # where args_list has 'Arity' elements.
+      {:clipboard_write, :handle_command, 1},
+      {:clipboard_read, :handle_command, 1}
     ]
   end
 
@@ -36,36 +40,67 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
 
   # Central internal handler for :clipboard_write
   @impl Raxol.Core.Runtime.Plugins.Plugin
-  def handle_command(:clipboard_write, [content], state) when is_binary(content) do
-    Logger.debug("ClipboardPlugin: Writing to clipboard via #{inspect(state.clipboard_impl)}...")
+  def handle_command([content], state) when is_binary(content) do
+    Logger.debug(
+      "ClipboardPlugin: Writing to clipboard via #{inspect(state.clipboard_impl)}..."
+    )
+
     # Call the configured implementation
     case state.clipboard_impl.copy(content) do
       :ok ->
-        {:ok, state, :clipboard_write_ok} # Return simple success atom
+        # Return actual result
+        {:ok, state, {:ok, :clipboard_write_ok}}
+
       {:error, reason} ->
-        Logger.error("ClipboardPlugin: Failed to write to clipboard: #{inspect(reason)}")
+        Logger.error(
+          "ClipboardPlugin: Failed to write to clipboard: #{inspect(reason)}"
+        )
+
+        # Return error result tuple
         {:error, {:clipboard_write_failed, reason}, state}
     end
   end
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
-  def handle_command(:clipboard_read, [], state) do
-    Logger.debug("ClipboardPlugin: Reading from clipboard via #{inspect(state.clipboard_impl)}...")
+  # Arity 1, but expecting nil or [] based on CommandHelper args
+  def handle_command(nil, state) do
+    handle_clipboard_read(state)
+  end
+
+  def handle_command([], state) do
+    handle_clipboard_read(state)
+  end
+
+  # Internal helper for read logic
+  defp handle_clipboard_read(state) do
+    Logger.debug(
+      "[ClipboardPlugin] Reading from clipboard via #{inspect(state.clipboard_impl)}..."
+    )
+
     # Call the configured implementation
     case state.clipboard_impl.paste() do
       {:ok, content} ->
-         {:ok, state, {:clipboard_content, content}} # Return content tuple
+        # Return result directly, CommandHelper will send it back
+        {:ok, state, {:ok, content}}
+
       {:error, reason} ->
-         Logger.error("ClipboardPlugin: Failed to read from clipboard: #{inspect(reason)}")
+        Logger.error(
+          "[ClipboardPlugin] Failed to read from clipboard: #{inspect(reason)}"
+        )
+
+        # Return error result tuple
         {:error, {:clipboard_read_failed, reason}, state}
     end
   end
 
   # Add back the catch-all clause for handle_command
   @impl Raxol.Core.Runtime.Plugins.Plugin
-  def handle_command(command, args, state) do
-    Logger.warning("ClipboardPlugin received unhandled/invalid command: #{inspect command} with args: #{inspect args}")
-    {:error, :unhandled_clipboard_command, state}
+  def handle_command(args, state) do
+    Logger.warning(
+      "ClipboardPlugin received unexpected args format: #{inspect(args)}"
+    )
+
+    {:error, {:unexpected_command_args, args}, state}
   end
 
   def terminate(_state) do

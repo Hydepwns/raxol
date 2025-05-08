@@ -120,8 +120,10 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
     # If options change substantially, we may need to reset some state
     reset_state = %{}
+
     reset_state =
-      if Map.has_key?(new_props, :options) and new_props.options != state.options do
+      if Map.has_key?(new_props, :options) and
+           new_props.options != state.options do
         Map.merge(reset_state, %{
           filtered_options: nil,
           is_filtering: false,
@@ -140,12 +142,16 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   def update({:search, search_text}, state) do
     # Update search text and filter options
-    %{state |
-      search_text: search_text,
-      is_filtering: search_text != "",
-      filtered_options: filter_options(state.options, search_text, state.searchable_fields),
-      focused_index: 0,  # Reset focus to first matching item
-      scroll_offset: 0   # Reset scroll position
+    %{
+      state
+      | search_text: search_text,
+        is_filtering: search_text != "",
+        filtered_options:
+          filter_options(state.options, search_text, state.searchable_fields),
+        # Reset focus to first matching item
+        focused_index: 0,
+        # Reset scroll position
+        scroll_offset: 0
     }
   end
 
@@ -164,15 +170,14 @@ defmodule Raxol.UI.Components.Input.SelectList do
       end
 
     # Update state with new selection
-    %{state |
-      selected_indices: updated_indices,
-      focused_index: index
-    }
+    %{state | selected_indices: updated_indices, focused_index: index}
   end
 
   def update({:set_page, page_num}, state) do
     effective_options = get_effective_options(state)
-    total_pages = calculate_total_pages(length(effective_options), state.page_size)
+
+    total_pages =
+      calculate_total_pages(length(effective_options), state.page_size)
 
     # Ensure page number is valid
     valid_page = max(0, min(page_num, total_pages - 1))
@@ -181,12 +186,14 @@ defmodule Raxol.UI.Components.Input.SelectList do
     new_focused_index = valid_page * state.page_size
 
     # Clamp to valid option range
-    clamped_focus = min(new_focused_index, max(0, length(effective_options) - 1))
+    clamped_focus =
+      min(new_focused_index, max(0, length(effective_options) - 1))
 
-    %{state |
-      current_page: valid_page,
-      focused_index: clamped_focus,
-      scroll_offset: valid_page * state.page_size
+    %{
+      state
+      | current_page: valid_page,
+        focused_index: clamped_focus,
+        scroll_offset: valid_page * state.page_size
     }
   end
 
@@ -283,6 +290,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
       {:focus, true} ->
         previous_focus = state.has_focus
         updated_state = update({:set_focus, true}, state)
+
         commands =
           if !previous_focus and updated_state.on_focus do
             # Call on_focus with the focused index
@@ -290,6 +298,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
           else
             []
           end
+
         {updated_state, commands}
 
       {:focus, false} ->
@@ -303,12 +312,14 @@ defmodule Raxol.UI.Components.Input.SelectList do
         if clicked_index != nil do
           # Select the clicked option
           updated_state = update({:select_option, clicked_index}, state)
+
           commands =
             if updated_state.on_focus do
               [fn -> updated_state.on_focus.(clicked_index) end]
             else
               []
             end
+
           {updated_state, commands}
         else
           # Check if search box was clicked
@@ -360,20 +371,36 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
     # Add label if present
     label_height = 0
+
     {elements, label_height} =
       if label = state[:label] do
-        {[%{type: :text, text: label, y: 0, attrs: %{fg: colors.label}} | elements], 1}
+        {[
+           %{type: :text, text: label, y: 0, attrs: %{fg: colors.label}}
+           | elements
+         ], 1}
       else
         {elements, 0}
       end
 
     # Add search box if enabled
     search_height = 0
+
     {elements, search_height} =
       if state.enable_search do
-        search_text = if state.search_text == "", do: state.placeholder, else: state.search_text
-        search_fg = if state.search_text == "", do: colors.search_placeholder_fg, else: colors.search_fg
-        search_style = if state.is_search_focused, do: %{fg: search_fg, bg: colors.search_bg}, else: %{fg: search_fg}
+        search_text =
+          if state.search_text == "",
+            do: state.placeholder,
+            else: state.search_text
+
+        search_fg =
+          if state.search_text == "",
+            do: colors.search_placeholder_fg,
+            else: colors.search_fg
+
+        search_style =
+          if state.is_search_focused,
+            do: %{fg: search_fg, bg: colors.search_bg},
+            else: %{fg: search_fg}
 
         search_element = %{
           type: :text,
@@ -411,10 +438,13 @@ defmodule Raxol.UI.Components.Input.SelectList do
       cond do
         is_integer(state.visible_height) ->
           state.visible_height - options_offset
+
         is_integer(state.max_height) and state.max_height > options_offset ->
           state.max_height - options_offset
+
         true ->
-          option_count # Default to showing all options
+          # Default to showing all options
+          option_count
       end
 
     # Ensure visible height is at least 1 and doesn't exceed option count
@@ -453,19 +483,26 @@ defmodule Raxol.UI.Components.Input.SelectList do
         is_selected = MapSet.member?(state.selected_indices, index)
 
         # Determine style based on focus and selection state
-        style = cond do
-          is_focused and is_selected ->
-            %{fg: colors.selected_fg, bg: colors.selected_bg, underline: true}
-          is_focused ->
-            %{fg: colors.focused_fg, bg: colors.focused_bg}
-          is_selected ->
-            %{fg: colors.selected_fg, bg: colors.selected_bg}
-          true ->
-            %{fg: colors.option_fg, bg: colors.option_bg}
-        end
+        style =
+          cond do
+            is_focused and is_selected ->
+              %{fg: colors.selected_fg, bg: colors.selected_bg, underline: true}
+
+            is_focused ->
+              %{fg: colors.focused_fg, bg: colors.focused_bg}
+
+            is_selected ->
+              %{fg: colors.selected_fg, bg: colors.selected_bg}
+
+            true ->
+              %{fg: colors.option_fg, bg: colors.option_bg}
+          end
 
         # Add selection indicator for multiple select
-        prefix = if state.multiple, do: (if is_selected, do: "[✓] ", else: "[ ] "), else: ""
+        prefix =
+          if state.multiple,
+            do: if(is_selected, do: "[✓] ", else: "[ ] "),
+            else: ""
 
         # Calculate y-position accounting for label and search box
         y_pos = index - start_index + options_offset
@@ -483,13 +520,40 @@ defmodule Raxol.UI.Components.Input.SelectList do
         # Y position for pagination controls (after the options)
         pagination_y = options_offset + visible_height
 
-        prev_style = if prev_enabled, do: %{fg: colors.pagination_fg, bg: colors.pagination_bg}, else: %{fg: colors.empty_fg}
-        next_style = if next_enabled, do: %{fg: colors.pagination_fg, bg: colors.pagination_bg}, else: %{fg: colors.empty_fg}
+        prev_style =
+          if prev_enabled,
+            do: %{fg: colors.pagination_fg, bg: colors.pagination_bg},
+            else: %{fg: colors.empty_fg}
+
+        next_style =
+          if next_enabled,
+            do: %{fg: colors.pagination_fg, bg: colors.pagination_bg},
+            else: %{fg: colors.empty_fg}
 
         [
-          %{type: :text, text: "< Prev", y: pagination_y, x: 0, attrs: prev_style, on_click: :pagination_prev},
-          %{type: :text, text: "Page #{state.current_page + 1}/#{total_pages}", y: pagination_y, x: 10, attrs: %{fg: colors.pagination_fg}},
-          %{type: :text, text: "Next >", y: pagination_y, x: 20, attrs: next_style, on_click: :pagination_next}
+          %{
+            type: :text,
+            text: "< Prev",
+            y: pagination_y,
+            x: 0,
+            attrs: prev_style,
+            on_click: :pagination_prev
+          },
+          %{
+            type: :text,
+            text: "Page #{state.current_page + 1}/#{total_pages}",
+            y: pagination_y,
+            x: 10,
+            attrs: %{fg: colors.pagination_fg}
+          },
+          %{
+            type: :text,
+            text: "Next >",
+            y: pagination_y,
+            x: 20,
+            attrs: next_style,
+            on_click: :pagination_next
+          }
         ]
       else
         []
@@ -508,8 +572,12 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
     # Validate options format
     Enum.each(props.options, fn
-      {label, _value} when is_binary(label) -> :ok
-      option -> raise ArgumentError, "Invalid option format: #{inspect(option)}. Expected {String.t(), any()}"
+      {label, _value} when is_binary(label) ->
+        :ok
+
+      option ->
+        raise ArgumentError,
+              "Invalid option format: #{inspect(option)}. Expected {String.t(), any()}"
     end)
   end
 
@@ -524,6 +592,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   # Filter options based on search text
   defp filter_options(options, "", _), do: options
+
   defp filter_options(options, search_text, searchable_fields) do
     search_text = String.downcase(search_text)
 
@@ -536,6 +605,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
         if is_list(searchable_fields) and is_map(value) do
           Enum.any?(searchable_fields, fn field ->
             field_value = Map.get(value, field)
+
             is_binary(field_value) and
               String.contains?(String.downcase(field_value), search_text)
           end)
@@ -612,7 +682,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
       end
 
       # Update scroll offset - for page movement, directly set it
-      %{updated_state | scroll_offset: max(0, new_index - (page_size / 2))}
+      %{updated_state | scroll_offset: max(0, new_index - page_size / 2)}
     else
       state
     end
@@ -639,7 +709,11 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
       # Update scroll offset - for page movement, directly set it
       max_scroll = max(0, option_count - page_size)
-      %{updated_state | scroll_offset: min(max_scroll, new_index - (page_size / 2))}
+
+      %{
+        updated_state
+        | scroll_offset: min(max_scroll, new_index - page_size / 2)
+      }
     else
       state
     end
@@ -750,9 +824,10 @@ defmodule Raxol.UI.Components.Input.SelectList do
       end
 
     # Update state with new search buffer and timestamp
-    state_with_buffer = %{state |
-      search_buffer: search_buffer,
-      last_key_time: current_time
+    state_with_buffer = %{
+      state
+      | search_buffer: search_buffer,
+        last_key_time: current_time
     }
 
     # Search for matching option
@@ -760,6 +835,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
     # Find first option that starts with our search buffer
     search_text = String.downcase(search_buffer)
+
     matching_index =
       Enum.find_index(effective_options, fn {label, _} ->
         String.starts_with?(String.downcase(label), search_text)
@@ -778,8 +854,8 @@ defmodule Raxol.UI.Components.Input.SelectList do
   defp calculate_clicked_index(state, y) do
     # Account for label and search box when calculating index
     options_offset =
-      (if state[:label], do: 1, else: 0) +
-      (if state.enable_search, do: 1, else: 0)
+      if(state[:label], do: 1, else: 0) +
+        if state.enable_search, do: 1, else: 0
 
     # Adjust y to get relative position within options list
     relative_y = y - options_offset
@@ -804,8 +880,13 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   # Update scroll offset to ensure focused item is visible
   defp update_scroll_if_needed(state) do
-    visible_height = state.visible_height || state.max_height || length(get_effective_options(state))
-    options_offset = (if state[:label], do: 1, else: 0) + (if state.enable_search, do: 1, else: 0)
+    visible_height =
+      state.visible_height || state.max_height ||
+        length(get_effective_options(state))
+
+    options_offset =
+      if(state[:label], do: 1, else: 0) + if state.enable_search, do: 1, else: 0
+
     effective_visible_height = max(1, visible_height - options_offset)
 
     scroll_offset = state.scroll_offset
@@ -827,7 +908,9 @@ defmodule Raxol.UI.Components.Input.SelectList do
       end
 
     # Clamp scroll offset to valid range
-    max_scroll = max(0, length(get_effective_options(state)) - effective_visible_height)
+    max_scroll =
+      max(0, length(get_effective_options(state)) - effective_visible_height)
+
     clamped_scroll = clamp(new_scroll_offset, 0, max_scroll)
 
     # Update state with new scroll offset if it changed
@@ -846,10 +929,12 @@ defmodule Raxol.UI.Components.Input.SelectList do
          visible_height
        ) do
     # Ensure visible_height is at least 1 if there are options
-    effective_visible_height = if option_count > 0, do: max(1, visible_height), else: 0
+    effective_visible_height =
+      if option_count > 0, do: max(1, visible_height), else: 0
 
     if effective_visible_height == 0 do
-      {0, -1, 0}  # No visible area
+      # No visible area
+      {0, -1, 0}
     else
       # Calculate new scroll offset to keep focused item visible
       new_scroll_offset =
@@ -873,6 +958,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
       # Calculate visible range
       start_index = clamped_scroll
+
       end_index =
         if option_count > 0 do
           min(option_count - 1, clamped_scroll + effective_visible_height - 1)

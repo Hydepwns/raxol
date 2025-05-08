@@ -14,25 +14,37 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
 
   defmodule Mock.EventLoop do
     use GenServer
-    def start_link(_), do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+
+    def start_link(_),
+      do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+
     def init(_), do: {:ok, nil}
   end
 
   defmodule Mock.RenderLoop do
     use GenServer
-    def start_link(_), do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+
+    def start_link(_),
+      do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+
     def init(_), do: {:ok, nil}
   end
 
   defmodule Mock.Plugins.Manager do
     use GenServer
-    def start_link(_), do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+
+    def start_link(_),
+      do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+
     def init(_), do: {:ok, nil}
   end
 
   defmodule Mock.Plugins.Commands do
     use GenServer
-    def start_link(_), do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+
+    def start_link(_),
+      do: GenServer.start_link(__MODULE__, nil, name: __MODULE__)
+
     def init(_), do: {:ok, nil}
   end
 
@@ -44,9 +56,18 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
 
   setup do
     # Define mocks here
-    Mox.defmock(Raxol.Core.Runtime.Events.DispatcherMock, for: Raxol.Core.Runtime.Events.Dispatcher.Behaviour)
-    Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock, for: Raxol.Core.Runtime.Rendering.Engine.Behaviour)
-    Mox.defmock(Raxol.Core.Runtime.Plugins.ManagerMock, for: Raxol.Core.Runtime.Plugins.Manager.Behaviour)
+    Mox.defmock(Raxol.Core.Runtime.Events.DispatcherMock,
+      for: Raxol.Core.Runtime.Events.Dispatcher.Behaviour
+    )
+
+    Mox.defmock(Raxol.Core.Runtime.Rendering.EngineMock,
+      for: Raxol.Core.Runtime.Rendering.Engine.Behaviour
+    )
+
+    Mox.defmock(Raxol.Core.Runtime.Plugins.ManagerMock,
+      for: Raxol.Core.Runtime.Plugins.Manager.Behaviour
+    )
+
     Mox.defmock(Raxol.Terminal.DriverMock, for: Raxol.Terminal.Driver.Behaviour)
     # Verify on exit
     :verify_on_exit!
@@ -67,9 +88,20 @@ defmodule Raxol.Core.Runtime.SupervisorTest do
 
       # Expectations for child processes using Mox
       # Note: Terminal.Driver isn't started by this supervisor, so no expectation here
-      Mox.expect(Raxol.Core.Runtime.Plugins.ManagerMock, :start_link, fn [_args] -> {:ok, spawn(fn -> :ok end)} end)
-      Mox.expect(Raxol.Core.Runtime.Events.DispatcherMock, :start_link, fn _pid, _init_arg -> {:ok, spawn(fn -> :ok end)} end)
-      Mox.expect(Raxol.Core.Runtime.Rendering.EngineMock, :start_link, fn _initial_state_map -> {:ok, spawn(fn -> :ok end)} end)
+      Mox.expect(Raxol.Core.Runtime.Plugins.ManagerMock, :start_link, fn [_args] ->
+        {:ok, spawn(fn -> :ok end)}
+      end)
+
+      Mox.expect(Raxol.Core.Runtime.Events.DispatcherMock, :start_link, fn _pid,
+                                                                           _init_arg ->
+        {:ok, spawn(fn -> :ok end)}
+      end)
+
+      Mox.expect(
+        Raxol.Core.Runtime.Rendering.EngineMock,
+        :start_link,
+        fn _initial_state_map -> {:ok, spawn(fn -> :ok end)} end
+      )
 
       # Call the supervisor's own start_link/1 function with the modified init_arg
       {:ok, _pid} = Raxol.Core.Runtime.Supervisor.start_link(init_arg)

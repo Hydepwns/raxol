@@ -31,13 +31,17 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
     # TODO: Skipping this test as the current process_bidi_text implementation
     #       is a placeholder and does not fully implement the Unicode Bidirectional Algorithm.
     #       A proper fix requires a more sophisticated approach.
-    @tag :skip
+    # @tag :skip # Unskipping the test
     test "processes bidirectional text correctly" do
       # Using a proper RTL character sequence
       # \u202E is RTL mark
       text = "Hello \u202E World"
       # Assert the structure returned by process_bidi_text
-      assert CharacterHandling.process_bidi_text(text) == [LTR: "Hello ", RTL: "World"]
+      # The function returns a list of tuples, not a keyword list.
+      assert CharacterHandling.process_bidi_text(text) == [
+               {:LTR, "Hello "},
+               {:RTL, " World"}
+             ]
     end
   end
 
@@ -47,7 +51,8 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
       # 5 (Hello) + 1 (space) + 2 (世) + 2 (界) = 10
       assert CharacterHandling.get_string_width("Hello 世界") == 10
       # 'e' + combining accent = width 1. 5 + 0 = 5
-      assert CharacterHandling.get_string_width("Hello\u0301") == 5 # Width doesn't include combining char
+      # Width doesn't include combining char
+      assert CharacterHandling.get_string_width("Hello\u0301") == 5
     end
   end
 end

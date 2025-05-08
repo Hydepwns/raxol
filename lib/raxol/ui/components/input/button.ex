@@ -37,8 +37,10 @@ defmodule Raxol.UI.Components.Input.Button do
     width = Map.get(opts, :width)
     height = Map.get(opts, :height)
     theme = Map.get(opts, :theme, %{})
-    role = Map.get(opts, :role, :default) # Added role handling
-    focused = Map.get(opts, :focused, false) # Added focused state
+    # Added role handling
+    role = Map.get(opts, :role, :default)
+    # Added focused state
+    focused = Map.get(opts, :focused, false)
     shortcut = Map.get(opts, :shortcut)
     tooltip = Map.get(opts, :tooltip)
 
@@ -51,7 +53,8 @@ defmodule Raxol.UI.Components.Input.Button do
       height: height,
       theme: theme,
       role: role,
-      focused: focused, # Ensure focused state is included
+      # Ensure focused state is included
+      focused: focused,
       shortcut: shortcut,
       tooltip: tooltip
       # removed pressed state
@@ -161,19 +164,29 @@ defmodule Raxol.UI.Components.Input.Button do
     end
   end
 
-  def handle_event(button, %Raxol.Core.Events.Event{type: :focus, data: %{focused: focused}}, _context) do
+  def handle_event(
+        button,
+        %Raxol.Core.Events.Event{type: :focus, data: %{focused: focused}},
+        _context
+      ) do
     # Update the focused state
     updated_button = %{button | focused: focused}
     # Use {:update, state, commands} tuple
     {:update, updated_button, []}
   end
 
-  def handle_event(button, %Raxol.Core.Events.Event{type: :keypress, data: %{key: key}}, _context) do
-    if !button.disabled and (key == :space or key == :enter) do # Check disabled
+  def handle_event(
+        button,
+        %Raxol.Core.Events.Event{type: :keypress, data: %{key: key}},
+        _context
+      ) do
+    # Check disabled
+    if !button.disabled and (key == :space or key == :enter) do
       # Execute the click handler if it exists
       if button.on_click, do: button.on_click.()
       # Consider adding :pressed state update here if needed
-      {:handled, button} # Return handled instead of :noreply
+      # Return handled instead of :noreply
+      {:handled, button}
     else
       :passthrough
     end
@@ -182,29 +195,36 @@ defmodule Raxol.UI.Components.Input.Button do
   # Catch-all for unhandled events - Moved to the end
   def handle_event(button, %Raxol.Core.Events.Event{} = _event, _context) do
     # {:noreply, button}
-    :passthrough # Indicate event was not handled by this component
+    # Indicate event was not handled by this component
+    :passthrough
   end
 
   # Private helpers
 
   defp resolve_colors(button, theme) do
-    default_fg = Map.get(theme, :fg, :default) # Default fg from theme or :default
-    default_bg = Map.get(theme, :bg, :default) # Default bg from theme or :default
+    # Default fg from theme or :default
+    default_fg = Map.get(theme, :fg, :default)
+    # Default bg from theme or :default
+    default_bg = Map.get(theme, :bg, :default)
 
     cond do
       button.disabled ->
         # Use Map.get with fallback to default_fg/default_bg
         {Map.get(theme, :disabled_fg, default_fg),
          Map.get(theme, :disabled_bg, default_bg)}
+
       button.focused ->
         {Map.get(theme, :focused_fg, default_fg),
          Map.get(theme, :focused_bg, default_bg)}
+
       button.role == :primary ->
         {Map.get(theme, :primary_fg, default_fg),
          Map.get(theme, :primary_bg, default_bg)}
+
       button.role == :secondary ->
         {Map.get(theme, :secondary_fg, default_fg),
          Map.get(theme, :secondary_bg, default_bg)}
+
       true ->
         {default_fg, default_bg}
     end

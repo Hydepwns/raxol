@@ -91,7 +91,10 @@ defmodule Raxol.UI.Layout.Grid do
 
   The dimensions of the grid: %{width: w, height: h}
   """
-  def measure_grid(%{type: :grid, attrs: attrs, children: children}, available_space) do
+  def measure_grid(
+        %{type: :grid, attrs: attrs, children: children},
+        available_space
+      ) do
     # Get grid dimensions from attributes or calculate based on children
     if Map.has_key?(attrs, :width) and Map.has_key?(attrs, :height) do
       # Use explicit dimensions

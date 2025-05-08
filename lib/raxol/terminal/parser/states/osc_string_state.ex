@@ -30,7 +30,8 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
 
       # String Terminator (ST - ESC \) -- Use escape_char check first
       <<27, rest_after_esc::binary>> ->
-        {:continue, emulator, %{parser_state | state: :osc_string_maybe_st}, rest_after_esc}
+        {:continue, emulator, %{parser_state | state: :osc_string_maybe_st},
+         rest_after_esc}
 
       # BEL (7) is another valid terminator for OSC
       <<7, rest_after_bel::binary>> ->
@@ -40,6 +41,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
             emulator,
             parser_state.payload_buffer
           )
+
         next_parser_state = %{parser_state | state: :ground}
         {:continue, new_emulator, next_parser_state, rest_after_bel}
 
@@ -56,6 +58,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
           parser_state
           | payload_buffer: parser_state.payload_buffer <> <<byte>>
         }
+
         {:continue, emulator, next_parser_state, rest_after_byte}
 
       # Ignore C0/DEL bytes within OSC string

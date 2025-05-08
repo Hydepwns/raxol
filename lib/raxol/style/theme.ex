@@ -66,11 +66,13 @@ defmodule Raxol.Style.Theme do
   Theme variants allow for alternate visual styles like high-contrast, dark mode, etc.
   A variant can include overrides for both :styles and :color_palette.
   """
-  def register_variant(name, variant_overrides) when is_atom(name) and is_map(variant_overrides) do
+  def register_variant(name, variant_overrides)
+      when is_atom(name) and is_map(variant_overrides) do
     current = current()
 
     # Ensure variant_overrides has :styles and :color_palette keys, even if empty
-    validated_overrides = Map.merge(%{styles: %{}, color_palette: %{}}, variant_overrides)
+    validated_overrides =
+      Map.merge(%{styles: %{}, color_palette: %{}}, variant_overrides)
 
     updated = %{
       current
@@ -145,7 +147,8 @@ defmodule Raxol.Style.Theme do
 
     # Define any style overrides for high contrast (e.g., bold text)
     high_contrast_styles = %{
-      default: %Style{text_decoration: [:bold]} # Example: make all default text bold
+      # Example: make all default text bold
+      default: %Style{text_decoration: [:bold]}
     }
 
     variant_overrides = %{

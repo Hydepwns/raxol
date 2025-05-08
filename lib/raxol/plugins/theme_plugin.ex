@@ -6,7 +6,14 @@ defmodule Raxol.Plugins.ThemePlugin do
 
   @behaviour Raxol.Plugins.Plugin
 
-  defstruct [:name, :enabled, :config, :current_theme, :api_version, :dependencies]
+  defstruct [
+    :name,
+    :enabled,
+    :config,
+    :current_theme,
+    :api_version,
+    :dependencies
+  ]
 
   @default_themes %{
     "default" => %{

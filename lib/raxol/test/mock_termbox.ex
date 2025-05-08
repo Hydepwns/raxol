@@ -89,19 +89,23 @@ defmodule Raxol.Test.MockTermbox do
   # Constants module
   defmodule Constants do
     def attribute(_name) do
-      0 # Placeholder
+      # Placeholder
+      0
     end
 
     def color(_name) do
-      0 # Placeholder
+      # Placeholder
+      0
     end
 
     def key(_name) do
-      0 # Placeholder
+      # Placeholder
+      0
     end
 
     def event_type(_name) do
-      0 # Placeholder
+      # Placeholder
+      0
     end
   end
 end

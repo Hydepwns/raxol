@@ -5,20 +5,18 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
   # --- Aliases & Meck Setup ---
   alias Raxol.Core.Runtime.Plugins.Manager
   alias Raxol.Core.Runtime.Plugins.{LifecycleHelper, CommandRegistry, Loader}
+  alias Raxol.Core.Runtime.Plugins.LifecycleHelperBehaviour
 
-  # --- Meck for non-behaviours ---
-  # Using meck for LifecycleHelper as it's not a behaviour
-  # If Code needs mocking, use meck:
-  # alias Raxol.Core.Runtime.Plugins.Code
-  # setup do
-  #   :meck.new(Code, [:passthrough])
-  #   on_exit(fn -> :meck.unload(Code) end)
+  # --- Mox for behaviours (if any remain) ---
   #   :ok
   # end
 
   # --- Mox for behaviours (if any remain) ---
   # Import Mox if other behaviour-based mocks are needed later
-  # import Mox
+  import Mox
+
+  # Define mock for LifecycleHelperBehaviour
+  defmock(LifecycleHelperMock, for: LifecycleHelperBehaviour)
 
   # --- Mock Plugin Definitions (Keep for setup_test_plugins) ---
   # Keep the behaviour definitions themselves
@@ -34,7 +32,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
   # defmock MockPluginBehaviour, for: MockPluginBehaviour
 
   defmodule MockPluginMetadataProvider do
-     @callback metadata() :: map
+    @callback metadata() :: map
   end
 
   # REMOVED defmock for MockPluginMetadataProvider
@@ -46,29 +44,30 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
 
   # --- Setup & Teardown ---
   setup %{test: test_name} do
-    # Mox.verify_on_exit!(self) # Only if Mox mocks are used
-
-    # Setup meck for LifecycleHelper
-    :meck.new(LifecycleHelper, [:passthrough])
-    on_exit(fn -> :meck.unload(LifecycleHelper) end)
+    Mox.verify_on_exit!()
 
     table_name = :"#{test_name}_CmdReg"
     :ets.new(table_name, [:set, :public, :named_table, read_concurrency: true])
-    on_exit(fn -> :ets.delete(table_name) end)
+
+    on_exit(fn ->
+      # Clean up ETS table if it exists
+      if :ets.info(:raxol_command_registry, :name) == :raxol_command_registry,
+        do: :ets.delete(:raxol_command_registry)
+
+      # Use the documented cleanup function
+      Briefly.cleanup()
+    end)
 
     # Create a temporary directory for plugins (if needed by remaining tests)
     {:ok, tmp_dir} = Briefly.create(directory: true)
-    on_exit(fn -> Briefly.remove!(tmp_dir) end)
+    on_exit(fn -> Briefly.cleanup() end)
 
     # Basic start options for remaining tests
     start_opts = [
       name: :"#{test_name}_PluginManager",
       plugin_dirs: [tmp_dir],
-      # Inject the real (mecked) LifecycleHelper
       lifecycle_helper_module: LifecycleHelper,
       command_registry_table: table_name
-      # loader_module: Loader # Add if Loader needed and meck it too
-      # command_helper_module: CommandHelper # Add if CommandHelper needed and meck it too
     ]
 
     {:ok, base_opts: start_opts, tmp_dir: tmp_dir}
@@ -79,7 +78,6 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
   defp setup_test_plugins(dir) do
     File.write!(Path.join(dir, "dummy_plugin.ex"), """
     defmodule DummyPlugin do
-      # REMOVED @behaviour declarations as defmocks were removed
       # @behaviour Raxol.Core.Runtime.Plugins.ManagerTest.MockPluginBehaviour
       # @behaviour Raxol.Core.Runtime.Plugins.ManagerTest.MockPluginMetadataProvider
 
@@ -91,6 +89,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       def metadata, do: %{id: :dummy, version: "1.0", dependencies: []}
     end
     """)
+
     # Compile the dummy plugin if meck needs to interact with it
     Code.compile_file(Path.join(dir, "dummy_plugin.ex"))
   end
@@ -102,25 +101,33 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     # Arrange: Setup dummy plugin (needed if Manager tries to load it)
     setup_test_plugins(dir)
 
-    # Arrange: Minimal expectations for LifecycleHelper.initialize_plugins/6
-    # Match the actual arity used in Manager.handle_call(:initialize, ...)
-    :meck.expect(LifecycleHelper, :initialize_plugins, fn plugin_specs, plugin_config, manager_pid, event_handler_pid, cell_processor_pid, command_helper_pid ->
+    # Arrange: Minimal expectations for LifecycleHelper.initialize_plugins/6 using Mox
+    Mox.expect(LifecycleHelperMock, :initialize_plugins, fn _plugin_specs,
+                                                            _plugin_config,
+                                                            _manager_pid,
+                                                            _event_handler_pid,
+                                                            _cell_processor_pid,
+                                                            _command_helper_pid ->
       # Add assertions or logging for args if needed for debugging
       # IO.inspect(plugin_specs, label: "initialize_plugins specs")
       # IO.inspect(plugin_config, label: "initialize_plugins config")
 
       # Simulate initialization finding the DummyPlugin
-      {:ok, %{
-        loaded: [:dummy],
-        failed: [],
-        plugins: %{dummy: DummyPlugin},
-        metadata: %{dummy: DummyPlugin.metadata()},
-        plugin_states: %{dummy: %{}},
-        load_order: [:dummy],
-        plugin_config: %{}, # Return provided config or expected final config
-        plugin_paths: %{dummy: Path.join(dir, "dummy_plugin.ex")}
-       },
-       %{initial_state: :dummy} # Simulate some initialized state if needed by Manager
+      {
+        :ok,
+        %{
+          loaded: [:dummy],
+          failed: [],
+          plugins: %{dummy: DummyPlugin},
+          metadata: %{dummy: DummyPlugin.metadata()},
+          plugin_states: %{dummy: %{}},
+          load_order: [:dummy],
+          # Return provided config or expected final config
+          plugin_config: %{},
+          plugin_paths: %{dummy: Path.join(dir, "dummy_plugin.ex")}
+        },
+        # Simulate some initialized state if needed by Manager
+        %{initial_state: :dummy}
       }
     end)
 
@@ -130,12 +137,11 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
     # Assert
     assert is_pid(pid)
     assert Process.alive?(pid)
-    :meck.verify(LifecycleHelper) # Verify the correct arity function was called
+    # :meck.verify(LifecycleHelper) # REMOVED, Mox handles verification
 
     # Cleanup
     if Process.alive?(pid), do: Supervisor.stop(pid, :shutdown, :infinity)
   end
 
   # Add any other remaining basic tests that weren't moved...
-
 end

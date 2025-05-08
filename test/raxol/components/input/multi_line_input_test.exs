@@ -33,6 +33,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
         focused: true,
         on_change: fn _ -> :changed end
       }
+
       state = MultiLineInput.init(props)
       assert state.id == :mle_props
       assert state.value == "Hello\nWorld"
@@ -42,7 +43,8 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
       assert state.wrap == :char
       assert state.focused == true
       assert is_function(state.on_change)
-      assert state.lines == ["Hello", "World"] # Check lines cache
+      # Check lines cache
+      assert state.lines == ["Hello", "World"]
     end
 
     test "initializes with provided values and style" do
@@ -67,6 +69,7 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
         on_change: fn _ -> :changed end,
         style: expected_style
       }
+
       state = MultiLineInput.init(props)
       assert state.id == :mle_props
       assert state.value == "Hello\nWorld"
@@ -77,58 +80,83 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
       assert state.focused == true
       assert is_function(state.on_change)
       assert state.style == expected_style
-      assert state.lines == ["Hello", "World"] # Check lines cache
+      # Check lines cache
+      assert state.lines == ["Hello", "World"]
       assert state.cursor_pos == {0, 0}
-      assert state.focused == true # Should be true as focused: true was passed in props
+      # Should be true as focused: true was passed in props
+      assert state.focused == true
     end
   end
 
   describe "update/2" do
     setup do
-      initial_state = MultiLineInput.init(%{id: :mle_update, value: "test\ntext"})
+      initial_state =
+        MultiLineInput.init(%{id: :mle_update, value: "test\ntext"})
+
       {:ok, state: initial_state}
     end
 
     test "sets value and resets cursor", %{state: state} do
       # Use {:update_props, ...} message to change value
-      {:noreply, new_state, _} = MultiLineInput.update({:update_props, %{value: "new\nvalue"}}, state)
+      {:noreply, new_state, _} =
+        MultiLineInput.update({:update_props, %{value: "new\nvalue"}}, state)
+
       assert new_state.value == "new\nvalue"
       assert new_state.lines == ["new", "value"]
       # Cursor/scroll might reset or be recalculated, check if visible
-      assert new_state.cursor_pos == {0, 0} # Assuming reset on value update
+      # Assuming reset on value update
+      assert new_state.cursor_pos == {0, 0}
       assert new_state.scroll_offset == {0, 0}
     end
 
     test "moves cursor within bounds", %{state: state} do
       # Move right
-      {:noreply, state_r, _} = MultiLineInput.update({:move_cursor, :right}, state)
+      {:noreply, state_r, _} =
+        MultiLineInput.update({:move_cursor, :right}, state)
+
       assert state_r.cursor_pos == {0, 1}
       # Move down
-      {:noreply, state_d, _} = MultiLineInput.update({:move_cursor, :down}, state_r)
+      {:noreply, state_d, _} =
+        MultiLineInput.update({:move_cursor, :down}, state_r)
+
       assert state_d.cursor_pos == {1, 1}
       # Move left
-      {:noreply, state_l, _} = MultiLineInput.update({:move_cursor, :left}, state_d)
+      {:noreply, state_l, _} =
+        MultiLineInput.update({:move_cursor, :left}, state_d)
+
       assert state_l.cursor_pos == {1, 0}
       # Move up
-      {:noreply, state_u, _} = MultiLineInput.update({:move_cursor, :up}, state_l)
+      {:noreply, state_u, _} =
+        MultiLineInput.update({:move_cursor, :up}, state_l)
+
       assert state_u.cursor_pos == {0, 0}
     end
 
     test "sets selection", %{state: state} do
       # Simulate moving right while holding shift (generates :select_to message)
       # NOTE: This assumes EventHandler translates Shift+Right to :select_to
-      {:noreply, state_sel, _} = MultiLineInput.update({:select_to, {0, 1}}, state)
+      {:noreply, state_sel, _} =
+        MultiLineInput.update({:select_to, {0, 1}}, state)
+
       assert state_sel.selection_start == {0, 0}
       assert state_sel.selection_end == {0, 1}
-      assert state_sel.cursor_pos == {0, 1} # Cursor moves with selection end
+      # Cursor moves with selection end
+      assert state_sel.cursor_pos == {0, 1}
     end
 
     test "handles scrolling (via cursor movement)", %{state: state} do
       # Simulate moving cursor down multiple times to trigger scroll
-      state_many_lines = MultiLineInput.init(%{value: Enum.join(Enum.map(1..20, &"Line #{&1}"), "\n"), height: 5})
-      {:noreply, state_moved, _} = Enum.reduce(1..10, {:noreply, state_many_lines, []}, fn _, {_, st, _} ->
-         MultiLineInput.update({:move_cursor, :down}, st)
-      end)
+      state_many_lines =
+        MultiLineInput.init(%{
+          value: Enum.join(Enum.map(1..20, &"Line #{&1}"), "\n"),
+          height: 5
+        })
+
+      {:noreply, state_moved, _} =
+        Enum.reduce(1..10, {:noreply, state_many_lines, []}, fn _, {_, st, _} ->
+          MultiLineInput.update({:move_cursor, :down}, st)
+        end)
+
       # Check if scroll_offset has changed (e.g., cursor at row 10, height 5)
       assert elem(state_moved.scroll_offset, 0) > 0
     end
@@ -141,47 +169,62 @@ defmodule Raxol.Components.Input.MultiLineInputTest do
     end
 
     test "handles :input message", %{state: state} do
-       # Input 'a' (codepoint 97)
-       {:noreply, new_state, _} = MultiLineInput.update({:input, ?a}, state)
-       assert new_state.value == "atest\ntext"
-       assert new_state.cursor_pos == {0, 1} # Cursor moves after char
+      # Input 'a' (codepoint 97)
+      {:noreply, new_state, _} = MultiLineInput.update({:input, ?a}, state)
+      assert new_state.value == "atest\ntext"
+      # Cursor moves after char
+      assert new_state.cursor_pos == {0, 1}
     end
 
     test "handles :enter message", %{state: state} do
-       # Position cursor at {0, 2}
-       state_at_2 = %{state | cursor_pos: {0, 2}}
-       {:noreply, new_state, _} = MultiLineInput.update({:enter}, state_at_2)
-       assert new_state.value == "te\nst\ntext"
-       assert new_state.cursor_pos == {1, 0} # Cursor moves to start of new line
-       assert new_state.lines == ["te", "st", "text"]
+      # Position cursor at {0, 2}
+      state_at_2 = %{state | cursor_pos: {0, 2}}
+      {:noreply, new_state, _} = MultiLineInput.update({:enter}, state_at_2)
+      assert new_state.value == "te\nst\ntext"
+      # Cursor moves to start of new line
+      assert new_state.cursor_pos == {1, 0}
+      assert new_state.lines == ["te", "st", "text"]
     end
 
     test "handles :backspace message (no selection)", %{state: state} do
-       # Position cursor at {1, 2}
-       state_at_1_2 = %{state | cursor_pos: {1, 2}}
-       {:noreply, new_state, _} = MultiLineInput.update({:backspace}, state_at_1_2)
-       assert new_state.value == "test\ntxt"
-       assert new_state.cursor_pos == {1, 1} # Cursor moves back
+      # Position cursor at {1, 2}
+      state_at_1_2 = %{state | cursor_pos: {1, 2}}
+
+      {:noreply, new_state, _} =
+        MultiLineInput.update({:backspace}, state_at_1_2)
+
+      assert new_state.value == "test\ntxt"
+      # Cursor moves back
+      assert new_state.cursor_pos == {1, 1}
     end
 
     test "handles :backspace message (with selection)", %{state: state} do
-       # Select from {0, 1} to {1, 2}
-       state_with_sel = %{state | selection_start: {0, 1}, selection_end: {1, 2}, cursor_pos: {1, 2}}
-       {:noreply, new_state, _} = MultiLineInput.update({:backspace}, state_with_sel)
-       assert new_state.value == "txt"
-       assert new_state.cursor_pos == {0, 1} # Cursor moves to selection start
-       assert new_state.selection_start == nil
-       assert new_state.selection_end == nil
+      # Select from {0, 1} to {1, 2}
+      state_with_sel = %{
+        state
+        | selection_start: {0, 1},
+          selection_end: {1, 2},
+          cursor_pos: {1, 2}
+      }
+
+      {:noreply, new_state, _} =
+        MultiLineInput.update({:backspace}, state_with_sel)
+
+      assert new_state.value == "txt"
+      # Cursor moves to selection start
+      assert new_state.cursor_pos == {0, 1}
+      assert new_state.selection_start == nil
+      assert new_state.selection_end == nil
     end
 
     test "handles :delete message (no selection)", %{state: state} do
-       # Position cursor at {0, 2}
-       state_at_0_2 = %{state | cursor_pos: {0, 2}}
-       {:noreply, new_state, _} = MultiLineInput.update({:delete}, state_at_0_2)
-       assert new_state.value == "tet\ntext"
-       assert new_state.cursor_pos == {0, 2} # Cursor doesn't move
+      # Position cursor at {0, 2}
+      state_at_0_2 = %{state | cursor_pos: {0, 2}}
+      {:noreply, new_state, _} = MultiLineInput.update({:delete}, state_at_0_2)
+      assert new_state.value == "tet\ntext"
+      # Cursor doesn't move
+      assert new_state.cursor_pos == {0, 2}
     end
-
   end
 
   describe "line wrapping" do

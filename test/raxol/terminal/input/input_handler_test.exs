@@ -188,7 +188,8 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
 
     test "does not add empty buffer to history" do
       handler = InputHandler.new()
-      handler = InputHandler.add_to_history(handler) # Capture returned handler
+      # Capture returned handler
+      handler = InputHandler.add_to_history(handler)
       assert handler.input_history == []
     end
   end
@@ -265,27 +266,34 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
         |> InputHandler.process_keyboard("test2")
         |> InputHandler.add_to_history()
         |> InputHandler.process_keyboard("test3")
-        |> InputHandler.add_to_history() # history: ["test3", "test2", "test1"]
+        # history: ["test3", "test2", "test1"]
+        |> InputHandler.add_to_history()
 
       # index nil -> 0
-      {handler, content} = handler |> InputHandler.previous_history_entry() # Capture handler
+      # Capture handler
+      {handler, content} = handler |> InputHandler.previous_history_entry()
       assert content == "test3"
       assert handler.history_index == 0
 
       # index 0 -> 1
-      {handler, content} = handler |> InputHandler.previous_history_entry() # Capture handler
+      # Capture handler
+      {handler, content} = handler |> InputHandler.previous_history_entry()
       assert content == "test2"
       assert handler.history_index == 1
 
       # index 1 -> 2
-      {handler, content} = handler |> InputHandler.previous_history_entry() # Capture handler
+      # Capture handler
+      {handler, content} = handler |> InputHandler.previous_history_entry()
       assert content == "test1"
       assert handler.history_index == 2
 
       # index 2 -> 2 (stay at oldest)
-      {handler, content} = handler |> InputHandler.previous_history_entry() # Capture handler
+      # Capture handler
+      {handler, content} = handler |> InputHandler.previous_history_entry()
+
       # When at the oldest, it should return the current buffer content, which is still "test1"
-      assert content == "test1" # Buffer content remains
+      # Buffer content remains
+      assert content == "test1"
       assert handler.history_index == 2
     end
   end
@@ -295,7 +303,8 @@ defmodule Raxol.Terminal.Input.InputHandlerTest do
       handler = InputHandler.new()
       handler = handler |> InputHandler.process_keyboard("abc")
       refute InputHandler.buffer_empty?(handler)
-      handler = InputHandler.clear_buffer(handler) # Capture returned handler
+      # Capture returned handler
+      handler = InputHandler.clear_buffer(handler)
       assert InputHandler.buffer_empty?(handler)
     end
   end

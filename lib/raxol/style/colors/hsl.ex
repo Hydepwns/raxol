@@ -37,15 +37,20 @@ defmodule Raxol.Style.Colors.HSL do
   defp _calculate_hue(r, g, b, max, delta) do
     hue =
       cond do
-        delta == 0.0 -> 0.0 # Achromatic
+        # Achromatic
+        delta == 0.0 -> 0.0
         max == r -> 60.0 * rem(round((g - b) / delta), 6)
-        max == g -> 60.0 * (((b - r) / delta) + 2.0)
+        max == g -> 60.0 * ((b - r) / delta + 2.0)
         # max == b
-        true -> 60.0 * (((r - g) / delta) + 4.0)
+        true -> 60.0 * ((r - g) / delta + 4.0)
       end
+
     # Ensure hue is always positive
-    if hue < 0, do: hue + 360.0, else: hue
-    |> then(&(rem(round(&1), 360)))
+    if hue < 0,
+      do: hue + 360.0,
+      else:
+        hue
+        |> then(&rem(round(&1), 360))
   end
 
   @doc """
@@ -62,7 +67,6 @@ defmodule Raxol.Style.Colors.HSL do
   def hsl_to_rgb(h, s, l)
       when is_number(h) and h >= 0 and h < 360 and is_float(s) and s >= 0.0 and
              s <= 1.0 and is_float(l) and l >= 0.0 and l <= 1.0 do
-
     c = (1.0 - abs(2.0 * l - 1.0)) * s
     h_prime = h / 60.0
     x = c * (1.0 - abs(rem(round(h_prime), 2) - 1.0))
@@ -76,7 +80,8 @@ defmodule Raxol.Style.Colors.HSL do
         h_prime >= 3.0 and h_prime < 4.0 -> {0.0, x, c}
         h_prime >= 4.0 and h_prime < 5.0 -> {x, 0.0, c}
         h_prime >= 5.0 and h_prime < 6.0 -> {c, 0.0, x}
-        true -> {0.0, 0.0, 0.0} # Should not happen with valid h
+        # Should not happen with valid h
+        true -> {0.0, 0.0, 0.0}
       end
 
     r = round((r_prime + m) * 255)
@@ -121,7 +126,8 @@ defmodule Raxol.Style.Colors.HSL do
   - A Color struct representing the lightened color
   """
   @spec lighten(Color.t(), float()) :: Color.t()
-  def lighten(%Color{} = color, amount) when is_float(amount) and amount >= 0.0 do
+  def lighten(%Color{} = color, amount)
+      when is_float(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_l = min(l + amount, 1.0)
     {r, g, b} = hsl_to_rgb(h, s, new_l)
@@ -141,7 +147,8 @@ defmodule Raxol.Style.Colors.HSL do
   - A Color struct representing the darkened color
   """
   @spec darken(Color.t(), float()) :: Color.t()
-  def darken(%Color{} = color, amount) when is_float(amount) and amount >= 0.0 do
+  def darken(%Color{} = color, amount)
+      when is_float(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_l = max(l - amount, 0.0)
     {r, g, b} = hsl_to_rgb(h, s, new_l)
@@ -161,7 +168,8 @@ defmodule Raxol.Style.Colors.HSL do
   - A Color struct representing the saturated color
   """
   @spec saturate(Color.t(), float()) :: Color.t()
-  def saturate(%Color{} = color, amount) when is_float(amount) and amount >= 0.0 do
+  def saturate(%Color{} = color, amount)
+      when is_float(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_s = min(s + amount, 1.0)
     {r, g, b} = hsl_to_rgb(h, new_s, l)
@@ -181,7 +189,8 @@ defmodule Raxol.Style.Colors.HSL do
   - A Color struct representing the desaturated color
   """
   @spec desaturate(Color.t(), float()) :: Color.t()
-  def desaturate(%Color{} = color, amount) when is_float(amount) and amount >= 0.0 do
+  def desaturate(%Color{} = color, amount)
+      when is_float(amount) and amount >= 0.0 do
     {h, s, l} = rgb_to_hsl(color.r, color.g, color.b)
     new_s = max(s - amount, 0.0)
     {r, g, b} = hsl_to_rgb(h, new_s, l)

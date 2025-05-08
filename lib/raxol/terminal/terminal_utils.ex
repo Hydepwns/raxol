@@ -26,14 +26,20 @@ defmodule Raxol.Terminal.TerminalUtils do
       with {:error, _} <- detect_with_io(:io),
            {:error, _} <- detect_with_termbox(),
            {:error, _} <- detect_with_stty() do
-        Logger.warning("Could not determine terminal dimensions. Using defaults.")
+        Logger.warning(
+          "Could not determine terminal dimensions. Using defaults."
+        )
+
         {default_width, default_height}
       else
         {:ok, w, h} -> {w, h}
       end
 
     if width == 0 or height == 0 do
-      Logger.warning("Detected invalid terminal dimensions (#{width}x#{height}). Using defaults.")
+      Logger.warning(
+        "Detected invalid terminal dimensions (#{width}x#{height}). Using defaults."
+      )
+
       {default_width, default_height}
     else
       Logger.debug("Terminal dimensions: #{width}x#{height}")
@@ -67,7 +73,8 @@ defmodule Raxol.Terminal.TerminalUtils do
   @doc """
   Returns the current cursor position, if available.
   """
-  @spec cursor_position :: {:ok, {pos_integer(), pos_integer()}} | {:error, term()}
+  @spec cursor_position ::
+          {:ok, {pos_integer(), pos_integer()}} | {:error, term()}
   def cursor_position do
     # This is a stub implementation - real implementation might use ANSI escape sequences
     {:error, :not_implemented}
@@ -78,8 +85,10 @@ defmodule Raxol.Terminal.TerminalUtils do
   # Try to detect with :io.columns and :io.rows (most reliable)
   defp detect_with_io(io_facade \\ :io) do
     try do
-      with {:ok, width} when is_integer(width) and width > 0 <- apply(io_facade, :columns, []),
-           {:ok, height} when is_integer(height) and height > 0 <- apply(io_facade, :rows, []) do
+      with {:ok, width} when is_integer(width) and width > 0 <-
+             apply(io_facade, :columns, []),
+           {:ok, height} when is_integer(height) and height > 0 <-
+             apply(io_facade, :rows, []) do
         {:ok, width, height}
       else
         {:error, reason} ->

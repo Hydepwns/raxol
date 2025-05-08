@@ -16,12 +16,14 @@ defmodule Raxol.Components.Selection.List do
             items: [],
             selected_index: 0,
             scroll_offset: 0,
-            width: 30, # Example default
+            # Example default
+            width: 30,
             height: @default_height,
             style: %{},
             focused: false,
             on_select: nil,
-            item_renderer: nil # Remove default function capture
+            # Remove default function capture
+            item_renderer: nil
 
   # --- Component Behaviour Callbacks ---
 
@@ -35,16 +37,18 @@ defmodule Raxol.Components.Selection.List do
       width: props[:width] || 30,
       height: props[:height] || @default_height,
       style: props[:style] || %{},
+      focused: props[:focused] || false,
       on_select: props[:on_select],
       # Set default renderer here if not provided
-      item_renderer: props[:item_renderer] || &default_item_renderer/1
+      item_renderer: props[:item_renderer] || (&default_item_renderer/1)
     }
   end
 
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle internal messages (selection, scrolling)
-    Logger.debug("List #{state.id} received message: #{inspect msg}")
+    Logger.debug("List #{state.id} received message: #{inspect(msg)}")
+
     case msg do
       :select_next -> select_item(state.selected_index + 1, state)
       :select_prev -> select_item(state.selected_index - 1, state)
@@ -56,37 +60,52 @@ defmodule Raxol.Components.Selection.List do
   end
 
   @impl Raxol.UI.Components.Base.Component
-  def handle_event(event, %{} = _props, state) do # Correct arity
+  # Correct arity
+  def handle_event(event, %{} = _props, state) do
     # Handle keyboard (up/down/enter), mouse clicks
-    Logger.debug("List #{state.id} received event: #{inspect event}")
+    Logger.debug("List #{state.id} received event: #{inspect(event)}")
+
     case event do
-      %{type: :key, data: %{key: "Up"}} -> update(:select_prev, state)
-      %{type: :key, data: %{key: "Down"}} -> update(:select_next, state)
-      %{type: :key, data: %{key: "Enter"}} -> confirm_selection(state)
-      %{type: :mouse, data: %{button: :left, action: :press, y: y_pos}} -> handle_click(y_pos, state)
-      _ -> {state, []}
+      %{type: :key, data: %{key: "Up"}} ->
+        update(:select_prev, state)
+
+      %{type: :key, data: %{key: "Down"}} ->
+        update(:select_next, state)
+
+      %{type: :key, data: %{key: "Enter"}} ->
+        confirm_selection(state)
+
+      %{type: :mouse, data: %{button: :left, action: :press, y: y_pos}} ->
+        handle_click(y_pos, state)
+
+      _ ->
+        {state, []}
     end
   end
 
   # --- Render Logic ---
 
   @impl Raxol.UI.Components.Base.Component
-  def render(state, %{} = _props) do # Correct arity
+  # Correct arity
+  def render(state, %{} = _props) do
     # Determine visible items based on scroll offset and height
     visible_items = Enum.slice(state.items, state.scroll_offset, state.height)
 
     # Render each visible item
-    item_elements = Enum.with_index(visible_items, state.scroll_offset)
-                    |> Enum.map(fn {item, index} ->
-                      is_selected = (index == state.selected_index)
-                      render_item(item, is_selected, state)
-                    end)
+    item_elements =
+      Enum.with_index(visible_items, state.scroll_offset)
+      |> Enum.map(fn {item, index} ->
+        is_selected = index == state.selected_index
+        render_item(item, is_selected, state)
+      end)
 
-    dsl_result = Raxol.View.Elements.box id: state.id, style: %{width: state.width, height: state.height} do
-      Raxol.View.Elements.column do
-        item_elements
+    dsl_result =
+      Raxol.View.Elements.box id: state.id,
+                              style: %{width: state.width, height: state.height} do
+        Raxol.View.Elements.column do
+          item_elements
+        end
       end
-    end
 
     # Return the element structure directly
     dsl_result
@@ -95,10 +114,14 @@ defmodule Raxol.Components.Selection.List do
   # --- Internal Render Helpers ---
 
   defp render_item(item_data, is_selected, state) do
-    base_style = %{width: :fill} # Ensure item fills width
+    # Ensure item fills width
+    base_style = %{width: :fill}
     selected_style = %{bg: :blue, fg: :white}
 
-    style = if is_selected and state.focused, do: Map.merge(base_style, selected_style), else: base_style
+    style =
+      if is_selected and state.focused,
+        do: Map.merge(base_style, selected_style),
+        else: base_style
 
     # Use the custom renderer or default
     content = state.item_renderer.(item_data)
@@ -107,11 +130,16 @@ defmodule Raxol.Components.Selection.List do
     display_content =
       cond do
         is_binary(content) -> Raxol.View.Elements.label(content: content)
-        is_map(content) and Map.has_key?(content, :type) -> content # Assume valid element
-        true -> Raxol.View.Elements.label(content: to_string(content)) # Default fallback
+        # Assume valid element
+        is_map(content) and Map.has_key?(content, :type) -> content
+        # Default fallback
+        true -> Raxol.View.Elements.label(content: to_string(content))
       end
 
-    Raxol.View.Elements.box style: style do [display_content] end # Pass as list
+    # Pass as list
+    Raxol.View.Elements.box style: style do
+      [display_content]
+    end
   end
 
   # --- Internal Logic Helpers ---
@@ -124,7 +152,12 @@ defmodule Raxol.Components.Selection.List do
 
   defp confirm_selection(state) do
     selected_item = Enum.at(state.items, state.selected_index)
-    commands = if state.on_select && selected_item, do: [{state.on_select, selected_item}], else: []
+
+    commands =
+      if state.on_select && selected_item,
+        do: [{state.on_select, selected_item}],
+        else: []
+
     {state, commands}
   end
 
@@ -150,5 +183,4 @@ defmodule Raxol.Components.Selection.List do
 
   # Default item renderer just converts to string
   defp default_item_renderer(item), do: to_string(item)
-
 end

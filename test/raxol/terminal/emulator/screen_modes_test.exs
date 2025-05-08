@@ -30,7 +30,12 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       # Switch to alternate buffer (DECSET ?1049h)
       {emulator_alt, ""} = Emulator.process_input(emulator, "\e[?1049h")
-      assert ModeManager.mode_enabled?(emulator_alt.mode_manager, :alt_screen_buffer) == true
+
+      assert ModeManager.mode_enabled?(
+               emulator_alt.mode_manager,
+               :alt_screen_buffer
+             ) == true
+
       # Check active buffer is now the alternate one (if getter exists)
       # assert Emulator.get_active_buffer_type(emulator) == :alternate
       # Check the alternate buffer is empty
@@ -49,7 +54,11 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       # Switch back to normal buffer (DECRST ?1049l)
       {emulator_normal, ""} = Emulator.process_input(emulator_alt, "\e[?1049l")
-      assert ModeManager.mode_enabled?(emulator_normal.mode_manager, :alt_screen_buffer) == false
+
+      assert ModeManager.mode_enabled?(
+               emulator_normal.mode_manager,
+               :alt_screen_buffer
+             ) == false
 
       # Check active buffer is now the main one
       # assert Emulator.get_active_buffer_type(emulator) == :main
@@ -98,11 +107,15 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       # Set insert mode (SM 4)
       {emulator_insert, ""} = Emulator.process_input(emulator, "\e[4h")
-      assert ModeManager.mode_enabled?(emulator_insert.mode_manager, :irm) == true
+
+      assert ModeManager.mode_enabled?(emulator_insert.mode_manager, :irm) ==
+               true
 
       # Reset insert mode (RM 4)
       {emulator_reset, ""} = Emulator.process_input(emulator_insert, "\e[4l")
-      assert ModeManager.mode_enabled?(emulator_reset.mode_manager, :irm) == false
+
+      assert ModeManager.mode_enabled?(emulator_reset.mode_manager, :irm) ==
+               false
     end
 
     test "sets and resets screen modes (Origin Mode - DECOM)" do
@@ -110,11 +123,15 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
 
       # Set origin mode (DECSET ?6h)
       {emulator_origin, ""} = Emulator.process_input(emulator, "\e[?6h")
-      assert ModeManager.mode_enabled?(emulator_origin.mode_manager, :decom) == true
+
+      assert ModeManager.mode_enabled?(emulator_origin.mode_manager, :decom) ==
+               true
 
       # Reset origin mode (DECRST ?6l)
       {emulator_reset, ""} = Emulator.process_input(emulator_origin, "\e[?6l")
-      assert ModeManager.mode_enabled?(emulator_reset.mode_manager, :decom) == false
+
+      assert ModeManager.mode_enabled?(emulator_reset.mode_manager, :decom) ==
+               false
     end
 
     test "handles cursor visibility (DECTCEM)" do
@@ -145,24 +162,32 @@ defmodule Raxol.Terminal.Emulator.ScreenModesTest do
       # Using ESC = as per vttest
       # Use process_input
       {emulator_app, ""} = Emulator.process_input(emulator, "\e=")
-      assert ModeManager.mode_enabled?(emulator_app.mode_manager, :decckm) == true
+
+      assert ModeManager.mode_enabled?(emulator_app.mode_manager, :decckm) ==
+               true
 
       # Reset application keypad mode (DECKPNM - CSI = ?1l or ESC >)
       # Using ESC > as per vttest
       # Use process_input
       {emulator_norm, ""} = Emulator.process_input(emulator_app, "\e>")
-      assert ModeManager.mode_enabled?(emulator_norm.mode_manager, :decckm) == false
+
+      assert ModeManager.mode_enabled?(emulator_norm.mode_manager, :decckm) ==
+               false
     end
 
     test "handles terminal modes (standard modes like IRM)" do
       emulator = Emulator.new(80, 24)
       # Insert mode (Set Standard Mode 4)
       {state_after_set, _} = Emulator.process_input(emulator, "\e[4h")
-      assert ModeManager.mode_enabled?(state_after_set.mode_manager, :irm) == true
+
+      assert ModeManager.mode_enabled?(state_after_set.mode_manager, :irm) ==
+               true
 
       # Normal mode (Reset Standard Mode 4)
       {state_after_reset, _} = Emulator.process_input(state_after_set, "\e[4l")
-      assert ModeManager.mode_enabled?(state_after_reset.mode_manager, :irm) == false
+
+      assert ModeManager.mode_enabled?(state_after_reset.mode_manager, :irm) ==
+               false
     end
   end
 end

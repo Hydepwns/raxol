@@ -1,8 +1,14 @@
 defmodule Raxol.Core.Runtime.Plugins.APITest do
   use ExUnit.Case, async: true
+  import Mox
 
   alias Raxol.Core.Runtime.Plugins.API
   alias Raxol.Core.Runtime.Events.Dispatcher
+  alias Raxol.Core.Runtime.Debug
+  alias Application
+
+  # Define Mocks
+  defmock(DispatcherMock, for: Raxol.Core.Runtime.Events.Dispatcher.Behaviour)
 
   # Mock event handler for testing
   defmodule TestEventHandler do
@@ -41,84 +47,70 @@ defmodule Raxol.Core.Runtime.Plugins.APITest do
   end
 
   setup do
-    # Create mocks for dependencies
-    :meck.new(Raxol.Core.Runtime.Events.Dispatcher, [:passthrough])
-    # :meck.new(Raxol.Core.Runtime.Plugins.Commands, [:passthrough]) # Removed
-    :meck.new(Raxol.Core.Runtime.Rendering.Engine, [:passthrough])
-    :meck.new(Raxol.Core.Runtime.Rendering.Buffer, [:passthrough])
-    :meck.new(Raxol.Core.Runtime.Debug, [:passthrough])
+    Mox.verify_on_exit!()
 
-    # Replace functions with our test implementations
-    :meck.expect(
-      Raxol.Core.Runtime.Events.Dispatcher,
-      :subscribe,
-      fn event_type, handler, function ->
-        send(self(), {:subscribe_called, event_type, handler, function})
-        :ok
-      end
-    )
-
-    :meck.expect(
-      Raxol.Core.Runtime.Events.Dispatcher,
-      :unsubscribe,
-      fn event_type, handler ->
-        send(self(), {:unsubscribe_called, event_type, handler})
-        :ok
-      end
-    )
-
-    :meck.expect(
-      Raxol.Core.Runtime.Events.Dispatcher,
-      :broadcast,
-      fn event_type, payload ->
-        send(self(), {:broadcast_called, event_type, payload})
-        :ok
-      end
-    )
-
-    :meck.expect(Raxol.Core.Runtime.Plugins.Commands, :register, fn name,
-                                                                    handler,
-                                                                    help,
-                                                                    options ->
-      send(self(), {:command_registered, name, handler, help, options})
+    # Mox stubs/expectations for DispatcherMock
+    Mox.expect(DispatcherMock, :subscribe, fn event_type, handler, function ->
+      send(self(), {:subscribe_called, event_type, handler, function})
       :ok
     end)
 
-    :meck.expect(Raxol.Core.Runtime.Plugins.Commands, :unregister, fn name ->
-      send(self(), {:command_unregistered, name})
+    Mox.expect(DispatcherMock, :unsubscribe, fn event_type, handler ->
+      send(self(), {:unsubscribe_called, event_type, handler})
       :ok
     end)
 
-    :meck.expect(Raxol.Core.Runtime.Rendering.Engine, :render, fn region,
-                                                                  content,
-                                                                  options ->
-      send(self(), {:render_called, region, content, options})
+    Mox.expect(DispatcherMock, :broadcast, fn event_type, payload ->
+      send(self(), {:broadcast_called, event_type, payload})
       :ok
     end)
 
-    :meck.expect(Raxol.Core.Runtime.Rendering.Buffer, :create, fn width,
-                                                                  height,
-                                                                  options ->
-      send(self(), {:buffer_created, width, height, options})
-      {:ok, %{width: width, height: height}}
-    end)
-
-    :meck.expect(Raxol.Core.Runtime.Debug, :info, fn message ->
+    # Mox stubs for Debug module
+    Mox.stub(Raxol.Core.Runtime.Debug, :info, fn message ->
       send(self(), {:debug_info, message})
       :ok
     end)
 
-    :meck.expect(Raxol.Core.Runtime.Debug, :error, fn message ->
+    Mox.stub(Raxol.Core.Runtime.Debug, :error, fn message ->
       send(self(), {:debug_error, message})
       :ok
     end)
 
-    on_exit(fn ->
-      :meck.unload(Raxol.Core.Runtime.Events.Dispatcher)
-      # :meck.unload(Raxol.Core.Runtime.Plugins.Commands) # Removed
-      :meck.unload(Raxol.Core.Runtime.Rendering.Engine)
-      :meck.unload(Raxol.Core.Runtime.Rendering.Buffer)
-      :meck.unload(Raxol.Core.Runtime.Debug)
+    # Removed :meck setup for Raxol.Core.Runtime.Plugins.Commands (already gone)
+    # Removed :meck setup for Raxol.Core.Runtime.Rendering.Engine (tests are skipped)
+    # Removed :meck setup for Raxol.Core.Runtime.Rendering.Buffer (API removed/tests skipped)
+
+    # API module needs to know to use DispatcherMock. For this test, we might need
+    # to consider how API resolves Dispatcher. If it calls Dispatcher directly,
+    # then the functions of Raxol.Core.Runtime.Events.Dispatcher itself would need to be stubbed.
+    # For now, assuming API can be configured or will pick up the mock via other means, or we adjust API for testability.
+    # The current API.ex seems to call `EventManager.dispatch` which might be an alias or another module.
+    # Let's assume for now API calls DispatcherMock for subscribe/unsubscribe/broadcast.
+    # If API calls Raxol.Core.Runtime.Events.Dispatcher directly, then we need to stub that module instead of DispatcherMock.
+
+    # The test code calls API.subscribe etc. API then calls Dispatcher functions.
+    # So, we need to ensure API uses our DispatcherMock or we stub the real Dispatcher.
+    # Given API is `alias Raxol.Core.Runtime.Events.Dispatcher`, it refers to the real one.
+    # So, stubs should be on `Raxol.Core.Runtime.Events.Dispatcher` directly.
+
+    # Corrected Mox stubs for direct module interaction:
+    Mox.stub(Raxol.Core.Runtime.Events.Dispatcher, :subscribe, fn event_type,
+                                                                  handler,
+                                                                  function ->
+      send(self(), {:subscribe_called, event_type, handler, function})
+      :ok
+    end)
+
+    Mox.stub(Raxol.Core.Runtime.Events.Dispatcher, :unsubscribe, fn event_type,
+                                                                    handler ->
+      send(self(), {:unsubscribe_called, event_type, handler})
+      :ok
+    end)
+
+    Mox.stub(Raxol.Core.Runtime.Events.Dispatcher, :broadcast, fn event_type,
+                                                                  payload ->
+      send(self(), {:broadcast_called, event_type, payload})
+      :ok
     end)
 
     :ok
@@ -151,6 +143,8 @@ defmodule Raxol.Core.Runtime.Plugins.APITest do
     end
   end
 
+  # Skip: Rendering API in Raxol.Core.Runtime.Plugins.API has been removed/refactored
+  @tag :skip
   describe "rendering" do
     test "render forwards calls to rendering engine" do
       content = "Test content"
@@ -186,32 +180,28 @@ defmodule Raxol.Core.Runtime.Plugins.APITest do
   describe "configuration" do
     test "get_config forwards to Application.get_env" do
       # Test environment setup
-      :meck.new(Application, [:passthrough])
-
-      :meck.expect(Application, :get_env, fn :raxol, :test_key, nil ->
+      Mox.stub(Application, :get_env, fn :raxol, :test_key, nil ->
         "test_value"
       end)
 
-      on_exit(fn -> :meck.unload(Application) end)
-
       # Test the function
       assert API.get_config(:test_key) == "test_value"
+      # Verify this specific stub if needed, or rely on verify_on_exit!
+      Mox.verify!(Application)
     end
 
     test "plugin_data_dir returns correct path" do
       # Test environment setup
-      :meck.new(Application, [:passthrough])
-
-      :meck.expect(Application, :get_env, fn :raxol,
-                                             :plugin_data_path,
-                                             "data/plugins" ->
+      Mox.stub(Application, :get_env, fn :raxol,
+                                         :plugin_data_path,
+                                         "data/plugins" ->
         "custom/path"
       end)
 
-      on_exit(fn -> :meck.unload(Application) end)
-
       # Test the function
       assert API.plugin_data_dir("test_plugin") == "custom/path/test_plugin"
+      # Verify this specific stub if needed
+      Mox.verify!(Application)
     end
   end
 end

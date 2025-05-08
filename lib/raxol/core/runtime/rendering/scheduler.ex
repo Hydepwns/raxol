@@ -9,7 +9,8 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
 
   defmodule State do
     @moduledoc false
-    defstruct interval_ms: 16, # Default ~60 FPS
+    # Default ~60 FPS
+    defstruct interval_ms: 16,
               timer_ref: nil,
               enabled: false,
               # Keep track of the engine PID
@@ -21,7 +22,10 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   def start_link(opts \\ []) do
     engine_pid = Keyword.get(opts, :engine_pid, Engine)
     interval_ms = Keyword.get(opts, :interval_ms, 16)
-    GenServer.start_link(__MODULE__, {engine_pid, interval_ms}, name: __MODULE__)
+
+    GenServer.start_link(__MODULE__, {engine_pid, interval_ms},
+      name: __MODULE__
+    )
   end
 
   def enable do
@@ -49,7 +53,8 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
     {:noreply, new_state}
   end
 
-  def handle_cast(:enable, state), do: {:noreply, state} # Already enabled
+  # Already enabled
+  def handle_cast(:enable, state), do: {:noreply, state}
 
   @impl true
   def handle_cast(:disable, %State{enabled: true, timer_ref: ref} = state) do
@@ -57,13 +62,16 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
     {:noreply, %{state | enabled: false, timer_ref: nil}}
   end
 
-  def handle_cast(:disable, state), do: {:noreply, state} # Already disabled
+  # Already disabled
+  def handle_cast(:disable, state), do: {:noreply, state}
 
   @impl true
   def handle_cast({:set_interval, ms}, state) do
     new_state = %{state | interval_ms: ms}
     # If enabled, reschedule with new interval
-    updated_state = if state.enabled, do: schedule_render_tick(new_state), else: new_state
+    updated_state =
+      if state.enabled, do: schedule_render_tick(new_state), else: new_state
+
     {:noreply, updated_state}
   end
 

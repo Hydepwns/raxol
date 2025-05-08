@@ -68,9 +68,17 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
         assert Adaptive.detect_color_support() == :true_color
       after
         # Restore original values or delete if they were nil
-        if is_nil(original_term), do: System.delete_env("TERM"), else: System.put_env("TERM", original_term)
-        if is_nil(original_colorterm), do: System.delete_env("COLORTERM"), else: System.put_env("COLORTERM", original_colorterm)
-        if is_nil(original_no_color), do: System.delete_env("NO_COLOR"), else: System.put_env("NO_COLOR", original_no_color)
+        if is_nil(original_term),
+          do: System.delete_env("TERM"),
+          else: System.put_env("TERM", original_term)
+
+        if is_nil(original_colorterm),
+          do: System.delete_env("COLORTERM"),
+          else: System.put_env("COLORTERM", original_colorterm)
+
+        if is_nil(original_no_color),
+          do: System.delete_env("NO_COLOR"),
+          else: System.put_env("NO_COLOR", original_no_color)
 
         # Reset detection again after restoring
         Adaptive.reset_detection()
@@ -203,7 +211,11 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       set_mock_background(:light)
 
       # Create a dark theme, providing the name
-      dark_theme = %{Theme.from_palette(Palette.dracula(), "Dracula") | dark_mode: true}
+      dark_theme = %{
+        Theme.from_palette(Palette.dracula(), "Dracula")
+        | dark_mode: true
+      }
+
       assert dark_theme.dark_mode == true
 
       # Adapt it to the light terminal
@@ -211,7 +223,8 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
 
       # Theme name should be adapted, but dark_mode should NOT change
       assert adapted.name == "Dracula (Adapted)"
-      assert adapted.dark_mode == dark_theme.dark_mode # Should remain true
+      # Should remain true
+      assert adapted.dark_mode == dark_theme.dark_mode
     end
 
     test "adapt_theme adapts light theme to dark terminal" do
@@ -220,7 +233,11 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       set_mock_background(:dark)
 
       # Create a light theme, providing the name
-      light_theme = %{Theme.from_palette(Palette.nord(), "Nord") | dark_mode: false}
+      light_theme = %{
+        Theme.from_palette(Palette.nord(), "Nord")
+        | dark_mode: false
+      }
+
       assert light_theme.dark_mode == false
 
       # Adapt it to the dark terminal
@@ -228,7 +245,8 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
 
       # Theme name should be adapted, but dark_mode should NOT change
       assert adapted.name == "Nord (Adapted)"
-      assert adapted.dark_mode == light_theme.dark_mode # Should remain false
+      # Should remain false
+      assert adapted.dark_mode == light_theme.dark_mode
     end
   end
 

@@ -19,7 +19,8 @@ defmodule Raxol.Components.Progress.ProgressBar do
             width: 20,
             style: %{},
             label: nil,
-            label_position: :below, # :above, :below, :right
+            # :above, :below, :right
+            label_position: :below,
             show_percentage: false
 
   # --- Component Behaviour Callbacks ---
@@ -42,25 +43,29 @@ defmodule Raxol.Components.Progress.ProgressBar do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages to update value
-    Logger.debug("ProgressBar #{state.id} received message: #{inspect msg}")
+    Logger.debug("ProgressBar #{state.id} received message: #{inspect(msg)}")
+
     case msg do
       {:set_value, value} when is_number(value) ->
         {%{state | value: clamp(value, 0, state.max)}, []}
-      _ -> {state, []}
+
+      _ ->
+        {state, []}
     end
   end
 
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
     # Handle events if needed
-    Logger.debug("ProgressBar #{state.id} received event: #{inspect event}")
+    Logger.debug("ProgressBar #{state.id} received event: #{inspect(event)}")
     {state, []}
   end
 
   # --- Render Logic ---
 
   @impl Raxol.UI.Components.Base.Component
-  def render(state, %{} = _props) do # Correct arity
+  # Correct arity
+  def render(state, %{} = _props) do
     # Calculate fill
     percentage = state.value / state.max
     filled_width = round(state.width * percentage)
@@ -73,44 +78,111 @@ defmodule Raxol.Components.Progress.ProgressBar do
     percentage_style = Map.get(state.style, :percentage, %{})
 
     # Create bar portions
-    filled_portion = Raxol.View.Elements.label(content: String.duplicate(" ", filled_width), style: filled_style)
-    empty_portion = Raxol.View.Elements.label(content: String.duplicate(" ", empty_width), style: empty_style)
+    filled_portion =
+      Raxol.View.Elements.label(
+        content: String.duplicate(" ", filled_width),
+        style: filled_style
+      )
+
+    empty_portion =
+      Raxol.View.Elements.label(
+        content: String.duplicate(" ", empty_width),
+        style: empty_style
+      )
 
     # Create label/percentage texts/elements conditionally
-    percentage_text = if state.show_percentage, do: " #{round(percentage * 100)}%", else: nil
+    percentage_text =
+      if state.show_percentage, do: " #{round(percentage * 100)}%", else: nil
+
     label_content = state.label
 
     # Combine based on label position
-    rendered_view = case state.label_position do
-      :above ->
-        Raxol.View.Elements.column id: state.id do
-          Raxol.View.Elements.row style: %{justify: :space_between} do
-            [
-              (if label_content, do: Raxol.View.Elements.label(content: label_content, style: label_style), else: nil),
-              (if percentage_text, do: Raxol.View.Elements.label(content: percentage_text, style: percentage_style), else: nil)
-            ] |> Enum.reject(&is_nil(&1))
+    rendered_view =
+      case state.label_position do
+        :above ->
+          Raxol.View.Elements.column id: state.id do
+            Raxol.View.Elements.row style: %{justify: :space_between} do
+              [
+                if(label_content,
+                  do:
+                    Raxol.View.Elements.label(
+                      content: label_content,
+                      style: label_style
+                    ),
+                  else: nil
+                ),
+                if(percentage_text,
+                  do:
+                    Raxol.View.Elements.label(
+                      content: percentage_text,
+                      style: percentage_style
+                    ),
+                  else: nil
+                )
+              ]
+              |> Enum.reject(&is_nil(&1))
+            end
+
+            Raxol.View.Elements.row do
+              [filled_portion, empty_portion]
+            end
           end
-          Raxol.View.Elements.row do [filled_portion, empty_portion] end
-        end
-      :below ->
-        Raxol.View.Elements.column id: state.id do
-           Raxol.View.Elements.row do [filled_portion, empty_portion] end
-           Raxol.View.Elements.row style: %{justify: :space_between} do
-            [
-              (if label_content, do: Raxol.View.Elements.label(content: label_content, style: label_style), else: nil),
-              (if percentage_text, do: Raxol.View.Elements.label(content: percentage_text, style: percentage_style), else: nil)
-            ] |> Enum.reject(&is_nil(&1))
+
+        :below ->
+          Raxol.View.Elements.column id: state.id do
+            Raxol.View.Elements.row do
+              [filled_portion, empty_portion]
+            end
+
+            Raxol.View.Elements.row style: %{justify: :space_between} do
+              [
+                if(label_content,
+                  do:
+                    Raxol.View.Elements.label(
+                      content: label_content,
+                      style: label_style
+                    ),
+                  else: nil
+                ),
+                if(percentage_text,
+                  do:
+                    Raxol.View.Elements.label(
+                      content: percentage_text,
+                      style: percentage_style
+                    ),
+                  else: nil
+                )
+              ]
+              |> Enum.reject(&is_nil(&1))
+            end
           end
-        end
-      :right ->
-        Raxol.View.Elements.row id: state.id do
-          [
-            Raxol.View.Elements.row do [filled_portion, empty_portion] end,
-            (if label_content, do: Raxol.View.Elements.label(content: label_content, style: label_style), else: nil),
-            (if percentage_text, do: Raxol.View.Elements.label(content: percentage_text, style: percentage_style), else: nil)
-          ] |> Enum.reject(&is_nil(&1))
-        end
-    end
+
+        :right ->
+          Raxol.View.Elements.row id: state.id do
+            [
+              Raxol.View.Elements.row do
+                [filled_portion, empty_portion]
+              end,
+              if(label_content,
+                do:
+                  Raxol.View.Elements.label(
+                    content: label_content,
+                    style: label_style
+                  ),
+                else: nil
+              ),
+              if(percentage_text,
+                do:
+                  Raxol.View.Elements.label(
+                    content: percentage_text,
+                    style: percentage_style
+                  ),
+                else: nil
+              )
+            ]
+            |> Enum.reject(&is_nil(&1))
+          end
+      end
 
     # Return element structure
     rendered_view
@@ -124,5 +196,4 @@ defmodule Raxol.Components.Progress.ProgressBar do
   end
 
   # Remove old render/1 and handle_event/2 if they existed
-
 end

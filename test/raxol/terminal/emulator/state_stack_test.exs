@@ -6,6 +6,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
   alias Raxol.Terminal.Cursor.Manager
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.ANSI.TextFormatting
+
   # Note: CharacterSets alias might be needed if asserting charset_state fields directly
   alias Raxol.Terminal.ANSI.CharacterSets
 
@@ -23,7 +24,8 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       # Designate G1 (ESC ) 0)
       {emulator1, ""} = Emulator.process_input(emulator1, "\e)0")
       mode_manager_state1 = emulator1.mode_manager
-      charset_state1 = emulator1.charset_state # Capture charset state
+      # Capture charset state
+      charset_state1 = emulator1.charset_state
 
       # Save state (DECSC - ESC 7)
       {emulator_saved1, ""} = Emulator.process_input(emulator1, "\e7")
@@ -41,7 +43,8 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       # Designate G1 back to ASCII (ESC ) B)
       {emulator2, ""} = Emulator.process_input(emulator2, "\e)B")
       mode_manager_state2 = emulator2.mode_manager
-      charset_state2 = emulator2.charset_state # Capture charset state
+      # Capture charset state
+      charset_state2 = emulator2.charset_state
 
       # Check stack count (indirectly, by testing restore)
 
@@ -55,7 +58,8 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       assert emulator_restored1.style.underline == false
       # Check charset restored
       assert emulator_restored1.charset_state == charset_state1
-      assert emulator_restored1.charset_state.g1 == :dec_special_graphics # Verify specific field if needed
+      # Verify specific field if needed
+      assert emulator_restored1.charset_state.g1 == :dec_special_graphics
       # Check mode state restored
       assert emulator_restored1.mode_manager == mode_manager_state1
 
@@ -89,18 +93,24 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       {emulator, ""} = Emulator.process_input(emulator, "\e[1m")
       main_buffer_snapshot = Emulator.get_active_buffer(emulator)
       cursor_snapshot = emulator.cursor
-      style_snapshot = emulator.style # Capture style BEFORE save
+      # Capture style BEFORE save
+      style_snapshot = emulator.style
 
       # 2. Save state (DECSET ?1048h) - Should only save cursor according to implementation
       {emulator, ""} = Emulator.process_input(emulator, "\e[?1048h")
 
       # Verify buffer did NOT switch
       assert emulator.active_buffer_type == :main
+
       # Verify buffer content is unchanged (DECSC/DECRC should not affect it for mode 1048)
       active_buffer_after_op = Emulator.get_active_buffer(emulator)
       line_cells = ScreenBuffer.get_line(active_buffer_after_op, 0)
-      line_text = if line_cells, do: Enum.map_join(line_cells, &(&1.char)), else: ""
-      assert line_text == "MainBuf" <> String.duplicate(" ", 73) # Check content roughly
+
+      line_text =
+        if line_cells, do: Enum.map_join(line_cells, & &1.char), else: ""
+
+      # Check content roughly
+      assert line_text == "MainBuf" <> String.duplicate(" ", 73)
 
       assert Emulator.get_active_buffer(emulator) == main_buffer_snapshot
 
@@ -118,15 +128,24 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       # Verify main buffer content is unchanged from before restore
       # (Buffer content itself is not saved/restored by 1048)
       active_buffer_after_restore = Emulator.get_active_buffer(emulator)
-      line_cells_after_restore = ScreenBuffer.get_line(active_buffer_after_restore, 0)
-      line_text_after_restore = if line_cells_after_restore, do: Enum.map_join(line_cells_after_restore, &(&1.char)), else: ""
+
+      line_cells_after_restore =
+        ScreenBuffer.get_line(active_buffer_after_restore, 0)
+
+      line_text_after_restore =
+        if line_cells_after_restore,
+          do: Enum.map_join(line_cells_after_restore, & &1.char),
+          else: ""
+
       assert line_text_after_restore == "MainBuf" <> String.duplicate(" ", 73)
 
       # Verify cursor position IS restored
-      assert emulator.cursor.position == cursor_snapshot.position # Compare position tuple directly
+      # Compare position tuple directly
+      assert emulator.cursor.position == cursor_snapshot.position
       # Verify style IS NOT restored (should remain the style set in step 3)
       assert emulator.style == style_after_change
-      refute emulator.style == style_snapshot # Explicitly check it's different from original
+      # Explicitly check it's different from original
+      refute emulator.style == style_snapshot
 
       # 5. Verify stack behavior (optional: DECRC ESC 8 should restore same cursor)
       # Let's skip this as the main logic is tested above

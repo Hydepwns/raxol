@@ -87,7 +87,9 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
   Handles clamping values and delegation to specific conversion functions.
   Supports HLS (1) and RGB (2).
   """
-  @spec convert_color(integer(), integer(), integer(), integer()) :: {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}} | {:error, atom()}
+  @spec convert_color(integer(), integer(), integer(), integer()) ::
+          {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}}
+          | {:error, atom()}
   def convert_color(color_space, px, py, pz) do
     # Clamp values to 0-100 range
     px = max(0, min(100, px))
@@ -127,7 +129,8 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
   Input: H (0-360), L (0-1), S (0-1)
   Output: {:ok, {R, G, B}} (0-255)
   """
-  @spec hls_to_rgb(float(), float(), float()) :: {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}}
+  @spec hls_to_rgb(float(), float(), float()) ::
+          {:ok, {non_neg_integer(), non_neg_integer(), non_neg_integer()}}
   def hls_to_rgb(h, l, s) do
     # Clamp inputs
     h = max(0.0, min(360.0, h))

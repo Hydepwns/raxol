@@ -76,6 +76,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
       :ok = Persistence.save_theme(%{@test_theme | name: "Theme B"})
 
       themes = Persistence.list_themes()
+
       # Assert that the list contains Theme A and Theme B, plus potentially Default
       assert length(themes) >= 2
       assert "Theme A" in themes

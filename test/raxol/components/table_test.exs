@@ -18,42 +18,68 @@ defmodule Raxol.Components.TableTest do
 
   describe "initialization" do
     test "initializes with default options" do
-      state = Table.init(%{
-        id: :test_table,
-        columns: @test_columns,
-        data: @test_data
-      })
+      state =
+        Table.init(%{
+          id: :test_table,
+          columns: @test_columns,
+          data: @test_data
+        })
 
       assert state.id == :test_table
       assert state.columns == @test_columns
       assert state.data == @test_data
-      assert state.options == %{paginate: false, searchable: false, sortable: false}
+
+      assert state.options == %{
+               paginate: false,
+               searchable: false,
+               sortable: false
+             }
+
       assert state.current_page == 1
       assert state.page_size == 10
       assert state.filter_term == ""
     end
 
     test "initializes with custom options" do
-      state = Table.init(%{
-        id: :test_table,
-        columns: @test_columns,
-        data: @test_data,
-        options: %{paginate: true, searchable: true, sortable: true, page_size: 2}
-      })
+      state =
+        Table.init(%{
+          id: :test_table,
+          columns: @test_columns,
+          data: @test_data,
+          options: %{
+            paginate: true,
+            searchable: true,
+            sortable: true,
+            page_size: 2
+          }
+        })
 
-      assert state.options == %{paginate: true, searchable: true, sortable: true, page_size: 2}
+      assert state.options == %{
+               paginate: true,
+               searchable: true,
+               sortable: true,
+               page_size: 2
+             }
+
       assert state.page_size == 2
     end
   end
 
   describe "data processing" do
     setup do
-      state = Table.init(%{
-        id: :test_table,
-        columns: @test_columns,
-        data: @test_data,
-        options: %{paginate: true, searchable: true, sortable: true, page_size: 2}
-      })
+      state =
+        Table.init(%{
+          id: :test_table,
+          columns: @test_columns,
+          data: @test_data,
+          options: %{
+            paginate: true,
+            searchable: true,
+            sortable: true,
+            page_size: 2
+          }
+        })
+
       {:ok, state: state}
     end
 
@@ -112,12 +138,19 @@ defmodule Raxol.Components.TableTest do
 
   describe "event handling" do
     setup do
-      state = Table.init(%{
-        id: :test_table,
-        columns: @test_columns,
-        data: @test_data,
-        options: %{paginate: true, searchable: true, sortable: true, page_size: 2}
-      })
+      state =
+        Table.init(%{
+          id: :test_table,
+          columns: @test_columns,
+          data: @test_data,
+          options: %{
+            paginate: true,
+            searchable: true,
+            sortable: true,
+            page_size: 2
+          }
+        })
+
       {:ok, state: state}
     end
 
@@ -126,43 +159,71 @@ defmodule Raxol.Components.TableTest do
       assert state.current_page == 1
 
       # Arrow right should go to page 2
-      {state_after_right, _} = Table.handle_event({:key, {:arrow_right, []}}, %{}, state)
+      {state_after_right, _} =
+        Table.handle_event({:key, {:arrow_right, []}}, %{}, state)
+
       assert state_after_right.current_page == 2
 
       # Arrow left should go back to page 1
-      {state_after_left, _} = Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_right)
+      {state_after_left, _} =
+        Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_right)
+
       assert state_after_left.current_page == 1
 
       # Arrow left at page 1 should stay at page 1
-      {state_after_left_again, _} = Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_left)
+      {state_after_left_again, _} =
+        Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_left)
+
       assert state_after_left_again.current_page == 1
     end
 
     test "handles button clicks for pagination", %{state: state} do
       # Click next page button
-      {state_after_next, _} = Table.handle_event({:button_click, "test_table_next_page"}, %{}, state)
+      {state_after_next, _} =
+        Table.handle_event({:button_click, "test_table_next_page"}, %{}, state)
+
       assert state_after_next.current_page == 2
 
       # Click prev page button
-      {state_after_prev, _} = Table.handle_event({:button_click, "test_table_prev_page"}, %{}, state_after_next)
+      {state_after_prev, _} =
+        Table.handle_event(
+          {:button_click, "test_table_prev_page"},
+          %{},
+          state_after_next
+        )
+
       assert state_after_prev.current_page == 1
     end
 
     test "handles sort button clicks", %{state: state} do
       # Click to sort by age
-      {state_after_sort, _} = Table.handle_event({:button_click, "test_table_sort_age"}, %{}, state)
+      {state_after_sort, _} =
+        Table.handle_event({:button_click, "test_table_sort_age"}, %{}, state)
+
       assert state_after_sort.sort_by == :age
       assert state_after_sort.sort_direction == :asc
 
       # Click again to reverse sort
-      {state_after_reverse, _} = Table.handle_event({:button_click, "test_table_sort_age"}, %{}, state_after_sort)
+      {state_after_reverse, _} =
+        Table.handle_event(
+          {:button_click, "test_table_sort_age"},
+          %{},
+          state_after_sort
+        )
+
       assert state_after_reverse.sort_by == :age
       assert state_after_reverse.sort_direction == :desc
     end
 
     test "handles search input", %{state: state} do
       # Set search text
-      {state_after_search, _} = Table.handle_event({:text_input, "test_table_search", "Alice"}, %{}, state)
+      {state_after_search, _} =
+        Table.handle_event(
+          {:text_input, "test_table_search", "Alice"},
+          %{},
+          state
+        )
+
       assert state_after_search.filter_term == "Alice"
       # Should reset to page 1
       assert state_after_search.current_page == 1

@@ -50,6 +50,7 @@ defmodule Raxol.UI.Layout.EngineTest do
 
       # Find the panel box
       box_element = Enum.find(result, fn elem -> elem.type == :box end)
+
       # assert box_element != nil # TODO: Fix LayoutEngine to generate box for panel
       # TEMP: Asserting nil for now to proceed
       assert box_element == nil
@@ -207,8 +208,11 @@ defmodule Raxol.UI.Layout.EngineTest do
       element = %{
         type: :panel,
         attrs: %{},
-        children: [%{type: :label, attrs: %{content: String.duplicate("X", 15)}}]
+        children: [
+          %{type: :label, attrs: %{content: String.duplicate("X", 15)}}
+        ]
       }
+
       # Panel adds 2 width/height for borders
       available_space = %{width: 80, height: 24}
       dimensions = Engine.measure_element(element, available_space)
@@ -224,6 +228,7 @@ defmodule Raxol.UI.Layout.EngineTest do
         attrs: %{width: 30, height: 5},
         children: [%{type: :label, attrs: %{content: "Short"}}]
       }
+
       available_space = %{width: 80, height: 24}
       dimensions = Engine.measure_element(element, available_space)
       assert dimensions.width == 30
@@ -235,12 +240,17 @@ defmodule Raxol.UI.Layout.EngineTest do
         type: :grid,
         attrs: %{columns: 2, gap_x: 1, gap_y: 1},
         children: [
-          %{type: :label, attrs: %{content: "AAAAAAAAAA"}}, # Width 10
-          %{type: :label, attrs: %{content: "BB"}},          # Width 2
-          %{type: :label, attrs: %{content: "CCC"}},         # Width 3
-          %{type: :label, attrs: %{content: "DDDDDD"}}      # Width 6
+          # Width 10
+          %{type: :label, attrs: %{content: "AAAAAAAAAA"}},
+          # Width 2
+          %{type: :label, attrs: %{content: "BB"}},
+          # Width 3
+          %{type: :label, attrs: %{content: "CCC"}},
+          # Width 6
+          %{type: :label, attrs: %{content: "DDDDDD"}}
         ]
       }
+
       # Grid logic uses max child width/height
       available_space = %{width: 80, height: 24}
       dimensions = Engine.measure_element(element, available_space)

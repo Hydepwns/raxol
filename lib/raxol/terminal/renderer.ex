@@ -155,12 +155,19 @@ defmodule Raxol.Terminal.Renderer do
       |> apply_color_style(:foreground, style_attrs, theme)
       |> apply_color_style(:background, style_attrs, theme)
       |> apply_flag_style(:bold, style_attrs, "font-weight", "bold")
-      |> apply_flag_style(:underline, style_attrs, "text-decoration", "underline")
+      |> apply_flag_style(
+        :underline,
+        style_attrs,
+        "text-decoration",
+        "underline"
+      )
       |> apply_flag_style(:italic, style_attrs, "font-style", "italic")
-      # Add other flag-based styles here
+
+    # Add other flag-based styles here
 
     final_styles
-    |> Enum.reverse() # Reverse to maintain original check order in string
+    # Reverse to maintain original check order in string
+    |> Enum.reverse()
     |> Enum.map(fn {property, value} -> "#{property}: #{value}" end)
     |> Enum.join("; ")
   end
@@ -187,7 +194,13 @@ defmodule Raxol.Terminal.Renderer do
   end
 
   # Helper to apply flag-based styles (bold, italic, etc.)
-  defp apply_flag_style(current_styles, key, style_attrs, property_name, property_value) do
+  defp apply_flag_style(
+         current_styles,
+         key,
+         style_attrs,
+         property_name,
+         property_value
+       ) do
     if Map.get(style_attrs, key) do
       [{property_name, property_value} | current_styles]
     else
@@ -201,6 +214,7 @@ defmodule Raxol.Terminal.Renderer do
     case name do
       :default ->
         get_in(theme, [type, :default])
+
       _ ->
         Map.get(theme[type] || %{}, name)
     end

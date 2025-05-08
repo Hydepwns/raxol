@@ -17,22 +17,31 @@ defmodule Raxol.Components.FocusRing do
 
   # Define state struct with enhanced styling options
   defstruct visible: true,
-            position: nil, # {x, y, width, height} of focused element
+            # {x, y, width, height} of focused element
+            position: nil,
             prev_position: nil,
             focused_element: nil,
             color: :yellow,
             thickness: 1,
             high_contrast: false,
-            animation: :pulse, # :pulse, :blink, :fade, :glow, :bounce, :none
-            animation_duration: 500, # ms
+            # :pulse, :blink, :fade, :glow, :bounce, :none
+            animation: :pulse,
+            # ms
+            animation_duration: 500,
             animation_phase: 0,
-            animation_frames: 100, # total animation frames
-            transition_effect: :fade, # :fade, :slide, :grow, :none
-            offset: {0, 0}, # {offset_x, offset_y}
+            # total animation frames
+            animation_frames: 100,
+            # :fade, :slide, :grow, :none
+            transition_effect: :fade,
+            # {offset_x, offset_y}
+            offset: {0, 0},
             style: %{},
-            component_type: nil, # button, text_input, checkbox, etc. - affects styling
-            state: :normal, # :normal, :active, :disabled
-            last_tick: nil # timestamp for animation timing
+            # button, text_input, checkbox, etc. - affects styling
+            component_type: nil,
+            # :normal, :active, :disabled
+            state: :normal,
+            # timestamp for animation timing
+            last_tick: nil
 
   # --- Component Behaviour Callbacks ---
 
@@ -54,38 +63,42 @@ defmodule Raxol.Components.FocusRing do
       animation_phase: 0,
       last_tick: System.monotonic_time(:millisecond)
     }
+
     struct!(__MODULE__, Map.merge(defaults, opts))
   end
 
   @impl true
   def update(msg, state) do
     # Handle internal messages (animation ticks, focus changes)
-    Logger.debug("FocusRing received message: #{inspect msg}")
+    Logger.debug("FocusRing received message: #{inspect(msg)}")
+
     case msg do
       # Focus change with component type and state information
       {:focus_changed, _old_elem_id, new_elem_id, new_position, component_info} ->
         component_type = Map.get(component_info, :type, nil)
         component_state = Map.get(component_info, :state, :normal)
 
-        {%{state |
-          focused_element: new_elem_id,
-          prev_position: state.position,
-          position: new_position,
-          animation_phase: 0,
-          component_type: component_type,
-          state: component_state,
-          last_tick: System.monotonic_time(:millisecond)
-        }, []}
+        {%{
+           state
+           | focused_element: new_elem_id,
+             prev_position: state.position,
+             position: new_position,
+             animation_phase: 0,
+             component_type: component_type,
+             state: component_state,
+             last_tick: System.monotonic_time(:millisecond)
+         }, []}
 
       # Basic focus change without component info
       {:focus_changed, _old_elem_id, new_elem_id, new_position} ->
-        {%{state |
-          focused_element: new_elem_id,
-          prev_position: state.position,
-          position: new_position,
-          animation_phase: 0,
-          last_tick: System.monotonic_time(:millisecond)
-        }, []}
+        {%{
+           state
+           | focused_element: new_elem_id,
+             prev_position: state.position,
+             position: new_position,
+             animation_phase: 0,
+             last_tick: System.monotonic_time(:millisecond)
+         }, []}
 
       # Animation tick handling with timing
       {:animation_tick} ->
@@ -93,21 +106,28 @@ defmodule Raxol.Components.FocusRing do
         time_passed = current_time - (state.last_tick || current_time)
 
         # Calculate how many phases to advance based on time and duration
-        phase_delta = trunc(time_passed / (state.animation_duration / state.animation_frames))
-        new_phase = rem(state.animation_phase + max(1, phase_delta), state.animation_frames)
+        phase_delta =
+          trunc(
+            time_passed / (state.animation_duration / state.animation_frames)
+          )
+
+        new_phase =
+          rem(
+            state.animation_phase + max(1, phase_delta),
+            state.animation_frames
+          )
 
         # Schedule next animation tick
         commands =
           if state.animation != :none and state.visible do
-            [schedule({:animation_tick}, 16)] # ~60fps
+            # ~60fps
+            [schedule({:animation_tick}, 16)]
           else
             []
           end
 
-        {%{state |
-          animation_phase: new_phase,
-          last_tick: current_time
-        }, commands}
+        {%{state | animation_phase: new_phase, last_tick: current_time},
+         commands}
 
       # Allow external configuration updates
       {:configure, opts} when is_map(opts) ->
@@ -116,7 +136,7 @@ defmodule Raxol.Components.FocusRing do
         # Start animation if needed
         commands =
           if new_state.animation != :none and new_state.visible and
-             (new_state.animation != state.animation or not state.visible) do
+               (new_state.animation != state.animation or not state.visible) do
             [schedule({:animation_tick}, 16)]
           else
             []
@@ -124,20 +144,24 @@ defmodule Raxol.Components.FocusRing do
 
         {new_state, commands}
 
-      _ -> {state, []}
+      _ ->
+        {state, []}
     end
   end
 
   @impl true
   def handle_event(event, %{} = _props, state) do
     # FocusRing might listen to focus changes or accessibility events
-    Logger.debug("FocusRing received event: #{inspect event}")
+    Logger.debug("FocusRing received event: #{inspect(event)}")
+
     case event do
       {:accessibility_high_contrast, enabled} ->
         {%{state | high_contrast: enabled}, []}
+
       {:accessibility_reduced_motion, enabled} ->
         animation = if enabled, do: :none, else: :pulse
         {%{state | animation: animation}, []}
+
       _ ->
         {state, []}
     end
@@ -150,9 +174,11 @@ defmodule Raxol.Components.FocusRing do
     dsl_result = render_focus_ring(state, props)
     # Result can be nil or a box element map
     if dsl_result do
-      dsl_result # Return element map directly
+      # Return element map directly
+      dsl_result
     else
-      nil # Render nothing if not visible or no position
+      # Render nothing if not visible or no position
+      nil
     end
   end
 
@@ -169,14 +195,15 @@ defmodule Raxol.Components.FocusRing do
 
       # Use View Elements box macro
       Raxol.View.Elements.box x: x + offset_x,
-                             y: y + offset_y,
-                             width: width,
-                             height: height,
-                             style: style_attrs do
+                              y: y + offset_y,
+                              width: width,
+                              height: height,
+                              style: style_attrs do
         # Empty block needed as the macro expects it
       end
     else
-      nil # Return nil if not visible or no position
+      # Return nil if not visible or no position
+      nil
     end
   end
 
@@ -267,7 +294,7 @@ defmodule Raxol.Components.FocusRing do
         # Pulse effect: varying opacity/intensity
         phase_percent = state.animation_phase / state.animation_frames
         # Simple sine wave for pulsing (0.7-1.0 intensity range)
-        intensity = 0.7 + 0.3 * :math.sin(phase_percent * 2 * :math.pi)
+        intensity = 0.7 + 0.3 * :math.sin(phase_percent * 2 * :math.pi())
 
         # Apply intensity through color - actual implementation would
         # handle this differently - this is a placeholder
@@ -281,13 +308,14 @@ defmodule Raxol.Components.FocusRing do
         if visible do
           %{border_color: color}
         else
-          %{border_color: :black} # "Invisible" - would use transparency in real impl
+          # "Invisible" - would use transparency in real impl
+          %{border_color: :black}
         end
 
       :glow ->
         # Glow effect: expanded border with gradient
         phase_percent = state.animation_phase / state.animation_frames
-        glow_size = 1 + :math.sin(phase_percent * 2 * :math.pi) * 0.5
+        glow_size = 1 + :math.sin(phase_percent * 2 * :math.pi()) * 0.5
 
         %{
           border_color: color,
@@ -299,7 +327,7 @@ defmodule Raxol.Components.FocusRing do
       :bounce ->
         # Bounce effect: slight size changes
         phase_percent = state.animation_phase / state.animation_frames
-        bounce_offset = :math.sin(phase_percent * 2 * :math.pi) * 0.5
+        bounce_offset = :math.sin(phase_percent * 2 * :math.pi()) * 0.5
 
         %{
           border_color: color,

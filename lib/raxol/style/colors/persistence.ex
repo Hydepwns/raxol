@@ -73,13 +73,17 @@ defmodule Raxol.Style.Colors.Persistence do
                 case color_value do
                   hex when is_binary(hex) -> Color.from_hex(hex)
                   map when is_map(map) -> struct!(Color, map)
-                  _ -> nil # Or handle error
+                  # Or handle error
+                  _ -> nil
                 end
+
               {key_atom, color_struct}
             end)
             |> Enum.reject(fn {_k, v} -> is_nil(v) end)
             |> Map.new()
-          _ -> %{}
+
+          _ ->
+            %{}
         end
 
       # Rebuild map for struct!
@@ -89,7 +93,8 @@ defmodule Raxol.Style.Colors.Persistence do
       {:ok, struct!(Theme, final_theme_data)}
     else
       {:error, :enoent} -> {:error, :enoent}
-      {:error, reason} -> {:error, reason} # Propagate JSON decode errors or other File errors
+      # Propagate JSON decode errors or other File errors
+      {:error, reason} -> {:error, reason}
     end
   end
 
@@ -106,6 +111,7 @@ defmodule Raxol.Style.Colors.Persistence do
       {:ok, preferences} ->
         # Get theme name using string key, provide "Default" as fallback
         theme_name = Map.get(preferences, "theme", "Default")
+
         case load_theme(theme_name) do
           {:ok, theme} -> {:ok, theme}
           # If loading the preferred theme file fails (e.g., :enoent), load standard theme

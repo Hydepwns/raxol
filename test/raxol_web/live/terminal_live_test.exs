@@ -1,13 +1,17 @@
 defmodule RaxolWeb.TerminalLiveTest do
-  use RaxolWeb.ConnCase, async: true # Keep async: true if tests don't need DB
+  # Keep async: true if tests don't need DB
+  use RaxolWeb.ConnCase, async: true
   import Phoenix.LiveViewTest
   alias RaxolWeb.TerminalLive
-  import RaxolWeb.ConnCase # Ensure ConnCase helpers are imported
+  # Ensure ConnCase helpers are imported
+  import RaxolWeb.ConnCase
 
   # Add setup block for authentication
   setup %{conn: conn} do
-    user = %{id: 1, role: :user} # Dummy user
-    conn = log_in_user(conn, user) # Use the helper from ConnCase
+    # Dummy user
+    user = %{id: 1, role: :user}
+    # Use the helper from ConnCase
+    conn = log_in_user(conn, user)
     {:ok, conn: conn, user: user}
   end
 

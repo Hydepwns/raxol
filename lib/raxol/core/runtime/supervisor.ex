@@ -14,7 +14,10 @@ defmodule Raxol.Core.Runtime.Supervisor do
   require Logger
 
   def start_link(init_arg) do
-    Logger.info("[#{__MODULE__}] start_link called with args: #{inspect(init_arg)}")
+    Logger.info(
+      "[#{__MODULE__}] start_link called with args: #{inspect(init_arg)}"
+    )
+
     Supervisor.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
 
@@ -23,15 +26,22 @@ defmodule Raxol.Core.Runtime.Supervisor do
     Logger.debug("[#{__MODULE__}] init called with args: #{inspect(init_arg)}")
 
     # Allow overriding child modules via init_arg for testing
-    dispatcher_mod = init_arg[:dispatcher_module] || Raxol.Core.Runtime.Events.Dispatcher
-    rendering_engine_mod = init_arg[:rendering_engine_module] || Raxol.Core.Runtime.Rendering.Engine
-    plugin_manager_mod = init_arg[:plugin_manager_module] || Raxol.Core.Runtime.Plugins.Manager
+    dispatcher_mod =
+      init_arg[:dispatcher_module] || Raxol.Core.Runtime.Events.Dispatcher
+
+    rendering_engine_mod =
+      init_arg[:rendering_engine_module] || Raxol.Core.Runtime.Rendering.Engine
+
+    plugin_manager_mod =
+      init_arg[:plugin_manager_module] || Raxol.Core.Runtime.Plugins.Manager
+
     # Assuming Task.Supervisor doesn't need mocking/overriding
 
     # Define the child spec for Dispatcher explicitly
     # Pass the supervisor's pid (self()) and the full init_arg map
     dispatcher_spec = %{
-      id: dispatcher_mod, # Use potentially overridden module
+      # Use potentially overridden module
+      id: dispatcher_mod,
       start: {dispatcher_mod, :start_link, [self(), init_arg]},
       type: :worker,
       restart: :permanent,
@@ -46,11 +56,13 @@ defmodule Raxol.Core.Runtime.Supervisor do
       dispatcher_pid: dispatcher_mod,
       width: init_arg[:width],
       height: init_arg[:height],
-      environment: init_arg[:environment] || :terminal # Default if not provided
+      # Default if not provided
+      environment: init_arg[:environment] || :terminal
     }
 
     rendering_engine_spec = %{
-      id: rendering_engine_mod, # Use potentially overridden module
+      # Use potentially overridden module
+      id: rendering_engine_mod,
       start: {rendering_engine_mod, :start_link, [rendering_engine_args]},
       type: :worker,
       restart: :permanent,
@@ -59,8 +71,10 @@ defmodule Raxol.Core.Runtime.Supervisor do
 
     # Define Plugin Manager spec (assuming simple start_link/1)
     plugin_manager_spec = %{
-      id: plugin_manager_mod, # Use potentially overridden module
-      start: {plugin_manager_mod, :start_link, [[]]}, # Assuming start_link([])
+      # Use potentially overridden module
+      id: plugin_manager_mod,
+      # Assuming start_link([])
+      start: {plugin_manager_mod, :start_link, [[]]},
       type: :worker,
       restart: :permanent,
       shutdown: 5000
@@ -77,9 +91,14 @@ defmodule Raxol.Core.Runtime.Supervisor do
       plugin_manager_spec
     ]
 
-    opts = [strategy: :one_for_all, name: __MODULE__] # Add name here for init/1
+    # Add name here for init/1
+    opts = [strategy: :one_for_all, name: __MODULE__]
 
-    Logger.debug("[#{__MODULE__}] Initializing supervisor with children: #{inspect(children)} and opts: #{inspect(opts)}")
-    Supervisor.init(children, strategy: :one_for_all) # Original call format
+    Logger.debug(
+      "[#{__MODULE__}] Initializing supervisor with children: #{inspect(children)} and opts: #{inspect(opts)}"
+    )
+
+    # Original call format
+    Supervisor.init(children, strategy: :one_for_all)
   end
 end
