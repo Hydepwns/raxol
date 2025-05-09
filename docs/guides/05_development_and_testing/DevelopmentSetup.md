@@ -107,21 +107,37 @@ reset
    ```bash
    # Replace <version> with the actual Erlang version, e.g., 26.2.5
    rm -rf ~/.asdf/installs/erlang/<version>
+   # It's also good to ensure asdf can correctly uninstall the version if possible:
+   asdf uninstall erlang <version>
    ```
 
-   b. **Explicitly set C and C++ compilers to Homebrew's clang:**
+   _Note: If `asdf uninstall` fails, updating `asdf` itself (`brew upgrade asdf` if installed via Homebrew, or `asdf update`) might resolve the uninstall issue._
+
+   b. **Explicitly set C and C++ compilers and flags using Homebrew's LLVM/Clang:**
    Before attempting the installation again, tell the build system to use `clang` and `clang++` from your Homebrew LLVM installation. This often provides a more complete and correctly configured C++ toolchain.
+
+   First, ensure `llvm` is installed and up-to-date via Homebrew:
+
+   ```bash
+   brew install llvm
+   # or if already installed:
+   brew upgrade llvm
+   ```
+
+   Then, use the following environment variables when running `asdf install erlang`:
 
    ```bash
    export CC=/opt/homebrew/opt/llvm/bin/clang \
-          CXX=/opt/homebrew/opt/llvm/bin/clang++
+          CXX=/opt/homebrew/opt/llvm/bin/clang++ \
+          LDFLAGS="-L/opt/homebrew/opt/llvm/lib" \
+          CPPFLAGS="-I/opt/homebrew/opt/llvm/include"
 
-   # Then try installing Erlang again, e.g., for version 26.2.5:
-   asdf install erlang 26.2.5
+   # Then try installing Erlang again, e.g., for version 27.0.1:
+   asdf install erlang 27.0.1
    asdf reshim erlang # Important to update shims after successful install
    ```
 
-   Ensure that Homebrew and its `llvm` package are up to date (`brew update && brew upgrade llvm`).
+   _Remember to unset these environment variables or open a new terminal session if you don't want them to persist for other operations._
 
    c. **Verify Xcode Command Line Tools:**
    As a general check, ensure your Xcode Command Line Tools are installed:
@@ -131,6 +147,22 @@ reset
    ```
 
    If issues persist after trying the `CC`/`CXX` export, a full reinstall of Command Line Tools might be considered as a more involved step.
+
+4. **Mox Compilation Error (`Mox.__using__/1 is undefined or private`)**
+
+   When using Mox for testing, particularly version 1.2.0 or newer, you might encounter a compilation error:
+   `** (UndefinedFunctionError) function Mox.__using__/1 is undefined or private`
+
+   **Symptoms:**
+
+   - `mix test` fails with the `Mox.__using__/1 is undefined` error.
+   - The error points to the line where `use Mox` is located in a test module.
+
+   **Status & Solution:**
+
+   - This issue was observed with Mox v1.2.0. The compilation error `(UndefinedFunctionError) function Mox.__using__/1 is undefined or private` occurs because the `Mox` module does not define a `__using__/1` macro.
+   - The statement `use Mox` in test files triggers this error.
+   - **Solution:** Remove `use Mox` from your test files. Instead, use `import Mox` to bring Mox functions (like `expect/3`, `stub/3`, `verify!/1`) into the current scope. Functions like `Mox.defmock/2` should continue to be called explicitly or imported if preferred (e.g., `import Mox, only: [defmock: 2]` or rely on the general `import Mox`). Ensure `Mox.start_link_ownership()` is used in `test_helper.exs` as appropriate for Mox v1.2.0+.
 
 ## Editor Integration
 

@@ -1,7 +1,7 @@
 ---
 title: Development Roadmap
 description: Future development plans for Raxol Terminal Emulator
-date: 2024-07-18
+date: 2025-05-08
 author: Raxol Team
 section: roadmap
 tags: [roadmap, planning, future, tui, elixir]
@@ -10,6 +10,7 @@ tags: [roadmap, planning, future, tui, elixir]
 # Raxol Development Roadmap
 
 This document outlines the high-level roadmap for the Raxol TUI framework.
+_Note: Phases and timelines are estimates and subject to change. Current critical blockers (Mox compilation issue) must be resolved before full-scale progress on some items can resume._
 
 ## Phase 1: Foundation (Largely Complete)
 
@@ -21,60 +22,62 @@ This document outlines the high-level roadmap for the Raxol TUI framework.
 
 ## Phase 2: Feature Expansion & Stabilization (In Progress)
 
-- **Component Library Growth:**
-  - Add missing component types (e.g., Navigation: Tabs, Pagination; Password Input).
-  - Refine existing components (e.g., Multi-select enhancements).
-  - Improve test coverage for all components.
-- **Styling System Enhancements:**
-  - Implement extended border styles (rounded, thick, double).
-  - Explore adaptive background detection.
-  - Refine theme definitions and palettes.
-- **Performance & Rendering:**
-  - Implement core terminal command handling (CSI, OSC, DCS).
-  - Stabilize and enhance core input components (TextInput, MultiLineInput).
-  - Optimize rendering pipeline.
-  - Benchmark core operations.
-- **API Stabilization:**
-  - Solidify public APIs for Core, UI, View.
-  - Improve ExDoc coverage.
-- **Documentation & Examples:**
-  - Complete Component Showcase.
-  - Develop more comprehensive guides and tutorials.
-- **Accessibility & UX:**
-  - Full integration of `UserPreferences`.
-  - Refine focus management and keyboard navigation.
-  - Test high-contrast mode thoroughly.
+- **Overarching Priorities:**
+  - Resolve Test Environment Blockers (Mox compilation error, address remaining skipped tests).
+  - Achieve Comprehensive Test Coverage and Stability across the application.
+- **Core Framework & API Maturation:**
+  - Solidify Public APIs (Core, UI, View) and Enhance ExDoc coverage.
+  - Stabilize and Optimize Rendering Pipeline & Core Operations (pending test stability).
+  - Continue Maturing Terminal Command Handling (CSI, OSC, DCS).
+- **Component Ecosystem Development:**
+  - Expand Component Library with key missing types (e.g., Navigation Tabs, Password Input).
+  - Continue Enhancing Existing Components (focus on usability, features, and thorough testing).
+- **User Experience & Accessibility:**
+  - Refine Focus Management, Keyboard Navigation, and High-Contrast Support.
+  - Ensure Full `UserPreferences` Integration and comprehensive testing.
+- **Documentation Excellence:**
+  - Complete Comprehensive Guides, Tutorials, and Component Showcase.
+  - Maintain High-Quality README, API Documentation, and inline ExDoc.
+- **Advanced Terminal Features:**
+  - Implement Advanced Terminal Input Handling (e.g., tab completion, enhanced mouse events).
+  - Support Advanced Character Sets and Feature Detection.
+  - Implement AI Content Generation Stubs.
+- **Code Health & Maintainability:**
+  - Address Technical Debt (e.g., refactor large files like `parser.ex`, deduplicate code).
+  - Investigate and Resolve Known Minor Issues (e.g., text wrapping, SIXEL precision).
 
 ## Phase 3: Advanced Capabilities (Future)
 
 - **Animation System:**
-  - Develop core animation framework (physics-based, easing).
-  - Integrate into components (e.g., FocusRing, transitions).
+  - Develop core animation framework (easing functions implemented, physics-based).
+  - Integrate animations broadly into components for smoother transitions and effects.
 - **Markdown Rendering Component:**
-  - Build terminal-optimized markdown display.
-  - Add syntax highlighting and theming.
+  - Build a terminal-optimized markdown display component.
+  - Include features like syntax highlighting and theming.
 - **Form System:**
-  - Design and implement form framework (`Huh` equivalent).
-  - Include field types, validation, accessibility.
+  - Design and implement a comprehensive form framework (building on existing Modal form capabilities).
+  - Include various field types, robust validation, and accessibility.
 - **Internationalization (i18n):**
-  - Lay groundwork for i18n support.
-  - Integrate with components and accessibility.
+  - Lay groundwork for full i18n support.
+  - Integrate with components and accessibility features.
+- **System Interaction Abstraction:**
+  - Systematically extend the System Interaction Adapter pattern to other relevant modules to improve testability and isolate dependencies.
 
 ## Phase 4: Ecosystem & Polish (Future)
 
 - **Ecosystem Tools Exploration:**
-  - CLI Enhancement Tools (`Gum` equivalent).
-  - Terminal Recording (`VHS` equivalent).
+  - Investigate and potentially develop CLI Enhancement Tools (`Gum` equivalent).
+  - Explore Terminal Recording capabilities (`VHS` equivalent).
 - **Burrito Integration (Exploratory):**
-  - Investigate seamless packaging and distribution.
-  - Address performance and dependency management.
+  - Investigate seamless packaging and distribution using Burrito.
+  - Address potential performance and dependency management challenges.
 - **Performance Optimization:**
-  - In-depth profiling and optimization.
+  - Conduct in-depth profiling and targeted optimization post-stabilization.
 - **Testing:**
-  - Comprehensive cross-platform testing.
-  - Visual regression testing.
+  - Implement comprehensive cross-platform testing.
+  - Explore visual regression testing.
 - **Documentation:**
-  - Finalize all guides, tutorials, API docs.
-  - Create showcase applications.
+  - Finalize all guides, tutorials, and API documentation.
+  - Create showcase applications demonstrating Raxol's capabilities.
 
 _Note: Phases and timelines are estimates and subject to change based on development progress and priorities._
