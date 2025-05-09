@@ -200,7 +200,6 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
             )
 
             # Save the new theme preference
-            # Use :meck passthrough for this in tests if needed
             :ok = UserPreferences.set("theme.active_id", new_theme_id)
             %{state | model: updated_model, current_theme_id: new_theme_id}
           else

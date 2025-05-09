@@ -20,6 +20,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   # Assume this exists
   alias Raxol.Core.Plugins.Core.NotificationPlugin
 
+  # Added alias for State
+  alias Raxol.Core.Runtime.Plugins.Manager.State
+
   # Added for file watching
   if Code.ensure_loaded?(FileSystem) do
     alias FileSystem
@@ -28,6 +31,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   @type plugin_id :: String.t()
   @type plugin_metadata :: map()
   @type plugin_state :: map()
+
+  # Use the literal default value
+  @default_plugins_dir "priv/plugins"
 
   # State stored in the process
   defmodule State do
@@ -61,7 +67,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
       # Debounce timer reference for file events
       file_event_timer: nil,
       # Runtime PID
-      runtime_pid: nil
+      runtime_pid: nil,
+      # Get plugin directories, ensure it's a list
+      plugin_dirs: [],
+      # Configurable modules for testing
+      loader_module: Raxol.Core.Runtime.Plugins.Loader,
+      lifecycle_helper_module: Raxol.Core.Runtime.Plugins.LifecycleHelper
     ]
   end
 
@@ -276,7 +287,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     # Gracefully unload all plugins in reverse order using LifecycleHelper
     Enum.reduce(Enum.reverse(state.load_order), state, fn plugin_id,
                                                           acc_state ->
-      case LifecycleHelper.unload_plugin(
+      case state.lifecycle_helper_module.unload_plugin(
              plugin_id,
              acc_state.plugins,
              acc_state.metadata,
@@ -309,11 +320,14 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl true
   def init(opts) do
+    IO.inspect(opts, label: "Manager init opts")
+
     # CommandRegistry.new() is likely just creating the ETS table name atom, keep it here
-    cmd_reg_table = Raxol.Core.Runtime.Plugins.CommandRegistry.new()
+    cmd_reg_table =
+      Keyword.get(opts, :command_registry_table) ||
+        Raxol.Core.Runtime.Plugins.CommandRegistry.new()
 
     # Extract runtime_pid from opts (passed by supervisor)
-    # Get runtime_pid
     runtime_pid = Keyword.get(opts, :runtime_pid)
 
     unless is_pid(runtime_pid) do
@@ -335,16 +349,37 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     # Merge them - opts can override app_env for specific plugins if keys clash
     initial_plugin_config = Map.merge(app_env_plugin_config, opts_plugin_config)
 
-    plugins_dir = Keyword.get(opts, :plugins_dir, "priv/plugins")
+    # Get plugin directories, ensure it's a list
+    plugin_dirs =
+      case Keyword.get(opts, :plugin_dirs, [@default_plugins_dir]) do
+        dirs when is_list(dirs) -> dirs
+        # Wrap single dir in a list
+        dir when is_binary(dir) -> [dir]
+        # Default if invalid type
+        _ -> [@default_plugins_dir]
+      end
+
+    IO.inspect(plugin_dirs, label: "Manager init plugin_dirs")
 
     enable_reloading =
       Keyword.get(opts, :enable_plugin_reloading, false) && Mix.env() == :dev
+
+    # Configurable modules
+    loader_mod =
+      Keyword.get(opts, :loader_module, Raxol.Core.Runtime.Plugins.Loader)
+
+    lifecycle_helper_mod =
+      Keyword.get(
+        opts,
+        :lifecycle_helper_module,
+        Raxol.Core.Runtime.Plugins.LifecycleHelper
+      )
 
     # Start file watcher if enabled (only in dev)
     {file_watcher_pid, file_watching_enabled?} =
       if enable_reloading and Code.ensure_loaded?(FileSystem) do
         # Start watching the base dir initially
-        case FileSystem.start_link(dirs: [plugins_dir]) do
+        case FileSystem.start_link(dirs: plugin_dirs) do
           {:ok, pid} ->
             Logger.info(
               "[#{__MODULE__}] File system watcher started for plugin reloading (PID: #{inspect(pid)})."
@@ -383,7 +418,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
      %State{
        command_registry_table: cmd_reg_table,
        plugin_config: initial_plugin_config,
-       plugins_dir: plugins_dir,
+       plugin_dirs: plugin_dirs,
        # Initialize plugin_paths
        plugin_paths: %{},
        # Initialize reverse paths
@@ -391,7 +426,10 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
        file_watcher_pid: file_watcher_pid,
        file_watching_enabled?: file_watching_enabled?,
        # Store runtime_pid
-       runtime_pid: runtime_pid
+       runtime_pid: runtime_pid,
+       # Store configurable modules
+       loader_module: loader_mod,
+       lifecycle_helper_module: lifecycle_helper_mod
      }}
   end
 
@@ -404,14 +442,67 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   def handle_call(:initialize, _from, state) do
     Logger.info("[#{__MODULE__}] Initializing Plugins...")
 
-    # Define Core Plugins
+    IO.inspect(state.plugin_dirs,
+      label: "Manager handle_call(:initialize) state.plugin_dirs"
+    )
+
+    # Define Core Plugins module names
     core_plugin_modules = [
-      ClipboardPlugin,
-      NotificationPlugin
+      Raxol.Core.Plugins.Core.ClipboardPlugin,
+      Raxol.Core.Plugins.Core.NotificationPlugin
     ]
 
-    # Discover external plugins
-    discovered_external_specs = Loader.discover_plugins(state.plugins_dir)
+    # Transform core plugin modules into specs with atom IDs
+    core_plugin_specs =
+      Enum.map(core_plugin_modules, fn module_atom ->
+        # Simple derivation of ID: Raxol.Core.Plugins.Core.ClipboardPlugin -> :clipboard_plugin
+        # This should match the keys used in plugin_config and mock expectations
+        id_atom =
+          module_atom
+          |> Atom.to_string()
+          |> String.split(".")
+          |> List.last()
+          |> String.replace_suffix("Plugin", "")
+          |> String.downcase()
+          |> (&"#{&1}_plugin").()
+          |> String.to_atom()
+
+        %{
+          id: id_atom,
+          module: module_atom,
+          # Core plugins don't have a discoverable path in the same way
+          path: nil,
+          config:
+            Map.get(
+              state.plugin_config,
+              module_atom,
+              Map.get(state.plugin_config, id_atom, %{})
+            )
+        }
+      end)
+
+    # Discover external plugins using configurable loader module
+    discovered_external_specs_result =
+      state.loader_module.discover_plugins(state.plugin_dirs)
+
+    # Handle potential error tuple from discover_plugins
+    discovered_external_specs =
+      case discovered_external_specs_result do
+        {:ok, specs} ->
+          specs
+
+        # Allow direct list return for flexibility/older mocks
+        specs when is_list(specs) ->
+          specs
+
+        _ ->
+          Logger.error(
+            "[#{__MODULE__}] Failed to discover external plugins: #{inspect(discovered_external_specs_result)}"
+          )
+
+          # Default to empty list on error
+          []
+      end
 
     Logger.debug(
       "[#{__MODULE__}] Discovered external plugin specs: #{inspect(discovered_external_specs)}"
@@ -420,7 +511,6 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     # Combine core modules and discovered specs (need to get file_path for core if needed)
     # For now, assume core plugins don't need a file_path for loading via load_plugin_by_module
     # Let's create specs for core plugins {module, nil} to fit the reduce structure
-    core_plugin_specs = Enum.map(core_plugin_modules, &{&1, nil})
     all_specs = core_plugin_specs ++ discovered_external_specs
 
     Logger.debug(
@@ -428,7 +518,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     )
 
     # Ensure ETS table exists
-    command_table = Raxol.Core.Runtime.Plugins.CommandRegistry.new()
+    # Use existing from state, not new()
+    command_table = state.command_registry_table
 
     # Initial state for reduction
     initial_acc = %{
@@ -444,20 +535,31 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
     # Iterate through ALL specs (core + external) and try to load each plugin
     final_acc =
-      Enum.reduce(all_specs, initial_acc, fn {module_atom, file_path}, acc ->
-        plugin_id_guess = Loader.module_to_default_id(module_atom)
+      Enum.reduce(all_specs, initial_acc, fn spec, acc ->
+        # 统一处理Spec，确保它总是有 :id, :module, :path, :config
+        # For core plugins, :id, :module, :path, :config are already set up correctly above.
+        # For discovered plugins, LoaderBehaviour states :id is an atom.
+        # This will always be an atom now
+        current_plugin_id = spec.id
+        module_atom = spec.module
+        # Can be nil for core
+        file_path = spec.path
 
-        # Use specific config for core plugins if provided in state.plugin_config
-        config =
+        plugin_specific_config =
           Map.get(
-            acc.plugin_config,
-            module_atom,
-            Map.get(acc.plugin_config, plugin_id_guess, %{})
+            spec,
+            :config,
+            Map.get(acc.plugin_config, current_plugin_id, %{})
           )
 
-        case LifecycleHelper.load_plugin_by_module(
+        IO.inspect({module_atom, plugin_specific_config, current_plugin_id},
+          label: "MANAGER: calling load_plugin_by_module with config and ID"
+        )
+
+        case state.lifecycle_helper_module.load_plugin_by_module(
                module_atom,
-               config,
+               # Use extracted config
+               plugin_specific_config,
                acc.plugins,
                acc.metadata,
                acc.plugin_states,
@@ -465,26 +567,31 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
                acc.command_table,
                acc.plugin_config
              ) do
-          {:ok, updated_maps} ->
-            # Get consistent ID
-            current_plugin_id = Loader.module_to_default_id(module_atom)
+          {:ok, updated_accs_from_helper} ->
+            IO.inspect(updated_accs_from_helper,
+              label: "MANAGER: POST-CALL load_plugin_by_module RESULT"
+            )
 
-            new_plugin_paths =
+            # current_plugin_id_for_path = state.loader_module.module_to_default_id(module_atom) # REMOVED
+
+            new_plugin_paths_map =
               if file_path do
+                # Use current_plugin_id (which is the atom ID from the spec)
                 Map.put(acc.plugin_paths, current_plugin_id, file_path)
               else
-                # Don't add path for core plugins
                 acc.plugin_paths
               end
 
             %{
               acc
-              | plugins: updated_maps.plugins,
-                metadata: updated_maps.metadata,
-                plugin_states: updated_maps.plugin_states,
-                load_order: updated_maps.load_order,
-                plugin_config: updated_maps.plugin_config,
-                plugin_paths: new_plugin_paths
+              | # Preserve fields like :errors, :command_table from the outer accumulator
+                plugins: updated_accs_from_helper.plugins,
+                metadata: updated_accs_from_helper.metadata,
+                plugin_states: updated_accs_from_helper.plugin_states,
+                load_order: updated_accs_from_helper.load_order,
+                # Use config from helper's accumulator
+                plugin_config: updated_accs_from_helper.plugin_config,
+                plugin_paths: new_plugin_paths_map
             }
 
           {:error, reason} ->
@@ -541,7 +648,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl true
   def handle_call({:load_plugin, plugin_id_or_module, config}, _from, state) do
-    case LifecycleHelper.load_plugin(
+    case state.lifecycle_helper_module.load_plugin(
            # Can be ID or module now
            plugin_id_or_module,
            config,
@@ -627,31 +734,42 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
       # Cancel any pending reload timer for this specific plugin_id if triggered manually
       new_state = cancel_existing_timer(state)
 
-      case LifecycleHelper.reload_plugin_from_disk(
+      case state.lifecycle_helper_module.reload_plugin_from_disk(
              plugin_id,
-             new_state.plugins,
-             new_state.metadata,
-             new_state.plugin_states,
-             new_state.load_order,
-             new_state.command_registry_table,
-             new_state.plugin_config,
-             # Pass the paths map
-             new_state.plugin_paths
+             state.plugins,
+             state.metadata,
+             state.plugin_states,
+             state.load_order,
+             state.command_registry_table,
+             state.plugin_config,
+             state.plugin_paths
            ) do
-        {:ok, updated_maps} ->
-          # Update the full state from the returned maps
-          reloaded_state = %{
-            new_state
-            | plugins: updated_maps.plugins,
-              metadata: updated_maps.metadata,
-              plugin_states: updated_maps.plugin_states,
-              load_order: updated_maps.load_order,
-              plugin_config: updated_maps.plugin_config
-          }
+        {:ok, updated_plugin_info} ->
+          # updated_plugin_info includes: %{module: new_module, state: new_state, config: new_config, metadata: new_metadata}
+          new_plugins =
+            Map.put(state.plugins, plugin_id, updated_plugin_info.module)
 
-          # Ensure watcher is up-to-date after reload (path might change theoretically)
-          final_state = update_file_watcher(reloaded_state)
-          {:ok, final_state}
+          new_plugin_states =
+            Map.put(state.plugin_states, plugin_id, updated_plugin_info.state)
+
+          new_plugin_config =
+            Map.put(state.plugin_config, plugin_id, updated_plugin_info.config)
+
+          new_metadata =
+            Map.put(state.metadata, plugin_id, updated_plugin_info.metadata)
+
+          Logger.info(
+            "[#{__MODULE__}] Plugin #{plugin_id} reloaded successfully."
+          )
+
+          {:ok,
+           %{
+             state
+             | plugins: new_plugins,
+               plugin_states: new_plugin_states,
+               plugin_config: new_plugin_config,
+               metadata: new_metadata
+           }}
 
         {:error, reason} ->
           # Reload failed, log and return error, state remains unchanged from before the call
@@ -694,23 +812,186 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   # New cast for internally triggered reloads from file watcher
   @impl true
-  def handle_cast({:reload_plugin_by_id, plugin_id}, state) do
-    # Reuse existing reload logic, but handle reply within the cast
-    case handle_reload_plugin(plugin_id, state) do
-      {:ok, new_state} ->
-        Logger.debug(
-          "[#{__MODULE__}] Auto-reloaded plugin '#{plugin_id}' due to file change."
-        )
+  def handle_cast({:reload_plugin_by_id, plugin_id_string}, state) do
+    Logger.info(
+      "[#{__MODULE__}] Received request to reload plugin by string ID: #{plugin_id_string}"
+    )
 
-        {:noreply, new_state}
+    plugin_id_atom = String.to_atom(plugin_id_string)
 
-      {:error, reason, new_state} ->
+    case Map.get(state.plugins, plugin_id_atom) do
+      nil ->
         Logger.error(
-          "[#{__MODULE__}] Failed to auto-reload plugin '#{plugin_id}': #{inspect(reason)}"
+          "[#{__MODULE__}] Cannot reload plugin atom :#{plugin_id_atom} (from string '#{plugin_id_string}'): Not found."
         )
 
-        # Keep state even on error
-        {:noreply, new_state}
+        {:noreply, state}
+
+      old_module ->
+        plugin_path = Map.get(state.plugin_paths, plugin_id_atom)
+
+        if is_nil(plugin_path) do
+          Logger.error(
+            "[#{__MODULE__}] Cannot reload plugin atom :#{plugin_id_atom}: Original path not found."
+          )
+
+          {:noreply, state}
+        else
+          # Use configurable lifecycle_helper_module
+          case state.lifecycle_helper_module.reload_plugin_from_disk(
+                 # Arg 1: plugin_id (atom)
+                 plugin_id_atom,
+                 # Arg 2: plugins (map of all modules)
+                 state.plugins,
+                 # Arg 3: metadata (map of all metadata)
+                 state.metadata,
+                 # Arg 4: plugin_states (map of all states)
+                 state.plugin_states,
+                 # Arg 5: load_order (list)
+                 state.load_order,
+                 # Arg 6: command_table (ETS name)
+                 state.command_registry_table,
+                 # Arg 7: plugin_config (map of all configs)
+                 state.plugin_config,
+                 # Arg 8: plugin_paths (map of all paths)
+                 state.plugin_paths
+               ) do
+            {:ok, updated_plugin_info} ->
+              # updated_plugin_info includes: %{module: new_module, state: new_state, config: new_config, metadata: new_metadata}
+              new_plugins =
+                Map.put(
+                  state.plugins,
+                  plugin_id_atom,
+                  updated_plugin_info.module
+                )
+
+              new_plugin_states =
+                Map.put(
+                  state.plugin_states,
+                  plugin_id_atom,
+                  updated_plugin_info.state
+                )
+
+              new_plugin_config =
+                Map.put(
+                  state.plugin_config,
+                  plugin_id_atom,
+                  updated_plugin_info.config
+                )
+
+              new_metadata =
+                Map.put(
+                  state.metadata,
+                  plugin_id_atom,
+                  updated_plugin_info.metadata
+                )
+
+              Logger.info(
+                "[#{__MODULE__}] Plugin atom :#{plugin_id_atom} reloaded successfully."
+              )
+
+              {:noreply,
+               %{
+                 state
+                 | plugins: new_plugins,
+                   plugin_states: new_plugin_states,
+                   plugin_config: new_plugin_config,
+                   metadata: new_metadata
+               }}
+
+            {:error, reason} ->
+              Logger.error(
+                "[#{__MODULE__}] Failed to reload plugin atom :#{plugin_id_atom}: #{inspect(reason)}"
+              )
+
+              # Optionally, try to restore or mark as broken
+              {:noreply, state}
+          end
+        end
     end
+  end
+
+  @impl true
+  def handle_info({:reload_plugin_file_debounced, plugin_id, path}, state) do
+    Logger.info(
+      "[#{__MODULE__}] Debounced file change: Reloading plugin #{plugin_id} from path #{path}"
+    )
+
+    # Clear the timer ref
+    new_state = %{state | file_event_timer: nil}
+
+    case Map.get(state.plugins, plugin_id) do
+      nil ->
+        Logger.error(
+          "[#{__MODULE__}] Cannot reload plugin #{plugin_id} (from file change): Not found in current state."
+        )
+
+        {:noreply, new_state}
+
+      old_module ->
+        # Use configurable lifecycle_helper_module
+        case state.lifecycle_helper_module.reload_plugin_from_disk(
+               plugin_id,
+               old_module,
+               # Use the path from the event
+               path,
+               state.plugin_states,
+               self(),
+               state.runtime_pid,
+               state.runtime_pid,
+               Raxol.Core.Runtime.Plugins.CommandHelper
+             ) do
+          {:ok, updated_maps} ->
+            new_plugins = Map.put(state.plugins, plugin_id, updated_maps.module)
+
+            new_plugin_states =
+              Map.put(state.plugin_states, plugin_id, updated_maps.state)
+
+            new_plugin_config =
+              Map.put(state.plugin_config, plugin_id, updated_maps.config)
+
+            new_metadata =
+              Map.put(state.metadata, plugin_id, updated_maps.metadata)
+
+            Logger.info(
+              "[#{__MODULE__}] Plugin #{plugin_id} reloaded successfully due to file change: #{path}."
+            )
+
+            {:noreply,
+             %{
+               new_state
+               | plugins: new_plugins,
+                 plugin_states: new_plugin_states,
+                 plugin_config: new_plugin_config,
+                 metadata: new_metadata
+             }}
+
+          {:error, reason} ->
+            Logger.error(
+              "[#{__MODULE__}] Failed to reload plugin #{plugin_id} from file change (#{path}): #{inspect(reason)}"
+            )
+
+            {:noreply, new_state}
+        end
+    end
+  end
+
+  @impl true
+  def handle_info(
+        {:fs_error, _pid, {path, reason}},
+        %{file_watching_enabled?: true} = state
+      ) do
+    Logger.error(
+      "[#{__MODULE__}] File system watcher error for path #{path}: #{inspect(reason)}"
+    )
+
+    {:noreply, state}
+  end
+
+  # Fallback for other fs messages
+  @impl true
+  def handle_info({:fs, _, _}, state) do
+    # Ignore if file watching not enabled or unexpected message
+    {:noreply, state}
   end
 end

@@ -1,11 +1,10 @@
 # Now define the test module
 defmodule Raxol.Core.Runtime.Plugins.ManagerInitializationTest do
   use ExUnit.Case, async: true
-  use Mox
   # Ensure Mox macros are available
   require Mox
   # Explicitly import defmock
-  import Mox, only: [defmock: 2]
+  import Mox
 
   # --- Aliases & Mox Setup ---
   alias Raxol.Core.Runtime.Plugins.Manager
@@ -191,7 +190,6 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerInitializationTest do
 
       # Cleanup
       if Process.alive?(pid), do: Supervisor.stop(pid, :shutdown, :infinity)
-      # :meck.unload([Loader, LifecycleHelper]) # REMOVED
     end
 
     test "start_link handles plugins with circular dependencies", %{

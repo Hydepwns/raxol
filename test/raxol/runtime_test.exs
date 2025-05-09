@@ -12,7 +12,6 @@ defmodule Raxol.RuntimeTest do
   alias Raxol.Core.Runtime.Rendering.Engine, as: RenderingEngine
   alias Raxol.Terminal.Driver, as: TerminalDriver
 
-  Mox.defmock(ClipboardMock, for: Raxol.System.Clipboard.Behaviour)
   Mox.defmock(NotificationMock, for: Raxol.System.Interaction)
   # Use correct behaviour
   Mox.defmock(InteractionMock, for: Raxol.System.Interaction)
@@ -234,19 +233,27 @@ defmodule Raxol.RuntimeTest do
     end
 
     on_exit(fn ->
-      # Supervisor.stop(supervisor_pid, :shutdown, :infinity) # Keep this commented
-      # REMOVED explicit stop of UserPreferences
-      # case Process.whereis(Raxol.Core.UserPreferences) do
-      #   pid when is_pid(pid) ->
-      #     ref = Process.monitor(pid)
-      #     Process.exit(pid, :shutdown)
-      #     receive do
-      #       {:DOWN, ^ref, _, _, _} -> :ok
-      #     after
-      #       100 -> Logger.warn(\"[TEST on_exit] UserPreferences did not stop cleanly.\")
-      #     end
-      #   _ -> :ok
-      # end
+      try do
+        Supervisor.stop(supervisor_pid, :shutdown, :infinity)
+      catch
+        :exit, reason ->
+          Logger.error(
+            "[TEST on_exit] Supervisor.stop(#{inspect(supervisor_pid)}) exited with reason: #{inspect(reason)}"
+          )
+      end
+
+      # Ensure the supervisor process is actually down
+      ref = Process.monitor(supervisor_pid)
+
+      receive do
+        {:DOWN, ^ref, _, _, _} -> :ok
+      after
+        # Increased timeout
+        7000 ->
+          Logger.error(
+            "[TEST on_exit] RuntimeSupervisor PID #{inspect(supervisor_pid)} did not stop cleanly."
+          )
+      end
 
       # Clean up ETS table after test
       try do
@@ -475,9 +482,6 @@ defmodule Raxol.RuntimeTest do
       count: 0,
       last_clipboard: "Test Clipboard Content"
     })
-
-    # Mox.verify!(ClipboardMock) # Optional: Mox.verify_on_exit! in test_helper handles this
-    # :meck.unload(Raxol.System.Clipboard) # Not needed for Mox
   end
 
   # Helper to wait for a process to terminate

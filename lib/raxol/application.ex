@@ -50,10 +50,15 @@ defmodule Raxol.Test.MockApplicationSupervisor do
 
   @impl true
   def init(_args) do
-    Logger.info("Initializing MockApplicationSupervisor with Phoenix PubSub")
+    Logger.info(
+      "Initializing MockApplicationSupervisor with Phoenix PubSub and Repo"
+    )
+
     # Add Phoenix.PubSub child spec for tests, using the conventional name
     pubsub_child_spec = {Phoenix.PubSub, name: Raxol.PubSub}
-    children = [pubsub_child_spec]
+    # Add Raxol.Repo child spec for tests
+    repo_child_spec = Raxol.Repo
+    children = [pubsub_child_spec, repo_child_spec]
     Supervisor.init(children, strategy: :one_for_one)
   end
 end

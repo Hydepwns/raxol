@@ -138,7 +138,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
           try do
             # Call the plugin's handler function using apply(Module, function, [args_list, state])
             # Use apply/3 correctly
+            command_name_atom = String.to_atom(command_name_str)
+
             case apply(plugin_module, function_atom, [
+                   command_name_atom,
                    args,
                    current_plugin_state
                  ]) do
