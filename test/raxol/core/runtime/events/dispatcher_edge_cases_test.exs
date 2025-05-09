@@ -33,9 +33,10 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
         {:key_press, :error, _} ->
           {:error, :simulated_error}
 
-        {:key_press, :timeout, _} ->
+        {:key_press, {:timeout, test_pid}, _modifiers} when is_pid(test_pid) ->
           # Simulate long computation
           Process.sleep(200)
+          send(test_pid, :mock_app_slow_update_finished)
           {%{state | count: state.count + 1, last_event: msg}, []}
 
         _ ->
@@ -139,6 +140,17 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
     on_exit(fn ->
       if Process.alive?(dispatcher), do: GenServer.stop(dispatcher)
       if Process.alive?(mock_pm_pid), do: GenServer.stop(mock_pm_pid)
+
+      # Cleanup for Registry by its registered name
+      try do
+        GenServer.stop(:raxol_event_subscriptions, :normal, 5000)
+      catch
+        :exit, {:noproc, _} -> :ok # Process not found, already stopped
+        :exit, _ -> :ok # Other exit during stop, consider it cleaned for test purposes
+      end
+
+      # Cleanup for ETS table by its name
+      :ets.delete(:raxol_command_registry)
     end)
 
     # Return test context
@@ -154,15 +166,10 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       plugin_manager: pm
     } do
       # Create a basic event
-      event = %Event{
-        type: :key,
-        data: %{key: :enter, state: :pressed, modifiers: []}
-      }
+      event = create_key_event(:enter)
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      # Allow event to process
-      Process.sleep(50)
 
       # Verify the event passed through
       current_state = :sys.get_state(dispatcher)
@@ -182,15 +189,10 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       GenServer.cast(pm, {:set_filter_mode, :modify})
 
       # Create a basic event
-      event = %Event{
-        type: :key,
-        data: %{key: :enter, state: :pressed, modifiers: []}
-      }
+      event = create_key_event(:enter)
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      # Allow event to process
-      Process.sleep(50)
 
       # Verify the event was modified by plugin
       current_state = :sys.get_state(dispatcher)
@@ -209,15 +211,10 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       GenServer.cast(pm, {:set_filter_mode, :block})
 
       # Create a basic event
-      event = %Event{
-        type: :key,
-        data: %{key: :enter, state: :pressed, modifiers: []}
-      }
+      event = create_key_event(:enter)
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      # Allow event to process
-      Process.sleep(50)
 
       # Verify the event was blocked (state unchanged)
       current_state = :sys.get_state(dispatcher)
@@ -235,15 +232,10 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       dispatcher: dispatcher
     } do
       # Create an event that will cause an error in update
-      event = %Event{
-        type: :key,
-        data: %{key: :error, state: :pressed, modifiers: []}
-      }
+      event = create_key_event(:error)
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      # Allow event to process
-      Process.sleep(50)
 
       # Verify that state is unchanged after error
       current_state = :sys.get_state(dispatcher)
@@ -255,15 +247,10 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       Process.flag(:trap_exit, true)
 
       # Create an event that will cause a crash in update
-      event = %Event{
-        type: :key,
-        data: %{key: :crash, state: :pressed, modifiers: []}
-      }
+      event = create_key_event(:crash)
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      # Allow event to process
-      Process.sleep(50)
 
       # Verify the process is still alive
       assert Process.alive?(dispatcher)
@@ -282,15 +269,10 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       GenServer.cast(pm, {:set_filter_mode, :crash})
 
       # Create a basic event
-      event = %Event{
-        type: :key,
-        data: %{key: :enter, state: :pressed, modifiers: []}
-      }
+      event = create_key_event(:enter)
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      # Allow event to process
-      Process.sleep(50)
 
       # Verify that state is unchanged after crash
       current_state = :sys.get_state(dispatcher)
@@ -309,8 +291,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      # Allow event to process
-      Process.sleep(50)
 
       # Verify state is updated
       current_state = :sys.get_state(dispatcher)
@@ -324,8 +304,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      # Allow event to process
-      Process.sleep(50)
 
       # Verify state is updated
       current_state = :sys.get_state(dispatcher)
@@ -336,8 +314,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
 
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
-      # Allow event to process
-      Process.sleep(50)
 
       # Verify state is updated
       current_state = :sys.get_state(dispatcher)
@@ -370,10 +346,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
   describe "performance edge cases" do
     test "handles slow application updates", %{dispatcher: dispatcher} do
       # Create an event that will cause a slow update
-      event = %Event{
-        type: :key,
-        data: %{key: :timeout, state: :pressed, modifiers: []}
-      }
+      event = create_key_event({:timeout, self()})
 
       # Start measuring time
       start_time = :os.system_time(:millisecond)
@@ -381,8 +354,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       # Dispatch the event
       GenServer.cast(dispatcher, {:dispatch, event})
 
-      # Wait for update to complete (tracking time)
-      Process.sleep(300)
+      # Wait for MockApp to confirm its "slow work" is done
+      assert_receive :mock_app_slow_update_finished, 5000 # Increased timeout for safety
 
       end_time = :os.system_time(:millisecond)
       elapsed = end_time - start_time
@@ -390,7 +363,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       # Verify update occurred
       current_state = :sys.get_state(dispatcher)
       assert current_state.model.count == 1
-      assert current_state.model.last_event == {:key_press, :timeout, []}
+      assert current_state.model.last_event == {:key_press, {:timeout, self()}, []}
 
       # Verify the operation took at least the sleep time
       assert elapsed >= 200
@@ -400,10 +373,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       # Create multiple events in quick succession
       events =
         for i <- 1..10 do
-          %Event{
-            type: :key,
-            data: %{key: "key#{i}", state: :pressed, modifiers: []}
-          }
+          create_key_event("key#{i}")
         end
 
       # Dispatch events in rapid succession
@@ -411,13 +381,19 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
         GenServer.cast(dispatcher, {:dispatch, event})
       end)
 
-      # Allow time for processing all events
-      Process.sleep(100)
-
       # Verify all events were processed
       current_state = :sys.get_state(dispatcher)
       assert current_state.model.count == 10
       assert current_state.model.last_event == {:key_press, "key10", []}
     end
+  end
+
+  # Private helper functions
+  defp create_key_event(key_value, extra_data \\ %{}) do
+    default_key_data = %{state: :pressed, modifiers: []}
+    final_data = Map.merge(default_key_data, extra_data)
+    # Ensure the :key from key_value argument takes precedence
+    data_with_key = Map.put(final_data, :key, key_value)
+    %Event{type: :key, data: data_with_key}
   end
 end

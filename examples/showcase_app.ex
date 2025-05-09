@@ -50,5 +50,4 @@ IO.puts("[examples/showcase_app.ex] Starting Raxol with ShowcaseApp...")
 Raxol.run(ShowcaseApp, []) # Use run/2 which might block
 
 # Keep the script alive (Raxol.run might handle this)
-# Process.sleep(:infinity)
 IO.puts("[examples/showcase_app.ex] Raxol finished or script exiting.")

@@ -45,7 +45,10 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
           g3: charset(),
           gl: gset_name(),
           gr: gset_name(),
-          single_shift: char() | nil,
+          # single_shift will store the actual charset (:us_ascii, :german, etc.)
+          # that is active for the next character due to SS2/SS3.
+          # It's nil if no single shift is active.
+          single_shift: charset() | nil,
           locked_shift: boolean()
         }
 
@@ -55,7 +58,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
             g3: :us_ascii,
             gl: :g0,
             gr: :g1,
-            single_shift: nil,
+            single_shift: nil, # Stays as is, will hold the target charset
             locked_shift: false
 
   @doc """
@@ -64,6 +67,29 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   @spec new() :: charset_state()
   def new() do
     %__MODULE__{}
+  end
+
+  @doc """
+  Activates a single shift for the next character.
+  SS2 invokes the G2 character set.
+  SS3 invokes the G3 character set.
+  """
+  @spec set_single_shift(charset_state(), :ss2 | :ss3) :: charset_state()
+  def set_single_shift(state, :ss2) do
+    %{state | single_shift: state.g2}
+  end
+
+  def set_single_shift(state, :ss3) do
+    %{state | single_shift: state.g3}
+  end
+
+  @doc """
+  Clears any active single shift. This should be called after processing
+  a character that was interpreted using a single-shifted charset.
+  """
+  @spec clear_single_shift(charset_state()) :: charset_state()
+  def clear_single_shift(state) do
+    %{state | single_shift: nil}
   end
 
   @doc """
@@ -93,37 +119,84 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
 
   @doc """
   Gets the active character set based on the current state.
+  Note: This function does not consume an active single shift.
+  The caller is responsible for calling clear_single_shift after processing
+  the character if a single shift was active.
   """
   @spec get_active_charset(charset_state()) :: charset()
   def get_active_charset(state) do
     cond do
+      state.single_shift != nil -> # If a single shift is active, it takes precedence
+        state.single_shift
       state.locked_shift ->
-        Map.get(state, state.gr)
-
-      state.single_shift != nil ->
-        Map.get(state, state.single_shift)
-
+        Map.get(state, state.gr) # Get the charset designated to GR
       true ->
-        Map.get(state, state.gl)
+        Map.get(state, state.gl)  # Get the charset designated to GL
     end
   end
 
   @doc """
   Translates a character based on the active character set.
+  If a single shift was used, it returns the translated character
+  and the new state with the single shift cleared. Otherwise,
+  it returns the translated char and the original state.
   """
-  @spec translate_char(charset_state(), char()) :: char()
+  @spec translate_char(charset_state(), char()) :: {char(), charset_state()}
   def translate_char(state, char) do
     active_charset = get_active_charset(state)
-    CharacterTranslations.translate_char(char, active_charset)
+    translated = CharacterTranslations.translate_char(char, active_charset)
+
+    new_state =
+      if state.single_shift != nil do
+        clear_single_shift(state)
+      else
+        state
+      end
+
+    {translated, new_state}
   end
 
   @doc """
-  Translates a string using the current character set.
+  Translates a string using the current character set state.
+  Handles single shifts correctly for the first applicable character.
+  Returns the translated string and the final character set state.
+  This function is more complex due to the stateful nature of single shifts
+  per character. For precise control, process char by char using translate_char/2.
   """
-  @spec translate_string(charset_state(), String.t()) :: String.t()
+  @spec translate_string(charset_state(), String.t()) :: {String.t(), charset_state()}
   def translate_string(state, string) do
-    active_charset = get_active_charset(state)
-    CharacterTranslations.translate_string(string, active_charset)
+    if String.length(string) == 0 do
+      {"", state}
+    else
+      first_char_binary = String.at(string, 0)
+      # Ensure char is an integer codepoint for translate_char
+      first_char =
+        if first_char_binary do
+          String.to_charlist(first_char_binary) |> List.first()
+        else
+          nil
+        end
+
+      if first_char do
+        {translated_first_char_code, next_state} = translate_char(state, first_char)
+        translated_first_char_string = <<translated_first_char_code::utf8>>
+
+        rest_of_string = String.slice(string, 1, String.length(string) - 1)
+
+        if String.length(rest_of_string) > 0 do
+          # The rest of the string is translated with the 'next_state',
+          # which has single_shift consumed if it was active for the first char.
+          # CharacterTranslations.translate_string takes the string and the charset atom.
+          active_charset_for_rest = get_active_charset(next_state)
+          translated_rest = CharacterTranslations.translate_string(rest_of_string, active_charset_for_rest)
+          {translated_first_char_string <> translated_rest, next_state}
+        else
+          {translated_first_char_string, next_state}
+        end
+      else
+        {"", state}
+      end
+    end
   end
 
   @doc """

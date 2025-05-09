@@ -79,4 +79,3 @@ Logger.info("EditorExample: Starting Raxol...")
 {:ok, _pid} = Raxol.start_link(EditorExample, [])
 Logger.info("EditorExample: Raxol started. Running...")
 
-Process.sleep(:infinity)

@@ -60,6 +60,14 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Ensured `Raxol.UI.Renderer.resolve_styles/3` correctly handles cases where `attrs.style` or `component_styles.style` might be a map instead of a list of atoms, defaulting to an empty list of style attributes.
   - As a result of the above, all 17 tests in `test/raxol/ui/renderer_edge_cases_test.exs` are now passing.
 
+### Changed
+
+- **Tests (`plugin_manager_edge_cases_test.exs`):** Significantly refactored for clarity and maintainability.
+  - Extracted common test plugin definitions to `test/support/plugin_test_fixtures.ex`.
+  - Introduced `with_running_manager/2` helper and several other utility functions (`setup_plugin`, `dispatch_command_and_assert_manager_alive`, `assert_matches_any_pattern`, `execute_command_and_verify`, `assert_plugin_load_fails`) to deduplicate code.
+  - Corrected logic and assertions in tests for init timeouts, command execution errors, and command not found.
+  - Unskipped and refactored plugin crash handling tests ("input handler crashes" and "output handler crashes"), validating event dispatch assumptions and implementing a robust command-based approach to trigger and test these scenarios.
+
 ### Added
 
 - **Tests:** Added tests for `TextInput` component covering init, update, event handling (chars, backspace, delete, cursor movement, enter, escape, click, max_length, validation), and rendering states.
@@ -144,6 +152,13 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **System (`Capabilities`):** Refactored `Raxol.Terminal.Config.Capabilities` to use a new `EnvironmentAdapterBehaviour` for improved testability of system environment interactions.
 - **Tests (`DeltaUpdaterTest`):** Refactored `test/raxol/system/delta_updater_test.exs` to use `Mox` with `DeltaUpdaterSystemAdapterMock`, removing `:meck` usage.
 - **Mox Dependency:** Upgraded Mox from `~> 1.1.0` to `~> 1.2.0` in `mix.exs` to explore potential fixes for cross-process mocking, although the final solution involved correct Mox setup (`import Mox`, `setup :set_mox_global`) rather than a specific feature from 1.2.0 like `allow_global/1` (which was found to be unavailable or not suitable for the use case).
+- **Tests (`plugin_manager_edge_cases_test.exs`):** Significantly refactored for clarity and maintainability.
+  - Extracted common test plugin definitions to `test/support/plugin_test_fixtures.ex`.
+  - Introduced `with_running_manager/2` helper and several other utility functions (`setup_plugin`, `dispatch_command_and_assert_manager_alive`, `assert_matches_any_pattern`, `execute_command_and_verify`, `assert_plugin_load_fails`) to deduplicate code.
+  - Corrected logic and assertions in tests for init timeouts, command execution errors, and command not found.
+  - Unskipped and refactored plugin crash handling tests ("input handler crashes" and "output handler crashes"), validating event dispatch assumptions and implementing a robust command-based approach to trigger and test these scenarios.
+- **Runtime & Plugins:**
+  - Corrected `Raxol.Core.Runtime.Plugins.Manager` to use a literal string for `@default_plugins_dir` to prevent compile-time errors when the `State` submodule isn't yet available. This resolved `FunctionClauseError` for `IO.chardata_to_string/1` when it received `nil` due to the module attribute not being defined correctly, which in turn fixed plugin discovery and loading issues in tests like `runtime_test.exs`.
 
 ### Deprecated
 
@@ -239,5 +254,3 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 - **`test/terminal/mode_manager_test.exs`:** Resolved the `Mox.VerificationError` for `TerminalStateMock.save_state/2` by fixing compile-time vs. runtime config loading in `ModeManager` and correcting test setup.
 - **`test/raxol/animation_test.exs`:** Made significant progress by resolving various compilation errors, `KeyError`s, and function arity mismatches. Current focus is on 2 remaining failures related to screen reader announcements; `Process.sleep()` was added to one test to help investigate timing issues with asynchronous event handling.
 - **`test/raxol/runtime_test.exs`:** Fixed the final remaining test failure (`supervisor restarts child processes`) by supervising the event subscription `Registry` directly within the `
-- **Runtime & Plugins:**
-  - Corrected `Raxol.Core.Runtime.Plugins.Manager` to use a literal string for `@default_plugins_dir` to prevent compile-time errors when the `State` submodule isn't yet available. This resolved `FunctionClauseError` for `IO.chardata_to_string/1` when it received `nil` due to the module attribute not being defined correctly, which in turn fixed plugin discovery and loading issues in tests like `runtime_test.exs`.

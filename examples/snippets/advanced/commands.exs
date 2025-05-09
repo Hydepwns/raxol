@@ -52,7 +52,6 @@ defmodule CommandsExample do
 
   defp process do
     Logger.debug("CommandsExample: process/0 running...")
-    Process.sleep(3000)
     result = Enum.random(1..10_000)
     Logger.debug("CommandsExample: process/0 finished with \#{result}")
     result
@@ -101,4 +100,3 @@ Logger.info("CommandsExample: Starting Raxol...")
 {:ok, _pid} = Raxol.start_link(CommandsExample, [])
 Logger.info("CommandsExample: Raxol started. Running...")
 
-Process.sleep(:infinity)

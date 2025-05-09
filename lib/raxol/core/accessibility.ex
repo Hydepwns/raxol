@@ -178,8 +178,13 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.disable()
       :ok
   """
-  def disable do
-    # Set disabled flag
+  def disable(user_preferences_pid_or_name \\ nil) do
+    target_prefs = user_preferences_pid_or_name || @default_prefs_name
+    Logger.debug("Disabling accessibility features for #{inspect(target_prefs)}")
+    # Set disabled flag in UserPreferences
+    set_pref(:enabled, false, target_prefs)
+
+    # Set process dictionary flag for immediate local effect if needed
     Process.put(:accessibility_disabled, true)
 
     # Unregister event handlers

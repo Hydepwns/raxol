@@ -56,6 +56,3 @@ Logger.info("TableTest: Starting Raxol.start_link...")
 # Start the Raxol application
 {:ok, _pid} = Raxol.start_link(TableTest, [])
 Logger.info("TableTest: Raxol.start_link completed. Entering sleep.")
-
-# Keep the process alive to see the output
-Process.sleep(:infinity)
