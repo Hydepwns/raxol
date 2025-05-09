@@ -16,7 +16,7 @@ tags: [roadmap, next steps, planning, status]
   Examples include `Raxol.System.DeltaUpdater` with its `Raxol.System.DeltaUpdaterSystemAdapterBehaviour`,
   and `Raxol.Terminal.Config.Capabilities` with its `Raxol.System.EnvironmentAdapterBehaviour`.
   **This pattern is encouraged for all new modules or significantly refactored modules involving such interactions to enhance testability from the outset.**
-- **Test Suite:** The project now compiles successfully after resolving issues with Mox setup, test helper loading, dependency compilation, and extensive test suite debugging. The full suite currently reports **227 failures** and **33 skipped tests** overall (as of 2025-05-08).
+- **Test Suite:** The project now compiles successfully after resolving issues with Mox setup, test helper loading, dependency compilation, and extensive test suite debugging. The full suite currently reports **225 failures** and **27 skipped tests** overall (as of 2025-05-08).
   - Significant effort was recently dedicated to fixing all tests in `test/raxol_web/channels/terminal_channel_test.exs`. This involved addressing Mox configurations, adapting to Phoenix Channel testing updates (including the creation of `RaxolWeb.UserSocket`), correcting `EmulatorBehaviour` arities, aligning `handle_in` expectations, and refining test assertions (e.g., using `assert_receive` and ensuring robust payload matching).
   - All 17 tests in `test/raxol/ui/renderer_edge_cases_test.exs` are now passing after resolving issues related to theme instantiation, registration, user preferences setup, element definitions, robust handling of nil/missing theme variants in `ColorSystem`, nil themes and elements in `Renderer`, and correct attribute/style propagation for various element types.
 - **Runtime Tests (`test/raxol/runtime_test.exs`):** (Resolved) All 6 tests in this file now pass. Failures were previously caused by unhandled errors from `Supervisor.stop/3` in the `on_exit` cleanup handler. These are now caught and logged, allowing the tests to pass, though the underlying supervisor shutdown in test contexts might still have minor issues (logged errors).
@@ -49,7 +49,7 @@ tags: [roadmap, next steps, planning, status]
   - Addressed multiple "Target file not found" errors reported by the pre-commit link checker.
   - Updated the `scripts/pre_commit_check.exs` script to improve its accuracy in finding Markdown files (including in hidden directories like `.github/`) and to normalize file paths for checking. Key project READMEs are now explicitly added to the known file set.
   - Anchor link checking (`#anchor-links`) within the pre-commit script has been temporarily disabled due to difficulties in robustly parsing them. The script now focuses solely on file existence, allowing pre-commit checks to pass. This area requires further development for a more comprehensive solution.
-- **Primary Focus:** Addressing the **227 failing tests** is the primary focus, followed by the **33 skipped tests**. Investigation is needed to understand the cause of the widespread failures.
+- **Primary Focus:** Addressing the **225 failing tests** is the primary focus, followed by the **27 skipped tests**. Investigation is needed to understand the cause of the widespread failures.
 - **Functionality:** Core systems are largely in place.
 - **Compiler Warnings:** Numerous warnings remain and require investigation.
 - **Sixel Graphics Tests:** Verified correct Sixel string terminator sequences (`\e\\`) in `test/terminal/ansi/sixel_graphics_test.exs`, with all tests passing.
@@ -58,12 +58,30 @@ tags: [roadmap, next steps, planning, status]
 ## Immediate Priorities / Tactical Plan
 
 1. **Resolve Mox Compilation Error (`Mox.__using__/1` with Mox 1.2.0):** ~~Investigate Mox 1.2.0 changelogs, documentation, and issue trackers for breaking changes or specific setup requirements related to the `use Mox` macro or the `Mox.__using__/1` function, especially concerning its interaction with `nimble_ownership`.~~ (Resolved by removing `use Mox` and using `import Mox` or explicit calls.)
-2. **Address Remaining Skipped Tests:** Once failures are resolved, investigate and fix the remaining **33 skipped tests**.
+2. **Address Remaining Skipped Tests:** Once failures are resolved, investigate and fix the remaining **27 skipped tests**.
+   - _Note: A review of tagged skipped tests indicates many (approx. 26) are linked to pending feature implementations (e.g., Character Set Single Shift, VT52 mode), API refactoring needs for tests, or known flakiness requiring deeper fixes rather than simple test adjustments. One previously skipped test was removed._
 3. **(Potentially) Identify Further `:meck` Usage:** Perform a codebase search for any remaining `:meck` usage that might have been missed (though this was previously marked complete).
 4. **Run Full Test Suite:** Regularly run `mix test` to monitor progress and catch regressions.
 5. **Update Documentation:** Keep `TODO.md`, `CHANGELOG.md`, and this file current with accurate test counts and task status.
 6. **(Once Tests Stabilize):** Begin comprehensive cross-platform testing and re-run performance benchmarks.
 7. **Revisit Pre-commit Anchor Checking:** Develop a more robust solution for checking anchor links (`#anchor-links`) within the `scripts/pre_commit_check.exs` script.
+
+### Improve Test Suite Stability and Reliability
+
+- **Address Test Flakiness Caused by `Process.sleep`**:
+  - **Target Files**: `test/raxol/core/accessibility_test.exs` (Completed - All tests passing after refactor), `test/raxol/core/runtime/events/dispatcher_test.exs` (Completed - No `Process.sleep` calls found), `test/raxol/core/runtime/events/dispatcher_edge_cases_test.exs` (Completed - Replaced test sleep with `assert_receive`).
+  - **Action**: Systematically replace `Process.sleep()` calls with deterministic synchronization mechanisms (e.g., `assert_receive`, polling helpers, synchronous calls where appropriate, or refactoring production code for testability).
+  - **Follow-up for `test/raxol/core/accessibility_test.exs`**: (Completed) The "Focus Change Handling (Not Implemented)" test block has been addressed. Tests now correctly simulate focus change events through the `EventManager` and verify that the `Accessibility` module makes appropriate announcements. Unused helper functions have also been removed.
+- **Ensure Consistent Cleanup of Named Test Resources**:
+  - **Target Files**: `test/raxol/core/accessibility_test.exs` (Verified during `Process.sleep` refactor), `test/raxol/core/runtime/events/dispatcher_edge_cases_test.exs` (for named ETS/Registry).
+  - **Action**: Add or verify `on_exit` handlers in `setup` blocks for all named resources to ensure proper cleanup after each test.
+- **Prevent File System Collisions in Async Tests**:
+  - **Target File**: `test/raxol/core/runtime/command_test.exs`.
+  - **Action**: Refactor file-writing tests to use unique temporary file names and paths, and ensure reliable cleanup, especially given its `async: true` setting.
+- **Verify Correct Ecto Sandbox Usage**:
+  - **Action**: Systematically review all test files that might interact with the database (i.e., `ExUnit.Case` modules using `Raxol.Repo`) to ensure `Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)` is used correctly, likely via a shared `DataCase` module or similar setup. This is crucial for database test isolation and preventing flakiness.
+- **Refactor and Enhance Test Files**: (Ongoing)
+  - `test/raxol/core/runtime/plugins/plugin_manager_edge_cases_test.exs`: Significant refactoring and enhancement completed, including extraction of test fixtures and helper functions, and updates to crash handling tests. (Details in CHANGELOG.md 2025-05-08).
 
 ---
 

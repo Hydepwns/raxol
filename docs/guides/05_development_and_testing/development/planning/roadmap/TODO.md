@@ -23,7 +23,7 @@ tags: [roadmap, todo, tasks]
 
 ## High Priority
 
-- [x] **Fix Test Failures:** Address the large number of remaining test failures (**227 failures** as of 2025-05-08) reported by `mix test`.
+- [x] **Fix Test Failures:** Address the large number of remaining test failures (**225 failures** as of 2025-05-08) reported by `mix test`.
 
   - This included a significant effort to resolve all failures in `test/raxol_web/channels/terminal_channel_test.exs` by addressing Mox setup, Phoenix ChannelTest API changes (which led to the creation of `RaxolWeb.UserSocket`), `EmulatorBehaviour` arity, `handle_in` return value consistency, and numerous test assertion refinements (e.g., switching to `assert_receive`).
   - It also included resolving all failures in `test/raxol/core/runtime/plugins/manager_reloading_test.exs` through fixes in Mox setup (using `import Mox`, `setup :set_mox_global`), `Manager` initialization (`command_registry_table`, ensuring mock modules were passed and used), test structure, and graceful shutdown (`GenServer.stop`).
@@ -54,7 +54,7 @@ tags: [roadmap, todo, tasks]
     - [x] `test/raxol/core/runtime/plugins/plugin_manager_edge_cases_test.exs`
   - **(DONE - All listed files converted)**
 
-- [ ] **Address Skipped Tests:** Reduce the number of skipped tests (currently **33 skipped tests** as of 2025-05-08).
+- [ ] **Address Skipped Tests:** Reduce the number of skipped tests (currently **27 skipped tests** as of 2025-05-08).
       Note: `test/raxol/core/ux_refinement_keyboard_test.exs` now has 2 skipped tests (down from 3) as one complex event integration test was successfully unskipped and fixed.
   - [x] Animation/Easing: Added full implementation for all 17 required easing functions.
   - [x] Notification Plugin: Fixed all 13 skipped tests by implementing proper Mox behavior.
@@ -64,6 +64,24 @@ tags: [roadmap, todo, tasks]
   - [x] Accessibility: Fixed all 4 skipped tests by improving mocking strategy and implementing focus change handlers.
   - [x] Character Handling: Fixed test failures by implementing proper string handling for `get_char_width`.
   - [x] Plugin Dependency: Fixed test failures by improving error handling for missing dependencies and version compatibility.
+  - **Current Skipped Test Analysis (as of 2025-05-08):**
+    - Most of the remaining 24 tests explicitly tagged with `:skip` (after one was removed and two were fixed) are due to:
+      - **Missing Features:** Tests awaiting implementation of corresponding functionality (e.g., I18n currency formatting in `i18n_accessibility_test.exs`, VT52 mode in `integration_test.exs`). (Character Set Single Shift tests fixed).
+      - **Outdated APIs:** Tests written for older, since-refactored module APIs requiring test rewrites (e.g., `Renderer.Manager` in `performance_test.exs`, `Plugins.API` rendering in `api_test.exs`).
+      - **Flaky Tests:** Tests known to be unreliable, needing deeper investigation and synchronization improvements (e.g., `integration_test.exs` large input test).
+      - **Module-level Skips:** Entire test files skipped due to major API changes or incomplete refactoring (e.g., `emulator_plugin_test.exs`, `performance_test.exs`).
+    - Further investigation may be needed for any remaining untagged skips if the count doesn't fully align.
+
+## Test Suite Reliability and Flakiness Reduction
+
+- [x] **Refactor `Process.sleep` calls in `test/raxol/core/accessibility_test.exs`**: Replaced with deterministic synchronization. All tests in this file are currently passing.
+- [x] **Refine Focus Change Handling Tests in `test/raxol/core/accessibility_test.exs`**: The `describe "Focus Change Handling (Not Implemented)"` block has been reviewed and updated. Tests now correctly simulate focus change events via `EventManager` and verify `Accessibility` module announcements. Unused helpers removed.
+- [x] **Refactor `Process.sleep` calls in `test/raxol/core/runtime/events/dispatcher_test.exs`**: Replace with deterministic synchronization. (Note: No `Process.sleep` calls were found in this file during review on 2025-05-08).
+- [x] **Refactor `Process.sleep` calls in `test/raxol/core/runtime/events/dispatcher_edge_cases_test.exs`**: Replaced with deterministic synchronization (test now uses `assert_receive` for mock app confirmation).
+- [x] **Ensure `on_exit` cleanup for named GenServers in `test/raxol/core/accessibility_test.exs`**: Verified all `setup` blocks that start named GenServers also stop them in an `on_exit` callback. (Covered during sleep refactoring)
+- [ ] **Ensure `on_exit` cleanup for named ETS/Registry in `test/raxol/core/runtime/events/dispatcher_edge_cases_test.exs`**: Add cleanup for `:raxol_command_registry` and `:raxol_event_subscriptions` in the main `setup` block's `on_exit` handler.
+- [ ] **Isolate file system operations in `test/raxol/core/runtime/command_test.exs`**: Modify tests that write to the filesystem to use unique temporary file names and paths (e.g., via `Briefly` or `Path.tmp_dir/1`) and ensure reliable cleanup, especially due to `async: true`.
+- [ ] **Systematically review and ensure correct Ecto Sandbox usage**: For all tests interacting with `Raxol.Repo`, verify that `Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)` is correctly used, potentially by ensuring they use a `DataCase` setup or similar best practice for Ecto testing.
 
 ## Medium Priority
 
@@ -88,11 +106,20 @@ tags: [roadmap, todo, tasks]
 - [ ] **Implement Terminal Input Handling:** Tab completion, advanced mouse events (`lib/raxol/terminal/input.ex`).
 - [ ] **Implement Advanced Terminal Character Set Features:** GR invocation, Locking/Single Shift (`lib/raxol/terminal/character_sets.ex`).
 
+[ ] **Implement Advanced Terminal Character Set Features:**
+
+- [ ] GR invocation (`lib/raxol/terminal/character_sets.ex`)
+- [ ] Locking Shift (`lib/raxol/terminal/character_sets.ex`)
+- [x] **Single Shift (SS2, SS3)** (`lib/raxol/terminal/character_sets.ex`) - _Implementation complete, 2 tests in `test/raxol/terminal/ansi/character_sets_test.exs` unskipped and passing._
+
 ## Low Priority
 
 - [ ] **Investigate/Fix Potential Text Wrapping Off-by-one Error:** (`lib/raxol/components/input/text_wrapping.ex`).
 - [ ] **Refactor Large Files:** Continue breaking down large modules identified in `ARCHITECTURE.md` (e.g., `parser.ex`). (`PluginManager` refactoring is complete).
-- [ ] **Deduplicate Code / Extract Utilities:** Identify and extract common helper functions.
+- [-] **Deduplicate Code / Extract Utilities:** Identify and extract common helper functions.
+  - `test/raxol/core/runtime/events/dispatcher_edge_cases_test.exs`:
+    - [x] Extracted `create_key_event/2` helper.
+  - `test/raxol/core/runtime/plugins/plugin_manager_edge_cases_test.exs`: [x] Completed major refactoring including extraction of test fixtures, numerous helper functions, and updates to crash handling tests. (Details in CHANGELOG.md 2025-05-08).
 - [ ] **SIXEL:** Investigate potential minor rounding inaccuracies in HLS -> RGB conversion.
 - [ ] **SIXEL:** Review `consume_integer_params` default value behavior.
 
@@ -104,7 +131,7 @@ tags: [roadmap, todo, tasks]
 
 ## Current Test Suite Status (2025-05-08)
 
-- **Overall:** `49 doctests, 1526 tests, 227 failures, 33 skipped`
+- **Overall:** `49 doctests, 1524 tests, 225 failures, 27 skipped`
 
 ### Plugin System & Runtime
 

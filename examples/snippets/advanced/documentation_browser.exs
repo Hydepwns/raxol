@@ -175,5 +175,4 @@ Logger.info("DocumentationBrowser: Starting Raxol...")
 {:ok, _pid} = Raxol.start_link(DocumentationBrowser, [])
 Logger.info("DocumentationBrowser: Raxol started. Running...")
 
-Process.sleep(:infinity)
 

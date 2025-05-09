@@ -1,6 +1,7 @@
 defmodule Raxol.Core.Runtime.CommandTest do
   use ExUnit.Case, async: true
   alias Raxol.Core.Runtime.Command
+  alias Briefly
 
   describe "command creation" do
     test "none/0 creates a no-op command" do
@@ -140,8 +141,8 @@ defmodule Raxol.Core.Runtime.CommandTest do
     end
 
     test "executes file read system command", %{context: context} do
-      # Create a temporary file for testing
-      path = "test_file.txt"
+      # Create a temporary file for testing using Briefly
+      {:ok, path} = Briefly.create(basename: "test_file.txt")
       content = "test content"
       File.write!(path, content)
 
@@ -150,8 +151,7 @@ defmodule Raxol.Core.Runtime.CommandTest do
 
       assert_receive {:command_result, {:file_read, ^content}}, 500
 
-      # Clean up
-      File.rm!(path)
+      # Clean up is handled automatically by Briefly
     end
   end
 end

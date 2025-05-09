@@ -123,9 +123,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
 
       :ok = GenServer.cast(dispatcher, {:dispatch, event})
 
-      # Allow cast to process
-      Process.sleep(50)
-
       # Assertions (e.g., state change, messages sent)
       assert_receive {:render_needed, _}, 100
       current_state = :sys.get_state(dispatcher)
@@ -224,8 +221,6 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
       {:ok, dispatcher} = Dispatcher.start_link(self(), initial_state)
 
       :ok = GenServer.cast(dispatcher, {:dispatch, event})
-      # Allow cast to process
-      Process.sleep(50)
 
       # Assertions: No render needed, state unchanged
       refute_receive {:render_needed, _}, 100

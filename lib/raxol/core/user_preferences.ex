@@ -26,8 +26,10 @@ defmodule Raxol.Core.UserPreferences do
   # --- Client API ---
 
   @impl GenServer
-  def start_link(_opts) do
-    GenServer.start_link(__MODULE__, [], name: __MODULE__)
+  def start_link(opts \\ []) do
+    # Pass only the test_mode? option to init, defaulting to false.
+    init_arg = [test_mode?: Keyword.get(opts, :test_mode?, false)]
+    GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
   end
 
   @doc """
@@ -85,24 +87,28 @@ defmodule Raxol.Core.UserPreferences do
   # --- Server Callbacks ---
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
     preferences =
-      case Persistence.load() do
-        {:ok, loaded_prefs} ->
-          Logger.info("User preferences loaded successfully.")
-          # Deep merge with defaults to ensure all keys exist
-          deep_merge(default_preferences(), loaded_prefs)
+      if Keyword.get(opts, :test_mode?, false) do
+        Logger.info("UserPreferences starting in test mode, using defaults only.")
+        default_preferences()
+      else
+        case Persistence.load() do
+          {:ok, loaded_prefs} ->
+            Logger.info("User preferences loaded successfully.")
+            # Deep merge with defaults to ensure all keys exist
+            deep_merge(default_preferences(), loaded_prefs)
 
-        {:error, :file_not_found} ->
-          Logger.info("No preferences file found, using defaults.")
-          default_preferences()
+          {:error, :file_not_found} ->
+            Logger.info("No preferences file found, using defaults.")
+            default_preferences()
 
-        {:error, reason} ->
-          Logger.warning(
-            "Failed to load preferences (#{reason}), using defaults."
-          )
-
-          default_preferences()
+          {:error, reason} ->
+            Logger.warning(
+              "Failed to load preferences (#{reason}), using defaults."
+            )
+            default_preferences()
+        end
       end
 
     {:ok, %State{preferences: preferences}}

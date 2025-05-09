@@ -124,7 +124,6 @@ defmodule Raxol.Terminal.IntegrationTest do
   end
 
   describe "mouse input integration" do
-    # @tag :skip # This line will be removed by commenting it out or deleting
     test "handles mouse clicks" do
       state = Emulator.new(80, 24)
 
@@ -244,14 +243,17 @@ defmodule Raxol.Terminal.IntegrationTest do
   end
 
   describe "mode switching integration" do
-    # @tag :skip # Temporarily skip due to persistent KeyError - Will unskip
+    setup do
+      initial_emulator_state = Emulator.new(80, 24)
+      %{state: initial_emulator_state}
+    end
+
     test "handles mode transitions", %{state: initial_state} do
       # Test DECOM (Origin Mode)
       # Set Origin Mode (CSI ?6h)
       {state_after_set, _output_set} =
         Emulator.process_input(initial_state, "\e[?6h")
 
-      # assert state_after_set.mode_manager.origin_mode == true
       assert ModeManager.mode_enabled?(state_after_set.mode_manager, :decom) ==
                true
 

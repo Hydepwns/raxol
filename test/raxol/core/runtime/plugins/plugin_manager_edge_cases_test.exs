@@ -12,162 +12,20 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
     CommandRegistry
   }
 
+  # Alias the new fixtures module
+  alias Raxol.Test.PluginTestFixtures
+
   # --- Mox Mock Definition ---
   # Define Mox mock for LifecycleHelper since it has a behaviour
   Mox.defmock(EdgeCasesLifecycleHelperMock,
     for: Raxol.Core.Runtime.Plugins.LifecycleHelperBehaviour
   )
 
-  # Test plugin module that implements the required behaviours
-  defmodule TestPlugin do
-    @behaviour Raxol.Core.Runtime.Plugins.Plugin
-
-    def init(opts) do
-      {:ok,
-       %{
-         name: "test_plugin",
-         enabled: true,
-         version: "1.0.0",
-         options: opts,
-         event_count: 0,
-         crash_on: nil
-       }}
-    end
-
-    def terminate(_reason, state) do
-      # Return state to verify it was called with the correct state
-      state
-    end
-
-    def get_commands do
-      [
-        {:test_cmd, :handle_test_cmd, 1},
-        {:crash_cmd, :handle_crash_cmd, 0}
-      ]
-    end
-
-    def handle_test_cmd(arg, state) do
-      new_state = Map.put(state, :last_arg, arg)
-      {:ok, new_state, {:result, arg}}
-    end
-
-    def handle_crash_cmd(state) do
-      raise "Intentional crash in TestPlugin.handle_crash_cmd"
-    end
-
-    def handle_input(input, state) do
-      if state.crash_on == :input do
-        raise "Intentional crash in handle_input"
-      else
-        new_state = %{
-          state
-          | event_count: state.event_count + 1,
-            last_input: input
-        }
-
-        {:ok, new_state}
-      end
-    end
-
-    def handle_output(output, state) do
-      if state.crash_on == :output do
-        raise "Intentional crash in handle_output"
-      else
-        new_state = %{
-          state
-          | event_count: state.event_count + 1,
-            last_output: output
-        }
-
-        {:ok, new_state, "Modified: #{output}"}
-      end
-    end
-
-    def handle_mouse(event, state) do
-      if state.crash_on == :mouse do
-        raise "Intentional crash in handle_mouse"
-      else
-        new_state = %{
-          state
-          | event_count: state.event_count + 1,
-            last_mouse: event
-        }
-
-        {:ok, new_state}
-      end
-    end
-
-    def handle_placeholder(tag, content, options, state) do
-      if state.crash_on == :placeholder do
-        raise "Intentional crash in handle_placeholder"
-      else
-        new_state = %{
-          state
-          | event_count: state.event_count + 1,
-            last_placeholder: {tag, content, options}
-        }
-
-        {:ok, new_state, "Rendered: #{tag} - #{content}"}
-      end
-    end
-  end
-
-  # Broken plugin that fails to implement required functions
-  defmodule BrokenPlugin do
-    @behaviour Raxol.Core.Runtime.Plugins.Plugin
-
-    def init(_opts), do: {:ok, %{}}
-    def terminate(_reason, state), do: state
-    def get_commands, do: [{:broken_cmd, :handle_broken_cmd, 1}]
-
-    # Missing implementation of handle_broken_cmd/2
-  end
-
-  # Plugin with bad return values
-  defmodule BadReturnPlugin do
-    @behaviour Raxol.Core.Runtime.Plugins.Plugin
-
-    def init(_opts), do: {:ok, %{}}
-    def terminate(_reason, state), do: state
-    def get_commands, do: [{:bad_return_cmd, :handle_bad_return_cmd, 1}]
-
-    def handle_bad_return_cmd(_arg, state) do
-      # Return wrong format
-      :unexpected_return
-    end
-
-    def handle_input(_input, state) do
-      # Wrong return format
-      :not_ok
-    end
-
-    def handle_output(_output, state) do
-      # Wrong return format
-      [:not, :a, :tuple]
-    end
-  end
-
-  # Plugin with invalid dependencies
-  defmodule DependentPlugin do
-    @behaviour Raxol.Core.Runtime.Plugins.Plugin
-    @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
-
-    def init(_opts), do: {:ok, %{}}
-    def terminate(_reason, state), do: state
-    def get_commands, do: []
-
-    def id, do: :dependent_plugin
-    def version, do: "1.0.0"
-    def dependencies, do: [{:missing_plugin, ">= 1.0.0"}]
-
-    def metadata do
-      %{
-        id: :dependent_plugin,
-        version: "1.0.0",
-        dependencies: [{:missing_plugin, ">= 1.0.0"}]
-      }
-    end
-  end
+  # Test plugin module definitions are now in PluginTestFixtures
+  # defmodule TestPlugin do ... end
+  # defmodule BrokenPlugin do ... end
+  # defmodule BadReturnPlugin do ... end
+  # defmodule DependentPlugin do ... end
 
   setup do
     # Use Mox stubbing for LifecycleHelper
@@ -199,234 +57,150 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
 
   describe "plugin loading errors" do
     test "handles plugin init failure gracefully" do
-      # Setup: Plugin init will fail (Now using Mox expect)
-      Mox.expect(EdgeCasesLifecycleHelperMock, :init_plugin, fn
-        TestPlugin, _opts -> {:error, :init_failed}
-        # Default case for other plugins if any
-        _module, _opts -> {:ok, %{}}
+      with_running_manager([], fn manager_pid ->
+        # Setup: Plugin init will fail
+        Mox.expect(EdgeCasesLifecycleHelperMock, :init_plugin, fn
+          PluginTestFixtures.TestPlugin, _opts -> {:error, :init_failed}
+          _module, _opts -> {:ok, %{}} # Default case for other plugins if any
+        end)
+
+        assert_plugin_load_fails(manager_pid, PluginTestFixtures.TestPlugin, %{}, {:error, :init_failed})
       end)
-
-      # Execute: Start Manager and try to load the plugin
-      {:ok, pid} = Manager.start_link([])
-      {:error, reason} = Manager.load_plugin(TestPlugin, %{})
-
-      # Verify: Manager should report the init failure
-      assert reason == :init_failed
-
-      # Verify: Manager is still functioning
-      assert Process.alive?(pid)
-
-      # Cleanup
-      if Process.alive?(pid), do: GenServer.stop(pid)
     end
 
     test "handles plugin module loading errors" do
-      # Setup: Loader will fail to load the module using Mox
-      Mox.expect(Loader, :load_plugin_module, fn
-        TestPlugin -> {:error, :not_found}
-        # Default case
-        _ -> {:ok, nil}
+      with_running_manager([], fn manager_pid ->
+        # Setup: Loader will fail to load the module using Mox
+        Mox.expect(Loader, :load_plugin_module, fn
+          PluginTestFixtures.TestPlugin -> {:error, :not_found}
+          _ -> {:ok, nil} # Default case
+        end)
+
+        assert_plugin_load_fails(manager_pid, PluginTestFixtures.TestPlugin, %{}, {:error, :not_found})
       end)
-
-      # Execute: Start Manager and try to load the plugin
-      {:ok, pid} = Manager.start_link([])
-      {:error, reason} = Manager.load_plugin(TestPlugin, %{})
-
-      # Verify: Manager should report the loading failure
-      assert reason == :not_found
-
-      # Verify: Manager is still functioning
-      assert Process.alive?(pid)
-
-      # Cleanup
-      if Process.alive?(pid), do: GenServer.stop(pid)
     end
 
     test "handles dependency resolution failures" do
-      # Setup: LifecycleHelper will check dependencies (Now using Mox expect)
-      Mox.expect(EdgeCasesLifecycleHelperMock, :check_dependencies, fn
-        _plugin_id,
-        %{dependencies: [{:missing_plugin, ">= 1.0.0"}]},
-        _available_plugins ->
+      with_running_manager([], fn manager_pid ->
+        # Setup: LifecycleHelper will check dependencies
+        Mox.expect(EdgeCasesLifecycleHelperMock, :check_dependencies, fn
+          _plugin_id,
+          %{dependencies: [{:missing_plugin, ">= 1.0.0"}]},
+          _available_plugins ->
+            {:error, :missing_dependencies, :missing_plugin}
+          _plugin_id, _metadata, _available_plugins -> # Default case
+            {:ok}
+        end)
+
+        # Expect Loader to return the dependencies using Mox
+        Mox.expect(Loader, :load_plugin_metadata, fn
+          PluginTestFixtures.DependentPlugin ->
+            {:ok, PluginTestFixtures.DependentPlugin}
+        end)
+
+        assert_plugin_load_fails(
+          manager_pid,
+          PluginTestFixtures.DependentPlugin,
+          %{},
           {:error, :missing_dependencies, :missing_plugin}
-
-        # Default case
-        _plugin_id, _metadata, _available_plugins ->
-          {:ok}
+        )
       end)
-
-      # Execute: Start Manager and try to load the plugin with dependencies
-      {:ok, pid} = Manager.start_link([])
-
-      # Expect Loader to return the dependencies using Mox
-      Mox.expect(Loader, :load_plugin_metadata, fn
-        DependentPlugin ->
-          {:ok, DependentPlugin}
-      end)
-
-      {:error, reason, missing} = Manager.load_plugin(DependentPlugin, %{})
-
-      # Verify: Manager should report the dependency failure
-      assert reason == :missing_dependencies
-      assert missing == :missing_plugin
-
-      # Verify: Manager is still functioning
-      assert Process.alive?(pid)
-
-      # Cleanup
-      if Process.alive?(pid), do: GenServer.stop(pid)
     end
 
     test "handles plugin init timeout (simulated via mock)" do
-      # In this test, we simulate a timeout by having the EdgeCasesLifecycleHelperMock's
-      # init_plugin function never return a value (or take too long).
-      # We use Mox.stub_with for direct control over the mock's behavior.
-      # Configure EdgeCasesLifecycleHelperMock to simulate a hanging init_plugin
-      Mox.stub_with(EdgeCasesLifecycleHelperMock, %{
-        init_plugin: fn _module, _opts ->
-          # Simulate a hanging process
-          Process.sleep(:infinity)
-          # This will never be reached, but Mox expects a return value structure
-          # In a real scenario, the GenServer.call would time out.
-          {:error, :timeout_simulated_never_reached}
-        end,
-        # Provide default implementations for other functions if Manager calls them
-        # Default ok
-        check_dependencies: fn _, _, _ -> {:ok, []} end,
-        # Default ok
-        terminate_plugin: fn _, _, _ -> :ok end
-      })
+      with_running_manager([], fn manager_pid ->
+        # Configure EdgeCasesLifecycleHelperMock to simulate a hanging init_plugin
+        Mox.stub_with(EdgeCasesLifecycleHelperMock, %{
+          init_plugin: fn _module, _opts ->
+            Process.sleep(:infinity)
+            {:error, :timeout_simulated_never_reached} # Unreachable
+          end,
+          check_dependencies: fn _, _, _ -> {:ok, []} end,
+          terminate_plugin: fn _, _, _ -> :ok end
+        })
 
-      # Attempt to load the plugin, expecting a timeout
-      {:ok, pid} = Manager.start_link([])
-      {:error, reason} = Manager.load_plugin(TestPlugin, %{})
-
-      # Verify: Should handle the timeout gracefully
-      assert reason == :timeout_simulated_never_reached
-      assert Process.alive?(pid)
-      if Process.alive?(pid), do: GenServer.stop(pid)
+        assert_plugin_load_fails(manager_pid, PluginTestFixtures.TestPlugin, %{}, {:error, :timeout})
+      end)
     end
 
     test "handles plugin command execution errors (BadReturnPlugin)" do
-      # Stub LifecycleHelper for this specific test if needed, or rely on global stub
-      # For this test, we want init_plugin to succeed.
-      Mox.expect(EdgeCasesLifecycleHelperMock, :init_plugin, fn TestPlugin,
-                                                                opts ->
-        {:ok, opts}
+      with_running_manager([], fn manager_pid ->
+        # Load BadReturnPlugin using the setup_plugin helper
+        assert {:ok, _loaded_state} = setup_plugin(manager_pid, PluginTestFixtures.BadReturnPlugin, :bad_return_plugin, %{})
+
+        execute_command_and_verify(
+          manager_pid,
+          :bad_return_plugin,
+          :bad_return_cmd,
+          ["test_arg"],
+          [
+            {:error, {:command_error, :bad_return_plugin, :bad_return_cmd, :bad_plugin_return_value}},
+            {:error, {:command_error, :bad_return_cmd, :bad_plugin_return_value}},
+            {:error, :command_failed}
+          ]
+        )
       end)
-
-      Mox.stub_with(EdgeCasesLifecycleHelperMock, %{
-        init_plugin: fn _mod, opts ->
-          {:ok,
-           %{
-             plugin_id: :bad_return_plugin,
-             module: BadReturnPlugin,
-             config: opts,
-             state: %{}
-           }}
-        end,
-        # Ensure other functions are stubbed if called by Manager.initialize or other paths
-        check_dependencies: fn _, _, _ -> {:ok, []} end,
-        terminate_plugin: fn _, _, _ -> :ok end
-      })
-
-      # Start with no plugins initially
-      {:ok, pid} = Manager.start_link(plugins: [])
-      {:error, reason} = Manager.load_plugin(BadReturnPlugin, %{})
-
-      # Verify: Should handle the bad return gracefully
-      assert reason == :timeout_simulated_never_reached
-      assert Process.alive?(pid)
-      if Process.alive?(pid), do: GenServer.stop(pid)
     end
 
     test "handles plugin command not found" do
-      # Setup: Load a plugin (TestPlugin)
-      # Stubbing init_plugin to successfully initialize TestPlugin
-      Mox.stub_with(EdgeCasesLifecycleHelperMock, %{
-        init_plugin: fn _mod, opts ->
-          {:ok,
-           %{
-             plugin_id: :test_plugin,
-             module: TestPlugin,
-             config: opts,
-             state: TestPlugin.init!(opts)
-           }}
-        end,
-        check_dependencies: fn _, _, _ -> {:ok, []} end,
-        terminate_plugin: fn _, _, _ -> :ok end
-      })
+      with_running_manager([], fn manager_pid ->
+        # Setup: Load TestPlugin using the helper
+        assert {:ok, _loaded_state} = setup_plugin(manager_pid, PluginTestFixtures.TestPlugin, :test_plugin, %{})
 
-      {:ok, _pid} = Manager.start_link(plugins: [{TestPlugin, %{}}])
-      # {:error, reason} = Manager.load_plugin(TestPlugin, %{})
+        execute_command_and_verify(
+          manager_pid,
+          :test_plugin,
+          :non_existent_cmd,
+          ["test_arg"],
+          [
+            {:error, {:command_error, :test_plugin, :non_existent_cmd, :not_found}},
+            {:error, {:command_not_found, :test_plugin, :non_existent_cmd}},
+            {:error, :command_not_found}
+          ]
+        )
+      end)
     end
   end
 
   describe "plugin event handling edge cases" do
-    # Skip: Manager.process_input/2 is no longer the API for input processing
-    @tag :skip
+    # Setup for this describe block is removed, tests will manage their own manager lifecycle
+    # and plugin loading as needed.
+
     test "handles plugin input handler crashes" do
-      # Setup: Prepare manager with test plugin configured to crash on input
-      {:ok, pid} = Manager.start_link([])
+      with_running_manager([], fn manager_pid ->
+        crashing_plugin_module = PluginTestFixtures.CrashingPlugin
+        crashing_plugin_id = :crashing_plugin
+        crashing_plugin_namespace = :crashing_plugin_commands # Matches conceptual CrashingPlugin
 
-      # Setup the plugin to crash on input
-      # Use Mox expect for init_plugin
-      Mox.expect(EdgeCasesLifecycleHelperMock, :init_plugin, fn
-        TestPlugin, _opts ->
-          {:ok, %{name: "test_plugin", enabled: true, crash_on: :input}}
+        # Load the crashing plugin
+        assert {:ok, _} = setup_plugin(manager_pid, crashing_plugin_module, crashing_plugin_id, %{})
 
-        # Default case for other plugins if any
-        _module, _opts ->
-          {:ok, %{}}
+        dispatch_command_and_assert_manager_alive(
+          manager_pid,
+          :trigger_input_crash,
+          crashing_plugin_namespace,
+          "PluginManager GenServer should remain alive after a plugin's input handler crashes (triggered by command)"
+        )
       end)
-
-      {:ok, _} = Manager.load_plugin(TestPlugin, %{})
-
-      # Execute: Process input that will trigger crash
-      result = Manager.process_input(pid, "test input")
-
-      # Verify: Should handle the crash gracefully
-      assert {:ok, _} = result
-
-      # Verify: Manager is still alive
-      assert Process.alive?(pid)
-
-      # Cleanup
-      if Process.alive?(pid), do: GenServer.stop(pid)
     end
 
-    # Skip: Manager.process_output/2 is no longer the API for output processing
     @tag :skip
     test "handles plugin output handler crashes" do
-      # Setup: Prepare manager with test plugin configured to crash on output
-      {:ok, pid} = Manager.start_link([])
+      with_running_manager([], fn manager_pid ->
+        crashing_plugin_module = PluginTestFixtures.CrashingPlugin
+        crashing_plugin_id = :crashing_plugin
+        crashing_plugin_namespace = :crashing_plugin_commands # Matches conceptual CrashingPlugin
 
-      # Setup the plugin to crash on output
-      # Use Mox expect for init_plugin
-      Mox.expect(EdgeCasesLifecycleHelperMock, :init_plugin, fn
-        TestPlugin, _opts ->
-          {:ok, %{name: "test_plugin", enabled: true, crash_on: :output}}
+        # Load the crashing plugin
+        assert {:ok, _} = setup_plugin(manager_pid, crashing_plugin_module, crashing_plugin_id, %{})
 
-        # Default case for other plugins if any
-        _module, _opts ->
-          {:ok, %{}}
+        dispatch_command_and_assert_manager_alive(
+          manager_pid,
+          :trigger_output_crash,
+          crashing_plugin_namespace,
+          "PluginManager GenServer should remain alive after a plugin's output handler crashes (triggered by command)"
+        )
       end)
-
-      {:ok, _} = Manager.load_plugin(TestPlugin, %{})
-
-      # Execute: Process output that will trigger crash
-      result = Manager.process_output(pid, "test output")
-
-      # Verify: Should handle the crash gracefully
-      assert {:ok, _, output} = result
-      # Original output should be returned
-      assert output == "test output"
-
-      # Verify: Manager is still alive
-      assert Process.alive?(pid)
-
-      # Cleanup
-      if Process.alive?(pid), do: GenServer.stop(pid)
     end
 
     # Skip: Manager.process_mouse/3 is no longer the API for mouse processing
@@ -438,7 +212,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       # Setup the plugin to crash on mouse
       # Use Mox expect for init_plugin
       Mox.expect(EdgeCasesLifecycleHelperMock, :init_plugin, fn
-        TestPlugin, _opts ->
+        PluginTestFixtures.TestPlugin, _opts ->
           {:ok, %{name: "test_plugin", enabled: true, crash_on: :mouse}}
 
         # Default case for other plugins if any
@@ -446,7 +220,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           {:ok, %{}}
       end)
 
-      {:ok, _} = Manager.load_plugin(TestPlugin, %{})
+      {:ok, _} = Manager.load_plugin(PluginTestFixtures.TestPlugin, %{})
 
       # Execute: Process mouse event that will trigger crash
       event = {:click, 10, 20, :left}
@@ -471,7 +245,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       # Setup the plugin to crash on placeholder
       # Use Mox expect for init_plugin
       Mox.expect(EdgeCasesLifecycleHelperMock, :init_plugin, fn
-        TestPlugin, _opts ->
+        PluginTestFixtures.TestPlugin, _opts ->
           {:ok, %{name: "test_plugin", enabled: true, crash_on: :placeholder}}
 
         # Default case for other plugins if any
@@ -479,7 +253,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           {:ok, %{}}
       end)
 
-      {:ok, _} = Manager.load_plugin(TestPlugin, %{})
+      {:ok, _} = Manager.load_plugin(PluginTestFixtures.TestPlugin, %{})
 
       # Execute: Process placeholder that will trigger crash
       result = Manager.process_placeholder(pid, "chart", "data", %{})
@@ -504,7 +278,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       # Allow the plugin to load
       # Use Mox expect for init_plugin
       Mox.expect(EdgeCasesLifecycleHelperMock, :init_plugin, fn
-        BadReturnPlugin, _opts ->
+        PluginTestFixtures.BadReturnPlugin, _opts ->
           {:ok, %{}}
 
         # Default case for other plugins if any
@@ -512,7 +286,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           {:ok, %{}}
       end)
 
-      {:ok, _} = Manager.load_plugin(BadReturnPlugin, %{})
+      {:ok, _} = Manager.load_plugin(PluginTestFixtures.BadReturnPlugin, %{})
 
       # Execute: Process input with bad return
       result = Manager.process_input(pid, "test input")
@@ -536,68 +310,53 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
 
   describe "plugin reloading edge cases" do
     test "handles reload failures gracefully" do
-      # Setup: Prepare manager with test plugin
-      {:ok, pid} = Manager.start_link([])
+      with_running_manager([], fn manager_pid ->
+        # Allow the plugin to load initially
+        Mox.expect(EdgeCasesLifecycleHelperMock, :init_plugin, fn
+          PluginTestFixtures.TestPlugin, _opts ->
+            {:ok, %{name: "test_plugin", enabled: true, module: PluginTestFixtures.TestPlugin, state: %{}}}
+          _module, _opts ->
+            {:ok, %{}} # Default case
+        end)
+        # Ensure load_plugin is called with the manager_pid
+        assert {:ok, _} = Manager.load_plugin(manager_pid, PluginTestFixtures.TestPlugin, %{})
 
-      # Allow the plugin to load
-      # Use Mox expect for init_plugin
-      Mox.expect(EdgeCasesLifecycleHelperMock, :init_plugin, fn
-        TestPlugin, _opts ->
-          {:ok, %{name: "test_plugin", enabled: true}}
+        # Setup: Make reloading fail
+        Mox.expect(
+          EdgeCasesLifecycleHelperMock,
+          :reload_plugin_from_disk,
+          1,
+          fn :test_plugin, # Expecting the plugin_id from the loaded plugin state
+             PluginTestFixtures.TestPlugin,
+             _path,
+             _plugin_states,
+             ^manager_pid, # Ensure the correct manager_pid is passed
+             _event_handler,
+             _cell_processor,
+             _cmd_helper ->
+            {:error, :recompile_failed}
+          end
+        )
 
-        # Default case for other plugins if any
-        _module, _opts ->
-          {:ok, %{}}
+        # Execute: Attempt to reload the plugin
+        # Assuming reload_plugin takes manager_pid and plugin_id
+        result = Manager.reload_plugin(manager_pid, :test_plugin)
+
+        # Verify: Should report the reload failure
+        assert {:error, :recompile_failed} = result
+        assert Process.alive?(manager_pid)
       end)
-
-      {:ok, _} = Manager.load_plugin(TestPlugin, %{})
-
-      # Setup: Make reloading fail
-      # Use Mox expect for reload_plugin_from_disk
-      Mox.expect(
-        EdgeCasesLifecycleHelperMock,
-        :reload_plugin_from_disk,
-        1,
-        fn _id,
-           _module,
-           _path,
-           _plugin_states,
-           _plugin_manager,
-           _event_handler,
-           _cell_processor,
-           _cmd_helper ->
-          {:error, :recompile_failed}
-        end
-      )
-
-      # Execute: Attempt to reload the plugin
-      result = Manager.reload_plugin(:test_plugin)
-
-      # Verify: Should report the reload failure
-      assert {:error, :recompile_failed} = result
-
-      # Verify: Manager is still alive
-      assert Process.alive?(pid)
-
-      # Cleanup
-      if Process.alive?(pid), do: GenServer.stop(pid)
     end
 
     test "handles reload failures gracefully when trying to reload a non-existent plugin" do
-      # Setup: Prepare manager
-      {:ok, pid} = Manager.start_link([])
+      with_running_manager([], fn manager_pid ->
+        # Execute: Try to reload a non-existent plugin
+        result = Manager.reload_plugin(manager_pid, :non_existent_plugin)
 
-      # Execute: Try to reload a non-existent plugin
-      result = Manager.reload_plugin(:non_existent_plugin)
-
-      # Verify: Reload should fail
-      assert {:error, :plugin_not_found} = result
-
-      # Verify: Manager is still alive
-      assert Process.alive?(pid)
-
-      # Cleanup
-      if Process.alive?(pid), do: GenServer.stop(pid)
+        # Verify: Reload should fail
+        assert {:error, :plugin_not_found} = result
+        assert Process.alive?(manager_pid)
+      end)
     end
   end
 
@@ -610,8 +369,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
 
       # Mix of operations
       ops = [
-        fn -> Manager.load_plugin(TestPlugin, %{}) end,
-        fn -> Manager.load_plugin(DependentPlugin, %{}) end,
+        fn -> Manager.load_plugin(PluginTestFixtures.TestPlugin, %{}) end,
+        fn -> Manager.load_plugin(PluginTestFixtures.DependentPlugin, %{}) end,
         fn -> Manager.process_input(pid, "test input") end,
         fn -> Manager.process_output(pid, "test output") end,
         fn -> Manager.execute_command(pid, :test_cmd, ["payload"]) end
@@ -646,14 +405,14 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       end)
 
       # Stub init_plugin to succeed for TestPlugin
-      Mox.stub(EdgeCasesLifecycleHelperMock, :init_plugin, fn TestPlugin,
+      Mox.stub(EdgeCasesLifecycleHelperMock, :init_plugin, fn PluginTestFixtures.TestPlugin,
                                                               opts ->
         {:ok,
          %{
            plugin_id: :test_plugin,
-           module: TestPlugin,
+           module: PluginTestFixtures.TestPlugin,
            config: opts,
-           state: TestPlugin.init!(opts)
+           state: PluginTestFixtures.TestPlugin.init!(opts)
          }}
       end)
 
@@ -664,7 +423,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
 
       # Execute: Start Manager, load plugin, then stop Manager
       {:ok, pid} = Manager.start_link([])
-      {:error, reason} = Manager.load_plugin(TestPlugin, %{})
+      {:error, reason} = Manager.load_plugin(PluginTestFixtures.TestPlugin, %{})
 
       # Verify: Should handle the terminate failure gracefully
       assert reason == :terminate_failed
@@ -683,9 +442,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           {:ok,
            %{
              plugin_id: :test_plugin,
-             module: TestPlugin,
+             module: PluginTestFixtures.TestPlugin,
              config: opts,
-             state: TestPlugin.init!(opts)
+             state: PluginTestFixtures.TestPlugin.init!(opts)
            }}
         end,
         # Default ok
@@ -700,7 +459,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
 
       # Start Manager and load TestPlugin
       {:ok, pid} = Manager.start_link([])
-      {:error, reason} = Manager.load_plugin(TestPlugin, %{})
+      {:error, reason} = Manager.load_plugin(PluginTestFixtures.TestPlugin, %{})
 
       # Verify: Should handle the terminate timeout gracefully
       assert reason == :timeout_simulated_never_reached
@@ -721,9 +480,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           {:ok,
            %{
              plugin_id: :test_plugin,
-             module: TestPlugin,
+             module: PluginTestFixtures.TestPlugin,
              config: opts,
-             state: TestPlugin.init!(opts)
+             state: PluginTestFixtures.TestPlugin.init!(opts)
            }}
         end,
         check_dependencies: fn _, _, _ -> {:ok, []} end,
@@ -734,39 +493,76 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       :ok
     end
 
-    # Skip: Tests removed Manager APIs (execute_command, process_*)
-    @tag :skip
-    test "handles concurrent plugin operations" do
-      # Setup: Prepare manager
-      {:ok, pid} = Manager.start_link([])
+  end
 
-      # Mix of operations
-      ops = [
-        fn -> Manager.load_plugin(TestPlugin, %{}) end,
-        fn -> Manager.load_plugin(DependentPlugin, %{}) end,
-        fn -> Manager.process_input(pid, "test input") end,
-        fn -> Manager.process_output(pid, "test output") end,
-        fn -> Manager.execute_command(pid, :test_cmd, ["payload"]) end
-      ]
+  # Helper to run a test with a managed PluginManager process
+  defp with_running_manager(manager_opts \\ [], func) do
+    {:ok, manager_pid} = Manager.start_link(manager_opts)
 
-      # Execute ops concurrently
-      tasks =
-        for _ <- 1..5 do
-          Task.async(fn ->
-            # Pick a random operation and execute it
-            op = Enum.random(ops)
-            op.()
-          end)
+    try do
+      func.(manager_pid)
+    after
+      # Ensure manager is stopped even if the test fails
+      if Process.alive?(manager_pid), do: GenServer.stop(manager_pid)
+    end
+  end
+
+  # --- New Helper Functions ---
+
+  defp setup_plugin(manager_pid, plugin_module, plugin_id_atom, initial_opts \\ %{}) do
+    plugin_init_fun = fn mod, opts ->
+      # Attempt to call init! first, then init if init! is not defined or fails for arity reasons
+      initial_plugin_state =
+        try do
+          apply(mod, :init!, [opts])
+        rescue
+          UndefinedFunctionError -> apply(mod, :init, [opts])
         end
 
-      # Wait for all tasks to complete
-      results = Task.await_many(tasks, 1000)
+      resolved_state =
+        if is_tuple(initial_plugin_state) and elem(initial_plugin_state, 0) == :ok do
+          elem(initial_plugin_state, 1)
+        else
+          initial_plugin_state # Assuming init! or a direct state return from init
+        end
 
-      # Verify: Manager should still be alive
-      assert Process.alive?(pid)
-
-      # Cleanup
-      if Process.alive?(pid), do: GenServer.stop(pid)
+      {:ok, %{plugin_id: plugin_id_atom, module: mod, config: opts, state: resolved_state}}
     end
+
+    # Stub common LifecycleHelper functions needed for loading
+    Mox.stub_with(EdgeCasesLifecycleHelperMock, %{
+      init_plugin: plugin_init_fun,
+      check_dependencies: fn _, _, _ -> {:ok, []} end, # Default stub for successful dependency check
+      terminate_plugin: fn _, _, _ -> :ok end         # Default stub for successful termination
+    })
+
+    Manager.load_plugin(manager_pid, plugin_module, initial_opts)
+  end
+
+  defp dispatch_command_and_assert_manager_alive(manager_pid, command_name, namespace, data \\ %{}, assertion_message) do
+    GenServer.cast(manager_pid, {:handle_command, command_name, namespace, data, self()})
+    Process.sleep(150) # Allow time for async processing and potential crash
+    assert Process.alive?(manager_pid), assertion_message
+  end
+
+  defp assert_matches_any_pattern(term, patterns) when is_list(patterns) do
+    assert Enum.any?(patterns, &match?(&1, term)),
+           "Term #{inspect(term)} did not match any of the expected patterns: #{inspect(patterns)}"
+  end
+
+  # Helper for executing a command and verifying the outcome and manager liveness
+  defp execute_command_and_verify(manager_pid, plugin_id_atom, command_name, command_args, expected_patterns) do
+    result = Manager.execute_command(manager_pid, plugin_id_atom, command_name, command_args)
+    assert_matches_any_pattern(result, expected_patterns)
+    assert Process.alive?(manager_pid), "PluginManager should be alive after command execution: #{command_name}"
+  end
+
+  # Helper for asserting plugin load failures while ensuring manager liveness
+  # Note: Mox expectations/stubs to cause the failure must be set up *before* calling this helper.
+  defp assert_plugin_load_fails(manager_pid, plugin_module, load_opts, expected_error_result) do
+    actual_result = Manager.load_plugin(manager_pid, plugin_module, load_opts)
+    assert actual_result == expected_error_result,
+           "Expected loading #{inspect(plugin_module)} to result in #{inspect(expected_error_result)}, but got #{inspect(actual_result)}"
+    assert Process.alive?(manager_pid), "PluginManager should be alive after a failed load of #{inspect(plugin_module)}"
   end
 end

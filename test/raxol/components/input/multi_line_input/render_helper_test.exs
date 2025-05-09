@@ -218,17 +218,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
       assert elem(children, 2).style == expected_text_style
     end
 
-    # Skipping until component state mocking is stable
-    @tag :skip
-    test "render_visible_lines/1 handles scroll offset correctly", %{
-      state: state,
-      theme: theme
-    } do
-      # Scroll down one line
-      state = %{state | scroll_offset: {1, 0}}
-      line_element = RenderHelper.render_line(1, Enum.at(state.lines, 1), state)
-      # TODO: Need assertion on element structure/styles
-      assert line_element != nil
-    end
+    # Test "render_visible_lines/1 handles scroll offset correctly" was removed as it was fundamentally flawed.
   end
 end

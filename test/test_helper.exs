@@ -10,10 +10,13 @@ if Application.get_env(:raxol, :database_enabled, true) do
 
   # Start the Ecto Sandbox owner process
   # DB should have been created/migrated by the `mix test` alias now
-  # :ok = Ecto.Adapters.SQL.Sandbox.start_owner!(Raxol.Repo, []) # COMMENT OUT
+  _owner_pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Raxol.Repo, [])
 end
 
 # Set Raxol.Test.Mocks.EventManagerMock to :stub mode globally for tests
 # This allows Mox.stub/expect to be used on this manually defined mock module
 # when it's injected via app config, without needing Mox.defmock for it.
 # Mox.set_mode(Raxol.Test.Mocks.EventManagerMock, :stub) # No longer needed with dummy behaviour approach
+
+# Ensure Mox verifies all expectations on exit to prevent state leakage
+# Mox.verify_on_exit!(ExUnit.configuration())

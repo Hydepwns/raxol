@@ -127,5 +127,4 @@ Raxol.run(example_module, opts)
 
 # Keep the script running until Raxol exits (or manually stopped)
 # Temporarily commented out -> Uncommented
-Process.sleep(:infinity)
 IO.puts("[bin/demo.exs] Script finished.")
