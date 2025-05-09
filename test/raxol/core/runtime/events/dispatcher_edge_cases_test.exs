@@ -145,8 +145,10 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       try do
         GenServer.stop(:raxol_event_subscriptions, :normal, 5000)
       catch
-        :exit, {:noproc, _} -> :ok # Process not found, already stopped
-        :exit, _ -> :ok # Other exit during stop, consider it cleaned for test purposes
+        # Process not found, already stopped
+        :exit, {:noproc, _} -> :ok
+        # Other exit during stop, consider it cleaned for test purposes
+        :exit, _ -> :ok
       end
 
       # Cleanup for ETS table by its name
@@ -355,7 +357,8 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       GenServer.cast(dispatcher, {:dispatch, event})
 
       # Wait for MockApp to confirm its "slow work" is done
-      assert_receive :mock_app_slow_update_finished, 5000 # Increased timeout for safety
+      # Increased timeout for safety
+      assert_receive :mock_app_slow_update_finished, 5000
 
       end_time = :os.system_time(:millisecond)
       elapsed = end_time - start_time
@@ -363,7 +366,9 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
       # Verify update occurred
       current_state = :sys.get_state(dispatcher)
       assert current_state.model.count == 1
-      assert current_state.model.last_event == {:key_press, {:timeout, self()}, []}
+
+      assert current_state.model.last_event ==
+               {:key_press, {:timeout, self()}, []}
 
       # Verify the operation took at least the sleep time
       assert elapsed >= 200

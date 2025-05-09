@@ -180,7 +180,11 @@ defmodule Raxol.Core.Accessibility do
   """
   def disable(user_preferences_pid_or_name \\ nil) do
     target_prefs = user_preferences_pid_or_name || @default_prefs_name
-    Logger.debug("Disabling accessibility features for #{inspect(target_prefs)}")
+
+    Logger.debug(
+      "Disabling accessibility features for #{inspect(target_prefs)}"
+    )
+
     # Set disabled flag in UserPreferences
     set_pref(:enabled, false, target_prefs)
 
