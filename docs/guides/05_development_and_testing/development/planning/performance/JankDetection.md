@@ -202,4 +202,4 @@ For advanced use cases, the JankDetector and JankVisualizer classes support addi
 
 ---
 
-For more information, see the [Performance Optimization Guide](./PerformanceOptimization.md) and [Animation Performance Guide](../guides/animation_performance.md).
+For more information, see the [Performance Optimization Guide](./PerformanceOptimization.md).

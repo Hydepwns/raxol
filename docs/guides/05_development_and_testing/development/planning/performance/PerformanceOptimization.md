@@ -394,7 +394,10 @@ For optimal visualization performance:
 
 ## Additional Resources
 
-- [Memory Management Guide](../guides/memory_management.md)
 - [Jank Detection Documentation](./JankDetection.md)
-- [Load Testing Guide](../guides/load_testing.md)
 - [Web Performance Fundamentals](https://web.dev/metrics/)
+
+## Further Reading
+
+- [Raxol Jank Detection Guide](./JankDetection.md)
+- [Raxol Performance Testing Guide](./PerformanceTesting.md)
