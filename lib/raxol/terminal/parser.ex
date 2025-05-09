@@ -56,12 +56,10 @@ defmodule Raxol.Terminal.Parser do
   @spec parse_chunk(Emulator.t(), State.t(), String.t()) ::
           {Emulator.t(), State.t(), String.t()}
   def parse_chunk(emulator, state, data) do
-    IO.inspect(emulator.main_screen_buffer,
-      label: "PARSER_CHUNK_ENTRY: main_screen_buffer"
-    )
+    # IO.inspect(emulator.main_screen_buffer, limit: :infinity, label: "PARSER_CHUNK_ENTRY: main_screen_buffer")
 
-    IO.inspect(state, label: "PARSER_CHUNK_ENTRY: state")
-    IO.inspect(data, label: "PARSER_CHUNK_ENTRY: data")
+    # IO.inspect(state, label: "PARSER_CHUNK_ENTRY: state")
+    # IO.inspect(data, label: "PARSER_CHUNK_ENTRY: data")
     parse_loop(emulator, state, data)
   end
 
