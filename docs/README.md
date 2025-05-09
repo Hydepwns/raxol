@@ -26,7 +26,7 @@ Welcome to the main documentation index for Raxol, a terminal application toolki
   - [Plugin Development](/docs/guides/04_extending_raxol/plugin_development.md)
   - [VS Code Extension](/docs/guides/04_extending_raxol/vscode_extension.md) (Planned)
 - **[Development & Testing](/docs/guides/05_development_and_testing/testing.md):** Guide to contributing and testing.
-- **[Terminal Details](/docs/guides/05_development_and_testing/development/terminal/README.md):** Lower-level information on terminal interaction.
+- **[Terminal Details](/docs/guides/02_core_concepts/terminal/README.md):** Lower-level information on terminal interaction.
 - **Examples:** Explore runnable demos and snippets in the top-level `examples/` directory.
 - **[CHANGELOG](/docs/changes/CHANGELOG.md):** Log of changes between versions.
 
