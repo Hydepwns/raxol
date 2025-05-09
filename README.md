@@ -86,6 +86,7 @@ Main documentation index: [docs/README.md](docs/README.md)
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [CHANGELOG](docs/changes/CHANGELOG.md)
 - [UI Components & Layout](docs/guides/03_components_and_layout/components/README.md)
+- [Accessibility Guide](docs/guides/05_development_and_testing/development/planning/accessibility/accessibility_guide.md)
 - **Core Concepts:**
   - [Runtime Options](docs/guides/02_core_concepts/runtime_options.md)
   - [Async Operations](docs/guides/02_core_concepts/async_operations.md)
@@ -96,7 +97,7 @@ Main documentation index: [docs/README.md](docs/README.md)
 - **Development & Testing:**
   - [Development Setup](docs/guides/05_development_and_testing/DevelopmentSetup.md)
   - [Testing Guide](docs/guides/05_development_and_testing/testing.md)
-- [Terminal Details](docs/guides/05_development_and_testing/development/terminal/README.md)
+- [Terminal Details](docs/guides/02_core_concepts/terminal/README.md)
 
 ## Development
 

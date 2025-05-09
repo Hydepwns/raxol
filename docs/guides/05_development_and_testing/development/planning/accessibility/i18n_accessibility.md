@@ -186,5 +186,4 @@ For languages with extensive use of diacritical marks:
 
 - [W3C Internationalization and Accessibility](https://www.w3.org/WAI/about/translating/)
 - [RTL UI Best Practices](https://material.io/design/usability/bidirectionality.html)
-- [Raxol Internationalization Guide](/docs/guides/02_core_concepts/i18n_guide.md)
-- [Raxol Accessibility Guide](/docs/guides/02_core_concepts/accessibility_guide.md)
+- [Raxol Accessibility Guide](/docs/guides/05_development_and_testing/development/planning/accessibility/accessibility_guide.md)
