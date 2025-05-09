@@ -15,6 +15,9 @@ defmodule RaxolWeb.Endpoint do
     websocket: [connect_info: [session: @session_options]]
   )
 
+  # Mount the general purpose UserSocket for channels
+  socket("/socket", RaxolWeb.UserSocket, websocket: true, longpoll: false)
+
   # Serve at "/" the static files from "priv/static" directory.
   plug Plug.Static,
     at: "/",

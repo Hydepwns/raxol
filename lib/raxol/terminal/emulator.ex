@@ -4,6 +4,8 @@ defmodule Raxol.Terminal.Emulator do
   cursor position, attributes, and modes.
   """
 
+  @behaviour Raxol.Terminal.EmulatorBehaviour
+
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Operations
   alias Raxol.Terminal.ANSI.CharacterSets
@@ -117,6 +119,7 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: t()
   @dialyzer {:nowarn_function, new: 3}
+  @impl Raxol.Terminal.EmulatorBehaviour
   def new(width \\ 80, height \\ 24, opts \\ []) do
     scrollback_limit = Keyword.get(opts, :scrollback, 1000)
     memory_limit = Keyword.get(opts, :memorylimit, 1_000_000)
@@ -173,10 +176,36 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   @doc """
+  Creates a new terminal emulator instance with specified dimensions, session ID, and client options.
+  This function is required by the TerminalChannel.
+  """
+  @impl Raxol.Terminal.EmulatorBehaviour
+  def new(width, height, session_id, client_options) do
+    Logger.warn(
+      "Emulator.new/4 called with session_id: #{inspect(session_id)} and client_options: #{inspect(client_options)}. These are currently ignored."
+    )
+
+    # Call the existing new/3, passing through width, height, and an empty list for opts for now.
+    # TODO: Properly utilize session_id and client_options or integrate them into opts for new/3.
+    # This will return t() directly as expected by the behaviour if new/3 returns t()
+    new(width, height, [])
+
+    # If new/3 is meant to return {:ok, t()} for the behaviour, this needs adjustment.
+    # Based on current new/3 signature, it returns t().
+    # The behaviour for new/4 is {:ok, t()} | {:error, any()}, so we wrap it.
+    # However, the mock is `{:ok, %Emulator{}}` so this should be fine for now as new/3 returns %Emulator{}
+    # Let's make it return {:ok, emulator_instance} to match the behaviour callback precisely for new/4.
+    # Calls the new/3 above
+    emulator_instance = new(width, height, [])
+    {:ok, emulator_instance}
+  end
+
+  @doc """
   Returns the currently active screen buffer (:main or :alternate).
   """
   @spec get_active_buffer(t()) :: ScreenBuffer.t()
-  def get_active_buffer(emulator) do
+  @impl Raxol.Terminal.EmulatorBehaviour
+  def get_active_buffer(%__MODULE__{active_buffer_type: :main} = emulator) do
     Logger.debug(
       "[get_active_buffer] Type: #{inspect(emulator.active_buffer_type)}, Keys: #{inspect(Map.keys(emulator))}"
     )
@@ -224,7 +253,8 @@ defmodule Raxol.Terminal.Emulator do
 
   """
   @spec process_input(t(), String.t()) :: {t(), String.t()}
-  def process_input(emulator, input) when is_binary(input) do
+  @impl Raxol.Terminal.EmulatorBehaviour
+  def process_input(%__MODULE__{} = emulator, input) when is_binary(input) do
     # Get the current parser state from the emulator
     current_parser_state = emulator.parser_state
 
@@ -271,6 +301,7 @@ defmodule Raxol.Terminal.Emulator do
           Raxol.Terminal.Emulator.t(),
           Raxol.Terminal.ScreenBuffer.t()
         ) :: Raxol.Terminal.Emulator.t()
+  @impl Raxol.Terminal.EmulatorBehaviour
   def update_active_buffer(
         %__MODULE__{active_buffer_type: :main} = emulator,
         new_buffer
@@ -313,6 +344,7 @@ defmodule Raxol.Terminal.Emulator do
           non_neg_integer()
         ) :: Raxol.Terminal.Emulator.t()
   @dialyzer {:nowarn_function, resize: 3}
+  @impl Raxol.Terminal.EmulatorBehaviour
   def resize(%__MODULE__{} = emulator, new_width, new_height) do
     # Resize both buffers
     new_main_buffer =
@@ -351,6 +383,7 @@ defmodule Raxol.Terminal.Emulator do
   @spec get_cursor_position(Raxol.Terminal.Emulator.t()) ::
           {non_neg_integer(), non_neg_integer()}
   @dialyzer {:nowarn_function, get_cursor_position: 1}
+  @impl Raxol.Terminal.EmulatorBehaviour
   def get_cursor_position(%__MODULE__{} = emulator) do
     emulator.cursor.position
   end
@@ -367,6 +400,7 @@ defmodule Raxol.Terminal.Emulator do
   Boolean indicating if cursor is visible
   """
   @spec get_cursor_visible(Raxol.Terminal.Emulator.t()) :: boolean()
+  @impl Raxol.Terminal.EmulatorBehaviour
   def get_cursor_visible(%__MODULE__{} = emulator) do
     emulator.cursor.state != :hidden
   end
