@@ -1,7 +1,7 @@
 ---
 title: Raxol Library Documentation
 description: Documentation for using the Raxol TUI library in Elixir projects
-date: 2025-05-01
+date: 2025-05-09
 author: DROO AMOR
 section: overview
 tags: [documentation, overview, library, tui, elixir]

@@ -22,6 +22,7 @@ This directory contains helper scripts for development, testing, and quality ass
 Ensure code quality before committing.
 
 - `pre_commit_check.exs`: Runs all applicable checks (Dialyzer, Credo, Format, Docs, Links, Coverage).
+  (Note: Link checking currently verifies file existence but anchor link (`#anchor`) validation is temporarily disabled).
 
   ```bash
   mix run scripts/pre_commit_check.exs
@@ -46,6 +47,7 @@ Ensure code quality before committing.
   ```
 
 - `check_links.exs`: Checks for broken links in Markdown files.
+  (Note: Currently verifies file existence; anchor link (`#anchor`) validation is temporarily disabled).
 
   ```bash
   mix run scripts/check_links.exs
