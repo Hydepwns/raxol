@@ -19,6 +19,7 @@ A terminal application toolkit for Elixir, providing components and a runtime fo
 - **User Preferences:** Persist settings across sessions (`Raxol.Core.UserPreferences`).
 - **Plugin System:** Extend functionality with custom plugins (`Raxol.Core.Runtime.Plugins`).
 - **Terminal Handling:** Robust ANSI/Sixel processing, input handling, double buffering with NIF-based termbox integration.
+- **Testable System Interactions:** Uses an adapter pattern for system calls (file system, HTTP) to improve testability.
 
 ## Installation
 
