@@ -473,10 +473,8 @@ defmodule Raxol.Core.FocusManager do
   (Placeholder implementation)
   """
   @impl true
-  @spec register_focus_change_handler(
-          (String.t() | nil, String.t() | nil ->
-             any())
-        ) :: :ok
+  @spec register_focus_change_handler((String.t() | nil, String.t() | nil ->
+                                         any())) :: :ok
   def register_focus_change_handler(handler_fun)
       when is_function(handler_fun, 2) do
     handlers = Process.get(:focus_manager_change_handlers, [])
@@ -490,10 +488,8 @@ defmodule Raxol.Core.FocusManager do
   (Placeholder implementation)
   """
   @impl true
-  @spec unregister_focus_change_handler(
-          (String.t() | nil, String.t() | nil ->
-             any())
-        ) :: :ok
+  @spec unregister_focus_change_handler((String.t() | nil, String.t() | nil ->
+                                           any())) :: :ok
   def unregister_focus_change_handler(handler_fun)
       when is_function(handler_fun, 2) do
     handlers = Process.get(:focus_manager_change_handlers, [])

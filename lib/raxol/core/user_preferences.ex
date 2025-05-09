@@ -90,7 +90,10 @@ defmodule Raxol.Core.UserPreferences do
   def init(opts) do
     preferences =
       if Keyword.get(opts, :test_mode?, false) do
-        Logger.info("UserPreferences starting in test mode, using defaults only.")
+        Logger.info(
+          "UserPreferences starting in test mode, using defaults only."
+        )
+
         default_preferences()
       else
         case Persistence.load() do
@@ -107,6 +110,7 @@ defmodule Raxol.Core.UserPreferences do
             Logger.warning(
               "Failed to load preferences (#{reason}), using defaults."
             )
+
             default_preferences()
         end
       end

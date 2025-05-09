@@ -58,7 +58,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
             g3: :us_ascii,
             gl: :g0,
             gr: :g1,
-            single_shift: nil, # Stays as is, will hold the target charset
+            # Stays as is, will hold the target charset
+            single_shift: nil,
             locked_shift: false
 
   @doc """
@@ -126,12 +127,17 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   @spec get_active_charset(charset_state()) :: charset()
   def get_active_charset(state) do
     cond do
-      state.single_shift != nil -> # If a single shift is active, it takes precedence
+      # If a single shift is active, it takes precedence
+      state.single_shift != nil ->
         state.single_shift
+
       state.locked_shift ->
-        Map.get(state, state.gr) # Get the charset designated to GR
+        # Get the charset designated to GR
+        Map.get(state, state.gr)
+
       true ->
-        Map.get(state, state.gl)  # Get the charset designated to GL
+        # Get the charset designated to GL
+        Map.get(state, state.gl)
     end
   end
 
@@ -163,7 +169,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   This function is more complex due to the stateful nature of single shifts
   per character. For precise control, process char by char using translate_char/2.
   """
-  @spec translate_string(charset_state(), String.t()) :: {String.t(), charset_state()}
+  @spec translate_string(charset_state(), String.t()) ::
+          {String.t(), charset_state()}
   def translate_string(state, string) do
     if String.length(string) == 0 do
       {"", state}
@@ -178,7 +185,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
         end
 
       if first_char do
-        {translated_first_char_code, next_state} = translate_char(state, first_char)
+        {translated_first_char_code, next_state} =
+          translate_char(state, first_char)
+
         translated_first_char_string = <<translated_first_char_code::utf8>>
 
         rest_of_string = String.slice(string, 1, String.length(string) - 1)
@@ -188,7 +197,13 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
           # which has single_shift consumed if it was active for the first char.
           # CharacterTranslations.translate_string takes the string and the charset atom.
           active_charset_for_rest = get_active_charset(next_state)
-          translated_rest = CharacterTranslations.translate_string(rest_of_string, active_charset_for_rest)
+
+          translated_rest =
+            CharacterTranslations.translate_string(
+              rest_of_string,
+              active_charset_for_rest
+            )
+
           {translated_first_char_string <> translated_rest, next_state}
         else
           {translated_first_char_string, next_state}
