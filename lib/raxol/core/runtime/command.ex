@@ -242,11 +242,11 @@ defmodule Raxol.Core.Runtime.Command do
         )
 
       %{type: :clipboard_read} ->
-        # Delegate to PluginManager with namespace, data as nil, and dispatcher_pid
+        # Delegate to PluginManager with namespace, data as an empty list, and dispatcher_pid
         GenServer.cast(
           PluginManager,
           {:handle_command, :clipboard_read,
-           Raxol.Core.Plugins.Core.ClipboardPlugin, nil, context.pid}
+           Raxol.Core.Plugins.Core.ClipboardPlugin, [], context.pid}
         )
 
       %{type: :notify, data: {title, body}} ->

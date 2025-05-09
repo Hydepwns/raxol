@@ -30,5 +30,17 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperBehaviour do
               loaded_plugins_paths :: list(String.t())
             ) :: {:ok, map()} | {:error, any()}
 
+  @doc "Loads a plugin by its module name when the module is already known."
+  @callback load_plugin_by_module(
+              plugin_module :: atom(),
+              config :: map(),
+              plugins :: map(),
+              metadata :: map(),
+              plugin_states :: map(),
+              load_order :: list(),
+              command_table :: atom(),
+              plugin_config :: map()
+            ) :: {:ok, map()} | {:error, any()}
+
   # Add other callbacks here if the Manager interacts with more LifecycleHelper functions
 end
