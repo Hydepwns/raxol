@@ -15,10 +15,15 @@ tags: [roadmap, todo, tasks]
 - [ ] Task 4.1-4.3: Review/Improve ExDoc (`@moduledoc`, `@doc`, `@spec`) for key public modules.
 - [x] Task 4.4: Test ExDoc Generation (`mix docs`).
 - [ ] Improve README Example.
+- [ ] **Pre-commit Script Maintenance (`scripts/pre_commit_check.exs`):**
+  - [x] Improve file discovery to include hidden directories (e.g., `.github/`) and normalize paths.
+  - [x] Explicitly include key project READMEs in the known file set.
+  - [x] Temporarily disable anchor checking (`#anchor-links`) due to parsing complexities. File existence checks are active.
+  - [ ] **Re-implement Robust Anchor Checking:** Develop a reliable method for parsing and validating anchor links within Markdown files for the pre-commit script.
 
 ## High Priority
 
-- [x] **Fix Test Failures:** Address the large number of remaining test failures (**242 failures** as of YYYY-MM-DD - please update date) reported by `mix test`.
+- [x] **Fix Test Failures:** Address the large number of remaining test failures (**227 failures** as of 2025-05-08) reported by `mix test`.
 
   - This included a significant effort to resolve all failures in `test/raxol_web/channels/terminal_channel_test.exs` by addressing Mox setup, Phoenix ChannelTest API changes (which led to the creation of `RaxolWeb.UserSocket`), `EmulatorBehaviour` arity, `handle_in` return value consistency, and numerous test assertion refinements (e.g., switching to `assert_receive`).
   - It also included resolving all failures in `test/raxol/core/runtime/plugins/manager_reloading_test.exs` through fixes in Mox setup (using `import Mox`, `setup :set_mox_global`), `Manager` initialization (`command_registry_table`, ensuring mock modules were passed and used), test structure, and graceful shutdown (`GenServer.stop`).
@@ -49,7 +54,7 @@ tags: [roadmap, todo, tasks]
     - [x] `test/raxol/core/runtime/plugins/plugin_manager_edge_cases_test.exs`
   - **(DONE - All listed files converted)**
 
-- [ ] **Address Skipped Tests:** Reduce the number of skipped tests (currently **33 skipped tests** as of YYYY-MM-DD - please update date). ~~(Progress on tests requiring Mox may be blocked by the Mox compilation error)~~ (Mox compilation error resolved).
+- [ ] **Address Skipped Tests:** Reduce the number of skipped tests (currently **33 skipped tests** as of 2025-05-08).
       Note: `test/raxol/core/ux_refinement_keyboard_test.exs` now has 2 skipped tests (down from 3) as one complex event integration test was successfully unskipped and fixed.
   - [x] Animation/Easing: Added full implementation for all 17 required easing functions.
   - [x] Notification Plugin: Fixed all 13 skipped tests by implementing proper Mox behavior.
