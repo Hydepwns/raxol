@@ -32,6 +32,13 @@ defmodule Raxol.Test.Mocks do
   Mox.defmock(Raxol.Mocks.FocusManagerMock,
     for: Raxol.Core.FocusManager.Behaviour
   )
+
+  # Mock for the KeyboardShortcuts Behaviour
+  Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
+    for: Raxol.Core.KeyboardShortcutsBehaviour
+  )
+
+  # Removed EventManagerBehaviour and defmock for EventManagerMock
 end
 
 # The Raxol.Core.Accessibility.Mock module definition below should be removed.

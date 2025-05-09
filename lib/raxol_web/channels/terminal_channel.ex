@@ -170,4 +170,36 @@ defmodule RaxolWeb.TerminalChannel do
   # def handle_in(\"resize\", %{\"width\" => width, \"height\" => height}, socket) do
   # ... (rest of original handler)
   # end
+
+  # Pushes rendered output and cursor state to the client
+  defp push_output(socket, state) do
+    buffer = state.emulator.main_screen_buffer
+    # Ensure theme is correctly passed if available
+    # Assuming state.renderer holds the current theme map if set
+    # Default to empty map
+    current_theme = Map.get(state.renderer, :theme, %{})
+
+    html_content =
+      Renderer.render(%Renderer{screen_buffer: buffer, theme: current_theme})
+
+    payload = %{
+      html: html_content,
+      cursor: %{
+        x: Emulator.get_cursor_position(state.emulator) |> elem(0),
+        y: Emulator.get_cursor_position(state.emulator) |> elem(1),
+        visible: Emulator.get_cursor_visible(state.emulator)
+      }
+    }
+
+    # Only use Task.start_link outside of test environment
+    if Mix.env() == :test do
+      push(socket, "output", payload)
+    else
+      # Use Task.start_link for async push in dev/prod
+      Task.start_link(fn -> push(socket, "output", payload) end)
+    end
+  end
+
+  # Helper to get terminal state from socket
+  # ... existing code ...
 end

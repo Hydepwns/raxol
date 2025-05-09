@@ -48,7 +48,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
   # Handle :notify command. Expects [title_string, message_string] as args.
-  def handle_command([title, message], state)
+  def handle_command(:notify, [title, message], state)
       when is_binary(title) and is_binary(message) do
     interaction_mod = state.interaction_module
     data_map = %{title: title, message: message}
@@ -57,12 +57,12 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
 
   # Catch-all for incorrect args if a command somehow gets routed here
   # with a different signature than what get_commands implies.
-  def handle_command(args, state) do
+  def handle_command(command_name, args, state) do
     Logger.warning(
-      "NotificationPlugin :handle_command received unexpected args format: #{inspect(args)}"
+      "NotificationPlugin :handle_command received unexpected command '#{command_name}' with args format: #{inspect(args)}"
     )
 
-    {:error, {:unexpected_command_args, args}, state}
+    {:error, {:unexpected_command_args, command_name, args}, state}
   end
 
   # Internal handler for :notify

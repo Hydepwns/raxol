@@ -55,32 +55,51 @@ defmodule Raxol.UI.Renderer do
 
   # --- Private Element Rendering Functions ---
 
-  defp render_element(element, theme) do
+  defp render_element(nil, _theme) do
+    # If the element itself is nil, render nothing
+    []
+  end
+
+  defp render_element(element, theme) when is_map(element) do
     # Dispatch based on element type found in the layout engine output
     case element do
-      %{type: :text, x: x, y: y, text: text} = text_element ->
-        # Pass the full element map to potentially use other attrs
-        render_text(x, y, text, Map.get(text_element, :attrs, %{}), theme)
+      # Element type :text - expect :text, :x, :y. attrs is optional.
+      %{type: :text, text: text_content, x: x, y: y} = text_element ->
+        # Use element's style map as attrs
+        attrs = Map.get(text_element, :style, %{})
+        render_text(x, y, text_content, attrs, theme)
 
+      # Element type :box - expect :x, :y, :w, :h. attrs is optional.
       %{type: :box, x: x, y: y, width: w, height: h} = box_element ->
-        # Pass the full element map
-        render_box(x, y, w, h, Map.get(box_element, :attrs, %{}), theme)
+        # Use element's style map as attrs
+        attrs = Map.get(box_element, :style, %{})
+        render_box(x, y, w, h, attrs, theme)
 
-      # Match necessary keys for table rendering
-      %{type: :table, x: x, y: y, width: w, height: h} = table_element ->
-        # --- Logging ---
-        Logger.debug(
-          "[Renderer] Received :table element: #{inspect(table_element)}"
-        )
+      # Element type :table
+      %{type: :table, x: x, y: y} = table_element ->
+        # Default width if not specified
+        width = Map.get(table_element, :width, 80)
+        # Default height if not specified
+        height = Map.get(table_element, :height, 24)
 
-        # ---------------
-        render_table(x, y, w, h, Map.get(table_element, :attrs, %{}), theme)
+        attrs = %{
+          _headers: Map.get(table_element, :headers, []),
+          _data: Map.get(table_element, :data, []),
+          _col_widths: Map.get(table_element, :col_widths, []),
+          _component_type: :table,
+          # Pass style from element
+          style: Map.get(table_element, :style, %{})
+        }
 
-      # Match necessary keys for panel rendering
+        render_table(x, y, width, height, attrs, theme)
+
+      # Match necessary keys for panel rendering. attrs is optional.
       %{type: :panel, x: x, y: y, width: w, height: h} = panel_element ->
+        # Use element's style map as attrs for the panel's box
+        attrs = Map.get(panel_element, :style, %{})
         # Render the panel's background/border as a box
         panel_box_cells =
-          render_box(x, y, w, h, Map.get(panel_element, :attrs, %{}), theme)
+          render_box(x, y, w, h, attrs, theme)
 
         # Render children
         children = Map.get(panel_element, :children)
@@ -219,7 +238,7 @@ defmodule Raxol.UI.Renderer do
   end
 
   # --- Add Table Rendering Logic ---
-  defp render_table(x, y, width, _height, attrs, theme) do
+  defp render_table(x, y, width, height, attrs, theme) do
     headers = Map.get(attrs, :_headers, [])
     data = Map.get(attrs, :_data, [])
     col_widths = Map.get(attrs, :_col_widths, [])
@@ -481,14 +500,29 @@ defmodule Raxol.UI.Renderer do
 
     # Determine style attributes (bold, underline, etc.)
     # Priority: explicit attrs -> component styles
-    explicit_style_attrs = Map.get(attrs, :style, [])
-    # Assuming style is list of atoms
-    component_style_attrs = Map.get(component_styles, :style, [])
+    raw_explicit_style = Map.get(attrs, :style, [])
+
+    explicit_style_attrs =
+      if is_list(raw_explicit_style), do: raw_explicit_style, else: []
+
+    raw_component_style = Map.get(component_styles, :style, [])
+
+    component_style_attrs =
+      if is_list(raw_component_style), do: raw_component_style, else: []
+
     # Merge: explicit attrs take precedence (simple list concatenation for now)
     # A proper merge might be needed depending on how styles are defined
     final_style_attrs =
       (explicit_style_attrs ++ component_style_attrs) |> Enum.uniq()
 
     {fg_color, bg_color, final_style_attrs}
+  end
+
+  # Clause to handle nil theme (fallback to defaults)
+  defp resolve_styles(attrs, _component_type, nil) do
+    fg_color = Map.get(attrs, :fg, @default_fg)
+    bg_color = Map.get(attrs, :bg, @default_bg)
+    style_attrs = Map.get(attrs, :style, []) |> Enum.uniq()
+    {fg_color, bg_color, style_attrs}
   end
 end

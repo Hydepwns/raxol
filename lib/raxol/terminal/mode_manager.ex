@@ -652,7 +652,7 @@ defmodule Raxol.Terminal.ModeManager do
         case type do
           # Assuming style is often saved with cursor
           :cursor_only ->
-            [:cursor, :style]
+            [:cursor]
 
           :full ->
             [

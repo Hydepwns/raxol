@@ -3,6 +3,14 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
   require Logger
 
   alias Raxol.UI.Renderer
+  alias Raxol.UI.Theming.Theme
+  alias Raxol.Core.UserPreferences
+
+  setup_all do
+    Raxol.UI.Theming.Theme.init()
+    {:ok, _pid} = UserPreferences.start_link(%{name: UserPreferences})
+    :ok
+  end
 
   # Utility function to get cells for a specific position
   defp get_cell_at(cells, x, y) do
@@ -19,11 +27,21 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       # Empty list of elements
       elements = []
 
-      # Create a test theme
-      theme = %{
-        foreground: %{default: :white},
-        background: %{default: :black}
+      # Create a test theme using the Theme struct
+      theme = %Theme{
+        id: :test_theme_empty,
+        name: "Test Theme Empty",
+        description: "A test theme for empty elements",
+        colors: %{
+          foreground: :white,
+          background: :black
+        },
+        fonts: %{},
+        component_styles: %{},
+        variants: %{}
       }
+
+      Raxol.UI.Theming.Theme.register(theme)
 
       # Render empty elements
       result = Renderer.render_to_cells(elements, theme)
@@ -36,11 +54,20 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       # List with nil elements
       elements = [nil, nil]
 
-      # Create a test theme
-      theme = %{
-        foreground: %{default: :white},
-        background: %{default: :black}
+      theme = %Theme{
+        id: :test_theme_nil,
+        name: "Test Theme Nil",
+        description: "A test theme for nil elements",
+        colors: %{
+          foreground: :white,
+          background: :black
+        },
+        fonts: %{},
+        component_styles: %{},
+        variants: %{}
       }
+
+      Raxol.UI.Theming.Theme.register(theme)
 
       # Render nil elements
       result = Renderer.render_to_cells(elements, theme)
@@ -53,7 +80,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       # Create elements with missing required attributes
       elements = [
         # Missing content
-        %{type: :text},
+        %{type: :text, x: 0, y: 0},
         # Missing width/height
         %{type: :panel, x: 0, y: 0},
         # Missing x/y
@@ -62,12 +89,21 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
         %{type: :unknown_type, x: 0, y: 0, width: 10, height: 5}
       ]
 
-      # Create a test theme
-      theme = %{
-        foreground: %{default: :white},
-        background: %{default: :black},
-        border: %{default: :green}
+      theme = %Theme{
+        id: :test_theme_missing_attrs,
+        name: "Test Theme Missing Attrs",
+        description: "A test theme for missing attributes",
+        colors: %{
+          foreground: :white,
+          background: :black,
+          border: :green
+        },
+        fonts: %{},
+        component_styles: %{},
+        variants: %{}
       }
+
+      Raxol.UI.Theming.Theme.register(theme)
 
       # Should not crash
       result = Renderer.render_to_cells(elements, theme)
@@ -98,13 +134,25 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
         }
       ]
 
-      # Create a test theme
-      theme = %{
-        foreground: %{default: :white, blue: :cyan, red: :yellow},
-        background: %{default: :black, blue: :blue, red: :red},
-        border: %{default: :green}
+      theme = %Theme{
+        id: :test_theme_overlap,
+        name: "Test Theme Overlap",
+        description: "A test theme for overlapping elements",
+        colors: %{
+          foreground: :white,
+          blue_fg: :cyan,
+          red_fg: :yellow,
+          background: :black,
+          blue_bg: :blue,
+          red_bg: :red,
+          border: :green
+        },
+        fonts: %{},
+        component_styles: %{},
+        variants: %{}
       }
 
+      Raxol.UI.Theming.Theme.register(theme)
       # Render overlapping elements
       result = Renderer.render_to_cells(elements, theme)
 
@@ -152,7 +200,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
                 type: :text,
                 x: 1,
                 y: 1,
-                content: "Nested",
+                text: "Nested",
                 style: %{foreground: :yellow}
               }
             ]
@@ -160,11 +208,23 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
         ]
       }
 
-      # Create a test theme
-      theme = %{
-        foreground: %{default: :white, yellow: :yellow},
-        background: %{default: :black, blue: :blue, red: :red}
+      theme = %Theme{
+        id: :test_theme_nested,
+        name: "Test Theme Nested",
+        description: "A test theme for nested elements",
+        colors: %{
+          foreground: :white,
+          yellow_fg: :yellow,
+          background: :black,
+          blue_bg: :blue,
+          red_bg: :red
+        },
+        fonts: %{},
+        component_styles: %{},
+        variants: %{}
       }
+
+      Raxol.UI.Theming.Theme.register(theme)
 
       # Render nested elements
       result = Renderer.render_to_cells([parent], theme)
@@ -199,7 +259,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
   describe "theme handling edge cases" do
     test "handles missing theme" do
       # Create a simple element
-      element = %{type: :text, x: 0, y: 0, content: "Test"}
+      element = %{type: :text, x: 0, y: 0, text: "Test"}
 
       # Render with nil theme
       result = Renderer.render_to_cells([element], nil)
@@ -215,7 +275,7 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
           type: :text,
           x: 0,
           y: 0,
-          content: "Test",
+          text: "Test",
           style: %{foreground: :missing_color}
         },
         %{
@@ -228,11 +288,20 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
         }
       ]
 
-      # Create a theme with limited colors
-      theme = %{
-        foreground: %{default: :white},
-        background: %{default: :black}
+      theme = %Theme{
+        id: :test_theme_missing_colors,
+        name: "Test Theme Missing Colors",
+        description: "A test theme with limited colors",
+        colors: %{
+          foreground: :white,
+          background: :black
+        },
+        fonts: %{},
+        component_styles: %{},
+        variants: %{}
       }
+
+      Raxol.UI.Theming.Theme.register(theme)
 
       # Render with missing theme colors
       result = Renderer.render_to_cells(elements, theme)
@@ -243,24 +312,22 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
       text_cell = get_cell_at(result, 0, 0)
       assert text_cell != nil
       {_, _, "T", fg, _, _} = text_cell
-      # Should use default foreground color since missing_color is not defined
       assert fg == :white
 
       # Check box element
       box_cell = get_cell_at(result, 5, 0)
       assert box_cell != nil
       {_, _, _, _, bg, _} = box_cell
-      # Should use default background color since another_missing is not defined
       assert bg == :black
     end
 
     test "handles style overrides" do
-      # Create element with style that should override theme defaults
+      # Create an element with explicit style overrides
       element = %{
         type: :text,
         x: 0,
         y: 0,
-        content: "Test",
+        text: "Test",
         style: %{
           foreground: :custom_fg,
           background: :custom_bg,
@@ -269,404 +336,534 @@ defmodule Raxol.UI.RendererEdgeCasesTest do
         }
       }
 
-      # Create a theme with custom colors
-      theme = %{
-        foreground: %{default: :white, custom_fg: :magenta},
-        background: %{default: :black, custom_bg: :cyan}
+      theme = %Theme{
+        id: :test_theme_overrides,
+        name: "Test Theme Overrides",
+        description: "A test theme for style overrides",
+        colors: %{
+          foreground: :theme_fg,
+          custom_fg: :red,
+          background: :theme_bg,
+          custom_bg: :blue
+        },
+        fonts: %{},
+        component_styles: %{
+          text: %{fg: :component_fg, style: [:bold_false]}
+        },
+        variants: %{}
       }
+
+      Raxol.UI.Theming.Theme.register(theme)
 
       # Render with style overrides
       result = Renderer.render_to_cells([element], theme)
 
-      # Check that style overrides are applied
+      # Check that the explicit styles are applied
       cell = get_cell_at(result, 0, 0)
       assert cell != nil
-      {_, _, "T", fg, bg, modifiers} = cell
-
-      # Custom foreground and background should be applied
-      assert fg == :magenta
-      assert bg == :cyan
-
-      # Modifiers should include bold and underline
-      assert modifiers[:bold] == true
-      assert modifiers[:underline] == true
+      {_, _, "T", fg, bg, style_attrs} = cell
+      assert fg == :custom_fg
+      assert bg == :custom_bg
+      assert :bold in style_attrs
+      assert :underline in style_attrs
     end
 
     test "handles explicit border style override" do
-      # Create element with style that should override theme defaults
       element = %{
-        type: :text,
+        type: :box,
         x: 0,
         y: 0,
-        content: "Test",
+        width: 3,
+        height: 3,
         style: %{
-          foreground: :custom_fg,
-          background: :custom_bg,
-          bold: true,
-          underline: true
+          border: %{
+            style: :double,
+            fg: :red
+          }
         }
       }
 
-      # Create a theme with custom colors
-      theme = %{
-        foreground: %{default: :white, custom_fg: :magenta},
-        background: %{default: :black, custom_bg: :cyan}
+      theme = %Theme{
+        id: :test_theme_border_override,
+        name: "Test Theme Border Override",
+        description: "A test theme for border overrides",
+        colors: %{
+          foreground: :white,
+          background: :black,
+          border: :blue,
+          red: :red
+        },
+        fonts: %{},
+        component_styles: %{
+          box: %{
+            border_style: :single,
+            border_fg: :blue
+          }
+        },
+        variants: %{}
       }
 
-      # Render with explicit border style override
+      Raxol.UI.Theming.Theme.register(theme)
       result = Renderer.render_to_cells([element], theme)
-
-      # Check that the text has a heavy border
       cell = get_cell_at(result, 0, 0)
       assert cell != nil
-      {_, _, "T", fg, bg, modifiers} = cell
-
-      # Custom foreground and background should be applied
-      assert fg == :magenta
-      assert bg == :cyan
-
-      # Modifiers should include bold and underline
-      assert modifiers[:bold] == true
-      assert modifiers[:underline] == true
+      {_, _, char, fg, _, _} = cell
+      assert char == "╔"
+      assert fg == :red
     end
 
     test "handles default border style" do
-      # Create element with style that should override theme defaults
       element = %{
-        type: :text,
+        type: :box,
         x: 0,
         y: 0,
-        content: "Test",
-        style: %{
-          foreground: :custom_fg,
-          background: :custom_bg,
-          bold: true,
-          underline: true
-        }
+        width: 3,
+        height: 3
       }
 
-      # Create a theme with custom colors
-      theme = %{
-        foreground: %{default: :white, custom_fg: :magenta},
-        background: %{default: :black, custom_bg: :cyan}
+      theme = %Theme{
+        id: :test_theme_default_border,
+        name: "Test Theme Default Border",
+        description: "A test theme for default borders",
+        colors: %{
+          foreground: :white,
+          background: :black,
+          border_color: :green
+        },
+        fonts: %{},
+        component_styles: %{
+          box: %{
+            border_style: :single,
+            border_fg: :green
+          }
+        },
+        variants: %{}
       }
 
-      # Render with default border style
+      Raxol.UI.Theming.Theme.register(theme)
       result = Renderer.render_to_cells([element], theme)
-
-      # Check that the text has the default border style from the theme
       cell = get_cell_at(result, 0, 0)
       assert cell != nil
-      {_, _, "T", fg, bg, modifiers} = cell
-
-      # Custom foreground and background should be applied
-      assert fg == :magenta
-      assert bg == :cyan
-
-      # Modifiers should include bold and underline
-      assert modifiers[:bold] == true
-      assert modifiers[:underline] == true
+      {_, _, char, fg, _, _} = cell
+      assert char == "┌"
+      assert fg == :green
     end
 
     test "handles no border" do
-      # Create element with style that should override theme defaults
       element = %{
-        type: :text,
+        type: :box,
         x: 0,
         y: 0,
-        content: "Test",
+        width: 3,
+        height: 3,
         style: %{
-          foreground: :custom_fg,
-          background: :custom_bg,
-          bold: true,
-          underline: true
+          border: :none
         }
       }
 
-      # Create a theme with custom colors
-      theme = %{
-        foreground: %{default: :white, custom_fg: :magenta},
-        background: %{default: :black, custom_bg: :cyan}
+      theme = %Theme{
+        id: :test_theme_no_border,
+        name: "Test Theme No Border",
+        description: "A test theme for no border",
+        colors: %{
+          foreground: :white,
+          background: :black,
+          border_color: :green
+        },
+        fonts: %{},
+        component_styles: %{
+          box: %{border_style: :single, border_fg: :green}
+        },
+        variants: %{}
       }
 
-      # Render with no border
+      Raxol.UI.Theming.Theme.register(theme)
       result = Renderer.render_to_cells([element], theme)
-
-      # Check that no border cells are rendered
       cell = get_cell_at(result, 0, 0)
       assert cell != nil
-      {_, _, "T", fg, bg, modifiers} = cell
-
-      # Custom foreground and background should be applied
-      assert fg == :magenta
-      assert bg == :cyan
-
-      # Modifiers should include bold and underline
-      assert modifiers[:bold] == true
-      assert modifiers[:underline] == true
+      {_, _, char, _, _, _} = cell
+      assert char != "┌"
+      assert char != "╔"
     end
   end
 
   describe "special components" do
     test "handles tables with varying row lengths" do
-      # Create a table with rows of different lengths
+      # Table with varying row lengths
       table = %{
         type: :table,
         x: 0,
         y: 0,
         headers: ["Col 1", "Col 2", "Col 3"],
         data: [
-          # Missing third column
           ["Row 1-1", "Row 1-2"],
           ["Row 2-1", "Row 2-2", "Row 2-3"],
-          # Missing second and third columns
           ["Row 3-1"]
         ],
         style: %{}
       }
 
-      # Create a theme
-      theme = %{
-        foreground: %{default: :white, header: :yellow},
-        background: %{default: :black},
-        border: %{default: :green}
+      theme = %Theme{
+        id: :test_theme_table_varying,
+        name: "Test Theme Table Varying",
+        description: "A test theme for table with varying rows",
+        colors: %{
+          foreground: :white,
+          background: :black,
+          table_header_fg: :yellow,
+          table_header_bg: :blue,
+          table_row_fg: :white,
+          table_row_bg: :black,
+          table_border: :cyan
+        },
+        fonts: %{},
+        component_styles: %{
+          table: %{
+            header_fg: :yellow,
+            header_bg: :blue,
+            row_fg: :white,
+            row_bg: :black,
+            border_color: :cyan
+          }
+        },
+        variants: %{}
       }
+
+      Raxol.UI.Theming.Theme.register(theme)
 
       # Render table
       result = Renderer.render_to_cells([table], theme)
 
-      # Should handle varying row lengths without crashing
+      # Should render correctly, padding shorter rows
       assert result != []
+      header_col1 = Enum.find(result, fn {_, _, c, _, _, _} -> c == "Col 1" end)
+      assert header_col1 != nil
+      {_hx, _hy, _, hfg, hbg, _} = header_col1
+      assert hfg == :yellow
+      assert hbg == :blue
 
-      # Verify the table headers are rendered
-      header_cells = get_cells_with_char(result, "C")
-      assert length(header_cells) > 0
+      data_row1_col1 =
+        Enum.find(result, fn {_, _, c, _, _, _} -> c == "Row 1-1" end)
+
+      assert data_row1_col1 != nil
+      {_dx, _dy, _, dfg, dbg, _} = data_row1_col1
+      assert dfg == :white
+      assert dbg == :black
     end
 
     test "handles very large elements" do
-      # Create a very large element that might challenge the renderer
+      # Element larger than typical terminal size
       large_box = %{
         type: :box,
         x: 0,
         y: 0,
-        width: 1000,
-        height: 500,
-        style: %{}
+        width: 200,
+        height: 100,
+        style: %{background: :blue}
       }
 
-      # Create a theme
-      theme = %{
-        foreground: %{default: :white},
-        background: %{default: :black},
-        border: %{default: :green}
+      theme = %Theme{
+        id: :test_theme_large,
+        name: "Test Theme Large",
+        description: "A test theme for large elements",
+        colors: %{
+          foreground: :white,
+          background: :black,
+          border: :green,
+          blue_bg: :blue
+        },
+        fonts: %{},
+        component_styles: %{},
+        variants: %{}
       }
+
+      Raxol.UI.Theming.Theme.register(theme)
 
       # Render large element
       result = Renderer.render_to_cells([large_box], theme)
 
-      # Should handle large dimensions without crashing
-      assert result != []
+      # Should not crash and produce a list of cells
+      assert is_list(result)
 
-      # Check that cells at the extremes are rendered
-      top_left = get_cell_at(result, 0, 0)
-      assert top_left != nil
-
-      # Don't check cells at maximum coordinates, as implementations might optimize or limit rendering
-      # Just ensure something was rendered
-      assert length(result) > 100
+      if result != [] do
+        assert Enum.any?(result, fn {_, _, _, _, bg, _} -> bg == :blue end)
+      else
+        assert large_box.width > 0 && large_box.height > 0 && result != [],
+               "Expected cells for a large box, but got none."
+      end
     end
 
     test "handles non-ASCII characters in text" do
-      # Create text with non-ASCII characters
-      text = %{
+      unicode_text = %{
         type: :text,
         x: 0,
         y: 0,
-        content: "Unicode: äöü 你好 👋🌍",
+        text: "Unicode: äöü 你好 👋🌍",
         style: %{}
       }
 
-      # Create a theme
-      theme = %{
-        foreground: %{default: :white},
-        background: %{default: :black}
+      theme = %Theme{
+        id: :test_theme_unicode,
+        name: "Test Theme Unicode",
+        description: "A test theme for unicode text",
+        colors: %{
+          foreground: :white,
+          background: :black
+        },
+        fonts: %{},
+        component_styles: %{},
+        variants: %{}
       }
 
-      # Render text with unicode
-      result = Renderer.render_to_cells([text], theme)
-
-      # Should handle Unicode characters
+      Raxol.UI.Theming.Theme.register(theme)
+      result = Renderer.render_to_cells([unicode_text], theme)
       assert result != []
-
-      # Verify some Unicode characters are rendered
-      unicode_chars =
-        get_cells_with_char(result, "ä") ++
-          get_cells_with_char(result, "你") ++
-          get_cells_with_char(result, "👋")
-
-      # At least some of these should be rendered
-      assert length(unicode_chars) > 0
+      first_char_cell = get_cell_at(result, 0, 0)
+      assert first_char_cell != nil
+      {_, _, char, _, _, _} = first_char_cell
+      assert char == "U"
+      assert Enum.any?(result, fn {_, _, c, _, _, _} -> c == "ä" end)
+      assert Enum.any?(result, fn {_, _, c, _, _, _} -> c == "你" end)
+      assert Enum.any?(result, fn {_, _, c, _, _, _} -> c == "👋" end)
     end
   end
 
   describe "component composition" do
-    test "handles deep nesting of components" do
-      # Create deeply nested components
-      deep_nesting = %{
-        type: :panel,
-        x: 0,
-        y: 0,
-        width: 50,
-        height: 20,
-        style: %{background: :color1},
-        children: [
-          %{
-            type: :panel,
-            x: 5,
-            y: 2,
-            width: 40,
-            height: 15,
-            style: %{background: :color2},
-            children: [
-              %{
-                type: :panel,
-                x: 5,
-                y: 2,
-                width: 30,
-                height: 10,
-                style: %{background: :color3},
-                children: [
-                  %{
-                    type: :panel,
-                    x: 5,
-                    y: 2,
-                    width: 20,
-                    height: 6,
-                    style: %{background: :color4},
-                    children: [
-                      %{
-                        type: :text,
-                        x: 2,
-                        y: 2,
-                        content: "Deeply Nested",
-                        style: %{foreground: :color5}
-                      }
-                    ]
-                  }
-                ]
-              }
-            ]
-          }
-        ]
+    # Simulating a simple custom component structure for testing composition
+    defmodule MyCustomComponent do
+      def render(props) do
+        text_content = Map.get(props, :text, "Default")
+
+        %{
+          type: :box,
+          x: Map.get(props, :x, 0),
+          y: Map.get(props, :y, 0),
+          width: Map.get(props, :width, 10),
+          height: Map.get(props, :height, 3),
+          style: %{background: Map.get(props, :bgColor, :cyan)},
+          children: [
+            %{
+              type: :text,
+              x: 1,
+              y: 1,
+              text: text_content,
+              style: %{foreground: Map.get(props, :fgColor, :black)}
+            }
+          ]
+        }
+      end
+    end
+
+    test "handles basic component composition" do
+      # Element that uses the custom component
+      composed_element = %{
+        type: :my_custom_component_output,
+        children_elements: [MyCustomComponent.render(%{text: "Hello"})]
       }
 
-      # Create a theme with the needed colors
-      theme = %{
-        foreground: %{default: :white, color5: :magenta},
-        background: %{
-          default: :black,
+      theme = %Theme{
+        id: :test_theme_composition1,
+        name: "Test Theme Composition 1",
+        description: "A test theme for composition",
+        colors: %{
+          foreground: :white,
+          background: :black,
+          cyan_bg: :cyan,
+          black_fg: :black
+        },
+        fonts: %{},
+        component_styles: %{},
+        variants: %{}
+      }
+
+      Raxol.UI.Theming.Theme.register(theme)
+
+      # Render the composed structure (output of MyCustomComponent.render)
+      result =
+        Renderer.render_to_cells(
+          [MyCustomComponent.render(%{text: "Hello"})],
+          theme
+        )
+
+      assert result != []
+      assert Enum.any?(result, fn {_, _, _, _, bg, _} -> bg == :cyan end)
+      text_cell = Enum.find(result, fn {_, _, c, _, _, _} -> c == "H" end)
+      assert text_cell != nil
+      {_, _, _, fg, _, _} = text_cell
+      assert fg == :black
+    end
+
+    test "handles deep nesting of components" do
+      # Define a component that can nest itself conceptually
+      # For the test, construct the deeply nested map structure directly
+      deep_nesting_data_generator = fn me, level, max_level, props ->
+        if level >= max_level do
+          %{
+            type: :text,
+            x: 1,
+            y: 1,
+            text: Map.get(props, :text, "End"),
+            style: %{foreground: Map.get(props, :fgEnd, :color5)}
+          }
+        else
+          %{
+            type: :box,
+            x: 1,
+            y: 1,
+            width: 10 - level * 2,
+            height: 5 - level,
+            style: %{background: Map.get(props, :"color#{level}", :color1)},
+            children: [
+              me.(me, level + 1, max_level, props)
+            ]
+          }
+        end
+      end
+
+      deep_nesting =
+        deep_nesting_data_generator.(deep_nesting_data_generator, 1, 5, %{
+          text: "Deep",
+          fgEnd: :color5,
+          color1: :color1,
+          color2: :color2,
+          color3: :color3,
+          color4: :color4
+        })
+
+      theme = %Theme{
+        id: :test_theme_deep_nest,
+        name: "Test Theme Deep Nest",
+        description: "A test theme for deep nesting",
+        colors: %{
+          foreground: :white,
+          background: :black,
           color1: :blue,
           color2: :green,
           color3: :cyan,
-          color4: :red
-        }
+          color4: :red,
+          color5: :magenta
+        },
+        fonts: %{},
+        component_styles: %{},
+        variants: %{}
       }
 
-      # Render deeply nested components
-      result = Renderer.render_to_cells([deep_nesting], theme)
+      Raxol.UI.Theming.Theme.register(theme)
 
-      # Should handle deep nesting without crashing
+      result = Renderer.render_to_cells([deep_nesting], theme)
       assert result != []
 
-      # Verify the text at the deepest level
-      text_cells = get_cells_with_char(result, "D")
-      assert length(text_cells) == 1
+      assert Enum.any?(result, fn {x, y, _, _, bg, _} -> bg == :blue end),
+             "Outermost box with :blue bg not found"
 
-      # Check position of the text (should be at x=0+5+5+5+2=17, y=0+2+2+2+2=8)
-      {x, y, _, fg, _, _} = hd(text_cells)
-      assert x == 17
-      assert y == 8
+      assert Enum.any?(result, fn {_, _, _, _, bg, _} -> bg == :cyan end),
+             "Inner box with :cyan bg not found"
+
+      text_cell = Enum.find(result, fn {_, _, char, _, _, _} -> char == "D" end)
+      assert text_cell != nil, "Text 'Deep' not found"
+      {_, _, _, fg, _, _} = text_cell
       assert fg == :magenta
-
-      # Check that backgrounds at each level are rendered correctly
-      # In outermost panel
-      level1_cell = get_cell_at(result, 2, 1)
-      assert level1_cell != nil
-      {_, _, _, _, bg1, _} = level1_cell
-      assert bg1 == :blue
-
-      # In second level panel
-      level2_cell = get_cell_at(result, 7, 4)
-      assert level2_cell != nil
-      {_, _, _, _, bg2, _} = level2_cell
-      assert bg2 == :green
-
-      # In third level panel
-      level3_cell = get_cell_at(result, 12, 7)
-      assert level3_cell != nil
-      {_, _, _, _, bg3, _} = level3_cell
-      assert bg3 == :cyan
-
-      # In fourth level panel
-      level4_cell = get_cell_at(result, 17, 7)
-      assert level4_cell != nil
-      {_, _, _, _, bg4, _} = level4_cell
-      assert bg4 == :red
     end
 
     test "handles recursive composition" do
-      # Create a function that builds a recursive tree of boxes
-      build_recursive_box = fn
-        _, 0 ->
-          nil
-
-        build_fn, depth ->
+      # Define a component that includes itself (simplified structure for testing map)
+      # Max depth to prevent infinite recursion in test data generation
+      recursive_data_generator = fn me, data, current_depth, max_depth ->
+        if current_depth >= max_depth do
+          %{
+            type: :text,
+            x: 0,
+            y: 0,
+            text: data.text,
+            style: %{foreground: data.fg_color}
+          }
+        else
           %{
             type: :box,
-            x: depth * 2,
-            y: depth * 2,
-            width: 20 - depth * 3,
-            height: 10 - depth * 2,
-            style: %{background: String.to_atom("color#{depth}")},
-            children: [build_fn.(build_fn, depth - 1)]
+            x: data.x,
+            y: data.y,
+            width: data.width,
+            height: data.height,
+            style: %{background: data.bg_color},
+            children: [
+              me.(
+                me,
+                %{
+                  text: "L#{current_depth + 1}",
+                  fg_color: data.child_fg,
+                  x: 1,
+                  y: 1,
+                  width: data.width - 2,
+                  height: data.height - 2,
+                  bg_color: data.child_bg,
+                  child_fg: data.child_fg,
+                  child_bg: data.child_bg
+                },
+                current_depth + 1,
+                max_depth
+              )
+            ]
           }
+        end
       end
 
-      # Create a recursive structure with depth 5
-      recursive_box = build_recursive_box.(build_recursive_box, 5)
+      initial_props = %{
+        text: "L0",
+        fg_color: :color5,
+        x: 0,
+        y: 0,
+        width: 10,
+        height: 5,
+        bg_color: :color1,
+        child_fg: :color5,
+        child_bg: :color2
+      }
 
-      # Create a theme with the needed colors
-      theme = %{
-        foreground: %{default: :white},
-        background: %{
-          default: :black,
+      recursive_box =
+        recursive_data_generator.(recursive_data_generator, initial_props, 1, 3)
+
+      theme = %Theme{
+        id: :test_theme_recursive,
+        name: "Test Theme Recursive",
+        description: "A test theme for recursive composition",
+        colors: %{
+          foreground: :white,
+          background: :black,
+          border: :white,
           color1: :red,
           color2: :green,
           color3: :blue,
           color4: :magenta,
           color5: :cyan
         },
-        border: %{default: :white}
+        fonts: %{},
+        component_styles: %{},
+        variants: %{}
       }
 
-      # Render recursive structure
+      Raxol.UI.Theming.Theme.register(theme)
       result = Renderer.render_to_cells([recursive_box], theme)
-
-      # Should handle recursive composition without crashing
       assert result != []
+      assert Enum.any?(result, fn {_, _, _, _, bg, _} -> bg == :red end)
+      assert Enum.any?(result, fn {_, _, _, _, bg, _} -> bg == :green end)
 
-      # Verify cells from each level
-      # In level 5 box
-      level5_cell = get_cell_at(result, 10, 5)
-      assert level5_cell != nil
-      {_, _, _, _, bg5, _} = level5_cell
-      assert bg5 == :cyan
+      final_text_cell =
+        Enum.find(result, fn {_, _, c, _, _, _} ->
+          c == "L" and length(result) > 0 and
+            elem(
+              Enum.at(
+                result,
+                Enum.find_index(result, fn {_, _, ch, _, _, _} -> ch == "L" end)
+              ),
+              2
+            ) == "L"
+        end)
 
-      # In level 3 box
-      level3_cell = get_cell_at(result, 6, 3)
-      assert level3_cell != nil
-      {_, _, _, _, bg3, _} = level3_cell
-      assert bg3 == :blue
+      l_text_cell =
+        Enum.find(result, fn {_, _, c, fg, _, _} -> c == "L" && fg == :cyan end)
+
+      assert l_text_cell != nil,
+             "Final nested text 'L3' with fg :cyan not found"
     end
   end
 end

@@ -1,13 +1,11 @@
 defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   # Mox is async-friendly
   use ExUnit.Case, async: true
+  import Mox
 
   alias Raxol.Core.Plugins.Core.ClipboardPlugin
   # Remove alias Raxol.System.Clipboard as we'll use the mock's behaviour
   # alias Raxol.System.Clipboard
-
-  # Define the Mox mock
-  Mox.defmock(ClipboardMock, for: Raxol.System.Clipboard.Behaviour)
 
   # Setup assigns a default state and opts
   setup do
@@ -17,6 +15,12 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
     # Return the plugin's state
     {:ok, state: plugin_state}
   end
+
+  setup :verify_on_exit!
+
+  # Mox.defmock(SystemInteractionMock, for: Raxol.System.Interaction)
+
+  # Configure Mox for this test module
 
   test "terminate/2 returns ok", %{state: state} do
     assert :ok = ClipboardPlugin.terminate(:shutdown, state)
