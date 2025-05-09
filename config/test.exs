@@ -8,46 +8,43 @@ config :logger, level: :debug
 config :raxol, :mocks, ClipboardBehaviour: ClipboardMock
 
 # Configure your database
-# config :raxol, Raxol.Repo,
-#   database: "raxol_test\#{System.get_env(\"MIX_TEST_PARTITION\")}\",
-#   pool_size: 5,
-#   pool: Ecto.Adapters.SQL.Sandbox
+config :raxol, Raxol.Repo,
+  database: "raxol_test",
+  pool_size: 10,
+  pool: Ecto.Adapters.SQL.Sandbox,
+  queue_target: 200,
+  show_sensitive_data_on_connection_error: true
 
 # Override Repo adapter and pool for tests
-config :raxol, Raxol.Repo,
-  adapter: Raxol.Test.MockDB,
-  pool: Ecto.Adapters.SQL.Sandbox,
-  # Ensure it\'s disabled unless explicitly used in specific tests
-  enabled: false
+# config :raxol, Raxol.Repo, # Commenting out this MockDB override
+#   adapter: Raxol.Test.MockDB,
+#   pool: Ecto.Adapters.SQL.Sandbox,
+#   # Ensure it's disabled unless explicitly used in specific tests
+#   enabled: true
 
 # Configure database settings
 # Global flag to disable database
-config :raxol, database_enabled: false
+config :raxol, database_enabled: true
 
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :raxol, RaxolWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base: "your_very_long_and_secure_secret_key_base_for_testing",
+  secret_key_base:
+    "Pik91mX07sP1JkNY42p6HI97p2aHq3jVIM5wMwpqCNzJ3+t7j3XhYvYq4u8m/u8k",
   server: false,
-  # Remove deprecated :pubsub key
-  # pubsub: [server: Phoenix.PubSub, adapter: Phoenix.PubSub.PG2]
-  # Add pubsub_server key pointing to the registered name
   pubsub_server: Raxol.PubSub
 
-# In test we don't send emails.
-config :raxol, Raxol.Mailer, adapter: Swoosh.Adapters.Test
-
-# Configure console logger for tests:
-# - Set to :debug level for verbose output.
-# - Include detailed metadata (time, module, function, line) for easier debugging.
-config :logger, :console,
-  level: :debug,
-  format: "$time $metadata[$level] $message\n",
-  metadata: [:module, :function, :line]
+# Print only warnings and errors during test
+config :logger, level: :warning
+# Set logger level to :debug for this test run
+# config :logger, level: :debug
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
+
+# Enable helpful sandbox testing commands (from raxol/support/test_helper.ex)
+config :raxol, :enable_test_commands, true
 
 # Configure terminal settings for testing
 config :raxol, :terminal,
@@ -107,7 +104,7 @@ config :raxol, :keyboard_shortcuts_module, Raxol.Mocks.KeyboardShortcutsMock
 # config :logger, Raxol.Terminal.Buffer.Eraser, level: :debug
 
 # Configure Mox for testing
-config :elixir, :mox_test_pid, self()
+# config :elixir, :mox_test_pid, self() # Commented out as Mox.setup() should handle this
 
 # Configure Raxol specific test settings
 config :raxol, :env, :test
@@ -128,4 +125,8 @@ config :raxol, :system_interaction_impl, SystemInteractionMock
 config :raxol, :focus_manager_impl, Raxol.Mocks.FocusManagerMock
 config :raxol, :accessibility_impl, Raxol.Mocks.AccessibilityMock
 
-# Configure default user preferences for tests if needed
+# Configure Mox mocks for testing
+config :raxol,
+  accessibility_module: Raxol.Mocks.AccessibilityMock,
+  focus_manager_module: Raxol.Mocks.FocusManagerMock,
+  keyboard_shortcuts_module: Raxol.Mocks.KeyboardShortcutsMock

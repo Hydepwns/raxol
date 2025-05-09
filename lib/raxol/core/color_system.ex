@@ -36,7 +36,13 @@ defmodule Raxol.Core.ColorSystem do
 
       # Check variant palette first, then base palette
       # Get variant palette safely
-      variant_palette = theme.variants[active_variant_id] |> Map.get(:palette)
+      variant_definition = Map.get(theme.variants, active_variant_id)
+
+      variant_palette =
+        if variant_definition,
+          do: Map.get(variant_definition, :palette),
+          else: nil
+
       base_palette = theme.colors
 
       cond do

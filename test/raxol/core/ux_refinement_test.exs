@@ -50,42 +50,35 @@ defmodule Raxol.Core.UXRefinementTest do
 
   describe "enable_feature/2" do
     test "enables focus_management feature" do
-      # Enable feature
       assert :ok = UXRefinement.enable_feature(:focus_management)
-
-      # Verify feature is enabled
       assert UXRefinement.feature_enabled?(:focus_management)
     end
 
     test "enables keyboard_navigation feature" do
-      # Enable feature
       assert :ok = UXRefinement.enable_feature(:keyboard_navigation)
-
-      # Verify feature is enabled
       assert UXRefinement.feature_enabled?(:keyboard_navigation)
     end
 
     test "enables hints feature" do
-      # Enable feature
       assert :ok = UXRefinement.enable_feature(:hints)
-
-      # Verify feature is enabled
       assert UXRefinement.feature_enabled?(:hints)
     end
 
     test "enables focus_ring feature" do
-      # Enable feature
       assert :ok = UXRefinement.enable_feature(:focus_ring)
-
-      # Verify feature is enabled
       assert UXRefinement.feature_enabled?(:focus_ring)
     end
 
     test "enables accessibility feature" do
-      # Enable feature
-      assert :ok = UXRefinement.enable_feature(:accessibility)
+      Mox.stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
 
-      # Verify feature is enabled
+      Mox.stub(
+        Raxol.Mocks.FocusManagerMock,
+        :register_focus_change_handler,
+        fn _ -> :ok end
+      )
+
+      assert :ok = UXRefinement.enable_feature(:accessibility)
       assert UXRefinement.feature_enabled?(:accessibility)
     end
 
@@ -111,47 +104,49 @@ defmodule Raxol.Core.UXRefinementTest do
 
   describe "disable_feature/1" do
     test "disables focus_management feature" do
-      # Enable then disable
       UXRefinement.enable_feature(:focus_management)
       assert :ok = UXRefinement.disable_feature(:focus_management)
-
-      # Verify feature is disabled
       refute UXRefinement.feature_enabled?(:focus_management)
     end
 
     test "disables keyboard_navigation feature" do
-      # Enable then disable
       UXRefinement.enable_feature(:keyboard_navigation)
       assert :ok = UXRefinement.disable_feature(:keyboard_navigation)
-
-      # Verify feature is disabled
       refute UXRefinement.feature_enabled?(:keyboard_navigation)
     end
 
     test "disables hints feature" do
-      # Enable then disable
+      # Allow HintDisplay.init to run
       UXRefinement.enable_feature(:hints)
       assert :ok = UXRefinement.disable_feature(:hints)
-
-      # Verify feature is disabled
       refute UXRefinement.feature_enabled?(:hints)
     end
 
     test "disables focus_ring feature" do
-      # Enable then disable
       UXRefinement.enable_feature(:focus_ring)
       assert :ok = UXRefinement.disable_feature(:focus_ring)
-
-      # Verify feature is disabled
       refute UXRefinement.feature_enabled?(:focus_ring)
     end
 
     test "disables accessibility feature" do
-      # Enable then disable
+      Mox.stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
+
+      Mox.stub(
+        Raxol.Mocks.FocusManagerMock,
+        :register_focus_change_handler,
+        fn _ -> :ok end
+      )
+
+      Mox.stub(
+        Raxol.Mocks.FocusManagerMock,
+        :unregister_focus_change_handler,
+        fn _ -> :ok end
+      )
+
+      Mox.stub(Raxol.Mocks.AccessibilityMock, :disable, fn -> :ok end)
+
       UXRefinement.enable_feature(:accessibility)
       assert :ok = UXRefinement.disable_feature(:accessibility)
-
-      # Verify feature is disabled
       refute UXRefinement.feature_enabled?(:accessibility)
     end
 
@@ -167,6 +162,7 @@ defmodule Raxol.Core.UXRefinementTest do
   describe "register_hint/2 and get_hint/1" do
     setup do
       UXRefinement.enable_feature(:hints)
+      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
       :ok
     end
 
@@ -197,6 +193,7 @@ defmodule Raxol.Core.UXRefinementTest do
   describe "register_component_hint/2 and get_component_hint/2" do
     setup do
       UXRefinement.enable_feature(:hints)
+      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
       :ok
     end
 

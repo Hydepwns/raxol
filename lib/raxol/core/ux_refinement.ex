@@ -151,7 +151,7 @@ defmodule Raxol.Core.UXRefinement do
     ensure_feature_enabled(:events)
 
     # Initialize accessibility features
-    accessibility_module().enable(opts)
+    accessibility_module().enable(opts, nil)
 
     # Initialize metadata registry if not already done
     Process.put(:ux_refinement_metadata, %{})
@@ -169,11 +169,11 @@ defmodule Raxol.Core.UXRefinement do
   end
 
   def enable_feature(:keyboard_shortcuts, _opts) do
-    # Ensure events are enabled
-    ensure_feature_enabled(:events)
-
-    # Initialize keyboard shortcuts
+    # Initialize keyboard shortcuts FIRST
     keyboard_shortcuts_module().init()
+
+    # Ensure events are enabled AFTER
+    ensure_feature_enabled(:events)
 
     # Register the feature as enabled
     _ = register_enabled_feature(:keyboard_shortcuts)
@@ -359,7 +359,15 @@ defmodule Raxol.Core.UXRefinement do
       ...>   ]
       ...> })
       :ok
+
+      iex> UXRefinement.register_component_hint("simple_button", "Click me")
+      :ok
   """
+  def register_component_hint(component_id, hint_info_string)
+      when is_binary(hint_info_string) do
+    register_component_hint(component_id, %{basic: hint_info_string})
+  end
+
   def register_component_hint(component_id, hint_info) when is_map(hint_info) do
     # Ensure hints feature is enabled
     ensure_feature_enabled(:hints)
@@ -496,10 +504,22 @@ defmodule Raxol.Core.UXRefinement do
     :ok
   end
 
-  defp ensure_feature_enabled(_feature) do
-    # Placeholder: Assume feature is enabled or enable it if needed (actual logic missing)
-    # enable_feature(feature) # Avoid recursion for now
+  defp ensure_feature_enabled(:events) do
+    # Initialize events manager if not already done
+    EventManager.init()
+    # Register the feature as enabled
+    register_enabled_feature(:events)
+    # Return original value
     :ok
+  end
+
+  # Add a helper to avoid infinite recursion if ensure_feature_enabled calls enable_feature
+  defp ensure_feature_enabled(feature) when feature != :events do
+    if !feature_enabled?(feature) do
+      enable_feature(feature)
+    else
+      :ok
+    end
   end
 
   defp handle_accessibility_focus_change(old_focus, new_focus) do
@@ -572,9 +592,10 @@ defmodule Raxol.Core.UXRefinement do
 
   defp shortcut_callback(component_id, description) do
     fn ->
-      IO.inspect("Shortcut activated for #{component_id}: #{description}")
-      # Placeholder for actual action. For example, sending an event:
-      # Raxol.Core.Runtime.Events.Dispatcher.dispatch_event(%Raxol.Core.Events.Event{type: :shortcut, data: %{component_id: component_id, description: description}})
+      # Keep debug for now
+      Logger.debug("Shortcut activated for #{component_id}: #{description}")
+      # Also attempt to set focus to the component associated with the hint
+      focus_manager_module().set_focus(component_id)
       :ok
     end
   end

@@ -13,9 +13,15 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   defstruct clipboard_impl: Raxol.System.Clipboard
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
-  def init(opts) do
+  def init(plugin_config) do
     # Allow overriding the clipboard implementation for testing
-    clipboard_impl = Keyword.get(opts, :clipboard_impl, Raxol.System.Clipboard)
+    # TRY AVOIDING Keyword.get to see if it's the source of the FunctionClauseError
+    clipboard_impl_from_config = Keyword.get(plugin_config, :clipboard_impl)
+
+    clipboard_impl =
+      if clipboard_impl_from_config,
+        do: clipboard_impl_from_config,
+        else: Raxol.System.Clipboard
 
     state = %__MODULE__{
       clipboard_impl: clipboard_impl
@@ -28,19 +34,18 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   @impl Raxol.Core.Runtime.Plugins.Plugin
   def get_commands() do
     [
-      # Command name (atom), Function name (atom), Arity
-      # CommandHelper will call Module.function(args_list, state)
-      # where args_list has 'Arity' elements.
+      # Command name (atom), Function name (atom from Plugin behaviour), Arity of args list for that command
+      # This command will pass a list with 1 arg to handle_command/3
       {:clipboard_write, :handle_command, 1},
-      {:clipboard_read, :handle_command, 1}
+      # This command will pass an empty list to handle_command/3
+      {:clipboard_read, :handle_command, 0}
     ]
   end
 
-  # Specific clauses are now the primary implementation
-
-  # Central internal handler for :clipboard_write
+  # NEW: Implement the single handle_command/3 as required by the Plugin behaviour
   @impl Raxol.Core.Runtime.Plugins.Plugin
-  def handle_command([content], state) when is_binary(content) do
+  def handle_command(:clipboard_write, [content], state)
+      when is_binary(content) do
     Logger.debug(
       "ClipboardPlugin: Writing to clipboard via #{inspect(state.clipboard_impl)}..."
     )
@@ -48,7 +53,6 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
     # Call the configured implementation
     case state.clipboard_impl.copy(content) do
       :ok ->
-        # Return actual result
         {:ok, state, {:ok, :clipboard_write_ok}}
 
       {:error, reason} ->
@@ -56,23 +60,12 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
           "ClipboardPlugin: Failed to write to clipboard: #{inspect(reason)}"
         )
 
-        # Return error result tuple
         {:error, {:clipboard_write_failed, reason}, state}
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.Plugin
-  # Arity 1, but expecting nil or [] based on CommandHelper args
-  def handle_command(nil, state) do
-    handle_clipboard_read(state)
-  end
-
-  def handle_command([], state) do
-    handle_clipboard_read(state)
-  end
-
-  # Internal helper for read logic
-  defp handle_clipboard_read(state) do
+  # Arity 0 means args is []
+  def handle_command(:clipboard_read, [], state) do
     Logger.debug(
       "[ClipboardPlugin] Reading from clipboard via #{inspect(state.clipboard_impl)}..."
     )
@@ -80,7 +73,6 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
     # Call the configured implementation
     case state.clipboard_impl.paste() do
       {:ok, content} ->
-        # Return result directly, CommandHelper will send it back
         {:ok, state, {:ok, content}}
 
       {:error, reason} ->
@@ -88,27 +80,19 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
           "[ClipboardPlugin] Failed to read from clipboard: #{inspect(reason)}"
         )
 
-        # Return error result tuple
         {:error, {:clipboard_read_failed, reason}, state}
     end
   end
 
-  # Add back the catch-all clause for handle_command
-  @impl Raxol.Core.Runtime.Plugins.Plugin
-  def handle_command(args, state) do
+  # Catch-all for unknown commands or mismatched arities handled by this plugin's handle_command/3
+  def handle_command(command_name, args, state) do
     Logger.warning(
-      "ClipboardPlugin received unexpected args format: #{inspect(args)}"
+      "ClipboardPlugin received unexpected command '#{command_name}' with args: #{inspect(args)}"
     )
 
-    {:error, {:unexpected_command_args, args}, state}
+    {:error, {:unknown_plugin_command, command_name, args}, state}
   end
 
-  def terminate(_state) do
-    Logger.info("Clipboard Plugin terminated.")
-    :ok
-  end
-
-  # Add terminate/2 implementation matching the behaviour
   @impl Raxol.Core.Runtime.Plugins.Plugin
   def terminate(_reason, _state) do
     Logger.info("Clipboard Plugin terminated (Behaviour callback).")
@@ -124,8 +108,4 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
   def filter_event(event, state), do: {:ok, event, state}
-
-  # Remove the helper function comment block as it's no longer relevant here
-  # --- Helper for Manager ---
-  # ...
 end
