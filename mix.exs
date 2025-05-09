@@ -8,7 +8,7 @@ defmodule Raxol.MixProject do
     [
       app: :raxol,
       version: @version,
-      elixir: "~> 1.14",
+      elixir: "~> 1.18.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
       start_permanent: Mix.env() == :prod,
@@ -53,7 +53,8 @@ defmodule Raxol.MixProject do
   def application do
     [
       mod: {Raxol.Application, []},
-      extra_applications: [:logger, :runtime_tools, :swoosh]
+      extra_applications:
+        [:logger, :runtime_tools, :swoosh] ++ test_applications()
     ]
   end
 
@@ -61,6 +62,14 @@ defmodule Raxol.MixProject do
     do: ["lib", "test/support"]
 
   defp elixirc_paths(_), do: ["lib"]
+
+  defp test_applications do
+    if Mix.env() == :test do
+      [:mox, :ecto_sql]
+    else
+      []
+    end
+  end
 
   defp deps do
     [
@@ -112,11 +121,9 @@ defmodule Raxol.MixProject do
       {:esbuild, "~> 0.8", runtime: Mix.env() == :dev},
       {:dart_sass, "~> 0.7", runtime: Mix.env() == :dev},
       {:credo, "~> 1.7", only: [:dev, :test], runtime: false},
-      {:dialyxir, "~> 1.4", only: [:dev, :test], runtime: false},
-      {:ex_doc, "~> 0.31", only: [:dev, :test], runtime: false},
 
       # Testing
-      {:mox, "~> 1.1.0", only: :test},
+      {:mox, "~> 1.2.0", only: :test},
       {:elixir_make, "~> 0.6", runtime: false},
       {:floki, ">= 0.30.0", only: :test},
       {:briefly, "~> 0.3", only: :test},
@@ -139,7 +146,11 @@ defmodule Raxol.MixProject do
       setup: ["deps.get"],
       "ecto.setup": ["ecto.create", "ecto.migrate", "run priv/repo/seeds.exs"],
       "ecto.reset": ["ecto.drop", "ecto.setup"],
-      test: ["test"],
+      test: [
+        "ecto.create -r Raxol.Repo --quiet",
+        "ecto.migrate -r Raxol.Repo",
+        "test"
+      ],
       "assets.setup": [
         "esbuild.install --if-missing",
         "sass.install --if-missing"
