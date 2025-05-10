@@ -37,10 +37,10 @@ defmodule Raxol.Terminal.IntegrationTest do
       assert String.starts_with?(first_line_text, "Hello")
     end
 
-    test "handles cursor movement with arrow keys" do
-      state = Emulator.new(80, 24)
+    test "handles cursor movement with arrow keys", %{state: initial_state} do
+      # state = Emulator.new(80, 24) # Use state from setup
 
-      {state, _output} = Emulator.process_input(state, "Hello")
+      {state, _output} = Emulator.process_input(initial_state, "Hello")
       {state, _output} = Emulator.process_input(state, "\e[D")
       {state, _output} = Emulator.process_input(state, "\e[D")
       {state, _output} = Emulator.process_input(state, "\e[D")
@@ -75,11 +75,12 @@ defmodule Raxol.Terminal.IntegrationTest do
       %{state: initial_emulator_state}
     end
 
-    test "processes ANSI escape sequences" do
+    test "processes ANSI escape sequences", %{state: initial_state} do
       # This test creates its own state
-      state = Emulator.new(80, 24)
+      # state = Emulator.new(80, 24) # Use state from setup
 
-      {state, _output} = Emulator.process_input(state, "\e[31mHello\e[0m")
+      {state, _output} =
+        Emulator.process_input(initial_state, "\e[31mHello\e[0m")
 
       first_cell =
         state.main_screen_buffer.cells |> List.first() |> List.first()
@@ -103,18 +104,18 @@ defmodule Raxol.Terminal.IntegrationTest do
       assert first_cell.style.foreground == :red
     end
 
-    test "handles cursor positioning" do
-      state = Emulator.new(80, 24)
+    test "handles cursor positioning", %{state: initial_state} do
+      # state = Emulator.new(80, 24) # Use state from setup
 
-      {state, _output} = Emulator.process_input(state, "\e[10;5H")
+      {state, _output} = Emulator.process_input(initial_state, "\e[10;5H")
 
       assert state.cursor.position == {4, 9}
     end
 
-    test "handles screen clearing" do
-      state = Emulator.new(80, 24)
+    test "handles screen clearing", %{state: initial_state} do
+      # state = Emulator.new(80, 24) # Use state from setup
 
-      {state, _output} = Emulator.process_input(state, "Hello")
+      {state, _output} = Emulator.process_input(initial_state, "Hello")
 
       {state, _output} = Emulator.process_input(state, "\e[2J")
 
@@ -124,11 +125,18 @@ defmodule Raxol.Terminal.IntegrationTest do
   end
 
   describe "mouse input integration" do
-    test "handles mouse clicks" do
-      state = Emulator.new(80, 24)
+    setup do
+      initial_emulator_state = Emulator.new(80, 24)
+      %{state: initial_emulator_state}
+    end
+
+    test "handles mouse clicks", %{state: initial_state} do
+      # state = Emulator.new(80, 24) # Use state from setup
 
       # Enable X10 mouse reporting (any button, any event)
-      {state, _output_mouse_enable} = Emulator.process_input(state, "\e[?1000h")
+      {state, _output_mouse_enable} =
+        Emulator.process_input(initial_state, "\e[?1000h")
+
       assert state.mode_manager.mouse_report_mode == :x10
 
       # Simulate a left mouse button press at (1,1)
@@ -145,11 +153,13 @@ defmodule Raxol.Terminal.IntegrationTest do
       assert output_mouse_click == mouse_click_sequence
     end
 
-    test "handles mouse selection" do
-      state = Emulator.new(80, 24)
+    test "handles mouse selection", %{state: initial_state} do
+      # state = Emulator.new(80, 24) # Use state from setup
 
       # Enable X11 mouse reporting (button-event tracking)
-      {state, _output_mouse_enable} = Emulator.process_input(state, "\e[?1002h")
+      {state, _output_mouse_enable} =
+        Emulator.process_input(initial_state, "\e[?1002h")
+
       assert state.mode_manager.mouse_report_mode == :cell_motion
 
       # 1. Press Left Button at (col 0, row 0)
