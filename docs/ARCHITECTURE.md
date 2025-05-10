@@ -68,10 +68,10 @@ The View system handles layout and component composition. Key modules:
 
 ## Key Design Decisions
 
-1. **Application Model**: Inspired by The Elm Architecture, with clear update/view separation
-2. **NIF-based Terminal Interface**: Uses rrex_termbox NIF for improved performance
-3. **Component System**: Reusable, stateful components with lifecycle hooks
-4. **Plugins**: Extensible through a plugin system
+1. **Application Model**: Inspired by The Elm Architecture, with clear update/view separation.
+2. **NIF-based Terminal Interface**: Uses rrex_termbox NIF for improved performance.
+3. **Component System**: Reusable, stateful components with lifecycle hooks.
+4. **Plugins**: Extensible through a plugin system.
 5. **System Interaction Adapters**: For modules with direct operating system or external service interactions (e.g., file system, HTTP calls, system commands), an adapter pattern (a behaviour defining the interaction contract and an implementation module) is used. This allows for mocking these interactions in tests, improving test reliability and isolation. Examples include `Raxol.System.DeltaUpdater` with its `Raxol.System.DeltaUpdaterSystemAdapterBehaviour`, and `Raxol.Terminal.Config.Capabilities` with its `Raxol.System.EnvironmentAdapterBehaviour`.
 
 ## Flow of Events
@@ -211,62 +211,63 @@ lib/raxol/
 
 ## Core Subsystems & Status
 
-- **Runtime System (`Core.Runtime.*`)**: Manages application lifecycle (`Application` behaviour), event dispatch (`Dispatcher`), plugin management (`Plugins.Manager`), and rendering orchestration (`Rendering.Engine`). **Designed for robust core functionality and well-tested.**
-- **Plugin System (`Core.Runtime.Plugins.*`, `Raxol.Plugins.*`)**: Handles plugin discovery, loading, lifecycle (`Lifecycle`), event dispatch (`EventHandler`), cell processing (`CellProcessor`), command registration/execution (`CommandHelper`, `CommandRegistry`), and reloading. The core `PluginManager` now delegates most responsibilities to specialized modules. **Designed to be extensible and is functionally tested.**
-- **Event Handling (`Terminal.Driver`, `Core.Runtime.Events.Dispatcher`, `Raxol.Plugins.EventHandler`)**: `Driver` receives events from `:rrex_termbox` NIF, translates them, sends to `Dispatcher`. `Dispatcher` manages state and routes events/commands to `Application` or `PluginManager`. `EventHandler` dispatches relevant events to loaded plugins. **Core event flow established.**
-- **Rendering Pipeline (`Core.Runtime.Rendering.Engine`, `UI.Layout.Engine`, `UI.Renderer`, `Terminal.Renderer`)**: `Engine` gets view from `Application`, `LayoutEngine` calculates positions (measurement logic implemented for core elements, panel measurement fixed), `Renderer` converts to styled cells using active theme (now includes direct handling for `:table` elements), `Terminal.Renderer` outputs diff to terminal. **Pipeline is functional and tested.**
-- **Component System (`UI.Components.*`)**: Components implement `UI.Components.Base.Component` behaviour (`init/1`, `handle_event/3` returns `{new_state, commands}`, `render/1` returns element map/list) and use `View.Elements` macros (e.g., `label`, `panel`). Requires explicit component map rendering (`%{type: ...}`) rather than direct function calls for non-Element components. `ComponentShowcase` example refactored to follow this pattern. **The foundational component behaviour is defined and adopted; new components will continue to evolve the system.**
-- **Theming (`UI.Theming.*`, `UI.Renderer`)**: Defines and applies styles. Integrated into `Renderer`. **Functional design.**
-- **Benchmarking (`Benchmarks.*`)**: Initial performance benchmark structure refactored into sub-modules. **Structure established.**
-- **Cloud Monitoring (`Cloud.Monitoring.*`)**: Monitoring module refactored into sub-modules (Metrics, Errors, Health, Alerts). **Structure established.**
-- **Compiler Warnings**: Addressed numerous compilation errors/warnings during refactoring. Some warnings persist (unused aliases/variables, duplicate docs, etc.) and require manual cleanup (see `CHANGELOG.md`). Project compiles without `--warnings-as-errors`, and the main test suite passes.
-- **Terminal Parser (`Terminal.Parser`):** Refactored `parse_loop` by extracting logic for each state into separate `handle_<state>_state` functions. Refactored `dispatch_csi` into category-specific sub-dispatcher functions. **Core parsing logic for essential sequences is stable.**
-- **Sixel Graphics (`Terminal.ANSI.SixelGraphics`):** Extracted pattern map and palette logic. Stateful parser implemented with parameter parsing for key commands. RLE optimization implemented. **Feature complete and tested.**
-- **MultiLineInput Component (`UI.Components.Input.MultiLineInput`):** Core logic refactored into helper modules (`Text`, `Navigation`, `Render`, `Event`, `Clipboard`). Basic navigation, clipboard, scroll, selection, and basic mouse handling implemented. Basic tests added. **Refactored and enhanced; considered stable for current features.**
-- **Visualization Plugin (`Plugins.VisualizationPlugin`):** Extracted rendering logic into helper modules (`ChartRenderer`, `TreemapRenderer`, `ImageRenderer`, `DrawingUtils`). Core plugin now delegates rendering via `handle_placeholder`. **Refactored design.**
-- **User Preferences (`Core.Preferences.*`)**: Manages user preference loading, saving, and access via `UserPreferences` GenServer and `Persistence` module. Integrated with core modules. **Functional and integrated.**
-- **Accessibility (`Core.Accessibility.*`)**: Implements `Raxol.Core.Accessibility.Behaviour`. Provides core accessibility features. Used by `UXRefinement` via injectable dependency (Application config).
-- **Focus Manager (`Core.FocusManager.*`)**: Implements `Raxol.Core.FocusManager.Behaviour`. Manages focus between UI components. Used by `UXRefinement` via injectable dependency (Application config).
-- **System Interaction (`Raxol.System.Interaction`)**: Behaviour for abstracting system interactions (commands, OS type, etc.) for testability. **Added.**
-- **System Interaction Implementation (`Raxol.System.InteractionImpl`)**: Default implementation of `System.Interaction` using Elixir/Erlang functions. **Added.**
-- **Delta Updater System Interaction (`Raxol.System.DeltaUpdater`, `Raxol.System.DeltaUpdaterSystemAdapterBehaviour`)**: Manages delta updates, using an adapter behaviour to abstract direct system calls (HTTP, file I/O, commands) for improved testability. The `DeltaUpdater` module has been refactored to use this pattern. **Refactored, Adapter Added.**
-- **Environment Adapter (`Raxol.System.EnvironmentAdapterBehaviour`)**: Behaviour for abstracting system environment calls (`System.get_env/1`, `System.cmd/3`). **Added.**
-- **RaxolWeb.UserSocket**: Phoenix Socket handler for managing WebSocket connections and routing to specific channels. **Stable.**
+- **Runtime System (`Core.Runtime.*`)**: Manages application lifecycle (`Application` behaviour), event dispatch (`Dispatcher`), plugin management (`Plugins.Manager`), and rendering orchestration (`Rendering.Engine`). **Core functionality designed and implemented.**
+- **Plugin System (`Core.Runtime.Plugins.*`, `Raxol.Plugins.*`)**: Handles plugin discovery, loading, lifecycle (`Lifecycle`), event dispatch (`EventHandler`), cell processing (`CellProcessor`), command registration/execution (`CommandHelper`, `CommandRegistry`), and reloading. The core `PluginManager` now delegates most responsibilities to specialized modules. **Designed to be extensible; core features are functionally tested.**
+- **Event Handling (`Terminal.Driver`, `Core.Runtime.Events.Dispatcher`, `Raxol.Plugins.EventHandler`)**: `Driver` receives events from `:rrex_termbox` NIF, translates them, sends to `Dispatcher`. `Dispatcher` manages state and routes events/commands to `Application` or `PluginManager`. `EventHandler` dispatches relevant events to loaded plugins. **Core event flow established and refined.**
+- **Rendering Pipeline (`Core.Runtime.Rendering.Engine`, `UI.Layout.Engine`, `UI.Renderer`, `Terminal.Renderer`)**: `Engine` gets view from `Application`, `LayoutEngine` calculates positions, `Renderer` converts to styled cells using active theme, `Terminal.Renderer` outputs diff to terminal. **Pipeline is functional; key components like `Renderer` have seen significant recent fixes and testing (e.g., `renderer_edge_cases_test.exs` all pass).**
+- **Component System (`UI.Components.*`)**: Components implement `UI.Components.Base.Component` behaviour (`init/1`, `handle_event/3` returns `{new_state, commands}`, `render/1` returns element map/list) and use `View.Elements` macros. `ComponentShowcase` example refactored to follow this pattern. **The foundational component behaviour is defined; new components and enhancements are ongoing.**
+- **Theming (`UI.Theming.*`, `UI.Renderer`)**: Defines and applies styles. Integrated into `Renderer`. **Functional design, with `ColorSystem` made robust against undefined theme variants.**
+- **Benchmarking (`Benchmarks.*`)**: Initial performance benchmark structure refactored. **Structure established.**
+- **Cloud Monitoring (`Cloud.Monitoring.*`)**: Monitoring module refactored into sub-modules. **Structure established.**
+- **Compiler Warnings**: Numerous compiler warnings (e.g., unused aliases/variables, duplicate docs) remain and require investigation. The project compiles, but addressing these warnings is an ongoing task.
+- **Test Suite Health**: As of 2025-05-08, the test suite has a significant number of failures (225) and skipped tests (27). Active efforts are focused on addressing these.
+- **Terminal Parser (`Terminal.Parser`):** Refactored `parse_loop` and `dispatch_csi`. **Core parsing logic for essential sequences is largely stable.**
+- **Sixel Graphics (`Terminal.ANSI.SixelGraphics`):** Stateful parser with RLE optimization. **Feature complete and tested (all Sixel tests passing).**
+- **MultiLineInput Component (`UI.Components.Input.MultiLineInput`):** Core logic refactored into helper modules. Basic navigation, clipboard, scroll, selection, and mouse handling implemented. **Refactored and enhanced; stable for current features.**
+- **Visualization Plugin (`Plugins.VisualizationPlugin`):** Rendering logic extracted into helper modules. **Refactored design.**
+- **User Preferences (`Core.Preferences.*`)**: Manages user preference loading, saving, and access. **Functional and integrated.**
+- **Accessibility (`Core.Accessibility.*`)**: Implements `Raxol.Core.Accessibility.Behaviour`. Used by `UXRefinement`. **Core features implemented and refined, test coverage improved.**
+- **Focus Manager (`Core.FocusManager.*`)**: Implements `Raxol.Core.FocusManager.Behaviour`. Used by `UXRefinement`. **Evolving.**
+- **System Interaction (`Raxol.System.Interaction`)**: Behaviour for abstracting system interactions. **Pattern adopted.**
+- **System Interaction Implementation (`Raxol.System.InteractionImpl`)**: Default implementation of `System.Interaction`. **Implemented.**
+- **Delta Updater System Interaction (`Raxol.System.DeltaUpdater`, `Raxol.System.DeltaUpdaterSystemAdapterBehaviour`)**: Manages delta updates, using an adapter behaviour for testability. **Refactored to use adapter pattern.**
+- **Environment Adapter (`Raxol.System.EnvironmentAdapterBehaviour`)**: Behaviour for abstracting system environment calls. **Implemented.**
+- **RaxolWeb.UserSocket**: Phoenix Socket handler. **Stable.**
 
 ## Key Modules
 
-| Module                                            | Description                                                                                                                      | Maturity |
-| ------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------- | -------- |
-| `Raxol.Core.Runtime.Application`                  | Defines the application behaviour (init, update, view)                                                                           | Evolving |
-| `Raxol.Core.Runtime.Events.Dispatcher`            | Manages application state, routes events/commands                                                                                | Stable   |
-| `Raxol.Core.Runtime.Plugins.Manager`              | Manages plugin state and delegates lifecycle, events, etc., to specialized modules.                                              | Stable   |
-| `Raxol.Plugins.Lifecycle`                         | Handles plugin loading, unloading, enabling, disabling, dependencies.                                                            | Stable   |
-| `Raxol.Plugins.EventHandler`                      | Dispatches events (input, mouse, resize, output, etc.) to plugins.                                                               | Stable   |
-| `Raxol.Plugins.CellProcessor`                     | Processes rendered cells, allowing plugins to handle placeholders.                                                               | Stable   |
-| `Raxol.Core.Runtime.Rendering.Engine`             | Orchestrates rendering: App -> Layout -> Renderer -> Terminal                                                                    | Stable   |
-| `Raxol.UI.Components.Base.Component`              | Base behaviour for UI components                                                                                                 | Evolving |
-| `Raxol.UI.Layout.Engine`                          | Calculates element positions                                                                                                     | Stable   |
-| `Raxol.UI.Renderer`                               | Converts layout elements to styled cells using active theme. Handles `:box`, `:text`, `:table`, and various edge cases robustly. | Stable   |
-| `Raxol.UI.Theming.Theme`                          | Theme data structure and retrieval                                                                                               | Stable   |
-| `Raxol.Terminal.Driver`                           | Manages `:rrex_termbox` NIF interface, receives/translates events to Raxol events.                                               | Stable   |
-| `Raxol.Terminal.Parser`                           | Main parser state machine and state handlers                                                                                     | Stable   |
-| `Raxol.Terminal.Commands.Executor`                | Dispatches parsed terminal commands (CSI, OSC, DCS) to dedicated handler modules.                                                | Stable   |
-| `Raxol.Terminal.Emulator`                         | Core terminal emulator logic, state, and input processing.                                                                       | Stable   |
-| `Raxol.View.Elements`                             | Macros (`panel`, `row`, `column`, `box`, `label`, input macros) for defining UI views.                                           | Evolving |
-| `Raxol.Core.Preferences.Persistence`              | Handles preference file I/O                                                                                                      | Stable   |
-| `Raxol.Core.Accessibility.Behaviour`              | Defines the contract for accessibility services.                                                                                 | Stable   |
-| `Raxol.Core.FocusManager.Behaviour`               | Defines the contract for focus management services.                                                                              | Evolving |
-| `Raxol.Core.ColorSystem`                          | Centralized theme/accessibility-aware color retrieval, robustly handles theme variants.                                          | Stable   |
-| `Raxol.System.Interaction`                        | Behaviour for abstracting system interactions (commands, OS type, etc.) for testability.                                         | Evolving |
-| `Raxol.System.DeltaUpdaterSystemAdapterBehaviour` | Behaviour abstracting system interactions specifically for `DeltaUpdater` (HTTP, file system, etc.).                             | Evolving |
-| `Raxol.System.EnvironmentAdapterBehaviour`        | Behaviour abstracting system environment calls (`System.get_env/1`, `System.cmd/3`).                                             | Evolving |
-| `RaxolWeb.UserSocket`                             | Phoenix Socket handler for managing WebSocket connections and routing to specific channels.                                      | Stable   |
+| Module                                            | Description                                                                                                           | Maturity |
+| ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------- | -------- |
+| `Raxol.Core.Runtime.Application`                  | Defines the application behaviour (init, update, view).                                                               | Evolving |
+| `Raxol.Core.Runtime.Events.Dispatcher`            | Manages application state, routes events/commands. (All tests in `dispatcher_test.exs` passing after fixes).          | Stable   |
+| `Raxol.Core.Runtime.Plugins.Manager`              | Manages plugin state and delegates to specialized modules. (Reloading tests in `manager_reloading_test.exs` passing). | Stable   |
+| `Raxol.Plugins.Lifecycle`                         | Handles plugin loading, unloading, enabling, disabling, dependencies.                                                 | Stable   |
+| `Raxol.Plugins.EventHandler`                      | Dispatches events (input, mouse, resize, output, etc.) to plugins.                                                    | Stable   |
+| `Raxol.Plugins.CellProcessor`                     | Processes rendered cells, allowing plugins to handle placeholders.                                                    | Stable   |
+| `Raxol.Core.Runtime.Rendering.Engine`             | Orchestrates rendering: App -> Layout -> Renderer -> Terminal                                                         | Stable   |
+| `Raxol.UI.Components.Base.Component`              | Base behaviour for UI components                                                                                      | Evolving |
+| `Raxol.UI.Layout.Engine`                          | Calculates element positions.                                                                                         | Evolving |
+| `Raxol.UI.Renderer`                               | Converts layout elements to styled cells. (All 17 tests in `renderer_edge_cases_test.exs` passing).                   | Stable   |
+| `Raxol.UI.Theming.Theme`                          | Theme data structure and retrieval.                                                                                   | Stable   |
+| `Raxol.Terminal.Driver`                           | Manages `:rrex_termbox` NIF interface, receives/translates events.                                                    | Stable   |
+| `Raxol.Terminal.Parser`                           | Main parser state machine and state handlers.                                                                         | Stable   |
+| `Raxol.Terminal.Commands.Executor`                | Dispatches parsed terminal commands (CSI, OSC, DCS).                                                                  | Stable   |
+| `Raxol.Terminal.Emulator`                         | Core terminal emulator logic, state, and input processing.                                                            | Stable   |
+| `Raxol.View.Elements`                             | Macros (`panel`, `row`, `column`, `box`, `label`, input macros) for defining UI views.                                | Evolving |
+| `Raxol.Core.Preferences.Persistence`              | Handles preference file I/O                                                                                           | Stable   |
+| `Raxol.Core.Accessibility.Behaviour`              | Defines the contract for accessibility services.                                                                      | Stable   |
+| `Raxol.Core.FocusManager.Behaviour`               | Defines the contract for focus management services.                                                                   | Evolving |
+| `Raxol.Core.ColorSystem`                          | Centralized theme/accessibility-aware color retrieval, robust against theme variants.                                 | Stable   |
+| `Raxol.System.Interaction`                        | Behaviour for abstracting system interactions.                                                                        | Defined  |
+| `Raxol.System.DeltaUpdaterSystemAdapterBehaviour` | Behaviour abstracting system interactions for `DeltaUpdater`.                                                         | Defined  |
+| `Raxol.System.EnvironmentAdapterBehaviour`        | Behaviour abstracting system environment calls.                                                                       | Defined  |
+| `RaxolWeb.UserSocket`                             | Phoenix Socket handler for WebSockets. (All tests in `terminal_channel_test.exs` related to this passing).            | Stable   |
 
 **Note on Module Maturity:**
 
-- **Stable:** Core functionality is complete and well-tested for its current scope. Major refactoring is not immediately planned.
-- **Evolving:** Actively under development, undergoing API changes, or has known limitations being addressed. May not yet be fully tested.
-- **Defined:** The foundational structure is defined and implemented. Additional features will continue to evolve the system.
+- **Stable:** Core functionality is implemented and has significant passing tests for its current scope. Not expecting immediate major refactoring.
+- **Evolving:** Actively under development, may be undergoing API changes, or has known limitations/tests failing.
+- **Defined:** The foundational structure/behaviour is defined and implemented. Further features or refinements will evolve it.
 - **Planned:** The module is planned for future development, but the core functionality is not yet implemented.
 - **Experimental:** The module is new and not yet fully tested.
 - **Deprecated:** The module is no longer maintained and will be removed in a future version.
@@ -279,8 +280,8 @@ lib/raxol/
 - **Commands**: Register via `get_commands/0` (namespaced), handled by `handle_command/3`, efficient lookup via ETS (`CommandRegistry`).
 - **Metadata**: Optional `PluginMetadataProvider` behaviour for `id`, `version`, `dependencies`. Used by `Loader`/`LifecycleHelper`.
 - **Reloading**:
-  - Manual: `PluginManager.reload_plugin/1` calls `LifecycleHelper.reload_plugin_from_disk/8`, which unloads, purges code, recompiles source, reloads, reinitializes, handling failures. This process is now tested and working as demonstrated in `manager_reloading_test.exs`.
-  - Automatic (Dev Only): Optionally uses the `file_system` library to watch plugin source files. Changes trigger the manual reload process after a short debounce. Enabled via `enable_plugin_reloading: true` option to `PluginManager.start_link/1`.
+  - Manual: `PluginManager.reload_plugin/1` calls `LifecycleHelper.reload_plugin_from_disk/8`. (Process tested and working in `manager_reloading_test.exs`).
+  - Automatic (Dev Only): Optionally uses `file_system` to watch plugin source files. Enabled via `enable_plugin_reloading: true` option to `PluginManager.start_link/1`.
 - **Core Plugins**: `ClipboardPlugin`, `NotificationPlugin` in `lib/raxol/core/plugins/core/`. (Tests passing for both after mocking improvements).
 - **Visualization Plugin**: Uses `handle_placeholder` hook to render charts, treemaps, images via helper modules (`ChartRenderer`, `TreemapRenderer`, `ImageRenderer`).
 

@@ -46,19 +46,7 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Restructuring the test file, including the proper placement and definition of helper functions like `generate_plugin_code/2` and `create_plugin_files/3`.
   - Correcting the usage of `Briefly.create(directory: true)` to properly handle its string path return value.
   - Replacing `Process.exit(manager_pid, :shutdown)` with `GenServer.stop(manager_pid, :normal)` for a more graceful and test-friendly shutdown of the `Manager` process.
-- **UI Renderer Edge Cases (`test/raxol/ui/renderer_edge_cases_test.exs`):** Resolved all compilation and runtime errors. Key fixes included:
-  - Correcting theme instantiation to use `%Raxol.UI.Theming.Theme{}` structs throughout the test file.
-  - Ensuring themes created within tests are registered using `Raxol.UI.Theming.Theme.register/1`.
-  - Adding `Raxol.Core.UserPreferences.start_link/1` to the `setup_all` block to ensure the GenServer is available for tests requiring it.
-  - Changing the `:content` key to `:text` for text element definitions to match `Raxol.UI.Renderer` expectations.
-  - Modifying recursive anonymous functions (`deep_nesting_data_generator`, `recursive_data_generator`) to correctly capture and call themselves, resolving undefined variable errors.
-  - Fixing various syntax errors (e.g., missing spaces after colons in map keys).
-  - Made `Raxol.Core.ColorSystem.get/2` robust against undefined theme variants to prevent `BadMapError`.
-  - Added a clause to `Raxol.UI.Renderer.resolve_styles/3` to handle `nil` themes, returning default styles.
-  - Added a clause to `Raxol.UI.Renderer.render_element/2` to gracefully handle `nil` elements.
-  - Adjusted patterns in `Raxol.UI.Renderer.render_element/2` for `:text`, `:box`, `:panel`, and `:table` elements to correctly extract or default attributes (including `width`, `height` for tables) and to correctly pass the element's `style` map as `attrs` to rendering helper functions.
-  - Ensured `Raxol.UI.Renderer.resolve_styles/3` correctly handles cases where `attrs.style` or `component_styles.style` might be a map instead of a list of atoms, defaulting to an empty list of style attributes.
-  - As a result of the above, all 17 tests in `test/raxol/ui/renderer_edge_cases_test.exs` are now passing.
+  - The `TestHostComponent` (used for rendering arbitrary view maps in many tests) is now correctly managed via `ComponentManager` and its `update/2` function is utilized by the new test helpers.
 
 ### Changed
 
@@ -67,61 +55,11 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - Introduced `with_running_manager/2` helper and several other utility functions (`setup_plugin`, `dispatch_command_and_assert_manager_alive`, `assert_matches_any_pattern`, `execute_command_and_verify`, `assert_plugin_load_fails`) to deduplicate code.
   - Corrected logic and assertions in tests for init timeouts, command execution errors, and command not found.
   - Unskipped and refactored plugin crash handling tests ("input handler crashes" and "output handler crashes"), validating event dispatch assumptions and implementing a robust command-based approach to trigger and test these scenarios.
-
-### Added
-
-- **Tests:** Added tests for `TextInput` component covering init, update, event handling (chars, backspace, delete, cursor movement, enter, escape, click, max_length, validation), and rendering states.
-- **Tests:** Added comprehensive test suites for edge cases in core modules:
-  - `dispatcher_edge_cases_test.exs` - Extensive tests for event filtering, error handling, system events, performance, and command execution in the Dispatcher.
-  - `plugin_manager_edge_cases_test.exs` - Robust tests for plugin loading errors, command handling, event processing, reloading failures, and concurrent operations.
-  - `renderer_edge_cases_test.exs` - Thorough tests for handling empty elements, missing attributes, overlapping elements, nested components, theme fallbacks, and Unicode rendering.
-- **Component(Modal):** Implemented form functionality supporting `TextInput`, `Checkbox`, and `Dropdown` elements.
-- **Component(Modal):** Added basic validation support for form fields (via `:validate` regex or function).
-- **Component(Modal):** Added `Modal.form/6` constructor for creating form modals.
-- **Terminal:** Added placeholder handlers for OSC and DCS command sequences in `lib/raxol/terminal/commands/executor.ex`.
-- **Terminal:** Implemented basic OSC command handling in `Executor` for Window Title (OSC 0, 2) and Hyperlinks (OSC 8).
-- **Component(MultiLineInput):** Implemented improved navigation with `move_cursor_page` function for the MultiLineInput component.
-- **Component(MultiLineInput):** Added support for text selection using shift + arrow keys in the EventHandler.
-- **Component(MultiLineInput):** Added support for text selection with shift + arrow keys in `EventHandler`.
-- **Component(TextInput):** Implemented visual cursor rendering (inverse style on focused character).
-- **Component(TextInput):** Added handling for Home, End, and Delete keys.
-- **Component(Table):** Implemented pagination with Previous/Next buttons and page indicator.
-- **Component(Table):** Added sorting capability with column header indicators for sort direction.
-- **Component(Table):** Implemented filtering/search functionality with text input field.
-- **Component(Table):** Added keyboard navigation (arrow keys) for pagination.
-- **Component(FocusRing):** Enhanced styling with various animation effects (pulse, blink, fade, glow, bounce), component-specific styling (button, text_input, checkbox), state-based styling (normal, active, disabled), and accessibility integration (high contrast, reduced motion). Added showcase example for demonstration.
-- **Component(SelectList):** Enhanced with stateful scroll offset, robust keyboard navigation (arrow keys, Home/End, Page Up/Down), search/filtering capabilities (both inline and dedicated search box), multiple selection mode with toggle, pagination support for large lists, and improved focus management. Added showcase example demonstrating all features.
-- **PluginSystem:** Added optional automatic plugin reloading via file watching (`FileSystem` dependency) in `:dev` environment. Enable with `enable_plugin_reloading: true` option to `PluginManager.start_link/1`.
-- **Tests:** Added tests for `PluginManager` covering command delegation, manual reload scenarios (success/failure), and file watch reloading.
-- **Tests:** Added test suite (`test/raxol/components/modal_test.exs`) for `Modal` component, covering form types (prompt, form), validation, focus, submission, and cancellation.
-- **Terminal(Executor):** Implemented OSC 52 (Clipboard Set/Query) handler using `Raxol.System.Clipboard`.
-- **Terminal(Executor):** Implemented OSC 4 (Color Palette Set/Query) handler, including parsing for `rgb:` and `#RGB`/`#RRGGBB` formats, storing colors in `Emulator.state`, and responding to queries.
-- **Terminal(Executor):** Added placeholder handlers and parsing logic for DCS DECRQSS (`! |`) and DCS Sixel (`q`).
-- **Terminal(Emulator):** Added `:color_palette` map to `Emulator.t` struct to store dynamic colors set via OSC 4.
-- Basic Plugin Manager (`Raxol.Core.Runtime.Plugins.Manager`) with GenServer implementation.
-- Plugin Loader (`Raxol.Core.Runtime.Plugins.Loader`) for discovering and loading plugin modules.
-- Plugin Lifecycle Helper (`Raxol.Core.Runtime.Plugins.LifecycleHelper`) for managing `init`/`terminate`.
-- Command Registry (`Raxol.Core.Runtime.Plugins.CommandRegistry`) using ETS for dynamic command lookup.
-- **Animation:** Implemented comprehensive easing functions in `Raxol.Animation.Easing` including linear, quadratic, cubic, and elastic variants.
-- **Tests:** Added comprehensive event handling tests for the Table component in `test/raxol/ui/components/display/table_test.exs`, covering scrolling with arrow/page keys across various scenarios: standard scrolling, empty data, data less than page size, and single visible data row height.
-- **System Interaction:** Introduced `Raxol.System.DeltaUpdaterSystemAdapterBehaviour` and its implementation `Raxol.System.DeltaUpdaterSystemAdapterImpl` to abstract system-level calls (HTTP, file system, OS commands) for the `DeltaUpdater` module, improving testability.
-- **System Interaction:** Introduced `Raxol.System.EnvironmentAdapterBehaviour` and `Raxol.System.EnvironmentAdapterImpl` to abstract system environment calls (`System.get_env/1`, `System.cmd/3`) for the `Raxol.Terminal.Config.Capabilities` module, improving testability.
-- **Tests:** Implemented tests for `Raxol.Terminal.Config.Capabilities.optimized_config/1` using `Mox` and the new `EnvironmentAdapterBehaviour` in `test/raxol/terminal/config_test.exs`.
-- **Runtime Tests:** Added comprehensive test suites for edge cases in Dispatcher, PluginManager, and UI Renderer, improving reliability and test coverage for critical modules. New files include `dispatcher_edge_cases_test.exs`, `plugin_manager_edge_cases_test.exs`, and `renderer_edge_cases_test.exs` with over 30 detailed test cases covering error handling, invalid inputs, performance, concurrency, and complex component composition.
-- **SelectList Enhancements:** Implemented comprehensive improvements to the SelectList component, adding stateful scroll offset, robust keyboard navigation (arrow keys, Home/End, Page Up/Down), search/filtering capabilities (both inline and dedicated search box), multiple selection mode with toggle, pagination support for large lists, and improved focus management. Added a showcase example demonstrating all the new features.
-- **FocusRing Styling:** Implemented comprehensive styling based on component state, accessibility preferences, and animation effects. Added multiple animation types (pulse, blink, fade, glow, bounce) and state-based styling (normal, active, disabled). Created a showcase example file.
-
-### Changed
-
-- **Tests (`manager_reloading_test.exs`):** ~~Continued debugging of `PluginManager` reloading. Addressed `EXIT shutdown` errors by correcting argument passing to `LifecycleHelper.reload_plugin_from_disk` and aligning Mox expectations. Current focus is a `FunctionClauseError` with `Mox.expect/4` when setting PID-specific expectations for `ReloadingLifecycleHelperMock`; investigating using `Mox.expect/5`.~~
-- **Tests (`manager_reloading_test.exs`):** ~~Refactored Mox usage to address `Mox.UnexpectedCallError` when mocks are called from the `PluginManager` GenServer process. Strategies include using `Mox.allow_global/1` to make stubs/expects defined in the test process accessible to calls originating from other processes.~~
-- **Docs:** Added troubleshooting guidance to `DevelopmentSetup.md` for macOS users experiencing Erlang/OTP build failures (e.g., C++ header issues like `'iterator'` file not found) when using `asdf`. Recommends explicitly setting `CC` and `CXX` to Homebrew's `clang`.
-- **Component(Modal):** Refactored state to handle `:prompt` type using internal `form_state`, removing redundant top-level `:input_value`.
-- **Component(Modal):** Updated `handle_event` to manage focus changes (Tab/Shift+Tab) and trigger submission (Enter) or cancellation (Escape).
-- **Component(Modal):** Updated rendering logic to display form fields and validation errors.
-- **Refactor:** Consolidated clipboard logic into `lib/raxol/system/clipboard.ex`, updated core plugins (`ClipboardPlugin`, `NotificationPlugin`) and tests to use it, removed redundant clipboard modules (`lib/raxol/terminal/clipboard.ex`, `lib/raxol/core/events/clipboard.ex`).
-- **Refactor:** Enhanced core `NotificationPlugin` with better shell escaping, Windows support, and error handling.
-- **Refactor(PluginManager):** Extracted plugin lifecycle management, event handling, and cell processing logic from `PluginManager` into new modules: `Raxol.Plugins.Lifecycle`, `Raxol.Plugins.EventHandler`, and `Raxol.Plugins.CellProcessor`. `PluginManager` now delegates responsibilities to these specialized modules.
+- **Performance Tests (`test/raxol/core/renderer/views/performance_test.exs`):** Refactored by extracting major helper functionalities into separate modules under `test/support/`:
+  - `Raxol.Core.Renderer.Views.PerformanceTest.TestHostComponent` moved to `test/support/test_host_component.ex`.
+  - Data generation logic (e.g., `@large_data`, `generate_columns/1`, `generate_data/3`) moved to `test/support/performance_test_data.ex` (as `Raxol.Test.PerformanceTestData`).
+  - Various view creation helper functions (e.g., `create_nested_structure/2`, `create_configurable_test_layout/1`, animation frame generators) moved to `test/support/performance_view_generators.ex` (as `Raxol.Test.PerformanceViewGenerators`).
+    This significantly reduces the size of the main test file and improves modularity.
 - **Tests (`UXRefinementKeyboardTest`):** Refactored `test/raxol/core/ux_refinement_keyboard_test.exs` to use `Mox` for `Accessibility` and `FocusManager` mocks, replacing `:meck`. Introduced `FocusManager.Behaviour` and updated `UXRefinement` to use it via application config.
 - Reorganized documentation guides under `docs/guides/` into clearer categories (Getting Started, Core Concepts, Components, Extending, Development).
 - Updated `README.md` and `docs/README.md` links to reflect new guide locations.
@@ -189,7 +127,7 @@ and we use [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
   - `Raxol.Terminal.Parser.State.new/0` (used `%State{}`).
   - `Raxol.Terminal.Cell.default_style/0` (used `TextFormatting.new()`).
   - `Raxol.Terminal.Buffer.Eraser.clear/2` (used `defdelegate ... as: :clear_screen`).
-- **Tests:** Resolved a large number of specific test failures and setup issues across the entire test suite. **The overall failure count is now 227 failures, and 33 skipped tests as of 2025-05-08.** (Updated from a previous count of 233 failures after fixes in `test/raxol/runtime_test.exs`).
+- **Tests:** Resolved a large number of specific test failures and setup issues across the entire test suite. **The overall failure count is now 279 failures, 17 invalid, and 21 skipped tests as of 2025-05-08.** (Updated from a previous count of 233 failures after fixes in `test/raxol/runtime_test.exs`).
   - `Raxol.Terminal.ANSI.ColumnWidthTest`: Fixed `FunctionClauseError` by refactoring `State.resize/3` grid copying logic.
   - `RaxolWeb.TerminalLiveTest`: Resolved authentication issues by adding `log_in_user/2` helper to `ConnCase` and using it in the test setup. Fixed related compilation error by importing `Plug.Conn` in `ConnCase`.
   - `Raxol.Terminal.ANSI.WindowManipulationTest`: Fixed parsing logic for CSI/OSC, corrected parameter handling for `move`/`resize`, ensured state updates for `maximize`/`restore`, fixed query response format, and corrected the `move` test sequence (`\e[3;x;yt`).
