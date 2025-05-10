@@ -11,7 +11,23 @@ defmodule Raxol.Core.Renderer.Views.Table do
   * Row selection
   """
 
+  # Assuming a Base.Component behaviour might exist or these are the expected functions
+  # If Raxol.UI.Components.Base.Component is a defined behaviour, uncommenting the next line would be good.
+  # @behaviour Raxol.UI.Components.Base.Component
+
   alias Raxol.Core.Renderer.View
+  require Logger
+
+  defstruct columns: [],
+            data: [],
+            border: :single,
+            striped: true,
+            selectable: false,
+            selected: nil,
+            header_style: [:bold],
+            row_style: [],
+            # Internal, calculated state
+            calculated_widths: []
 
   @type column :: %{
           header: String.t(),
@@ -21,7 +37,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
           format: (term() -> String.t()) | nil
         }
 
-  @type options :: [
+  @type props :: %{
           columns: [column()],
           data: [map()],
           border: View.border_style(),
@@ -30,67 +46,136 @@ defmodule Raxol.Core.Renderer.Views.Table do
           selected: non_neg_integer() | nil,
           header_style: View.style(),
           row_style: View.style()
-        ]
+        }
 
   @doc """
-  Creates a new table view.
+  Initializes the Table component with props.
+  Props are expected to be a map.
   """
-  def new(opts) do
-    columns = Keyword.get(opts, :columns, [])
-    data = Keyword.get(opts, :data, [])
-    border = Keyword.get(opts, :border, :single)
-    striped = Keyword.get(opts, :striped, true)
-    selectable = Keyword.get(opts, :selectable, false)
-    selected = Keyword.get(opts, :selected)
-    header_style = Keyword.get(opts, :header_style, [:bold])
-    row_style = Keyword.get(opts, :row_style, [])
+  # @impl Raxol.UI.Components.Base.Component
+  def init(props) when is_map(props) do
+    columns = Map.get(props, :columns, [])
+    data = Map.get(props, :data, [])
+    border = Map.get(props, :border, :single)
+    striped = Map.get(props, :striped, true)
+    selectable = Map.get(props, :selectable, false)
+    selected = Map.get(props, :selected)
+    header_style = Map.get(props, :header_style, [:bold])
+    # row_style can be a list or a function (index, row_data) -> style_list
+    row_style = Map.get(props, :row_style, [])
 
-    # Calculate column widths
-    widths = calculate_column_widths(columns, data)
+    # Calculate column widths during init
+    calculated_widths = calculate_column_widths(columns, data)
 
-    # Create header row
-    header = create_header_row(columns, widths, header_style)
+    initial_state = %__MODULE__{
+      columns: columns,
+      data: data,
+      border: border,
+      striped: striped,
+      selectable: selectable,
+      selected: selected,
+      header_style: header_style,
+      row_style: row_style,
+      calculated_widths: calculated_widths
+    }
+    # Return state directly, not {:ok, state}
+    initial_state
+  end
 
-    # Create data rows
-    rows =
-      create_data_rows(
-        columns,
-        data,
-        widths,
-        striped,
-        selectable,
-        selected,
-        row_style
-      )
+  @doc """
+  Called when the component is mounted.
+  """
+  # @impl Raxol.UI.Components.Base.Component
+  def mount(state) do
+    # No commands on mount for now
+    # Return {state, commands} tuple
+    {state, []}
+  end
 
-    # Wrap in border if needed
+  @doc """
+  Renders the Table component based on its current state.
+  """
+  # @impl Raxol.UI.Components.Base.Component
+  def render(state = %__MODULE__{}) do
+    # Logic from the old new/1 function, adapted to use component state
+    header = create_header_row(state.columns, state.calculated_widths, state.header_style)
+
+    rows = create_data_rows(
+      state.columns,
+      state.data,
+      state.calculated_widths,
+      state.striped,
+      state.selectable,
+      state.selected,
+      state.row_style
+    )
+
     content = [header | rows]
 
-    if border != :none do
-      View.border(border, do: content)
+    if state.border != :none do
+      View.border(state.border, do: content)
     else
       View.box(children: content)
     end
   end
 
-  # Private Helpers
+  @doc """
+  Handles updates to the component state.
+  """
+  # @impl Raxol.UI.Components.Base.Component
+  def update(message, state = %__MODULE__{}) do
+    Logger.info("Table component [#{inspect(self())}] received update: #{inspect(message)}")
+    # TODO: Implement actual update logic based on message
+    # For now, just return current state and no commands
+    {:ok, state, []}
+  end
+
+  @doc """
+  Handles dispatched events.
+  """
+  # @impl Raxol.UI.Components.Base.Component
+  def handle_event(event, state = %__MODULE__{}) do
+    Logger.info("Table component [#{inspect(self())}] received event: #{inspect(event)}")
+    # TODO: Implement event handling logic
+    {:ok, state, []}
+  end
+
+  @doc """
+  Called when the component is about to be unmounted.
+  """
+  # @impl Raxol.UI.Components.Base.Component
+  def unmount(state = %__MODULE__{}) do
+    # No specific cleanup for now
+    {:ok, state}
+  end
+
+
+  @doc """
+  Creates a new table view. (DEPRECATED - Use ComponentManager.mount/2 instead)
+  """
+  def new(opts) do
+    Logger.warn("#{__MODULE__}.new/1 is deprecated. Use ComponentManager.mount(#{__MODULE__}, props) instead.")
+    # For temporary backward compatibility or direct view generation, map opts to props
+    # and call the new rendering path via a temporary state.
+    props = Enum.into(opts, %{})
+    {:ok, initial_comp_state} = init(props)
+    render(initial_comp_state)
+  end
+
+  # Private Helpers (remain largely the same, ensure they use arguments not module state)
 
   defp calculate_column_widths(columns, data) do
     Enum.map(columns, fn column ->
       case column.width do
         :auto ->
-          # Calculate based on content
           header_width = String.length(column.header)
-
           content_width =
             Enum.reduce(data, 0, fn row, max ->
               value = get_column_value(row, column)
               len = String.length(to_string(value))
               if len > max, do: len, else: max
             end)
-
           max(header_width, content_width)
-
         width when is_integer(width) ->
           width
       end
@@ -113,25 +198,19 @@ defmodule Raxol.Core.Renderer.Views.Table do
          striped,
          selectable,
          selected,
-         style
+         style # This is state.row_style
        ) do
     data
     |> Enum.with_index()
     |> Enum.map(fn {row, index} ->
-      # Calculate base style by evaluating the style function if it is one
-      # Default to empty list if function returns nil
       base_style =
         if is_function(style, 2) do
-          # Call the function with index and row data
           style.(index, row)
         else
-          # Assume it's already a list of styles
           style
         end || []
 
-      # Calculate row style by combining base, striping, and selection
-      # Result from function or the original list
-      row_style =
+      row_style_combined =
         base_style ++
           if striped and rem(index, 2) == 1 do
             [bg: :bright_black]
@@ -144,34 +223,24 @@ defmodule Raxol.Core.Renderer.Views.Table do
             []
           end
 
-      # Create row cells
       cells =
         Enum.zip(columns, widths)
         |> Enum.map(fn {column, width} ->
           formatted_value =
             get_column_value(row, column)
             |> format_value(column.format)
-
           cell_content =
             case formatted_value do
               text when is_binary(text) ->
                 View.text(pad_text(text, width, column.align))
-
-              # Assuming map means a View struct
               view when is_map(view) ->
-                # TODO: How to handle width/alignment for nested views?
-                # For now, just pass the view directly.
                 view
-
-              # Fallback for other types
               other ->
                 View.text(pad_text(to_string(other), width, column.align))
             end
-
           cell_content
         end)
-
-      View.flex direction: :row, style: row_style do
+      View.flex direction: :row, style: row_style_combined do
         cells
       end
     end)
@@ -189,17 +258,13 @@ defmodule Raxol.Core.Renderer.Views.Table do
 
   defp pad_text(text, width, align) do
     text = String.slice(to_string(text), 0, width)
-
     case align do
       :left ->
         String.pad_trailing(text, width)
-
       :right ->
         String.pad_leading(text, width)
-
       :center ->
         left = div(width - String.length(text), 2)
-
         String.pad_leading(text, left + String.length(text))
         |> String.pad_trailing(width)
     end
