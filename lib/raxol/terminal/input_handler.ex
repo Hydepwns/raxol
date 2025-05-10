@@ -159,7 +159,7 @@ defmodule Raxol.Terminal.InputHandler do
     buffer_height = ScreenBuffer.get_height(active_buffer)
 
     # Translate character based on current charset state
-    translated_codepoint =
+    {translated_codepoint, new_charset_state} =
       CharacterSets.translate_char(emulator.charset_state, char_codepoint)
 
     # Pass the integer codepoint to get_char_width
@@ -231,7 +231,7 @@ defmodule Raxol.Terminal.InputHandler do
         last_col_exceeded: next_last_col_exceeded,
         mode_manager: emulator.mode_manager,
         style: emulator.style,
-        charset_state: emulator.charset_state,
+        charset_state: new_charset_state,
         scroll_region: emulator.scroll_region,
         cursor_style: emulator.cursor_style,
         state_stack: emulator.state_stack

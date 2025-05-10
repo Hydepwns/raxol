@@ -140,6 +140,29 @@ defmodule Raxol.Core.Runtime.CommandTest do
       assert_receive {:command_result, ^msg}, 100
     end
 
+    test "executes file write system command", %{context: context} do
+      # Create a temporary directory using Briefly
+      {:ok, temp_dir_path} = Briefly.create(directory: true)
+      # Define a file path within the temporary directory
+      file_path = Path.join(temp_dir_path, "output.txt")
+      content = "hello from raxol test"
+
+      # Create the file_write command
+      cmd = Command.system(:file_write, path: file_path, content: content)
+
+      # Execute the command
+      Command.execute(cmd, context)
+
+      # Assert that the command execution was successful (adjust if result format is different)
+      assert_receive {:command_result, {:file_write, :ok}}, 500
+
+      # Verify that the file was written with the correct content
+      assert File.read!(file_path) == content
+
+      # Briefly will automatically clean up the temp_dir_path and its contents
+      # when the test process exits.
+    end
+
     test "executes file read system command", %{context: context} do
       # Create a temporary file for testing using Briefly
       {:ok, path} = Briefly.create(basename: "test_file.txt")

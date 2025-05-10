@@ -265,10 +265,11 @@ defmodule Raxol.Core.Runtime.Command do
       :file_write ->
         case File.write(opts[:path], opts[:content]) do
           :ok ->
-            :ok
+            send(context.pid, {:command_result, {:file_write, :ok}})
 
           {:error, reason} ->
             Logger.error("System command file_write failed: #{reason}")
+            send(context.pid, {:command_result, {:file_write_error, reason}})
         end
 
       :file_read ->
