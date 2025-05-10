@@ -25,8 +25,8 @@ defmodule Raxol.Core.Renderer.Manager do
     GenServer.call(__MODULE__, {:init, opts})
   end
 
-  def render do
-    GenServer.cast(__MODULE__, :render)
+  def render(reply_to_pid_for_signal \\ nil) do
+    GenServer.cast(__MODULE__, {:render, reply_to_pid_for_signal})
   end
 
   def cleanup do
@@ -70,11 +70,14 @@ defmodule Raxol.Core.Renderer.Manager do
 
   @impl true
   def handle_cast(:render, %{initialized: false} = state) do
+    # If not initialized, it's a no-op, so we don't send a signal.
+    # Or, if we always expect a signal, we could send one here too.
+    # For now, assuming no signal if no actual render attempt is made.
     {:noreply, state}
   end
 
   @impl true
-  def handle_cast(:render, state) do
+  def handle_cast({:render, reply_to_pid_for_signal}, state) do
     # Get component IDs that need rendering
     component_ids = ComponentManager.get_render_queue()
 
@@ -97,6 +100,10 @@ defmodule Raxol.Core.Renderer.Manager do
       # Get damaged regions and update screen
       damage = Buffer.get_damage(buffer)
       render_damage(damage)
+    end
+
+    if reply_to_pid_for_signal do
+      send(reply_to_pid_for_signal, :render_cycle_complete)
     end
 
     {:noreply, %{state | buffer: buffer}}
