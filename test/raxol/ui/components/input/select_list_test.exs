@@ -1,0 +1,261 @@
+defmodule Raxol.UI.Components.Input.SelectListTest do
+  use ExUnit.Case, async: true
+  import Mox
+
+  alias Raxol.UI.Components.Input.SelectList
+  alias Raxol.Core.Events.Event
+
+  # Define mocks
+  Mox.defmock(TestPlugin, for: Raxol.Core.Runtime.Plugins.Plugin)
+
+  setup :verify_on_exit!
+
+  describe "init/1" do
+    test "initializes with default values when no props provided" do
+      assert_raise ArgumentError, "SelectList requires :options prop", fn ->
+        SelectList.init(%{})
+      end
+    end
+
+    test "initializes with provided values" do
+      options = [{"Option 1", :opt1}, {"Option 2", :opt2}]
+      on_select = fn _ -> :selected end
+
+      state = SelectList.init(%{
+        options: options,
+        label: "Select an option:",
+        on_select: on_select,
+        max_height: 10,
+        enable_search: true,
+        multiple: true,
+        searchable_fields: [:name, :email],
+        placeholder: "Type to search...",
+        empty_message: "No matches found",
+        show_pagination: true
+      })
+
+      assert state.options == options
+      assert state.label == "Select an option:"
+      assert state.on_select == on_select
+      assert state.max_height == 10
+      assert state.enable_search == true
+      assert state.multiple == true
+      assert state.searchable_fields == [:name, :email]
+      assert state.placeholder == "Type to search..."
+      assert state.empty_message == "No matches found"
+      assert state.show_pagination == true
+      assert state.focused_index == 0
+      assert state.scroll_offset == 0
+      assert state.search_text == ""
+      assert state.filtered_options == nil
+      assert state.is_filtering == false
+      assert state.selected_indices == MapSet.new()
+      assert state.is_search_focused == false
+      assert state.page_size == 10
+      assert state.current_page == 0
+      assert state.has_focus == false
+      assert state.visible_height == nil
+      assert state.last_key_time == nil
+      assert state.search_buffer == ""
+      assert state.search_timer == nil
+    end
+
+    test "validates option format" do
+      assert_raise ArgumentError, "SelectList options must be {label, value} tuples", fn ->
+        SelectList.init(%{options: ["invalid"]})
+      end
+
+      assert_raise ArgumentError, "SelectList option labels must be strings", fn ->
+        SelectList.init(%{options: [{:invalid, :value}]})
+      end
+    end
+  end
+
+  describe "update/2" do
+    setup do
+      options = [{"Option 1", :opt1}, {"Option 2", :opt2}, {"Option 3", :opt3}]
+      state = SelectList.init(%{options: options})
+      {:ok, state: state}
+    end
+
+    test "updates props", %{state: state} do
+      new_options = [{"New 1", :new1}, {"New 2", :new2}]
+      {new_state, _} = SelectList.update({:update_props, %{options: new_options}}, state)
+      assert new_state.options == new_options
+      assert new_state.filtered_options == nil
+      assert new_state.is_filtering == false
+      assert new_state.search_text == ""
+      assert new_state.search_buffer == ""
+      assert new_state.search_timer == nil
+      assert new_state.focused_index == 0
+      assert new_state.scroll_offset == 0
+      assert new_state.current_page == 0
+    end
+
+    test "handles search", %{state: state} do
+      # Initial search
+      {state1, _} = SelectList.update({:search, "opt"}, state)
+      assert state1.search_buffer == "opt"
+      assert state1.search_timer != nil
+
+      # Apply search after timer
+      {state2, _} = SelectList.update({:apply_search, "opt"}, state1)
+      assert state2.search_text == "opt"
+      assert state2.search_timer == nil
+      assert state2.is_filtering == true
+      assert state2.filtered_options != nil
+    end
+
+    test "handles selection", %{state: state} do
+      # Single selection
+      {state1, _} = SelectList.update({:select_option, 1}, state)
+      assert state1.focused_index == 1
+
+      # Multiple selection
+      state2 = %{state1 | multiple: true}
+      {state3, _} = SelectList.update({:select_option, 2}, state2)
+      assert MapSet.size(state3.selected_indices) == 1
+      assert MapSet.member?(state3.selected_indices, 2)
+    end
+
+    test "handles pagination", %{state: state} do
+      state1 = %{state | show_pagination: true, page_size: 2}
+      {state2, _} = SelectList.update({:set_page, 1}, state1)
+      assert state2.current_page == 1
+    end
+
+    test "handles focus", %{state: state} do
+      on_focus = fn index -> send(self(), {:focused, index}) end
+      state1 = %{state | on_focus: on_focus}
+
+      {state2, _} = SelectList.update({:set_focus, true}, state1)
+      assert state2.has_focus == true
+      assert_received {:focused, 0}
+    end
+
+    test "handles search focus toggle", %{state: state} do
+      state1 = %{state | enable_search: true}
+
+      # Toggle on
+      {state2, _} = SelectList.update({:toggle_search_focus}, state1)
+      assert state2.is_search_focused == true
+      assert state2.search_text == ""
+      assert state2.search_buffer == ""
+      assert state2.filtered_options == nil
+      assert state2.is_filtering == false
+
+      # Toggle off
+      {state3, _} = SelectList.update({:toggle_search_focus}, state2)
+      assert state3.is_search_focused == false
+    end
+  end
+
+  describe "handle_event/3" do
+    setup do
+      options = [{"Option 1", :opt1}, {"Option 2", :opt2}, {"Option 3", :opt3}]
+      state = SelectList.init(%{options: options})
+      {:ok, state: state}
+    end
+
+    test "handles keyboard navigation", %{state: state} do
+      # Down arrow
+      event = %Event{type: :key, data: %{key: "Down"}}
+      {state1, _} = SelectList.handle_event(event, %{}, state)
+      assert state1.focused_index == 1
+
+      # Up arrow
+      event = %Event{type: :key, data: %{key: "Up"}}
+      {state2, _} = SelectList.handle_event(event, %{}, state1)
+      assert state2.focused_index == 0
+
+      # Page down
+      event = %Event{type: :key, data: %{key: "PageDown"}}
+      {state3, _} = SelectList.handle_event(event, %{}, state)
+      assert state3.focused_index == 2
+
+      # Page up
+      event = %Event{type: :key, data: %{key: "PageUp"}}
+      {state4, _} = SelectList.handle_event(event, %{}, state3)
+      assert state4.focused_index == 0
+
+      # Home
+      event = %Event{type: :key, data: %{key: "Home"}}
+      {state5, _} = SelectList.handle_event(event, %{}, state3)
+      assert state5.focused_index == 0
+
+      # End
+      event = %Event{type: :key, data: %{key: "End"}}
+      {state6, _} = SelectList.handle_event(event, %{}, state)
+      assert state6.focused_index == 2
+    end
+
+    test "handles selection", %{state: state} do
+      on_select = fn value -> send(self(), {:selected, value}) end
+      state1 = %{state | on_select: on_select}
+
+      # Enter key
+      event = %Event{type: :key, data: %{key: "Enter"}}
+      {state2, _} = SelectList.handle_event(event, %{}, state1)
+      assert_received {:selected, :opt1}
+      assert state2.focused_index == 0
+
+      # Multiple selection
+      state3 = %{state2 | multiple: true}
+      event = %Event{type: :key, data: %{key: "Space"}}
+      {state4, _} = SelectList.handle_event(event, %{}, state3)
+      assert MapSet.size(state4.selected_indices) == 1
+      assert MapSet.member?(state4.selected_indices, 0)
+    end
+
+    test "handles search", %{state: state} do
+      state1 = %{state | enable_search: true, is_search_focused: true}
+
+      # Tab to toggle search focus
+      event = %Event{type: :key, data: %{key: "Tab"}}
+      {state2, _} = SelectList.handle_event(event, %{}, state1)
+      assert state2.is_search_focused == false
+
+      # Character input
+      event = %Event{type: :key, data: %{key: "a"}}
+      {state3, _} = SelectList.handle_event(event, %{}, state1)
+      assert state3.search_buffer == "a"
+      assert state3.search_timer != nil
+
+      # Backspace
+      event = %Event{type: :key, data: %{key: "Backspace"}}
+      {state4, _} = SelectList.handle_event(event, %{}, state3)
+      assert state4.search_buffer == ""
+    end
+
+    test "handles mouse click", %{state: state} do
+      # Click on search box
+      event = %Event{type: :mouse, data: %{x: 1, y: 1}}
+      state1 = %{state | enable_search: true}
+      {state2, _} = SelectList.handle_event(event, %{}, state1)
+      assert state2.is_search_focused == true
+
+      # Click on option
+      event = %Event{type: :mouse, data: %{x: 1, y: 2}}
+      {state3, _} = SelectList.handle_event(event, %{}, state)
+      assert state3.focused_index == 1
+    end
+
+    test "handles focus events", %{state: state} do
+      # Focus
+      event = %Event{type: :focus}
+      {state1, _} = SelectList.handle_event(event, %{}, state)
+      assert state1.has_focus == true
+
+      # Blur
+      event = %Event{type: :blur}
+      {state2, _} = SelectList.handle_event(event, %{}, state1)
+      assert state2.has_focus == false
+    end
+
+    test "handles resize events", %{state: state} do
+      event = %Event{type: :resize, data: %{width: 80, height: 24}}
+      {state1, _} = SelectList.handle_event(event, %{}, state)
+      assert state1.visible_height == 24
+    end
+  end
+end
