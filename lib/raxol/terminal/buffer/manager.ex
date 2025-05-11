@@ -1,72 +1,27 @@
 defmodule Raxol.Terminal.Buffer.Manager do
   @moduledoc """
-  Terminal buffer manager module.
-
-  This module handles the management of terminal buffers, including:
-  - Double buffering implementation
-  - Damage tracking system
-  - Buffer synchronization
-  - Memory management
+  Manages terminal buffers and their operations.
+  Coordinates between different buffer-related modules.
   """
+
+  alias Raxol.Terminal.{
+    ScreenBuffer,
+    Buffer.Manager.State,
+    Buffer.Manager.Buffer,
+    Buffer.Manager.Cursor,
+    Buffer.Manager.Damage,
+    Buffer.Manager.Memory,
+    Buffer.Manager.Scrollback
+  }
+
+  @type t :: State.t()
 
   use GenServer
 
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Buffer.DamageTracker
-  alias Raxol.Terminal.Buffer.Scrollback
-  alias Raxol.Terminal.Buffer.MemoryManager
-  alias Raxol.Terminal.ANSI.TextFormatting
-
-  @type t :: %__MODULE__{
-          active_buffer: ScreenBuffer.t(),
-          back_buffer: ScreenBuffer.t(),
-          damage_tracker: DamageTracker.t(),
-          memory_limit: non_neg_integer(),
-          memory_usage: non_neg_integer(),
-          cursor_position: {non_neg_integer(), non_neg_integer()},
-          scrollback: Scrollback.t()
-        }
-
-  defstruct [
-    :active_buffer,
-    :back_buffer,
-    :damage_tracker,
-    :memory_limit,
-    :memory_usage,
-    :cursor_position,
-    :scrollback
-  ]
-
-  def child_spec(opts) do
-    %{
-      id: __MODULE__,
-      start: {__MODULE__, :start_link, [opts]},
-      type: :worker,
-      restart: :permanent,
-      shutdown: 5000
-    }
-  end
-
-  def start_link(opts) do
-    GenServer.start_link(__MODULE__, opts, name: __MODULE__)
-  end
-
-  @impl true
-  def init(opts) when is_list(opts) do
-    width = Keyword.get(opts, :width, 80)
-    height = Keyword.get(opts, :height, 24)
-    scrollback_height = Keyword.get(opts, :scrollback_height, 1000)
-    memory_limit = Keyword.get(opts, :memory_limit, 10_000_000)
-
-    new(width, height, scrollback_height, memory_limit)
-  end
-
-  def init(_opts) do
-    init([])
-  end
+  # Client API
 
   @doc """
-  Creates a new buffer manager with the given dimensions.
+  Creates a new buffer manager with the specified dimensions.
 
   ## Examples
 
@@ -76,71 +31,129 @@ defmodule Raxol.Terminal.Buffer.Manager do
       iex> manager.active_buffer.height
       24
   """
-  def new(width, height, scrollback_height \\ 1000, memory_limit \\ 10_000_000) do
-    active_buffer = ScreenBuffer.new(width, height, scrollback_height)
-    back_buffer = ScreenBuffer.new(width, height, scrollback_height)
-
-    {:ok,
-     %__MODULE__{
-       active_buffer: active_buffer,
-       back_buffer: back_buffer,
-       damage_tracker: DamageTracker.new(),
-       memory_limit: memory_limit,
-       memory_usage: 0,
-       cursor_position: {0, 0},
-       scrollback: Scrollback.new(scrollback_height)
-     }}
+  def new(width, height, scrollback_limit \\ 1000, memory_limit \\ 10_000_000) do
+    State.new(width, height, scrollback_limit, memory_limit)
   end
 
   @doc """
-  Switches the active and back buffers.
+  Initializes main and alternate screen buffers with the specified dimensions.
 
   ## Examples
 
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.switch_buffers(manager)
-      iex> manager.active_buffer == manager.back_buffer
-      false
+      iex> {main_buffer, alt_buffer} = Manager.initialize_buffers(80, 24, 1000)
+      iex> main_buffer.width
+      80
+      iex> alt_buffer.height
+      24
   """
-  def switch_buffers(%__MODULE__{} = manager) do
-    %{
-      manager
-      | active_buffer: manager.back_buffer,
-        back_buffer: manager.active_buffer,
-        damage_tracker: DamageTracker.clear_regions(manager.damage_tracker)
-    }
+  def initialize_buffers(width, height, scrollback_limit) do
+    main_buffer = ScreenBuffer.new(width, height, scrollback_limit)
+    alt_buffer = ScreenBuffer.new(width, height, scrollback_limit)
+    {main_buffer, alt_buffer}
   end
 
   @doc """
-  Marks a region of the buffer as damaged.
+  Starts a new buffer manager process.
+
+  ## Options
+
+    * `:width` - The width of the buffer (default: 80)
+    * `:height` - The height of the buffer (default: 24)
+    * `:scrollback_height` - The maximum number of scrollback lines (default: 1000)
+    * `:memory_limit` - The maximum memory usage in bytes (default: 10_000_000)
 
   ## Examples
 
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.mark_damaged(manager, 0, 0, 10, 5)
-      iex> length(manager.damage_regions)
-      1
+      iex> {:ok, pid} = Buffer.Manager.start_link(width: 100, height: 30)
+      iex> Process.alive?(pid)
+      true
   """
-  def mark_damaged(%__MODULE__{} = manager, x1, y1, x2, y2) do
-    new_tracker =
-      DamageTracker.mark_damaged(manager.damage_tracker, x1, y1, x2, y2)
-
-    %{manager | damage_tracker: new_tracker}
+  def start_link(opts \\ []) do
+    GenServer.start_link(__MODULE__, opts)
   end
 
   @doc """
-  Gets all damaged regions.
+  Gets the current state of the buffer manager.
 
   ## Examples
 
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.mark_damaged(manager, 0, 0, 10, 5)
-      iex> regions = Buffer.Manager.get_damage_regions(manager)
-      iex> length(regions)
-      1
+      iex> {:ok, pid} = Buffer.Manager.start_link()
+      iex> state = Buffer.Manager.get_state(pid)
+      iex> state.active_buffer.width
+      80
   """
-  def get_damage_regions(%__MODULE__{} = manager) do
-    DamageTracker.get_regions(manager.damage_tracker)
+  def get_state(pid) do
+    GenServer.call(pid, :get_state)
+  end
+
+  @doc """
+  Sets a cell in the active buffer.
+
+  ## Examples
+
+      iex> {:ok, pid} = Buffer.Manager.start_link()
+      iex> cell = %Cell{char: "A", fg: :red, bg: :blue}
+      iex> :ok = Buffer.Manager.set_cell(pid, 0, 0, cell)
+      iex> state = Buffer.Manager.get_state(pid)
+      iex> Buffer.get_cell(state, 0, 0)
+      %Cell{char: "A", fg: :red, bg: :blue}
+  """
+  def set_cell(pid, x, y, cell) do
+    GenServer.call(pid, {:set_cell, x, y, cell})
+  end
+
+  @doc """
+  Gets a cell from the active buffer.
+
+  ## Examples
+
+      iex> {:ok, pid} = Buffer.Manager.start_link()
+      iex> Buffer.Manager.get_cell(pid, 0, 0)
+      %Cell{char: " ", fg: :default, bg: :default}
+  """
+  def get_cell(pid, x, y) do
+    GenServer.call(pid, {:get_cell, x, y})
+  end
+
+  @doc """
+  Sets the cursor position.
+
+  ## Examples
+
+      iex> {:ok, pid} = Buffer.Manager.start_link()
+      iex> :ok = Buffer.Manager.set_cursor(pid, 10, 5)
+      iex> state = Buffer.Manager.get_state(pid)
+      iex> Cursor.get_position(state)
+      {10, 5}
+  """
+  def set_cursor(pid, x, y) do
+    GenServer.call(pid, {:set_cursor, x, y})
+  end
+
+  @doc """
+  Gets the current cursor position.
+
+  ## Examples
+
+      iex> {:ok, pid} = Buffer.Manager.start_link()
+      iex> Buffer.Manager.get_cursor(pid)
+      {0, 0}
+  """
+  def get_cursor(pid) do
+    GenServer.call(pid, :get_cursor)
+  end
+
+  @doc """
+  Gets the damaged regions in the buffer.
+
+  ## Examples
+
+      iex> {:ok, pid} = Buffer.Manager.start_link()
+      iex> Buffer.Manager.get_damage(pid)
+      []
+  """
+  def get_damage(pid) do
+    GenServer.call(pid, :get_damage)
   end
 
   @doc """
@@ -148,375 +161,142 @@ defmodule Raxol.Terminal.Buffer.Manager do
 
   ## Examples
 
-      iex> manager = Buffer.Manager.new(80, 24)
-      iex> manager = Buffer.Manager.mark_damaged(manager, 0, 0, 10, 5)
-      iex> manager = Buffer.Manager.clear_damage_regions(manager)
-      iex> length(manager.damage_regions)
+      iex> {:ok, pid} = Buffer.Manager.start_link()
+      iex> :ok = Buffer.Manager.clear_damage(pid)
+      iex> Buffer.Manager.get_damage(pid)
+      []
+  """
+  def clear_damage(pid) do
+    GenServer.call(pid, :clear_damage)
+  end
+
+  @doc """
+  Gets the current memory usage.
+
+  ## Examples
+
+      iex> {:ok, pid} = Buffer.Manager.start_link()
+      iex> Buffer.Manager.get_memory_usage(pid)
       0
   """
-  def clear_damage_regions(%__MODULE__{} = manager) do
-    new_tracker = DamageTracker.clear_regions(manager.damage_tracker)
-    %{manager | damage_tracker: new_tracker}
+  def get_memory_usage(pid) do
+    GenServer.call(pid, :get_memory_usage)
   end
 
   @doc """
-  Updates memory usage tracking.
-  Delegates calculation to `MemoryManager.get_total_usage/2`.
-  """
-  def update_memory_usage(%__MODULE__{} = manager) do
-    total_usage =
-      MemoryManager.get_total_usage(manager.active_buffer, manager.back_buffer)
+  Gets the number of lines in the scrollback buffer.
 
-    %{manager | memory_usage: total_usage}
+  ## Examples
+
+      iex> {:ok, pid} = Buffer.Manager.start_link()
+      iex> Buffer.Manager.get_scrollback_count(pid)
+      0
+  """
+  def get_scrollback_count(pid) do
+    GenServer.call(pid, :get_scrollback_count)
   end
 
   @doc """
-  Checks if memory usage is within limits.
-  Delegates check to `MemoryManager.is_within_limit?/2`.
+  Resizes the buffer.
+
+  ## Examples
+
+      iex> {:ok, pid} = Buffer.Manager.start_link()
+      iex> :ok = Buffer.Manager.resize(pid, 100, 30)
+      iex> state = Buffer.Manager.get_state(pid)
+      iex> state.active_buffer.width
+      100
+      iex> state.active_buffer.height
+      30
   """
-  def within_memory_limits?(%__MODULE__{} = manager) do
-    MemoryManager.is_within_limit?(manager.memory_usage, manager.memory_limit)
+  def resize(pid, width, height) do
+    GenServer.call(pid, {:resize, width, height})
   end
 
   @doc """
-  Sets the cursor position managed by the Buffer Manager.
+  Returns the default tab stop positions for a given width.
+
+  ## Examples
+
+      iex> Manager.default_tab_stops(8)
+      [0, 8, 16, 24, 32, 40, 48, 56]
   """
-  @spec set_cursor_position(t(), non_neg_integer(), non_neg_integer()) :: t()
-  def set_cursor_position(%__MODULE__{} = manager, x, y) do
-    %{manager | cursor_position: {x, y}}
+  def default_tab_stops(width) when is_integer(width) and width > 0 do
+    # Standard tab stops every 8 columns, up to the given width
+    Enum.take_every(0..(width - 1), 8) |> Enum.to_list()
   end
 
-  @doc """
-  Gets the cursor position managed by the Buffer Manager.
-  """
-  @spec get_cursor_position(t()) :: {non_neg_integer(), non_neg_integer()}
-  def get_cursor_position(%__MODULE__{} = manager) do
-    manager.cursor_position
+  # Server Callbacks
+
+  @impl true
+  def init(opts) do
+    width = Keyword.get(opts, :width, 80)
+    height = Keyword.get(opts, :height, 24)
+    scrollback_height = Keyword.get(opts, :scrollback_height, 1000)
+    memory_limit = Keyword.get(opts, :memory_limit, 10_000_000)
+
+    state = State.new(width, height, scrollback_height, memory_limit)
+    {:ok, state}
   end
 
-  @doc """
-  Erases from the beginning of the display to the cursor.
-  Marks the cleared region as damaged.
-  Requires the default_style to use for clearing.
-  """
-  @spec erase_from_beginning_to_cursor(t(), TextFormatting.text_style()) :: t()
-  def erase_from_beginning_to_cursor(%__MODULE__{} = manager, default_style) do
-    {x, y} = manager.cursor_position
-
-    # Call ScreenBuffer function (which uses Eraser)
-    new_active_buffer =
-      ScreenBuffer.erase_in_display(
-        manager.active_buffer,
-        {x, y},
-        :to_beginning,
-        default_style
-      )
-
-    # Determine damage region (assuming erase returns the buffer)
-    # TODO: Refine damage tracking if erase functions no longer return region
-    # Approximate damage
-    {cx1, cy1, cx2, cy2} = {0, 0, x, y}
-
-    # Mark the region as damaged
-    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
-
-    # Update the active buffer state
-    %{manager_with_damage | active_buffer: new_active_buffer}
+  @impl true
+  def handle_call(:get_state, _from, state) do
+    {:reply, state, state}
   end
 
-  @doc """
-  Clears the visible portion of the display (viewport) without affecting the scrollback buffer.
-  Marks the cleared region as damaged.
-  Requires the default_style to use for clearing.
-  """
-  @spec clear_visible_display(t(), TextFormatting.text_style()) :: t()
-  def clear_visible_display(
-        %__MODULE__{active_buffer: buffer} = manager,
-        default_style
-      ) do
-    # Call ScreenBuffer.clear (which uses Eraser.clear_screen)
-    new_active_buffer = ScreenBuffer.clear(buffer, default_style)
-
-    # Determine damage region
-    {cx1, cy1, cx2, cy2} =
-      {0, 0, ScreenBuffer.get_width(buffer) - 1,
-       ScreenBuffer.get_height(buffer) - 1}
-
-    # Mark the entire visible region as damaged (using region from clear)
-    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
-
-    # Update the active buffer state
-    %{manager_with_damage | active_buffer: new_active_buffer}
+  @impl true
+  def handle_call({:set_cell, x, y, cell}, _from, state) do
+    state = Buffer.set_cell(state, x, y, cell)
+    state = Damage.mark_region(state, x, y, 1, 1)
+    {:reply, :ok, state}
   end
 
-  @doc """
-  Clears the entire display including the scrollback buffer.
-  Marks the cleared region as damaged.
-  Requires the default_style to use for clearing.
-  """
-  @spec clear_entire_display_with_scrollback(t(), TextFormatting.text_style()) ::
-          t()
-  def clear_entire_display_with_scrollback(
-        %__MODULE__{} = manager,
-        default_style
-      ) do
-    # Clear the active buffer cells
-    new_active_buffer = ScreenBuffer.clear(manager.active_buffer, default_style)
-
-    # Determine damage region
-    {buffer_width, buffer_height} =
-      ScreenBuffer.get_dimensions(new_active_buffer)
-
-    {cx1, cy1, cx2, cy2} = {0, 0, buffer_width - 1, buffer_height - 1}
-
-    # Mark the region as damaged
-    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
-
-    # Clear the scrollback state
-    new_scrollback = Scrollback.clear(manager.scrollback)
-
-    %{
-      manager_with_damage
-      | active_buffer: new_active_buffer,
-        scrollback: new_scrollback
-    }
+  @impl true
+  def handle_call({:get_cell, x, y}, _from, state) do
+    cell = Buffer.get_cell(state, x, y)
+    {:reply, cell, state}
   end
 
-  @doc """
-  Erases from the cursor to the end of the current line.
-  Marks the cleared region as damaged.
-  Requires the default_style to use for clearing.
-  """
-  @spec erase_from_cursor_to_end_of_line(t(), TextFormatting.text_style()) ::
-          t()
-  def erase_from_cursor_to_end_of_line(%__MODULE__{} = manager, default_style) do
-    {x, y} = manager.cursor_position
-    buffer_width = ScreenBuffer.get_width(manager.active_buffer)
-
-    # Call ScreenBuffer function
-    new_active_buffer =
-      ScreenBuffer.erase_in_line(
-        manager.active_buffer,
-        {x, y},
-        :to_end,
-        default_style
-      )
-
-    # Determine damage region
-    # Approximate damage
-    {cx1, cy1, cx2, cy2} = {x, y, buffer_width - 1, y}
-
-    # Mark the region as damaged
-    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
-
-    # Update the active buffer state
-    %{manager_with_damage | active_buffer: new_active_buffer}
+  @impl true
+  def handle_call({:set_cursor, x, y}, _from, state) do
+    state = Cursor.set_position(state, x, y)
+    {:reply, :ok, state}
   end
 
-  @doc """
-  Erases from the beginning of the current line to the cursor position.
-  Marks the cleared region as damaged.
-  Requires the default_style to use for clearing.
-  """
-  @spec erase_from_beginning_of_line_to_cursor(t(), TextFormatting.text_style()) ::
-          t()
-  def erase_from_beginning_of_line_to_cursor(
-        %__MODULE__{} = manager,
-        default_style
-      ) do
-    {x, y} = manager.cursor_position
-
-    # Call ScreenBuffer function
-    new_active_buffer =
-      ScreenBuffer.erase_in_line(
-        manager.active_buffer,
-        {x, y},
-        :to_beginning,
-        default_style
-      )
-
-    # Determine damage region
-    # Approximate damage
-    {cx1, cy1, cx2, cy2} = {0, y, x, y}
-
-    # Mark the region as damaged
-    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
-
-    # Update the active buffer state
-    %{manager_with_damage | active_buffer: new_active_buffer}
+  @impl true
+  def handle_call(:get_cursor, _from, state) do
+    position = Cursor.get_position(state)
+    {:reply, position, state}
   end
 
-  @doc """
-  Clears the entire current line where the cursor is located.
-  Marks the cleared region as damaged.
-  Requires the default_style to use for clearing.
-  """
-  @spec clear_current_line(t(), TextFormatting.text_style()) :: t()
-  def clear_current_line(%__MODULE__{} = manager, default_style) do
-    {x, y} = manager.cursor_position
-    buffer_width = ScreenBuffer.get_width(manager.active_buffer)
-
-    # Call ScreenBuffer function
-    new_active_buffer =
-      ScreenBuffer.erase_in_line(
-        manager.active_buffer,
-        {x, y},
-        :all,
-        default_style
-      )
-
-    # Determine damage region
-    # Approximate damage
-    {cx1, cy1, cx2, cy2} = {0, y, buffer_width - 1, y}
-
-    # Mark the region as damaged
-    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
-
-    # Update the active buffer state
-    %{manager_with_damage | active_buffer: new_active_buffer}
+  @impl true
+  def handle_call(:get_damage, _from, state) do
+    regions = Damage.get_regions(state)
+    {:reply, regions, state}
   end
 
-  @doc """
-  Erases from the cursor position to the end of the display.
-  Marks the cleared region as damaged.
-  Requires the default_style to use for clearing.
-  """
-  @spec erase_from_cursor_to_end(t(), TextFormatting.text_style()) :: t()
-  def erase_from_cursor_to_end(%__MODULE__{} = manager, default_style) do
-    {x, y} = manager.cursor_position
-
-    {buffer_width, buffer_height} =
-      ScreenBuffer.get_dimensions(manager.active_buffer)
-
-    # Call ScreenBuffer function (which uses Eraser)
-    new_active_buffer =
-      ScreenBuffer.erase_in_display(
-        manager.active_buffer,
-        {x, y},
-        :to_end,
-        default_style
-      )
-
-    # Determine damage region
-    # Approximate damage
-    {cx1, cy1, cx2, cy2} = {x, y, buffer_width - 1, buffer_height - 1}
-
-    # Mark the region as damaged
-    manager_with_damage = mark_damaged(manager, cx1, cy1, cx2, cy2)
-
-    # Update the active buffer state
-    %{manager_with_damage | active_buffer: new_active_buffer}
+  @impl true
+  def handle_call(:clear_damage, _from, state) do
+    state = Damage.clear_regions(state)
+    {:reply, :ok, state}
   end
 
-  @doc """
-  Scrolls the buffer up by the specified number of lines.
-  Lines that scroll off the top are added to the scrollback buffer.
-  """
-  def scroll_up(manager, lines) do
-    # Call modified ScreenBuffer.scroll_up (which delegates to Operations.scroll_up)
-    # It now returns {updated_cells, scrolled_off_lines}
-    {updated_cells, scrolled_off_lines} =
-      ScreenBuffer.scroll_up(manager.active_buffer, lines)
-
-    # Add scrolled lines to our scrollback state
-    new_scrollback =
-      Scrollback.add_lines(manager.scrollback, scrolled_off_lines)
-
-    # Update manager state
-    %{
-      manager
-      | active_buffer: %{manager.active_buffer | cells: updated_cells},
-        scrollback: new_scrollback
-    }
+  @impl true
+  def handle_call(:get_memory_usage, _from, state) do
+    usage = Memory.get_usage(state)
+    {:reply, usage, state}
   end
 
-  @doc """
-  Scrolls the buffer down by the specified number of lines.
-  Lines are restored from the scrollback buffer if available.
-  """
-  def scroll_down(manager, lines) do
-    # Take lines from our scrollback state
-    {lines_to_restore, new_scrollback} =
-      Scrollback.take_lines(manager.scrollback, lines)
-
-    # Call modified ScreenBuffer.scroll_down (delegating to Operations.scroll_down)
-    # passing the lines to insert
-    updated_active_buffer =
-      ScreenBuffer.scroll_down(manager.active_buffer, lines_to_restore, lines)
-
-    # Update manager state
-    %{
-      manager
-      | active_buffer: updated_active_buffer,
-        scrollback: new_scrollback
-    }
+  @impl true
+  def handle_call(:get_scrollback_count, _from, state) do
+    count = Scrollback.get_line_count(state)
+    {:reply, count, state}
   end
 
-  @doc """
-  Sets a scroll region in the buffer. All scrolling operations will be confined to this region.
-  The region is specified by start and end line numbers (inclusive).
-  """
-  def set_scroll_region(manager, start_line, end_line) do
-    active_buffer =
-      ScreenBuffer.set_scroll_region(
-        manager.active_buffer,
-        start_line,
-        end_line
-      )
-
-    %{manager | active_buffer: active_buffer}
-  end
-
-  @doc """
-  Clears the scroll region, making the entire buffer scrollable.
-  """
-  def clear_scroll_region(manager) do
-    active_buffer = ScreenBuffer.clear_scroll_region(manager.active_buffer)
-    %{manager | active_buffer: active_buffer}
-  end
-
-  @doc """
-  Starts a text selection at the specified coordinates.
-  """
-  def start_selection(manager, x, y) do
-    active_buffer = ScreenBuffer.start_selection(manager.active_buffer, x, y)
-    %{manager | active_buffer: active_buffer}
-  end
-
-  @doc """
-  Updates the endpoint of the current selection.
-  """
-  def update_selection(manager, x, y) do
-    active_buffer = ScreenBuffer.update_selection(manager.active_buffer, x, y)
-    %{manager | active_buffer: active_buffer}
-  end
-
-  @doc """
-  Gets the text within the current selection.
-  Returns an empty string if there is no selection.
-  """
-  def get_selection(manager) do
-    ScreenBuffer.get_selection(manager.active_buffer)
-  end
-
-  @doc """
-  Checks if the given position is within the current selection.
-  Returns false if there is no selection.
-  """
-  def in_selection?(manager, x, y) do
-    ScreenBuffer.in_selection?(manager.active_buffer, x, y)
-  end
-
-  # For backward compatibility
-  @doc false
-  @deprecated "Use in_selection?/2 instead"
-  def is_in_selection?(manager, x, y), do: in_selection?(manager, x, y)
-
-  @doc """
-  Gets the boundaries of the current selection.
-  Returns nil if there is no selection.
-  """
-  def get_selection_boundaries(manager) do
-    ScreenBuffer.get_selection_boundaries(manager.active_buffer)
+  @impl true
+  def handle_call({:resize, width, height}, _from, state) do
+    state = Buffer.resize(state, width, height)
+    state = Damage.mark_all(state)
+    {:reply, :ok, state}
   end
 end

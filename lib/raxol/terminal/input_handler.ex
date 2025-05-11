@@ -299,4 +299,129 @@ defmodule Raxol.Terminal.InputHandler do
   end
 
   # TODO: Move CSI, OSC, and other handlers here
+
+  @doc """
+  Process a character or string input, handling character sets and translations.
+  """
+  @spec process_input(String.t(), CharacterSets.t()) :: {String.t(), CharacterSets.t()}
+  def process_input(input, char_sets) do
+    # Convert input to graphemes for proper Unicode handling
+    graphemes = String.graphemes(input)
+
+    # Process each grapheme
+    {processed, updated_sets} =
+      Enum.reduce(graphemes, {"", char_sets}, fn grapheme, {acc, sets} ->
+        # Get the first codepoint of the grapheme
+        case String.first(grapheme) do
+          nil ->
+            {acc, sets}
+
+          codepoint ->
+            # Check if it's a control character
+            if codepoint < 0x20 or codepoint == 0x7F do
+              # Handle control characters
+              {acc <> grapheme, sets}
+            else
+              # Get character width
+              width = CharacterHandling.get_char_width(codepoint)
+
+              # Translate character based on current character set
+              translated = CharacterSets.translate_char(codepoint, sets)
+
+              # Handle combining characters
+              if CharacterHandling.is_combining_char?(codepoint) do
+                # For combining characters, append to previous character
+                case String.last(acc) do
+                  nil ->
+                    # No previous character, treat as standalone
+                    {acc <> translated, sets}
+
+                  last ->
+                    # Combine with previous character
+                    {String.slice(acc, 0..-2) <> last <> translated, sets}
+                end
+              else
+                # Normal character processing
+                {acc <> translated, sets}
+              end
+            end
+        end
+      end)
+
+    # Process bidirectional text
+    bidi_segments = CharacterHandling.process_bidi_text(processed)
+
+    # Combine segments in correct order
+    final_text =
+      bidi_segments
+      |> Enum.map(fn {_type, text} -> text end)
+      |> Enum.join()
+
+    {final_text, updated_sets}
+  end
+
+  @doc """
+  Handle a control sequence in the input.
+  """
+  @spec handle_control_sequence(String.t(), CharacterSets.t()) :: {String.t(), CharacterSets.t()}
+  def handle_control_sequence(sequence, char_sets) do
+    case sequence do
+      # Character set designations
+      <<0x1B, 0x28, set>> -> {char_sets, CharacterSets.set_designator(:G0, set)}
+      <<0x1B, 0x29, set>> -> {char_sets, CharacterSets.set_designator(:G1, set)}
+      <<0x1B, 0x2A, set>> -> {char_sets, CharacterSets.set_designator(:G2, set)}
+      <<0x1B, 0x2B, set>> -> {char_sets, CharacterSets.set_designator(:G3, set)}
+
+      # Character set invocations
+      <<0x0E>> -> {char_sets, CharacterSets.invoke_designator(:G1, :GL)}
+      <<0x0F>> -> {char_sets, CharacterSets.invoke_designator(:G0, :GL)}
+      <<0x1B, 0x4E>> -> {char_sets, CharacterSets.invoke_designator(:G2, :GL)}
+      <<0x1B, 0x4F>> -> {char_sets, CharacterSets.invoke_designator(:G3, :GL)}
+      <<0x1B, 0x7C>> -> {char_sets, CharacterSets.invoke_designator(:G2, :GR)}
+      <<0x1B, 0x7D>> -> {char_sets, CharacterSets.invoke_designator(:G3, :GR)}
+      <<0x1B, 0x7E>> -> {char_sets, CharacterSets.invoke_designator(:G1, :GR)}
+
+      # Single shifts
+      <<0x1B, 0x4E>> -> {char_sets, CharacterSets.set_single_shift(:G2)}
+      <<0x1B, 0x4F>> -> {char_sets, CharacterSets.set_single_shift(:G3)}
+      <<0x1B, 0x7C>> -> {char_sets, CharacterSets.set_single_shift(:G2)}
+      <<0x1B, 0x7D>> -> {char_sets, CharacterSets.set_single_shift(:G3)}
+      <<0x1B, 0x7E>> -> {char_sets, CharacterSets.set_single_shift(:G1)}
+
+      # Locking shifts
+      <<0x1B, 0x28, set>> -> {char_sets, CharacterSets.set_locking_shift(:G0, set)}
+      <<0x1B, 0x29, set>> -> {char_sets, CharacterSets.set_locking_shift(:G1, set)}
+      <<0x1B, 0x2A, set>> -> {char_sets, CharacterSets.set_locking_shift(:G2, set)}
+      <<0x1B, 0x2B, set>> -> {char_sets, CharacterSets.set_locking_shift(:G3, set)}
+
+      # Unknown sequence
+      _ ->
+        Logger.warning("Unknown control sequence: #{inspect(sequence)}")
+        {char_sets, char_sets}
+    end
+  end
+
+  @doc """
+  Process a complete input string, handling both normal characters and control sequences.
+  """
+  @spec process_complete_input(String.t(), CharacterSets.t()) :: {String.t(), CharacterSets.t()}
+  def process_complete_input(input, char_sets) do
+    # Split input into control sequences and normal text
+    {text, sequences} =
+      input
+      |> String.split(~r/\x1B[^a-zA-Z]*[a-zA-Z]/, include_captures: true)
+      |> Enum.reduce({[], []}, fn
+        <<0x1B, _::binary>> = seq, {text, seqs} -> {text, [seq | seqs]}
+        text, {texts, seqs} -> {[text | texts], seqs}
+      end)
+
+    # Process control sequences
+    {updated_sets, _} =
+      Enum.reduce(sequences, {char_sets, []}, fn seq, {sets, _} ->
+        handle_control_sequence(seq, sets)
+      end)
+
+    # Process remaining text
+    process_input(Enum.join(text), updated_sets)
+  end
 end

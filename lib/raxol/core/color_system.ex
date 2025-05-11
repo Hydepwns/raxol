@@ -1,16 +1,148 @@
 defmodule Raxol.Core.ColorSystem do
   @moduledoc """
-  Provides access to the application's color palette, considering the current theme
-  and accessibility settings (like high contrast mode).
+  Core color system for Raxol.
 
-  Components should use `ColorSystem.get/2` to retrieve semantic colors.
+  This module provides a unified interface for managing colors and themes
+  throughout the application. It integrates with the Style.Colors modules
+  to provide a consistent color experience.
+
+  ## Features
+
+  - Theme management with semantic color naming
+  - Color palette generation and manipulation
+  - Color format conversion and validation
+  - Accessibility checks and adjustments
   """
 
   alias Raxol.UI.Theming.Theme
   alias Raxol.Core.Accessibility.ThemeIntegration
   # For color parsing/manipulation if needed
   alias Raxol.UI.Theming.Colors
+  alias Raxol.Style.Colors.{Color, Palettes, Utilities}
   require Logger
+
+  @doc """
+  Creates a new theme with the given name and colors.
+
+  ## Examples
+
+      iex> theme = create_theme("dark", %{
+      ...>   primary: "#FF0000",
+      ...>   background: "#000000",
+      ...>   text: "#FFFFFF"
+      ...> })
+      iex> theme.name
+      "dark"
+  """
+  def create_theme(name, colors) when is_binary(name) and is_map(colors) do
+    # Convert hex colors to Color structs
+    colors = Map.new(colors, fn {key, value} -> {key, Color.from_hex(value)} end)
+
+    %{
+      name: name,
+      colors: colors,
+      created_at: DateTime.utc_now()
+    }
+  end
+
+  @doc """
+  Gets a color from the theme by its semantic name.
+
+  ## Examples
+
+      iex> theme = create_theme("dark", %{primary: "#FF0000"})
+      iex> get_color(theme, :primary)
+      %Color{r: 255, g: 0, b: 0, hex: "#FF0000"}
+  """
+  def get_color(theme, name) when is_map(theme) and is_atom(name) do
+    get_in(theme, [:colors, name])
+  end
+
+  @doc """
+  Checks if two colors meet WCAG contrast requirements.
+
+  ## Examples
+
+      iex> theme = create_theme("dark", %{
+      ...>   text: "#FFFFFF",
+      ...>   background: "#000000"
+      ...> })
+      iex> meets_contrast_requirements?(theme, :text, :background, :AA, :normal)
+      true
+  """
+  def meets_contrast_requirements?(theme, foreground, background, level, size) do
+    fg = get_color(theme, foreground)
+    bg = get_color(theme, background)
+
+    Utilities.meets_contrast_requirements?(fg, bg, level, size)
+  end
+
+  @doc """
+  Generates a color palette from a primary color.
+
+  ## Examples
+
+      iex> palette = generate_palette("#FF0000")
+      iex> palette.primary.hex
+      "#FF0000"
+  """
+  def generate_palette(primary_color) when is_binary(primary_color) do
+    Palettes.from_primary(primary_color)
+  end
+
+  @doc """
+  Gets a predefined color palette by name.
+
+  ## Examples
+
+      iex> palette = get_palette(:solarized)
+      iex> palette.primary.hex
+      "#268BD2"
+  """
+  def get_palette(:solarized), do: Palettes.solarized()
+  def get_palette(:nord), do: Palettes.nord()
+  def get_palette(:dracula), do: Palettes.dracula()
+  def get_palette(:ansi_16), do: Palettes.ansi_16()
+
+  @doc """
+  Converts a color to its ANSI representation.
+
+  ## Examples
+
+      iex> theme = create_theme("dark", %{primary: "#FF0000"})
+      iex> to_ansi(theme, :primary, :foreground)
+      196
+  """
+  def to_ansi(theme, color_name, type) do
+    color = get_color(theme, color_name)
+    Color.to_ansi(color, type)
+  end
+
+  @doc """
+  Adjusts a color to meet contrast requirements with another color.
+
+  ## Examples
+
+      iex> theme = create_theme("dark", %{
+      ...>   text: "#808080",
+      ...>   background: "#000000"
+      ...> })
+      iex> adjusted = adjust_for_contrast(theme, :text, :background, :AA, :normal)
+      iex> meets_contrast_requirements?(adjusted, :text, :background, :AA, :normal)
+      true
+  """
+  def adjust_for_contrast(theme, foreground, background, level, size) do
+    fg = get_color(theme, foreground)
+    bg = get_color(theme, background)
+
+    if Utilities.meets_contrast_requirements?(fg, bg, level, size) do
+      theme
+    else
+      # Adjust the foreground color to meet contrast requirements
+      adjusted_fg = adjust_color_for_contrast(fg, bg, level, size)
+      put_in(theme, [:colors, foreground], adjusted_fg)
+    end
+  end
 
   @doc """
   Gets the effective color value for a given semantic color name.
@@ -106,7 +238,26 @@ defmodule Raxol.Core.ColorSystem do
     end
   end
 
-  # Potential future additions:
-  # - Functions to manipulate colors (lighten, darken, mix)
-  # - Functions to check color contrast ratios
+  # Private functions
+
+  defp adjust_color_for_contrast(fg, bg, level, size) do
+    # Start with the original color
+    current = fg
+    step = 0.1
+
+    # Try lightening first
+    lightened = Color.lighten(current, step)
+    if Utilities.meets_contrast_requirements?(lightened, bg, level, size) do
+      lightened
+    else
+      # If lightening doesn't work, try darkening
+      darkened = Color.darken(current, step)
+      if Utilities.meets_contrast_requirements?(darkened, bg, level, size) do
+        darkened
+      else
+        # If neither works, try the opposite of the background
+        Color.complement(bg)
+      end
+    end
+  end
 end

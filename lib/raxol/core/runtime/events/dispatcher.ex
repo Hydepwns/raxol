@@ -53,94 +53,32 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   end
 
   @impl true
-  def init({runtime_pid, initial_state_map}) do
-    Logger.info("Dispatcher initializing...")
-
-    # Ensure necessary modules are loaded to prevent runtime errors with function_exported?
-    # Elixir's Application module
-    true = Code.ensure_loaded?(Application)
-    true = Code.ensure_loaded?(initial_state_map.app_module)
-
-    # Call the application's init function
-    # Determine arity and call appropriately
-    # Expect {:ok, model, commands}
-    {:ok, app_model, app_commands} =
-      cond do
-        function_exported?(initial_state_map.app_module, :init, 1) ->
-          # Pass full map for context
-          initial_state_map.app_module.init(initial_state_map)
-
-        function_exported?(initial_state_map.app_module, :init, 2) ->
-          # Legacy or specific arity
-          initial_state_map.app_module.init(
-            initial_state_map,
-            initial_state_map.model
-          )
-
-        true ->
-          Logger.error(
-            "Application module #{inspect(initial_state_map.app_module)} does not implement init/1 or init/2."
-          )
-
-          # TODO: Return proper error to supervisor
-          raise "Application module #{initial_state_map.app_module} does not implement init/1 or init/2."
-      end
-
-    # Merge UserPreferences into the model (Theme specific)
-    # UserPreferences name
-    user_prefs_pid = Process.whereis(UserPreferences)
-
-    current_theme_id_string =
-      if user_prefs_pid do
-        # Get the theme NAME directly using the correct key
-        UserPreferences.get(:theme, user_prefs_pid) || "Default Theme"
-      else
-        Logger.warning(
-          "UserPreferences PID not found during Dispatcher init. Using default theme."
-        )
-
-        # Fallback default theme ID
-        "Default Theme"
-      end
-
-    Logger.debug(
-      "Dispatcher init: Loaded initial theme ID: \"#{current_theme_id_string}\""
-    )
-
-    model_with_theme =
-      Map.put(app_model, :current_theme_id, current_theme_id_string)
-
+  def init({runtime_pid, initial_state}) do
+    # Initialize state
     state = %State{
       runtime_pid: runtime_pid,
-      app_module: initial_state_map.app_module,
-      # Use the model returned by app's init, with theme
-      model: model_with_theme,
-      width: initial_state_map.width,
-      height: initial_state_map.height,
-      # Default focus state
+      app_module: initial_state.app_module,
+      model: initial_state.model,
+      width: initial_state.width,
+      height: initial_state.height,
       focused: true,
-      debug_mode: initial_state_map.debug_mode || false,
-      # This is an atom (registered name)
-      plugin_manager: initial_state_map.plugin_manager,
-      # This is an atom
-      command_registry_table: initial_state_map.command_registry_table,
-      # Store the theme ID string
-      current_theme_id: current_theme_id_string
+      debug_mode: initial_state.debug_mode,
+      plugin_manager: initial_state.plugin_manager,
+      command_registry_table: initial_state.command_registry_table,
+      current_theme_id: UserPreferences.get_theme_id()
     }
 
-    Logger.debug(
-      "Dispatcher init: Processing initial commands: #{inspect(app_commands)}"
-    )
+    # Send runtime initialized event
+    send(runtime_pid, {:runtime_initialized, self()})
 
-    # Process any initial commands returned by the application's init
-    # These are processed after the main state is set up.
-    if Enum.any?(app_commands) do
-      # self() is the Dispatcher's own PID
-      # Using cast to avoid blocking init
-      GenServer.cast(self(), {:process_commands, app_commands})
+    # Send plugin manager ready event
+    send(runtime_pid, {:plugin_manager_ready, initial_state.plugin_manager})
+
+    # Send dispatcher ready event in test environment
+    if Mix.env() == :test do
+      send(self(), {:dispatcher_ready, self()})
     end
 
-    Logger.info("Dispatcher init complete.")
     {:ok, state}
   end
 

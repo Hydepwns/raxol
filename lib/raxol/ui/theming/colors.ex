@@ -2,14 +2,18 @@ defmodule Raxol.UI.Theming.Colors do
   @moduledoc """
   Color management utilities for theme handling.
 
-  This module provides functions for:
-  - Converting between color formats
-  - Color manipulation (lighten, darken, alpha blend)
-  - Calculating color contrast
-  - Validating color accessibility
+  This module provides functions for working with colors in the context of UI theming,
+  including color format conversion, manipulation, and theme-specific operations.
+
+  ## Features
+
+  - Color format conversion (hex, RGB, ANSI)
+  - Color manipulation (lighten, darken, blend)
+  - Theme color management
+  - Accessibility checks
   """
 
-  alias Raxol.Style.Colors.HSL
+  alias Raxol.Style.Colors.{Color, Utilities}
 
   # Format: "#RRGGBB" or "#RRGGBBAA"
   @type color_hex :: String.t()
@@ -39,6 +43,184 @@ defmodule Raxol.UI.Theming.Colors do
   }
 
   @doc """
+  Converts a hex color string to RGB values.
+
+  ## Examples
+
+      iex> hex_to_rgb("#FF0000")
+      {255, 0, 0}
+  """
+  def hex_to_rgb(hex) when is_binary(hex) do
+    color = Color.from_hex(hex)
+    {color.r, color.g, color.b}
+  end
+
+  @doc """
+  Converts RGB values to a hex color string.
+
+  ## Examples
+
+      iex> rgb_to_hex(255, 0, 0)
+      "#FF0000"
+  """
+  def rgb_to_hex(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
+    Color.from_rgb(r, g, b).hex
+  end
+
+  @doc """
+  Converts an ANSI color code to RGB values.
+
+  ## Examples
+
+      iex> ansi_to_rgb(1)
+      {205, 0, 0}
+  """
+  def ansi_to_rgb(code) when code in 0..255 do
+    color = Color.from_ansi(code)
+    {color.r, color.g, color.b}
+  end
+
+  @doc """
+  Converts RGB values to the closest ANSI color code.
+
+  ## Examples
+
+      iex> rgb_to_ansi(255, 0, 0)
+      196
+  """
+  def rgb_to_ansi(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
+    Color.from_rgb(r, g, b) |> Color.to_ansi_256()
+  end
+
+  @doc """
+  Lightens a color by the specified amount.
+
+  ## Examples
+
+      iex> lighten("#000000", 0.5)
+      "#808080"
+      iex> lighten(:red, 0.5)
+      "#FF8080"
+  """
+  def lighten(color, amount) when amount >= 0 and amount <= 1 do
+    hex = to_hex(color)
+    {r, g, b} = hex_to_rgb(hex)
+
+    # Simple linear interpolation with white
+    r = round(r + (255 - r) * amount)
+    g = round(g + (255 - g) * amount)
+    b = round(b + (255 - b) * amount)
+
+    rgb_to_hex(r, g, b)
+  end
+
+  @doc """
+  Darkens a color by the specified amount.
+
+  ## Examples
+
+      iex> darken("#FFFFFF", 0.5)
+      "#808080"
+      iex> darken(:red, 0.5)
+      "#800000"
+  """
+  def darken(color, amount) when amount >= 0 and amount <= 1 do
+    hex = to_hex(color)
+    {r, g, b} = hex_to_rgb(hex)
+
+    # Simple linear interpolation with black
+    r = round(r * (1 - amount))
+    g = round(g * (1 - amount))
+    b = round(b * (1 - amount))
+
+    rgb_to_hex(r, g, b)
+  end
+
+  @doc """
+  Blends two colors with the specified alpha value.
+
+  ## Examples
+
+      iex> blend("#FF0000", "#0000FF", 0.5)
+      "#800080"
+      iex> blend(:red, :blue, 0.5)
+      "#800080"
+  """
+  def blend(color1, color2, alpha) when alpha >= 0 and alpha <= 1 do
+    hex1 = to_hex(color1)
+    hex2 = to_hex(color2)
+
+    {r1, g1, b1} = hex_to_rgb(hex1)
+    {r2, g2, b2} = hex_to_rgb(hex2)
+
+    r = round(r1 * (1 - alpha) + r2 * alpha)
+    g = round(g1 * (1 - alpha) + g2 * alpha)
+    b = round(b1 * (1 - alpha) + b2 * alpha)
+
+    rgb_to_hex(r, g, b)
+  end
+
+  @doc """
+  Calculates the contrast ratio between two colors.
+
+  ## Examples
+
+      iex> contrast_ratio("#FFFFFF", "#000000")
+      21.0
+      iex> contrast_ratio(:white, :black)
+      21.0
+  """
+  def contrast_ratio(color1, color2) do
+    hex1 = to_hex(color1)
+    hex2 = to_hex(color2)
+
+    c1 = Color.from_hex(hex1)
+    c2 = Color.from_hex(hex2)
+    Utilities.contrast_ratio(c1, c2)
+  end
+
+  @doc """
+  Checks if two colors meet WCAG contrast requirements.
+
+  ## Examples
+
+      iex> meets_contrast_requirements?("#FFFFFF", "#000000", :AA, :normal)
+      true
+  """
+  def meets_contrast_requirements?(color1, color2, level, size) do
+    hex1 = to_hex(color1)
+    hex2 = to_hex(color2)
+
+    c1 = Color.from_hex(hex1)
+    c2 = Color.from_hex(hex2)
+    Utilities.meets_contrast_requirements?(c1, c2, level, size)
+  end
+
+  @doc """
+  Converts RGB values to HSL values.
+
+  ## Examples
+
+      iex> rgb_to_hsl(255, 0, 0)
+      {0, 1.0, 0.5}
+  """
+  def rgb_to_hsl(r, g, b) when r in 0..255 and g in 0..255 and b in 0..255 do
+    Utilities.rgb_to_hsl(r, g, b)
+  end
+
+  @doc """
+  Converts HSL values to RGB values.
+
+  ## Examples
+
+      iex> hsl_to_rgb(0, 1.0, 0.5)
+      {255, 0, 0}
+  """
+  def hsl_to_rgb(h, s, l) when h >= 0 and h <= 360 and s >= 0 and s <= 1 and l >= 0 and l <= 1 do
+    Utilities.hsl_to_rgb(h, s, l)
+  end
+
+  @doc """
   Converts a color from one format to RGB values.
 
   ## Examples
@@ -49,229 +231,63 @@ defmodule Raxol.UI.Theming.Colors do
       iex> Colors.to_rgb(:blue)
       {0, 0, 255}
   """
-  @spec to_rgb(color_hex | color_name) :: color_rgb
-  def to_rgb(color)
-
-  def to_rgb(hex_color)
-      when is_binary(hex_color) and byte_size(hex_color) >= 7 do
-    hex_color
-    |> String.trim_leading("#")
-    |> String.downcase()
-    |> parse_hex_color()
-  end
-
-  def to_rgb(color_name) when is_atom(color_name) do
-    color_name
-    |> get_hex_from_name()
-    |> to_rgb()
+  def to_rgb(color) do
+    case color do
+      hex when is_binary(hex) -> hex_to_rgb(hex)
+      name when is_atom(name) -> hex_to_rgb(@color_names[name])
+      {r, g, b} when r in 0..255 and g in 0..255 and b in 0..255 -> {r, g, b}
+    end
   end
 
   @doc """
-  Converts RGB values to a hex color string.
+  Converts a color to its hex representation.
 
   ## Examples
 
-      iex> Colors.to_hex({255, 0, 0})
+      iex> Colors.to_hex(:red)
       "#FF0000"
-  """
-  @spec to_hex(color_rgb | color_rgba) :: color_hex
-  def to_hex({r, g, b}) do
-    "##{to_hex_component(r)}#{to_hex_component(g)}#{to_hex_component(b)}"
-  end
 
-  def to_hex({r, g, b, a}) do
-    "##{to_hex_component(r)}#{to_hex_component(g)}#{to_hex_component(b)}#{to_hex_component(a)}"
+      iex> Colors.to_hex("#00FF00")
+      "#00FF00"
+  """
+  def to_hex(color) do
+    case color do
+      hex when is_binary(hex) -> hex
+      name when is_atom(name) -> @color_names[name]
+      {r, g, b} when r in 0..255 and g in 0..255 and b in 0..255 -> rgb_to_hex(r, g, b)
+    end
   end
 
   @doc """
-  Lightens a color by the specified percentage.
-
-  Uses HSL color space for more perceptually uniform lightening.
+  Converts a color to its ANSI representation.
 
   ## Examples
 
-      iex> Colors.lighten("#FF0000", 20)
-      "#FF6666"
+      iex> Colors.to_ansi(:red)
+      196
+
+      iex> Colors.to_ansi("#FF0000")
+      196
   """
-  @spec lighten(color_hex | color_name, percentage :: 0..100) :: color_hex
-  def lighten(color, percentage) when percentage >= 0 and percentage <= 100 do
+  def to_ansi(color) do
     {r, g, b} = to_rgb(color)
-    {h, s, l} = HSL.rgb_to_hsl(r, g, b)
-
-    # Adjust lightness relative to distance to white
-    l_adjust_factor = percentage / 100.0
-    new_l = l + (1.0 - l) * l_adjust_factor
-
-    {new_r, new_g, new_b} = HSL.hsl_to_rgb(h, s, new_l)
-
-    # Convert back to hex
-    to_hex({round(new_r), round(new_g), round(new_b)})
+    rgb_to_ansi(r, g, b)
   end
 
   @doc """
-  Darkens a color by the specified percentage.
-
-  Uses HSL color space for more perceptually uniform darkening.
+  Converts a color to its ANSI 16-color representation.
 
   ## Examples
 
-      iex> Colors.darken("#FF0000", 20)
-      "#CC0000"
+      iex> Colors.to_ansi_16(:red)
+      1
+
+      iex> Colors.to_ansi_16("#FF0000")
+      1
   """
-  @spec darken(color_hex | color_name, percentage :: 0..100) :: color_hex
-  def darken(color, percentage) when percentage >= 0 and percentage <= 100 do
+  def to_ansi_16(color) do
     {r, g, b} = to_rgb(color)
-    {h, s, l} = HSL.rgb_to_hsl(r, g, b)
-
-    # Adjust lightness relative to distance to black
-    l_adjust_factor = percentage / 100.0
-    new_l = l - l * l_adjust_factor
-
-    {new_r, new_g, new_b} = HSL.hsl_to_rgb(h, s, new_l)
-
-    # Convert back to hex
-    to_hex({round(new_r), round(new_g), round(new_b)})
-  end
-
-  @doc """
-  Calculates the contrast ratio between two colors.
-
-  Returns a value between 1 and 21, with 21 being the highest contrast.
-
-  ## Examples
-
-      iex> Colors.contrast_ratio("#FFFFFF", "#000000")
-      21.0
-  """
-  @spec contrast_ratio(color_hex | color_name, color_hex | color_name) :: float
-  def contrast_ratio(color1, color2) do
-    # Convert colors to relative luminance
-    lum1 = relative_luminance(to_rgb(color1))
-    lum2 = relative_luminance(to_rgb(color2))
-
-    # Calculate contrast ratio
-    {lighter, darker} = if lum1 > lum2, do: {lum1, lum2}, else: {lum2, lum1}
-    (lighter + 0.05) / (darker + 0.05)
-  end
-
-  @doc """
-  Checks if the contrast ratio between two colors meets accessibility standards.
-
-  ## Parameters
-
-  * `color1` - The first color
-  * `color2` - The second color
-  * `level` - The WCAG accessibility level to check for (:aa or :aaa)
-  * `type` - The text type (:normal or :large)
-
-  ## Examples
-
-      iex> Colors.accessible?("#FFFFFF", "#000000", :aa, :normal)
-      true
-  """
-  @spec accessible?(
-          color_hex | color_name,
-          color_hex | color_name,
-          level :: :aa | :aaa,
-          type :: :normal | :large
-        ) :: boolean
-  def accessible?(color1, color2, level \\ :aa, type \\ :normal) do
-    ratio = contrast_ratio(color1, color2)
-
-    min_ratio =
-      case {level, type} do
-        {:aa, :normal} -> 4.5
-        {:aa, :large} -> 3.0
-        {:aaa, :normal} -> 7.0
-        {:aaa, :large} -> 4.5
-      end
-
-    ratio >= min_ratio
-  end
-
-  @doc """
-  Blends two colors together with the specified alpha value.
-
-  ## Examples
-
-      iex> Colors.blend("#FF0000", "#0000FF", 0.5)
-      "#800080"
-  """
-  @spec blend(color_hex | color_name, color_hex | color_name, alpha :: 0..1) ::
-          color_hex
-  def blend(color1, color2, alpha) when alpha >= 0 and alpha <= 1 do
-    {r1, g1, b1} = to_rgb(color1)
-    {r2, g2, b2} = to_rgb(color2)
-
-    r = (r1 * alpha + r2 * (1 - alpha)) |> round()
-    g = (g1 * alpha + g2 * (1 - alpha)) |> round()
-    b = (b1 * alpha + b2 * (1 - alpha)) |> round()
-
-    to_hex({r, g, b})
-  end
-
-  # Private helpers
-
-  defp parse_hex_color(hex) when byte_size(hex) == 6 do
-    # Parse RGB hex values
-    {
-      String.slice(hex, 0, 2) |> String.to_integer(16),
-      String.slice(hex, 2, 2) |> String.to_integer(16),
-      String.slice(hex, 4, 2) |> String.to_integer(16)
-    }
-  end
-
-  defp parse_hex_color(hex) when byte_size(hex) == 8 do
-    # Parse RGBA hex values
-    {
-      String.slice(hex, 0, 2) |> String.to_integer(16),
-      String.slice(hex, 2, 2) |> String.to_integer(16),
-      String.slice(hex, 4, 2) |> String.to_integer(16),
-      String.slice(hex, 6, 2) |> String.to_integer(16)
-    }
-  end
-
-  defp parse_hex_color(hex) when byte_size(hex) == 3 do
-    # Handle shorthand hex (#RGB)
-    r = String.at(hex, 0) |> String.duplicate(2) |> String.to_integer(16)
-    g = String.at(hex, 1) |> String.duplicate(2) |> String.to_integer(16)
-    b = String.at(hex, 2) |> String.duplicate(2) |> String.to_integer(16)
-    {r, g, b}
-  end
-
-  defp to_hex_component(value) do
-    value
-    |> Integer.to_string(16)
-    |> String.pad_leading(2, "0")
-    |> String.upcase()
-  end
-
-  defp get_hex_from_name(color_name) do
-    Map.get(@color_names, color_name, "#000000")
-  end
-
-  defp relative_luminance({r, g, b}) do
-    # Convert RGB to relative luminance following WCAG formula
-    r_srgb = r / 255
-    g_srgb = g / 255
-    b_srgb = b / 255
-
-    r_linear =
-      if r_srgb <= 0.03928,
-        do: r_srgb / 12.92,
-        else: :math.pow((r_srgb + 0.055) / 1.055, 2.4)
-
-    g_linear =
-      if g_srgb <= 0.03928,
-        do: g_srgb / 12.92,
-        else: :math.pow((g_srgb + 0.055) / 1.055, 2.4)
-
-    b_linear =
-      if b_srgb <= 0.03928,
-        do: b_srgb / 12.92,
-        else: :math.pow((b_srgb + 0.055) / 1.055, 2.4)
-
-    0.2126 * r_linear + 0.7152 * g_linear + 0.0722 * b_linear
+    Color.from_rgb(r, g, b) |> Color.to_ansi_16()
   end
 
   # --- ANSI Color Palette Conversion ---

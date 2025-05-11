@@ -11,8 +11,10 @@ defmodule Raxol.Components.Input.TextInput do
   """
 
   use Raxol.UI.Components.Base.Component
-  import Raxol.View.Elements
-  alias Raxol.UI.Theming.Theme
+  alias Raxol.Components.Input.TextInput.Manipulation
+  alias Raxol.Components.Input.TextInput.Selection
+  alias Raxol.Components.Input.TextInput.Validation
+  alias Raxol.Components.Input.TextInput.Renderer
 
   @type state :: %{
           value: String.t(),
@@ -20,7 +22,10 @@ defmodule Raxol.Components.Input.TextInput do
           selection: {non_neg_integer(), non_neg_integer()} | nil,
           focused: boolean(),
           placeholder: String.t() | nil,
-          password: boolean()
+          password: boolean(),
+          max_length: non_neg_integer() | nil,
+          pattern: String.t() | nil,
+          error: String.t() | nil
         }
 
   @doc false
@@ -32,7 +37,10 @@ defmodule Raxol.Components.Input.TextInput do
       selection: nil,
       focused: false,
       placeholder: props[:placeholder],
-      password: props[:password] || false
+      password: props[:password] || false,
+      max_length: props[:max_length],
+      pattern: props[:pattern],
+      error: nil
     }
   end
 
@@ -41,31 +49,92 @@ defmodule Raxol.Components.Input.TextInput do
     new_state =
       case msg do
         {:input, char} when is_integer(char) ->
-          insert_char(state, char)
+          # Clear selection when typing
+          state = Selection.clear_selection(state)
+          # Check max length before inserting
+          if Validation.would_exceed_max_length?(state, char) do
+            state
+          else
+            state = Manipulation.insert_char(state, char)
+            Validation.validate_input(state)
+          end
 
         {:backspace} ->
-          delete_char_backward(state)
+          case state.selection do
+            {start, len} ->
+              Manipulation.delete_selected_text(state, start, len)
+            _ ->
+              state = Manipulation.delete_char_backward(state)
+              Validation.validate_input(state)
+          end
 
         {:delete} ->
-          delete_char_forward(state)
+          case state.selection do
+            {start, len} ->
+              Manipulation.delete_selected_text(state, start, len)
+            _ ->
+              state = Manipulation.delete_char_forward(state)
+              Validation.validate_input(state)
+          end
 
         {:move_cursor, :left} ->
-          move_cursor(state, -1)
+          Selection.move_cursor(state, -1)
 
         {:move_cursor, :right} ->
-          move_cursor(state, 1)
+          Selection.move_cursor(state, 1)
 
         {:move_cursor, :home} ->
-          %{state | cursor: 0}
+          Selection.move_to_home(state)
 
         {:move_cursor, :end} ->
-          %{state | cursor: String.length(state.value)}
+          Selection.move_to_end(state)
+
+        {:select, :left} ->
+          Selection.select_text(state, -1)
+
+        {:select, :right} ->
+          Selection.select_text(state, 1)
+
+        {:select, :home} ->
+          Selection.select_to_home(state)
+
+        {:select, :end} ->
+          Selection.select_to_end(state)
+
+        {:clear_selection} ->
+          Selection.clear_selection(state)
 
         {:focus} ->
           %{state | focused: true}
 
         {:blur} ->
-          %{state | focused: false}
+          %{state | focused: false, selection: nil}
+
+        # Handle copy operation
+        {:copy} ->
+          case Selection.get_selected_text(state) do
+            text when is_binary(text) ->
+              Raxol.Clipboard.set_text(text)
+              state
+            _ ->
+              state
+          end
+
+        # Handle paste operation
+        {:paste} ->
+          case Raxol.Clipboard.get_text() do
+            {:ok, text} ->
+              case state.selection do
+                {start, len} ->
+                  # Replace selected text
+                  Manipulation.paste_at_position(state, text, start, len)
+                _ ->
+                  # Insert at cursor
+                  Manipulation.paste_at_position(state, text, state.cursor, 0)
+              end
+            _ ->
+              state
+          end
 
         _ ->
           state
@@ -76,66 +145,8 @@ defmodule Raxol.Components.Input.TextInput do
   end
 
   @impl true
-  def render(%{assigns: assigns}, context) do
-    # Get the theme struct using the context config (assuming it's the theme ID)
-    # Fallback to default theme if not found
-    theme_id = context.theme_config || :default
-    theme = Theme.get(theme_id) || Theme.default_theme()
-
-    display_raw = display_value(assigns)
-    # Get base style for text_input from the theme
-    base_style = Theme.component_style(theme, :text_input)
-
-    # Add dim style if placeholder is shown
-    placeholder_style =
-      if assigns.value == "" and assigns.placeholder,
-        do: %{intensity: :dim},
-        else: %{}
-
-    # Merge base style with placeholder style
-    text_style = Map.merge(base_style, placeholder_style)
-
-    # Determine box style based on focus
-    box_style =
-      if assigns.focused do
-        # Potentially use a focused variant from theme, or just override border/bg
-        Map.merge(base_style, %{
-          border_color: Map.get(theme.colors, :primary, :blue)
-        })
-      else
-        base_style
-      end
-
-    # Use the box macro for the container
-    box padding: {0, 1},
-        border: assigns.focused,
-        border_style: :single,
-        style: box_style do
-      if assigns.focused and assigns.value != "" do
-        # Split text around cursor
-        cursor_pos = assigns.cursor
-
-        {before_cursor, at_cursor_and_after} =
-          String.split_at(display_raw, cursor_pos)
-
-        {at_cursor, after_cursor} = String.split_at(at_cursor_and_after, 1)
-
-        # Render parts with cursor highlighted (using label macro)
-        # Return a list of elements for the box children
-        [
-          label(content: before_cursor, style: text_style),
-          # Render cursor char with inverse style merged into base style
-          label(
-            content: at_cursor,
-            style: Map.merge(text_style, %{inverse: true})
-          ),
-          label(content: after_cursor, style: text_style)
-        ]
-      else
-        # Not focused or empty, render normally (using label macro)
-        label(content: display_raw, style: text_style)
-      end
-    end
+  def render(assigns, context) do
+    Renderer.render(assigns, context)
   end
 
   @impl true
@@ -158,58 +169,6 @@ defmodule Raxol.Components.Input.TextInput do
 
   # Private helpers
 
-  defp insert_char(state, char) do
-    {before_cursor, after_cursor} = String.split_at(state.value, state.cursor)
-    new_value = before_cursor <> <<char::utf8>> <> after_cursor
-    %{state | value: new_value, cursor: state.cursor + 1}
-  end
-
-  defp delete_char_backward(%{cursor: 0} = state), do: state
-
-  defp delete_char_backward(state) do
-    {before_cursor, after_cursor} =
-      String.split_at(state.value, state.cursor - 1)
-
-    # Delete character *before* cursor
-    new_value = String.slice(before_cursor, 0, state.cursor - 1) <> after_cursor
-    %{state | value: new_value, cursor: state.cursor - 1}
-  end
-
-  defp delete_char_forward(state) do
-    cursor = state.cursor
-    value = state.value
-    len = String.length(value)
-
-    if cursor < len do
-      # Delete character *at* cursor
-      {before_cursor, after_cursor} = String.split_at(value, cursor)
-      new_value = before_cursor <> String.slice(after_cursor, 1..-1)
-      # Cursor position doesn't change
-      %{state | value: new_value}
-    else
-      # Cursor at end, nothing to delete
-      state
-    end
-  end
-
-  defp move_cursor(state, offset) do
-    new_cursor = max(0, min(String.length(state.value), state.cursor + offset))
-    %{state | cursor: new_cursor}
-  end
-
-  defp display_value(%{value: "", placeholder: placeholder})
-       when not is_nil(placeholder) do
-    placeholder
-  end
-
-  defp display_value(%{value: value, password: true}) do
-    String.duplicate("*", String.length(value))
-  end
-
-  defp display_value(%{value: value}) do
-    value
-  end
-
   defp handle_key_event(key_data, state) do
     msg =
       case key_data do
@@ -226,7 +185,6 @@ defmodule Raxol.Components.Input.TextInput do
         %{key: :right, modifiers: []} ->
           {:move_cursor, :right}
 
-        # TODO: Add Home, End, Delete keys
         %{key: :home, modifiers: []} ->
           {:move_cursor, :home}
 
@@ -235,6 +193,27 @@ defmodule Raxol.Components.Input.TextInput do
 
         %{key: :delete, modifiers: []} ->
           {:delete}
+
+        # Add selection with Shift+Arrow
+        %{key: :left, modifiers: [:shift]} ->
+          {:select, :left}
+
+        %{key: :right, modifiers: [:shift]} ->
+          {:select, :right}
+
+        %{key: :home, modifiers: [:shift]} ->
+          {:select, :home}
+
+        %{key: :end, modifiers: [:shift]} ->
+          {:select, :end}
+
+        # Add copy (Ctrl+C) when text is selected
+        %{key: :char, char: "c", ctrl: true} when state.selection != nil ->
+          {:copy}
+
+        # Add paste (Ctrl+V)
+        %{key: :char, char: "v", ctrl: true} ->
+          {:paste}
 
         _ ->
           # Ignore other keys
@@ -247,6 +226,4 @@ defmodule Raxol.Components.Input.TextInput do
       {state, []}
     end
   end
-
-  # TODO: Add options for max length, validation regex/function, etc.
 end

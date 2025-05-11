@@ -3,11 +3,7 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
   import ExUnit.CaptureLog
 
   alias Raxol.Core.Runtime.ComponentManager
-  # Need alias now
   alias Raxol.Core.Runtime.ComponentManagerTest.TestComponent
-
-  # Mock component module for testing
-  # REMOVED - Moved to test/support/component_manager_test_mocks.ex
 
   setup do
     # Start ComponentManager with clean state
@@ -101,8 +97,8 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       # Dispatch event
       ComponentManager.dispatch_event({:test_event, "test_value"})
 
-      # Allow time for async processing
-      Process.sleep(10)
+      # Wait for event processing
+      assert_receive {:component_updated, ^component_id}, 100
 
       # Verify component state was updated
       component_data = ComponentManager.get_component(component_id)
@@ -149,10 +145,9 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       )
 
       # Wait for delayed message to be processed
-      Process.sleep(100)
+      assert_receive {:component_updated, ^component_id}, 150
 
       # Verify the component received the delayed message via update
-      # Check the state separately after waiting
       final_component_data = ComponentManager.get_component(component_id)
       assert final_component_data.state.last_message == :delayed_message
     end
@@ -165,11 +160,8 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       # Update component 1 to trigger the broadcast command
       {:ok, _} = ComponentManager.update(component_id1, :trigger_broadcast)
 
-      # Wait for broadcasting to complete (via async cast potentially)
-      # Robust waiting: Check state periodically
-      wait_for_state(component_id2, fn state ->
-        state.last_message == :broadcast_message
-      end)
+      # Wait for broadcasting to complete
+      assert_receive {:component_updated, ^component_id2}, 500
 
       # Verify both components received the broadcast via update
       component1 = ComponentManager.get_component(component_id1)
@@ -178,37 +170,6 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       # Component 1's last message should be the trigger, not the broadcast
       assert component1.state.last_message == :trigger_broadcast
       assert component2.state.last_message == :broadcast_message
-    end
-  end
-
-  # Helper function for robust waiting
-  defp wait_for_state(
-         component_id,
-         condition_fun,
-         timeout \\ 500,
-         interval \\ 10
-       ) do
-    start_time = System.monotonic_time(:millisecond)
-
-    check_state = fn ->
-      component = ComponentManager.get_component(component_id)
-      component != nil && condition_fun.(component.state)
-    end
-
-    unless check_state.() do
-      Process.sleep(interval)
-      elapsed = System.monotonic_time(:millisecond) - start_time
-
-      if elapsed < timeout do
-        wait_for_state(component_id, condition_fun, timeout - elapsed, interval)
-      else
-        # Timeout reached, fail the test
-        component = ComponentManager.get_component(component_id)
-
-        flunk(
-          "Timeout waiting for condition on component #{component_id}. Last state: #{inspect(component)}"
-        )
-      end
     end
   end
 end

@@ -60,8 +60,8 @@ defmodule Raxol.ColorSystemTest do
 
     # Fixed: Use apply_theme
     ColorSystem.apply_theme(:default)
-    # Allow changes to propagate
-    Process.sleep(50)
+    # Wait for theme change to be applied
+    assert_receive {:theme_changed, :default}, 100
 
     on_exit(fn ->
       cleanup_accessibility_and_prefs(pref_pid)
@@ -77,6 +77,7 @@ defmodule Raxol.ColorSystemTest do
     test "applies high contrast mode to theme colors" do
       # Apply a theme
       ColorSystem.apply_theme(:standard)
+      assert_receive {:theme_changed, :standard}, 100
 
       # Get the primary color before high contrast
       normal_primary = ColorSystem.get_color(:primary)
@@ -84,8 +85,8 @@ defmodule Raxol.ColorSystemTest do
 
       # Enable high contrast mode
       Accessibility.set_high_contrast(true)
-      # Ensure changes propagate if async operations are involved
-      Process.sleep(50)
+      # Wait for high contrast change to be applied
+      assert_receive {:high_contrast_changed, true}, 100
 
       # Get the primary color after high contrast
       high_contrast_primary = ColorSystem.get_color(:primary)

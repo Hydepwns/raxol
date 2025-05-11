@@ -5,6 +5,17 @@ defmodule Raxol.Animation.FrameworkTest do
   alias Raxol.Animation.{Animation, Framework}
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
+  alias Raxol.Test.EventAssertions
+
+  # Helper to wait for animation completion
+  defp wait_for_animation_completion(element_id, animation_name, timeout \\ 100) do
+    assert_receive {:animation_completed, ^element_id, ^animation_name}, timeout
+  end
+
+  # Helper to wait for animation start
+  defp wait_for_animation_start(element_id, animation_name, timeout \\ 100) do
+    assert_receive {:animation_started, ^element_id, ^animation_name}, timeout
+  end
 
   # Start UserPreferences for these tests
   setup do
@@ -16,12 +27,32 @@ defmodule Raxol.Animation.FrameworkTest do
     Framework.init()
     Accessibility.enable()
 
+    # Reset relevant prefs before each test
+    UserPreferences.set("accessibility.reduced_motion", false)
+    UserPreferences.set("accessibility.screen_reader", true)
+    UserPreferences.set("accessibility.silence_announcements", false)
+    Accessibility.clear_announcements()
+
+    # Wait for preferences to be applied
+    assert_receive {:preferences_applied}, 100
+
+    on_exit(fn ->
+      # Cleanup
+      Framework.stop()
+      Accessibility.disable()
+    end)
+
     :ok
   end
 
   describe "Animation Framework" do
     test "initializes with default settings" do
       assert :ok == Framework.init()
+      # Verify default settings
+      settings = Process.get(:animation_framework_settings, %{})
+      assert settings.reduced_motion == false
+      assert settings.default_duration == 300
+      assert settings.default_easing == :linear
     end
 
     test "creates animation with default settings" do
@@ -64,18 +95,20 @@ defmodule Raxol.Animation.FrameworkTest do
 
     test "starts animation for an element" do
       # Create and start a test animation
-      _animation =
+      animation =
         Framework.create_animation(:test_animation, %{
           type: :fade,
           from: 0,
           to: 1
         })
 
-      assert :ok == Framework.start_animation(:test_animation, "test_element")
+      assert :ok == Framework.start_animation(animation.name, "test_element")
+      wait_for_animation_start("test_element", animation.name)
     end
 
     test "handles reduced motion preferences" do
       # Enable reduced motion *before* creating/starting
+      UserPreferences.set("accessibility.reduced_motion", true)
       Framework.init(%{reduced_motion: true})
 
       # Create initial state
@@ -89,7 +122,7 @@ defmodule Raxol.Animation.FrameworkTest do
       }
 
       # Create a test animation
-      _animation =
+      animation =
         Framework.create_animation(:test_animation, %{
           type: :fade,
           # Original duration doesn't matter now
@@ -101,7 +134,8 @@ defmodule Raxol.Animation.FrameworkTest do
         })
 
       # Start the animation
-      :ok = Framework.start_animation(:test_animation, "test_element")
+      :ok = Framework.start_animation(animation.name, "test_element")
+      wait_for_animation_start("test_element", animation.name)
 
       # Apply animation immediately
       updated_state = Framework.apply_animations_to_state(initial_state)
@@ -112,7 +146,7 @@ defmodule Raxol.Animation.FrameworkTest do
 
     test "announces animations to screen readers when configured" do
       # Create an animation with screen reader announcement
-      _animation =
+      animation =
         Framework.create_animation(:test_animation, %{
           type: :fade,
           from: 0,
@@ -122,11 +156,11 @@ defmodule Raxol.Animation.FrameworkTest do
         })
 
       # Start the animation
-      :ok = Framework.start_animation(:test_animation, "test_element")
+      :ok = Framework.start_animation(animation.name, "test_element")
+      wait_for_animation_start("test_element", animation.name)
 
-      # Verify announcement was made by checking the process dictionary queue
-      announcements = Process.get(:accessibility_announcements, [])
-      assert Enum.any?(announcements, &(&1.message == "Test animation"))
+      # Verify announcement was made
+      assert_receive {:accessibility_announcement, "Test animation started"}, 100
     end
 
     test "applies animation values to state" do
@@ -140,7 +174,7 @@ defmodule Raxol.Animation.FrameworkTest do
       }
 
       # Create and start a fade animation with zero duration for instant result
-      _animation =
+      animation =
         Framework.create_animation(:fade_in, %{
           type: :fade,
           # Set duration to 0
@@ -149,7 +183,8 @@ defmodule Raxol.Animation.FrameworkTest do
           to: 1
         })
 
-      :ok = Framework.start_animation(:fade_in, "test_element")
+      :ok = Framework.start_animation(animation.name, "test_element")
+      wait_for_animation_start("test_element", animation.name)
 
       # Apply animation to state
       updated_state = Framework.apply_animations_to_state(initial_state)
@@ -170,7 +205,7 @@ defmodule Raxol.Animation.FrameworkTest do
       }
 
       # Create and start multiple animations with zero duration
-      _fade_animation =
+      fade_animation =
         Framework.create_animation(:fade_in, %{
           type: :fade,
           # Set duration to 0
@@ -179,7 +214,7 @@ defmodule Raxol.Animation.FrameworkTest do
           to: 1
         })
 
-      _slide_animation =
+      slide_animation =
         Framework.create_animation(:slide_in, %{
           type: :slide,
           # Set duration to 0
@@ -188,17 +223,42 @@ defmodule Raxol.Animation.FrameworkTest do
           to: 100
         })
 
-      :ok = Framework.start_animation(:fade_in, "test_element")
-      :ok = Framework.start_animation(:slide_in, "test_element")
+      :ok = Framework.start_animation(fade_animation.name, "test_element")
+      :ok = Framework.start_animation(slide_animation.name, "test_element")
+
+      wait_for_animation_start("test_element", fade_animation.name)
+      wait_for_animation_start("test_element", slide_animation.name)
 
       # Apply animations to state
       updated_state = Framework.apply_animations_to_state(initial_state)
 
       # Verify both animations were applied
       assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
+      assert get_in(updated_state, [:elements, "test_element", :position]) == 100
+    end
 
-      assert get_in(updated_state, [:elements, "test_element", :position]) ==
-               100
+    test "meets performance requirements" do
+      # Create a test animation
+      animation =
+        Framework.create_animation(:perf_test, %{
+          type: :fade,
+          duration: 100,
+          from: 0,
+          to: 1
+        })
+
+      # Measure animation performance
+      start_time = System.monotonic_time()
+
+      :ok = Framework.start_animation(animation.name, "test_element")
+      wait_for_animation_start("test_element", animation.name)
+      wait_for_animation_completion("test_element", animation.name)
+
+      end_time = System.monotonic_time()
+      duration = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      # Verify performance requirements
+      assert duration < 16, "Animation frame time too high"
     end
   end
 end

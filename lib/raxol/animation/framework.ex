@@ -223,6 +223,9 @@ defmodule Raxol.Animation.Framework do
       # Store active animation via StateManager
       StateManager.put_active_animation(element_id, animation_name, instance)
 
+      # Send animation started message
+      send(self(), {:animation_started, element_id, animation_name})
+
       # Announce to screen reader if configured and not fully disabled by reduced motion
       should_announce =
         Map.get(adapted_animation, :announce_to_screen_reader, false) and
@@ -293,9 +296,10 @@ defmodule Raxol.Animation.Framework do
         )
       end)
 
-    # Remove completed animations from state manager
+    # Remove completed animations from state manager and send completion messages
     Enum.each(completed, fn {element_id, animation_name} ->
       StateManager.remove_active_animation(element_id, animation_name)
+      send(self(), {:animation_completed, element_id, animation_name})
     end)
 
     new_state
@@ -411,6 +415,8 @@ defmodule Raxol.Animation.Framework do
   def stop_animation(animation_name, element_id) do
     # Use StateManager to remove the animation
     StateManager.remove_active_animation(element_id, animation_name)
+    # Send completion message since we're stopping the animation
+    send(self(), {:animation_completed, element_id, animation_name})
     # Ensure function returns something, :ok seems appropriate
     :ok
   end

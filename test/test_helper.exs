@@ -1,22 +1,23 @@
 ExUnit.start()
 
-# Ensure necessary applications are started and Sandbox owner is running
+# Start the sandbox for database tests
+Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, :manual)
+
+# Start the application for testing
+Application.ensure_all_started(:raxol)
+
+# Set up Mox for mocking
+Mox.defmock(Raxol.Core.Runtime.Plugins.FileWatcherMock, for: Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour)
+Mox.defmock(Raxol.Core.Runtime.Plugins.LoaderMock, for: Raxol.Core.Runtime.Plugins.Loader.Behaviour)
+Mox.defmock(Raxol.Core.Runtime.Plugins.LifecycleHelperMock, for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour)
+Mox.defmock(Raxol.Core.Runtime.Plugins.EdgeCasesLifecycleHelperMock, for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour)
+Mox.defmock(Raxol.System.DeltaUpdaterSystemAdapterMock, for: Raxol.System.DeltaUpdaterSystemAdapterBehaviour)
+Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock, for: Raxol.Terminal.Config.EnvironmentAdapterBehaviour)
+
+# Set up test environment
+Application.put_env(:raxol, :test_mode, true)
+
+# Ensure necessary applications are started
 if Application.get_env(:raxol, :database_enabled, true) do
-  # Ensure the :raxol app (and its children like Repo) are started
-  {:ok, _} = Application.ensure_all_started(:raxol)
-
-  # Ensure ecto_sql is started (might be redundant if already in extra_applications, but safe)
   Application.ensure_all_started(:ecto_sql)
-
-  # Start the Ecto Sandbox owner process
-  # DB should have been created/migrated by the `mix test` alias now
-  _owner_pid = Ecto.Adapters.SQL.Sandbox.start_owner!(Raxol.Repo, [])
 end
-
-# Set Raxol.Test.Mocks.EventManagerMock to :stub mode globally for tests
-# This allows Mox.stub/expect to be used on this manually defined mock module
-# when it's injected via app config, without needing Mox.defmock for it.
-# Mox.set_mode(Raxol.Test.Mocks.EventManagerMock, :stub) # No longer needed with dummy behaviour approach
-
-# Ensure Mox verifies all expectations on exit to prevent state leakage
-# Mox.verify_on_exit!(ExUnit.configuration())

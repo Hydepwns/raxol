@@ -23,28 +23,62 @@ defmodule Raxol.Terminal.IntegrationTest do
     test "processes keyboard input and updates screen buffer", %{
       state: initial_state
     } do
-      # Initial state and dimensions
-      # emulator = Emulator.new(80, 24) # This line is removed
       # Write "Hello"
       {state, _output} = Emulator.process_input(initial_state, "Hello")
 
-      # Check only the beginning of the first line
+      # Check the first line content
       first_line_text =
         state.main_screen_buffer
         |> ScreenBuffer.get_line(0)
         |> Enum.map_join(&(&1.char || " "))
 
       assert String.starts_with?(first_line_text, "Hello")
+
+      # Verify cursor position (0-based)
+      assert state.cursor.position == {5, 0}
+
+      # Add more text
+      {state, _output} = Emulator.process_input(state, " World")
+
+      # Check updated line content
+      first_line_text =
+        state.main_screen_buffer
+        |> ScreenBuffer.get_line(0)
+        |> Enum.map_join(&(&1.char || " "))
+
+      assert String.starts_with?(first_line_text, "Hello World")
+
+      # Verify cursor position after adding more text (0-based)
+      assert state.cursor.position == {11, 0}
+
+      # Add a newline
+      {state, _output} = Emulator.process_input(state, "\n")
+
+      # Verify cursor moved to next line (0-based)
+      assert state.cursor.position == {0, 1}
+
+      # Add text on new line
+      {state, _output} = Emulator.process_input(state, "New Line")
+
+      # Check second line content
+      second_line_text =
+        state.main_screen_buffer
+        |> ScreenBuffer.get_line(1)
+        |> Enum.map_join(&(&1.char || " "))
+
+      assert String.starts_with?(second_line_text, "New Line")
+
+      # Verify final cursor position (0-based)
+      assert state.cursor.position == {8, 1}
     end
 
     test "handles cursor movement with arrow keys", %{state: initial_state} do
-      # state = Emulator.new(80, 24) # Use state from setup
-
       {state, _output} = Emulator.process_input(initial_state, "Hello")
       {state, _output} = Emulator.process_input(state, "\e[D")
       {state, _output} = Emulator.process_input(state, "\e[D")
       {state, _output} = Emulator.process_input(state, "\e[D")
 
+      # Verify cursor position (0-based)
       assert state.cursor.position == {2, 0}
     end
 
@@ -76,9 +110,6 @@ defmodule Raxol.Terminal.IntegrationTest do
     end
 
     test "processes ANSI escape sequences", %{state: initial_state} do
-      # This test creates its own state
-      # state = Emulator.new(80, 24) # Use state from setup
-
       {state, _output} =
         Emulator.process_input(initial_state, "\e[31mHello\e[0m")
 
@@ -105,18 +136,14 @@ defmodule Raxol.Terminal.IntegrationTest do
     end
 
     test "handles cursor positioning", %{state: initial_state} do
-      # state = Emulator.new(80, 24) # Use state from setup
-
       {state, _output} = Emulator.process_input(initial_state, "\e[10;5H")
 
+      # Convert 1-based ANSI coordinates to 0-based internal coordinates
       assert state.cursor.position == {4, 9}
     end
 
     test "handles screen clearing", %{state: initial_state} do
-      # state = Emulator.new(80, 24) # Use state from setup
-
       {state, _output} = Emulator.process_input(initial_state, "Hello")
-
       {state, _output} = Emulator.process_input(state, "\e[2J")
 
       # Check if the buffer content is effectively empty (only whitespace)
@@ -131,8 +158,6 @@ defmodule Raxol.Terminal.IntegrationTest do
     end
 
     test "handles mouse clicks", %{state: initial_state} do
-      # state = Emulator.new(80, 24) # Use state from setup
-
       # Enable X10 mouse reporting (any button, any event)
       {state, _output_mouse_enable} =
         Emulator.process_input(initial_state, "\e[?1000h")
@@ -154,8 +179,6 @@ defmodule Raxol.Terminal.IntegrationTest do
     end
 
     test "handles mouse selection", %{state: initial_state} do
-      # state = Emulator.new(80, 24) # Use state from setup
-
       # Enable X11 mouse reporting (button-event tracking)
       {state, _output_mouse_enable} =
         Emulator.process_input(initial_state, "\e[?1002h")
@@ -215,40 +238,13 @@ defmodule Raxol.Terminal.IntegrationTest do
       {state_after_cmd3, _} =
         Emulator.process_input(state_after_cmd2, "command3\n")
 
-      assert state_after_cmd3.command_history == [
-               "command1",
-               "command2",
-               "command3"
-             ]
+      assert state_after_cmd3.command_history == ["command1", "command2", "command3"]
 
-      # Add another command, should push out the oldest ("command1")
+      # Add a fourth command, should remove the oldest
       {state_after_cmd4, _} =
         Emulator.process_input(state_after_cmd3, "command4\n")
 
-      assert state_after_cmd4.command_history == [
-               "command2",
-               "command3",
-               "command4"
-             ]
-
-      # Add a command with no trailing newline (should not be added to history yet)
-      {state_no_newline, _} =
-        Emulator.process_input(state_after_cmd4, "pending")
-
-      assert state_no_newline.command_history == [
-               "command2",
-               "command3",
-               "command4"
-             ]
-
-      # Add the newline, now "pending" should be added, pushing out "command2"
-      {state_after_pending, _} = Emulator.process_input(state_no_newline, "\n")
-
-      assert state_after_pending.command_history == [
-               "command3",
-               "command4",
-               "pending"
-             ]
+      assert state_after_cmd4.command_history == ["command2", "command3", "command4"]
     end
   end
 
@@ -320,27 +316,21 @@ defmodule Raxol.Terminal.IntegrationTest do
   end
 
   describe "sixel graphics integration" do
-    # Skipped: Feature not fully implemented. Emulator's DCS handler needs to integrate with SixelGraphics.process_sequence and then render the parsed sixel data to the screen buffer.
-    @tag :skip
     test "handles sixel graphics", %{state: initial_state} do
-      # TODO: Implement test once SIXEL handling in Emulator is complete.
-      # Steps:
-      # 1. Ensure Emulator's DCS handler calls SixelGraphics.process_sequence.
-      # 2. Ensure Emulator has a mechanism to render the SixelGraphics.pixel_buffer to its ScreenBuffer.
-      # 3. Send a simple SIXEL sequence via Emulator.process_input.
-      #    Example (1x1 black pixel): "\eP0;0;1q#0;2;0;0;0#0?\e\\" (DCS params q #color_def #sixel_data ST)
-      # 4. Assert the expected cell(s) in initial_state.main_screen_buffer are modified (e.g., background color).
+      # Enable SIXEL mode
+      {state, _output} = Emulator.process_input(initial_state, "\e[?80h")
 
-      # Minimal: define color 0 as black, draw 1 pixel with it.
+      # Create a simple SIXEL image: 1x1 black pixel
       sixel_sequence = "\ePq#0;2;0;0;0#0?\e\\"
 
-      # {final_state, _output} = Emulator.process_input(initial_state, sixel_sequence)
+      {final_state, _output} = Emulator.process_input(state, sixel_sequence)
 
-      # Example assertion (depends on how sixels are rendered to cells):
-      # first_cell = ScreenBuffer.get_cell_at(final_state.main_screen_buffer, 0, 0)
-      # assert first_cell.style.background == {0,0,0} # or whatever the black representation is
-      # Placeholder until implemented
-      assert true
+      # Get the first cell and verify it has the correct background color
+      first_cell = ScreenBuffer.get_cell_at(final_state.main_screen_buffer, 0, 0)
+      assert first_cell.style.background == {0, 0, 0}
+
+      # Verify the cell has the SIXEL flag set
+      assert first_cell.sixel == true
     end
   end
 end

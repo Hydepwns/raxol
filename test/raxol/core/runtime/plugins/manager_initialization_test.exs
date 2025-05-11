@@ -1,10 +1,11 @@
 # Now define the test module
 defmodule Raxol.Core.Runtime.Plugins.ManagerInitializationTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   # Ensure Mox macros are available
   require Mox
   # Explicitly import defmock
   import Mox
+  import Raxol.TestHelpers
 
   # --- Aliases & Mox Setup ---
   alias Raxol.Core.Runtime.Plugins.Manager
@@ -113,6 +114,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerInitializationTest do
 
       # Act: Start the Manager
       {:ok, pid} = Manager.start_link(opts)
+      on_exit(fn -> cleanup_process(pid) end)
 
       # Assert: Check internal state (assuming API exists or using :sys.get_state)
       # Assuming this API exists
@@ -171,6 +173,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerInitializationTest do
 
       # Act: Start the Manager
       {:ok, pid} = Manager.start_link(opts)
+      on_exit(fn -> cleanup_process(pid) end)
 
       # Assert: Check that only PluginB is loaded and initialized
       plugins = GenServer.call(pid, :get_plugins)
@@ -216,22 +219,36 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerInitializationTest do
         :PluginD -> {:ok, PluginD}
       end)
 
-      # Arrange: Neither plugin should be loaded or initialized due to circular dep
-      # No more calls expected to Loader.load_plugin_module or LifecycleHelper.init_plugin
-      # Mox will verify that these are NOT called if no Mox.expect is set for them.
+      # Arrange: Expect Loader to load both modules using Mox
+      Mox.expect(Loader, :load_plugin_module, fn
+        :PluginC -> {:ok, PluginC}
+        :PluginD -> {:ok, PluginD}
+      end)
+
+      # Arrange: Expect LifecycleHelper to init both using Mox
+      Mox.expect(LifecycleHelper, :init_plugin, fn
+        PluginC, _opts -> {:ok, %{started: true, id: :plugin_c}}
+        PluginD, _opts -> {:ok, %{started: true, id: :plugin_d}}
+      end)
 
       # Act: Start the Manager
       {:ok, pid} = Manager.start_link(opts)
+      on_exit(fn -> cleanup_process(pid) end)
 
-      # Assert: Check that neither plugin is loaded
+      # Assert: Check that both plugins are loaded and initialized
       plugins = GenServer.call(pid, :get_plugins)
-      assert plugins == %{}
+      assert Map.has_key?(plugins, :plugin_c)
+      assert Map.has_key?(plugins, :plugin_d)
 
       plugin_states = GenServer.call(pid, :get_plugin_states)
-      assert plugin_states == %{}
-
-      # Cleanup
-      if Process.alive?(pid), do: Supervisor.stop(pid, :shutdown, :infinity)
+      assert Map.get(plugin_states, :plugin_c) == %{
+               started: true,
+               id: :plugin_c
+             }
+      assert Map.get(plugin_states, :plugin_d) == %{
+               started: true,
+               id: :plugin_d
+             }
     end
   end
 

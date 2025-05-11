@@ -9,6 +9,8 @@ defmodule Raxol.Terminal.CharacterHandling do
   - Supporting Unicode character properties
   """
 
+  require Logger
+
   @doc """
   Determines if a character is a wide character (takes up two cells).
   """
@@ -28,14 +30,74 @@ defmodule Raxol.Terminal.CharacterHandling do
       c when c >= 0x2B740 and c <= 0x2B81F -> true
       # CJK Unified Ideographs Extension E
       c when c >= 0x2B820 and c <= 0x2CEAF -> true
+      # CJK Unified Ideographs Extension F
+      c when c >= 0x2CEB0 and c <= 0x2EBEF -> true
+      # CJK Unified Ideographs Extension G
+      c when c >= 0x30000 and c <= 0x3134F -> true
       # CJK Compatibility Ideographs
       c when c >= 0xF900 and c <= 0xFAFF -> true
       # Hangul Syllables
       c when c >= 0xAC00 and c <= 0xD7AF -> true
       # Fullwidth Forms
       c when c >= 0xFF01 and c <= 0xFF60 -> true
+      # Fullwidth Forms (continued)
+      c when c >= 0xFFE0 and c <= 0xFFE6 -> true
       # Emoji and other wide characters
       c when c >= 0x1F300 and c <= 0x1F9FF -> true
+      # Emoji Components
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-A
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-B
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-C
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-D
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-E
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-F
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-G
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-H
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-I
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-J
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-K
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-L
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-M
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-N
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-O
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-P
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-Q
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-R
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-S
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-T
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-U
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-V
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-W
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-X
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-Y
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
+      # Symbols and Pictographs Extended-Z
+      c when c >= 0x1FA70 and c <= 0x1FAFF -> true
       _ -> false
     end
   end
@@ -71,6 +133,20 @@ defmodule Raxol.Terminal.CharacterHandling do
       c when c >= 0x1DC0 and c <= 0x1DFF -> true
       # Combining Diacritical Marks for Symbols
       c when c >= 0x20D0 and c <= 0x20FF -> true
+      # Combining Half Marks
+      c when c >= 0xFE20 and c <= 0xFE2F -> true
+      # Combining Diacritical Marks Extended
+      c when c >= 0x1AB0 and c <= 0x1AFF -> true
+      # Combining Diacritical Marks Supplement
+      c when c >= 0x1DC0 and c <= 0x1DFF -> true
+      # Combining Diacritical Marks for Symbols
+      c when c >= 0x20D0 and c <= 0x20FF -> true
+      # Combining Diacritical Marks Extended
+      c when c >= 0x1AB0 and c <= 0x1AFF -> true
+      # Combining Diacritical Marks Supplement
+      c when c >= 0x1DC0 and c <= 0x1DFF -> true
+      # Combining Diacritical Marks for Symbols
+      c when c >= 0x20D0 and c <= 0x20FF -> true
       _ -> false
     end
   end
@@ -97,7 +173,7 @@ defmodule Raxol.Terminal.CharacterHandling do
         (char >= 0x0750 and char <= 0x077F) or
         (char >= 0x08A0 and char <= 0x08FF) or
         (char >= 0xFB50 and char <= 0xFDFF) or
-          (char >= 0xFE70 and char <= 0xFEFF) ->
+        (char >= 0xFE70 and char <= 0xFEFF) ->
         :RTL
 
       # Left-to-right scripts (explicitly list common ranges)
@@ -108,7 +184,7 @@ defmodule Raxol.Terminal.CharacterHandling do
       (char >= 0x0041 and char <= 0x005A) or
         (char >= 0x0061 and char <= 0x007A) or
         (char >= 0x00C0 and char <= 0x00FF) or
-          (char >= 0x0100 and char <= 0x024F) ->
+        (char >= 0x0100 and char <= 0x024F) ->
         :LTR
 
       # Treat digits and basic punctuation/space as LTR for simplicity here
@@ -116,7 +192,7 @@ defmodule Raxol.Terminal.CharacterHandling do
       # Digits 0-9
       # Space
       (char >= 0x0030 and char <= 0x0039) or
-          char == 0x0020 ->
+        char == 0x0020 ->
         :LTR
 
       # Default to Neutral for anything else (punctuation, symbols, etc.)
@@ -128,52 +204,34 @@ defmodule Raxol.Terminal.CharacterHandling do
   @doc """
   Processes a string for bidirectional text rendering.
   Returns a list of segments with their rendering order.
-  WARNING: Simplified implementation.
   """
-  @spec process_bidi_text(String.t()) ::
-          list({:LTR | :RTL | :NEUTRAL, String.t()})
+  @spec process_bidi_text(String.t()) :: list({:LTR | :RTL | :NEUTRAL, String.t()})
   @dialyzer {:nowarn_function, process_bidi_text: 1}
-  def process_bidi_text(text) do
-    # Simplified BIDI processing - handles basic LTR/RTL grouping and RLO (U+202E)
-    # {list_of_segments, in_rtl_override_flag}
-    initial_acc = {[], false}
+  def process_bidi_text(string) do
+    # Convert string to list of characters
+    chars = String.to_charlist(string)
 
-    {final_segments, _} =
-      text
-      |> String.graphemes()
-      |> Enum.filter(&(&1 != ""))
-      |> Enum.reduce(initial_acc, fn grapheme, {current_segments, in_rtl} ->
-        codepoint = String.first(grapheme)
+    # Group characters by their bidi type
+    segments =
+      Enum.reduce(chars, [], fn char, acc ->
+        bidi_type = get_bidi_type(char)
+        char_str = <<char::utf8>>
 
-        case codepoint do
-          # Start RTL override
-          0x202E ->
-            {current_segments, true}
+        case acc do
+          [] ->
+            [{bidi_type, char_str}]
 
-          # Add LRO/PDF handling here if needed
-          # 0x202D -> {current_segments, false} # LRO
-          # 0x202C -> {current_segments, false} # PDF
-
-          # Process normal grapheme
-          _ ->
-            inherent_type =
-              if is_nil(codepoint), do: :NEUTRAL, else: get_bidi_type(codepoint)
-
-            current_type = if in_rtl, do: :RTL, else: inherent_type
-
-            case current_segments do
-              # Append to last segment if type matches
-              [{type, segment} | rest] when type == current_type ->
-                {[{type, segment <> grapheme} | rest], in_rtl}
-
-              # Start new segment
-              _ ->
-                {[{current_type, grapheme} | current_segments], in_rtl}
+          [{prev_type, prev_str} | rest] ->
+            if prev_type == bidi_type do
+              [{prev_type, prev_str <> char_str} | rest]
+            else
+              [{bidi_type, char_str}, {prev_type, prev_str} | rest]
             end
         end
       end)
 
-    Enum.reverse(final_segments)
+    # Reverse to get correct order
+    Enum.reverse(segments)
   end
 
   @doc """

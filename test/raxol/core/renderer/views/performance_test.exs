@@ -38,21 +38,46 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
   # @tag :skip # Will unskip test by test
 
   setup do
+    # Ensure test process receives component_queued_for_render events
+    ComponentManager.set_runtime_pid(self())
+    # Start the event manager
+    :ok = Raxol.Core.Events.Manager.init()
+
+    # Start supervised processes
     start_supervised!(ComponentManager)
     start_supervised!(RendererManagerMod)
 
-    # Initialize RendererManagerMod without root component assumptions
-    :ok = RendererManagerMod.initialize([])
+    # Initialize RendererManagerMod with proper options
+    :ok = RendererManagerMod.initialize([
+      fps: 60,
+      debug_mode: true  # Enable debug mode for better test feedback
+    ])
 
-    # Optionally, mount a default TestHostComponent if many tests need a generic host
+    # Subscribe to component render events
+    {:ok, _ref} = Raxol.Core.Events.Manager.subscribe([:component_queued_for_render])
+
+    # Mount a default TestHostComponent if many tests need a generic host
     # This component can be updated by tests to render arbitrary view maps.
-    {:ok, host_component_id} = ComponentManager.mount(
-      Raxol.Core.Renderer.Views.PerformanceTest.TestHostComponent,
-      %{initial_view: View.box(%{})} # Start with an empty view
-    )
+    action_fun = fn ->
+      ComponentManager.mount(
+        Raxol.Core.Renderer.Views.PerformanceTest.TestHostComponent,
+        %{initial_view: View.box(%{})} # Start with an empty view
+      )
+    end
+
     # Force an initial render of the host component to ensure it's in the system
     # and to clear any initial render queue items from its mount.
-    _initial_render_time = measure_action_and_render_time(fn -> :ok end, fn -> host_component_id end)
+    {{:ok, host_component_id}, _initial_render_time} = measure_action_and_render_time(action_fun)
+
+    # Clean up on test completion
+    on_exit(fn ->
+      # Ensure all components are unmounted
+      ComponentManager.unmount_all()
+      # Clean up event manager
+      Raxol.Core.Events.Manager.cleanup()
+      # Stop renderer manager
+      GenServer.stop(RendererManagerMod)
+    end)
 
     %{host_component_id: host_component_id}
   end
@@ -78,10 +103,17 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
   # action_fun: a 0-arity function that performs the action (e.g., mount, update)
   #             and returns the result of that action.
   defp measure_action_and_render_time(action_fun) do
+    # Clear any pending render events
+    receive do
+      {:component_queued_for_render, _} -> :ok
+    after
+      0 -> :ok
+    end
+
     action_result = action_fun.()
-    # Allow a brief moment for ComponentManager GenServer calls to complete
-    # and add the component to the render queue before we trigger the render.
-    Process.sleep(5) # Might be removable if all action_fun calls are sync and queue reliably.
+
+    # Wait for component to be queued for render
+    assert_receive {:component_queued_for_render, _component_id}, 1000
 
     start_time = System.monotonic_time(:nanosecond)
     :ok = RendererManagerMod.render(self())
@@ -375,7 +407,7 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
   end
 
   describe "memory usage" do
-    test "maintains reasonable memory usage with large layouts" do
+    test "maintains reasonable memory usage with large layouts", %{host_component_id: host_component_id} do
       # Create a large complex layout view map
       view_map = PerformanceViewGenerators.create_configurable_test_layout(
         table_rows: 1000, # Uses full @large_data by default if table_data_source is not changed

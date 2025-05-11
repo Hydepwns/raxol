@@ -36,78 +36,101 @@ defmodule Raxol.UI.Components.Display.Table do
           # Overall table width - ADDED COMMA
           optional(:width) => integer() | :auto,
           # Alignment per column
-          optional(:alignments) => [:left | :center | :right | [atom()]]
+          optional(:alignments) => [:left | :center | :right | [atom()]],
+          optional(:sortable) => boolean(),
+          optional(:filterable) => boolean(),
+          optional(:selectable) => boolean(),
+          optional(:striped) => boolean(),
+          optional(:selected) => integer() | nil
         }
 
   # Tables are typically display-only, so state might be minimal or nil
-  @type state :: map()
-
-  @type t :: %{
-          # props: props(), # Maybe remove direct props field if passed via render
-          state: state(),
-          # Or maybe attrs are merged into state? Need clarification
+  @type state :: %{
           id: String.t() | atom(),
           columns: list(),
           data: list(),
           style: map(),
-          # Default set in init
-          row_style: nil,
-          # Default set in init
-          cell_style: nil,
-          header_style: %{bold: true},
-          footer: nil,
-          # Internal state
-          scroll_top: 0,
-          scroll_left: 0,
-          focused_row: nil,
-          focused_col: nil,
-          max_height: nil,
-          max_width: nil
+          row_style: map() | nil,
+          cell_style: map() | nil,
+          header_style: map(),
+          footer: map() | nil,
+          scroll_top: integer(),
+          scroll_left: integer(),
+          focused_row: integer() | nil,
+          focused_col: integer() | nil,
+          max_height: integer() | nil,
+          max_width: integer() | nil,
+          sort_by: atom() | nil,
+          sort_direction: :asc | :desc | nil,
+          filter_term: String.t(),
+          selected_row: integer() | nil,
+          striped: boolean(),
+          border_style: :single | :double | :none | map()
         }
 
   defstruct id: nil,
             columns: [],
             data: [],
             style: %{},
-            # Default set in init
             row_style: nil,
-            # Default set in init
             cell_style: nil,
             header_style: %{bold: true},
             footer: nil,
-            # Internal state
             scroll_top: 0,
             scroll_left: 0,
             focused_row: nil,
             focused_col: nil,
             max_height: nil,
-            max_width: nil
+            max_width: nil,
+            sort_by: nil,
+            sort_direction: nil,
+            filter_term: "",
+            selected_row: nil,
+            striped: true,
+            border_style: :single
 
   # --- Component Implementation ---
 
   @impl true
   def init(attrs) do
-    # Initialize only internal state, not data/columns passed via macro
     id = Map.get(attrs, :id) || Raxol.Core.ID.generate()
-    # Don't merge all attrs into state struct blindly
-    internal_state = %{
+
+    # Initialize all state fields with proper defaults
+    internal_state = %__MODULE__{
       id: id,
+      columns: Map.get(attrs, :columns, []),
+      data: Map.get(attrs, :data, []),
+      style: Map.get(attrs, :style, %{}),
+      row_style: Map.get(attrs, :row_style),
+      cell_style: Map.get(attrs, :cell_style),
+      header_style: Map.get(attrs, :header_style, %{bold: true}),
+      footer: Map.get(attrs, :footer),
       scroll_top: 0,
       scroll_left: 0,
-      # ... other non-data internal defaults ...
-      # Base style state, specific styles come from attrs
-      style: %{}
+      focused_row: nil,
+      focused_col: nil,
+      max_height: Map.get(attrs, :max_height),
+      max_width: Map.get(attrs, :max_width),
+      sort_by: nil,
+      sort_direction: nil,
+      filter_term: "",
+      selected_row: Map.get(attrs, :selected),
+      striped: Map.get(attrs, :striped, true),
+      border_style: Map.get(attrs, :border_style, :single)
     }
 
     {:ok, internal_state}
   end
 
   @impl true
-  # No mount needed
-  def mount(_state), do: {:ok, []}
+  def mount(state) do
+    # Initialize any subscriptions or setup needed
+    {:ok, state, []}
+  end
 
   @impl true
   def update({:update_props, new_props}, state) do
+    # Update state with new props while preserving internal state
     updated_state = Map.merge(state, Map.new(new_props))
     # Recalculate column widths if data or headers change
     updated_state = update_column_widths(updated_state)
@@ -115,35 +138,60 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   @impl true
+  def update({:sort, column}, state) do
+    new_direction =
+      if state.sort_by == column do
+        if state.sort_direction == :asc, do: :desc, else: :asc
+      else
+        :asc
+      end
+
+    updated_state = %{state |
+      sort_by: column,
+      sort_direction: new_direction
+    }
+
+    {:noreply, updated_state}
+  end
+
+  @impl true
+  def update({:filter, term}, state) do
+    updated_state = %{state | filter_term: term}
+    {:noreply, updated_state}
+  end
+
+  @impl true
+  def update({:select_row, row_index}, state) do
+    updated_state = %{state | selected_row: row_index}
+    {:noreply, updated_state}
+  end
+
+  @impl true
   def update(message, state) do
-    IO.inspect(message, label: "Unhandled Table update")
+    Logger.warning("Unhandled Table update: #{inspect(message)}")
     {:noreply, state}
   end
 
   @impl true
   def handle_event(state, event, context) do
-    # Get necessary info from context attrs
     attrs = context.attrs
     data = Map.get(attrs, :data, [])
-    # Calculate max_height based on style in attrs
     component_style = Map.get(attrs, :style, %{})
     theme = context.theme
     theme_style_def = Theme.component_style(theme, :table)
-    # Convert style definitions to Style structs before merging
     theme_style_struct = Raxol.Style.new(theme_style_def)
     component_style_struct = Raxol.Style.new(component_style)
     base_style = Raxol.Style.merge(theme_style_struct, component_style_struct)
-    # Correctly access height from the layout field of the Style struct
     max_height = base_style.layout.height
     current_visible_height = visible_height(%{max_height: max_height})
 
     case event do
+      # Scrolling events
       {:keypress, :arrow_up} ->
         new_scroll_top = max(0, state.scroll_top - 1)
         {:noreply, %{state | scroll_top: new_scroll_top}}
 
       {:keypress, :arrow_down} ->
-        # Use actual data length and visible height
         max_scroll = max(0, length(data) - current_visible_height)
         new_scroll_top = min(max_scroll, state.scroll_top + 1)
         {:noreply, %{state | scroll_top: new_scroll_top}}
@@ -159,7 +207,40 @@ defmodule Raxol.UI.Components.Display.Table do
         new_scroll_top = min(max_scroll, state.scroll_top + page_size)
         {:noreply, %{state | scroll_top: new_scroll_top}}
 
-      # TODO: Add horizontal scrolling, row/cell focus
+      # Row selection events
+      {:click, {:row, row_index}} ->
+        if Map.get(attrs, :selectable, false) do
+          {:noreply, %{state | selected_row: row_index}}
+        else
+          {:noreply, state}
+        end
+
+      # Sorting events
+      {:click, {:header, column}} ->
+        if Map.get(attrs, :sortable, false) do
+          {:noreply, state, [{:update, {:sort, column}}]}
+        else
+          {:noreply, state}
+        end
+
+      # Filtering events
+      {:input, {:filter, term}} ->
+        if Map.get(attrs, :filterable, false) do
+          {:noreply, state, [{:update, {:filter, term}}]}
+        else
+          {:noreply, state}
+        end
+
+      # Focus events
+      {:focus, {:row, row_index}} ->
+        {:noreply, %{state | focused_row: row_index}}
+
+      {:focus, {:cell, {row_index, col_index}}} ->
+        {:noreply, %{state |
+          focused_row: row_index,
+          focused_col: col_index
+        }}
+
       _ ->
         {:noreply, state}
     end
@@ -167,45 +248,47 @@ defmodule Raxol.UI.Components.Display.Table do
 
   @impl true
   def render(state, context) do
-    # ** Crucial Change: Use attrs from context/state for data **
-    # Attributes are typically passed via context
     attrs = context.attrs
-
     id = Map.get(attrs, :id)
-    # Get the ORIGINAL data and columns config from attrs
     original_data = Map.get(attrs, :data, [])
     columns_config = Map.get(attrs, :columns, [])
+
+    # Process data based on current state
+    processed_data = process_data(original_data, state)
 
     # Use style from attrs, merge with theme default
     component_style = Map.get(attrs, :style, %{})
     theme = context.theme
-
-    # Handle different theme types
     theme_style_def = get_theme_style(theme, :table)
-
-    # Convert style definitions to Style structs before merging
     theme_style_struct = Raxol.Style.new(theme_style_def)
     component_style_struct = Raxol.Style.new(component_style)
     base_style = Raxol.Style.merge(theme_style_struct, component_style_struct)
 
-    # Use the Elements.table macro, passing the original data and columns definition
-    # The Layout.Table module will extract headers and calculate layout.
-    # The Renderer will handle displaying the correct visible portion based on scroll state (passed via attrs?).
+    # Apply border style
+    base_style = apply_border_style(base_style, state.border_style)
+
+    # Apply row styles
+    row_styles = get_row_styles(state)
+
     Elements.table(
       id: id,
       style: base_style,
-      # Pass the ORIGINAL data
-      data: original_data,
-      # Pass the column definitions
+      data: processed_data,
       columns: columns_config,
-      # Pass scroll state so Renderer can use it
-      _scroll_top: state.scroll_top
+      _scroll_top: state.scroll_top,
+      _selected_row: state.selected_row,
+      _focused_row: state.focused_row,
+      _focused_col: state.focused_col,
+      _row_styles: row_styles,
+      _header_style: state.header_style
     )
   end
 
   @impl true
-  # No unmount needed
-  def unmount(_state), do: :ok
+  def unmount(state) do
+    # Clean up any resources
+    {:ok, state}
+  end
 
   # --- Private Helpers ---
 
@@ -239,28 +322,61 @@ defmodule Raxol.UI.Components.Display.Table do
   defp visible_height(%{max_height: _}), do: 1
 
   defp update_column_widths(state) do
-    # Calculate widths based on headers and potentially sample data rows
-    # TODO: This state update might not be necessary if widths calculated in render
+    # Calculate widths based on headers and data
     header_widths =
-      case state.headers do
+      case state.columns do
         nil -> []
         [] -> []
-        headers when is_list(headers) -> Enum.map(headers, &str_width/1)
+        columns when is_list(columns) ->
+          Enum.map(columns, fn col ->
+            String.length(Map.get(col, :header, ""))
+          end)
         _ -> []
       end
 
-    # TODO: Sample data rows for more accurate widths?
-    # For now, just use header widths
-    %{state | column_widths: header_widths}
+    data_widths =
+      case state.data do
+        nil -> []
+        [] -> []
+        data when is_list(data) ->
+          Enum.reduce(data, List.duplicate(0, length(state.columns)), fn row, acc ->
+            Enum.zip_with(acc, state.columns, fn max_width, col ->
+              value = Map.get(row, Map.get(col, :key))
+              max(max_width, String.length(to_string(value)))
+            end)
+          end)
+        _ -> []
+      end
+
+    # Combine header and data widths
+    column_widths = Enum.zip_with(header_widths, data_widths, &max/2)
+
+    # Update state with calculated widths
+    %{state | column_widths: column_widths}
   end
 
-  # Calculate string width, handling wide characters
-  defp str_width(str) when is_binary(str) do
-    String.length(str)
+  defp process_data(data, state) do
+    data
+    |> filter_data(state.filter_term)
+    |> sort_data(state.sort_by, state.sort_direction)
   end
 
-  defp str_width(value) do
-    value |> to_string() |> String.length()
+  defp filter_data(data, ""), do: data
+  defp filter_data(data, term) do
+    term = String.downcase(term)
+    Enum.filter(data, fn row ->
+      Enum.any?(row, fn {_key, value} ->
+        String.contains?(String.downcase(to_string(value)), term)
+      end)
+    end)
+  end
+
+  defp sort_data(data, nil, _direction), do: data
+  defp sort_data(data, column, direction) do
+    Enum.sort_by(data, fn row ->
+      value = Map.get(row, column)
+      if direction == :asc, do: value, else: -value
+    end)
   end
 
   # Helper to get theme style for either Theme type
@@ -268,7 +384,7 @@ defmodule Raxol.UI.Components.Display.Table do
     cond do
       # Check for Raxol.UI.Theming.Theme
       is_map(theme) && Map.has_key?(theme, :component_styles) ->
-        Map.get(theme.component_styles, component_type, %{})
+        Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
 
       # Check for Raxol.Style.Colors.Theme
       is_map(theme) && Map.has_key?(theme, :palette) ->
@@ -285,6 +401,38 @@ defmodule Raxol.UI.Components.Display.Table do
       # Fallback
       true ->
         %{}
+    end
+  end
+
+  defp apply_border_style(style, :none) do
+    %{style | border: %{style.border | style: :none}}
+  end
+
+  defp apply_border_style(style, :single) do
+    %{style | border: %{style.border | style: :single}}
+  end
+
+  defp apply_border_style(style, :double) do
+    %{style | border: %{style.border | style: :double}}
+  end
+
+  defp apply_border_style(style, custom_border) when is_map(custom_border) do
+    %{style | border: Map.merge(style.border, custom_border)}
+  end
+
+  defp get_row_styles(state) do
+    fn index, _row ->
+      cond do
+        # Selected row style
+        state.selected_row == index ->
+          [bg: :blue, fg: :white]
+        # Striped row style
+        state.striped and rem(index, 2) == 1 ->
+          [bg: :bright_black]
+        # Default row style
+        true ->
+          []
+      end
     end
   end
 end

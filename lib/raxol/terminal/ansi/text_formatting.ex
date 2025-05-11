@@ -270,6 +270,54 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       :default_bg ->
         %{style | background: nil}
 
+      :bright_black ->
+        %{style | foreground: :black}
+
+      :bright_red ->
+        %{style | foreground: :red}
+
+      :bright_green ->
+        %{style | foreground: :green}
+
+      :bright_yellow ->
+        %{style | foreground: :yellow}
+
+      :bright_blue ->
+        %{style | foreground: :blue}
+
+      :bright_magenta ->
+        %{style | foreground: :magenta}
+
+      :bright_cyan ->
+        %{style | foreground: :cyan}
+
+      :bright_white ->
+        %{style | foreground: :white}
+
+      :bg_bright_black ->
+        %{style | background: :black}
+
+      :bg_bright_red ->
+        %{style | background: :red}
+
+      :bg_bright_green ->
+        %{style | background: :green}
+
+      :bg_bright_yellow ->
+        %{style | background: :yellow}
+
+      :bg_bright_blue ->
+        %{style | background: :blue}
+
+      :bg_bright_magenta ->
+        %{style | background: :magenta}
+
+      :bg_bright_cyan ->
+        %{style | background: :cyan}
+
+      :bg_bright_white ->
+        %{style | background: :white}
+
       _ ->
         style
     end
@@ -436,7 +484,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
     # Add foreground color
     params =
-      case attrs.fg do
+      case attrs.foreground do
         {:ansi, n} when n >= 0 and n <= 7 -> [30 + n | params]
         {:ansi, n} when n >= 8 and n <= 15 -> [90 + (n - 8) | params]
         {:color_256, n} -> [38, 5, n | params]
@@ -447,7 +495,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
     # Add background color
     params =
-      case attrs.bg do
+      case attrs.background do
         {:ansi, n} when n >= 0 and n <= 7 -> [40 + n | params]
         {:ansi, n} when n >= 8 and n <= 15 -> [100 + (n - 8) | params]
         {:color_256, n} -> [48, 5, n | params]
@@ -587,11 +635,55 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       47 ->
         apply_attribute(current_style, :bg_white)
 
-      48 ->
-        apply_attribute(current_style, :default_bg)
+      # Bright foreground colors (90-97)
+      90 ->
+        apply_attribute(current_style, :bright_black)
 
-      49 ->
-        apply_attribute(current_style, :default_bg)
+      91 ->
+        apply_attribute(current_style, :bright_red)
+
+      92 ->
+        apply_attribute(current_style, :bright_green)
+
+      93 ->
+        apply_attribute(current_style, :bright_yellow)
+
+      94 ->
+        apply_attribute(current_style, :bright_blue)
+
+      95 ->
+        apply_attribute(current_style, :bright_magenta)
+
+      96 ->
+        apply_attribute(current_style, :bright_cyan)
+
+      97 ->
+        apply_attribute(current_style, :bright_white)
+
+      # Bright background colors (100-107)
+      100 ->
+        apply_attribute(current_style, :bg_bright_black)
+
+      101 ->
+        apply_attribute(current_style, :bg_bright_red)
+
+      102 ->
+        apply_attribute(current_style, :bg_bright_green)
+
+      103 ->
+        apply_attribute(current_style, :bg_bright_yellow)
+
+      104 ->
+        apply_attribute(current_style, :bg_bright_blue)
+
+      105 ->
+        apply_attribute(current_style, :bg_bright_magenta)
+
+      106 ->
+        apply_attribute(current_style, :bg_bright_cyan)
+
+      107 ->
+        apply_attribute(current_style, :bg_bright_white)
 
       # Set Foreground Color (8-bit)
       {:fg_8bit, index} when index >= 0 and index <= 255 ->

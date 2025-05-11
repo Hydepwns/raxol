@@ -1,5 +1,6 @@
 defmodule RaxolWeb.TerminalChannelTest do
   use RaxolWeb.ChannelCase
+  use Raxol.DataCase
   # Ensure tests run sequentially due to mocking
   use ExUnit.Case, async: false
 
@@ -22,19 +23,25 @@ defmodule RaxolWeb.TerminalChannelTest do
 
   # Import Mox for function mocking
   import Mox
+  import Raxol.TestHelpers
 
   # Ensure Mox is validated on exit
   setup :verify_on_exit!
 
   setup do
+    # Generate a unique topic for each test
     topic = "terminal:" <> Ecto.UUID.generate()
 
+    # Create and join socket
     {:ok, _, socket} =
       UserSocket
       |> socket("user_socket:test", %{user_id: 1})
       |> subscribe_and_join(TerminalChannel, topic)
 
+    # Setup mock
     Mox.stub_with(EmulatorMock, Emulator)
+
+    # Return test context
     {:ok, socket: socket, topic: topic}
   end
 
@@ -44,20 +51,14 @@ defmodule RaxolWeb.TerminalChannelTest do
       topic: topic
     } do
       # Set up mock expectations
-      EmulatorMock
-
-      # |> expect(:new, fn _, _, _, _ -> {:ok, %Emulator{}} end) # Old location, moved inside test
-
-      # Explicitly expect new/4 to be called by the join function
       expect(EmulatorMock, :new, fn _width, _height ->
-        # Return a simple Emulator struct for this test
         {:ok, %Emulator{}}
       end)
 
       assert {:ok, _, updated_socket} =
                socket |> subscribe_and_join(TerminalChannel, topic)
 
-      # Compare string topic to session_id binary converted back to string using binary_to_string!
+      # Verify session ID and user ID
       assert String.replace_prefix(topic, "terminal:", "") ==
                Ecto.UUID.binary_to_string!(
                  updated_socket.assigns.terminal_state.session_id
@@ -68,14 +69,11 @@ defmodule RaxolWeb.TerminalChannelTest do
     end
 
     test "rejects invalid session topics" do
-      # Expect new/4 to be called *even if* the topic is invalid, as join/3 calls it before checking topic format?
-      # Let's re-check join/3 logic... yes, it calls Emulator.new() *before* pattern matching on topic.
+      # Expect new/4 to be called even for invalid topics
       expect(EmulatorMock, :new, fn _width, _height ->
-        # Needs to be expected even for failed join
         {:ok, %Emulator{}}
       end)
 
-      # Use the socket/3 function imported from Phoenix.ChannelTest
       {:ok, socket} = socket(UserSocket, "user_socket:fail", %{user_id: 2})
 
       assert {:error, %{reason: "unauthorized"}} =
@@ -84,11 +82,6 @@ defmodule RaxolWeb.TerminalChannelTest do
                  TerminalChannel,
                  "terminal:invalid-topic-format"
                )
-
-      # The actual rejection comes from pattern matching in join/3, but the socket setup itself might reject first?
-      # Rerunning the test... wait, the error in the previous run was Mox.VerificationError.
-      # The assertion currently is {:error, %{reason: "unauthorized"}} which might be wrong.
-      # Let's stick to fixing the Mox error first. Expect new/4.
     end
 
     # Add more tests for join/3 edge cases if needed
@@ -111,9 +104,6 @@ defmodule RaxolWeb.TerminalChannelTest do
       |> expect(:get_cursor_position, fn _ -> {5, 0} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
 
-      # Capture pid (optional, assert_receive works globally)
-      _pid = socket.channel_pid
-
       {:reply, :ok, _socket_after_input} =
         TerminalChannel.handle_in(
           "input",
@@ -128,7 +118,6 @@ defmodule RaxolWeb.TerminalChannelTest do
                          cursor: %{x: 5, y: 0, visible: true}
                        }
                      },
-                     # Add timeout to assert_receive
                      500
 
       assert is_binary(html_content)
@@ -140,11 +129,8 @@ defmodule RaxolWeb.TerminalChannelTest do
       |> expect(:process_input, fn _, "\x03" ->
         {Emulator.new(), "output_from_ctrl_c"}
       end)
-      # Assuming reset or no move
       |> expect(:get_cursor_position, fn _ -> {0, 0} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
-
-      _pid = socket.channel_pid
 
       {:reply, :ok, _socket_after_ctrl_c} =
         TerminalChannel.handle_in(
@@ -172,8 +158,6 @@ defmodule RaxolWeb.TerminalChannelTest do
       |> expect(:get_cursor_position, fn _ -> {0, 0} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
 
-      _pid = socket.channel_pid
-
       {:reply, :ok, _socket_after_resize} =
         TerminalChannel.handle_in(
           "resize",
@@ -194,30 +178,23 @@ defmodule RaxolWeb.TerminalChannelTest do
     end
 
     test "handles theme changes", %{socket: socket} do
-      # Mock expect for set_theme (assuming Renderer.set_theme doesn't involve EmulatorMock)
-      # We still need cursor info for the push
+      # Mock expect for cursor info
       EmulatorMock
       |> expect(:get_cursor_position, fn _ -> {10, 5} end)
-      |> expect(:get_cursor_visible, fn _ -> false end)
-
-      # Send theme as a map (adjust based on actual Renderer.set_theme expectation)
-      # Example map
-      theme_payload = %{
-        name: "solarized-dark",
-        colors: %{foreground: "#ffffff", background: "#000000"}
-      }
-
-      _pid = socket.channel_pid
+      |> expect(:get_cursor_visible, fn _ -> true end)
 
       {:reply, :ok, _socket_after_theme} =
-        TerminalChannel.handle_in("theme", %{"theme" => theme_payload}, socket)
+        TerminalChannel.handle_in(
+          "theme",
+          %{"theme" => "dark"},
+          socket
+        )
 
-      # Assert push with expected cursor, HTML might be complex to assert here
       assert_receive %Phoenix.Socket.Message{
                        event: "output",
                        payload: %{
                          html: html_content,
-                         cursor: %{x: 10, y: 5, visible: false}
+                         cursor: %{x: 10, y: 5, visible: true}
                        }
                      },
                      500

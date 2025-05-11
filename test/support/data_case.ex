@@ -1,11 +1,13 @@
 defmodule Raxol.DataCase do
   @moduledoc """
   This module defines the setup for tests requiring
-  access to the application\'s data layer.
+  access to the application's data layer.
 
-  It assumes the Ecto Sandbox owner process is already running
-  (likely started implicitly via Repo config `pool: Ecto.Adapters.SQL.Sandbox`)
-  and handles checking out connections and setting the mode.
+  It provides standardized database setup and cleanup
+  for all tests that need database access, including:
+  - Conditional database enabling
+  - Safe transaction handling
+  - Proper sandbox setup
   """
 
   use ExUnit.CaseTemplate
@@ -17,20 +19,46 @@ defmodule Raxol.DataCase do
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
-      # import Raxol.DataCase # No specific helper functions needed here yet
+      import Raxol.DataCase
     end
   end
 
   setup tags do
-    # Checkout a sandbox connection for this test process
     :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
 
     unless tags[:async] do
-      # If running synchronously, allow sharing the connection.
-      # Async tests require explicit checkouts and handle their connections separately.
       Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
     end
 
     :ok
+  end
+
+  @doc """
+  Helper function to safely execute database operations
+  within a transaction that will be rolled back.
+  """
+  def with_transaction(fun) do
+    if Application.get_env(:raxol, :database_enabled, false) do
+      Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+      fun.()
+    else
+      fun.()
+    end
+  end
+
+  @doc """
+  A helper that transforms changeset errors into a map of messages.
+
+      assert {:error, changeset} = Accounts.create_user(%{password: "short"})
+      assert "password is too short" in errors_on(changeset).password
+      assert %{password: ["password is too short"]} = errors_on(changeset)
+
+  """
+  def errors_on(changeset) do
+    Ecto.Changeset.traverse_errors(changeset, fn {msg, opts} ->
+      Regex.replace(~r"%{(\w+)}", msg, fn _, key ->
+        opts |> Keyword.get(String.to_existing_atom(key), key) |> to_string()
+      end)
+    end)
   end
 end

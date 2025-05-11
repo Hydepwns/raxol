@@ -124,6 +124,7 @@ defmodule Raxol.MixProject do
 
       # Testing
       {:mox, "~> 1.2.0", only: :test},
+      {:meck, "~> 0.9.2", only: :test},
       {:elixir_make, "~> 0.6", runtime: false},
       {:floki, ">= 0.30.0", only: :test},
       {:briefly, "~> 0.3", only: :test},

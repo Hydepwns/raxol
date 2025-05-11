@@ -12,9 +12,8 @@ defmodule Raxol.Core.Performance.MonitorTest do
     test "initializes with default settings" do
       {:ok, monitor} = Monitor.start_link()
 
-      # Allow time for the first memory check to occur
-      # Default interval is 5000ms
-      Process.sleep(5100)
+      # Wait for the first memory check to occur
+      assert_receive {:memory_check, _}, 6000
 
       metrics = Monitor.get_metrics(monitor)
 
@@ -56,9 +55,8 @@ defmodule Raxol.Core.Performance.MonitorTest do
       # Faster interval for testing
       {:ok, monitor} = Monitor.start_link(memory_check_interval: 100)
 
-      # Allow time for initial memory check
-      # Increased sleep
-      Process.sleep(300)
+      # Wait for initial memory check
+      assert_receive {:memory_check, _}, 400
 
       initial_metrics = Monitor.get_metrics(monitor)
       initial_memory = initial_metrics.memory_usage
@@ -70,9 +68,8 @@ defmodule Raxol.Core.Performance.MonitorTest do
       _large_binary = :binary.copy(" ", 1024 * 1024)
       :erlang.garbage_collect()
 
-      # Allow time for another memory check
-      # Increased sleep
-      Process.sleep(300)
+      # Wait for another memory check
+      assert_receive {:memory_check, _}, 400
 
       updated_metrics = Monitor.get_metrics(monitor)
       updated_memory = updated_metrics.memory_usage
@@ -121,8 +118,8 @@ defmodule Raxol.Core.Performance.MonitorTest do
       # Faster interval
       {:ok, monitor} = Monitor.start_link(memory_check_interval: 100)
 
-      # Allow time for initial check (Increased sleep)
-      Process.sleep(300)
+      # Wait for initial check
+      assert_receive {:memory_check, _}, 400
 
       initial_metrics = Monitor.get_metrics(monitor)
       # Assert initial GC stats structure
@@ -136,8 +133,8 @@ defmodule Raxol.Core.Performance.MonitorTest do
       _large_binary = :binary.copy(" ", 1024 * 10)
       :erlang.garbage_collect()
 
-      # Allow time for GC stats to be updated (Increased sleep)
-      Process.sleep(300)
+      # Wait for GC stats to be updated
+      assert_receive {:memory_check, _}, 400
 
       updated_metrics = Monitor.get_metrics(monitor)
       assert is_tuple(updated_metrics.gc_stats)

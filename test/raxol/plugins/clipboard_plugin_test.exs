@@ -1,6 +1,6 @@
 defmodule Raxol.Plugins.ClipboardPluginTest do
   # Can switch back to async with Mox
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   import Mox
 
   # Remove Mox.defmock - it's configured in config/test.exs

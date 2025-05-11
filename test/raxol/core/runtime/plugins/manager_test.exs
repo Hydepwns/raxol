@@ -1,11 +1,12 @@
 defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   # use Properties.Case # Temporarily commented out
 
   # --- Aliases & Meck Setup ---
   alias Raxol.Core.Runtime.Plugins.Manager
   alias Raxol.Core.Runtime.Plugins.{LifecycleHelper, CommandRegistry, Loader}
   alias Raxol.Core.Runtime.Plugins.LifecycleHelperBehaviour
+  alias Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
 
   # --- Mox for behaviours (if any remain) ---
   #   :ok
@@ -15,8 +16,8 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
   # Import Mox if other behaviour-based mocks are needed later
   import Mox
 
-  # Define mock for LifecycleHelperBehaviour
-  defmock(LifecycleHelperMock, for: LifecycleHelperBehaviour)
+  # Define mock for LifecycleHelper.Behaviour
+  defmock(LifecycleHelperMock, for: LifecycleHelper.Behaviour)
 
   # --- Mock Plugin Definitions (Keep for setup_test_plugins) ---
   # Keep the behaviour definitions themselves

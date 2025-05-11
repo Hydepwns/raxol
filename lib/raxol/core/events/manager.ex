@@ -28,6 +28,8 @@ defmodule Raxol.Core.Events.Manager do
   ```
   """
 
+  @behaviour Raxol.Core.Events.Manager.Behaviour
+
   @doc """
   Initialize the event manager.
 

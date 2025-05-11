@@ -1,16 +1,18 @@
 defmodule RaxolWeb.ChannelCase do
   @moduledoc """
-  This module defines the test case to be used by
-  channel tests.
+  This module defines the setup for tests requiring
+  access to the application's channel layer.
 
   Such tests rely on `Phoenix.ChannelTest` and also
   imports other functionality to make it easier
-  to build and query models.
+  to build common data structures and query the data layer.
 
   Finally, if the test case interacts with the database,
-  it cannot be async. For this reason, every test runs
-  inside a transaction which is reset at the beginning
-  of the test unless the test case is marked as async.
+  we enable the SQL sandbox, so changes done to the database
+  are reverted at the end of every test. If you are using
+  PostgreSQL, you can even run database tests asynchronously
+  by setting `use RaxolWeb.ChannelCase, async: true`, although
+  this option is not recommended for other databases.
   """
 
   use ExUnit.CaseTemplate
@@ -19,30 +21,33 @@ defmodule RaxolWeb.ChannelCase do
     quote do
       # Import conveniences for testing with channels
       import Phoenix.ChannelTest
+      import RaxolWeb.ChannelCase
 
       # The default endpoint for testing
       @endpoint RaxolWeb.Endpoint
-
-      alias Raxol.Repo
-      import Ecto
-      import Ecto.Changeset
-      import Ecto.Query
     end
   end
 
   setup tags do
-    # Ensure Endpoint is started for channel tests
-    # PubSub should be started by the application tree now
-    # start_supervised!({Phoenix.PubSub, name: Raxol.PubSub}) # Removed
-    start_supervised!(RaxolWeb.Endpoint)
+    # Use DataCase for database setup
+    {:ok, _} = Raxol.DataCase.setup(tags)
 
-    # Setup Ecto sandbox
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+    # Start the endpoint server for tests requiring it
+    start_endpoint(tags)
 
-    if !tags[:async] do
-      Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
-    end
+    :ok
+  end
 
+  @doc """
+  Starts the endpoint server for tests requiring it.
+  """
+  def start_endpoint(_) do
+    # Start applications necessary for the endpoint
+    Application.ensure_all_started(:phoenix)
+    Application.ensure_all_started(:plug_cowboy)
+
+    # Start the endpoint itself
+    RaxolWeb.Endpoint.start_link()
     :ok
   end
 end

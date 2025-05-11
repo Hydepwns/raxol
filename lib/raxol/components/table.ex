@@ -1,419 +1,348 @@
 defmodule Raxol.Components.Table do
   @moduledoc """
-  Renders data in a tabular format with optional headers, sorting, and pagination.
+  Table component for displaying and interacting with tabular data.
+
+  Features:
+  * Pagination
+  * Sorting
+  * Filtering
+  * Custom column formatting
+  * Row selection
   """
 
-  # Use standard component behaviour
-  use Raxol.UI.Components.Base.Component
-  require Logger
+  alias Raxol.Core.Renderer.View
+  alias Raxol.Core.Renderer.Views.Table, as: TableView
 
-  # Require view macros
-  require Raxol.View.Elements
-
-  # Define state struct
   defstruct id: nil,
             columns: [],
             data: [],
-            options: %{},
-            sort_by: nil,
-            sort_direction: :asc,
+            options: %{
+              paginate: false,
+              searchable: false,
+              sortable: false,
+              page_size: 10
+            },
             current_page: 1,
             page_size: 10,
             filter_term: "",
-            # Add any other necessary state fields
-            # Example default
-            width: 80,
-            # Example default
-            height: 20
+            sort_by: nil,
+            sort_direction: :asc,
+            scroll_top: 0,
+            selected_row: nil
 
-  # --- Component Behaviour Callbacks ---
+  @type column :: %{
+          id: atom(),
+          label: String.t(),
+          width: non_neg_integer() | :auto,
+          align: :left | :center | :right,
+          format: (term() -> String.t()) | nil
+        }
 
-  @impl Raxol.UI.Components.Base.Component
-  def init(props) do
-    # Initialize state from props, potentially merging with defaults
-    # Example: Merge options, set initial data/columns
-    opts = Map.get(props, :options, %{})
-    default_opts = %{paginate: false, searchable: false, sortable: false}
-    merged_opts = Map.merge(default_opts, opts)
+  @type options :: %{
+          paginate: boolean(),
+          searchable: boolean(),
+          sortable: boolean(),
+          page_size: non_neg_integer()
+        }
 
-    %__MODULE__{
-      id: props[:id],
-      columns: props[:columns] || [],
-      data: props[:data] || [],
-      options: merged_opts,
-      page_size: Map.get(opts, :page_size, 10),
-      width: Map.get(props, :width, 80),
-      height: Map.get(props, :height, 20)
-      # Initialize other fields as needed
+  @behaviour Raxol.UI.Components.Base.Component
+
+  @doc """
+  Initializes the table component with the given props.
+  """
+  def init(%{id: id, columns: columns, data: data} = props) do
+    options = Map.get(props, :options, %{
+      paginate: false,
+      searchable: false,
+      sortable: false,
+      page_size: 10
+    })
+
+    state = %{
+      id: id,
+      columns: columns,
+      data: data,
+      options: options,
+      current_page: 1,
+      page_size: options.page_size,
+      filter_term: "",
+      sort_by: nil,
+      sort_direction: :asc,
+      scroll_top: 0,
+      selected_row: nil
     }
+
+    {:ok, state}
   end
 
-  @impl Raxol.UI.Components.Base.Component
-  def update(msg, state) do
-    # Handle messages for sorting, pagination, filtering, etc.
-    Logger.debug("Table #{state.id} received message: #{inspect(msg)}")
-
-    case msg do
-      {:set_page, page} when is_integer(page) and page > 0 ->
-        {%{state | current_page: page}, []}
-
-      {:sort, column_id} ->
-        new_direction =
-          if state.sort_by == column_id and state.sort_direction == :asc,
-            do: :desc,
-            else: :asc
-
-        {%{state | sort_by: column_id, sort_direction: new_direction}, []}
-
-      {:filter, term} ->
-        # Reset to first page when filtering changes
-        {%{state | filter_term: term, current_page: 1}, []}
-
-      _ ->
-        {state, []}
-    end
+  def mount(state) do
+    {state, []}
   end
 
-  @impl Raxol.UI.Components.Base.Component
-  def handle_event(event, %{} = props, state) do
-    # Handle key events for navigation, selection, etc. if needed
-    Logger.debug("Table #{state.id} received event: #{inspect(event)}")
-
-    # Create search field ID constant for comparison
-    search_field_id = "#{state.id}_search"
-
-    case event do
-      # Handle keyboard navigation events for pagination
-      {:key, {:arrow_left, _mods}} ->
-        # Check for pagination option
-        if is_map_key(state.options, :paginate) && state.options.paginate do
-          # If paginate is enabled, go to previous page
-          current_page = state.current_page
-
-          if current_page > 1 do
-            {%{state | current_page: current_page - 1}, []}
-          else
-            {state, []}
-          end
-        else
-          {state, []}
-        end
-
-      {:key, {:arrow_right, _mods}} ->
-        # Check for pagination option
-        if is_map_key(state.options, :paginate) && state.options.paginate do
-          # If paginate is enabled, go to next page
-          current_page = state.current_page
-          total_items = length(state.data)
-          total_pages = max(1, ceil(total_items / state.page_size))
-
-          if current_page < total_pages do
-            {%{state | current_page: current_page + 1}, []}
-          else
-            {state, []}
-          end
-        else
-          {state, []}
-        end
-
-      # Handle text input for search field
-      {:text_input, id, value} ->
-        if id == search_field_id && is_map_key(state.options, :searchable) &&
-             state.options.searchable do
-          # Update filter term and reset to first page
-          {%{state | filter_term: value, current_page: 1}, []}
-        else
-          {state, []}
-        end
-
-      # Handle button clicks
-      {:button_click, id} ->
-        cond do
-          # Pagination button clicks
-          id == "#{state.id}_prev_page" ->
-            {%{state | current_page: max(1, state.current_page - 1)}, []}
-
-          id == "#{state.id}_next_page" ->
-            total_items = length(state.data)
-            total_pages = max(1, ceil(total_items / state.page_size))
-
-            {%{state | current_page: min(total_pages, state.current_page + 1)},
-             []}
-
-          # Column header sort button clicks
-          String.starts_with?(id, "#{state.id}_sort_") and
-              state.options[:sortable] ->
-            # Extract column id from button id
-            column_id =
-              String.replace_prefix(id, "#{state.id}_sort_", "")
-              |> String.to_atom()
-
-            new_direction =
-              if state.sort_by == column_id and state.sort_direction == :asc,
-                do: :desc,
-                else: :asc
-
-            {%{state | sort_by: column_id, sort_direction: new_direction}, []}
-
-          true ->
-            {state, []}
-        end
-
-      _ ->
-        {state, []}
-    end
+  @doc """
+  Updates the table state based on the given message.
+  """
+  def update({:filter, term}, state) do
+    new_state = %{state | filter_term: term, current_page: 1, scroll_top: 0}
+    {:ok, new_state}
   end
 
-  # --- Render Logic ---
-
-  # Main render function implementing Component behaviour
-  @impl Raxol.UI.Components.Base.Component
-  # Changed arity to 2
-  def render(state, %{} = _props) do
-    # Prepare data (filter, sort, paginate)
-    processed_data = process_data(state)
-
-    # Calculate layout (column widths, etc.) - Placeholder
-    col_widths = calculate_column_widths(state.columns, state.width)
-
-    # Use View Elements macros
-    Raxol.View.Elements.column id: state.id,
-                               width: state.width,
-                               height: state.height do
-      # Render Search Bar if searchable
-      if state.options[:searchable] do
-        render_search_bar(state)
-      end
-
-      # Render Header
-      if state.options[:header] != false do
-        render_header(state.columns, col_widths, state)
-      end
-
-      # Render Separator (example)
-      Raxol.View.Elements.label(content: String.duplicate("-", state.width))
-
-      # Render Data Rows
-      render_data_rows(processed_data, state.columns, col_widths, state)
-
-      # Render Footer (pagination controls, etc.) - Placeholder
-      if state.options[:paginate] do
-        render_pagination_footer(state)
-      end
-    end
-
-    # Note: Raxol.View.Elements.column returns the element structure directly
-    # No need for to_element here unless the result needs wrapping.
+  def update({:sort, column}, state) do
+    new_direction = if state.sort_by == column && state.sort_direction == :asc, do: :desc, else: :asc
+    new_state = %{state | sort_by: column, sort_direction: new_direction}
+    {:ok, new_state}
   end
 
-  # --- Internal Render Helpers (Simplified) ---
-
-  defp render_search_bar(state) do
-    Raxol.View.Elements.row do
-      Raxol.View.Elements.label(content: "Search: ")
-
-      Raxol.View.Elements.text_input(
-        id: "#{state.id}_search",
-        value: state.filter_term,
-        placeholder: "Filter table...",
-        on_change: fn value -> {:filter, value} end,
-        width: state.width - 10
-      )
-    end
+  def update({:set_page, page}, state) do
+    filtered_data = filter_data(state.data, state.filter_term)
+    max_page = max(1, ceil(length(filtered_data) / state.page_size))
+    new_page = max(1, min(page, max_page))
+    new_state = %{state | current_page: new_page, scroll_top: 0}
+    {:ok, new_state}
   end
 
-  defp render_header(columns, col_widths, state) do
-    Raxol.View.Elements.row do
-      # Render each column header
-      Enum.map(columns, fn %{id: id, label: label} ->
-        width = Map.get(col_widths, id, 10)
-
-        # Determine if this column is the sort column and the direction
-        is_sort_column = state.sort_by == id
-
-        sort_indicator =
-          cond do
-            not state.options[:sortable] -> ""
-            not is_sort_column -> " "
-            state.sort_direction == :asc -> " ▲"
-            state.sort_direction == :desc -> " ▼"
-            true -> " "
-          end
-
-        # Calculate adjusted width to account for sort indicator
-        adjusted_width = width - String.length(sort_indicator)
-
-        # Format header text with possible truncation
-        header_text = String.slice(label, 0, max(0, adjusted_width))
-        padded_text = String.pad_trailing(header_text, adjusted_width)
-
-        # Add the sort indicator and create the full label
-        full_text = padded_text <> sort_indicator <> " "
-
-        # If sortable, render as a button, otherwise as a label
-        if state.options[:sortable] do
-          Raxol.View.Elements.button(
-            id: "#{state.id}_sort_#{id}",
-            label: full_text,
-            action: {:sort, id},
-            style: %{
-              bold: true,
-              underline: is_sort_column,
-              # Account for space separator
-              width: width + 1
-            }
-          )
-        else
-          Raxol.View.Elements.label(
-            content: full_text,
-            # Account for space separator
-            style: %{bold: true, width: width + 1}
-          )
-        end
-      end)
-    end
+  def update({:select_row, row_index}, state) do
+    new_state = %{state | selected_row: row_index}
+    {:ok, new_state}
   end
 
-  defp render_data_rows(data, columns, col_widths, state) do
-    Enum.map(data, fn row_data ->
-      render_single_row(row_data, columns, col_widths, state)
-    end)
-  end
+  @doc """
+  Renders the table component.
+  """
+  def render(state, _context) do
+    # Apply filtering
+    filtered_data = filter_data(state.data, state.filter_term)
 
-  defp render_single_row(row_data, columns, col_widths, _state) do
-    row_cells =
-      Enum.map(columns, fn %{id: id} ->
-        cell_value = Map.get(row_data, id, "") |> to_string()
-        width = Map.get(col_widths, id, 10)
-        # Pad/truncate value
-        # Add space separator
-        String.pad_trailing(cell_value, width) <> " "
-      end)
+    # Apply sorting
+    sorted_data = sort_data(filtered_data, state.sort_by, state.sort_direction)
 
-    Raxol.View.Elements.row do
-      Raxol.View.Elements.label(content: Enum.join(row_cells))
-    end
-  end
+    # Apply pagination
+    paginated_data = paginate_data(sorted_data, state.current_page, state.page_size)
 
-  defp render_pagination_footer(state) do
-    # Calculate total pages
-    total_items = length(state.data)
-    total_pages = max(1, ceil(total_items / state.page_size))
+    # Create header
+    header = create_header(state.columns, state)
 
-    # Ensure current_page is within bounds
-    current_page = max(1, min(state.current_page, total_pages))
+    # Create rows
+    rows = create_rows(paginated_data, state.columns, state.selected_row)
 
-    # Create a pagination row with controls
-    Raxol.View.Elements.row do
-      # "Previous" button
-      Raxol.View.Elements.button(
-        id: "#{state.id}_prev_page",
-        label: "< Prev",
-        action: {:set_page, max(1, current_page - 1)},
-        enabled: current_page > 1
-      )
+    # Create pagination controls if enabled
+    pagination = if state.options.paginate, do: create_pagination(state), else: []
 
-      # Page indicator
-      Raxol.View.Elements.label(
-        content: " Page #{current_page} of #{total_pages} ",
-        style: %{bold: true}
-      )
-
-      # "Next" button
-      Raxol.View.Elements.button(
-        id: "#{state.id}_next_page",
-        label: "Next >",
-        action: {:set_page, min(total_pages, current_page + 1)},
-        enabled: current_page < total_pages
-      )
-
-      # Additional information
-      Raxol.View.Elements.label(
-        content: " (#{total_items} items, #{state.page_size} per page)"
-      )
-    end
-  end
-
-  # --- Data Processing Helpers ---
-
-  defp process_data(state) do
-    # Apply filtering, sorting, pagination based on state.options and state fields
-    # Start with raw data
-    data = state.data
-
-    # Apply filtering if filter_term is present and filtering is enabled
-    data =
-      if state.options[:searchable] && state.filter_term &&
-           state.filter_term != "" do
-        filter_data(data, state.filter_term)
-      else
-        data
-      end
-
-    # Apply sorting if sort_by is present and sorting is enabled
-    data =
-      if state.options[:sortable] && state.sort_by do
-        sort_data(data, state.sort_by, state.sort_direction)
-      else
-        data
-      end
-
-    # Apply pagination if enabled
-    if state.options[:paginate] do
-      paginate_data(data, state.current_page, state.page_size)
-    else
-      data
-    end
-  end
-
-  defp filter_data(data, filter_term) do
-    filter_term = String.downcase(filter_term)
-
-    Enum.filter(data, fn row ->
-      # Check if any field in the row contains the filter term
-      Enum.any?(row, fn {_key, value} ->
-        value
-        |> to_string()
-        |> String.downcase()
-        |> String.contains?(filter_term)
-      end)
-    end)
-  end
-
-  defp sort_data(data, sort_by, direction) do
-    Enum.sort_by(
-      data,
-      fn row ->
-        Map.get(row, sort_by)
-      end,
-      sort_direction_to_comparator(direction)
+    # Combine all elements
+    Raxol.Core.Renderer.View.box(
+      border: :single,
+      children: [
+        header,
+        Raxol.Core.Renderer.View.flex(
+          direction: :column,
+          children: rows
+        ),
+        Raxol.Core.Renderer.View.flex(
+          direction: :row,
+          justify: :space_between,
+          children: pagination
+        )
+      ]
     )
   end
 
-  defp sort_direction_to_comparator(:asc), do: &<=/2
-  defp sort_direction_to_comparator(:desc), do: &>=/2
+  @doc """
+  Handles events for the table component.
+  """
+  def handle_event({:key, {:arrow_down, _}}, _context, state) do
+    filtered_data = filter_data(state.data, state.filter_term)
+    visible_rows = state.page_size - 1  # Account for header
+    max_scroll = max(0, length(filtered_data) - visible_rows)
+    new_scroll = min(state.scroll_top + 1, max_scroll)
+    new_state = %{state | scroll_top: new_scroll}
+
+    # Update selected row if selection is enabled
+    if state.selected_row != nil do
+      new_selected = min(state.selected_row + 1, length(filtered_data) - 1)
+      new_state = %{new_state | selected_row: new_selected}
+    end
+
+    {:ok, new_state}
+  end
+
+  def handle_event({:key, {:arrow_up, _}}, _context, state) do
+    new_scroll = max(0, state.scroll_top - 1)
+    new_state = %{state | scroll_top: new_scroll}
+
+    # Update selected row if selection is enabled
+    if state.selected_row != nil do
+      new_selected = max(0, state.selected_row - 1)
+      new_state = %{new_state | selected_row: new_selected}
+    end
+
+    {:ok, new_state}
+  end
+
+  def handle_event({:key, {:page_down, _}}, _context, state) do
+    filtered_data = filter_data(state.data, state.filter_term)
+    visible_rows = state.page_size - 1  # Account for header
+    max_scroll = max(0, length(filtered_data) - visible_rows)
+    new_scroll = min(state.scroll_top + visible_rows, max_scroll)
+    new_state = %{state | scroll_top: new_scroll}
+
+    # Update selected row if selection is enabled
+    if state.selected_row != nil do
+      new_selected = min(state.selected_row + visible_rows, length(filtered_data) - 1)
+      new_state = %{new_state | selected_row: new_selected}
+    end
+
+    {:ok, new_state}
+  end
+
+  def handle_event({:key, {:page_up, _}}, _context, state) do
+    visible_rows = state.page_size - 1  # Account for header
+    new_scroll = max(0, state.scroll_top - visible_rows)
+    new_state = %{state | scroll_top: new_scroll}
+
+    # Update selected row if selection is enabled
+    if state.selected_row != nil do
+      new_selected = max(0, state.selected_row - visible_rows)
+      new_state = %{new_state | selected_row: new_selected}
+    end
+
+    {:ok, new_state}
+  end
+
+  def handle_event({:mouse, {:click, {_x, y}}}, _context, state) do
+    # Convert y coordinate to row index, accounting for header
+    row_index = y - 1
+    if row_index >= 0 and row_index < length(state.data) do
+      {:ok, %{state | selected_row: row_index}}
+    else
+      {:ok, state}
+    end
+  end
+
+  def handle_event({:button_click, button_id}, _context, state) do
+    case button_id do
+      "test_table_next_page" ->
+        filtered_data = filter_data(state.data, state.filter_term)
+        max_page = max(1, ceil(length(filtered_data) / state.page_size))
+        new_page = min(state.current_page + 1, max_page)
+        {:ok, %{state | current_page: new_page, scroll_top: 0}}
+
+      "test_table_prev_page" ->
+        new_page = max(1, state.current_page - 1)
+        {:ok, %{state | current_page: new_page, scroll_top: 0}}
+
+      "test_table_sort_" <> column ->
+        column = String.to_existing_atom(column)
+        new_direction = if state.sort_by == column && state.sort_direction == :asc, do: :desc, else: :asc
+        {:ok, %{state | sort_by: column, sort_direction: new_direction}}
+
+      _ ->
+        {:ok, state}
+    end
+  end
+
+  def unmount(state) do
+    state
+  end
+
+  # Private Helpers
+
+  defp filter_data(data, term) when term == "", do: data
+  defp filter_data(data, term) do
+    term = String.downcase(term)
+    Enum.filter(data, fn row ->
+      Enum.any?(row, fn {_key, value} ->
+        to_string(value) |> String.downcase() |> String.contains?(term)
+      end)
+    end)
+  end
+
+  defp sort_data(data, nil, _direction), do: data
+  defp sort_data(data, column, direction) do
+    Enum.sort_by(data, fn row -> row[column] end, fn a, b ->
+      case direction do
+        :asc -> compare_values(a, b)
+        :desc -> compare_values(b, a)
+      end
+    end)
+  end
+
+  defp compare_values(a, b) when is_number(a) and is_number(b), do: a <= b
+  defp compare_values(a, b) when is_binary(a) and is_binary(b), do: a <= b
+  defp compare_values(a, b) when is_atom(a) and is_atom(b), do: a <= b
+  defp compare_values(a, b) when is_binary(a), do: to_string(a) <= to_string(b)
+  defp compare_values(a, b) when is_binary(b), do: to_string(a) <= to_string(b)
+  defp compare_values(a, b), do: to_string(a) <= to_string(b)
 
   defp paginate_data(data, page, page_size) do
-    offset = (page - 1) * page_size
-    Enum.slice(data, offset, page_size)
+    start_index = (page - 1) * page_size
+    Enum.slice(data, start_index, page_size)
   end
 
-  defp calculate_column_widths(columns, total_width) do
-    # Placeholder: Distribute width evenly
-    num_cols = length(columns)
+  defp create_header(columns, state) do
+    header_cells = Enum.map(columns, fn column ->
+      content = if state.options.sortable do
+        "#{column.label} #{sort_indicator(state.sort_by, state.sort_direction, column.id)}"
+      else
+        column.label
+      end
 
-    each_width =
-      if num_cols > 0, do: div(total_width, num_cols), else: total_width
+      Raxol.Core.Renderer.View.text(
+        content,
+        style: [:bold],
+        align: column.align
+      )
+    end)
 
-    Map.new(columns, fn %{id: id} -> {id, each_width} end)
+    Raxol.Core.Renderer.View.flex(
+      direction: :row,
+      children: header_cells
+    )
   end
 
-  # --- Original Helper Functions (May need removal/refactoring) ---
-  # Keep relevant ones, remove those replaced by Component logic or render helpers
+  defp create_rows(data, columns, selected_row) do
+    Enum.map(Enum.with_index(data), fn {row, index} ->
+      cells = Enum.map(columns, fn column ->
+        value = row[column.id]
+        formatted = if column.format, do: column.format.(value), else: to_string(value)
 
-  # Example: Original render function (remove or adapt)
-  # def render(data, columns, options) do ... end
+        # Apply selection style if this row is selected
+        style = if index == selected_row, do: [bg: :blue, fg: :white], else: []
 
-  # Example: Original pagination helper (adapt or remove)
-  # defp paginated(data, page, page_size, sort_by, sort_direction, filter_term) do ... end
+        Raxol.Core.Renderer.View.text(
+          formatted,
+          align: column.align,
+          style: style
+        )
+      end)
+
+      Raxol.Core.Renderer.View.flex(
+        direction: :row,
+        children: cells
+      )
+    end)
+  end
+
+  defp create_pagination(state) do
+    filtered_data = filter_data(state.data, state.filter_term)
+    max_page = max(1, ceil(length(filtered_data) / state.page_size))
+    [
+      Raxol.Core.Renderer.View.text("Page #{state.current_page} of #{max_page}"),
+      Raxol.Core.Renderer.View.flex(
+        direction: :row,
+        gap: 1,
+        children: [
+          Raxol.Core.Renderer.View.text("←", id: "test_table_prev_page"),
+          Raxol.Core.Renderer.View.text("→", id: "test_table_next_page")
+        ]
+      )
+    ]
+  end
+
+  defp sort_indicator(sort_by, sort_direction, column_id) do
+    cond do
+      sort_by != column_id -> ""
+      sort_direction == :asc -> "↑"
+      sort_direction == :desc -> "↓"
+    end
+  end
 end

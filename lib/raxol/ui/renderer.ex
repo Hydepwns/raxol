@@ -160,10 +160,6 @@ defmodule Raxol.UI.Renderer do
       Map.get(attrs, :border) ||
         Map.get(theme.component_styles[component_type] || %{}, :border, :none)
 
-    # Initialize cell lists
-    # background_cells = [] # Removed - assigned below
-    # border_cells = [] # Removed - assigned below
-
     # Draw background first
     background_cells =
       if w > 0 and h > 0 do
@@ -180,27 +176,25 @@ defmodule Raxol.UI.Renderer do
         border_chars = get_border_chars(border_style)
 
         # Draw corners
-        corner_cells =
-          [
-            # Top-left
-            {x, y, border_chars.top_left, fg, bg, style_attrs},
-            # Top-right
-            {x + w - 1, y, border_chars.top_right, fg, bg, style_attrs},
-            # Bottom-left
-            {x, y + h - 1, border_chars.bottom_left, fg, bg, style_attrs},
-            # Bottom-right
-            {x + w - 1, y + h - 1, border_chars.bottom_right, fg, bg,
-             style_attrs}
-          ]
+        corner_cells = [
+          # Top-left
+          {x, y, border_chars.top_left, fg, bg, style_attrs},
+          # Top-right
+          {x + w - 1, y, border_chars.top_right, fg, bg, style_attrs},
+          # Bottom-left
+          {x, y + h - 1, border_chars.bottom_left, fg, bg, style_attrs},
+          # Bottom-right
+          {x + w - 1, y + h - 1, border_chars.bottom_right, fg, bg, style_attrs}
+        ]
 
         # Draw horizontal lines (if width > 1)
         horizontal_cells =
           if w > 1 do
             for cur_x <- (x + 1)..(x + w - 2) do
               [
-                # Top
+                # Top line
                 {cur_x, y, border_chars.horizontal, fg, bg, style_attrs},
-                # Bottom
+                # Bottom line
                 {cur_x, y + h - 1, border_chars.horizontal, fg, bg, style_attrs}
               ]
             end
@@ -214,9 +208,9 @@ defmodule Raxol.UI.Renderer do
           if h > 1 do
             for cur_y <- (y + 1)..(y + h - 2) do
               [
-                # Left
+                # Left line
                 {x, cur_y, border_chars.vertical, fg, bg, style_attrs},
-                # Right
+                # Right line
                 {x + w - 1, cur_y, border_chars.vertical, fg, bg, style_attrs}
               ]
             end
@@ -225,15 +219,12 @@ defmodule Raxol.UI.Renderer do
             []
           end
 
-        # Combine border cells
         corner_cells ++ horizontal_cells ++ vertical_cells
       else
-        # No border
         []
       end
 
-    # Return combined background and border cells
-    # Border cells should render 'on top' of background due to list order
+    # Combine background and border cells
     background_cells ++ border_cells
   end
 
@@ -249,7 +240,7 @@ defmodule Raxol.UI.Renderer do
 
     # Get specific styles for header, separator, data rows from theme
     table_base_styles =
-      Raxol.UI.Theming.Theme.component_style(theme, component_type)
+      Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
 
     header_style = %{
       fg: Map.get(table_base_styles, :header_fg, :cyan),
@@ -524,5 +515,20 @@ defmodule Raxol.UI.Renderer do
     bg_color = Map.get(attrs, :bg, @default_bg)
     style_attrs = Map.get(attrs, :style, []) |> Enum.uniq()
     {fg_color, bg_color, style_attrs}
+  end
+
+  # Clause to handle when attrs is a map with style attributes
+  defp resolve_styles(%{fg: fg, bg: bg, style: style}, _component_type, theme) do
+    resolve_styles(%{fg: fg, bg: bg, style: style}, nil, theme)
+  end
+
+  # Clause to handle when attrs is a map with just fg and bg
+  defp resolve_styles(%{fg: fg, bg: bg}, _component_type, theme) do
+    resolve_styles(%{fg: fg, bg: bg, style: []}, nil, theme)
+  end
+
+  # Clause to handle when attrs is a map with just style
+  defp resolve_styles(%{style: style}, _component_type, theme) do
+    resolve_styles(%{fg: @default_fg, bg: @default_bg, style: style}, nil, theme)
   end
 end

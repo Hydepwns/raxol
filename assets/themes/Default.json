@@ -1,79 +1,97 @@
 {
   "name": "Default",
+  "description": "The default Raxol theme",
+  "id": "default",
   "high_contrast": false,
-  "palette": {
-    "accent": {
-      "r": 190,
-      "g": 88,
-      "b": 0,
-      "a": 1.0
-    },
-    "background": {
-      "r": 255,
-      "g": 255,
-      "b": 255,
-      "a": 1.0
-    },
-    "error": {
-      "r": 204,
-      "g": 0,
-      "b": 0,
-      "a": 1.0
-    },
-    "info": {
-      "r": 0,
-      "g": 114,
-      "b": 165,
-      "a": 1.0
-    },
+  "colors": {
     "primary": {
-      "r": 0,
-      "g": 119,
-      "b": 204,
-      "a": 1.0
+      "hex": "#0077CC",
+      "rgb": [0, 119, 204],
+      "alpha": 1.0
     },
     "secondary": {
-      "r": 102,
-      "g": 102,
-      "b": 102,
-      "a": 1.0
+      "hex": "#666666",
+      "rgb": [102, 102, 102],
+      "alpha": 1.0
     },
-    "success": {
-      "r": 0,
-      "g": 127,
-      "b": 0,
-      "a": 1.0
+    "accent": {
+      "hex": "#FF9900",
+      "rgb": [255, 153, 0],
+      "alpha": 1.0
+    },
+    "background": {
+      "hex": "#FFFFFF",
+      "rgb": [255, 255, 255],
+      "alpha": 1.0
     },
     "surface": {
-      "r": 115,
-      "g": 115,
-      "b": 115,
-      "a": 1.0
+      "hex": "#F5F5F5",
+      "rgb": [245, 245, 245],
+      "alpha": 1.0
     },
-    "text": {
-      "r": 51,
-      "g": 51,
-      "b": 51,
-      "a": 1.0
+    "error": {
+      "hex": "#CC0000",
+      "rgb": [204, 0, 0],
+      "alpha": 1.0
+    },
+    "success": {
+      "hex": "#009900",
+      "rgb": [0, 153, 0],
+      "alpha": 1.0
     },
     "warning": {
-      "r": 190,
-      "g": 88,
-      "b": 0,
-      "a": 1.0
+      "hex": "#FF9900",
+      "rgb": [255, 153, 0],
+      "alpha": 1.0
+    },
+    "info": {
+      "hex": "#0099CC",
+      "rgb": [0, 153, 204],
+      "alpha": 1.0
+    },
+    "text": {
+      "hex": "#333333",
+      "rgb": [51, 51, 51],
+      "alpha": 1.0
     }
   },
-  "dark_mode": false,
-  "ui_mappings": {
-    "accent_button": "accent",
-    "app_background": "background",
-    "error_text": "error",
-    "info_text": "info",
-    "primary_button": "primary",
-    "secondary_button": "secondary",
-    "success_text": "success",
-    "surface_background": "surface",
-    "text": "text",
-    "warning_text": "warning"
+  "component_styles": {
+    "panel": {
+      "border": "single",
+      "padding": 1
+    },
+    "button": {
+      "padding": [0, 1],
+      "text_style": ["bold"]
+    },
+    "text_field": {
+      "border": "single",
+      "padding": [0, 1]
+    }
+  },
+  "variants": {
+    "high_contrast": {
+      "colors": {
+        "primary": {
+          "hex": "#0000FF",
+          "rgb": [0, 0, 255],
+          "alpha": 1.0
+        },
+        "background": {
+          "hex": "#000000",
+          "rgb": [0, 0, 0],
+          "alpha": 1.0
+        },
+        "text": {
+          "hex": "#FFFFFF",
+          "rgb": [255, 255, 255],
+          "alpha": 1.0
+        }
+      }
+    }
+  },
+  "metadata": {
+    "author": "Raxol",
+    "version": "1.0.0"
   }
 }

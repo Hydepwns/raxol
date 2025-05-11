@@ -125,15 +125,16 @@ defmodule Raxol.Terminal.Cursor.ManagerTest do
     end
 
     test "toggles visibility for blinking cursor" do
-      cursor = Manager.new()
+      # Create a cursor with a very short blink rate for testing
+      cursor = %{Manager.new() | blink_rate: 50}
       cursor = Manager.set_state(cursor, :blinking)
 
       # First update should be visible
       {cursor, visible1} = Manager.update_blink(cursor)
       assert visible1 == true
 
-      # Wait for half a blink cycle
-      Process.sleep(300)
+      # Wait for blink state change
+      assert_receive {:cursor_blink_state_changed, false}, 100
 
       # Second update should be hidden
       {_cursor, visible2} = Manager.update_blink(cursor)

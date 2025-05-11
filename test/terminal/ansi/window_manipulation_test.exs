@@ -95,21 +95,31 @@ defmodule Raxol.Terminal.ANSI.WindowManipulationTest do
       assert response == ""
     end
 
-    test "handles window query operation" do
-      state = %{WindowManipulation.new() | size: {100, 50}, position: {10, 5}}
+    test "handles window size report request" do
+      state = WindowManipulation.new()
+
+      {new_state, response} =
+        WindowManipulation.process_sequence(state, "\e[18t")
+
+      assert new_state == state
+      assert response == "\e[8;24;80t"
+    end
+
+    test "handles window position report request" do
+      state = WindowManipulation.new()
 
       {new_state, response} =
         WindowManipulation.process_sequence(state, "\e[13t")
 
       assert new_state == state
-      assert response == "\e[8;50;100t\e[3;5;10t"
+      assert response == "\e[3;0;0t"
     end
 
-    test "handles invalid sequence" do
+    test "handles invalid sequences gracefully" do
       state = WindowManipulation.new()
 
       {new_state, response} =
-        WindowManipulation.process_sequence(state, "\e[invalid")
+        WindowManipulation.process_sequence(state, "\e[999t")
 
       assert new_state == state
       assert response == ""

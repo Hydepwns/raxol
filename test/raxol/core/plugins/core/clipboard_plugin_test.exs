@@ -1,6 +1,6 @@
 defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   # Mox is async-friendly
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   import Mox
 
   alias Raxol.Core.Plugins.Core.ClipboardPlugin
@@ -29,16 +29,15 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
 
   test "get_commands/0 returns clipboard commands", %{state: _state} do
     expected_commands = [
-      # Updated arity based on previous fixes to how CommandHelper calls handle_command/2
       {:clipboard_write, :handle_command, 1},
-      {:clipboard_read, :handle_command, 1}
+      {:clipboard_read, :handle_command, 0}
     ]
 
     assert ClipboardPlugin.get_commands() == expected_commands
     # No mocking needed for get_commands
   end
 
-  test "handle_command/2 :clipboard_write calls Raxol.System.Clipboard.copy/1",
+  test "handle_command/3 :clipboard_write calls Raxol.System.Clipboard.copy/1",
        %{state: current_state} do
     test_text = "Hello Raxol"
 
@@ -49,13 +48,13 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
 
     # Call the command handler. Args for write is [test_text]
     assert {:ok, ^current_state, {:ok, :clipboard_write_ok}} =
-             ClipboardPlugin.handle_command([test_text], current_state)
+             ClipboardPlugin.handle_command(:clipboard_write, [test_text], current_state)
 
     # Verify expectations for this test
     Mox.verify!(ClipboardMock)
   end
 
-  test "handle_command/2 :clipboard_read calls Raxol.System.Clipboard.paste/0 and returns text",
+  test "handle_command/3 :clipboard_read calls Raxol.System.Clipboard.paste/0 and returns text",
        %{state: current_state} do
     expected_text = "Pasted Text"
 
@@ -65,12 +64,12 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
 
     # Call the command handler. Args for read is [nil]
     assert {:ok, ^current_state, {:ok, ^expected_text}} =
-             ClipboardPlugin.handle_command([nil], current_state)
+             ClipboardPlugin.handle_command(:clipboard_read, [], current_state)
 
     Mox.verify!(ClipboardMock)
   end
 
-  test "handle_command/2 :clipboard_read handles Raxol.System.Clipboard.paste/0 error",
+  test "handle_command/3 :clipboard_read handles Raxol.System.Clipboard.paste/0 error",
        %{state: current_state} do
     error_reason = {:paste_command_failed, "some error"}
 
@@ -80,17 +79,16 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
 
     # Call the command handler. Args for read is [nil]
     assert {:error, {:clipboard_read_failed, ^error_reason}, ^current_state} =
-             ClipboardPlugin.handle_command([nil], current_state)
+             ClipboardPlugin.handle_command(:clipboard_read, [], current_state)
 
     Mox.verify!(ClipboardMock)
   end
 
-  test "handle_command/2 returns error for unknown command args", %{
+  test "handle_command/3 returns error for unknown command args", %{
     state: current_state
   } do
     # No mocking needed for this path. Call with an unexpected arg structure for the catch-all handle_command/2
-    assert {:error, {:unexpected_command_args, [:unknown_cmd_arg]},
-            ^current_state} =
-             ClipboardPlugin.handle_command([:unknown_cmd_arg], current_state)
+    assert {:error, {:unknown_plugin_command, :unknown_cmd, [:unknown_cmd_arg]}, ^current_state} =
+             ClipboardPlugin.handle_command(:unknown_cmd, [:unknown_cmd_arg], current_state)
   end
 end

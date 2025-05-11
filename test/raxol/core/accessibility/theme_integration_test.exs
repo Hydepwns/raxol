@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
-  use ExUnit.Case, async: true
+  use Raxol.DataCase, async: true
 
   alias Raxol.Components.FocusRing
   alias Raxol.Core.Accessibility.ThemeIntegration
@@ -69,233 +69,239 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
     end
   end
 
-  # Skip: Test needs rewrite. apply_settings/1 now takes options directly and internal logic changed (no Process.put).
-  @tag :skip
-  describe "apply_current_settings/0" do
-    test "applies current accessibility settings" do
-      # Set up accessibility options
-      Process.put(:accessibility_options,
-        high_contrast: true,
-        reduced_motion: true,
-        large_text: true
-      )
-
-      # Apply settings
-      assert :ok = ThemeIntegration.apply_current_settings()
-
-      # Verify text scale was set
-      assert Process.get(:accessibility_text_scale) == 1.5
-
-      # Verify component styles were updated
-      component_styles = Process.get(:accessibility_component_styles)
-      assert component_styles != nil
-
-      # Clean up
-      Process.delete(:accessibility_options)
-      Process.delete(:accessibility_text_scale)
-      Process.delete(:accessibility_component_styles)
-    end
-  end
-
   describe "handle_high_contrast/1" do
     test "updates component styles for high contrast mode" do
+      # Subscribe to theme change events
+      ref = make_ref()
+      EventManager.subscribe(ref, :theme_changed)
+
       # Handle high contrast event
       assert :ok =
                ThemeIntegration.handle_high_contrast(
                  {:accessibility_high_contrast, true}
                )
 
-      # Verify component styles were updated
-      component_styles = Process.get(:accessibility_component_styles)
-      assert component_styles != nil
+      # Wait for theme change event
+      assert_receive {:theme_changed, %{high_contrast: true}}, 1000
 
-      # Check button colors
-      assert component_styles.button.background == :yellow
-      assert component_styles.button.foreground == :black
+      # Get color scheme
+      scheme = ThemeIntegration.get_color_scheme()
+      assert scheme != nil
 
-      # Clean up
-      Process.delete(:accessibility_component_styles)
+      # Verify high contrast colors
+      assert scheme.background == :black
+      assert scheme.foreground == :white
+
+      # Cleanup subscription
+      EventManager.unsubscribe(ref, :theme_changed)
     end
 
     test "updates component styles for standard mode" do
+      # Subscribe to theme change events
+      ref = make_ref()
+      EventManager.subscribe(ref, :theme_changed)
+
       # Handle standard contrast event
       assert :ok =
                ThemeIntegration.handle_high_contrast(
                  {:accessibility_high_contrast, false}
                )
 
-      # Verify component styles were updated
-      component_styles = Process.get(:accessibility_component_styles)
-      assert component_styles != nil
+      # Wait for theme change event
+      assert_receive {:theme_changed, %{high_contrast: false}}, 1000
 
-      # Check button colors
-      assert component_styles.button.background == {:rgb, 0, 120, 215}
-      assert component_styles.button.foreground == :white
+      # Get color scheme
+      scheme = ThemeIntegration.get_color_scheme()
+      assert scheme != nil
 
-      # Clean up
-      Process.delete(:accessibility_component_styles)
+      # Verify standard colors
+      assert scheme.background == {:rgb, 30, 30, 30}
+      assert scheme.foreground == {:rgb, 220, 220, 220}
+
+      # Cleanup subscription
+      EventManager.unsubscribe(ref, :theme_changed)
     end
   end
 
   describe "handle_reduced_motion/1" do
     test "disables animations when reduced motion is enabled" do
-      # Record initial configuration
-      # initial_config = Process.get(:focus_ring_config) # No longer needed
+      # Subscribe to theme change events
+      ref = make_ref()
+      EventManager.subscribe(ref, :theme_changed)
 
-      # Mock FocusRing.configure -- REMOVING MECK
-      # original_configure = Function.capture(FocusRing, :configure, 1)
-      # Create a test process to receive configure calls
-      # test_pid = self()
-      # Override the function with a mock that sends messages to our test process
-      # :meck.new(FocusRing, [:passthrough])
-      # :meck.expect(FocusRing, :configure, fn opts ->
-      #   send(test_pid, {:configure, opts})
-      #   :ok
-      # end)
-
-      # try do
       # Handle reduced motion event
       assert :ok =
                ThemeIntegration.handle_reduced_motion(
                  {:accessibility_reduced_motion, true}
                )
 
-      # Verify FocusRing.configure was called with correct options -- REMOVING MECK ASSERTIONS
-      # assert_received {:configure, opts}
-      # assert opts[:animation] == :none
-      # assert opts[:transition_effect] == :none
-      # after
-      # Clean up the mock -- REMOVING MECK
-      # :meck.unload(FocusRing)
+      # Wait for theme change event
+      assert_receive {:theme_changed, %{reduced_motion: true}}, 1000
 
-      # Restore original configuration
-      # if initial_config do # No longer needed
-      #   Process.put(:focus_ring_config, initial_config)
-      # end
-      # end
+      # Verify active variant
+      assert ThemeIntegration.get_active_variant() == :reduced_motion
+
+      # Cleanup subscription
+      EventManager.unsubscribe(ref, :theme_changed)
     end
 
     test "enables animations when reduced motion is disabled" do
-      # Record initial configuration
-      # initial_config = Process.get(:focus_ring_config) # No longer needed
+      # Subscribe to theme change events
+      ref = make_ref()
+      EventManager.subscribe(ref, :theme_changed)
 
-      # Mock FocusRing.configure -- REMOVING MECK
-      # test_pid = self()
-      # :meck.new(FocusRing, [:passthrough])
-      # :meck.expect(FocusRing, :configure, fn opts ->
-      #  send(test_pid, {:configure, opts})
-      #  :ok
-      # end)
-
-      # try do
       # Handle reduced motion event
       assert :ok =
                ThemeIntegration.handle_reduced_motion(
                  {:accessibility_reduced_motion, false}
                )
 
-      # Verify FocusRing.configure was called with correct options -- REMOVING MECK ASSERTIONS
-      # assert_received {:configure, opts}
-      # assert opts[:animation] == :pulse
-      # assert opts[:transition_effect] == :fade
-      # after
-      # Clean up the mock -- REMOVING MECK
-      # :meck.unload(FocusRing)
+      # Wait for theme change event
+      assert_receive {:theme_changed, %{reduced_motion: false}}, 1000
 
-      # Restore original configuration
-      # if initial_config do # No longer needed
-      #  Process.put(:focus_ring_config, initial_config)
-      # end
-      # end
+      # Verify active variant
+      assert ThemeIntegration.get_active_variant() == :standard
+
+      # Cleanup subscription
+      EventManager.unsubscribe(ref, :theme_changed)
     end
   end
 
   describe "handle_large_text/1" do
     test "sets text scale for large text mode" do
+      # Subscribe to theme change events
+      ref = make_ref()
+      EventManager.subscribe(ref, :theme_changed)
+
       # Handle large text event
       assert :ok =
                ThemeIntegration.handle_large_text(
                  {:accessibility_large_text, true}
                )
 
-      # Verify text scale was set
-      assert Process.get(:accessibility_text_scale) == 1.5
+      # Wait for theme change event
+      assert_receive {:theme_changed, %{large_text: true}}, 1000
 
-      # Clean up
-      Process.delete(:accessibility_text_scale)
+      # Verify text scale
+      assert ThemeIntegration.get_text_scale() == 1.5
+
+      # Cleanup subscription
+      EventManager.unsubscribe(ref, :theme_changed)
     end
 
     test "sets text scale for standard text mode" do
+      # Subscribe to theme change events
+      ref = make_ref()
+      EventManager.subscribe(ref, :theme_changed)
+
       # Handle standard text event
       assert :ok =
                ThemeIntegration.handle_large_text(
                  {:accessibility_large_text, false}
                )
 
-      # Verify text scale was set
-      assert Process.get(:accessibility_text_scale) == 1.0
+      # Wait for theme change event
+      assert_receive {:theme_changed, %{large_text: false}}, 1000
 
-      # Clean up
-      Process.delete(:accessibility_text_scale)
+      # Verify text scale
+      assert ThemeIntegration.get_text_scale() == 1.0
+
+      # Cleanup subscription
+      EventManager.unsubscribe(ref, :theme_changed)
     end
   end
 
-  # Skip: get_standard_colors/0 removed from API
-  @tag :skip
-  describe "get_standard_colors/0" do
-    test "returns standard color scheme" do
-      colors = ThemeIntegration.get_standard_colors()
+  describe "apply_settings/1" do
+    test "applies accessibility settings" do
+      # Subscribe to theme change events
+      ref = make_ref()
+      EventManager.subscribe(ref, :theme_changed)
 
-      assert colors.background == {:rgb, 30, 30, 30}
-      assert colors.foreground == {:rgb, 220, 220, 220}
-      assert colors.accent == {:rgb, 0, 120, 215}
-      assert colors.focus == {:rgb, 0, 120, 215}
-      assert colors.button == {:rgb, 0, 120, 215}
-      assert colors.error == {:rgb, 232, 17, 35}
-      assert colors.success == {:rgb, 16, 124, 16}
-      assert colors.warning == {:rgb, 255, 140, 0}
-      assert colors.info == {:rgb, 41, 128, 185}
-      assert colors.border == {:rgb, 100, 100, 100}
+      # Apply settings
+      assert :ok = ThemeIntegration.apply_settings([
+        high_contrast: true,
+        reduced_motion: true,
+        large_text: true
+      ])
+
+      # Wait for theme change events
+      assert_receive {:theme_changed, %{high_contrast: true}}, 1000
+      assert_receive {:theme_changed, %{reduced_motion: true}}, 1000
+      assert_receive {:theme_changed, %{large_text: true}}, 1000
+
+      # Verify active variant
+      assert ThemeIntegration.get_active_variant() == :high_contrast
+
+      # Verify text scale
+      assert ThemeIntegration.get_text_scale() == 1.5
+
+      # Cleanup subscription
+      EventManager.unsubscribe(ref, :theme_changed)
     end
   end
 
-  # Skip: get_current_colors/0 removed from API
-  @tag :skip
-  describe "get_current_colors/0" do
+  describe "get_color_scheme/0" do
     test "returns high contrast colors when high contrast is enabled" do
-      # Set high contrast mode
-      Process.put(:accessibility_options, high_contrast: true)
+      # Subscribe to theme change events
+      ref = make_ref()
+      EventManager.subscribe(ref, :theme_changed)
 
-      colors = ThemeIntegration.get_current_colors()
+      # Enable high contrast
+      assert :ok = ThemeIntegration.apply_settings([high_contrast: true])
+      assert_receive {:theme_changed, %{high_contrast: true}}, 1000
 
-      assert colors.background == :black
-      assert colors.foreground == :white
+      # Get color scheme
+      scheme = ThemeIntegration.get_color_scheme()
+      assert scheme != nil
 
-      # Clean up
-      Process.delete(:accessibility_options)
+      # Verify high contrast colors
+      assert scheme.background == :black
+      assert scheme.foreground == :white
+
+      # Cleanup subscription
+      EventManager.unsubscribe(ref, :theme_changed)
     end
 
     test "returns standard colors when high contrast is disabled" do
-      # Set standard contrast mode
-      Process.put(:accessibility_options, high_contrast: false)
+      # Subscribe to theme change events
+      ref = make_ref()
+      EventManager.subscribe(ref, :theme_changed)
 
-      colors = ThemeIntegration.get_current_colors()
+      # Disable high contrast
+      assert :ok = ThemeIntegration.apply_settings([high_contrast: false])
+      assert_receive {:theme_changed, %{high_contrast: false}}, 1000
 
-      assert colors.background == {:rgb, 30, 30, 30}
-      assert colors.foreground == {:rgb, 220, 220, 220}
+      # Get color scheme
+      scheme = ThemeIntegration.get_color_scheme()
+      assert scheme != nil
 
-      # Clean up
-      Process.delete(:accessibility_options)
+      # Verify standard colors
+      assert scheme.background == {:rgb, 30, 30, 30}
+      assert scheme.foreground == {:rgb, 220, 220, 220}
+
+      # Cleanup subscription
+      EventManager.unsubscribe(ref, :theme_changed)
     end
 
     test "returns standard colors when accessibility options are not set" do
-      # Ensure no options are set
-      Process.delete(:accessibility_options)
+      # Subscribe to theme change events
+      ref = make_ref()
+      EventManager.subscribe(ref, :theme_changed)
 
-      colors = ThemeIntegration.get_current_colors()
+      # Apply default settings
+      assert :ok = ThemeIntegration.apply_settings([])
+      assert_receive {:theme_changed, %{high_contrast: false}}, 1000
 
-      assert colors.background == {:rgb, 30, 30, 30}
-      assert colors.foreground == {:rgb, 220, 220, 220}
+      # Get color scheme
+      scheme = ThemeIntegration.get_color_scheme()
+      assert scheme != nil
+
+      # Verify standard colors
+      assert scheme.background == {:rgb, 30, 30, 30}
+      assert scheme.foreground == {:rgb, 220, 220, 220}
+
+      # Cleanup subscription
+      EventManager.unsubscribe(ref, :theme_changed)
     end
   end
 

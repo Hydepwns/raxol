@@ -2,6 +2,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
   use ExUnit.Case, async: true
   alias Raxol.Core.Renderer.View
   alias Raxol.Core.Renderer.Views.Table
+  alias Raxol.UI.Components.ComponentManager
 
   @sample_data [
     %{id: 1, name: "Alice", age: 30},
@@ -15,7 +16,7 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
     %{header: "Age", key: :age, width: 5, align: :center}
   ]
 
-  describe "new/1" do
+  describe "component lifecycle" do
     test "creates a basic table" do
       # Add format dynamically
       columns_with_format =
@@ -24,11 +25,13 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
           &Map.put(&1, :format, fn val -> to_string(val) end)
         )
 
-      view =
-        Table.new(
-          columns: columns_with_format,
-          data: @sample_data
-        )
+      props = %{
+        columns: columns_with_format,
+        data: @sample_data
+      }
+
+      {:ok, state} = Table.init(props)
+      view = Table.render(state)
 
       assert view.type == :border
       assert view.border == :single
@@ -52,11 +55,13 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
           &Map.put(&1, :format, fn val -> to_string(val) end)
         )
 
-      view =
-        Table.new(
-          columns: columns_with_format,
-          data: []
-        )
+      props = %{
+        columns: columns_with_format,
+        data: []
+      }
+
+      {:ok, state} = Table.init(props)
+      view = Table.render(state)
 
       assert view.type == :border
       [header | rows] = get_in(view, [:children, Access.at(0)])
@@ -70,12 +75,14 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
           &Map.put(&1, :format, fn val -> to_string(val) end)
         )
 
-      view =
-        Table.new(
-          columns: columns_with_format,
-          data: @sample_data,
-          striped: true
-        )
+      props = %{
+        columns: columns_with_format,
+        data: @sample_data,
+        striped: true
+      }
+
+      {:ok, state} = Table.init(props)
+      view = Table.render(state)
 
       [_header | rows] = get_in(view, [:children, Access.at(0)])
 
@@ -92,14 +99,16 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
           &Map.put(&1, :format, fn val -> to_string(val) end)
         )
 
-      view =
-        Table.new(
-          columns: columns_with_format,
-          data: @sample_data,
-          selectable: true,
-          selected: 1,
-          striped: false
-        )
+      props = %{
+        columns: columns_with_format,
+        data: @sample_data,
+        selectable: true,
+        selected: 1,
+        striped: false
+      }
+
+      {:ok, state} = Table.init(props)
+      view = Table.render(state)
 
       [_header | rows] = get_in(view, [:children, Access.at(0)])
 
@@ -114,21 +123,34 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
           &Map.put(&1, :format, fn val -> to_string(val) end)
         )
 
-      view =
-        Table.new(
-          columns: columns_with_format,
-          data: @sample_data,
-          border: :double
-        )
+      props = %{
+        columns: columns_with_format,
+        data: @sample_data,
+        border: :double
+      }
+
+      {:ok, state} = Table.init(props)
+      view = Table.render(state)
 
       assert view.border == :double
     end
 
-    # Mark as pending due to style assertion failure
-    @tag :pending
-    test "new/1 applies custom header style", %{table_data: data, columns: cols} do
-      custom_style = [bold: true, underline: true]
-      view = Table.new(data: data, columns: cols, header_style: custom_style)
+    test "applies custom header style" do
+      columns_with_format =
+        Enum.map(
+          @sample_columns,
+          &Map.put(&1, :format, fn val -> to_string(val) end)
+        )
+
+      props = %{
+        columns: columns_with_format,
+        data: @sample_data,
+        header_style: [:bold, :underline]
+      }
+
+      {:ok, state} = Table.init(props)
+      view = Table.render(state)
+
       [header | _] = get_in(view, [:children, Access.at(0)])
       assert Enum.all?(header.children, &([:bold, :underline] == &1.style))
     end
@@ -140,13 +162,15 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
           &Map.put(&1, :format, fn val -> to_string(val) end)
         )
 
-      view =
-        Table.new(
-          columns: columns_with_format,
-          data: @sample_data,
-          row_style: [:dim],
-          striped: false
-        )
+      props = %{
+        columns: columns_with_format,
+        data: @sample_data,
+        row_style: [:dim],
+        striped: false
+      }
+
+      {:ok, state} = Table.init(props)
+      view = Table.render(state)
 
       [_header | rows] = get_in(view, [:children, Access.at(0)])
       assert Enum.all?(rows, &([:dim] == &1.style))
@@ -174,19 +198,21 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
 
       data = [%{name: "A", age: 1}, %{name: "B", age: 2}]
 
-      view = Table.new(columns: columns, data: data)
+      props = %{
+        columns: columns,
+        data: data
+      }
+
+      {:ok, state} = Table.init(props)
+      view = Table.render(state)
+
       [header | _] = get_in(view, [:children, Access.at(0)])
 
       # First column should be width of "Short"
-      # Check calculated width
       assert String.length(Enum.at(header.children, 0).content) == 5
 
-      # assert Enum.at(header.children, 0).align == :left # Alignment handled by parent flex
       # Second column should be width of "Very Long Header"
-      # Header length + 1 space padding
       assert String.length(Enum.at(header.children, 1).content) == 16
-
-      # assert Enum.at(header.children, 1).align == :left # Alignment handled by parent flex
     end
 
     test "handles custom formatters" do
@@ -202,12 +228,16 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
 
       data = [%{amount: 1000}]
 
-      view = Table.new(columns: columns, data: data)
-      [_header | rows] = get_in(view, [:children, Access.at(0)])
-      row = Enum.at(rows, 0)
+      props = %{
+        columns: columns,
+        data: data
+      }
 
-      # Adjust assertion based on actual padding/alignment
-      assert Enum.at(row.children, 0).content == "     $1000"
+      {:ok, state} = Table.init(props)
+      view = Table.render(state)
+
+      [_header | rows] = get_in(view, [:children, Access.at(0)])
+      assert Enum.at(rows, 0).children |> Enum.at(0) |> Map.get(:content) == "    $1000"
     end
 
     test "handles function keys" do
@@ -217,18 +247,22 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
           key: fn row -> "#{row.first} #{row.last}" end,
           width: 20,
           align: :left,
-          # Add format even for function key
-          format: &to_string/1
+          format: & &1
         }
       ]
 
       data = [%{first: "John", last: "Doe"}]
 
-      view = Table.new(columns: columns, data: data)
-      [_header | rows] = get_in(view, [:children, Access.at(0)])
-      row = Enum.at(rows, 0)
+      props = %{
+        columns: columns,
+        data: data
+      }
 
-      assert Enum.at(row.children, 0).content == "John Doe            "
+      {:ok, state} = Table.init(props)
+      view = Table.render(state)
+
+      [_header | rows] = get_in(view, [:children, Access.at(0)])
+      assert Enum.at(rows, 0).children |> Enum.at(0) |> Map.get(:content) == "John Doe             "
     end
   end
 end

@@ -11,9 +11,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   * Row selection
   """
 
-  # Assuming a Base.Component behaviour might exist or these are the expected functions
-  # If Raxol.UI.Components.Base.Component is a defined behaviour, uncommenting the next line would be good.
-  # @behaviour Raxol.UI.Components.Base.Component
+  @behaviour Raxol.UI.Components.Base.Component
 
   alias Raxol.Core.Renderer.View
   require Logger
@@ -27,7 +25,8 @@ defmodule Raxol.Core.Renderer.Views.Table do
             header_style: [:bold],
             row_style: [],
             # Internal, calculated state
-            calculated_widths: []
+            calculated_widths: [],
+            title: nil
 
   @type column :: %{
           header: String.t(),
@@ -52,7 +51,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   Initializes the Table component with props.
   Props are expected to be a map.
   """
-  # @impl Raxol.UI.Components.Base.Component
+  @impl Raxol.UI.Components.Base.Component
   def init(props) when is_map(props) do
     columns = Map.get(props, :columns, [])
     data = Map.get(props, :data, [])
@@ -63,6 +62,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     header_style = Map.get(props, :header_style, [:bold])
     # row_style can be a list or a function (index, row_data) -> style_list
     row_style = Map.get(props, :row_style, [])
+    title = Map.get(props, :title)
 
     # Calculate column widths during init
     calculated_widths = calculate_column_widths(columns, data)
@@ -76,28 +76,27 @@ defmodule Raxol.Core.Renderer.Views.Table do
       selected: selected,
       header_style: header_style,
       row_style: row_style,
-      calculated_widths: calculated_widths
+      calculated_widths: calculated_widths,
+      title: title
     }
-    # Return state directly, not {:ok, state}
-    initial_state
+
+    {:ok, initial_state}
   end
 
   @doc """
   Called when the component is mounted.
   """
-  # @impl Raxol.UI.Components.Base.Component
+  @impl Raxol.UI.Components.Base.Component
   def mount(state) do
     # No commands on mount for now
-    # Return {state, commands} tuple
-    {state, []}
+    {:ok, state, []}
   end
 
   @doc """
   Renders the Table component based on its current state.
   """
-  # @impl Raxol.UI.Components.Base.Component
+  @impl Raxol.UI.Components.Base.Component
   def render(state = %__MODULE__{}) do
-    # Logic from the old new/1 function, adapted to use component state
     header = create_header_row(state.columns, state.calculated_widths, state.header_style)
 
     rows = create_data_rows(
@@ -113,7 +112,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
     content = [header | rows]
 
     if state.border != :none do
-      View.border(state.border, do: content)
+      View.border_wrap(state.border, do: content)
     else
       View.box(children: content)
     end
@@ -122,18 +121,17 @@ defmodule Raxol.Core.Renderer.Views.Table do
   @doc """
   Handles updates to the component state.
   """
-  # @impl Raxol.UI.Components.Base.Component
+  @impl Raxol.UI.Components.Base.Component
   def update(message, state = %__MODULE__{}) do
     Logger.info("Table component [#{inspect(self())}] received update: #{inspect(message)}")
     # TODO: Implement actual update logic based on message
-    # For now, just return current state and no commands
     {:ok, state, []}
   end
 
   @doc """
   Handles dispatched events.
   """
-  # @impl Raxol.UI.Components.Base.Component
+  @impl Raxol.UI.Components.Base.Component
   def handle_event(event, state = %__MODULE__{}) do
     Logger.info("Table component [#{inspect(self())}] received event: #{inspect(event)}")
     # TODO: Implement event handling logic
@@ -143,26 +141,13 @@ defmodule Raxol.Core.Renderer.Views.Table do
   @doc """
   Called when the component is about to be unmounted.
   """
-  # @impl Raxol.UI.Components.Base.Component
+  @impl Raxol.UI.Components.Base.Component
   def unmount(state = %__MODULE__{}) do
     # No specific cleanup for now
     {:ok, state}
   end
 
-
-  @doc """
-  Creates a new table view. (DEPRECATED - Use ComponentManager.mount/2 instead)
-  """
-  def new(opts) do
-    Logger.warn("#{__MODULE__}.new/1 is deprecated. Use ComponentManager.mount(#{__MODULE__}, props) instead.")
-    # For temporary backward compatibility or direct view generation, map opts to props
-    # and call the new rendering path via a temporary state.
-    props = Enum.into(opts, %{})
-    {:ok, initial_comp_state} = init(props)
-    render(initial_comp_state)
-  end
-
-  # Private Helpers (remain largely the same, ensure they use arguments not module state)
+  # Private Helpers
 
   defp calculate_column_widths(columns, data) do
     Enum.map(columns, fn column ->
@@ -183,10 +168,13 @@ defmodule Raxol.Core.Renderer.Views.Table do
   end
 
   defp create_header_row(columns, widths, style) do
-    View.flex direction: :row, style: style do
+    View.row style: style do
       Enum.zip(columns, widths)
       |> Enum.map(fn {column, width} ->
-        View.text(pad_text(column.header, width, column.align))
+        View.text(
+          pad_text(column.header, width, column.align),
+          style: style
+        )
       end)
     end
   end
@@ -198,52 +186,28 @@ defmodule Raxol.Core.Renderer.Views.Table do
          striped,
          selectable,
          selected,
-         style # This is state.row_style
+         row_style
        ) do
     data
     |> Enum.with_index()
     |> Enum.map(fn {row, index} ->
-      base_style =
-        if is_function(style, 2) do
-          style.(index, row)
-        else
-          style
-        end || []
-
-      row_style_combined =
-        base_style ++
-          if striped and rem(index, 2) == 1 do
-            [bg: :bright_black]
-          else
-            []
-          end ++
-          if selectable and selected == index do
-            [bg: :blue, fg: :white]
-          else
-            []
-          end
-
-      cells =
-        Enum.zip(columns, widths)
-        |> Enum.map(fn {column, width} ->
-          formatted_value =
-            get_column_value(row, column)
-            |> format_value(column.format)
-          cell_content =
-            case formatted_value do
-              text when is_binary(text) ->
-                View.text(pad_text(text, width, column.align))
-              view when is_map(view) ->
-                view
-              other ->
-                View.text(pad_text(to_string(other), width, column.align))
-            end
-          cell_content
-        end)
-      View.flex direction: :row, style: row_style_combined do
-        cells
-      end
+      style = get_row_style(index, row, striped, selectable, selected, row_style)
+      create_data_row(columns, row, widths, style)
     end)
+  end
+
+  defp create_data_row(columns, row, widths, style) do
+    View.row style: style do
+      Enum.zip(columns, widths)
+      |> Enum.map(fn {column, width} ->
+        value = get_column_value(row, column)
+        formatted = format_value(value, column)
+        View.text(
+          pad_text(formatted, width, column.align),
+          style: style
+        )
+      end)
+    end
   end
 
   defp get_column_value(row, column) do
@@ -253,20 +217,71 @@ defmodule Raxol.Core.Renderer.Views.Table do
     end
   end
 
-  defp format_value(value, nil), do: to_string(value)
-  defp format_value(value, formatter), do: formatter.(value)
+  defp format_value(value, column) do
+    case column.format do
+      nil -> to_string(value)
+      fun when is_function(fun, 1) -> fun.(value)
+    end
+  end
+
+  defp get_row_style(index, row, striped, selectable, selected, row_style) do
+    base_style = get_base_row_style(index, row, row_style)
+    selection_style = get_selection_style(index, selectable, selected)
+    stripe_style = get_stripe_style(index, striped)
+
+    Enum.uniq(base_style ++ selection_style ++ stripe_style)
+  end
+
+  defp get_base_row_style(index, row, row_style) do
+    case row_style do
+      style when is_list(style) -> style
+      fun when is_function(fun, 2) -> fun.(index, row)
+      _ -> []
+    end
+  end
+
+  defp get_selection_style(index, true, selected) when index == selected do
+    [:bold, :bg_blue, :fg_white]
+  end
+  defp get_selection_style(_index, _selectable, _selected), do: []
+
+  defp get_stripe_style(index, true) when rem(index, 2) == 1 do
+    [:bg_bright_black]
+  end
+  defp get_stripe_style(_index, _striped), do: []
 
   defp pad_text(text, width, align) do
-    text = String.slice(to_string(text), 0, width)
+    text = to_string(text)
+    padding = width - String.length(text)
     case align do
-      :left ->
-        String.pad_trailing(text, width)
-      :right ->
-        String.pad_leading(text, width)
+      :left -> text <> String.duplicate(" ", padding)
+      :right -> String.duplicate(" ", padding) <> text
       :center ->
-        left = div(width - String.length(text), 2)
-        String.pad_leading(text, left + String.length(text))
-        |> String.pad_trailing(width)
+        left_pad = div(padding, 2)
+        right_pad = padding - left_pad
+        String.duplicate(" ", left_pad) <> text <> String.duplicate(" ", right_pad)
+    end
+  end
+
+  defp render_content(state) do
+    header = create_header_row(state.columns, state.calculated_widths, state.header_style)
+
+    rows = create_data_rows(
+      state.columns,
+      state.data,
+      state.calculated_widths,
+      state.striped,
+      state.selectable,
+      state.selected,
+      state.row_style
+    )
+
+    content = [header | rows]
+
+    if state.border != :none do
+      View.border_wrap(state.border, do: content)
+    else
+      View.box(children: content)
     end
   end
 end

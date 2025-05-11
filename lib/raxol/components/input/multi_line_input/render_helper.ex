@@ -142,6 +142,9 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
         nil
       end
 
+    # Get cursor position
+    {cursor_row, cursor_col} = state.cursor_pos
+
     # Render based on focus and selection state
     line_content_element =
       cond do
@@ -155,7 +158,7 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelper do
           # Selection rendering logic (needs state as arg)
           render_line_with_selection(line_index, line, state)
 
-        state.focused and line_index == state.cursor_row ->
+        state.focused and line_index == cursor_row ->
           # Line with cursor rendering logic
           render_line_with_cursor(line, state)
 

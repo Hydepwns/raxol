@@ -9,11 +9,12 @@ config :raxol, :mocks, ClipboardBehaviour: ClipboardMock
 
 # Configure your database
 config :raxol, Raxol.Repo,
-  database: "raxol_test",
-  pool_size: 10,
+  username: "postgres",
+  password: "postgres",
+  hostname: "localhost",
+  database: "raxol_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
-  queue_target: 200,
-  show_sensitive_data_on_connection_error: true
+  pool_size: 10
 
 # Override Repo adapter and pool for tests
 # config :raxol, Raxol.Repo, # Commenting out this MockDB override
@@ -36,7 +37,7 @@ config :raxol, RaxolWeb.Endpoint,
   pubsub_server: Raxol.PubSub
 
 # Print only warnings and errors during test
-config :logger, level: :warning
+config :logger, level: :warn
 # Set logger level to :debug for this test run
 # config :logger, level: :debug
 
@@ -130,3 +131,14 @@ config :raxol,
   accessibility_module: Raxol.Mocks.AccessibilityMock,
   focus_manager_module: Raxol.Mocks.FocusManagerMock,
   keyboard_shortcuts_module: Raxol.Mocks.KeyboardShortcutsMock
+
+# Configure test environment
+config :raxol,
+  test_mode: true,
+  database_enabled: true
+
+# Configure test helpers
+config :ex_unit,
+  capture_log: true,
+  assert_receive_timeout: 1000,
+  refute_receive_timeout: 1000

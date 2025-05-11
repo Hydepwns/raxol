@@ -76,8 +76,31 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
   @spec max_colors() :: non_neg_integer()
   def max_colors(), do: 255
 
-  # TODO: Add functions for defining custom colors via Sixel '#' command
-  # e.g., define_color(palette, index, format, p1, p2, p3, p4, p5)
+  @doc """
+  Defines a custom color in the palette using the Sixel '#' command format.
+
+  ## Parameters
+    * `palette` - The current color palette map
+    * `index` - The color index to define (0-255)
+    * `format` - The color space format (1 for HLS, 2 for RGB)
+    * `p1` - First parameter (H or R)
+    * `p2` - Second parameter (L or G)
+    * `p3` - Third parameter (S or B)
+
+  ## Returns
+    * `{:ok, updated_palette}` - The updated palette with the new color
+    * `{:error, reason}` - If the color definition fails
+  """
+  @spec define_color(map(), non_neg_integer(), 1..2, 0..100, 0..100, 0..100) ::
+          {:ok, map()} | {:error, atom()}
+  def define_color(palette, index, format, p1, p2, p3) when index >= 0 and index <= 255 do
+    case convert_color(format, p1, p2, p3) do
+      {:ok, rgb} -> {:ok, Map.put(palette, index, rgb)}
+      {:error, reason} -> {:error, reason}
+    end
+  end
+
+  def define_color(_palette, _index, _format, _p1, _p2, _p3), do: {:error, :invalid_index}
 
   # --- Color Conversion Helpers ---
 

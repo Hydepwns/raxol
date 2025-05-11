@@ -34,10 +34,13 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
           {:error, :simulated_error}
 
         {:key_press, {:timeout, test_pid}, _modifiers} when is_pid(test_pid) ->
-          # Simulate long computation
-          Process.sleep(200)
-          send(test_pid, :mock_app_slow_update_finished)
-          {%{state | count: state.count + 1, last_event: msg}, []}
+          # Simulate long computation with event-based approach
+          Process.send_after(self(), :update_complete, 200)
+          receive do
+            :update_complete ->
+              send(test_pid, :mock_app_slow_update_finished)
+              {%{state | count: state.count + 1, last_event: msg}, []}
+          end
 
         _ ->
           {%{state | count: state.count + 1, last_event: msg}, []}
