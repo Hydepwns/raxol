@@ -227,19 +227,21 @@ defmodule PreCommitCheck do
         #   }, label: "DEBUG: .github/workflows/README.md check")
         # end
 
-        if MapSet.member?(all_files_set, normalized_target_file) do
+        if MapSet.member?(all_files_set, normalized_target_file) or
+             File.dir?(normalized_target_file) or
+             File.exists?(normalized_target_file) do
           if anchor do
             # check_anchor(normalized_target_file, anchor) # Temporarily disable anchor checking
             # Assume anchors are ok for now
             :ok
           else
-            # File exists, no anchor to check
+            # File or directory exists, no anchor to check
             :ok
           end
         else
           # IO.inspect(%{check: normalized_target_file, against: all_files_set}, label: "File Check Failed")
           {:error,
-           "Target file `#{normalized_target_file}` (resolved from `#{url}` in `#{source_file}`) not found"}
+           "Target file or directory `#{normalized_target_file}` (resolved from `#{url}` in `#{source_file}`) not found"}
         end
     end
   end
