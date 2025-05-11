@@ -1,7 +1,7 @@
 ---
 title: Raxol UI Components & Layout
 description: Overview of Raxol UI Components and the Layout System
-date: 2025-04-27
+date: 2025-05-10
 author: Raxol Team
 section: guides
 tags: [components, layout, ui, guides, documentation]
@@ -10,6 +10,8 @@ tags: [components, layout, ui, guides, documentation]
 # Raxol UI Components & Layout
 
 This document overviews the Raxol UI component system (`Base.Component` behaviour, `View.Elements` DSL, HEEx-like syntax) and the flexbox-inspired layout engine.
+
+For detailed API documentation, see [Component API Reference](/docs/components/api/component_api_reference.md).
 
 ## Core Concepts
 

@@ -1,7 +1,7 @@
 ---
 title: Accessibility Color Integration
 description: Guidelines for integrating color accessibility features in Raxol Terminal Emulator
-date: 2023-04-04
+date: 2025-05-10
 author: Raxol Team
 section: accessibility
 tags: [accessibility, color, integration]
@@ -31,6 +31,56 @@ When high contrast mode is enabled through `Accessibility.set_high_contrast(true
 UserPreferences.set(:high_contrast, true)
 
 # Colors will automatically adjust across the application
+```
+
+### Color System Integration
+
+The accessibility features integrate with the new centralized color system:
+
+#### Core Color Representation (`Raxol.Style.Colors.Color`)
+
+```elixir
+# Basic color operations with accessibility in mind
+color = Raxol.Style.Colors.Color.from_hex("#FF0000")
+adjusted = Raxol.Style.Colors.Color.adjust_for_accessibility(color)
+```
+
+#### Color System (`Raxol.Core.ColorSystem`)
+
+```elixir
+# Theme-aware color retrieval with accessibility
+primary_color = Raxol.Core.ColorSystem.get_color(:primary, respect_accessibility: true)
+hover_color = Raxol.Core.ColorSystem.get_color(:primary, :hover, respect_accessibility: true)
+```
+
+#### Color Utilities (`Raxol.Style.Colors.Utilities`)
+
+```elixir
+# Accessibility checks and adjustments
+is_readable = Raxol.Style.Colors.Utilities.meets_contrast_requirements?(
+  text_color,
+  background_color,
+  :AA,
+  :normal
+)
+
+adjusted_color = Raxol.Style.Colors.Utilities.adjust_for_contrast(
+  text_color,
+  background_color,
+  :AA,
+  :normal
+)
+```
+
+#### Palette Manager (`Raxol.Style.Colors.PaletteManager`)
+
+```elixir
+# Generate accessible color palettes
+palette = Raxol.Style.Colors.PaletteManager.generate_accessible_palette(
+  base_color,
+  background_color,
+  :AA
+)
 ```
 
 ### Reduced Motion
@@ -89,7 +139,7 @@ The framework includes utilities for calculating and ensuring sufficient color c
 assert_sufficient_contrast(foreground_color, background_color)
 
 # In application code
-contrast_ratio = ColorSystem.calculate_contrast(foreground, background)
+contrast_ratio = Raxol.Style.Colors.Utilities.contrast_ratio(foreground, background)
 is_accessible = contrast_ratio >= 4.5 # WCAG AA standard for normal text
 ```
 
@@ -110,7 +160,7 @@ Theme switching respects accessibility settings:
 
 ```elixir
 # Applying a theme while respecting accessibility settings
-ColorSystem.apply_theme(:dark, respect_accessibility: true)
+Raxol.Core.ColorSystem.apply_theme(:dark, respect_accessibility: true)
 ```
 
 When `respect_accessibility` is true (default), the theme colors will be adjusted based on the current accessibility settings.
@@ -123,13 +173,16 @@ The framework provides comprehensive testing tools for accessibility:
 # Testing high contrast mode
 with_high_contrast fn ->
   # Test code with high contrast enabled
-  assert ColorSystem.get_color(:primary) != original_primary
-  assert_sufficient_contrast(ColorSystem.get_color(:primary), ColorSystem.get_color(:background))
+  assert Raxol.Core.ColorSystem.get_color(:primary) != original_primary
+  assert_sufficient_contrast(
+    Raxol.Core.ColorSystem.get_color(:primary),
+    Raxol.Core.ColorSystem.get_color(:background)
+  )
 end
 
 # Testing screen reader announcements
 with_screen_reader_spy fn ->
-  ColorSystem.apply_theme(:high_contrast)
+  Raxol.Core.ColorSystem.apply_theme(:high_contrast)
   assert_announced("high contrast theme")
 end
 ```
@@ -145,7 +198,11 @@ end
 ## Related Modules
 
 - `Raxol.Core.Accessibility` - Core accessibility features
-- `Raxol.Style.Colors.System` - Color system implementation
+- `Raxol.Style.Colors.Color` - Core color representation
+- `Raxol.Core.ColorSystem` - Centralized color management
+- `Raxol.UI.Theming.Colors` - UI-specific color operations
+- `Raxol.Style.Colors.Utilities` - Shared color utilities
+- `Raxol.Style.Colors.PaletteManager` - Palette management
 - `Raxol.Core.UserPreferences` - User preference management
 - `Raxol.AccessibilityTestHelpers` - Testing utilities for accessibility
 
@@ -153,4 +210,4 @@ end
 
 - [WCAG Color Contrast Guidelines](https://www.w3.org/WAI/WCAG21/Understanding/contrast-minimum.html)
 - [Terminal UI Accessibility Best Practices](https://example.com/terminal-ui-accessibility)
-- [Raxol Accessibility Guide](./accessibility_guide.md) 
+- [Raxol Accessibility Guide](./accessibility_guide.md)

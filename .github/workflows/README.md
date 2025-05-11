@@ -18,9 +18,9 @@ Use [act](https://github.com/nektos/act) to run workflows locally for debugging.
 
 ### Setup
 
-1.  **Install act**: `brew install act` (or other methods).
-2.  **Docker/Orbstack**: Ensure Docker or Orbstack is running (Orbstack recommended on macOS ARM).
-3.  **Configuration**: Review `.actrc` in project root. Custom Docker images in `/docker` may be used.
+1. **Install act**: `brew install act` (or other methods).
+2. **Docker/Orbstack**: Ensure Docker or Orbstack is running (Orbstack recommended on macOS ARM).
+3. **Configuration**: Review `.actrc` in project root. Custom Docker images in `/docker` may be used.
 
 ### Running Workflows Locally (`run-local-actions.sh`)
 

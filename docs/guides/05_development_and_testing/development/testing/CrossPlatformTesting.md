@@ -66,6 +66,7 @@ mix run scripts/run_platform_tests.exs
 ```
 
 This will:
+
 1. Detect your current platform
 2. Run appropriate platform-specific tests
 3. Verify terminal compatibility
@@ -90,6 +91,7 @@ mix run test/platform/verify_terminal_compatibility.exs
 ### CI Tests
 
 The CI system automatically runs cross-platform tests on each supported platform when:
+
 - Code is pushed to `main` or `develop` branches
 - Pull requests target `main` or `develop` branches
 - Manual trigger is initiated with `workflow_dispatch`
@@ -99,6 +101,7 @@ The CI system automatically runs cross-platform tests on each supported platform
 ### 1. Platform Detection
 
 Tests in `platform_detection_test.exs` verify:
+
 - Correct platform identification
 - Platform-specific information gathering
 - File extension determination
@@ -107,6 +110,7 @@ Tests in `platform_detection_test.exs` verify:
 ### 2. Terminal Compatibility
 
 The `verify_terminal_compatibility.exs` script checks:
+
 - Basic color support
 - True color (24-bit) support
 - Unicode character rendering
@@ -117,6 +121,7 @@ The `verify_terminal_compatibility.exs` script checks:
 ### 3. Component Rendering
 
 Tests in `component_rendering_test.exs` ensure:
+
 - Components render with appropriate styling
 - Unicode is handled correctly
 - Box borders use correct characters
@@ -126,6 +131,7 @@ Tests in `component_rendering_test.exs` ensure:
 ### 4. Platform-Specific Tests
 
 Platform-specific tests verify features unique to each platform:
+
 - **Windows**: Console type detection, Unicode fallbacks
 - **macOS**: Terminal app identification, Apple Silicon optimizations
 - **Linux**: Distribution detection, Wayland/X11 identification
@@ -189,4 +195,4 @@ To ensure Raxol works correctly, these minimum requirements should be met:
 
 ## Conclusion
 
-Cross-platform testing is essential to ensure Raxol provides a consistent experience across different environments. By following the procedures outlined in this document, you can verify compatibility and identify platform-specific issues early in the development process. 
+Cross-platform testing is essential to ensure Raxol provides a consistent experience across different environments. By following the procedures outlined in this document, you can verify compatibility and identify platform-specific issues early in the development process.

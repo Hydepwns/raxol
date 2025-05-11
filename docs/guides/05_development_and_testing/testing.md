@@ -1,7 +1,7 @@
 ---
 title: Testing Guide
 description: Comprehensive guide for testing Raxol applications and components
-date: 2024-07-27 # Updated date
+date: 2025-05-10
 author: Raxol Team
 section: guides
 tags: [guides, testing, documentation, exunit]
@@ -11,250 +11,452 @@ tags: [guides, testing, documentation, exunit]
 
 ## Overview
 
-This guide covers best practices and examples for testing Raxol applications and components. Testing typically involves standard Elixir tooling like ExUnit, possibly complemented by project-specific helpers found in `test/support/`.
+This guide covers best practices and examples for testing Raxol applications and components. Testing typically involves standard Elixir tooling like ExUnit, complemented by project-specific helpers found in `test/support/`.
 
-Testing strategies might include:
+Testing strategies include:
 
 1. **Unit Testing:** Testing individual functions or components in isolation.
 2. **Integration Testing:** Testing the interaction between multiple components or parts of the application.
-3. **Visual/Snapshot Testing:** Verifying the rendered output of components (if applicable, using tools like snapshot testing).
+3. **Visual/Snapshot Testing:** Verifying the rendered output of components using snapshot testing.
 4. **Performance Testing:** Measuring the performance characteristics of components or the application.
+5. **Event-Based Testing:** Testing asynchronous behavior using event-based synchronization.
 
 ## Test Types & Examples
 
 ### Unit Testing
 
-Unit tests focus on testing individual functions or modules. For UI components (if applicable, depending on the component model used, e.g., `Raxol.App` or lower-level parts), this might involve testing state transitions or helper functions.
+Unit tests focus on testing individual functions or modules. For UI components, this involves testing state transitions, event handling, and helper functions.
 
 ```elixir
-# Example assuming standard ExUnit tests
+# Example of a unit test with event-based synchronization
 defmodule MyApp.MyComponentTest do
   use ExUnit.Case, async: true
+  import Raxol.Test.EventAssertions
 
   alias MyApp.MyComponent
 
   test "component logic updates state correctly" do
-    initial_state = MyComponent.init()
-    event = :some_event
-    params = %{} # Example params
-    # Assuming a function handles state transitions
-    {:ok, new_state} = MyComponent.handle_event(event, params, initial_state)
-    assert new_state.value == :expected_value
+    # Initialize component
+    {:ok, component} = MyComponent.start_link([])
+
+    # Send event and wait for state update
+    MyComponent.send_event(component, :some_event, %{value: "test"})
+    assert_event_received :state_updated, %{value: "test"}, 1000
+
+    # Verify final state
+    state = MyComponent.get_state(component)
+    assert state.value == "test"
   end
 end
 ```
 
-**Best Practices:**
+### Plugin Testing
 
-- Test one behavior per test.
-- Use descriptive test names.
-- Mock external dependencies where necessary (e.g., using Mox). Consider leveraging the "System Interaction Adapter" pattern (see ARCHITECTURE.md) for modules with OS or external service interactions, allowing these adapters to be easily mocked with Mox for better test isolation.
-- Test edge cases and error conditions.
+Plugin testing requires special consideration for system interactions and state management. Here's an example of testing a plugin:
+
+```elixir
+defmodule Raxol.Plugins.NotificationPluginTest do
+  use ExUnit.Case, async: false  # Note: async: false for Mox
+  import Mox
+
+  # Define mock for system interactions
+  Mox.defmock(SystemInteractionMock, for: Raxol.System.Interaction)
+
+  # Setup Mox before each test
+  setup :verify_on_exit!
+
+  describe "handle_command" do
+    setup do
+      # Set up common mocks
+      Mox.stub(SystemInteractionMock, :get_os_type, fn -> {:unix, :linux} end)
+
+      # Basic state needed by the plugin
+      state = %{
+        interaction_module: SystemInteractionMock,
+        name: "notification_test",
+        enabled: true,
+        config: %{},
+        notifications: []
+      }
+
+      # Define test arguments
+      args = ["Test Level", "Test Message"]
+
+      %{current_state: state, args: args}
+    end
+
+    test "handles command successfully", %{current_state: state, args: args} do
+      # Set up specific mock expectations
+      Mox.expect(SystemInteractionMock, :find_executable, fn "notify-send" ->
+        "/usr/bin/notify-send"
+      end)
+
+      # Call the command handler
+      assert {:ok, _, :notification_sent} = NotificationPlugin.handle_command(args, state)
+    end
+  end
+end
+```
+
+**Best Practices for Plugin Testing:**
+
+1. **Mock System Interactions:**
+
+   - Use Mox for mocking system interactions
+   - Set `async: false` when using Mox
+   - Use `verify_on_exit!` to ensure mock expectations are met
+   - Stub common functions in setup
+   - Set specific expectations in individual tests
+
+2. **State Management:**
+
+   - Initialize plugin state in setup blocks
+   - Use consistent state structure across tests
+   - Clean up state after tests
+   - Test state transitions thoroughly
+
+3. **Command Handling:**
+
+   - Test command registration
+   - Test command execution
+   - Test error cases
+   - Verify command results
+
+4. **Error Handling:**
+   - Test invalid inputs
+   - Test system failures
+   - Test edge cases
+   - Verify error messages
 
 ### Integration Testing
 
-Integration tests verify interactions between different parts of your Raxol application. This could involve testing how events flow, how parent/child components interact (if applicable), or how the application state changes in response to sequences of events.
+Integration tests verify interactions between different parts of your Raxol application, focusing on event flow, component interactions, and state changes.
 
 ```elixir
-# Example: Testing interaction within an App or View
+# Example of integration test with event-based synchronization
 defmodule MyApp.AppIntegrationTest do
-  use ExUnit.Case # Or potentially a ConnCase/FeatureCase if web features are involved
+  use ExUnit.Case
+  import Raxol.Test.EventAssertions
 
-  # Example - Highly dependent on actual Raxol.App structure
-  # This might involve starting the Runtime and sending events,
-  # or testing composite views.
+  setup do
+    # Start the application and wait for initialization
+    {:ok, _pid} = MyApp.start_link([])
+    assert_event_received :app_initialized, _, 1000
+
+    # Return test context
+    :ok
+  end
+
   test "user action triggers expected state change across components" do
-    # Setup might involve starting the Raxol runtime or rendering a view
-    # with multiple interacting parts.
-    # ... setup code ...
+    # Simulate user action
+    MyApp.send_user_action(:click_button, %{button_id: "save"})
 
-    # Simulate an action
-    # ... simulation code ...
+    # Wait for and verify event chain
+    assert_event_received :button_clicked, %{button_id: "save"}, 1000
+    assert_event_received :save_operation_started, _, 1000
+    assert_event_received :save_operation_completed, _, 1000
 
-    # Assert the final state or effects
-    # ... assertion code ...
-    assert true # Placeholder
+    # Verify final state
+    state = MyApp.get_state()
+    assert state.saved == true
   end
 end
 ```
 
-**Best Practices:**
-
-- Test realistic user flows or interaction scenarios.
-- Verify state changes across relevant parts of the application.
-- Test error handling across boundaries.
-
 ### Visual/Snapshot Testing
 
-Visual tests ensure components render correctly. This often involves "snapshot testing", where the rendered output (e.g., terminal character grid, ANSI sequences, or HTML if applicable) is compared against a previously approved "snapshot" file. The `test/snapshots/` directory suggests this might be used. Tools or custom helpers in `test/support/` might facilitate this.
+Visual tests ensure components render correctly by comparing output against approved snapshots.
 
 ```elixir
-# Hypothetical Snapshot Test Example
-# Check test/support/ or specific snapshot tests for actual implementation
+# Example of snapshot test with event-based synchronization
 defmodule MyApp.MyComponentSnapshotTest do
   use ExUnit.Case
-  # Possibly import snapshotting helpers from test/support
+  import Raxol.Test.SnapshotAssertions
+  import Raxol.Test.EventAssertions
 
   test "component renders correctly with given state" do
-    state = %{value: "Example"}
-    # Assuming a function generates the renderable output
-    output = MyApp.MyComponent.render(state) # Or similar render call
+    # Initialize component
+    {:ok, component} = MyComponent.start_link([])
 
-    # Assert against a stored snapshot
+    # Update state and wait for render
+    MyComponent.set_state(component, %{value: "Example"})
+    assert_event_received :render_completed, _, 1000
+
+    # Capture and verify snapshot
+    output = MyComponent.render(component)
     assert_snapshot "my_component_example_state", output
   end
 end
 ```
 
-**Best Practices:**
-
-- Maintain snapshot tests: Review and update snapshots intentionally when UI changes are expected.
-- Test components with different states/props.
-- Ensure snapshot stability across environments.
-
-### Performance Testing
-
-Performance tests measure and verify component or application efficiency. Elixir has tools like `Benchee` that can be integrated. The `test/performance/` directory suggests dedicated performance tests exist.
-
-```elixir
-# Example using Benchee (requires adding :benchee to deps)
-# Check test/performance/ for actual implementation
-defmodule MyApp.PerformanceTest do
-  use ExUnit.Case
-
-  def run_render(state) do
-    # Replace with actual render logic
-    MyApp.MyComponent.render(state)
-  end
-
-  # @tag :performance # Optional tag for selective running
-  # test "render performance is adequate" do
-  #   state = %{value: "complex data"}
-  #   Benchee.run(
-  #     %{ "render_component" => fn -> run_render(state) end },
-  #     time: 5, # seconds
-  #     memory: true
-  #   )
-  #   # Assertions might involve checking Benchee output or comparing to baseline
-  # end
-end
-```
-
-**Best Practices:**
-
-- Establish realistic benchmarks based on expected usage.
-- Test with varying data sizes or complexity.
-- Measure relevant metrics (time, memory, reductions).
-- Monitor for performance regressions over time.
-
 ## Test Organization
 
 ### Directory Structure
 
-The actual test directory structure appears organized by feature area or test type:
-
-```
+```bash
 test/
-├── core/               # Core Raxol logic tests
-├── data/               # Data structure related tests
-├── examples/           # Tests related to examples
-├── js/                 # JavaScript-related tests (if any)
-├── performance/        # Performance benchmarks
-├── platform/           # Platform abstraction tests
-├── platform_specific/  # Tests for specific platforms (OS, terminal)
-├── raxol/              # General Raxol feature tests
-├── raxol_web/          # Web-related feature tests (if any)
-├── snapshots/          # Snapshot files for visual/render testing
-├── support/            # Helper modules and setup for tests
-├── terminal/           # Terminal emulation layer tests
-├── setup.ts            # TypeScript setup for JS tests (if any)
-└── test_helper.exs     # Main test helper setup (loads support/*)
+  ├── support/           # Test helpers and utilities
+  ├── raxol/            # Unit and integration tests
+  │   ├── core/         # Core functionality tests
+  │   ├── terminal/     # Terminal-specific tests
+  │   └── ui/          # UI component tests
+  ├── raxol_web/        # Web-specific tests (if applicable)
+  └── test_helper.exs   # Test configuration
 ```
 
-### Naming Conventions
+### Test Helpers
 
-Follow standard Elixir conventions:
+The `test/support/` directory contains various test helpers:
 
-- Test files typically end with `_test.exs`.
-- Use descriptive module and test names.
+1. **Event Assertions:** Helpers for event-based testing
+2. **Mock System:** Utilities for mocking system interactions
+3. **Snapshot Helpers:** Tools for visual testing
+4. **Performance Tools:** Benchmarking utilities
 
-## Test Helpers and Utilities
+## Best Practices
 
-Helper modules are often placed in `test/support/`. These might include:
+### Event-Based Testing
 
-- Setup functions for components or application state.
-- Custom assertion functions.
+Instead of using `Process.sleep` for asynchronous operations, use event-based synchronization:
 
-- Factories for generating test data (e.g., using `ExMachina`).
+```elixir
+# Bad: Using Process.sleep
+def test_async_operation do
+  start_operation()
+  Process.sleep(100)  # Arbitrary wait time
+  assert result == expected
+end
 
-- Mocks for external services (e.g., using `Mox`).
-
-Examine `test/support/` and individual tests to understand available helpers.
-
-## Continuous Integration
-
-### Test Running
-
-The primary command to run the default test suite is:
-
-```bash
-# Run all tests defined in mix.exs test paths
-mix test
+# Good: Using event-based synchronization
+def test_async_operation do
+  start_operation()
+  assert_event_received :operation_completed, expected_result, 1000
+end
 ```
 
-You can often run specific test files or directories:
+### Test Isolation
 
-```bash
-# Run a specific file
-mix test test/core/some_feature_test.exs
+1. **Parallel Execution:** Use `async: true` when possible (except with Mox)
+2. **Resource Cleanup:** Always clean up resources in `on_exit` callbacks
+3. **Event Timing:** Use appropriate timeouts for event assertions
+4. **Snapshot Maintenance:** Update snapshots intentionally and document changes
 
-# Run all tests in a directory
-mix test test/terminal/
+### Mocking Strategy
+
+1. **System Interactions:**
+
+   - Use Mox for mocking system interactions
+   - Set `async: false` when using Mox
+   - Use `verify_on_exit!` to ensure mock expectations are met
+   - Stub common functions in setup
+   - Set specific expectations in individual tests
+
+2. **Mock Organization:**
+   - Group related mocks in setup blocks
+   - Use descriptive mock names
+   - Document mock behavior
+   - Clean up mocks after tests
+
+### Plugin Testing
+
+1. **State Management:**
+
+   - Initialize plugin state in setup blocks
+   - Use consistent state structure
+   - Clean up state after tests
+   - Test state transitions
+
+2. **Command Handling:**
+
+   - Test command registration
+   - Test command execution
+   - Test error cases
+   - Verify command results
+
+3. **Error Handling:**
+   - Test invalid inputs
+   - Test system failures
+   - Test edge cases
+   - Verify error messages
+
+## Current Status
+
+As of 2025-05-08:
+
+- 49 doctests
+- 1528 tests
+- 279 failures
+- 17 invalid tests
+- 21 skipped tests
+
+## Common Patterns
+
+### Event Assertions
+
+```elixir
+# Wait for specific event
+assert_receive {:event_name, payload}, 5000
+
+# Wait for multiple events
+assert_receive {:first_event, _}, 5000
+assert_receive {:second_event, _}, 5000
+
+# Pattern matching
+assert_receive {:event_name, %{status: :success} = payload}, 5000
 ```
 
-**Specialized Test Scripts:**
+### State Management
 
-The project utilizes helper scripts for more specific testing scenarios (e.g., platform-specific tests, dashboard tests). These provide more control and target different aspects of the testing matrix.
-
-**Refer to the [Scripts Documentation](../../../scripts/README.md) for details on available testing scripts** like `run-local-tests.sh`, `run_all_dashboard_tests.sh`, and others, and how to use them. These are crucial for comprehensive testing beyond the basic `mix test` command.
-
-### Performance Monitoring
-
-If performance benchmarks exist (`test/performance/`), they might be integrated into CI to:
-
-- Establish performance baselines.
-- Monitor trends over time.
-- Detect performance regressions.
-
-## Common Pitfalls
-
-1. **Snapshot Test Maintenance:** Brittle snapshots require frequent updates. Ensure changes are intentional.
-2. **Test Environment Consistency:** Differences between local and CI environments can lead to flaky tests. Use containers (like Docker, suggested by the `/docker` directory) or consistent setup procedures.
-3. **Integration Test Complexity:** Overly complex integration tests can be slow and difficult to debug. Focus on key interactions.
-
-## Best Practices Summary
-
-1. **General Testing:** Use standard ExUnit practices. Write clear, focused tests. Leverage helpers from `test/support/`.
-2. **Component Testing:** Test component state, events, and rendering logic according to the specific component model used.
-3. **Visual Testing:** If using snapshots (`test/snapshots/`), maintain them carefully.
-4. **Performance Testing:** Use tools like Benchee (`test/performance/`) and integrate them into CI if needed.
-5. **Utilize Scripts:** Use the helper scripts detailed in `../../../scripts/README.md` for comprehensive testing.
-
-### Project Structure for Testing
-
-```bash
-raxol/
-├── lib/                    # Source code
-├── test/
-│   ├── support/            # Test helpers (mocks, fixtures)
-│   ├── raxol/              # Unit/integration tests mirroring lib/raxol structure
-│   │   ├── core/
-│   │   ├── terminal/
-│   │   └── ui/
-│   ├── raxol_web/          # Tests specific to web integration (if applicable)
-│   └── test_helper.exs     # Configures ExUnit, starts necessary applications
-├── examples/               # Example applications (runnable, not part of core tests)
-├── priv/                   # Private files (e.g., themes, static assets)
-├── mix.exs
-└── ...
+```elixir
+# Track state changes
+def handle_event(event, state) do
+  new_state = %{state |
+    last_event: event,
+    handled_at: System.monotonic_time()
+  }
+  {:ok, new_state}
+end
 ```
+
+### Resource Cleanup
+
+```elixir
+setup do
+  # Create resources
+  {:ok, resource} = create_resource()
+
+  # Ensure cleanup
+  on_exit(fn ->
+    cleanup_resource(resource)
+  end)
+
+  {:ok, %{resource: resource}}
+end
+```
+
+## Troubleshooting
+
+### Common Issues
+
+1. **Test Flakiness:**
+
+   - Replace `Process.sleep` with event assertions
+   - Ensure proper resource cleanup
+   - Use unique state for each test
+
+2. **Mock Verification Failures:**
+
+   - Reset mocks in setup
+   - Use `verify_on_exit!`
+   - Check mock expectations
+
+3. **Resource Leaks:**
+   - Use `on_exit` for cleanup
+   - Create unique resource names
+   - Track resource creation
+
+### Debugging Tips
+
+1. **Event Tracing:**
+
+   ```elixir
+   # Enable event tracing
+   :sys.trace(pid, true)
+
+   # Check event flow
+   assert_receive {:trace, ^pid, :receive, message}, 5000
+   ```
+
+2. **State Inspection:**
+
+   ```elixir
+   # Inspect state changes
+   IO.inspect(state, label: "State after event")
+   ```
+
+3. **Mock Verification:**
+   ```elixir
+   # Verify mock calls
+   Mox.verify!(MyMock)
+   ```
+
+## Contributing
+
+When adding new tests:
+
+1. Follow the event-based testing pattern
+2. Ensure proper test isolation
+3. Use the adapter pattern for system interactions
+4. Add appropriate cleanup
+5. Document test requirements
+6. Use meaningful error messages
+7. Track test coverage
+
+## Resources
+
+- [ExUnit Documentation](https://hexdocs.pm/ex_unit/ExUnit.html)
+- [Mox Documentation](https://hexdocs.pm/mox/Mox.html)
+- [Testing Best Practices](https://hexdocs.pm/mix/Mix.Tasks.Test.html)
+
+## Polling for State Changes in GenServer Tests
+
+In some cases, a GenServer does not emit events or messages that can be captured with `assert_receive` after a call (e.g., after a `GenServer.cast`). In these situations, the best practice is to use a polling helper that repeatedly checks the state until a condition is met or a timeout occurs. This avoids race conditions and is more deterministic than using a fixed `Process.sleep`.
+
+### Example: Polling for State Change in a Session Test
+
+```elixir
+defmodule Raxol.Terminal.SessionTest do
+  use ExUnit.Case, async: true
+  alias Raxol.Terminal.Session
+  alias Raxol.Terminal.Emulator
+
+  # Helper: Poll until a condition is met or timeout (default 100ms)
+  defp eventually(assertion_fun, timeout_ms \\ 100) do
+    start = System.monotonic_time(:millisecond)
+    do_eventually(assertion_fun, start, timeout_ms)
+  end
+
+  defp do_eventually(assertion_fun, start, timeout_ms) do
+    case assertion_fun.() do
+      {:ok, value} -> value
+      :ok -> :ok
+      :error ->
+        if System.monotonic_time(:millisecond) - start < timeout_ms do
+          Process.sleep(2)
+          do_eventually(assertion_fun, start, timeout_ms)
+        else
+          flunk("Condition not met within #{timeout_ms}ms")
+        end
+      other ->
+        if System.monotonic_time(:millisecond) - start < timeout_ms do
+          Process.sleep(2)
+          do_eventually(assertion_fun, start, timeout_ms)
+        else
+          flunk("Condition not met within #{timeout_ms}ms: #{inspect(other)}")
+        end
+    end
+  end
+
+  test "send_input/2 processes input and updates emulator state" do
+    {:ok, pid} = Session.start_link(width: 80, height: 24)
+    initial_state = Session.get_state(pid)
+    :ok = Session.send_input(pid, "hello world")
+    eventually(fn ->
+      new_state = Session.get_state(pid)
+      if new_state.emulator != initial_state.emulator do
+        {:ok, new_state}
+      else
+        :error
+      end
+    end)
+    state = Session.get_state(pid)
+    assert %Emulator{} = state.emulator
+  end
+end
+```
+
+**Best Practice:**
+
+- Use polling helpers like `eventually/2` for state changes when no events are emitted.
+- Avoid arbitrary `Process.sleep` calls, which can lead to race conditions and flakiness.
+- Prefer event-based assertions (`assert_receive`) when the system emits events.
