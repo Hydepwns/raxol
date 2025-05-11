@@ -45,6 +45,12 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       :handle_large_text
     )
 
+    EventManager.register_handler(
+      :theme_changed,
+      Raxol.Core.Accessibility,
+      :handle_theme_changed
+    )
+
     :ok
   end
 
@@ -76,6 +82,12 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       :accessibility_large_text,
       __MODULE__,
       :handle_large_text
+    )
+
+    EventManager.unregister_handler(
+      :theme_changed,
+      Raxol.Core.Accessibility,
+      :handle_theme_changed
     )
 
     :ok
@@ -182,4 +194,27 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
 
   # Helper to mimic internal pref_key logic
   defp pref_key(key), do: "accessibility.#{key}"
+
+  @doc """
+  Get the current color scheme based on accessibility settings.
+
+  ## Examples
+
+      iex> ThemeIntegration.get_color_scheme()
+      %{background: ...}  # Returns the current color scheme
+  """
+  def get_color_scheme do
+    theme = Raxol.Style.Theme.current()
+    active_variant = get_active_variant()
+
+    variant_palette =
+      if active_variant do
+        theme.variants
+        |> Map.get(active_variant, %{})
+        |> Map.get(:color_palette)
+      end
+
+    # Return variant palette if it exists, otherwise base theme palette
+    variant_palette || theme.color_palette
+  end
 end

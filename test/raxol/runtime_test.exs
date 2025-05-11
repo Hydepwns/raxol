@@ -190,103 +190,23 @@ defmodule Raxol.RuntimeTest do
       # Add missing key
       initial_term_size: %{width: 80, height: 24},
       runtime_pid: runtime_pid
-      # The following are not directly used by Supervisor.init/1 but might be by children if passed differently
-      # For now, ensure the supervisor gets what it directly needs.
-      # dispatcher_name: Dispatcher,
-      # terminal_driver_name: TerminalDriver,
-      # plugin_manager_name: PluginManager,
-      # user_preferences_name: Raxol.Core.UserPreferences
     }
 
+    # Start the supervisor and capture the PIDs we need
     {:ok, supervisor_pid} = RuntimeSupervisor.start_link(supervisor_init_args)
+    {:ok, plugin_manager_pid} = PluginManager.start_link([])
+    {:ok, dispatcher_pid} = Dispatcher.start_link([])
 
-    # Allow time for all processes to start and initial events to settle
-    :timer.sleep(500)
+    # Wait for the plugin manager to be ready
+    assert_receive {:plugin_manager_ready, ^plugin_manager_pid}, 1000
 
-    # Explicitly initialize the PluginManager to load plugins and register commands
-    case Raxol.Core.Runtime.Plugins.Manager.initialize() do
-      :ok ->
-        Logger.debug("[TEST setup] PluginManager initialized successfully.")
-
-      :already_initialized ->
-        Logger.debug("[TEST setup] PluginManager was already initialized.")
-
-      {:error, reason} ->
-        flunk(
-          "[TEST setup] Failed to initialize PluginManager: #{inspect(reason)}"
-        )
-    end
-
-    # Allow a bit more time for commands to register
-    :timer.sleep(100)
-
-    # Allow ClipboardMock calls from PluginManager process
-    # Ensure PluginManager is registered before attempting Mox.allow
-    plugin_manager_pid = Process.whereis(Raxol.Core.Runtime.Plugins.Manager)
-
-    if plugin_manager_pid do
-      Mox.allow(ClipboardMock, self(), plugin_manager_pid)
-      Mox.allow(NotificationMock, self(), plugin_manager_pid)
-      Mox.allow(InteractionMock, self(), plugin_manager_pid)
-    else
-      flunk("PluginManager PID not found, cannot allow Mox calls.")
-    end
-
-    on_exit(fn ->
-      try do
-        Supervisor.stop(supervisor_pid, :shutdown, :infinity)
-      catch
-        :exit, reason ->
-          Logger.error(
-            "[TEST on_exit] Supervisor.stop(#{inspect(supervisor_pid)}) exited with reason: #{inspect(reason)}"
-          )
-      end
-
-      # Ensure the supervisor process is actually down
-      ref = Process.monitor(supervisor_pid)
-
-      receive do
-        {:DOWN, ^ref, _, _, _} -> :ok
-      after
-        # Increased timeout
-        7000 ->
-          Logger.error(
-            "[TEST on_exit] RuntimeSupervisor PID #{inspect(supervisor_pid)} did not stop cleanly."
-          )
-      end
-
-      # Clean up ETS table after test
-      try do
-        :ets.delete(:raxol_command_registry)
-      rescue
-        # Ignore if already deleted
-        ArgumentError -> :ok
-      end
-
-      # Clean up Application environment for plugin_manager_config
-      Application.delete_env(:raxol, :plugin_manager_config)
-    end)
-
-    actual_dispatcher_pid = Process.whereis(Dispatcher)
-    actual_driver_pid = Process.whereis(TerminalDriver)
-
-    unless is_pid(actual_dispatcher_pid) do
-      flunk(
-        "Dispatcher PID not found after setup. Is Dispatcher running and registered?"
-      )
-    end
-
-    unless is_pid(actual_driver_pid) do
-      flunk(
-        "TerminalDriver PID not found after setup. Is TerminalDriver running and registered?"
-      )
-    end
-
-    %{
-      supervisor_pid: supervisor_pid,
-      dispatcher_pid: actual_dispatcher_pid,
-      driver_pid: actual_driver_pid
-    }
+    # Return the captured PIDs in the context
+    {:ok,
+     %{
+       supervisor_pid: supervisor_pid,
+       plugin_manager_pid: plugin_manager_pid,
+       dispatcher_pid: dispatcher_pid
+     }}
   end
 
   # --- Tests ---
@@ -298,8 +218,12 @@ defmodule Raxol.RuntimeTest do
     # Check if supervisor is running (redundant, start_link succeeded)
     assert is_pid(supervisor_pid)
 
-    # Allow some time for children to start
-    :timer.sleep(100)
+    # Wait for children to start
+    assert_receive {:child_started, ^supervisor_pid, PluginManager}, 1000
+    assert_receive {:child_started, ^supervisor_pid, Dispatcher}, 1000
+    assert_receive {:child_started, ^supervisor_pid, RenderingEngine}, 1000
+    assert_receive {:child_started, ^supervisor_pid, TerminalDriver}, 1000
+    assert_receive {:child_started, ^supervisor_pid, Raxol.Core.UserPreferences}, 1000
 
     # Check if children are running (use registered names)
     assert is_pid(Process.whereis(PluginManager))
@@ -334,10 +258,11 @@ defmodule Raxol.RuntimeTest do
   end
 
   test "input event triggers application update", %{
-    supervisor_pid: _supervisor_pid
+    supervisor_pid: supervisor_pid,
+    dispatcher_pid: dispatcher_pid
   } do
     # Allow startup
-    :timer.sleep(100)
+    assert_receive {:child_started, ^supervisor_pid, TerminalDriver}, 1000
 
     driver_pid = Process.whereis(TerminalDriver)
     assert is_pid(driver_pid), "TerminalDriver not running"
@@ -348,8 +273,9 @@ defmodule Raxol.RuntimeTest do
     # Inject an event ('+')
     # New way
     GenServer.cast(driver_pid, {:test_input, "+"})
-    # Allow time for async processing
-    :timer.sleep(100)
+
+    # Wait for model update
+    assert_receive {:model_updated, ^dispatcher_pid, %{count: 1, last_clipboard: nil}}, 1000
 
     # Assert model was updated
     assert_model(Process.whereis(Dispatcher), %{count: 1, last_clipboard: nil})
@@ -441,14 +367,14 @@ defmodule Raxol.RuntimeTest do
     # Simulate Ctrl+X (copy "copied from mock")
     # Ctrl+X
     GenServer.cast(driver_pid, {:test_input, <<24>>})
-    # Allow processing
-    :timer.sleep(100)
+    # Wait for command processing
+    assert_receive {:command_processed, ^driver_pid, :copy}, 1000
 
     # Simulate Ctrl+N (notify "Mock Title", "Mock Body")
     # Ctrl+N
     GenServer.cast(driver_pid, {:test_input, <<14>>})
-    # Allow processing
-    :timer.sleep(100)
+    # Wait for command processing
+    assert_receive {:command_processed, ^driver_pid, :notify}, 1000
 
     # Verify expectations (Mox will do this automatically on test exit if expectations are set)
     # For this test, the main goal is to ensure no crashes and that PluginManager handles them.
@@ -508,48 +434,36 @@ defmodule Raxol.RuntimeTest do
     assert {Raxol.Core.Runtime.Events.Dispatcher, dispatcher_pid, :worker, _} =
              dispatcher_info
 
-    # ADDED LOG
     Logger.debug(
       "[TEST supervisor restart] Found initial Dispatcher: #{inspect(dispatcher_pid)}"
     )
 
+    # Subscribe to dispatcher events before killing it
+    {:ok, _} = Registry.register(:raxol_event_subscriptions, :dispatcher_events, [])
+
     # Manually stop the Dispatcher process
     # Use :kill to simulate an unexpected crash
     ref = Process.monitor(dispatcher_pid)
-    # ADDED LOG
     Logger.debug(
       "[TEST supervisor restart] Sending :kill to #{inspect(dispatcher_pid)}"
     )
 
     Process.exit(dispatcher_pid, :kill)
 
-    # Wait for DOWN message (increased timeout)
-    # ADDED LOG
+    # Wait for DOWN message
     Logger.debug("[TEST supervisor restart] Waiting for :DOWN message...")
 
-    receive do
-      {:DOWN, ^ref, :process, ^dispatcher_pid, :killed} ->
-        # ADDED LOG
-        Logger.debug(
-          "[TEST supervisor restart] Received :DOWN message for #{inspect(dispatcher_pid)}."
-        )
+    assert_receive {:DOWN, ^ref, :process, ^dispatcher_pid, :killed}, 5000
 
-        :ok
-    after
-      5000 -> flunk("Did not receive DOWN message for Dispatcher after 5000ms")
-    end
-
-    # Allow time for supervisor to restart (give it generous time)
-    # ADDED LOG
+    # Wait for the restarted Dispatcher to be ready by subscribing to its events
     Logger.debug(
-      "[TEST supervisor restart] Sleeping for 1000ms for supervisor restart..."
+      "[TEST supervisor restart] Waiting for restarted Dispatcher to be ready..."
     )
 
-    # Increased from 500ms
-    Process.sleep(1000)
+    # Wait for the new dispatcher to be ready by subscribing to its events
+    assert_receive {:dispatcher_ready, new_dispatcher_pid}, 5000
 
     # Verify the Dispatcher has been restarted by the supervisor
-    # ADDED LOG
     Logger.debug(
       "[TEST supervisor restart] Checking for restarted Dispatcher..."
     )
@@ -571,17 +485,15 @@ defmodule Raxol.RuntimeTest do
       )
     end
 
-    assert {Raxol.Core.Runtime.Events.Dispatcher, new_dispatcher_pid, :worker,
+    assert {Raxol.Core.Runtime.Events.Dispatcher, ^new_dispatcher_pid, :worker,
             _} = new_dispatcher_info
 
-    # ADDED LOG
     Logger.debug(
       "[TEST supervisor restart] Found new Dispatcher: #{inspect(new_dispatcher_pid)}"
     )
 
     # Ensure it's a *new* process
     refute new_dispatcher_pid == dispatcher_pid
-    # ADDED LOG
     Logger.debug("[TEST supervisor restart] New PID confirmed.")
 
     # Verify the new Dispatcher is functioning (e.g., by getting its model)
@@ -593,13 +505,11 @@ defmodule Raxol.RuntimeTest do
       current_theme_id: "Default Theme"
     }
 
-    # ADDED LOG
     Logger.debug(
       "[TEST supervisor restart] Asserting model for new Dispatcher..."
     )
 
     assert_model(new_dispatcher_pid, expected_model)
-    # ADDED LOG
     Logger.debug("[TEST supervisor restart] Model assertion passed.")
   end
 

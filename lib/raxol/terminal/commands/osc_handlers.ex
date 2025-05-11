@@ -16,7 +16,25 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
     %{emulator | window_title: pt}
   end
 
-  @doc "Handles OSC 4 (Set/Query Color Palette)"
+  @doc """
+  Handles OSC 4 (Set/Query Color Palette).
+
+  Format: OSC 4 ; c ; spec ST
+  - c: Color index (0-255)
+  - spec: Color specification or "?" for query
+
+  Color specifications supported:
+  - rgb:RRRR/GGGG/BBBB (hex, 1-4 digits per component)
+  - #RRGGBB (hex, 2 digits per component)
+  - #RGB (hex, 1 digit per component)
+  - #RRGGBBAA (hex with alpha, 2 digits per component)
+  - rgb(r,g,b) (decimal, 0-255)
+  - rgb(r%,g%,b%) (percentage, 0-100%)
+
+  Returns:
+  - For set: Updated emulator with new color in palette
+  - For query: Emulator with response in output_buffer
+  """
   @spec handle_4(Emulator.t(), String.t()) :: Emulator.t()
   def handle_4(emulator, pt) do
     parse_osc4(emulator, pt)
@@ -222,8 +240,65 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
           _ -> {:error, "invalid #RGB hex value(s)"}
         end
 
+      # #RRGGBBAA (hex with alpha, 2 digits per component)
+      String.starts_with?(spec, "#") and byte_size(spec) == 9 ->
+        r_hex = String.slice(spec, 1..2)
+        g_hex = String.slice(spec, 3..4)
+        b_hex = String.slice(spec, 5..6)
+        # Ignore alpha channel for now
+        _a_hex = String.slice(spec, 7..8)
+
+        with {r, ""} <- Integer.parse(r_hex, 16),
+             {g, ""} <- Integer.parse(g_hex, 16),
+             {b, ""} <- Integer.parse(b_hex, 16) do
+          {:ok, {r, g, b}}
+        else
+          _ -> {:error, "invalid #RRGGBBAA hex value(s)"}
+        end
+
+      # rgb(r,g,b) (decimal, 0-255)
+      String.match?(spec, ~r/^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/) ->
+        case Regex.run(~r/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/, spec, capture: :all_but_first) do
+          [r_str, g_str, b_str] ->
+            with {r, ""} <- Integer.parse(r_str),
+                 {g, ""} <- Integer.parse(g_str),
+                 {b, ""} <- Integer.parse(b_str),
+                 true <- r >= 0 and r <= 255,
+                 true <- g >= 0 and g <= 255,
+                 true <- b >= 0 and b <= 255 do
+              {:ok, {r, g, b}}
+            else
+              _ -> {:error, "rgb() values must be between 0 and 255"}
+            end
+
+          _ ->
+            {:error, "invalid rgb() format"}
+        end
+
+      # rgb(r%,g%,b%) (percentage, 0-100%)
+      String.match?(spec, ~r/^rgb\(\s*\d+%\s*,\s*\d+%\s*,\s*\d+%\s*\)$/) ->
+        case Regex.run(~r/rgb\(\s*(\d+)%\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/, spec, capture: :all_but_first) do
+          [r_str, g_str, b_str] ->
+            with {r_pct, ""} <- Integer.parse(r_str),
+                 {g_pct, ""} <- Integer.parse(g_str),
+                 {b_pct, ""} <- Integer.parse(b_str),
+                 true <- r_pct >= 0 and r_pct <= 100,
+                 true <- g_pct >= 0 and g_pct <= 100,
+                 true <- b_pct >= 0 and b_pct <= 100 do
+              r = round(r_pct * 255 / 100)
+              g = round(g_pct * 255 / 100)
+              b = round(b_pct * 255 / 100)
+              {:ok, {r, g, b}}
+            else
+              _ -> {:error, "rgb() percentage values must be between 0 and 100"}
+            end
+
+          _ ->
+            {:error, "invalid rgb() percentage format"}
+        end
+
       true ->
-        {:error, "unsupported format"}
+        {:error, "unsupported color format"}
     end
   end
 

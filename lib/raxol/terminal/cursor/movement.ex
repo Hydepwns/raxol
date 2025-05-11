@@ -19,10 +19,10 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {0, 0}  # Already at top, no change
   """
-  def move_up(%Manager{} = cursor, n \\ 1) do
-    {x, y} = cursor.position
-    new_y = max(0, y - n)
-    Manager.move_to(cursor, x, new_y)
+  def move_up(cursor, count \\ 1) do
+    {x, y} = Manager.get_position(cursor)
+    new_y = max(0, y - count)
+    Manager.move_to(cursor, {x, new_y})
   end
 
   @doc """
@@ -36,10 +36,10 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {0, 2}
   """
-  def move_down(%Manager{} = cursor, n \\ 1) do
-    {x, y} = cursor.position
-    new_y = y + n
-    Manager.move_to(cursor, x, new_y)
+  def move_down(cursor, count \\ 1) do
+    {x, y} = Manager.get_position(cursor)
+    new_y = y + count
+    Manager.move_to(cursor, {x, new_y})
   end
 
   @doc """
@@ -54,10 +54,10 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {3, 0}
   """
-  def move_left(%Manager{} = cursor, n \\ 1) do
-    {x, y} = cursor.position
-    new_x = max(0, x - n)
-    Manager.move_to(cursor, new_x, y)
+  def move_left(cursor, count \\ 1) do
+    {x, y} = Manager.get_position(cursor)
+    new_x = max(0, x - count)
+    Manager.move_to(cursor, {new_x, y})
   end
 
   @doc """
@@ -71,10 +71,10 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {2, 0}
   """
-  def move_right(%Manager{} = cursor, n \\ 1) do
-    {x, y} = cursor.position
-    new_x = x + n
-    Manager.move_to(cursor, new_x, y)
+  def move_right(cursor, count \\ 1) do
+    {x, y} = Manager.get_position(cursor)
+    new_x = x + count
+    Manager.move_to(cursor, {new_x, y})
   end
 
   @doc """
@@ -89,9 +89,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {0, 0}
   """
-  def move_to_line_start(%Manager{} = cursor) do
-    {_, y} = cursor.position
-    Manager.move_to(cursor, 0, y)
+  def move_to_line_start(cursor) do
+    {_, y} = Manager.get_position(cursor)
+    Manager.move_to(cursor, {0, y})
   end
 
   @doc """
@@ -105,9 +105,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {79, 0}
   """
-  def move_to_line_end(%Manager{} = cursor, line_width) do
-    {_, y} = cursor.position
-    Manager.move_to(cursor, line_width - 1, y)
+  def move_to_line_end(cursor, line_width) do
+    {_, y} = Manager.get_position(cursor)
+    Manager.move_to(cursor, {line_width - 1, y})
   end
 
   @doc """
@@ -121,9 +121,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {10, 0}
   """
-  def move_to_column(%Manager{} = cursor, column) do
-    {_, y} = cursor.position
-    Manager.move_to(cursor, column, y)
+  def move_to_column(cursor, column) do
+    {_, y} = Manager.get_position(cursor)
+    Manager.move_to(cursor, {column, y})
   end
 
   @doc """
@@ -137,9 +137,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {0, 5}
   """
-  def move_to_line(%Manager{} = cursor, line) do
-    {x, _} = cursor.position
-    Manager.move_to(cursor, x, line)
+  def move_to_line(cursor, line) do
+    {x, _} = Manager.get_position(cursor)
+    Manager.move_to(cursor, {x, line})
   end
 
   @doc """
@@ -153,8 +153,8 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {10, 5}
   """
-  def move_to_position(%Manager{} = cursor, column, line) do
-    Manager.move_to(cursor, column, line)
+  def move_to_position(cursor, column, line) do
+    Manager.move_to(cursor, {column, line})
   end
 
   @doc """
@@ -169,8 +169,8 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {0, 0}
   """
-  def move_home(%Manager{} = cursor) do
-    Manager.move_to(cursor, 0, 0)
+  def move_home(cursor) do
+    Manager.move_to(cursor, {0, 0})
   end
 
   @doc """
@@ -184,10 +184,10 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {8, 0}
   """
-  def move_to_next_tab(%Manager{} = cursor, tab_size \\ 8) do
-    {x, y} = cursor.position
-    next_tab = div(x, tab_size) * tab_size + tab_size
-    Manager.move_to(cursor, next_tab, y)
+  def move_to_next_tab(cursor, tab_width) do
+    {x, y} = Manager.get_position(cursor)
+    next_tab = div(x + tab_width, tab_width) * tab_width
+    Manager.move_to(cursor, {next_tab, y})
   end
 
   @doc """
@@ -202,9 +202,9 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {8, 0}
   """
-  def move_to_prev_tab(%Manager{} = cursor, tab_size \\ 8) do
-    {x, y} = cursor.position
-    prev_tab = div(x, tab_size) * tab_size
-    Manager.move_to(cursor, prev_tab, y)
+  def move_to_prev_tab(cursor, tab_width) do
+    {x, y} = Manager.get_position(cursor)
+    prev_tab = max(0, div(x - 1, tab_width) * tab_width)
+    Manager.move_to(cursor, {prev_tab, y})
   end
 end

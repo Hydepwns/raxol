@@ -3,9 +3,9 @@ defmodule Raxol.Components.TableTest do
   alias Raxol.Components.Table
 
   @test_columns [
-    %{id: :id, label: "ID"},
-    %{id: :name, label: "Name"},
-    %{id: :age, label: "Age"}
+    %{id: :id, label: "ID", width: 4, align: :right, format: &String.Chars.to_string/1},
+    %{id: :name, label: "Name", width: 10, align: :left, format: &String.Chars.to_string/1},
+    %{id: :age, label: "Age", width: 5, align: :center, format: &String.Chars.to_string/1}
   ]
 
   @test_data [
@@ -16,36 +16,48 @@ defmodule Raxol.Components.TableTest do
     %{id: 5, name: "Eve", age: 28}
   ]
 
+  setup do
+    # Initialize any required dependencies
+    :ok = Raxol.UI.Theming.Theme.init()
+    :ok = Raxol.Core.UserPreferences.start_link(test_mode?: true)
+    {:ok, _} = Raxol.Core.Renderer.Manager.start_link([])
+
+    # Return the test context
+    {:ok, %{
+      columns: @test_columns,
+      data: @test_data
+    }}
+  end
+
   describe "initialization" do
-    test "initializes with default options" do
-      state =
+    test "initializes with default options", %{columns: columns, data: data} do
+      {:ok, state} =
         Table.init(%{
           id: :test_table,
-          columns: @test_columns,
-          data: @test_data
+          columns: columns,
+          data: data
         })
 
       assert state.id == :test_table
-      assert state.columns == @test_columns
-      assert state.data == @test_data
-
+      assert state.columns == columns
+      assert state.data == data
       assert state.options == %{
                paginate: false,
                searchable: false,
-               sortable: false
+               sortable: false,
+               page_size: 10
              }
-
       assert state.current_page == 1
       assert state.page_size == 10
       assert state.filter_term == ""
     end
 
-    test "initializes with custom options" do
-      state =
+    test "initializes with custom options", %{columns: columns, data: data} do
+      {:ok, state} =
         Table.init(%{
           id: :test_table,
-          columns: @test_columns,
-          data: @test_data,
+          columns: columns,
+          data: data,
           options: %{
             paginate: true,
             searchable: true,
@@ -60,18 +72,17 @@ defmodule Raxol.Components.TableTest do
                sortable: true,
                page_size: 2
              }
-
       assert state.page_size == 2
     end
   end
 
   describe "data processing" do
-    setup do
-      state =
+    setup %{columns: columns, data: data} do
+      {:ok, state} =
         Table.init(%{
           id: :test_table,
-          columns: @test_columns,
-          data: @test_data,
+          columns: columns,
+          data: data,
           options: %{
             paginate: true,
             searchable: true,
@@ -80,69 +91,64 @@ defmodule Raxol.Components.TableTest do
           }
         })
 
-      {:ok, state: state}
+      {:ok, %{state: state}}
     end
 
     test "filtering works correctly", %{state: state} do
-      # Set up filter term
-      {updated_state, _} = Table.update({:filter, "alice"}, state)
-
-      # Render to process data
+      {:ok, updated_state} = Table.update({:filter, "alice"}, state)
       rendered = Table.render(updated_state, %{})
 
-      # Verify we're displaying a filtered set
-      assert String.contains?(inspect(rendered), "Alice")
-      refute String.contains?(inspect(rendered), "Bob")
+      # Check rendered content structure instead of string inspection
+      assert rendered.type == :border
+      [header | rows] = get_in(rendered, [:children, Access.at(0)])
+      assert length(rows) == 1
+      first_row = List.first(rows)
+      assert first_row.type == :flex
+      assert length(first_row.children) == 3
+      assert Enum.at(first_row.children, 1).content == "Alice      "
     end
 
     test "sorting works correctly", %{state: state} do
-      # Sort by age descending
-      {updated_state, _} = Table.update({:sort, :age}, state)
-
-      # Render to process data
+      {:ok, updated_state} = Table.update({:sort, :age}, state)
       rendered = Table.render(updated_state, %{})
 
-      # Check for sort indicator
-      assert String.contains?(inspect(rendered), "Age ▲")
-
-      # Sort again to change direction
-      {updated_state, _} = Table.update({:sort, :age}, updated_state)
-      rendered = Table.render(updated_state, %{})
-
-      # Check for reversed sort indicator
-      assert String.contains?(inspect(rendered), "Age ▼")
+      # Verify sort order through row content
+      [header | rows] = get_in(rendered, [:children, Access.at(0)])
+      first_row = List.first(rows)
+      assert Enum.at(first_row.children, 2).content == " 25 "
+      last_row = List.last(rows)
+      assert Enum.at(last_row.children, 2).content == " 40 "
     end
 
     test "pagination works correctly", %{state: state} do
-      # With page size 2, should have 3 pages
-      {page1_state, _} = Table.update({:set_page, 1}, state)
+      {:ok, page1_state} = Table.update({:set_page, 1}, state)
       rendered = Table.render(page1_state, %{})
 
-      # Page 1 should show items 1-2
-      assert String.contains?(inspect(rendered), "Page 1 of 3")
-      assert String.contains?(inspect(rendered), "Alice")
-      assert String.contains?(inspect(rendered), "Bob")
-      refute String.contains?(inspect(rendered), "Charlie")
+      # Verify first page content
+      [header | rows] = get_in(rendered, [:children, Access.at(0)])
+      assert length(rows) == 2
+      first_row = List.first(rows)
+      assert Enum.at(first_row.children, 1).content == "Alice      "
+      second_row = Enum.at(rows, 1)
+      assert Enum.at(second_row.children, 1).content == "Bob        "
 
-      # Go to page 2
-      {page2_state, _} = Table.update({:set_page, 2}, state)
+      # Verify second page content
+      {:ok, page2_state} = Table.update({:set_page, 2}, state)
       rendered = Table.render(page2_state, %{})
-
-      # Page 2 should show items 3-4
-      assert String.contains?(inspect(rendered), "Page 2 of 3")
-      assert String.contains?(inspect(rendered), "Charlie")
-      assert String.contains?(inspect(rendered), "Dave")
-      refute String.contains?(inspect(rendered), "Alice")
+      [header | rows] = get_in(rendered, [:children, Access.at(0)])
+      assert length(rows) == 2
+      first_row = List.first(rows)
+      assert Enum.at(first_row.children, 1).content == "Charlie    "
     end
   end
 
   describe "event handling" do
-    setup do
-      state =
+    setup %{columns: columns, data: data} do
+      {:ok, state} =
         Table.init(%{
           id: :test_table,
-          columns: @test_columns,
-          data: @test_data,
+          columns: columns,
+          data: data,
           options: %{
             paginate: true,
             searchable: true,
@@ -151,81 +157,63 @@ defmodule Raxol.Components.TableTest do
           }
         })
 
-      {:ok, state: state}
+      {:ok, %{state: state}}
     end
 
     test "handles arrow key navigation for pagination", %{state: state} do
-      # Starting at page 1
       assert state.current_page == 1
 
-      # Arrow right should go to page 2
-      {state_after_right, _} =
+      {:ok, state_after_right} =
         Table.handle_event({:key, {:arrow_right, []}}, %{}, state)
-
       assert state_after_right.current_page == 2
 
-      # Arrow left should go back to page 1
-      {state_after_left, _} =
+      {:ok, state_after_left} =
         Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_right)
-
       assert state_after_left.current_page == 1
 
-      # Arrow left at page 1 should stay at page 1
-      {state_after_left_again, _} =
+      {:ok, state_after_left_again} =
         Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_left)
-
       assert state_after_left_again.current_page == 1
     end
 
     test "handles button clicks for pagination", %{state: state} do
-      # Click next page button
-      {state_after_next, _} =
+      {:ok, state_after_next} =
         Table.handle_event({:button_click, "test_table_next_page"}, %{}, state)
-
       assert state_after_next.current_page == 2
 
-      # Click prev page button
-      {state_after_prev, _} =
+      {:ok, state_after_prev} =
         Table.handle_event(
           {:button_click, "test_table_prev_page"},
           %{},
           state_after_next
         )
-
       assert state_after_prev.current_page == 1
     end
 
     test "handles sort button clicks", %{state: state} do
-      # Click to sort by age
-      {state_after_sort, _} =
+      {:ok, state_after_sort} =
         Table.handle_event({:button_click, "test_table_sort_age"}, %{}, state)
-
       assert state_after_sort.sort_by == :age
       assert state_after_sort.sort_direction == :asc
 
-      # Click again to reverse sort
-      {state_after_reverse, _} =
+      {:ok, state_after_reverse} =
         Table.handle_event(
           {:button_click, "test_table_sort_age"},
           %{},
           state_after_sort
         )
-
       assert state_after_reverse.sort_by == :age
       assert state_after_reverse.sort_direction == :desc
     end
 
     test "handles search input", %{state: state} do
-      # Set search text
-      {state_after_search, _} =
+      {:ok, state_after_search} =
         Table.handle_event(
           {:text_input, "test_table_search", "Alice"},
           %{},
           state
         )
-
       assert state_after_search.filter_term == "Alice"
-      # Should reset to page 1
       assert state_after_search.current_page == 1
     end
   end

@@ -63,20 +63,39 @@ defmodule Raxol.I18nAccessibilityTest do
   end
 
   describe "I18n and Accessibility Integration" do
-    # test "correct accessibility settings are applied for RTL locales" do
-    #   # Mock the Accessibility module
-    #   # expect(Raxol.Core.Accessibility.Mock, :apply_locale_settings, fn -> %{direction: :rtl} end)
-    #
-    #   assert_locale_accessibility_settings("he", %{direction: :rtl})
-    #   assert_locale_accessibility_settings("ar", %{direction: :rtl})
-    # end
-    #
-    # test "correct accessibility settings are applied for LTR locales" do
-    #   # expect(Raxol.Core.Accessibility.Mock, :apply_locale_settings, fn -> %{direction: :ltr} end)
-    #
-    #   assert_locale_accessibility_settings("en", %{direction: :ltr})
-    #   assert_locale_accessibility_settings("fr", %{direction: :ltr})
-    # end
+    test "correct accessibility settings are applied for RTL locales" do
+      # Test RTL locales
+      with_locale("he", fn ->
+        settings = I18n.get_accessibility_settings()
+        assert settings.direction == :rtl
+        assert settings.text_align == :right
+        assert settings.text_direction == :rtl
+      end)
+
+      with_locale("ar", fn ->
+        settings = I18n.get_accessibility_settings()
+        assert settings.direction == :rtl
+        assert settings.text_align == :right
+        assert settings.text_direction == :rtl
+      end)
+    end
+
+    test "correct accessibility settings are applied for LTR locales" do
+      # Test LTR locales
+      with_locale("en", fn ->
+        settings = I18n.get_accessibility_settings()
+        assert settings.direction == :ltr
+        assert settings.text_align == :left
+        assert settings.text_direction == :ltr
+      end)
+
+      with_locale("fr", fn ->
+        settings = I18n.get_accessibility_settings()
+        assert settings.direction == :ltr
+        assert settings.text_align == :left
+        assert settings.text_direction == :ltr
+      end)
+    end
 
     test "accessibility announcements use translated strings" do
       locale = "es"
@@ -142,29 +161,35 @@ defmodule Raxol.I18nAccessibilityTest do
       end)
     end
 
-    # TODO: Mark currency test as skipped or remove if functionality not planned
-    @tag :skip
     test "currency formatting respects locale" do
       amount = 1234.56
 
       with_locale("en", fn ->
-        # Default might not include currency symbol unless specified via Cldr
-        # assert I18n.format_currency(amount, "USD") =~ "$1,234.56"
-        assert true
+        # Test USD formatting
+        formatted = I18n.format_currency(amount, "USD")
+        assert formatted =~ "$1,234.56"
+        assert formatted =~ "USD"
       end)
 
       with_locale("fr", fn ->
-        # Check for non-breaking space (NBSP) and comma separator
-        # assert I18n.format_currency(amount, "EUR") =~ "1 234,56"
-        # assert I18n.format_currency(amount, "EUR") =~ "€"
-        assert true
+        # Test EUR formatting with French locale
+        formatted = I18n.format_currency(amount, "EUR")
+        assert formatted =~ "1 234,56"
+        assert formatted =~ "€"
       end)
 
       with_locale("de", fn ->
-        # Check for dot separator and comma decimal
-        # assert I18n.format_currency(amount, "EUR") =~ "1.234,56"
-        # assert I18n.format_currency(amount, "EUR") =~ "€"
-        assert true
+        # Test EUR formatting with German locale
+        formatted = I18n.format_currency(amount, "EUR")
+        assert formatted =~ "1.234,56"
+        assert formatted =~ "€"
+      end)
+
+      with_locale("ja", fn ->
+        # Test JPY formatting with Japanese locale
+        formatted = I18n.format_currency(amount, "JPY")
+        assert formatted =~ "¥1,235"
+        assert formatted =~ "JPY"
       end)
     end
 

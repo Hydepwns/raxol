@@ -1,351 +1,220 @@
 defmodule Raxol.Terminal.Cursor.Manager do
   @moduledoc """
-  Terminal cursor manager module.
-
-  This module handles the management of terminal cursors, including:
-  - Multiple cursor styles
-  - State persistence
-  - Animation system
-  - Position tracking
+  Manages cursor state and operations.
   """
 
-  @type cursor_style :: :block | :underline | :bar | :custom
-  @type cursor_state :: :visible | :hidden | :blinking
-  # width, height
-  @type cursor_shape :: {non_neg_integer(), non_neg_integer()}
+  alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.Emulator
+  require Logger
 
-  @type t :: %__MODULE__{
-          position: {non_neg_integer(), non_neg_integer()},
-          saved_position: {non_neg_integer(), non_neg_integer()} | nil,
-          style: cursor_style,
-          state: cursor_state,
-          shape: cursor_shape,
-          blink_rate: non_neg_integer(),
-          last_blink: integer(),
-          custom_shape: String.t() | nil,
-          history: list(map()),
-          history_index: non_neg_integer(),
-          history_limit: non_neg_integer()
-        }
+  defstruct position: {0, 0},
+            style: :block,
+            state: :visible,
+            saved_position: nil,
+            saved_style: nil,
+            saved_state: nil
 
-  defstruct [
-    :position,
-    :saved_position,
-    :style,
-    :state,
-    :shape,
-    :blink_rate,
-    :last_blink,
-    :custom_shape,
-    :history,
-    :history_index,
-    :history_limit
-  ]
+  @type position :: {non_neg_integer(), non_neg_integer()}
+  @type style :: :block | :underline | :bar
+  @type state :: :visible | :hidden | :blinking
+  @type cursor :: %__MODULE__{
+    position: position(),
+    style: style(),
+    state: state(),
+    saved_position: position() | nil,
+    saved_style: style() | nil,
+    saved_state: state() | nil
+  }
 
   @doc """
-  Creates a new cursor manager.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor.position
-      {0, 0}
-      iex> cursor.style
-      :block
+  Creates a new cursor with default values.
   """
-  def new do
-    %__MODULE__{
-      position: {0, 0},
-      saved_position: nil,
-      style: :block,
-      state: :visible,
-      shape: {1, 1},
-      # milliseconds
-      blink_rate: 530,
-      last_blink: System.system_time(:millisecond),
-      custom_shape: nil,
-      history: [],
-      history_index: 0,
-      history_limit: 100
-    }
+  def new(_opts \\ []) do
+    %__MODULE__{}
+  end
+
+  @doc """
+  Gets the cursor's current position.
+  """
+  def get_position(cursor) do
+    cursor.position
   end
 
   @doc """
   Moves the cursor to a new position.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 10, 5)
-      iex> cursor.position
-      {10, 5}
   """
-  def move_to(%__MODULE__{} = cursor, x, y) do
+  def move_to(cursor, {x, y}) do
     %{cursor | position: {x, y}}
   end
 
   @doc """
-  Saves the current cursor position.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 10, 5)
-      iex> cursor = Raxol.Terminal.Cursor.Manager.save_position(cursor)
-      iex> cursor.saved_position
-      {10, 5}
+  Saves the cursor's current state.
   """
-  def save_position(%__MODULE__{} = cursor) do
-    %{cursor | saved_position: cursor.position}
+  def save_state(cursor) do
+    %{cursor |
+      saved_position: cursor.position,
+      saved_style: cursor.style,
+      saved_state: cursor.state
+    }
   end
 
   @doc """
-  Restores the saved cursor position.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 10, 5)
-      iex> cursor = Raxol.Terminal.Cursor.Manager.save_position(cursor)
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 0, 0)
-      iex> cursor = Raxol.Terminal.Cursor.Manager.restore_position(cursor)
-      iex> cursor.position
-      {10, 5}
+  Restores the cursor's saved state.
   """
-  def restore_position(%__MODULE__{} = cursor) do
-    case cursor.saved_position do
-      nil -> cursor
-      pos -> %{cursor | position: pos}
-    end
+  def restore_state(cursor) do
+    %{cursor |
+      position: cursor.saved_position || cursor.position,
+      style: cursor.saved_style || cursor.style,
+      state: cursor.saved_state || cursor.state,
+      saved_position: nil,
+      saved_style: nil,
+      saved_state: nil
+    }
   end
 
   @doc """
-  Sets the cursor style.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.set_style(cursor, :underline)
-      iex> cursor.style
-      :underline
+  Gets the cursor's current style.
   """
-  def set_style(%__MODULE__{} = cursor, style)
-      when style in [:block, :underline, :bar] do
-    shape =
-      case style do
-        :block -> {1, 1}
-        :underline -> {1, 1}
-        :bar -> {1, 1}
-      end
-
-    %{cursor | style: style, shape: shape, custom_shape: nil}
+  def get_style(cursor) do
+    cursor.style
   end
 
   @doc """
-  Sets a custom cursor shape.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.set_custom_shape(cursor, "█", {2, 1})
-      iex> cursor.style
-      :custom
-      iex> cursor.custom_shape
-      "█"
+  Sets the cursor's style.
   """
-  def set_custom_shape(%__MODULE__{} = cursor, shape, dimensions) do
-    %{cursor | style: :custom, custom_shape: shape, shape: dimensions}
+  def set_style(cursor, style) do
+    %{cursor | style: style}
   end
 
   @doc """
-  Sets the cursor state.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.set_state(cursor, :hidden)
-      iex> cursor.state
-      :hidden
+  Gets the cursor's current state.
   """
-  def set_state(%__MODULE__{} = cursor, state)
-      when state in [:visible, :hidden, :blinking] do
+  def get_state(cursor) do
+    cursor.state
+  end
+
+  @doc """
+  Sets the cursor's state.
+  """
+  def set_state(cursor, state) do
     %{cursor | state: state}
   end
 
   @doc """
-  Updates the cursor blink state.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.set_state(cursor, :blinking)
-      iex> {cursor, visible} = Raxol.Terminal.Cursor.Manager.update_blink(cursor)
-      iex> is_boolean(visible)
-      true
+  Updates the cursor's blink state.
   """
-  def update_blink(%__MODULE__{} = cursor) do
+  def update_blink(cursor) do
     case cursor.state do
       :blinking ->
-        now = System.system_time(:millisecond)
-        elapsed = now - cursor.last_blink
-        visible = rem(div(elapsed, cursor.blink_rate), 2) == 0
-
-        {%{cursor | last_blink: now}, visible}
-
-      _ ->
-        {cursor, cursor.state == :visible}
+        case cursor.style do
+          :visible -> %{cursor | style: :hidden}
+          :hidden -> %{cursor | style: :visible}
+          _ -> cursor
+        end
+      _ -> cursor
     end
   end
 
   @doc """
-  Adds the current cursor state to history.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.add_to_history(cursor)
-      iex> length(cursor.history)
-      1
+  Gets whether the cursor is visible.
   """
-  def add_to_history(%__MODULE__{} = cursor) do
-    state = %{
-      position: cursor.position,
-      style: cursor.style,
-      state: cursor.state,
-      shape: cursor.shape,
-      custom_shape: cursor.custom_shape
-    }
-
-    history = [state | Enum.take(cursor.history, cursor.history_limit - 1)]
-
-    %{
-      cursor
-      | history: history,
-        history_index: min(cursor.history_index + 1, cursor.history_limit)
-    }
+  def is_visible?(%__MODULE__{} = cursor) do
+    cursor.state == :visible
   end
 
   @doc """
-  Restores the cursor state from history.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.add_to_history(cursor)
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 10, 5)
-      iex> cursor = Raxol.Terminal.Cursor.Manager.restore_from_history(cursor)
-      iex> cursor.position
-      {0, 0}
+  Sets the cursor visibility.
   """
-  def restore_from_history(%__MODULE__{} = cursor) do
-    case Enum.at(cursor.history, cursor.history_index - 1) do
-      nil ->
-        cursor
-
-      state ->
-        %{
-          cursor
-          | position: state.position,
-            style: state.style,
-            state: state.state,
-            shape: state.shape,
-            custom_shape: state.custom_shape
-        }
-    end
+  def set_visibility(%__MODULE__{} = cursor, visible) when is_boolean(visible) do
+    state = if visible, do: :visible, else: :hidden
+    %{cursor | state: state}
   end
 
   @doc """
-  Moves the cursor down by the specified number of rows.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_down(cursor, 3)
-      iex> cursor.position
-      {0, 3}
+  Moves the cursor to the next tab stop.
   """
-  def move_down(%__MODULE__{position: {x, y}} = cursor, count)
-      when is_integer(count) and count >= 0 do
-    %{cursor | position: {x, y + count}}
+  def move_to_next_tab(%__MODULE__{} = cursor, tab_stops, width) do
+    {x, y} = cursor.position
+    next_tab = find_next_tab(x, tab_stops, width)
+    %{cursor | position: {next_tab, y}}
   end
 
   @doc """
-  Moves the cursor up by the specified number of rows.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 5, 5)
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_up(cursor, 3)
-      iex> cursor.position
-      {5, 2}
+  Moves the cursor to the previous tab stop.
   """
-  def move_up(%__MODULE__{position: {x, y}} = cursor, count)
-      when is_integer(count) and count >= 0 do
-    new_y = max(0, y - count)
-    %{cursor | position: {x, new_y}}
+  def move_to_previous_tab(%__MODULE__{} = cursor, tab_stops) do
+    {x, y} = cursor.position
+    prev_tab = find_previous_tab(x, tab_stops)
+    %{cursor | position: {prev_tab, y}}
+  end
+
+  @doc """
+  Moves the cursor up by the specified number of lines.
+  """
+  def move_up(%__MODULE__{} = cursor, lines \\ 1) do
+    {x, y} = cursor.position
+    %{cursor | position: {x, max(0, y - lines)}}
+  end
+
+  @doc """
+  Moves the cursor down by the specified number of lines.
+  """
+  def move_down(%__MODULE__{} = cursor, lines \\ 1) do
+    {x, y} = cursor.position
+    %{cursor | position: {x, y + lines}}
   end
 
   @doc """
   Moves the cursor left by the specified number of columns.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 5, 0)
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_left(cursor, 3)
-      iex> cursor.position
-      {2, 0}
   """
-  def move_left(%__MODULE__{position: {x, y}} = cursor, count)
-      when is_integer(count) and count >= 0 do
-    new_x = max(0, x - count)
-    %{cursor | position: {new_x, y}}
+  def move_left(%__MODULE__{} = cursor, columns \\ 1) do
+    {x, y} = cursor.position
+    %{cursor | position: {max(0, x - columns), y}}
   end
 
   @doc """
   Moves the cursor right by the specified number of columns.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_right(cursor, 3)
-      iex> cursor.position
-      {3, 0}
   """
-  def move_right(%__MODULE__{position: {x, y}} = cursor, count)
-      when is_integer(count) and count >= 0 do
-    %{cursor | position: {x + count, y}}
+  def move_right(%__MODULE__{} = cursor, columns \\ 1) do
+    {x, y} = cursor.position
+    %{cursor | position: {x + columns, y}}
   end
 
   @doc """
-  Moves the cursor to a specific column while maintaining the current row.
-
-  ## Examples
-
-      iex> alias Raxol.Terminal.Cursor.Manager
-      iex> cursor = Raxol.Terminal.Cursor.Manager.new()
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to(cursor, 0, 5)
-      iex> cursor = Raxol.Terminal.Cursor.Manager.move_to_col(cursor, 10)
-      iex> cursor.position
-      {10, 5}
+  Moves the cursor to the beginning of the line.
   """
-  def move_to_col(%__MODULE__{position: {_x, y}} = cursor, col)
-      when is_integer(col) and col >= 0 do
-    %{cursor | position: {col, y}}
+  def move_to_line_start(%__MODULE__{} = cursor) do
+    {_, y} = cursor.position
+    %{cursor | position: {0, y}}
+  end
+
+  @doc """
+  Moves the cursor to the specified column.
+  """
+  def move_to_column(%__MODULE__{} = cursor, column) when is_integer(column) and column >= 0 do
+    {_, y} = cursor.position
+    %{cursor | position: {column, y}}
+  end
+
+  # Private helper functions
+
+  defp find_next_tab(current_x, tab_stops, width) do
+    tab_stops
+    |> Enum.sort()
+    |> Enum.find(fn tab -> tab > current_x end)
+    |> case do
+      nil -> width - 1
+      tab -> tab
+    end
+  end
+
+  defp find_previous_tab(current_x, tab_stops) do
+    tab_stops
+    |> Enum.sort(:desc)
+    |> Enum.find(fn tab -> tab < current_x end)
+    |> case do
+      nil -> 0
+      tab -> tab
+    end
   end
 end

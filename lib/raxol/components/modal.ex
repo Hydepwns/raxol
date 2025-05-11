@@ -115,6 +115,8 @@ defmodule Raxol.Components.Modal do
         # Logger.debug("Modal Update: Received :show. State BEFORE: #{inspect state}")
         cmd = set_focus_command(state)
         new_state = %{state | visible: true}
+        # Emit state changed event
+        send(self(), {:modal_state_changed, state.id, :visible, true})
 
         # Logger.debug("Modal Update: State AFTER :show: #{inspect new_state}, Command: #{inspect cmd}")
         {new_state, [cmd]}
@@ -122,6 +124,8 @@ defmodule Raxol.Components.Modal do
       :hide ->
         # Logger.debug("Modal Update: Received :hide. State BEFORE: #{inspect state}")
         new_state = %{state | visible: false}
+        # Emit state changed event
+        send(self(), {:modal_state_changed, state.id, :visible, false})
         # Logger.debug("Modal Update: State AFTER :hide: #{inspect new_state}")
         {new_state, []}
 
@@ -131,11 +135,17 @@ defmodule Raxol.Components.Modal do
 
       # Handle explicit cancel tuple
       {:button_click, {:cancel, original_msg}} ->
-        {%{state | visible: false}, [original_msg]}
+        new_state = %{state | visible: false}
+        # Emit state changed event
+        send(self(), {:modal_state_changed, state.id, :visible, false})
+        {new_state, [original_msg]}
 
       {:button_click, btn_msg} ->
         # Hide modal and send the button's message
-        {%{state | visible: false}, [btn_msg]}
+        new_state = %{state | visible: false}
+        # Emit state changed event
+        send(self(), {:modal_state_changed, state.id, :visible, false})
+        {new_state, [btn_msg]}
 
       # --- Field Updates ---
       {:field_update, field_id, new_value} ->

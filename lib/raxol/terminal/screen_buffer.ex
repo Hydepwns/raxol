@@ -199,8 +199,19 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   @doc "Gets dimensions. See `Raxol.Terminal.Buffer.Operations.get_dimensions/1`."
   @spec get_dimensions(t()) :: {non_neg_integer(), non_neg_integer()}
-  @impl Raxol.Terminal.ScreenBufferBehaviour
   defdelegate get_dimensions(buffer), to: Operations
+
+  @doc """
+  Gets the character at the specified position.
+  Returns nil if coordinates are out of bounds.
+  """
+  @spec get_char(t(), non_neg_integer(), non_neg_integer()) :: String.t() | nil
+  def get_char(buffer, x, y) do
+    case get_cell(buffer, x, y) do
+      %Cell{char: char} -> char
+      nil -> nil
+    end
+  end
 
   # --- Cell/Line Access --- (Delegated to Operations)
   @doc "Gets line. See `Raxol.Terminal.Buffer.Operations.get_line/2`."

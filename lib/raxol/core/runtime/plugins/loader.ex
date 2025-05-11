@@ -6,6 +6,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @behaviour Raxol.Core.Runtime.Plugins.LoaderBehaviour
 
   require Logger
+  alias Raxol.Core.Runtime.Plugins.Plugin
 
   # --- LoaderBehaviour Callbacks ---
 
@@ -273,6 +274,123 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
       )
 
       {:error, :module_not_found}
+    end
+  end
+
+  @doc """
+  Loads a plugin module's code.
+
+  ## Parameters
+
+  * `module` - The module to load
+
+  ## Returns
+
+  * `:ok` - If the module was loaded successfully
+  * `{:error, :module_not_found}` - If the module could not be found
+
+  ## Examples
+
+      iex> Loader.load_code(MyPlugin)
+      :ok
+  """
+  def load_code(module) when is_atom(module) do
+    case Code.ensure_loaded(module) do
+      {:module, ^module} -> :ok
+      {:error, :nofile} -> {:error, :module_not_found}
+    end
+  end
+
+  @doc """
+  Extracts metadata from a plugin module.
+
+  ## Parameters
+
+  * `module` - The module to extract metadata from
+
+  ## Returns
+
+  * A map containing the plugin's metadata
+
+  ## Examples
+
+      iex> Loader.extract_metadata(MyPlugin)
+      %{id: "my_plugin", version: "1.0.0", dependencies: []}
+  """
+  def extract_metadata(module) when is_atom(module) do
+    # Extract metadata from module attributes
+    metadata = %{
+      id: Module.get_attribute(module, :plugin_id),
+      version: Module.get_attribute(module, :plugin_version),
+      dependencies: Module.get_attribute(module, :plugin_dependencies) || [],
+      description: Module.get_attribute(module, :plugin_description),
+      author: Module.get_attribute(module, :plugin_author),
+      license: Module.get_attribute(module, :plugin_license)
+    }
+
+    # Filter out nil values
+    Enum.reject(metadata, fn {_key, value} -> is_nil(value) end)
+    |> Map.new()
+  end
+
+  @doc """
+  Checks if a module implements a specific behaviour.
+
+  ## Parameters
+
+  * `module` - The module to check
+  * `behaviour` - The behaviour to check for
+
+  ## Returns
+
+  * `true` if the module implements the behaviour, `false` otherwise
+
+  ## Examples
+
+      iex> Loader.behaviour_implemented?(MyPlugin, Plugin)
+      true
+  """
+  def behaviour_implemented?(module, behaviour) when is_atom(module) and is_atom(behaviour) do
+    case Code.ensure_loaded(module) do
+      {:module, ^module} ->
+        behaviours = module.module_info(:attributes)
+        |> Keyword.get_values(:behaviour)
+        |> List.flatten()
+        behaviour in behaviours
+
+      {:error, :nofile} ->
+        false
+    end
+  end
+
+  @doc """
+  Initializes a plugin with the given configuration.
+
+  ## Parameters
+
+  * `module` - The plugin module to initialize
+  * `config` - The configuration to pass to the plugin's init/1 callback
+
+  ## Returns
+
+  * `{:ok, state}` - If initialization was successful
+  * `{:error, reason}` - If initialization failed
+
+  ## Examples
+
+      iex> Loader.initialize_plugin(MyPlugin, %{setting: "value"})
+      {:ok, %{initialized: true}}
+  """
+  def initialize_plugin(module, config) when is_atom(module) do
+    try do
+      case module.init(config) do
+        {:ok, state} -> {:ok, state}
+        {:error, reason} -> {:error, reason}
+      end
+    rescue
+      error ->
+        Logger.error("Error during plugin init for #{module}: #{inspect(error)}")
+        {:error, {:init_exception, error}}
     end
   end
 end

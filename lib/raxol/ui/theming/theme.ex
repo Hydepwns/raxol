@@ -1,342 +1,231 @@
 defmodule Raxol.UI.Theming.Theme do
   @moduledoc """
-  Defines and manages UI themes for the Raxol system.
+  Theme management for Raxol UI components.
 
-  This module provides:
-  * Theme definition and registration
-  * Default theme settings
-  * Theme application to UI elements
-  * Color scheme management
+  This module provides functionality for:
+  - Theme definition and management
+  - Color palette integration
+  - Component styling
+  - Theme variants and accessibility
   """
 
-  @behaviour Raxol.UI.Theming.ThemeBehaviour
+  alias Raxol.Style.Colors.{Color, Utilities}
+  alias Raxol.Core.ColorSystem
 
-  @type t :: %__MODULE__{
-          id: atom(),
-          name: String.t(),
-          description: String.t(),
-          colors: map(),
-          fonts: map(),
-          component_styles: map()
-        }
+  @type color_value :: Color.t() | atom() | String.t()
+  @type style_map :: %{atom() => any()}
 
-  # Added structure for theme variants (e.g., high contrast)
-  @type theme_variant :: %{palette: map(), component_styles: map()}
-  defstruct id: :default,
-            name: "Default Theme",
-            description: "The default Raxol theme",
-            # Base color palette
-            colors: %{},
-            fonts: %{},
-            # Base component styles
-            component_styles: %{},
-            # Map of variant_id => %{palette: map(), component_styles: map()}
-            variants: %{}
-
-  # Store registered themes
-  @themes_table :themes
+  defstruct [
+    :id,
+    :name,
+    :description,
+    :colors,
+    :component_styles,
+    :variants,
+    :metadata,
+    :fonts
+  ]
 
   @doc """
-  Initializes the theme system.
+  Creates a new theme with the given attributes.
   """
-  @impl Raxol.UI.Theming.ThemeBehaviour
-  def init do
-    # Set up ETS table for themes
-    :ets.new(@themes_table, [:set, :public, :named_table])
-
-    # Register built-in themes
-    register(default_theme())
-    register(dark_theme())
-
-    :ok
+  def new(attrs \\ %{}) do
+    struct!(__MODULE__, Map.merge(default_attrs(), attrs))
   end
 
   @doc """
-  Registers a theme for use in the application.
-
-  ## Parameters
-
-  * `theme` - The theme struct to register
-
-  ## Returns
-
-  `:ok`
+  Gets a color from the theme, respecting variants and accessibility settings.
   """
-  @impl Raxol.UI.Theming.ThemeBehaviour
-  def register(%__MODULE__{} = theme) do
-    :ets.insert(@themes_table, {theme.id, theme})
-    :ok
+  def get_color(theme, color_name, arg3 \\ nil)
+  def get_color(%__MODULE__{} = theme, color_name, variant) do
+    ColorSystem.get_color(theme.id, color_name, variant)
+  end
+  def get_color(theme, color_name, default) do
+    get_in(theme, [:colors, color_name]) || default
   end
 
   @doc """
-  Gets a theme by ID.
-
-  ## Parameters
-
-  * `theme_id` - The ID of the theme to retrieve
-
-  ## Returns
-
-  The theme struct or nil if not found
+  Gets a component style from the theme.
   """
-  @impl Raxol.UI.Theming.ThemeBehaviour
-  def get(theme_id) do
-    case :ets.lookup(@themes_table, theme_id) do
-      [{^theme_id, theme}] -> theme
-      [] -> nil
-    end
-  end
-
-  @doc """
-  Lists all registered themes.
-
-  ## Returns
-
-  A list of theme structs
-  """
-  @impl Raxol.UI.Theming.ThemeBehaviour
-  def list do
-    :ets.tab2list(@themes_table)
-    |> Enum.map(fn {_id, theme} -> theme end)
-  end
-
-  @doc """
-  Gets the default theme.
-
-  ## Returns
-
-  The default theme struct
-  """
-  @impl Raxol.UI.Theming.ThemeBehaviour
-  def default_theme do
-    %__MODULE__{
-      id: :default,
-      name: "Default Theme",
-      description: "The default Raxol theme",
-      colors: %{
-        primary: :blue,
-        secondary: :cyan,
-        success: :green,
-        warning: :yellow,
-        error: :red,
-        info: :blue,
-        background: :black,
-        foreground: :white,
-        accent: :magenta,
-        border: :gray,
-        text: :white,
-        muted: :dark_gray
-      },
-      fonts: %{
-        default: %{weight: :normal},
-        heading: %{weight: :bold},
-        code: %{family: :monospace}
-      },
-      component_styles: %{
-        panel: %{
-          border: :single,
-          fg: :white,
-          bg: :black
-        },
-        button: %{
-          fg: :white,
-          bg: :blue,
-          focused_bg: :light_blue,
-          disabled_bg: :dark_gray
-        },
-        text_field: %{
-          fg: :white,
-          bg: :black,
-          border: :gray,
-          focused_border: :blue,
-          placeholder: :dark_gray
-        },
-        table: %{
-          header_fg: :white,
-          header_bg: :dark_blue,
-          row_fg: :white,
-          row_bg: :black,
-          alternate_row_bg: :dark_gray,
-          border: :gray
-        }
-      }
-    }
-  end
-
-  @doc """
-  Gets the dark theme.
-
-  ## Returns
-
-  The dark theme struct
-  """
-  @impl Raxol.UI.Theming.ThemeBehaviour
-  def dark_theme do
-    %__MODULE__{
-      id: :dark,
-      name: "Dark Theme",
-      description: "A dark theme for Raxol",
-      colors: %{
-        primary: :blue,
-        secondary: :cyan,
-        success: :green,
-        warning: :yellow,
-        error: :red,
-        info: :blue,
-        background: :black,
-        foreground: :light_gray,
-        accent: :magenta,
-        border: :dark_gray,
-        text: :light_gray,
-        muted: :dark_gray
-      },
-      fonts: %{
-        default: %{weight: :normal},
-        heading: %{weight: :bold},
-        code: %{family: :monospace}
-      },
-      component_styles: %{
-        panel: %{
-          border: :single,
-          fg: :dark_gray,
-          bg: :black
-        },
-        button: %{
-          fg: :black,
-          bg: :blue,
-          focused_bg: :light_blue,
-          disabled_bg: :dark_gray
-        },
-        text_field: %{
-          fg: :light_gray,
-          bg: :black,
-          border: :dark_gray,
-          focused_border: :blue,
-          placeholder: :dark_gray
-        },
-        table: %{
-          header_fg: :black,
-          header_bg: :dark_blue,
-          row_fg: :light_gray,
-          row_bg: :black,
-          alternate_row_bg: :dark_gray,
-          border: :dark_gray
-        }
-      }
-    }
-  end
-
-  @doc """
-  Gets a component style from a theme.
-
-  ## Parameters
-
-  * `theme` - The theme to get styles from
-  * `component_type` - The type of component to get styles for
-
-  ## Returns
-
-  A map of style properties for the component, or an empty map if not found
-  """
-  @impl Raxol.UI.Theming.ThemeBehaviour
-  def component_style(%__MODULE__{} = theme, component_type) do
+  def get_component_style(%__MODULE__{} = theme, component_type) do
     Map.get(theme.component_styles, component_type, %{})
   end
 
   @doc """
-  Gets a color from a theme.
-
-  ## Parameters
-
-  * `theme` - The theme to get colors from
-  * `color_name` - The name of the color to get
-
-  ## Returns
-
-  The color value, or a default color if not found
+  Creates a high contrast variant of the theme.
   """
-  @impl Raxol.UI.Theming.ThemeBehaviour
-  def color(%__MODULE__{} = theme, color_name) do
-    Map.get(theme.colors, color_name, :white)
+  def create_high_contrast_variant(%__MODULE__{} = theme) do
+    high_contrast_colors =
+      Enum.map(theme.colors, fn {name, color} ->
+        {name, Utilities.increase_contrast(color)}
+      end)
+      |> Map.new()
+
+    %{theme |
+      colors: high_contrast_colors,
+      variants: Map.put(theme.variants, :high_contrast, %{
+        colors: high_contrast_colors
+      })
+    }
   end
 
   @doc """
-  Gets a color value considering the theme and an optional variant.
-
-  Looks up the color in the variant's palette first, then falls back
-  to the theme's base palette.
+  Gets a theme by ID.
   """
-  @spec get_color(t(), atom(), atom() | nil) ::
-          Raxol.Style.Colors.color_value() | nil
-  @impl Raxol.UI.Theming.ThemeBehaviour
-  def get_color(%__MODULE__{} = theme, color_name, variant_id \\ nil) do
-    variant_palette = get_in(theme, [:variants, variant_id, :palette])
-    base_palette = theme.colors
-
-    cond do
-      # Check variant palette first
-      variant_palette && Map.has_key?(variant_palette, color_name) ->
-        Map.get(variant_palette, color_name)
-
-      # Fallback to base palette
-      Map.has_key?(base_palette, color_name) ->
-        Map.get(base_palette, color_name)
-
-      # Not found anywhere
-      true ->
-        # Or return a default like :white or :default?
-        nil
+  def get(theme_id) do
+    case Application.get_env(:raxol, :themes) do
+      nil -> default_theme()
+      themes -> Map.get(themes, theme_id, default_theme())
     end
   end
 
   @doc """
-  Applies a theme to an element tree.
-
-  ## Parameters
-
-  * `element` - The element tree to apply the theme to
-  * `theme` - The theme to apply
-
-  ## Returns
-
-  The element tree with theme applied
+  Returns the default theme.
   """
-  @impl Raxol.UI.Theming.ThemeBehaviour
-  def apply_theme(element, %__MODULE__{} = theme) do
-    apply_theme_to_element(element, theme)
+  def default_theme do
+    %{
+      name: "default",
+      colors: %{
+        background: "#000000",
+        foreground: "#FFFFFF",
+        accent: "#4A9CD5",
+        error: "#FF5555",
+        warning: "#FFB86C",
+        success: "#50FA7B"
+      },
+      styles: %{
+        text_input: %{
+          background: "#1E1E1E",
+          foreground: "#FFFFFF",
+          border: "#4A9CD5",
+          focus: "#4A9CD5"
+        },
+        button: %{
+          background: "#4A9CD5",
+          foreground: "#FFFFFF",
+          hover: "#5FB0E8",
+          active: "#3A8CC5"
+        },
+        checkbox: %{
+          background: "#1E1E1E",
+          foreground: "#FFFFFF",
+          border: "#4A9CD5",
+          checked: "#4A9CD5"
+        }
+      }
+    }
+  end
+
+  @doc """
+  Returns the dark theme.
+  """
+  def dark_theme do
+    %{
+      name: "dark",
+      colors: %{
+        background: "#1E1E1E",
+        foreground: "#FFFFFF",
+        accent: "#4A9CD5",
+        error: "#FF5555",
+        warning: "#FFB86C",
+        success: "#50FA7B"
+      },
+      styles: %{
+        text_input: %{
+          background: "#2D2D2D",
+          foreground: "#FFFFFF",
+          border: "#4A9CD5",
+          focus: "#4A9CD5"
+        },
+        button: %{
+          background: "#4A9CD5",
+          foreground: "#FFFFFF",
+          hover: "#5FB0E8",
+          active: "#3A8CC5"
+        },
+        checkbox: %{
+          background: "#2D2D2D",
+          foreground: "#FFFFFF",
+          border: "#4A9CD5",
+          checked: "#4A9CD5"
+        }
+      }
+    }
+  end
+
+  @doc """
+  Gets the component style for a specific component type.
+  """
+  def get_component_style(theme, component_type) do
+    get_in(theme, [:styles, component_type]) || %{}
   end
 
   # Private helpers
 
-  defp apply_theme_to_element(%{type: type, attrs: attrs} = element, theme)
-       when is_atom(type) do
-    # Get component style for this element type
-    comp_style = component_style(theme, type)
-
-    # Apply component style to element attributes
-    themed_attrs = Map.merge(attrs, Map.drop(comp_style, [:children]))
-
-    # Apply theme to children recursively
-    themed_children =
-      if Map.has_key?(element, :children) do
-        apply_theme_to_children(Map.get(element, :children), theme)
-      else
-        nil
-      end
-
-    # Return themed element
-    element
-    |> Map.put(:attrs, themed_attrs)
-    |> Map.put(:children, themed_children)
+  defp default_attrs do
+    %{
+      id: :default,
+      name: "Default Theme",
+      description: "The default Raxol theme",
+      colors: %{
+        primary: Color.from_hex("#0077CC"),
+        secondary: Color.from_hex("#666666"),
+        accent: Color.from_hex("#FF9900"),
+        background: Color.from_hex("#FFFFFF"),
+        surface: Color.from_hex("#F5F5F5"),
+        error: Color.from_hex("#CC0000"),
+        success: Color.from_hex("#009900"),
+        warning: Color.from_hex("#FF9900"),
+        info: Color.from_hex("#0099CC"),
+        text: Color.from_hex("#333333")
+      },
+      component_styles: %{
+        panel: %{
+          border: :single,
+          padding: 1
+        },
+        button: %{
+          padding: {0, 1},
+          text_style: [:bold]
+        },
+        text_field: %{
+          border: :single,
+          padding: {0, 1}
+        }
+      },
+      variants: %{},
+      metadata: %{
+        author: "Raxol",
+        version: "1.0.0"
+      },
+      fonts: %{
+        default: %{
+          family: "monospace",
+          size: 12,
+          weight: "normal"
+        }
+      }
+    }
   end
 
-  defp apply_theme_to_element(element, _theme), do: element
-
-  defp apply_theme_to_children(children, theme) when is_list(children) do
-    Enum.map(children, &apply_theme_to_element(&1, theme))
+  @doc """
+  Initializes the theme system and registers the default theme.
+  This should be called during application startup.
+  """
+  def init do
+    # Create and register the default theme
+    default_theme = new()
+    register(default_theme)
+    :ok
   end
 
-  defp apply_theme_to_children(child, theme) do
-    apply_theme_to_element(child, theme)
+  @doc """
+  Registers a theme in the application environment.
+  """
+  def register(%__MODULE__{} = theme) do
+    current_themes = Application.get_env(:raxol, :themes, %{})
+    new_themes = Map.put(current_themes, theme.id, theme)
+    Application.put_env(:raxol, :themes, new_themes)
+    :ok
   end
 end

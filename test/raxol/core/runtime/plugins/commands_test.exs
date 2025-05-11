@@ -1,5 +1,6 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
   use ExUnit.Case, async: true
+  import Raxol.TestHelpers
 
   alias Raxol.Core.Runtime.Plugins.{CommandHelper, CommandRegistry}
   alias Raxol.Core.Runtime.Plugins.Manager.State, as: ManagerState
@@ -41,10 +42,6 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     def get_commands, do: [{:error_cmd, :handle_error_cmd, 0}]
 
     def handle_error_cmd(state) do
-      IO.inspect(state, label: "MockErrorPlugin state received")
-      # if is_nil(state) do
-      #   raise "MockErrorPlugin: state is nil! Arg was: #{inspect(state)}"
-      # end
       {:error, :test_failure, Map.put(state, :errored, true)}
     end
 
@@ -65,43 +62,28 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
   defmodule MockMessagePlugin do
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
     def get_commands, do: [{:msg_cmd, :handle_msg_cmd, 1}]
-    # Sends message back to caller (test process)
+
     def handle_msg_cmd(arg, state) do
-      IO.inspect(state, label: "MockMessagePlugin state received")
-      # if is_nil(state) do
-      #  raise "MockMessagePlugin: state is nil! Arg was: #{inspect(arg)}, State was: #{inspect(state)}"
-      # end
       send(state.test_pid, {:handled, arg, state})
       {:noreply, Map.put(state, :msg_sent, true)}
     end
 
-    # test_pid will be set in state
     def init(_), do: {:ok, %{test_pid: nil}}
     def terminate(_, state), do: state
   end
 
   # --- Setup ---
-  # Context is not needed here
   setup _context do
     # Create ETS table for command registry
-    # Use a unique name for test
     table_name = :raxol_command_registry_test
-
-    try do
-      :ets.delete(table_name)
-    rescue
-      # Ignore if table doesn't exist
-      ArgumentError -> :ok
-    end
-
+    cleanup_ets_table(table_name)
     :ets.new(table_name, [:set, :public, :named_table, read_concurrency: true])
+    on_exit(fn -> cleanup_ets_table(table_name) end)
 
     # Create a default mock plugin manager state
     manager_state = %ManagerState{
-      # Populated per test
       plugins: %{},
       metadata: %{},
-      # Populated per test
       plugin_states: %{},
       load_order: [],
       initialized: true,
@@ -113,16 +95,6 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
       file_event_timer: nil
     }
 
-    on_exit(fn ->
-      try do
-        :ets.delete(table_name)
-      rescue
-        # Ignore if already deleted
-        ArgumentError -> :ok
-      end
-    end)
-
-    # Return the created table name and state for tests to use
     {:ok, command_table: table_name, manager_state: manager_state}
   end
 
@@ -153,6 +125,130 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
 
       assert {:error, :not_found} =
                CommandRegistry.lookup_command(table, MockPlugin, "test_cmd")
+    end
+
+    test "register_plugin_commands handles empty command list", %{
+      command_table: table
+    } do
+      # Create a plugin with no commands
+      defmodule EmptyPlugin do
+        @behaviour Raxol.Core.Runtime.Plugins.Plugin
+        def get_commands, do: []
+        def init(_), do: {:ok, %{}}
+        def terminate(_, state), do: state
+      end
+
+      # Should not crash
+      assert :ok = CommandHelper.register_plugin_commands(EmptyPlugin, %{}, table)
+    end
+
+    test "register_plugin_commands handles duplicate command names", %{
+      command_table: table
+    } do
+      # Create two plugins with the same command name
+      defmodule DuplicatePlugin1 do
+        @behaviour Raxol.Core.Runtime.Plugins.Plugin
+        def get_commands, do: [{:dupe_cmd, :handle_dupe_cmd, 1}]
+        def handle_dupe_cmd(_arg, state), do: {:ok, state}
+        def init(_), do: {:ok, %{}}
+        def terminate(_, state), do: state
+      end
+
+      defmodule DuplicatePlugin2 do
+        @behaviour Raxol.Core.Runtime.Plugins.Plugin
+        def get_commands, do: [{:dupe_cmd, :handle_dupe_cmd, 1}]
+        def handle_dupe_cmd(_arg, state), do: {:ok, state}
+        def init(_), do: {:ok, %{}}
+        def terminate(_, state), do: state
+      end
+
+      # Register first plugin
+      assert :ok = CommandHelper.register_plugin_commands(DuplicatePlugin1, %{}, table)
+
+      # Register second plugin - should overwrite first registration
+      assert :ok = CommandHelper.register_plugin_commands(DuplicatePlugin2, %{}, table)
+
+      # Verify only the second plugin's command is registered
+      assert {:ok, {DuplicatePlugin2, :handle_dupe_cmd, 1}} =
+               CommandRegistry.lookup_command(table, DuplicatePlugin2, "dupe_cmd")
+    end
+
+    test "register_plugin_commands handles invalid command specifications", %{
+      command_table: table
+    } do
+      # Create a plugin with invalid command spec
+      defmodule InvalidPlugin do
+        @behaviour Raxol.Core.Runtime.Plugins.Plugin
+        def get_commands, do: [{:invalid_cmd, :non_existent_function, 1}]
+        def init(_), do: {:ok, %{}}
+        def terminate(_, state), do: state
+      end
+
+      # Should handle gracefully
+      assert :ok = CommandHelper.register_plugin_commands(InvalidPlugin, %{}, table)
+    end
+
+    test "register_plugin_commands validates command names", %{
+      command_table: table
+    } do
+      # Create a plugin with invalid command names
+      defmodule InvalidNamePlugin do
+        @behaviour Raxol.Core.Runtime.Plugins.Plugin
+        def get_commands, do: [
+          {:invalid_name_with_spaces, :handle_cmd, 1},
+          {:invalid@chars, :handle_cmd, 1},
+          {:valid_cmd, :handle_cmd, 1}
+        ]
+        def handle_cmd(_arg, state), do: {:ok, state}
+        def init(_), do: {:ok, %{}}
+        def terminate(_, state), do: state
+      end
+
+      # Should only register the valid command
+      assert :ok = CommandHelper.register_plugin_commands(InvalidNamePlugin, %{}, table)
+
+      # Verify only valid command was registered
+      assert {:ok, {InvalidNamePlugin, :handle_cmd, 1}} =
+               CommandRegistry.lookup_command(table, InvalidNamePlugin, "valid_cmd")
+      assert {:error, :not_found} =
+               CommandRegistry.lookup_command(table, InvalidNamePlugin, "invalid_name_with_spaces")
+      assert {:error, :not_found} =
+               CommandRegistry.lookup_command(table, InvalidNamePlugin, "invalid@chars")
+    end
+
+    test "register_plugin_commands handles concurrent registration", %{
+      command_table: table
+    } do
+      # Create two plugins that will register commands concurrently
+      defmodule ConcurrentPlugin1 do
+        @behaviour Raxol.Core.Runtime.Plugins.Plugin
+        def get_commands, do: [{:concurrent_cmd, :handle_cmd, 1}]
+        def handle_cmd(_arg, state), do: {:ok, state}
+        def init(_), do: {:ok, %{}}
+        def terminate(_, state), do: state
+      end
+
+      defmodule ConcurrentPlugin2 do
+        @behaviour Raxol.Core.Runtime.Plugins.Plugin
+        def get_commands, do: [{:concurrent_cmd, :handle_cmd, 1}]
+        def handle_cmd(_arg, state), do: {:ok, state}
+        def init(_), do: {:ok, %{}}
+        def terminate(_, state), do: state
+      end
+
+      # Register commands concurrently
+      tasks = [
+        Task.async(fn -> CommandHelper.register_plugin_commands(ConcurrentPlugin1, %{}, table) end),
+        Task.async(fn -> CommandHelper.register_plugin_commands(ConcurrentPlugin2, %{}, table) end)
+      ]
+
+      results = Task.await_many(tasks, 5000)
+      assert Enum.all?(results, &(&1 == :ok))
+
+      # Verify one of the plugins' command is registered (last writer wins)
+      assert {:ok, {plugin, :handle_cmd, 1}} =
+               CommandRegistry.lookup_command(table, ConcurrentPlugin1, "concurrent_cmd")
+      assert plugin in [ConcurrentPlugin1, ConcurrentPlugin2]
     end
   end
 
@@ -276,6 +372,188 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
 
       # Assert original plugin states are returned on exception
       assert original_states == manager_state.plugin_states
+    end
+
+    test "handles command with invalid arguments", %{
+      command_table: table,
+      manager_state: state
+    } do
+      plugin_id = "mock_plugin"
+      initial_plugin_state = %{initial: true}
+
+      manager_state = %{
+        state
+        | plugins: %{plugin_id => MockPlugin},
+          plugin_states: %{plugin_id => initial_plugin_state}
+      }
+
+      # Register command
+      CommandHelper.register_plugin_commands(MockPlugin, initial_plugin_state, table)
+
+      # Execute command with invalid args (nil)
+      assert {:error, :invalid_args, _updated_states} =
+               CommandHelper.handle_command(
+                 table,
+                 "test_cmd",
+                 MockPlugin,
+                 nil,
+                 manager_state
+               )
+    end
+
+    test "handles command with missing plugin state", %{
+      command_table: table,
+      manager_state: state
+    } do
+      plugin_id = "mock_plugin"
+
+      # Create manager state without plugin state
+      manager_state = %{
+        state
+        | plugins: %{plugin_id => MockPlugin},
+          plugin_states: %{}
+      }
+
+      # Register command
+      CommandHelper.register_plugin_commands(MockPlugin, %{}, table)
+
+      # Execute command
+      assert {:error, :missing_plugin_state, _updated_states} =
+               CommandHelper.handle_command(
+                 table,
+                 "test_cmd",
+                 MockPlugin,
+                 ["arg"],
+                 manager_state
+               )
+    end
+
+    test "handles command with invalid plugin module", %{
+      command_table: table,
+      manager_state: state
+    } do
+      plugin_id = "invalid_plugin"
+      initial_plugin_state = %{initial: true}
+
+      manager_state = %{
+        state
+        | plugins: %{plugin_id => :invalid_module},
+          plugin_states: %{plugin_id => initial_plugin_state}
+      }
+
+      # Execute command with invalid module
+      assert {:error, :invalid_plugin_module, _updated_states} =
+               CommandHelper.handle_command(
+                 table,
+                 "test_cmd",
+                 :invalid_module,
+                 ["arg"],
+                 manager_state
+               )
+    end
+
+    test "validates command arguments before execution", %{
+      command_table: table,
+      manager_state: state
+    } do
+      plugin_id = "mock_plugin"
+      initial_plugin_state = %{initial: true}
+
+      manager_state = %{
+        state
+        | plugins: %{plugin_id => MockPlugin},
+          plugin_states: %{plugin_id => initial_plugin_state}
+      }
+
+      # Register command
+      CommandHelper.register_plugin_commands(MockPlugin, initial_plugin_state, table)
+
+      # Test various invalid argument types
+      invalid_args = [
+        nil,
+        "not_a_list",
+        %{not: "a_list"},
+        {:not, "a_list"},
+        [1, "string", %{not: "allowed"}]
+      ]
+
+      for args <- invalid_args do
+        assert {:error, :invalid_args, _updated_states} =
+                 CommandHelper.handle_command(
+                   table,
+                   "test_cmd",
+                   MockPlugin,
+                   args,
+                   manager_state
+                 )
+      end
+    end
+
+    test "handles command execution timing", %{
+      command_table: table,
+      manager_state: state
+    } do
+      plugin_id = "mock_plugin"
+      initial_plugin_state = %{initial: true}
+
+      manager_state = %{
+        state
+        | plugins: %{plugin_id => MockPlugin},
+          plugin_states: %{plugin_id => initial_plugin_state}
+      }
+
+      # Register command
+      CommandHelper.register_plugin_commands(MockPlugin, initial_plugin_state, table)
+
+      # Execute command and measure time
+      start_time = System.monotonic_time()
+      assert {:ok, _updated_states} =
+               CommandHelper.handle_command(
+                 table,
+                 "test_cmd",
+                 MockPlugin,
+                 ["arg"],
+                 manager_state
+               )
+      end_time = System.monotonic_time()
+
+      # Verify execution time is reasonable (less than 100ms)
+      execution_time = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+      assert execution_time < 100, "Command execution took #{execution_time}ms"
+    end
+
+    test "handles command cancellation", %{
+      command_table: table,
+      manager_state: state
+    } do
+      plugin_id = "mock_plugin"
+      initial_plugin_state = %{initial: true}
+
+      manager_state = %{
+        state
+        | plugins: %{plugin_id => MockPlugin},
+          plugin_states: %{plugin_id => initial_plugin_state}
+      }
+
+      # Register command
+      CommandHelper.register_plugin_commands(MockPlugin, initial_plugin_state, table)
+
+      # Start command execution in a separate process
+      task = Task.async(fn ->
+        CommandHelper.handle_command(
+          table,
+          "test_cmd",
+          MockPlugin,
+          ["arg"],
+          manager_state
+        )
+      end)
+
+      # Cancel the command execution
+      Task.shutdown(task, :brutal_kill)
+
+      # Verify the command was cancelled
+      assert {:exit, :killed} = Task.await(task, 100)
     end
   end
 end

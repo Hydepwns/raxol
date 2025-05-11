@@ -1,211 +1,142 @@
 defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
   use ExUnit.Case
   alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets.{StateManager, Translator}
 
-  describe "new/0" do
-    test "creates a new character set state with default values" do
-      state = CharacterSets.new()
+  describe "CharacterSets" do
+    test "translates characters using active character set" do
+      state = StateManager.new()
+      assert CharacterSets.translate_char(?a, state) == ?a
+      assert CharacterSets.translate_char(?_, state) == ?_
 
+      state = StateManager.set_active(state, :dec_special_graphics)
+      assert CharacterSets.translate_char(?_, state) == ?─
+      assert CharacterSets.translate_char(?`, state) == ?◆
+    end
+
+    test "translates strings using active character set" do
+      state = StateManager.new()
+      assert CharacterSets.translate_string("Hello", state) == "Hello"
+
+      state = StateManager.set_active(state, :dec_special_graphics)
+      assert CharacterSets.translate_string("_`", state) == "─◆"
+    end
+
+    test "handles single shift character sets" do
+      state = StateManager.new()
+      state = StateManager.set_single_shift(state, :dec_special_graphics)
+      assert CharacterSets.translate_char(?_, state) == ?─
+      assert CharacterSets.translate_char(?a, state) == ?a
+    end
+
+    test "clears single shift after use" do
+      state = StateManager.new()
+      state = StateManager.set_single_shift(state, :dec_special_graphics)
+      {_, new_state} = CharacterSets.translate_char(state, ?_)
+      assert StateManager.get_single_shift(new_state) == nil
+    end
+  end
+
+  describe "StateManager" do
+    test "creates new state with default values" do
+      state = StateManager.new()
+      assert state.active == :us_ascii
+      assert state.single_shift == nil
       assert state.g0 == :us_ascii
       assert state.g1 == :us_ascii
       assert state.g2 == :us_ascii
       assert state.g3 == :us_ascii
       assert state.gl == :g0
-      assert state.gr == :g1
-      assert state.single_shift == nil
-      assert state.locked_shift == false
-    end
-  end
-
-  describe "switch_charset/3" do
-    test "switches the specified character set" do
-      state = CharacterSets.new()
-      state = CharacterSets.switch_charset(state, :g0, :french)
-
-      assert state.g0 == :french
-      assert state.g1 == :us_ascii
-      assert state.g2 == :us_ascii
-      assert state.g3 == :us_ascii
-    end
-  end
-
-  describe "set_gl/2" do
-    test "sets the GL character set" do
-      state = CharacterSets.new()
-      state = CharacterSets.set_gl(state, :g1)
-
-      assert state.gl == :g1
-      assert state.gr == :g1
-    end
-  end
-
-  describe "set_gr/2" do
-    test "sets the GR character set" do
-      state = CharacterSets.new()
-      state = CharacterSets.set_gr(state, :g2)
-
-      assert state.gl == :g0
       assert state.gr == :g2
     end
-  end
 
-  # Skip: set_single_shift/2 function does not exist in the current API
-  # @tag :skip
-  describe "set_single_shift/2" do
-    test "sets and clears the single shift character set using SS2 and SS3" do
-      state = CharacterSets.new()
-      # Designate a specific charset to G2 and G3 for clarity
-      state = CharacterSets.switch_charset(state, :g2, :german)
-      state = CharacterSets.switch_charset(state, :g3, :french)
+    test "sets and gets active character set" do
+      state = StateManager.new()
+      assert StateManager.get_active(state) == :us_ascii
+      state = StateManager.set_active(state, :dec_special_graphics)
+      assert StateManager.get_active(state) == :dec_special_graphics
+    end
 
-      # Test SS2
-      state_ss2_active = CharacterSets.set_single_shift(state, :ss2)
-      # G2 charset
-      assert state_ss2_active.single_shift == :german
+    test "sets and gets single shift character set" do
+      state = StateManager.new()
+      assert StateManager.get_single_shift(state) == nil
+      state = StateManager.set_single_shift(state, :dec_special_graphics)
+      assert StateManager.get_single_shift(state) == :dec_special_graphics
+      state = StateManager.clear_single_shift(state)
+      assert StateManager.get_single_shift(state) == nil
+    end
 
-      # Test clearing single_shift
-      state_ss_cleared = CharacterSets.clear_single_shift(state_ss2_active)
-      assert state_ss_cleared.single_shift == nil
+    test "sets and gets G-set character sets" do
+      state = StateManager.new()
+      state = StateManager.set_gset(state, :g0, :dec_special_graphics)
+      assert StateManager.get_gset(state, :g0) == :dec_special_graphics
+    end
 
-      # Test SS3
-      state_ss3_active = CharacterSets.set_single_shift(state, :ss3)
-      # G3 charset
-      assert state_ss3_active.single_shift == :french
+    test "sets and gets GL/GR character sets" do
+      state = StateManager.new()
+      state = StateManager.set_gl(state, :g1)
+      assert StateManager.get_gl(state) == :g1
+      state = StateManager.set_gr(state, :g3)
+      assert StateManager.get_gr(state) == :g3
+    end
 
-      # Test clearing again
-      state_ss3_cleared = CharacterSets.clear_single_shift(state_ss3_active)
-      assert state_ss3_cleared.single_shift == nil
+    test "gets active G-set character set" do
+      state = StateManager.new()
+      state = StateManager.set_gset(state, :g1, :dec_special_graphics)
+      state = StateManager.set_gl(state, :g1)
+      assert StateManager.get_active_gset(state) == :dec_special_graphics
+    end
+
+    test "converts character set codes to atoms" do
+      assert StateManager.charset_code_to_atom(?0) == :dec_special_graphics
+      assert StateManager.charset_code_to_atom(?A) == :uk
+      assert StateManager.charset_code_to_atom(?B) == :us_ascii
+      assert StateManager.charset_code_to_atom(?X) == nil
+    end
+
+    test "converts G-set indices to atoms" do
+      assert StateManager.index_to_gset(0) == :g0
+      assert StateManager.index_to_gset(1) == :g1
+      assert StateManager.index_to_gset(2) == :g2
+      assert StateManager.index_to_gset(3) == :g3
     end
   end
 
-  describe "get_active_charset/1" do
-    # Skip: Test relies on set_single_shift/2 which does not exist
-    # @tag :skip
-    test "returns the correct active character set, including single shift" do
-      state = CharacterSets.new()
-      # Explicitly set G0
-      state = CharacterSets.switch_charset(state, :g0, :us_ascii)
-      state = CharacterSets.switch_charset(state, :g1, :uk)
-      # For SS2 testing
-      state = CharacterSets.switch_charset(state, :g2, :german)
-      # For SS3 testing
-      state = CharacterSets.switch_charset(state, :g3, :french)
-
-      # Default to GL (G0)
-      state = CharacterSets.set_gl(state, :g0)
-      assert CharacterSets.get_active_charset(state) == :us_ascii
-
-      # Switch GL to G1
-      state = CharacterSets.set_gl(state, :g1)
-      assert CharacterSets.get_active_charset(state) == :uk
-
-      # Activate single shift SS2 (to G2 - german)
-      state_ss2_active = CharacterSets.set_single_shift(state, :ss2)
-      assert CharacterSets.get_active_charset(state_ss2_active) == :german
-
-      # Verify original GL is still G1 if single shift wasn't consumed from state
-      assert state_ss2_active.gl == :g1
-
-      # Activate single shift SS3 (to G3 - french)
-      state_ss3_active = CharacterSets.set_single_shift(state, :ss3)
-      assert CharacterSets.get_active_charset(state_ss3_active) == :french
-
-      # Test locked shift (GR should be G1 - uk)
-      # Ensure GR is set before locking
-      state_locked = %{state | locked_shift: true, gr: :g1}
-      assert CharacterSets.get_active_charset(state_locked) == :uk
-
-      # Test precedence: single_shift > locked_shift > gl
-      # GL=g0, GR=g1, locked
-      state_complex =
-        CharacterSets.set_gl(%{state | locked_shift: true, gr: :g1}, :g0)
-
-      # Locked shift (GR) active
-      assert CharacterSets.get_active_charset(state_complex) == :uk
-      # SS2 to G2 (german)
-      state_complex_ss2 = CharacterSets.set_single_shift(state_complex, :ss2)
-      # Single shift takes precedence
-      assert CharacterSets.get_active_charset(state_complex_ss2) == :german
+  describe "Translator" do
+    test "translates DEC Special Graphics characters" do
+      assert Translator.translate_char(?_, :dec_special_graphics, nil) == ?─
+      assert Translator.translate_char(?`, :dec_special_graphics, nil) == ?◆
+      assert Translator.translate_char(?a, :dec_special_graphics, nil) == ?▒
     end
-  end
 
-  describe "translate_char/2" do
-    test "translates characters according to the active character set" do
-      state = CharacterSets.new()
-      state = CharacterSets.switch_charset(state, :g0, :french)
-      state = CharacterSets.set_gl(state, :g0)
-      # In :french, 0x23 (#) -> £ (163)
-      assert CharacterSets.translate_char(state, 0x23) == {163, state}
-
-      # In :french, 'a' (0x61) -> 'a' (0x61) (no specific mapping, stays US ASCII like)
-      assert CharacterSets.translate_char(state, ?a) == {?a, state}
-
-      # Test with single shift consumption
-      # GL defaults to US ASCII
-      state = CharacterSets.switch_charset(state, :g0, :us_ascii)
-      state = CharacterSets.set_gl(state, :g0)
-      # G2 is German
-      state_g2_german = CharacterSets.switch_charset(state, :g2, :german)
-
-      state_ss2_active = CharacterSets.set_single_shift(state_g2_german, :ss2)
-
-      # Test with '{' (0x7B):
-      # In :german, 0x7B ('{') -> 'ä' (228)
-      {translated_char_german, state_after_ss2} =
-        CharacterSets.translate_char(state_ss2_active, 0x7B)
-
-      # Should be 'ä' from German charset
-      assert translated_char_german == 228
-      # Single shift should be consumed
-      assert state_after_ss2.single_shift == nil
-      # Active charset should revert to G0 (:us_ascii) after SS2 is consumed
-      assert CharacterSets.get_active_charset(state_after_ss2) == :us_ascii
-
-      # Translate '{' again, should now use :us_ascii (0x7B -> 0x7B)
-      {translated_char_us_ascii, _final_state} =
-        CharacterSets.translate_char(state_after_ss2, 0x7B)
-
-      # Should be '{' from US ASCII
-      assert translated_char_us_ascii == 0x7B
+    test "translates UK characters" do
+      assert Translator.translate_char(?#, :uk, nil) == ?£
+      assert Translator.translate_char(?a, :uk, nil) == ?a
     end
-  end
 
-  describe "translate_string/2" do
-    test "translates strings according to the active character set and consumes single shift" do
-      state = CharacterSets.new()
-      state_french_g0 = CharacterSets.switch_charset(state, :g0, :french)
-      state_french_g0 = CharacterSets.set_gl(state_french_g0, :g0)
-      # "#a" -> French: "£a"
-      assert CharacterSets.translate_string(state_french_g0, "#a") ==
-               {"£a", state_french_g0}
+    test "translates French characters" do
+      assert Translator.translate_char(?#, :french, nil) == ?£
+      assert Translator.translate_char(?@, :french, nil) == ?à
+      assert Translator.translate_char(?[, :french, nil) == ?°
+    end
 
-      assert CharacterSets.translate_string(state_french_g0, "café") ==
-               {"café", state_french_g0}
+    test "translates German characters" do
+      assert Translator.translate_char(?#, :german, nil) == ?§
+      assert Translator.translate_char(?@, :german, nil) == ?§
+      assert Translator.translate_char(?[, :german, nil) == ?Ä
+    end
 
-      # Test with single shift consumption for the first character
-      # G0 is US ASCII
-      state = CharacterSets.switch_charset(state, :g0, :us_ascii)
-      # G2 is German
-      state = CharacterSets.switch_charset(state, :g2, :german)
-      state = CharacterSets.set_gl(state, :g0)
+    test "translates Spanish characters" do
+      assert Translator.translate_char(?#, :spanish, nil) == ?ñ
+      assert Translator.translate_char(?@, :spanish, nil) == ?¿
+      assert Translator.translate_char(?[, :spanish, nil) == ?¡
+    end
 
-      # Activate SS2 (G2 - German)
-      state_ss2_active = CharacterSets.set_single_shift(state, :ss2)
-
-      # String: "{BC"
-      # Expected: '{'(0x7B) via G2 German -> 'ä' (228)
-      #           'B'(0x42) via G0 US ASCII (SS2 consumed) -> 'B' (0x42)
-      #           'C'(0x43) via G0 US ASCII -> 'C' (0x43)
-      # Result: "äBC"
-      {translated_string, state_after_ss2} =
-        CharacterSets.translate_string(state_ss2_active, "{BC")
-
-      # Changed from <<228>> <> "BC"
-      assert translated_string == "äBC"
-      # Single shift consumed
-      assert state_after_ss2.single_shift == nil
-      # Next active is G0 US ASCII
-      assert CharacterSets.get_active_charset(state_after_ss2) == :us_ascii
+    test "translates strings" do
+      assert Translator.translate_string("_`", :dec_special_graphics, nil) == "─◆"
+      assert Translator.translate_string("#@[", :french, nil) == "£à°"
+      assert Translator.translate_string("#@[", :german, nil) == "§§Ä"
     end
   end
 end
+

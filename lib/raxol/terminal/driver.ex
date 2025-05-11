@@ -51,39 +51,26 @@ defmodule Raxol.Terminal.Driver do
   @impl true
   # dispatcher_pid can be nil here
   def init(dispatcher_pid) do
-    Logger.info("[#{__MODULE__}] init starting...")
-    Process.flag(:trap_exit, true)
+    Logger.info("[#{__MODULE__}] init called with dispatcher: #{inspect(dispatcher_pid)}")
 
-    # Skip NIF initialization entirely in test environment
-    if Mix.env() == :test do
-      Logger.debug("[#{__MODULE__}] Skipping rrex_termbox init in :test env.")
-      # Proceed as if init was successful
-      if dispatcher_pid, do: send_initial_resize_event(dispatcher_pid)
-      {:ok, %State{dispatcher_pid: dispatcher_pid, original_stty: nil}}
-    else
-      # Start rrex_termbox NIF in non-test environments
-      Logger.debug("[#{__MODULE__}] Initializing rrex_termbox...")
-
-      case ExTermbox.init(owner: self()) do
-        {:ok, _tb_pid} ->
-          Logger.info("[#{__MODULE__}] rrex_termbox initialized successfully.")
-
-          # Send initial size event (still useful)
-          Logger.debug("[#{__MODULE__}] Sending initial resize event...")
-          # Only send if dispatcher_pid is known
-          if dispatcher_pid, do: send_initial_resize_event(dispatcher_pid)
-
-          Logger.info("[#{__MODULE__}] init completed successfully.")
-          {:ok, %State{dispatcher_pid: dispatcher_pid, original_stty: nil}}
-
-        {:error, reason} ->
-          Logger.error(
-            "[#{__MODULE__}] Failed to initialize rrex_termbox: #{inspect(reason)}. Halting init."
-          )
-
-          {:stop, {:termbox_init_failed, reason}}
+    # Get original terminal settings
+    original_stty =
+      case System.cmd("stty", ["-g"]) do
+        {output, 0} -> String.trim(output)
+        {_error, _exit_code} -> nil
       end
+
+    # Initialize terminal in raw mode
+    if Mix.env() != :test do
+      _ = ExTermbox.init()
     end
+
+    # Send driver_ready event to the test process
+    if Mix.env() == :test do
+      send(self(), {:driver_ready, self()})
+    end
+
+    {:ok, %State{dispatcher_pid: dispatcher_pid, original_stty: original_stty}}
   end
 
   @impl true

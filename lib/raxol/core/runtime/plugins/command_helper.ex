@@ -15,14 +15,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   Returns `{:ok, module, function, arity} | :not_found`.
   """
   def find_plugin_for_command(command_table, command_name, namespace, _arity) do
-    # Ensure command_name is a binary for lookup
+    # Normalize command name: trim whitespace and downcase
     processed_command_name =
-      if is_atom(command_name) do
-        Atom.to_string(command_name)
-      else
-        # Assuming it's already a binary or handle error if not
-        command_name
-      end
+      command_name
+      |> (fn name -> if is_atom(name), do: Atom.to_string(name), else: name end).()
+      |> String.trim()
+      |> String.downcase()
 
     # Namespace is optional (pass nil for global search or specific module)
     namespace_module =
@@ -78,7 +76,9 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
                 command_table,
                 # Use module as namespace
                 plugin_module,
-                Atom.to_string(name),
+                Atom.to_string(name)
+                |> String.trim()
+                |> String.downcase(),
                 # Module containing the function
                 plugin_module,
                 function,
@@ -116,90 +116,151 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   plugin state map or an error indicator.
 
   Returns `{:ok, updated_plugin_states_map} | :not_found | {:error, reason}`.
-  Replies are sent directly via `send/2` within this function.
   """
   def handle_command(command_table, command_name_str, namespace, args, state) do
-    # Arity isn't used in lookup yet
-    case find_plugin_for_command(
-           command_table,
-           command_name_str,
-           namespace,
-           :unknown
-         ) do
-      # Correct match for successful lookup
-      {:ok, {plugin_module, function_atom, _arity}} ->
-        # Find current plugin state
-        plugin_id =
-          LifecycleHelper.find_plugin_id_by_module(state.plugins, plugin_module)
+    # Validate arguments
+    case validate_command_args(args) do
+      :ok ->
+        # Arity isn't used in lookup yet
+        case find_plugin_for_command(
+               command_table,
+               command_name_str,
+               namespace,
+               :unknown
+             ) do
+          # Correct match for successful lookup
+          {:ok, {plugin_module, function_atom, _arity}} ->
+            # Find current plugin state
+            plugin_id = find_plugin_id_by_module(state.plugins, plugin_module)
 
-        if plugin_id && Map.has_key?(state.plugin_states, plugin_id) do
-          current_plugin_state = state.plugin_states[plugin_id]
+            if plugin_id && Map.has_key?(state.plugin_states, plugin_id) do
+              current_plugin_state = state.plugin_states[plugin_id]
 
-          try do
-            # Call the plugin's handler function using apply(Module, function, [args_list, state])
-            # Use apply/3 correctly
-            command_name_atom = String.to_atom(command_name_str)
+              try do
+                # Call the plugin's handler function using apply(Module, function, [args_list, state])
+                # Use apply/3 correctly
+                command_name_atom = String.to_atom(command_name_str)
 
-            case apply(plugin_module, function_atom, [
-                   command_name_atom,
-                   args,
-                   current_plugin_state
-                 ]) do
-              # Expected success format from plugin: {:ok, new_plugin_state, result_tuple}
-              {:ok, new_plugin_state, result_tuple} ->
-                Logger.debug(
-                  "Command '#{command_name_str}' handled by #{inspect(plugin_module)}, result: #{inspect(result_tuple)}"
-                )
+                case with_timeout(fn ->
+                  apply(plugin_module, function_atom, [
+                    command_name_atom,
+                    args,
+                    current_plugin_state
+                  ])
+                end, 5000) do
+                  {:ok, {:ok, new_plugin_state, result_tuple}} ->
+                    Logger.debug(
+                      "Command '#{command_name_str}' handled by #{inspect(plugin_module)}, result: #{inspect(result_tuple)}"
+                    )
 
-                # Return result to PluginManager
-                {:ok, new_plugin_state, result_tuple, plugin_id}
+                    # Update plugin state in the state map
+                    updated_states = Map.put(state.plugin_states, plugin_id, new_plugin_state)
 
-              # Expected error format from plugin: {:error, reason_tuple, new_plugin_state}
-              {:error, reason_tuple, new_plugin_state} ->
-                Logger.error(
-                  "Error handling command '#{command_name_str}' in #{inspect(plugin_module)}: #{inspect(reason_tuple)}"
-                )
+                    # Return result to PluginManager
+                    {:ok, updated_states}
 
-                # Return error to PluginManager
-                {:error, reason_tuple, plugin_id}
+                  {:ok, {:error, reason_tuple, new_plugin_state}} ->
+                    Logger.error(
+                      "Error handling command '#{command_name_str}' in #{inspect(plugin_module)}: #{inspect(reason_tuple)}"
+                    )
 
-              other ->
-                Logger.warning(
-                  "Plugin #{inspect(plugin_module)} returned unexpected value from command handler: #{inspect(other)}. Expected {:ok, state, result} or {:error, reason, state}."
-                )
+                    # Update plugin state even on error
+                    updated_states = Map.put(state.plugin_states, plugin_id, new_plugin_state)
 
-                # Return generic error to PluginManager
-                {:error, {:unexpected_plugin_return, other}, plugin_id}
-            end
-          rescue
-            error ->
+                    # Return error to PluginManager
+                    {:error, reason_tuple, updated_states}
+
+                  {:ok, invalid_return} ->
+                    Logger.warning(
+                      "Plugin #{inspect(plugin_module)} returned unexpected value from command handler: #{inspect(invalid_return)}. Expected {:ok, state, result} or {:error, reason, state}."
+                    )
+
+                    # Return generic error to PluginManager
+                    {:error, {:unexpected_plugin_return, invalid_return}, state.plugin_states}
+
+                  {:error, :timeout} ->
+                    Logger.error(
+                      "Command '#{command_name_str}' in #{inspect(plugin_module)} timed out after 5 seconds"
+                    )
+
+                    {:error, :command_timeout, state.plugin_states}
+
+                  {:error, reason} ->
+                    Logger.error(
+                      "Exception handling command '#{command_name_str}' in #{inspect(plugin_module)}: #{inspect(reason)}"
+                    )
+
+                    {:error, {:exception, reason}, state.plugin_states}
+                end
+              rescue
+                error ->
+                  Logger.error(
+                    "Exception handling command '#{command_name_str}' in #{inspect(plugin_module)}: #{inspect(error)}
+                    Stacktrace: #{inspect(__STACKTRACE__)}"
+                  )
+
+                  # Return exception error to PluginManager
+                  {:error, {:exception, error}, state.plugin_states}
+              end
+            else
               Logger.error(
-                "Exception handling command '#{command_name_str}' in #{inspect(plugin_module)}: #{inspect(error)}
-              Stacktrace: #{inspect(__STACKTRACE__)}"
+                "Could not find state for plugin #{inspect(plugin_module)} handling command '#{command_name_str}'"
               )
 
-              # Return exception error to PluginManager
-              # Include plugin_id if possible
-              {:error, {:exception, error}, plugin_id}
-          end
-        else
-          Logger.error(
-            "Could not find state for plugin #{inspect(plugin_module)} handling command '#{command_name_str}'"
-          )
+              # Return error to PluginManager
+              {:error, :missing_plugin_state, state.plugin_states}
+            end
 
-          # Return error to PluginManager
-          # No specific plugin_id
-          {:error, :plugin_state_not_found, nil}
+          :not_found ->
+            Logger.warning(
+              "Command '#{command_name_str}' not found in namespace #{inspect(namespace)}"
+            )
+
+            :not_found
         end
 
-      # Correct match for lookup failure
-      {:error, :not_found} ->
-        Logger.warning(
-          "Command not found: [#{namespace || "global"}] '#{command_name_str}'"
-        )
+      {:error, reason} ->
+        {:error, reason, state.plugin_states}
+    end
+  end
 
-        # Indicate command was not found
-        :not_found
+  @doc """
+  Finds the plugin ID for a given module.
+  """
+  def find_plugin_id_by_module(plugins, module) do
+    Enum.find_value(plugins, fn {id, mod} -> if mod == module, do: id end)
+  end
+
+  @doc """
+  Validates command arguments.
+  """
+  def validate_command_args(args) do
+    cond do
+      is_nil(args) ->
+        {:error, :invalid_args}
+
+      not is_list(args) ->
+        {:error, :invalid_args}
+
+      Enum.any?(args, &(not is_binary(&1) and not is_number(&1))) ->
+        {:error, :invalid_args}
+
+      true ->
+        :ok
+    end
+  end
+
+  # Helper function to execute a function with a timeout
+  defp with_timeout(fun, timeout) do
+    task = Task.async(fun)
+    try do
+      Task.await(task, timeout)
+    catch
+      :exit, {:timeout, _} ->
+        Task.shutdown(task)
+        {:error, :timeout}
+      :exit, reason ->
+        {:error, reason}
     end
   end
 

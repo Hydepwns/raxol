@@ -1,7 +1,13 @@
 defmodule Raxol.Core.Runtime.CommandTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   alias Raxol.Core.Runtime.Command
   alias Briefly
+
+  setup do
+    {:ok, temp_dir} = Briefly.create(directory: true)
+    on_exit(fn -> File.rm_rf!(temp_dir) end)
+    {:ok, temp_dir: temp_dir}
+  end
 
   describe "command creation" do
     test "none/0 creates a no-op command" do
@@ -140,41 +146,28 @@ defmodule Raxol.Core.Runtime.CommandTest do
       assert_receive {:command_result, ^msg}, 100
     end
 
-    test "executes file write system command", %{context: context} do
-      # Create a temporary directory using Briefly
-      {:ok, temp_dir_path} = Briefly.create(directory: true)
-      # Define a file path within the temporary directory
-      file_path = Path.join(temp_dir_path, "output.txt")
+    test "executes file write system command", %{context: context, temp_dir: temp_dir} do
+      file_path = Path.join(temp_dir, "output.txt")
       content = "hello from raxol test"
 
-      # Create the file_write command
       cmd = Command.system(:file_write, path: file_path, content: content)
 
-      # Execute the command
       Command.execute(cmd, context)
 
-      # Assert that the command execution was successful (adjust if result format is different)
       assert_receive {:command_result, {:file_write, :ok}}, 500
 
-      # Verify that the file was written with the correct content
       assert File.read!(file_path) == content
-
-      # Briefly will automatically clean up the temp_dir_path and its contents
-      # when the test process exits.
     end
 
-    test "executes file read system command", %{context: context} do
-      # Create a temporary file for testing using Briefly
-      {:ok, path} = Briefly.create(basename: "test_file.txt")
+    test "executes file read system command", %{context: context, temp_dir: temp_dir} do
+      file_path = Path.join(temp_dir, "test_file.txt")
       content = "test content"
-      File.write!(path, content)
+      File.write!(file_path, content)
 
-      cmd = Command.system(:file_read, path: path)
+      cmd = Command.system(:file_read, path: file_path)
       Command.execute(cmd, context)
 
       assert_receive {:command_result, {:file_read, ^content}}, 500
-
-      # Clean up is handled automatically by Briefly
     end
   end
 end

@@ -138,8 +138,6 @@ defmodule Raxol.System.TerminalPlatform do
     features = if supports_mouse?, do: [:mouse | features], else: features
     features = if supports_title?, do: [:title | features], else: features
 
-    # TODO: Need to add checks for other features like :unicode, :clipboard, :bracketed_paste, :focus
-    # Example placeholder:
     features = if supports_unicode?(), do: [:unicode | features], else: features
 
     features =

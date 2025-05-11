@@ -35,21 +35,8 @@ defmodule RaxolWeb.ConnCase do
   end
 
   setup tags do
-    # Conditionally start the Ecto Sandbox only if the database is enabled
-    if Application.get_env(:raxol, :database_enabled, false) do
-      # Start the Repo if not already started (needed for Sandbox)
-      {:ok, _} =
-        Ecto.Adapters.SQL.Sandbox.start_owner!(Raxol.Repo,
-          shared: not tags[:async]
-        )
-
-      # Setup Ecto sandbox
-      :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
-
-      if !tags[:async] do
-        Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
-      end
-    end
+    # Use DataCase for database setup
+    {:ok, _} = Raxol.DataCase.setup(tags)
 
     # Ensure Endpoint is started for LiveView tests
     start_endpoint(tags)

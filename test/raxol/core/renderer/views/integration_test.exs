@@ -42,7 +42,8 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
                   color: :blue
                 }
               ],
-              width: 20
+              width: 20,
+              height: 1
             )
           end
         },
@@ -68,12 +69,20 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
           header_style: [:bold]
         )
 
-      assert view.type == :border
-      [header | rows] = get_in(view, [:children, Access.at(0)])
+      context = %{width: 80, height: 20}
+      alias Raxol.Renderer.Layout
+      rendered_view = Layout.apply_layout(view, context)
 
-      # Verify structure
-      assert length(rows) == 3
+      # Verify table structure
+      assert rendered_view.type == :table
+      assert rendered_view.border == :single
+      assert length(rendered_view.columns) == 4
+      assert length(rendered_view.data) == 3
+
+      # Verify table content
+      [header | rows] = hd(rendered_view.children)
       assert length(header.children) == 4
+      assert length(rows) == 3
 
       # Verify sparkline integration
       trend_cells =
@@ -81,7 +90,17 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
           Enum.at(row.children, 2)
         end)
 
-      assert Enum.all?(trend_cells, &(&1.type == :box))
+      Enum.each(trend_cells, fn cell ->
+        assert cell.type == :chart
+        assert cell.type == :sparkline
+        assert cell.width == 20
+        assert cell.height == 1
+        assert length(cell.series) == 1
+        [series] = cell.series
+        assert series.name == "Sales"
+        assert series.color == :blue
+        assert is_list(series.data)
+      end)
 
       # Verify status indicators
       status_cells =
@@ -91,6 +110,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       assert Enum.any?(status_cells, &(&1.fg == :green))
       assert Enum.any?(status_cells, &(&1.fg == :red))
+      assert Enum.any?(status_cells, &(&1.fg == :yellow))
     end
 
     test "creates side-by-side charts" do
@@ -135,12 +155,44 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
           [bar_chart, line_chart]
         end
 
-      assert view.type == :flex
-      assert length(view.children) == 2
-      # Bar chart
-      assert Enum.at(view.children, 0).type == :box
-      # Line chart
-      assert Enum.at(view.children, 1).type == :box
+      context = %{width: 80, height: 20}
+      alias Raxol.Renderer.Layout
+      rendered_view = Layout.apply_layout(view, context)
+
+      # Verify flex container
+      assert rendered_view.type == :flex
+      assert rendered_view.direction == :row
+      assert length(rendered_view.children) == 2
+
+      # Verify bar chart
+      [bar_chart_view, line_chart_view] = rendered_view.children
+      assert bar_chart_view.type == :chart
+      assert bar_chart_view.type == :bar
+      assert bar_chart_view.width == 30
+      assert bar_chart_view.height == 10
+      assert bar_chart_view.show_axes == true
+      assert bar_chart_view.show_legend == true
+      assert length(bar_chart_view.series) == 1
+      [bar_series] = bar_chart_view.series
+      assert bar_series.name == "Total Sales"
+      assert bar_series.color == :blue
+      assert length(bar_series.data) == 3
+
+      # Verify line chart
+      assert line_chart_view.type == :chart
+      assert line_chart_view.type == :line
+      assert line_chart_view.width == 40
+      assert line_chart_view.height == 10
+      assert line_chart_view.show_axes == true
+      assert line_chart_view.show_legend == true
+      assert length(line_chart_view.series) == 3
+
+      # Verify line chart series
+      Enum.each(line_chart_view.series, fn series ->
+        assert series.name in ["Product A", "Product B", "Product C"]
+        assert series.color in [:green, :red]
+        assert length(series.data) == 5
+      end)
     end
 
     test "creates complex dashboard layout" do
@@ -225,20 +277,49 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
           ]
         )
 
+      # Verify overall structure
       assert view.type == :box
-      # Header and content flex
       assert length(view.children) == 2
 
+      # Verify header
       [header, content] = view.children
+      assert header.type == :box
       assert header.border == :single
+      assert header.style == [:bold]
+      assert length(header.children) == 1
+      [header_text] = header.children
+      assert header_text.type == :text
+      assert header_text.content == "Sales Dashboard"
+      assert header_text.style == [:bold]
+      assert header_text.fg == :blue
+
+      # Verify content layout
       assert content.type == :flex
-      # Summary and chart
+      assert content.direction == :row
       assert length(content.children) == 2
 
-      # Verify layout structure
+      # Verify summary table
       [summary, chart] = content.children
+      assert summary.type == :box
       assert summary.size == {25, :auto}
+      assert length(summary.children) == 1
+      [table] = summary.children
+      assert table.type == :table
+      assert table.border == :single
+      assert length(table.columns) == 2
+      assert length(table.data) == 3
+
+      # Verify chart
+      assert chart.type == :box
       assert chart.size == {60, :auto}
+      assert length(chart.children) == 1
+      [chart_component] = chart.children
+      assert chart_component.type == :chart
+      assert chart_component.width == 60
+      assert chart_component.height == 15
+      assert chart_component.show_axes == true
+      assert chart_component.show_legend == true
+      assert length(chart_component.series) == length(@sample_data)
     end
   end
 
@@ -421,18 +502,48 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
                   format: fn value -> to_string(value) end
                 }
               ],
-              data: @sample_data
+              data: @sample_data,
+              border: :single
             )
           end
         end
 
-      assert Keyword.get(view.border, :border) == :double
+      context = %{width: 80, height: 20}
+      alias Raxol.Renderer.Layout
+      rendered_view = Layout.apply_layout(view, context)
 
-      inner_border = List.first(view.children)
-      assert inner_border.border == [border: :single]
+      # Verify outer border
+      assert rendered_view.type == :border
+      assert rendered_view.border == :double
+      assert rendered_view.padding == 1
 
-      table = List.first(inner_border.children)
-      assert table.type == :border
+      # Verify inner border
+      inner_border = hd(rendered_view.children)
+      assert inner_border.type == :border
+      assert inner_border.border == :single
+
+      # Verify table
+      table = hd(inner_border.children)
+      assert table.type == :table
+      assert table.border == :single
+      assert length(table.columns) == 2
+      assert length(table.data) == 3
+
+      # Verify table content
+      [header | rows] = hd(table.children)
+      assert length(header.children) == 2
+      assert length(rows) == 3
+
+      # Verify header cells
+      [name_header, status_header] = header.children
+      assert name_header.content == "Name           "
+      assert status_header.content == "Status  "
+
+      # Verify first row
+      first_row = hd(rows)
+      [name_cell, status_cell] = first_row.children
+      assert name_cell.content == "Product A      "
+      assert status_cell.content == "up     "
     end
 
     test "creates responsive grid layout" do
@@ -462,60 +573,41 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       # Test with enough width
       context = %{width: 100, height: 10}
-      # Ensure Layout alias is available
       alias Raxol.Renderer.Layout
-      # Use Layout.apply_layout instead of Renderer.render
-      # rendered_view = Layout.apply_layout(view, context)
-      rendered_view_list = Layout.apply_layout(view, context)
-      assert is_list(rendered_view_list) and length(rendered_view_list) == 1
-      # Extract the map
-      rendered_view = hd(rendered_view_list)
+      rendered_view = Layout.apply_layout(view, context)
 
-      # Check basic grid structure
-      # assert is_list(rendered_view)
-      # assert length(rendered_view) == 3
-      # Assert type on the extracted map
+      # Verify grid structure
       assert rendered_view.type == :grid
-      # Assuming the grid map has children representing the charts
       assert is_list(rendered_view.children)
-      # Check the number of charts within the grid map
       assert length(rendered_view.children) == 3
 
-      # Move these lines inside the test block
-      # expected_width = div(context.width - 1, 2) # Assuming grid splits width
-
-      # Check properties of each child (grid cell/column)
-      # Enum.each(rendered_view, fn rendered_chart ->
-      #   assert is_map(rendered_chart)
-      # end)
-      Enum.each(rendered_view.children, fn rendered_chart ->
-        assert is_map(rendered_chart)
+      # Verify each chart in the grid
+      Enum.each(rendered_view.children, fn chart ->
+        assert is_map(chart)
+        assert chart.type == :chart
+        assert chart.width == 30
+        assert chart.height == 8
+        assert chart.show_legend == true
+        assert length(chart.series) == 1
       end)
 
-      # Test with very narrow width (forces truncation/change)
+      # Test with narrow width
       context_narrow = %{width: 10, height: 10}
-      # Use Layout.apply_layout here as well
-      # rendered_view_narrow = Layout.apply_layout(view, context_narrow)
-      rendered_view_narrow_list = Layout.apply_layout(view, context_narrow)
+      rendered_view_narrow = Layout.apply_layout(view, context_narrow)
 
-      assert is_list(rendered_view_narrow_list) and
-               length(rendered_view_narrow_list) == 1
-
-      # Extract the grid map
-      rendered_view_narrow = hd(rendered_view_narrow_list)
-      # assert is_list(rendered_view_narrow)
-      # assert length(rendered_view_narrow) == 3
+      # Verify grid structure with narrow width
       assert rendered_view_narrow.type == :grid
       assert is_list(rendered_view_narrow.children)
-      # Still 3 charts, just rendered smaller
       assert length(rendered_view_narrow.children) == 3
 
-      # Basic check: ensure rendering happened and structure is somewhat preserved
-      # Enum.each(rendered_view_narrow, fn rendered_chart_narrow ->
-      #    assert is_map(rendered_chart_narrow)
-      # end)
-      Enum.each(rendered_view_narrow.children, fn rendered_chart_narrow ->
-        assert is_map(rendered_chart_narrow)
+      # Verify charts are properly scaled down
+      Enum.each(rendered_view_narrow.children, fn chart ->
+        assert is_map(chart)
+        assert chart.type == :chart
+        assert chart.width <= 10
+        assert chart.height <= 10
+        assert chart.show_legend == true
+        assert length(chart.series) == 1
       end)
     end
   end

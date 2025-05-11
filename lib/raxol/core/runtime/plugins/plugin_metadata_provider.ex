@@ -10,12 +10,12 @@ defmodule Raxol.Core.Runtime.Plugins.PluginMetadataProvider do
   Represents the metadata for a plugin.
   - `id`: A unique atom identifying the plugin (e.g., `:my_plugin`).
   - `version`: A string representing the plugin version (e.g., "0.1.0").
-  - `dependencies`: A list of plugin IDs (atoms) that this plugin depends on.
+  - `dependencies`: A list of tuples {plugin_id, version_requirement} that this plugin depends on.
   """
   @type metadata :: %{
           id: atom(),
           version: String.t(),
-          dependencies: list(atom())
+          dependencies: list({atom(), String.t()})
         }
 
   @doc """

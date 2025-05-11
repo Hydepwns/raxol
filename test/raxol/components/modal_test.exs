@@ -52,14 +52,16 @@ defmodule Raxol.Components.ModalTest do
 
     # Show it and check state/commands
     {show_state, show_cmds} = Modal.update(:show, state)
-    :timer.sleep(10)
+    # Wait for modal to become visible
+    assert_receive {:modal_state_changed, :my_alert, :visible, true}, 100
     assert show_state.visible
     # Focus alert itself
     assert show_cmds == [{:set_focus, :my_alert}]
 
     # Hide it and check state/commands
     {hide_state, hide_cmds} = Modal.update(:hide, show_state)
-    :timer.sleep(10)
+    # Wait for modal to become hidden
+    assert_receive {:modal_state_changed, :my_alert, :visible, false}, 100
     refute hide_state.visible
     assert hide_cmds == []
   end
@@ -149,7 +151,8 @@ defmodule Raxol.Components.ModalTest do
     props_map = %{}
     escape_event = %{type: :key, data: %{key: "Escape"}}
     {new_state, commands} = Modal.handle_event(escape_event, props_map, state)
-    :timer.sleep(10)
+    # Wait for modal to become hidden
+    assert_receive {:modal_state_changed, :my_prompt, :visible, false}, 100
     assert new_state.visible == false
     assert commands == [:prompt_cancel]
   end
@@ -295,25 +298,21 @@ defmodule Raxol.Components.ModalTest do
 
     # Focus next (0 -> 1)
     {state_1, commands_1} = Modal.update(:focus_next_field, initial_state)
-    :timer.sleep(10)
     assert state_1.form_state.focus_index == 1
     assert commands_1 == [{:set_focus, "my_form.agree"}]
 
     # Focus next (1 -> 2)
     {state_2, commands_2} = Modal.update(:focus_next_field, state_1)
-    :timer.sleep(10)
     assert state_2.form_state.focus_index == 2
     assert commands_2 == [{:set_focus, "my_form.option"}]
 
     # Focus next (2 -> 0, wrap around)
     {state_0, commands_0} = Modal.update(:focus_next_field, state_2)
-    :timer.sleep(10)
     assert state_0.form_state.focus_index == 0
     assert commands_0 == [{:set_focus, "my_form.name"}]
 
     # Focus previous (0 -> 2, wrap around)
     {state_prev, commands_prev} = Modal.update(:focus_prev_field, state_0)
-    :timer.sleep(10)
     assert state_prev.form_state.focus_index == 2
     assert commands_prev == [{:set_focus, "my_form.option"}]
   end
@@ -330,19 +329,16 @@ defmodule Raxol.Components.ModalTest do
     {state_1, commands_1} =
       Modal.handle_event(tab_event, props_map, initial_state)
 
-    :timer.sleep(10)
     assert state_1.form_state.focus_index == 1
     assert commands_1 == [{:set_focus, "my_form.agree"}]
 
     # Tab (1 -> 2)
     {state_2, commands_2} = Modal.handle_event(tab_event, props_map, state_1)
-    :timer.sleep(10)
     assert state_2.form_state.focus_index == 2
     assert commands_2 == [{:set_focus, "my_form.option"}]
 
     # Tab (2 -> 0, wrap)
     {state_0, commands_0} = Modal.handle_event(tab_event, props_map, state_2)
-    :timer.sleep(10)
     assert state_0.form_state.focus_index == 0
     assert commands_0 == [{:set_focus, "my_form.name"}]
 
@@ -352,7 +348,6 @@ defmodule Raxol.Components.ModalTest do
     {state_prev, commands_prev} =
       Modal.handle_event(shift_tab_event, props_map, state_0)
 
-    :timer.sleep(10)
     assert state_prev.form_state.focus_index == 2
     assert commands_prev == [{:set_focus, "my_form.option"}]
   end
@@ -384,7 +379,8 @@ defmodule Raxol.Components.ModalTest do
     props_map = %{}
     escape_event = %{type: :key, data: %{key: "Escape"}}
     {new_state, commands} = Modal.handle_event(escape_event, props_map, state)
-    :timer.sleep(10)
+    # Wait for modal to become hidden
+    assert_receive {:modal_state_changed, :my_form, :visible, false}, 100
     # Modal should hide on cancel
     assert new_state.visible == false
     # Cancel message triggered
@@ -558,13 +554,11 @@ defmodule Raxol.Components.ModalTest do
 
     # Show sends focus command without prefix
     {_state, commands} = Modal.update(:show, state)
-    :timer.sleep(10)
     assert commands == [{:set_focus, :field1}]
 
     # Focus change sends focus command without prefix
     # wrap around
     {_state, commands} = Modal.update(:focus_next_field, state)
-    :timer.sleep(10)
     assert commands == [{:set_focus, :field1}]
   end
 end

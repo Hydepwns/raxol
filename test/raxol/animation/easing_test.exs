@@ -5,127 +5,216 @@ defmodule Raxol.Animation.EasingTest do
 
   describe "Easing Functions" do
     test "linear easing" do
-      t = 0.5
-      assert Easing.calculate_value(:linear, 0.0) == 0.0
-      assert Easing.calculate_value(:linear, 1.0) == 1.0
-      assert Easing.calculate_value(:linear, t) == t
+      assert Easing.linear(0.0) == 0.0
+      assert Easing.linear(0.5) == 0.5
+      assert Easing.linear(1.0) == 1.0
     end
 
-    test "quadratic ease-in" do
-      t = 0.5
-      assert Easing.calculate_value(:ease_in_quad, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_in_quad, 1.0) == 1.0
-      assert Easing.calculate_value(:ease_in_quad, t) == t * t
+    test "ease_in_quad" do
+      assert Easing.ease_in_quad(0.0) == 0.0
+      assert_in_delta Easing.ease_in_quad(0.5), 0.25, 0.001
+      assert Easing.ease_in_quad(1.0) == 1.0
     end
 
-    test "quadratic ease-out" do
-      t = 0.5
-      assert Easing.calculate_value(:ease_out_quad, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_out_quad, 1.0) == 1.0
-      assert Easing.calculate_value(:ease_out_quad, t) == t * (2 - t)
+    test "ease_out_quad" do
+      assert Easing.ease_out_quad(0.0) == 0.0
+      assert_in_delta Easing.ease_out_quad(0.5), 0.75, 0.001
+      assert Easing.ease_out_quad(1.0) == 1.0
     end
 
-    test "quadratic ease-in-out" do
-      # Test below 0.5
-      t = 0.4
-      assert Easing.calculate_value(:ease_in_out_quad, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_in_out_quad, 1.0) == 1.0
-      assert Easing.calculate_value(:ease_in_out_quad, t) == 2 * t * t
-      # Test above 0.5
-      t = 0.6
-
-      assert Easing.calculate_value(:ease_in_out_quad, t) ==
-               -1 + (4 - 2 * t) * t
+    test "ease_in_out_quad" do
+      assert Easing.ease_in_out_quad(0.0) == 0.0
+      assert_in_delta Easing.ease_in_out_quad(0.25), 0.125, 0.001
+      assert_in_delta Easing.ease_in_out_quad(0.5), 0.5, 0.001
+      assert_in_delta Easing.ease_in_out_quad(0.75), 0.875, 0.001
+      assert Easing.ease_in_out_quad(1.0) == 1.0
     end
 
-    test "cubic ease-in" do
-      t = 0.5
-      assert Easing.calculate_value(:ease_in_cubic, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_in_cubic, 1.0) == 1.0
-      assert Easing.calculate_value(:ease_in_cubic, t) == t * t * t
+    test "ease_in_cubic" do
+      assert Easing.ease_in_cubic(0.0) == 0.0
+      assert_in_delta Easing.ease_in_cubic(0.5), 0.125, 0.001
+      assert Easing.ease_in_cubic(1.0) == 1.0
     end
 
-    test "cubic ease-out" do
-      t = 0.5
-      assert Easing.calculate_value(:ease_out_cubic, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_out_cubic, 1.0) == 1.0
-      t_minus_1 = t - 1
-
-      assert Easing.calculate_value(:ease_out_cubic, t) ==
-               t_minus_1 * t_minus_1 * t_minus_1 + 1
+    test "ease_out_cubic" do
+      assert Easing.ease_out_cubic(0.0) == 0.0
+      assert_in_delta Easing.ease_out_cubic(0.5), 0.875, 0.001
+      assert Easing.ease_out_cubic(1.0) == 1.0
     end
 
-    test "cubic ease-in-out" do
-      # Test below 0.5
-      t = 0.4
-      assert Easing.calculate_value(:ease_in_out_cubic, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_in_out_cubic, 1.0) == 1.0
-      assert Easing.calculate_value(:ease_in_out_cubic, t) == 4 * t * t * t
-      # Test above 0.5
-      t = 0.6
-      t_minus_1 = t - 1
-
-      assert Easing.calculate_value(:ease_in_out_cubic, t) ==
-               (t - 1) * (2 * t_minus_1 * t_minus_1) + 1
+    test "ease_in_out_cubic" do
+      assert Easing.ease_in_out_cubic(0.0) == 0.0
+      assert_in_delta Easing.ease_in_out_cubic(0.25), 0.0625, 0.001
+      assert_in_delta Easing.ease_in_out_cubic(0.5), 0.5, 0.001
+      assert_in_delta Easing.ease_in_out_cubic(0.75), 0.9375, 0.001
+      assert Easing.ease_in_out_cubic(1.0) == 1.0
     end
 
-    test "elastic ease-in" do
-      t = 0.7
-      assert Easing.calculate_value(:ease_in_elastic, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_in_elastic, 1.0) == 1.0
-      # Approximate value for elastic ease-in at t=0.7
-      assert_in_delta Easing.calculate_value(:ease_in_elastic, t), -0.022, 0.001
+    test "ease_in_quart" do
+      assert Easing.ease_in_quart(0.0) == 0.0
+      assert_in_delta Easing.ease_in_quart(0.5), 0.0625, 0.001
+      assert Easing.ease_in_quart(1.0) == 1.0
     end
 
-    test "elastic ease-out" do
-      t = 0.7
-      assert Easing.calculate_value(:ease_out_elastic, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_out_elastic, 1.0) == 1.0
-      # Approximate value for elastic ease-out at t=0.7
-      assert_in_delta Easing.calculate_value(:ease_out_elastic, t), 1.022, 0.001
+    test "ease_out_quart" do
+      assert Easing.ease_out_quart(0.0) == 0.0
+      assert_in_delta Easing.ease_out_quart(0.5), 0.9375, 0.001
+      assert Easing.ease_out_quart(1.0) == 1.0
     end
 
-    test "elastic ease-in-out" do
-      t = 0.7
-      assert Easing.calculate_value(:ease_in_out_elastic, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_in_out_elastic, 1.0) == 1.0
-      # Approximate value for elastic ease-in-out at t=0.7
-      assert_in_delta Easing.calculate_value(:ease_in_out_elastic, t),
-                      1.011,
-                      0.001
+    test "ease_in_out_quart" do
+      assert Easing.ease_in_out_quart(0.0) == 0.0
+      assert_in_delta Easing.ease_in_out_quart(0.25), 0.03125, 0.001
+      assert_in_delta Easing.ease_in_out_quart(0.5), 0.5, 0.001
+      assert_in_delta Easing.ease_in_out_quart(0.75), 0.96875, 0.001
+      assert Easing.ease_in_out_quart(1.0) == 1.0
     end
 
-    test "standard ease-in" do
-      t = 0.5
-      assert Easing.calculate_value(:ease_in, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_in, 1.0) == 1.0
-      # Update assertion based on actual default implementation if different
-      # Defaults to quad
-      assert Easing.calculate_value(:ease_in, t) == t * t
+    test "ease_in_quint" do
+      assert Easing.ease_in_quint(0.0) == 0.0
+      assert_in_delta Easing.ease_in_quint(0.5), 0.03125, 0.001
+      assert Easing.ease_in_quint(1.0) == 1.0
     end
 
-    test "standard ease-out" do
-      t = 0.5
-      assert Easing.calculate_value(:ease_out, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_out, 1.0) == 1.0
-      # Update assertion based on actual default implementation if different
-      # Defaults to quad
-      assert Easing.calculate_value(:ease_out, t) == t * (2 - t)
+    test "ease_out_quint" do
+      assert Easing.ease_out_quint(0.0) == 0.0
+      assert_in_delta Easing.ease_out_quint(0.5), 0.96875, 0.001
+      assert Easing.ease_out_quint(1.0) == 1.0
     end
 
-    test "standard ease-in-out" do
-      t = 0.4
-      assert Easing.calculate_value(:ease_in_out, 0.0) == 0.0
-      assert Easing.calculate_value(:ease_in_out, 1.0) == 1.0
-      # Update assertion based on actual default implementation if different
-      # Defaults to quad
-      assert Easing.calculate_value(:ease_in_out, t) == 2 * t * t
+    test "ease_in_out_quint" do
+      assert Easing.ease_in_out_quint(0.0) == 0.0
+      assert_in_delta Easing.ease_in_out_quint(0.25), 0.015625, 0.001
+      assert_in_delta Easing.ease_in_out_quint(0.5), 0.5, 0.001
+      assert_in_delta Easing.ease_in_out_quint(0.75), 0.984375, 0.001
+      assert Easing.ease_in_out_quint(1.0) == 1.0
     end
 
-    test "all functions maintain range [0.0, 1.0] for inputs in [0.0, 1.0]" do
-      inputs = [0.0, 0.1, 0.5, 0.9, 1.0]
+    test "ease_in_sine" do
+      assert Easing.ease_in_sine(0.0) == 0.0
+      assert_in_delta Easing.ease_in_sine(0.5), 0.292893, 0.001
+      assert Easing.ease_in_sine(1.0) == 1.0
+    end
 
-      functions = [
+    test "ease_out_sine" do
+      assert Easing.ease_out_sine(0.0) == 0.0
+      assert_in_delta Easing.ease_out_sine(0.5), 0.707107, 0.001
+      assert Easing.ease_out_sine(1.0) == 1.0
+    end
+
+    test "ease_in_out_sine" do
+      assert Easing.ease_in_out_sine(0.0) == 0.0
+      assert_in_delta Easing.ease_in_out_sine(0.25), 0.146447, 0.001
+      assert_in_delta Easing.ease_in_out_sine(0.5), 0.5, 0.001
+      assert_in_delta Easing.ease_in_out_sine(0.75), 0.853553, 0.001
+      assert Easing.ease_in_out_sine(1.0) == 1.0
+    end
+
+    test "ease_in_expo" do
+      assert Easing.ease_in_expo(0.0) == 0.0
+      assert_in_delta Easing.ease_in_expo(0.5), 0.03125, 0.001
+      assert Easing.ease_in_expo(1.0) == 1.0
+    end
+
+    test "ease_out_expo" do
+      assert Easing.ease_out_expo(0.0) == 0.0
+      assert_in_delta Easing.ease_out_expo(0.5), 0.96875, 0.001
+      assert Easing.ease_out_expo(1.0) == 1.0
+    end
+
+    test "ease_in_out_expo" do
+      assert Easing.ease_in_out_expo(0.0) == 0.0
+      assert_in_delta Easing.ease_in_out_expo(0.25), 0.015625, 0.001
+      assert_in_delta Easing.ease_in_out_expo(0.5), 0.5, 0.001
+      assert_in_delta Easing.ease_in_out_expo(0.75), 0.984375, 0.001
+      assert Easing.ease_in_out_expo(1.0) == 1.0
+    end
+
+    test "ease_in_circ" do
+      assert Easing.ease_in_circ(0.0) == 0.0
+      assert_in_delta Easing.ease_in_circ(0.5), 0.133975, 0.001
+      assert Easing.ease_in_circ(1.0) == 1.0
+    end
+
+    test "ease_out_circ" do
+      assert Easing.ease_out_circ(0.0) == 0.0
+      assert_in_delta Easing.ease_out_circ(0.5), 0.866025, 0.001
+      assert Easing.ease_out_circ(1.0) == 1.0
+    end
+
+    test "ease_in_out_circ" do
+      assert Easing.ease_in_out_circ(0.0) == 0.0
+      assert_in_delta Easing.ease_in_out_circ(0.25), 0.066987, 0.001
+      assert_in_delta Easing.ease_in_out_circ(0.5), 0.5, 0.001
+      assert_in_delta Easing.ease_in_out_circ(0.75), 0.933013, 0.001
+      assert Easing.ease_in_out_circ(1.0) == 1.0
+    end
+
+    test "ease_in_back" do
+      assert Easing.ease_in_back(0.0) == 0.0
+      assert_in_delta Easing.ease_in_back(0.5), -0.0876975, 0.001
+      assert Easing.ease_in_back(1.0) == 1.0
+    end
+
+    test "ease_out_back" do
+      assert Easing.ease_out_back(0.0) == 0.0
+      assert_in_delta Easing.ease_out_back(0.5), 1.0876975, 0.001
+      assert Easing.ease_out_back(1.0) == 1.0
+    end
+
+    test "ease_in_out_back" do
+      assert Easing.ease_in_out_back(0.0) == 0.0
+      assert_in_delta Easing.ease_in_out_back(0.25), -0.04384875, 0.001
+      assert_in_delta Easing.ease_in_out_back(0.5), 0.5, 0.001
+      assert_in_delta Easing.ease_in_out_back(0.75), 1.04384875, 0.001
+      assert Easing.ease_in_out_back(1.0) == 1.0
+    end
+
+    test "ease_in_elastic" do
+      assert Easing.ease_in_elastic(0.0) == 0.0
+      assert_in_delta Easing.ease_in_elastic(0.5), -0.015625, 0.001
+      assert Easing.ease_in_elastic(1.0) == 1.0
+    end
+
+    test "ease_out_elastic" do
+      assert Easing.ease_out_elastic(0.0) == 0.0
+      assert_in_delta Easing.ease_out_elastic(0.5), 1.015625, 0.001
+      assert Easing.ease_out_elastic(1.0) == 1.0
+    end
+
+    test "ease_in_out_elastic" do
+      assert Easing.ease_in_out_elastic(0.0) == 0.0
+      assert_in_delta Easing.ease_in_out_elastic(0.25), -0.0078125, 0.001
+      assert_in_delta Easing.ease_in_out_elastic(0.5), 0.5, 0.001
+      assert_in_delta Easing.ease_in_out_elastic(0.75), 1.0078125, 0.001
+      assert Easing.ease_in_out_elastic(1.0) == 1.0
+    end
+
+    test "ease_in_bounce" do
+      assert Easing.ease_in_bounce(0.0) == 0.0
+      assert_in_delta Easing.ease_in_bounce(0.5), 0.234375, 0.001
+      assert Easing.ease_in_bounce(1.0) == 1.0
+    end
+
+    test "ease_out_bounce" do
+      assert Easing.ease_out_bounce(0.0) == 0.0
+      assert_in_delta Easing.ease_out_bounce(0.5), 0.765625, 0.001
+      assert Easing.ease_out_bounce(1.0) == 1.0
+    end
+
+    test "ease_in_out_bounce" do
+      assert Easing.ease_in_out_bounce(0.0) == 0.0
+      assert_in_delta Easing.ease_in_out_bounce(0.25), 0.1171875, 0.001
+      assert_in_delta Easing.ease_in_out_bounce(0.5), 0.5, 0.001
+      assert_in_delta Easing.ease_in_out_bounce(0.75), 0.8828125, 0.001
+      assert Easing.ease_in_out_bounce(1.0) == 1.0
+    end
+  end
+
+  describe "Performance" do
+    test "easing functions meet performance requirements" do
+      # Test all easing functions
+      easing_functions = [
         :linear,
         :ease_in_quad,
         :ease_out_quad,
@@ -133,19 +222,47 @@ defmodule Raxol.Animation.EasingTest do
         :ease_in_cubic,
         :ease_out_cubic,
         :ease_in_out_cubic,
+        :ease_in_quart,
+        :ease_out_quart,
+        :ease_in_out_quart,
+        :ease_in_quint,
+        :ease_out_quint,
+        :ease_in_out_quint,
+        :ease_in_sine,
+        :ease_out_sine,
+        :ease_in_out_sine,
+        :ease_in_expo,
+        :ease_out_expo,
+        :ease_in_out_expo,
+        :ease_in_circ,
+        :ease_out_circ,
+        :ease_in_out_circ,
+        :ease_in_back,
+        :ease_out_back,
+        :ease_in_out_back,
         :ease_in_elastic,
         :ease_out_elastic,
         :ease_in_out_elastic,
-        :ease_in,
-        :ease_out,
-        :ease_in_out
+        :ease_in_bounce,
+        :ease_out_bounce,
+        :ease_in_out_bounce
       ]
 
-      for func_atom <- functions, t <- inputs do
-        result = Easing.calculate_value(func_atom, t)
+      # Test each function with multiple inputs
+      test_inputs = [0.0, 0.25, 0.5, 0.75, 1.0]
 
-        assert result >= 0.0 and result <= 1.0,
-               "Easing.calculate_value(:#{func_atom}, #{t}) result #{result} out of range [0.0, 1.0]"
+      for function <- easing_functions do
+        start_time = System.monotonic_time()
+
+        for input <- test_inputs do
+          apply(Easing, function, [input])
+        end
+
+        end_time = System.monotonic_time()
+        duration = System.convert_time_unit(end_time - start_time, :native, :microsecond)
+
+        # Each function should complete within 1 microsecond per call
+        assert duration < 5, "Easing function #{function} too slow: #{duration}μs"
       end
     end
   end

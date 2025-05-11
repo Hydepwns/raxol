@@ -9,7 +9,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     import Raxol.View.Elements
 
     @impl true
-    def init(_context), do: %{count: 0}
+    def init(_context), do: %{count: 0, initialized: true}
 
     @impl true
     def update(message, state) do
@@ -17,6 +17,7 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
         case message do
           :increment -> Map.update!(state, :count, &(&1 + 1))
           :decrement -> Map.update!(state, :count, &(&1 - 1))
+          {:add, amount} -> Map.update!(state, :count, &(&1 + amount))
           _ -> state
         end
 
@@ -25,11 +26,13 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
 
     @impl true
     def view(state) do
-      panel title: "Counter" do
-        row do
-          Raxol.View.Components.button(label: "-", on_click: :decrement)
-          text("Count: #{state.count}")
-          Raxol.View.Components.button(label: "+", on_click: :increment)
+      Raxol.Core.Renderer.View.panel(title: "Counter") do
+        Raxol.Core.Renderer.View.row() do
+          [
+            Raxol.View.Components.button(label: "-", on_click: :decrement),
+            Raxol.Core.Renderer.View.text("Count: #{state.count}"),
+            Raxol.View.Components.button(label: "+", on_click: :increment)
+          ]
         end
       end
     end

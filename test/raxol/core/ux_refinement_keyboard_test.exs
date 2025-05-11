@@ -297,9 +297,8 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
 
       EventManager.dispatch({:keyboard_event, event_to_dispatch})
 
-      # Reverted sleep duration
-      Process.sleep(50)
-      assert_received :handled_shortcut_event
+      # Wait for event to be handled with a timeout
+      assert_receive :handled_shortcut_event, 100
       Mox.verify!(Raxol.Mocks.KeyboardShortcutsMock)
     end
   end

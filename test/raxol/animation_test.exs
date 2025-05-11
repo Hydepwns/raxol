@@ -8,6 +8,17 @@ defmodule Raxol.AnimationTest do
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
   alias Raxol.Animation.StateManager
+  alias Raxol.Test.EventAssertions
+
+  # Helper to wait for animation completion
+  defp wait_for_animation_completion(element_id, animation_name, timeout \\ 100) do
+    assert_receive {:animation_completed, ^element_id, ^animation_name}, timeout
+  end
+
+  # Helper to wait for animation start
+  defp wait_for_animation_start(element_id, animation_name, timeout \\ 100) do
+    assert_receive {:animation_started, ^element_id, ^animation_name}, timeout
+  end
 
   # Helper to setup Accessibility and UserPreferences
   # setup :configure_env do
@@ -24,24 +35,30 @@ defmodule Raxol.AnimationTest do
 
   # Start UserPreferences for these tests
   setup do
-    pref_pid = setup_accessibility()
-    # Initialize the framework (might be needed)
-    Framework.init(%{})
-    # Accessibility.enable() # Temporarily commented out
+    # Use a test-specific name to avoid conflicts
+    {:ok, _pid} =
+      start_supervised({UserPreferences, name: __MODULE__.UserPreferences})
+
+    # Initialize required systems for testing
+    Animation.init()
+    Accessibility.enable()
 
     # Reset relevant prefs before each test
     UserPreferences.set("accessibility.reduced_motion", false)
     UserPreferences.set("accessibility.screen_reader", true)
     UserPreferences.set("accessibility.silence_announcements", false)
     Accessibility.clear_announcements()
-    Process.sleep(50)
 
-    cleanup_func = fn ->
-      cleanup_accessibility(pref_pid)
-      # Optional: Reset prefs after test if needed, though setup does it before
-    end
+    # Wait for preferences to be applied
+    assert_receive {:preferences_applied}, 100
 
-    {:ok, on_exit: cleanup_func}
+    on_exit(fn ->
+      # Cleanup
+      Animation.stop()
+      Accessibility.disable()
+    end)
+
+    :ok
   end
 
   describe "Animation Framework with accessibility integration" do
@@ -59,6 +76,8 @@ defmodule Raxol.AnimationTest do
 
       # Start standard animation
       :ok = Framework.start_animation(standard_def.name, "element_std")
+      wait_for_animation_start("element_std", standard_def.name)
+
       # Get standard instance details
       standard_instance =
         get_in(StateManager.get_active_animations(), [
@@ -84,6 +103,8 @@ defmodule Raxol.AnimationTest do
 
       # Start reduced motion animation
       :ok = Framework.start_animation(reduced_def.name, "element_reduced")
+      wait_for_animation_start("element_reduced", reduced_def.name)
+
       # Get reduced instance details
       reduced_instance =
         get_in(StateManager.get_active_animations(), [
@@ -115,14 +136,10 @@ defmodule Raxol.AnimationTest do
           )
 
         Framework.start_animation(animation.name, "test_element")
+        wait_for_animation_start("test_element", animation.name)
 
         # Wait for animation to complete
-        Process.sleep(150)
-
-        # Trigger update cycle to process completion & announce
-        Framework.apply_animations_to_state(%{})
-        # Allow event queue processing
-        Process.sleep(10)
+        wait_for_animation_completion("test_element", animation.name)
 
         # Verify announcements were made
         assert_announced("Loading process started")
@@ -140,9 +157,8 @@ defmodule Raxol.AnimationTest do
           )
 
         Framework.start_animation(animation.name, "test_element")
-
-        # Wait for animation to complete
-        Process.sleep(150)
+        wait_for_animation_start("test_element", animation.name)
+        wait_for_animation_completion("test_element", animation.name)
 
         # Verify no announcements were made
         assert_no_announcements()
@@ -279,6 +295,162 @@ defmodule Raxol.AnimationTest do
 
       # Verify cognitive animation has longer duration to be more perceivable
       assert cognitive_duration > original_duration
+    end
+  end
+
+  describe "Animation Framework with Accessibility Integration" do
+    test "respects user preferences for reduced motion" do
+      # Enable reduced motion
+      UserPreferences.set("accessibility.reduced_motion", true)
+      Animation.init(%{reduced_motion: true})
+
+      # Create initial state
+      initial_state = %{
+        elements: %{
+          "test_element" => %{
+            opacity: 0
+          }
+        }
+      }
+
+      # Create a test animation
+      animation =
+        Animation.create_animation(:test_animation, %{
+          type: :fade,
+          duration: 300,
+          from: 0,
+          to: 1
+        })
+
+      # Start the animation
+      :ok = Animation.start_animation(animation.name, "test_element")
+      wait_for_animation_start("test_element", animation.name)
+
+      # Apply animation to state
+      updated_state = Animation.apply_animations_to_state(initial_state)
+
+      # Verify the final state was applied immediately due to reduced motion
+      assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
+    end
+
+    test "announces animations to screen readers when configured" do
+      # Create an animation with screen reader announcement
+      animation =
+        Animation.create_animation(:test_animation, %{
+          type: :fade,
+          from: 0,
+          to: 1,
+          announce_to_screen_reader: true,
+          description: "Test animation"
+        })
+
+      # Start the animation
+      :ok = Animation.start_animation(animation.name, "test_element")
+      wait_for_animation_start("test_element", animation.name)
+
+      # Verify announcement was made
+      assert_receive {:accessibility_announcement, "Test animation started"}, 100
+    end
+
+    test "silences announcements when configured" do
+      # Silence announcements
+      UserPreferences.set("accessibility.silence_announcements", true)
+
+      # Create an animation with screen reader announcement
+      animation =
+        Animation.create_animation(:test_animation, %{
+          type: :fade,
+          from: 0,
+          to: 1,
+          announce_to_screen_reader: true,
+          description: "Test animation"
+        })
+
+      # Start the animation
+      :ok = Animation.start_animation(animation.name, "test_element")
+      wait_for_animation_start("test_element", animation.name)
+
+      # Verify no announcement was made
+      refute_receive {:accessibility_announcement, _}, 100
+    end
+
+    test "handles multiple animations with accessibility" do
+      # Create initial state
+      initial_state = %{
+        elements: %{
+          "test_element" => %{
+            opacity: 0,
+            position: 0
+          }
+        }
+      }
+
+      # Create and start multiple animations
+      fade_animation =
+        Animation.create_animation(:fade_in, %{
+          type: :fade,
+          duration: 0,
+          from: 0,
+          to: 1,
+          announce_to_screen_reader: true,
+          description: "Fade in"
+        })
+
+      slide_animation =
+        Animation.create_animation(:slide_in, %{
+          type: :slide,
+          duration: 0,
+          from: 0,
+          to: 100,
+          announce_to_screen_reader: true,
+          description: "Slide in"
+        })
+
+      :ok = Animation.start_animation(fade_animation.name, "test_element")
+      :ok = Animation.start_animation(slide_animation.name, "test_element")
+
+      wait_for_animation_start("test_element", fade_animation.name)
+      wait_for_animation_start("test_element", slide_animation.name)
+
+      # Apply animations to state
+      updated_state = Animation.apply_animations_to_state(initial_state)
+
+      # Verify both animations were applied
+      assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
+      assert get_in(updated_state, [:elements, "test_element", :position]) == 100
+
+      # Verify announcements were made in order
+      assert_receive {:accessibility_announcement, "Fade in started"}, 100
+      assert_receive {:accessibility_announcement, "Slide in started"}, 100
+    end
+
+    test "meets performance requirements with accessibility" do
+      # Create a test animation with accessibility features
+      animation =
+        Animation.create_animation(:perf_test, %{
+          type: :fade,
+          duration: 100,
+          from: 0,
+          to: 1,
+          announce_to_screen_reader: true,
+          description: "Performance test"
+        })
+
+      # Measure animation performance
+      start_time = System.monotonic_time()
+
+      :ok = Animation.start_animation(animation.name, "test_element")
+      wait_for_animation_start("test_element", animation.name)
+      wait_for_animation_completion("test_element", animation.name)
+
+      end_time = System.monotonic_time()
+      duration = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      # Verify performance requirements
+      assert duration < 16, "Animation frame time too high"
+
+      # Verify accessibility announcement was made
+      assert_receive {:accessibility_announcement, "Performance test started"}, 100
     end
   end
 

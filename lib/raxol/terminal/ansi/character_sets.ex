@@ -6,6 +6,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
 
   alias Raxol.Terminal.ANSI.CharacterTranslations
   alias Logger
+  alias Raxol.Terminal.ANSI.CharacterSets.Translator
+
+  @type codepoint :: non_neg_integer()
 
   @type charset ::
           :us_ascii
@@ -142,114 +145,56 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   end
 
   @doc """
-  Translates a character based on the active character set.
-  If a single shift was used, it returns the translated character
-  and the new state with the single shift cleared. Otherwise,
-  it returns the translated char and the original state.
+  Translates a character using the active character set.
   """
-  @spec translate_char(charset_state(), char()) :: {char(), charset_state()}
-  def translate_char(state, char) do
-    active_charset = get_active_charset(state)
-    translated = CharacterTranslations.translate_char(char, active_charset)
-
-    new_state =
-      if state.single_shift != nil do
-        clear_single_shift(state)
-      else
-        state
-      end
-
-    {translated, new_state}
+  @spec translate_char(codepoint, charset_state()) :: char()
+  def translate_char(codepoint, state) do
+    Translator.translate_char(codepoint, get_active_charset(state), state.single_shift)
   end
 
   @doc """
-  Translates a string using the current character set state.
-  Handles single shifts correctly for the first applicable character.
-  Returns the translated string and the final character set state.
-  This function is more complex due to the stateful nature of single shifts
-  per character. For precise control, process char by char using translate_char/2.
+  Translates a string using the active character set.
   """
-  @spec translate_string(charset_state(), String.t()) ::
-          {String.t(), charset_state()}
-  def translate_string(state, string) do
-    if String.length(string) == 0 do
-      {"", state}
-    else
-      first_char_binary = String.at(string, 0)
-      # Ensure char is an integer codepoint for translate_char
-      first_char =
-        if first_char_binary do
-          String.to_charlist(first_char_binary) |> List.first()
-        else
-          nil
-        end
+  @spec translate_string(String.t(), charset_state()) :: String.t()
+  def translate_string(string, state) do
+    Translator.translate_string(string, get_active_charset(state), state.single_shift)
+  end
 
-      if first_char do
-        {translated_first_char_code, next_state} =
-          translate_char(state, first_char)
+  @doc """
+  Sets the active character set.
+  """
+  @spec set_active(charset_state(), charset()) :: charset_state()
+  def set_active(state, set) do
+    %{state | active: set}
+  end
 
-        translated_first_char_string = <<translated_first_char_code::utf8>>
+  @doc """
+  Sets the locking shift character set.
+  """
+  @spec set_locking_shift(charset_state(), charset()) :: charset_state()
+  def set_locking_shift(state, _set) do
+    %{state | locked_shift: true}
+  end
 
-        rest_of_string = String.slice(string, 1, String.length(string) - 1)
-
-        if String.length(rest_of_string) > 0 do
-          # The rest of the string is translated with the 'next_state',
-          # which has single_shift consumed if it was active for the first char.
-          # CharacterTranslations.translate_string takes the string and the charset atom.
-          active_charset_for_rest = get_active_charset(next_state)
-
-          translated_rest =
-            CharacterTranslations.translate_string(
-              rest_of_string,
-              active_charset_for_rest
-            )
-
-          {translated_first_char_string <> translated_rest, next_state}
-        else
-          {translated_first_char_string, next_state}
-        end
-      else
-        {"", state}
-      end
+  @doc """
+  Sets the character set designator.
+  """
+  @spec set_designator(charset_state(), :g0 | :g1 | :g2 | :g3, charset()) :: charset_state()
+  def set_designator(state, designator, set) do
+    case designator do
+      :G0 -> %{state | g0: set}
+      :G1 -> %{state | g1: set}
+      :G2 -> %{state | g2: set}
+      :G3 -> %{state | g3: set}
+      _ -> state
     end
   end
 
   @doc """
-  Designates a character set for a specific G-set (G0-G3).
-  `gset_index` is 0, 1, 2, or 3.
-  `charset_code` is the character byte following ESC (, ESC ), ESC *, or ESC +.
+  Invokes a character set designator.
   """
-  @spec designate_charset(charset_state(), 0..3, byte()) :: charset_state()
-  def designate_charset(state, gset_index, charset_code) do
-    charset_atom = charset_code_to_atom(charset_code)
-    target_g_set = index_to_gset(gset_index)
-
-    if charset_atom && target_g_set do
-      # Assign the result of Map.put back
-      new_state = Map.put(state, target_g_set, charset_atom)
-      # Return the new state
-      new_state
-    else
-      # Log or ignore unknown charset code / gset index
-      state
-    end
-  end
-
-  @doc """
-  Invokes a character set as the GL (left) character set.
-  This is used by SI/SO (Shift In/Shift Out) control codes.
-
-  ## Examples
-
-      iex> state = Raxol.Terminal.ANSI.CharacterSets.new()
-      iex> state = Raxol.Terminal.ANSI.CharacterSets.switch_charset(state, :g1, :dec_special_graphics)
-      iex> state = Raxol.Terminal.ANSI.CharacterSets.invoke_charset(state, :g1)
-      iex> state.gl
-      :g1
-  """
-  @spec invoke_charset(charset_state(), :g0 | :g1 | :g2 | :g3) ::
-          charset_state()
-  def invoke_charset(state, gset) when gset in [:g0, :g1, :g2, :g3] do
+  @spec invoke_designator(charset_state(), :g0 | :g1 | :g2 | :g3) :: charset_state()
+  def invoke_designator(state, gset) when gset in [:g0, :g1, :g2, :g3] do
     # Set the specified G-set as the GL (left) charset
     %{state | gl: gset}
   end

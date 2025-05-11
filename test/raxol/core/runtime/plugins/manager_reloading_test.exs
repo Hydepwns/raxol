@@ -13,7 +13,7 @@ end
 
 # Now define the test module
 defmodule Raxol.Core.Runtime.Plugins.ManagerReloadingTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
   require Mox
   # Import Mox functions like expect, stub, verify_on_exit!, set_mox_global
   import Mox
@@ -31,10 +31,10 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerReloadingTest do
   )
 
   # Mox mock for LoaderBehaviour
-  Mox.defmock(LoaderMock, for: Raxol.Core.Runtime.Plugins.LoaderBehaviour)
+  Mox.defmock(LoaderMock, for: Raxol.Core.Runtime.Plugins.Loader.Behaviour)
 
   Mox.defmock(ReloadingLifecycleHelperMock,
-    for: Raxol.Core.Runtime.Plugins.LifecycleHelperBehaviour
+    for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
   )
 
   # --- Aliases & Meck Setup ---
@@ -229,8 +229,6 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerReloadingTest do
         {:ok, [initial_plugin_spec]}
       end)
 
-      # REMOVED: Mox.stub for LoaderMock.module_to_default_id/1
-
       # --- Expectations for ReloadingLifecycleHelperMock ---
       # Expectation for load_plugin_by_module
       Mox.expect(
@@ -248,128 +246,74 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerReloadingTest do
           plugin_id_atom =
             case module_atom_arg do
               # Match the compiled module name
-              Elixir.TestPluginV1 -> :test_plugin_v1
-              Raxol.Core.Plugins.Core.ClipboardPlugin -> :clipboard_plugin
-              Raxol.Core.Plugins.Core.NotificationPlugin -> :notification_plugin
-              # Fallback
-              _ -> module_atom_arg
+              ^module_atom -> :test_plugin_v1
+              _ -> raise "Unexpected module: #{inspect(module_atom_arg)}"
             end
 
-          initial_state =
-            Map.get(
-              %{
-                :test_plugin_v1 => %{init_version: 1},
-                :clipboard_plugin => %Raxol.Core.Plugins.Core.ClipboardPlugin{
-                  clipboard_impl: Raxol.System.Clipboard
-                },
-                :notification_plugin => %{
-                  enabled: true,
-                  name: "notification",
-                  config: %{style: "minimal"},
-                  interaction_module: Raxol.System.InteractionImpl,
-                  notifications: []
-                }
-              },
-              plugin_id_atom,
-              %{stubbed: true}
-            )
-
-          initial_meta =
-            Map.get(
-              %{
-                :test_plugin_v1 => %{
-                  id: :test_plugin_v1,
-                  version: "1.0.0",
-                  dependencies: []
-                },
-                :clipboard_plugin => %{
-                  id: :clipboard_plugin,
-                  version: "0.0.0-dev",
-                  dependencies: []
-                },
-                :notification_plugin => %{
-                  id: :notification_plugin,
-                  version: "0.0.0-dev",
-                  dependencies: []
-                }
-              },
-              plugin_id_atom,
-              %{id: plugin_id_atom, version: "stubbed"}
-            )
-
-          new_plugins_acc =
-            Map.put(plugins_acc, plugin_id_atom, module_atom_arg)
-
-          new_meta_acc = Map.put(meta_acc, plugin_id_atom, initial_meta)
-          new_states_acc = Map.put(states_acc, plugin_id_atom, initial_state)
-          new_order_acc = order_acc ++ [plugin_id_atom]
-
-          # Ensure config from the call is merged with global, prioritizing the passed config_arg
-          merged_plugin_config =
-            Map.merge(Map.get(_global_config, :plugin_config, %{}), %{
-              plugin_id_atom => config_arg
-            })
-
-          {:ok,
-           %{
-             plugins: new_plugins_acc,
-             metadata: new_meta_acc,
-             plugin_states: new_states_acc,
-             load_order: new_order_acc,
-             plugin_config: merged_plugin_config
-           }}
+          # Return updated accumulators
+          {
+            :ok,
+            [plugin_id_atom | plugins_acc],
+            [%{id: plugin_id_atom, module: module_atom_arg} | meta_acc],
+            [%{id: plugin_id_atom, state: %{version: 1}} | states_acc],
+            [plugin_id_atom | order_acc]
+          }
         end
       )
 
-      # Expectation for reload_plugin_from_disk
-      Mox.expect(ReloadingLifecycleHelperMock, :reload_plugin_from_disk, 1, fn
-        :test_plugin_v1,
-        _plugins_map,
-        _metadata_map,
-        _plugin_states_map,
-        _load_order_list,
-        ^table_name,
-        _plugin_config_map,
-        _plugin_paths_map ->
-          {:ok,
-           %{
-             module: module_atom,
-             metadata: %{id: :test_plugin_v1, version: "2.0.0"},
-             state: %{init_version: 2},
-             config: %{}
-           }}
-      end)
-
-      # Start the Plugin Manager
+      # Start the manager with the mocked loader
       {:ok, manager_pid} = Manager.start_link(start_opts)
 
-      # Explicitly initialize the plugin manager
-      assert :ok = Manager.initialize()
+      # Wait for the manager to be ready
+      assert_receive {:manager_ready, ^manager_pid}, 5000
 
-      # Modify the plugin file (V2)
-      # Use TestPluginV1 module atom
-      plugin_v2_content = generate_plugin_code(TestPluginV1, 2)
-      # Overwrite V1 file with V2 content
-      File.write!(plugin_v1_path, plugin_v2_content)
-      Process.sleep(100)
+      # Verify initial state
+      assert Manager.get_plugin_state(:test_plugin_v1).version == 1
+
+      # Create V2 plugin
+      {_plugin_v2_path, _module_atom} = create_plugin_v2(tmp_dir)
+
+      # Expect the reload
+      Mox.expect(
+        ReloadingLifecycleHelperMock,
+        :load_plugin_by_module,
+        3,
+        fn module_atom_arg,
+           config_arg,
+           plugins_acc,
+           meta_acc,
+           states_acc,
+           order_acc,
+           _cmd_reg,
+           _global_config ->
+          plugin_id_atom =
+            case module_atom_arg do
+              ^module_atom -> :test_plugin_v1
+              _ -> raise "Unexpected module: #{inspect(module_atom_arg)}"
+            end
+
+          # Return updated accumulators
+          {
+            :ok,
+            [plugin_id_atom | plugins_acc],
+            [%{id: plugin_id_atom, module: module_atom_arg} | meta_acc],
+            [%{id: plugin_id_atom, state: %{version: 2}} | states_acc],
+            [plugin_id_atom | order_acc]
+          }
+        end
+      )
 
       # Trigger reload
-      GenServer.cast(manager_pid, {:reload_plugin_by_id, "test_plugin_v1"})
-      Process.sleep(100)
+      assert :ok == Manager.reload_plugin(:test_plugin_v1)
 
-      # Explicitly verify mocks
-      Mox.verify!(LoaderMock)
-      Mox.verify!(ReloadingLifecycleHelperMock)
+      # Wait for reload to complete
+      assert_receive {:plugin_reloaded, :test_plugin_v1}, 5000
+
+      # Verify new state
+      assert Manager.get_plugin_state(:test_plugin_v1).version == 2
 
       # Cleanup
-      # Process.exit(manager_pid, :shutdown)
-      # More graceful shutdown
-      GenServer.stop(manager_pid, :normal)
-      File.rm_rf!(tmp_dir)
-      # Mox.verify_on_exit! was removed
-
-      # Return from test if needed
-      {:ok, test_name: test_name, table: table_name}
+      GenServer.stop(manager_pid)
     end
   end
 end

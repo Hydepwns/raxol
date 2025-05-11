@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.Emulator.WritingBufferTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case
   import Mox
 
   alias Raxol.Terminal.Emulator

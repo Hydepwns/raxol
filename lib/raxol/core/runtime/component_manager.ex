@@ -25,6 +25,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
 
+  # Setter for runtime_pid (for tests)
+  def set_runtime_pid(pid) do
+    GenServer.cast(__MODULE__, {:set_runtime_pid, pid})
+  end
+
   def mount(component_module, props \\ %{}) do
     GenServer.call(__MODULE__, {:mount, component_module, props})
   end
@@ -60,7 +65,8 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   # Server Callbacks
 
   @impl true
-  def init(_opts) do
+  def init(opts) do
+    runtime_pid = Keyword.get(opts, :runtime_pid, nil)
     {:ok,
      %{
        # component_id => component_state
@@ -68,7 +74,9 @@ defmodule Raxol.Core.Runtime.ComponentManager do
        # subscription_id => component_id
        subscriptions: %{},
        # list of component_ids needing render
-       render_queue: []
+       render_queue: [],
+       # PID to send events to (for tests or runtime)
+       runtime_pid: runtime_pid
      }}
   end
 
@@ -96,6 +104,9 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
     # Queue initial render
     new_state = update_in(new_state.render_queue, &[component_id | &1])
+
+    # Emit component_queued_for_render event if runtime_pid is set
+    if new_state.runtime_pid, do: send(new_state.runtime_pid, {:component_queued_for_render, component_id})
 
     {:reply, {:ok, component_id}, new_state}
   end
@@ -144,6 +155,9 @@ defmodule Raxol.Core.Runtime.ComponentManager do
               state_with_comp_updated.render_queue,
               &[component_id | &1]
             )
+
+          # Send component queued for render event if runtime_pid is set
+          if state_after_render.runtime_pid, do: send(state_after_render.runtime_pid, {:component_queued_for_render, component_id})
 
           # Process commands returned by the component
           final_state =
@@ -257,6 +271,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     {:noreply, state}
   end
 
+  @impl true
+  def handle_cast({:set_runtime_pid, pid}, state) do
+    {:noreply, %{state | runtime_pid: pid}}
+  end
+
   # Private Helpers
 
   defp process_commands(commands, component_id, state) do
@@ -268,42 +287,39 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
         {:schedule, msg, delay} ->
           # Schedule delayed message using Process.send_after
-          _timer_ref =
-            Process.send_after(self(), {:update, component_id, msg}, delay)
-
+          _timer_ref = Process.send_after(self(), {:update, component_id, msg}, delay)
           acc
 
         {:broadcast, msg} ->
           # Use Enum.reduce to iterate and update the state (accumulator)
-          Enum.reduce(Map.keys(acc.components), acc, fn id, acc_state ->
-            # Skip update for the component that initiated the broadcast
-            if id == component_id do
-              # Return accumulator unchanged
-              acc_state
-            else
-              if component = Map.get(acc_state.components, id) do
-                # Directly call component update
-                # Destructure the return value, ignore commands from broadcast update
-                {updated_comp_state, _commands} =
-                  component.module.update(msg, component.state)
-
-                # Update component in state (store only the state map)
-                updated_component = %{component | state: updated_comp_state}
-
-                state_with_updated_comp =
-                  put_in(acc_state.components[id], updated_component)
-
-                # Add to render queue
-                update_in(state_with_updated_comp.render_queue, &[id | &1])
-              else
-                # Component not found, ignore
-                acc_state
-              end
-            end
-          end)
+          broadcast_update(msg, component_id, acc)
 
         _ ->
+          Logger.warning("Unknown command type: #{inspect(command)}")
           acc
+      end
+    end)
+  end
+
+  defp broadcast_update(msg, source_component_id, state) do
+    Enum.reduce(Map.keys(state.components), state, fn id, acc_state ->
+      # Skip update for the component that initiated the broadcast
+      if id == source_component_id do
+        acc_state
+      else
+        case Map.get(acc_state.components, id) do
+          nil -> acc_state
+          component ->
+            # Directly call component update
+            {updated_comp_state, _commands} = component.module.update(msg, component.state)
+
+            # Update component in state
+            updated_component = %{component | state: updated_comp_state}
+            state_with_updated_comp = put_in(acc_state.components[id], updated_component)
+
+            # Add to render queue
+            update_in(state_with_updated_comp.render_queue, &[id | &1])
+        end
       end
     end)
   end

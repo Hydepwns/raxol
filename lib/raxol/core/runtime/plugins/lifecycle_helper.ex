@@ -1,858 +1,211 @@
 defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   @moduledoc """
-  Handles plugin lifecycle operations (loading, unloading, reloading) for the Plugin Manager.
+  Helper functions for plugin lifecycle management.
   """
+
+  @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+
+  alias Raxol.Core.Runtime.Plugins.{DependencyManager, StateManager, CommandRegistry, Loader}
 
   require Logger
-  use Supervisor
-  @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelperBehaviour
 
-  alias Raxol.Core.Runtime.Plugins.Loader
-  # alias Raxol.Core.Runtime.Plugins.CommandRegistry # Unused
-  alias Raxol.Core.Runtime.Plugins.Plugin
-  alias Raxol.Core.Runtime.Plugins.CommandHelper
-
-  # TODO: Move relevant functions from Manager here (e.g., load_plugin, unload_plugin, reload_plugin_from_disk, check_dependencies)
-  # Functions will need to accept the relevant parts of the Manager's state as arguments
-  # and return updated state fragments or status tuples.
-
-  # Need this here now
-  @default_plugins_dir "priv/plugins"
-
-  # --- Loading / Unloading / Reloading ---
+  @impl true
+  def init(opts) do
+    {:ok, opts}
+  end
 
   @doc """
-  Loads a plugin by its ID (string) or module (atom).
-
-  Accepts the current plugin state maps and config, returns updated maps or an error.
-  Returns `{:ok, %{plugins: map(), metadata: map(), plugin_states: map(), load_order: list(), plugin_config: map()}} | {:error, reason}`.
+  Loads a plugin by ID or module with improved error handling and state persistence.
   """
-  def load_plugin(
-        plugin_id_or_module,
-        config,
-        plugins,
-        metadata,
-        plugin_states,
-        load_order,
-        command_table,
-        plugin_config
-      ) do
-    case plugin_id_or_module do
-      plugin_id when is_binary(plugin_id) ->
-        load_plugin_by_id(
-          plugin_id,
-          config,
-          plugins,
-          metadata,
-          plugin_states,
-          load_order,
-          command_table,
-          plugin_config
-        )
+  def load_plugin(plugin_id_or_module, config, plugins, metadata, plugin_states, load_order, command_table, plugin_config) do
+    with {plugin_id, plugin_module} <- resolve_plugin_identity(plugin_id_or_module),
+         :ok <- validate_not_loaded(plugin_id, plugins),
+         {:ok, plugin_metadata} <- Loader.extract_metadata(plugin_module),
+         :ok <- DependencyManager.check_dependencies(plugin_id, plugin_metadata, plugins),
+         :ok <- validate_behaviour(plugin_module),
+         {:ok, initial_state} <- Loader.initialize_plugin(plugin_module, config),
+         :ok <- CommandRegistry.register_plugin_commands(plugin_module, initial_state, command_table) do
 
-      plugin_module when is_atom(plugin_module) ->
-        load_plugin_by_module(
-          plugin_module,
-          config,
-          plugins,
-          metadata,
-          plugin_states,
-          load_order,
-          command_table,
-          plugin_config
-        )
+      # Update state maps with proper error handling
+      updated_maps = %{
+        plugins: Map.put(plugins, plugin_id, plugin_module),
+        metadata: Map.put(metadata, plugin_id, plugin_metadata),
+        plugin_states: Map.put(plugin_states, plugin_id, initial_state),
+        load_order: [plugin_id | load_order],
+        plugin_config: Map.put(plugin_config, plugin_id, config)
+      }
 
-      _ ->
-        {:error, :invalid_plugin_identifier}
-    end
-  end
-
-  # Handles loading by ID (string) - typically during initial discovery
-  defp load_plugin_by_id(
-         plugin_id,
-         config,
-         plugins,
-         metadata,
-         plugin_states,
-         load_order,
-         command_table,
-         plugin_config
-       ) do
-    # 1. Load code (ensure module is available)
-    # Assuming ID maps to Module name part
-    case Loader.load_code(String.to_existing_atom("Elixir." <> plugin_id)) do
-      # Code loaded successfully
-      :ok ->
-        # TODO: Derive module atom more reliably if needed, or pass it from discovery
-        plugin_module = String.to_existing_atom("Elixir." <> plugin_id)
-
-        # Proceed with the rest of the loading logic (metadata, dependencies, init, etc.)
-        # (Copied from load_plugin_by_module, assuming module is now known)
-        if Map.has_key?(plugins, plugin_id) do
-          # Already loaded, skip
-          {:error, :already_loaded}
-        else
-          # 2. Extract metadata
-          plugin_metadata = Loader.extract_metadata(plugin_module)
-          # Use extracted ID or fallback
-          effective_plugin_id = Map.get(plugin_metadata, :id, plugin_id)
-
-          # 3. Check dependencies
-          case check_dependencies(effective_plugin_id, plugin_metadata, plugins) do
-            :ok ->
-              # 4. Check if it implements the Plugin behaviour
-              if behaviour_implemented?(plugin_module, Plugin) do
-                # 5. Call plugin's init/1 callback
-                try do
-                  case plugin_module.init(config) do
-                    {:ok, plugin_init_state} ->
-                      # 6. Register Commands using CommandHelper
-                      CommandHelper.register_plugin_commands(
-                        plugin_module,
-                        plugin_init_state,
-                        command_table
-                      )
-
-                      # 7. Update State Maps
-                      new_plugins =
-                        Map.put(plugins, effective_plugin_id, plugin_module)
-
-                      new_metadata =
-                        Map.put(metadata, effective_plugin_id, plugin_metadata)
-
-                      new_plugin_states =
-                        Map.put(
-                          plugin_states,
-                          effective_plugin_id,
-                          plugin_init_state
-                        )
-
-                      new_load_order = load_order ++ [effective_plugin_id]
-
-                      new_plugin_config =
-                        Map.put(plugin_config, effective_plugin_id, config)
-
-                      Logger.info(
-                        "Successfully loaded plugin: #{effective_plugin_id} (#{inspect(plugin_module)})"
-                      )
-
-                      {:ok,
-                       %{
-                         plugins: new_plugins,
-                         metadata: new_metadata,
-                         plugin_states: new_plugin_states,
-                         load_order: new_load_order,
-                         plugin_config: new_plugin_config
-                       }}
-
-                    {:error, reason} ->
-                      Logger.error(
-                        "Plugin #{effective_plugin_id} init/1 failed: #{inspect(reason)}"
-                      )
-
-                      {:error, {:init_failed, reason}}
-                  end
-                rescue
-                  error ->
-                    Logger.error(
-                      "Error during plugin init for #{effective_plugin_id}: #{inspect(error)}
-                    Stacktrace: #{inspect(__STACKTRACE__)}"
-                    )
-
-                    {:error, {:init_exception, error}}
-                end
-              else
-                Logger.error(
-                  "Plugin #{plugin_module} does not implement the Plugin behaviour."
-                )
-
-                {:error, :behaviour_not_implemented}
-              end
-
-            # Match specific dependency error tuple
-            {:error, :missing_dependencies, missing} ->
-              Logger.error(
-                "Plugin #{effective_plugin_id} missing dependencies: #{inspect(missing)}"
-              )
-
-              {:error, :missing_dependencies, missing}
-          end
-        end
-
-      {:error, :module_not_found} ->
-        Logger.error("Failed to load plugin code for ID: #{plugin_id}")
-        {:error, :module_not_found}
-    end
-  end
-
-  # Handles loading when the module is already known (e.g., reloading)
-  # Make this public so PluginManager can call it directly
-  def load_plugin_by_module(
-        plugin_module,
-        config,
-        plugins,
-        metadata,
-        plugin_states,
-        load_order,
-        command_table,
-        plugin_config
-      ) do
-    Logger.debug(
-      "[LifecycleHelper] Attempting to load plugin module: #{inspect(plugin_module)}"
-    )
-
-    # 1. Check if it's already loaded
-    existing_id = find_plugin_id_by_module(plugins, plugin_module)
-
-    if existing_id do
-      Logger.warning(
-        "Plugin module #{inspect(plugin_module)} (ID: #{existing_id}) already loaded."
-      )
-
-      {:error, :already_loaded}
+      {:ok, updated_maps}
     else
-      # 2. Extract metadata
-      plugin_metadata = Loader.extract_metadata(plugin_module)
-      # Fallback ID
-      plugin_id = Map.get(plugin_metadata, :id, Atom.to_string(plugin_module))
+      {:error, :already_loaded} ->
+        {:error, "Plugin #{plugin_id_or_module} is already loaded"}
 
-      # 3. Check dependencies
-      case check_dependencies(plugin_id, plugin_metadata, plugins) do
-        :ok ->
-          # 4. Check if it implements the Plugin behaviour
-          if behaviour_implemented?(plugin_module, Plugin) do
-            # 5. Call plugin's init/1 callback
-            try do
-              Logger.debug(
-                "[LifecycleHelper] Calling init/1 for #{inspect(plugin_module)} with config: #{inspect(config)}"
-              )
+      {:error, :invalid_plugin} ->
+        {:error, "Plugin #{plugin_id_or_module} does not implement required behaviour"}
 
-              case plugin_module.init(config) do
-                {:ok, plugin_init_state} ->
-                  Logger.debug(
-                    "[LifecycleHelper] init/1 successful for #{inspect(plugin_module)}. State: #{inspect(plugin_init_state)}"
-                  )
+      {:error, :dependency_missing, missing} ->
+        {:error, "Missing dependency #{missing} for plugin #{plugin_id_or_module}"}
 
-                  # 6. Register Commands using CommandHelper
-                  commands_to_register =
-                    if function_exported?(plugin_module, :get_commands, 0) do
-                      plugin_module.get_commands()
-                    else
-                      []
-                    end
+      {:error, :dependency_cycle, cycle} ->
+        {:error, "Dependency cycle detected: #{inspect(cycle)}"}
 
-                  Logger.debug(
-                    "[LifecycleHelper] Commands to register for #{inspect(plugin_module)}: #{inspect(commands_to_register)}"
-                  )
+      {:error, reason} ->
+        Logger.error("Failed to load plugin #{plugin_id_or_module}: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
 
-                  if !Enum.empty?(commands_to_register) do
-                    CommandHelper.register_plugin_commands(
-                      plugin_module,
-                      # Pass nil for the ignored _plugin_state argument
-                      nil,
-                      command_table
-                    )
+  @doc """
+  Initializes plugins in the correct order with improved error handling.
+  """
+  def initialize_plugins(plugins, metadata, config, states, load_order, command_table, _opts) do
+    # Initialize command table
+    table = initialize_command_table(command_table, plugins)
 
-                    Logger.debug(
-                      "[LifecycleHelper] Called CommandHelper.register_plugin_commands for #{inspect(plugin_module)}"
-                    )
-                  else
-                    Logger.debug(
-                      "[LifecycleHelper] No commands declared by #{inspect(plugin_module)}. Skipping registration call."
-                    )
-                  end
+    # Initialize plugins in order with proper error handling
+    Enum.reduce_while(load_order, {:ok, {metadata, states, table}}, fn plugin_id, {:ok, {meta, sts, tbl}} ->
+      case Map.get(plugins, plugin_id) do
+        nil ->
+          {:cont, {:ok, {meta, sts, tbl}}}
 
-                  # 7. Update State Maps
-                  new_plugins = Map.put(plugins, plugin_id, plugin_module)
-                  new_metadata = Map.put(metadata, plugin_id, plugin_metadata)
+        plugin ->
+          case plugin.init(config) do
+            {:ok, new_states} ->
+              new_meta = Map.put(meta, plugin_id, %{status: :active})
+              new_tbl = update_command_table(tbl, plugin)
+              {:cont, {:ok, {new_meta, Map.merge(sts, new_states), new_tbl}}}
 
-                  new_plugin_states =
-                    Map.put(plugin_states, plugin_id, plugin_init_state)
-
-                  new_load_order = load_order ++ [plugin_id]
-                  new_plugin_config = Map.put(plugin_config, plugin_id, config)
-
-                  Logger.info(
-                    "Successfully loaded plugin: #{plugin_id} (#{inspect(plugin_module)})"
-                  )
-
-                  {:ok,
-                   %{
-                     plugins: new_plugins,
-                     metadata: new_metadata,
-                     plugin_states: new_plugin_states,
-                     load_order: new_load_order,
-                     plugin_config: new_plugin_config
-                   }}
-
-                {:error, reason} ->
-                  Logger.error(
-                    "Plugin #{plugin_id} init/1 failed: #{inspect(reason)}"
-                  )
-
-                  {:error, {:init_failed, reason}}
-
-                _ ->
-                  Logger.error(
-                    "Plugin #{plugin_id} init/1 returned invalid value."
-                  )
-
-                  {:error, :invalid_init_return}
-              end
-            rescue
-              error ->
-                Logger.error(
-                  "Exception during plugin #{plugin_id} init/1: #{inspect(error)}\n                Stacktrace: #{inspect(__STACKTRACE__)}"
-                )
-
-                {:error, {:init_exception, error}}
-            end
-          else
-            Logger.error(
-              "Plugin #{plugin_id} (#{inspect(plugin_module)}) does not implement the Raxol.Core.Runtime.Plugins.Plugin behaviour."
-            )
-
-            {:error, :behaviour_not_implemented}
+            {:error, reason} ->
+              Logger.error("Failed to initialize plugin #{plugin_id}: #{inspect(reason)}")
+              {:halt, {:error, reason}}
           end
-
-        {:error, :missing_dependencies, missing} ->
-          Logger.error(
-            "Plugin #{plugin_id} has unmet dependencies: #{inspect(missing)}"
-          )
-
-          # Propagate the missing deps info
-          {:error, {:missing_dependencies, missing}}
       end
-    end
-  end
-
-  @doc """
-  Unloads a plugin identified by its ID.
-
-  Accepts the current plugin state maps, returns updated maps or an error.
-  Returns `{:ok, %{plugins: map(), metadata: map(), plugin_states: map(), load_order: list()}} | {:error, reason}`.
-  """
-  def unload_plugin(
-        plugin_id,
-        plugins,
-        metadata,
-        plugin_states,
-        load_order,
-        command_table
-      ) do
-    Logger.info("[LifecycleHelper] Unloading plugin: #{plugin_id}...")
-
-    case Map.get(plugins, plugin_id) do
-      nil ->
-        {:error, :not_loaded}
-
-      plugin_module ->
-        # 1. Call terminate callback if implemented
-        if function_exported?(plugin_module, :terminate, 2) do
-          plugin_state = Map.get(plugin_states, plugin_id, %{})
-          reason = :unload
-
-          try do
-            _ = plugin_module.terminate(reason, plugin_state)
-          rescue
-            error ->
-              Logger.error(
-                "Error calling terminate/2 on #{plugin_module}: #{inspect(error)}
-              Stacktrace: #{inspect(__STACKTRACE__)}"
-              )
-          end
-        end
-
-        # 2. Unregister commands using CommandHelper
-        CommandHelper.unregister_plugin_commands(command_table, plugin_module)
-
-        # 3. Remove from state maps
-        new_plugins = Map.delete(plugins, plugin_id)
-        new_metadata = Map.delete(metadata, plugin_id)
-        new_plugin_states = Map.delete(plugin_states, plugin_id)
-        new_load_order = List.delete(load_order, plugin_id)
-
-        {:ok,
-         %{
-           plugins: new_plugins,
-           metadata: new_metadata,
-           plugin_states: new_plugin_states,
-           load_order: new_load_order
-         }}
-    end
-  end
-
-  @doc """
-  Reloads a plugin identified by its ID.
-
-  Handles unloading and then loading again, potentially with code reloading.
-  Accepts the current plugin state maps and config, returns updated maps or an error.
-  Requires the `plugin_paths` map to find the source file.
-  Returns `{:ok, %{...updated_maps...}} | {:error, reason}`.
-  """
-  def reload_plugin_from_disk(
-        plugin_id,
-        plugins,
-        metadata,
-        plugin_states,
-        load_order,
-        command_table,
-        plugin_config,
-        plugin_paths
-      ) do
-    Logger.info("[LifecycleHelper] Reloading plugin: #{plugin_id}...")
-
-    original_config = Map.get(plugin_config, plugin_id, %{})
-    # Get module *before* unload
-    original_module = Map.get(plugins, plugin_id)
-
-    # Check if source path exists before proceeding
-    case Map.get(plugin_paths, plugin_id) do
-      nil ->
-        Logger.error(
-          "[LifecycleHelper] Cannot reload plugin #{plugin_id}: Source path not found."
-        )
-
-        {:error, :source_path_not_found}
-
-      # Path found, proceed with unload and reload
-      source_path ->
-        case unload_plugin(
-               plugin_id,
-               plugins,
-               metadata,
-               plugin_states,
-               load_order,
-               command_table
-             ) do
-          {:ok, unloaded_state_maps} ->
-            # Pass the individual maps from the result tuple
-            plugins_after_unload = unloaded_state_maps.plugins
-            metadata_after_unload = unloaded_state_maps.metadata
-            plugin_states_after_unload = unloaded_state_maps.plugin_states
-            load_order_after_unload = unloaded_state_maps.load_order
-
-            # Reloading Steps:
-            if original_module do
-              try do
-                # 1. Purge old code
-                Logger.debug(
-                  "Purging old code for module: #{inspect(original_module)}"
-                )
-
-                :ok = :code.purge(original_module)
-
-                # 2. Recompile source file (Path is now known)
-                Logger.debug("Attempting to recompile source: #{source_path}")
-
-                case Code.compile_file(source_path) do
-                  {:ok, ^original_module, _binary} ->
-                    Logger.debug("Successfully recompiled: #{source_path}")
-
-                    # 3. Ensure new code is loaded (optional, compile_file might load it)
-                    :ok = Code.ensure_loaded(original_module)
-
-                    # 4. Load the plugin again using the now-updated module definition
-                    #    We need to pass the *original* full plugin_config and plugin_paths
-                    #    because load_plugin_by_module updates them.
-                    Logger.debug(
-                      "Loading recompiled module: #{inspect(original_module)}"
-                    )
-
-                    case load_plugin_by_module(
-                           original_module,
-                           original_config,
-                           plugins_after_unload,
-                           metadata_after_unload,
-                           plugin_states_after_unload,
-                           load_order_after_unload,
-                           command_table,
-                           # Pass original config map
-                           plugin_config
-                         ) do
-                      {:ok, loaded_maps} ->
-                        # 5. Add the source path back to the plugin_paths map
-                        updated_paths =
-                          Map.put(plugin_paths, plugin_id, source_path)
-
-                        {:ok,
-                         Map.put(loaded_maps, :plugin_paths, updated_paths)}
-
-                      {:error, reason} ->
-                        # Loading failed after successful compile
-                        {:error, reason}
-                    end
-
-                  {:error, errors} ->
-                    Logger.error(
-                      "Failed to recompile plugin #{plugin_id} from #{source_path}: #{inspect(errors)}"
-                    )
-
-                    {:error, {:compilation_failed, errors}}
-                end
-              rescue
-                error ->
-                  Logger.error(
-                    "Exception during plugin reload (purge/compile/load) for #{plugin_id}: #{inspect(error)}
-                  Stacktrace: #{inspect(__STACKTRACE__)}"
-                  )
-
-                  {:error, {:reload_exception, error}}
-              after
-                # Ensure soft purge happens even if compilation/load fails
-                :code.soft_purge(original_module)
-              end
-            else
-              Logger.error(
-                "Cannot reload plugin #{plugin_id}: Original module not found (should have been caught by unload)."
-              )
-
-              {:error, :original_module_not_found}
-            end
-
-          {:error, reason} ->
-            Logger.error(
-              "Failed to unload plugin #{plugin_id} during reload: #{inspect(reason)}"
-            )
-
-            {:error, {:unload_failed, reason}}
-        end
-    end
-  end
-
-  @doc """
-  Discovers, sorts, and loads all plugins from the default directory.
-
-  Accepts the initial Manager state maps and returns the updated maps (including `plugin_paths`) after loading,
-  or an error tuple if discovery, sorting, or loading fails.
-
-  Returns `{:ok, %{...updated_maps..., plugin_paths: map()}} | {:error, reason}`
-  """
-  def initialize_plugins(
-        plugins,
-        metadata,
-        plugin_states,
-        load_order,
-        command_table,
-        plugin_config
-      ) do
-    discovered_plugins = Loader.discover_plugins(@default_plugins_dir)
-
-    Logger.info(
-      "Discovered #{length(discovered_plugins)} potential plugin files."
-    )
-
-    # Extract metadata for all discovered plugins
-    plugins_with_metadata_and_path =
-      Enum.map(discovered_plugins, fn {module, path} ->
-        meta = Loader.extract_metadata(module)
-        {module, meta, path}
-      end)
-
-    # Prepare list for sorting: {module, metadata}
-    plugins_for_sorting =
-      Enum.map(plugins_with_metadata_and_path, fn {module, meta, _path} ->
-        {module, meta}
-      end)
-
-    case sort_plugins(plugins_for_sorting) do
-      {:ok, sorted_plugin_modules} ->
-        Logger.info("Plugin dependency order determined.")
-
-        # Create a map of module -> path for easy lookup during loading
-        module_to_path_map =
-          Enum.into(plugins_with_metadata_and_path, %{}, fn {mod, _meta, path} ->
-            {mod, path}
-          end)
-
-        # Load plugins sequentially, updating state maps along the way
-        initial_state =
-          {:ok,
-           %{
-             plugins: plugins,
-             metadata: metadata,
-             plugin_states: plugin_states,
-             load_order: load_order,
-             plugin_config: plugin_config,
-             # Initialize empty plugin_paths map
-             plugin_paths: %{}
-           }}
-
-        Enum.reduce_while(
-          sorted_plugin_modules,
-          initial_state,
-          fn plugin_module, {:ok, current_state_maps} ->
-            # Extract the necessary maps for load_plugin_by_module
-            current_plugins = current_state_maps.plugins
-            current_metadata = current_state_maps.metadata
-            current_plugin_states = current_state_maps.plugin_states
-            current_load_order = current_state_maps.load_order
-            current_plugin_config = current_state_maps.plugin_config
-
-            # current_plugin_paths = current_state_maps.plugin_paths # Keep track of paths
-
-            # Get the config for this plugin (defaults to empty map)
-            # Need to extract metadata again briefly to get the ID for config lookup
-            # Alternatively, pass the full {module, meta, path} list through sort?
-            temp_meta = Loader.extract_metadata(plugin_module)
-
-            plugin_id_for_config =
-              Map.get(
-                temp_meta,
-                :id,
-                Loader.module_to_default_id(plugin_module)
-              )
-
-            config = Map.get(current_plugin_config, plugin_id_for_config, %{})
-
-            case load_plugin_by_module(
-                   plugin_module,
-                   config,
-                   current_plugins,
-                   current_metadata,
-                   current_plugin_states,
-                   current_load_order,
-                   command_table,
-                   current_plugin_config
-                 ) do
-              {:ok, loaded_maps} ->
-                # Successfully loaded, find the effective plugin ID and store the path
-                effective_plugin_id =
-                  find_plugin_id_by_module(loaded_maps.plugins, plugin_module)
-
-                source_path = Map.get(module_to_path_map, plugin_module)
-
-                if effective_plugin_id && source_path do
-                  updated_paths =
-                    Map.put(
-                      current_state_maps.plugin_paths,
-                      effective_plugin_id,
-                      source_path
-                    )
-
-                  updated_full_maps =
-                    Map.merge(loaded_maps, %{plugin_paths: updated_paths})
-
-                  # Continue with updated maps including paths
-                  {:cont, {:ok, updated_full_maps}}
-                else
-                  Logger.error(
-                    "Failed to associate source path for loaded plugin #{inspect(plugin_module)}. Skipping path storage."
-                  )
-
-                  # Continue with loaded maps, but path won't be stored for reload
-                  updated_full_maps_no_path =
-                    Map.merge(loaded_maps, %{
-                      plugin_paths: current_state_maps.plugin_paths
-                    })
-
-                  {:cont, {:ok, updated_full_maps_no_path}}
-                end
-
-              {:error, reason} ->
-                Logger.error(
-                  "Failed to load plugin #{inspect(plugin_module)}: #{inspect(reason)}. Skipping."
-                )
-
-                # Continue with previous maps
-                {:cont, {:ok, current_state_maps}}
-            end
-          end
-        )
-
-      # Reduce/while returns the final accumulator state
-
-      {:error, :circular_dependency} ->
-        Logger.error("Failed to initialize plugins due to circular dependency.")
-        {:error, :circular_dependency}
-
-        # This clause might still be useful if sort_plugins could return other errors
-        # {:error, reason} -> # Catch other potential sort errors if tsort is enhanced
-        #   Logger.error("Failed to sort plugins for initialization: #{inspect(reason)}")
-        #   {:error, :dependency_resolution_failed}
-    end
-  end
-
-  # --- Helper Functions ---
-
-  @doc """
-  Loads plugin configuration (placeholder).
-  """
-  def load_plugin_config() do
-    # Placeholder: Load from Mix config or other source
-    Logger.debug("Loading plugin configuration (placeholder)...")
-    Application.get_env(:raxol, :plugins, %{})
-  end
-
-  @doc """
-  Checks if all dependencies for a plugin are met by the currently loaded plugins.
-  Returns `:ok` or `{:error, :missing_dependencies, missing_list}`.
-  """
-  def check_dependencies(plugin_id, metadata, loaded_plugins_map) do
-    required = Map.get(metadata, :dependencies, [])
-    # Use Map.keys as loaded_plugins_map contains id => module
-    available = Map.keys(loaded_plugins_map)
-
-    missing =
-      Enum.reject(required, fn dep_id -> Enum.member?(available, dep_id) end)
-
-    if Enum.empty?(missing) do
-      :ok
-    else
-      Logger.debug(
-        "Plugin #{plugin_id} missing dependencies: #{inspect(missing)}"
-      )
-
-      {:error, :missing_dependencies, missing}
-    end
-  end
-
-  # --- Dependency Management ---
-
-  @doc """
-  Sorts a list of plugin modules based on their declared dependencies.
-
-  Accepts a list of `{plugin_module, plugin_metadata}` tuples.
-  Returns `{:ok, sorted_plugin_modules}` or `{:error, :circular_dependency, cycle}`.
-  Uses a topological sort algorithm.
-  """
-  def sort_plugins(plugins_with_metadata) do
-    Logger.debug("[LifecycleHelper] Sorting plugins by dependency...")
-
-    # Build the dependency graph {plugin_id => [dep_id, ...]}
-    graph =
-      Enum.reduce(plugins_with_metadata, %{}, fn {_, meta}, acc ->
-        plugin_id = Map.get(meta, :id)
-        dependencies = Map.get(meta, :dependencies, [])
-        Map.put(acc, plugin_id, dependencies)
-      end)
-
-    # Perform topological sort - Handles {:ok, list} | {:error, :circular_dependency}
-    case tsort(graph) do
-      {:ok, sorted_ids} ->
-        # Map sorted IDs back to modules
-        id_to_module_map =
-          Enum.into(plugins_with_metadata, %{}, fn {mod, meta} ->
-            {Map.get(meta, :id), mod}
-          end)
-
-        sorted_modules = Enum.map(sorted_ids, &Map.get(id_to_module_map, &1))
-
-        Logger.debug(
-          "[LifecycleHelper] Plugin sort order: #{inspect(sorted_ids)}"
-        )
-
-        {:ok, sorted_modules}
-
-      {:error, :circular_dependency} ->
-        Logger.error(
-          "[LifecycleHelper] Circular dependency detected during plugin sort."
-        )
-
-        # Pass the error up
-        {:error, :circular_dependency}
-
-        # Note: No need for a generic error case here unless tsort can return other errors
-    end
-  end
-
-  # --- Helpers ---
-
-  # Helper to check if a module implements a behaviour (Simplified Check)
-  defp behaviour_implemented?(module, behaviour) do
-    # Check if the @behaviour attribute lists the required behaviour
-    case module.__info__(:attributes) do
-      attributes when is_list(attributes) ->
-        Enum.any?(attributes, fn {attr_name, values} ->
-          attr_name == :behaviour and Enum.member?(values, behaviour)
-        end)
-
-      _ ->
-        Logger.warning(
-          "Could not read attributes for module #{inspect(module)} to check behaviour."
-        )
-
-        # Cannot verify
-        false
-    end
-
-    # --- Original Check (commented out) ---
-    # function_exported?(module, :behaviour_info, 1) and
-    #   # Also check required callbacks are present
-    #   Enum.all?(behaviour.behaviour_info(:callbacks), fn {name, arity} ->
-    #     function_exported?(module, name, arity)
-    #   end)
-  end
-
-  # Helper to find a plugin ID given its module - Make public for CommandHelper
-  def find_plugin_id_by_module(plugins, module) do
-    Enum.find_value(plugins, nil, fn {id, mod} ->
-      if mod == module, do: id, else: nil
     end)
   end
 
-  # Topological Sort Implementation (using a hypothetical Tsort module or algorithm)
-  # Replace this with an actual implementation or library.
-  # Example structure based on common topological sort algorithms.
-  defp tsort(graph) do
-    # Placeholder: In a real scenario, use a library like :tsort or implement Kahn's algorithm or DFS-based sort.
-    # This example assumes `Tsort.tsort/1` exists and raises `Tsort.Error` on cycles.
-    # Example using a hypothetical library:
-    # Tsort.tsort(graph)
+  @doc """
+  Reloads a plugin from disk with improved state persistence and error handling.
+  """
+  def reload_plugin_from_disk(plugin_id, plugin_module, plugin_path, plugin_state, command_table, metadata, plugin_manager, _current_metadata) do
+    try do
+      # Reload the module with proper error handling
+      with :ok <- :code.purge(plugin_module),
+           {:module, ^plugin_module} <- :code.load_file(plugin_module),
+           {:ok, updated_state} <- plugin_module.init(plugin_state),
+           {:ok, updated_table} <- update_command_table(command_table, plugin_module, updated_state) do
 
-    # Manual Implementation Example (Kahn's Algorithm):
-    nodes = Map.keys(graph)
-    node_count = length(nodes)
+        # Update metadata with proper error handling
+        updated_metadata = Map.put(metadata, plugin_id, %{
+          path: plugin_path,
+          state: updated_state,
+          last_reload: System.system_time()
+        })
 
-    in_degree =
-      Enum.reduce(graph, Map.new(nodes, fn node -> {node, 0} end), fn {_node,
-                                                                       deps},
-                                                                      acc ->
-        Enum.reduce(deps, acc, fn dep, inner_acc ->
-          Map.update(inner_acc, dep, 1, &(&1 + 1))
-        end)
-      end)
-
-    queue =
-      Enum.filter(in_degree, fn {_node, degree} -> degree == 0 end)
-      |> Enum.map(&elem(&1, 0))
-
-    sorted = []
-
-    tsort_kahn(graph, in_degree, queue, sorted, node_count)
-  end
-
-  # Updated tsort_kahn to detect cycles and return {:error, :circular_dependency}
-  defp tsort_kahn(_graph, _in_degree, [], sorted, node_count) do
-    if length(sorted) == node_count do
-      # Kahn builds reverse topological order
-      {:ok, Enum.reverse(sorted)}
-    else
-      # Cycle detected: Not all nodes could be added to the sorted list.
-      {:error, :circular_dependency}
+        {:ok, updated_state, updated_table, updated_metadata}
+      else
+        {:error, reason} ->
+          Logger.error("Failed to reload plugin #{plugin_id}: #{inspect(reason)}")
+          {:error, :reload_failed}
+      end
+    rescue
+      e ->
+        Logger.error("Failed to reload plugin #{plugin_id}: #{inspect(e)}")
+        {:error, :reload_failed}
     end
   end
 
-  defp tsort_kahn(graph, in_degree, [node | queue_tail], sorted, node_count) do
-    new_sorted = [node | sorted]
-    # Find nodes that depend on the current node
-    dependents =
-      Map.keys(graph)
-      |> Enum.filter(&Enum.member?(Map.get(graph, &1, []), node))
+  @doc """
+  Unloads a plugin with improved cleanup and error handling.
+  """
+  def unload_plugin(plugin_id, metadata, _config, states, command_table, _opts) do
+    with {:ok, plugin_metadata} <- Map.fetch(metadata, plugin_id),
+         :ok <- CommandRegistry.unregister_plugin_commands(plugin_id, command_table) do
 
-    {new_in_degree, new_queue_tail} =
-      Enum.reduce(dependents, {in_degree, queue_tail}, fn dep,
-                                                          {acc_in_degree,
-                                                           acc_queue} ->
-        new_degree_map = Map.update!(acc_in_degree, dep, &(&1 - 1))
+      # Remove plugin from metadata and states
+      meta = Map.delete(metadata, plugin_id)
+      sts = Map.delete(states, plugin_id)
 
-        if Map.get(new_degree_map, dep) == 0 do
-          {new_degree_map, [dep | acc_queue]}
-        else
-          {new_degree_map, acc_queue}
+      {:ok, {meta, sts, command_table}}
+    else
+      :error ->
+        # Plugin not found, return unchanged state
+        {:ok, {metadata, states, command_table}}
+
+      {:error, reason} ->
+        Logger.error("Failed to unload plugin #{plugin_id}: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  # Private helper functions
+
+  defp resolve_plugin_identity(plugin_id_or_module) do
+    case plugin_id_or_module do
+      id when is_binary(id) ->
+        case Loader.load_code(id) do
+          {:ok, module} -> {:ok, {id, module}}
+          error -> error
         end
-      end)
+      module when is_atom(module) ->
+        case Loader.extract_metadata(module) do
+          {:ok, %{id: id}} -> {:ok, {id, module}}
+          error -> error
+        end
+    end
+  end
 
-    tsort_kahn(graph, new_in_degree, new_queue_tail, new_sorted, node_count)
+  defp validate_not_loaded(plugin_id, plugins) do
+    if Map.has_key?(plugins, plugin_id) do
+      {:error, :already_loaded}
+    else
+      :ok
+    end
+  end
+
+  defp validate_behaviour(plugin_module) do
+    if Loader.behaviour_implemented?(plugin_module, Raxol.Core.Runtime.Plugins.Plugin) do
+      :ok
+    else
+      {:error, :invalid_plugin}
+    end
+  end
+
+  defp initialize_command_table(table, _plugins) do
+    table
+  end
+
+  defp update_command_table(table, plugin, state \\ nil) do
+    with {:ok, commands} <- get_plugin_commands(plugin),
+         :ok <- register_plugin_commands(table, plugin, commands) do
+      {:ok, table}
+    else
+      {:error, reason} ->
+        Logger.error("Failed to update command table: #{inspect(reason)}")
+        {:error, reason}
+    end
+  end
+
+  defp get_plugin_commands(plugin) do
+    if function_exported?(plugin, :get_commands, 0) do
+      {:ok, plugin.get_commands()}
+    else
+      {:ok, []}
+    end
+  end
+
+  defp register_plugin_commands(table, plugin, commands) do
+    Enum.reduce_while(commands, :ok, fn {name, function, arity}, :ok ->
+      case CommandRegistry.register_command(
+        table,
+        plugin,
+        Atom.to_string(name),
+        plugin,
+        function,
+        arity
+      ) do
+        :ok -> {:cont, :ok}
+        error -> {:halt, error}
+      end
+    end)
   end
 end

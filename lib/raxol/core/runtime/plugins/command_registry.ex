@@ -1,147 +1,192 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @moduledoc """
-  Manages commands registered by plugins using an ETS table.
-
-  Provides functions to register, unregister, and look up commands.
+  Manages command registration and execution for plugins.
   """
 
   require Logger
 
   @type command_name :: String.t()
-  @type namespace :: atom() | nil
-  @type command_key :: {namespace(), command_name()}
-  @type command_entry :: {module(), atom(), integer() | nil}
-  @type table_name :: atom()
+  @type command_handler :: function()
+  @type command_metadata :: %{
+    optional(:description) => String.t(),
+    optional(:usage) => String.t(),
+    optional(:aliases) => [String.t()],
+    optional(:timeout) => non_neg_integer()
+  }
+  @type command :: {command_name(), command_handler(), command_metadata()}
 
   @doc """
-  Creates a new ETS table for the command registry.
-
-  Returns the name of the created table.
+  Registers commands for a plugin.
   """
-  @spec new() :: table_name()
-  def new() do
-    table_name = :raxol_command_registry
-
-    if :ets.info(table_name, :name) != table_name do
-      :ets.new(table_name, [:set, :public, :named_table, read_concurrency: true])
-
-      Logger.debug(
-        "[#{__MODULE__}] ETS table `#{inspect(table_name)}` created."
-      )
-    end
-
-    table_name
-  end
-
-  @doc """
-  Registers a command provided by a plugin.
-
-  Args:
-    - `table`: The ETS table name.
-    - `command_name`: The name the command will be invoked by.
-    - `module`: The plugin module implementing the command.
-    - `function`: The function within the module to call.
-    - `arity`: The arity of the function.
-
-  Returns `:ok` or `{:error, :already_registered}`.
-  """
-  @spec register_command(
-          table_name(),
-          namespace(),
-          command_name(),
-          module(),
-          atom(),
-          integer() | nil
-        ) ::
-          :ok | {:error, :already_registered}
-  def register_command(table, namespace, command_name, module, function, arity)
-      when is_atom(table) and (is_atom(namespace) or is_nil(namespace)) and
-             is_binary(command_name) and is_atom(module) and
-             is_atom(function) and (is_integer(arity) or is_nil(arity)) do
-    key = {namespace, command_name}
-    value = {module, function, arity}
-
-    case :ets.lookup(table, key) do
-      [] ->
-        :ets.insert(table, {key, value})
-
-        Logger.info(
-          ~c"[#{__MODULE__}] Registered command [#{namespace || "global"}] \"#{command_name}\" -> #{inspect(module)}.#{function}/#{arity || ~c"?"}"
-        )
-
-        :ok
-
-      [_] ->
-        Logger.warning(
-          "[#{__MODULE__}] Command [#{namespace || "global"}] \"#{command_name}\" already registered. Registration failed."
-        )
-
-        {:error, :already_registered}
+  def register_plugin_commands(plugin_module, plugin_state, command_table) do
+    with {:ok, commands} <- get_plugin_commands(plugin_module),
+         :ok <- validate_commands(commands),
+         :ok <- check_command_conflicts(commands, command_table) do
+      register_commands(commands, plugin_module, plugin_state, command_table)
     end
   end
 
   @doc """
-  Unregisters a command.
+  Unregisters all commands for a plugin.
   """
-  @spec unregister_command(table_name(), namespace(), command_name()) :: :ok
-  def unregister_command(table, namespace, command_name)
-      when is_atom(table) and (is_atom(namespace) or is_nil(namespace)) and
-             is_binary(command_name) do
-    key = {namespace, command_name}
-    :ets.delete(table, key)
-
-    Logger.info(
-      "[#{__MODULE__}] Unregistered command [#{namespace || "global"}] \"#{command_name}\"."
-    )
-
-    :ok
-  end
-
-  @doc """
-  Looks up the handler {module, function, arity} for a command name and namespace.
-  """
-  @spec lookup_command(table_name(), namespace(), command_name()) ::
-          {:ok, command_entry()} | {:error, :not_found}
-  def lookup_command(table, namespace, command_name)
-      when is_atom(table) and (is_atom(namespace) or is_nil(namespace)) and
-             is_binary(command_name) do
-    key = {namespace, command_name}
-
-    case :ets.lookup(table, key) do
-      [{^key, handler}] -> {:ok, handler}
-      [] -> {:error, :not_found}
+  def unregister_plugin_commands(plugin_module, command_table) do
+    case Map.get(command_table, plugin_module) do
+      nil -> :ok
+      commands -> unregister_commands(commands, command_table, plugin_module)
     end
   end
 
   @doc """
-  Unregisters all commands associated with a specific module.
-
-  Useful when a plugin is unloaded.
+  Executes a command with proper error handling and timeout.
   """
-  @spec unregister_commands_by_module(table_name(), module()) :: :ok
-  def unregister_commands_by_module(table, module_to_remove)
-      when is_atom(table) and is_atom(module_to_remove) do
-    match_spec = [
-      {{{:"$1", :"$2"}, {module_to_remove, :_, :_}}, [], [{{:"$1", :"$2"}}]}
-    ]
+  def execute_command(command_name, args, command_table) do
+    case find_command(command_name, command_table) do
+      {:ok, {handler, metadata}} ->
+        execute_with_timeout(handler, args, metadata)
+      {:error, reason} = error ->
+        Logger.error("Failed to execute command #{command_name}: #{inspect(reason)}")
+        error
+    end
+  end
 
-    keys_to_delete = :ets.select(table, match_spec)
-    count = Enum.count(keys_to_delete)
+  # Private helper functions
 
-    if count > 0 do
-      Logger.info(
-        "[#{__MODULE__}] Unregistering #{count} commands for module #{inspect(module_to_remove)}..."
-      )
+  defp get_plugin_commands(plugin_module) do
+    case plugin_module.commands() do
+      commands when is_list(commands) -> {:ok, commands}
+      _ -> {:error, :invalid_commands}
+    end
+  end
 
-      Enum.each(keys_to_delete, fn {namespace, command_name} = key ->
-        :ets.delete(table, key)
+  defp validate_commands(commands) do
+    Enum.reduce_while(commands, :ok, fn command, :ok ->
+      case validate_command(command) do
+        :ok -> {:cont, :ok}
+        error -> {:halt, error}
+      end
+    end)
+  end
 
-        Logger.debug(
-          ~c"[#{__MODULE__}] Unregistered command [#{namespace || "global"}] \"#{command_name}\"."
-        )
+  defp validate_command({name, handler, metadata}) do
+    with :ok <- validate_command_name(name),
+         :ok <- validate_command_handler(handler),
+         :ok <- validate_command_metadata(metadata) do
+      :ok
+    end
+  end
+
+  defp validate_command_name(name) do
+    cond do
+      not is_binary(name) -> {:error, :invalid_command_name}
+      String.length(name) == 0 -> {:error, :empty_command_name}
+      not String.match?(name, ~r/^[a-zA-Z0-9_-]+$/) -> {:error, :invalid_command_name_format}
+      true -> :ok
+    end
+  end
+
+  defp validate_command_handler(handler) do
+    if is_function(handler, 2), do: :ok, else: {:error, :invalid_command_handler}
+  end
+
+  defp validate_command_metadata(metadata) do
+    cond do
+      not is_map(metadata) -> {:error, :invalid_metadata}
+      not valid_metadata_fields?(metadata) -> {:error, :invalid_metadata_fields}
+      true -> :ok
+    end
+  end
+
+  defp valid_metadata_fields?(metadata) do
+    Enum.all?(metadata, fn {key, value} ->
+      case key do
+        :description -> is_binary(value)
+        :usage -> is_binary(value)
+        :aliases -> is_list(value) and Enum.all?(value, &is_binary/1)
+        :timeout -> is_integer(value) and value > 0
+        _ -> false
+      end
+    end)
+  end
+
+  defp check_command_conflicts(commands, command_table) do
+    Enum.reduce_while(commands, :ok, fn {name, _, _}, :ok ->
+      if command_exists?(name, command_table) do
+        {:halt, {:error, {:command_exists, name}}}
+      else
+        {:cont, :ok}
+      end
+    end)
+  end
+
+  defp command_exists?(name, command_table) do
+    Enum.any?(command_table, fn {_, commands} ->
+      Enum.any?(commands, fn {cmd_name, _, _} -> cmd_name == name end)
+    end)
+  end
+
+  defp register_commands(commands, plugin_module, plugin_state, command_table) do
+    try do
+      new_commands = Enum.map(commands, fn {name, handler, metadata} ->
+        wrapped_handler = wrap_handler(handler, plugin_state)
+        {name, wrapped_handler, metadata}
       end)
-    end
 
-    :ok
+      updated_table = Map.put(command_table, plugin_module, new_commands)
+      {:ok, updated_table}
+    rescue
+      e ->
+        Logger.error("Failed to register commands: #{inspect(e)}")
+        {:error, :registration_failed}
+    end
+  end
+
+  defp unregister_commands(_commands, command_table, plugin_module) do
+    try do
+      updated_table = Map.delete(command_table, plugin_module)
+      {:ok, updated_table}
+    rescue
+      e ->
+        Logger.error("Failed to unregister commands: #{inspect(e)}")
+        {:error, :unregistration_failed}
+    end
+  end
+
+  defp wrap_handler(handler, plugin_state) do
+    fn args, context ->
+      try do
+        handler.(args, Map.put(context, :plugin_state, plugin_state))
+      rescue
+        e ->
+          Logger.error("Command execution failed: #{inspect(e)}")
+          {:error, {:execution_failed, Exception.message(e)}}
+      end
+    end
+  end
+
+  defp find_command(name, command_table) do
+    case Enum.find_value(command_table, :error, fn {_, commands} ->
+      Enum.find(commands, fn {cmd_name, _, _} -> cmd_name == name end)
+    end) do
+      {^name, handler, metadata} -> {:ok, {handler, metadata}}
+      :error -> {:error, :command_not_found}
+    end
+  end
+
+  defp execute_with_timeout(handler, args, metadata) do
+    timeout = Map.get(metadata, :timeout, 5000)
+    context = %{
+      timestamp: System.system_time(),
+      metadata: metadata
+    }
+
+    try do
+      Task.await(Task.async(fn -> handler.(args, context) end), timeout)
+    catch
+      :exit, {:timeout, _} ->
+        {:error, :command_timeout}
+      _kind, reason ->
+        Logger.error("Command execution failed: #{inspect(reason)}")
+        {:error, {:execution_failed, Exception.message(reason)}}
+    end
   end
 end

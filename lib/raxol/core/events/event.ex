@@ -15,20 +15,22 @@ defmodule Raxol.Core.Events.Event do
 
   @type t :: %__MODULE__{
           type: event_type(),
-          data: event_data()
+          data: event_data(),
+          timestamp: DateTime.t()
         }
 
-  defstruct [:type, :data]
+  defstruct [:type, :data, :timestamp]
 
   # Event constructors for common events
 
   @doc """
-  Creates a new event with the given type and data.
+  Creates a new event with the given type and data. Optionally accepts a timestamp (defaults to now).
   """
-  def new(type, data) do
+  def new(type, data, timestamp \\ DateTime.utc_now()) do
     %__MODULE__{
       type: type,
-      data: data
+      data: data,
+      timestamp: timestamp
     }
   end
 
