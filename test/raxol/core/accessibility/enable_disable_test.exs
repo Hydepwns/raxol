@@ -1,0 +1,89 @@
+defmodule Raxol.Core.Accessibility.EnableDisableTest do
+  use Raxol.DataCase, async: false
+  import Mox
+
+  alias Raxol.Core.Accessibility
+  alias Raxol.Core.AccessibilityTestHelper, as: Helper
+
+  setup :verify_on_exit!
+  setup :set_mox_global
+
+  setup do
+    Raxol.Core.I18n.init()
+    :ok
+  end
+
+  describe "enable/1 and disable/0" do
+    setup do
+      prefs_name = UserPreferencesEnableDisableTest
+      Helper.setup_test_preferences(prefs_name)
+    end
+
+    test "enable/1 applies default preferences if none are set", %{
+      prefs_name: prefs_name
+    } do
+      # Set prefs to nil initially
+      UserPreferences.set(Helper.pref_key(:high_contrast), nil, prefs_name)
+      UserPreferences.set(Helper.pref_key(:reduced_motion), nil, prefs_name)
+      UserPreferences.set(Helper.pref_key(:large_text), nil, prefs_name)
+
+      # Disable first to clear handlers etc.
+      Accessibility.disable(prefs_name)
+      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == false end)
+
+      # Enable reads preferences
+      Accessibility.enable([], prefs_name)
+      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == true end)
+
+      # Assert default values
+      assert UserPreferences.get(Helper.pref_key(:high_contrast), prefs_name) == false
+      assert UserPreferences.get(Helper.pref_key(:reduced_motion), prefs_name) == false
+      assert UserPreferences.get(Helper.pref_key(:large_text), prefs_name) == false
+      assert UserPreferences.get(Helper.pref_key(:screen_reader), prefs_name) == true
+      assert Accessibility.get_text_scale(prefs_name) == 1.0
+    end
+
+    test "enable/1 applies custom options over defaults", %{
+      prefs_name: prefs_name
+    } do
+      # Set prefs to nil initially
+      UserPreferences.set(Helper.pref_key(:high_contrast), nil, prefs_name)
+      UserPreferences.set(Helper.pref_key(:reduced_motion), nil, prefs_name)
+      UserPreferences.set(Helper.pref_key(:screen_reader), nil, prefs_name)
+
+      Accessibility.disable(prefs_name)
+      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == false end)
+
+      custom_opts = [
+        high_contrast: true,
+        reduced_motion: true,
+        screen_reader: false
+      ]
+
+      Accessibility.enable(custom_opts, prefs_name)
+      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == true end)
+
+      assert Accessibility.get_option(:high_contrast, prefs_name) == true
+      assert Accessibility.get_option(:reduced_motion, prefs_name) == true
+      assert Accessibility.get_option(:screen_reader, prefs_name) == false
+      assert Accessibility.get_text_scale(prefs_name) == 1.0
+    end
+
+    test "disable/0 stops functionality", %{
+      prefs_name: prefs_name
+    } do
+      Accessibility.enable([], prefs_name)
+      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == true end)
+
+      assert Accessibility.get_option(:enabled, prefs_name) == true
+      Accessibility.announce("Test before disable", [], prefs_name)
+      assert Accessibility.get_next_announcement() == "Test before disable"
+
+      Accessibility.disable(prefs_name)
+      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == false end)
+
+      Accessibility.announce("Test after disable", [], prefs_name)
+      assert Accessibility.get_next_announcement() == nil
+    end
+  end
+end
