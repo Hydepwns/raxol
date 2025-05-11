@@ -1,7 +1,7 @@
 ---
 title: Raxol Library Documentation
 description: Documentation for using the Raxol TUI library in Elixir projects
-date: 2025-05-09
+date: 2025-05-10
 author: DROO AMOR
 section: overview
 tags: [documentation, overview, library, tui, elixir]
@@ -11,25 +11,30 @@ tags: [documentation, overview, library, tui, elixir]
 
 Welcome to the main documentation index for Raxol, a terminal application toolkit for Elixir.
 
+## Project Status
+
+As of May 10, 2025:
+
+- Test suite: 49 doctests, 1528 tests, 279 failures, 17 invalid, 21 skipped
+- Recent improvements: See [CHANGELOG.md](/CHANGELOG.md) for details
+
 ## Key Sections
 
-- **[Installation](/docs/guides/05_development_and_testing/DevelopmentSetup.md):** How to set up your development environment and add Raxol as a dependency.
-- **[Getting Started](/docs/guides/01_getting_started/quick_start.md):** Build your first simple Raxol application using `Raxol.Core.Runtime.Application`.
-- **[Architecture](/docs/ARCHITECTURE.md):** Overview of the Raxol system architecture.
-- **[UI Components & Layout](/docs/guides/03_components_and_layout/components/README.md):** Documentation for built-in UI components and the layout system.
-- **[Core Concepts:**
-  - [Runtime Options](/docs/guides/02_core_concepts/runtime_options.md)
-  - [Async Operations](/docs/guides/02_core_concepts/async_operations.md)
-  - [Theming](/docs/guides/02_core_concepts/theming.md)
-  - [Terminal Emulator](/docs/guides/02_core_concepts/terminal_emulator.md)
-- **[Extending Raxol:**
-  - [Plugin Development](/docs/guides/04_extending_raxol/plugin_development.md)
-  - [VS Code Extension](/docs/guides/04_extending_raxol/vscode_extension.md) (Planned)
-- **[Development & Testing](/docs/guides/05_development_and_testing/testing.md):** Guide to contributing and testing.
-- **[Terminal Details](/docs/guides/02_core_concepts/terminal/README.md):** Lower-level information on terminal interaction.
+- **[Architecture](ARCHITECTURE.md):** Overview of the Raxol system architecture.
+- **[UI Components & Layout](../docs/guides/03_components_and_layout/components/README.md):** Documentation for built-in UI components and the layout system.
 - **Examples:** Explore runnable demos and snippets in the top-level `examples/` directory.
-- **[CHANGELOG](/docs/changes/CHANGELOG.md):** Log of changes between versions.
+- **[CHANGELOG](../CHANGELOG.md):** Log of changes between versions.
 
 ## Navigating the Docs
 
 Use the links above to explore different topics. Start with the Installation and Getting Started guides if you are new to Raxol. Check the `ARCHITECTURE.md` for a high-level overview.
+
+## Performance Requirements
+
+Raxol enforces strict performance requirements through automated testing:
+
+- Event processing: < 1ms average, < 2ms 95th percentile
+- Screen updates: < 2ms average, < 5ms 95th percentile
+- Concurrent operations: < 5ms average, < 10ms 95th percentile
+
+See [Performance Testing](/docs/testing/performance_testing.md) for details.

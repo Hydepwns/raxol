@@ -38,20 +38,60 @@ At the lowest level, terminal colors are controlled by ANSI Select Graphic Rendi
 - **`Raxol.Terminal.Parser`**: This module recognizes the SGR sequences within the incoming byte stream.
 - **`Raxol.Terminal.Emulator`**: When the parser identifies an SGR color sequence, it updates the `Emulator`'s state. The `Emulator` tracks the _current_ active foreground and background color attributes (along with other attributes like bold, italic, etc.). These attributes are associated with characters as they are written to the screen buffer.
 
-## 3. Theming System (`Raxol.UI.Theming.*`)
+## 3. Centralized Color System
 
-While the terminal layer understands raw SGR sequences, Raxol applications typically define and use colors through the high-level Theming system.
+Raxol's color system is organized into several specialized modules that work together:
 
-- **Color Schemes**: The `UI.Theming` modules allow defining complete color schemes (e.g., "Solarized", "Dracula", "Nord") which specify palettes of named colors for various UI elements (background, foreground, primary button, error text, etc.).
-- **Palettes**: Themes contain palettes mapping abstract names (like `:primary`, `:background`, `:accent`) to specific color values (which could be 16-color names, 256-color indices, or 24-bit RGB values).
-- **Active Theme**: The Raxol runtime manages an active theme for the application.
+### Core Color Representation (`Raxol.Style.Colors.Color`)
 
-## 4. Core Color System (`Raxol.Core.ColorSystem`)
+- Provides the fundamental color data structure and manipulation functions
+- Handles color format conversions through the `Formats` module
+- Maintains core color operations (lighten, darken, blend, etc.)
+- Supports RGB, RGBA, hex, ANSI, and named color formats
 
-Application code and UI components should generally not use raw SGR codes or hardcoded color values. Instead, they interact with the `Raxol.Core.ColorSystem`.
+### Color System (`Raxol.Core.ColorSystem`)
 
-- **Theme-Aware Retrieval**: This module provides functions like `Raxol.Core.ColorSystem.get/2` which allow retrieving a color value (e.g., an RGB tuple or an appropriate ANSI code) based on a semantic name (e.g., `:text_primary`) and the _currently active theme_.
-- **Accessibility Integration**: The `ColorSystem` also considers accessibility settings (like high contrast mode) when resolving colors, ensuring appropriate contrast or alternative palettes are used when needed.
+- Centralizes theme management and high-level color operations
+- Uses `Color`, `Palettes`, and `Utilities` modules for core functionality
+- Provides semantic color naming and accessibility features
+- Integrates with the accessibility system for high contrast mode
+
+### UI Theming Colors (`Raxol.UI.Theming.Colors`)
+
+- Provides a simpler interface for UI-specific color operations
+- Uses `Color` and `Utilities` modules for core functionality
+- Maintains backward compatibility with existing code
+- Focuses on theme-specific color operations
+
+### Color Utilities (`Raxol.Style.Colors.Utilities`)
+
+- Provides shared color manipulation and analysis functions
+- Handles contrast calculations and accessibility checks
+- Offers color palette generation and management
+- Supports color format conversions and validation
+
+### Palette Manager (`Raxol.Style.Colors.PaletteManager`)
+
+- Manages color palettes and scales
+- Handles user preferences for colors
+- Provides palette generation and manipulation
+- Integrates with the accessibility system
+
+### Theme Management (`Raxol.Style.Colors.Theme`)
+
+- Defines and manages color themes
+- Handles theme variants (light, dark, high contrast)
+- Provides theme persistence and loading
+- Integrates with the color system for theme application
+
+## 4. Theme System Integration
+
+The color system integrates with the theme system through:
+
+- **Theme Definition**: Themes define color palettes and UI mappings
+- **Theme Application**: Colors are resolved through the theme system
+- **Accessibility**: High contrast mode and accessibility settings are respected
+- **Dynamic Updates**: Theme changes trigger appropriate updates
 
 ## 5. Rendering (`Raxol.UI.Renderer`)
 

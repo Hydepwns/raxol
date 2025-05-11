@@ -1,7 +1,7 @@
 ---
 title: Architecture Overview
 description: High-level overview of the Raxol Terminal Emulator architecture
-date: [Current Date]
+date: 2025-05-10
 author: Raxol Team
 section: architecture
 tags: [architecture, overview, design]
@@ -13,7 +13,7 @@ tags: [architecture, overview, design]
 
 Raxol is built on a modular architecture that implements the Elm-inspired design pattern with a comprehensive terminal UI ecosystem. The system is composed of several key layers:
 
-```
+```bash
 ┌────────────────────────────────────────────────────────────┐
 │                     Application Layer                       │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────────┐    │
@@ -45,9 +45,10 @@ The foundation of Raxol, handling the fundamental terminal operations and system
 1. **Runtime System**
 
    - BEAM VM integration
-   - Process supervision _(Basic supervisor implemented)_
+   - Process supervision
    - Hot code reloading
-   - State management _(via Dispatcher)_
+   - State management via Dispatcher
+   - System Interaction Adapter pattern for testable system calls
 
 2. **Renderer**
 
@@ -55,13 +56,14 @@ The foundation of Raxol, handling the fundamental terminal operations and system
    - Double buffering
    - Damage tracking
    - Frame-rate control
-   - _(Basic rendering engine connected to layout and theme)_
+   - Performance optimizations
 
 3. **Event System**
    - Event handling
-   - Input processing _(Basic keyboard and resize handling implemented)_
+   - Input processing
    - Event delegation
    - Custom event support
+   - Event-based testing infrastructure
 
 ### Style Layer
 
@@ -72,7 +74,8 @@ Provides comprehensive styling capabilities for terminal UI elements:
    - ANSI color support (4-bit, 8-bit, 24-bit)
    - Theme management
    - Color adaptation
-   - Gradient support
+   - OSC 4 color palette management
+   - Accessibility-aware color selection
 
 2. **Layout Engine**
 
@@ -80,12 +83,14 @@ Provides comprehensive styling capabilities for terminal UI elements:
    - Grid system
    - Flex-like layouts
    - Responsive design
+   - Performance optimizations
 
 3. **Border System**
    - Border styles
    - Corner handling
    - Shadow effects
    - Custom borders
+   - Theme integration
 
 ### Component Layer
 
@@ -97,6 +102,7 @@ Pre-built, customizable UI components:
    - Multi-line editor
    - Password fields
    - Search boxes
+   - Focus management
 
 2. **Selection Components**
 
@@ -104,12 +110,14 @@ Pre-built, customizable UI components:
    - Dropdowns
    - Multi-select
    - Tree views
+   - Stateful scroll offset
 
 3. **Display Components**
-   - Tables
+   - Tables (with pagination, filtering, sorting)
    - Panels
    - Progress indicators
    - Charts
+   - Focus ring styling
 
 ### Application Layer
 
@@ -120,17 +128,20 @@ The high-level interface for building applications:
    - Application state
    - Data structures
    - State validation
+   - Immutable updates
 
 2. **Update**
 
    - Message handling
    - State transitions
    - Side effects
+   - Command processing
 
 3. **View**
    - UI composition
    - Component layout
    - Event binding
+   - Theme application
 
 ## Data Flow
 
@@ -182,23 +193,27 @@ end
    - Props validation
    - State initialization
    - Resource setup
+   - Theme integration
 
 2. **Update Cycle**
 
    - Message processing
    - State updates
    - Side effect handling
+   - Command generation
 
 3. **Rendering**
 
    - State to view conversion
    - Style application
    - Layout calculation
+   - Accessibility support
 
 4. **Cleanup**
    - Resource cleanup
    - State persistence
    - Event unsubscription
+   - Theme cleanup
 
 ## Style System
 
@@ -228,6 +243,7 @@ The style system is implemented as a layered architecture:
 2. Theme application
 3. Terminal capability detection
 4. ANSI code generation
+5. Accessibility considerations
 
 ## Event System
 
@@ -254,21 +270,24 @@ Event handling follows a bubbling pattern:
    - Keyboard
    - Mouse
    - Window
+   - Focus
 
 2. **System Events**
 
    - Timer
    - Subscription
    - Command
+   - Theme change
 
 3. **Custom Events**
    - Component
    - Application
    - Integration
+   - Plugin
 
 ## Integration Points
 
-### Burrito Integration
+### System Interaction Adapters
 
 ```
 ┌────────────────┐
@@ -276,24 +295,26 @@ Event handling follows a bubbling pattern:
 └───────┬────────┘
         │
     ┌───▼───┐
-    │Burrito│
+    │Adapter│
     └───┬───┘
         │
     ┌───▼───┐
-    │ BEAM  │
+    │System │
     └───────┘
 ```
 
-1. **Packaging**
+1. **Adapter Pattern**
 
-   - Dependency bundling
-   - BEAM inclusion
-   - Native dependencies
+   - System interaction abstraction
+   - Testable interfaces
+   - Mock implementations
+   - Error handling
 
-2. **Distribution**
-   - Cross-platform builds
-   - Version management
-   - Update system
+2. **Integration**
+   - File system access
+   - Network operations
+   - Process management
+   - Environment variables
 
 ## Performance Considerations
 
@@ -302,17 +323,20 @@ Event handling follows a bubbling pattern:
    - Frame rate control
    - Damage tracking
    - Buffer management
+   - Layout caching
 
 2. **Event Processing**
 
    - Event batching
    - Debouncing
    - Throttling
+   - Priority queuing
 
 3. **Memory Management**
    - State immutability
    - Resource cleanup
    - Buffer reuse
+   - Garbage collection
 
 ## Security Model
 
@@ -321,11 +345,13 @@ Event handling follows a bubbling pattern:
    - Event sanitization
    - Props validation
    - Command validation
+   - Resource limits
 
 2. **Resource Access**
    - File system limits
    - Network restrictions
    - Process isolation
+   - Permission checks
 
 ## Testing Strategy
 
@@ -334,33 +360,68 @@ Event handling follows a bubbling pattern:
    - Component testing
    - Style testing
    - Event testing
+   - Adapter testing
 
 2. **Integration Testing**
 
    - Application flows
    - Component interaction
    - System integration
+   - Plugin testing
 
-3. **Visual Testing**
-   - Snapshot testing
-   - Visual regression
-   - Theme testing
+3. **Performance Testing**
+   - Load testing
+   - Memory profiling
+   - CPU profiling
+   - Event timing
+
+## Current Status
+
+1. **Core Systems**
+
+   - Runtime: Stable
+   - Renderer: Stable with optimizations
+   - Event System: Stable with event-based testing
+   - Plugin System: Refactored and stable
+
+2. **Component System**
+
+   - Base Components: Stable
+   - Input Components: Enhanced
+   - Display Components: Enhanced
+   - Testing Infrastructure: Comprehensive
+
+3. **Style System**
+
+   - Color System: Enhanced with OSC 4
+   - Layout Engine: Stable
+   - Border System: Complete
+   - Theme System: Stable
+
+4. **Test Suite**
+   - Unit Tests: Comprehensive
+   - Integration Tests: Growing
+   - Performance Tests: Implemented
+   - Current Status: 279 failures, 17 invalid, 21 skipped
 
 ## Future Considerations
 
 1. **Extensibility**
 
-   - Plugin system
-   - Custom components
+   - Plugin system enhancements
+   - Custom component framework
    - Theme extensions
+   - Event system extensions
 
 2. **Integration**
 
    - Web bridge
    - Native extensions
    - External services
+   - Platform-specific features
 
 3. **Performance**
    - GPU acceleration
    - Native rendering
    - Async operations
+   - Memory optimizations

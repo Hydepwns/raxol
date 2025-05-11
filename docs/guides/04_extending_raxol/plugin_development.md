@@ -186,7 +186,7 @@ The `PluginManager` uses `Raxol.Core.Runtime.Plugins.CommandRegistry` (ETS-backe
 
 ## Dependencies
 
-Plugins can require others to load first.
+Plugins can require others to load first, with sophisticated version constraint handling and detailed dependency chain reporting.
 
 ### Declaring Dependencies
 
@@ -195,23 +195,75 @@ Use the optional `PluginMetadataProvider`'s `dependencies/0` callback.
 ```elixir
 defmodule MyPlugin.Metadata do
   # ... id/version ...
-  @impl true; def dependencies(), do: [:core_clipboard, :another_plugin]
+  @impl true
+  def dependencies() do
+    [
+      {:core_clipboard, ">= 1.0.0"},
+      {:another_plugin, ">= 2.0.0 || >= 3.0.0"},
+      :optional_plugin  # Simple dependency without version constraint
+    ]
+  end
 end
 ```
 
-- Returns a list of required plugin IDs (atoms).
-- Both dependent and dependency plugins should provide metadata for reliable tracking.
+- Returns a list of dependencies, each being either:
+  - A tuple `{plugin_id, version_constraint}` for versioned dependencies
+  - A simple `plugin_id` atom for unversioned dependencies
+- Version constraints support:
+  - Simple constraints: `">= 1.0.0"`, `"~> 1.0"`, `"== 1.0.0"`
+  - Complex constraints with OR operator: `">= 1.0.0 || >= 2.0.0"`
+  - Both dependent and dependency plugins should provide metadata for reliable tracking
 
 ### Dependency Resolution
 
 `PluginManager` determines init order:
 
-1. Discover plugins.
-2. Extract Metadata.
-3. Topological Sort based on dependencies.
-4. Initialize in sorted order (`get_commands/0`, then `init/1`).
+1. Discover plugins
+2. Extract metadata
+3. Build dependency graph with version information
+4. Use Tarjan's algorithm for cycle detection and topological sort
+5. Initialize in sorted order (`get_commands/0`, then `init/1`)
 
-**Failures:** Initialization stops for a plugin if dependencies are missing, circular, or fail their own `init/1`.
+### Error Handling
+
+The dependency system provides detailed error reporting:
+
+- **Missing Dependencies:**
+
+  ```elixir
+  {:error, :missing_dependencies, ["missing_plugin"], ["my_plugin", "dependent_plugin"]}
+  ```
+
+- **Version Mismatches:**
+
+  ```elixir
+  {:error, :version_mismatch, [{"other_plugin", "1.0.0", ">= 2.0.0"}], ["my_plugin"]}
+  ```
+
+- **Circular Dependencies:**
+  ```elixir
+  {:error, :circular_dependency, ["plugin_a", "plugin_b", "plugin_a"], ["plugin_a", "plugin_b"]}
+  ```
+
+Each error includes a dependency chain showing the path that led to the error, making it easier to diagnose complex dependency issues.
+
+### Optional Dependencies
+
+Plugins can declare optional dependencies that won't prevent loading if missing:
+
+```elixir
+defmodule MyPlugin.Metadata do
+  @impl true
+  def optional_dependencies() do
+    [
+      {:optional_feature, ">= 1.0.0"},
+      :another_optional
+    ]
+  end
+end
+```
+
+Optional dependencies follow the same version constraint rules as required dependencies.
 
 ## Plugin Reloading
 

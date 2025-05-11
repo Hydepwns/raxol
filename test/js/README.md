@@ -42,13 +42,13 @@ Component tests should be placed in the `components/` directory. Each test file 
 Example:
 
 ```javascript
-import { render, screen } from '@testing-library/react';
-import Terminal from '../../lib/raxol_web/components/Terminal';
+import { render, screen } from "@testing-library/react";
+import Terminal from "../../lib/raxol_web/components/Terminal";
 
-describe('Terminal', () => {
-  it('renders without crashing', () => {
+describe("Terminal", () => {
+  it("renders without crashing", () => {
     render(<Terminal />);
-    expect(screen.getByRole('textbox')).toBeInTheDocument();
+    expect(screen.getByRole("textbox")).toBeInTheDocument();
   });
 });
 ```
@@ -60,14 +60,14 @@ Visual regression tests should be placed in the `visual/` directory. These tests
 Example:
 
 ```javascript
-import { render } from '@testing-library/react';
-import { toMatchImageSnapshot } from 'jest-image-snapshot';
-import Terminal from '../../lib/raxol_web/components/Terminal';
+import { render } from "@testing-library/react";
+import { toMatchImageSnapshot } from "jest-image-snapshot";
+import Terminal from "../../lib/raxol_web/components/Terminal";
 
 expect.extend({ toMatchImageSnapshot });
 
-describe('Terminal Visual Tests', () => {
-  it('matches snapshot', () => {
+describe("Terminal Visual Tests", () => {
+  it("matches snapshot", () => {
     const { container } = render(<Terminal />);
     expect(container).toMatchImageSnapshot();
   });
@@ -81,14 +81,14 @@ Accessibility tests should be placed in the `accessibility/` directory. These te
 Example:
 
 ```javascript
-import { render } from '@testing-library/react';
-import { axe, toHaveNoViolations } from 'jest-axe';
-import Terminal from '../../lib/raxol_web/components/Terminal';
+import { render } from "@testing-library/react";
+import { axe, toHaveNoViolations } from "jest-axe";
+import Terminal from "../../lib/raxol_web/components/Terminal";
 
 expect.extend(toHaveNoViolations);
 
-describe('Terminal Accessibility', () => {
-  it('has no accessibility violations', async () => {
+describe("Terminal Accessibility", () => {
+  it("has no accessibility violations", async () => {
     const { container } = render(<Terminal />);
     const results = await axe(container);
     expect(results).toHaveNoViolations();
@@ -103,13 +103,13 @@ End-to-end tests should be placed in the `e2e/` directory. These tests simulate 
 Example:
 
 ```javascript
-import { test, expect } from '@playwright/test';
+import { test, expect } from "@playwright/test";
 
-test('terminal input and output', async ({ page }) => {
-  await page.goto('/');
+test("terminal input and output", async ({ page }) => {
+  await page.goto("/");
   await page.fill('[role="textbox"]', 'echo "Hello, World!"');
-  await page.keyboard.press('Enter');
-  await expect(page.locator('.terminal-output')).toContainText('Hello, World!');
+  await page.keyboard.press("Enter");
+  await expect(page.locator(".terminal-output")).toContainText("Hello, World!");
 });
 ```
 
@@ -131,4 +131,4 @@ If you need to add more mocks, add them to the `__mocks__/` directory and import
 4. Mock external dependencies
 5. Use test data factories for complex objects
 6. Avoid testing implementation details
-7. Maintain test coverage above 80% 
+7. Maintain test coverage above 80%
