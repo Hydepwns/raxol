@@ -7,34 +7,36 @@ section: overview
 tags: [documentation, overview, library, tui, elixir]
 ---
 
-## Raxol Documentation
+# 📚 Raxol Documentation
 
-Welcome to the main documentation index for Raxol, a terminal application toolkit for Elixir.
+Welcome! This is your starting point for all things Raxol—a powerful toolkit for building interactive terminal (TUI) applications in Elixir.
 
-## Project Status
+## 📈 Project Status
 
-As of May 10, 2025:
+- **Test suite:** 49 doctests, 1528 tests, 279 failures, 17 invalid, 21 skipped
+- **Recent improvements:** See the [CHANGELOG](../CHANGELOG.md) for details.
 
-- Test suite: 49 doctests, 1528 tests, 279 failures, 17 invalid, 21 skipped
-- Recent improvements: See [CHANGELOG.md](/CHANGELOG.md) for details
+## 🗂️ Key Sections
 
-## Key Sections
+- [Architecture](ARCHITECTURE.md): System overview and design principles.
+- [UI Components & Layout](../docs/guides/03_components_and_layout/components/README.md): Built-in components and layout system.
+- [Examples](../examples/): Runnable demos and code snippets.
+- [CHANGELOG](../CHANGELOG.md): Version history and updates.
 
-- **[Architecture](ARCHITECTURE.md):** Overview of the Raxol system architecture.
-- **[UI Components & Layout](../docs/guides/03_components_and_layout/components/README.md):** Documentation for built-in UI components and the layout system.
-- **Examples:** Explore runnable demos and snippets in the top-level `examples/` directory.
-- **[CHANGELOG](../CHANGELOG.md):** Log of changes between versions.
+## 🧭 How to Navigate
 
-## Navigating the Docs
+- New to Raxol? Start with the Installation and Getting Started guides.
+- For a high-level overview, see [Architecture](ARCHITECTURE.md).
+- Explore the links above for in-depth guides and references.
 
-Use the links above to explore different topics. Start with the Installation and Getting Started guides if you are new to Raxol. Check the `ARCHITECTURE.md` for a high-level overview.
+## 🚦 Performance Requirements
 
-## Performance Requirements
+Raxol is built for speed and reliability. Automated tests enforce strict performance standards:
 
-Raxol enforces strict performance requirements through automated testing:
+- **Event processing:** < 1ms average, < 2ms (95th percentile)
+- **Screen updates:** < 2ms average, < 5ms (95th percentile)
+- **Concurrent operations:** < 5ms average, < 10ms (95th percentile)
 
-- Event processing: < 1ms average, < 2ms 95th percentile
-- Screen updates: < 2ms average, < 5ms 95th percentile
-- Concurrent operations: < 5ms average, < 10ms 95th percentile
+See the [Performance Testing Guide](/docs/testing/performance_testing.md) for more details.
 
-See [Performance Testing](/docs/testing/performance_testing.md) for details.
+Happy hacking!
