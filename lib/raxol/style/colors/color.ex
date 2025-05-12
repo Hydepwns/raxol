@@ -64,11 +64,15 @@ defmodule Raxol.Style.Colors.Color do
       iex> Color.from_hex("#FF000080")
       %Color{r: 255, g: 0, b: 0, a: 128, hex: "#FF000080"}
   """
-  @spec from_hex(String.t()) :: t()
+  @spec from_hex(String.t()) :: t() | {:error, :invalid_hex}
   def from_hex(hex_string) when is_binary(hex_string) do
-    case Formats.from_hex(hex_string) do
-      {r, g, b} -> from_rgb(r, g, b)
-      {r, g, b, a} -> from_rgba(r, g, b, a)
+    try do
+      case Formats.from_hex(hex_string) do
+        {r, g, b} -> from_rgb(r, g, b)
+        {r, g, b, a} -> from_rgba(r, g, b, a)
+      end
+    rescue
+      ArgumentError -> {:error, :invalid_hex}
     end
   end
 

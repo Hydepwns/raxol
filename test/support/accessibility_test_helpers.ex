@@ -1,10 +1,7 @@
 defmodule Raxol.AccessibilityTestHelpers do
   @moduledoc """
-  Test helpers for accessibility testing in Raxol applications.
-
-  This module provides specialized helpers for testing accessibility features
-  and compliance with Web Content Accessibility Guidelines (WCAG) where
-  applicable to terminal UI applications.
+  Test helpers for accessibility-related assertions and simulation in Raxol.
+  Provides assertion helpers for screen reader announcements, contrast, keyboard navigation, and focus management.
 
   ## Features
 
@@ -41,6 +38,8 @@ defmodule Raxol.AccessibilityTestHelpers do
   alias Raxol.Core.FocusManager
   alias Raxol.Core.KeyboardShortcuts
   alias Raxol.Core.Events.Manager, as: EventManager
+
+  import ExUnit.Assertions
 
   @doc """
   Run a test with a spy on screen reader announcements.
@@ -104,33 +103,25 @@ defmodule Raxol.AccessibilityTestHelpers do
   """
   def assert_announced(expected, opts \\ []) do
     announcements = Process.get(:accessibility_test_announcements, [])
-
     exact = Keyword.get(opts, :exact, false)
     context = Keyword.get(opts, :context, "")
 
     if exact do
-      # Check for exact match
-      if !Enum.member?(announcements, expected) do
-        raise ExUnit.AssertionError,
-          message:
-            "Expected screen reader announcement \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
+      unless Enum.member?(announcements, expected) do
+        flunk("Expected screen reader announcement \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}")
       end
     else
-      # Check for pattern match
-      if is_binary(expected) do
-        # Search for substring
-        if !Enum.any?(announcements, &String.contains?(&1, expected)) do
-          raise ExUnit.AssertionError,
-            message:
-              "Expected screen reader announcement containing \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-        end
-      else
-        # Assume Regex
-        if !Enum.any?(announcements, &Regex.match?(expected, &1)) do
-          raise ExUnit.AssertionError,
-            message:
-              "Expected screen reader announcement matching #{inspect(expected)} was not made.\nActual announcements: #{inspect(announcements)}\n#{context}"
-        end
+      cond do
+        is_binary(expected) ->
+          unless Enum.any?(announcements, &String.contains?(&1, expected)) do
+            flunk("Expected screen reader announcement containing \"#{expected}\" was not made.\nActual announcements: #{inspect(announcements)}\n#{context}")
+          end
+        match?(%Regex{}, expected) ->
+          unless Enum.any?(announcements, &Regex.match?(expected, &1)) do
+            flunk("Expected screen reader announcement matching #{inspect(expected)} was not made.\nActual announcements: #{inspect(announcements)}\n#{context}")
+          end
+        true ->
+          flunk("Invalid expected value for assert_announced: #{inspect(expected)}")
       end
     end
   end
@@ -152,13 +143,9 @@ defmodule Raxol.AccessibilityTestHelpers do
   """
   def assert_no_announcements(opts \\ []) do
     announcements = Process.get(:accessibility_test_announcements, [])
-
     context = Keyword.get(opts, :context, "")
-
-    if !Enum.empty?(announcements) do
-      raise ExUnit.AssertionError,
-        message:
-          "Expected no screen reader announcements, but got: #{inspect(announcements)}\n#{context}"
+    unless Enum.empty?(announcements) do
+      flunk("Expected no screen reader announcements, but got: #{inspect(announcements)}\n#{context}")
     end
   end
 
@@ -204,10 +191,8 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     context = Keyword.get(opts, :context, "")
 
-    if not (ratio >= min_ratio) do
-      raise ExUnit.AssertionError,
-        message:
-          "Insufficient contrast ratio: got #{ratio}, need #{min_ratio} for #{level}/#{size}.\nForeground: #{foreground}, Background: #{background}\n#{context}"
+    unless ratio >= min_ratio do
+      flunk("Insufficient contrast ratio: got #{ratio}, need #{min_ratio} for #{level}/#{size}.\nForeground: #{foreground}, Background: #{background}\n#{context}")
     end
   end
 
@@ -285,10 +270,8 @@ defmodule Raxol.AccessibilityTestHelpers do
 
     context = Keyword.get(opts, :context, "")
 
-    if current != expected do
-      raise ExUnit.AssertionError,
-        message:
-          "Expected focus on \"#{expected}\", but it's on \"#{current}\"\n#{context}"
+    unless current == expected do
+      flunk("Expected focus on \"#{expected}\", but it's on \"#{current}\"\n#{context}")
     end
   end
 
@@ -349,9 +332,7 @@ defmodule Raxol.AccessibilityTestHelpers do
       action_id = Process.get(:shortcut_action_id)
 
       if !executed do
-        raise ExUnit.AssertionError,
-          message:
-            "Keyboard shortcut \"#{shortcut}\" did not trigger any action.\n#{context}"
+        flunk("Keyboard shortcut \"#{shortcut}\" did not trigger any action.\n#{context}")
       end
 
       # Return the action ID for further assertions

@@ -73,6 +73,8 @@ The plugin system is now fully modular and extensible, with all core behaviors i
 - **Dependency Resolution:**
   - Enhanced version constraint handling (e.g., ">= 1.0.0 || >= 2.0.0")
   - Tarjan's algorithm for efficient cycle detection and load order
+  - Implementation now guarantees only true cycles are flagged (not just any strongly connected component), load order is unique (no duplicate plugin IDs), and detailed error chains are reported for self-loops and mutual dependencies.
+  - Optional dependencies with version mismatches are now ignored, allowing plugins to load even if optional dependencies do not meet version requirements.
   - Detailed error reporting for dependency issues
 - **Reloading:**
   - Manual and automatic (dev) plugin reloading supported
@@ -372,6 +374,7 @@ lib/raxol/
 - **Cloud Monitoring (`Cloud.Monitoring.*`)**: Monitoring module refactored into sub-modules. **Structure established.**
 - **Compiler Warnings**: Numerous compiler warnings (e.g., unused aliases/variables, duplicate docs) remain and require investigation. The project compiles, but addressing these warnings is an ongoing task.
 - **Test Suite Health**: As of 2025-05-10, the test suite has a significant number of failures (279), invalid tests (17), and skipped tests (21). Active efforts are focused on addressing these, with a focus on high-impact/core areas first.
+  - As of 2025-06-10, all dependency manager resolution tests pass.
 - **Terminal Parser (`Terminal.Parser`):** Refactored `parse_loop` and `dispatch_csi`. **Core parsing logic for essential sequences is largely stable.**
 - **Sixel Graphics (`Terminal.ANSI.SixelGraphics`):** Stateful parser with RLE optimization. **Feature complete and tested (all Sixel tests passing).**
 - **MultiLineInput Component (`UI.Components.Input.MultiLineInput`):** Core logic refactored into helper modules. Basic navigation, clipboard, scroll, selection, and mouse handling implemented. **Refactored and enhanced; stable for current features.**
@@ -521,10 +524,12 @@ The test infrastructure has been significantly improved to ensure reliability an
    - Clear test boundaries for plugin operations
    - Improved mock expectations with better error messages
    - Added unique state tracking for test plugins
+   - All dependency manager resolution tests now pass, including cycle detection, duplicate ID, and optional version handling.
 
 ## Performance Testing and Benchmarking
 
-The Raxol codebase includes a comprehensive performance testing infrastructure to ensure optimal performance across all components. The performance testing system is built on top of ExUnit and provides utilities for benchmarking, metrics collection, and performance assertions.
+The Raxol codebase includes a comprehensive performance testing infrastructure to ensure optimal performance across all components.
+The performance testing system is built on top of ExUnit and provides utilities for benchmarking, metrics collection, and performance assertions.
 
 ### Performance Test Infrastructure
 

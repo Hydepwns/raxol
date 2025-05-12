@@ -38,59 +38,59 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
       case param do
         # Cursor Keys Mode (DECCKM)
         1 ->
-          apply_mode_func.(acc, :cursor_keys)
+          apply_mode_func.(acc, [:cursor_keys])
 
         # ANSI/VT52 Mode (DECANM)
         2 ->
-          apply_mode_func.(acc, :ansi_mode)
+          apply_mode_func.(acc, [:ansi_mode])
 
         # Column Mode (DECCOLM)
         3 ->
-          apply_mode_func.(acc, :column_mode)
+          apply_mode_func.(acc, [:column_mode])
 
         # Scrolling Mode (DECSCLM)
         4 ->
-          apply_mode_func.(acc, :smooth_scroll)
+          apply_mode_func.(acc, [:smooth_scroll])
 
         # Screen Mode (DECSCNM)
         5 ->
-          apply_mode_func.(acc, :reverse_video)
+          apply_mode_func.(acc, [:reverse_video])
 
         # Origin Mode (DECOM)
         6 ->
-          apply_mode_func.(acc, :origin_mode)
+          apply_mode_func.(acc, [:origin_mode])
 
         # Auto Wrap Mode (DECAWM)
         7 ->
-          apply_mode_func.(acc, :auto_wrap)
+          apply_mode_func.(acc, [:auto_wrap])
 
         # Auto Repeat Mode (DECARM)
         8 ->
-          apply_mode_func.(acc, :auto_repeat)
+          apply_mode_func.(acc, [:auto_repeat])
 
         # Interlace Mode (DECINLM)
         9 ->
-          apply_mode_func.(acc, :interlace)
+          apply_mode_func.(acc, [:interlace])
 
         # Line Feed/New Line Mode (DECLNM)
         20 ->
-          apply_mode_func.(acc, :line_feed_new_line)
+          apply_mode_func.(acc, [:line_feed_new_line])
 
         # Cursor Blinking (DECSCUSR)
         12 ->
-          apply_mode_func.(acc, :cursor_blink)
+          apply_mode_func.(acc, [:cursor_blink])
 
         # Cursor Visibility (DECTCEM)
         25 ->
-          apply_mode_func.(acc, :cursor_visible)
+          apply_mode_func.(acc, [:cursor_visible])
 
         # Bracketed Paste Mode
         2004 ->
-          apply_mode_func.(acc, :bracketed_paste)
+          apply_mode_func.(acc, [:bracketed_paste])
 
         # Focus Reporting Mode
         1004 ->
-          apply_mode_func.(acc, :focus_reporting)
+          apply_mode_func.(acc, [:focus_reporting])
 
         _ ->
           Logger.warning("Unknown DEC private mode: #{param}")
@@ -107,19 +107,19 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
       case param do
         # Keyboard Action Mode (KAM)
         2 ->
-          apply_mode_func.(acc, :keyboard_action)
+          apply_mode_func.(acc, [:keyboard_action])
 
         # Insert/Replace Mode (IRM)
         4 ->
-          apply_mode_func.(acc, :insert_mode)
+          apply_mode_func.(acc, [:insert_mode])
 
         # Send/Receive Mode (SRM)
         12 ->
-          apply_mode_func.(acc, :send_receive)
+          apply_mode_func.(acc, [:send_receive])
 
         # Echo Mode (ERM)
         20 ->
-          apply_mode_func.(acc, :echo)
+          apply_mode_func.(acc, [:echo])
 
         _ ->
           Logger.warning("Unknown standard mode: #{param}")

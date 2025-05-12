@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
   use ExUnit.Case
-  alias Raxol.Terminal.ANSI.CharacterSets
-  alias Raxol.Terminal.ANSI.CharacterSets.{StateManager, Translator}
+  # remove charactersets terminal ansi
+  # remove charactersets terminal ansi.{StateManager, Translator}
 
   describe "CharacterSets" do
     test "translates characters using active character set" do

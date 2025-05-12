@@ -332,7 +332,7 @@ defmodule Raxol.Terminal.ControlCodes do
     # SO: Shift Out. Invoke G1 character set.
     %{
       emulator
-      | charset_state: CharacterSets.invoke_charset(emulator.charset_state, :g1)
+      | charset_state: CharacterSets.invoke_designator(emulator.charset_state, :g1)
     }
   end
 
@@ -341,7 +341,7 @@ defmodule Raxol.Terminal.ControlCodes do
     # SI: Shift In. Invoke G0 character set.
     %{
       emulator
-      | charset_state: CharacterSets.invoke_charset(emulator.charset_state, :g0)
+      | charset_state: CharacterSets.invoke_designator(emulator.charset_state, :g0)
     }
   end
 

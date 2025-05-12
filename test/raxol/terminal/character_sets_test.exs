@@ -4,6 +4,7 @@ defmodule Raxol.Terminal.CharacterSetsTest do
   alias Raxol.Terminal.CharacterSets
   # Add alias for translation functions
   alias Raxol.Terminal.ANSI.CharacterTranslations
+  alias Raxol.Terminal.ANSI.CharacterSets
 
   describe "character set translation" do
     test "translates Latin-1 characters" do

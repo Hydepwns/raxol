@@ -15,9 +15,9 @@ defmodule Snake do
   require Logger
 
   # Arrow key chars might vary by terminal, handle common patterns or codes if needed
-  @up    [:key_up]
-  @down  [:key_down]
-  @left  [:key_left]
+  @up [:key_up]
+  @down [:key_down]
+  @left [:key_left]
   @right [:key_right]
   # Consider adding WASD or hjkl keys for wider compatibility
   @arrows @up ++ @down ++ @left ++ @right
@@ -27,6 +27,7 @@ defmodule Snake do
   @impl true
   def init(context) do
     Logger.debug("Snake: init/1 context: \#{inspect(context)}")
+
     # Assume context provides initial window dimensions if needed, or use defaults
     # Using fixed size for simplicity now, context inspection needed for dynamic size
     height = context[:height] || 20
@@ -38,16 +39,20 @@ defmodule Snake do
        direction: :right,
        # Ensure coordinates start within bounds (e.g., 0-based)
        chain: Enum.map(@initial_length..1, fn x -> {x, 0} end),
-       food: {7, 7}, # Ensure food starts within bounds
+       # Ensure food starts within bounds
+       food: {7, 7},
        alive: true,
-       height: height - 2, # Adjust for potential border/padding
-       width: width - 2   # Adjust for potential border/padding
+       # Adjust for potential border/padding
+       height: height - 2,
+       # Adjust for potential border/padding
+       width: width - 2
      }}
   end
 
   @impl true
   def update(message, model) do
     Logger.debug("Snake: update/2 received message: \#{inspect(message)}")
+
     case message do
       # Use Event struct for key presses
       %Event{type: :key, data: %{key: key_name}} when key_name in @arrows ->
@@ -58,6 +63,7 @@ defmodule Snake do
       # Handle quit keys
       %Event{type: :key, data: %{key: :char, char: "q"}} ->
         {:ok, model, [Command.new(:quit)]}
+
       %Event{type: :key, data: %{key: :char, char: "c", ctrl: true}} ->
         {:ok, model, [Command.new(:quit)]}
 
@@ -100,7 +106,12 @@ defmodule Snake do
           render_board(model)
         else
           # Center Game Over message
-          box style: [[:height, :fill], [:width, :fill], [:align_items, :center], [:justify_content, :center]] do
+          box style: [
+                [:height, :fill],
+                [:width, :fill],
+                [:align_items, :center],
+                [:justify_content, :center]
+              ] do
             text(content: "Game Over! Score: #{score}")
           end
         end
@@ -116,27 +127,46 @@ defmodule Snake do
        ) do
     # Assuming canvas and its syntax is correct
     # Head is often different from tail segments
-    head_cell = %{x: head_x, y: head_y, char: "@", style: %{color: :green, bg_color: :dark_green}}
+    head_cell = %{
+      x: head_x,
+      y: head_y,
+      char: "@",
+      style: %{color: :green, bg_color: :dark_green}
+    }
+
     # Tail segments
-    tail_cells = for {x, y} <- tail, do: %{x: x, y: y, char: "o", style: %{color: :green}}
+    tail_cells =
+      for {x, y} <- tail, do: %{x: x, y: y, char: "o", style: %{color: :green}}
+
     # Food
     food_cell = %{x: food_x, y: food_y, char: "X", style: %{color: :red}}
 
-    canvas(height: model.height, width: model.width, cells: [food_cell, head_cell | tail_cells])
+    canvas(
+      height: model.height,
+      width: model.width,
+      cells: [food_cell, head_cell | tail_cells]
+    )
   end
 
   defp move_snake(model) do
-    [head | _tail] = model.chain # Tail used via model later
+    # Tail used via model later
+    [head | _tail] = model.chain
     next = next_link(head, model.direction)
 
     cond do
       not next_valid?(next, model) ->
-        Logger.info("Snake: Game Over - Collision detected at \#{inspect(next)}")
+        Logger.info(
+          "Snake: Game Over - Collision detected at \#{inspect(next)}"
+        )
+
         %{model | alive: false}
 
       next == model.food ->
         Logger.debug("Snake: Food eaten at \#{inspect(next)}")
-        new_food = random_food(model.width - 1, model.height - 1, [next | model.chain])
+
+        new_food =
+          random_food(model.width - 1, model.height - 1, [next | model.chain])
+
         Logger.debug("Snake: New food at \#{inspect(new_food)}")
         # Grow snake by prepending head and keeping old tail
         %{model | chain: [next | model.chain], food: new_food}
@@ -150,6 +180,7 @@ defmodule Snake do
   # Ensure new food doesn't spawn on the snake
   defp random_food(max_x, max_y, occupied) do
     food = {Enum.random(0..max_x), Enum.random(0..max_y)}
+
     if food in occupied do
       Logger.debug("Snake: Random food conflict, retrying...")
       random_food(max_x, max_y, occupied)
@@ -165,9 +196,11 @@ defmodule Snake do
   defp key_to_dir(:key_right), do: :right
 
   # Check bounds and self-collision
-  defp next_valid?({x, y}, model) when x < 0 or y < 0 or x >= model.width or y >= model.height do
+  defp next_valid?({x, y}, model)
+       when x < 0 or y < 0 or x >= model.width or y >= model.height do
     false
   end
+
   defp next_valid?(next, %{chain: chain}), do: next not in chain
 
   # Prevent moving directly opposite
@@ -186,7 +219,9 @@ end
 
 Logger.info("Snake: Starting Raxol...")
 # Use standard startup
-{:ok, _pid} = Raxol.start_link(Snake, []) # Pass initial config if needed
+# Pass initial config if needed
+{:ok, _pid} = Raxol.start_link(Snake, [])
 Logger.info("Snake: Raxol started. Running...")
 
-Process.sleep(:infinity)
+# For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
+Process.sleep(2000)

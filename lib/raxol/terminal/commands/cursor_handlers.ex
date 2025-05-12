@@ -16,9 +16,12 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   Helper function to handle cursor movement operations.
   Takes the emulator, movement function, and movement parameters.
   """
-  @spec handle_cursor_movement(Emulator.t(), (CursorManager.t(), integer() -> CursorManager.t()), integer()) :: Emulator.t()
+  @spec handle_cursor_movement(Emulator.t(), (CursorManager.t(), integer(), integer(), integer() -> CursorManager.t()), integer()) :: Emulator.t()
   def handle_cursor_movement(emulator, movement_fn, amount) do
-    new_cursor = movement_fn.(emulator.cursor, amount)
+    active_buffer = Emulator.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
+    new_cursor = movement_fn.(emulator.cursor, amount, width, height)
     %{emulator | cursor: new_cursor}
   end
 
@@ -27,7 +30,10 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   def handle_H(emulator, params) do
     row = get_valid_pos_param(params, 0, 1)
     col = get_valid_pos_param(params, 1, 1)
-    new_cursor = CursorManager.move_to(emulator.cursor, {col - 1, row - 1})
+    active_buffer = Emulator.get_active_buffer(emulator)
+    width = ScreenBuffer.get_width(active_buffer)
+    height = ScreenBuffer.get_height(active_buffer)
+    new_cursor = CursorManager.move_to(emulator.cursor, {col - 1, row - 1}, width, height)
     %{emulator | cursor: new_cursor}
   end
 
@@ -35,28 +41,28 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec handle_A(Emulator.t(), list(integer())) :: Emulator.t()
   def handle_A(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
-    handle_cursor_movement(emulator, &CursorManager.move_up/2, amount)
+    handle_cursor_movement(emulator, &CursorManager.move_up/4, amount)
   end
 
   @doc "Handles Cursor Down (CUD - 'B')"
   @spec handle_B(Emulator.t(), list(integer())) :: Emulator.t()
   def handle_B(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
-    handle_cursor_movement(emulator, &CursorManager.move_down/2, amount)
+    handle_cursor_movement(emulator, &CursorManager.move_down/4, amount)
   end
 
   @doc "Handles Cursor Forward (CUF - 'C')"
   @spec handle_C(Emulator.t(), list(integer())) :: Emulator.t()
   def handle_C(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
-    handle_cursor_movement(emulator, &CursorManager.move_right/2, amount)
+    handle_cursor_movement(emulator, &CursorManager.move_right/4, amount)
   end
 
   @doc "Handles Cursor Backward (CUB - 'D')"
   @spec handle_D(Emulator.t(), list(integer())) :: Emulator.t()
   def handle_D(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
-    handle_cursor_movement(emulator, &CursorManager.move_left/2, amount)
+    handle_cursor_movement(emulator, &CursorManager.move_left/4, amount)
   end
 
   @doc "Handles Cursor Next Line (CNL - 'E')"
@@ -64,8 +70,8 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   def handle_E(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
     emulator
-    |> handle_cursor_movement(&CursorManager.move_down/2, amount)
-    |> handle_cursor_movement(&CursorManager.move_to_column/2, 0)
+    |> handle_cursor_movement(&CursorManager.move_down/4, amount)
+    |> handle_cursor_movement(&CursorManager.move_to_column/4, 0)
   end
 
   @doc "Handles Cursor Previous Line (CPL - 'F')"
@@ -73,15 +79,15 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   def handle_F(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
     emulator
-    |> handle_cursor_movement(&CursorManager.move_up/2, amount)
-    |> handle_cursor_movement(&CursorManager.move_to_column/2, 0)
+    |> handle_cursor_movement(&CursorManager.move_up/4, amount)
+    |> handle_cursor_movement(&CursorManager.move_to_column/4, 0)
   end
 
   @doc "Handles Cursor Horizontal Absolute (CHA - 'G')"
   @spec handle_G(Emulator.t(), list(integer())) :: Emulator.t()
   def handle_G(emulator, params) do
     column = get_valid_pos_param(params, 0, 1)
-    handle_cursor_movement(emulator, &CursorManager.move_to_column/2, column - 1)
+    handle_cursor_movement(emulator, &CursorManager.move_to_column/4, column - 1)
   end
 
   @doc "Handles Cursor Vertical Absolute (VPA - 'd')"
@@ -94,7 +100,8 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     # Convert to 0-based index and clamp to bounds
     new_row = min(row - 1, height - 1)
     {current_col, _} = emulator.cursor.position
-    new_cursor = CursorManager.move_to(emulator.cursor, {current_col, new_row})
+    width = ScreenBuffer.get_width(active_buffer)
+    new_cursor = CursorManager.move_to(emulator.cursor, {current_col, new_row}, width, height)
     %{emulator | cursor: new_cursor}
   end
 

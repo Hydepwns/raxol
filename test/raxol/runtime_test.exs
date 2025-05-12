@@ -600,4 +600,52 @@ defmodule Raxol.RuntimeTest do
       File.Error -> :ok
     end
   end
+
+  # --- Event-based wait helpers ---
+  defp wait_for_process(fun, timeout) do
+    start = System.monotonic_time(:millisecond)
+    do_wait_for_process(fun, start, timeout)
+  end
+
+  defp do_wait_for_process(fun, start, timeout) do
+    case fun.() do
+      nil ->
+        if System.monotonic_time(:millisecond) - start < timeout do
+          Process.sleep(10)
+          do_wait_for_process(fun, start, timeout)
+        else
+          flunk("Process did not become available within \\#{timeout}ms")
+        end
+      pid -> pid
+    end
+  end
+
+  defp wait_for_model(dispatcher_pid, expected, timeout) do
+    start = System.monotonic_time(:millisecond)
+    do_wait_for_model(dispatcher_pid, expected, start, timeout)
+  end
+
+  defp do_wait_for_model(dispatcher_pid, expected, start, timeout) do
+    case GenServer.call(dispatcher_pid, :get_model, 100) do
+      {:ok, model} ->
+        expected_with_theme = Map.put(expected, :current_theme_id, "Default Theme")
+        if model == expected_with_theme do
+          :ok
+        else
+          if System.monotonic_time(:millisecond) - start < timeout do
+            Process.sleep(20)
+            do_wait_for_model(dispatcher_pid, expected, start, timeout)
+          else
+            flunk("Model did not reach expected state within \\#{timeout}ms. Last: \\#{inspect(model)}")
+          end
+        end
+      _ ->
+        if System.monotonic_time(:millisecond) - start < timeout do
+          Process.sleep(20)
+          do_wait_for_model(dispatcher_pid, expected, start, timeout)
+        else
+          flunk("Model did not become available within \\#{timeout}ms")
+        end
+    end
+  end
 end

@@ -5,10 +5,6 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
 
-  # Define mocks
-  defmock(FileWatcherMock, for: Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour)
-  defmock(LoaderMock, for: Raxol.Core.Runtime.Plugins.Loader.Behaviour)
-
   describe "initialize/1" do
     test "initializes plugin system successfully" do
       # Setup test state
@@ -17,8 +13,8 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
         plugins_dir: "priv/plugins",
         initialized: false,
         command_registry_table: nil,
-        loader_module: LoaderMock,
-        lifecycle_helper_module: FileWatcherMock,
+        loader_module: Raxol.Core.Runtime.Plugins.LoaderMock,
+        lifecycle_helper_module: Raxol.Core.Runtime.Plugins.FileWatcherMock,
         plugins: %{},
         metadata: %{},
         plugin_states: %{},
@@ -28,12 +24,12 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
       }
 
       # Expect FileWatcher setup
-      expect(FileWatcherMock, :setup_file_watching, fn ^state ->
+      expect(Raxol.Core.Runtime.Plugins.FileWatcherMock, :setup_file_watching, fn ^state ->
         {:ok, %{state | file_watching_enabled?: true}}
       end)
 
       # Expect plugin discovery
-      expect(LoaderMock, :discover_plugins, fn dirs ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins, fn dirs ->
         assert dirs == ["priv/plugins", "test/plugins"]
         {:ok, []}
       end)
@@ -54,8 +50,8 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
         plugins_dir: "priv/plugins",
         initialized: false,
         command_registry_table: nil,
-        loader_module: LoaderMock,
-        lifecycle_helper_module: FileWatcherMock,
+        loader_module: Raxol.Core.Runtime.Plugins.LoaderMock,
+        lifecycle_helper_module: Raxol.Core.Runtime.Plugins.FileWatcherMock,
         plugins: %{},
         metadata: %{},
         plugin_states: %{},
@@ -65,12 +61,12 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
       }
 
       # Expect FileWatcher setup
-      expect(FileWatcherMock, :setup_file_watching, fn ^state ->
+      expect(Raxol.Core.Runtime.Plugins.FileWatcherMock, :setup_file_watching, fn ^state ->
         {:ok, %{state | file_watching_enabled?: true}}
       end)
 
       # Expect plugin discovery to fail
-      expect(LoaderMock, :discover_plugins, fn dirs ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins, fn dirs ->
         assert dirs == ["priv/plugins", "test/plugins"]
         {:error, :discovery_failed}
       end)
@@ -92,11 +88,11 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
       }
 
       # Expect discovery in each directory
-      expect(LoaderMock, :discover_plugins_in_dir, fn "priv/plugins", ^state ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins_in_dir, fn "priv/plugins", ^state ->
         {:ok, %{state | plugins: %{"plugin1" => :plugin1}}}
       end)
 
-      expect(LoaderMock, :discover_plugins_in_dir, fn "test/plugins", state ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins_in_dir, fn "test/plugins", state ->
         {:ok, %{state | plugins: %{"plugin2" => :plugin2}}}
       end)
 
@@ -118,7 +114,7 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
       }
 
       # Expect first discovery to fail
-      expect(LoaderMock, :discover_plugins_in_dir, fn "priv/plugins", ^state ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins_in_dir, fn "priv/plugins", ^state ->
         {:error, :discovery_failed}
       end)
 

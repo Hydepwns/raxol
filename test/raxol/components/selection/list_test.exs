@@ -196,5 +196,32 @@ defmodule Raxol.Components.Selection.ListTest do
     end
   end
 
+  test "handles custom item rendering" do
+    # Custom renderer that returns a label with a prefix
+    custom_renderer = fn item -> "Custom: #{item}" end
+
+    state = Raxol.Components.Selection.List.init(%{
+      id: :custom_render_list,
+      items: ["a", "b", "c"],
+      item_renderer: custom_renderer
+    })
+
+    # Render the list
+    rendered = Raxol.Components.Selection.List.render(state, %{})
+
+    # Navigate the rendered structure to get the labels
+    # rendered = %{type: :box, children: %{type: :column, children: [box1, box2, box3]}}
+    column = rendered.children
+    assert column.type == :column
+    boxes = column.children
+    assert length(boxes) == 3
+    Enum.each(Enum.zip(boxes, ["a", "b", "c"]), fn {box, item} ->
+      assert box.type == :box
+      [label] = box.children
+      assert label.type == :label
+      assert label.content == "Custom: #{item}"
+    end)
+  end
+
   # Removed tests for filtering and rendering
 end

@@ -743,4 +743,16 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
         FileWatcher.reload_plugin(plugin_id, plugin_path)
     end
   end
+
+  @tag :skip
+  @doc """
+  Skipped: Recursive directory watching implementation incomplete.
+  Blocked by: Directory traversal optimization (see docs/testing/test_tracking.md).
+  Once recursive watching is implemented, this test should be enabled and completed.
+  """
+  test "handles recursive directory watching" do
+    # TODO: Implement test for recursive directory watching once the feature is available.
+    # This test is currently skipped and serves as a placeholder for future work.
+    assert true
+  end
 end

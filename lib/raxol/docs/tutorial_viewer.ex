@@ -11,8 +11,7 @@ defmodule Raxol.Docs.TutorialViewer do
   # alias Raxol.Components.{MarkdownRenderer, CodeBlock}
 
   alias Raxol.Docs.InteractiveTutorial
-  # Removed unused State alias
-  alias Raxol.Docs.InteractiveTutorial.{Tutorial, Step}
+  alias Raxol.Docs.InteractiveTutorial.Models.{Tutorial, Step}
 
   # --- State ---
 

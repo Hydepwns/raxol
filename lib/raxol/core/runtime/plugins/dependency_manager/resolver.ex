@@ -35,19 +35,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
     stack = []
 
     # Visit each node
-    case Enum.reduce_while(Map.keys(graph), {:ok, indices, lowlinks, components, stack, index}, fn node, {:ok, idx, low, comp, stk, i} ->
+    case Enum.reduce_while(Map.keys(graph), {:ok, indices, lowlinks, components, stack, on_stack, index}, fn node, {:ok, idx, low, comp, stk, on_stk, i} ->
       if Map.has_key?(idx, node) do
-        {:cont, {:ok, idx, low, comp, stk, i}}
+        {:cont, {:ok, idx, low, comp, stk, on_stk, i}}
       else
-        case strongconnect(node, graph, idx, low, comp, stk, i, on_stack) do
-          {:ok, new_idx, new_low, new_comp, new_stk, new_i} ->
-            {:cont, {:ok, new_idx, new_low, new_comp, new_stk, new_i}}
+        case strongconnect(node, graph, idx, low, comp, stk, i, on_stk) do
+          {:ok, new_idx, new_low, new_comp, new_stk, new_on_stk, new_i} ->
+            {:cont, {:ok, new_idx, new_low, new_comp, new_stk, new_on_stk, new_i}}
           {:error, cycle} ->
             {:halt, {:error, cycle}}
         end
       end
     end) do
-      {:ok, _, _, components, _, _} ->
+      {:ok, _, _, components, _, _, _} ->
         # Reverse components to get topological order
         {:ok, Enum.reverse(Enum.flat_map(components, & &1))}
       {:error, cycle} ->
@@ -93,15 +93,33 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
         if Map.get(low, node) == Map.get(idx, node) do
           # Node is root of strongly connected component
           {component, new_stack} = extract_component(node, stk)
-          # Assert types for safety
           unless is_list(component) and Enum.all?(component, &is_binary/1), do: raise "Component must be a list of strings"
           unless is_struct(on_stk, MapSet), do: raise "on_stk must be a MapSet"
-          new_components = [component | comp]
-          new_on_stack = Enum.reduce(component, on_stk, fn elem, acc ->
-            unless is_struct(acc, MapSet), do: raise "Accumulator must be a MapSet"
-            MapSet.delete(acc, elem)
-          end)
-          {:ok, idx, low, new_components, new_stack, new_on_stack, i}
+          if length(component) > 1 do
+            # Check if there is an edge within the component (true cycle)
+            if Enum.any?(component, fn n ->
+                 Enum.any?(graph[n], fn {neighbor, _, _} -> neighbor in component end)
+               end) do
+              {:error, component}
+            else
+              new_components = [component | comp]
+              new_on_stack = Enum.reduce(component, on_stk, fn elem, acc ->
+                unless is_struct(acc, MapSet), do: raise "Accumulator must be a MapSet"
+                MapSet.delete(acc, elem)
+              end)
+              {:ok, idx, low, new_components, new_stack, new_on_stack, i}
+            end
+          else
+            # Single node: check for self-loop
+            node = hd(component)
+            if Enum.any?(graph[node], fn {neighbor, _, _} -> neighbor == node end) do
+              {:error, component}
+            else
+              new_components = [component | comp]
+              new_on_stack = MapSet.delete(on_stk, node)
+              {:ok, idx, low, new_components, new_stack, new_on_stack, i}
+            end
+          end
         else
           {:ok, idx, low, comp, stk, on_stk, i}
         end
@@ -109,8 +127,16 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Resolver do
   end
 
   @doc false
-  defp extract_component(node, stack) do
-    {component, rest} = Enum.split_while(stack, &(&1 != node))
-    {[node | component], rest}
+  defp extract_component(node, [top | rest]) do
+    do_extract_component(node, [top | rest], [])
+  end
+
+  defp do_extract_component(node, [top | rest], acc) do
+    acc = [top | acc]
+    if top == node do
+      {acc, rest}
+    else
+      do_extract_component(node, rest, acc)
+    end
   end
 end

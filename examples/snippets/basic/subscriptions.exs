@@ -74,4 +74,5 @@ Logger.info("SubscriptionsExample: Starting Raxol...")
 {:ok, _pid} = Raxol.start_link(SubscriptionsExample, [])
 Logger.info("SubscriptionsExample: Raxol started. Running...")
 
-Process.sleep(:infinity)
+# For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
+Process.sleep(2000)

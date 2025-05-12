@@ -54,7 +54,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
             %{version: version} ->
               case Version.check_version(version, version_req) do
                 :ok -> {missing_acc, mismatch_acc, opt_missing_acc}
-                {:error, reason} -> {missing_acc, [{dep_id, version, version_req, reason} | mismatch_acc], opt_missing_acc}
+                {:error, _reason} -> {missing_acc, mismatch_acc, opt_missing_acc} # Ignore version mismatch for optional
               end
 
             _ ->
@@ -117,13 +117,93 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   * `{:error, :circular_dependency, cycle, chain}` - If a circular dependency is detected
   """
   def resolve_load_order(plugins) do
-    # Build dependency graph with version information
     graph = Graph.build_dependency_graph(plugins)
 
-    # Use Tarjan's algorithm for cycle detection and topological sort
+    # 1. Self-dependency check
+    case find_self_dependency(graph) do
+      {:error, plugin_id, chain} ->
+        {:error, :self_dependency, [plugin_id], chain}
+      :ok ->
+        :ok
+    end
+
+    # 2. Conflicting requirements check
+    case find_conflicting_requirements(graph) do
+      {:error, conflicts, chain} ->
+        {:error, :conflicting_requirements, conflicts, chain}
+      :ok ->
+        :ok
+    end
+
+    # 3. Version mismatch check (simulate loaded_plugins as plugins with their own version)
+    case find_version_mismatches(graph, plugins) do
+      {:error, mismatches, chain} ->
+        {:error, :version_mismatch, mismatches, chain}
+      :ok ->
+        :ok
+    end
+
+    # 4. Cycle detection (Tarjan's algorithm)
     case Resolver.tarjan_sort(graph) do
       {:ok, order} -> {:ok, order}
       {:error, cycle} -> {:error, :circular_dependency, cycle, Graph.build_dependency_chain(cycle, graph)}
     end
+  end
+
+  # --- Helper functions for error detection ---
+
+  # Self-dependency: plugin depends on itself
+  defp find_self_dependency(graph) do
+    Enum.find_value(graph, :ok, fn {plugin_id, deps} ->
+      if Enum.any?(deps, fn {dep_id, _, _} -> dep_id == plugin_id end) do
+        {:error, plugin_id, [plugin_id]}
+      else
+        nil
+      end
+    end)
+  end
+
+  # Conflicting requirements: multiple dependencies on the same plugin with incompatible version requirements
+  defp find_conflicting_requirements(graph) do
+    Enum.find_value(graph, :ok, fn {plugin_id, deps} ->
+      reqs = Enum.group_by(deps, fn {dep_id, _, _} -> dep_id end)
+      conflict = Enum.find(reqs, fn {_dep_id, dep_list} -> length(dep_list) > 1 and not compatible_requirements?(dep_list) end)
+      if conflict do
+        {dep_id, dep_list} = conflict
+        requirements = Enum.map(dep_list, fn {_, req, _} -> req end)
+        {:error, [{dep_id, requirements}], [plugin_id, dep_id]}
+      else
+        nil
+      end
+    end)
+  end
+
+  defp compatible_requirements?(dep_list) do
+    # For simplicity, treat as compatible if all requirements are equal or nil
+    reqs = Enum.map(dep_list, fn {_, req, _} -> req end) |> Enum.uniq()
+    length(reqs) == 1
+  end
+
+  # Version mismatch: plugin depends on another with incompatible version
+  defp find_version_mismatches(graph, plugins) do
+    Enum.find_value(graph, :ok, fn {plugin_id, deps} ->
+      mismatches = Enum.filter_map(deps, fn {dep_id, req, _} ->
+        dep = plugins[dep_id]
+        version = dep && Map.get(dep, :version)
+        if version && req do
+          case Raxol.Core.Runtime.Plugins.DependencyManager.Version.check_version(version, req) do
+            :ok -> false
+            {:error, _} -> true
+          end
+        else
+          false
+        end
+      end, fn {dep_id, req, _} -> {dep_id, plugins[dep_id][:version], req} end)
+      if mismatches != [] do
+        {:error, mismatches, [plugin_id | Enum.map(mismatches, fn {dep_id, _, _} -> dep_id end)]}
+      else
+        nil
+      end
+    end)
   end
 end

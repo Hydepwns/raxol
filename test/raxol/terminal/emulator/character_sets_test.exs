@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Terminal.ANSI.CharacterSets
+  # remove charactersets terminal ansi
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
 

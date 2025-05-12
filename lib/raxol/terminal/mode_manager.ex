@@ -209,6 +209,9 @@ defmodule Raxol.Terminal.ModeManager do
       :irm ->
         update_mm_state(emulator, %{mm_state | insert_mode: true})
 
+      :insert_mode ->
+        update_mm_state(emulator, %{mm_state | insert_mode: true})
+
       :lnm ->
         update_mm_state(emulator, %{mm_state | line_feed_mode: true})
 
@@ -286,6 +289,9 @@ defmodule Raxol.Terminal.ModeManager do
         update_mm_state(emulator, %{mm_state | origin_mode: false})
 
       :irm ->
+        update_mm_state(emulator, %{mm_state | insert_mode: false})
+
+      :insert_mode ->
         update_mm_state(emulator, %{mm_state | insert_mode: false})
 
       :lnm ->

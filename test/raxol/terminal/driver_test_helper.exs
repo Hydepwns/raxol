@@ -1,3 +1,6 @@
+import ExUnit.Assertions
+import ExUnit.Callbacks
+
 defmodule Raxol.Terminal.DriverTestHelper do
   @moduledoc """
   Helper module for terminal driver tests providing common test utilities and fixtures.
@@ -12,7 +15,11 @@ defmodule Raxol.Terminal.DriverTestHelper do
   end
 
   def wait_for_driver_ready(driver_pid, timeout \\ 500) do
-    assert_receive {:driver_ready, ^driver_pid}, timeout
+    case :erlang.trace_receive(timeout) do
+      {:driver_ready, ^driver_pid} -> :ok
+      {:driver_ready, other_pid} -> assert other_pid == driver_pid
+      other -> flunk("Expected {:driver_ready, #{inspect(driver_pid)}}, got: #{inspect(other)}")
+    end
   end
 
   def consume_initial_resize(timeout \\ 500) do
@@ -58,15 +65,19 @@ defmodule Raxol.Terminal.DriverTestHelper do
                      %Event{
                        type: :key,
                        data: %{
-                         char: char,
-                         key: key,
-                         shift: modifiers.shift,
-                         ctrl: modifiers.ctrl,
-                         alt: modifiers.alt,
-                         meta: modifiers.meta
+                         char: ^char,
+                         key: ^key,
+                         shift: shift,
+                         ctrl: ctrl,
+                         alt: alt,
+                         meta: meta
                        }
                      }}},
                    500
+    assert shift == modifiers.shift
+    assert ctrl == modifiers.ctrl
+    assert alt == modifiers.alt
+    assert meta == modifiers.meta
   end
 
   def assert_mouse_event(x, y, button) do

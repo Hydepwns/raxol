@@ -31,7 +31,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerReloadingTest do
   )
 
   # Mox mock for LoaderBehaviour
-  Mox.defmock(LoaderMock, for: Raxol.Core.Runtime.Plugins.Loader.Behaviour)
+  # Mox.defmock(LoaderMock, for: Raxol.Core.Runtime.Plugins.Loader.Behaviour)
 
   Mox.defmock(ReloadingLifecycleHelperMock,
     for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
@@ -117,7 +117,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerReloadingTest do
     # Base options for starting the manager
     base_opts = [
       plugin_dirs: [tmp_dir_path],
-      loader_module: LoaderMock,
+      loader_module: Raxol.Core.Runtime.Plugins.LoaderMock,
       lifecycle_helper_module: ReloadingLifecycleHelperMock,
       command_registry_table: table_name,
       runtime_pid: self(),
@@ -225,7 +225,7 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerReloadingTest do
       }
 
       # Expectations for initial load (LoaderMock)
-      Mox.expect(LoaderMock, :discover_plugins, fn [^tmp_dir] ->
+      Mox.expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins, fn [^tmp_dir] ->
         {:ok, [initial_plugin_spec]}
       end)
 

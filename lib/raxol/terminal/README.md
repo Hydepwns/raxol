@@ -6,7 +6,7 @@ The Raxol Terminal System provides a comprehensive terminal emulation solution w
 
 This module is currently undergoing a significant restructuring as part of the Raxol Repository Reorganization Plan. The goal is to break down large monolithic files into smaller, more focused modules for improved maintainability and discoverability.
 
-### Completed Refactoring:
+### Completed Refactoring
 
 - **ANSI Module**: The large `ansi.ex` (1257 lines) has been broken down into:
 
@@ -21,11 +21,11 @@ This module is currently undergoing a significant restructuring as part of the R
   - `commands/modes.ex` - Mode setting/resetting handlers
   - `commands/screen.ex` - Screen manipulation functions
 
-### In-Progress Refactoring:
+### In-Progress Refactoring
 
 - **Configuration Module**: Breaking down `configuration.ex` (2394 lines) into modules in the `config/` directory.
 
-### Upcoming Refactoring:
+### Upcoming Refactoring
 
 - **Screen Buffer**: Breaking down `screen_buffer.ex` (1129 lines)
 - **Emulator**: Reorganizing `emulator.ex` (911 lines)

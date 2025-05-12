@@ -41,10 +41,11 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @doc """
-  Moves the cursor to a new position.
+  Moves the cursor to a new position, clamped to the screen bounds.
   """
-  def move_to(cursor, {x, y}) do
-    %{cursor | position: {x, y}}
+  def move_to(cursor, {x, y}, width, height) do
+    {clamped_x, clamped_y} = clamp_position({x, y}, width, height)
+    %{cursor | position: {clamped_x, clamped_y}}
   end
 
   @doc """
@@ -149,35 +150,35 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @doc """
-  Moves the cursor up by the specified number of lines.
+  Moves the cursor up by the specified number of lines, clamped to the screen bounds.
   """
-  def move_up(%__MODULE__{} = cursor, lines \\ 1) do
+  def move_up(%__MODULE__{} = cursor, lines, width, height) do
     {x, y} = cursor.position
-    %{cursor | position: {x, max(0, y - lines)}}
+    move_to(cursor, {x, y - lines}, width, height)
   end
 
   @doc """
-  Moves the cursor down by the specified number of lines.
+  Moves the cursor down by the specified number of lines, clamped to the screen bounds.
   """
-  def move_down(%__MODULE__{} = cursor, lines \\ 1) do
+  def move_down(%__MODULE__{} = cursor, lines, width, height) do
     {x, y} = cursor.position
-    %{cursor | position: {x, y + lines}}
+    move_to(cursor, {x, y + lines}, width, height)
   end
 
   @doc """
-  Moves the cursor left by the specified number of columns.
+  Moves the cursor left by the specified number of columns, clamped to the screen bounds.
   """
-  def move_left(%__MODULE__{} = cursor, columns \\ 1) do
+  def move_left(%__MODULE__{} = cursor, columns, width, height) do
     {x, y} = cursor.position
-    %{cursor | position: {max(0, x - columns), y}}
+    move_to(cursor, {x - columns, y}, width, height)
   end
 
   @doc """
-  Moves the cursor right by the specified number of columns.
+  Moves the cursor right by the specified number of columns, clamped to the screen bounds.
   """
-  def move_right(%__MODULE__{} = cursor, columns \\ 1) do
+  def move_right(%__MODULE__{} = cursor, columns, width, height) do
     {x, y} = cursor.position
-    %{cursor | position: {x + columns, y}}
+    move_to(cursor, {x + columns, y}, width, height)
   end
 
   @doc """
@@ -189,11 +190,22 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @doc """
-  Moves the cursor to the specified column.
+  Moves the cursor to the specified column, clamped to the screen bounds.
   """
-  def move_to_column(%__MODULE__{} = cursor, column) when is_integer(column) and column >= 0 do
+  def move_to_column(%__MODULE__{} = cursor, column, width, height) do
     {_, y} = cursor.position
-    %{cursor | position: {column, y}}
+    move_to(cursor, {column, y}, width, height)
+  end
+
+  @doc """
+  Clamps a position to the screen bounds.
+  """
+  @spec clamp_position({integer(), integer()}, integer(), integer()) :: {integer(), integer()}
+  def clamp_position({x, y}, width, height) do
+    {
+      min(max(x, 0), width - 1),
+      min(max(y, 0), height - 1)
+    }
   end
 
   # Private helper functions

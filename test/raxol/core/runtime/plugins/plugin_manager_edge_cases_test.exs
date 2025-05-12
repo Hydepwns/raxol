@@ -477,6 +477,18 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
         assert Process.alive?(manager_pid)
       end)
     end
+
+    @tag :skip
+    @doc """
+    Skipped: Plugin reload with state persistence not yet implemented.
+    Blocked by: Plugin state management improvements (see docs/testing/test_tracking.md).
+    Once state persistence is implemented, this test should be enabled and completed.
+    """
+    test "handles plugin reload with state persistence" do
+      # TODO: Implement test for plugin reload with state persistence once the feature is available.
+      # This test is currently skipped and serves as a placeholder for future work.
+      assert true
+    end
   end
 
   describe "concurrent operations" do

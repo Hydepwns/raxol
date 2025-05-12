@@ -148,6 +148,176 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       {state3, _} = SelectList.update({:toggle_search_focus}, state2)
       assert state3.is_search_focused == false
     end
+
+    test "filters options by searchable field", %{state: state} do
+      options = [
+        {"Alice", %{email: "alice@example.com"}},
+        {"Bob", %{email: "bob@work.com"}},
+        {"Carol", %{email: "carol@school.edu"}},
+        {"Bobby", %{email: "bobby@work.com"}}
+      ]
+      state = Raxol.UI.Components.Input.SelectList.init(%{
+        options: options,
+        enable_search: true,
+        searchable_fields: [:email]
+      })
+
+      # Simulate entering a search term 'bob'
+      {state1, _} = Raxol.UI.Components.Input.SelectList.update({:search, "bob"}, state)
+      {state2, _} = Raxol.UI.Components.Input.SelectList.update({:apply_search, "bob"}, state1)
+
+      # Should only match "Bob" and "Bobby" (emails contain 'bob')
+      assert state2.is_filtering == true
+      assert state2.filtered_options == [
+        {"Bob", %{email: "bob@work.com"}},
+        {"Bobby", %{email: "bobby@work.com"}}
+      ]
+
+      # Render and check only filtered options are present
+      rendered = Raxol.UI.Components.Input.SelectList.render(state2)
+      texts =
+        rendered
+        |> List.flatten()
+        |> Enum.flat_map(fn
+          %{type: :text, props: %{content: content}} -> [content]
+          %{children: children} -> Enum.flat_map(children, fn c ->
+            if is_map(c) and Map.has_key?(c, :props) and Map.has_key?(c.props, :content), do: [c.props.content], else: []
+          end)
+          _ -> []
+        end)
+      assert Enum.any?(texts, &String.contains?(&1, "Bob"))
+      assert Enum.any?(texts, &String.contains?(&1, "Bobby"))
+      refute Enum.any?(texts, &String.contains?(&1, "Alice"))
+      refute Enum.any?(texts, &String.contains?(&1, "Carol"))
+    end
+
+    test "shows empty message when no options match filter", %{state: state} do
+      options = [
+        {"Alpha", :alpha},
+        {"Beta", :beta},
+        {"Gamma", :gamma}
+      ]
+      state = Raxol.UI.Components.Input.SelectList.init(%{
+        options: options,
+        enable_search: true,
+        empty_message: "Nothing found!"
+      })
+
+      # Simulate entering a search term that matches nothing
+      {state1, _} = Raxol.UI.Components.Input.SelectList.update({:search, "zzz"}, state)
+      {state2, _} = Raxol.UI.Components.Input.SelectList.update({:apply_search, "zzz"}, state1)
+
+      assert state2.is_filtering == true
+      assert state2.filtered_options == []
+
+      # Render and check the empty message is present
+      rendered = Raxol.UI.Components.Input.SelectList.render(state2)
+      texts =
+        rendered
+        |> List.flatten()
+        |> Enum.flat_map(fn
+          %{type: :text, props: %{content: content}} -> [content]
+          %{children: children} -> Enum.flat_map(children, fn c ->
+            if is_map(c) and Map.has_key?(c, :props) and Map.has_key?(c.props, :content), do: [c.props.content], else: []
+          end)
+          _ -> []
+        end)
+      assert Enum.any?(texts, &String.contains?(&1, "Nothing found!"))
+      refute Enum.any?(texts, &String.contains?(&1, "Alpha"))
+      refute Enum.any?(texts, &String.contains?(&1, "Beta"))
+      refute Enum.any?(texts, &String.contains?(&1, "Gamma"))
+    end
+
+    test "filters options case-insensitively", %{state: state} do
+      options = [
+        {"Apple", :apple},
+        {"banana", :banana},
+        {"Grape", :grape},
+        {"Pineapple", :pineapple}
+      ]
+      state = Raxol.UI.Components.Input.SelectList.init(%{
+        options: options,
+        enable_search: true
+      })
+
+      # Simulate entering a lowercase search term for a capitalized label
+      {state1, _} = Raxol.UI.Components.Input.SelectList.update({:search, "apple"}, state)
+      {state2, _} = Raxol.UI.Components.Input.SelectList.update({:apply_search, "apple"}, state1)
+      assert state2.is_filtering == true
+      assert state2.filtered_options == [{"Apple", :apple}, {"Pineapple", :pineapple}]
+
+      # Simulate entering an uppercase search term for a lowercase label
+      {state3, _} = Raxol.UI.Components.Input.SelectList.update({:search, "BANANA"}, state)
+      {state4, _} = Raxol.UI.Components.Input.SelectList.update({:apply_search, "BANANA"}, state3)
+      assert state4.is_filtering == true
+      assert state4.filtered_options == [{"banana", :banana}]
+
+      # Render and check only filtered options are present for each case
+      rendered2 = Raxol.UI.Components.Input.SelectList.render(state2)
+      texts2 =
+        rendered2
+        |> List.flatten()
+        |> Enum.flat_map(fn
+          %{type: :text, props: %{content: content}} -> [content]
+          %{children: children} -> Enum.flat_map(children, fn c ->
+            if is_map(c) and Map.has_key?(c, :props) and Map.has_key?(c.props, :content), do: [c.props.content], else: []
+          end)
+          _ -> []
+        end)
+      assert Enum.any?(texts2, &String.contains?(&1, "Apple"))
+      assert Enum.any?(texts2, &String.contains?(&1, "Pineapple"))
+      refute Enum.any?(texts2, &String.contains?(&1, "banana"))
+      refute Enum.any?(texts2, &String.contains?(&1, "Grape"))
+
+      rendered4 = Raxol.UI.Components.Input.SelectList.render(state4)
+      texts4 =
+        rendered4
+        |> List.flatten()
+        |> Enum.flat_map(fn
+          %{type: :text, props: %{content: content}} -> [content]
+          %{children: children} -> Enum.flat_map(children, fn c ->
+            if is_map(c) and Map.has_key?(c, :props) and Map.has_key?(c.props, :content), do: [c.props.content], else: []
+          end)
+          _ -> []
+        end)
+      assert Enum.any?(texts4, &String.contains?(&1, "banana"))
+      refute Enum.any?(texts4, &String.contains?(&1, "Apple"))
+      refute Enum.any?(texts4, &String.contains?(&1, "Pineapple"))
+      refute Enum.any?(texts4, &String.contains?(&1, "Grape"))
+    end
+
+    test "keyboard navigation only moves through filtered options", %{state: state} do
+      options = [
+        {"Alpha", :alpha},
+        {"Beta", :beta},
+        {"Gamma", :gamma},
+        {"Delta", :delta},
+        {"Alphabet", :alphabet}
+      ]
+      state = Raxol.UI.Components.Input.SelectList.init(%{
+        options: options,
+        enable_search: true
+      })
+
+      # Filter for options containing 'Al' (should match 'Alpha' and 'Alphabet')
+      {state1, _} = Raxol.UI.Components.Input.SelectList.update({:search, "Al"}, state)
+      {state2, _} = Raxol.UI.Components.Input.SelectList.update({:apply_search, "Al"}, state1)
+      assert state2.filtered_options == [{"Alpha", :alpha}, {"Alphabet", :alphabet}]
+      assert state2.focused_index == 0
+
+      # Simulate down arrow (should move to second filtered option)
+      state3 = %{state2 | filtered_options: state2.filtered_options, is_filtering: true}
+      state3 = Raxol.UI.Components.Input.SelectList.Navigation.update_focus_state(state3, 1)
+      assert state3.focused_index == 1
+
+      # Simulate up arrow (should move back to first filtered option)
+      state4 = Raxol.UI.Components.Input.SelectList.Navigation.update_focus_state(state3, 0)
+      assert state4.focused_index == 0
+
+      # Simulate down arrow past end (should stay at last filtered option)
+      state5 = Raxol.UI.Components.Input.SelectList.Navigation.update_focus_state(state4, 2)
+      assert state5.focused_index == 1
+    end
   end
 
   describe "handle_event/3" do

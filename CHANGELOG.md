@@ -37,6 +37,7 @@
   - Event-based test synchronization replacing all `Process.sleep` calls
   - System interaction adapter pattern for testable system calls
   - High-contrast mode support and reduced motion preference
+  - Improved test coverage for terminal memory management, including both unit and integration tests for memory usage estimation
 - **Performance Testing Infrastructure:**
   - New `Raxol.Test.PerformanceHelper` module for benchmarking
   - Performance test suite for terminal manager
@@ -74,6 +75,17 @@
   - Enhanced test isolation and cleanup
   - Improved state management verification
   - Added resource cleanup validation
+- **SelectList Advanced Feature Tests:**
+  - Added comprehensive tests for SelectList advanced features:
+    - Custom item rendering
+    - Filtering (basic, by field, empty state, case-insensitive)
+    - Keyboard navigation after filtering
+  - These tests replace previously skipped/placeholder tests and improve coverage for advanced SelectList features.
+- **Memory Manager Integration Tests:**
+  - Added integration-style tests for `Raxol.Terminal.MemoryManager.estimate_memory_usage/1` using real `Raxol.Terminal.Integration.State`, `Buffer.Manager`, and `Buffer.Scroll` structs.
+  - Tests cover default, custom, and partial state scenarios, ensuring robust memory usage estimation.
+- **Test Tracking Improvement:**
+  - Added a prioritized table of skipped tests blocked only by minor refactors, missing helpers, or minor API changes to `docs/testing/test_tracking.md` (May 2025). This table helps the team focus on unskipping and updating "low-hanging fruit" tests before addressing feature-blocked or obsolete tests, supporting the roadmap and test stabilization efforts.
 
 ### Changed
 
@@ -91,6 +103,9 @@
   - Refined roadmap and next steps
   - Reorganized and harmonized all component system documentation (README, ARCHITECTURE.md, API reference, architecture guide) with improved cross-linking and unified lifecycle/terminology.
   - Consolidated large file and test helper file refactoring tracking into docs/changes/LARGE_FILES_FOR_REFACTOR.md
+- Updated `test/raxol/terminal/emulator_plugin_test.exs` to use current APIs and mocks for plugin lifecycle, event, and command handler tests.
+- **Test Suite:**
+  - All dependency manager resolution tests now pass.
 
 ### Deprecated
 
@@ -110,6 +125,7 @@
 ### Fixed
 
 - **Test Infrastructure:**
+  - Fixed Mox compilation errors due to duplicate LoaderMock/FileWatcherMock definitions; all plugin system tests now use global mocks defined in test_helper.exs (2025-06-10)
   - Fixed Mox compilation errors and setup issues
   - Resolved test reliability issues across multiple test files
   - Improved test cleanup and resource management
@@ -132,12 +148,16 @@
   - Corrected text scaling behavior
   - Improved theme integration
   - Enhanced high-contrast mode support
+- **Dependency Resolution:**
+  - Fixed cycle detection and topological sort in plugin dependency resolver (Tarjan's algorithm now correctly detects cycles and produces a valid load order).
+  - Fixed duplicate plugin IDs in load order.
+  - Fixed handling of optional dependency version mismatches: version mismatches for optional dependencies are now ignored, as expected by tests.
 
 ### Current Status (2025-05-10)
 
 - **Test Suite:** `49 doctests, 1528 tests, 279 failures, 17 invalid, 21 skipped`
 - **Documentation:** Updated to reflect new component system architecture
-- **Next Steps:** Focus on test stabilization and OSC 4 handler implementation
+- **Next Steps:** Focus on test stabilization, OSC 4 handler implementation, and memory management test coverage improvements (now complete for estimate_memory_usage/1).
 
 ### Upcoming Work
 
