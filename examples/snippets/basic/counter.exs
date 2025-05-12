@@ -91,5 +91,5 @@ Logger.info("CounterExample: Starting Raxol...")
 {:ok, _pid} = Raxol.start_link(CounterExample, [])
 Logger.info("CounterExample: Raxol started. Running...")
 
-# Keep the script alive
-Process.sleep(:infinity)
+# For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
+Process.sleep(2000)

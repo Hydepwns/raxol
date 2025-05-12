@@ -136,4 +136,5 @@ Logger.info("RenderingDemo: Starting Raxol...")
 {:ok, _pid} = Raxol.start_link(RenderingDemo, [])
 Logger.info("RenderingDemo: Raxol started. Running...")
 
-Process.sleep(:infinity)
+# For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
+Process.sleep(2000)

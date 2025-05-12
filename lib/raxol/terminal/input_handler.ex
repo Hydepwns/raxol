@@ -160,7 +160,7 @@ defmodule Raxol.Terminal.InputHandler do
 
     # Translate character based on current charset state
     {translated_codepoint, new_charset_state} =
-      CharacterSets.translate_char(emulator.charset_state, char_codepoint)
+      CharacterSets.translate_char(char_codepoint, emulator.charset_state)
 
     # Pass the integer codepoint to get_char_width
     char_width = CharacterHandling.get_char_width(translated_codepoint)

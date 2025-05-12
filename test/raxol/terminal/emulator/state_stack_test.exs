@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
   alias Raxol.Terminal.ANSI.TextFormatting
 
   # Note: CharacterSets alias might be needed if asserting charset_state fields directly
-  alias Raxol.Terminal.ANSI.CharacterSets
+  # remove charactersets terminal ansi
 
   describe "Emulator State Stack (push/pop)" do
     # These tests check the side effects of ANSI sequences handled by Emulator/Parser

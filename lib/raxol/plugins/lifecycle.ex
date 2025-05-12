@@ -10,6 +10,7 @@ defmodule Raxol.Plugins.Lifecycle do
 
   # Alias necessary modules
   alias Raxol.Plugins.{Plugin, PluginConfig, PluginDependency, PluginManager}
+  alias Raxol.Core.Runtime.Plugins.DependencyManager
 
   @doc """
   Loads a single plugin module and initializes it.
@@ -42,9 +43,11 @@ defmodule Raxol.Plugins.Lifecycle do
              manager.api_version
            ),
          {:ok, _} <-
-           PluginDependency.check_dependencies(
+           DependencyManager.check_dependencies(
+             plugin.name,
              plugin,
-             PluginManager.list_plugins(manager)
+             PluginManager.list_plugins(manager),
+             []
            ),
          # Update plugin config with merged config
          updated_config =
@@ -112,8 +115,9 @@ defmodule Raxol.Plugins.Lifecycle do
           {:ok, PluginManager.t()} | {:error, String.t()}
   def load_plugins(%PluginManager{} = manager, modules) when is_list(modules) do
     with {:ok, initialized_plugins} <- initialize_all_plugins(manager, modules),
-         {:ok, sorted_plugin_names} <-
-           PluginDependency.resolve_dependencies(initialized_plugins),
+         {:ok, sorted_plugin_names} <- DependencyManager.resolve_load_order(
+           for plugin <- initialized_plugins, into: %{}, do: {plugin.name, plugin}
+         ),
          {:ok, final_manager} <-
            load_plugins_in_order(
              manager,
@@ -206,9 +210,11 @@ defmodule Raxol.Plugins.Lifecycle do
 
       plugin ->
         with {:ok, _} <-
-               PluginDependency.check_dependencies(
+               DependencyManager.check_dependencies(
+                 plugin.name,
                  plugin,
-                 PluginManager.list_plugins(manager)
+                 PluginManager.list_plugins(manager),
+                 []
                ),
              # Update config to enable plugin
              updated_config = PluginConfig.enable_plugin(manager.config, name),

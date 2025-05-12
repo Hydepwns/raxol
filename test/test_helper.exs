@@ -21,3 +21,5 @@ Application.put_env(:raxol, :test_mode, true)
 if Application.get_env(:raxol, :database_enabled, true) do
   Application.ensure_all_started(:ecto_sql)
 end
+
+Code.require_file("raxol/terminal/driver_test_helper.exs", __DIR__)

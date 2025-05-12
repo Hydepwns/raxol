@@ -146,4 +146,22 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
       _ -> nil
     end
   end
+
+  @doc "Handles DECSTBM (Set Scrolling Region - 'r')"
+  @spec handle_r(Emulator.t(), list(integer())) :: Emulator.t()
+  def handle_r(emulator, params) do
+    height = emulator.height
+    top = (Enum.at(params, 0, 1)) - 1
+    bottom = (Enum.at(params, 1, height)) - 1
+
+    valid_region = top >= 0 and bottom < height and top < bottom
+    is_full_screen = top == 0 and bottom == height - 1
+    new_cursor = %{emulator.cursor | position: {0, 0}}
+
+    if valid_region and not is_full_screen do
+      %{emulator | scroll_region: {top, bottom}, cursor: new_cursor}
+    else
+      %{emulator | scroll_region: nil, cursor: new_cursor}
+    end
+  end
 end

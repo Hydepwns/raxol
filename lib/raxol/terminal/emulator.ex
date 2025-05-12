@@ -400,12 +400,32 @@ defmodule Raxol.Terminal.Emulator do
     # Update tab stops for the new width
     new_tab_stops = BufferManager.default_tab_stops(new_width)
 
+    # Clamp cursor position
+    {cur_x, cur_y} = emulator.cursor.position
+    clamped_x = min(max(cur_x, 0), new_width - 1)
+    clamped_y = min(max(cur_y, 0), new_height - 1)
+    new_cursor = %{emulator.cursor | position: {clamped_x, clamped_y}}
+
+    # Clamp or reset scroll region
+    new_scroll_region =
+      case emulator.scroll_region do
+        {top, bottom}
+          when is_integer(top) and is_integer(bottom) and top < bottom and top >= 0 and bottom < new_height ->
+          {top, bottom}
+        _ ->
+          nil
+      end
+
     # Return updated emulator
     %{
       emulator
       | main_screen_buffer: new_main_buffer,
         alternate_screen_buffer: new_alt_buffer,
-        tab_stops: new_tab_stops
+        tab_stops: new_tab_stops,
+        cursor: new_cursor,
+        scroll_region: new_scroll_region,
+        width: new_width,
+        height: new_height
     }
   end
 

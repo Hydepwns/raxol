@@ -58,7 +58,8 @@ defmodule Raxol.Docs.Guides.Examples.Display.ProgressBarTest do
   # Function to run the example directly
   def main do
     Raxol.start_link(__MODULE__, [])
-    Process.sleep(:infinity)
+    # For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
+    Process.sleep(2000)
   end
 end
 

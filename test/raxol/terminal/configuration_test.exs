@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
 
       # Check a few default values based on Defaults implementation
       assert config.width == 80
-      assert config.scrollback_limit == 1000
+      assert config.scrollback_height == 1000
       # Check that theme defaults to nil as it's not set in Defaults
       assert config.theme == nil
     end
@@ -74,7 +74,7 @@ defmodule Raxol.Terminal.ConfigurationTest do
       assert config.theme == %{primary: "blue"}
 
       # Assert a default value that wasn't overridden
-      assert config.scrollback_limit == 1000
+      assert config.scrollback_height == 1000
     end
 
     # This test seems redundant

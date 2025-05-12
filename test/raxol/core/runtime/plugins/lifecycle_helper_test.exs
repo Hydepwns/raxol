@@ -6,7 +6,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
   setup :verify_on_exit!
 
   # Define mocks
-  defmock(LoaderMock, for: Raxol.Core.Runtime.Plugins.Loader.Behaviour)
+  # Use global Raxol.Core.Runtime.Plugins.LoaderMock defined in test_helper.exs
   defmock(DependencyManagerMock, for: Raxol.Core.Runtime.Plugins.DependencyManager.Behaviour)
   defmock(CommandHelperMock, for: Raxol.Core.Runtime.Plugins.CommandHelper.Behaviour)
 
@@ -57,10 +57,10 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       command_table = :test_command_table
 
       # Expect Loader to load code
-      expect(LoaderMock, :load_code, fn ^plugin_module -> :ok end)
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :load_code, fn ^plugin_module -> :ok end)
 
       # Expect Loader to extract metadata
-      expect(LoaderMock, :extract_metadata, fn ^plugin_module ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :extract_metadata, fn ^plugin_module ->
         %{id: plugin_id, version: "1.0.0"}
       end)
 
@@ -70,12 +70,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       end)
 
       # Expect Loader to check behaviour implementation
-      expect(LoaderMock, :behaviour_implemented?, fn ^plugin_module, Plugin ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :behaviour_implemented?, fn ^plugin_module, Plugin ->
         true
       end)
 
       # Expect Loader to initialize plugin
-      expect(LoaderMock, :initialize_plugin, fn ^plugin_module, ^config ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :initialize_plugin, fn ^plugin_module, ^config ->
         {:ok, %{initialized: true}}
       end)
 
@@ -119,7 +119,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       command_table = :test_command_table
 
       # Expect Loader to extract metadata
-      expect(LoaderMock, :extract_metadata, fn ^plugin_module ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :extract_metadata, fn ^plugin_module ->
         %{id: plugin_id, version: "1.0.0"}
       end)
 
@@ -129,12 +129,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       end)
 
       # Expect Loader to check behaviour implementation
-      expect(LoaderMock, :behaviour_implemented?, fn ^plugin_module, Plugin ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :behaviour_implemented?, fn ^plugin_module, Plugin ->
         true
       end)
 
       # Expect Loader to initialize plugin
-      expect(LoaderMock, :initialize_plugin, fn ^plugin_module, ^config ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :initialize_plugin, fn ^plugin_module, ^config ->
         {:ok, %{initialized: true}}
       end)
 
@@ -201,10 +201,10 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       }
 
       # Expect Loader to load code
-      expect(LoaderMock, :load_code, fn ^plugin_module -> :ok end)
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :load_code, fn ^plugin_module -> :ok end)
 
       # Expect Loader to extract metadata
-      expect(LoaderMock, :extract_metadata, fn ^plugin_module ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :extract_metadata, fn ^plugin_module ->
         %{id: plugin_id, version: "1.0.0", dependencies: ["missing_plugin"]}
       end)
 
@@ -239,10 +239,10 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       }
 
       # Expect Loader to load code
-      expect(LoaderMock, :load_code, fn ^plugin_module -> :ok end)
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :load_code, fn ^plugin_module -> :ok end)
 
       # Expect Loader to extract metadata
-      expect(LoaderMock, :extract_metadata, fn ^plugin_module ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :extract_metadata, fn ^plugin_module ->
         %{id: plugin_id, version: "1.0.0"}
       end)
 
@@ -252,12 +252,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       end)
 
       # Expect Loader to check behaviour implementation
-      expect(LoaderMock, :behaviour_implemented?, fn ^plugin_module, Plugin ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :behaviour_implemented?, fn ^plugin_module, Plugin ->
         true
       end)
 
       # Expect Loader to initialize plugin and fail
-      expect(LoaderMock, :initialize_plugin, fn ^plugin_module, _ ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :initialize_plugin, fn ^plugin_module, _ ->
         {:error, :init_failed}
       end)
 
@@ -439,7 +439,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       }
 
       # Expect Loader to extract metadata with incompatible version
-      expect(LoaderMock, :extract_metadata, fn ^plugin_module ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :extract_metadata, fn ^plugin_module ->
         %{id: plugin_id, version: "2.0.0", min_api_version: "2.0.0"}
       end)
 
@@ -471,13 +471,13 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       }
 
       # Expect Loader to extract metadata with compatible version
-      expect(LoaderMock, :extract_metadata, fn ^plugin_module ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :extract_metadata, fn ^plugin_module ->
         %{id: plugin_id, version: "1.0.0", min_api_version: "1.0.0"}
       end)
 
       # Expect other necessary mocks
-      expect(LoaderMock, :behaviour_implemented?, fn ^plugin_module, Plugin -> true end)
-      expect(LoaderMock, :initialize_plugin, fn ^plugin_module, ^config ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :behaviour_implemented?, fn ^plugin_module, Plugin -> true end)
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :initialize_plugin, fn ^plugin_module, ^config ->
         {:ok, %{initialized: true}}
       end)
       expect(CommandHelperMock, :register_plugin_commands, fn ^plugin_module, _, ^table -> :ok end)
@@ -520,16 +520,16 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       expect(CommandHelperMock, :unregister_plugin_commands, fn ^plugin_module, ^table -> :ok end)
 
       # Expect Loader to purge and recompile module
-      expect(LoaderMock, :purge_module, fn ^plugin_module -> :ok end)
-      expect(LoaderMock, :recompile_module, fn ^plugin_module -> :ok end)
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :purge_module, fn ^plugin_module -> :ok end)
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :recompile_module, fn ^plugin_module -> :ok end)
 
       # Expect Loader to extract metadata
-      expect(LoaderMock, :extract_metadata, fn ^plugin_module ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :extract_metadata, fn ^plugin_module ->
         %{id: plugin_id, version: "1.0.1"}
       end)
 
       # Expect Loader to initialize plugin with preserved state
-      expect(LoaderMock, :initialize_plugin, fn ^plugin_module, ^config ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :initialize_plugin, fn ^plugin_module, ^config ->
         {:ok, %{initial_state | counter: 2}}
       end)
 
@@ -571,7 +571,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       expect(CommandHelperMock, :unregister_plugin_commands, fn ^plugin_module, ^table -> :ok end)
 
       # Expect Loader to cleanup resources
-      expect(LoaderMock, :cleanup_plugin, fn ^plugin_module -> :ok end)
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :cleanup_plugin, fn ^plugin_module -> :ok end)
 
       # Call the function
       {:ok, updated_maps} = LifecycleHelper.unload_plugin(plugin_id, state_maps, table)
@@ -601,7 +601,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       }
 
       # Setup dependency chain: C depends on B depends on A
-      expect(LoaderMock, :extract_metadata, fn
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :extract_metadata, fn
         ^plugin_c -> %{id: plugin_c, version: "1.0.0", dependencies: [{"plugin_b", ">= 1.0.0"}]}
         ^plugin_b -> %{id: plugin_b, version: "1.0.0", dependencies: [{"plugin_a", ">= 1.0.0"}]}
         ^plugin_a -> %{id: plugin_a, version: "1.0.0", dependencies: []}
@@ -609,7 +609,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
 
       # Expect initialization for each plugin
       for plugin <- [plugin_a, plugin_b, plugin_c] do
-        expect(LoaderMock, :initialize_plugin, fn ^plugin, ^config ->
+        expect(Raxol.Core.Runtime.Plugins.LoaderMock, :initialize_plugin, fn ^plugin, ^config ->
           {:ok, %{initialized: true}}
         end)
         expect(CommandHelperMock, :register_plugin_commands, fn ^plugin, _, ^table -> :ok end)
@@ -640,12 +640,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelperTest do
       }
 
       # Expect Loader to extract metadata
-      expect(LoaderMock, :extract_metadata, fn ^plugin_module ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :extract_metadata, fn ^plugin_module ->
         %{id: plugin_id, version: "1.0.0"}
       end)
 
       # Expect Loader to initialize plugin with timeout
-      expect(LoaderMock, :initialize_plugin, fn ^plugin_module, ^config ->
+      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :initialize_plugin, fn ^plugin_module, ^config ->
         # Instead of sleep, send a message to self after delay
         Process.send_after(self(), :init_complete, 100)
         receive do

@@ -7,16 +7,16 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistryTest do
   setup :verify_on_exit!
 
   # Define mock for TestPlugin
-  defmock(TestPlugin, for: Raxol.Plugin)
+  defmock(CommandRegistryTestPluginMock, for: Raxol.Plugin)
 
   setup do
     # Setup test plugin and command table
-    plugin_module = TestPlugin
+    plugin_module = CommandRegistryTestPluginMock
     plugin_state = %{counter: 0}
     command_table = %{}
 
     # Setup default command responses
-    expect(TestPlugin, :commands, fn ->
+    expect(CommandRegistryTestPluginMock, :commands, fn ->
       [
         {"test_command", fn args, _ctx -> {:ok, args} end, %{description: "Test command"}},
         {"slow_command", fn _args, _ctx ->
@@ -57,7 +57,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistryTest do
       command_table: command_table
     } do
       # Mock plugin with invalid command name
-      expect(TestPlugin, :commands, fn ->
+      expect(CommandRegistryTestPluginMock, :commands, fn ->
         [{"invalid@command", fn args, _ctx -> {:ok, args} end, %{}}]
       end)
 
@@ -72,7 +72,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistryTest do
       command_table: command_table
     } do
       # Mock plugin with invalid handler
-      expect(TestPlugin, :commands, fn ->
+      expect(CommandRegistryTestPluginMock, :commands, fn ->
         [{"test_command", fn -> :ok end, %{}}]
       end)
 
@@ -87,7 +87,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistryTest do
       command_table: command_table
     } do
       # Mock plugin with invalid metadata
-      expect(TestPlugin, :commands, fn ->
+      expect(CommandRegistryTestPluginMock, :commands, fn ->
         [{"test_command", fn args, _ctx -> {:ok, args} end, %{invalid: :field}}]
       end)
 
@@ -211,5 +211,17 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistryTest do
         command_table
       )
     end
+  end
+
+  @tag :skip
+  @doc """
+  Skipped: Complex command chaining implementation pending.
+  Blocked by: Command execution pipeline improvements (see docs/testing/test_tracking.md).
+  Once the command chaining feature is implemented, this test should be enabled and completed.
+  """
+  test "handles complex command chaining" do
+    # TODO: Implement test for complex command chaining once the feature is available.
+    # This test is currently skipped and serves as a placeholder for future work.
+    assert true
   end
 end

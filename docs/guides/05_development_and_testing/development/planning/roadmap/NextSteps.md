@@ -20,13 +20,17 @@ tags: [roadmap, next-steps, priorities]
    - [ ] Focus on Plugin System Tests:
      - [x] Fix plugin lifecycle management
      - [x] Resolve command registration issues
-     - [x] Address state management problems
-     - [x] Add comprehensive error handling tests
+     - [x] Address plugin event handling tests
+     - [ ] Address state management problems
+     - [ ] Add comprehensive error handling tests
      - [x] Enhance dependency resolution tests
    - [x] Fix FileWatcher compilation error
    - [ ] Address remaining FileWatcher runtime failures
-   - [ ] Complete SelectList implementation
-   - [ ] Document skipped tests
+   - [x] Complete SelectList implementation
+   - [x] Restore and fix Raxol.Terminal.DriverTestHelper (helper import, pattern match, and assertion issues resolved; test suite now proceeds past helper errors)
+   - [x] Document skipped tests in `test_tracking` document
+   - [x] Add unit and integration tests for terminal memory management (estimate_memory_usage/1)
+   - [x] Prioritize unskipping tests that are blocked only by minor refactors or helper updates. (See prioritized table in test_tracking.md)
 
 2. **Performance Optimization**
 
@@ -53,6 +57,7 @@ tags: [roadmap, next-steps, priorities]
    - [x] Enhanced test isolation and cleanup
    - [x] Improved state management verification
    - [x] Added resource cleanup validation
+   - [x] Restore and fix terminal driver test helper (import ExUnit, pattern match, assertion fixes)
 
 2. **Terminal Buffer Management Refactoring**
 
@@ -119,6 +124,7 @@ tags: [roadmap, next-steps, priorities]
    - [x] Enhanced test documentation
 
 7. **Editor Implementation**
+
    - [x] Implemented line operations:
      - [x] Insert lines with proper shifting
      - [x] Delete lines with proper shifting
@@ -138,6 +144,16 @@ tags: [roadmap, next-steps, priorities]
      - [x] Type specifications
      - [x] Usage examples
      - [x] Edge case handling
+
+8. **Memory Management Test Coverage**
+
+   - [x] Added both unit and integration-style tests for `Raxol.Terminal.MemoryManager.estimate_memory_usage/1` using real and mock state structs.
+   - [x] Ensured robust coverage for memory usage estimation in terminal state.
+
+9. **Character Sets Aliasing Issues**
+
+   - [x] Fix CharacterSets aliasing issues in terminal and test modules (completed 2025-05-10)
+   - [x] All CharacterSets aliasing issues resolved; codebase now consistently uses Raxol.Terminal.CharacterSets
 
 ## Future Considerations
 
@@ -175,6 +191,7 @@ tags: [roadmap, next-steps, priorities]
 - Editor implementation is complete with comprehensive functionality
 - Next major focus is on performance optimization and remaining test failures
 - Component system documentation is now unified, harmonized, and cross-linked across all major docs.
+- All CharacterSets aliasing issues are resolved; no further action required for alias cleanup.
 
 ## Current Test Suite Status (2025-05-10)
 
@@ -198,6 +215,16 @@ tags: [roadmap, next-steps, priorities]
    - [x] Identify blocking issues that prevent other fixes
    - [x] Set up test isolation for each subsystem
    - [x] Create test execution plan
+
+   **Plugin System Tests**
+
+   - [x] Fix plugin lifecycle test issues
+   - [x] Address plugin command registration tests
+   - [x] Address plugin event handling tests
+   - [ ] Fix plugin state management tests
+   - [ ] Implement proper cleanup in plugin tests
+   - [ ] Add comprehensive plugin error handling tests
+   - [x] Enhance plugin dependency resolution tests
 
 3. **Review & Update Failing/Skipped/Invalid Tests:**
 
@@ -259,6 +286,7 @@ tags: [roadmap, next-steps, priorities]
 - [x] Character set translation and handler issues fixed
 - [x] Accessibility module compile error resolved
 - [x] File watcher compilation error resolved and basic state initialization implemented
+- [ ] `test/raxol/terminal/emulator_plugin_test.exs`: Starting work on pending state management, metadata, and error handling tests. (Lifecycle, event, command handler tests previously updated, details in CHANGELOG). Setup for conditional plugin reloading for persistence tests is complete. Next: implement state persistence/reload logic in the relevant test.
 - [x] Plugin system improvements:
   - [x] Enhanced dependency management with version requirements
   - [x] Improved command registration and validation
@@ -299,3 +327,17 @@ tags: [roadmap, next-steps, priorities]
 - [ ] Performance test failures (host_component_id undefined) in progress
 - [ ] Plugin system test failures under investigation
 - [ ] Integration/Performance test failures in queue
+- [x] Fix SelectList component implementation
+- All advanced SelectList features (custom rendering, filtering, navigation, empty state, case insensitivity) are now covered by real tests.
+
+## Additional Notes
+
+- [ ] Prioritize unskipping tests that are blocked only by minor refactors or helper updates (e.g., visual/snapshot tests, alignment/layout, missing helpers, minor API changes). Review and update these before tackling feature-blocked or obsolete tests.
+
+## Mox Mock Definition Cleanup
+
+- [x] Fixed all Mox compile errors due to duplicate LoaderMock/FileWatcherMock definitions
+- [x] All plugin system tests now use global mocks defined in test_helper.exs
+
+- [x] Enhanced dependency resolution tests (now all pass, including cycle detection and optional version mismatch handling).
+- [x] Dependency manager's Tarjan resolver and optional dependency handling are now correct and fully tested.

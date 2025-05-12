@@ -70,7 +70,7 @@ yarn-error.log
 *.swp
 *.swo
 *~
-*.log
+# *.log
 *.pid
 *.beam
 *.dump

@@ -210,9 +210,10 @@ end
   - A tuple `{plugin_id, version_constraint}` for versioned dependencies
   - A simple `plugin_id` atom for unversioned dependencies
 - Version constraints support:
-  - Simple constraints: `">= 1.0.0"`, `"~> 1.0"`, `"== 1.0.0"`
+  - Simple constraints: `">= 1.0.0"`, "~> 1.0", "== 1.0.0"
   - Complex constraints with OR operator: `">= 1.0.0 || >= 2.0.0"`
   - Both dependent and dependency plugins should provide metadata for reliable tracking
+- **Optional dependencies with version mismatches are ignored and do not block plugin loading.**
 
 ### Dependency Resolution
 
@@ -222,7 +223,21 @@ end
 2. Extract metadata
 3. Build dependency graph with version information
 4. Use Tarjan's algorithm for cycle detection and topological sort
+   - Only true cycles (mutually reachable nodes) are flagged as errors
+   - The load order is unique (no duplicate plugin IDs)
 5. Initialize in sorted order (`get_commands/0`, then `init/1`)
+
+#### Cycle Detection Example
+
+```elixir
+A → B → C
+↑   ↓   ↓
+└── D ← E
+```
+
+- Edges: A→B, B→C, C→E, E→D, D→A, B→D
+- Tarjan's algorithm will find the cycle: [A, B, C, D, E]
+- Only true cycles are flagged as errors.
 
 ### Error Handling
 
@@ -241,15 +256,18 @@ The dependency system provides detailed error reporting:
   ```
 
 - **Circular Dependencies:**
+
   ```elixir
   {:error, :circular_dependency, ["plugin_a", "plugin_b", "plugin_a"], ["plugin_a", "plugin_b"]}
   ```
+
+- **Note:** Optional dependencies with version mismatches are ignored and do not cause errors.
 
 Each error includes a dependency chain showing the path that led to the error, making it easier to diagnose complex dependency issues.
 
 ### Optional Dependencies
 
-Plugins can declare optional dependencies that won't prevent loading if missing:
+Plugins can declare optional dependencies that won't prevent loading if missing or if the version does not match:
 
 ```elixir
 defmodule MyPlugin.Metadata do
@@ -263,7 +281,7 @@ defmodule MyPlugin.Metadata do
 end
 ```
 
-Optional dependencies follow the same version constraint rules as required dependencies.
+Optional dependencies follow the same version constraint rules as required dependencies, but version mismatches are ignored.
 
 ## Plugin Reloading
 
@@ -386,3 +404,7 @@ end
 ```
 
 This example shows state (`%{count: 0}`), initialized in `init/1` and updated/passed through `handle_command/3`.
+
+## Dependencies
+
+> **API Reference:** [Dependency Manager API Reference](../../components/api/dependency_manager.md)

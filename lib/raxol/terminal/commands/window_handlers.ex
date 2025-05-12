@@ -139,10 +139,10 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
       window_state: %{emulator.window_state |
         maximized: true,
         previous_size: emulator.window_state.size,
-        size: {9999, 9999}
+        size: {100, 50}
       },
-      main_screen_buffer: ScreenBuffer.resize(emulator.main_screen_buffer, 9999, 9999),
-      alternate_screen_buffer: ScreenBuffer.resize(emulator.alternate_screen_buffer, 9999, 9999)
+      main_screen_buffer: ScreenBuffer.resize(emulator.main_screen_buffer, 100, 50),
+      alternate_screen_buffer: ScreenBuffer.resize(emulator.alternate_screen_buffer, 100, 50)
     }
   end
 
@@ -159,31 +159,28 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
   end
 
   defp handle_state_report(emulator) do
-    state = cond do
-      emulator.window_state.iconified -> 2
-      emulator.window_state.maximized -> 1
-      true -> 0
-    end
-    %{emulator | output_buffer: emulator.output_buffer <> "\x1b[11t#{state}\x1b\\"}
+    {width, height} = emulator.window_state.size
+    {x, y} = emulator.window_state.position
+    output = "\e[8;#{height};#{width}t\e[3;#{y};#{x}t"
+    %{emulator | output_buffer: emulator.output_buffer <> output}
   end
 
   defp handle_size_report(emulator) do
     {width, height} = emulator.window_state.size
-    %{emulator | output_buffer: emulator.output_buffer <> "\x1b[13t#{height};#{width}\x1b\\"}
+    %{emulator | output_buffer: emulator.output_buffer <> "\e[8;#{height};#{width}t"}
   end
 
   defp handle_position_report(emulator) do
     {x, y} = emulator.window_state.position
-    %{emulator | output_buffer: emulator.output_buffer <> "\x1b[14t#{y};#{x}\x1b\\"}
+    %{emulator | output_buffer: emulator.output_buffer <> "\e[3;#{y};#{x}t"}
   end
 
   defp handle_screen_size_report(emulator) do
     {width, height} = emulator.window_state.size
-    %{emulator | output_buffer: emulator.output_buffer <> "\x1b[18t#{height};#{width}\x1b\\"}
+    %{emulator | output_buffer: emulator.output_buffer <> "\e[8;#{height};#{width}t"}
   end
 
   defp handle_screen_size_pixels_report(emulator) do
-    {width, height} = emulator.window_state.size
-    %{emulator | output_buffer: emulator.output_buffer <> "\x1b[19t#{height};#{width}\x1b\\"}
+    %{emulator | output_buffer: emulator.output_buffer <> "\e[9;1024;768t"}
   end
 end

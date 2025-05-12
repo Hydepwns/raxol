@@ -49,6 +49,14 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     end
   end
 
+  @doc """
+  Creates a new command registry table (as a map).
+  Returns the new, empty command table.
+  """
+  def new do
+    %{}
+  end
+
   # Private helper functions
 
   defp get_plugin_commands(plugin_module) do

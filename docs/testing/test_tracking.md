@@ -1,221 +1,100 @@
 # Test Suite Tracking
 
-## Test Suite Status (as of 2025-05-10)
+## Test Suite Status (as of 2025-06-11)
 
-- **Total Tests:** 1528
-- **Doctests:** 49
-- **Failures:** 279
-- **Invalid:** 17
-- **Skipped:** 21
+- **Total Tests:** 2191
+- **Doctests:** 34
+- **Failures:** 977
+- **Invalid:** N/A
+- **Skipped:** 12
 
-### Major Failure Categories
+### Major Failure Categories (2025-06-11)
 
-- **Plugin System:** Dependency resolution, error handling, lifecycle
-- **FileWatcher:** Core functionality, performance
-- **SelectList:** Core features, integration
-- **Performance:** host_component_id, event processing, concurrency
+- **UndefinedFunctionError in Raxol.Terminal.Commands.CSIHandlers**
+
+  - `function Raxol.Terminal.Commands.CSIHandlers.handle_r/2 is undefined or private`
+  - This error appears in many terminal emulator and parser tests, likely blocking or cascading into other failures.
+
+- **ModeManager Insert Mode Failure**
+  - `test handles terminal modes (Raxol.Components.Terminal.EmulatorTest)`
+  - Assertion: `assert state.core_emulator.mode_manager.insert_mode == true` (left: false, right: true)
+  - Warning: `[ModeManager] Unhandled mode to set: :insert_mode`
+  - Indicates insert mode is not being set or handled correctly in ModeManager.
+
+### Progress Notes (2025-06-11)
+
+- KeyError for :single_shift is resolved (argument order bug in translate_char fixed).
+- ModeManager insert_mode failure and terminal driver test helper issues are resolved (helper import, pattern match, and assertion issues fixed).
+- The test suite now runs to completion, with failures reduced to 977. Major failures are now dominated by scroll region assertion (handle_r/2 in CSIHandlers not implemented) and screen resizing assertion errors.
+- Next step: implement or stub handle_r/2 in Raxol.Terminal.Commands.CSIHandlers, address screen resizing assertion failures, and re-run the suite to assess remaining issues.
+
+### Minor Failure Categories (2025-06-10)
+
+- **CompileError in test/raxol/core/runtime/plugins/discovery_test.exs**
+
+  - Mox.defmock/2 error: LoaderMock cannot be compiled (deps/mox/lib/mox.ex:401)
+  - This blocks all subsequent tests from running.
+  - **Action:** Fix the mock definition or Mox usage in discovery_test.exs.
+
+- **Plugin System: Dependency Manager Performance Tests**
+
+  - **CaseClauseError** in multiple tests in `test/raxol/core/runtime/plugins/dependency_manager_performance_test.exs`:
+    - "handles large number of plugins efficiently"
+    - "handles complex version requirements efficiently"
+    - "handles mixed workload efficiently"
+    - "handles memory usage with large dependency graphs"
+  - All fail with `no case clause matching: {:ok, ...}` in `Resolver.tarjan_sort/1`.
+  - **Action:** Review the return value expectations in these tests and the implementation of `tarjan_sort/1`.
+
+- **Dependency Graph Test**
+
+  - `test/core/runtime/plugins/dependency_manager/graph_test.exs:115` fails:
+    - Assertion with == failed: `assert length(deps) == 3` (left: 4, right: 3)
+    - **Action:** Check the test data and expected dependency count.
+
+- **Missing Dependencies**
+  - Many errors of the form `{:error, :missing_dependencies, ...}` in plugin dependency tests.
+  - **Action:** Review plugin dependency setup and error handling.
 
 ### Skipped/Invalid Tests
 
 - All skipped/invalid tests are documented below with reasons and blocking issues.
 
-### Action Plan
+### Action Plan (2025-06-11)
 
-- **Phase 1:** Plugin, FileWatcher, SelectList, skipped test documentation
-- **Phase 2:** Performance optimization
-- **Phase 3:** Integration test improvements
-- **Phase 4:** Documentation and cleanup
+- **Phase 0:**
+  - Fix CompileError in discovery_test.exs (Mox/LoaderMock)
+  - Triage and fix CaseClauseError in dependency manager performance tests
+  - Review dependency graph test assertion
+- **Phase 1:**
+  - Implement or stub handle_r/2 in Raxol.Terminal.Commands.CSIHandlers
+  - Address screen resizing assertion failures
+  - Re-run test suite after fixing above issues
+  - Update this file with new failure counts and details
 
-_See this file and roadmap docs for detailed tracking and progress._
+## Progress Notes (2025-06-10)
 
-## Test Failure Categories
+- Test run blocked by CompileError in discovery_test.exs (Mox/LoaderMock)
+- Dependency manager performance tests have multiple CaseClauseError failures
+- Dependency graph test assertion mismatch (expected vs actual dependency count)
+- Many plugin dependency tests report missing dependencies
+- ModeManager insert_mode not handled (see warning and assertion failure)
+- Skipped/invalid tests unchanged
 
-### 1. Plugin System Tests
+---
 
-#### Dependency Resolution
+# Prioritized: Skipped Tests Blocked by Minor Refactors or Helper Updates
 
-- [ ] Complex version constraint handling
-- [ ] Circular dependency detection
-- [ ] Dependency chain reporting
-- [ ] Version compatibility checks
+The following tests are skipped only due to minor refactors, missing helpers, or minor API changes. These are high-priority for unskipping and should be addressed before tackling feature-blocked or obsolete tests.
 
-#### Error Handling
+| Area / File        | Test / Describe                                                                                                | Reason Skipped                                                                  | Blocker Type                            | Next Action                                    |
+| ------------------ | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------- | --------------------------------------- | ---------------------------------------------- |
+| UI/Renderer        | `test/raxol/ui/renderer_test.exs`<br>"renders table cell alignment correctly"                                  | Alignment hardcoded to left; test not implemented                               | Minor refactor (alignment/layout logic) | Update alignment logic, re-enable test         |
+| UI/Renderer/Chart  | `test/raxol/core/renderer/views/chart_test.exs`<br>"adds axes when enabled", "adds legend when enabled"        | Chart.new returns only content view; axes/legend may need wrapper or API update | Minor API change                        | Refactor Chart API or test, re-enable          |
+| Visual/Component   | `test/examples/button_test.exs`<br>"adapts to different sizes", "maintains consistent structure across themes" | Visual/snapshot tests; may need updated helpers or snapshots                    | Missing helpers / snapshot update       | Update helpers/snapshots, re-enable            |
+| Input/Helpers      | `test/raxol/components/input/multi_line_input/render_helper_test.exs`                                          | Some helpers missing or refactored                                              | Missing helpers                         | Restore or rewrite helpers, re-enable          |
+| Colors/Utilities   | `test/raxol/style/colors/utilities_test.exs`                                                                   | Entire module skipped; outdated tests or missing functions                      | Minor refactor / helper update          | Review module, restore helpers, re-enable      |
+| Buffer/Scroll      | `test/raxol/terminal/buffer/scroll_test.exs`                                                                   | Compression logic only compresses runs of empty cells                           | Minor logic improvement                 | Improve compression logic, re-enable           |
+| Visual/Performance | `test/examples/button_performance_test.exs`                                                                    | Outdated benchmarking or pending migration                                      | Minor refactor / helper update          | Update to new performance framework, re-enable |
 
-- [ ] Plugin initialization failures
-- [ ] Command execution errors
-- [ ] State management issues
-- [ ] Resource cleanup
-
-#### Lifecycle Management
-
-- [ ] Plugin loading/unloading
-- [ ] State persistence
-- [ ] Event handling
-- [ ] Command registration
-
-### 2. FileWatcher Tests
-
-#### Core Functionality
-
-- [ ] File change detection
-- [ ] Event emission
-- [ ] Path handling
-- [ ] Error recovery
-
-#### Performance
-
-- [ ] Large directory handling
-- [ ] Concurrent file operations
-- [ ] Resource usage
-- [ ] Event processing
-
-### 3. SelectList Implementation
-
-#### Core Features
-
-- [ ] Item selection
-- [ ] Keyboard navigation
-- [ ] Search/filtering
-- [ ] Custom rendering
-
-#### Integration
-
-- [ ] Event handling
-- [ ] State management
-- [ ] Accessibility
-- [ ] Performance
-
-## Skipped/Invalid Tests Documentation
-
-### 1. Plugin System (8 skipped)
-
-#### Test: `test/raxol/core/runtime/plugins/plugin_manager_test.exs`
-
-- **Test:** "handles plugin reload with state persistence"
-- **Reason:** State persistence mechanism needs refactoring
-- **Blocked by:** Plugin state management improvements
-- **Priority:** High
-
-#### Test: `test/raxol/core/runtime/plugins/command_registry_test.exs`
-
-- **Test:** "handles complex command chaining"
-- **Reason:** Command chaining implementation pending
-- **Blocked by:** Command execution pipeline improvements
-- **Priority:** Medium
-
-### 2. FileWatcher (5 skipped)
-
-#### Test: `test/raxol/core/runtime/file_watcher_test.exs`
-
-- **Test:** "handles recursive directory watching"
-- **Reason:** Recursive watching implementation incomplete
-- **Blocked by:** Directory traversal optimization
-- **Priority:** High
-
-### 3. SelectList (4 skipped)
-
-#### Test: `test/raxol/components/select_list_test.exs`
-
-- **Test:** "handles custom item rendering"
-- **Reason:** Custom renderer API pending
-- **Blocked by:** Component system improvements
-- **Priority:** Medium
-
-### 4. Integration Tests (4 skipped)
-
-#### Test: `test/integration/plugin_lifecycle_test.exs`
-
-- **Test:** "handles plugin reload during active use"
-- **Reason:** Hot reload implementation incomplete
-- **Blocked by:** Plugin system improvements
-- **Priority:** High
-
-## Performance Test Failures
-
-### 1. Host Component ID Issues
-
-- **Location:** `test/performance/host_component_test.exs`
-- **Issue:** Undefined host_component_id in performance tests
-- **Impact:** Blocks performance benchmarking
-- **Priority:** High
-
-### 2. Event Processing
-
-- **Location:** `test/performance/event_processing_test.exs`
-- **Issue:** Event processing benchmarks not meeting targets
-- **Target:** < 1ms average, < 2ms 95th percentile
-- **Priority:** High
-
-### 3. Concurrent Operations
-
-- **Location:** `test/performance/concurrent_operations_test.exs`
-- **Issue:** Concurrent operation benchmarks not meeting targets
-- **Target:** < 5ms average, < 10ms 95th percentile
-- **Priority:** Medium
-
-## Action Plan
-
-### Phase 1: Test Stabilization (Week 1-2)
-
-1. Address plugin system test failures
-2. Fix FileWatcher related failures
-3. Complete SelectList implementation
-4. Document remaining skipped tests
-
-### Phase 2: Performance Optimization (Week 3-4)
-
-1. Fix host_component_id issues
-2. Optimize event processing
-3. Improve concurrent operation handling
-4. Implement performance metrics
-
-### Phase 3: Integration Testing (Week 5-6)
-
-1. Fix remaining integration test failures
-2. Enhance edge case coverage
-3. Improve test isolation
-4. Add comprehensive event testing
-
-### Phase 4: Documentation and Cleanup (Week 7-8)
-
-1. Update test documentation
-2. Create test writing guide
-3. Document plugin system improvements
-4. Review and update API documentation
-
-## Progress Tracking
-
-### Week 1 (2025-05-10 to 2025-05-17)
-
-- [ ] Categorize all test failures
-- [ ] Create detailed failure reports
-- [ ] Set up test isolation improvements
-- [ ] Begin plugin system test fixes
-
-### Week 2 (2025-05-18 to 2025-05-24)
-
-- [ ] Complete plugin system test fixes
-- [ ] Address FileWatcher failures
-- [ ] Begin SelectList implementation
-- [ ] Document skipped tests
-
-### Week 3 (2025-05-25 to 2025-05-31)
-
-- [ ] Fix host_component_id issues
-- [ ] Begin event processing optimization
-- [ ] Set up performance metrics
-- [ ] Start concurrent operation improvements
-
-### Week 4 (2025-06-01 to 2025-06-07)
-
-- [ ] Complete performance optimizations
-- [ ] Implement performance metrics
-- [ ] Begin integration test improvements
-- [ ] Start documentation updates
-
-## Notes
-
-- Regular progress updates will be added to this document
-- Test failures should be categorized and tracked as they are fixed
-- Performance metrics will be updated weekly
-- Documentation will be updated as features are completed
+---

@@ -191,31 +191,39 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   end
 
   @doc """
-  Invokes a character set designator.
+  Map G-set index (0-3) to map key (:g0-:g3).
+  Public for use in tests and other modules.
   """
-  @spec invoke_designator(charset_state(), :g0 | :g1 | :g2 | :g3) :: charset_state()
-  def invoke_designator(state, gset) when gset in [:g0, :g1, :g2, :g3] do
-    # Set the specified G-set as the GL (left) charset
-    %{state | gl: gset}
-  end
+  def index_to_gset(0), do: :g0
+  def index_to_gset(1), do: :g1
+  def index_to_gset(2), do: :g2
+  def index_to_gset(3), do: :g3
+  def index_to_gset(_), do: nil
 
-  # --- Private Helpers ---
-
-  # Map G-set index (0-3) to map key (:g0-:g3)
-  defp index_to_gset(0), do: :g0
-  defp index_to_gset(1), do: :g1
-  defp index_to_gset(2), do: :g2
-  defp index_to_gset(3), do: :g3
-  defp index_to_gset(_), do: nil
-
-  # Map character code byte to charset atom (Based on escape_sequence.ex)
-  defp charset_code_to_atom(?B), do: :us_ascii
-  defp charset_code_to_atom(?0), do: :dec_special_graphics
-  defp charset_code_to_atom(?A), do: :uk
+  @doc """
+  Map character code byte to charset atom (Based on escape_sequence.ex).
+  Public for use in tests and other modules.
+  """
+  def charset_code_to_atom(?B), do: :us_ascii
+  def charset_code_to_atom(?0), do: :dec_special_graphics
+  def charset_code_to_atom(?A), do: :uk
   # Often same as US ASCII initially
-  defp charset_code_to_atom(?<), do: :dec_supplemental
-  defp charset_code_to_atom(?>), do: :dec_technical
+  def charset_code_to_atom(?<), do: :dec_supplemental
+  def charset_code_to_atom(?>), do: :dec_technical
   # TODO: Add mappings for other national/special charsets (?F, ?K, etc.)
   # Return nil for unknown codes
-  defp charset_code_to_atom(_), do: nil
+  def charset_code_to_atom(_), do: nil
+
+  @doc """
+  Invokes a character set designator into GL or GR.
+  By default, invokes into GL (left). If the second argument is :gr, invokes into GR (right).
+  """
+  @spec invoke_designator(charset_state(), :g0 | :g1 | :g2 | :g3, :gl | :gr) :: charset_state()
+  def invoke_designator(state, gset, target \\ :gl) when gset in [:g0, :g1, :g2, :g3] do
+    case target do
+      :gl -> %{state | gl: gset}
+      :gr -> %{state | gr: gset}
+      _ -> state
+    end
+  end
 end

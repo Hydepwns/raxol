@@ -1,5 +1,7 @@
 # Dependency Manager Module Architecture
 
+> **See Also:** [Dependency Manager API Reference](components/api/dependency_manager.md)
+
 ## Overview
 
 The Dependency Manager module is responsible for managing plugin dependencies and resolving load order. It has been refactored into a modular architecture to improve maintainability, testability, and separation of concerns.
@@ -25,7 +27,7 @@ The main module serves as the public API and delegates to specialized submodules
   - `resolve_load_order/1`: Determines the correct load order for plugins
 - **Features**:
   - Dependency validation
-  - Optional dependency handling
+  - Optional dependency handling (version mismatches for optional dependencies are ignored and do not block plugin loading)
   - Error reporting with dependency chains
 
 #### 2. `DependencyManager.Version`
@@ -57,9 +59,10 @@ The main module serves as the public API and delegates to specialized submodules
 - **Key Functions**:
   - `tarjan_sort/1`: Performs topological sorting of the dependency graph
 - **Features**:
-  - Efficient cycle detection
+  - Efficient cycle detection (only true cycles are flagged, not just any strongly connected component)
   - Strongly connected component identification
-  - Topological ordering
+  - Topological ordering (load order is unique, no duplicate plugin IDs)
+  - Detailed error chains for self-loops and mutual dependencies
 
 ## State Management
 
@@ -80,8 +83,8 @@ The Dependency Manager maintains the following state in the dependency graph:
 The module implements comprehensive error handling:
 
 - Missing dependencies
-- Version mismatches
-- Circular dependencies
+- Version mismatches (optional dependencies with version mismatches are ignored)
+- Circular dependencies (only true cycles are flagged)
 - Invalid version formats
 - Invalid requirement formats
 
@@ -92,6 +95,21 @@ Each error type includes detailed information for debugging:
 {:error, :version_mismatch, [{"plugin", "1.0.0", ">= 2.0.0"}], ["plugin_a"]}
 {:error, :circular_dependency, ["plugin_a", "plugin_b"], ["plugin_a", "plugin_b", "plugin_a"]}
 ```
+
+## Cycle Detection Example (Tarjan's Algorithm)
+
+Consider the following dependency graph:
+
+```elixir
+A → B → C
+↑   ↓   ↓
+└── D ← E
+```
+
+- Edges: A→B, B→C, C→E, E→D, D→A, B→D
+- Tarjan's algorithm will find the cycle: [A, B, C, D, E]
+- The load order will be unique and each plugin appears only once.
+- Only true cycles (mutually reachable nodes) are flagged as errors.
 
 ## Usage Example
 
