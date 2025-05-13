@@ -35,10 +35,9 @@ defmodule RaxolWeb.Endpoint do
 
     plug Phoenix.CodeReloader
 
-    # TODO: Commenting out CheckRepoStatus as DB is not configured/running reliably
-    # if Mix.env() == :dev do
-    #   plug Phoenix.Ecto.CheckRepoStatus, otp_app: :raxol
-    # end
+    if Mix.env() == :dev do
+      plug Phoenix.Ecto.CheckRepoStatus, otp_app: :raxol
+    end
   end
 
   plug Phoenix.LiveDashboard.RequestLogger,

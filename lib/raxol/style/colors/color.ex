@@ -163,7 +163,7 @@ defmodule Raxol.Style.Colors.Color do
   Converts a color to an ANSI code (currently defaults to 256-color code).
   The `type` parameter (:foreground or :background) is currently ignored.
 
-  TODO: Implement proper ANSI sequence generation based on type and terminal capabilities.
+  NOTE: This is a placeholder. Implement proper ANSI sequence generation based on type and terminal capabilities in the future.
   """
   @spec to_ansi(t(), :foreground | :background) :: integer()
   def to_ansi(%__MODULE__{} = color, _type) do

@@ -181,10 +181,8 @@ defmodule PreCommitCheck do
 
       # Handle anchor-only links (within the same file)
       String.starts_with?(url, "#") ->
-        # anchor = String.trim_leading(url, "#")
-        # check_anchor(source_file, anchor) # Temporarily disable anchor checking
-        # Assume anchors are ok for now
-        :ok
+        anchor = String.trim_leading(url, "#")
+        check_anchor(source_file, anchor)
 
       # Handle links with file path and potentially anchor
       true ->
@@ -231,9 +229,7 @@ defmodule PreCommitCheck do
              File.dir?(normalized_target_file) or
              File.exists?(normalized_target_file) do
           if anchor do
-            # check_anchor(normalized_target_file, anchor) # Temporarily disable anchor checking
-            # Assume anchors are ok for now
-            :ok
+            check_anchor(normalized_target_file, anchor)
           else
             # File or directory exists, no anchor to check
             :ok
@@ -251,32 +247,39 @@ defmodule PreCommitCheck do
       full_content = File.read!(target_file)
 
       # Attempt to strip frontmatter
-      # This regex assumes frontmatter is at the very start, enclosed by '---' lines,
-      # and that '---' lines only contain those dashes and optional whitespace.
-      # It matches from the start of the string (\\A), captures the content between --- lines,
-      # and expects the --- lines to be on their own.
       content_without_frontmatter =
         Regex.replace(~r/\A---\s*\n(?:.|\n)*?^---\s*$\n/m, full_content, "",
           global: false
         )
 
-      pattern = "^#\{1,6\}\\s+#{Regex.escape(anchor)}\\s*$"
-      anchor_regex = Regex.compile!(pattern, "mi")
+      # Extract all headings (lines starting with 1-6 # followed by space)
+      headings =
+        content_without_frontmatter
+        |> String.split("\n")
+        |> Enum.filter(fn line -> Regex.match?(~r/^#\s|^##\s|^###\s|^####\s|^#####\s|^######\s/, line) end)
+        |> Enum.map(fn line ->
+          # Remove leading #s and whitespace
+          String.replace(line, ~r/^#+\s*/, "")
+        end)
 
-      if Regex.match?(anchor_regex, content_without_frontmatter) do
+      # Normalize heading to GitHub-style anchor
+      normalize_anchor = fn str ->
+        str
+        |> String.downcase()
+        |> String.replace(~r/[^a-z0-9\-\s]/u, "") # Remove most punctuation
+        |> String.replace(~r/[\s]+/, "-")         # Spaces to dashes
+        |> String.replace(~r/-+/, "-")             # Collapse dashes
+        |> String.trim("-")                        # Trim leading/trailing dashes
+      end
+
+      heading_anchors = Enum.map(headings, normalize_anchor)
+      normalized_anchor = normalize_anchor.(anchor)
+
+      if Enum.member?(heading_anchors, normalized_anchor) do
         :ok
       else
-        # Provide more context on failure for debugging
-        reason_detail =
-          if String.length(full_content) ==
-               String.length(content_without_frontmatter) do
-            " (frontmatter not detected or not stripped)"
-          else
-            " (after attempting to strip frontmatter)"
-          end
-
         {:error,
-         "Anchor `##{anchor}` not found in `#{target_file}`#{reason_detail}"}
+         "Anchor `##{anchor}` (normalized: `##{normalized_anchor}`) not found in `#{target_file}`. Available anchors: #{inspect(heading_anchors)}"}
       end
     rescue
       e in File.Error ->

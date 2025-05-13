@@ -61,6 +61,28 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     %{}
   end
 
+  @doc """
+  Looks up the handler for a command name and namespace (plugin module).
+  Returns {:ok, {module, function, arity}} or {:error, :not_found}.
+  """
+  def lookup_command(table, namespace, command_name) do
+    case Map.get(table, namespace) do
+      nil -> {:error, :not_found}
+      commands ->
+        case Enum.find(commands, fn {name, _handler, _meta_or_arity} -> name == command_name end) do
+          {^command_name, handler, meta_or_arity} ->
+            arity =
+              cond do
+                is_map(meta_or_arity) && Map.has_key?(meta_or_arity, :arity) -> meta_or_arity.arity
+                is_integer(meta_or_arity) -> meta_or_arity
+                true -> nil
+              end
+            {:ok, {namespace, handler, arity}}
+          _ -> {:error, :not_found}
+        end
+    end
+  end
+
   # Private helper functions
 
   defp get_plugin_commands(plugin_module) do

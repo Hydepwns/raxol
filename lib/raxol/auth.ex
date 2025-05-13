@@ -20,13 +20,8 @@ defmodule Raxol.Auth do
   WARNING: This is a placeholder and insecure. Needs proper implementation.
   """
   def validate_token(_session_id, _token) do
-    # TODO: Implement proper session/token validation
-    # Placeholder: Assume token is valid and belongs to "user" for testing
-    # In a real app, look up session_id/token in a secure store.
-    # This mock implementation might need adjustment based on how UserAuth stores/retrieves tokens.
-    # It might be sufficient to just return {:ok, user_id} if Auth.get_user is called later.
-    # For now, let's assume a fixed user ID for testing UI flows.
-    # Mock: Always validates as user "user"'s session
+    # Placeholder implementation: Always returns {:ok, "user"} for testing UI flows.
+    # WARNING: This is insecure and should be replaced with real session/token validation logic.
     {:ok, "user"}
   end
 
@@ -34,8 +29,8 @@ defmodule Raxol.Auth do
   Checks if a user has the required role.
   """
   def has_role?(user_id, required_role) do
-    # TODO: Implement role checking
-    # For now, we'll use a simple mock role system
+    # Placeholder implementation: Only "admin" and "user" roles are recognized for testing.
+    # WARNING: Replace with real role checking logic using your user schema/roles.
     case user_id do
       "admin" -> true
       "user" -> required_role == :user
@@ -97,29 +92,25 @@ defmodule Raxol.Auth do
   Checks if a user has permission for a specific action (Placeholder).
   """
   def has_permission?(_user, _module, _action) do
-    # TODO: Implement actual permission checking logic
-    # Placeholder: Allow everything for now
+    # Placeholder implementation: Always allows everything for now.
+    # WARNING: Replace with real permission checking logic when available.
     true
   end
 
   @doc """
-  TODO: Review if needed, Accounts.get_user/1 exists
   Retrieves a user by their session ID.
+  NOTE: This function is a stub. Raxol.Auth.Session is undefined; consider removing if not needed.
   Returns the user or nil if not found or session is invalid.
   """
   def get_user_by_session(_session_id) do
-    # Raxol.Auth.Session is undefined, comment out for now
-    # case Session.get_session(session_id) do
     Logger.warning(
-      "get_user_by_session called, but Raxol.Auth.Session is undefined."
+      "get_user_by_session called, but Raxol.Auth.Session is undefined. This is a stub."
     )
-
     nil
   end
 
   # @doc """
-  # TODO: Review if needed
-  # Checks if a user has a specific permission.
+  # Checks if a user has a specific permission. (Unused stub; consider removing if not needed)
   # """
   # def has_permission?(user_id, permission) do
   #   user = Accounts.get_user(user_id)

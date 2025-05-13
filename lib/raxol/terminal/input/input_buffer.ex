@@ -245,7 +245,7 @@ defmodule Raxol.Terminal.Input.InputBuffer do
           # For prepend, take the end.
           final_contents =
             if operation == :prepend do
-              String.slice(new_contents, -buffer.max_size..-1//1)
+              String.slice(new_contents, max(0, -buffer.max_size)..-1//1)
             else
               String.slice(new_contents, 0, buffer.max_size)
             end
@@ -263,7 +263,7 @@ defmodule Raxol.Terminal.Input.InputBuffer do
             if operation == :prepend do
               String.slice(new_contents, 0, buffer.max_size)
             else
-              String.slice(new_contents, -buffer.max_size..-1//1)
+              String.slice(new_contents, max(0, -buffer.max_size)..-1//1)
             end
 
           %{buffer | contents: final_contents}
