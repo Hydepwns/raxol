@@ -1,6 +1,6 @@
 # Dependency Manager Module Architecture
 
-> **See Also:** [Dependency Manager API Reference](components/api/dependency_manager.md)
+> **See Also:** <!-- TODO: Dependency Manager API Reference link removed: components/api/dependency_manager.md -->
 
 ## Overview
 

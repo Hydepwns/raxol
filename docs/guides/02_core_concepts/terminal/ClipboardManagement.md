@@ -45,6 +45,6 @@ To differentiate between text typed by the user and text pasted into the termina
 
 Modern input components such as `MultiLineInput` now use a harmonized API for clipboard operations, selection, and paste handling. This ensures consistent behavior and prop support (including `on_change`, `theme`, and accessibility props) across all major input components.
 
-For usage details and supported props, see the [Main UI Components Guide](../../03_component_reference/Elements.md#multilineinput).
+<!-- TODO: Link to ../../03_component_reference/Elements.md#multilineinput removed due to missing file. -->
 
 > **Note:** Legacy input components may not fully support the harmonized clipboard conventions. Prefer the modern components for new development.
