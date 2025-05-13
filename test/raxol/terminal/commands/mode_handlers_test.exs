@@ -13,6 +13,7 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
       cursor: CursorManager.new(),
       style: TextFormatting.new()
     }
+
     {:ok, emulator: emulator}
   end
 
@@ -129,11 +130,13 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
 
     test "handles multiple parameters", %{emulator: emulator} do
       # First enable all modes
-      emulator = %{emulator |
-        insert_mode: true,
-        cursor: %{emulator.cursor | visible: true},
-        origin_mode: true
+      emulator = %{
+        emulator
+        | insert_mode: true,
+          cursor: %{emulator.cursor | visible: true},
+          origin_mode: true
       }
+
       result = ModeHandlers.handle_l(emulator, [4, 25, 6])
       assert result.insert_mode == false
       assert result.cursor.visible == false
@@ -149,9 +152,10 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
   describe "handle_s/2 (Save Cursor)" do
     test "saves cursor position and attributes", %{emulator: emulator} do
       # Set cursor position and attributes
-      emulator = %{emulator |
-        cursor: %{emulator.cursor | position: {5, 5}},
-        style: Map.merge(TextFormatting.new(), %{bold: true, fg_color: :red})
+      emulator = %{
+        emulator
+        | cursor: %{emulator.cursor | position: {5, 5}},
+          style: Map.merge(TextFormatting.new(), %{bold: true, fg_color: :red})
       }
 
       result = ModeHandlers.handle_s(emulator, [])
@@ -170,6 +174,7 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
         position: {5, 5},
         style: Map.merge(TextFormatting.new(), %{bold: true, fg_color: :red})
       }
+
       emulator = %{emulator | saved_cursor: saved_cursor}
 
       result = ModeHandlers.handle_u(emulator, [])

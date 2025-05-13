@@ -17,6 +17,7 @@ defmodule Raxol.UI.Components.Input.Button do
           disabled: boolean(),
           focused: boolean(),
           theme: map(),
+          style: map(),
           width: integer() | nil,
           height: integer() | nil,
           shortcut: String.t() | nil,
@@ -37,6 +38,7 @@ defmodule Raxol.UI.Components.Input.Button do
     width = Map.get(opts, :width)
     height = Map.get(opts, :height)
     theme = Map.get(opts, :theme, %{})
+    style = Map.get(opts, :style, %{})
     # Added role handling
     role = Map.get(opts, :role, :default)
     # Added focused state
@@ -52,6 +54,7 @@ defmodule Raxol.UI.Components.Input.Button do
       width: width,
       height: height,
       theme: theme,
+      style: style,
       role: role,
       # Ensure focused state is included
       focused: focused,
@@ -70,6 +73,12 @@ defmodule Raxol.UI.Components.Input.Button do
     initialized_state = new(state)
     {:ok, initialized_state}
   end
+
+  @impl Component
+  def mount(state), do: state
+
+  @impl Component
+  def unmount(state), do: state
 
   @doc """
   Updates the button component state based on external messages.
@@ -96,11 +105,12 @@ defmodule Raxol.UI.Components.Input.Button do
     # Access component styles correctly from context.component_styles
     component_styles = context.component_styles || %{}
     button_theme_from_context = component_styles.button || %{}
-    # Prioritize button's own theme map, fallback to context's button styles
     theme = Map.merge(button_theme_from_context, button.theme || %{})
+    style = button.style || %{}
+    merged_style = Map.merge(theme, style)
 
     # Determine colors based on state (including focus) and role
-    {fg, bg} = resolve_colors(button, theme)
+    {fg, bg} = resolve_colors(button, merged_style)
 
     button_width =
       button.width || min(String.length(button.label) + 4, context.max_width)
@@ -201,29 +211,29 @@ defmodule Raxol.UI.Components.Input.Button do
 
   # Private helpers
 
-  defp resolve_colors(button, theme) do
+  defp resolve_colors(button, style) do
     # Default fg from theme or :default
-    default_fg = Map.get(theme, :fg, :default)
+    default_fg = Map.get(style, :fg, :default)
     # Default bg from theme or :default
-    default_bg = Map.get(theme, :bg, :default)
+    default_bg = Map.get(style, :bg, :default)
 
     cond do
       button.disabled ->
         # Use Map.get with fallback to default_fg/default_bg
-        {Map.get(theme, :disabled_fg, default_fg),
-         Map.get(theme, :disabled_bg, default_bg)}
+        {Map.get(style, :disabled_fg, default_fg),
+         Map.get(style, :disabled_bg, default_bg)}
 
       button.focused ->
-        {Map.get(theme, :focused_fg, default_fg),
-         Map.get(theme, :focused_bg, default_bg)}
+        {Map.get(style, :focused_fg, default_fg),
+         Map.get(style, :focused_bg, default_bg)}
 
       button.role == :primary ->
-        {Map.get(theme, :primary_fg, default_fg),
-         Map.get(theme, :primary_bg, default_bg)}
+        {Map.get(style, :primary_fg, default_fg),
+         Map.get(style, :primary_bg, default_bg)}
 
       button.role == :secondary ->
-        {Map.get(theme, :secondary_fg, default_fg),
-         Map.get(theme, :secondary_bg, default_bg)}
+        {Map.get(style, :secondary_fg, default_fg),
+         Map.get(style, :secondary_bg, default_bg)}
 
       true ->
         {default_fg, default_bg}

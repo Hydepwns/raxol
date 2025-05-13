@@ -31,15 +31,22 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
 
   def search_matches?({label, value}, search_text, searchable_fields) do
     # Always search the label
-    label_match = String.contains?(String.downcase(label), String.downcase(search_text))
+    label_match =
+      String.contains?(String.downcase(label), String.downcase(search_text))
 
     # Search specified fields in the value if it's a map
     value_match =
       if is_map(value) do
         Enum.any?(searchable_fields, fn field ->
           case Map.get(value, field) do
-            nil -> false
-            field_value -> String.contains?(String.downcase(to_string(field_value)), String.downcase(search_text))
+            nil ->
+              false
+
+            field_value ->
+              String.contains?(
+                String.downcase(to_string(field_value)),
+                String.downcase(search_text)
+              )
           end
         end)
       else
@@ -57,7 +64,8 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
       state
       | search_text: search_text,
         is_filtering: search_text != "",
-        filtered_options: filter_options(state.options, search_text, state.searchable_fields),
+        filtered_options:
+          filter_options(state.options, search_text, state.searchable_fields),
         # Reset focus to first matching item
         focused_index: 0,
         # Reset scroll position

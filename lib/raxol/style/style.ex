@@ -129,14 +129,23 @@ defmodule Raxol.Style do
   Merges two styles, with the second overriding the first.
   """
   def merge(base, override) do
+    layout1 = Map.get(base, :layout) || Layout.new()
+    layout2 = Map.get(override, :layout) || Layout.new()
+    border1 = Map.get(base, :border) || Borders.new()
+    border2 = Map.get(override, :border) || Borders.new()
+
     %__MODULE__{
-      layout: Layout.merge(base.layout, override.layout),
-      border: Borders.merge(base.border, override.border),
-      color: override.color || base.color,
-      background: override.background || base.background,
+      layout: Layout.merge(layout1, layout2),
+      border: Borders.merge(border1, border2),
+      color: Map.get(override, :color) || Map.get(base, :color),
+      background: Map.get(override, :background) || Map.get(base, :background),
       text_decoration:
-        (base.text_decoration ++ override.text_decoration) |> Enum.uniq(),
-      decorations: (base.decorations ++ override.decorations) |> Enum.uniq()
+        (Map.get(base, :text_decoration, []) ++
+           Map.get(override, :text_decoration, []))
+        |> Enum.uniq(),
+      decorations:
+        (Map.get(base, :decorations, []) ++ Map.get(override, :decorations, []))
+        |> Enum.uniq()
     }
   end
 
@@ -173,7 +182,7 @@ defmodule Raxol.Style do
   Resolves a style definition against the current theme.
   """
   def resolve(style_def, theme \\ nil) do
-    theme = theme || Raxol.Style.Theme.current()
+    theme = theme || Raxol.UI.Theming.Theme.current()
 
     resolved_style =
       case style_def do

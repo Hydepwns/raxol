@@ -40,12 +40,13 @@ defmodule Raxol.Style.Colors.System do
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Style.Colors.HSL
   alias Raxol.Style.Colors.Color
+  alias Raxol.UI.Theming.Theme
 
   defstruct [
     # ... existing code ...
   ]
 
-  @default_theme :standard
+  @default_theme :default
 
   @doc """
   Initialize the color system.
@@ -55,7 +56,7 @@ defmodule Raxol.Style.Colors.System do
 
   ## Options
 
-  * `:theme` - The initial theme to use (default: `:standard`)
+  * `:theme` - The initial theme to use (default: `:default`)
   * `:high_contrast` - Whether to start in high contrast mode (default: from accessibility settings)
 
   ## Examples
@@ -67,8 +68,9 @@ defmodule Raxol.Style.Colors.System do
       :ok
   """
   def init(opts \\ []) do
-    # Get the initial theme
-    initial_theme = Keyword.get(opts, :theme, @default_theme)
+    # Get the initial theme (as an atom or struct)
+    initial_theme_id = Keyword.get(opts, :theme, @default_theme)
+    initial_theme = Theme.get(initial_theme_id)
 
     # Get high contrast setting from accessibility or options
     high_contrast =
@@ -84,20 +86,9 @@ defmodule Raxol.Style.Colors.System do
           )
       end
 
-    # Initialize color palettes registry
-    Process.put(:color_system_palettes, %{})
-
-    # Initialize themes registry
-    Process.put(:color_system_themes, %{})
-
-    # Initialize current theme
-    Process.put(:color_system_current_theme, initial_theme)
-
-    # Initialize high contrast state
+    # Set current theme in process (optional, for compatibility)
+    Process.put(:color_system_current_theme, initial_theme.id)
     Process.put(:color_system_high_contrast, high_contrast)
-
-    # Register standard themes
-    register_standard_themes()
 
     # Register event handlers for accessibility changes
     EventManager.register_handler(
@@ -107,7 +98,7 @@ defmodule Raxol.Style.Colors.System do
     )
 
     # Apply the initial theme
-    apply_theme(initial_theme, high_contrast: high_contrast)
+    apply_theme(initial_theme.id, high_contrast: high_contrast)
 
     :ok
   end
@@ -151,18 +142,11 @@ defmodule Raxol.Style.Colors.System do
 
   ## Parameters
 
-  * `theme_name` - Unique identifier for the theme
-  * `colors` - Map of color names to color values
-  * `opts` - Additional options
-
-  ## Options
-
-  * `:high_contrast_colors` - Map of high contrast alternatives
-  * `:variants` - Map of color variants (hover, active, etc.)
+  * `theme_attrs` - Map of theme attributes
 
   ## Examples
 
-      iex> ColorSystem.register_theme(:ocean, %{
+      iex> ColorSystem.register_theme(%{
       ...>   primary: "#0077CC",
       ...>   secondary: "#00AAFF",
       ...>   background: "#001133",
@@ -171,28 +155,9 @@ defmodule Raxol.Style.Colors.System do
       ...> })
       :ok
   """
-  def register_theme(theme_name, colors, opts \\ []) do
-    # Get high contrast colors or generate them automatically
-    high_contrast_colors =
-      Keyword.get(opts, :high_contrast_colors) ||
-        generate_high_contrast_colors(colors)
-
-    # Get variants or use defaults
-    variants = Keyword.get(opts, :variants) || %{}
-
-    # Create theme record
-    theme = %{
-      colors: colors,
-      high_contrast_colors: high_contrast_colors,
-      variants: variants
-    }
-
-    # Update themes registry
-    themes = Process.get(:color_system_themes, %{})
-    updated_themes = Map.put(themes, theme_name, theme)
-    Process.put(:color_system_themes, updated_themes)
-
-    :ok
+  def register_theme(theme_attrs) do
+    theme = Theme.new(theme_attrs)
+    Theme.register(theme)
   end
 
   @doc """
@@ -200,7 +165,7 @@ defmodule Raxol.Style.Colors.System do
 
   ## Parameters
 
-  - `theme` - The theme to apply
+  - `theme_id` - The ID of the theme to apply
   - `opts` - Additional options
     - `:high_contrast` - Whether to apply high contrast mode (default: current setting)
 
@@ -209,8 +174,7 @@ defmodule Raxol.Style.Colors.System do
   - `:ok` on success
   - `{:error, reason}` on failure
   """
-  def apply_theme(theme, opts \\ []) do
-    # Get high contrast setting from options or current state
+  def apply_theme(theme_id, opts \\ []) do
     high_contrast =
       Keyword.get(
         opts,
@@ -218,13 +182,10 @@ defmodule Raxol.Style.Colors.System do
         Process.get(:color_system_high_contrast, false)
       )
 
-    # Update current theme
-    Process.put(:color_system_current_theme, theme)
-
-    # Update high contrast state
+    theme = Theme.get(theme_id)
+    Process.put(:color_system_current_theme, theme.id)
     Process.put(:color_system_high_contrast, high_contrast)
 
-    # Emit theme change event
     EventManager.dispatch(
       {:theme_changed, %{theme: theme, high_contrast: high_contrast}}
     )
@@ -241,7 +202,7 @@ defmodule Raxol.Style.Colors.System do
 
     # Re-apply current theme with new high contrast setting
     current_theme = get_current_theme()
-    apply_theme(current_theme, high_contrast: enabled)
+    apply_theme(current_theme.id, high_contrast: enabled)
 
     EventManager.dispatch({:high_contrast_changed, enabled})
   end
@@ -249,43 +210,27 @@ defmodule Raxol.Style.Colors.System do
   # Private functions
 
   defp get_current_theme do
-    Process.get(:color_system_current_theme, @default_theme)
+    theme_id = Process.get(:color_system_current_theme, @default_theme)
+    Theme.get(theme_id)
   end
 
   defp get_high_contrast do
     Process.get(:color_system_high_contrast, false)
   end
 
-  defp get_standard_color(theme_name, color_name, variant) do
-    case Process.get(:color_system_themes, %{}) do
-      %{^theme_name => theme} ->
-        # Try variant first, then base color
-        # Fallback to a default color if not found
-        Map.get(theme.variants, {color_name, variant}) ||
-          Map.get(theme.colors, color_name) ||
-          default_color(color_name)
-
-      _ ->
-        # Theme not found, fallback
-        default_color(color_name)
-    end
+  defp get_standard_color(theme, color_name, variant) do
+    # Try variant first, then base color
+    Map.get(theme.variants, {color_name, variant}) ||
+      Map.get(theme.colors, color_name) ||
+      default_color(color_name)
   end
 
-  defp get_high_contrast_color(theme_name, color_name, variant) do
-    case Process.get(:color_system_themes, %{}) do
-      %{^theme_name => theme} ->
-        # Try high contrast variant first, then high contrast base color
-        # Fallback to standard color if high contrast not defined
-        # Further fallback
-        Map.get(theme.variants, {color_name, variant, :high_contrast}) ||
-          Map.get(theme.high_contrast_colors, color_name) ||
-          get_standard_color(theme_name, color_name, variant) ||
-          default_color(color_name)
-
-      _ ->
-        # Theme not found, fallback
-        default_color(color_name)
-    end
+  defp get_high_contrast_color(theme, color_name, variant) do
+    # Try high contrast variant first, then high contrast base color
+    Map.get(theme.variants, {color_name, variant, :high_contrast}) ||
+      Map.get(theme.colors, color_name) ||
+      get_standard_color(theme, color_name, variant) ||
+      default_color(color_name)
   end
 
   defp generate_high_contrast_colors(colors) do
@@ -346,81 +291,7 @@ defmodule Raxol.Style.Colors.System do
     end
   end
 
-  defp register_standard_themes do
-    # Define standard theme
-    register_theme(
-      :standard,
-      %{
-        foreground: "#333333",
-        background: "#FFFFFF",
-        primary: "#007bff",
-        secondary: "#6c757d",
-        success: "#28a745",
-        danger: "#dc3545",
-        warning: "#ffc107",
-        info: "#17a2b8",
-        light: "#f8f9fa",
-        dark: "#343a40",
-        # Example accent
-        accent: "#ff6b6b"
-      }
-      # Define variants if needed
-    )
-
-    # Define dark theme
-    register_theme(
-      :dark,
-      %{
-        foreground: "#e9ecef",
-        background: "#212529",
-        # Slightly brighter blue for dark mode
-        primary: "#0d6efd",
-        secondary: "#6c757d",
-        success: "#198754",
-        danger: "#dc3545",
-        warning: "#ffc107",
-        info: "#0dcaf0",
-        # Often kept light for contrast elements
-        light: "#f8f9fa",
-        # Base dark color
-        dark: "#343a40",
-        # Example accent
-        accent: "#f7a072"
-      }
-    )
-
-    # Define high contrast theme (often black and white with bright accents)
-    register_theme(
-      :high_contrast,
-      %{
-        foreground: "#FFFFFF",
-        background: "#000000",
-        # Bright yellow
-        primary: "#FFFF00",
-        # Bright cyan
-        secondary: "#00FFFF",
-        # Bright green
-        success: "#00FF00",
-        # Bright red
-        danger: "#FF0000",
-        # Bright magenta
-        warning: "#FF00FF",
-        # Bright cyan (reused)
-        info: "#00FFFF",
-        # Pure white
-        light: "#FFFFFF",
-        # Pure black
-        dark: "#000000",
-        # Example accent
-        accent: "#FF00FF"
-      }
-    )
-  end
-
-  @doc """
-  Gets the name (atom) of the currently applied theme.
-  """
-  @spec get_current_theme_name() :: atom()
+  @spec get_current_theme_name() :: atom() | String.t()
   def get_current_theme_name do
     Process.get(:color_system_current_theme, @default_theme)
   end

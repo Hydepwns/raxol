@@ -226,6 +226,30 @@ defmodule Raxol.Terminal.Buffer.Manager do
     Enum.take_every(0..(width - 1), 8) |> Enum.to_list()
   end
 
+  @doc """
+  Marks a region of the buffer as damaged (needs redraw).
+  """
+  def mark_damaged(state, _x, _y, _width, _height) do
+    # Stub: No-op, just return state
+    state
+  end
+
+  @doc """
+  Updates the memory usage for the buffer manager.
+  """
+  def update_memory_usage(state) do
+    # Stub: No-op, just return state
+    state
+  end
+
+  @doc """
+  Sets the cursor position in the buffer manager.
+  """
+  def set_cursor_position(state, x, y) do
+    # Stub: Update a cursor_position field if present, else just return state
+    Map.put(state, :cursor_position, {x, y})
+  end
+
   # Server Callbacks
 
   @impl true

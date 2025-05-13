@@ -195,7 +195,9 @@ defmodule Raxol.Core.Renderer.View do
   """
   defmacro row(opts, do: block) do
     quote do
-      Raxol.Core.Renderer.View.Layout.Flex.row(Keyword.merge(unquote(opts), [children: unquote(block)]))
+      Raxol.Core.Renderer.View.Layout.Flex.row(
+        Keyword.merge(unquote(opts), children: unquote(block))
+      )
     end
   end
 
@@ -210,7 +212,9 @@ defmodule Raxol.Core.Renderer.View do
   """
   defmacro grid(opts, do: block) do
     quote do
-      Raxol.Core.Renderer.View.Layout.Grid.new(Keyword.merge(unquote(opts), [children: unquote(block)]))
+      Raxol.Core.Renderer.View.Layout.Grid.new(
+        Keyword.merge(unquote(opts), children: unquote(block))
+      )
     end
   end
 
@@ -235,7 +239,10 @@ defmodule Raxol.Core.Renderer.View do
 
   defmacro border_wrap(style, opts, do: block) do
     quote do
-      Raxol.Core.Renderer.View.Style.Border.wrap(unquote(block), Keyword.merge([style: unquote(style)], unquote(opts)))
+      Raxol.Core.Renderer.View.Style.Border.wrap(
+        unquote(block),
+        Keyword.merge([style: unquote(style)], unquote(opts))
+      )
     end
   end
 
@@ -250,7 +257,10 @@ defmodule Raxol.Core.Renderer.View do
   """
   defmacro scroll_wrap(opts, do: block) do
     quote do
-      Raxol.Core.Renderer.View.Components.Scroll.new(unquote(block), unquote(opts))
+      Raxol.Core.Renderer.View.Components.Scroll.new(
+        unquote(block),
+        unquote(opts)
+      )
     end
   end
 
@@ -361,6 +371,45 @@ defmodule Raxol.Core.Renderer.View do
   """
   def simple_border(view, opts \\ []) do
     wrap_with_border(view, Keyword.put(opts, :style, :simple))
+  end
+
+  @doc """
+  Creates a new panel view (box with border and children).
+
+  ## Options
+    * `:children` - Child views
+    * `:border` - Border style (default: :single)
+    * `:padding` - Padding inside the panel (default: 1)
+    * `:style` - Additional style options
+    * `:title` - Optional title for the panel
+    * `:fg` - Foreground color
+    * `:bg` - Background color
+
+  ## Examples
+      View.panel(children: [View.text("Hello")])
+      View.panel(border: :double, title: "Panel")
+  """
+  def panel(opts \\ []) do
+    border = Keyword.get(opts, :border, :single)
+    padding = Keyword.get(opts, :padding, 1)
+    children = Keyword.get(opts, :children, [])
+    style = Keyword.get(opts, :style, [])
+    title = Keyword.get(opts, :title)
+    fg = Keyword.get(opts, :fg)
+    bg = Keyword.get(opts, :bg)
+
+    box_opts =
+      [
+        border: border,
+        padding: padding,
+        children: children,
+        fg: fg,
+        bg: bg
+      ]
+      |> Keyword.merge(if(title, do: [title: title], else: []))
+      |> Keyword.merge(if(style != [], do: [style: style], else: []))
+
+    __MODULE__.box(box_opts)
   end
 
   defp normalize_spacing(view) do

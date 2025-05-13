@@ -1,12 +1,14 @@
-defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
+defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
   @moduledoc """
   Handles key and mouse events for MultiLineInput, translating them into update messages.
   """
 
   # Needed for update/2 calls
-  alias Raxol.Components.Input.MultiLineInput
+  alias Raxol.UI.Components.Input.MultiLineInput
   # For event structs like KeyDown
   alias Raxol.Core.Events.Event, as: Event
+  alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
+  alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
   require Logger
 
   # Directly handle the event struct for more clarity
@@ -15,7 +17,7 @@ defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
           type: :key,
           data: %{key: key, state: state, modifiers: modifiers}
         } = event,
-        input_state
+        input_stat
       )
       when state in [:pressed, :repeat] do
     # Debug logging to see exactly what's coming in
@@ -134,10 +136,10 @@ defmodule Raxol.Components.Input.MultiLineInput.EventHandler do
     # Return the update message directly for the component behaviour
     if msg do
       Logger.debug("Returning update message: #{inspect(msg)}")
-      {:update, msg, input_state}
+      {:update, msg, input_stat}
     else
       Logger.debug("No message handler found, returning noreply")
-      {:noreply, input_state, nil}
+      {:noreply, input_stat, nil}
     end
   end
 

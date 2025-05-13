@@ -24,7 +24,8 @@ erl_crash.dump
 raxol-*.tar
 
 # Temporary files, for example, from tests.
-/tmp/
+/tmp/*
+!/tmp/.gitkeep
 
 # Environment files
 .env
@@ -70,13 +71,12 @@ yarn-error.log
 *.swp
 *.swo
 *~
-# *.log
+!*.log
 *.pid
 *.beam
 *.dump
 *.ez
 *.iml
-.idea/
 .vscode/
 themes/working_version.json
 themes/staged_version.json

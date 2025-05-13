@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Parser.States.DesignateCharsetState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
-  alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
   require Logger
 
   @doc """

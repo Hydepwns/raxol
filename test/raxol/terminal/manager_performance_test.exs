@@ -30,43 +30,64 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
       events = generate_test_events(1000)
 
       # Benchmark event processing
-      results = benchmark(fn ->
-        Enum.each(events, fn event ->
-          Manager.process_event(manager, event)
-        end)
-      end, iterations: 100, warmup: 10)
+      results =
+        benchmark(
+          fn ->
+            Enum.each(events, fn event ->
+              Manager.process_event(manager, event)
+            end)
+          end,
+          iterations: 100,
+          warmup: 10
+        )
 
       # Assert performance requirements
       assert_performance(results,
-        max_average_time: 1000,  # 1ms per event
-        max_p95_time: 2000,      # 2ms for 95th percentile
+        # 1ms per event
+        max_average_time: 1000,
+        # 2ms for 95th percentile
+        max_p95_time: 2000,
         min_iterations: 100
       )
 
       # Log results for analysis
-      Logger.info("Terminal Manager Event Processing Performance:\n#{format_benchmark_results(results)}")
+      Logger.info(
+        "Terminal Manager Event Processing Performance:\n#{format_benchmark_results(results)}"
+      )
     end
 
-    test "handles screen updates efficiently", %{manager: manager, terminal: terminal} do
+    test "handles screen updates efficiently", %{
+      manager: manager,
+      terminal: terminal
+    } do
       # Generate screen update commands
       updates = generate_screen_updates(100)
 
       # Benchmark screen updates
-      results = benchmark(fn ->
-        Enum.each(updates, fn update ->
-          Manager.update_screen(manager, update)
-        end)
-      end, iterations: 100, warmup: 10)
+      results =
+        benchmark(
+          fn ->
+            Enum.each(updates, fn update ->
+              Manager.update_screen(manager, update)
+            end)
+          end,
+          iterations: 100,
+          warmup: 10
+        )
 
       # Assert performance requirements
       assert_performance(results,
-        max_average_time: 2000,  # 2ms per update
-        max_p95_time: 5000,      # 5ms for 95th percentile
+        # 2ms per update
+        max_average_time: 2000,
+        # 5ms for 95th percentile
+        max_p95_time: 5000,
         min_iterations: 100
       )
 
       # Log results for analysis
-      Logger.info("Terminal Manager Screen Update Performance:\n#{format_benchmark_results(results)}")
+      Logger.info(
+        "Terminal Manager Screen Update Performance:\n#{format_benchmark_results(results)}"
+      )
     end
 
     test "handles concurrent operations efficiently", %{manager: manager} do
@@ -78,20 +99,29 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
       ]
 
       # Benchmark concurrent operations
-      results = benchmark(fn ->
-        Task.async_stream(operations, fn op -> op.() end)
-        |> Stream.run()
-      end, iterations: 100, warmup: 10)
+      results =
+        benchmark(
+          fn ->
+            Task.async_stream(operations, fn op -> op.() end)
+            |> Stream.run()
+          end,
+          iterations: 100,
+          warmup: 10
+        )
 
       # Assert performance requirements
       assert_performance(results,
-        max_average_time: 5000,  # 5ms for concurrent operations
-        max_p95_time: 10000,     # 10ms for 95th percentile
+        # 5ms for concurrent operations
+        max_average_time: 5000,
+        # 10ms for 95th percentile
+        max_p95_time: 10000,
         min_iterations: 100
       )
 
       # Log results for analysis
-      Logger.info("Terminal Manager Concurrent Operations Performance:\n#{format_benchmark_results(results)}")
+      Logger.info(
+        "Terminal Manager Concurrent Operations Performance:\n#{format_benchmark_results(results)}"
+      )
     end
   end
 

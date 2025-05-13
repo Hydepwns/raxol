@@ -381,4 +381,23 @@ defmodule Raxol.UI.Components.Display.TableTest do
       assert state_still_top.scroll_top == 0
     end
   end
+
+  describe "Table Lifecycle" do
+    @describetag :component
+    setup do
+      {:ok, initial_component_state} = Table.init(%{id: :lifecycle_table})
+      {:ok, state: initial_component_state}
+    end
+
+    test "mount/1 returns state and commands (currently empty)", %{state: state} do
+      {:ok, mounted_state, commands} = Table.mount(state)
+      assert mounted_state == state
+      assert commands == []
+    end
+
+    test "unmount/1 returns state (currently no-op)", %{state: state} do
+      {:ok, unmounted_state} = Table.unmount(state)
+      assert unmounted_state == state
+    end
+  end
 end

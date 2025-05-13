@@ -196,4 +196,26 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
       # Actual cursor rendering might be handled higher up
     end
   end
+
+  describe "theming, style, and lifecycle" do
+    test "applies style and theme props to input" do
+      theme = %{input: %{border: "2px solid #00ff00", color: "#123456"}}
+      style = %{input: %{border_radius: "8px", color: "#654321"}}
+
+      state =
+        create_component_state(%{value: "Styled", theme: theme, style: style})
+
+      rendered = TextInput.render(state, %{})
+      # Style should be merged, style prop overrides theme
+      assert rendered.style.border == "2px solid #00ff00"
+      assert rendered.style.border_radius == "8px"
+      assert rendered.style.color == "#654321"
+    end
+
+    test "mount/1 and unmount/1 return state unchanged" do
+      state = create_component_state(%{value: "foo"})
+      assert TextInput.mount(state) == state
+      assert TextInput.unmount(state) == state
+    end
+  end
 end

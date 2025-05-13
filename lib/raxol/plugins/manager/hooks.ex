@@ -26,19 +26,21 @@ defmodule Raxol.Plugins.Manager.Hooks do
           # Call using the module with plugin state as first argument
           case module.handle_render(plugin) do
             {:ok, updated_plugin, command} when not is_nil(command) ->
-              updated_manager = Core.update_plugins(
-                acc_manager,
-                Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-              )
+              updated_manager =
+                Core.update_plugins(
+                  acc_manager,
+                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+                )
 
               {:ok, updated_manager, [command | acc_commands]}
 
             # No command returned
             {:ok, updated_plugin} ->
-              updated_manager = Core.update_plugins(
-                acc_manager,
-                Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-              )
+              updated_manager =
+                Core.update_plugins(
+                  acc_manager,
+                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+                )
 
               {:ok, updated_manager, acc_commands}
 
@@ -78,19 +80,21 @@ defmodule Raxol.Plugins.Manager.Hooks do
           # Call using the module with plugin state as first argument
           case apply(module, hook_name, [plugin | args]) do
             {:ok, updated_plugin, result} ->
-              updated_manager = Core.update_plugins(
-                acc_manager,
-                Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-              )
+              updated_manager =
+                Core.update_plugins(
+                  acc_manager,
+                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+                )
 
               {:ok, updated_manager, [result | acc_results]}
 
             # No result returned
             {:ok, updated_plugin} ->
-              updated_manager = Core.update_plugins(
-                acc_manager,
-                Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-              )
+              updated_manager =
+                Core.update_plugins(
+                  acc_manager,
+                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+                )
 
               {:ok, updated_manager, acc_results}
 

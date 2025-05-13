@@ -30,8 +30,16 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
     %{emulator | output: emulator.output <> response}
   end
 
+  @doc "Handles Device Status Report (CPR - '6n') (stub)."
+  @spec handle_6n(Emulator.t(), list(integer())) :: Emulator.t()
+  def handle_6n(emulator, _params) do
+    # Stub: Implement actual logic if needed
+    emulator
+  end
+
   # Helper function to generate DSR response based on code
-  @spec generate_dsr_response(non_neg_integer(), Emulator.t()) :: String.t() | nil
+  @spec generate_dsr_response(non_neg_integer(), Emulator.t()) ::
+          String.t() | nil
   defp generate_dsr_response(code, emulator) do
     case code do
       # Report cursor position (CPR)
@@ -42,7 +50,8 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
 
       # Report device status (DSR)
       5 ->
-        "\e[0n" # Device ready
+        # Device ready
+        "\e[0n"
 
       _ ->
         Logger.warning("Unknown DSR code: #{code}")
@@ -54,8 +63,10 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
   @spec generate_da_response(String.t()) :: String.t()
   defp generate_da_response(intermediates_buffer) do
     case intermediates_buffer do
-      ">" -> "\e[>0;0;0c" # Secondary DA: VT100 with no options
-      _ -> "\e[?1;0c" # Primary DA: VT100 with no options
+      # Secondary DA: VT100 with no options
+      ">" -> "\e[>0;0;0c"
+      # Primary DA: VT100 with no options
+      _ -> "\e[?1;0c"
     end
   end
 
@@ -65,13 +76,23 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
   Gets a parameter value with validation.
   Returns the parameter value if valid, or the default value if invalid.
   """
-  @spec get_valid_param(list(integer() | nil), non_neg_integer(), integer(), integer(), integer()) :: integer()
+  @spec get_valid_param(
+          list(integer() | nil),
+          non_neg_integer(),
+          integer(),
+          integer(),
+          integer()
+        ) :: integer()
   defp get_valid_param(params, index, default, min, max) do
     case Enum.at(params, index, default) do
       value when is_integer(value) and value >= min and value <= max ->
         value
+
       _ ->
-        Logger.warning("Invalid parameter value at index #{index}, using default #{default}")
+        Logger.warning(
+          "Invalid parameter value at index #{index}, using default #{default}"
+        )
+
         default
     end
   end
@@ -80,7 +101,11 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
   Gets a parameter value with validation for non-negative integers.
   Returns the parameter value if valid, or the default value if invalid.
   """
-  @spec get_valid_non_neg_param(list(integer() | nil), non_neg_integer(), non_neg_integer()) :: non_neg_integer()
+  @spec get_valid_non_neg_param(
+          list(integer() | nil),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: non_neg_integer()
   defp get_valid_non_neg_param(params, index, default) do
     get_valid_param(params, index, default, 0, 9999)
   end

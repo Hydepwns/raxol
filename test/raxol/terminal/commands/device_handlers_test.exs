@@ -13,6 +13,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlersTest do
       cursor: CursorManager.new(),
       style: TextFormatting.new()
     }
+
     {:ok, emulator: emulator}
   end
 

@@ -116,7 +116,8 @@ defmodule Raxol.Terminal.Emulator.Core do
     command_manager = CommandManager.new()
 
     # Initialize buffers through BufferManager
-    {main_buffer, alternate_buffer} = Manager.initialize_buffers(width, height, scrollback_limit)
+    {main_buffer, alternate_buffer} =
+      Manager.initialize_buffers(width, height, scrollback_limit)
 
     %__MODULE__{
       cursor: initial_cursor,

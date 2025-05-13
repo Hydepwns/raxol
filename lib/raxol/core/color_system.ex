@@ -9,16 +9,14 @@ defmodule Raxol.Core.ColorSystem do
   ## Features
 
   - Theme management with semantic color naming
-  - Color palette generation and manipulation
   - Color format conversion and validation
   - Accessibility checks and adjustments
   """
 
   alias Raxol.UI.Theming.Theme
   alias Raxol.Core.Accessibility.ThemeIntegration
-  # For color parsing/manipulation if needed
   alias Raxol.UI.Theming.Colors
-  alias Raxol.Style.Colors.{Color, Palettes, Utilities}
+  alias Raxol.Style.Colors.{Color, Utilities}
   require Logger
 
   @doc """
@@ -36,7 +34,8 @@ defmodule Raxol.Core.ColorSystem do
   """
   def create_theme(name, colors) when is_binary(name) and is_map(colors) do
     # Convert hex colors to Color structs
-    colors = Map.new(colors, fn {key, value} -> {key, Color.from_hex(value)} end)
+    colors =
+      Map.new(colors, fn {key, value} -> {key, Color.from_hex(value)} end)
 
     %{
       name: name,
@@ -76,33 +75,6 @@ defmodule Raxol.Core.ColorSystem do
 
     Utilities.meets_contrast_requirements?(fg, bg, level, size)
   end
-
-  @doc """
-  Generates a color palette from a primary color.
-
-  ## Examples
-
-      iex> palette = generate_palette("#FF0000")
-      iex> palette.primary.hex
-      "#FF0000"
-  """
-  def generate_palette(primary_color) when is_binary(primary_color) do
-    Palettes.from_primary(primary_color)
-  end
-
-  @doc """
-  Gets a predefined color palette by name.
-
-  ## Examples
-
-      iex> palette = get_palette(:solarized)
-      iex> palette.primary.hex
-      "#268BD2"
-  """
-  def get_palette(:solarized), do: Palettes.solarized()
-  def get_palette(:nord), do: Palettes.nord()
-  def get_palette(:dracula), do: Palettes.dracula()
-  def get_palette(:ansi_16), do: Palettes.ansi_16()
 
   @doc """
   Converts a color to its ANSI representation.
@@ -247,11 +219,13 @@ defmodule Raxol.Core.ColorSystem do
 
     # Try lightening first
     lightened = Color.lighten(current, step)
+
     if Utilities.meets_contrast_requirements?(lightened, bg, level, size) do
       lightened
     else
       # If lightening doesn't work, try darkening
       darkened = Color.darken(current, step)
+
       if Utilities.meets_contrast_requirements?(darkened, bg, level, size) do
         darkened
       else

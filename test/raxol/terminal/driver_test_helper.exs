@@ -16,9 +16,16 @@ defmodule Raxol.Terminal.DriverTestHelper do
 
   def wait_for_driver_ready(driver_pid, timeout \\ 500) do
     case :erlang.trace_receive(timeout) do
-      {:driver_ready, ^driver_pid} -> :ok
-      {:driver_ready, other_pid} -> assert other_pid == driver_pid
-      other -> flunk("Expected {:driver_ready, #{inspect(driver_pid)}}, got: #{inspect(other)}")
+      {:driver_ready, ^driver_pid} ->
+        :ok
+
+      {:driver_ready, other_pid} ->
+        assert other_pid == driver_pid
+
+      other ->
+        flunk(
+          "Expected {:driver_ready, #{inspect(driver_pid)}}, got: #{inspect(other)}"
+        )
     end
   end
 
@@ -55,10 +62,11 @@ defmodule Raxol.Terminal.DriverTestHelper do
   end
 
   def assert_key_event(char, key \\ nil, modifiers \\ %{}) do
-    modifiers = Map.merge(
-      %{shift: false, ctrl: false, alt: false, meta: false},
-      modifiers
-    )
+    modifiers =
+      Map.merge(
+        %{shift: false, ctrl: false, alt: false, meta: false},
+        modifiers
+      )
 
     assert_receive {:"$gen_cast",
                     {:dispatch,
@@ -74,6 +82,7 @@ defmodule Raxol.Terminal.DriverTestHelper do
                        }
                      }}},
                    500
+
     assert shift == modifiers.shift
     assert ctrl == modifiers.ctrl
     assert alt == modifiers.alt
@@ -90,7 +99,10 @@ defmodule Raxol.Terminal.DriverTestHelper do
   def assert_resize_event(width, height) do
     assert_receive {:"$gen_cast",
                     {:dispatch,
-                     %Event{type: :resize, data: %{width: width, height: height}}}},
+                     %Event{
+                       type: :resize,
+                       data: %{width: width, height: height}
+                     }}},
                    500
   end
 

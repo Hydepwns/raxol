@@ -3,11 +3,13 @@ defmodule Raxol.UI.Components.Display.Progress do
   A progress bar component for displaying completion status.
 
   Features:
-  * Customizable colors
+  * Customizable colors (harmonized style/theme prop merging)
   * Percentage display option
   * Custom width
   * Animated progress
   * Optional label
+  * Accessibility/extra props (aria_label, tooltip, etc)
+  * Robust lifecycle hooks (mount/unmount)
   """
 
   alias Raxol.UI.Components.Base.Component
@@ -29,7 +31,10 @@ defmodule Raxol.UI.Components.Display.Progress do
           optional(:show_percentage) => boolean(),
           optional(:label) => String.t(),
           optional(:theme) => map(),
-          optional(:animated) => boolean()
+          optional(:style) => map(),
+          optional(:animated) => boolean(),
+          optional(:aria_label) => String.t(),
+          optional(:tooltip) => String.t()
         }
 
   @type state :: %{
@@ -40,17 +45,23 @@ defmodule Raxol.UI.Components.Display.Progress do
           :show_percentage => boolean(),
           :label => String.t() | nil,
           :theme => map() | nil,
+          :style => map() | nil,
           :animated => boolean(),
           # Internal state
           :animation_frame => integer(),
           # timestamp for animation
-          :last_update => integer()
+          :last_update => integer(),
+          :aria_label => String.t() | nil,
+          :tooltip => String.t() | nil
         }
 
   @animation_chars [" ", "▏", "▎", "▍", "▌", "▋", "▊", "▉", "█"]
   # ms between frames
   @animation_speed 100
 
+  @doc """
+  Initializes the progress bar state from props.
+  """
   @impl Component
   def init(props) do
     # Initialize state by merging normalized props with default internal state
@@ -64,6 +75,18 @@ defmodule Raxol.UI.Components.Display.Progress do
 
     {:ok, state}
   end
+
+  @doc """
+  Mounts the progress bar (for future extensibility: timers, subscriptions, etc).
+  """
+  @impl Component
+  def mount(state), do: {state, []}
+
+  @doc """
+  Unmounts the progress bar (cleanup for future extensibility).
+  """
+  @impl Component
+  def unmount(state), do: state
 
   @impl Component
   def update({:update_props, new_props}, state) do
@@ -109,47 +132,49 @@ defmodule Raxol.UI.Components.Display.Progress do
   end
 
   @impl Component
-  def render(state, _context) do
-    # Access props directly from state map
-    progress = state.progress
-    width = state.width
-    # Use the component's theme if set, otherwise the global theme
-    theme = state.theme || Raxol.UI.Theming.Theme.default_theme()
+  def render(state, context) do
+    # Harmonize theme merging: context.theme < state.theme < state.style
+    context_theme = Map.get(context, :theme, %{})
+    theme = Map.merge(context_theme, state.theme || %{})
+    theme_style = Map.get(theme, :progress, %{})
+    base_style = Map.merge(theme_style, state.style || %{})
 
-    colors =
-      Map.get(theme, :progress, %{
-        fg: :green,
-        bg: :black,
-        border: :white,
-        text: :white
-      })
+    # Colors for bar, border, text
+    fg = Map.get(base_style, :fg, :green)
+    bg = Map.get(base_style, :bg, :black)
+    border = Map.get(base_style, :border, :white)
+    text_color = Map.get(base_style, :text, :white)
 
-    # Calculate the filled width
+    progress = max(0.0, min(1.0, state.progress))
+    width = max(3, state.width)
     filled_width = floor(progress * (width - 2))
 
-    # Generate progress bar content
     bar_content =
       generate_bar_content(
         filled_width,
         width - 2,
-        colors,
-        # Use state.animated
+        base_style,
         state.animated,
-        # Use state.animation_frame
         state.animation_frame
       )
 
-    # Create percentage text if needed
-    # Use state.show_percentage
     percentage_text =
       if state.show_percentage do
         percent_str = "#{floor(progress * 100)}%"
-        # Center the percentage text in the bar
         padding = div(width - String.length(percent_str), 2)
         String.duplicate(" ", max(0, padding)) <> percent_str
       else
         ""
       end
+
+    # Accessibility/extra attributes
+    extra_attrs =
+      %{
+        aria_label: state.aria_label,
+        tooltip: state.tooltip
+      }
+      |> Enum.reject(fn {_k, v} -> is_nil(v) end)
+      |> Enum.into(%{})
 
     # Elements list
     progress_elements = [
@@ -158,18 +183,22 @@ defmodule Raxol.UI.Components.Display.Progress do
         type: :box,
         width: width,
         height: 1,
-        attrs: %{
-          fg: colors.border,
-          bg: colors.bg,
-          border: %{
-            top_left: "[",
-            top_right: "]",
-            bottom_left: "[",
-            bottom_right: "]",
-            horizontal: " ",
-            vertical: "|"
-          }
-        }
+        attrs:
+          Map.merge(
+            %{
+              fg: border,
+              bg: bg,
+              border: %{
+                top_left: "[",
+                top_right: "]",
+                bottom_left: "[",
+                bottom_right: "]",
+                horizontal: " ",
+                vertical: "|"
+              }
+            },
+            extra_attrs
+          )
       },
       # Progress fill
       %{
@@ -179,8 +208,8 @@ defmodule Raxol.UI.Components.Display.Progress do
         y: 0,
         text: bar_content,
         attrs: %{
-          fg: colors.fg,
-          bg: colors.bg
+          fg: fg,
+          bg: bg
         }
       }
     ]
@@ -195,7 +224,7 @@ defmodule Raxol.UI.Components.Display.Progress do
           y: 0,
           text: percentage_text,
           attrs: %{
-            fg: colors.text,
+            fg: text_color,
             # To show the bar underneath
             bg: :transparent
           }
@@ -218,9 +247,9 @@ defmodule Raxol.UI.Components.Display.Progress do
           y: -1,
           text: label,
           attrs: %{
-            fg: colors.text,
+            fg: text_color,
             # Use main background color
-            bg: colors.bg
+            bg: bg
           }
         }
 
@@ -251,6 +280,9 @@ defmodule Raxol.UI.Components.Display.Progress do
     |> Map.put_new(:label, nil)
     # Allow nil theme initially
     |> Map.put_new_lazy(:theme, fn -> nil end)
+    |> Map.put_new(:style, %{})
+    |> Map.put_new(:aria_label, nil)
+    |> Map.put_new(:tooltip, nil)
     # Clamp progress between 0.0 and 1.0
     |> Map.update!(:progress, &max(0.0, min(1.0, &1)))
     # Ensure minimum width for borders
@@ -261,7 +293,7 @@ defmodule Raxol.UI.Components.Display.Progress do
          filled_width,
          total_width,
          # colors not used here? Check original code. Ok, not used.
-         _colors,
+         _base_style,
          animated,
          animation_frame
        ) do

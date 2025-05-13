@@ -47,11 +47,15 @@ defmodule Raxol.Terminal.Commands.WindowHandlersBenchmark do
     end
 
     test "concurrent operations", %{emulator: emulator} do
-      operations = Enum.map(WindowTestHelper.basic_window_operations(), fn {params, _} ->
-        fn -> WindowHandlers.handle_t(emulator, params) end
-      end)
+      operations =
+        Enum.map(WindowTestHelper.basic_window_operations(), fn {params, _} ->
+          fn -> WindowHandlers.handle_t(emulator, params) end
+        end)
 
-      PerformanceTestHelper.assert_concurrent_performance(operations, "concurrent window")
+      PerformanceTestHelper.assert_concurrent_performance(
+        operations,
+        "concurrent window"
+      )
     end
   end
 end

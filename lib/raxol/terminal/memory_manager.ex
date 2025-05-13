@@ -78,6 +78,7 @@ defmodule Raxol.Terminal.MemoryManager do
         Logger.warning(
           "Memory usage still high after check. Current: #{new_usage}, Limit: #{memory_limit}. Need more aggressive cleanup."
         )
+
         # TODO: Implement more aggressive cleanup
       else
         Logger.debug(
@@ -94,6 +95,7 @@ defmodule Raxol.Terminal.MemoryManager do
       Logger.debug(
         "Memory usage (#{current_usage} bytes) within limit (#{memory_limit} bytes). No cleanup needed."
       )
+
       %{state | last_cleanup: System.monotonic_time(:millisecond)}
     end
   end

@@ -49,12 +49,15 @@ defmodule Raxol.Test.PerformanceHelper do
 
     # Actual benchmark
     start_time = System.monotonic_time()
-    results = for _ <- 1..iterations do
-      iteration_start = System.monotonic_time()
-      result = fun.()
-      iteration_end = System.monotonic_time()
-      {result, iteration_end - iteration_start}
-    end
+
+    results =
+      for _ <- 1..iterations do
+        iteration_start = System.monotonic_time()
+        result = fun.()
+        iteration_end = System.monotonic_time()
+        {result, iteration_end - iteration_start}
+      end
+
     end_time = System.monotonic_time()
 
     # Calculate statistics
@@ -88,18 +91,25 @@ defmodule Raxol.Test.PerformanceHelper do
     min_iterations = Keyword.get(opts, :min_iterations)
 
     if max_avg && benchmark_result.average_time > max_avg do
-      flunk("Average time #{benchmark_result.average_time} exceeds maximum allowed #{max_avg}")
+      flunk(
+        "Average time #{benchmark_result.average_time} exceeds maximum allowed #{max_avg}"
+      )
     end
 
     if max_p95 do
       p95_time = calculate_percentile(benchmark_result.times, 95)
+
       if p95_time > max_p95 do
-        flunk("95th percentile time #{p95_time} exceeds maximum allowed #{max_p95}")
+        flunk(
+          "95th percentile time #{p95_time} exceeds maximum allowed #{max_p95}"
+        )
       end
     end
 
     if min_iterations && length(benchmark_result.times) < min_iterations do
-      flunk("Number of iterations #{length(benchmark_result.times)} is less than required #{min_iterations}")
+      flunk(
+        "Number of iterations #{length(benchmark_result.times)} is less than required #{min_iterations}"
+      )
     end
 
     :ok

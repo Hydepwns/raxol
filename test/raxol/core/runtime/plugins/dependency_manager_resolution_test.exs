@@ -15,7 +15,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerResolutionTest do
 
     test "resolves complex dependency graph" do
       plugins = %{
-        "plugin_a" => %{dependencies: [{"plugin_b", ">= 1.0.0"}, {"plugin_c", ">= 1.0.0"}]},
+        "plugin_a" => %{
+          dependencies: [{"plugin_b", ">= 1.0.0"}, {"plugin_c", ">= 1.0.0"}]
+        },
         "plugin_b" => %{dependencies: [{"plugin_c", ">= 1.0.0"}]},
         "plugin_c" => %{dependencies: []},
         "plugin_d" => %{dependencies: [{"plugin_a", ">= 1.0.0"}]}
@@ -44,7 +46,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerResolutionTest do
         "plugin_b" => %{dependencies: [{"plugin_a", ">= 1.0.0"}]}
       }
 
-      assert {:error, :circular_dependency, cycle, chain} = DependencyManager.resolve_load_order(plugins)
+      assert {:error, :circular_dependency, cycle, chain} =
+               DependencyManager.resolve_load_order(plugins)
+
       assert length(cycle) > 0
       assert length(chain) > 0
       assert "plugin_a" in cycle
@@ -58,7 +62,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerResolutionTest do
         "plugin_c" => %{dependencies: [{"plugin_a", ">= 1.0.0"}]}
       }
 
-      assert {:error, :circular_dependency, cycle, chain} = DependencyManager.resolve_load_order(plugins)
+      assert {:error, :circular_dependency, cycle, chain} =
+               DependencyManager.resolve_load_order(plugins)
+
       assert length(cycle) > 0
       assert length(chain) > 0
       assert "plugin_a" in cycle
@@ -75,19 +81,27 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerResolutionTest do
         "plugin_e" => %{dependencies: [{"plugin_a", ">= 1.0.0"}]}
       }
 
-      assert {:error, :circular_dependency, cycle, chain} = DependencyManager.resolve_load_order(plugins)
+      assert {:error, :circular_dependency, cycle, chain} =
+               DependencyManager.resolve_load_order(plugins)
+
       assert length(cycle) == 5
       assert length(chain) > 5
     end
 
     test "handles very long dependency chains" do
       # Create a chain of 100 plugins
-      plugins = Enum.reduce(1..100, %{}, fn i, acc ->
-        next_plugin = if i < 100, do: "plugin_#{i + 1}", else: "plugin_1"
-        Map.put(acc, "plugin_#{i}", %{dependencies: [{next_plugin, ">= 1.0.0"}]})
-      end)
+      plugins =
+        Enum.reduce(1..100, %{}, fn i, acc ->
+          next_plugin = if i < 100, do: "plugin_#{i + 1}", else: "plugin_1"
 
-      assert {:error, :circular_dependency, cycle, chain} = DependencyManager.resolve_load_order(plugins)
+          Map.put(acc, "plugin_#{i}", %{
+            dependencies: [{next_plugin, ">= 1.0.0"}]
+          })
+        end)
+
+      assert {:error, :circular_dependency, cycle, chain} =
+               DependencyManager.resolve_load_order(plugins)
+
       assert length(cycle) > 0
       assert length(chain) > 0
     end
@@ -101,9 +115,15 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerResolutionTest do
           {"optional_plugin", ">= 2.0.0", %{optional: true}}
         ]
       }
+
       loaded_plugins = %{"required_plugin" => %{version: "1.1.0"}}
 
-      assert :ok == DependencyManager.check_dependencies("my_plugin", plugin_metadata, loaded_plugins)
+      assert :ok ==
+               DependencyManager.check_dependencies(
+                 "my_plugin",
+                 plugin_metadata,
+                 loaded_plugins
+               )
     end
 
     test "logs missing optional dependencies" do
@@ -112,9 +132,15 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerResolutionTest do
           {"optional_plugin", ">= 2.0.0", %{optional: true}}
         ]
       }
+
       loaded_plugins = %{}
 
-      assert :ok == DependencyManager.check_dependencies("my_plugin", plugin_metadata, loaded_plugins)
+      assert :ok ==
+               DependencyManager.check_dependencies(
+                 "my_plugin",
+                 plugin_metadata,
+                 loaded_plugins
+               )
     end
 
     test "handles version mismatches for optional dependencies" do
@@ -123,9 +149,15 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerResolutionTest do
           {"optional_plugin", ">= 2.0.0", %{optional: true}}
         ]
       }
+
       loaded_plugins = %{"optional_plugin" => %{version: "1.0.0"}}
 
-      assert :ok == DependencyManager.check_dependencies("my_plugin", plugin_metadata, loaded_plugins)
+      assert :ok ==
+               DependencyManager.check_dependencies(
+                 "my_plugin",
+                 plugin_metadata,
+                 loaded_plugins
+               )
     end
   end
 end

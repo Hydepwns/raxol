@@ -51,7 +51,9 @@ defmodule Raxol.Terminal.Driver do
   @impl true
   # dispatcher_pid can be nil here
   def init(dispatcher_pid) do
-    Logger.info("[#{__MODULE__}] init called with dispatcher: #{inspect(dispatcher_pid)}")
+    Logger.info(
+      "[#{__MODULE__}] init called with dispatcher: #{inspect(dispatcher_pid)}"
+    )
 
     # Get original terminal settings
     original_stty =

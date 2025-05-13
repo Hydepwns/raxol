@@ -30,7 +30,10 @@ defmodule RaxolWeb.TerminalLive do
         |> assign(:cursor, %{x: 0, y: 0, visible: true})
         |> assign(:dimensions, %{width: 80, height: 24})
         |> assign(:scroll_offset, 0)
-        |> assign(:theme, default_theme())
+        |> assign(
+          :theme,
+          Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.current_theme_id())
+        )
         |> assign(:connected, false)
 
       {:ok, socket, temporary_assigns: [terminal_html: ""]}
@@ -127,29 +130,5 @@ defmodule RaxolWeb.TerminalLive do
 
   defp generate_session_id do
     :crypto.strong_rand_bytes(16) |> Base.encode16(case: :lower)
-  end
-
-  defp default_theme do
-    %{
-      background: "#1e1e1e",
-      foreground: "#d4d4d4",
-      cursor: "#ffffff",
-      black: "#000000",
-      red: "#cd0000",
-      green: "#00cd00",
-      yellow: "#cdcd00",
-      blue: "#0000cd",
-      magenta: "#cd00cd",
-      cyan: "#00cdcd",
-      white: "#e5e5e5",
-      bright_black: "#7f7f7f",
-      bright_red: "#ff0000",
-      bright_green: "#00ff00",
-      bright_yellow: "#ffff00",
-      bright_blue: "#0000ff",
-      bright_magenta: "#ff00ff",
-      bright_cyan: "#00ffff",
-      bright_white: "#ffffff"
-    }
   end
 end

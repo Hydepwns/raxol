@@ -11,10 +11,12 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.CleanupTest do
   setup do
     pid = Helper.setup_mocks()
     Helper.cleanup_test_plugins()
+
     on_exit(fn ->
       Helper.stop_manager(pid)
       Helper.cleanup_test_plugins()
     end)
+
     :ok
   end
 

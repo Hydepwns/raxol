@@ -10,8 +10,6 @@ defmodule Raxol.Style.Colors.HotReload do
   use GenServer
 
   alias Raxol.Style.Colors.{System, Persistence}
-  # alias Raxol.Style.Colors.Theme # Unused
-  # alias Raxol.Core.Events.Manager, as: EventManager # Unused
 
   # Check for changes every second
   @check_interval 1000

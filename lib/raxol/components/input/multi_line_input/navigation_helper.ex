@@ -1,11 +1,11 @@
-defmodule Raxol.Components.Input.MultiLineInput.NavigationHelper do
+defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   @moduledoc """
   Helper functions for cursor navigation and text selection in MultiLineInput.
   """
 
   # alias Raxol.Components.Input.MultiLineInput # May need state struct definition
   # Need pos_to_index
-  alias Raxol.Components.Input.MultiLineInput.TextHelper
+  alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
   require Logger
 
   # Implements cursor movement logic

@@ -28,7 +28,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
       assert new_emulator.color_palette[3] == {0, 0, 255}
     end
 
-    test "sets color using #RRGGBBAA format (ignores alpha)", %{emulator: emulator} do
+    test "sets color using #RRGGBBAA format (ignores alpha)", %{
+      emulator: emulator
+    } do
       # Test setting color index 4 to yellow using #RRGGBBAA format
       new_emulator = OSCHandlers.handle_4(emulator, "4;#FFFF0080")
       assert new_emulator.color_palette[4] == {255, 255, 0}
@@ -101,9 +103,12 @@ defmodule Raxol.Terminal.Commands.OSCHandlersTest do
 
     test "handles multiple color queries", %{emulator: emulator} do
       # Set multiple colors
-      emulator = OSCHandler.handle_4(emulator, "1;rgb:FFFF/0000/0000") # Red
-      emulator = OSCHandler.handle_4(emulator, "2;rgb:0000/FFFF/0000") # Green
-      emulator = OSCHandler.handle_4(emulator, "3;rgb:0000/0000/FFFF") # Blue
+      # Red
+      emulator = OSCHandler.handle_4(emulator, "1;rgb:FFFF/0000/0000")
+      # Green
+      emulator = OSCHandler.handle_4(emulator, "2;rgb:0000/FFFF/0000")
+      # Blue
+      emulator = OSCHandler.handle_4(emulator, "3;rgb:0000/0000/FFFF")
 
       # Query each color
       emulator = OSCHandler.handle_4(emulator, "1;?")

@@ -8,11 +8,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @type command_name :: String.t()
   @type command_handler :: function()
   @type command_metadata :: %{
-    optional(:description) => String.t(),
-    optional(:usage) => String.t(),
-    optional(:aliases) => [String.t()],
-    optional(:timeout) => non_neg_integer()
-  }
+          optional(:description) => String.t(),
+          optional(:usage) => String.t(),
+          optional(:aliases) => [String.t()],
+          optional(:timeout) => non_neg_integer()
+        }
   @type command :: {command_name(), command_handler(), command_metadata()}
 
   @doc """
@@ -43,8 +43,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     case find_command(command_name, command_table) do
       {:ok, {handler, metadata}} ->
         execute_with_timeout(handler, args, metadata)
+
       {:error, reason} = error ->
-        Logger.error("Failed to execute command #{command_name}: #{inspect(reason)}")
+        Logger.error(
+          "Failed to execute command #{command_name}: #{inspect(reason)}"
+        )
+
         error
     end
   end
@@ -85,15 +89,24 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
   defp validate_command_name(name) do
     cond do
-      not is_binary(name) -> {:error, :invalid_command_name}
-      String.length(name) == 0 -> {:error, :empty_command_name}
-      not String.match?(name, ~r/^[a-zA-Z0-9_-]+$/) -> {:error, :invalid_command_name_format}
-      true -> :ok
+      not is_binary(name) ->
+        {:error, :invalid_command_name}
+
+      String.length(name) == 0 ->
+        {:error, :empty_command_name}
+
+      not String.match?(name, ~r/^[a-zA-Z0-9_-]+$/) ->
+        {:error, :invalid_command_name_format}
+
+      true ->
+        :ok
     end
   end
 
   defp validate_command_handler(handler) do
-    if is_function(handler, 2), do: :ok, else: {:error, :invalid_command_handler}
+    if is_function(handler, 2),
+      do: :ok,
+      else: {:error, :invalid_command_handler}
   end
 
   defp validate_command_metadata(metadata) do
@@ -134,10 +147,11 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
   defp register_commands(commands, plugin_module, plugin_state, command_table) do
     try do
-      new_commands = Enum.map(commands, fn {name, handler, metadata} ->
-        wrapped_handler = wrap_handler(handler, plugin_state)
-        {name, wrapped_handler, metadata}
-      end)
+      new_commands =
+        Enum.map(commands, fn {name, handler, metadata} ->
+          wrapped_handler = wrap_handler(handler, plugin_state)
+          {name, wrapped_handler, metadata}
+        end)
 
       updated_table = Map.put(command_table, plugin_module, new_commands)
       {:ok, updated_table}
@@ -173,8 +187,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
   defp find_command(name, command_table) do
     case Enum.find_value(command_table, :error, fn {_, commands} ->
-      Enum.find(commands, fn {cmd_name, _, _} -> cmd_name == name end)
-    end) do
+           Enum.find(commands, fn {cmd_name, _, _} -> cmd_name == name end)
+         end) do
       {^name, handler, metadata} -> {:ok, {handler, metadata}}
       :error -> {:error, :command_not_found}
     end
@@ -182,6 +196,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
 
   defp execute_with_timeout(handler, args, metadata) do
     timeout = Map.get(metadata, :timeout, 5000)
+
     context = %{
       timestamp: System.system_time(),
       metadata: metadata
@@ -192,6 +207,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     catch
       :exit, {:timeout, _} ->
         {:error, :command_timeout}
+
       _kind, reason ->
         Logger.error("Command execution failed: #{inspect(reason)}")
         {:error, {:execution_failed, Exception.message(reason)}}

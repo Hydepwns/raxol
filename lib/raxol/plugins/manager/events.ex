@@ -62,7 +62,7 @@ defmodule Raxol.Plugins.Manager.Events do
   """
   def broadcast_event(%Core{} = manager, event) do
     Enum.reduce_while(manager.plugins, {:ok, manager}, fn {_name, plugin},
-                                                         {:ok, acc_manager} ->
+                                                          {:ok, acc_manager} ->
       if plugin.enabled do
         # Get the module from the struct
         module = plugin.__struct__
@@ -71,10 +71,11 @@ defmodule Raxol.Plugins.Manager.Events do
         if function_exported?(module, :handle_event, 2) do
           case module.handle_event(plugin, event) do
             {:ok, updated_plugin} ->
-              updated_manager = Core.update_plugins(
-                acc_manager,
-                Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-              )
+              updated_manager =
+                Core.update_plugins(
+                  acc_manager,
+                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+                )
 
               {:cont, {:ok, updated_manager}}
 

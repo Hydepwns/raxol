@@ -21,6 +21,7 @@ defmodule Raxol.Terminal.Emulator.Cursor do
     case Manager.move_to(emulator.cursor, row, col) do
       {:ok, updated_cursor} ->
         {:ok, %{emulator | cursor: updated_cursor}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -30,11 +31,13 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   Moves the cursor up by the specified number of lines.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec move_up(Core.t(), non_neg_integer()) :: {:ok, Core.t()} | {:error, String.t()}
+  @spec move_up(Core.t(), non_neg_integer()) ::
+          {:ok, Core.t()} | {:error, String.t()}
   def move_up(%Core{} = emulator, lines) when lines > 0 do
     case Manager.move_up(emulator.cursor, lines) do
       {:ok, updated_cursor} ->
         {:ok, %{emulator | cursor: updated_cursor}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -48,11 +51,13 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   Moves the cursor down by the specified number of lines.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec move_down(Core.t(), non_neg_integer()) :: {:ok, Core.t()} | {:error, String.t()}
+  @spec move_down(Core.t(), non_neg_integer()) ::
+          {:ok, Core.t()} | {:error, String.t()}
   def move_down(%Core{} = emulator, lines) when lines > 0 do
     case Manager.move_down(emulator.cursor, lines) do
       {:ok, updated_cursor} ->
         {:ok, %{emulator | cursor: updated_cursor}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -66,11 +71,13 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   Moves the cursor left by the specified number of columns.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec move_left(Core.t(), non_neg_integer()) :: {:ok, Core.t()} | {:error, String.t()}
+  @spec move_left(Core.t(), non_neg_integer()) ::
+          {:ok, Core.t()} | {:error, String.t()}
   def move_left(%Core{} = emulator, cols) when cols > 0 do
     case Manager.move_left(emulator.cursor, cols) do
       {:ok, updated_cursor} ->
         {:ok, %{emulator | cursor: updated_cursor}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -84,11 +91,13 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   Moves the cursor right by the specified number of columns.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec move_right(Core.t(), non_neg_integer()) :: {:ok, Core.t()} | {:error, String.t()}
+  @spec move_right(Core.t(), non_neg_integer()) ::
+          {:ok, Core.t()} | {:error, String.t()}
   def move_right(%Core{} = emulator, cols) when cols > 0 do
     case Manager.move_right(emulator.cursor, cols) do
       {:ok, updated_cursor} ->
         {:ok, %{emulator | cursor: updated_cursor}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -102,15 +111,17 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   Sets the cursor style.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_style(Core.t(), Core.cursor_style_type()) :: {:ok, Core.t()} | {:error, String.t()}
-  def set_style(%Core{} = emulator, style) when style in [
-    :blinking_block,
-    :steady_block,
-    :blinking_underline,
-    :steady_underline,
-    :blinking_bar,
-    :steady_bar
-  ] do
+  @spec set_style(Core.t(), Core.cursor_style_type()) ::
+          {:ok, Core.t()} | {:error, String.t()}
+  def set_style(%Core{} = emulator, style)
+      when style in [
+             :blinking_block,
+             :steady_block,
+             :blinking_underline,
+             :steady_underline,
+             :blinking_bar,
+             :steady_bar
+           ] do
     {:ok, %{emulator | cursor_style: style}}
   end
 
@@ -137,6 +148,7 @@ defmodule Raxol.Terminal.Emulator.Cursor do
     case emulator.saved_cursor do
       nil ->
         {:error, "No saved cursor state"}
+
       saved_cursor ->
         {:ok, %{emulator | cursor: saved_cursor}}
     end
@@ -151,6 +163,7 @@ defmodule Raxol.Terminal.Emulator.Cursor do
     case Manager.show(emulator.cursor) do
       {:ok, updated_cursor} ->
         {:ok, %{emulator | cursor: updated_cursor}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -165,6 +178,7 @@ defmodule Raxol.Terminal.Emulator.Cursor do
     case Manager.hide(emulator.cursor) do
       {:ok, updated_cursor} ->
         {:ok, %{emulator | cursor: updated_cursor}}
+
       {:error, reason} ->
         {:error, reason}
     end

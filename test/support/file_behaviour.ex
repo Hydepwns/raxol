@@ -7,7 +7,8 @@ defmodule File.Behaviour do
   @doc """
   Gets file statistics.
   """
-  @callback stat(path :: String.t()) :: {:ok, File.Stat.t()} | {:error, File.posix()}
+  @callback stat(path :: String.t()) ::
+              {:ok, File.Stat.t()} | {:error, File.posix()}
 
   @doc """
   Checks if a file exists.
@@ -22,7 +23,8 @@ defmodule File.Behaviour do
   @doc """
   Writes content to a file.
   """
-  @callback write(path :: String.t(), content :: binary()) :: :ok | {:error, File.posix()}
+  @callback write(path :: String.t(), content :: binary()) ::
+              :ok | {:error, File.posix()}
 
   @doc """
   Removes a file.

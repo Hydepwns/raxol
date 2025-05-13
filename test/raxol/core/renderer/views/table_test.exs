@@ -237,7 +237,9 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       view = Table.render(state)
 
       [_header | rows] = get_in(view, [:children, Access.at(0)])
-      assert Enum.at(rows, 0).children |> Enum.at(0) |> Map.get(:content) == "    $1000"
+
+      assert Enum.at(rows, 0).children |> Enum.at(0) |> Map.get(:content) ==
+               "    $1000"
     end
 
     test "handles function keys" do
@@ -262,7 +264,9 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       view = Table.render(state)
 
       [_header | rows] = get_in(view, [:children, Access.at(0)])
-      assert Enum.at(rows, 0).children |> Enum.at(0) |> Map.get(:content) == "John Doe             "
+
+      assert Enum.at(rows, 0).children |> Enum.at(0) |> Map.get(:content) ==
+               "John Doe             "
     end
   end
 end

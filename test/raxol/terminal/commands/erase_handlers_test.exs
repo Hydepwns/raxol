@@ -13,6 +13,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       cursor: CursorManager.new(),
       style: TextFormatting.new()
     }
+
     {:ok, emulator: emulator}
   end
 
@@ -35,13 +36,16 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Verify content from cursor to end is erased
       for y <- 5..9 do
         start_x = if y == 5, do: 5, else: 0
+
         for x <- start_x..9 do
           assert ScreenBuffer.get_char(result.main_screen_buffer, x, y) == " "
         end
       end
     end
 
-    test "erases from beginning of screen to cursor (mode 1)", %{emulator: emulator} do
+    test "erases from beginning of screen to cursor (mode 1)", %{
+      emulator: emulator
+    } do
       # Fill buffer with test data
       emulator = fill_buffer_with_test_data(emulator)
       # Move cursor to middle of screen
@@ -59,6 +63,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Verify content from cursor to end is preserved
       for y <- 5..9 do
         start_x = if y == 5, do: 5, else: 0
+
         for x <- start_x..9 do
           assert ScreenBuffer.get_char(result.main_screen_buffer, x, y) == "X"
         end
@@ -98,6 +103,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
 
       for y <- 5..9 do
         start_x = if y == 5, do: 5, else: 0
+
         for x <- start_x..9 do
           assert ScreenBuffer.get_char(result.main_screen_buffer, x, y) == " "
         end
@@ -125,7 +131,9 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       end
     end
 
-    test "erases from beginning of line to cursor (mode 1)", %{emulator: emulator} do
+    test "erases from beginning of line to cursor (mode 1)", %{
+      emulator: emulator
+    } do
       # Fill buffer with test data
       emulator = fill_buffer_with_test_data(emulator)
       # Move cursor to middle of line
@@ -180,11 +188,14 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
   # Helper function to fill buffer with test data
   defp fill_buffer_with_test_data(emulator) do
     buffer = emulator.main_screen_buffer
+
     for y <- 0..9 do
       for x <- 0..9 do
-        buffer = ScreenBuffer.write_char(buffer, x, y, "X", TextFormatting.new())
+        buffer =
+          ScreenBuffer.write_char(buffer, x, y, "X", TextFormatting.new())
       end
     end
+
     %{emulator | main_screen_buffer: buffer}
   end
 end

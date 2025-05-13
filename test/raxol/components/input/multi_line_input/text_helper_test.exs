@@ -1,8 +1,8 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Components.Input.MultiLineInput
-  alias Raxol.Components.Input.MultiLineInput.TextHelper
+  alias Raxol.UI.Components.Input.MultiLineInput
+  alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
 
   # Helper to create initial state
   defp create_state(lines \\ [""], cursor_pos \\ {0, 0}) do

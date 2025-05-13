@@ -3,17 +3,14 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   Manages the integration between accessibility settings and the active theme.
 
   Listens for accessibility changes (e.g., high contrast toggle) and
-  updates the active theme variant accordingly.
+  updates the active theme accordingly.
   """
 
   require Logger
 
   alias Raxol.Core.Events.Manager, as: EventManager
-  # alias Raxol.UI.Theming.Theme # Removed unused alias
   alias Raxol.Core.UserPreferences
-  # Remove unused aliases
-  # alias Raxol.Style.Theme # Added alias
-  # alias Raxol.Core.UserPreferences # Added alias
+  alias Raxol.UI.Theming.Theme
 
   @doc """
   Initialize the theme integration.
@@ -119,40 +116,31 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
 
   @doc """
   Handle high contrast mode changes.
-  Stores the active variant (:high_contrast or nil) in the process dictionary.
-  Components should then use a central function (e.g., ColorSystem.get) to query colors.
+  Updates the theme based on high contrast setting.
   """
   def handle_high_contrast({:accessibility_high_contrast, enabled}) do
     require Logger
     Logger.debug("ThemeIntegration handling high contrast event: #{enabled}")
 
-    # No longer storing in process dictionary
-    # active_variant = if enabled, do: :high_contrast, else: nil
-    # Process.put(@active_variant_key, active_variant)
-
-    # Components will now query Accessibility.get_option(:high_contrast)
-    # or use ColorSystem which should internally check this.
-
-    # Optionally, trigger a global UI refresh event if needed
-    # EventManager.trigger(:ui_refresh_required, %{reason: :theme_variant_change})
+    # Trigger a global UI refresh event
+    EventManager.trigger(:ui_refresh_required, %{reason: :theme_change})
 
     :ok
   end
 
   @doc """
-  Returns the currently active theme variant based on accessibility settings.
-  Defaults to `:default` if high contrast is off.
+  Returns the current accessibility mode based on settings.
+  Defaults to `:normal` if high contrast is off.
   """
-  @spec get_active_variant() :: atom()
-  def get_active_variant() do
+  @spec get_accessibility_mode() :: atom()
+  def get_accessibility_mode() do
     # Read using UserPreferences
     is_high_contrast = UserPreferences.get(pref_key(:high_contrast)) || false
 
     if is_high_contrast do
-      # Return the variant atom directly
       :high_contrast
     else
-      :default
+      :normal
     end
   end
 
@@ -167,8 +155,6 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   def handle_reduced_motion({:accessibility_reduced_motion, _enabled}) do
     require Logger
     Logger.debug("Restoring FocusRing config for normal motion")
-    # No animation, immediate focus change
-    # FocusRing.configure(animation: :none, transition_effect: :none)
 
     :ok
   end
@@ -181,14 +167,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       iex> ThemeIntegration.handle_large_text({:accessibility_large_text, true})
       :ok
   """
-  def handle_large_text({:accessibility_large_text, enabled}) do
-    # Update text size based on large text setting
-    # Calculate but don't store
-    _text_scale = if enabled, do: 1.5, else: 1.0
-
-    # No longer store in process dictionary
-    # Process.put(:accessibility_text_scale, text_scale)
-
+  def handle_large_text({:accessibility_large_text, _enabled}) do
     :ok
   end
 
@@ -196,25 +175,35 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   defp pref_key(key), do: "accessibility.#{key}"
 
   @doc """
-  Get the current color scheme based on accessibility settings.
+  Get the current theme based on accessibility settings.
 
   ## Examples
 
-      iex> ThemeIntegration.get_color_scheme()
-      %{background: ...}  # Returns the current color scheme
+      iex> ThemeIntegration.get_theme()
+      %Theme{}  # Returns the current theme with accessibility adjustments
   """
-  def get_color_scheme do
-    theme = Raxol.Style.Theme.current()
-    active_variant = get_active_variant()
+  def get_theme do
+    theme = Theme.current()
+    mode = get_accessibility_mode()
 
-    variant_palette =
-      if active_variant do
-        theme.variants
-        |> Map.get(active_variant, %{})
-        |> Map.get(:color_palette)
-      end
+    if mode == :high_contrast do
+      Theme.adjust_for_high_contrast(theme)
+    else
+      theme
+    end
+  end
 
-    # Return variant palette if it exists, otherwise base theme palette
-    variant_palette || theme.color_palette
+  @doc """
+  Returns the current active theme variant for accessibility-aware theming.
+  Used by the renderer and theming system to select the correct theme variant.
+
+  ## Examples
+
+      iex> ThemeIntegration.get_active_variant()
+      :normal | :high_contrast
+  """
+  @spec get_active_variant() :: atom()
+  def get_active_variant do
+    get_accessibility_mode()
   end
 end

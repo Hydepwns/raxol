@@ -37,9 +37,11 @@ defmodule Raxol.UI.Theming.Theme do
   Gets a color from the theme, respecting variants and accessibility settings.
   """
   def get_color(theme, color_name, arg3 \\ nil)
+
   def get_color(%__MODULE__{} = theme, color_name, variant) do
     ColorSystem.get_color(theme.id, color_name, variant)
   end
+
   def get_color(theme, color_name, default) do
     get_in(theme, [:colors, color_name]) || default
   end
@@ -48,7 +50,7 @@ defmodule Raxol.UI.Theming.Theme do
   Gets a component style from the theme.
   """
   def get_component_style(%__MODULE__{} = theme, component_type) do
-    Map.get(theme.component_styles, component_type, %{})
+    get_in(theme, [:component_styles, component_type]) || %{}
   end
 
   @doc """
@@ -61,12 +63,22 @@ defmodule Raxol.UI.Theming.Theme do
       end)
       |> Map.new()
 
-    %{theme |
-      colors: high_contrast_colors,
-      variants: Map.put(theme.variants, :high_contrast, %{
-        colors: high_contrast_colors
-      })
+    %{
+      theme
+      | colors: high_contrast_colors,
+        variants:
+          Map.put(theme.variants, :high_contrast, %{
+            colors: high_contrast_colors
+          })
     }
+  end
+
+  @doc """
+  Returns a high-contrast version of the given theme, for accessibility support.
+  If the theme is already high-contrast, returns it unchanged.
+  """
+  def adjust_for_high_contrast(%__MODULE__{} = theme) do
+    create_high_contrast_variant(theme)
   end
 
   @doc """
@@ -83,7 +95,8 @@ defmodule Raxol.UI.Theming.Theme do
   Returns the default theme.
   """
   def default_theme do
-    %{
+    new(%{
+      id: :default,
       name: "default",
       colors: %{
         background: "#000000",
@@ -93,7 +106,7 @@ defmodule Raxol.UI.Theming.Theme do
         warning: "#FFB86C",
         success: "#50FA7B"
       },
-      styles: %{
+      component_styles: %{
         text_input: %{
           background: "#1E1E1E",
           foreground: "#FFFFFF",
@@ -113,14 +126,15 @@ defmodule Raxol.UI.Theming.Theme do
           checked: "#4A9CD5"
         }
       }
-    }
+    })
   end
 
   @doc """
   Returns the dark theme.
   """
   def dark_theme do
-    %{
+    new(%{
+      id: :dark,
       name: "dark",
       colors: %{
         background: "#1E1E1E",
@@ -130,7 +144,7 @@ defmodule Raxol.UI.Theming.Theme do
         warning: "#FFB86C",
         success: "#50FA7B"
       },
-      styles: %{
+      component_styles: %{
         text_input: %{
           background: "#2D2D2D",
           foreground: "#FFFFFF",
@@ -150,15 +164,18 @@ defmodule Raxol.UI.Theming.Theme do
           checked: "#4A9CD5"
         }
       }
-    }
+    })
   end
 
   @doc """
   Gets the component style for a specific component type.
   """
   def get_component_style(theme, component_type) do
-    get_in(theme, [:styles, component_type]) || %{}
+    get_in(theme, [:component_styles, component_type]) || %{}
   end
+
+  def component_style(theme, component_type),
+    do: get_component_style(theme, component_type)
 
   # Private helpers
 
@@ -227,5 +244,21 @@ defmodule Raxol.UI.Theming.Theme do
     new_themes = Map.put(current_themes, theme.id, theme)
     Application.put_env(:raxol, :themes, new_themes)
     :ok
+  end
+
+  @doc """
+  Lists all registered themes as a list of theme structs.
+  """
+  def list_themes do
+    Application.get_env(:raxol, :themes, %{})
+    |> Map.values()
+  end
+
+  @doc """
+  Returns the currently active theme. Defaults to :default if not set.
+  """
+  def current do
+    # This is a placeholder; in a real app, you might store the current theme in the process or app env
+    get(:default)
   end
 end

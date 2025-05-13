@@ -29,12 +29,21 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
              state.plugin_paths
            ) do
         {:ok, updated_plugin_info} ->
-          new_plugins = Map.put(state.plugins, plugin_id, updated_plugin_info.module)
-          new_plugin_states = Map.put(state.plugin_states, plugin_id, updated_plugin_info.state)
-          new_plugin_config = Map.put(state.plugin_config, plugin_id, updated_plugin_info.config)
-          new_metadata = Map.put(state.metadata, plugin_id, updated_plugin_info.metadata)
+          new_plugins =
+            Map.put(state.plugins, plugin_id, updated_plugin_info.module)
 
-          Logger.info("[#{__MODULE__}] Plugin #{plugin_id} reloaded successfully.")
+          new_plugin_states =
+            Map.put(state.plugin_states, plugin_id, updated_plugin_info.state)
+
+          new_plugin_config =
+            Map.put(state.plugin_config, plugin_id, updated_plugin_info.config)
+
+          new_metadata =
+            Map.put(state.metadata, plugin_id, updated_plugin_info.metadata)
+
+          Logger.info(
+            "[#{__MODULE__}] Plugin #{plugin_id} reloaded successfully."
+          )
 
           {:ok,
            %{
@@ -46,7 +55,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
            }}
 
         {:error, reason} ->
-          Logger.error("Failed to reload plugin #{plugin_id}: #{inspect(reason)}")
+          Logger.error(
+            "Failed to reload plugin #{plugin_id}: #{inspect(reason)}"
+          )
+
           {:error, reason, state}
       end
     end
@@ -91,10 +103,33 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
                  state.plugin_paths
                ) do
             {:ok, updated_plugin_info} ->
-              new_plugins = Map.put(state.plugins, plugin_id_atom, updated_plugin_info.module)
-              new_plugin_states = Map.put(state.plugin_states, plugin_id_atom, updated_plugin_info.state)
-              new_plugin_config = Map.put(state.plugin_config, plugin_id_atom, updated_plugin_info.config)
-              new_metadata = Map.put(state.metadata, plugin_id_atom, updated_plugin_info.metadata)
+              new_plugins =
+                Map.put(
+                  state.plugins,
+                  plugin_id_atom,
+                  updated_plugin_info.module
+                )
+
+              new_plugin_states =
+                Map.put(
+                  state.plugin_states,
+                  plugin_id_atom,
+                  updated_plugin_info.state
+                )
+
+              new_plugin_config =
+                Map.put(
+                  state.plugin_config,
+                  plugin_id_atom,
+                  updated_plugin_info.config
+                )
+
+              new_metadata =
+                Map.put(
+                  state.metadata,
+                  plugin_id_atom,
+                  updated_plugin_info.metadata
+                )
 
               Logger.info(
                 "[#{__MODULE__}] Plugin atom :#{plugin_id_atom} reloaded successfully."

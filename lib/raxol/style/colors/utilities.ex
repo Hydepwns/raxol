@@ -178,18 +178,20 @@ defmodule Raxol.Style.Colors.Utilities do
   end
 
   defp darken_color(%Color{} = color, factor) do
-    %{color |
-      r: round(color.r * (1 - factor)),
-      g: round(color.g * (1 - factor)),
-      b: round(color.b * (1 - factor))
+    %{
+      color
+      | r: round(color.r * (1 - factor)),
+        g: round(color.g * (1 - factor)),
+        b: round(color.b * (1 - factor))
     }
   end
 
   defp lighten_color(%Color{} = color, factor) do
-    %{color |
-      r: min(255, round(color.r + (255 - color.r) * factor)),
-      g: min(255, round(color.g + (255 - color.g) * factor)),
-      b: min(255, round(color.b + (255 - color.b) * factor))
+    %{
+      color
+      | r: min(255, round(color.r + (255 - color.r) * factor)),
+        g: min(255, round(color.g + (255 - color.g) * factor)),
+        b: min(255, round(color.b + (255 - color.b) * factor))
     }
   end
 end

@@ -118,6 +118,9 @@ defmodule Raxol.Terminal.Integration.Config do
   end
 
   defp update_command_history(command_history, config) do
-    History.update_size(command_history, (config.behavior.save_history && 1000) || 0)
+    History.update_size(
+      command_history,
+      (config.behavior.save_history && 1000) || 0
+    )
   end
 end

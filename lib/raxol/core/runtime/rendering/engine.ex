@@ -76,7 +76,8 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         )
 
         # Fetch the actual theme struct using the ID
-        theme = Theme.get(current_theme_id) || Theme.default_theme()
+        theme =
+          Theme.get(current_theme_id) || Theme.get(Theme.default_theme_id())
 
         case do_render_frame(current_model, theme, state) do
           {:ok, new_state} ->

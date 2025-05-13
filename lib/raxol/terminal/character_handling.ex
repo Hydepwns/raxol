@@ -173,7 +173,7 @@ defmodule Raxol.Terminal.CharacterHandling do
         (char >= 0x0750 and char <= 0x077F) or
         (char >= 0x08A0 and char <= 0x08FF) or
         (char >= 0xFB50 and char <= 0xFDFF) or
-        (char >= 0xFE70 and char <= 0xFEFF) ->
+          (char >= 0xFE70 and char <= 0xFEFF) ->
         :RTL
 
       # Left-to-right scripts (explicitly list common ranges)
@@ -184,7 +184,7 @@ defmodule Raxol.Terminal.CharacterHandling do
       (char >= 0x0041 and char <= 0x005A) or
         (char >= 0x0061 and char <= 0x007A) or
         (char >= 0x00C0 and char <= 0x00FF) or
-        (char >= 0x0100 and char <= 0x024F) ->
+          (char >= 0x0100 and char <= 0x024F) ->
         :LTR
 
       # Treat digits and basic punctuation/space as LTR for simplicity here
@@ -192,7 +192,7 @@ defmodule Raxol.Terminal.CharacterHandling do
       # Digits 0-9
       # Space
       (char >= 0x0030 and char <= 0x0039) or
-        char == 0x0020 ->
+          char == 0x0020 ->
         :LTR
 
       # Default to Neutral for anything else (punctuation, symbols, etc.)
@@ -205,7 +205,8 @@ defmodule Raxol.Terminal.CharacterHandling do
   Processes a string for bidirectional text rendering.
   Returns a list of segments with their rendering order.
   """
-  @spec process_bidi_text(String.t()) :: list({:LTR | :RTL | :NEUTRAL, String.t()})
+  @spec process_bidi_text(String.t()) ::
+          list({:LTR | :RTL | :NEUTRAL, String.t()})
   @dialyzer {:nowarn_function, process_bidi_text: 1}
   def process_bidi_text(string) do
     # Convert string to list of characters

@@ -20,7 +20,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
 
     test "handles optional dependencies" do
       plugins = %{
-        "plugin_a" => %{dependencies: [{"plugin_b", ">= 1.0.0", %{optional: true}}]},
+        "plugin_a" => %{
+          dependencies: [{"plugin_b", ">= 1.0.0", %{optional: true}}]
+        },
         "plugin_b" => %{dependencies: []}
       }
 
@@ -68,27 +70,32 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
   describe "build_dependency_chain/2" do
     test "builds chain for cycle" do
       cycle = ["plugin_a", "plugin_b"]
+
       graph = %{
         "plugin_a" => [{"plugin_b", ">= 1.0.0", %{optional: false}}],
         "plugin_b" => [{"plugin_a", ">= 1.0.0", %{optional: false}}]
       }
 
-      assert ["plugin_a", "plugin_b", "plugin_a"] == Graph.build_dependency_chain(cycle, graph)
+      assert ["plugin_a", "plugin_b", "plugin_a"] ==
+               Graph.build_dependency_chain(cycle, graph)
     end
 
     test "handles single node cycle" do
       cycle = ["plugin_a"]
+
       graph = %{
         "plugin_a" => [{"plugin_a", ">= 1.0.0", %{optional: false}}]
       }
 
-      assert ["plugin_a", "plugin_a"] == Graph.build_dependency_chain(cycle, graph)
+      assert ["plugin_a", "plugin_a"] ==
+               Graph.build_dependency_chain(cycle, graph)
     end
   end
 
   describe "get_all_dependencies/3" do
     test "gets all dependencies for a plugin" do
       plugin_id = "plugin_a"
+
       graph = %{
         "plugin_a" => [{"plugin_b", ">= 1.0.0", %{optional: false}}],
         "plugin_b" => [{"plugin_c", ">= 1.0.0", %{optional: false}}],
@@ -103,17 +110,21 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
 
     test "detects circular dependencies" do
       plugin_id = "plugin_a"
+
       graph = %{
         "plugin_a" => [{"plugin_b", ">= 1.0.0", %{optional: false}}],
         "plugin_b" => [{"plugin_a", ">= 1.0.0", %{optional: false}}]
       }
 
-      assert {:error, :circular_dependency, cycle} = Graph.get_all_dependencies(plugin_id, graph)
+      assert {:error, :circular_dependency, cycle} =
+               Graph.get_all_dependencies(plugin_id, graph)
+
       assert length(cycle) > 0
     end
 
     test "handles plugins with no dependencies" do
       plugin_id = "plugin_a"
+
       graph = %{
         "plugin_a" => []
       }
@@ -130,8 +141,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
 
     test "handles complex dependency chains" do
       plugin_id = "plugin_a"
+
       graph = %{
-        "plugin_a" => [{"plugin_b", ">= 1.0.0", %{optional: false}}, {"plugin_c", ">= 1.0.0", %{optional: false}}],
+        "plugin_a" => [
+          {"plugin_b", ">= 1.0.0", %{optional: false}},
+          {"plugin_c", ">= 1.0.0", %{optional: false}}
+        ],
         "plugin_b" => [{"plugin_d", ">= 1.0.0", %{optional: false}}],
         "plugin_c" => [{"plugin_d", ">= 1.0.0", %{optional: false}}],
         "plugin_d" => []

@@ -7,6 +7,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
+
   alias Raxol.Terminal.Parser.States.{
     GroundState,
     EscapeState,

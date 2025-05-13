@@ -14,47 +14,47 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandDispatcher.Behaviour do
   Returns an updated state and any necessary side effects.
   """
   @callback dispatch_command(
-    command_atom :: atom(),
-    namespace :: atom(),
-    data :: list(),
-    dispatcher_pid :: pid(),
-    state :: map()
-  ) :: {:ok, map()} | {:error, any()}
+              command_atom :: atom(),
+              namespace :: atom(),
+              data :: list(),
+              dispatcher_pid :: pid(),
+              state :: map()
+            ) :: {:ok, map()} | {:error, any()}
 
   @doc """
   Handles command results from plugins.
   """
   @callback handle_command_result(
-    command_atom :: atom(),
-    result :: any(),
-    dispatcher_pid :: pid(),
-    state :: map()
-  ) :: {:ok, map()} | {:error, any()}
+              command_atom :: atom(),
+              result :: any(),
+              dispatcher_pid :: pid(),
+              state :: map()
+            ) :: {:ok, map()} | {:error, any()}
 
   @doc """
   Handles command errors from plugins.
   """
   @callback handle_command_error(
-    command_atom :: atom(),
-    error :: any(),
-    dispatcher_pid :: pid(),
-    state :: map()
-  ) :: {:ok, map()} | {:error, any()}
+              command_atom :: atom(),
+              error :: any(),
+              dispatcher_pid :: pid(),
+              state :: map()
+            ) :: {:ok, map()} | {:error, any()}
 
   @doc """
   Handles command timeouts.
   """
   @callback handle_command_timeout(
-    command_atom :: atom(),
-    dispatcher_pid :: pid(),
-    state :: map()
-  ) :: {:ok, map()} | {:error, any()}
+              command_atom :: atom(),
+              dispatcher_pid :: pid(),
+              state :: map()
+            ) :: {:ok, map()} | {:error, any()}
 
   @doc """
   Updates the command dispatcher state.
   """
   @callback update_dispatcher_state(
-    state :: map(),
-    new_state :: map()
-  ) :: map()
+              state :: map(),
+              new_state :: map()
+            ) :: map()
 end

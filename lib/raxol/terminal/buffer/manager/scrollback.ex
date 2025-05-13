@@ -89,7 +89,8 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       iex> Scrollback.get_height(state)
       2000
   """
-  def set_height(%State{} = state, new_height) when is_integer(new_height) and new_height > 0 do
+  def set_height(%State{} = state, new_height)
+      when is_integer(new_height) and new_height > 0 do
     new_scrollback = Scrollback.set_height(state.scrollback, new_height)
     %{state | scrollback: new_scrollback}
   end

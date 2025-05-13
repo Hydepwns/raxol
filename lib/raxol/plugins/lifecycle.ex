@@ -115,9 +115,12 @@ defmodule Raxol.Plugins.Lifecycle do
           {:ok, PluginManager.t()} | {:error, String.t()}
   def load_plugins(%PluginManager{} = manager, modules) when is_list(modules) do
     with {:ok, initialized_plugins} <- initialize_all_plugins(manager, modules),
-         {:ok, sorted_plugin_names} <- DependencyManager.resolve_load_order(
-           for plugin <- initialized_plugins, into: %{}, do: {plugin.name, plugin}
-         ),
+         {:ok, sorted_plugin_names} <-
+           DependencyManager.resolve_load_order(
+             for plugin <- initialized_plugins,
+                 into: %{},
+                 do: {plugin.name, plugin}
+           ),
          {:ok, final_manager} <-
            load_plugins_in_order(
              manager,

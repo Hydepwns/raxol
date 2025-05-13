@@ -258,7 +258,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
 
       # rgb(r,g,b) (decimal, 0-255)
       String.match?(spec, ~r/^rgb\(\s*\d+\s*,\s*\d+\s*,\s*\d+\s*\)$/) ->
-        case Regex.run(~r/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/, spec, capture: :all_but_first) do
+        case Regex.run(~r/rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)/, spec,
+               capture: :all_but_first
+             ) do
           [r_str, g_str, b_str] ->
             with {r, ""} <- Integer.parse(r_str),
                  {g, ""} <- Integer.parse(g_str),
@@ -277,7 +279,9 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
 
       # rgb(r%,g%,b%) (percentage, 0-100%)
       String.match?(spec, ~r/^rgb\(\s*\d+%\s*,\s*\d+%\s*,\s*\d+%\s*\)$/) ->
-        case Regex.run(~r/rgb\(\s*(\d+)%\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/, spec, capture: :all_but_first) do
+        case Regex.run(~r/rgb\(\s*(\d+)%\s*,\s*(\d+)%\s*,\s*(\d+)%\s*\)/, spec,
+               capture: :all_but_first
+             ) do
           [r_str, g_str, b_str] ->
             with {r_pct, ""} <- Integer.parse(r_str),
                  {g_pct, ""} <- Integer.parse(g_str),

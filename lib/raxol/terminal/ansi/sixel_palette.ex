@@ -93,14 +93,16 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
   """
   @spec define_color(map(), non_neg_integer(), 1..2, 0..100, 0..100, 0..100) ::
           {:ok, map()} | {:error, atom()}
-  def define_color(palette, index, format, p1, p2, p3) when index >= 0 and index <= 255 do
+  def define_color(palette, index, format, p1, p2, p3)
+      when index >= 0 and index <= 255 do
     case convert_color(format, p1, p2, p3) do
       {:ok, rgb} -> {:ok, Map.put(palette, index, rgb)}
       {:error, reason} -> {:error, reason}
     end
   end
 
-  def define_color(_palette, _index, _format, _p1, _p2, _p3), do: {:error, :invalid_index}
+  def define_color(_palette, _index, _format, _p1, _p2, _p3),
+    do: {:error, :invalid_index}
 
   # --- Color Conversion Helpers ---
 

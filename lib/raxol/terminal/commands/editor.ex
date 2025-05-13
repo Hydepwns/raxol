@@ -15,7 +15,12 @@ defmodule Raxol.Terminal.Commands.Editor do
   Inserts a specified number of blank lines at the current cursor position.
   Lines below the cursor are shifted down, and lines shifted off the bottom are discarded.
   """
-  @spec insert_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style()) :: ScreenBuffer.t()
+  @spec insert_lines(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          TextFormatting.text_style()
+        ) :: ScreenBuffer.t()
   def insert_lines(buffer, row, count, default_style) do
     LineEditor.insert_lines(buffer, row, count, default_style)
   end
@@ -24,7 +29,12 @@ defmodule Raxol.Terminal.Commands.Editor do
   Deletes a specified number of lines starting from the current cursor position.
   Lines below the deleted lines are shifted up, and blank lines are added at the bottom.
   """
-  @spec delete_lines(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style()) :: ScreenBuffer.t()
+  @spec delete_lines(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          TextFormatting.text_style()
+        ) :: ScreenBuffer.t()
   def delete_lines(buffer, row, count, default_style) do
     LineEditor.delete_lines(buffer, row, count, default_style)
   end
@@ -33,7 +43,13 @@ defmodule Raxol.Terminal.Commands.Editor do
   Inserts a specified number of blank characters at the current cursor position.
   Characters to the right of the cursor are shifted right, and characters shifted off the end are discarded.
   """
-  @spec insert_chars(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style()) :: ScreenBuffer.t()
+  @spec insert_chars(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          TextFormatting.text_style()
+        ) :: ScreenBuffer.t()
   def insert_chars(buffer, row, col, count, default_style) do
     CharEditor.insert_characters(buffer, row, col, count, default_style)
   end
@@ -42,7 +58,13 @@ defmodule Raxol.Terminal.Commands.Editor do
   Deletes a specified number of characters starting from the current cursor position.
   Characters to the right of the deleted characters are shifted left, and blank characters are added at the end.
   """
-  @spec delete_chars(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style()) :: ScreenBuffer.t()
+  @spec delete_chars(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          TextFormatting.text_style()
+        ) :: ScreenBuffer.t()
   def delete_chars(buffer, row, col, count, default_style) do
     CharEditor.delete_characters(buffer, row, col, count, default_style)
   end
@@ -51,7 +73,13 @@ defmodule Raxol.Terminal.Commands.Editor do
   Erases a specified number of characters starting from the current cursor position.
   Characters are replaced with blank spaces using the default style.
   """
-  @spec erase_chars(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style()) :: ScreenBuffer.t()
+  @spec erase_chars(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          TextFormatting.text_style()
+        ) :: ScreenBuffer.t()
   def erase_chars(buffer, row, col, count, default_style) do
     # First delete the characters
     buffer = delete_chars(buffer, row, col, count, default_style)
@@ -77,7 +105,12 @@ defmodule Raxol.Terminal.Commands.Editor do
 
   * Updated screen buffer
   """
-  @spec clear_screen(ScreenBuffer.t(), {non_neg_integer(), non_neg_integer()}, integer(), TextFormatting.text_style()) :: ScreenBuffer.t()
+  @spec clear_screen(
+          ScreenBuffer.t(),
+          {non_neg_integer(), non_neg_integer()},
+          integer(),
+          TextFormatting.text_style()
+        ) :: ScreenBuffer.t()
   def clear_screen(buffer, cursor_pos, mode, default_style) do
     case mode do
       0 -> Eraser.clear_screen_from(buffer, cursor_pos, default_style)
@@ -105,7 +138,12 @@ defmodule Raxol.Terminal.Commands.Editor do
 
   * Updated screen buffer
   """
-  @spec clear_line(ScreenBuffer.t(), {non_neg_integer(), non_neg_integer()}, integer(), TextFormatting.text_style()) :: ScreenBuffer.t()
+  @spec clear_line(
+          ScreenBuffer.t(),
+          {non_neg_integer(), non_neg_integer()},
+          integer(),
+          TextFormatting.text_style()
+        ) :: ScreenBuffer.t()
   def clear_line(buffer, cursor_pos, mode, default_style) do
     case mode do
       0 -> Eraser.clear_line_from(buffer, cursor_pos, default_style)
@@ -131,7 +169,14 @@ defmodule Raxol.Terminal.Commands.Editor do
 
   * Updated screen buffer
   """
-  @spec clear_region(ScreenBuffer.t(), non_neg_integer(), non_neg_integer(), non_neg_integer(), non_neg_integer(), TextFormatting.text_style()) :: ScreenBuffer.t()
+  @spec clear_region(
+          ScreenBuffer.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer(),
+          TextFormatting.text_style()
+        ) :: ScreenBuffer.t()
   def clear_region(buffer, start_x, start_y, end_x, end_y, default_style) do
     Eraser.clear_region(buffer, start_x, start_y, end_x, end_y, default_style)
   end

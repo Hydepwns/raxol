@@ -141,20 +141,24 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
                 # Use apply/3 correctly
                 command_name_atom = String.to_atom(command_name_str)
 
-                case with_timeout(fn ->
-                  apply(plugin_module, function_atom, [
-                    command_name_atom,
-                    args,
-                    current_plugin_state
-                  ])
-                end, 5000) do
+                case with_timeout(
+                       fn ->
+                         apply(plugin_module, function_atom, [
+                           command_name_atom,
+                           args,
+                           current_plugin_state
+                         ])
+                       end,
+                       5000
+                     ) do
                   {:ok, {:ok, new_plugin_state, result_tuple}} ->
                     Logger.debug(
                       "Command '#{command_name_str}' handled by #{inspect(plugin_module)}, result: #{inspect(result_tuple)}"
                     )
 
                     # Update plugin state in the state map
-                    updated_states = Map.put(state.plugin_states, plugin_id, new_plugin_state)
+                    updated_states =
+                      Map.put(state.plugin_states, plugin_id, new_plugin_state)
 
                     # Return result to PluginManager
                     {:ok, updated_states}
@@ -165,7 +169,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
                     )
 
                     # Update plugin state even on error
-                    updated_states = Map.put(state.plugin_states, plugin_id, new_plugin_state)
+                    updated_states =
+                      Map.put(state.plugin_states, plugin_id, new_plugin_state)
 
                     # Return error to PluginManager
                     {:error, reason_tuple, updated_states}
@@ -176,7 +181,8 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
                     )
 
                     # Return generic error to PluginManager
-                    {:error, {:unexpected_plugin_return, invalid_return}, state.plugin_states}
+                    {:error, {:unexpected_plugin_return, invalid_return},
+                     state.plugin_states}
 
                   {:error, :timeout} ->
                     Logger.error(
@@ -253,12 +259,14 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   # Helper function to execute a function with a timeout
   defp with_timeout(fun, timeout) do
     task = Task.async(fun)
+
     try do
       Task.await(task, timeout)
     catch
       :exit, {:timeout, _} ->
         Task.shutdown(task)
         {:error, :timeout}
+
       :exit, reason ->
         {:error, reason}
     end

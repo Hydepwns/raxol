@@ -10,12 +10,10 @@ defmodule Raxol.Style.Colors.Advanced do
   - Color harmony generation
   """
 
-  alias Raxol.Style.Colors.{Color, Palette, Theme, Utilities, Adaptive}
+  alias Raxol.Style.Colors.{Color, Theme, Utilities, Adaptive}
   require :math
 
   @type color :: Color.t()
-  @type palette :: Palette.t()
-  @type color_space :: :rgb | :hsl | :lab | :xyz
 
   @doc """
   Blends two colors together with the given ratio.

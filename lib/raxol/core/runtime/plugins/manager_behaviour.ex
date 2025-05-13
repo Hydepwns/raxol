@@ -7,7 +7,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Behaviour do
   @doc """
   Gets a plugin by its ID.
   """
-  @callback get_plugin(plugin_id :: String.t()) :: {:ok, map()} | {:error, term()}
+  @callback get_plugin(plugin_id :: String.t()) ::
+              {:ok, map()} | {:error, term()}
 
   @doc """
   Unloads a plugin by its ID.
@@ -17,7 +18,8 @@ defmodule Raxol.Core.Runtime.Plugins.Manager.Behaviour do
   @doc """
   Loads a plugin from a file path.
   """
-  @callback load_plugin(plugin_path :: String.t()) :: {:ok, map()} | {:error, term()}
+  @callback load_plugin(plugin_path :: String.t()) ::
+              {:ok, map()} | {:error, term()}
 
   @doc """
   Starts the plugin manager with the given options.

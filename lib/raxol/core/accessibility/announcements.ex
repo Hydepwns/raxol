@@ -37,7 +37,8 @@ defmodule Raxol.Core.Accessibility.Announcements do
     silenced = get_silence_setting(user_preferences_pid_or_name)
 
     # Check if screen reader is enabled
-    screen_reader_enabled = get_screen_reader_setting(user_preferences_pid_or_name)
+    screen_reader_enabled =
+      get_screen_reader_setting(user_preferences_pid_or_name)
 
     cond do
       # Do nothing if accessibility is disabled
@@ -66,7 +67,12 @@ defmodule Raxol.Core.Accessibility.Announcements do
 
         # Add to queue
         current_queue = Process.get(:accessibility_announcements, [])
-        updated_queue = if announcement.interrupt, do: [announcement], else: insert_by_priority(current_queue, announcement, priority)
+
+        updated_queue =
+          if announcement.interrupt,
+            do: [announcement],
+            else: insert_by_priority(current_queue, announcement, priority)
+
         Process.put(:accessibility_announcements, updated_queue)
 
         # Dispatch event to notify screen readers
@@ -114,14 +120,20 @@ defmodule Raxol.Core.Accessibility.Announcements do
   # --- Private Functions ---
 
   defp get_silence_setting(user_preferences_pid_or_name) do
-    case Raxol.Core.UserPreferences.get([:accessibility, :silence_announcements], user_preferences_pid_or_name) do
+    case Raxol.Core.UserPreferences.get(
+           [:accessibility, :silence_announcements],
+           user_preferences_pid_or_name
+         ) do
       true -> true
       _ -> false
     end
   end
 
   defp get_screen_reader_setting(user_preferences_pid_or_name) do
-    case Raxol.Core.UserPreferences.get([:accessibility, :screen_reader], user_preferences_pid_or_name) do
+    case Raxol.Core.UserPreferences.get(
+           [:accessibility, :screen_reader],
+           user_preferences_pid_or_name
+         ) do
       false -> false
       _ -> true
     end

@@ -4,6 +4,7 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
 
   alias Raxol.Core.Accessibility
   alias Raxol.Core.AccessibilityTestHelper, as: Helper
+  alias Raxol.Core.UserPreferences
 
   setup :verify_on_exit!
   setup :set_mox_global
@@ -15,7 +16,12 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
 
   describe "enable/1 and disable/0" do
     setup do
-      prefs_name = UserPreferencesEnableDisableTest
+      prefs_name =
+        String.to_atom(
+          "user_prefs_enable_disable_" <>
+            Integer.to_string(System.unique_integer([:positive]))
+        )
+
       Helper.setup_test_preferences(prefs_name)
     end
 
@@ -29,17 +35,31 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
 
       # Disable first to clear handlers etc.
       Accessibility.disable(prefs_name)
-      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == false end)
+
+      Helper.wait_for_state(fn ->
+        Accessibility.get_option(:enabled, prefs_name) == false
+      end)
 
       # Enable reads preferences
       Accessibility.enable([], prefs_name)
-      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == true end)
+
+      Helper.wait_for_state(fn ->
+        Accessibility.get_option(:enabled, prefs_name) == true
+      end)
 
       # Assert default values
-      assert UserPreferences.get(Helper.pref_key(:high_contrast), prefs_name) == false
-      assert UserPreferences.get(Helper.pref_key(:reduced_motion), prefs_name) == false
-      assert UserPreferences.get(Helper.pref_key(:large_text), prefs_name) == false
-      assert UserPreferences.get(Helper.pref_key(:screen_reader), prefs_name) == true
+      assert UserPreferences.get(Helper.pref_key(:high_contrast), prefs_name) ==
+               false
+
+      assert UserPreferences.get(Helper.pref_key(:reduced_motion), prefs_name) ==
+               false
+
+      assert UserPreferences.get(Helper.pref_key(:large_text), prefs_name) ==
+               false
+
+      assert UserPreferences.get(Helper.pref_key(:screen_reader), prefs_name) ==
+               true
+
       assert Accessibility.get_text_scale(prefs_name) == 1.0
     end
 
@@ -52,7 +72,10 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       UserPreferences.set(Helper.pref_key(:screen_reader), nil, prefs_name)
 
       Accessibility.disable(prefs_name)
-      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == false end)
+
+      Helper.wait_for_state(fn ->
+        Accessibility.get_option(:enabled, prefs_name) == false
+      end)
 
       custom_opts = [
         high_contrast: true,
@@ -61,7 +84,10 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       ]
 
       Accessibility.enable(custom_opts, prefs_name)
-      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == true end)
+
+      Helper.wait_for_state(fn ->
+        Accessibility.get_option(:enabled, prefs_name) == true
+      end)
 
       assert Accessibility.get_option(:high_contrast, prefs_name) == true
       assert Accessibility.get_option(:reduced_motion, prefs_name) == true
@@ -73,17 +99,26 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       prefs_name: prefs_name
     } do
       Accessibility.enable([], prefs_name)
-      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == true end)
+
+      Helper.wait_for_state(fn ->
+        Accessibility.get_option(:enabled, prefs_name) == true
+      end)
 
       assert Accessibility.get_option(:enabled, prefs_name) == true
       Accessibility.announce("Test before disable", [], prefs_name)
       assert Accessibility.get_next_announcement() == "Test before disable"
 
       Accessibility.disable(prefs_name)
-      Helper.wait_for_state(fn -> Accessibility.get_option(:enabled, prefs_name) == false end)
+
+      Helper.wait_for_state(fn ->
+        Accessibility.get_option(:enabled, prefs_name) == false
+      end)
 
       Accessibility.announce("Test after disable", [], prefs_name)
       assert Accessibility.get_next_announcement() == nil
     end
   end
 end
+
+ExUnit.start()
+Code.require_file("../accessibility_test_helper.exs", __DIR__)

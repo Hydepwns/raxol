@@ -34,13 +34,23 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
       iex> ParameterValidation.get_valid_param([-1, 2, 3], 0, 0, 0, 9999)
       0
   """
-  @spec get_valid_param(list(integer() | nil), non_neg_integer(), integer(), integer(), integer()) :: integer()
+  @spec get_valid_param(
+          list(integer() | nil),
+          non_neg_integer(),
+          integer(),
+          integer(),
+          integer()
+        ) :: integer()
   def get_valid_param(params, index, default, min, max) do
     case Enum.at(params, index, default) do
       value when is_integer(value) and value >= min and value <= max ->
         value
+
       _ ->
-        Logger.warning("Invalid parameter value at index #{index}, using default #{default}")
+        Logger.warning(
+          "Invalid parameter value at index #{index}, using default #{default}"
+        )
+
         default
     end
   end
@@ -66,7 +76,11 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
       iex> ParameterValidation.get_valid_non_neg_param([-1, 2, 3], 0, 0)
       0
   """
-  @spec get_valid_non_neg_param(list(integer() | nil), non_neg_integer(), non_neg_integer()) :: non_neg_integer()
+  @spec get_valid_non_neg_param(
+          list(integer() | nil),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: non_neg_integer()
   def get_valid_non_neg_param(params, index, default) do
     get_valid_param(params, index, default, 0, 9999)
   end
@@ -92,7 +106,11 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
       iex> ParameterValidation.get_valid_pos_param([0, 2, 3], 0, 1)
       1
   """
-  @spec get_valid_pos_param(list(integer() | nil), non_neg_integer(), pos_integer()) :: pos_integer()
+  @spec get_valid_pos_param(
+          list(integer() | nil),
+          non_neg_integer(),
+          pos_integer()
+        ) :: pos_integer()
   def get_valid_pos_param(params, index, default) do
     get_valid_param(params, index, default, 1, 9999)
   end
@@ -118,7 +136,8 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
       iex> ParameterValidation.get_valid_bool_param([2, 2, 3], 0, 0)
       0
   """
-  @spec get_valid_bool_param(list(integer() | nil), non_neg_integer(), 0..1) :: 0..1
+  @spec get_valid_bool_param(list(integer() | nil), non_neg_integer(), 0..1) ::
+          0..1
   def get_valid_bool_param(params, index, default) do
     get_valid_param(params, index, default, 0, 1)
   end

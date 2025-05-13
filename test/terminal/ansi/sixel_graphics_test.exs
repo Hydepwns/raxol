@@ -49,6 +49,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       {new_state, response} = SixelGraphics.process_sequence(state, input)
       assert response == :ok
       assert new_state.current_color == 1
+
       # '~' (ASCII 126) is pattern 63 (126-63). Bits 0-5 should be set with color 1
       expected_pixels = Enum.into(0..5, %{}, fn y -> {{0, y}, 1} end)
       assert new_state.pixel_buffer == expected_pixels
@@ -61,9 +62,12 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       assert response == :ok
       # First 'A' at x=0, second 'A' at x=0 after CR
       expected_pixels = %{
-        {0, 1} => 0,  # First 'A' with color 0
-        {0, 7} => 0   # Second 'A' with color 0 after CR and line feed
+        # First 'A' with color 0
+        {0, 1} => 0,
+        # Second 'A' with color 0 after CR and line feed
+        {0, 7} => 0
       }
+
       assert new_state.pixel_buffer == expected_pixels
     end
 
@@ -74,10 +78,13 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       assert response == :ok
       # '-' advances y by 6, resets x to 0
       # 'A' (ASCII 65) is pattern 2 (0b000010), bit 1 is set
-      expected_pixels = %{{0, 7} => 0}  # y=6+1 with default color 0
+      # y=6+1 with default color 0
+      expected_pixels = %{{0, 7} => 0}
       assert new_state.pixel_buffer == expected_pixels
-      assert elem(new_state.position, 0) == 1  # x should be 1 after processing 'A'
-      assert elem(new_state.position, 1) == 6  # y should be 6 after line feed
+      # x should be 1 after processing 'A'
+      assert elem(new_state.position, 0) == 1
+      # y should be 6 after line feed
+      assert elem(new_state.position, 1) == 6
     end
 
     test "handles non-Sixel DCS sequences gracefully" do
@@ -103,14 +110,20 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
       # Verify pixel buffer contents
       # Check pixels from the repeated 'A' (pattern 2 -> bit 1) - should be color 1
-      assert Map.get(new_state.pixel_buffer, {0, 1}) == 1  # First 'A'
-      assert Map.get(new_state.pixel_buffer, {1, 1}) == 1  # Second 'A'
-      assert Map.get(new_state.pixel_buffer, {2, 1}) == 1  # Third 'A'
-      assert Map.get(new_state.pixel_buffer, {0, 7}) == 1  # Final 'A' after CR/LF
+      # First 'A'
+      assert Map.get(new_state.pixel_buffer, {0, 1}) == 1
+      # Second 'A'
+      assert Map.get(new_state.pixel_buffer, {1, 1}) == 1
+      # Third 'A'
+      assert Map.get(new_state.pixel_buffer, {2, 1}) == 1
+      # Final 'A' after CR/LF
+      assert Map.get(new_state.pixel_buffer, {0, 7}) == 1
 
       # Verify final cursor position
-      assert elem(new_state.position, 0) == 1  # After processing final 'A'
-      assert elem(new_state.position, 1) == 6  # After line feed
+      # After processing final 'A'
+      assert elem(new_state.position, 0) == 1
+      # After line feed
+      assert elem(new_state.position, 1) == 6
     end
 
     test "handles DCS Sixel termination correctly" do
@@ -118,18 +131,28 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
       # Test exact termination
       input_exact = "\ePq?\e\\\\"
-      {new_state_exact, response_exact} = SixelGraphics.process_sequence(state, input_exact)
+
+      {new_state_exact, response_exact} =
+        SixelGraphics.process_sequence(state, input_exact)
+
       assert response_exact == :ok
-      assert new_state_exact.pixel_buffer == %{}  # Empty buffer for pattern 0
+      # Empty buffer for pattern 0
+      assert new_state_exact.pixel_buffer == %{}
 
       # Test embedded ST
       input_embedded = "\ePq?\e\\\\extra"
-      {_new_state_embedded, response_embedded} = SixelGraphics.process_sequence(state, input_embedded)
+
+      {_new_state_embedded, response_embedded} =
+        SixelGraphics.process_sequence(state, input_embedded)
+
       assert response_embedded == :ok
 
       # Test missing ST
       input_missing = "\ePq?"
-      {_new_state_missing, response_missing} = SixelGraphics.process_sequence(state, input_missing)
+
+      {_new_state_missing, response_missing} =
+        SixelGraphics.process_sequence(state, input_missing)
+
       assert response_missing == {:error, :missing_st}
     end
   end

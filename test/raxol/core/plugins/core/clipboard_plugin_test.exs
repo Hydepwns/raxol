@@ -48,7 +48,11 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
 
     # Call the command handler. Args for write is [test_text]
     assert {:ok, ^current_state, {:ok, :clipboard_write_ok}} =
-             ClipboardPlugin.handle_command(:clipboard_write, [test_text], current_state)
+             ClipboardPlugin.handle_command(
+               :clipboard_write,
+               [test_text],
+               current_state
+             )
 
     # Verify expectations for this test
     Mox.verify!(ClipboardMock)
@@ -88,7 +92,12 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
     state: current_state
   } do
     # No mocking needed for this path. Call with an unexpected arg structure for the catch-all handle_command/2
-    assert {:error, {:unknown_plugin_command, :unknown_cmd, [:unknown_cmd_arg]}, ^current_state} =
-             ClipboardPlugin.handle_command(:unknown_cmd, [:unknown_cmd_arg], current_state)
+    assert {:error, {:unknown_plugin_command, :unknown_cmd, [:unknown_cmd_arg]},
+            ^current_state} =
+             ClipboardPlugin.handle_command(
+               :unknown_cmd,
+               [:unknown_cmd_arg],
+               current_state
+             )
   end
 end

@@ -115,4 +115,34 @@ defmodule Raxol.Animation.Easing do
   def calculate_value(_, t) when is_float(t), do: t
   # Fallback for invalid input
   def calculate_value(_, _), do: 0.0
+
+  # --- Easing function stubs for test compatibility ---
+  def linear(t), do: calculate_value(:linear, t)
+  def ease_in_quad(t), do: calculate_value(:ease_in_quad, t)
+  def ease_out_quad(t), do: calculate_value(:ease_out_quad, t)
+  def ease_in_out_quad(t), do: calculate_value(:ease_in_out_quad, t)
+  def ease_in_cubic(t), do: calculate_value(:ease_in_cubic, t)
+  def ease_out_cubic(t), do: calculate_value(:ease_out_cubic, t)
+  def ease_in_out_cubic(t), do: calculate_value(:ease_in_out_cubic, t)
+  def ease_in_quart(t), do: calculate_value(:ease_in_quart, t)
+  def ease_out_quart(t), do: calculate_value(:ease_out_quart, t)
+  def ease_in_out_quart(t), do: calculate_value(:ease_in_out_quart, t)
+  def ease_in_quint(t), do: calculate_value(:ease_in_quint, t)
+  def ease_out_quint(t), do: calculate_value(:ease_out_quint, t)
+  def ease_in_out_quint(t), do: calculate_value(:ease_in_out_quint, t)
+  def ease_in_sine(t), do: calculate_value(:ease_in_sine, t)
+  def ease_out_sine(t), do: calculate_value(:ease_out_sine, t)
+  def ease_in_out_sine(t), do: calculate_value(:ease_in_out_sine, t)
+  def ease_in_expo(t), do: calculate_value(:ease_in_expo, t)
+  def ease_out_expo(t), do: calculate_value(:ease_out_expo, t)
+  def ease_in_out_expo(t), do: calculate_value(:ease_in_out_expo, t)
+  def ease_in_circ(t), do: calculate_value(:ease_in_circ, t)
+  def ease_out_circ(t), do: calculate_value(:ease_out_circ, t)
+  def ease_in_out_circ(t), do: calculate_value(:ease_in_out_circ, t)
+  def ease_in_back(t), do: calculate_value(:ease_in_back, t)
+  def ease_out_back(t), do: calculate_value(:ease_out_back, t)
+  def ease_in_out_back(t), do: calculate_value(:ease_in_out_back, t)
+  def ease_in_bounce(t), do: calculate_value(:ease_in_bounce, t)
+  def ease_out_bounce(t), do: calculate_value(:ease_out_bounce, t)
+  def ease_in_out_bounce(t), do: calculate_value(:ease_in_out_bounce, t)
 end

@@ -146,10 +146,7 @@ defmodule Raxol.UI.Components.Display.Table do
         :asc
       end
 
-    updated_state = %{state |
-      sort_by: column,
-      sort_direction: new_direction
-    }
+    updated_state = %{state | sort_by: column, sort_direction: new_direction}
 
     {:noreply, updated_state}
   end
@@ -236,10 +233,7 @@ defmodule Raxol.UI.Components.Display.Table do
         {:noreply, %{state | focused_row: row_index}}
 
       {:focus, {:cell, {row_index, col_index}}} ->
-        {:noreply, %{state |
-          focused_row: row_index,
-          focused_col: col_index
-        }}
+        {:noreply, %{state | focused_row: row_index, focused_col: col_index}}
 
       _ ->
         {:noreply, state}
@@ -325,27 +319,40 @@ defmodule Raxol.UI.Components.Display.Table do
     # Calculate widths based on headers and data
     header_widths =
       case state.columns do
-        nil -> []
-        [] -> []
+        nil ->
+          []
+
+        [] ->
+          []
+
         columns when is_list(columns) ->
           Enum.map(columns, fn col ->
             String.length(Map.get(col, :header, ""))
           end)
-        _ -> []
+
+        _ ->
+          []
       end
 
     data_widths =
       case state.data do
-        nil -> []
-        [] -> []
+        nil ->
+          []
+
+        [] ->
+          []
+
         data when is_list(data) ->
-          Enum.reduce(data, List.duplicate(0, length(state.columns)), fn row, acc ->
+          Enum.reduce(data, List.duplicate(0, length(state.columns)), fn row,
+                                                                         acc ->
             Enum.zip_with(acc, state.columns, fn max_width, col ->
               value = Map.get(row, Map.get(col, :key))
               max(max_width, String.length(to_string(value)))
             end)
           end)
-        _ -> []
+
+        _ ->
+          []
       end
 
     # Combine header and data widths
@@ -362,8 +369,10 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   defp filter_data(data, ""), do: data
+
   defp filter_data(data, term) do
     term = String.downcase(term)
+
     Enum.filter(data, fn row ->
       Enum.any?(row, fn {_key, value} ->
         String.contains?(String.downcase(to_string(value)), term)
@@ -372,6 +381,7 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   defp sort_data(data, nil, _direction), do: data
+
   defp sort_data(data, column, direction) do
     Enum.sort_by(data, fn row ->
       value = Map.get(row, column)
@@ -381,26 +391,10 @@ defmodule Raxol.UI.Components.Display.Table do
 
   # Helper to get theme style for either Theme type
   defp get_theme_style(theme, component_type) do
-    cond do
-      # Check for Raxol.UI.Theming.Theme
-      is_map(theme) && Map.has_key?(theme, :component_styles) ->
-        Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
-
-      # Check for Raxol.Style.Colors.Theme
-      is_map(theme) && Map.has_key?(theme, :palette) ->
-        %{
-          header_fg: :cyan,
-          header_bg: :default,
-          row_fg: :default,
-          row_bg: :default,
-          alternate_row_bg: :default,
-          # Return a default border struct instead of just an atom
-          border: %Raxol.Style.Borders{color: :white, style: :solid, width: 1}
-        }
-
-      # Fallback
-      true ->
-        %{}
+    if is_map(theme) && Map.has_key?(theme, :component_styles) do
+      Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
+    else
+      %{}
     end
   end
 
@@ -426,9 +420,11 @@ defmodule Raxol.UI.Components.Display.Table do
         # Selected row style
         state.selected_row == index ->
           [bg: :blue, fg: :white]
+
         # Striped row style
         state.striped and rem(index, 2) == 1 ->
           [bg: :bright_black]
+
         # Default row style
         true ->
           []

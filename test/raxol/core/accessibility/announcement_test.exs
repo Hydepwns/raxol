@@ -15,7 +15,12 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
 
   describe "announce/2 related functions" do
     setup do
-      prefs_name = UserPreferencesAnnounceTest
+      prefs_name =
+        String.to_atom(
+          "user_prefs_announce_" <>
+            Integer.to_string(System.unique_integer([:positive]))
+        )
+
       Helper.setup_test_preferences_with_events(prefs_name)
     end
 
@@ -93,9 +98,17 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
     test "announce/2 respects :silence_announcements setting", %{
       prefs_name: prefs_name
     } do
-      UserPreferences.set(Helper.pref_key(:silence_announcements), true, prefs_name)
+      UserPreferences.set(
+        Helper.pref_key(:silence_announcements),
+        true,
+        prefs_name
+      )
+
       Accessibility.announce("Should not be announced", [], prefs_name)
       assert Accessibility.get_next_announcement() == nil
     end
   end
 end
+
+ExUnit.start()
+Code.require_file("../accessibility_test_helper.exs", __DIR__)

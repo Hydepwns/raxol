@@ -14,15 +14,15 @@ defmodule Raxol.Terminal.Integration.State do
   }
 
   @type t :: %__MODULE__{
-    emulator: Emulator.t(),
-    renderer: Renderer.t(),
-    buffer_manager: Manager.t(),
-    scroll_buffer: Scroll.t(),
-    cursor_manager: Manager.t(),
-    command_history: History.t(),
-    config: map(),
-    last_cleanup: integer()
-  }
+          emulator: Emulator.t(),
+          renderer: Renderer.t(),
+          buffer_manager: Manager.t(),
+          scroll_buffer: Scroll.t(),
+          cursor_manager: Manager.t(),
+          command_history: History.t(),
+          config: map(),
+          last_cleanup: integer()
+        }
 
   defstruct [
     :emulator,

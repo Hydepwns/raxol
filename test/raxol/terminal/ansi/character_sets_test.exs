@@ -1,7 +1,11 @@
 defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
   use ExUnit.Case
-  # remove charactersets terminal ansi
-  # remove charactersets terminal ansi.{StateManager, Translator}
+
+  alias Raxol.Terminal.ANSI.CharacterSets.{
+    StateManager,
+    Translator,
+    CharacterSets
+  }
 
   describe "CharacterSets" do
     test "translates characters using active character set" do
@@ -133,10 +137,11 @@ defmodule Raxol.Terminal.ANSI.CharacterSetsTest do
     end
 
     test "translates strings" do
-      assert Translator.translate_string("_`", :dec_special_graphics, nil) == "─◆"
+      assert Translator.translate_string("_`", :dec_special_graphics, nil) ==
+               "─◆"
+
       assert Translator.translate_string("#@[", :french, nil) == "£à°"
       assert Translator.translate_string("#@[", :german, nil) == "§§Ä"
     end
   end
 end
-

@@ -5,33 +5,44 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerPerformanceTest do
   describe "performance and stress testing" do
     test "handles large number of plugins efficiently" do
       # Create 1000 plugins with random dependencies
-      plugins = Enum.reduce(1..1000, %{}, fn i, acc ->
-        # Each plugin depends on 0-3 random other plugins
-        num_deps = Enum.random(0..3)
-        deps = Enum.map(1..num_deps, fn _ ->
-          dep_id = "plugin_#{Enum.random(1..1000)}"
-          {dep_id, ">= 1.0.0"}
+      plugins =
+        Enum.reduce(1..1000, %{}, fn i, acc ->
+          # Each plugin depends on 0-3 random other plugins
+          num_deps = Enum.random(0..3)
+
+          deps =
+            Enum.map(1..num_deps, fn _ ->
+              dep_id = "plugin_#{Enum.random(1..1000)}"
+              {dep_id, ">= 1.0.0"}
+            end)
+
+          Map.put(acc, "plugin_#{i}", %{dependencies: deps})
         end)
-        Map.put(acc, "plugin_#{i}", %{dependencies: deps})
-      end)
 
       # Measure resolution time
-      {time, result} = :timer.tc(fn -> DependencyManager.resolve_load_order(plugins) end)
+      {time, result} =
+        :timer.tc(fn -> DependencyManager.resolve_load_order(plugins) end)
 
       # Assert reasonable performance (should complete within 1 second)
-      assert time < 1_000_000  # 1 second in microseconds
+      # 1 second in microseconds
+      assert time < 1_000_000
       assert match?({:ok, _}, result)
     end
 
     test "handles deep dependency chains efficiently" do
       # Create a chain of 1000 plugins
-      plugins = Enum.reduce(1..1000, %{}, fn i, acc ->
-        next_plugin = if i < 1000, do: "plugin_#{i + 1}", else: "plugin_1"
-        Map.put(acc, "plugin_#{i}", %{dependencies: [{next_plugin, ">= 1.0.0"}]})
-      end)
+      plugins =
+        Enum.reduce(1..1000, %{}, fn i, acc ->
+          next_plugin = if i < 1000, do: "plugin_#{i + 1}", else: "plugin_1"
+
+          Map.put(acc, "plugin_#{i}", %{
+            dependencies: [{next_plugin, ">= 1.0.0"}]
+          })
+        end)
 
       # Measure cycle detection time
-      {time, result} = :timer.tc(fn -> DependencyManager.resolve_load_order(plugins) end)
+      {time, result} =
+        :timer.tc(fn -> DependencyManager.resolve_load_order(plugins) end)
 
       # Assert reasonable performance
       assert time < 1_000_000
@@ -40,18 +51,23 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerPerformanceTest do
 
     test "handles complex version requirements efficiently" do
       # Create plugins with complex version requirements
-      plugins = Enum.reduce(1..100, %{}, fn i, acc ->
-        deps = Enum.map(1..5, fn j ->
-          {"plugin_#{j}", ">= #{i}.0.0 || >= #{i + 1}.0.0 || ~> #{i}.0"}
+      plugins =
+        Enum.reduce(1..100, %{}, fn i, acc ->
+          deps =
+            Enum.map(1..5, fn j ->
+              {"plugin_#{j}", ">= #{i}.0.0 || >= #{i + 1}.0.0 || ~> #{i}.0"}
+            end)
+
+          Map.put(acc, "plugin_#{i}", %{dependencies: deps})
         end)
-        Map.put(acc, "plugin_#{i}", %{dependencies: deps})
-      end)
 
       # Measure version checking time
-      {time, result} = :timer.tc(fn -> DependencyManager.resolve_load_order(plugins) end)
+      {time, result} =
+        :timer.tc(fn -> DependencyManager.resolve_load_order(plugins) end)
 
       # Assert reasonable performance
-      assert time < 500_000  # 500ms in microseconds
+      # 500ms in microseconds
+      assert time < 500_000
       assert match?({:ok, _}, result)
     end
 
@@ -64,16 +80,22 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerPerformanceTest do
       }
 
       # Run multiple dependency checks concurrently
-      tasks = Enum.map(1..100, fn _ ->
-        Task.async(fn ->
-          DependencyManager.check_dependencies("plugin_a", plugins["plugin_a"], plugins)
+      tasks =
+        Enum.map(1..100, fn _ ->
+          Task.async(fn ->
+            DependencyManager.check_dependencies(
+              "plugin_a",
+              plugins["plugin_a"],
+              plugins
+            )
+          end)
         end)
-      end)
 
       # Measure concurrent execution time
-      {time, results} = :timer.tc(fn ->
-        Enum.map(tasks, &Task.await/1)
-      end)
+      {time, results} =
+        :timer.tc(fn ->
+          Enum.map(tasks, &Task.await/1)
+        end)
 
       # Assert reasonable performance
       assert time < 1_000_000
@@ -82,30 +104,39 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerPerformanceTest do
 
     test "handles memory usage with large dependency graphs" do
       # Create a large dependency graph with shared dependencies
-      base_plugins = Enum.map(1..100, fn i ->
-        {"base_plugin_#{i}", %{dependencies: []}}
-      end)
-
-      plugins = Enum.reduce(1..1000, Map.new(base_plugins), fn i, acc ->
-        # Each plugin depends on 10 random base plugins
-        deps = Enum.map(1..10, fn _ ->
-          base_id = "base_plugin_#{Enum.random(1..100)}"
-          {base_id, ">= 1.0.0"}
+      base_plugins =
+        Enum.map(1..100, fn i ->
+          {"base_plugin_#{i}", %{dependencies: []}}
         end)
-        Map.put(acc, "plugin_#{i}", %{dependencies: deps})
-      end)
+
+      plugins =
+        Enum.reduce(1..1000, Map.new(base_plugins), fn i, acc ->
+          # Each plugin depends on 10 random base plugins
+          deps =
+            Enum.map(1..10, fn _ ->
+              base_id = "base_plugin_#{Enum.random(1..100)}"
+              {base_id, ">= 1.0.0"}
+            end)
+
+          Map.put(acc, "plugin_#{i}", %{dependencies: deps})
+        end)
 
       # Measure memory usage during resolution
       :erlang.garbage_collect()
       before = :erlang.memory(:total)
-      {time, result} = :timer.tc(fn -> DependencyManager.resolve_load_order(plugins) end)
+
+      {time, result} =
+        :timer.tc(fn -> DependencyManager.resolve_load_order(plugins) end)
+
       :erlang.garbage_collect()
       after_memory = :erlang.memory(:total)
       memory_used = after_memory - before
 
       # Assert reasonable performance and memory usage
-      assert time < 2_000_000  # 2 seconds
-      assert memory_used < 50_000_000  # 50MB
+      # 2 seconds
+      assert time < 2_000_000
+      # 50MB
+      assert memory_used < 50_000_000
       assert match?({:ok, _}, result)
     end
 
@@ -117,17 +148,24 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerPerformanceTest do
       }
 
       # Simulate rapid plugin updates
-      {time, _} = :timer.tc(fn ->
-        Enum.each(1..100, fn i ->
-          # Update plugin versions
-          updated_plugins = Map.update!(plugins, "plugin_b", fn plugin ->
-            Map.put(plugin, :version, "#{i}.0.0")
-          end)
+      {time, _} =
+        :timer.tc(fn ->
+          Enum.each(1..100, fn i ->
+            # Update plugin versions
+            updated_plugins =
+              Map.update!(plugins, "plugin_b", fn plugin ->
+                Map.put(plugin, :version, "#{i}.0.0")
+              end)
 
-          # Check dependencies
-          assert :ok == DependencyManager.check_dependencies("plugin_a", plugins["plugin_a"], updated_plugins)
+            # Check dependencies
+            assert :ok ==
+                     DependencyManager.check_dependencies(
+                       "plugin_a",
+                       plugins["plugin_a"],
+                       updated_plugins
+                     )
+          end)
         end)
-      end)
 
       # Assert reasonable performance
       assert time < 1_000_000
@@ -146,7 +184,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerPerformanceTest do
         "complex_c" => %{dependencies: []},
 
         # Optional dependencies
-        "optional_a" => %{dependencies: [{"optional_b", ">= 1.0.0", %{optional: true}}]},
+        "optional_a" => %{
+          dependencies: [{"optional_b", ">= 1.0.0", %{optional: true}}]
+        },
         "optional_b" => %{dependencies: []},
 
         # Circular dependencies
@@ -155,14 +195,27 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerPerformanceTest do
       }
 
       # Measure mixed workload performance
-      {time, results} = :timer.tc(fn ->
-        [
-          DependencyManager.check_dependencies("simple_a", plugins["simple_a"], plugins),
-          DependencyManager.check_dependencies("complex_a", plugins["complex_a"], plugins),
-          DependencyManager.check_dependencies("optional_a", plugins["optional_a"], plugins),
-          DependencyManager.resolve_load_order(plugins)
-        ]
-      end)
+      {time, results} =
+        :timer.tc(fn ->
+          [
+            DependencyManager.check_dependencies(
+              "simple_a",
+              plugins["simple_a"],
+              plugins
+            ),
+            DependencyManager.check_dependencies(
+              "complex_a",
+              plugins["complex_a"],
+              plugins
+            ),
+            DependencyManager.check_dependencies(
+              "optional_a",
+              plugins["optional_a"],
+              plugins
+            ),
+            DependencyManager.resolve_load_order(plugins)
+          ]
+        end)
 
       # Assert reasonable performance
       assert time < 500_000

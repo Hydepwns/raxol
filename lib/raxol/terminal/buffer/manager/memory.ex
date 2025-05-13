@@ -18,7 +18,9 @@ defmodule Raxol.Terminal.Buffer.Manager.Memory do
       true
   """
   def update_usage(%State{} = state) do
-    total_usage = MemoryManager.get_total_usage(state.active_buffer, state.back_buffer)
+    total_usage =
+      MemoryManager.get_total_usage(state.active_buffer, state.back_buffer)
+
     %{state | memory_usage: total_usage}
   end
 
@@ -72,7 +74,8 @@ defmodule Raxol.Terminal.Buffer.Manager.Memory do
       iex> Memory.get_limit(state)
       5_000_000
   """
-  def set_limit(%State{} = state, new_limit) when is_integer(new_limit) and new_limit > 0 do
+  def set_limit(%State{} = state, new_limit)
+      when is_integer(new_limit) and new_limit > 0 do
     %{state | memory_limit: new_limit}
   end
 

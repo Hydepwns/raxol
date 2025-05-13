@@ -14,8 +14,12 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert state.disabled == false
       assert state.label == ""
       assert state.style == %{}
+      assert state.theme == %{}
       assert state.focused == false
       assert state.on_toggle == nil
+      assert state.tooltip == nil
+      assert state.required == false
+      assert state.aria_label == nil
     end
 
     test "initializes with provided props" do
@@ -27,7 +31,11 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
         checked: true,
         disabled: true,
         style: %{color: :green},
-        on_toggle: on_toggle_func
+        theme: %{fg: :blue},
+        on_toggle: on_toggle_func,
+        tooltip: "tip",
+        required: true,
+        aria_label: "Check this"
       ]
 
       # init returns {:ok, state}
@@ -38,8 +46,12 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       assert state.disabled == true
       assert state.label == "Check me"
       assert state.style == %{color: :green}
+      assert state.theme == %{fg: :blue}
       assert state.focused == false
       assert state.on_toggle == on_toggle_func
+      assert state.tooltip == "tip"
+      assert state.required == true
+      assert state.aria_label == "Check this"
     end
   end
 
@@ -160,6 +172,20 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
         Checkbox.update(%{on_toggle: cb_func_2}, initial_state)
 
       assert updated_state.on_toggle == cb_func_2
+    end
+
+    test "merges style and theme on update" do
+      {:ok, initial_state} =
+        Checkbox.init(id: :cb_update, style: %{fg: :red}, theme: %{bg: :blue})
+
+      {:ok, updated_state, _cmds} =
+        Checkbox.update(
+          %{style: %{bold: true}, theme: %{fg: :green}},
+          initial_state
+        )
+
+      assert updated_state.style == %{fg: :red, bold: true}
+      assert updated_state.theme == %{bg: :blue, fg: :green}
     end
   end
 

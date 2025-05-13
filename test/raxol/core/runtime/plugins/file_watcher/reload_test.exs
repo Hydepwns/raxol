@@ -2,12 +2,10 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.ReloadTest do
   use ExUnit.Case
   import Mox
   alias Raxol.Core.Runtime.Plugins.FileWatcher.Reload
+  import Raxol.Test.Mocks
 
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
-
-  # Define mocks
-  defmock(ManagerMock, for: Raxol.Core.Runtime.Plugins.Manager.Behaviour)
 
   # Setup default mocks
   setup do
@@ -68,7 +66,8 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.ReloadTest do
       end)
 
       # Call the function
-      {:error, {:unload_failed, :unload_failed}} = Reload.reload_plugin(plugin_id, plugin_path)
+      {:error, {:unload_failed, :unload_failed}} =
+        Reload.reload_plugin(plugin_id, plugin_path)
     end
 
     test "handles load failure" do
@@ -90,7 +89,8 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.ReloadTest do
       end)
 
       # Call the function
-      {:error, {:reload_failed, :load_failed}} = Reload.reload_plugin(plugin_id, plugin_path)
+      {:error, {:reload_failed, :load_failed}} =
+        Reload.reload_plugin(plugin_id, plugin_path)
     end
 
     test "handles unexpected errors during reload" do

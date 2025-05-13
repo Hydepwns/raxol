@@ -48,8 +48,15 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Handler do
   """
   def designate_charset(state, gset_index, code) do
     case StateManager.charset_code_to_atom(code) do
-      nil -> state
-      charset -> StateManager.set_gset(state, StateManager.index_to_gset(gset_index), charset)
+      nil ->
+        state
+
+      charset ->
+        StateManager.set_gset(
+          state,
+          StateManager.index_to_gset(gset_index),
+          charset
+        )
     end
   end
 

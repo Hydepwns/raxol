@@ -36,7 +36,8 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Updates the current command buffer.
   """
-  def update_command_buffer(%__MODULE__{} = manager, buffer) when is_binary(buffer) do
+  def update_command_buffer(%__MODULE__{} = manager, buffer)
+      when is_binary(buffer) do
     %{manager | current_command_buffer: buffer}
   end
 
@@ -50,7 +51,8 @@ defmodule Raxol.Terminal.Command.Manager do
   @doc """
   Adds a command to the history, maintaining the maximum history size.
   """
-  def add_to_history(%__MODULE__{} = manager, command) when is_binary(command) do
+  def add_to_history(%__MODULE__{} = manager, command)
+      when is_binary(command) do
     new_history = [command | manager.command_history]
     limited_history = Enum.take(new_history, manager.max_command_history)
     %{manager | command_history: limited_history}
@@ -87,10 +89,13 @@ defmodule Raxol.Terminal.Command.Manager do
       # Enter key - execute command
       %{key: :enter} ->
         command = manager.current_command_buffer
+
         if String.trim(command) != "" do
-          new_manager = manager
+          new_manager =
+            manager
             |> add_to_history(command)
             |> update_command_buffer("")
+
           {new_manager, command}
         else
           {manager, nil}
@@ -116,7 +121,8 @@ defmodule Raxol.Terminal.Command.Manager do
   Gets a command from history by index (0-based).
   Returns nil if index is out of bounds.
   """
-  def get_history_command(%__MODULE__{} = manager, index) when is_integer(index) and index >= 0 do
+  def get_history_command(%__MODULE__{} = manager, index)
+      when is_integer(index) and index >= 0 do
     Enum.at(manager.command_history, index)
   end
 
@@ -133,7 +139,8 @@ defmodule Raxol.Terminal.Command.Manager do
   Updates the maximum command history size.
   If the new size is smaller than the current history, older commands are removed.
   """
-  def update_max_history(%__MODULE__{} = manager, new_size) when is_integer(new_size) and new_size > 0 do
+  def update_max_history(%__MODULE__{} = manager, new_size)
+      when is_integer(new_size) and new_size > 0 do
     limited_history = Enum.take(manager.command_history, new_size)
     %{manager | max_command_history: new_size, command_history: limited_history}
   end

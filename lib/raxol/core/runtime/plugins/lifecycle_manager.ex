@@ -21,13 +21,21 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
       plugin ->
         Logger.info("[#{__MODULE__}] Enabling plugin: #{plugin_id}")
 
-        case state.lifecycle_helper_module.enable_plugin(plugin, state.plugin_states) do
+        case state.lifecycle_helper_module.enable_plugin(
+               plugin,
+               state.plugin_states
+             ) do
           {:ok, new_plugin_state} ->
-            updated_states = Map.put(state.plugin_states, plugin_id, new_plugin_state)
+            updated_states =
+              Map.put(state.plugin_states, plugin_id, new_plugin_state)
+
             {:ok, %{state | plugin_states: updated_states}}
 
           {:error, reason} ->
-            Logger.error("[#{__MODULE__}] Failed to enable plugin #{plugin_id}: #{inspect(reason)}")
+            Logger.error(
+              "[#{__MODULE__}] Failed to enable plugin #{plugin_id}: #{inspect(reason)}"
+            )
+
             {:error, reason}
         end
     end
@@ -44,13 +52,21 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
       plugin ->
         Logger.info("[#{__MODULE__}] Disabling plugin: #{plugin_id}")
 
-        case state.lifecycle_helper_module.disable_plugin(plugin, state.plugin_states) do
+        case state.lifecycle_helper_module.disable_plugin(
+               plugin,
+               state.plugin_states
+             ) do
           {:ok, new_plugin_state} ->
-            updated_states = Map.put(state.plugin_states, plugin_id, new_plugin_state)
+            updated_states =
+              Map.put(state.plugin_states, plugin_id, new_plugin_state)
+
             {:ok, %{state | plugin_states: updated_states}}
 
           {:error, reason} ->
-            Logger.error("[#{__MODULE__}] Failed to disable plugin #{plugin_id}: #{inspect(reason)}")
+            Logger.error(
+              "[#{__MODULE__}] Failed to disable plugin #{plugin_id}: #{inspect(reason)}"
+            )
+
             {:error, reason}
         end
     end
@@ -109,7 +125,8 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
               state
               | plugins: Map.put(state.plugins, plugin_id, plugin),
                 metadata: Map.put(state.metadata, plugin_id, metadata),
-                plugin_states: Map.put(state.plugin_states, plugin_id, initial_state),
+                plugin_states:
+                  Map.put(state.plugin_states, plugin_id, initial_state),
                 load_order: [plugin_id | state.load_order]
             }
 
@@ -124,7 +141,10 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
         end
 
       {:error, reason} ->
-        Logger.error("[#{__MODULE__}] Failed to load plugin #{plugin_id}: #{inspect(reason)}")
+        Logger.error(
+          "[#{__MODULE__}] Failed to load plugin #{plugin_id}: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end

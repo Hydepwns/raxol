@@ -23,16 +23,16 @@ defmodule Raxol.Docs.InteractiveTutorial.Models do
     ]
 
     @type t :: %__MODULE__{
-      id: Raxol.Docs.InteractiveTutorial.Models.step_id(),
-      title: String.t(),
-      content: String.t(),
-      example_code: String.t() | nil,
-      exercise: map() | nil,
-      validation: function() | nil,
-      hints: [String.t()],
-      next_steps: [Raxol.Docs.InteractiveTutorial.Models.step_id()],
-      interactive_elements: [map()]
-    }
+            id: Raxol.Docs.InteractiveTutorial.Models.step_id(),
+            title: String.t(),
+            content: String.t(),
+            example_code: String.t() | nil,
+            exercise: map() | nil,
+            validation: function() | nil,
+            hints: [String.t()],
+            next_steps: [Raxol.Docs.InteractiveTutorial.Models.step_id()],
+            interactive_elements: [map()]
+          }
   end
 
   defmodule Tutorial do
@@ -52,15 +52,15 @@ defmodule Raxol.Docs.InteractiveTutorial.Models do
     ]
 
     @type t :: %__MODULE__{
-      id: Raxol.Docs.InteractiveTutorial.Models.tutorial_id(),
-      title: String.t(),
-      description: String.t(),
-      tags: [String.t()],
-      difficulty: :beginner | :intermediate | :advanced,
-      estimated_time: integer(),
-      prerequisites: [String.t()],
-      steps: [Step.t()],
-      metadata: map()
-    }
+            id: Raxol.Docs.InteractiveTutorial.Models.tutorial_id(),
+            title: String.t(),
+            description: String.t(),
+            tags: [String.t()],
+            difficulty: :beginner | :intermediate | :advanced,
+            estimated_time: integer(),
+            prerequisites: [String.t()],
+            steps: [Step.t()],
+            metadata: map()
+          }
   end
 end

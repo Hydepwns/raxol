@@ -179,20 +179,7 @@ defmodule Raxol.Core.Renderer.Color do
   Returns the default color theme.
   """
   def default_theme do
-    %{
-      primary: :blue,
-      secondary: :cyan,
-      success: :green,
-      warning: :yellow,
-      error: :red,
-      info: :white,
-      background: :black,
-      foreground: :white,
-      border: :bright_black,
-      highlight: :bright_blue,
-      muted: :bright_black,
-      accent: :bright_magenta
-    }
+    Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.default_theme_id())
   end
 
   @doc """

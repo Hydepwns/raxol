@@ -121,7 +121,17 @@ defmodule Raxol.Terminal.Renderer do
     font_settings = Keyword.get(opts, :font_settings, renderer.font_settings)
 
     renderer.screen_buffer.cells
-    |> Enum.map(&render_row(&1, renderer, selection, selections, validation, theme, font_settings))
+    |> Enum.map(
+      &render_row(
+        &1,
+        renderer,
+        selection,
+        selections,
+        validation,
+        theme,
+        font_settings
+      )
+    )
     |> Enum.join("\n")
   end
 
@@ -190,18 +200,62 @@ defmodule Raxol.Terminal.Renderer do
 
   # Private helper functions
 
-  defp render_row(row, renderer, selection, selections, validation, theme, font_settings) do
+  defp render_row(
+         row,
+         renderer,
+         selection,
+         selections,
+         validation,
+         theme,
+         font_settings
+       ) do
     row
-    |> Enum.map(&render_cell(&1, renderer, selection, selections, validation, theme, font_settings))
+    |> Enum.map(
+      &render_cell(
+        &1,
+        renderer,
+        selection,
+        selections,
+        validation,
+        theme,
+        font_settings
+      )
+    )
     |> Enum.join("")
   end
 
-  defp render_cell(cell, renderer, selection, selections, validation, theme, font_settings) do
-    style = build_style(cell, renderer, selection, selections, validation, theme, font_settings)
+  defp render_cell(
+         cell,
+         renderer,
+         selection,
+         selections,
+         validation,
+         theme,
+         font_settings
+       ) do
+    style =
+      build_style(
+        cell,
+        renderer,
+        selection,
+        selections,
+        validation,
+        theme,
+        font_settings
+      )
+
     "<span style=\"#{style}\">#{cell.char}</span>"
   end
 
-  defp build_style(cell, _renderer, selection, selections, validation, theme, font_settings) do
+  defp build_style(
+         cell,
+         _renderer,
+         selection,
+         selections,
+         validation,
+         theme,
+         font_settings
+       ) do
     _styles = []
 
     # Add foreground color

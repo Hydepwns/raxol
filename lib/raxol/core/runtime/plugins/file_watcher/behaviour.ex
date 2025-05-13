@@ -20,13 +20,15 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour do
   Handles file system events.
   Returns updated state with debounced reload timer if needed.
   """
-  @callback handle_file_event(path :: String.t(), state :: map()) :: {:ok, map()} | {:error, any()}
+  @callback handle_file_event(path :: String.t(), state :: map()) ::
+              {:ok, map()} | {:error, any()}
 
   @doc """
   Handles debounced file events.
   Returns updated state after processing events.
   """
-  @callback handle_debounced_events(state :: map()) :: {:ok, map()} | {:error, any()}
+  @callback handle_debounced_events(state :: map()) ::
+              {:ok, map()} | {:error, any()}
 
   @doc """
   Updates the reverse path mapping for file watching.

@@ -74,10 +74,18 @@ defmodule Raxol.Core.Renderer.View.Components.Box do
     {padding_top, padding_right, padding_bottom, padding_left} = box.padding
 
     # Apply margins
-    layout = apply_margins(children_layout, {margin_top, margin_right, margin_bottom, margin_left})
+    layout =
+      apply_margins(
+        children_layout,
+        {margin_top, margin_right, margin_bottom, margin_left}
+      )
 
     # Apply padding
-    layout = apply_padding(layout, {padding_top, padding_right, padding_bottom, padding_left})
+    layout =
+      apply_padding(
+        layout,
+        {padding_top, padding_right, padding_bottom, padding_left}
+      )
 
     # Apply border if needed
     if box.border != :none do

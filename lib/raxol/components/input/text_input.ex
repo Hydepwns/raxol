@@ -63,6 +63,7 @@ defmodule Raxol.Components.Input.TextInput do
           case state.selection do
             {start, len} ->
               Manipulation.delete_selected_text(state, start, len)
+
             _ ->
               state = Manipulation.delete_char_backward(state)
               Validation.validate_input(state)
@@ -72,6 +73,7 @@ defmodule Raxol.Components.Input.TextInput do
           case state.selection do
             {start, len} ->
               Manipulation.delete_selected_text(state, start, len)
+
             _ ->
               state = Manipulation.delete_char_forward(state)
               Validation.validate_input(state)
@@ -116,6 +118,7 @@ defmodule Raxol.Components.Input.TextInput do
             text when is_binary(text) ->
               Raxol.Clipboard.set_text(text)
               state
+
             _ ->
               state
           end
@@ -128,10 +131,12 @@ defmodule Raxol.Components.Input.TextInput do
                 {start, len} ->
                   # Replace selected text
                   Manipulation.paste_at_position(state, text, start, len)
+
                 _ ->
                   # Insert at cursor
                   Manipulation.paste_at_position(state, text, state.cursor, 0)
               end
+
             _ ->
               state
           end

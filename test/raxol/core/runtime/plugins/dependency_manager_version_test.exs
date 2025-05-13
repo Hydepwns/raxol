@@ -7,14 +7,27 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerVersionTest do
       plugin_metadata = %{dependencies: [{"other_plugin", ">= 1.0.0"}]}
       loaded_plugins = %{"other_plugin" => %{version: "1.1.0"}}
 
-      assert :ok == DependencyManager.check_dependencies("my_plugin", plugin_metadata, loaded_plugins)
+      assert :ok ==
+               DependencyManager.check_dependencies(
+                 "my_plugin",
+                 plugin_metadata,
+                 loaded_plugins
+               )
     end
 
     test "handles complex version constraints with OR operator" do
-      plugin_metadata = %{dependencies: [{"other_plugin", ">= 1.0.0 || >= 2.0.0"}]}
+      plugin_metadata = %{
+        dependencies: [{"other_plugin", ">= 1.0.0 || >= 2.0.0"}]
+      }
+
       loaded_plugins = %{"other_plugin" => %{version: "2.1.0"}}
 
-      assert :ok == DependencyManager.check_dependencies("my_plugin", plugin_metadata, loaded_plugins)
+      assert :ok ==
+               DependencyManager.check_dependencies(
+                 "my_plugin",
+                 plugin_metadata,
+                 loaded_plugins
+               )
     end
 
     test "handles multiple version constraints" do
@@ -25,21 +38,33 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerVersionTest do
           {"plugin_c", "~> 1.0"}
         ]
       }
+
       loaded_plugins = %{
         "plugin_a" => %{version: "1.1.0"},
         "plugin_b" => %{version: "3.0.0"},
         "plugin_c" => %{version: "1.2.0"}
       }
 
-      assert :ok == DependencyManager.check_dependencies("my_plugin", plugin_metadata, loaded_plugins)
+      assert :ok ==
+               DependencyManager.check_dependencies(
+                 "my_plugin",
+                 plugin_metadata,
+                 loaded_plugins
+               )
     end
 
     test "reports version mismatches with detailed information" do
       plugin_metadata = %{dependencies: [{"other_plugin", ">= 2.0.0"}]}
       loaded_plugins = %{"other_plugin" => %{version: "1.0.0"}}
 
-      assert {:error, :version_mismatch, [{"other_plugin", "1.0.0", ">= 2.0.0"}], ["my_plugin"]} ==
-               DependencyManager.check_dependencies("my_plugin", plugin_metadata, loaded_plugins)
+      assert {:error, :version_mismatch,
+              [{"other_plugin", "1.0.0", ">= 2.0.0"}],
+              ["my_plugin"]} ==
+               DependencyManager.check_dependencies(
+                 "my_plugin",
+                 plugin_metadata,
+                 loaded_plugins
+               )
     end
   end
 
@@ -65,8 +90,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerVersionTest do
 
       Enum.each(invalid_versions, fn version ->
         plugins = %{"plugin" => %{version: version}}
+
         assert {:error, :invalid_version_format, ["plugin"], ["my_plugin"]} =
-          DependencyManager.check_dependencies("my_plugin", %{dependencies: [{"plugin", ">= 1.0.0"}]}, plugins)
+                 DependencyManager.check_dependencies(
+                   "my_plugin",
+                   %{dependencies: [{"plugin", ">= 1.0.0"}]},
+                   plugins
+                 )
       end)
     end
 
@@ -109,7 +139,11 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerVersionTest do
 
       Enum.each(invalid_requirements, fn requirement ->
         assert {:error, :invalid_version_requirement, _} =
-          DependencyManager.check_dependencies("my_plugin", %{dependencies: [{"plugin", requirement}]}, %{"plugin" => %{version: "1.0.0"}})
+                 DependencyManager.check_dependencies(
+                   "my_plugin",
+                   %{dependencies: [{"plugin", requirement}]},
+                   %{"plugin" => %{version: "1.0.0"}}
+                 )
       end)
     end
 
@@ -130,7 +164,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerVersionTest do
 
       Enum.each(conflicts, fn deps ->
         assert {:error, :conflicting_requirements, conflicts, ["my_plugin"]} =
-          DependencyManager.check_dependencies("my_plugin", %{dependencies: deps}, %{"plugin" => %{version: "1.0.0"}})
+                 DependencyManager.check_dependencies(
+                   "my_plugin",
+                   %{dependencies: deps},
+                   %{"plugin" => %{version: "1.0.0"}}
+                 )
+
         assert length(conflicts) > 0
       end)
     end

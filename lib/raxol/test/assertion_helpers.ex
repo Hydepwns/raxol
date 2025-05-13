@@ -41,6 +41,7 @@ defmodule Raxol.Test.AssertionHelpers do
       error ->
         assert component.state != nil,
                "Component state was corrupted after error"
+
         assert_error_handled(error)
     end
   end
@@ -50,6 +51,7 @@ defmodule Raxol.Test.AssertionHelpers do
   """
   def assert_renders_with(component, expected_text) do
     output = capture_render(component)
+
     assert output =~ expected_text,
            "Expected output to contain: #{expected_text}"
   end
@@ -63,6 +65,7 @@ defmodule Raxol.Test.AssertionHelpers do
 
     if File.exists?(snapshot_path) do
       expected = File.read!(snapshot_path)
+
       assert output == expected,
              "Component output does not match snapshot: #{snapshot_name}"
     else
@@ -77,7 +80,9 @@ defmodule Raxol.Test.AssertionHelpers do
     Enum.each(sizes, fn {width, height} ->
       context = %{width: width, height: height}
       output = capture_render(component, context)
-      assert is_binary(output), "Component failed to render at size #{width}x#{height}"
+
+      assert is_binary(output),
+             "Component failed to render at size #{width}x#{height}"
     end)
   end
 
@@ -89,7 +94,9 @@ defmodule Raxol.Test.AssertionHelpers do
       Raxol.ColorSystem.apply_theme(theme)
       assert_receive {:theme_changed, ^theme}, 100
       output = capture_render(component)
-      assert is_binary(output), "Component failed to render with theme: #{theme}"
+
+      assert is_binary(output),
+             "Component failed to render with theme: #{theme}"
     end)
   end
 

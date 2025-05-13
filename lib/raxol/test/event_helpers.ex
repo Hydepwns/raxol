@@ -13,7 +13,10 @@ defmodule Raxol.Test.EventHelpers do
   def simulate_user_action(component, action) do
     case action do
       {:click, pos} ->
-        simulate_event(component, Event.new(:click, target: component.state.id, position: pos))
+        simulate_event(
+          component,
+          Event.new(:click, target: component.state.id, position: pos)
+        )
 
       :focus ->
         simulate_event(component, Event.new(:focus, target: component.state.id))
@@ -22,7 +25,10 @@ defmodule Raxol.Test.EventHelpers do
         simulate_event(component, Event.new(:blur, target: component.state.id))
 
       {:key, key} ->
-        simulate_event(component, Event.new(:key, target: component.state.id, key: key))
+        simulate_event(
+          component,
+          Event.new(:key, target: component.state.id, key: key)
+        )
 
       other ->
         simulate_event(component, other)
@@ -78,6 +84,7 @@ defmodule Raxol.Test.EventHelpers do
   def assert_system_events_handled(component, events) do
     Enum.each(events, fn event ->
       {updated, _} = simulate_event(component, event)
+
       assert updated.state != nil,
              "Component failed to handle event: #{inspect(event)}"
     end)

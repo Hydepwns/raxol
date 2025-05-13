@@ -259,10 +259,13 @@ defmodule Raxol.Animation.EasingTest do
         end
 
         end_time = System.monotonic_time()
-        duration = System.convert_time_unit(end_time - start_time, :native, :microsecond)
+
+        duration =
+          System.convert_time_unit(end_time - start_time, :native, :microsecond)
 
         # Each function should complete within 1 microsecond per call
-        assert duration < 5, "Easing function #{function} too slow: #{duration}μs"
+        assert duration < 5,
+               "Easing function #{function} too slow: #{duration}μs"
       end
     end
   end

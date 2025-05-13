@@ -24,15 +24,23 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
       }
 
       # Expect FileWatcher setup
-      expect(Raxol.Core.Runtime.Plugins.FileWatcherMock, :setup_file_watching, fn ^state ->
-        {:ok, %{state | file_watching_enabled?: true}}
-      end)
+      expect(
+        Raxol.Core.Runtime.Plugins.FileWatcherMock,
+        :setup_file_watching,
+        fn ^state ->
+          {:ok, %{state | file_watching_enabled?: true}}
+        end
+      )
 
       # Expect plugin discovery
-      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins, fn dirs ->
-        assert dirs == ["priv/plugins", "test/plugins"]
-        {:ok, []}
-      end)
+      expect(
+        Raxol.Core.Runtime.Plugins.LoaderMock,
+        :discover_plugins,
+        fn dirs ->
+          assert dirs == ["priv/plugins", "test/plugins"]
+          {:ok, []}
+        end
+      )
 
       # Call the function
       {:ok, new_state} = Discovery.initialize(state)
@@ -61,15 +69,23 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
       }
 
       # Expect FileWatcher setup
-      expect(Raxol.Core.Runtime.Plugins.FileWatcherMock, :setup_file_watching, fn ^state ->
-        {:ok, %{state | file_watching_enabled?: true}}
-      end)
+      expect(
+        Raxol.Core.Runtime.Plugins.FileWatcherMock,
+        :setup_file_watching,
+        fn ^state ->
+          {:ok, %{state | file_watching_enabled?: true}}
+        end
+      )
 
       # Expect plugin discovery to fail
-      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins, fn dirs ->
-        assert dirs == ["priv/plugins", "test/plugins"]
-        {:error, :discovery_failed}
-      end)
+      expect(
+        Raxol.Core.Runtime.Plugins.LoaderMock,
+        :discover_plugins,
+        fn dirs ->
+          assert dirs == ["priv/plugins", "test/plugins"]
+          {:error, :discovery_failed}
+        end
+      )
 
       # Call the function
       {:error, reason} = Discovery.initialize(state)
@@ -88,22 +104,30 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
       }
 
       # Expect discovery in each directory
-      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins_in_dir, fn "priv/plugins", ^state ->
-        {:ok, %{state | plugins: %{"plugin1" => :plugin1}}}
-      end)
+      expect(
+        Raxol.Core.Runtime.Plugins.LoaderMock,
+        :discover_plugins_in_dir,
+        fn "priv/plugins", ^state ->
+          {:ok, %{state | plugins: %{"plugin1" => :plugin1}}}
+        end
+      )
 
-      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins_in_dir, fn "test/plugins", state ->
-        {:ok, %{state | plugins: %{"plugin2" => :plugin2}}}
-      end)
+      expect(
+        Raxol.Core.Runtime.Plugins.LoaderMock,
+        :discover_plugins_in_dir,
+        fn "test/plugins", state ->
+          {:ok, %{state | plugins: %{"plugin2" => :plugin2}}}
+        end
+      )
 
       # Call the function
       {:ok, new_state} = Discovery.discover_plugins(state)
 
       # Verify results
       assert new_state.plugins == %{
-        "plugin1" => :plugin1,
-        "plugin2" => :plugin2
-      }
+               "plugin1" => :plugin1,
+               "plugin2" => :plugin2
+             }
     end
 
     test "stops on first discovery failure" do
@@ -114,9 +138,13 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
       }
 
       # Expect first discovery to fail
-      expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins_in_dir, fn "priv/plugins", ^state ->
-        {:error, :discovery_failed}
-      end)
+      expect(
+        Raxol.Core.Runtime.Plugins.LoaderMock,
+        :discover_plugins_in_dir,
+        fn "priv/plugins", ^state ->
+          {:error, :discovery_failed}
+        end
+      )
 
       # Call the function
       {:error, reason} = Discovery.discover_plugins(state)
@@ -142,9 +170,9 @@ defmodule Raxol.Core.Runtime.Plugins.DiscoveryTest do
 
       # Verify results
       assert plugins == [
-        {"plugin1", %{name: "Plugin 1"}},
-        {"plugin2", %{name: "Plugin 2"}}
-      ]
+               {"plugin1", %{name: "Plugin 1"}},
+               {"plugin2", %{name: "Plugin 2"}}
+             ]
     end
   end
 

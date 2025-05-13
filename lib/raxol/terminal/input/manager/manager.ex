@@ -16,33 +16,59 @@ defmodule Raxol.Terminal.Input.Manager do
 
   @type mouse_button :: 0 | 1 | 2 | 3 | 4
   @type mouse_event_type :: :press | :release | :move | :scroll
-  @type mouse_event :: {mouse_event_type(), mouse_button(), non_neg_integer(), non_neg_integer()}
-  @type special_key :: :up | :down | :left | :right | :home | :end | :page_up | :page_down |
-                      :insert | :delete | :escape | :tab | :enter | :backspace |
-                      :f1 | :f2 | :f3 | :f4 | :f5 | :f6 | :f7 | :f8 | :f9 | :f10 | :f11 | :f12
+  @type mouse_event ::
+          {mouse_event_type(), mouse_button(), non_neg_integer(),
+           non_neg_integer()}
+  @type special_key ::
+          :up
+          | :down
+          | :left
+          | :right
+          | :home
+          | :end
+          | :page_up
+          | :page_down
+          | :insert
+          | :delete
+          | :escape
+          | :tab
+          | :enter
+          | :backspace
+          | :f1
+          | :f2
+          | :f3
+          | :f4
+          | :f5
+          | :f6
+          | :f7
+          | :f8
+          | :f9
+          | :f10
+          | :f11
+          | :f12
   @type input_mode :: :normal | :insert | :replace | :command
   @type completion_callback :: (String.t() -> list(String.t()))
 
   @type t :: %__MODULE__{
-    mode: input_mode(),
-    history_index: integer() | nil,
-    input_history: [String.t()],
-    buffer: Types.input_buffer(),
-    prompt: String.t() | nil,
-    completion_context: map() | nil,
-    last_event_time: integer() | nil,
-    clipboard_content: String.t() | nil,
-    clipboard_history: [String.t()],
-    mouse_enabled: boolean(),
-    mouse_buttons: MapSet.t(mouse_button()),
-    mouse_position: {non_neg_integer(), non_neg_integer()},
-    modifier_state: SpecialKeys.modifier_state(),
-    input_queue: list(String.t()),
-    processing_escape: boolean(),
-    completion_callback: completion_callback() | nil,
-    completion_options: list(String.t()),
-    completion_index: non_neg_integer()
-  }
+          mode: input_mode(),
+          history_index: integer() | nil,
+          input_history: [String.t()],
+          buffer: Types.input_buffer(),
+          prompt: String.t() | nil,
+          completion_context: map() | nil,
+          last_event_time: integer() | nil,
+          clipboard_content: String.t() | nil,
+          clipboard_history: [String.t()],
+          mouse_enabled: boolean(),
+          mouse_buttons: MapSet.t(mouse_button()),
+          mouse_position: {non_neg_integer(), non_neg_integer()},
+          modifier_state: SpecialKeys.modifier_state(),
+          input_queue: list(String.t()),
+          processing_escape: boolean(),
+          completion_callback: completion_callback() | nil,
+          completion_options: list(String.t()),
+          completion_index: non_neg_integer()
+        }
 
   defstruct [
     :mode,
@@ -124,7 +150,8 @@ defmodule Raxol.Terminal.Input.Manager do
       when is_binary(key) and is_boolean(pressed) do
     %{
       manager
-      | modifier_state: SpecialKeys.update_state(manager.modifier_state, key, pressed)
+      | modifier_state:
+          SpecialKeys.update_state(manager.modifier_state, key, pressed)
     }
   end
 
@@ -132,7 +159,8 @@ defmodule Raxol.Terminal.Input.Manager do
   Processes a key with the current modifier state.
   """
   @spec process_key_with_modifiers(t(), String.t()) :: t()
-  def process_key_with_modifiers(%__MODULE__{} = manager, key) when is_binary(key) do
+  def process_key_with_modifiers(%__MODULE__{} = manager, key)
+      when is_binary(key) do
     sequence = SpecialKeys.to_escape_sequence(manager.modifier_state, key)
     process_keyboard(manager, sequence)
   end
@@ -148,7 +176,8 @@ defmodule Raxol.Terminal.Input.Manager do
       %{
         manager
         | buffer: InputBuffer.append(manager.buffer, mouse_sequence),
-          mouse_buttons: update_mouse_buttons(manager.mouse_buttons, event_type, button),
+          mouse_buttons:
+            update_mouse_buttons(manager.mouse_buttons, event_type, button),
           mouse_position: {x, y}
       }
     else
@@ -160,7 +189,8 @@ defmodule Raxol.Terminal.Input.Manager do
   Enables or disables mouse event handling.
   """
   @spec set_mouse_enabled(t(), boolean()) :: t()
-  def set_mouse_enabled(%__MODULE__{} = manager, enabled) when is_boolean(enabled) do
+  def set_mouse_enabled(%__MODULE__{} = manager, enabled)
+      when is_boolean(enabled) do
     %{manager | mouse_enabled: enabled}
   end
 
@@ -185,7 +215,9 @@ defmodule Raxol.Terminal.Input.Manager do
   Resets the history navigation index and clears the buffer.
   """
   @spec add_to_history(t()) :: t()
-  def add_to_history(%__MODULE__{buffer: buffer, input_history: history} = manager) do
+  def add_to_history(
+        %__MODULE__{buffer: buffer, input_history: history} = manager
+      ) do
     if buffer != "" do
       %{
         manager

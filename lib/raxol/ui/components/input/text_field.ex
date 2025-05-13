@@ -13,21 +13,25 @@ defmodule Raxol.UI.Components.Input.TextField do
             value: "",
             placeholder: "",
             style: %{},
+            theme: %{},
             disabled: false,
             secret: false,
             # Internal state
             focused: false,
-            cursor_pos: 0
+            cursor_pos: 0,
+            scroll_offset: 0
 
   @impl true
   def init(props) do
     id = props[:id] || Raxol.Core.ID.generate()
-    state = struct!(__MODULE__, Keyword.merge([id: id], props))
+    width = props[:width] || 20
+    state = struct!(__MODULE__, Map.merge(%{id: id}, props))
+    state = Map.put(state, :width, width)
     {:ok, state}
   end
 
   @impl true
-  def mount(_state), do: {:ok, []}
+  def mount(state), do: state
 
   @impl true
   def update({:update_props, new_props}, state) do
@@ -36,7 +40,23 @@ defmodule Raxol.UI.Components.Input.TextField do
     cursor_pos =
       clamp(updated_state.cursor_pos, 0, String.length(updated_state.value))
 
-    {:noreply, %{updated_state | cursor_pos: cursor_pos}}
+    # Clamp scroll_offset if width changed
+    width = Map.get(updated_state, :width, 20)
+
+    scroll_offset =
+      clamp(
+        updated_state.scroll_offset,
+        0,
+        max(0, String.length(updated_state.value) - width)
+      )
+
+    {:noreply,
+     %{
+       updated_state
+       | cursor_pos: cursor_pos,
+         scroll_offset: scroll_offset,
+         width: width
+     }}
   end
 
   # Handle focus/blur implicitly via context for now
@@ -77,7 +97,23 @@ defmodule Raxol.UI.Components.Input.TextField do
     {left, right} = String.split_at(state.value, state.cursor_pos)
     new_value = left <> key <> right
     new_cursor_pos = state.cursor_pos + String.length(key)
-    {:noreply, %{state | value: new_value, cursor_pos: new_cursor_pos}}
+    width = Map.get(state, :width, 20)
+
+    new_scroll_offset =
+      adjust_scroll_offset(
+        new_cursor_pos,
+        width,
+        new_value,
+        state.scroll_offset
+      )
+
+    {:noreply,
+     %{
+       state
+       | value: new_value,
+         cursor_pos: new_cursor_pos,
+         scroll_offset: new_scroll_offset
+     }}
   end
 
   defp handle_keypress(state, :backspace, _modifiers, _context) do
@@ -85,7 +121,23 @@ defmodule Raxol.UI.Components.Input.TextField do
       {left, right} = String.split_at(state.value, state.cursor_pos)
       new_value = String.slice(left, 0, String.length(left) - 1) <> right
       new_cursor_pos = state.cursor_pos - 1
-      {:noreply, %{state | value: new_value, cursor_pos: new_cursor_pos}}
+      width = Map.get(state, :width, 20)
+
+      new_scroll_offset =
+        adjust_scroll_offset(
+          new_cursor_pos,
+          width,
+          new_value,
+          state.scroll_offset
+        )
+
+      {:noreply,
+       %{
+         state
+         | value: new_value,
+           cursor_pos: new_cursor_pos,
+           scroll_offset: new_scroll_offset
+       }}
     else
       {:noreply, state}
     end
@@ -95,7 +147,17 @@ defmodule Raxol.UI.Components.Input.TextField do
     if state.cursor_pos < String.length(state.value) do
       {left, right} = String.split_at(state.value, state.cursor_pos)
       new_value = left <> String.slice(right, 1, String.length(right) - 1)
-      {:noreply, %{state | value: new_value}}
+      width = Map.get(state, :width, 20)
+
+      new_scroll_offset =
+        adjust_scroll_offset(
+          state.cursor_pos,
+          width,
+          new_value,
+          state.scroll_offset
+        )
+
+      {:noreply, %{state | value: new_value, scroll_offset: new_scroll_offset}}
     else
       {:noreply, state}
     end
@@ -103,20 +165,55 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   defp handle_keypress(state, :arrow_left, _modifiers, _context) do
     new_cursor_pos = clamp(state.cursor_pos - 1, 0, String.length(state.value))
-    {:noreply, %{state | cursor_pos: new_cursor_pos}}
+    width = Map.get(state, :width, 20)
+
+    new_scroll_offset =
+      adjust_scroll_offset(
+        new_cursor_pos,
+        width,
+        state.value,
+        state.scroll_offset
+      )
+
+    {:noreply,
+     %{state | cursor_pos: new_cursor_pos, scroll_offset: new_scroll_offset}}
   end
 
   defp handle_keypress(state, :arrow_right, _modifiers, _context) do
     new_cursor_pos = clamp(state.cursor_pos + 1, 0, String.length(state.value))
-    {:noreply, %{state | cursor_pos: new_cursor_pos}}
+    width = Map.get(state, :width, 20)
+
+    new_scroll_offset =
+      adjust_scroll_offset(
+        new_cursor_pos,
+        width,
+        state.value,
+        state.scroll_offset
+      )
+
+    {:noreply,
+     %{state | cursor_pos: new_cursor_pos, scroll_offset: new_scroll_offset}}
   end
 
   defp handle_keypress(state, :home, _modifiers, _context) do
-    {:noreply, %{state | cursor_pos: 0}}
+    width = Map.get(state, :width, 20)
+    {:noreply, %{state | cursor_pos: 0, scroll_offset: 0}}
   end
 
   defp handle_keypress(state, :end, _modifiers, _context) do
-    {:noreply, %{state | cursor_pos: String.length(state.value)}}
+    width = Map.get(state, :width, 20)
+    new_cursor_pos = String.length(state.value)
+
+    new_scroll_offset =
+      adjust_scroll_offset(
+        new_cursor_pos,
+        width,
+        state.value,
+        state.scroll_offset
+      )
+
+    {:noreply,
+     %{state | cursor_pos: new_cursor_pos, scroll_offset: new_scroll_offset}}
   end
 
   # Ignore other key presses for now
@@ -126,7 +223,7 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   @impl true
   def render(state, context) do
-    theme = context.theme
+    theme = Map.get(state, :theme, %{})
     component_theme_style = Theme.component_style(theme, :text_field)
     style = Raxol.Style.merge(component_theme_style, state.style)
 
@@ -136,26 +233,89 @@ defmodule Raxol.UI.Components.Input.TextField do
         else: state.value
 
     # Add placeholder if value is empty and not focused
+    showing_placeholder =
+      String.length(display_value) == 0 && !state.focused &&
+        state.placeholder != ""
+
     final_value =
-      if String.length(display_value) == 0 && !state.focused &&
-           state.placeholder != "" do
+      if showing_placeholder do
         # TODO: Style placeholder differently?
         state.placeholder
       else
         display_value
       end
 
-    # TODO: Add cursor rendering
-    # TODO: Add scrolling for long text
-    Element.new(
-      :view,
-      %{style: style},
-      [Element.new(:text, %{}, final_value)]
-    )
+    width = Map.get(state, :width, 20)
+    scroll_offset = state.scroll_offset || 0
+
+    visible_value =
+      if showing_placeholder do
+        String.slice(final_value, 0, width)
+      else
+        String.slice(final_value, scroll_offset, width)
+      end
+
+    # Cursor rendering
+    text_children =
+      cond do
+        showing_placeholder ->
+          placeholder_style = %{
+            color: Map.get(component_theme_style, :placeholder_color, "#888"),
+            text_decoration: [:italic]
+          }
+
+          [
+            Element.new(:text, placeholder_style, do: [])
+            |> Map.put(:content, visible_value)
+          ]
+
+        state.focused ->
+          # Cursor position relative to visible window
+          cursor_in_window = state.cursor_pos - scroll_offset
+          cursor_in_window = clamp(cursor_in_window, 0, width)
+          {left, right} = String.split_at(visible_value, cursor_in_window)
+
+          cursor_style = %{
+            text_decoration: [:underline],
+            color: style.color || "#fff",
+            background: style.background || "#000"
+          }
+
+          [
+            Element.new(:text, %{}, do: []) |> Map.put(:content, left),
+            Element.new(:text, cursor_style, do: []) |> Map.put(:content, "|"),
+            Element.new(:text, %{}, do: []) |> Map.put(:content, right)
+          ]
+
+        true ->
+          [
+            Element.new(:text, %{}, do: [])
+            |> Map.put(:content, visible_value || "")
+          ]
+      end
+
+    Element.new(:view, %{style: style}, do: text_children)
   end
 
   @impl true
-  def unmount(_state), do: :ok
+  def unmount(state), do: state
 
   defp clamp(value, min_val, max_val), do: max(min_val, min(value, max_val))
+
+  # Helper to keep the cursor visible in the window
+  defp adjust_scroll_offset(cursor_pos, width, value, scroll_offset) do
+    cond do
+      cursor_pos < scroll_offset ->
+        cursor_pos
+
+      cursor_pos > scroll_offset + width - 1 ->
+        cursor_pos - width + 1
+
+      String.length(value) - scroll_offset < width ->
+        max(0, String.length(value) - width)
+
+      true ->
+        scroll_offset
+    end
+  end
 end

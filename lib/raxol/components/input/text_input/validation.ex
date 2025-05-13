@@ -62,7 +62,8 @@ defmodule Raxol.Components.Input.TextInput.Validation do
   Validates a value's length against a maximum.
   Returns :ok if valid, {:error, reason} if invalid.
   """
-  def validate_length(value, max_length) when is_integer(max_length) and max_length > 0 do
+  def validate_length(value, max_length)
+      when is_integer(max_length) and max_length > 0 do
     if String.length(value) <= max_length do
       :ok
     else

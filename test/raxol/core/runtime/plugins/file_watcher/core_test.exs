@@ -7,17 +7,16 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.CoreTest do
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
 
-  # Define mocks
-  defmock(FileSystemMock, for: FileSystem.Behaviour)
-
   # Setup default mocks and test environment
   setup do
     pid = Helper.setup_mocks()
     Helper.cleanup_test_plugins()
+
     on_exit(fn ->
       Helper.stop_manager(pid)
       Helper.cleanup_test_plugins()
     end)
+
     :ok
   end
 
@@ -66,24 +65,34 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.CoreTest do
       # Setup test state
       state = Helper.create_test_state()
       state = put_in(state.file_watching_enabled?, true)
-      state = put_in(state.plugin_paths, %{
-        "plugin1" => "test/plugins/plugin1.ex",
-        "plugin2" => "test/plugins/plugin2.ex"
-      })
+
+      state =
+        put_in(state.plugin_paths, %{
+          "plugin1" => "test/plugins/plugin1.ex",
+          "plugin2" => "test/plugins/plugin2.ex"
+        })
 
       # Call the function
       new_state = Core.update_file_watcher(state)
 
       # Verify results
       assert map_size(new_state.reverse_plugin_paths) == 2
-      assert new_state.reverse_plugin_paths[Path.expand("test/plugins/plugin1.ex")] == "plugin1"
-      assert new_state.reverse_plugin_paths[Path.expand("test/plugins/plugin2.ex")] == "plugin2"
+
+      assert new_state.reverse_plugin_paths[
+               Path.expand("test/plugins/plugin1.ex")
+             ] == "plugin1"
+
+      assert new_state.reverse_plugin_paths[
+               Path.expand("test/plugins/plugin2.ex")
+             ] == "plugin2"
     end
 
     test "returns unchanged state when file watching is disabled" do
       # Setup test state
       state = Helper.create_test_state()
-      state = put_in(state.plugin_paths, %{"plugin1" => "test/plugins/plugin1.ex"})
+
+      state =
+        put_in(state.plugin_paths, %{"plugin1" => "test/plugins/plugin1.ex"})
 
       # Call the function
       new_state = Core.update_file_watcher(state)

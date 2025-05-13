@@ -17,7 +17,8 @@ defmodule Raxol.Terminal.Config.EnvironmentAdapterBehaviour do
   @doc """
   Sets an environment variable.
   """
-  @callback set_env(key :: String.t(), value :: String.t()) :: :ok | {:error, any()}
+  @callback set_env(key :: String.t(), value :: String.t()) ::
+              :ok | {:error, any()}
 
   @doc """
   Gets all environment variables.

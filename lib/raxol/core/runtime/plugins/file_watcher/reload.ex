@@ -21,21 +21,36 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
               # Then reload it
               case Raxol.Core.Runtime.Plugins.Manager.load_plugin(path) do
                 {:ok, _} ->
-                  Logger.info("[#{__MODULE__}] Successfully reloaded plugin #{plugin_id}")
+                  Logger.info(
+                    "[#{__MODULE__}] Successfully reloaded plugin #{plugin_id}"
+                  )
+
                   :ok
+
                 {:error, reason} ->
-                  Logger.error("[#{__MODULE__}] Failed to reload plugin #{plugin_id}: #{inspect(reason)}")
+                  Logger.error(
+                    "[#{__MODULE__}] Failed to reload plugin #{plugin_id}: #{inspect(reason)}"
+                  )
+
                   {:error, {:reload_failed, reason}}
               end
+
             {:error, reason} ->
-              Logger.error("[#{__MODULE__}] Failed to unload plugin #{plugin_id}: #{inspect(reason)}")
+              Logger.error(
+                "[#{__MODULE__}] Failed to unload plugin #{plugin_id}: #{inspect(reason)}"
+              )
+
               {:error, {:unload_failed, reason}}
           end
         rescue
           e ->
-            Logger.error("[#{__MODULE__}] Error during plugin reload #{plugin_id}: #{inspect(e)}")
+            Logger.error(
+              "[#{__MODULE__}] Error during plugin reload #{plugin_id}: #{inspect(e)}"
+            )
+
             {:error, {:reload_error, e}}
         end
+
       {:error, :not_found} ->
         Logger.error("[#{__MODULE__}] Plugin #{plugin_id} not found for reload")
         {:error, :plugin_not_found}

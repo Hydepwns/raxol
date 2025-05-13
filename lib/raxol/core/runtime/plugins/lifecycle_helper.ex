@@ -5,7 +5,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
 
   @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
 
-  alias Raxol.Core.Runtime.Plugins.{DependencyManager, StateManager, CommandRegistry, Loader}
+  alias Raxol.Core.Runtime.Plugins.{
+    DependencyManager,
+    StateManager,
+    CommandRegistry,
+    Loader
+  }
 
   require Logger
 
@@ -17,15 +22,35 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   @doc """
   Loads a plugin by ID or module with improved error handling and state persistence.
   """
-  def load_plugin(plugin_id_or_module, config, plugins, metadata, plugin_states, load_order, command_table, plugin_config) do
-    with {plugin_id, plugin_module} <- resolve_plugin_identity(plugin_id_or_module),
+  def load_plugin(
+        plugin_id_or_module,
+        config,
+        plugins,
+        metadata,
+        plugin_states,
+        load_order,
+        command_table,
+        plugin_config
+      ) do
+    with {plugin_id, plugin_module} <-
+           resolve_plugin_identity(plugin_id_or_module),
          :ok <- validate_not_loaded(plugin_id, plugins),
          {:ok, plugin_metadata} <- Loader.extract_metadata(plugin_module),
-         :ok <- DependencyManager.check_dependencies(plugin_id, plugin_metadata, plugins),
+         :ok <-
+           DependencyManager.check_dependencies(
+             plugin_id,
+             plugin_metadata,
+             plugins
+           ),
          :ok <- validate_behaviour(plugin_module),
-         {:ok, initial_state} <- Loader.initialize_plugin(plugin_module, config),
-         :ok <- CommandRegistry.register_plugin_commands(plugin_module, initial_state, command_table) do
-
+         {:ok, initial_state} <-
+           Loader.initialize_plugin(plugin_module, config),
+         :ok <-
+           CommandRegistry.register_plugin_commands(
+             plugin_module,
+             initial_state,
+             command_table
+           ) do
       # Update state maps with proper error handling
       updated_maps = %{
         plugins: Map.put(plugins, plugin_id, plugin_module),
@@ -41,16 +66,21 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
         {:error, "Plugin #{plugin_id_or_module} is already loaded"}
 
       {:error, :invalid_plugin} ->
-        {:error, "Plugin #{plugin_id_or_module} does not implement required behaviour"}
+        {:error,
+         "Plugin #{plugin_id_or_module} does not implement required behaviour"}
 
       {:error, :dependency_missing, missing} ->
-        {:error, "Missing dependency #{missing} for plugin #{plugin_id_or_module}"}
+        {:error,
+         "Missing dependency #{missing} for plugin #{plugin_id_or_module}"}
 
       {:error, :dependency_cycle, cycle} ->
         {:error, "Dependency cycle detected: #{inspect(cycle)}"}
 
       {:error, reason} ->
-        Logger.error("Failed to load plugin #{plugin_id_or_module}: #{inspect(reason)}")
+        Logger.error(
+          "Failed to load plugin #{plugin_id_or_module}: #{inspect(reason)}"
+        )
+
         {:error, reason}
     end
   end
@@ -58,53 +88,81 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   @doc """
   Initializes plugins in the correct order with improved error handling.
   """
-  def initialize_plugins(plugins, metadata, config, states, load_order, command_table, _opts) do
+  def initialize_plugins(
+        plugins,
+        metadata,
+        config,
+        states,
+        load_order,
+        command_table,
+        _opts
+      ) do
     # Initialize command table
     table = initialize_command_table(command_table, plugins)
 
     # Initialize plugins in order with proper error handling
-    Enum.reduce_while(load_order, {:ok, {metadata, states, table}}, fn plugin_id, {:ok, {meta, sts, tbl}} ->
-      case Map.get(plugins, plugin_id) do
-        nil ->
-          {:cont, {:ok, {meta, sts, tbl}}}
+    Enum.reduce_while(
+      load_order,
+      {:ok, {metadata, states, table}},
+      fn plugin_id, {:ok, {meta, sts, tbl}} ->
+        case Map.get(plugins, plugin_id) do
+          nil ->
+            {:cont, {:ok, {meta, sts, tbl}}}
 
-        plugin ->
-          case plugin.init(config) do
-            {:ok, new_states} ->
-              new_meta = Map.put(meta, plugin_id, %{status: :active})
-              new_tbl = update_command_table(tbl, plugin)
-              {:cont, {:ok, {new_meta, Map.merge(sts, new_states), new_tbl}}}
+          plugin ->
+            case plugin.init(config) do
+              {:ok, new_states} ->
+                new_meta = Map.put(meta, plugin_id, %{status: :active})
+                new_tbl = update_command_table(tbl, plugin)
+                {:cont, {:ok, {new_meta, Map.merge(sts, new_states), new_tbl}}}
 
-            {:error, reason} ->
-              Logger.error("Failed to initialize plugin #{plugin_id}: #{inspect(reason)}")
-              {:halt, {:error, reason}}
-          end
+              {:error, reason} ->
+                Logger.error(
+                  "Failed to initialize plugin #{plugin_id}: #{inspect(reason)}"
+                )
+
+                {:halt, {:error, reason}}
+            end
+        end
       end
-    end)
+    )
   end
 
   @doc """
   Reloads a plugin from disk with improved state persistence and error handling.
   """
-  def reload_plugin_from_disk(plugin_id, plugin_module, plugin_path, plugin_state, command_table, metadata, plugin_manager, _current_metadata) do
+  def reload_plugin_from_disk(
+        plugin_id,
+        plugin_module,
+        plugin_path,
+        plugin_state,
+        command_table,
+        metadata,
+        plugin_manager,
+        _current_metadata
+      ) do
     try do
       # Reload the module with proper error handling
       with :ok <- :code.purge(plugin_module),
            {:module, ^plugin_module} <- :code.load_file(plugin_module),
            {:ok, updated_state} <- plugin_module.init(plugin_state),
-           {:ok, updated_table} <- update_command_table(command_table, plugin_module, updated_state) do
-
+           {:ok, updated_table} <-
+             update_command_table(command_table, plugin_module, updated_state) do
         # Update metadata with proper error handling
-        updated_metadata = Map.put(metadata, plugin_id, %{
-          path: plugin_path,
-          state: updated_state,
-          last_reload: System.system_time()
-        })
+        updated_metadata =
+          Map.put(metadata, plugin_id, %{
+            path: plugin_path,
+            state: updated_state,
+            last_reload: System.system_time()
+          })
 
         {:ok, updated_state, updated_table, updated_metadata}
       else
         {:error, reason} ->
-          Logger.error("Failed to reload plugin #{plugin_id}: #{inspect(reason)}")
+          Logger.error(
+            "Failed to reload plugin #{plugin_id}: #{inspect(reason)}"
+          )
+
           {:error, :reload_failed}
       end
     rescue
@@ -119,8 +177,8 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   """
   def unload_plugin(plugin_id, metadata, _config, states, command_table, _opts) do
     with {:ok, plugin_metadata} <- Map.fetch(metadata, plugin_id),
-         :ok <- CommandRegistry.unregister_plugin_commands(plugin_id, command_table) do
-
+         :ok <-
+           CommandRegistry.unregister_plugin_commands(plugin_id, command_table) do
       # Remove plugin from metadata and states
       meta = Map.delete(metadata, plugin_id)
       sts = Map.delete(states, plugin_id)
@@ -146,6 +204,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
           {:ok, module} -> {:ok, {id, module}}
           error -> error
         end
+
       module when is_atom(module) ->
         case Loader.extract_metadata(module) do
           {:ok, %{id: id}} -> {:ok, {id, module}}
@@ -163,7 +222,10 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   end
 
   defp validate_behaviour(plugin_module) do
-    if Loader.behaviour_implemented?(plugin_module, Raxol.Core.Runtime.Plugins.Plugin) do
+    if Loader.behaviour_implemented?(
+         plugin_module,
+         Raxol.Core.Runtime.Plugins.Plugin
+       ) do
       :ok
     else
       {:error, :invalid_plugin}
@@ -196,13 +258,13 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
   defp register_plugin_commands(table, plugin, commands) do
     Enum.reduce_while(commands, :ok, fn {name, function, arity}, :ok ->
       case CommandRegistry.register_command(
-        table,
-        plugin,
-        Atom.to_string(name),
-        plugin,
-        function,
-        arity
-      ) do
+             table,
+             plugin,
+             Atom.to_string(name),
+             plugin,
+             function,
+             arity
+           ) do
         :ok -> {:cont, :ok}
         error -> {:halt, error}
       end

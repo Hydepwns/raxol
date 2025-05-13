@@ -9,13 +9,16 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     @behaviour Raxol.UI.Components.Base.Component
 
     def init(props) do
-      Map.merge(%{
-        children: [],
-        events: [],
-        child_states: %{},
-        mounted: false,
-        unmounted: false
-      }, props)
+      Map.merge(
+        %{
+          children: [],
+          events: [],
+          child_states: %{},
+          mounted: false,
+          unmounted: false
+        },
+        props
+      )
     end
 
     def mount(state) do
@@ -28,17 +31,21 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     end
 
     def render(state, context) do
-      {state, %{
-        type: :parent,
-        id: state.id,
-        children: state.children,
-        child_states: state.child_states,
-        mounted: state.mounted,
-        unmounted: state.unmounted
-      }}
+      {state,
+       %{
+         type: :parent,
+         id: state.id,
+         children: state.children,
+         child_states: state.child_states,
+         mounted: state.mounted,
+         unmounted: state.unmounted
+       }}
     end
 
-    def handle_event(%{type: :child_event, child_id: child_id, value: value}, state) do
+    def handle_event(
+          %{type: :child_event, child_id: child_id, value: value},
+          state
+        ) do
       new_state = %{state | events: [{child_id, value} | state.events]}
       {new_state, [{:command, {:child_event, child_id, value}}]}
     end
@@ -57,12 +64,15 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     @behaviour Raxol.UI.Components.Base.Component
 
     def init(props) do
-      Map.merge(%{
-        value: 0,
-        parent_id: nil,
-        mounted: false,
-        unmounted: false
-      }, props)
+      Map.merge(
+        %{
+          value: 0,
+          parent_id: nil,
+          mounted: false,
+          unmounted: false
+        },
+        props
+      )
     end
 
     def mount(state) do
@@ -75,14 +85,15 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     end
 
     def render(state, _context) do
-      {state, %{
-        type: :child,
-        id: state.id,
-        value: state.value,
-        parent_id: state.parent_id,
-        mounted: state.mounted,
-        unmounted: state.unmounted
-      }}
+      {state,
+       %{
+         type: :child,
+         id: state.id,
+         value: state.value,
+         parent_id: state.parent_id,
+         mounted: state.mounted,
+         unmounted: state.unmounted
+       }}
     end
 
     def handle_event(%{type: :click}, state) do
@@ -103,10 +114,16 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     test "parent-child relationship" do
       # Set up parent and child components
       parent = create_test_component(ParentComponent)
-      child = create_test_component(ChildComponent, %{parent_id: parent.state.id})
+
+      child =
+        create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} = Raxol.ComponentTestHelpers.setup_component_hierarchy(ParentComponent, ChildComponent)
+      {parent, child} =
+        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+          ParentComponent,
+          ChildComponent
+        )
 
       # Verify hierarchy
       verify_hierarchy_valid(parent, [child])
@@ -116,15 +133,26 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     test "event propagation up the hierarchy" do
       # Set up components
       parent = create_test_component(ParentComponent)
-      child = create_test_component(ChildComponent, %{parent_id: parent.state.id})
+
+      child =
+        create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} = Raxol.ComponentTestHelpers.setup_component_hierarchy(ParentComponent, ChildComponent)
+      {parent, child} =
+        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+          ParentComponent,
+          ChildComponent
+        )
 
       # Simulate child event
-      {updated_child, child_commands} = Unit.simulate_event(child, %{type: :click})
+      {updated_child, child_commands} =
+        Unit.simulate_event(child, %{type: :click})
+
       assert updated_child.state.value == 1
-      assert child_commands == [{:command, {:notify_parent, updated_child.state}}]
+
+      assert child_commands == [
+               {:command, {:notify_parent, updated_child.state}}
+             ]
 
       # Store parent ID for assertion
       parent_id = parent.state.id
@@ -138,17 +166,24 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     test "state updates down the hierarchy" do
       # Set up components
       parent = create_test_component(ParentComponent)
-      child = create_test_component(ChildComponent, %{parent_id: parent.state.id})
+
+      child =
+        create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} = Raxol.ComponentTestHelpers.setup_component_hierarchy(ParentComponent, ChildComponent)
+      {parent, child} =
+        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+          ParentComponent,
+          ChildComponent
+        )
 
       # Update child through parent
-      {updated_parent, _} = Unit.simulate_event(parent, %{
-        type: :child_event,
-        child_id: child.state.id,
-        value: 5
-      })
+      {updated_parent, _} =
+        Unit.simulate_event(parent, %{
+          type: :child_event,
+          child_id: child.state.id,
+          value: 5
+        })
 
       # Verify child state was updated
       updated_child = ComponentManager.get_component(child.state.id)
@@ -160,17 +195,26 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     test "broadcast events" do
       # Set up multiple components
       parent = create_test_component(ParentComponent)
-      child1 = create_test_component(ChildComponent, %{parent_id: parent.state.id})
-      child2 = create_test_component(ChildComponent, %{parent_id: parent.state.id})
+
+      child1 =
+        create_test_component(ChildComponent, %{parent_id: parent.state.id})
+
+      child2 =
+        create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, [child1, child2]} = Raxol.ComponentTestHelpers.setup_component_hierarchy(ParentComponent, [ChildComponent, ChildComponent])
+      {parent, [child1, child2]} =
+        Raxol.ComponentTestHelpers.setup_component_hierarchy(ParentComponent, [
+          ChildComponent,
+          ChildComponent
+        ])
 
       # Simulate broadcast event
-      {updated_parent, _} = Unit.simulate_event(parent, %{
-        type: :broadcast,
-        value: :increment
-      })
+      {updated_parent, _} =
+        Unit.simulate_event(parent, %{
+          type: :broadcast,
+          value: :increment
+        })
 
       # Verify all children received the event
       updated_child1 = ComponentManager.get_component(child1.state.id)
@@ -182,17 +226,25 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     test "component state synchronization" do
       # Set up components
       parent = create_test_component(ParentComponent)
-      child = create_test_component(ChildComponent, %{parent_id: parent.state.id})
+
+      child =
+        create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} = Raxol.ComponentTestHelpers.setup_component_hierarchy(ParentComponent, ChildComponent)
+      {parent, child} =
+        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+          ParentComponent,
+          ChildComponent
+        )
 
       # Update child state
       {updated_child, _} = Unit.simulate_event(child, %{type: :click})
 
       # Verify parent state was synchronized
       updated_parent = ComponentManager.get_component(parent.state.id)
-      assert updated_parent.state.child_states[child.state.id] == updated_child.state
+
+      assert updated_parent.state.child_states[child.state.id] ==
+               updated_child.state
     end
   end
 
@@ -200,10 +252,16 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     test "mounting order" do
       # Set up components
       parent = create_test_component(ParentComponent)
-      child = create_test_component(ChildComponent, %{parent_id: parent.state.id})
+
+      child =
+        create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} = Raxol.ComponentTestHelpers.setup_component_hierarchy(ParentComponent, ChildComponent)
+      {parent, child} =
+        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+          ParentComponent,
+          ChildComponent
+        )
 
       # Mount components
       mounted_parent = mount_component(parent)
@@ -218,10 +276,16 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     test "unmounting order" do
       # Set up components
       parent = create_test_component(ParentComponent)
-      child = create_test_component(ChildComponent, %{parent_id: parent.state.id})
+
+      child =
+        create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} = Raxol.ComponentTestHelpers.setup_component_hierarchy(ParentComponent, ChildComponent)
+      {parent, child} =
+        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+          ParentComponent,
+          ChildComponent
+        )
 
       # Mount components
       mounted_parent = mount_component(parent)
@@ -241,10 +305,16 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     test "handles child errors gracefully" do
       # Set up components
       parent = create_test_component(ParentComponent)
-      child = create_test_component(ChildComponent, %{parent_id: parent.state.id})
+
+      child =
+        create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} = Raxol.ComponentTestHelpers.setup_component_hierarchy(ParentComponent, ChildComponent)
+      {parent, child} =
+        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+          ParentComponent,
+          ChildComponent
+        )
 
       # Simulate child error
       {updated_child, _} = Unit.simulate_event(child, %{type: :error_event})
@@ -257,10 +327,16 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     test "handles parent errors gracefully" do
       # Set up components
       parent = create_test_component(ParentComponent)
-      child = create_test_component(ChildComponent, %{parent_id: parent.state.id})
+
+      child =
+        create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} = Raxol.ComponentTestHelpers.setup_component_hierarchy(ParentComponent, ChildComponent)
+      {parent, child} =
+        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+          ParentComponent,
+          ChildComponent
+        )
 
       # Simulate parent error
       {updated_parent, _} = Unit.simulate_event(parent, %{type: :error_event})
@@ -284,6 +360,7 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
 
   defp verify_hierarchy_valid(parent, children) do
     assert parent.state.children == Enum.map(children, & &1.state.id)
+
     Enum.each(children, fn child ->
       assert child.state.parent_id == parent.state.id
     end)

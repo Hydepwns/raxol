@@ -74,7 +74,9 @@ defmodule Raxol.ComponentTestHelpers do
     end)
 
     end_time = System.monotonic_time()
-    duration = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+    duration =
+      System.convert_time_unit(end_time - start_time, :native, :millisecond)
 
     %{
       total_time: duration,
@@ -88,12 +90,13 @@ defmodule Raxol.ComponentTestHelpers do
   """
   def validate_accessibility(component) do
     # Render with accessibility context
-    {_updated, rendered} = component.module.render(component.state, %{
-      accessibility: %{
-        high_contrast: true,
-        screen_reader: true
-      }
-    })
+    {_updated, rendered} =
+      component.module.render(component.state, %{
+        accessibility: %{
+          high_contrast: true,
+          screen_reader: true
+        }
+      })
 
     # Validate rendered output
     validate_rendered_accessibility(rendered)
@@ -162,18 +165,23 @@ defmodule Raxol.ComponentTestHelpers do
   @doc """
   Sets up a component hierarchy with parent and child components.
   """
-  def setup_component_hierarchy(parent_module, child_module) when is_atom(child_module) do
+  def setup_component_hierarchy(parent_module, child_module)
+      when is_atom(child_module) do
     parent = create_test_component(parent_module)
     child = create_test_component(child_module, %{parent_id: parent.state.id})
     parent = %{parent | state: %{parent.state | children: [child.state.id]}}
     {parent, child}
   end
 
-  def setup_component_hierarchy(parent_module, child_modules) when is_list(child_modules) do
+  def setup_component_hierarchy(parent_module, child_modules)
+      when is_list(child_modules) do
     parent = create_test_component(parent_module)
-    children = Enum.map(child_modules, fn module ->
-      create_test_component(module, %{parent_id: parent.state.id})
-    end)
+
+    children =
+      Enum.map(child_modules, fn module ->
+        create_test_component(module, %{parent_id: parent.state.id})
+      end)
+
     child_ids = Enum.map(children, & &1.state.id)
     parent = %{parent | state: %{parent.state | children: child_ids}}
     {parent, children}
@@ -184,6 +192,7 @@ defmodule Raxol.ComponentTestHelpers do
   """
   def assert_hierarchy_valid(parent, children) do
     assert parent.state.children == Enum.map(children, & &1.state.id)
+
     Enum.each(children, fn child ->
       assert child.state.parent_id == parent.state.id
     end)
@@ -195,7 +204,8 @@ defmodule Raxol.ComponentTestHelpers do
   def mount_component(child_component, parent_component) do
     # Optionally update the child's state with parent_id if not already set
     child_state =
-      if Map.get(child_component.state, :parent_id) == nil and Map.has_key?(parent_component.state, :id) do
+      if Map.get(child_component.state, :parent_id) == nil and
+           Map.has_key?(parent_component.state, :id) do
         %{child_component.state | parent_id: parent_component.state.id}
       else
         child_component.state

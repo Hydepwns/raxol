@@ -18,10 +18,15 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
   Dispatches to `ModeManager` to handle both standard ANSI modes and
   DEC private modes (prefixed with `?`).
   """
-  @spec handle_h_or_l(Emulator.t(), list(integer()), String.t(), char()) :: Emulator.t()
+  @spec handle_h_or_l(Emulator.t(), list(integer()), String.t(), char()) ::
+          Emulator.t()
   def handle_h_or_l(emulator, params, intermediates_buffer, final_byte) do
     action = if final_byte == ?h, do: :set, else: :reset
-    apply_mode_func = if action == :set, do: &ModeManager.set_mode/2, else: &ModeManager.reset_mode/2
+
+    apply_mode_func =
+      if action == :set,
+        do: &ModeManager.set_mode/2,
+        else: &ModeManager.reset_mode/2
 
     if intermediates_buffer == "?" do
       handle_dec_private_mode(emulator, params, apply_mode_func, action)
@@ -31,7 +36,12 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
   end
 
   # Helper function to handle DEC private modes
-  @spec handle_dec_private_mode(Emulator.t(), list(integer()), function(), :set | :reset) :: Emulator.t()
+  @spec handle_dec_private_mode(
+          Emulator.t(),
+          list(integer()),
+          function(),
+          :set | :reset
+        ) :: Emulator.t()
   defp handle_dec_private_mode(emulator, params, apply_mode_func, action) do
     # Process each mode parameter
     Enum.reduce(params, emulator, fn param, acc ->
@@ -100,7 +110,12 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
   end
 
   # Helper function to handle standard ANSI modes
-  @spec handle_standard_mode(Emulator.t(), list(integer()), function(), :set | :reset) :: Emulator.t()
+  @spec handle_standard_mode(
+          Emulator.t(),
+          list(integer()),
+          function(),
+          :set | :reset
+        ) :: Emulator.t()
   defp handle_standard_mode(emulator, params, apply_mode_func, action) do
     # Process each mode parameter
     Enum.reduce(params, emulator, fn param, acc ->
@@ -134,13 +149,23 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
   Gets a parameter value with validation.
   Returns the parameter value if valid, or the default value if invalid.
   """
-  @spec get_valid_param(list(integer() | nil), non_neg_integer(), integer(), integer(), integer()) :: integer()
+  @spec get_valid_param(
+          list(integer() | nil),
+          non_neg_integer(),
+          integer(),
+          integer(),
+          integer()
+        ) :: integer()
   defp get_valid_param(params, index, default, min, max) do
     case Enum.at(params, index, default) do
       value when is_integer(value) and value >= min and value <= max ->
         value
+
       _ ->
-        Logger.warning("Invalid parameter value at index #{index}, using default #{default}")
+        Logger.warning(
+          "Invalid parameter value at index #{index}, using default #{default}"
+        )
+
         default
     end
   end
@@ -149,7 +174,11 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
   Gets a parameter value with validation for non-negative integers.
   Returns the parameter value if valid, or the default value if invalid.
   """
-  @spec get_valid_non_neg_param(list(integer() | nil), non_neg_integer(), non_neg_integer()) :: non_neg_integer()
+  @spec get_valid_non_neg_param(
+          list(integer() | nil),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: non_neg_integer()
   defp get_valid_non_neg_param(params, index, default) do
     get_valid_param(params, index, default, 0, 9999)
   end

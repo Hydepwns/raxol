@@ -25,37 +25,37 @@ defmodule Raxol.Core.Runtime.Plugins.PluginCommandRegistry.Behaviour do
   Registers a command provided by a plugin.
   """
   @callback register_command(
-    table_name(),
-    namespace(),
-    command_name(),
-    module(),
-    atom(),
-    integer() | nil
-  ) :: :ok | {:error, :already_registered}
+              table_name(),
+              namespace(),
+              command_name(),
+              module(),
+              atom(),
+              integer() | nil
+            ) :: :ok | {:error, :already_registered}
 
   @doc """
   Unregisters a command.
   """
   @callback unregister_command(
-    table_name(),
-    namespace(),
-    command_name()
-  ) :: :ok
+              table_name(),
+              namespace(),
+              command_name()
+            ) :: :ok
 
   @doc """
   Looks up the handler for a command name and namespace.
   """
   @callback lookup_command(
-    table_name(),
-    namespace(),
-    command_name()
-  ) :: {:ok, command_entry()} | {:error, :not_found}
+              table_name(),
+              namespace(),
+              command_name()
+            ) :: {:ok, command_entry()} | {:error, :not_found}
 
   @doc """
   Unregisters all commands associated with a specific module.
   """
   @callback unregister_commands_by_module(
-    table_name(),
-    module()
-  ) :: :ok
+              table_name(),
+              module()
+            ) :: :ok
 end

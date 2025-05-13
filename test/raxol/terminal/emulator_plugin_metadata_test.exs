@@ -9,11 +9,14 @@ defmodule Raxol.Terminal.EmulatorPluginMetadataTest do
 
   setup context do
     reloading_enabled = Keyword.has_key?(context.tags, :enable_plugin_reloading)
-    {:ok, _pid} = Manager.start_link(
-      command_registry_table: :test_command_registry,
-      plugin_config: %{},
-      enable_plugin_reloading: reloading_enabled
-    )
+
+    {:ok, _pid} =
+      Manager.start_link(
+        command_registry_table: :test_command_registry,
+        plugin_config: %{},
+        enable_plugin_reloading: reloading_enabled
+      )
+
     :ok = Manager.initialize()
     emulator = Emulator.new(80, 24)
     on_exit(fn -> :ets.delete(:test_command_registry) end)

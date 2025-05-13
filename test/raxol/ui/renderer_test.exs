@@ -77,8 +77,9 @@ defmodule Raxol.UI.RendererTest do
         }
       }
 
-      # Execute: Call Renderer.render with the element and theme
-      rendered_cells = Renderer.render_to_cells([positioned_table], Theme.get(:test_theme))
+      # Execute: Call Renderer.render_to_cells with the element and theme
+      rendered_cells =
+        Renderer.render_to_cells([positioned_table], Theme.get(:test_theme))
 
       # Assert: Check the final character grid/cell list for correct padding/positioning
       assert length(rendered_cells) > 0

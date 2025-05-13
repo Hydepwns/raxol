@@ -41,16 +41,20 @@ defmodule Raxol.Terminal.Driver.KeyEventTest do
       Helper.consume_initial_resize()
 
       # Test arrow keys
-      Helper.simulate_key_event(driver_pid, 0, 65) # Up arrow
+      # Up arrow
+      Helper.simulate_key_event(driver_pid, 0, 65)
       Helper.assert_key_event(nil, :up)
 
-      Helper.simulate_key_event(driver_pid, 0, 66) # Down arrow
+      # Down arrow
+      Helper.simulate_key_event(driver_pid, 0, 66)
       Helper.assert_key_event(nil, :down)
 
-      Helper.simulate_key_event(driver_pid, 0, 67) # Right arrow
+      # Right arrow
+      Helper.simulate_key_event(driver_pid, 0, 67)
       Helper.assert_key_event(nil, :right)
 
-      Helper.simulate_key_event(driver_pid, 0, 68) # Left arrow
+      # Left arrow
+      Helper.simulate_key_event(driver_pid, 0, 68)
       Helper.assert_key_event(nil, :left)
 
       Process.exit(driver_pid, :shutdown)
@@ -65,10 +69,12 @@ defmodule Raxol.Terminal.Driver.KeyEventTest do
       Helper.consume_initial_resize()
 
       # Test function keys
-      Helper.simulate_key_event(driver_pid, 0, 265) # F1
+      # F1
+      Helper.simulate_key_event(driver_pid, 0, 265)
       Helper.assert_key_event(nil, :f1)
 
-      Helper.simulate_key_event(driver_pid, 0, 266) # F2
+      # F2
+      Helper.simulate_key_event(driver_pid, 0, 266)
       Helper.assert_key_event(nil, :f2)
 
       Process.exit(driver_pid, :shutdown)
@@ -83,10 +89,12 @@ defmodule Raxol.Terminal.Driver.KeyEventTest do
       Helper.consume_initial_resize()
 
       # Test modifier combinations
-      Helper.simulate_key_event(driver_pid, 0, 65, 2) # Ctrl+Up
+      # Ctrl+Up
+      Helper.simulate_key_event(driver_pid, 0, 65, 2)
       Helper.assert_key_event(nil, :up, %{ctrl: true})
 
-      Helper.simulate_key_event(driver_pid, 0, 66, 1) # Shift+Down
+      # Shift+Down
+      Helper.simulate_key_event(driver_pid, 0, 66, 1)
       Helper.assert_key_event(nil, :down, %{shift: true})
 
       Process.exit(driver_pid, :shutdown)

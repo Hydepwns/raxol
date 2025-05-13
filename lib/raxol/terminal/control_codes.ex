@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.ControlCodes do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.Movement
   alias Raxol.Terminal.Cursor.Manager
-  alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
   alias Raxol.Terminal.ModeManager
   # Needed for RIS
   alias Raxol.Terminal.ANSI.TerminalState
@@ -332,7 +332,8 @@ defmodule Raxol.Terminal.ControlCodes do
     # SO: Shift Out. Invoke G1 character set.
     %{
       emulator
-      | charset_state: CharacterSets.invoke_designator(emulator.charset_state, :g1)
+      | charset_state:
+          CharacterSets.invoke_designator(emulator.charset_state, :g1)
     }
   end
 
@@ -341,7 +342,8 @@ defmodule Raxol.Terminal.ControlCodes do
     # SI: Shift In. Invoke G0 character set.
     %{
       emulator
-      | charset_state: CharacterSets.invoke_designator(emulator.charset_state, :g0)
+      | charset_state:
+          CharacterSets.invoke_designator(emulator.charset_state, :g0)
     }
   end
 

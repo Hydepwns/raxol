@@ -68,7 +68,8 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerTest do
       name: :"#{test_name}_PluginManager",
       plugin_dirs: [tmp_dir],
       lifecycle_helper_module: LifecycleHelper,
-      command_registry_table: table_name
+      command_registry_table: table_name,
+      runtime_pid: self()
     ]
 
     {:ok, base_opts: start_opts, tmp_dir: tmp_dir}

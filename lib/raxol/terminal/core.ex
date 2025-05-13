@@ -14,12 +14,12 @@ defmodule Raxol.Terminal.Core do
   ]
 
   @type t :: %__MODULE__{
-    active_buffer_type: any(),
-    mode_manager: any(),
-    charset_state: any(),
-    state: any(),
-    memory_limit: integer() | nil,
-    current_hyperlink_url: String.t() | nil,
-    tab_stops: any()
-  }
+          active_buffer_type: any(),
+          mode_manager: any(),
+          charset_state: any(),
+          state: any(),
+          memory_limit: integer() | nil,
+          current_hyperlink_url: String.t() | nil,
+          tab_stops: any()
+        }
 end

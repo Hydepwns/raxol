@@ -28,6 +28,9 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerCommandHandlingTest do
       # No plugin dirs or other mocks needed if just testing delegation
     ]
 
+    # Before calling Manager.start_link(start_opts), ensure start_opts includes runtime_pid: self()
+    start_opts = Keyword.put_new(start_opts, :runtime_pid, self())
+
     {:ok, pid} = Manager.start_link(start_opts)
 
     on_exit(fn -> cleanup_process(pid) end)
@@ -358,10 +361,12 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerCommandHandlingTest do
     } do
       command_name = "test:command"
       command_args = []
+
       initial_states = %{
         "plugin1" => %{value: 1},
         "plugin2" => %{value: 2}
       }
+
       updated_states = %{
         "plugin1" => %{value: 3},
         "plugin2" => %{value: 4}
@@ -369,7 +374,10 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerCommandHandlingTest do
 
       # Set initial plugin states
       for {plugin_id, state} <- initial_states do
-        GenServer.call(manager, {:set_plugin_state, String.to_atom(plugin_id), state})
+        GenServer.call(
+          manager,
+          {:set_plugin_state, String.to_atom(plugin_id), state}
+        )
       end
 
       # Expect CommandHelper to return updated states

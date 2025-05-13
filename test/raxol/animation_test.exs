@@ -4,10 +4,9 @@ defmodule Raxol.AnimationTest do
 
   import Raxol.AccessibilityTestHelpers
 
-  alias Raxol.Animation.{Framework, Animation}
+  alias Raxol.Animation.{Framework, Animation, StateManager}
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
-  alias Raxol.Animation.StateManager
   alias Raxol.Test.EventAssertions
 
   # Helper to wait for animation completion
@@ -349,7 +348,8 @@ defmodule Raxol.AnimationTest do
       wait_for_animation_start("test_element", animation.name)
 
       # Verify announcement was made
-      assert_receive {:accessibility_announcement, "Test animation started"}, 100
+      assert_receive {:accessibility_announcement, "Test animation started"},
+                     100
     end
 
     test "silences announcements when configured" do
@@ -417,7 +417,9 @@ defmodule Raxol.AnimationTest do
 
       # Verify both animations were applied
       assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
-      assert get_in(updated_state, [:elements, "test_element", :position]) == 100
+
+      assert get_in(updated_state, [:elements, "test_element", :position]) ==
+               100
 
       # Verify announcements were made in order
       assert_receive {:accessibility_announcement, "Fade in started"}, 100
@@ -444,13 +446,16 @@ defmodule Raxol.AnimationTest do
       wait_for_animation_completion("test_element", animation.name)
 
       end_time = System.monotonic_time()
-      duration = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      duration =
+        System.convert_time_unit(end_time - start_time, :native, :millisecond)
 
       # Verify performance requirements
       assert duration < 16, "Animation frame time too high"
 
       # Verify accessibility announcement was made
-      assert_receive {:accessibility_announcement, "Performance test started"}, 100
+      assert_receive {:accessibility_announcement, "Performance test started"},
+                     100
     end
   end
 

@@ -1,11 +1,13 @@
 defmodule Raxol.Core.Renderer.Views.PerformanceTest.TestHostComponent do
   # @behaviour Raxol.UI.Components.Base.Component # If a specific behaviour is defined and required
 
-  alias Raxol.Core.Renderer.View # Make sure View macros are available
+  # Make sure View macros are available
+  alias Raxol.Core.Renderer.View
 
   def init(props) do
     # The state of this component is simply the view map it's supposed to render.
-    Map.get(props, :initial_view, View.box(%{})) # Default to an empty box if no view provided
+    # Default to an empty box if no view provided
+    Map.get(props, :initial_view, View.box(%{}))
   end
 
   def mount(current_view_state) do

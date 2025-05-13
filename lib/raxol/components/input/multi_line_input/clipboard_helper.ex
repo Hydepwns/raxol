@@ -3,9 +3,9 @@ defmodule Raxol.Components.Input.MultiLineInput.ClipboardHelper do
   Helper for clipboard operations (copy/cut/paste) in MultiLineInput.
   """
 
-  alias Raxol.Components.Input.MultiLineInput, as: State
-  alias Raxol.Components.Input.MultiLineInput.TextHelper
-  alias Raxol.Components.Input.MultiLineInput.NavigationHelper
+  alias Raxol.UI.Components.Input.MultiLineInput, as: State
+  alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
+  alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
   alias Raxol.Core.Runtime.Command
   require Logger
 

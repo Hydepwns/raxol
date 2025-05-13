@@ -8,7 +8,7 @@ defmodule Raxol.Terminal.Emulator do
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Operations
-  alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.Cursor.Manager
@@ -170,7 +170,8 @@ defmodule Raxol.Terminal.Emulator do
     command_manager = CommandManager.new()
 
     # Initialize buffers through BufferManager
-    {main_buffer, alternate_buffer} = BufferManager.initialize_buffers(width, height, scrollback_limit)
+    {main_buffer, alternate_buffer} =
+      BufferManager.initialize_buffers(width, height, scrollback_limit)
 
     %__MODULE__{
       cursor: initial_cursor,
@@ -410,8 +411,10 @@ defmodule Raxol.Terminal.Emulator do
     new_scroll_region =
       case emulator.scroll_region do
         {top, bottom}
-          when is_integer(top) and is_integer(bottom) and top < bottom and top >= 0 and bottom < new_height ->
+        when is_integer(top) and is_integer(bottom) and top < bottom and
+               top >= 0 and bottom < new_height ->
           {top, bottom}
+
         _ ->
           nil
       end
@@ -650,58 +653,172 @@ defmodule Raxol.Terminal.Emulator do
 
   # Delegate to BufferManager
   def get_active_buffer(emulator), do: BufferManager.get_active_buffer(emulator)
-  def update_active_buffer(emulator, new_buffer), do: BufferManager.update_active_buffer(emulator, new_buffer)
+
+  def update_active_buffer(emulator, new_buffer),
+    do: BufferManager.update_active_buffer(emulator, new_buffer)
+
   def maybe_scroll(emulator), do: BufferManager.maybe_scroll(emulator)
 
   # Delegate cursor operations to CursorManager
-  defdelegate get_cursor_position(emulator), to: CursorManager, as: :get_position
-  defdelegate set_cursor_position(emulator, position), to: CursorManager, as: :set_position
+  defdelegate get_cursor_position(emulator),
+    to: CursorManager,
+    as: :get_position
+
+  defdelegate set_cursor_position(emulator, position),
+    to: CursorManager,
+    as: :set_position
+
   defdelegate is_cursor_visible?(emulator), to: CursorManager, as: :is_visible?
-  defdelegate set_cursor_visibility(emulator, visible), to: CursorManager, as: :set_visibility
+
+  defdelegate set_cursor_visibility(emulator, visible),
+    to: CursorManager,
+    as: :set_visibility
+
   defdelegate get_cursor_style(emulator), to: CursorManager, as: :get_style
-  defdelegate set_cursor_style(emulator, style), to: CursorManager, as: :set_style
+
+  defdelegate set_cursor_style(emulator, style),
+    to: CursorManager,
+    as: :set_style
+
   defdelegate save_cursor_state(emulator), to: CursorManager, as: :save_state
-  defdelegate restore_cursor_state(emulator), to: CursorManager, as: :restore_state
+
+  defdelegate restore_cursor_state(emulator),
+    to: CursorManager,
+    as: :restore_state
 
   # Delegate cursor movement operations
-  defdelegate move_cursor_up(emulator, lines \\ 1), to: CursorManager, as: :move_up
-  defdelegate move_cursor_down(emulator, lines \\ 1), to: CursorManager, as: :move_down
-  defdelegate move_cursor_left(emulator, columns \\ 1), to: CursorManager, as: :move_left
-  defdelegate move_cursor_right(emulator, columns \\ 1), to: CursorManager, as: :move_right
-  defdelegate move_cursor_to_line_start(emulator), to: CursorManager, as: :move_to_line_start
-  defdelegate move_cursor_to_column(emulator, column), to: CursorManager, as: :move_to_column
-  defdelegate move_cursor_to(emulator, position), to: CursorManager, as: :move_to
+  defdelegate move_cursor_up(emulator, lines \\ 1),
+    to: CursorManager,
+    as: :move_up
+
+  defdelegate move_cursor_down(emulator, lines \\ 1),
+    to: CursorManager,
+    as: :move_down
+
+  defdelegate move_cursor_left(emulator, columns \\ 1),
+    to: CursorManager,
+    as: :move_left
+
+  defdelegate move_cursor_right(emulator, columns \\ 1),
+    to: CursorManager,
+    as: :move_right
+
+  defdelegate move_cursor_to_line_start(emulator),
+    to: CursorManager,
+    as: :move_to_line_start
+
+  defdelegate move_cursor_to_column(emulator, column),
+    to: CursorManager,
+    as: :move_to_column
+
+  defdelegate move_cursor_to(emulator, position),
+    to: CursorManager,
+    as: :move_to
 
   # Delegate state management operations to StateManager
-  defdelegate get_mode_manager(emulator), to: StateManager, as: :get_mode_manager
-  defdelegate update_mode_manager(emulator, mode_manager), to: StateManager, as: :update_mode_manager
-  defdelegate get_charset_state(emulator), to: StateManager, as: :get_charset_state
-  defdelegate update_charset_state(emulator, charset_state), to: StateManager, as: :update_charset_state
+  defdelegate get_mode_manager(emulator),
+    to: StateManager,
+    as: :get_mode_manager
+
+  defdelegate update_mode_manager(emulator, mode_manager),
+    to: StateManager,
+    as: :update_mode_manager
+
+  defdelegate get_charset_state(emulator),
+    to: StateManager,
+    as: :get_charset_state
+
+  defdelegate update_charset_state(emulator, charset_state),
+    to: StateManager,
+    as: :update_charset_state
+
   defdelegate get_state_stack(emulator), to: StateManager, as: :get_state_stack
-  defdelegate update_state_stack(emulator, state_stack), to: StateManager, as: :update_state_stack
-  defdelegate get_scroll_region(emulator), to: StateManager, as: :get_scroll_region
-  defdelegate update_scroll_region(emulator, scroll_region), to: StateManager, as: :update_scroll_region
-  defdelegate get_last_col_exceeded(emulator), to: StateManager, as: :get_last_col_exceeded
-  defdelegate update_last_col_exceeded(emulator, last_col_exceeded), to: StateManager, as: :update_last_col_exceeded
-  defdelegate get_hyperlink_url(emulator), to: StateManager, as: :get_hyperlink_url
-  defdelegate update_hyperlink_url(emulator, url), to: StateManager, as: :update_hyperlink_url
-  defdelegate get_window_title(emulator), to: StateManager, as: :get_window_title
-  defdelegate update_window_title(emulator, title), to: StateManager, as: :update_window_title
+
+  defdelegate update_state_stack(emulator, state_stack),
+    to: StateManager,
+    as: :update_state_stack
+
+  defdelegate get_scroll_region(emulator),
+    to: StateManager,
+    as: :get_scroll_region
+
+  defdelegate update_scroll_region(emulator, scroll_region),
+    to: StateManager,
+    as: :update_scroll_region
+
+  defdelegate get_last_col_exceeded(emulator),
+    to: StateManager,
+    as: :get_last_col_exceeded
+
+  defdelegate update_last_col_exceeded(emulator, last_col_exceeded),
+    to: StateManager,
+    as: :update_last_col_exceeded
+
+  defdelegate get_hyperlink_url(emulator),
+    to: StateManager,
+    as: :get_hyperlink_url
+
+  defdelegate update_hyperlink_url(emulator, url),
+    to: StateManager,
+    as: :update_hyperlink_url
+
+  defdelegate get_window_title(emulator),
+    to: StateManager,
+    as: :get_window_title
+
+  defdelegate update_window_title(emulator, title),
+    to: StateManager,
+    as: :update_window_title
+
   defdelegate get_icon_name(emulator), to: StateManager, as: :get_icon_name
-  defdelegate update_icon_name(emulator, name), to: StateManager, as: :update_icon_name
+
+  defdelegate update_icon_name(emulator, name),
+    to: StateManager,
+    as: :update_icon_name
+
   defdelegate save_state(emulator), to: StateManager, as: :save_state
   defdelegate restore_state(emulator), to: StateManager, as: :restore_state
 
   # Delegate command management operations to CommandManager
-  defdelegate get_command_buffer(emulator), to: CommandManager, as: :get_command_buffer
-  defdelegate update_command_buffer(emulator, buffer), to: CommandManager, as: :update_command_buffer
-  defdelegate get_command_history(emulator), to: CommandManager, as: :get_command_history
-  defdelegate add_to_history(emulator, command), to: CommandManager, as: :add_to_history
+  defdelegate get_command_buffer(emulator),
+    to: CommandManager,
+    as: :get_command_buffer
+
+  defdelegate update_command_buffer(emulator, buffer),
+    to: CommandManager,
+    as: :update_command_buffer
+
+  defdelegate get_command_history(emulator),
+    to: CommandManager,
+    as: :get_command_history
+
+  defdelegate add_to_history(emulator, command),
+    to: CommandManager,
+    as: :add_to_history
+
   defdelegate clear_history(emulator), to: CommandManager, as: :clear_history
-  defdelegate get_last_key_event(emulator), to: CommandManager, as: :get_last_key_event
-  defdelegate update_last_key_event(emulator, event), to: CommandManager, as: :update_last_key_event
-  defdelegate process_key_event(emulator, key_event), to: CommandManager, as: :process_key_event
-  defdelegate get_history_command(emulator, index), to: CommandManager, as: :get_history_command
-  defdelegate search_history(emulator, prefix), to: CommandManager, as: :search_history
-  defdelegate update_max_history(emulator, new_size), to: CommandManager, as: :update_max_history
+
+  defdelegate get_last_key_event(emulator),
+    to: CommandManager,
+    as: :get_last_key_event
+
+  defdelegate update_last_key_event(emulator, event),
+    to: CommandManager,
+    as: :update_last_key_event
+
+  defdelegate process_key_event(emulator, key_event),
+    to: CommandManager,
+    as: :process_key_event
+
+  defdelegate get_history_command(emulator, index),
+    to: CommandManager,
+    as: :get_history_command
+
+  defdelegate search_history(emulator, prefix),
+    to: CommandManager,
+    as: :search_history
+
+  defdelegate update_max_history(emulator, new_size),
+    to: CommandManager,
+    as: :update_max_history
 end

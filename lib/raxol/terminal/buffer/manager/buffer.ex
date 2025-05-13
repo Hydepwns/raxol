@@ -60,7 +60,9 @@ defmodule Raxol.Terminal.Buffer.Manager.Buffer do
       %Cell{char: "X", fg: :red, bg: :blue}
   """
   def fill_region(%State{} = state, x, y, width, height, cell) do
-    new_buffer = Buffer.fill_region(state.active_buffer, x, y, width, height, cell)
+    new_buffer =
+      Buffer.fill_region(state.active_buffer, x, y, width, height, cell)
+
     %{state | active_buffer: new_buffer}
   end
 
@@ -77,7 +79,17 @@ defmodule Raxol.Terminal.Buffer.Manager.Buffer do
       %Cell{char: "A", fg: :red, bg: :blue}
   """
   def copy_region(%State{} = state, src_x, src_y, dst_x, dst_y, width, height) do
-    new_buffer = Buffer.copy_region(state.active_buffer, src_x, src_y, dst_x, dst_y, width, height)
+    new_buffer =
+      Buffer.copy_region(
+        state.active_buffer,
+        src_x,
+        src_y,
+        dst_x,
+        dst_y,
+        width,
+        height
+      )
+
     %{state | active_buffer: new_buffer}
   end
 
@@ -92,7 +104,9 @@ defmodule Raxol.Terminal.Buffer.Manager.Buffer do
       %Cell{char: " ", fg: :default, bg: :default}
   """
   def scroll_region(%State{} = state, x, y, width, height, lines) do
-    new_buffer = Buffer.scroll_region(state.active_buffer, x, y, width, height, lines)
+    new_buffer =
+      Buffer.scroll_region(state.active_buffer, x, y, width, height, lines)
+
     %{state | active_buffer: new_buffer}
   end
 

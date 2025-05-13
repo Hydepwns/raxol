@@ -30,11 +30,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
   def build_dependency_graph(plugins) do
     Enum.reduce(plugins, %{}, fn {id, metadata}, acc ->
       deps = Map.get(metadata, :dependencies, [])
-      dep_info = Enum.map(deps, fn
-        {dep_id, version_req, opts} -> {dep_id, version_req, opts}
-        {dep_id, version_req} -> {dep_id, version_req, %{optional: false}}
-        dep_id -> {dep_id, nil, %{optional: false}}
-      end)
+
+      dep_info =
+        Enum.map(deps, fn
+          {dep_id, version_req, opts} -> {dep_id, version_req, opts}
+          {dep_id, version_req} -> {dep_id, version_req, %{optional: false}}
+          dep_id -> {dep_id, nil, %{optional: false}}
+        end)
+
       Map.put(acc, id, dep_info)
     end)
   end
@@ -87,8 +90,11 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
 
       Enum.reduce_while(deps, {:ok, []}, fn {dep_id, _, _}, {:ok, acc} ->
         case get_all_dependencies(dep_id, graph, visited) do
-          {:ok, dep_deps} -> {:cont, {:ok, [dep_id | acc] ++ dep_deps}}
-          {:error, :circular_dependency, cycle} -> {:halt, {:error, :circular_dependency, [plugin_id | cycle]}}
+          {:ok, dep_deps} ->
+            {:cont, {:ok, [dep_id | acc] ++ dep_deps}}
+
+          {:error, :circular_dependency, cycle} ->
+            {:halt, {:error, :circular_dependency, [plugin_id | cycle]}}
         end
       end)
     end

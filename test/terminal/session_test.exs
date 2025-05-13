@@ -189,13 +189,17 @@ defmodule Raxol.Terminal.SessionTest do
 
   describe "Session GenServer API" do
     test "start_link/1 starts a session and process is alive" do
-      {:ok, pid} = Session.start_link(width: 100, height: 40, title: "Test Terminal")
+      {:ok, pid} =
+        Session.start_link(width: 100, height: 40, title: "Test Terminal")
+
       assert Process.alive?(pid)
       on_exit(fn -> cleanup_process(pid) end)
     end
 
     test "get_state/1 returns the correct initial state" do
-      {:ok, pid} = Session.start_link(width: 90, height: 30, title: "Test Terminal")
+      {:ok, pid} =
+        Session.start_link(width: 90, height: 30, title: "Test Terminal")
+
       on_exit(fn -> cleanup_process(pid) end)
 
       state = Session.get_state(pid)
@@ -208,7 +212,9 @@ defmodule Raxol.Terminal.SessionTest do
     end
 
     test "update_state/2 updates the session state" do
-      {:ok, pid} = Session.start_link(width: 80, height: 24, title: "Test Terminal")
+      {:ok, pid} =
+        Session.start_link(width: 80, height: 24, title: "Test Terminal")
+
       on_exit(fn -> cleanup_process(pid) end)
 
       # Get initial state
@@ -224,11 +230,14 @@ defmodule Raxol.Terminal.SessionTest do
       updated_state = Session.get_state(pid)
       assert updated_state.width == 100
       assert updated_state.height == 40
-      assert updated_state.title == "Test Terminal" # Unchanged
+      # Unchanged
+      assert updated_state.title == "Test Terminal"
     end
 
     test "update_state/2 preserves existing state for unspecified fields" do
-      {:ok, pid} = Session.start_link(width: 80, height: 24, title: "Test Terminal")
+      {:ok, pid} =
+        Session.start_link(width: 80, height: 24, title: "Test Terminal")
+
       on_exit(fn -> cleanup_process(pid) end)
 
       # Update only width
@@ -242,7 +251,9 @@ defmodule Raxol.Terminal.SessionTest do
     end
 
     test "update_state/2 handles invalid state updates" do
-      {:ok, pid} = Session.start_link(width: 80, height: 24, title: "Test Terminal")
+      {:ok, pid} =
+        Session.start_link(width: 80, height: 24, title: "Test Terminal")
+
       on_exit(fn -> cleanup_process(pid) end)
 
       # Try to update with invalid width
@@ -255,7 +266,9 @@ defmodule Raxol.Terminal.SessionTest do
     end
 
     test "update_state/2 handles concurrent updates" do
-      {:ok, pid} = Session.start_link(width: 80, height: 24, title: "Test Terminal")
+      {:ok, pid} =
+        Session.start_link(width: 80, height: 24, title: "Test Terminal")
+
       on_exit(fn -> cleanup_process(pid) end)
 
       # Create multiple update tasks
@@ -277,7 +290,8 @@ defmodule Raxol.Terminal.SessionTest do
     end
 
     test "update_state/2 handles process termination" do
-      {:ok, pid} = Session.start_link(width: 80, height: 24, title: "Test Terminal")
+      {:ok, pid} =
+        Session.start_link(width: 80, height: 24, title: "Test Terminal")
 
       # Terminate the process
       Process.exit(pid, :normal)
@@ -291,7 +305,8 @@ defmodule Raxol.Terminal.SessionTest do
     end
 
     test "get_state/1 handles process termination" do
-      {:ok, pid} = Session.start_link(width: 80, height: 24, title: "Test Terminal")
+      {:ok, pid} =
+        Session.start_link(width: 80, height: 24, title: "Test Terminal")
 
       # Terminate the process
       Process.exit(pid, :normal)

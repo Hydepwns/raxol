@@ -97,17 +97,23 @@ defmodule Raxol.Core.Renderer.Views.Table do
   """
   @impl Raxol.UI.Components.Base.Component
   def render(state = %__MODULE__{}) do
-    header = create_header_row(state.columns, state.calculated_widths, state.header_style)
+    header =
+      create_header_row(
+        state.columns,
+        state.calculated_widths,
+        state.header_style
+      )
 
-    rows = create_data_rows(
-      state.columns,
-      state.data,
-      state.calculated_widths,
-      state.striped,
-      state.selectable,
-      state.selected,
-      state.row_style
-    )
+    rows =
+      create_data_rows(
+        state.columns,
+        state.data,
+        state.calculated_widths,
+        state.striped,
+        state.selectable,
+        state.selected,
+        state.row_style
+      )
 
     content = [header | rows]
 
@@ -123,7 +129,10 @@ defmodule Raxol.Core.Renderer.Views.Table do
   """
   @impl Raxol.UI.Components.Base.Component
   def update(message, state = %__MODULE__{}) do
-    Logger.info("Table component [#{inspect(self())}] received update: #{inspect(message)}")
+    Logger.info(
+      "Table component [#{inspect(self())}] received update: #{inspect(message)}"
+    )
+
     # TODO: Implement actual update logic based on message
     {:ok, state, []}
   end
@@ -133,7 +142,10 @@ defmodule Raxol.Core.Renderer.Views.Table do
   """
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, state = %__MODULE__{}) do
-    Logger.info("Table component [#{inspect(self())}] received event: #{inspect(event)}")
+    Logger.info(
+      "Table component [#{inspect(self())}] received event: #{inspect(event)}"
+    )
+
     # TODO: Implement event handling logic
     {:ok, state, []}
   end
@@ -154,13 +166,16 @@ defmodule Raxol.Core.Renderer.Views.Table do
       case column.width do
         :auto ->
           header_width = String.length(column.header)
+
           content_width =
             Enum.reduce(data, 0, fn row, max ->
               value = get_column_value(row, column)
               len = String.length(to_string(value))
               if len > max, do: len, else: max
             end)
+
           max(header_width, content_width)
+
         width when is_integer(width) ->
           width
       end
@@ -191,7 +206,9 @@ defmodule Raxol.Core.Renderer.Views.Table do
     data
     |> Enum.with_index()
     |> Enum.map(fn {row, index} ->
-      style = get_row_style(index, row, striped, selectable, selected, row_style)
+      style =
+        get_row_style(index, row, striped, selectable, selected, row_style)
+
       create_data_row(columns, row, widths, style)
     end)
   end
@@ -202,6 +219,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
       |> Enum.map(fn {column, width} ->
         value = get_column_value(row, column)
         formatted = format_value(value, column)
+
         View.text(
           pad_text(formatted, width, column.align),
           style: style
@@ -243,38 +261,53 @@ defmodule Raxol.Core.Renderer.Views.Table do
   defp get_selection_style(index, true, selected) when index == selected do
     [:bold, :bg_blue, :fg_white]
   end
+
   defp get_selection_style(_index, _selectable, _selected), do: []
 
   defp get_stripe_style(index, true) when rem(index, 2) == 1 do
     [:bg_bright_black]
   end
+
   defp get_stripe_style(_index, _striped), do: []
 
   defp pad_text(text, width, align) do
     text = to_string(text)
     padding = width - String.length(text)
+
     case align do
-      :left -> text <> String.duplicate(" ", padding)
-      :right -> String.duplicate(" ", padding) <> text
+      :left ->
+        text <> String.duplicate(" ", padding)
+
+      :right ->
+        String.duplicate(" ", padding) <> text
+
       :center ->
         left_pad = div(padding, 2)
         right_pad = padding - left_pad
-        String.duplicate(" ", left_pad) <> text <> String.duplicate(" ", right_pad)
+
+        String.duplicate(" ", left_pad) <>
+          text <> String.duplicate(" ", right_pad)
     end
   end
 
   defp render_content(state) do
-    header = create_header_row(state.columns, state.calculated_widths, state.header_style)
+    header =
+      create_header_row(
+        state.columns,
+        state.calculated_widths,
+        state.header_style
+      )
 
-    rows = create_data_rows(
-      state.columns,
-      state.data,
-      state.calculated_widths,
-      state.striped,
-      state.selectable,
-      state.selected,
-      state.row_style
-    )
+    rows =
+      create_data_rows(
+        state.columns,
+        state.data,
+        state.calculated_widths,
+        state.striped,
+        state.selectable,
+        state.selected,
+        state.row_style
+      )
 
     content = [header | rows]
 

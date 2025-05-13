@@ -22,7 +22,10 @@ defmodule Raxol.Style.Colors.Formats do
       iex> Formats.to_hex({255, 0, 0, 128})
       "#FF000080"
   """
-  @spec to_hex({integer(), integer(), integer()} | {integer(), integer(), integer(), integer()}) :: String.t()
+  @spec to_hex(
+          {integer(), integer(), integer()}
+          | {integer(), integer(), integer(), integer()}
+        ) :: String.t()
   def to_hex({r, g, b}) when r in 0..255 and g in 0..255 and b in 0..255 do
     r_hex = Integer.to_string(r, 16) |> String.pad_leading(2, "0")
     g_hex = Integer.to_string(g, 16) |> String.pad_leading(2, "0")
@@ -30,7 +33,8 @@ defmodule Raxol.Style.Colors.Formats do
     "#" <> String.upcase(r_hex <> g_hex <> b_hex)
   end
 
-  def to_hex({r, g, b, a}) when r in 0..255 and g in 0..255 and b in 0..255 and a in 0..255 do
+  def to_hex({r, g, b, a})
+      when r in 0..255 and g in 0..255 and b in 0..255 and a in 0..255 do
     base = to_hex({r, g, b})
     a_hex = Integer.to_string(a, 16) |> String.pad_leading(2, "0")
     base <> String.upcase(a_hex)
@@ -47,7 +51,9 @@ defmodule Raxol.Style.Colors.Formats do
       iex> Formats.from_hex("#FF000080")
       {255, 0, 0, 128}
   """
-  @spec from_hex(String.t()) :: {integer(), integer(), integer()} | {integer(), integer(), integer(), integer()}
+  @spec from_hex(String.t()) ::
+          {integer(), integer(), integer()}
+          | {integer(), integer(), integer(), integer()}
   def from_hex(hex_string) when is_binary(hex_string) do
     hex_string = String.trim_leading(hex_string, "#")
 
@@ -70,22 +76,69 @@ defmodule Raxol.Style.Colors.Formats do
   def ansi_to_rgb(code) when code in 0..255 do
     case code do
       # Basic 16 colors
-      0 -> {0, 0, 0}        # Black
-      1 -> {205, 0, 0}      # Red
-      2 -> {0, 205, 0}      # Green
-      3 -> {205, 205, 0}    # Yellow
-      4 -> {0, 0, 238}      # Blue
-      5 -> {205, 0, 205}    # Magenta
-      6 -> {0, 205, 205}    # Cyan
-      7 -> {229, 229, 229}  # White
-      8 -> {127, 127, 127}  # Bright Black
-      9 -> {255, 0, 0}      # Bright Red
-      10 -> {0, 255, 0}     # Bright Green
-      11 -> {255, 255, 0}   # Bright Yellow
-      12 -> {92, 92, 255}   # Bright Blue
-      13 -> {255, 0, 255}   # Bright Magenta
-      14 -> {0, 255, 255}   # Bright Cyan
-      15 -> {255, 255, 255} # Bright White
+      # Black
+      0 ->
+        {0, 0, 0}
+
+      # Red
+      1 ->
+        {205, 0, 0}
+
+      # Green
+      2 ->
+        {0, 205, 0}
+
+      # Yellow
+      3 ->
+        {205, 205, 0}
+
+      # Blue
+      4 ->
+        {0, 0, 238}
+
+      # Magenta
+      5 ->
+        {205, 0, 205}
+
+      # Cyan
+      6 ->
+        {0, 205, 205}
+
+      # White
+      7 ->
+        {229, 229, 229}
+
+      # Bright Black
+      8 ->
+        {127, 127, 127}
+
+      # Bright Red
+      9 ->
+        {255, 0, 0}
+
+      # Bright Green
+      10 ->
+        {0, 255, 0}
+
+      # Bright Yellow
+      11 ->
+        {255, 255, 0}
+
+      # Bright Blue
+      12 ->
+        {92, 92, 255}
+
+      # Bright Magenta
+      13 ->
+        {255, 0, 255}
+
+      # Bright Cyan
+      14 ->
+        {0, 255, 255}
+
+      # Bright White
+      15 ->
+        {255, 255, 255}
 
       # 216 colors (6x6x6 cube)
       n when n in 16..231 ->
@@ -128,7 +181,9 @@ defmodule Raxol.Style.Colors.Formats do
   end
 
   defp parse_rgba_hex(hex) do
-    <<r::binary-size(2), g::binary-size(2), b::binary-size(2), a::binary-size(2)>> = hex
+    <<r::binary-size(2), g::binary-size(2), b::binary-size(2),
+      a::binary-size(2)>> = hex
+
     {r, ""} = Integer.parse(r, 16)
     {g, ""} = Integer.parse(g, 16)
     {b, ""} = Integer.parse(b, 16)

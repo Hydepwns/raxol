@@ -24,14 +24,16 @@ defmodule Raxol.Plugins.Manager.State do
           new_plugin_state = update_fun.(plugin)
           # Basic validation: ensure it's still the same struct type
           if is_struct(new_plugin_state, plugin.__struct__) do
-            updated_manager = Core.update_plugins(
-              manager,
-              Map.put(manager.plugins, name, new_plugin_state)
-            )
+            updated_manager =
+              Core.update_plugins(
+                manager,
+                Map.put(manager.plugins, name, new_plugin_state)
+              )
 
             {:ok, updated_manager}
           else
-            {:error, "Update function returned invalid state for plugin #{name}"}
+            {:error,
+             "Update function returned invalid state for plugin #{name}"}
           end
         rescue
           e -> {:error, "Error updating plugin #{name}: #{inspect(e)}"}

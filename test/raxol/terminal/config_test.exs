@@ -70,6 +70,7 @@ defmodule Raxol.Terminal.ConfigTest do
 
     test "schema/0 includes all required fields" do
       schema = Schema.schema()
+
       required_fields = [
         :terminal_type,
         :color_mode,

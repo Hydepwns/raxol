@@ -10,14 +10,15 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
   Renders a tutorial's content.
   """
   def render_tutorial(%Tutorial{} = tutorial) do
-    content = [
-      render_title(tutorial),
-      render_description(tutorial),
-      render_metadata(tutorial),
-      render_steps(tutorial)
-    ]
-    |> Enum.reject(&is_nil/1)
-    |> Enum.join("\n\n")
+    content =
+      [
+        render_title(tutorial),
+        render_description(tutorial),
+        render_metadata(tutorial),
+        render_steps(tutorial)
+      ]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join("\n\n")
 
     {:ok, content}
   end
@@ -26,15 +27,16 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
   Renders a single step's content.
   """
   def render_step(%Step{} = step) do
-    content = [
-      render_step_title(step),
-      render_step_content(step),
-      render_example_code(step),
-      render_exercise(step),
-      render_hints(step)
-    ]
-    |> Enum.reject(&is_nil/1)
-    |> Enum.join("\n\n")
+    content =
+      [
+        render_step_title(step),
+        render_step_content(step),
+        render_example_code(step),
+        render_exercise(step),
+        render_hints(step)
+      ]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join("\n\n")
 
     {:ok, content}
   end
@@ -43,9 +45,10 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
   Renders interactive elements for a step.
   """
   def render_interactive_elements(%Step{} = step) do
-    elements = step.interactive_elements
-    |> Enum.map(&render_interactive_element/1)
-    |> Enum.reject(&is_nil/1)
+    elements =
+      step.interactive_elements
+      |> Enum.map(&render_interactive_element/1)
+      |> Enum.reject(&is_nil/1)
 
     {:ok, elements}
   end
@@ -61,14 +64,15 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
   end
 
   defp render_metadata(%Tutorial{} = tutorial) do
-    metadata = [
-      render_difficulty(tutorial),
-      render_estimated_time(tutorial),
-      render_prerequisites(tutorial),
-      render_tags(tutorial)
-    ]
-    |> Enum.reject(&is_nil/1)
-    |> Enum.join("\n")
+    metadata =
+      [
+        render_difficulty(tutorial),
+        render_estimated_time(tutorial),
+        render_prerequisites(tutorial),
+        render_tags(tutorial)
+      ]
+      |> Enum.reject(&is_nil/1)
+      |> Enum.join("\n")
 
     if metadata != "", do: "## Metadata\n#{metadata}", else: nil
   end
@@ -77,18 +81,22 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
     "**Difficulty:** #{String.capitalize(to_string(difficulty))}"
   end
 
-  defp render_estimated_time(%Tutorial{estimated_time: time}) when is_integer(time) do
+  defp render_estimated_time(%Tutorial{estimated_time: time})
+       when is_integer(time) do
     "**Estimated Time:** #{time} minutes"
   end
+
   defp render_estimated_time(_), do: nil
 
   defp render_prerequisites(%Tutorial{prerequisites: []}), do: nil
+
   defp render_prerequisites(%Tutorial{prerequisites: prereqs}) do
     "**Prerequisites:**\n" <>
-    Enum.map_join(prereqs, "\n", &"* #{&1}")
+      Enum.map_join(prereqs, "\n", &"* #{&1}")
   end
 
   defp render_tags(%Tutorial{tags: []}), do: nil
+
   defp render_tags(%Tutorial{tags: tags}) do
     "**Tags:** " <> Enum.join(tags, ", ")
   end
@@ -108,19 +116,22 @@ defmodule Raxol.Docs.InteractiveTutorial.Renderer do
   end
 
   defp render_example_code(%Step{example_code: nil}), do: nil
+
   defp render_example_code(%Step{example_code: code}) do
     "### Example Code\n```elixir\n#{code}\n```"
   end
 
   defp render_exercise(%Step{exercise: nil}), do: nil
+
   defp render_exercise(%Step{exercise: exercise}) do
     "### Exercise\n#{exercise.description}"
   end
 
   defp render_hints(%Step{hints: []}), do: nil
+
   defp render_hints(%Step{hints: hints}) do
-    "### Hints\n" <>
-    Enum.with_index(hints, 1)
+    ("### Hints\n" <>
+       Enum.with_index(hints, 1))
     |> Enum.map_join("\n", fn {hint, index} -> "#{index}. #{hint}" end)
   end
 

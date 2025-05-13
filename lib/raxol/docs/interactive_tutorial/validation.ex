@@ -20,7 +20,8 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   @doc """
   Validates a user's solution for an exercise with custom validation function.
   """
-  def validate_solution(%Step{} = step, solution, validation_fn) when is_function(validation_fn, 1) do
+  def validate_solution(%Step{} = step, solution, validation_fn)
+      when is_function(validation_fn, 1) do
     case step.exercise do
       nil -> {:error, "No exercise defined for this step"}
       exercise -> validation_fn.(solution)
@@ -30,7 +31,8 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
   @doc """
   Checks if a solution matches the expected output.
   """
-  def validate_output(solution, expected_output) when is_binary(solution) and is_binary(expected_output) do
+  def validate_output(solution, expected_output)
+      when is_binary(solution) and is_binary(expected_output) do
     solution = String.trim(solution)
     expected = String.trim(expected_output)
 
@@ -64,6 +66,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
     rescue
       e in RuntimeError ->
         {:error, "Runtime error: #{e.message}"}
+
       e in CompileError ->
         {:error, "Compilation error: #{e.description}"}
     end
@@ -75,33 +78,51 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
     with {:ok, _} <- validate_syntax(solution),
          {:ok, result} <- validate_execution(solution) do
       case exercise.validation do
-        nil -> {:ok, "Code executed successfully"}
-        validation_fn when is_function(validation_fn, 1) -> validation_fn.(result)
-        expected when is_binary(expected) -> validate_output(to_string(result), expected)
-        _ -> {:error, "Invalid validation configuration"}
+        nil ->
+          {:ok, "Code executed successfully"}
+
+        validation_fn when is_function(validation_fn, 1) ->
+          validation_fn.(result)
+
+        expected when is_binary(expected) ->
+          validate_output(to_string(result), expected)
+
+        _ ->
+          {:error, "Invalid validation configuration"}
       end
     end
   end
 
   defp do_validate(%{type: :text} = exercise, solution) do
     case exercise.validation do
-      nil -> {:ok, "Text submitted successfully"}
-      validation_fn when is_function(validation_fn, 1) -> validation_fn.(solution)
-      expected when is_binary(expected) -> validate_output(solution, expected)
-      _ -> {:error, "Invalid validation configuration"}
+      nil ->
+        {:ok, "Text submitted successfully"}
+
+      validation_fn when is_function(validation_fn, 1) ->
+        validation_fn.(solution)
+
+      expected when is_binary(expected) ->
+        validate_output(solution, expected)
+
+      _ ->
+        {:error, "Invalid validation configuration"}
     end
   end
 
   defp do_validate(%{type: :multiple_choice} = exercise, solution) do
     case exercise.validation do
-      nil -> {:error, "No validation configured for multiple choice"}
+      nil ->
+        {:error, "No validation configured for multiple choice"}
+
       correct_answer when is_binary(correct_answer) ->
         if solution == correct_answer do
           {:ok, "Correct answer selected"}
         else
           {:error, "Incorrect answer selected"}
         end
-      _ -> {:error, "Invalid validation configuration"}
+
+      _ ->
+        {:error, "Invalid validation configuration"}
     end
   end
 

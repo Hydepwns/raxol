@@ -25,12 +25,17 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
     # Apply filters in load order
     Enum.reduce_while(enabled_plugins, event, fn plugin_id, current_event ->
       case apply_plugin_filter(plugin_id, current_event, plugin_manager_state) do
-        {:ok, modified_event} -> {:cont, modified_event}
-        :halt -> {:halt, :halt}
+        {:ok, modified_event} ->
+          {:cont, modified_event}
+
+        :halt ->
+          {:halt, :halt}
+
         {:error, reason} ->
           Logger.warning(
             "[#{__MODULE__}] Plugin #{plugin_id} filter error: #{inspect(reason)}"
           )
+
           {:cont, current_event}
       end
     end)
@@ -59,7 +64,10 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
         try do
           # Call the plugin's filter_event callback if it exists
           if function_exported?(plugin_module, :filter_event, 2) do
-            plugin_module.filter_event(event, Map.get(state.plugin_states, plugin_id))
+            plugin_module.filter_event(
+              event,
+              Map.get(state.plugin_states, plugin_id)
+            )
           else
             # Plugin doesn't implement filtering, pass event through unchanged
             {:ok, event}
@@ -69,6 +77,7 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
             Logger.error(
               "[#{__MODULE__}] Plugin #{plugin_id} filter crashed: #{inspect(e)}"
             )
+
             {:error, :filter_crashed}
         end
     end

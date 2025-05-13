@@ -26,7 +26,6 @@ defmodule Raxol.UI.Components.Input.SelectList do
   @type options :: [option()]
   @type props :: %{
           optional(:id) => String.t(),
-          # Made options mandatory in props
           :options => options(),
           optional(:label) => String.t(),
           optional(:on_select) => (any() -> any()),
@@ -34,6 +33,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
           optional(:on_change) => (any() -> any()) | nil,
           optional(:on_focus) => (integer() -> any()) | nil,
           optional(:theme) => map(),
+          optional(:style) => map(),
           optional(:max_height) => integer() | nil,
           optional(:enable_search) => boolean(),
           optional(:multiple) => boolean(),
@@ -45,7 +45,6 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   # Enhanced state includes props and more comprehensive internal state
   @type state :: %{
-          # Props merged into state
           :id => String.t() | nil,
           :options => options(),
           :label => String.t() | nil,
@@ -54,6 +53,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
           :on_change => (any() -> any()) | nil,
           :on_focus => (integer() -> any()) | nil,
           :theme => map() | nil,
+          :style => map() | nil,
           :max_height => integer() | nil,
           :enable_search => boolean(),
           :multiple => boolean(),
@@ -61,8 +61,6 @@ defmodule Raxol.UI.Components.Input.SelectList do
           :placeholder => String.t(),
           :empty_message => String.t(),
           :show_pagination => boolean(),
-
-          # Internal state
           :focused_index => integer(),
           :scroll_offset => integer(),
           :search_text => String.t(),
@@ -105,7 +103,9 @@ defmodule Raxol.UI.Components.Input.SelectList do
       visible_height: nil,
       last_key_time: nil,
       search_buffer: "",
-      search_timer: nil
+      search_timer: nil,
+      theme: %{},
+      style: %{}
     }
 
     # Merge validated props with default internal state
@@ -161,7 +161,10 @@ defmodule Raxol.UI.Components.Input.SelectList do
   end
 
   def update({:apply_search, search_text}, state) do
-    Search.update_search_state(%{state | search_text: search_text, search_timer: nil}, search_text)
+    Search.update_search_state(
+      %{state | search_text: search_text, search_timer: nil},
+      search_text
+    )
   end
 
   def update({:select_option, index}, state) do
@@ -190,7 +193,13 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
       # If focusing search, clear any existing search
       if new_state.is_search_focused do
-        %{new_state | search_text: "", search_buffer: "", filtered_options: nil, is_filtering: false}
+        %{
+          new_state
+          | search_text: "",
+            search_buffer: "",
+            filtered_options: nil,
+            is_filtering: false
+        }
       else
         new_state
       end
@@ -214,20 +223,28 @@ defmodule Raxol.UI.Components.Input.SelectList do
     case event do
       {:key, :up} ->
         handle_key_up(state)
+
       {:key, :down} ->
         handle_key_down(state)
+
       {:key, :enter} ->
         handle_enter(state)
+
       {:key, :backspace} ->
         handle_backspace(state)
+
       {:mouse, :click, _x, y} ->
         handle_mouse_click(y, state)
+
       {:focus, :gain} ->
         handle_focus_gain(state)
+
       {:focus, :lose} ->
         handle_focus_lose(state)
+
       {:resize, _width, _height} ->
         handle_resize(state)
+
       _ ->
         state
     end
@@ -237,6 +254,12 @@ defmodule Raxol.UI.Components.Input.SelectList do
   def render(state) do
     Renderer.render(state)
   end
+
+  @impl true
+  def mount(state), do: state
+
+  @impl true
+  def unmount(state), do: state
 
   # --- Private Helper Functions ---
 
@@ -256,6 +279,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
       end
 
       {label, _value} = option
+
       unless is_binary(label) do
         raise ArgumentError, "SelectList option labels must be strings"
       end
@@ -273,6 +297,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   defp handle_key_down(state) do
     options = state.filtered_options || state.options
+
     if state.focused_index < length(options) - 1 do
       new_index = state.focused_index + 1
       Navigation.update_focus_state(state, new_index)
@@ -320,6 +345,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
     # and update focus/selection accordingly
     if state.visible_height do
       index = Navigation.calculate_clicked_index(y, state)
+
       if index >= 0 and index < length(state.options) do
         Selection.update_selection_state(state, index)
       else

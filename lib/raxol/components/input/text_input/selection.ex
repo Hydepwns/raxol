@@ -31,20 +31,34 @@ defmodule Raxol.Components.Input.TextInput.Selection do
   """
   def select_text(state, offset) do
     new_cursor = max(0, min(String.length(state.value), state.cursor + offset))
+
     case state.selection do
       {start, _len} ->
         # Extend existing selection
         if new_cursor < start do
-          %{state | cursor: new_cursor, selection: {new_cursor, start - new_cursor}}
+          %{
+            state
+            | cursor: new_cursor,
+              selection: {new_cursor, start - new_cursor}
+          }
         else
           %{state | cursor: new_cursor, selection: {start, new_cursor - start}}
         end
+
       nil ->
         # Start new selection
         if new_cursor < state.cursor do
-          %{state | cursor: new_cursor, selection: {new_cursor, state.cursor - new_cursor}}
+          %{
+            state
+            | cursor: new_cursor,
+              selection: {new_cursor, state.cursor - new_cursor}
+          }
         else
-          %{state | cursor: new_cursor, selection: {state.cursor, new_cursor - state.cursor}}
+          %{
+            state
+            | cursor: new_cursor,
+              selection: {state.cursor, new_cursor - state.cursor}
+          }
         end
     end
   end
@@ -56,6 +70,7 @@ defmodule Raxol.Components.Input.TextInput.Selection do
     case state.selection do
       {start, _len} ->
         %{state | cursor: 0, selection: {0, start}}
+
       nil ->
         %{state | cursor: 0, selection: {0, state.cursor}}
     end
@@ -66,9 +81,11 @@ defmodule Raxol.Components.Input.TextInput.Selection do
   """
   def select_to_end(state) do
     len = String.length(state.value)
+
     case state.selection do
       {start, _len} ->
         %{state | cursor: len, selection: {start, len - start}}
+
       nil ->
         %{state | cursor: len, selection: {state.cursor, len - state.cursor}}
     end

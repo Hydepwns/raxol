@@ -58,8 +58,11 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
           steps: [],
           metadata: data["metadata"] || %{}
         }
+
         {:ok, tutorial}
-      _ -> {:error, "Failed to parse YAML"}
+
+      _ ->
+        {:error, "Failed to parse YAML"}
     end
   end
 
@@ -69,7 +72,8 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
   def parse_steps(markdown) do
     markdown
     |> String.split(~r/^##\s+/m)
-    |> Enum.drop(1)  # Skip the first empty split
+    # Skip the first empty split
+    |> Enum.drop(1)
     |> Enum.map(&parse_step/1)
   end
 
@@ -81,10 +85,11 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
     content = List.first(content_parts) || ""
 
     # Extract step ID from title
-    id = title
-    |> String.downcase()
-    |> String.replace(~r/[^a-z0-9]+/, "-")
-    |> String.trim("-")
+    id =
+      title
+      |> String.downcase()
+      |> String.replace(~r/[^a-z0-9]+/, "-")
+      |> String.trim("-")
 
     # Extract example code if present
     {example_code, content} = extract_example_code(content)
@@ -101,24 +106,35 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
       content: String.trim(content),
       example_code: example_code,
       exercise: exercise,
-      validation: nil,  # To be implemented
+      # To be implemented
+      validation: nil,
       hints: hints,
-      next_steps: [],  # To be determined during parsing
-      interactive_elements: []  # To be extracted from content
+      # To be determined during parsing
+      next_steps: [],
+      # To be extracted from content
+      interactive_elements: []
     }
   end
 
   defp extract_example_code(content) do
     case Regex.run(~r/```elixir\n(.*?)\n```/s, content) do
-      [_, code] -> {String.trim(code), String.replace(content, ~r/```elixir\n.*?\n```/s, "")}
-      _ -> {nil, content}
+      [_, code] ->
+        {String.trim(code),
+         String.replace(content, ~r/```elixir\n.*?\n```/s, "")}
+
+      _ ->
+        {nil, content}
     end
   end
 
   defp extract_exercise(content) do
     case Regex.run(~r/### Exercise\n(.*?)(?=###|\z)/s, content) do
-      [_, exercise] -> {parse_exercise(exercise), String.replace(content, ~r/### Exercise\n.*?(?=###|\z)/s, "")}
-      _ -> {nil, content}
+      [_, exercise] ->
+        {parse_exercise(exercise),
+         String.replace(content, ~r/### Exercise\n.*?(?=###|\z)/s, "")}
+
+      _ ->
+        {nil, content}
     end
   end
 
@@ -126,8 +142,10 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
     # Basic exercise parsing - can be expanded based on needs
     %{
       description: String.trim(exercise_content),
-      type: :code,  # Default type
-      validation: nil  # To be implemented
+      # Default type
+      type: :code,
+      # To be implemented
+      validation: nil
     }
   end
 
@@ -138,7 +156,9 @@ defmodule Raxol.Docs.InteractiveTutorial.Loader do
         |> String.split(~r/^\d+\.\s+/m)
         |> Enum.drop(1)
         |> Enum.map(&String.trim/1)
-      _ -> []
+
+      _ ->
+        []
     end
   end
 end

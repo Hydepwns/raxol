@@ -51,6 +51,7 @@ defmodule Raxol.TestAnalyzer do
           else
             acc
           end
+
         _ ->
           acc
       end

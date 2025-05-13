@@ -1,4 +1,4 @@
-defmodule Raxol.Components.Input.MultiLineInput.RenderHelperTest do
+defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
   use ExUnit.Case, async: true
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.RenderHelper
@@ -67,19 +67,12 @@ defmodule Raxol.Components.Input.MultiLineInput.RenderHelperTest do
   # Helper function to create default state
   defp create_state(opts \\ []) do
     # Start with a default state
-    state = %Raxol.Components.Input.MultiLineInput{
+    state = %Raxol.UI.Components.Input.MultiLineInput{
       value: "",
       placeholder: "",
       width: 40,
       height: 10,
-      style: %{
-        text_color: :white,
-        placeholder_color: :gray,
-        selection_color: :blue,
-        cursor_color: :white,
-        line_numbers: false,
-        line_number_color: :gray
-      },
+      theme: %{},
       wrap: :word,
       cursor_pos: {0, 0},
       scroll_offset: {0, 0},
