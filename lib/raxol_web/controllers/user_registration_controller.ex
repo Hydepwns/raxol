@@ -10,43 +10,25 @@ defmodule RaxolWeb.UserRegistrationController do
   # alias RaxolWeb.Router.Helpers, as: Routes # Removed unused alias
 
   def new(conn, _params) do
-    # TODO: Implement user changeset creation (Auth.change_user is undefined)
-    # changeset = Auth.change_user_registration(%User{}) # Placeholder
-    # Temporarily commenting out as Raxol.Accounts.change_user_registration/2 was removed
-    # changeset = Raxol.Accounts.change_user_registration(%User{}, %{}) # Assuming an Accounts context exists
-    # Placeholder
-    changeset = %{}
+    changeset = Raxol.Auth.User.registration_changeset(%Raxol.Auth.User{}, %{})
     render(conn, :new, changeset: changeset)
   end
 
   @spec create(Plug.Conn.t(), %{required(String.t()) => map()}) :: Plug.Conn.t()
   def create(conn, %{"user" => user_params}) do
-    # TODO: Implement user creation (Auth.create_user is undefined)
-    # Assuming an Accounts context exists
-    case Raxol.Accounts.register_user(user_params) do
-      # case Auth.create_user(user_params) do
+    changeset = Raxol.Auth.User.registration_changeset(%Raxol.Auth.User{}, user_params)
+
+    case Raxol.Repo.insert(changeset) do
       {:ok, user} ->
         conn
         |> UserAuth.log_in_user(user)
         |> put_flash(:info, "User created successfully.")
         |> redirect(to: "/")
 
-      {:error, reason} ->
-        # Convert reason map to a user-friendly string if possible
-        error_msg =
-          if is_map(reason) do
-            reason
-            |> Enum.map(fn {field, msg} -> "#{field} #{msg}" end)
-            |> Enum.join(", ")
-          else
-            # Generic fallback
-            "Registration failed."
-          end
-
+      {:error, changeset} ->
         conn
-        |> put_flash(:error, "Registration failed: #{error_msg}")
-        # Pass an empty map as changeset for the form
-        |> render(:new, changeset: %{})
+        |> put_flash(:error, "Registration failed.")
+        |> render(:new, changeset: changeset)
     end
   end
 end

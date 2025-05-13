@@ -37,7 +37,7 @@ defmodule Raxol.Components.Input.TextInput.Manipulation do
       new_value =
         state.value
         |> String.split_at(state.cursor_position)
-        |> then(fn {before, rest} -> before <> String.slice(rest, 1..-1//1) end)
+        |> then(fn {before, rest} -> before <> String.slice(rest, max(0, 1)..-1//1) end)
 
       %{state | value: new_value}
     else
@@ -50,7 +50,7 @@ defmodule Raxol.Components.Input.TextInput.Manipulation do
   """
   def delete_selected_text(state, start, len) do
     {before, rest} = String.split_at(state.value, start)
-    rest = String.slice(rest, len..-1)
+    rest = String.slice(rest, max(0, len)..-1)
     state = %{state | value: before <> rest, cursor: start, selection: nil}
     Validation.validate_input(state)
   end
@@ -60,7 +60,7 @@ defmodule Raxol.Components.Input.TextInput.Manipulation do
   """
   def paste_at_position(state, text, position, selection_len) do
     {before, rest} = String.split_at(state.value, position)
-    rest = String.slice(rest, selection_len..-1)
+    rest = String.slice(rest, max(0, selection_len)..-1)
     new_value = before <> text <> rest
 
     if Validation.would_exceed_max_length?(state, new_value) do

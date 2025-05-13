@@ -50,7 +50,13 @@ defmodule Raxol.UI.Theming.Theme do
   Gets a component style from the theme.
   """
   def get_component_style(%__MODULE__{} = theme, component_type) do
-    get_in(theme, [:component_styles, component_type]) || %{}
+    case get_in(theme, [:component_styles, component_type]) do
+      nil ->
+        require Logger
+        Logger.warn("Theme missing component style for #{inspect(component_type)}; returning empty map.")
+        %{}
+      style -> style
+    end
   end
 
   @doc """
@@ -171,7 +177,13 @@ defmodule Raxol.UI.Theming.Theme do
   Gets the component style for a specific component type.
   """
   def get_component_style(theme, component_type) do
-    get_in(theme, [:component_styles, component_type]) || %{}
+    case get_in(theme, [:component_styles, component_type]) do
+      nil ->
+        require Logger
+        Logger.warn("Theme missing component style for #{inspect(component_type)}; returning empty map.")
+        %{}
+      style -> style
+    end
   end
 
   def component_style(theme, component_type),

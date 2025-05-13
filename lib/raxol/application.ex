@@ -25,7 +25,7 @@ defmodule Raxol.Application do
           # Start the UserPreferences GenServer
           Raxol.Core.UserPreferences,
           # Start the Terminal Driver
-          # TODO: Pass the actual Dispatcher PID later
+          # Dispatcher PID is not available at startup; passing nil for now.
           {Raxol.Terminal.Driver, nil}
           # Add other core persistent processes here if needed (e.g., PluginManager, TerminalDriver? Check ARCHITECTURE)
         ]

@@ -164,7 +164,8 @@ defmodule Raxol.Components.Input.SingleLineInput do
   defp insert_char(char, state) do
     new_value =
       String.slice(state.value, 0, state.cursor_pos) <>
-        char <> String.slice(state.value, state.cursor_pos..-1//1)
+        char <>
+        String.slice(state.value, max(0, state.cursor_pos)..-1//1)
 
     new_cursor_pos = state.cursor_pos + 1
     new_state = %{state | value: new_value, cursor_pos: new_cursor_pos}
@@ -187,8 +188,8 @@ defmodule Raxol.Components.Input.SingleLineInput do
   defp backspace(state) do
     if state.cursor_pos > 0 do
       new_value =
-        String.slice(state.value, 0, state.cursor_pos - 1) <>
-          String.slice(state.value, state.cursor_pos..-1//1)
+        String.slice(state.value, 0, max(0, state.cursor_pos - 1)) <>
+          String.slice(state.value, max(0, state.cursor_pos)..-1//1)
 
       new_cursor_pos = state.cursor_pos - 1
       new_state = %{state | value: new_value, cursor_pos: new_cursor_pos}
@@ -206,7 +207,7 @@ defmodule Raxol.Components.Input.SingleLineInput do
     if state.cursor_pos < String.length(state.value) do
       new_value =
         String.slice(state.value, 0, state.cursor_pos) <>
-          String.slice(state.value, (state.cursor_pos + 1)..-1//1)
+          String.slice(state.value, max(0, state.cursor_pos + 1)..-1//1)
 
       new_state = %{state | value: new_value}
 

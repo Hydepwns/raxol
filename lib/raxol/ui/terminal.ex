@@ -286,7 +286,7 @@ defmodule Raxol.UI.Terminal do
     end
 
     # Print content
-    # content_padding = div(width - 2 - content_width, 2) # Comment out unused variable calculation
+    # _content_padding = div(width - 2 - content_width, 2) # Comment out unused variable calculation
 
     Enum.each(lines, fn line ->
       line_str = "│ " <> String.pad_trailing(line, width - 4) <> " │"

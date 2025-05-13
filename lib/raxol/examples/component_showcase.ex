@@ -396,7 +396,7 @@ defmodule Raxol.Examples.ComponentShowcase do
 
   @impl Raxol.UI.Components.Base.Component
   def update(message, state) do
-    # TODO: Implement message handling if needed for this component
+    # NOTE: Implement message handling for this component if needed in the future.
     Logger.warning(
       "Unhandled update message in ComponentShowcase: #{inspect(message)}"
     )

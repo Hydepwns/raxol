@@ -35,11 +35,21 @@ defmodule RaxolWeb.SettingsLive do
   end
 
   @impl true
-  def handle_event("update_profile", %{"user" => _user_params}, socket) do
-    # TODO: Implement profile update using Accounts context (requires Accounts.update_user, Accounts.change_user)
-    # user = socket.assigns.current_user
-    # ... logic ...
-    {:noreply, put_flash(socket, :error, "Profile update not implemented yet.")}
+  def handle_event("update_profile", %{"user" => user_params}, socket) do
+    user = socket.assigns.current_user
+    changeset = Raxol.Auth.User.changeset(user, user_params)
+
+    case Raxol.Repo.update(changeset) do
+      {:ok, updated_user} ->
+        {:noreply,
+         socket
+         |> assign(:current_user, updated_user)
+         |> put_flash(:info, "Profile updated successfully.")
+         |> assign(:changeset, changeset)}
+
+      {:error, changeset} ->
+        {:noreply, assign(socket, changeset: changeset)}
+    end
   end
 
   @impl true
@@ -94,24 +104,23 @@ defmodule RaxolWeb.SettingsLive do
   end
 
   @impl true
-  def handle_event("validate", %{"user" => _user_params}, socket) do
-    # TODO: Validation logic needs proper changesets from Accounts
-    # For now, just return an empty changeset map
-    changeset = %{}
+  def handle_event("validate", %{"user" => user_params}, socket) do
+    user = socket.assigns.current_user
+    changeset = Raxol.Auth.User.changeset(user, user_params)
     {:noreply, assign(socket, changeset: changeset)}
   end
 
-  # defp assign_user_and_token(socket, token) do
-  #   case Accounts.get_user_by_session_token(token) do
-  #     nil ->
-  #       socket
-  #       |> put_flash(:error, "Invalid session token. Please log in again.")
-  #       |> redirect(to: Routes.user_session_path(socket, :new))
+  defp assign_user_and_token(socket, token) do
+    case Accounts.get_user_by_session_token(token) do
+      nil ->
+        socket
+        |> put_flash(:error, "Invalid session token. Please log in again.")
+        |> redirect(to: Routes.user_session_path(socket, :new))
 
-  #     user ->
-  #       socket
-  #       |> assign(:current_user, user)
-  #       |> assign(:token, token)
-  #   end
-  # end
+      user ->
+        socket
+        |> assign(:current_user, user)
+        |> assign(:token, token)
+    end
+  end
 end

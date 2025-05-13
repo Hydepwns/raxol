@@ -468,6 +468,37 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
   end
 
+  # --- Stubs for missing Plugin Manager functions ---
+  @doc "Stub: process_output/2 not yet implemented."
+  def process_output(_manager, _output) do
+    Logger.warning("[Plugins.Manager] process_output/2 not implemented.")
+    {:error, :not_implemented}
+  end
+
+  @doc "Stub: process_mouse/3 not yet implemented."
+  def process_mouse(_manager, _event, _emulator_state) do
+    Logger.warning("[Plugins.Manager] process_mouse/3 not implemented.")
+    {:error, :not_implemented}
+  end
+
+  @doc "Stub: process_placeholder/4 not yet implemented."
+  def process_placeholder(_manager, _arg1, _arg2, _arg3) do
+    Logger.warning("[Plugins.Manager] process_placeholder/4 not implemented.")
+    {:error, :not_implemented}
+  end
+
+  @doc "Stub: process_input/2 not yet implemented."
+  def process_input(_manager, _input) do
+    Logger.warning("[Plugins.Manager] process_input/2 not implemented.")
+    {:error, :not_implemented}
+  end
+
+  @doc "Stub: execute_command/4 not yet implemented."
+  def execute_command(_manager, _command, _arg1, _arg2) do
+    Logger.warning("[Plugins.Manager] execute_command/4 not implemented.")
+    {:error, :not_implemented}
+  end
+
   # --- Termination ---
   @impl true
   def terminate(reason, state) do

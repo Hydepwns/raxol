@@ -27,7 +27,7 @@ defmodule RaxolWeb.UserAuth do
   if you are not using LiveView.
   """
   def log_in_user(conn, user, _params \\ %{}) do
-    # TODO: This pattern match needs adjustment when Auth.create_user_session is fully implemented
+    # NOTE: This pattern match is a placeholder. Adjust when Auth.create_user_session is fully implemented.
     case Raxol.Auth.create_user_session(user.id, user.role) do
       # Temporary handling for the placeholder :ok return
       :ok ->

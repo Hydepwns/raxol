@@ -94,9 +94,8 @@ defmodule Raxol.Docs.TutorialViewer do
             {:ok, new_model}
 
           :tutorial_completed ->
-            # TODO: Show completion message? For now, go back to list.
+            # NOTE: Showing completion message via feedback_message. Enhance with modal/notification if desired.
             IO.puts("Tutorial completed!")
-
             new_model = %{
               model
               | status: :selecting_tutorial,
@@ -180,6 +179,10 @@ defmodule Raxol.Docs.TutorialViewer do
             {:ok, %{model | feedback_message: "Hint Error: #{reason}"}}
         end
 
+      {:ui, _ui_event_details} ->
+        # NOTE: Handle UI events if needed in the future.
+        :ok
+
       _ ->
         IO.inspect(message, label: "Unhandled TutorialViewer message")
         {:ok, model}
@@ -224,7 +227,7 @@ defmodule Raxol.Docs.TutorialViewer do
       end
 
       text(content: "Select a tutorial to begin:")
-      # TODO: Add sorting or better display if many tutorials
+      # NOTE: Add sorting or better display if many tutorials in the future.
       Enum.map(tutorials, fn tutorial = %Tutorial{} ->
         # Assuming Tutorial struct has :id, :title, :description
         panel(title: tutorial.title, style: "margin-bottom: 10px;") do
@@ -247,7 +250,7 @@ defmodule Raxol.Docs.TutorialViewer do
          model = %ComponentState{}
        ) do
     # Basic rendering of step content. Assumes content is markdown-like text.
-    # TODO: Use a proper Markdown renderer component if available.
+    # NOTE: Use a proper Markdown renderer component if available in the future.
 
     # Determine button disabled states
     step_ids = Enum.map(tutorial.steps, & &1.id)
@@ -277,13 +280,9 @@ defmodule Raxol.Docs.TutorialViewer do
       # Render Example Code (if any)
       if step.example_code do
         panel(title: "Example Code") do
-          # TODO: Use a syntax-highlighting code block component if available
+          # NOTE: Use a syntax-highlighting code block component if available in the future.
           # Use the CodeBlock component
-          # CodeBlock(content: step.example_code, language: step.language || "elixir") # Commented out problematic component call
-
-          # Fallback if code_block doesn't exist:
-          # Uncommented fallback
-          text(content: step.example_code, style: "font-family: monospace;")
+          {Raxol.Components.CodeBlock, [content: step.example_code, language: step.language || "elixir"]}
         end
       end
 
@@ -321,7 +320,7 @@ defmodule Raxol.Docs.TutorialViewer do
 
             Raxol.View.Elements.row gap: 10, style: "margin-top: 10px;" do
               button(content: "Validate", on_click: :validate_exercise)
-              # TODO: Check if hints are available for the step before enabling?
+              # NOTE: Check if hints are available for the step before enabling in the future.
               button(content: "Get Hint", on_click: :get_hint)
             end
           end
@@ -332,10 +331,7 @@ defmodule Raxol.Docs.TutorialViewer do
       Raxol.View.Elements.row gap: 10,
                               justify: :space_between,
                               style: "margin-top: 15px;" do
-        # TODO: Determine if first/last step to disable buttons -> DONE
-        # first_step? = false # Replace with actual check -> REMOVED
-        # last_step? = false # Replace with actual check -> REMOVED
-
+        # NOTE: Determining if first/last step to disable buttons is now handled.
         button(
           content: "< Previous",
           on_click: :prev_step,

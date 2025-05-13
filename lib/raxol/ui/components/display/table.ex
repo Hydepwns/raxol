@@ -391,10 +391,13 @@ defmodule Raxol.UI.Components.Display.Table do
 
   # Helper to get theme style for either Theme type
   defp get_theme_style(theme, component_type) do
-    if is_map(theme) && Map.has_key?(theme, :component_styles) do
-      Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
-    else
-      %{}
+    cond do
+      is_struct(theme, Raxol.UI.Theming.Theme) ->
+        Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
+      is_map(theme) and Map.has_key?(theme, :component_styles) ->
+        Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
+      true ->
+        %{}
     end
   end
 

@@ -177,17 +177,17 @@ defmodule Raxol.AI.ContentGeneration do
   end
 
   defp do_suggest_text(input, _options) do
-    # TODO: Implement text suggestion logic
+    # Placeholder: Text suggestion logic not yet implemented. Integrate with AI service here in the future.
     {:ok, "Suggested text for: #{input}"}
   end
 
   defp do_generate_help(context, _options) do
-    # TODO: Implement help generation logic
+    # Placeholder: Help generation logic not yet implemented. Integrate with AI service here in the future.
     {:ok, "Help content for: #{context}"}
   end
 
   defp do_generate_tutorial(feature, _options) do
-    # TODO: Implement tutorial generation logic
+    # Placeholder: Tutorial generation logic not yet implemented. Integrate with AI service here in the future.
     {:ok, "Tutorial for: #{feature}"}
   end
 

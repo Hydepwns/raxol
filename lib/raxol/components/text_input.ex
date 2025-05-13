@@ -168,7 +168,13 @@ defmodule Raxol.Components.TextInput do
       {before_cursor, after_cursor} =
         String.split_at(input.value, input.cursor_pos)
 
-      {_, before_cursor} = String.split_at(before_cursor, -1)
+      before_cursor =
+        if String.length(before_cursor) > 0 do
+          {_, bc} = String.split_at(before_cursor, -1)
+          bc
+        else
+          before_cursor
+        end
       new_value = before_cursor <> after_cursor
       new_cursor_pos = input.cursor_pos - 1
 

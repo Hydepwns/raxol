@@ -70,8 +70,7 @@ defmodule Raxol.Cloud.Core do
     record_metric("cloud.stop", 1, tags: ["service:all"])
 
     # Stop edge computing
-    # TODO: Raxol.Cloud.EdgeComputing.cleanup/0 is undefined.
-    # Determine if cleanup is needed and implement/call appropriately.
+    # NOTE: EdgeComputing.cleanup/0 is undefined. Implement or call if cleanup is needed in the future.
     # EdgeComputing.cleanup()
 
     # Stop monitoring (last, so we can record the stop event)
