@@ -27,7 +27,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
     Mox.verify_on_exit!()
 
     # Create a unique ETS table name for each test
-    table_name = :"command_registry_#{:rand.uniform(1000000)}"
+    table_name = :"command_registry_#{:rand.uniform(1_000_000)}"
     :ets.new(table_name, [:set, :public, :named_table, read_concurrency: true])
 
     # Store the table name in the test context
@@ -35,7 +35,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
   end
 
   describe "plugin loading errors" do
-    test "handles plugin init failure gracefully", %{command_registry_table: table} do
+    test "handles plugin init failure gracefully", %{
+      command_registry_table: table
+    } do
       with_running_manager([command_registry_table: table], fn manager_pid ->
         # Setup: Plugin init will fail
         Mox.expect(EdgeCasesLifecycleHelperMock, :init_plugin, fn
@@ -53,7 +55,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       end)
     end
 
-    test "handles plugin module loading errors", %{command_registry_table: table} do
+    test "handles plugin module loading errors", %{
+      command_registry_table: table
+    } do
       with_running_manager([command_registry_table: table], fn manager_pid ->
         # Setup: Loader will fail to load the module using Mox
         Mox.expect(Loader, :load_plugin_module, fn
@@ -71,7 +75,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       end)
     end
 
-    test "handles dependency resolution failures", %{command_registry_table: table} do
+    test "handles dependency resolution failures", %{
+      command_registry_table: table
+    } do
       with_running_manager([command_registry_table: table], fn manager_pid ->
         # Setup: LifecycleHelper will check dependencies
         Mox.expect(EdgeCasesLifecycleHelperMock, :check_dependencies, fn
@@ -83,12 +89,14 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           _plugin_id,
           %{dependencies: [{"version_mismatch", ">= 2.0.0"}]},
           _available_plugins ->
-            {:error, :version_mismatch, [{"version_mismatch", "1.0.0", ">= 2.0.0"}], ["my_plugin"]}
+            {:error, :version_mismatch,
+             [{"version_mismatch", "1.0.0", ">= 2.0.0"}], ["my_plugin"]}
 
           _plugin_id,
           %{dependencies: [{"circular_dependency", ">= 1.0.0"}]},
           _available_plugins ->
-            {:error, :circular_dependency, ["circular_dependency", "my_plugin"], ["my_plugin", "circular_dependency"]}
+            {:error, :circular_dependency, ["circular_dependency", "my_plugin"],
+             ["my_plugin", "circular_dependency"]}
 
           # Default case
           _plugin_id, _metadata, _available_plugins ->
@@ -100,7 +108,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           manager_pid,
           PluginTestFixtures.DependentPlugin,
           %{},
-          {:error, {:dependency_check_failed, {:missing_dependencies, ["missing_plugin"], ["my_plugin"]}}}
+          {:error,
+           {:dependency_check_failed,
+            {:missing_dependencies, ["missing_plugin"], ["my_plugin"]}}}
         )
 
         # Test version mismatch
@@ -108,7 +118,10 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           manager_pid,
           PluginTestFixtures.VersionMismatchPlugin,
           %{},
-          {:error, {:dependency_check_failed, {:version_mismatch, [{"version_mismatch", "1.0.0", ">= 2.0.0"}], ["my_plugin"]}}}
+          {:error,
+           {:dependency_check_failed,
+            {:version_mismatch, [{"version_mismatch", "1.0.0", ">= 2.0.0"}],
+             ["my_plugin"]}}}
         )
 
         # Test circular dependency
@@ -116,25 +129,23 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           manager_pid,
           PluginTestFixtures.CircularDependencyPlugin,
           %{},
-          {:error, {:dependency_check_failed, {:circular_dependency, ["circular_dependency", "my_plugin"], ["my_plugin", "circular_dependency"]}}}
+          {:error,
+           {:dependency_check_failed,
+            {:circular_dependency, ["circular_dependency", "my_plugin"],
+             ["my_plugin", "circular_dependency"]}}}
         )
       end)
     end
 
-    test "handles plugin init timeout (simulated via mock)", %{command_registry_table: table} do
+    test "handles plugin init timeout (simulated via mock)", %{
+      command_registry_table: table
+    } do
       with_running_manager([command_registry_table: table], fn manager_pid ->
-        # Configure EdgeCasesLifecycleHelperMock to simulate a hanging init_plugin
-        Mox.stub_with(EdgeCasesLifecycleHelperMock, %{
-          init_plugin: fn _module, _opts ->
-            # Use a timer to simulate a timeout that matches the actual timeout in the code
-            Process.send_after(self(), :timeout_simulated, 6000)
-            receive do
-              :timeout_simulated -> {:error, :timeout_simulated}
-            end
-          end,
-          check_dependencies: fn _, _, _ -> {:ok, []} end,
-          terminate_plugin: fn _, _, _ -> :ok end
-        })
+        # Use the stub module instead of a map
+        Mox.stub_with(
+          EdgeCasesLifecycleHelperMock,
+          EdgeCasesLifecycleHelperTimeoutStub
+        )
 
         assert_plugin_load_fails(
           manager_pid,
@@ -145,7 +156,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       end)
     end
 
-    test "handles plugin command execution errors (BadReturnPlugin)", %{command_registry_table: table} do
+    test "handles plugin command execution errors (BadReturnPlugin)", %{
+      command_registry_table: table
+    } do
       with_running_manager([command_registry_table: table], fn manager_pid ->
         # Load BadReturnPlugin using the setup_plugin helper
         assert {:ok, _loaded_state} =
@@ -164,7 +177,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           ["test_arg"],
           [
             {:error, {:unexpected_plugin_return, :unexpected_return}},
-            {:error, {:command_error, :bad_return_plugin, :bad_return_cmd, :unexpected_return}},
+            {:error,
+             {:command_error, :bad_return_plugin, :bad_return_cmd,
+              :unexpected_return}},
             {:error, :command_failed}
           ]
         )
@@ -177,7 +192,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           ["test_input"],
           [
             {:error, {:unexpected_plugin_return, :not_ok}},
-            {:error, {:command_error, :bad_return_plugin, :handle_input, :not_ok}},
+            {:error,
+             {:command_error, :bad_return_plugin, :handle_input, :not_ok}},
             {:error, :command_failed}
           ]
         )
@@ -190,7 +206,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           ["test_output"],
           [
             {:error, {:unexpected_plugin_return, [:not, :a, :tuple]}},
-            {:error, {:command_error, :bad_return_plugin, :handle_output, [:not, :a, :tuple]}},
+            {:error,
+             {:command_error, :bad_return_plugin, :handle_output,
+              [:not, :a, :tuple]}},
             {:error, :command_failed}
           ]
         )
@@ -214,7 +232,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           :non_existent_cmd,
           ["test_arg"],
           [
-            {:error, {:command_error, :test_plugin, :non_existent_cmd, :not_found}},
+            {:error,
+             {:command_error, :test_plugin, :non_existent_cmd, :not_found}},
             {:error, {:command_not_found, :test_plugin, :non_existent_cmd}},
             {:error, :command_not_found}
           ]
@@ -227,21 +246,29 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
         # Setup: Loader will return invalid metadata
         Mox.expect(Loader, :load_plugin_metadata, fn
           PluginTestFixtures.InvalidMetadataPlugin ->
-            {:ok, %{
-              id: nil,  # Invalid: missing required field
-              version: "not_a_semver",  # Invalid: not a valid semver
-              dependencies: [
-                {:invalid_dependency, "invalid_version"},  # Invalid: wrong format
-                {:missing_required_field, nil},  # Invalid: missing required field
-                {:invalid_type, 123}  # Invalid: wrong type
-              ],
-              # Missing required fields
-              name: nil,
-              description: nil,
-              author: nil
-            }}
+            {:ok,
+             %{
+               # Invalid: missing required field
+               id: nil,
+               # Invalid: not a valid semver
+               version: "not_a_semver",
+               dependencies: [
+                 # Invalid: wrong format
+                 {:invalid_dependency, "invalid_version"},
+                 # Invalid: missing required field
+                 {:missing_required_field, nil},
+                 # Invalid: wrong type
+                 {:invalid_type, 123}
+               ],
+               # Missing required fields
+               name: nil,
+               description: nil,
+               author: nil
+             }}
+
           # Default case
-          _ -> {:ok, %{id: :test, version: "1.0.0", dependencies: []}}
+          _ ->
+            {:ok, %{id: :test, version: "1.0.0", dependencies: []}}
         end)
 
         # Test loading with invalid metadata
@@ -249,22 +276,27 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
           manager_pid,
           PluginTestFixtures.InvalidMetadataPlugin,
           %{},
-          {:error, {:invalid_metadata, [
-            :missing_required_field,
-            :invalid_version_format,
-            :invalid_dependency_format,
-            :invalid_field_type
-          ]}}
+          {:error,
+           {:invalid_metadata,
+            [
+              :missing_required_field,
+              :invalid_version_format,
+              :invalid_dependency_format,
+              :invalid_field_type
+            ]}}
         )
 
         # Verify the plugin was not loaded
-        assert {:error, :plugin_not_found} = Manager.get_plugin(:invalid_metadata_plugin)
+        assert {:error, :plugin_not_found} =
+                 Manager.get_plugin(:invalid_metadata_plugin)
       end)
     end
   end
 
   describe "plugin event handling edge cases" do
-    test "handles plugin input handler crashes", %{command_registry_table: table} do
+    test "handles plugin input handler crashes", %{
+      command_registry_table: table
+    } do
       with_running_manager([command_registry_table: table], fn manager_pid ->
         crashing_plugin_module = PluginTestFixtures.CrashingPlugin
         crashing_plugin_id = :crashing_plugin
@@ -290,7 +322,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       end)
     end
 
-    test "handles plugin output handler crashes", %{command_registry_table: table} do
+    test "handles plugin output handler crashes", %{
+      command_registry_table: table
+    } do
       with_running_manager([command_registry_table: table], fn manager_pid ->
         crashing_plugin_module = PluginTestFixtures.CrashingPlugin
         crashing_plugin_id = :crashing_plugin
@@ -318,7 +352,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       end)
     end
 
-    test "handles plugin mouse handler crashes", %{command_registry_table: table} do
+    test "handles plugin mouse handler crashes", %{
+      command_registry_table: table
+    } do
       with_running_manager([command_registry_table: table], fn manager_pid ->
         crashing_plugin_module = PluginTestFixtures.CrashingPlugin
         crashing_plugin_id = :crashing_plugin
@@ -346,7 +382,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       end)
     end
 
-    test "handles plugin placeholder handler crashes", %{command_registry_table: table} do
+    test "handles plugin placeholder handler crashes", %{
+      command_registry_table: table
+    } do
       with_running_manager([command_registry_table: table], fn manager_pid ->
         crashing_plugin_module = PluginTestFixtures.CrashingPlugin
         crashing_plugin_id = :crashing_plugin
@@ -373,7 +411,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       end)
     end
 
-    test "handles invalid return values from event handlers", %{command_registry_table: table} do
+    test "handles invalid return values from event handlers", %{
+      command_registry_table: table
+    } do
       with_running_manager([command_registry_table: table], fn manager_pid ->
         # Load the bad return plugin
         assert {:ok, _} =
@@ -397,7 +437,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
         assert_receive {:log, :warning, "Plugin " <> _}, 1000
 
         # Test mouse handler with invalid return
-        result = Manager.process_mouse(manager_pid, {:click, 10, 20, :left}, %{})
+        result =
+          Manager.process_mouse(manager_pid, {:click, 10, 20, :left}, %{})
+
         assert {:ok, _manager} = result
         assert Process.alive?(manager_pid)
         assert_receive {:log, :warning, "Plugin " <> _}, 1000
@@ -467,7 +509,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       end)
     end
 
-    test "handles reload failures gracefully when trying to reload a non-existent plugin", %{command_registry_table: table} do
+    test "handles reload failures gracefully when trying to reload a non-existent plugin",
+         %{command_registry_table: table} do
       with_running_manager([command_registry_table: table], fn manager_pid ->
         # Execute: Try to reload a non-existent plugin
         result = Manager.reload_plugin(manager_pid, :non_existent_plugin)
@@ -492,21 +535,45 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
   end
 
   describe "concurrent operations" do
-    test "handles concurrent plugin operations", %{command_registry_table: table} do
+    test "handles concurrent plugin operations", %{
+      command_registry_table: table
+    } do
       with_running_manager([command_registry_table: table], fn manager_pid ->
         # Define concurrent operations
         ops = [
           # Load plugins
-          fn -> setup_plugin(manager_pid, PluginTestFixtures.TestPlugin, :test_plugin, %{}) end,
-          fn -> setup_plugin(manager_pid, PluginTestFixtures.DependentPlugin, :dependent_plugin, %{}) end,
+          fn ->
+            setup_plugin(
+              manager_pid,
+              PluginTestFixtures.TestPlugin,
+              :test_plugin,
+              %{}
+            )
+          end,
+          fn ->
+            setup_plugin(
+              manager_pid,
+              PluginTestFixtures.DependentPlugin,
+              :dependent_plugin,
+              %{}
+            )
+          end,
           # Process events
           fn -> Manager.process_input(manager_pid, "test input") end,
           fn -> Manager.process_output(manager_pid, "test output") end,
-          fn -> Manager.process_mouse(manager_pid, {:click, 10, 20, :left}, %{}) end,
-          fn -> Manager.process_placeholder(manager_pid, "chart", "data", %{}) end,
+          fn ->
+            Manager.process_mouse(manager_pid, {:click, 10, 20, :left}, %{})
+          end,
+          fn ->
+            Manager.process_placeholder(manager_pid, "chart", "data", %{})
+          end,
           # Execute commands
-          fn -> Manager.execute_command(manager_pid, :test_plugin, :test_cmd, ["payload"]) end,
-          fn -> Manager.execute_command(manager_pid, :dependent_plugin, :dependent_cmd, ["payload"]) end
+          fn ->
+            CommandRegistry.execute_command(:test_cmd, ["payload"], table)
+          end,
+          fn ->
+            CommandRegistry.execute_command(:dependent_cmd, ["payload"], table)
+          end
         ]
 
         # Execute operations concurrently
@@ -524,11 +591,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
 
         # Verify all operations completed
         assert Enum.all?(results, fn
-          {:ok, _} -> true
-          {:ok, _, _} -> true
-          {:error, _} -> true
-          _ -> false
-        end)
+                 {:ok, _} -> true
+                 {:ok, _, _} -> true
+                 {:error, _} -> true
+                 _ -> false
+               end)
 
         # Verify manager is still alive
         assert Process.alive?(manager_pid)
@@ -537,7 +604,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
   end
 
   describe "plugin termination errors" do
-    test "handles plugin terminate failure gracefully", %{command_registry_table: table} do
+    test "handles plugin terminate failure gracefully", %{
+      command_registry_table: table
+    } do
       # Setup: Plugin terminate will fail
       Mox.expect(EdgeCasesLifecycleHelperMock, :terminate_plugin, fn
         :test_plugin, :shutdown, _state -> {:error, :terminate_failed}
@@ -564,7 +633,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       end)
 
       # Execute: Start Manager, load plugin, then stop Manager
-      {:ok, pid} = Manager.start_link([command_registry_table: table])
+      {:ok, pid} =
+        Manager.start_link(command_registry_table: table, runtime_pid: self())
+
       {:error, reason} = Manager.load_plugin(PluginTestFixtures.TestPlugin, %{})
 
       # Verify: Should handle the terminate failure gracefully
@@ -577,30 +648,19 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
       if Process.alive?(pid), do: GenServer.stop(pid)
     end
 
-    test "handles plugin terminate timeout (simulated)", %{command_registry_table: table} do
-      # Configure EdgeCasesLifecycleHelperMock to simulate a hanging terminate_plugin
-      Mox.stub_with(EdgeCasesLifecycleHelperMock, %{
-        init_plugin: fn _module, opts ->
-          {:ok,
-           %{
-             plugin_id: :test_plugin,
-             module: PluginTestFixtures.TestPlugin,
-             config: opts,
-             state: PluginTestFixtures.TestPlugin.init!(opts)
-           }}
-        end,
-        # Default ok
-        check_dependencies: fn _, _, _ -> {:ok, []} end,
-        terminate_plugin: fn _plugin_id, _reason, _state ->
-          # Instead of infinite sleep, wait for a message that will never come
-          receive do
-            :terminate_plugin -> :ok
-          end
-        end
-      })
+    test "handles plugin terminate timeout (simulated)", %{
+      command_registry_table: table
+    } do
+      # Use the stub module instead of a map
+      Mox.stub_with(
+        EdgeCasesLifecycleHelperMock,
+        EdgeCasesLifecycleHelperTerminateTimeoutStub
+      )
 
       # Start Manager and load TestPlugin
-      {:ok, pid} = Manager.start_link([command_registry_table: table])
+      {:ok, pid} =
+        Manager.start_link(command_registry_table: table, runtime_pid: self())
+
       {:error, reason} = Manager.load_plugin(PluginTestFixtures.TestPlugin, %{})
 
       # Verify: Should handle the terminate timeout gracefully
@@ -616,21 +676,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
 
   describe "manager robustness to plugin crashes" do
     setup do
-      # Stub LifecycleHelper for these tests
-      Mox.stub_with(EdgeCasesLifecycleHelperMock, %{
-        init_plugin: fn _mod, opts ->
-          {:ok,
-           %{
-             plugin_id: :test_plugin,
-             module: PluginTestFixtures.TestPlugin,
-             config: opts,
-             state: PluginTestFixtures.TestPlugin.init!(opts)
-           }}
-        end,
-        check_dependencies: fn _, _, _ -> {:ok, []} end,
-        # Default ok for termination
-        terminate_plugin: fn _, _, _ -> :ok end
-      })
+      # Use a stub module instead of a map
+      Mox.stub_with(
+        EdgeCasesLifecycleHelperMock,
+        EdgeCasesLifecycleHelperCrashStub
+      )
 
       :ok
     end
@@ -638,7 +688,8 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
 
   # Helper to run a test with a managed PluginManager process
   defp with_running_manager(manager_opts \\ [], func) do
-    {:ok, manager_pid} = Manager.start_link(manager_opts)
+    {:ok, manager_pid} =
+      Manager.start_link(Keyword.put_new(manager_opts, :runtime_pid, self()))
 
     try do
       func.(manager_pid)
@@ -656,45 +707,22 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
          plugin_id_atom,
          initial_opts \\ %{}
        ) do
-    plugin_init_fun = fn mod, opts ->
-      # First try init/1, then fall back to init!/1 if init/1 is not defined
-      initial_plugin_state =
-        try do
-          apply(mod, :init, [opts])
-        rescue
-          UndefinedFunctionError -> apply(mod, :init!, [opts])
-        end
-
-      # Handle both {:ok, state} and direct state returns
-      resolved_state =
-        case initial_plugin_state do
-          {:ok, state} -> state
-          state when is_map(state) -> state
-          _ -> raise "Plugin init must return {:ok, state} or a state map"
-        end
-
-      {:ok,
-       %{
-         plugin_id: plugin_id_atom,
-         module: mod,
-         config: opts,
-         state: resolved_state
-       }}
-    end
-
-    # Stub common LifecycleHelper functions needed for loading
-    Mox.stub_with(EdgeCasesLifecycleHelperMock, %{
-      init_plugin: plugin_init_fun,
-      # Default stub for successful dependency check
-      check_dependencies: fn _, _, _ -> {:ok, []} end,
-      # Default stub for successful termination
-      terminate_plugin: fn _, _, _ -> :ok end
-    })
+    # Use the stub module instead of a map
+    Mox.stub_with(
+      EdgeCasesLifecycleHelperMock,
+      EdgeCasesLifecycleHelperSetupPluginStub
+    )
 
     Manager.load_plugin(manager_pid, plugin_module, initial_opts)
   end
 
-  defp dispatch_command_and_assert_manager_alive(manager_pid, command_name, namespace, data, assertion_message) do
+  defp dispatch_command_and_assert_manager_alive(
+         manager_pid,
+         command_name,
+         namespace,
+         data,
+         assertion_message
+       ) do
     GenServer.cast(
       manager_pid,
       {:handle_command, command_name, namespace, data, self()}
@@ -754,4 +782,93 @@ defmodule Raxol.Core.Runtime.Plugins.PluginManagerEdgeCasesTest do
     assert Process.alive?(manager_pid),
            "PluginManager should be alive after a failed load of #{inspect(plugin_module)}"
   end
+end
+
+defmodule EdgeCasesLifecycleHelperTimeoutStub do
+  @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+
+  def init_plugin(_module, _opts) do
+    # Use a timer to simulate a timeout that matches the actual timeout in the code
+    Process.send_after(self(), :timeout_simulated, 6000)
+
+    receive do
+      :timeout_simulated -> {:error, :timeout_simulated}
+    end
+  end
+
+  def check_dependencies(_, _, _), do: {:ok, []}
+  def terminate_plugin(_, _, _), do: :ok
+end
+
+defmodule EdgeCasesLifecycleHelperTerminateTimeoutStub do
+  @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+
+  def init_plugin(_module, opts) do
+    {:ok,
+     %{
+       plugin_id: :test_plugin,
+       module: Raxol.Test.PluginTestFixtures.TestPlugin,
+       config: opts,
+       state: Raxol.Test.PluginTestFixtures.TestPlugin.init!(opts)
+     }}
+  end
+
+  def check_dependencies(_, _, _), do: {:ok, []}
+
+  def terminate_plugin(_plugin_id, _reason, _state) do
+    # Instead of infinite sleep, wait for a message that will never come
+    receive do
+      :terminate_plugin -> :ok
+    end
+  end
+end
+
+defmodule EdgeCasesLifecycleHelperCrashStub do
+  @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+
+  def init_plugin(_mod, opts) do
+    {:ok,
+     %{
+       plugin_id: :test_plugin,
+       module: Raxol.Test.PluginTestFixtures.TestPlugin,
+       config: opts,
+       state: Raxol.Test.PluginTestFixtures.TestPlugin.init!(opts)
+     }}
+  end
+
+  def check_dependencies(_, _, _), do: {:ok, []}
+  def terminate_plugin(_, _, _), do: :ok
+end
+
+defmodule EdgeCasesLifecycleHelperSetupPluginStub do
+  @behaviour Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+
+  def init_plugin(mod, opts) do
+    # First try init/1, then fall back to init!/1 if init/1 is not defined
+    initial_plugin_state =
+      try do
+        apply(mod, :init, [opts])
+      rescue
+        UndefinedFunctionError -> apply(mod, :init!, [opts])
+      end
+
+    resolved_state =
+      case initial_plugin_state do
+        {:ok, state} -> state
+        state when is_map(state) -> state
+        _ -> raise "Plugin init must return {:ok, state} or a state map"
+      end
+
+    {:ok,
+     %{
+       # Will be set by caller if needed
+       plugin_id: nil,
+       module: mod,
+       config: opts,
+       state: resolved_state
+     }}
+  end
+
+  def check_dependencies(_, _, _), do: {:ok, []}
+  def terminate_plugin(_, _, _), do: :ok
 end

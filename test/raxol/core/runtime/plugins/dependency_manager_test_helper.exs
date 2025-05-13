@@ -8,10 +8,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerTestHelper do
     version_constraint = Keyword.get(opts, :version_constraint, ">= 1.0.0")
 
     Enum.reduce(1..count, %{}, fn i, acc ->
-      deps = Enum.map(1..dependencies_per_plugin, fn j ->
-        dep_id = "plugin_#{Enum.random(1..count)}"
-        {dep_id, version_constraint}
-      end)
+      deps =
+        Enum.map(1..dependencies_per_plugin, fn j ->
+          dep_id = "plugin_#{Enum.random(1..count)}"
+          {dep_id, version_constraint}
+        end)
+
       Map.put(acc, "plugin_#{i}", %{dependencies: deps})
     end)
   end
@@ -25,9 +27,11 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerTestHelper do
 
   def create_complex_version_requirements(count) do
     Enum.reduce(1..count, %{}, fn i, acc ->
-      deps = Enum.map(1..5, fn j ->
-        {"plugin_#{j}", ">= #{i}.0.0 || >= #{i + 1}.0.0 || ~> #{i}.0"}
-      end)
+      deps =
+        Enum.map(1..5, fn j ->
+          {"plugin_#{j}", ">= #{i}.0.0 || >= #{i + 1}.0.0 || ~> #{i}.0"}
+        end)
+
       Map.put(acc, "plugin_#{i}", %{dependencies: deps})
     end)
   end
@@ -37,8 +41,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerTestHelper do
     before = :erlang.memory(:total)
     result = fun.()
     :erlang.garbage_collect()
-    after = :erlang.memory(:total)
-    {result, after - before}
+    mem_after = :erlang.memory(:total)
+    {result, mem_after - before}
   end
 
   def measure_time(fun) do

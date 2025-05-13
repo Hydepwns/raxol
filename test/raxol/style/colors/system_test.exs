@@ -1,9 +1,11 @@
 defmodule Raxol.Style.Colors.SystemTest do
-  use ExUnit.Case, async: false  # Changed to false to prevent concurrent access to shared state
+  # Changed to false to prevent concurrent access to shared state
+  use ExUnit.Case, async: false
   import Mox
 
   alias Raxol.Style.Colors.{Color, System, Theme}
   alias Raxol.Core.Events.Manager, as: EventManager
+  alias Raxol.UI.Theming.Theme
 
   # Define mocks
   defmock(EventManagerMock, for: Raxol.Core.Events.Manager.Behaviour)
@@ -52,22 +54,19 @@ defmodule Raxol.Style.Colors.SystemTest do
     stub_with(EventManagerMock, EventManager)
 
     # Set up test theme
-    @test_theme = Theme.new(%{
-      id: :test_theme,
-      name: "Test Theme",
-      colors: %{
-        primary: Color.from_hex("#0077CC"),
-        secondary: Color.from_hex("#666666"),
-        background: Color.from_hex("#FFFFFF"),
-        text: Color.from_hex("#333333")
-      }
-    })
+    @test_theme =
+      Theme.new(%{
+        id: :test_theme,
+        name: "Test Theme",
+        colors: %{
+          primary: Color.from_hex("#0077CC"),
+          secondary: Color.from_hex("#666666"),
+          background: Color.from_hex("#FFFFFF"),
+          text: Color.from_hex("#333333")
+        }
+      })
 
-    # Set up event manager mock
-    event_manager = MockEventManager
-    stub_with(event_manager, Raxol.Core.Events.Manager)
-
-    {:ok, %{event_manager: event_manager}}
+    {:ok, %{event_manager: EventManagerMock}}
   end
 
   describe "theme management" do
@@ -166,22 +165,23 @@ defmodule Raxol.Style.Colors.SystemTest do
 
     test "gets color with variant", %{event_manager: event_manager} do
       # Create theme with variant
-      theme = Theme.new(%{
-        id: :test_theme,
-        name: "Test Theme",
-        colors: %{
-          primary: Color.from_hex("#0077CC"),
-          background: Color.from_hex("#FFFFFF")
-        },
-        variants: %{
-          high_contrast: %{
-            colors: %{
-              primary: Color.from_hex("#0000FF"),
-              background: Color.from_hex("#000000")
+      theme =
+        Theme.new(%{
+          id: :test_theme,
+          name: "Test Theme",
+          colors: %{
+            primary: Color.from_hex("#0077CC"),
+            background: Color.from_hex("#FFFFFF")
+          },
+          variants: %{
+            high_contrast: %{
+              colors: %{
+                primary: Color.from_hex("#0000FF"),
+                background: Color.from_hex("#000000")
+              }
             }
           }
-        }
-      })
+        })
 
       # Apply theme
       assert :ok == System.apply_theme(theme)
