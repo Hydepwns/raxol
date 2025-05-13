@@ -2,6 +2,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   # Mox is async-friendly
   use ExUnit.Case
   import Mox
+  import Raxol.Test.ClipboardHelpers
 
   alias Raxol.Core.Plugins.Core.ClipboardPlugin
   # Remove alias Raxol.System.Clipboard as we'll use the mock's behaviour
@@ -42,9 +43,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
     test_text = "Hello Raxol"
 
     # Use Mox.expect
-    Mox.expect(ClipboardMock, :copy, fn ^test_text ->
-      :ok
-    end)
+    expect_clipboard_copy(ClipboardMock, test_text, :ok)
 
     # Call the command handler. Args for write is [test_text]
     assert {:ok, ^current_state, {:ok, :clipboard_write_ok}} =
@@ -62,9 +61,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
        %{state: current_state} do
     expected_text = "Pasted Text"
 
-    Mox.expect(ClipboardMock, :paste, fn ->
-      {:ok, expected_text}
-    end)
+    expect_clipboard_paste(ClipboardMock, {:ok, expected_text})
 
     # Call the command handler. Args for read is [nil]
     assert {:ok, ^current_state, {:ok, ^expected_text}} =
@@ -77,9 +74,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
        %{state: current_state} do
     error_reason = {:paste_command_failed, "some error"}
 
-    Mox.expect(ClipboardMock, :paste, fn ->
-      {:error, error_reason}
-    end)
+    expect_clipboard_paste(ClipboardMock, {:error, error_reason})
 
     # Call the command handler. Args for read is [nil]
     assert {:error, {:clipboard_read_failed, ^error_reason}, ^current_state} =

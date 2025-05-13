@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlersTest do
       :meck.new(IO, [:passthrough])
       :meck.expect(IO, :write, fn data -> send(me, {:io_write, data}) end)
 
-      DeviceHandlers.handle_c(emulator, [0])
+      DeviceHandlers.handle_c(emulator, [0], "")
 
       # Verify response format
       assert_receive {:io_write, "\e[?1;2c"}, 1000
@@ -37,7 +37,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlersTest do
       :meck.new(IO, [:passthrough])
       :meck.expect(IO, :write, fn data -> send(me, {:io_write, data}) end)
 
-      DeviceHandlers.handle_c(emulator, [0])
+      DeviceHandlers.handle_c(emulator, [0], ">")
 
       # Verify response format
       assert_receive {:io_write, "\e[>0;1;0c"}, 1000
@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlersTest do
       :meck.new(IO, [:passthrough])
       :meck.expect(IO, :write, fn data -> send(me, {:io_write, data}) end)
 
-      DeviceHandlers.handle_c(emulator, [])
+      DeviceHandlers.handle_c(emulator, [], "")
 
       # Should default to primary DA request
       assert_receive {:io_write, "\e[?1;2c"}, 1000

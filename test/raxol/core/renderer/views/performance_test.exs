@@ -15,6 +15,8 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
   alias Raxol.Test.PerformanceTestData
   # Add this alias
   alias Raxol.Test.PerformanceViewGenerators
+  alias Raxol.Test.PerformanceHelper
+  import Raxol.Test.PerformanceHelper
   require Logger
 
   # Allow longer timeout for performance tests
@@ -117,11 +119,11 @@ defmodule Raxol.Core.Renderer.Views.PerformanceTest do
                 }
               end)
 
-  # Helper to measure execution time (for synchronous operations)
+  # Uses canonical performance helper for timing
   defp measure_sync(fun) do
-    {time, result} = :timer.tc(fun)
-    # Convert to seconds
-    {result, time / 1_000_000}
+    {time, result} = measure_time(fun)
+    # Convert ms to seconds
+    {result, time / 1000}
   end
 
   # New helper to measure an action followed by a full render cycle time

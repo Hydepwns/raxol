@@ -2,6 +2,7 @@ defmodule Raxol.UI.ComponentCompositionTest do
   use ExUnit.Case
   alias Raxol.UI.Renderer
   alias Raxol.UI.RendererTestHelper, as: Helper
+  import Raxol.Test.Visual.Assertions
 
   test "handles basic component composition" do
     child1 = Helper.create_test_text(1, 1, "Child 1")

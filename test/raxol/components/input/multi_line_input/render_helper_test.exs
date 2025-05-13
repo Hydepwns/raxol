@@ -24,11 +24,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
       selection_start: sel_start,
       selection_end: sel_end,
       scroll_offset: scroll_offset,
-      theme: %{},
+      theme: test_theme(),
       id: "test_input"
       # Add other required fields if RenderHelper depends on them
       # value: Enum.join(lines, "\n"), # Might be needed if helpers rely on it
-      # theme: %Raxol.UI.Theming.Theme{...} # Add a mock theme if needed
+      # theme: test_theme(%{...}) # Add a mock theme if needed
     }
   end
 

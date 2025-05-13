@@ -95,4 +95,12 @@ defmodule EdgeCasesLifecycleHelperTimeoutStub do
 
   def check_dependencies(_, _, _), do: {:ok, []}
   def terminate_plugin(_, _, _), do: :ok
+
+  # Stub implementations for required callbacks
+  def load_plugin(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def unload_plugin(_, _, _, _, _, _), do: {:error, :not_implemented}
+  def reload_plugin(_, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def initialize_plugins(_, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def reload_plugin_from_disk(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def load_plugin_by_module(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
 end

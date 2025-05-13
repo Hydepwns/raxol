@@ -6,6 +6,7 @@ defmodule Raxol.Animation.FrameworkTest do
   alias Raxol.Core.Accessibility
   alias Raxol.Core.UserPreferences
   alias Raxol.Test.EventAssertions
+  import Raxol.AccessibilityTestHelpers
 
   # Helper to wait for animation completion
   defp wait_for_animation_completion(element_id, animation_name, timeout \\ 100) do
@@ -25,13 +26,13 @@ defmodule Raxol.Animation.FrameworkTest do
 
     # Initialize required systems for testing
     Framework.init()
-    Accessibility.enable()
+    # Accessibility.enable() -- replaced by with_screen_reader_spy in tests
 
     # Reset relevant prefs before each test
     UserPreferences.set("accessibility.reduced_motion", false)
     UserPreferences.set("accessibility.screen_reader", true)
     UserPreferences.set("accessibility.silence_announcements", false)
-    Accessibility.clear_announcements()
+    # Accessibility.clear_announcements() -- replaced by with_screen_reader_spy in tests
 
     # Wait for preferences to be applied
     assert_receive {:preferences_applied}, 100
@@ -39,7 +40,7 @@ defmodule Raxol.Animation.FrameworkTest do
     on_exit(fn ->
       # Cleanup
       Framework.stop()
-      Accessibility.disable()
+      # Accessibility.disable() -- replaced by with_screen_reader_spy in tests
     end)
 
     :ok
@@ -145,23 +146,24 @@ defmodule Raxol.Animation.FrameworkTest do
     end
 
     test "announces animations to screen readers when configured" do
-      # Create an animation with screen reader announcement
-      animation =
-        Framework.create_animation(:test_animation, %{
-          type: :fade,
-          from: 0,
-          to: 1,
-          announce_to_screen_reader: true,
-          description: "Test animation"
-        })
+      with_screen_reader_spy(fn ->
+        # Create an animation with screen reader announcement
+        animation =
+          Framework.create_animation(:test_animation, %{
+            type: :fade,
+            from: 0,
+            to: 1,
+            announce_to_screen_reader: true,
+            description: "Test animation"
+          })
 
-      # Start the animation
-      :ok = Framework.start_animation(animation.name, "test_element")
-      wait_for_animation_start("test_element", animation.name)
+        # Start the animation
+        :ok = Framework.start_animation(animation.name, "test_element")
+        wait_for_animation_start("test_element", animation.name)
 
-      # Verify announcement was made
-      assert_receive {:accessibility_announcement, "Test animation started"},
-                     100
+        # Verify announcement was made
+        assert_announced("Test animation started")
+      end)
     end
 
     test "applies animation values to state" do

@@ -1,5 +1,8 @@
 defmodule Raxol.UI.Components.Base.LifecycleTest do
   use ExUnit.Case, async: true
+  doctest Raxol.UI.Components.Base.Lifecycle
+
+  import Raxol.TestHelpers
 
   # Define a test component that implements the Component behavior
   defmodule TestComponent do
@@ -88,7 +91,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
 
     test "render increases render count" do
       component = TestComponent.new()
-      context = %{theme: %{}}
+      context = %{theme: test_theme()}
 
       # First render
       TestComponent.render(component, context)
@@ -185,7 +188,7 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       mounted = TestComponent.mount(component)
 
       # Render
-      context = %{theme: %{}}
+      context = %{theme: test_theme()}
       rendered_element_map = TestComponent.render(mounted, context)
 
       # Handle events - Pass the state BEFORE render (mounted)

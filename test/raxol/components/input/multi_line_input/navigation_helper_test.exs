@@ -1,6 +1,8 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
   use ExUnit.Case, async: true
 
+  import Raxol.TestHelpers
+
   alias Raxol.UI.Components.Input.MultiLineInput, as: State
   alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
 
@@ -16,7 +18,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
       placeholder: "",
       width: elem(dimensions, 0),
       height: elem(dimensions, 1),
-      theme: %{},
+      theme: test_theme(),
       wrap: :word,
       cursor_pos: cursor,
       scroll_offset: scroll,

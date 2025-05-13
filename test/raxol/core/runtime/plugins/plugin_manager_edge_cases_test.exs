@@ -798,6 +798,13 @@ defmodule EdgeCasesLifecycleHelperTimeoutStub do
 
   def check_dependencies(_, _, _), do: {:ok, []}
   def terminate_plugin(_, _, _), do: :ok
+
+  def load_plugin(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def unload_plugin(_, _, _, _, _, _), do: {:error, :not_implemented}
+  def reload_plugin(_, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def initialize_plugins(_, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def reload_plugin_from_disk(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def load_plugin_by_module(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
 end
 
 defmodule EdgeCasesLifecycleHelperTerminateTimeoutStub do
@@ -821,6 +828,13 @@ defmodule EdgeCasesLifecycleHelperTerminateTimeoutStub do
       :terminate_plugin -> :ok
     end
   end
+
+  def load_plugin(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def unload_plugin(_, _, _, _, _, _), do: {:error, :not_implemented}
+  def reload_plugin(_, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def initialize_plugins(_, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def reload_plugin_from_disk(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def load_plugin_by_module(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
 end
 
 defmodule EdgeCasesLifecycleHelperCrashStub do
@@ -838,6 +852,13 @@ defmodule EdgeCasesLifecycleHelperCrashStub do
 
   def check_dependencies(_, _, _), do: {:ok, []}
   def terminate_plugin(_, _, _), do: :ok
+
+  def load_plugin(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def unload_plugin(_, _, _, _, _, _), do: {:error, :not_implemented}
+  def reload_plugin(_, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def initialize_plugins(_, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def reload_plugin_from_disk(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def load_plugin_by_module(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
 end
 
 defmodule EdgeCasesLifecycleHelperSetupPluginStub do
@@ -871,4 +892,11 @@ defmodule EdgeCasesLifecycleHelperSetupPluginStub do
 
   def check_dependencies(_, _, _), do: {:ok, []}
   def terminate_plugin(_, _, _), do: :ok
+
+  def load_plugin(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def unload_plugin(_, _, _, _, _, _), do: {:error, :not_implemented}
+  def reload_plugin(_, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def initialize_plugins(_, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def reload_plugin_from_disk(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
+  def load_plugin_by_module(_, _, _, _, _, _, _, _), do: {:error, :not_implemented}
 end

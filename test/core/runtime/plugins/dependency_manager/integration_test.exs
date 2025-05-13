@@ -227,7 +227,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
   describe "plugin lifecycle events" do
     defmodule LifecycleTestPluginA do
       @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
-      @behaviour Raxol.Core.Runtime.Plugins.Lifecycle
 
       @impl true
       def get_metadata do
@@ -259,7 +258,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
     defmodule LifecycleTestPluginB do
       @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
-      @behaviour Raxol.Core.Runtime.Plugins.Lifecycle
 
       @impl true
       def get_metadata do
@@ -337,7 +335,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
     test "lifecycle events handle errors gracefully" do
       defmodule ErrorTestPlugin do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
-        @behaviour Raxol.Core.Runtime.Plugins.Lifecycle
 
         @impl true
         def get_metadata do
@@ -349,17 +346,17 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         end
 
         @impl true
-        def init(_config) do
+        def init(config) do
           {:error, "Init failed"}
         end
 
         @impl true
-        def start(_config) do
+        def start(config) do
           {:error, "Start failed"}
         end
 
         @impl true
-        def stop(_config) do
+        def stop(config) do
           {:error, "Stop failed"}
         end
       end
@@ -375,7 +372,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       # Test start error (by mocking init to succeed)
       defmodule ErrorTestPlugin do
         @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
-        @behaviour Raxol.Core.Runtime.Plugins.Lifecycle
 
         @impl true
         def get_metadata do
@@ -392,12 +388,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         end
 
         @impl true
-        def start(_config) do
+        def start(config) do
           {:error, "Start failed"}
         end
 
         @impl true
-        def stop(_config) do
+        def stop(config) do
           {:error, "Stop failed"}
         end
       end

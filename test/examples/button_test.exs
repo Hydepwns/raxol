@@ -4,6 +4,7 @@ defmodule Raxol.Examples.ButtonTest do
   use Raxol.Test.Integration
   use Raxol.Test.Visual
   import ExUnit.Callbacks
+  import Raxol.TestHelpers
   # import Raxol.Test.ButtonHelpers # REMOVED - Helpers seem outdated/incorrect
 
   # alias Raxol.Examples.Button # OLD ALIAS
@@ -14,6 +15,8 @@ defmodule Raxol.Examples.ButtonTest do
   # Alias the Form mock for testing
   # Assuming Form mock exists or is defined elsewhere
   alias Form
+  # Add import for canonical visual assertions
+  import Raxol.Test.Visual.Assertions
 
   setup do
     context = TestHelper.setup_test_env()
@@ -144,7 +147,7 @@ defmodule Raxol.Examples.ButtonTest do
     end
 
     test "mount and unmount lifecycle hooks are called and return state" do
-      state = %{label: "Test", theme: %{}, style: %{}}
+      state = %{label: "Test", theme: test_theme(), style: %{}}
       mounted = Button.mount(state)
       assert mounted == state
       unmounted = Button.unmount(mounted)
@@ -210,7 +213,7 @@ defmodule Raxol.Examples.ButtonTest do
 
     test "matches snapshot", %{button: button, context: context} do
       # Ensure the component matches a pre-recorded snapshot
-      Raxol.Test.Visual.Assertions.assert_matches_snapshot(
+      assert_matches_snapshot(
         button,
         "button_submit",
         context
@@ -222,7 +225,7 @@ defmodule Raxol.Examples.ButtonTest do
     test "adapts to different sizes", _context do
       button = Raxol.Test.Visual.setup_visual_component(Button, %{})
 
-      Raxol.Test.Visual.Assertions.assert_responsive(
+      assert_responsive(
         button,
         [{80, 24}, {40, 12}, {20, 6}]
       )
@@ -233,7 +236,7 @@ defmodule Raxol.Examples.ButtonTest do
     test "maintains consistent structure across themes", _context do
       button = Raxol.Test.Visual.setup_visual_component(Button, %{})
 
-      Raxol.Test.Visual.Assertions.assert_theme_consistent(
+      assert_theme_consistent(
         button,
         %{light: %{fg: :black, bg: :white}, dark: %{fg: :white, bg: :black}}
       )

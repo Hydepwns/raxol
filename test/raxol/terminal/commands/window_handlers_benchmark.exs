@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.Commands.WindowHandlersBenchmark do
   use ExUnit.Case
   alias Raxol.Terminal.Commands.WindowHandlers
-  alias Raxol.Test.PerformanceTestHelper
+  alias Raxol.Test.PerformanceHelper
   alias Raxol.Test.WindowTestHelper
 
   setup do
@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersBenchmark do
   describe "window handlers performance" do
     test "basic window operations", %{emulator: emulator} do
       for {params, name} <- WindowTestHelper.basic_window_operations() do
-        PerformanceTestHelper.assert_performance(
+        PerformanceHelper.assert_performance(
           fn -> WindowHandlers.handle_t(emulator, params) end,
           name
         )
@@ -20,7 +20,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersBenchmark do
 
     test "window reporting operations", %{emulator: emulator} do
       for {params, name} <- WindowTestHelper.reporting_operations() do
-        PerformanceTestHelper.assert_performance(
+        PerformanceHelper.assert_performance(
           fn -> WindowHandlers.handle_t(emulator, params) end,
           name
         )
@@ -29,7 +29,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersBenchmark do
 
     test "parameter validation performance", %{emulator: emulator} do
       for {params, name} <- WindowTestHelper.invalid_parameters() do
-        PerformanceTestHelper.assert_performance(
+        PerformanceHelper.assert_performance(
           fn -> WindowHandlers.handle_t(emulator, params) end,
           name
         )
@@ -38,7 +38,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersBenchmark do
 
     test "buffer resize performance", %{emulator: emulator} do
       for {width, height} <- WindowTestHelper.test_window_sizes() do
-        PerformanceTestHelper.assert_performance(
+        PerformanceHelper.assert_performance(
           fn -> WindowHandlers.handle_t(emulator, [4, width, height]) end,
           "#{width}x#{height} resize",
           0.005
@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlersBenchmark do
           fn -> WindowHandlers.handle_t(emulator, params) end
         end)
 
-      PerformanceTestHelper.assert_concurrent_performance(
+      PerformanceHelper.assert_concurrent_performance(
         operations,
         "concurrent window"
       )

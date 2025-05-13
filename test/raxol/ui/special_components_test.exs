@@ -2,6 +2,7 @@ defmodule Raxol.UI.SpecialComponentsTest do
   use ExUnit.Case
   alias Raxol.UI.Renderer
   alias Raxol.UI.RendererTestHelper, as: Helper
+  import Raxol.Test.Visual.Assertions
 
   test "handles tables with varying row lengths" do
     headers = ["Name", "Age", "City"]

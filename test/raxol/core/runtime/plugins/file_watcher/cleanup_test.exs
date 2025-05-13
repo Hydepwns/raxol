@@ -20,10 +20,16 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.CleanupTest do
     :ok
   end
 
+  defmodule TestWatcherGenServer do
+    use GenServer
+    def start_link(opts \\ []), do: GenServer.start_link(__MODULE__, :ok, opts)
+    def init(:ok), do: {:ok, %{}}
+  end
+
   describe "cleanup_file_watching/1" do
     test "stops file watcher process and cancels timer" do
       # Setup test state with watcher PID and timer
-      watcher_pid = spawn(fn -> :timer.sleep(1_000_000) end)
+      {:ok, watcher_pid} = TestWatcherGenServer.start_link([])
       timer = Process.send_after(self(), :test, 1_000_000)
       state = Helper.create_test_state()
       state = put_in(state.file_watcher_pid, watcher_pid)
@@ -66,7 +72,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.CleanupTest do
 
     test "handles cleanup when no timer exists" do
       # Setup test state with only watcher PID
-      watcher_pid = spawn(fn -> :timer.sleep(1_000_000) end)
+      {:ok, watcher_pid} = TestWatcherGenServer.start_link([])
       state = Helper.create_test_state()
       state = put_in(state.file_watcher_pid, watcher_pid)
       state = put_in(state.file_watching_enabled?, true)

@@ -5,6 +5,8 @@ defmodule Raxol.TestHelpers do
 
   import ExUnit.Assertions
 
+  alias Raxol.UI.Theming.Theme
+
   @doc """
   Waits for a condition to be true, with a timeout.
   Uses event-based synchronization instead of Process.sleep.
@@ -93,5 +95,22 @@ defmodule Raxol.TestHelpers do
       {:ok, pid} -> pid
       other -> other
     end
+  end
+
+  @doc """
+  Returns a complete theme struct for tests, merging any overrides provided.
+  Ensures all required component_styles are present.
+  """
+  def test_theme(overrides \\ %{}) do
+    base = Theme.default_theme()
+    # Merge overrides deeply for component_styles
+    merged_styles =
+      Map.merge(base.component_styles, Map.get(overrides, :component_styles, %{}), fn _k, v1, v2 ->
+        Map.merge(v1, v2)
+      end)
+
+    base
+    |> Map.merge(overrides)
+    |> Map.put(:component_styles, merged_styles)
   end
 end
