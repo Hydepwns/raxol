@@ -157,6 +157,10 @@
   - Completed component system documentation.
   - Fixed SelectList component implementation.
   - All advanced SelectList features (custom rendering, filtering, navigation, empty state, case insensitivity) are now covered by real tests.
+- **Terminal Command Handler Test Fixes:**
+  - Updated all tests for `DeviceHandlers.handle_c/2` to use the correct `handle_c/3` signature, matching the real API and improving maintainability.
+  - No unnecessary wrapper functions were added; the API remains minimal and explicit.
+  - All related test failures are now resolved.
 
 ### Deprecated
 
@@ -172,3 +176,10 @@
 - `Raxol.UI.Components.ScreenModes` module and associated tests/references
 - Removed `:meck` direct usage from test files
 - Deleted `
+
+### TODO / Next Steps
+
+- Investigate and resolve remaining test failures in `Raxol.Core.Runtime.Plugins.PerformanceTest` (MatchError and ArithmeticError in performance and dependency graph tests).
+- Review and improve performance test assertions to match actual return values and metrics.
+- Address any remaining skipped or flaky tests, especially those related to plugin system and dependency manager edge cases.
+- Continue refactoring and harmonizing test helpers and fixtures for maintainability.

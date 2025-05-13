@@ -39,16 +39,7 @@ defmodule Raxol.Test.EventHelpers do
   Simulates an event on a component.
   """
   def simulate_event(component, event) do
-    case component.module.handle_event(event, component.state) do
-      {:ok, new_state} ->
-        {Map.put(component, :state, new_state), []}
-
-      {:ok, new_state, commands} ->
-        {Map.put(component, :state, new_state), commands}
-
-      other ->
-        other
-    end
+    Raxol.Test.Unit.simulate_event(component, event)
   end
 
   @doc """
