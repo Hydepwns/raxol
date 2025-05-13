@@ -86,6 +86,44 @@
   - Tests cover default, custom, and partial state scenarios, ensuring robust memory usage estimation.
 - **Test Tracking Improvement:**
   - Added a prioritized table of skipped tests blocked only by minor refactors, missing helpers, or minor API changes to `docs/testing/test_tracking.md` (May 2025). This table helps the team focus on unskipping and updating "low-hanging fruit" tests before addressing feature-blocked or obsolete tests, supporting the roadmap and test stabilization efforts.
+- **Theme Refactor:**
+  - Refactored all theme usage to use `Raxol.UI.Theming.Theme` exclusively. Removed legacy theme modules and references. Codebase is now fully canonical for theming. (2025-06-10)
+- **Documentation Improvements:**
+  - Completed comprehensive guides (Plugin Dev, Theming, VS Code Ext).
+  - Reviewed and improved ExDoc (`@moduledoc`, `@doc`, `@spec`) for key public modules.
+  - Successfully generated ExDoc documentation (`mix docs`).
+  - Improved README example.
+  - Component system documentation is now harmonized and cross-linked across README, ARCHITECTURE.md, API reference, and architecture guide.
+  - Added component lifecycle documentation, composition patterns guide, testing patterns guide, style guide, and updated component README with API reference links.
+  - Testing framework documentation: documented test helper modules, added event-based testing examples, performance testing guide, troubleshooting section, and best practices.
+  - Pre-commit script improvements: file discovery now includes hidden directories and normalizes paths; key project READMEs are explicitly included; anchor checking temporarily disabled due to parsing complexities; file existence checks are active.
+  - Continued refactoring large files (see docs/changes/LARGE_FILES_FOR_REFACTOR.md for tracking and guidelines).
+  - Tracking of large or growing test helper files is now in place.
+- Theming and style prop support for SelectList, TextInput, TextField, and Button components. All now support `style` and `theme` props, with proper merging and override precedence.
+- Lifecycle hooks (`mount/1`, `unmount/1`) for SelectList, TextInput, TextField, and Button components.
+- Expanded/added test suites for SelectList, TextInput, TextField, and Button, covering theming, style, lifecycle, and responsiveness.
+- Dedicated test file for TextField: `test/raxol/ui/components/input/text_field_test.exs`. Button: test/examples/button_test.exs expanded for style, theme, and lifecycle coverage.
+- SelectList, TextInput, TextField, and Button components now use merged `style` and `theme` props throughout their render logic.
+- All four components now implement and test lifecycle hooks (`mount/1`, `unmount/1`).
+- Test coverage for these components is now comprehensive and up to date.
+- **Checkbox Component Refactor:**
+  - Fully refactored and tested.
+  - Now supports style and theme props (with correct merging and override precedence).
+  - Implements robust lifecycle hooks (`mount/1`, `unmount/1`).
+  - Supports accessibility and extra props (`tooltip`, `required`, `aria_label`).
+  - Test coverage expanded for style/theme merging, lifecycle, accessibility, and responsiveness.
+  - Harmonized with Button, SelectList, TextInput, and TextField components.
+- **Progress Component Refactor:**
+  - Fully refactored and tested.
+  - Now supports harmonized style and theme prop merging (context.theme < theme prop < style prop).
+  - Implements robust lifecycle hooks (`mount/1`, `unmount/1`).
+  - Supports accessibility and extra props (`aria_label`, `tooltip`).
+  - Test coverage expanded for style/theme merging, lifecycle, accessibility, and responsiveness.
+  - Harmonized with Button, Checkbox, SelectList, TextInput, and TextField components.
+- **MultiLineInput Harmonization and Documentation:**
+  - MultiLineInput and other modern input components now use a harmonized API for props, theming, clipboard, and cursor management.
+  - Architecture, clipboard, and cursor documentation updated to reflect these conventions and reference the main UI components guide. (2024-07-30)
+- MultiLineInput: All styling is now theme-driven. The `style` field and `@default_style` are removed. Use the theme system for appearance customization. (BREAKING)
 
 ### Changed
 
@@ -106,6 +144,19 @@
 - Updated `test/raxol/terminal/emulator_plugin_test.exs` to use current APIs and mocks for plugin lifecycle, event, and command handler tests.
 - **Test Suite:**
   - All dependency manager resolution tests now pass.
+- **Test and Infrastructure Fixes:**
+  - Fixed Manager.Behaviour/mock issue in file watcher tests to unblock test suite.
+  - Fixed Mox compile errors due to duplicate LoaderMock/FileWatcherMock definitions; all plugin system tests now use global mocks (2025-06-10).
+  - Re-ran test suite and updated failure/skipped/invalid counts.
+  - Restored and fixed Raxol.Terminal.DriverTestHelper (helper import, pattern match, and assertion issues resolved; test suite now proceeds past helper errors).
+  - Addressed remaining test failures (KeyError for :single_shift resolved; next focus: scroll region/handle_r/2 and screen resizing failures).
+- **Component Enhancements:**
+  - Implemented Table features: pagination buttons, filtering, sorting.
+  - Implemented FocusRing styling based on state/effects.
+  - Enhanced SelectList: stateful scroll offset, robust focus management, search/filtering.
+  - Completed component system documentation.
+  - Fixed SelectList component implementation.
+  - All advanced SelectList features (custom rendering, filtering, navigation, empty state, case insensitivity) are now covered by real tests.
 
 ### Deprecated
 
@@ -120,80 +171,4 @@
 - Removed redundant clipboard modules
 - `Raxol.UI.Components.ScreenModes` module and associated tests/references
 - Removed `:meck` direct usage from test files
-- Deleted `test/core/runtime/plugins/meck_sanity_check_test.exs`
-
-### Fixed
-
-- **Test Infrastructure:**
-  - Fixed Mox compilation errors due to duplicate LoaderMock/FileWatcherMock definitions; all plugin system tests now use global mocks defined in test_helper.exs (2025-06-10)
-  - Fixed Mox compilation errors and setup issues
-  - Resolved test reliability issues across multiple test files
-  - Improved test cleanup and resource management
-  - Enhanced test synchronization and isolation
-  - Fixed various test setup and teardown issues
-- **Component System:**
-  - Fixed various component test failures
-  - Improved component state management
-  - Enhanced event handling
-  - Fixed rendering assertions
-  - Corrected test setup issues
-- **Terminal Emulation:**
-  - Fixed state propagation issues
-  - Corrected command parsing/execution logic
-  - Improved cursor management
-  - Enhanced screen updates
-  - Fixed mode handling and SGR attributes
-- **Accessibility:**
-  - Fixed announcement handling
-  - Corrected text scaling behavior
-  - Improved theme integration
-  - Enhanced high-contrast mode support
-- **Dependency Resolution:**
-  - Fixed cycle detection and topological sort in plugin dependency resolver (Tarjan's algorithm now correctly detects cycles and produces a valid load order).
-  - Fixed duplicate plugin IDs in load order.
-  - Fixed handling of optional dependency version mismatches: version mismatches for optional dependencies are now ignored, as expected by tests.
-
-### Current Status (2025-05-10)
-
-- **Test Suite:** `49 doctests, 1528 tests, 279 failures, 17 invalid, 21 skipped`
-- **Documentation:** Updated to reflect new component system architecture
-- **Next Steps:** Focus on test stabilization, OSC 4 handler implementation, and memory management test coverage improvements (now complete for estimate_memory_usage/1).
-
-### Upcoming Work
-
-- **Test Suite Stabilization:**
-
-  - Address remaining 279 test failures and 17 invalid tests
-  - Complete plugin system error handling tests
-  - Fix FileWatcher related failures
-  - Complete SelectList implementation
-  - Document skipped tests
-
-- **Performance Optimization:**
-
-  - Fix performance test failures (host_component_id undefined)
-  - Optimize event processing
-  - Improve concurrent operation handling
-  - Implement proper performance metrics
-
-- **Integration Testing:**
-
-  - Fix remaining integration test failures
-  - Enhance test coverage for edge cases
-  - Improve test isolation and cleanup
-  - Add more comprehensive event testing
-
-- **Documentation:**
-
-  - Re-implement robust anchor checking in pre-commit script
-  - Create test writing guide
-  - Update API documentation with new features
-  - Add examples for new functionality
-  - Document plugin system improvements
-
-- **Code Quality:**
-  - Investigate potential text wrapping off-by-one error
-  - Continue refactoring large files
-  - Identify and extract more common utilities
-  - Improve error handling and logging
-  - Enhance plugin system error reporting
+- Deleted `

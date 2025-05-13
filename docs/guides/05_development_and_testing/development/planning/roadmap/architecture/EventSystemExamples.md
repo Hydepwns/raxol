@@ -146,7 +146,7 @@ defmodule MyTest do
 
   test "verifies plugin loading" do
     # Start the plugin manager
-    {:ok, _pid} = Raxol.Core.Runtime.Plugins.Manager.start_link([])
+    {:ok, _pid} = Raxol.Core.Runtime.Plugins.Manager.start_link([runtime_pid: self()])
 
     # Attempt to load a plugin
     Raxol.Core.Runtime.Plugins.Manager.load_plugin("my_plugin", %{})

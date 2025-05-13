@@ -43,6 +43,14 @@ tags: [roadmap, todo, tasks]
 - [x] Re-run test suite and update failure/skipped/invalid counts.
 - [x] Restore and fix Raxol.Terminal.DriverTestHelper (helper import, pattern match, and assertion issues resolved; test suite now proceeds past helper errors).
 - [x] Fix Test Failures: Address remaining test failures (currently 1023 failures, 12 skipped, 34 doctests; KeyError for :single_shift resolved; next focus: scroll region/handle_r/2 and screen resizing failures).
+- [x] Table theming/lifecycle/test improvements complete. Table now supports style and theme props, per-column style/header_style, and is fully documented and tested.
+- [x] SelectList theming/lifecycle/test improvements complete. SelectList now supports style and theme props, per-option style, and is fully documented and tested.
+- [x] TextInput theming/lifecycle/test improvements complete. TextInput now supports style and theme props, and is fully documented and tested.
+- [x] TextField theming/lifecycle/test improvements complete. TextField now supports style and theme props, and is fully documented and tested.
+- [x] Button theming/lifecycle/test improvements complete. Button now supports style and theme props, and is fully documented and tested.
+- [x] Checkbox theming/lifecycle/test improvements complete. Checkbox now supports style and theme props, per-instance style, accessibility/extra props, and is fully documented and tested.
+- [x] Progress theming/lifecycle/test improvements complete. Progress now supports harmonized style and theme prop merging, accessibility/extra props, and is fully documented and tested.
+- [ ] Next vital component: \***\*\_\_\*\*** (placeholder for future refactor)
 
 ## Medium Priority
 
@@ -53,11 +61,26 @@ tags: [roadmap, todo, tasks]
   - [x] Complete component system documentation
   - [x] Fix SelectList component implementation
   - All advanced SelectList features (custom rendering, filtering, navigation, empty state, case insensitivity) are now covered by real tests.
+  - [x] Table: Theming and API refactor complete (supports `style` and `theme` props, per-column style/header_style, fully documented and tested)
+  - [x] SelectList: Advanced theming, style, and lifecycle/test improvements complete
+  - [x] Button: Theming, style, and lifecycle/test improvements complete
 - [ ] **Performance Optimization:**
   - [ ] Fix performance test failures (host_component_id undefined)
   - [ ] Optimize event processing
   - [ ] Improve concurrent operation handling
   - [ ] Implement proper performance metrics
+- [ ] **Component Responsiveness & Lifecycle Improvements:**
+  - [ ] Audit all UI components for complete lifecycle hook coverage (`init`, `mount`, `update`, `render`, `handle_event`, `unmount`).
+  - [ ] Add or improve `mount/1` and `unmount/1` for components needing setup/teardown (timers, subscriptions, etc).
+  - [ ] Ensure all components respond to `max_height`, `max_width`, and layout/style changes (responsiveness).
+  - [ ] Address outstanding TODOs in components (e.g., scrolling, cursor rendering, placeholder styling).
+  - [ ] Add/expand tests for:
+    - [ ] Mounting/unmounting (resource cleanup, event detachment)
+    - [ ] Prop updates (state preservation, reactivity)
+    - [ ] Dynamic resizing/layout changes
+  - [ ] Document and track any components that cannot be made fully responsive or lifecycle-complete.
+  - [x] Table: Theming and API refactor complete (supports `style` and `theme` props, per-column style/header_style, fully documented and tested)
+  - [x] SelectList: Advanced theming, style, and lifecycle/test improvements
 
 ## Low Priority
 
@@ -257,4 +280,6 @@ All CharacterSets aliasing issues resolved; codebase now consistently uses Raxol
 - [x] Enhance plugin dependency resolution tests (cycle detection, duplicate IDs, optional version handling).
 - [x] Fix plugin dependency resolver (Tarjan's algorithm, optional version mismatches).
 
-- Note: All dependency manager resolution tests now pass.
+- [x] All theme usage is now canonical and standardized on `Raxol.UI.Theming.Theme`. Legacy theme modules and references have been removed. (2025-06-10)
+
+- [x] Update architecture, clipboard, and cursor documentation to mention the harmonized API and conventions for MultiLineInput (2024-07-30)

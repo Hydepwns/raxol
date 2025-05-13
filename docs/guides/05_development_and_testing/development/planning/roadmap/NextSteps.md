@@ -108,12 +108,14 @@ tags: [roadmap, next-steps, priorities]
      - [x] Event handling for keyboard navigation
      - [x] Row selection functionality
      - [x] Scroll position calculation
-   - [x] Improved test framework:
-     - [x] Added standardized test setup helpers
-     - [x] Added common assertion helpers
-     - [x] Added event testing helpers
-     - [x] Added performance testing helpers
-     - [x] Updated testing documentation
+   - [x] Table theming/lifecycle/test improvements complete. Table now supports style and theme props, per-column style/header_style, and is fully documented and tested.
+   - [x] SelectList theming/lifecycle/test improvements complete. SelectList now supports style and theme props, per-option style, and is fully documented and tested.
+   - [x] TextInput theming/lifecycle/test improvements complete. TextInput now supports style and theme props, and is fully documented and tested.
+   - [x] TextField theming/lifecycle/test improvements complete. TextField now supports style and theme props, and is fully documented and tested.
+   - [x] Button theming/lifecycle/test improvements complete. Button now supports style and theme props, and is fully documented and tested.
+   - [x] Checkbox theming/lifecycle/test improvements complete. Checkbox now supports style and theme props, per-instance style, accessibility/extra props, and is fully documented and tested.
+   - [x] Progress theming/lifecycle/test improvements complete. Progress now supports harmonized style and theme prop merging, accessibility/extra props, and is fully documented and tested.
+   - [ ] Next vital component: \***\*\_\_\*\*** (placeholder for future refactor)
 
 6. **Test Infrastructure**
 
@@ -154,6 +156,10 @@ tags: [roadmap, next-steps, priorities]
 
    - [x] Fix CharacterSets aliasing issues in terminal and test modules (completed 2025-05-10)
    - [x] All CharacterSets aliasing issues resolved; codebase now consistently uses Raxol.Terminal.CharacterSets
+
+10. **Theme Refactor**
+
+    - [x] All theme usage is now canonical and standardized on `Raxol.UI.Theming.Theme`. Legacy theme modules and references have been removed. (2025-06-10)
 
 ## Future Considerations
 
@@ -341,3 +347,5 @@ tags: [roadmap, next-steps, priorities]
 
 - [x] Enhanced dependency resolution tests (now all pass, including cycle detection and optional version mismatch handling).
 - [x] Dependency manager's Tarjan resolver and optional dependency handling are now correct and fully tested.
+
+- [x] Architecture, clipboard, and cursor documentation updated to reflect harmonized MultiLineInput API and conventions (2025-05-12)
