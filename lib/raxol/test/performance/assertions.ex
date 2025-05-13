@@ -187,7 +187,7 @@ defmodule Raxol.Test.Performance.Assertions do
 
   # Placeholder function
   # defp get_baseline_path() do
-  #   # TODO: Define logic to get the actual baseline path
+  #   # NOTE: Define logic to get the actual baseline path in the future.
   #   "test/performance/baselines/default.json"
   # end
 end

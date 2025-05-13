@@ -1,8 +1,10 @@
 defmodule Raxol.Test.PerformanceHelpers do
   @moduledoc """
-  Helpers for performance testing and benchmarking in Raxol.
-  Provides utilities for measuring and asserting performance metrics.
+  DEPRECATED: Use Raxol.Test.PerformanceHelper instead.
+  This module is deprecated and will be removed in a future release.
+  Please update your tests to use Raxol.Test.PerformanceHelper.
   """
+  @deprecated "Use Raxol.Test.PerformanceHelper instead."
 
   import ExUnit.Assertions
 
