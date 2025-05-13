@@ -1,7 +1,7 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "0.2.0"
+  @version "0.3.0"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
@@ -138,7 +138,8 @@ defmodule Raxol.MixProject do
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},
       {:excoveralls, "~> 0.18", only: :test},
-      {:hackney, "~> 1.9"}
+      {:hackney, "~> 1.9"},
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
     ]
   end
 
@@ -174,7 +175,7 @@ defmodule Raxol.MixProject do
   defp package do
     [
       files:
-        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* docs/development/changes/CHANGELOG.md),
+        ~w(lib priv/themes .formatter.exs mix.exs README* LICENSE* CHANGELOG.md),
       maintainers: ["DROO AMOR"],
       licenses: ["MIT"],
       links: %{
@@ -188,8 +189,8 @@ defmodule Raxol.MixProject do
       main: "readme",
       extras: [
         "README.md",
-        "docs/guides/quick_start.md",
-        "docs/guides/vscode_extension.md"
+        "docs/guides/01_getting_started/quick_start.md",
+        "docs/guides/04_extending_raxol/vscode_extension.md"
       ],
       source_url: "https://github.com/Hydepwns/raxol",
       source_ref: "v#{@version}",
