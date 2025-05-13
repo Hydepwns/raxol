@@ -11,7 +11,6 @@ defmodule Raxol.UI.Theming.Selector do
 
   use Raxol.UI.Components.Base.Component
 
-  alias Raxol.Style.Theme
   # alias Raxol.UI.Components.Input.SelectList
   # alias Raxol.Core.Events
 

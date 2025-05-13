@@ -216,7 +216,8 @@ defmodule Raxol.UI.Theming.Colors do
       iex> hsl_to_rgb(0, 1.0, 0.5)
       {255, 0, 0}
   """
-  def hsl_to_rgb(h, s, l) when h >= 0 and h <= 360 and s >= 0 and s <= 1 and l >= 0 and l <= 1 do
+  def hsl_to_rgb(h, s, l)
+      when h >= 0 and h <= 360 and s >= 0 and s <= 1 and l >= 0 and l <= 1 do
     Utilities.hsl_to_rgb(h, s, l)
   end
 
@@ -252,9 +253,14 @@ defmodule Raxol.UI.Theming.Colors do
   """
   def to_hex(color) do
     case color do
-      hex when is_binary(hex) -> hex
-      name when is_atom(name) -> @color_names[name]
-      {r, g, b} when r in 0..255 and g in 0..255 and b in 0..255 -> rgb_to_hex(r, g, b)
+      hex when is_binary(hex) ->
+        hex
+
+      name when is_atom(name) ->
+        @color_names[name]
+
+      {r, g, b} when r in 0..255 and g in 0..255 and b in 0..255 ->
+        rgb_to_hex(r, g, b)
     end
   end
 

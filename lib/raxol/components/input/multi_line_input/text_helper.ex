@@ -1,11 +1,12 @@
-defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
+defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   @moduledoc """
   Helper functions for text and line manipulation in MultiLineInput.
   """
 
   alias Raxol.Components.Input.TextWrapping
-  # May need state struct definition
-  alias Raxol.Components.Input.MultiLineInput
+  alias Raxol.UI.Components.Input.MultiLineInput
+  alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
+  alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
   require Logger
 
   # --- Line Splitting and Wrapping ---
@@ -199,9 +200,7 @@ defmodule Raxol.Components.Input.MultiLineInput.TextHelper do
 
     # Get normalized {row, col} tuples
     {start_pos, end_pos} =
-      Raxol.Components.Input.MultiLineInput.NavigationHelper.normalize_selection(
-        state
-      )
+      NavigationHelper.normalize_selection(state)
 
     # Check if selection is valid before proceeding
     if start_pos == nil or end_pos == nil do

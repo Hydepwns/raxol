@@ -13,11 +13,14 @@ defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
 
   setup context do
     reloading_enabled = Keyword.has_key?(context.tags, :enable_plugin_reloading)
-    {:ok, _pid} = Manager.start_link(
-      command_registry_table: :test_command_registry,
-      plugin_config: %{},
-      enable_plugin_reloading: reloading_enabled
-    )
+
+    {:ok, _pid} =
+      Manager.start_link(
+        command_registry_table: :test_command_registry,
+        plugin_config: %{},
+        enable_plugin_reloading: reloading_enabled
+      )
+
     :ok = Manager.initialize()
     emulator = Emulator.new(80, 24)
     on_exit(fn -> :ets.delete(:test_command_registry) end)
@@ -44,6 +47,7 @@ defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
       assert :ok = Manager.load_plugin("mock_on_terminate_crash_plugin", %{})
       # Trigger plugin termination (unload or reload)
       result = Manager.reload_plugin("mock_on_terminate_crash_plugin")
+
       case result do
         :ok -> assert true
         {:error, _} -> assert true

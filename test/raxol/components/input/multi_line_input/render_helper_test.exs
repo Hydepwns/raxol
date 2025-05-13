@@ -2,8 +2,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
   use ExUnit.Case, async: true
 
   # @tag :skip # Skip: Tests call RenderHelper.render_view/2 which does not exist
-  alias Raxol.Components.Input.MultiLineInput
-  alias Raxol.Components.Input.MultiLineInput.RenderHelper
+  alias Raxol.UI.Components.Input.MultiLineInput
+  alias Raxol.UI.Components.Input.MultiLineInput.RenderHelper
   alias Raxol.UI.Style
   alias Raxol.Terminal.Cell
 
@@ -18,23 +18,13 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     sel_start = if selection, do: elem(selection, 0), else: nil
     sel_end = if selection, do: elem(selection, 1), else: nil
 
-    %MultiLineInput{
+    %Raxol.UI.Components.Input.MultiLineInput{
       lines: lines,
       cursor_pos: cursor_pos,
       selection_start: sel_start,
       selection_end: sel_end,
       scroll_offset: scroll_offset,
-      style:
-        %{
-          text_color: :white,
-          placeholder_color: :gray,
-          selection_color: :blue,
-          cursor_color: :white,
-          # Default
-          line_numbers: false,
-          line_number_color: :gray
-        }
-        |> Map.put(:line_numbers, show_line_numbers),
+      theme: %{},
       id: "test_input"
       # Add other required fields if RenderHelper depends on them
       # value: Enum.join(lines, "\n"), # Might be needed if helpers rely on it

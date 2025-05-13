@@ -74,16 +74,17 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
     @tag :pending
     test "handles crashes", %{context: context} do
       # Test that the process crashes but is restarted
-      # pid = start_test_source() # Commented out undefined function call
+      pid =
+        Raxol.TestHelpers.start_test_event_source(%{data: :test_data}, context)
 
       # Killing the process should trigger a restart
-      # Process.exit(pid, :kill) # Needs pid from start_test_source
+      Process.exit(pid, :kill)
 
       # Monitor the process (reuse same pid variable)
-      # _ref = Process.monitor(pid) # Needs pid
+      ref = Process.monitor(pid)
 
       # Expect DOWN message (not checking contents)
-      # assert_receive {:DOWN, _, _, _, _}, 500
+      assert_receive {:DOWN, ^ref, :process, ^pid, _}, 500
 
       # Wait a moment for restart
       :timer.sleep(100)

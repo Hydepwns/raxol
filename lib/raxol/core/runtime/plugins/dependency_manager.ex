@@ -22,9 +22,11 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
   @type dependency :: {String.t(), version_constraint()} | String.t()
   @type dependency_chain :: [String.t()]
   @type dependency_error ::
-    {:error, :missing_dependencies, [String.t()], dependency_chain()} |
-    {:error, :version_mismatch, [{String.t(), String.t(), version_constraint()}], dependency_chain()} |
-    {:error, :circular_dependency, [String.t()], dependency_chain()}
+          {:error, :missing_dependencies, [String.t()], dependency_chain()}
+          | {:error, :version_mismatch,
+             [{String.t(), String.t(), version_constraint()}],
+             dependency_chain()}
+          | {:error, :circular_dependency, [String.t()], dependency_chain()}
 
   @doc """
   Checks if a plugin's dependencies are satisfied.
@@ -54,8 +56,18 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
       iex> DependencyManager.check_dependencies("my_plugin", %{dependencies: [{"other_plugin", ">= 2.0.0"}]}, %{"other_plugin" => %{version: "1.0.0"}}, [])
       {:error, :version_mismatch, [{"other_plugin", "1.0.0", ">= 2.0.0"}], ["my_plugin"]}
   """
-  def check_dependencies(plugin_id, plugin_metadata, loaded_plugins, dependency_chain \\ []) do
-    Core.check_dependencies(plugin_id, plugin_metadata, loaded_plugins, dependency_chain)
+  def check_dependencies(
+        plugin_id,
+        plugin_metadata,
+        loaded_plugins,
+        dependency_chain \\ []
+      ) do
+    Core.check_dependencies(
+      plugin_id,
+      plugin_metadata,
+      loaded_plugins,
+      dependency_chain
+    )
   end
 
   @doc """
@@ -96,6 +108,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
           else
             {:error, :version_mismatch}
           end
+
         requirement ->
           if Version.match?(parsed_version, requirement) do
             :ok
@@ -115,10 +128,15 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
     case String.split(requirement, "||") do
       [single_req] ->
         parse_single_requirement(single_req)
+
       multiple_reqs ->
         # Handle OR conditions
         parsed_reqs = Enum.map(multiple_reqs, &parse_single_requirement/1)
-        if Enum.all?(parsed_reqs, fn {:ok, _} -> true; _ -> false end) do
+
+        if Enum.all?(parsed_reqs, fn
+             {:ok, _} -> true
+             _ -> false
+           end) do
           {:ok, {:or, Enum.map(parsed_reqs, fn {:ok, req} -> req end)}}
         else
           {:error, :invalid_requirement}
@@ -128,6 +146,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
 
   defp parse_single_requirement(req) do
     req = String.trim(req)
+
     case Version.parse_requirement(req) do
       {:ok, parsed} -> {:ok, parsed}
       _ -> {:error, :invalid_requirement}
@@ -138,11 +157,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
   defp build_dependency_graph(plugins) do
     Enum.reduce(plugins, %{}, fn {id, metadata}, acc ->
       deps = Map.get(metadata, :dependencies, [])
-      dep_info = Enum.map(deps, fn
-        {dep_id, version_req, opts} -> {dep_id, version_req, opts}
-        {dep_id, version_req} -> {dep_id, version_req, %{optional: false}}
-        dep_id -> {dep_id, nil, %{optional: false}}
-      end)
+
+      dep_info =
+        Enum.map(deps, fn
+          {dep_id, version_req, opts} -> {dep_id, version_req, opts}
+          {dep_id, version_req} -> {dep_id, version_req, %{optional: false}}
+          dep_id -> {dep_id, nil, %{optional: false}}
+        end)
+
       Map.put(acc, id, dep_info)
     end)
   end
@@ -158,28 +180,43 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
     stack = []
 
     # Visit each node
-    case Enum.reduce_while(Map.keys(graph), {:ok, indices, lowlinks, components, stack, index}, fn node, {:ok, idx, low, comp, stk, i} ->
-      if Map.has_key?(idx, node) do
-        {:cont, {:ok, idx, low, comp, stk, i}}
-      else
-        case strongconnect(node, graph, idx, low, comp, stk, i, on_stack) do
-          {:ok, new_idx, new_low, new_comp, new_stk, new_i} ->
-            {:cont, {:ok, new_idx, new_low, new_comp, new_stk, new_i}}
-          {:error, cycle} ->
-            {:halt, {:error, cycle}}
-        end
-      end
-    end) do
+    case Enum.reduce_while(
+           Map.keys(graph),
+           {:ok, indices, lowlinks, components, stack, index},
+           fn node, {:ok, idx, low, comp, stk, i} ->
+             if Map.has_key?(idx, node) do
+               {:cont, {:ok, idx, low, comp, stk, i}}
+             else
+               case strongconnect(node, graph, idx, low, comp, stk, i, on_stack) do
+                 {:ok, new_idx, new_low, new_comp, new_stk, new_i} ->
+                   {:cont, {:ok, new_idx, new_low, new_comp, new_stk, new_i}}
+
+                 {:error, cycle} ->
+                   {:halt, {:error, cycle}}
+               end
+             end
+           end
+         ) do
       {:ok, _, _, components, _, _} ->
         # Reverse components to get topological order
         {:ok, Enum.reverse(Enum.flat_map(components, & &1))}
+
       {:error, cycle} ->
         {:error, cycle}
     end
   end
 
   # Strongly connected component detection (Tarjan's algorithm)
-  defp strongconnect(node, graph, indices, lowlinks, components, stack, index, on_stack) do
+  defp strongconnect(
+         node,
+         graph,
+         indices,
+         lowlinks,
+         components,
+         stack,
+         index,
+         on_stack
+       ) do
     # Initialize node's index and lowlink
     new_indices = Map.put(indices, node, index)
     new_lowlinks = Map.put(lowlinks, node, index)
@@ -188,38 +225,64 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
     new_on_stack = MapSet.put(on_stack, node)
 
     # Process all neighbors
-    result = Enum.reduce_while(graph[node], {new_indices, new_lowlinks, components, new_stack, new_on_stack, new_index}, fn {neighbor, _, _}, {idx, low, comp, stk, on_stk, i} ->
-      if not Map.has_key?(idx, neighbor) do
-        case strongconnect(neighbor, graph, idx, low, comp, stk, i, on_stk) do
-          {:ok, idx2, low2, comp2, stk2, i2} ->
-            # Update lowlink
-            low2 = Map.put(low2, node, min(Map.get(low2, node), Map.get(low2, neighbor)))
-            {:cont, {idx2, low2, comp2, stk2, on_stk, i2}}
-          {:error, cycle} ->
-            {:halt, {:error, cycle}}
+    result =
+      Enum.reduce_while(
+        graph[node],
+        {new_indices, new_lowlinks, components, new_stack, new_on_stack,
+         new_index},
+        fn {neighbor, _, _}, {idx, low, comp, stk, on_stk, i} ->
+          if not Map.has_key?(idx, neighbor) do
+            case strongconnect(neighbor, graph, idx, low, comp, stk, i, on_stk) do
+              {:ok, idx2, low2, comp2, stk2, i2} ->
+                # Update lowlink
+                low2 =
+                  Map.put(
+                    low2,
+                    node,
+                    min(Map.get(low2, node), Map.get(low2, neighbor))
+                  )
+
+                {:cont, {idx2, low2, comp2, stk2, on_stk, i2}}
+
+              {:error, cycle} ->
+                {:halt, {:error, cycle}}
+            end
+          else
+            if MapSet.member?(on_stk, neighbor) do
+              # Neighbor is in stack and hence in the current SCC
+              low =
+                Map.put(
+                  low,
+                  node,
+                  min(Map.get(low, node), Map.get(idx, neighbor))
+                )
+
+              {:cont, {idx, low, comp, stk, on_stk, i}}
+            else
+              {:cont, {idx, low, comp, stk, on_stk, i}}
+            end
+          end
         end
-      else
-        if MapSet.member?(on_stk, neighbor) do
-          # Neighbor is in stack and hence in the current SCC
-          low = Map.put(low, node, min(Map.get(low, node), Map.get(idx, neighbor)))
-          {:cont, {idx, low, comp, stk, on_stk, i}}
-        else
-          {:cont, {idx, low, comp, stk, on_stk, i}}
-        end
-      end
-    end)
+      )
 
     case result do
       {:error, cycle} ->
         {:error, cycle}
-      {final_indices, final_lowlinks, final_components, final_stack, final_on_stack, final_index} ->
+
+      {final_indices, final_lowlinks, final_components, final_stack,
+       final_on_stack, final_index} ->
         # If node is a root node, pop the stack and generate an SCC
         if Map.get(final_lowlinks, node) == Map.get(final_indices, node) do
-          {component, new_stack2, new_on_stack2} = pop_component(node, final_stack, final_on_stack)
+          {component, new_stack2, new_on_stack2} =
+            pop_component(node, final_stack, final_on_stack)
+
           new_components = [component | final_components]
-          {:ok, final_indices, final_lowlinks, new_components, new_stack2, final_index}
+
+          {:ok, final_indices, final_lowlinks, new_components, new_stack2,
+           final_index}
         else
-          {:ok, final_indices, final_lowlinks, final_components, final_stack, final_index}
+          {:ok, final_indices, final_lowlinks, final_components, final_stack,
+           final_index}
         end
     end
   end
@@ -237,6 +300,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
   end
 
   defp build_chain([], _graph, _visited, acc), do: acc
+
   defp build_chain([node | rest], graph, visited, acc) do
     if MapSet.member?(visited, node) do
       build_chain(rest, graph, visited, acc)
@@ -252,15 +316,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager do
   Checks if a version meets a version requirement.
   """
   def satisfies_version?(installed_version, version_req) do
-    case {Version.parse(installed_version), parse_version_requirement(version_req)} do
+    case {Version.parse(installed_version),
+          parse_version_requirement(version_req)} do
       {{:ok, parsed_version}, {:ok, parsed_requirement}} ->
         case parsed_requirement do
           {:or, requirements} ->
             Enum.any?(requirements, &Version.match?(parsed_version, &1))
+
           requirement ->
             Version.match?(parsed_version, requirement)
         end
-      _ -> false
+
+      _ ->
+        false
     end
   end
 end

@@ -18,7 +18,9 @@ defmodule Raxol.Terminal.Buffer.Manager.Damage do
       1
   """
   def mark_region(%State{} = state, x1, y1, x2, y2) do
-    new_tracker = DamageTracker.mark_damaged(state.damage_tracker, x1, y1, x2, y2)
+    new_tracker =
+      DamageTracker.mark_damaged(state.damage_tracker, x1, y1, x2, y2)
+
     %{state | damage_tracker: new_tracker}
   end
 

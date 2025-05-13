@@ -123,6 +123,33 @@ defmodule Raxol.Examples.ButtonTest do
       # State should persist
       assert button_after_resize.state.focused == false
     end
+
+    test "applies style and theme with correct precedence" do
+      theme = %{fg: :red, bg: :blue, focused_fg: :green}
+      style = %{fg: :yellow, bg: :magenta}
+
+      {:ok, button} =
+        Raxol.Test.Unit.setup_isolated_component(Button, %{
+          theme: theme,
+          style: style,
+          focused: true
+        })
+
+      view = Raxol.Test.Visual.render_component(button)
+      # Style should override theme
+      assert view.attrs.fg == :yellow
+      assert view.attrs.bg == :magenta
+      # Focused_fg from theme should be overridden if present in style
+      # (if style had focused_fg, it would override)
+    end
+
+    test "mount and unmount lifecycle hooks are called and return state" do
+      state = %{label: "Test", theme: %{}, style: %{}}
+      mounted = Button.mount(state)
+      assert mounted == state
+      unmounted = Button.unmount(mounted)
+      assert unmounted == mounted
+    end
   end
 
   describe "integration tests" do

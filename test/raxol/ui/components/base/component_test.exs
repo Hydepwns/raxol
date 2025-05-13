@@ -7,13 +7,16 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     @behaviour Raxol.UI.Components.Base.Component
 
     def init(props) do
-      Map.merge(%{
-        counter: 0,
-        mounted: false,
-        unmounted: false,
-        events: [],
-        render_count: 0
-      }, props)
+      Map.merge(
+        %{
+          counter: 0,
+          mounted: false,
+          unmounted: false,
+          events: [],
+          render_count: 0
+        },
+        props
+      )
     end
 
     def mount(state) do
@@ -31,12 +34,14 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
 
     def render(state, context) do
       new_state = %{state | render_count: state.render_count + 1}
-      {new_state, %{
-        type: :test_component,
-        id: state.id,
-        counter: state.counter,
-        theme: context.theme
-      }}
+
+      {new_state,
+       %{
+         type: :test_component,
+         id: state.id,
+         counter: state.counter,
+         theme: context.theme
+       }}
     end
 
     def handle_event(%{type: :test_event, value: value}, state) do
@@ -57,23 +62,25 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     test "complete lifecycle flow" do
       component = create_test_component(TestComponent)
 
-      {final_component, events} = simulate_lifecycle(component, fn mounted ->
-        # Verify mounted state
-        assert mounted.state.mounted
-        assert_receive {:commands, [{:command, :mounted}]}
+      {final_component, events} =
+        simulate_lifecycle(component, fn mounted ->
+          # Verify mounted state
+          assert mounted.state.mounted
+          assert_receive {:commands, [{:command, :mounted}]}
 
-        # Update state
-        updated = simulate_event_sequence(mounted, [
-          %{type: :test_event, value: "test1"},
-          %{type: :test_event, value: "test2"}
-        ])
+          # Update state
+          updated =
+            simulate_event_sequence(mounted, [
+              %{type: :test_event, value: "test1"},
+              %{type: :test_event, value: "test2"}
+            ])
 
-        # Verify updates
-        assert updated.state.counter == 0
-        assert updated.state.events == ["test2", "test1"]
+          # Verify updates
+          assert updated.state.counter == 0
+          assert updated.state.events == ["test2", "test1"]
 
-        updated
-      end)
+          updated
+        end)
 
       # Verify final state
       assert final_component.state.unmounted
@@ -87,7 +94,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
 
     test "unmount cleanup" do
       component = create_test_component(TestComponent)
-      {final, _} = simulate_lifecycle(component, &(&1))
+      {final, _} = simulate_lifecycle(component, & &1)
       assert final.state.unmounted
     end
   end
@@ -96,10 +103,11 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     test "state updates through events" do
       component = create_test_component(TestComponent)
 
-      updated = simulate_event_sequence(component, [
-        %{type: :test_event, value: "test1"},
-        %{type: :test_event, value: "test2"}
-      ])
+      updated =
+        simulate_event_sequence(component, [
+          %{type: :test_event, value: "test1"},
+          %{type: :test_event, value: "test2"}
+        ])
 
       assert updated.state.events == ["test2", "test1"]
     end
@@ -107,7 +115,8 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     test "state updates through commands" do
       component = create_test_component(TestComponent)
 
-      {updated, commands} = Unit.simulate_event(component, %{type: :test_event, value: "test"})
+      {updated, commands} =
+        Unit.simulate_event(component, %{type: :test_event, value: "test"})
 
       assert updated.state.events == ["test"]
       assert commands == [{:command, :event_handled}]
@@ -133,12 +142,13 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     test "render count tracking" do
       component = create_test_component(TestComponent)
 
-      {final, _} = simulate_lifecycle(component, fn mounted ->
-        # Render multiple times
-        contexts = [%{theme: %{}}, %{theme: %{}}, %{theme: %{}}]
-        validate_rendering(mounted, contexts)
-        mounted
-      end)
+      {final, _} =
+        simulate_lifecycle(component, fn mounted ->
+          # Render multiple times
+          contexts = [%{theme: %{}}, %{theme: %{}}, %{theme: %{}}]
+          validate_rendering(mounted, contexts)
+          mounted
+        end)
 
       assert final.state.render_count > 0
     end
@@ -148,7 +158,8 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     test "handles known events" do
       component = create_test_component(TestComponent)
 
-      {updated, commands} = Unit.simulate_event(component, %{type: :test_event, value: "test"})
+      {updated, commands} =
+        Unit.simulate_event(component, %{type: :test_event, value: "test"})
 
       assert updated.state.events == ["test"]
       assert commands == [{:command, :event_handled}]
@@ -157,7 +168,8 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     test "ignores unknown events" do
       component = create_test_component(TestComponent)
 
-      {updated, commands} = Unit.simulate_event(component, %{type: :unknown_event})
+      {updated, commands} =
+        Unit.simulate_event(component, %{type: :unknown_event})
 
       assert updated.state == component.state
       assert commands == []
@@ -191,7 +203,8 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       metrics = measure_performance(component, workload)
 
       assert metrics.iterations == 100
-      assert metrics.average_time < 100 # Less than 100ms per iteration
+      # Less than 100ms per iteration
+      assert metrics.average_time < 100
     end
   end
 
@@ -212,7 +225,8 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     test "handles invalid events gracefully" do
       component = create_test_component(TestComponent)
 
-      {updated, commands} = Unit.simulate_event(component, %{type: :invalid_event, data: nil})
+      {updated, commands} =
+        Unit.simulate_event(component, %{type: :invalid_event, data: nil})
 
       assert updated.state == component.state
       assert commands == []
@@ -229,7 +243,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       end
 
       component = create_test_component(MinimalComponent)
-      {final, _} = simulate_lifecycle(component, &(&1))
+      {final, _} = simulate_lifecycle(component, & &1)
 
       assert final.state == component.state
     end

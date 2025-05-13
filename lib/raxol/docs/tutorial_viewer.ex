@@ -319,7 +319,7 @@ defmodule Raxol.Docs.TutorialViewer do
               text(content: model.feedback_message, style: feedback_style)
             end
 
-            Raxol.View.Elements.row(gap: 10, style: "margin-top: 10px;") do
+            Raxol.View.Elements.row gap: 10, style: "margin-top: 10px;" do
               button(content: "Validate", on_click: :validate_exercise)
               # TODO: Check if hints are available for the step before enabling?
               button(content: "Get Hint", on_click: :get_hint)
@@ -329,7 +329,9 @@ defmodule Raxol.Docs.TutorialViewer do
       end
 
       # Navigation
-      Raxol.View.Elements.row(gap: 10, justify: :space_between, style: "margin-top: 15px;") do
+      Raxol.View.Elements.row gap: 10,
+                              justify: :space_between,
+                              style: "margin-top: 15px;" do
         # TODO: Determine if first/last step to disable buttons -> DONE
         # first_step? = false # Replace with actual check -> REMOVED
         # last_step? = false # Replace with actual check -> REMOVED

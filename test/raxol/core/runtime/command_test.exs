@@ -146,7 +146,10 @@ defmodule Raxol.Core.Runtime.CommandTest do
       assert_receive {:command_result, ^msg}, 100
     end
 
-    test "executes file write system command", %{context: context, temp_dir: temp_dir} do
+    test "executes file write system command", %{
+      context: context,
+      temp_dir: temp_dir
+    } do
       file_path = Path.join(temp_dir, "output.txt")
       content = "hello from raxol test"
 
@@ -159,7 +162,10 @@ defmodule Raxol.Core.Runtime.CommandTest do
       assert File.read!(file_path) == content
     end
 
-    test "executes file read system command", %{context: context, temp_dir: temp_dir} do
+    test "executes file read system command", %{
+      context: context,
+      temp_dir: temp_dir
+    } do
       file_path = Path.join(temp_dir, "test_file.txt")
       content = "test content"
       File.write!(file_path, content)

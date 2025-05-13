@@ -67,6 +67,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   @impl true
   def init(opts) do
     runtime_pid = Keyword.get(opts, :runtime_pid, nil)
+
     {:ok,
      %{
        # component_id => component_state
@@ -106,7 +107,12 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     new_state = update_in(new_state.render_queue, &[component_id | &1])
 
     # Emit component_queued_for_render event if runtime_pid is set
-    if new_state.runtime_pid, do: send(new_state.runtime_pid, {:component_queued_for_render, component_id})
+    if new_state.runtime_pid,
+      do:
+        send(
+          new_state.runtime_pid,
+          {:component_queued_for_render, component_id}
+        )
 
     {:reply, {:ok, component_id}, new_state}
   end
@@ -157,7 +163,12 @@ defmodule Raxol.Core.Runtime.ComponentManager do
             )
 
           # Send component queued for render event if runtime_pid is set
-          if state_after_render.runtime_pid, do: send(state_after_render.runtime_pid, {:component_queued_for_render, component_id})
+          if state_after_render.runtime_pid,
+            do:
+              send(
+                state_after_render.runtime_pid,
+                {:component_queued_for_render, component_id}
+              )
 
           # Process commands returned by the component
           final_state =
@@ -287,7 +298,9 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
         {:schedule, msg, delay} ->
           # Schedule delayed message using Process.send_after
-          _timer_ref = Process.send_after(self(), {:update, component_id, msg}, delay)
+          _timer_ref =
+            Process.send_after(self(), {:update, component_id, msg}, delay)
+
           acc
 
         {:broadcast, msg} ->
@@ -308,14 +321,19 @@ defmodule Raxol.Core.Runtime.ComponentManager do
         acc_state
       else
         case Map.get(acc_state.components, id) do
-          nil -> acc_state
+          nil ->
+            acc_state
+
           component ->
             # Directly call component update
-            {updated_comp_state, _commands} = component.module.update(msg, component.state)
+            {updated_comp_state, _commands} =
+              component.module.update(msg, component.state)
 
             # Update component in state
             updated_component = %{component | state: updated_comp_state}
-            state_with_updated_comp = put_in(acc_state.components[id], updated_component)
+
+            state_with_updated_comp =
+              put_in(acc_state.components[id], updated_component)
 
             # Add to render queue
             update_in(state_with_updated_comp.render_queue, &[id | &1])

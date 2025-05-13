@@ -128,10 +128,13 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerReloadingTest do
       }
     ]
 
+    # Before calling Manager.start_link(start_opts), ensure start_opts includes runtime_pid: self()
+    start_opts = Keyword.put_new(base_opts, :runtime_pid, self())
+
     # Return tmp_dir_path as tmp_dir for the test context
     {:ok,
      tmp_dir: tmp_dir_path,
-     base_opts: base_opts,
+     base_opts: start_opts,
      test_name: test_name,
      table: table_name}
   end
@@ -225,7 +228,9 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerReloadingTest do
       }
 
       # Expectations for initial load (LoaderMock)
-      Mox.expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins, fn [^tmp_dir] ->
+      Mox.expect(Raxol.Core.Runtime.Plugins.LoaderMock, :discover_plugins, fn [
+                                                                                ^tmp_dir
+                                                                              ] ->
         {:ok, [initial_plugin_spec]}
       end)
 

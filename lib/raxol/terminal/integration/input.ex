@@ -16,8 +16,8 @@ defmodule Raxol.Terminal.Integration.Input do
     state =
       if state.config.enable_command_history do
         %{
-          state |
-          command_history: History.save_input(state.command_history, input)
+          state
+          | command_history: History.save_input(state.command_history, input)
         }
       else
         state
@@ -82,9 +82,11 @@ defmodule Raxol.Terminal.Integration.Input do
       [completion] ->
         # Single completion, apply it
         handle_input(state, completion)
+
       [] ->
         # No completions, do nothing
         state
+
       _ ->
         # Multiple completions, show them
         show_completions(state, completions)

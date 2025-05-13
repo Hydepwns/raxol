@@ -238,13 +238,21 @@ defmodule Raxol.Terminal.IntegrationTest do
       {state_after_cmd3, _} =
         Emulator.process_input(state_after_cmd2, "command3\n")
 
-      assert state_after_cmd3.command_history == ["command1", "command2", "command3"]
+      assert state_after_cmd3.command_history == [
+               "command1",
+               "command2",
+               "command3"
+             ]
 
       # Add a fourth command, should remove the oldest
       {state_after_cmd4, _} =
         Emulator.process_input(state_after_cmd3, "command4\n")
 
-      assert state_after_cmd4.command_history == ["command2", "command3", "command4"]
+      assert state_after_cmd4.command_history == [
+               "command2",
+               "command3",
+               "command4"
+             ]
     end
   end
 
@@ -326,7 +334,9 @@ defmodule Raxol.Terminal.IntegrationTest do
       {final_state, _output} = Emulator.process_input(state, sixel_sequence)
 
       # Get the first cell and verify it has the correct background color
-      first_cell = ScreenBuffer.get_cell_at(final_state.main_screen_buffer, 0, 0)
+      first_cell =
+        ScreenBuffer.get_cell_at(final_state.main_screen_buffer, 0, 0)
+
       assert first_cell.style.background == {0, 0, 0}
 
       # Verify the cell has the SIXEL flag set

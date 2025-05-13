@@ -31,7 +31,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   """
   def update_page_state(state, page_num) do
     effective_options = get_effective_options(state)
-    total_pages = calculate_total_pages(length(effective_options), state.page_size)
+
+    total_pages =
+      calculate_total_pages(length(effective_options), state.page_size)
 
     # Ensure page number is valid
     valid_page = max(0, min(page_num, total_pages - 1))
@@ -40,7 +42,8 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
     new_focused_index = valid_page * state.page_size
 
     # Clamp to valid option range
-    clamped_focus = min(new_focused_index, max(0, length(effective_options) - 1))
+    clamped_focus =
+      min(new_focused_index, max(0, length(effective_options) - 1))
 
     %{
       state

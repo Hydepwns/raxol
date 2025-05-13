@@ -200,11 +200,12 @@ defmodule Raxol.Components.Selection.ListTest do
     # Custom renderer that returns a label with a prefix
     custom_renderer = fn item -> "Custom: #{item}" end
 
-    state = Raxol.Components.Selection.List.init(%{
-      id: :custom_render_list,
-      items: ["a", "b", "c"],
-      item_renderer: custom_renderer
-    })
+    state =
+      Raxol.Components.Selection.List.init(%{
+        id: :custom_render_list,
+        items: ["a", "b", "c"],
+        item_renderer: custom_renderer
+      })
 
     # Render the list
     rendered = Raxol.Components.Selection.List.render(state, %{})
@@ -215,6 +216,7 @@ defmodule Raxol.Components.Selection.ListTest do
     assert column.type == :column
     boxes = column.children
     assert length(boxes) == 3
+
     Enum.each(Enum.zip(boxes, ["a", "b", "c"]), fn {box, item} ->
       assert box.type == :box
       [label] = box.children

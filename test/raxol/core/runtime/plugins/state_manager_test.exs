@@ -15,21 +15,29 @@ defmodule Raxol.Core.Runtime.Plugins.StateManagerTest do
       }
 
       # Call the function
-      updated_maps = StateManager.update_state_maps(
-        "test_plugin",
-        TestPlugin,
-        %{version: "1.0.0"},
-        %{initialized: true},
-        %{setting: "value"},
-        state_maps
-      )
+      updated_maps =
+        StateManager.update_state_maps(
+          "test_plugin",
+          TestPlugin,
+          %{version: "1.0.0"},
+          %{initialized: true},
+          %{setting: "value"},
+          state_maps
+        )
 
       # Verify results
       assert updated_maps.plugins == %{"test_plugin" => TestPlugin}
       assert updated_maps.metadata == %{"test_plugin" => %{version: "1.0.0"}}
-      assert updated_maps.plugin_states == %{"test_plugin" => %{initialized: true}}
+
+      assert updated_maps.plugin_states == %{
+               "test_plugin" => %{initialized: true}
+             }
+
       assert updated_maps.load_order == ["test_plugin"]
-      assert updated_maps.plugin_config == %{"test_plugin" => %{setting: "value"}}
+
+      assert updated_maps.plugin_config == %{
+               "test_plugin" => %{setting: "value"}
+             }
     end
 
     test "appends to existing state maps" do
@@ -43,33 +51,38 @@ defmodule Raxol.Core.Runtime.Plugins.StateManagerTest do
       }
 
       # Call the function
-      updated_maps = StateManager.update_state_maps(
-        "test_plugin",
-        TestPlugin,
-        %{version: "1.0.0"},
-        %{initialized: true},
-        %{setting: "value"},
-        state_maps
-      )
+      updated_maps =
+        StateManager.update_state_maps(
+          "test_plugin",
+          TestPlugin,
+          %{version: "1.0.0"},
+          %{initialized: true},
+          %{setting: "value"},
+          state_maps
+        )
 
       # Verify results
       assert updated_maps.plugins == %{
-        "existing_plugin" => ExistingPlugin,
-        "test_plugin" => TestPlugin
-      }
+               "existing_plugin" => ExistingPlugin,
+               "test_plugin" => TestPlugin
+             }
+
       assert updated_maps.metadata == %{
-        "existing_plugin" => %{version: "0.9.0"},
-        "test_plugin" => %{version: "1.0.0"}
-      }
+               "existing_plugin" => %{version: "0.9.0"},
+               "test_plugin" => %{version: "1.0.0"}
+             }
+
       assert updated_maps.plugin_states == %{
-        "existing_plugin" => %{initialized: true},
-        "test_plugin" => %{initialized: true}
-      }
+               "existing_plugin" => %{initialized: true},
+               "test_plugin" => %{initialized: true}
+             }
+
       assert updated_maps.load_order == ["existing_plugin", "test_plugin"]
+
       assert updated_maps.plugin_config == %{
-        "existing_plugin" => %{setting: "old"},
-        "test_plugin" => %{setting: "value"}
-      }
+               "existing_plugin" => %{setting: "old"},
+               "test_plugin" => %{setting: "value"}
+             }
     end
   end
 
@@ -123,9 +136,16 @@ defmodule Raxol.Core.Runtime.Plugins.StateManagerTest do
       # Verify results
       assert updated_maps.plugins == %{"other_plugin" => OtherPlugin}
       assert updated_maps.metadata == %{"other_plugin" => %{version: "0.9.0"}}
-      assert updated_maps.plugin_states == %{"other_plugin" => %{initialized: true}}
+
+      assert updated_maps.plugin_states == %{
+               "other_plugin" => %{initialized: true}
+             }
+
       assert updated_maps.load_order == ["other_plugin"]
-      assert updated_maps.plugin_config == %{"other_plugin" => %{setting: "other"}}
+
+      assert updated_maps.plugin_config == %{
+               "other_plugin" => %{setting: "other"}
+             }
     end
   end
 
@@ -141,14 +161,18 @@ defmodule Raxol.Core.Runtime.Plugins.StateManagerTest do
       }
 
       # Call the function
-      updated_maps = StateManager.update_plugin_state(
-        "test_plugin",
-        %{initialized: false},
-        state_maps
-      )
+      updated_maps =
+        StateManager.update_plugin_state(
+          "test_plugin",
+          %{initialized: false},
+          state_maps
+        )
 
       # Verify results
-      assert updated_maps.plugin_states == %{"test_plugin" => %{initialized: false}}
+      assert updated_maps.plugin_states == %{
+               "test_plugin" => %{initialized: false}
+             }
+
       # Verify other maps are unchanged
       assert updated_maps.plugins == state_maps.plugins
       assert updated_maps.metadata == state_maps.metadata

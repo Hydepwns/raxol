@@ -21,6 +21,7 @@ defmodule Raxol.TestHelpers do
     else
       if System.monotonic_time(:millisecond) - start < timeout_ms do
         Process.send_after(self(), {:check_condition, ref}, 100)
+
         receive do
           {:check_condition, received_ref} when received_ref == ref ->
             do_wait_for_state(condition_fun, start, timeout_ms, ref)
@@ -41,6 +42,7 @@ defmodule Raxol.TestHelpers do
     if Process.alive?(pid) do
       ref = Process.monitor(pid)
       Process.exit(pid, :normal)
+
       receive do
         {:DOWN, ^ref, :process, _pid, _reason} -> :ok
       after
@@ -71,7 +73,7 @@ defmodule Raxol.TestHelpers do
   Creates a temporary directory for test files.
   """
   def create_temp_dir do
-    dir = Path.join(System.tmp_dir!(), "raxol_test_#{:rand.uniform(1000000)}")
+    dir = Path.join(System.tmp_dir!(), "raxol_test_#{:rand.uniform(1_000_000)}")
     File.mkdir_p!(dir)
     dir
   end
@@ -81,5 +83,15 @@ defmodule Raxol.TestHelpers do
   """
   def cleanup_temp_dir(dir) do
     File.rm_rf!(dir)
+  end
+
+  def start_test_event_source(args \\ %{}, context \\ %{pid: self()}) do
+    case Raxol.Core.Runtime.EventSourceTest.TestEventSource.start_link(
+           args,
+           context
+         ) do
+      {:ok, pid} -> pid
+      other -> other
+    end
   end
 end

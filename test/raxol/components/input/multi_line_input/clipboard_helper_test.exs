@@ -1,9 +1,9 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Components.Input.MultiLineInput
-  alias Raxol.Components.Input.MultiLineInput.ClipboardHelper
-  alias Raxol.Components.Input.MultiLineInput.TextHelper
+  alias Raxol.UI.Components.Input.MultiLineInput
+  alias Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper
+  alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
   alias Raxol.Core.Runtime.Command
 
   # Helper to create initial state

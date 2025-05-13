@@ -6,14 +6,11 @@ defmodule Raxol.Style.Colors.HotReloadTest do
 
   @test_theme %{
     name: "Test Theme",
-    palette: %{
-      name: "Test Palette",
-      colors: %{
-        primary: "#FF0000",
-        secondary: "#00FF00",
-        background: "#000000",
-        foreground: "#FFFFFF"
-      }
+    colors: %{
+      primary: "#FF0000",
+      secondary: "#00FF00",
+      background: "#000000",
+      foreground: "#FFFFFF"
     },
     ui_mappings: %{
       app_background: :background,

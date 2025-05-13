@@ -15,20 +15,21 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
 
       tutorial ->
         # Get the first step or last accessed step
-        progress = Map.get(state.progress, tutorial_id, %{
-          completed: false,
-          completed_steps: [],
-          last_step: nil
-        })
+        progress =
+          Map.get(state.progress, tutorial_id, %{
+            completed: false,
+            completed_steps: [],
+            last_step: nil
+          })
 
         step_id = progress.last_step || List.first(tutorial.steps).id
 
         # Update state
         updated_state = %{
-          state |
-          current_tutorial: tutorial_id,
-          current_step: step_id,
-          history: [{:tutorial_start, tutorial_id, step_id} | state.history]
+          state
+          | current_tutorial: tutorial_id,
+            current_step: step_id,
+            history: [{:tutorial_start, tutorial_id, step_id} | state.history]
         }
 
         {:ok, State.get_current_step(updated_state)}
@@ -41,25 +42,30 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
   def next_step(state) do
     with tutorial_id when not is_nil(tutorial_id) <- state.current_tutorial,
          step_id when not is_nil(step_id) <- state.current_step,
-         tutorial when not is_nil(tutorial) <- Map.get(state.tutorials, tutorial_id) do
+         tutorial when not is_nil(tutorial) <-
+           Map.get(state.tutorials, tutorial_id) do
       current_index = Enum.find_index(tutorial.steps, &(&1.id == step_id))
 
       if current_index < length(tutorial.steps) - 1 do
         next_step = Enum.at(tutorial.steps, current_index + 1)
         updated_state = State.update_progress(state, tutorial_id, next_step.id)
+
         updated_state = %{
-          updated_state |
-          current_step: next_step.id,
-          history: [{:step_change, tutorial_id, next_step.id} | state.history]
+          updated_state
+          | current_step: next_step.id,
+            history: [{:step_change, tutorial_id, next_step.id} | state.history]
         }
+
         {:ok, State.get_current_step(updated_state)}
       else
         # This was the last step, mark tutorial as completed
         updated_state = State.mark_completed(state, tutorial_id)
+
         updated_state = %{
-          updated_state |
-          history: [{:tutorial_complete, tutorial_id} | state.history]
+          updated_state
+          | history: [{:tutorial_complete, tutorial_id} | state.history]
         }
+
         {:ok, :tutorial_completed}
       end
     else
@@ -73,16 +79,19 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
   def previous_step(state) do
     with tutorial_id when not is_nil(tutorial_id) <- state.current_tutorial,
          step_id when not is_nil(step_id) <- state.current_step,
-         tutorial when not is_nil(tutorial) <- Map.get(state.tutorials, tutorial_id) do
+         tutorial when not is_nil(tutorial) <-
+           Map.get(state.tutorials, tutorial_id) do
       current_index = Enum.find_index(tutorial.steps, &(&1.id == step_id))
 
       if current_index > 0 do
         prev_step = Enum.at(tutorial.steps, current_index - 1)
+
         updated_state = %{
-          state |
-          current_step: prev_step.id,
-          history: [{:step_change, tutorial_id, prev_step.id} | state.history]
+          state
+          | current_step: prev_step.id,
+            history: [{:step_change, tutorial_id, prev_step.id} | state.history]
         }
+
         {:ok, State.get_current_step(updated_state)}
       else
         {:error, "Already at first step"}
@@ -97,13 +106,15 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
   """
   def jump_to_step(state, step_id) do
     with tutorial_id when not is_nil(tutorial_id) <- state.current_tutorial,
-         tutorial when not is_nil(tutorial) <- Map.get(state.tutorials, tutorial_id),
+         tutorial when not is_nil(tutorial) <-
+           Map.get(state.tutorials, tutorial_id),
          true <- Enum.any?(tutorial.steps, &(&1.id == step_id)) do
       updated_state = %{
-        state |
-        current_step: step_id,
-        history: [{:step_jump, tutorial_id, step_id} | state.history]
+        state
+        | current_step: step_id,
+          history: [{:step_jump, tutorial_id, step_id} | state.history]
       }
+
       {:ok, State.get_current_step(updated_state)}
     else
       _ -> {:error, "Invalid step or no tutorial in progress"}
@@ -115,27 +126,33 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
   """
   def get_progress(state, tutorial_id) do
     case Map.get(state.tutorials, tutorial_id) do
-      nil -> {:error, "Tutorial not found"}
+      nil ->
+        {:error, "Tutorial not found"}
+
       tutorial ->
-        progress = Map.get(state.progress, tutorial_id, %{
-          completed: false,
-          completed_steps: [],
-          last_step: nil
-        })
+        progress =
+          Map.get(state.progress, tutorial_id, %{
+            completed: false,
+            completed_steps: [],
+            last_step: nil
+          })
 
         total_steps = length(tutorial.steps)
         completed_steps = length(progress.completed_steps)
-        percentage = if total_steps > 0, do: (completed_steps / total_steps) * 100, else: 0
 
-        {:ok, %{
-          tutorial_id: tutorial_id,
-          completed: progress.completed,
-          completed_steps: progress.completed_steps,
-          last_step: progress.last_step,
-          total_steps: total_steps,
-          completed_count: completed_steps,
-          percentage: percentage
-        }}
+        percentage =
+          if total_steps > 0, do: completed_steps / total_steps * 100, else: 0
+
+        {:ok,
+         %{
+           tutorial_id: tutorial_id,
+           completed: progress.completed,
+           completed_steps: progress.completed_steps,
+           last_step: progress.last_step,
+           total_steps: total_steps,
+           completed_count: completed_steps,
+           percentage: percentage
+         }}
     end
   end
 end

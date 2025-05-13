@@ -189,28 +189,67 @@ defmodule Raxol.Plugins.PluginSystemTest do
       {:ok, plugin} = ThemePlugin.init()
       assert plugin.name == "theme"
       assert plugin.enabled == true
-      assert plugin.current_theme.background == {0, 0, 0}
-      assert plugin.current_theme.foreground == {255, 255, 255}
-      assert plugin.current_theme.red == {255, 0, 0}
+      assert is_map(plugin.current_theme.colors)
+
+      assert plugin.current_theme.colors.background ==
+               Raxol.UI.Theming.Theme.default_theme().colors.background
+
+      assert plugin.current_theme.colors.foreground ==
+               Raxol.UI.Theming.Theme.default_theme().colors.foreground
     end
 
     test "changes theme" do
       {:ok, plugin} = ThemePlugin.init()
 
+      # Register a new theme for testing
+      new_theme_attrs = %{
+        id: :test_theme,
+        name: "Test Theme",
+        colors: %{
+          background: "#123456",
+          foreground: "#654321"
+        }
+      }
+
+      :ok = ThemePlugin.register_theme(new_theme_attrs)
+
       # Test changing to a valid theme
-      {:ok, updated_plugin} = ThemePlugin.change_theme(plugin, "solarized_dark")
-      assert updated_plugin.current_theme.background == {0, 43, 54}
+      {:ok, updated_plugin} = ThemePlugin.change_theme(plugin, :test_theme)
+      assert updated_plugin.current_theme.name == "Test Theme"
+      assert updated_plugin.current_theme.colors.background == "#123456"
 
       # Test changing to an invalid theme
-      {:error, _} = ThemePlugin.change_theme(plugin, "invalid_theme")
+      assert {:error, _} = ThemePlugin.change_theme(plugin, :invalid_theme)
     end
 
     test "lists available themes" do
       themes = ThemePlugin.list_themes()
-      assert "default" in themes
-      assert "solarized_dark" in themes
-      assert "solarized_light" in themes
-      assert "dracula" in themes
+      assert Enum.any?(themes, fn t -> t.name == "Default Theme" end)
+    end
+
+    test "registers a new theme and retrieves it" do
+      theme_attrs = %{
+        id: :custom_theme,
+        name: "Custom Theme",
+        colors: %{
+          background: "#abcdef",
+          foreground: "#fedcba"
+        }
+      }
+
+      :ok = ThemePlugin.register_theme(theme_attrs)
+      themes = ThemePlugin.list_themes()
+      assert Enum.any?(themes, fn t -> t.name == "Custom Theme" end)
+      {:ok, plugin} = ThemePlugin.init(%{theme: :custom_theme})
+      assert plugin.current_theme.name == "Custom Theme"
+      assert plugin.current_theme.colors.background == "#abcdef"
+    end
+
+    test "get_theme/1 returns the current theme struct" do
+      {:ok, plugin} = ThemePlugin.init()
+      theme = ThemePlugin.get_theme(plugin)
+      assert is_map(theme)
+      assert Map.has_key?(theme, :colors)
     end
   end
 
@@ -288,19 +327,6 @@ defmodule Raxol.Plugins.PluginSystemTest do
       # Verify plugins are loaded (via PluginManager directly)
       plugins = PluginManager.list_plugins(plugin_manager)
       assert length(plugins) == 4
-
-      # Test plugin functionality via process_input (basic check)
-      # Note: We assume process_input correctly delegates to the plugin manager
-      # based on other tests. Full buffer verification is complex here.
-      # Emulator.process_input currently does NOT delegate commands to plugins.
-      # These assertions are removed until Emulator logic is updated.
-      # {emulator, _output} = Emulator.process_input(emulator, "/theme solarized_dark")
-      # assert Map.get(emulator.plugin_manager.plugins["theme"].current_theme, :background) == {0, 43, 54}
-      #
-      # {emulator, _output} = Emulator.process_input(emulator, "/search example")
-      # assert emulator.plugin_manager.plugins["search"].search_term == "example"
-
-      # Removed Emulator.write_string and buffer content assertions due to undefined functions
     end
   end
 end

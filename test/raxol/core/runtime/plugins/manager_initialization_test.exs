@@ -48,7 +48,10 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerInitializationTest do
       # command_registry_table, command_helper_module not needed for pure init tests
     ]
 
-    {:ok, tmp_dir: tmp_dir, base_opts: start_opts}
+    # Before calling Manager.start_link(opts), ensure opts includes runtime_pid: self()
+    opts = Keyword.put_new(start_opts, :runtime_pid, self())
+
+    {:ok, tmp_dir: tmp_dir, base_opts: opts}
   end
 
   # Helper to create a simple plugin file
@@ -241,10 +244,12 @@ defmodule Raxol.Core.Runtime.Plugins.ManagerInitializationTest do
       assert Map.has_key?(plugins, :plugin_d)
 
       plugin_states = GenServer.call(pid, :get_plugin_states)
+
       assert Map.get(plugin_states, :plugin_c) == %{
                started: true,
                id: :plugin_c
              }
+
       assert Map.get(plugin_states, :plugin_d) == %{
                started: true,
                id: :plugin_d

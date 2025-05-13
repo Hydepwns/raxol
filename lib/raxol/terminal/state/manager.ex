@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.State.Manager do
   Manages terminal state including modes, character sets, and state stack.
   """
 
-  alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.ModeManager
   require Logger
@@ -162,6 +162,7 @@ defmodule Raxol.Terminal.State.Manager do
     case TerminalState.pop(state.state_stack) do
       {nil, new_stack} ->
         %{state | state_stack: new_stack}
+
       {saved_state, new_stack} ->
         %{state | state_stack: new_stack}
         |> Map.merge(saved_state)

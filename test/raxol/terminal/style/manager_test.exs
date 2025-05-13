@@ -113,10 +113,14 @@ defmodule Raxol.Terminal.Style.ManagerTest do
 
       params = Manager.format_sgr_params(style)
       # The exact format may vary, but it should contain the relevant codes
-      assert String.contains?(params, "1")  # bold
-      assert String.contains?(params, "4")  # underline
-      assert String.contains?(params, "31") # red foreground
-      assert String.contains?(params, "44") # blue background
+      # bold
+      assert String.contains?(params, "1")
+      # underline
+      assert String.contains?(params, "4")
+      # red foreground
+      assert String.contains?(params, "31")
+      # blue background
+      assert String.contains?(params, "44")
     end
   end
 end

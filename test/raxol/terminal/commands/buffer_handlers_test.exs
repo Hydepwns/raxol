@@ -13,11 +13,14 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       cursor: CursorManager.new(),
       style: TextFormatting.new()
     }
+
     {:ok, emulator: emulator}
   end
 
   describe "handle_L/2 (Insert Line)" do
-    test "inserts specified number of lines at cursor position", %{emulator: emulator} do
+    test "inserts specified number of lines at cursor position", %{
+      emulator: emulator
+    } do
       # Fill buffer with test data
       emulator = fill_buffer_with_test_data(emulator)
       # Move cursor to middle of screen
@@ -48,7 +51,9 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
   end
 
   describe "handle_M/2 (Delete Line)" do
-    test "deletes specified number of lines at cursor position", %{emulator: emulator} do
+    test "deletes specified number of lines at cursor position", %{
+      emulator: emulator
+    } do
       # Fill buffer with test data
       emulator = fill_buffer_with_test_data(emulator)
       # Move cursor to middle of screen
@@ -80,7 +85,9 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
   end
 
   describe "handle_P/2 (Delete Character)" do
-    test "deletes specified number of characters at cursor position", %{emulator: emulator} do
+    test "deletes specified number of characters at cursor position", %{
+      emulator: emulator
+    } do
       # Fill buffer with test data
       emulator = fill_buffer_with_test_data(emulator)
       # Move cursor to middle of line
@@ -110,7 +117,9 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
   end
 
   describe "handle_at/2 (Insert Character)" do
-    test "inserts specified number of spaces at cursor position", %{emulator: emulator} do
+    test "inserts specified number of spaces at cursor position", %{
+      emulator: emulator
+    } do
       # Fill buffer with test data
       emulator = fill_buffer_with_test_data(emulator)
       # Move cursor to middle of line
@@ -140,7 +149,9 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
   end
 
   describe "handle_X/2 (Erase Character)" do
-    test "erases specified number of characters at cursor position", %{emulator: emulator} do
+    test "erases specified number of characters at cursor position", %{
+      emulator: emulator
+    } do
       # Fill buffer with test data
       emulator = fill_buffer_with_test_data(emulator)
       # Move cursor to middle of line
@@ -172,15 +183,18 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
   # Helper function to fill buffer with test data
   defp fill_buffer_with_test_data(emulator) do
     buffer = emulator.main_screen_buffer
+
     for y <- 0..9 do
       buffer = ScreenBuffer.write_string(buffer, 0, y, "Line #{y}")
     end
+
     %{emulator | main_screen_buffer: buffer}
   end
 
   # Helper function to get line content as string
   defp get_line(emulator, y) do
     buffer = emulator.main_screen_buffer
+
     for x <- 0..9 do
       ScreenBuffer.get_char(buffer, x, y)
     end

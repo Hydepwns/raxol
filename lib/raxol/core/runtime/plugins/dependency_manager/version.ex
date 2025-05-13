@@ -27,6 +27,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
           else
             {:error, :version_mismatch}
           end
+
         requirement ->
           if Version.match?(parsed_version, requirement) do
             :ok
@@ -65,10 +66,15 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
     case String.split(requirement, "||") do
       [single_req] ->
         parse_single_requirement(single_req)
+
       multiple_reqs ->
         # Handle OR conditions
         parsed_reqs = Enum.map(multiple_reqs, &parse_single_requirement/1)
-        if Enum.all?(parsed_reqs, fn {:ok, _} -> true; _ -> false end) do
+
+        if Enum.all?(parsed_reqs, fn
+             {:ok, _} -> true
+             _ -> false
+           end) do
           {:ok, {:or, Enum.map(parsed_reqs, fn {:ok, req} -> req end)}}
         else
           {:error, :invalid_requirement}
@@ -90,6 +96,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
   """
   def parse_single_requirement(req) do
     req = String.trim(req)
+
     case Version.parse_requirement(req) do
       {:ok, parsed} -> {:ok, parsed}
       _ -> {:error, :invalid_requirement}

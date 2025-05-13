@@ -7,12 +7,31 @@ Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, :manual)
 Application.ensure_all_started(:raxol)
 
 # Set up Mox for mocking
-Mox.defmock(Raxol.Core.Runtime.Plugins.FileWatcherMock, for: Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour)
-Mox.defmock(Raxol.Core.Runtime.Plugins.LoaderMock, for: Raxol.Core.Runtime.Plugins.Loader.Behaviour)
-Mox.defmock(Raxol.Core.Runtime.Plugins.LifecycleHelperMock, for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour)
-Mox.defmock(Raxol.Core.Runtime.Plugins.EdgeCasesLifecycleHelperMock, for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour)
-Mox.defmock(Raxol.System.DeltaUpdaterSystemAdapterMock, for: Raxol.System.DeltaUpdaterSystemAdapterBehaviour)
-Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock, for: Raxol.Terminal.Config.EnvironmentAdapterBehaviour)
+Mox.defmock(Raxol.Core.Runtime.Plugins.FileWatcherMock,
+  for: Raxol.Core.Runtime.Plugins.FileWatcher.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.LoaderMock,
+  for: Raxol.Core.Runtime.Plugins.Loader.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.LifecycleHelperMock,
+  for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+)
+
+Mox.defmock(Raxol.Core.Runtime.Plugins.EdgeCasesLifecycleHelperMock,
+  for: Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour
+)
+
+Mox.defmock(Raxol.System.DeltaUpdaterSystemAdapterMock,
+  for: Raxol.System.DeltaUpdaterSystemAdapterBehaviour
+)
+
+Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock,
+  for: Raxol.Terminal.Config.EnvironmentAdapterBehaviour
+)
+
+Mox.defmock(FileSystemMock, for: FileSystem.Behaviour)
 
 # Set up test environment
 Application.put_env(:raxol, :test_mode, true)
@@ -23,3 +42,9 @@ if Application.get_env(:raxol, :database_enabled, true) do
 end
 
 Code.require_file("raxol/terminal/driver_test_helper.exs", __DIR__)
+
+# Ensure all support helpers are loaded
+Enum.each(
+  Path.wildcard(Path.join([__DIR__, "support", "*.ex"])),
+  &Code.require_file/1
+)

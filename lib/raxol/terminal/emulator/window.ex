@@ -6,19 +6,19 @@ defmodule Raxol.Terminal.Emulator.Window do
 
   require Logger
 
-  alias Raxol.Terminal.Core
+  alias Raxol.Terminal.Emulator
 
   @doc """
   Sets the window title.
   Returns {:ok, updated_emulator}.
   """
-  @spec set_title(Core.t(), String.t()) :: {:ok, Core.t()}
-  def set_title(%Core{} = emulator, title) when is_binary(title) do
+  @spec set_title(Emulator.t(), String.t()) :: {:ok, Emulator.t()}
+  def set_title(%Emulator{} = emulator, title) when is_binary(title) do
     window_state = Map.put(emulator.window_state, :title, title)
     {:ok, %{emulator | window_title: title, window_state: window_state}}
   end
 
-  def set_title(%Core{} = _emulator, invalid_title) do
+  def set_title(%Emulator{} = _emulator, invalid_title) do
     {:error, "Invalid window title: #{inspect(invalid_title)}"}
   end
 
@@ -26,13 +26,13 @@ defmodule Raxol.Terminal.Emulator.Window do
   Sets the window icon name.
   Returns {:ok, updated_emulator}.
   """
-  @spec set_icon_name(Core.t(), String.t()) :: {:ok, Core.t()}
-  def set_icon_name(%Core{} = emulator, name) when is_binary(name) do
+  @spec set_icon_name(Emulator.t(), String.t()) :: {:ok, Emulator.t()}
+  def set_icon_name(%Emulator{} = emulator, name) when is_binary(name) do
     window_state = Map.put(emulator.window_state, :icon_name, name)
     {:ok, %{emulator | icon_name: name, window_state: window_state}}
   end
 
-  def set_icon_name(%Core{} = _emulator, invalid_name) do
+  def set_icon_name(%Emulator{} = _emulator, invalid_name) do
     {:error, "Invalid icon name: #{inspect(invalid_name)}"}
   end
 
@@ -40,13 +40,17 @@ defmodule Raxol.Terminal.Emulator.Window do
   Sets the window size.
   Returns {:ok, updated_emulator}.
   """
-  @spec set_size(Core.t(), non_neg_integer(), non_neg_integer()) :: {:ok, Core.t()}
-  def set_size(%Core{} = emulator, width, height) when width > 0 and height > 0 do
+  @spec set_size(Emulator.t(), non_neg_integer(), non_neg_integer()) ::
+          {:ok, Emulator.t()}
+  def set_size(%Emulator{} = emulator, width, height)
+      when width > 0 and height > 0 do
     window_state = Map.put(emulator.window_state, :size, {width, height})
-    {:ok, %{emulator | width: width, height: height, window_state: window_state}}
+
+    {:ok,
+     %{emulator | width: width, height: height, window_state: window_state}}
   end
 
-  def set_size(%Core{} = _emulator, width, height) do
+  def set_size(%Emulator{} = _emulator, width, height) do
     {:error, "Invalid window size: #{width}x#{height}"}
   end
 
@@ -54,13 +58,14 @@ defmodule Raxol.Terminal.Emulator.Window do
   Sets the window position.
   Returns {:ok, updated_emulator}.
   """
-  @spec set_position(Core.t(), non_neg_integer(), non_neg_integer()) :: {:ok, Core.t()}
-  def set_position(%Core{} = emulator, x, y) when x >= 0 and y >= 0 do
+  @spec set_position(Emulator.t(), non_neg_integer(), non_neg_integer()) ::
+          {:ok, Emulator.t()}
+  def set_position(%Emulator{} = emulator, x, y) when x >= 0 and y >= 0 do
     window_state = Map.put(emulator.window_state, :position, {x, y})
     {:ok, %{emulator | window_state: window_state}}
   end
 
-  def set_position(%Core{} = _emulator, x, y) do
+  def set_position(%Emulator{} = _emulator, x, y) do
     {:error, "Invalid window position: (#{x}, #{y})"}
   end
 
@@ -68,13 +73,15 @@ defmodule Raxol.Terminal.Emulator.Window do
   Sets the window stacking order.
   Returns {:ok, updated_emulator}.
   """
-  @spec set_stacking_order(Core.t(), :normal | :maximized | :iconified) :: {:ok, Core.t()}
-  def set_stacking_order(%Core{} = emulator, order) when order in [:normal, :maximized, :iconified] do
+  @spec set_stacking_order(Emulator.t(), :normal | :maximized | :iconified) ::
+          {:ok, Emulator.t()}
+  def set_stacking_order(%Emulator{} = emulator, order)
+      when order in [:normal, :maximized, :iconified] do
     window_state = Map.put(emulator.window_state, :stacking_order, order)
     {:ok, %{emulator | window_state: window_state}}
   end
 
-  def set_stacking_order(%Core{} = _emulator, invalid_order) do
+  def set_stacking_order(%Emulator{} = _emulator, invalid_order) do
     {:error, "Invalid stacking order: #{inspect(invalid_order)}"}
   end
 
@@ -82,8 +89,8 @@ defmodule Raxol.Terminal.Emulator.Window do
   Maximizes the window.
   Returns {:ok, updated_emulator}.
   """
-  @spec maximize(Core.t()) :: {:ok, Core.t()}
-  def maximize(%Core{} = emulator) do
+  @spec maximize(Emulator.t()) :: {:ok, Emulator.t()}
+  def maximize(%Emulator{} = emulator) do
     # Store current size before maximizing
     window_state = emulator.window_state
     window_state = Map.put(window_state, :previous_size, window_state.size)
@@ -97,19 +104,22 @@ defmodule Raxol.Terminal.Emulator.Window do
   Restores the window from maximized state.
   Returns {:ok, updated_emulator}.
   """
-  @spec restore(Core.t()) :: {:ok, Core.t()}
-  def restore(%Core{} = emulator) do
+  @spec restore(Emulator.t()) :: {:ok, Emulator.t()}
+  def restore(%Emulator{} = emulator) do
     window_state = emulator.window_state
+
     case window_state.previous_size do
       nil ->
         {:error, "No previous size to restore"}
+
       {width, height} ->
         window_state = Map.put(window_state, :size, {width, height})
         window_state = Map.put(window_state, :maximized, false)
         window_state = Map.put(window_state, :stacking_order, :normal)
         window_state = Map.put(window_state, :previous_size, nil)
 
-        {:ok, %{emulator | width: width, height: height, window_state: window_state}}
+        {:ok,
+         %{emulator | width: width, height: height, window_state: window_state}}
     end
   end
 
@@ -117,8 +127,8 @@ defmodule Raxol.Terminal.Emulator.Window do
   Iconifies the window.
   Returns {:ok, updated_emulator}.
   """
-  @spec iconify(Core.t()) :: {:ok, Core.t()}
-  def iconify(%Core{} = emulator) do
+  @spec iconify(Emulator.t()) :: {:ok, Emulator.t()}
+  def iconify(%Emulator{} = emulator) do
     window_state = emulator.window_state
     window_state = Map.put(window_state, :iconified, true)
     window_state = Map.put(window_state, :stacking_order, :iconified)
@@ -130,8 +140,8 @@ defmodule Raxol.Terminal.Emulator.Window do
   Deiconifies the window.
   Returns {:ok, updated_emulator}.
   """
-  @spec deiconify(Core.t()) :: {:ok, Core.t()}
-  def deiconify(%Core{} = emulator) do
+  @spec deiconify(Emulator.t()) :: {:ok, Emulator.t()}
+  def deiconify(%Emulator{} = emulator) do
     window_state = emulator.window_state
     window_state = Map.put(window_state, :iconified, false)
     window_state = Map.put(window_state, :stacking_order, :normal)
@@ -143,8 +153,8 @@ defmodule Raxol.Terminal.Emulator.Window do
   Gets the current window state.
   Returns the window state.
   """
-  @spec get_state(Core.t()) :: Core.window_state()
-  def get_state(%Core{} = emulator) do
+  @spec get_state(Emulator.t()) :: map()
+  def get_state(%Emulator{} = emulator) do
     emulator.window_state
   end
 end

@@ -67,7 +67,8 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
           |> Enum.map(&Path.join(dir, &1))
 
         # Load each plugin
-        Enum.reduce_while(plugins, {:ok, state}, fn plugin_path, {:ok, acc_state} ->
+        Enum.reduce_while(plugins, {:ok, state}, fn plugin_path,
+                                                    {:ok, acc_state} ->
           case load_discovered_plugin(plugin_path, acc_state) do
             {:ok, new_state} -> {:cont, {:ok, new_state}}
             {:error, reason} -> {:halt, {:error, reason}}
@@ -95,9 +96,12 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
               state
               | plugins: Map.put(state.plugins, plugin_id, plugin),
                 metadata: Map.put(state.metadata, plugin_id, metadata),
-                plugin_states: Map.put(state.plugin_states, plugin_id, initial_state),
-                plugin_paths: Map.put(state.plugin_paths, plugin_id, plugin_path),
-                reverse_plugin_paths: Map.put(state.reverse_plugin_paths, plugin_path, plugin_id),
+                plugin_states:
+                  Map.put(state.plugin_states, plugin_id, initial_state),
+                plugin_paths:
+                  Map.put(state.plugin_paths, plugin_id, plugin_path),
+                reverse_plugin_paths:
+                  Map.put(state.reverse_plugin_paths, plugin_path, plugin_id),
                 load_order: [plugin_id | state.load_order]
             }
 

@@ -3,9 +3,27 @@ defmodule Raxol.Components.TableTest do
   alias Raxol.Components.Table
 
   @test_columns [
-    %{id: :id, label: "ID", width: 4, align: :right, format: &String.Chars.to_string/1},
-    %{id: :name, label: "Name", width: 10, align: :left, format: &String.Chars.to_string/1},
-    %{id: :age, label: "Age", width: 5, align: :center, format: &String.Chars.to_string/1}
+    %{
+      id: :id,
+      label: "ID",
+      width: 4,
+      align: :right,
+      format: &String.Chars.to_string/1
+    },
+    %{
+      id: :name,
+      label: "Name",
+      width: 10,
+      align: :left,
+      format: &String.Chars.to_string/1
+    },
+    %{
+      id: :age,
+      label: "Age",
+      width: 5,
+      align: :center,
+      format: &String.Chars.to_string/1
+    }
   ]
 
   @test_data [
@@ -23,10 +41,11 @@ defmodule Raxol.Components.TableTest do
     {:ok, _} = Raxol.Core.Renderer.Manager.start_link([])
 
     # Return the test context
-    {:ok, %{
-      columns: @test_columns,
-      data: @test_data
-    }}
+    {:ok,
+     %{
+       columns: @test_columns,
+       data: @test_data
+     }}
   end
 
   describe "initialization" do
@@ -41,12 +60,14 @@ defmodule Raxol.Components.TableTest do
       assert state.id == :test_table
       assert state.columns == columns
       assert state.data == data
+
       assert state.options == %{
                paginate: false,
                searchable: false,
                sortable: false,
                page_size: 10
              }
+
       assert state.current_page == 1
       assert state.page_size == 10
       assert state.filter_term == ""
@@ -72,6 +93,7 @@ defmodule Raxol.Components.TableTest do
                sortable: true,
                page_size: 2
              }
+
       assert state.page_size == 2
     end
   end
@@ -165,20 +187,24 @@ defmodule Raxol.Components.TableTest do
 
       {:ok, state_after_right} =
         Table.handle_event({:key, {:arrow_right, []}}, %{}, state)
+
       assert state_after_right.current_page == 2
 
       {:ok, state_after_left} =
         Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_right)
+
       assert state_after_left.current_page == 1
 
       {:ok, state_after_left_again} =
         Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_left)
+
       assert state_after_left_again.current_page == 1
     end
 
     test "handles button clicks for pagination", %{state: state} do
       {:ok, state_after_next} =
         Table.handle_event({:button_click, "test_table_next_page"}, %{}, state)
+
       assert state_after_next.current_page == 2
 
       {:ok, state_after_prev} =
@@ -187,12 +213,14 @@ defmodule Raxol.Components.TableTest do
           %{},
           state_after_next
         )
+
       assert state_after_prev.current_page == 1
     end
 
     test "handles sort button clicks", %{state: state} do
       {:ok, state_after_sort} =
         Table.handle_event({:button_click, "test_table_sort_age"}, %{}, state)
+
       assert state_after_sort.sort_by == :age
       assert state_after_sort.sort_direction == :asc
 
@@ -202,6 +230,7 @@ defmodule Raxol.Components.TableTest do
           %{},
           state_after_sort
         )
+
       assert state_after_reverse.sort_by == :age
       assert state_after_reverse.sort_direction == :desc
     end
@@ -213,8 +242,175 @@ defmodule Raxol.Components.TableTest do
           %{},
           state
         )
+
       assert state_after_search.filter_term == "Alice"
       assert state_after_search.current_page == 1
+    end
+  end
+
+  describe "theming and style" do
+    setup %{columns: columns, data: data} do
+      {:ok, state} =
+        Table.init(%{
+          id: :test_table,
+          columns: columns,
+          data: data,
+          options: %{
+            paginate: false,
+            searchable: false,
+            sortable: true,
+            page_size: 10
+          }
+        })
+
+      {:ok, %{state: state}}
+    end
+
+    test "header is rendered with bold style", %{state: state} do
+      rendered = Table.render(state, %{})
+      [header | _] = get_in(rendered, [:children, Access.at(0)])
+      assert header.type == :flex
+
+      Enum.each(header.children, fn cell ->
+        assert :bold in (cell.style || [])
+      end)
+    end
+
+    test "selected row is rendered with correct background and foreground colors",
+         %{state: state} do
+      state = %{state | selected_row: 1}
+      rendered = Table.render(state, %{})
+      [_header | rows] = get_in(rendered, [:children, Access.at(0)])
+      selected_row = Enum.at(rows, 1)
+      assert selected_row.type == :flex
+
+      Enum.each(selected_row.children, fn cell ->
+        style = cell.style || []
+        assert {:bg, :blue} in style
+        assert {:fg, :white} in style
+      end)
+    end
+
+    test "box style is overridden by style prop", %{
+      columns: columns,
+      data: data
+    } do
+      {:ok, state} =
+        Table.init(%{
+          id: :styled,
+          columns: columns,
+          data: data,
+          style: %{border_color: :red}
+        })
+
+      rendered = Table.render(state, %{})
+      assert rendered.style[:border_color] == :red
+    end
+
+    test "box style is overridden by theme", %{columns: columns, data: data} do
+      theme = %{box: %{border_color: :green}}
+
+      {:ok, state} =
+        Table.init(%{id: :themed, columns: columns, data: data, theme: theme})
+
+      rendered = Table.render(state, %{})
+      assert rendered.style[:border_color] == :green
+    end
+
+    test "header style is overridden by theme and style prop", %{
+      columns: columns,
+      data: data
+    } do
+      theme = %{header: %{underline: true}}
+      style = %{header: %{italic: true}}
+
+      {:ok, state} =
+        Table.init(%{
+          id: :headerstyled,
+          columns: columns,
+          data: data,
+          theme: theme,
+          style: style
+        })
+
+      rendered = Table.render(state, %{})
+      [header | _] = get_in(rendered, [:children, Access.at(0)])
+
+      Enum.each(header.children, fn cell ->
+        # Should include :underline and :italic in style keys
+        style_keys = cell.style || []
+        assert :underline in style_keys
+        assert :italic in style_keys
+      end)
+    end
+
+    test "row and selected row style are overridden by theme", %{
+      columns: columns,
+      data: data
+    } do
+      theme = %{row: %{bg: :yellow}, selected_row: %{bg: :red, fg: :black}}
+
+      {:ok, state} =
+        Table.init(%{
+          id: :rowstyled,
+          columns: columns,
+          data: data,
+          theme: theme,
+          style: %{}
+        })
+
+      # Unselected row
+      rendered = Table.render(state, %{})
+      [_header | rows] = get_in(rendered, [:children, Access.at(0)])
+      first_row = Enum.at(rows, 0)
+
+      Enum.each(first_row.children, fn cell ->
+        style = cell.style || []
+        assert :yellow in style
+      end)
+
+      # Selected row
+      state = %{state | selected_row: 2}
+      rendered = Table.render(state, %{})
+      [_header | rows] = get_in(rendered, [:children, Access.at(0)])
+      selected_row = Enum.at(rows, 2)
+
+      Enum.each(selected_row.children, fn cell ->
+        style = cell.style || []
+        assert :red in style
+        assert :black in style
+      end)
+    end
+
+    test "column style and header_style are respected", %{
+      columns: columns,
+      data: data
+    } do
+      custom_columns = [
+        %{
+          id: :id,
+          label: "ID",
+          width: 4,
+          align: :right,
+          style: %{color: :magenta},
+          header_style: %{bg: :cyan}
+        },
+        %{id: :name, label: "Name", width: 10, align: :left},
+        %{id: :age, label: "Age", width: 5, align: :center}
+      ]
+
+      {:ok, state} =
+        Table.init(%{id: :colstyled, columns: custom_columns, data: data})
+
+      rendered = Table.render(state, %{})
+      [header | rows] = get_in(rendered, [:children, Access.at(0)])
+      # Header cell for :id should have :bg in style
+      id_header_cell = Enum.at(header.children, 0)
+      assert :bg in (id_header_cell.style || [])
+      # First row, first cell should have :magenta in style
+      first_row = Enum.at(rows, 0)
+      id_cell = Enum.at(first_row.children, 0)
+      assert :magenta in (id_cell.style || [])
     end
   end
 end

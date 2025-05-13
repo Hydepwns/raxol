@@ -220,4 +220,10 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
   def filter_event(event, state), do: {:ok, event, state}
+
+  # Defensive: handle_command/2 returns an error indicating incorrect arity
+  def handle_command(_command, _args) do
+    {:error, :invalid_arity,
+     "NotificationPlugin.handle_command/2 is not supported. Use handle_command/3 with state."}
+  end
 end

@@ -4,7 +4,14 @@ defmodule Raxol.Core.Runtime.Plugins.EdgeCases.Helper do
   import Mox
 
   alias Raxol.Core.Events.Event
-  alias Raxol.Core.Runtime.Plugins.{Manager, Loader, LifecycleHelper, CommandRegistry}
+
+  alias Raxol.Core.Runtime.Plugins.{
+    Manager,
+    Loader,
+    LifecycleHelper,
+    CommandRegistry
+  }
+
   alias Raxol.Test.PluginTestFixtures
 
   # Define Mox mock for LifecycleHelper
@@ -18,7 +25,7 @@ defmodule Raxol.Core.Runtime.Plugins.EdgeCases.Helper do
     Mox.verify_on_exit!()
 
     # Create a unique ETS table name for each test
-    table_name = :"command_registry_#{:rand.uniform(1000000)}"
+    table_name = :"command_registry_#{:rand.uniform(1_000_000)}"
     :ets.new(table_name, [:set, :public, :named_table, read_concurrency: true])
 
     # Store the table name in the test context
@@ -27,6 +34,7 @@ defmodule Raxol.Core.Runtime.Plugins.EdgeCases.Helper do
 
   def with_running_manager(opts \\ [], fun) do
     {:ok, pid} = Manager.start_link(opts)
+
     try do
       fun.(pid)
     after
@@ -43,8 +51,21 @@ defmodule Raxol.Core.Runtime.Plugins.EdgeCases.Helper do
     assert error == expected_error
   end
 
-  def execute_command_and_verify(manager_pid, plugin_id, command, args, expected_errors) do
-    assert {:error, error} = Manager.execute_command(manager_pid, plugin_id, command, args)
+  def execute_command_and_verify(
+        manager_pid,
+        plugin_id,
+        command,
+        args,
+        expected_errors,
+        command_registry_table
+      ) do
+    assert {:error, error} =
+             Raxol.Core.Runtime.Plugins.CommandRegistry.execute_command(
+               command,
+               args,
+               command_registry_table
+             )
+
     assert error in expected_errors
   end
 end

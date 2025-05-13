@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.ControlCodes
-  alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
   require Logger
 
   @doc """

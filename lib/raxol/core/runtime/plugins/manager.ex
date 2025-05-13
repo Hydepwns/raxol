@@ -164,9 +164,16 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
         {:handle_command, command_atom, namespace, data, dispatcher_pid},
         state
       ) do
-    case CommandHandler.handle_command(command_atom, namespace, data, dispatcher_pid, state) do
+    case CommandHandler.handle_command(
+           command_atom,
+           namespace,
+           data,
+           dispatcher_pid,
+           state
+         ) do
       {:ok, updated_plugin_states} ->
         {:noreply, %{state | plugin_states: updated_plugin_states}}
+
       {:error, _reason} ->
         {:noreply, state}
     end
@@ -252,7 +259,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     end
 
     # Get config options
-    app_env_plugin_config = Application.get_env(:raxol, :plugin_manager_config, %{})
+    app_env_plugin_config =
+      Application.get_env(:raxol, :plugin_manager_config, %{})
+
     opts_plugin_config = Keyword.get(opts, :plugin_config, %{})
     initial_plugin_config = Map.merge(app_env_plugin_config, opts_plugin_config)
 
@@ -372,6 +381,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     case LifecycleManager.load_plugin(plugin_id, config, state) do
       {:ok, updated_state} ->
         {:reply, :ok, updated_state}
+
       {:error, reason} ->
         Logger.error("Failed to load plugin #{plugin_id}: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
@@ -451,6 +461,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
         # Send command processed event
         send(state.runtime_pid, {:command_processed, command, result})
         {:reply, {:ok, result}, updated_state}
+
       {:error, reason} ->
         Logger.error("Failed to process command: #{inspect(reason)}")
         {:reply, {:error, reason}, state}

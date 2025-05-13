@@ -50,10 +50,12 @@ defmodule Raxol.Components.Input.TextInput.Renderer do
         Map.merge(base_style, %{
           border_color: Map.get(theme.colors, :error, :red)
         })
+
       assigns.focused ->
         Map.merge(base_style, %{
           border_color: Map.get(theme.colors, :primary, :blue)
         })
+
       true ->
         base_style
     end
@@ -63,21 +65,36 @@ defmodule Raxol.Components.Input.TextInput.Renderer do
     case assigns.selection do
       {start, len} ->
         # Split text around selection
-        {before_selection, at_selection_and_after} = String.split_at(display_raw, start)
-        {at_selection, after_selection} = String.split_at(at_selection_and_after, len)
+        {before_selection, at_selection_and_after} =
+          String.split_at(display_raw, start)
+
+        {at_selection, after_selection} =
+          String.split_at(at_selection_and_after, len)
+
         [
           label(content: before_selection, style: text_style),
-          label(content: at_selection, style: Map.merge(text_style, %{inverse: true})),
+          label(
+            content: at_selection,
+            style: Map.merge(text_style, %{inverse: true})
+          ),
           label(content: after_selection, style: text_style)
         ]
+
       _ ->
         # Split text around cursor
         cursor_pos = assigns.cursor
-        {before_cursor, at_cursor_and_after} = String.split_at(display_raw, cursor_pos)
+
+        {before_cursor, at_cursor_and_after} =
+          String.split_at(display_raw, cursor_pos)
+
         {at_cursor, after_cursor} = String.split_at(at_cursor_and_after, 1)
+
         [
           label(content: before_cursor, style: text_style),
-          label(content: at_cursor, style: Map.merge(text_style, %{inverse: true})),
+          label(
+            content: at_cursor,
+            style: Map.merge(text_style, %{inverse: true})
+          ),
           label(content: after_cursor, style: text_style)
         ]
     end

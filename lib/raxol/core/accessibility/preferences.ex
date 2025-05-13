@@ -231,7 +231,11 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
     # Send text scale updated event
     scale = if enabled, do: 1.5, else: 1.0
-    send(user_preferences_pid_or_name || @default_prefs_name, {:text_scale_updated, self(), scale})
+
+    send(
+      user_preferences_pid_or_name || @default_prefs_name,
+      {:text_scale_updated, self(), scale}
+    )
 
     :ok
   end
@@ -299,7 +303,10 @@ defmodule Raxol.Core.Accessibility.Preferences do
     merged_opts = Map.merge(existing_prefs, Map.new(opts))
 
     # Send preferences applied event
-    send(user_preferences_pid_or_name || @default_prefs_name, {:preferences_applied, self()})
+    send(
+      user_preferences_pid_or_name || @default_prefs_name,
+      {:preferences_applied, self()}
+    )
 
     merged_opts
   end
@@ -370,22 +377,31 @@ defmodule Raxol.Core.Accessibility.Preferences do
         Raxol.Core.Accessibility.ThemeIntegration.handle_high_contrast(
           {:accessibility_high_contrast, value}
         )
+
         dispatch_event.({:accessibility_high_contrast_changed, value})
 
       :reduced_motion ->
         Raxol.Core.Accessibility.ThemeIntegration.handle_reduced_motion(
           {:accessibility_reduced_motion, value}
         )
+
         dispatch_event.({:accessibility_reduced_motion_changed, value})
         Logger.info("[Accessibility] Reduced motion set to: #{value}")
 
       :large_text ->
-        Raxol.Core.Accessibility.ThemeIntegration.handle_large_text({:accessibility_large_text, value})
+        Raxol.Core.Accessibility.ThemeIntegration.handle_large_text(
+          {:accessibility_large_text, value}
+        )
+
         dispatch_event.({:accessibility_large_text_changed, value})
 
         # Send text scale updated event
         scale = if value, do: 1.5, else: 1.0
-        send(user_preferences_pid_or_name || @default_prefs_name, {:text_scale_updated, self(), scale})
+
+        send(
+          user_preferences_pid_or_name || @default_prefs_name,
+          {:text_scale_updated, self(), scale}
+        )
 
       # No side effects for other preferences
       _ ->

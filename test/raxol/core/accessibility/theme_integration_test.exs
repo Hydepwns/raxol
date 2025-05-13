@@ -218,11 +218,12 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       EventManager.subscribe(ref, :theme_changed)
 
       # Apply settings
-      assert :ok = ThemeIntegration.apply_settings([
-        high_contrast: true,
-        reduced_motion: true,
-        large_text: true
-      ])
+      assert :ok =
+               ThemeIntegration.apply_settings(
+                 high_contrast: true,
+                 reduced_motion: true,
+                 large_text: true
+               )
 
       # Wait for theme change events
       assert_receive {:theme_changed, %{high_contrast: true}}, 1000
@@ -247,7 +248,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       EventManager.subscribe(ref, :theme_changed)
 
       # Enable high contrast
-      assert :ok = ThemeIntegration.apply_settings([high_contrast: true])
+      assert :ok = ThemeIntegration.apply_settings(high_contrast: true)
       assert_receive {:theme_changed, %{high_contrast: true}}, 1000
 
       # Get color scheme
@@ -268,7 +269,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       EventManager.subscribe(ref, :theme_changed)
 
       # Disable high contrast
-      assert :ok = ThemeIntegration.apply_settings([high_contrast: false])
+      assert :ok = ThemeIntegration.apply_settings(high_contrast: false)
       assert_receive {:theme_changed, %{high_contrast: false}}, 1000
 
       # Get color scheme

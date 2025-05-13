@@ -20,12 +20,17 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       alternate_screen_buffer: ScreenBuffer.new(80, 24),
       output_buffer: ""
     }
+
     {:ok, emulator: emulator}
   end
 
   describe "handle_t/2" do
     test "handles window deiconify", %{emulator: emulator} do
-      emulator = %{emulator | window_state: %{emulator.window_state | iconified: true}}
+      emulator = %{
+        emulator
+        | window_state: %{emulator.window_state | iconified: true}
+      }
+
       new_emulator = WindowHandlers.handle_t(emulator, [1])
       assert new_emulator.window_state.iconified == false
     end
@@ -154,7 +159,9 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
     end
 
     test "handles non-integer parameters", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [3, "invalid", "invalid"])
+      new_emulator =
+        WindowHandlers.handle_t(emulator, [3, "invalid", "invalid"])
+
       assert new_emulator.window_state.position == {0, 0}
     end
 

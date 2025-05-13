@@ -99,7 +99,8 @@ defmodule Raxol.Style.Colors.Color do
       %Color{r: 255, g: 0, b: 0, a: 128, hex: "#FF000080"}
   """
   @spec from_rgba(integer(), integer(), integer(), integer()) :: t()
-  def from_rgba(r, g, b, a) when r in 0..255 and g in 0..255 and b in 0..255 and a in 0..255 do
+  def from_rgba(r, g, b, a)
+      when r in 0..255 and g in 0..255 and b in 0..255 and a in 0..255 do
     hex = Formats.to_hex({r, g, b, a})
     %__MODULE__{r: r, g: g, b: b, a: a, hex: hex}
   end
@@ -210,7 +211,8 @@ defmodule Raxol.Style.Colors.Color do
       %Color{r: 128, g: 0, b: 128, hex: "#800080"}
   """
   @spec alpha_blend(t(), t(), float()) :: t()
-  def alpha_blend(%__MODULE__{} = color1, %__MODULE__{} = color2, alpha) when alpha >= 0 and alpha <= 1 do
+  def alpha_blend(%__MODULE__{} = color1, %__MODULE__{} = color2, alpha)
+      when alpha >= 0 and alpha <= 1 do
     r = round(color1.r * (1 - alpha) + color2.r * alpha)
     g = round(color1.g * (1 - alpha) + color2.g * alpha)
     b = round(color1.b * (1 - alpha) + color2.b * alpha)

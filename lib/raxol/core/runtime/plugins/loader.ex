@@ -350,12 +350,15 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
       iex> Loader.behaviour_implemented?(MyPlugin, Plugin)
       true
   """
-  def behaviour_implemented?(module, behaviour) when is_atom(module) and is_atom(behaviour) do
+  def behaviour_implemented?(module, behaviour)
+      when is_atom(module) and is_atom(behaviour) do
     case Code.ensure_loaded(module) do
       {:module, ^module} ->
-        behaviours = module.module_info(:attributes)
-        |> Keyword.get_values(:behaviour)
-        |> List.flatten()
+        behaviours =
+          module.module_info(:attributes)
+          |> Keyword.get_values(:behaviour)
+          |> List.flatten()
+
         behaviour in behaviours
 
       {:error, :nofile} ->
@@ -389,7 +392,10 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
       end
     rescue
       error ->
-        Logger.error("Error during plugin init for #{module}: #{inspect(error)}")
+        Logger.error(
+          "Error during plugin init for #{module}: #{inspect(error)}"
+        )
+
         {:error, {:init_exception, error}}
     end
   end

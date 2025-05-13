@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.InputHandler do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Operations
-  alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.Cursor.Manager
@@ -159,11 +159,21 @@ defmodule Raxol.Terminal.InputHandler do
     buffer_height = ScreenBuffer.get_height(active_buffer)
 
     # Translate character based on current charset state
-    {translated_codepoint, new_charset_state} =
+    translated_char =
       CharacterSets.translate_char(char_codepoint, emulator.charset_state)
 
+    new_charset_state = emulator.charset_state
+
+    unless is_binary(translated_char) do
+      require Logger
+
+      Logger.error(
+        "Expected translated_char to be a string, got: #{inspect(translated_char)}"
+      )
+    end
+
     # Pass the integer codepoint to get_char_width
-    char_width = CharacterHandling.get_char_width(translated_codepoint)
+    char_width = CharacterHandling.get_char_width(char_codepoint)
 
     # Check if auto wrap mode (DECAWM) is enabled
     auto_wrap_mode = ModeManager.mode_enabled?(emulator.mode_manager, :decawm)
@@ -185,11 +195,11 @@ defmodule Raxol.Terminal.InputHandler do
       if write_y < buffer_height do
         # Use Operations module for buffer modifications
         Logger.debug(
-          "[InputHandler] Writing char codepoint '#{translated_codepoint}' with style: #{inspect(emulator.style)}"
+          "[InputHandler] Writing char codepoint '#{translated_char}' with style: #{inspect(emulator.style)}"
         )
 
         # Convert codepoint back to binary for writing
-        char_to_write = <<translated_codepoint::utf8>>
+        char_to_write = translated_char
 
         # Get the active buffer for writing
         buffer_for_write = Emulator.get_active_buffer(emulator)
@@ -303,7 +313,8 @@ defmodule Raxol.Terminal.InputHandler do
   @doc """
   Process a character or string input, handling character sets and translations.
   """
-  @spec process_input(String.t(), CharacterSets.t()) :: {String.t(), CharacterSets.t()}
+  @spec process_input(String.t(), CharacterSets.t()) ::
+          {String.t(), CharacterSets.t()}
   def process_input(input, char_sets) do
     # Convert input to graphemes for proper Unicode handling
     graphemes = String.graphemes(input)
@@ -363,36 +374,73 @@ defmodule Raxol.Terminal.InputHandler do
   @doc """
   Handle a control sequence in the input.
   """
-  @spec handle_control_sequence(String.t(), CharacterSets.t()) :: {String.t(), CharacterSets.t()}
+  @spec handle_control_sequence(String.t(), CharacterSets.t()) ::
+          {String.t(), CharacterSets.t()}
   def handle_control_sequence(sequence, char_sets) do
     case sequence do
       # Character set designations
-      <<0x1B, 0x28, set>> -> {char_sets, CharacterSets.set_designator(:G0, set)}
-      <<0x1B, 0x29, set>> -> {char_sets, CharacterSets.set_designator(:G1, set)}
-      <<0x1B, 0x2A, set>> -> {char_sets, CharacterSets.set_designator(:G2, set)}
-      <<0x1B, 0x2B, set>> -> {char_sets, CharacterSets.set_designator(:G3, set)}
+      <<0x1B, 0x28, set>> ->
+        {char_sets, CharacterSets.set_designator(:G0, set)}
+
+      <<0x1B, 0x29, set>> ->
+        {char_sets, CharacterSets.set_designator(:G1, set)}
+
+      <<0x1B, 0x2A, set>> ->
+        {char_sets, CharacterSets.set_designator(:G2, set)}
+
+      <<0x1B, 0x2B, set>> ->
+        {char_sets, CharacterSets.set_designator(:G3, set)}
 
       # Character set invocations
-      <<0x0E>> -> {char_sets, CharacterSets.invoke_designator(:G1, :GL)}
-      <<0x0F>> -> {char_sets, CharacterSets.invoke_designator(:G0, :GL)}
-      <<0x1B, 0x4E>> -> {char_sets, CharacterSets.invoke_designator(:G2, :GL)}
-      <<0x1B, 0x4F>> -> {char_sets, CharacterSets.invoke_designator(:G3, :GL)}
-      <<0x1B, 0x7C>> -> {char_sets, CharacterSets.invoke_designator(:G2, :GR)}
-      <<0x1B, 0x7D>> -> {char_sets, CharacterSets.invoke_designator(:G3, :GR)}
-      <<0x1B, 0x7E>> -> {char_sets, CharacterSets.invoke_designator(:G1, :GR)}
+      <<0x0E>> ->
+        {char_sets, CharacterSets.invoke_designator(:G1, :GL)}
+
+      <<0x0F>> ->
+        {char_sets, CharacterSets.invoke_designator(:G0, :GL)}
+
+      <<0x1B, 0x4E>> ->
+        {char_sets, CharacterSets.invoke_designator(:G2, :GL)}
+
+      <<0x1B, 0x4F>> ->
+        {char_sets, CharacterSets.invoke_designator(:G3, :GL)}
+
+      <<0x1B, 0x7C>> ->
+        {char_sets, CharacterSets.invoke_designator(:G2, :GR)}
+
+      <<0x1B, 0x7D>> ->
+        {char_sets, CharacterSets.invoke_designator(:G3, :GR)}
+
+      <<0x1B, 0x7E>> ->
+        {char_sets, CharacterSets.invoke_designator(:G1, :GR)}
 
       # Single shifts
-      <<0x1B, 0x4E>> -> {char_sets, CharacterSets.set_single_shift(:G2)}
-      <<0x1B, 0x4F>> -> {char_sets, CharacterSets.set_single_shift(:G3)}
-      <<0x1B, 0x7C>> -> {char_sets, CharacterSets.set_single_shift(:G2)}
-      <<0x1B, 0x7D>> -> {char_sets, CharacterSets.set_single_shift(:G3)}
-      <<0x1B, 0x7E>> -> {char_sets, CharacterSets.set_single_shift(:G1)}
+      <<0x1B, 0x4E>> ->
+        {char_sets, CharacterSets.set_single_shift(:G2)}
+
+      <<0x1B, 0x4F>> ->
+        {char_sets, CharacterSets.set_single_shift(:G3)}
+
+      <<0x1B, 0x7C>> ->
+        {char_sets, CharacterSets.set_single_shift(:G2)}
+
+      <<0x1B, 0x7D>> ->
+        {char_sets, CharacterSets.set_single_shift(:G3)}
+
+      <<0x1B, 0x7E>> ->
+        {char_sets, CharacterSets.set_single_shift(:G1)}
 
       # Locking shifts
-      <<0x1B, 0x28, set>> -> {char_sets, CharacterSets.set_locking_shift(:G0, set)}
-      <<0x1B, 0x29, set>> -> {char_sets, CharacterSets.set_locking_shift(:G1, set)}
-      <<0x1B, 0x2A, set>> -> {char_sets, CharacterSets.set_locking_shift(:G2, set)}
-      <<0x1B, 0x2B, set>> -> {char_sets, CharacterSets.set_locking_shift(:G3, set)}
+      <<0x1B, 0x28, set>> ->
+        {char_sets, CharacterSets.set_locking_shift(:G0, set)}
+
+      <<0x1B, 0x29, set>> ->
+        {char_sets, CharacterSets.set_locking_shift(:G1, set)}
+
+      <<0x1B, 0x2A, set>> ->
+        {char_sets, CharacterSets.set_locking_shift(:G2, set)}
+
+      <<0x1B, 0x2B, set>> ->
+        {char_sets, CharacterSets.set_locking_shift(:G3, set)}
 
       # Unknown sequence
       _ ->
@@ -404,7 +452,8 @@ defmodule Raxol.Terminal.InputHandler do
   @doc """
   Process a complete input string, handling both normal characters and control sequences.
   """
-  @spec process_complete_input(String.t(), CharacterSets.t()) :: {String.t(), CharacterSets.t()}
+  @spec process_complete_input(String.t(), CharacterSets.t()) ::
+          {String.t(), CharacterSets.t()}
   def process_complete_input(input, char_sets) do
     # Split input into control sequences and normal text
     {text, sequences} =

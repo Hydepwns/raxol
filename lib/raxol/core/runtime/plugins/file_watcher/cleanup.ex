@@ -26,10 +26,11 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
     end
 
     # Return state with cleared watcher references
-    %{state |
-      file_watcher_pid: nil,
-      file_event_timer: nil,
-      file_watching_enabled?: false
+    %{
+      state
+      | file_watcher_pid: nil,
+        file_event_timer: nil,
+        file_watching_enabled?: false
     }
   end
 end

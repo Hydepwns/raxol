@@ -1,7 +1,7 @@
-defmodule Raxol.Components.Input.MultiLineInputTest do
+defmodule Raxol.UI.Components.Input.MultiLineInputTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Components.Input.MultiLineInput
+  alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.Core.Events.Event
   alias Raxol.Components.Input.TextWrapping
 

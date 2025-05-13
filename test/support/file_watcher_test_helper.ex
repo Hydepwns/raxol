@@ -1,6 +1,7 @@
 defmodule FileWatcherTestHelper do
   import Mox
   import ExUnit.Case
+
   @moduledoc """
   Helper module for file watcher tests that provides common setup functions and utilities.
   """
@@ -9,42 +10,44 @@ defmodule FileWatcherTestHelper do
   Creates a valid file stat for testing.
   """
   def valid_file_stat do
-    {:ok, %File.Stat{
-      size: 0,
-      type: :regular,
-      access: :read,
-      atime: {{2024, 1, 1}, {0, 0, 0}},
-      mtime: {{2024, 1, 1}, {0, 0, 0}},
-      ctime: {{2024, 1, 1}, {0, 0, 0}},
-      mode: 0o644,
-      links: 1,
-      major_device: 0,
-      minor_device: 0,
-      inode: 0,
-      uid: 0,
-      gid: 0
-    }}
+    {:ok,
+     %File.Stat{
+       size: 0,
+       type: :regular,
+       access: :read,
+       atime: {{2024, 1, 1}, {0, 0, 0}},
+       mtime: {{2024, 1, 1}, {0, 0, 0}},
+       ctime: {{2024, 1, 1}, {0, 0, 0}},
+       mode: 0o644,
+       links: 1,
+       major_device: 0,
+       minor_device: 0,
+       inode: 0,
+       uid: 0,
+       gid: 0
+     }}
   end
 
   @doc """
   Creates a directory stat for testing.
   """
   def directory_stat do
-    {:ok, %File.Stat{
-      size: 0,
-      type: :directory,
-      access: :read,
-      atime: {{2024, 1, 1}, {0, 0, 0}},
-      mtime: {{2024, 1, 1}, {0, 0, 0}},
-      ctime: {{2024, 1, 1}, {0, 0, 0}},
-      mode: 0o755,
-      links: 1,
-      major_device: 0,
-      minor_device: 0,
-      inode: 0,
-      uid: 0,
-      gid: 0
-    }}
+    {:ok,
+     %File.Stat{
+       size: 0,
+       type: :directory,
+       access: :read,
+       atime: {{2024, 1, 1}, {0, 0, 0}},
+       mtime: {{2024, 1, 1}, {0, 0, 0}},
+       ctime: {{2024, 1, 1}, {0, 0, 0}},
+       mode: 0o755,
+       links: 1,
+       major_device: 0,
+       minor_device: 0,
+       inode: 0,
+       uid: 0,
+       gid: 0
+     }}
   end
 
   @doc """
@@ -57,7 +60,8 @@ defmodule FileWatcherTestHelper do
       initialized: false,
       command_registry_table: nil,
       loader_module: opts[:loader_module] || Raxol.Core.Runtime.Plugins.Loader,
-      lifecycle_helper_module: opts[:lifecycle_helper_module] || Raxol.Core.Runtime.Plugins.FileWatcher,
+      lifecycle_helper_module:
+        opts[:lifecycle_helper_module] || Raxol.Core.Runtime.Plugins.FileWatcher,
       plugins: %{},
       metadata: %{},
       plugin_states: %{},
@@ -74,7 +78,9 @@ defmodule FileWatcherTestHelper do
   Starts the Manager process for testing.
   """
   def start_manager do
-    {:ok, pid} = Raxol.Core.Runtime.Plugins.Manager.start_link([])
+    {:ok, pid} =
+      Raxol.Core.Runtime.Plugins.Manager.start_link(runtime_pid: self())
+
     pid
   end
 
@@ -117,6 +123,7 @@ defmodule FileWatcherTestHelper do
   """
   def cleanup_test_plugins do
     plugin_dir = "test/plugins"
+
     if File.exists?(plugin_dir) do
       File.rm_rf!(plugin_dir)
     end

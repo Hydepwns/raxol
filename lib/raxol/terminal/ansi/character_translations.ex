@@ -8,10 +8,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
 
   # US ASCII character set (G0)
   @us_ascii_map %{
-    # Control characters (0x00-0x1F) are not translated
-    # Printable ASCII (0x20-0x7E) are not translated
-    # DEL (0x7F) is not translated
-  }
+                  # Control characters (0x00-0x1F) are not translated
+                  # Printable ASCII (0x20-0x7E) are not translated
+                  # DEL (0x7F) is not translated
+                }
 
   # UK character set (G1)
   @uk_map %{
@@ -82,38 +82,70 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   # Latin-1 character set (ISO-8859-1)
   @latin1_map %{
     # Add Latin-1 specific mappings
-    0x80 => 0x20AC, # Euro sign
-    0x81 => 0x0081, # Control character
-    0x82 => 0x201A, # Single low-9 quotation mark
-    0x83 => 0x0192, # Latin small f with hook
-    0x84 => 0x201E, # Double low-9 quotation mark
-    0x85 => 0x2026, # Horizontal ellipsis
-    0x86 => 0x2020, # Dagger
-    0x87 => 0x2021, # Double dagger
-    0x88 => 0x02C6, # Modifier letter circumflex accent
-    0x89 => 0x2030, # Per mille sign
-    0x8A => 0x0160, # Latin capital letter S with caron
-    0x8B => 0x2039, # Single left-pointing angle quotation mark
-    0x8C => 0x0152, # Latin capital ligature OE
-    0x8D => 0x008D, # Control character
-    0x8E => 0x017D, # Latin capital letter Z with caron
-    0x8F => 0x008F, # Control character
-    0x90 => 0x0090, # Control character
-    0x91 => 0x2018, # Left single quotation mark
-    0x92 => 0x2019, # Right single quotation mark
-    0x93 => 0x201C, # Left double quotation mark
-    0x94 => 0x201D, # Right double quotation mark
-    0x95 => 0x2022, # Bullet
-    0x96 => 0x2013, # En dash
-    0x97 => 0x2014, # Em dash
-    0x98 => 0x02DC, # Small tilde
-    0x99 => 0x2122, # Trade mark sign
-    0x9A => 0x0161, # Latin small letter s with caron
-    0x9B => 0x203A, # Single right-pointing angle quotation mark
-    0x9C => 0x0153, # Latin small ligature oe
-    0x9D => 0x009D, # Control character
-    0x9E => 0x017E, # Latin small letter z with caron
-    0x9F => 0x0178  # Latin capital letter Y with diaeresis
+    # Euro sign
+    0x80 => 0x20AC,
+    # Control character
+    0x81 => 0x0081,
+    # Single low-9 quotation mark
+    0x82 => 0x201A,
+    # Latin small f with hook
+    0x83 => 0x0192,
+    # Double low-9 quotation mark
+    0x84 => 0x201E,
+    # Horizontal ellipsis
+    0x85 => 0x2026,
+    # Dagger
+    0x86 => 0x2020,
+    # Double dagger
+    0x87 => 0x2021,
+    # Modifier letter circumflex accent
+    0x88 => 0x02C6,
+    # Per mille sign
+    0x89 => 0x2030,
+    # Latin capital letter S with caron
+    0x8A => 0x0160,
+    # Single left-pointing angle quotation mark
+    0x8B => 0x2039,
+    # Latin capital ligature OE
+    0x8C => 0x0152,
+    # Control character
+    0x8D => 0x008D,
+    # Latin capital letter Z with caron
+    0x8E => 0x017D,
+    # Control character
+    0x8F => 0x008F,
+    # Control character
+    0x90 => 0x0090,
+    # Left single quotation mark
+    0x91 => 0x2018,
+    # Right single quotation mark
+    0x92 => 0x2019,
+    # Left double quotation mark
+    0x93 => 0x201C,
+    # Right double quotation mark
+    0x94 => 0x201D,
+    # Bullet
+    0x95 => 0x2022,
+    # En dash
+    0x96 => 0x2013,
+    # Em dash
+    0x97 => 0x2014,
+    # Small tilde
+    0x98 => 0x02DC,
+    # Trade mark sign
+    0x99 => 0x2122,
+    # Latin small letter s with caron
+    0x9A => 0x0161,
+    # Single right-pointing angle quotation mark
+    0x9B => 0x203A,
+    # Latin small ligature oe
+    0x9C => 0x0153,
+    # Control character
+    0x9D => 0x009D,
+    # Latin small letter z with caron
+    0x9E => 0x017E,
+    # Latin capital letter Y with diaeresis
+    0x9F => 0x0178
   }
 
   # DEC Special Graphics Character Set
@@ -187,109 +219,202 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   # DEC Technical Character Set
   @dec_technical_map %{
     # Add DEC Technical character set mappings
-    0x60 => 0x00B0, # Degree sign
-    0x61 => 0x00B1, # Plus-minus sign
-    0x62 => 0x00B2, # Superscript two
-    0x63 => 0x00B3, # Superscript three
-    0x64 => 0x00B4, # Acute accent
-    0x65 => 0x00B5, # Micro sign
-    0x66 => 0x00B6, # Pilcrow sign
-    0x67 => 0x00B7, # Middle dot
-    0x68 => 0x00B8, # Cedilla
-    0x69 => 0x00B9, # Superscript one
-    0x6A => 0x00BA, # Masculine ordinal indicator
-    0x6B => 0x00BB, # Right-pointing double angle quotation mark
-    0x6C => 0x00BC, # Vulgar fraction one quarter
-    0x6D => 0x00BD, # Vulgar fraction one half
-    0x6E => 0x00BE, # Vulgar fraction three quarters
-    0x6F => 0x00BF, # Inverted question mark
-    0x70 => 0x00C0, # Latin capital letter A with grave
-    0x71 => 0x00C1, # Latin capital letter A with acute
-    0x72 => 0x00C2, # Latin capital letter A with circumflex
-    0x73 => 0x00C3, # Latin capital letter A with tilde
-    0x74 => 0x00C4, # Latin capital letter A with diaeresis
-    0x75 => 0x00C5, # Latin capital letter A with ring above
-    0x76 => 0x00C6, # Latin capital letter AE
-    0x77 => 0x00C7, # Latin capital letter C with cedilla
-    0x78 => 0x00C8, # Latin capital letter E with grave
-    0x79 => 0x00C9, # Latin capital letter E with acute
-    0x7A => 0x00CA, # Latin capital letter E with circumflex
-    0x7B => 0x00CB, # Latin capital letter E with diaeresis
-    0x7C => 0x00CC, # Latin capital letter I with grave
-    0x7D => 0x00CD, # Latin capital letter I with acute
-    0x7E => 0x00CE  # Latin capital letter I with circumflex
+    # Degree sign
+    0x60 => 0x00B0,
+    # Plus-minus sign
+    0x61 => 0x00B1,
+    # Superscript two
+    0x62 => 0x00B2,
+    # Superscript three
+    0x63 => 0x00B3,
+    # Acute accent
+    0x64 => 0x00B4,
+    # Micro sign
+    0x65 => 0x00B5,
+    # Pilcrow sign
+    0x66 => 0x00B6,
+    # Middle dot
+    0x67 => 0x00B7,
+    # Cedilla
+    0x68 => 0x00B8,
+    # Superscript one
+    0x69 => 0x00B9,
+    # Masculine ordinal indicator
+    0x6A => 0x00BA,
+    # Right-pointing double angle quotation mark
+    0x6B => 0x00BB,
+    # Vulgar fraction one quarter
+    0x6C => 0x00BC,
+    # Vulgar fraction one half
+    0x6D => 0x00BD,
+    # Vulgar fraction three quarters
+    0x6E => 0x00BE,
+    # Inverted question mark
+    0x6F => 0x00BF,
+    # Latin capital letter A with grave
+    0x70 => 0x00C0,
+    # Latin capital letter A with acute
+    0x71 => 0x00C1,
+    # Latin capital letter A with circumflex
+    0x72 => 0x00C2,
+    # Latin capital letter A with tilde
+    0x73 => 0x00C3,
+    # Latin capital letter A with diaeresis
+    0x74 => 0x00C4,
+    # Latin capital letter A with ring above
+    0x75 => 0x00C5,
+    # Latin capital letter AE
+    0x76 => 0x00C6,
+    # Latin capital letter C with cedilla
+    0x77 => 0x00C7,
+    # Latin capital letter E with grave
+    0x78 => 0x00C8,
+    # Latin capital letter E with acute
+    0x79 => 0x00C9,
+    # Latin capital letter E with circumflex
+    0x7A => 0x00CA,
+    # Latin capital letter E with diaeresis
+    0x7B => 0x00CB,
+    # Latin capital letter I with grave
+    0x7C => 0x00CC,
+    # Latin capital letter I with acute
+    0x7D => 0x00CD,
+    # Latin capital letter I with circumflex
+    0x7E => 0x00CE
   }
 
   # DEC Supplementary Character Set
   @dec_supplementary_map %{
     # Add DEC Supplementary character set mappings
-    0x60 => 0x00A0, # Non-breaking space
-    0x61 => 0x00A1, # Inverted exclamation mark
-    0x62 => 0x00A2, # Cent sign
-    0x63 => 0x00A3, # Pound sign
-    0x64 => 0x00A4, # Currency sign
-    0x65 => 0x00A5, # Yen sign
-    0x66 => 0x00A6, # Broken bar
-    0x67 => 0x00A7, # Section sign
-    0x68 => 0x00A8, # Diaeresis
-    0x69 => 0x00A9, # Copyright sign
-    0x6A => 0x00AA, # Feminine ordinal indicator
-    0x6B => 0x00AB, # Left-pointing double angle quotation mark
-    0x6C => 0x00AC, # Not sign
-    0x6D => 0x00AD, # Soft hyphen
-    0x6E => 0x00AE, # Registered sign
-    0x6F => 0x00AF, # Macron
-    0x70 => 0x00B0, # Degree sign
-    0x71 => 0x00B1, # Plus-minus sign
-    0x72 => 0x00B2, # Superscript two
-    0x73 => 0x00B3, # Superscript three
-    0x74 => 0x00B4, # Acute accent
-    0x75 => 0x00B5, # Micro sign
-    0x76 => 0x00B6, # Pilcrow sign
-    0x77 => 0x00B7, # Middle dot
-    0x78 => 0x00B8, # Cedilla
-    0x79 => 0x00B9, # Superscript one
-    0x7A => 0x00BA, # Masculine ordinal indicator
-    0x7B => 0x00BB, # Right-pointing double angle quotation mark
-    0x7C => 0x00BC, # Vulgar fraction one quarter
-    0x7D => 0x00BD, # Vulgar fraction one half
-    0x7E => 0x00BE  # Vulgar fraction three quarters
+    # Non-breaking space
+    0x60 => 0x00A0,
+    # Inverted exclamation mark
+    0x61 => 0x00A1,
+    # Cent sign
+    0x62 => 0x00A2,
+    # Pound sign
+    0x63 => 0x00A3,
+    # Currency sign
+    0x64 => 0x00A4,
+    # Yen sign
+    0x65 => 0x00A5,
+    # Broken bar
+    0x66 => 0x00A6,
+    # Section sign
+    0x67 => 0x00A7,
+    # Diaeresis
+    0x68 => 0x00A8,
+    # Copyright sign
+    0x69 => 0x00A9,
+    # Feminine ordinal indicator
+    0x6A => 0x00AA,
+    # Left-pointing double angle quotation mark
+    0x6B => 0x00AB,
+    # Not sign
+    0x6C => 0x00AC,
+    # Soft hyphen
+    0x6D => 0x00AD,
+    # Registered sign
+    0x6E => 0x00AE,
+    # Macron
+    0x6F => 0x00AF,
+    # Degree sign
+    0x70 => 0x00B0,
+    # Plus-minus sign
+    0x71 => 0x00B1,
+    # Superscript two
+    0x72 => 0x00B2,
+    # Superscript three
+    0x73 => 0x00B3,
+    # Acute accent
+    0x74 => 0x00B4,
+    # Micro sign
+    0x75 => 0x00B5,
+    # Pilcrow sign
+    0x76 => 0x00B6,
+    # Middle dot
+    0x77 => 0x00B7,
+    # Cedilla
+    0x78 => 0x00B8,
+    # Superscript one
+    0x79 => 0x00B9,
+    # Masculine ordinal indicator
+    0x7A => 0x00BA,
+    # Right-pointing double angle quotation mark
+    0x7B => 0x00BB,
+    # Vulgar fraction one quarter
+    0x7C => 0x00BC,
+    # Vulgar fraction one half
+    0x7D => 0x00BD,
+    # Vulgar fraction three quarters
+    0x7E => 0x00BE
   }
 
   # DEC Supplementary Graphics Character Set
   @dec_supplementary_graphics_map %{
     # Add DEC Supplementary Graphics character set mappings
-    0x60 => 0x25A0, # Black square
-    0x61 => 0x25A1, # White square
-    0x62 => 0x25A2, # White square with rounded corners
-    0x63 => 0x25A3, # White square containing black small square
-    0x64 => 0x25A4, # Square with horizontal fill
-    0x65 => 0x25A5, # Square with vertical fill
-    0x66 => 0x25A6, # Square with orthogonal crosshatch fill
-    0x67 => 0x25A7, # Square with upper left to lower right fill
-    0x68 => 0x25A8, # Square with upper right to lower left fill
-    0x69 => 0x25A9, # Square with diagonal crosshatch fill
-    0x6A => 0x25AA, # Black small square
-    0x6B => 0x25AB, # White small square
-    0x6C => 0x25AC, # Black rectangle
-    0x6D => 0x25AD, # White rectangle
-    0x6E => 0x25AE, # Black vertical rectangle
-    0x6F => 0x25AF, # White vertical rectangle
-    0x70 => 0x25B0, # Black parallelogram
-    0x71 => 0x25B1, # White parallelogram
-    0x72 => 0x25B2, # Black up-pointing triangle
-    0x73 => 0x25B3, # White up-pointing triangle
-    0x74 => 0x25B4, # Black up-pointing small triangle
-    0x75 => 0x25B5, # White up-pointing small triangle
-    0x76 => 0x25B6, # Black right-pointing triangle
-    0x77 => 0x25B7, # White right-pointing triangle
-    0x78 => 0x25B8, # Black right-pointing small triangle
-    0x79 => 0x25B9, # White right-pointing small triangle
-    0x7A => 0x25BA, # Black right-pointing pointer
-    0x7B => 0x25BB, # White right-pointing pointer
-    0x7C => 0x25BC, # Black down-pointing triangle
-    0x7D => 0x25BD, # White down-pointing triangle
-    0x7E => 0x25BE  # Black down-pointing small triangle
+    # Black square
+    0x60 => 0x25A0,
+    # White square
+    0x61 => 0x25A1,
+    # White square with rounded corners
+    0x62 => 0x25A2,
+    # White square containing black small square
+    0x63 => 0x25A3,
+    # Square with horizontal fill
+    0x64 => 0x25A4,
+    # Square with vertical fill
+    0x65 => 0x25A5,
+    # Square with orthogonal crosshatch fill
+    0x66 => 0x25A6,
+    # Square with upper left to lower right fill
+    0x67 => 0x25A7,
+    # Square with upper right to lower left fill
+    0x68 => 0x25A8,
+    # Square with diagonal crosshatch fill
+    0x69 => 0x25A9,
+    # Black small square
+    0x6A => 0x25AA,
+    # White small square
+    0x6B => 0x25AB,
+    # Black rectangle
+    0x6C => 0x25AC,
+    # White rectangle
+    0x6D => 0x25AD,
+    # Black vertical rectangle
+    0x6E => 0x25AE,
+    # White vertical rectangle
+    0x6F => 0x25AF,
+    # Black parallelogram
+    0x70 => 0x25B0,
+    # White parallelogram
+    0x71 => 0x25B1,
+    # Black up-pointing triangle
+    0x72 => 0x25B2,
+    # White up-pointing triangle
+    0x73 => 0x25B3,
+    # Black up-pointing small triangle
+    0x74 => 0x25B4,
+    # White up-pointing small triangle
+    0x75 => 0x25B5,
+    # Black right-pointing triangle
+    0x76 => 0x25B6,
+    # White right-pointing triangle
+    0x77 => 0x25B7,
+    # Black right-pointing small triangle
+    0x78 => 0x25B8,
+    # White right-pointing small triangle
+    0x79 => 0x25B9,
+    # Black right-pointing pointer
+    0x7A => 0x25BA,
+    # White right-pointing pointer
+    0x7B => 0x25BB,
+    # Black down-pointing triangle
+    0x7C => 0x25BC,
+    # White down-pointing triangle
+    0x7D => 0x25BD,
+    # Black down-pointing small triangle
+    0x7E => 0x25BE
   }
 
   # Map of character set names to their translation tables
@@ -354,7 +479,8 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   Translates a character from the source character set to the target character set.
   Returns the translated character as a UTF-8 binary or the original if no translation exists.
   """
-  @spec translate_char(char_codepoint :: integer(), charset :: atom()) :: binary()
+  @spec translate_char(char_codepoint :: integer(), charset :: atom()) ::
+          binary()
   def translate_char(char, charset) when is_integer(char) do
     map = Map.get(@charset_tables, charset, %{})
     codepoint = Map.get(map, char, char)
@@ -380,8 +506,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
         translated =
           Enum.map(charlist, fn
             int when is_integer(int) -> translate_char(int, charset)
-            _ -> "" # skip non-integer (shouldn't happen)
+            # skip non-integer (shouldn't happen)
+            _ -> ""
           end)
+
         IO.iodata_to_binary(translated)
 
       {:error, charlist, _} ->
@@ -389,8 +517,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
         translated =
           Enum.map(:binary.bin_to_list(string), fn
             int when is_integer(int) -> translate_char(int, charset)
-            _ -> "" # skip non-integer (shouldn't happen)
+            # skip non-integer (shouldn't happen)
+            _ -> ""
           end)
+
         IO.iodata_to_binary(translated)
 
       {:incomplete, charlist, _} ->
@@ -398,8 +528,10 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
         translated =
           Enum.map(:binary.bin_to_list(string), fn
             int when is_integer(int) -> translate_char(int, charset)
-            _ -> "" # skip non-integer (shouldn't happen)
+            # skip non-integer (shouldn't happen)
+            _ -> ""
           end)
+
         IO.iodata_to_binary(translated)
     end
   end

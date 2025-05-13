@@ -68,7 +68,8 @@ defmodule Raxol.Terminal.Driver.InputBufferingTest do
       Helper.simulate_key_event(driver_pid, ?[)
       Helper.assert_key_event("[")
 
-      Helper.simulate_key_event(driver_pid, 0, 65) # Up arrow
+      # Up arrow
+      Helper.simulate_key_event(driver_pid, 0, 65)
       Helper.assert_key_event(nil, :up)
 
       Helper.simulate_key_event(driver_pid, ?y)

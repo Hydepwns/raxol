@@ -1,56 +1,69 @@
 defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
   use ExUnit.Case
+  alias Raxol.Terminal.ANSI.CharacterSets.StateManager
   # remove charactersets terminal ansi.{Handler, StateManager}
 
   describe "handle_sequence/2" do
     test "handles G0 character set designation" do
       state = StateManager.new()
-      state = Handler.handle_sequence(state, [?/, ?B])  # US ASCII
+      # US ASCII
+      state = Handler.handle_sequence(state, [?/, ?B])
       assert StateManager.get_gset(state, :g0) == :us_ascii
 
-      state = Handler.handle_sequence(state, [?/, ?0])  # DEC Special Graphics
+      # DEC Special Graphics
+      state = Handler.handle_sequence(state, [?/, ?0])
       assert StateManager.get_gset(state, :g0) == :dec_special_graphics
     end
 
     test "handles G1 character set designation" do
       state = StateManager.new()
-      state = Handler.handle_sequence(state, [?), ?B])  # US ASCII
+      # US ASCII
+      state = Handler.handle_sequence(state, [?), ?B])
       assert StateManager.get_gset(state, :g1) == :us_ascii
 
-      state = Handler.handle_sequence(state, [?), ?A])  # UK
+      # UK
+      state = Handler.handle_sequence(state, [?), ?A])
       assert StateManager.get_gset(state, :g1) == :uk
     end
 
     test "handles G2 character set designation" do
       state = StateManager.new()
-      state = Handler.handle_sequence(state, [?*, ?B])  # US ASCII
+      # US ASCII
+      state = Handler.handle_sequence(state, [?*, ?B])
       assert StateManager.get_gset(state, :g2) == :us_ascii
 
-      state = Handler.handle_sequence(state, [?*, ?F])  # German
+      # German
+      state = Handler.handle_sequence(state, [?*, ?F])
       assert StateManager.get_gset(state, :g2) == :german
     end
 
     test "handles G3 character set designation" do
       state = StateManager.new()
-      state = Handler.handle_sequence(state, [?+, ?B])  # US ASCII
+      # US ASCII
+      state = Handler.handle_sequence(state, [?+, ?B])
       assert StateManager.get_gset(state, :g3) == :us_ascii
 
-      state = Handler.handle_sequence(state, [?+, ?D])  # French
+      # French
+      state = Handler.handle_sequence(state, [?+, ?D])
       assert StateManager.get_gset(state, :g3) == :french
     end
 
     test "handles locking shift sequences" do
       state = StateManager.new()
-      state = Handler.handle_sequence(state, [?N])  # Locking Shift G0
+      # Locking Shift G0
+      state = Handler.handle_sequence(state, [?N])
       assert StateManager.get_gl(state) == :g0
 
-      state = Handler.handle_sequence(state, [?O])  # Locking Shift G1
+      # Locking Shift G1
+      state = Handler.handle_sequence(state, [?O])
       assert StateManager.get_gl(state) == :g1
 
-      state = Handler.handle_sequence(state, [?P])  # Locking Shift G2
+      # Locking Shift G2
+      state = Handler.handle_sequence(state, [?P])
       assert StateManager.get_gl(state) == :g2
 
-      state = Handler.handle_sequence(state, [?Q])  # Locking Shift G3
+      # Locking Shift G3
+      state = Handler.handle_sequence(state, [?Q])
       assert StateManager.get_gl(state) == :g3
     end
 
@@ -59,32 +72,39 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
       state = StateManager.set_gset(state, :g2, :german)
       state = StateManager.set_gset(state, :g3, :french)
 
-      state = Handler.handle_sequence(state, [?R])  # Single Shift G2
+      # Single Shift G2
+      state = Handler.handle_sequence(state, [?R])
       assert StateManager.get_single_shift(state) == :german
 
-      state = Handler.handle_sequence(state, [?S])  # Single Shift G3
+      # Single Shift G3
+      state = Handler.handle_sequence(state, [?S])
       assert StateManager.get_single_shift(state) == :french
     end
 
     test "handles invoke sequences" do
       state = StateManager.new()
-      state = Handler.handle_sequence(state, [?T])  # Invoke G0
+      # Invoke G0
+      state = Handler.handle_sequence(state, [?T])
       assert StateManager.get_gl(state) == :g0
 
-      state = Handler.handle_sequence(state, [?U])  # Invoke G1
+      # Invoke G1
+      state = Handler.handle_sequence(state, [?U])
       assert StateManager.get_gl(state) == :g1
 
-      state = Handler.handle_sequence(state, [?V])  # Invoke G2
+      # Invoke G2
+      state = Handler.handle_sequence(state, [?V])
       assert StateManager.get_gl(state) == :g2
 
-      state = Handler.handle_sequence(state, [?W])  # Invoke G3
+      # Invoke G3
+      state = Handler.handle_sequence(state, [?W])
       assert StateManager.get_gl(state) == :g3
     end
 
     test "ignores unknown sequences" do
       state = StateManager.new()
       original_state = state
-      state = Handler.handle_sequence(state, [?X])  # Unknown sequence
+      # Unknown sequence
+      state = Handler.handle_sequence(state, [?X])
       assert state == original_state
     end
   end
@@ -92,23 +112,28 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
   describe "designate_charset/3" do
     test "designates character sets correctly" do
       state = StateManager.new()
-      state = Handler.designate_charset(state, 0, ?B)  # US ASCII
+      # US ASCII
+      state = Handler.designate_charset(state, 0, ?B)
       assert StateManager.get_gset(state, :g0) == :us_ascii
 
-      state = Handler.designate_charset(state, 1, ?A)  # UK
+      # UK
+      state = Handler.designate_charset(state, 1, ?A)
       assert StateManager.get_gset(state, :g1) == :uk
 
-      state = Handler.designate_charset(state, 2, ?F)  # German
+      # German
+      state = Handler.designate_charset(state, 2, ?F)
       assert StateManager.get_gset(state, :g2) == :german
 
-      state = Handler.designate_charset(state, 3, ?D)  # French
+      # French
+      state = Handler.designate_charset(state, 3, ?D)
       assert StateManager.get_gset(state, :g3) == :french
     end
 
     test "ignores invalid character set codes" do
       state = StateManager.new()
       original_state = state
-      state = Handler.designate_charset(state, 0, ?X)  # Invalid code
+      # Invalid code
+      state = Handler.designate_charset(state, 0, ?X)
       assert state == original_state
     end
   end

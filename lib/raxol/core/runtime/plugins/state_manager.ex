@@ -38,7 +38,14 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
         plugin_config: %{"my_plugin" => %{setting: "value"}}
       }
   """
-  def update_state_maps(plugin_id, plugin_module, plugin_metadata, plugin_state, config, state_maps) do
+  def update_state_maps(
+        plugin_id,
+        plugin_module,
+        plugin_metadata,
+        plugin_state,
+        config,
+        state_maps
+      ) do
     %{
       plugins: Map.put(state_maps.plugins, plugin_id, plugin_module),
       metadata: Map.put(state_maps.metadata, plugin_id, plugin_metadata),
@@ -118,7 +125,10 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
       }
   """
   def update_plugin_state(plugin_id, new_state, state_maps) do
-    %{state_maps | plugin_states: Map.put(state_maps.plugin_states, plugin_id, new_state)}
+    %{
+      state_maps
+      | plugin_states: Map.put(state_maps.plugin_states, plugin_id, new_state)
+    }
   end
 
   @doc """
@@ -211,5 +221,20 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
   """
   def get_plugin_config(plugin_id, state_maps) do
     Map.get(state_maps.plugin_config, plugin_id)
+  end
+
+  @doc """
+  Returns a new default plugin manager state struct.
+  """
+  def new do
+    %Raxol.Core.Runtime.Plugins.Manager.State{}
+  end
+
+  @doc """
+  Sets the state for a given plugin.
+  Alias for update_plugin_state/3.
+  """
+  def set_plugin_state(plugin_id, new_state, state_maps) do
+    update_plugin_state(plugin_id, new_state, state_maps)
   end
 end

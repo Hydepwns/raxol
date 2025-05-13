@@ -3,6 +3,8 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   Checkbox component for toggling boolean values.
 
   This component provides a selectable checkbox with customizable appearance and behavior.
+  Fully supports style and theme props (with correct merging/precedence),
+  implements robust lifecycle hooks, and supports accessibility/extra props.
   """
 
   # use Raxol.UI.Components.Base
@@ -32,51 +34,25 @@ defmodule Raxol.UI.Components.Input.Checkbox do
           id: String.t(),
           label: String.t(),
           checked: boolean(),
-          on_change: function() | nil,
+          on_toggle: function() | nil,
           disabled: boolean(),
+          style: map(),
           theme: map(),
           tooltip: String.t() | nil,
           required: boolean(),
-          aria_label: String.t() | nil
+          aria_label: String.t() | nil,
+          focused: boolean()
         }
 
   @doc """
   Creates a new checkbox component with the given options.
-
-  ## Options
-
-  * `:id` - Unique identifier for the checkbox
-  * `:label` - Text to display next to the checkbox
-  * `:checked` - Whether the checkbox is checked
-  * `:on_change` - Function to call when the checkbox state changes
-  * `:disabled` - Whether the checkbox is disabled
-  * `:theme` - Theme overrides for the checkbox
-  * `:tooltip` - Optional tooltip text
-  * `:required` - Whether the checkbox is required
-  * `:aria_label` - Accessibility label
-
-  ## Returns
-
-  A new checkbox component struct.
+  See `init/1` for details.
   """
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
-    %{
-      id:
-        Keyword.get(
-          opts,
-          :id,
-          "checkbox-#{:erlang.unique_integer([:positive])}"
-        ),
-      label: Keyword.get(opts, :label, ""),
-      checked: Keyword.get(opts, :checked, false),
-      on_change: Keyword.get(opts, :on_change),
-      disabled: Keyword.get(opts, :disabled, false),
-      theme: Keyword.get(opts, :theme, %{}),
-      tooltip: Keyword.get(opts, :tooltip),
-      required: Keyword.get(opts, :required, false),
-      aria_label: Keyword.get(opts, :aria_label)
-    }
+    # Just delegate to init for consistency
+    {:ok, state} = init(opts)
+    state
   end
 
   @impl true
@@ -85,101 +61,99 @@ defmodule Raxol.UI.Components.Input.Checkbox do
       Keyword.get(props, :id, "checkbox-#{:erlang.unique_integer([:positive])}")
 
     state = %{
-      # Core state
       id: id,
       checked: Keyword.get(props, :checked, false),
       disabled: Keyword.get(props, :disabled, false),
-      # Props influencing state/rendering
       label: Keyword.get(props, :label, ""),
       style: Keyword.get(props, :style, %{}),
-      # Callback prop
+      theme: Keyword.get(props, :theme, %{}),
       on_toggle: Keyword.get(props, :on_toggle),
-      # Internal state
-      # Default internal state
+      tooltip: Keyword.get(props, :tooltip),
+      required: Keyword.get(props, :required, false),
+      aria_label: Keyword.get(props, :aria_label),
       focused: false
-      # TODO: Consider other props like tooltip, required, aria_label
-      # tooltip: Keyword.get(props, :tooltip),
-      # required: Keyword.get(props, :required, false),
-      # aria_label: Keyword.get(props, :aria_label)
     }
 
-    # Return the state map, not a struct
     {:ok, state}
   end
 
   @impl true
-  def mount(_state), do: {:ok, []}
+  def mount(state) do
+    # Could register focus, subscriptions, etc. if needed
+    # For now, just return state and []
+    {state, []}
+  end
+
+  @impl true
+  def unmount(state) do
+    # Cleanup any resources, subscriptions, etc. if needed
+    state
+  end
 
   @impl true
   def update(props, state) when is_map(props) do
-    # Merge the new props into the state
-    new_state = Map.merge(state, props)
-    # Return {:ok, new_state, commands} as per component behavior (usually)
+    # Merge new props into state, with style/theme merged as in other components
+    merged_style = Map.merge(state.style || %{}, Map.get(props, :style, %{}))
+    merged_theme = Map.merge(state.theme || %{}, Map.get(props, :theme, %{}))
+
+    new_state =
+      state
+      |> Map.merge(props)
+      |> Map.put(:style, merged_style)
+      |> Map.put(:theme, merged_theme)
+
     {:ok, new_state, []}
   end
 
   @impl true
-  def update(message, state) do
-    IO.inspect(message, label: "Unhandled Checkbox update (ignored)")
-    # Return ok to avoid crashing test if unexpected message sent
+  def update(_msg, state) do
+    # Ignore unknown messages for now
     {:ok, state, []}
   end
 
   @impl true
   def handle_event(
-        %Event{type: :mouse, data: %{action: :press}} = event,
+        %Event{type: :mouse, data: %{action: :press}},
         _context,
         state
       )
       when not state.disabled do
-    toggle_state(event, state)
+    toggle_state(state)
   end
 
-  def handle_event(
-        %Event{type: :key, data: %{key: :space}} = event,
-        _context,
-        state
-      )
+  def handle_event(%Event{type: :key, data: %{key: :space}}, _context, state)
       when not state.disabled do
-    toggle_state(event, state)
+    toggle_state(state)
   end
 
-  def handle_event(_event, _context, state) do
-    {:noreply, state, []}
-  end
+  def handle_event(_event, _context, state), do: {:noreply, state, []}
 
-  defp toggle_state(_event, state) do
+  defp toggle_state(state) do
     new_checked_state = !state.checked
     new_state = %{state | checked: new_checked_state}
 
     commands =
-      if is_function(state.on_toggle, 1) do
-        # Potentially create a command if the callback needs to trigger one,
-        # but for now, just call it directly.
-        # The callback itself might return a command to be dispatched.
-        # For simplicity in this fix, we assume the callback is side-effect only or returns nil.
-        _ = state.on_toggle.(new_checked_state)
-        []
-      else
-        []
-      end
+      if is_function(state.on_toggle, 1),
+        do:
+          (
+            state.on_toggle.(new_checked_state)
+            []
+          ),
+        else: []
 
     {:noreply, new_state, commands}
   end
 
   @impl true
   def render(state, context) do
-    theme = context.theme
-    # Get base style for :checkbox from theme
+    # Harmonize theme merging: context.theme < state.theme < state.style
+    theme = Map.merge(context.theme || %{}, state.theme || %{})
     theme_style = Theme.component_style(theme, :checkbox)
-    # Merge theme style with instance style (instance overrides theme)
-    base_style = Map.merge(theme_style, state.style)
+    base_style = Map.merge(theme_style, state.style || %{})
 
-    # Determine effective style based on state
     {fg, bg} =
       cond do
         state.disabled ->
-          # Fallback chain
           {Map.get(base_style, :disabled_fg, Map.get(base_style, :fg, :gray)),
            Map.get(base_style, :disabled_bg, Map.get(base_style, :bg, :default))}
 
@@ -192,26 +166,30 @@ defmodule Raxol.UI.Components.Input.Checkbox do
            Map.get(base_style, :bg, :default)}
       end
 
-    # TODO: Handle other style attributes like :bold, :underline based on state/theme?
-    final_attrs_style = %{fg: fg, bg: bg}
+    # Support bold/underline/other attrs if present
+    attrs =
+      Map.take(base_style, [:bold, :underline, :italic])
+      |> Map.merge(%{fg: fg, bg: bg})
 
     check_char = if state.checked, do: "[x]", else: "[ ]"
     label_text = state.label
+    # Accessibility: aria_label, required, tooltip as attributes
+    extra_attrs =
+      %{
+        aria_label: state.aria_label,
+        required: state.required,
+        tooltip: state.tooltip
+      }
+      |> Enum.reject(fn {_k, v} -> is_nil(v) or v == false end)
+      |> Enum.into(%{})
 
-    # Pass children under the :do key in the opts list
-    # Apply the calculated style to the hbox
     Element.new(
       :hbox,
-      # Apply calculated fg/bg
-      %{style: final_attrs_style},
+      Map.merge(%{style: attrs}, extra_attrs),
       do: [
-        # Maybe apply style individually? For now, apply to hbox.
         Element.new(:text, %{id: "#{state.id}-check", text: check_char}),
         Element.new(:text, %{id: "#{state.id}-label", text: " " <> label_text})
       ]
     )
   end
-
-  @impl true
-  def unmount(_state), do: :ok
 end

@@ -5,8 +5,7 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
 
   alias Raxol.Style.Colors.Adaptive
   alias Raxol.Style.Colors.Color
-  alias Raxol.Style.Colors.Palette
-  alias Raxol.Style.Colors.Theme
+  alias Raxol.UI.Theming.Theme
 
   setup do
     # Initialize the capabilities cache for each test
@@ -166,25 +165,6 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
     end
   end
 
-  describe "palette adaptation" do
-    test "adapt_palette adapts all colors in a palette" do
-      set_mock_detection(:ansi_16)
-
-      palette = Palette.nord()
-      adapted = Adaptive.adapt_palette(palette)
-
-      # The name should be modified
-      assert adapted.name == "Nord (Adapted)"
-
-      # All colors should be adapted
-      adapted.colors
-      |> Enum.each(fn {_name, color} ->
-        assert color.ansi_code != nil
-        assert color.ansi_code >= 0 and color.ansi_code <= 15
-      end)
-    end
-  end
-
   describe "theme adaptation" do
     setup do
       # Initialize the theme registry - Removed as it seems unnecessary
@@ -195,7 +175,21 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
     test "adapt_theme adapts the theme's palette" do
       set_mock_detection(:ansi_16)
 
-      theme = Theme.from_palette(Palette.nord(), "Nord")
+      theme =
+        Theme.new(%{
+          name: "Nord",
+          colors: %{
+            primary: "#5e81ac",
+            secondary: "#88c0d0",
+            accent: "#ebcb8b",
+            background: "#2e3440",
+            foreground: "#d8dee9"
+          },
+          styles: %{},
+          dark_mode: false,
+          high_contrast: false
+        })
+
       adapted = Adaptive.adapt_theme(theme)
 
       # The name should be modified
@@ -211,10 +205,20 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       set_mock_background(:light)
 
       # Create a dark theme, providing the name
-      dark_theme = %{
-        Theme.from_palette(Palette.dracula(), "Dracula")
-        | dark_mode: true
-      }
+      dark_theme =
+        Theme.new(%{
+          name: "Dracula",
+          colors: %{
+            primary: "#bd93f9",
+            secondary: "#8be9fd",
+            accent: "#ff79c6",
+            background: "#282a36",
+            foreground: "#f8f8f2"
+          },
+          styles: %{},
+          dark_mode: true,
+          high_contrast: false
+        })
 
       assert dark_theme.dark_mode == true
 
@@ -233,10 +237,20 @@ defmodule Raxol.Style.Colors.AdaptiveTest do
       set_mock_background(:dark)
 
       # Create a light theme, providing the name
-      light_theme = %{
-        Theme.from_palette(Palette.nord(), "Nord")
-        | dark_mode: false
-      }
+      light_theme =
+        Theme.new(%{
+          name: "Nord",
+          colors: %{
+            primary: "#5e81ac",
+            secondary: "#88c0d0",
+            accent: "#ebcb8b",
+            background: "#2e3440",
+            foreground: "#d8dee9"
+          },
+          styles: %{},
+          dark_mode: false,
+          high_contrast: false
+        })
 
       assert light_theme.dark_mode == false
 

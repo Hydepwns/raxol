@@ -27,8 +27,9 @@ defmodule Raxol.Plugins.Manager.Cells do
   """
   def process_cell(%Core{} = manager, cell, emulator_state) do
     Enum.reduce_while(manager.plugins, {:ok, manager, cell}, fn {_name, plugin},
-                                                               {:ok, acc_manager,
-                                                                acc_cell} ->
+                                                                {:ok,
+                                                                 acc_manager,
+                                                                 acc_cell} ->
       if plugin.enabled do
         # Get the module from the struct
         module = plugin.__struct__
@@ -37,10 +38,11 @@ defmodule Raxol.Plugins.Manager.Cells do
         if function_exported?(module, :process_cell, 3) do
           case module.process_cell(plugin, acc_cell, emulator_state) do
             {:ok, updated_plugin, processed_cell} ->
-              updated_manager = Core.update_plugins(
-                acc_manager,
-                Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-              )
+              updated_manager =
+                Core.update_plugins(
+                  acc_manager,
+                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+                )
 
               {:cont, {:ok, updated_manager, processed_cell}}
 
@@ -64,8 +66,8 @@ defmodule Raxol.Plugins.Manager.Cells do
   """
   def collect_cell_commands(%Core{} = manager) do
     Enum.reduce(manager.plugins, {:ok, manager, []}, fn {_name, plugin},
-                                                       {:ok, acc_manager,
-                                                        acc_commands} ->
+                                                        {:ok, acc_manager,
+                                                         acc_commands} ->
       if plugin.enabled do
         # Get the module from the struct
         module = plugin.__struct__
@@ -74,19 +76,21 @@ defmodule Raxol.Plugins.Manager.Cells do
         if function_exported?(module, :get_cell_commands, 1) do
           case module.get_cell_commands(plugin) do
             {:ok, updated_plugin, commands} ->
-              updated_manager = Core.update_plugins(
-                acc_manager,
-                Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-              )
+              updated_manager =
+                Core.update_plugins(
+                  acc_manager,
+                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+                )
 
               {:ok, updated_manager, commands ++ acc_commands}
 
             # No commands returned
             {:ok, updated_plugin} ->
-              updated_manager = Core.update_plugins(
-                acc_manager,
-                Map.put(acc_manager.plugins, plugin.name, updated_plugin)
-              )
+              updated_manager =
+                Core.update_plugins(
+                  acc_manager,
+                  Map.put(acc_manager.plugins, plugin.name, updated_plugin)
+                )
 
               {:ok, updated_manager, acc_commands}
 

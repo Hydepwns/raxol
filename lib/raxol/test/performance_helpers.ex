@@ -23,11 +23,12 @@ defmodule Raxol.Test.PerformanceHelpers do
   Returns the average time in milliseconds.
   """
   def measure_average_time(operation, iterations \\ 1000) do
-    {time, _} = measure_time(fn ->
-      Enum.each(1..iterations, fn _ ->
-        operation.()
+    {time, _} =
+      measure_time(fn ->
+        Enum.each(1..iterations, fn _ ->
+          operation.()
+        end)
       end)
-    end)
 
     time / iterations
   end
@@ -35,8 +36,14 @@ defmodule Raxol.Test.PerformanceHelpers do
   @doc """
   Asserts that an operation's average execution time is below a threshold.
   """
-  def assert_performance(operation, name, threshold \\ 0.001, iterations \\ 1000) do
+  def assert_performance(
+        operation,
+        name,
+        threshold \\ 0.001,
+        iterations \\ 1000
+      ) do
     avg_time = measure_average_time(operation, iterations)
+
     assert avg_time < threshold,
            "Average time for #{name} operation (#{avg_time}ms) exceeds #{threshold}ms threshold"
   end
@@ -44,16 +51,23 @@ defmodule Raxol.Test.PerformanceHelpers do
   @doc """
   Asserts that a set of concurrent operations' average execution time is below a threshold.
   """
-  def assert_concurrent_performance(operations, name, threshold \\ 0.002, iterations \\ 1000) do
-    {time, _} = measure_time(fn ->
-      Enum.each(1..iterations, fn _ ->
-        Enum.each(operations, fn operation ->
-          operation.()
+  def assert_concurrent_performance(
+        operations,
+        name,
+        threshold \\ 0.002,
+        iterations \\ 1000
+      ) do
+    {time, _} =
+      measure_time(fn ->
+        Enum.each(1..iterations, fn _ ->
+          Enum.each(operations, fn operation ->
+            operation.()
+          end)
         end)
       end)
-    end)
 
     avg_time = time / (iterations * length(operations))
+
     assert avg_time < threshold,
            "Average time for #{name} operations (#{avg_time}ms) exceeds #{threshold}ms threshold"
   end
@@ -76,6 +90,7 @@ defmodule Raxol.Test.PerformanceHelpers do
   """
   def assert_memory_usage(operation, name, threshold \\ 1_000_000) do
     {memory, _} = measure_memory(operation)
+
     assert memory < threshold,
            "Memory usage for #{name} operation (#{memory} bytes) exceeds #{threshold} bytes threshold"
   end
@@ -83,7 +98,12 @@ defmodule Raxol.Test.PerformanceHelpers do
   @doc """
   Measures and asserts both time and memory performance.
   """
-  def assert_performance_metrics(operation, name, time_threshold \\ 0.001, memory_threshold \\ 1_000_000) do
+  def assert_performance_metrics(
+        operation,
+        name,
+        time_threshold \\ 0.001,
+        memory_threshold \\ 1_000_000
+      ) do
     {time, _} = measure_time(operation)
     {memory, _} = measure_memory(operation)
 

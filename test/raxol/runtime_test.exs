@@ -223,7 +223,10 @@ defmodule Raxol.RuntimeTest do
     assert_receive {:child_started, ^supervisor_pid, Dispatcher}, 1000
     assert_receive {:child_started, ^supervisor_pid, RenderingEngine}, 1000
     assert_receive {:child_started, ^supervisor_pid, TerminalDriver}, 1000
-    assert_receive {:child_started, ^supervisor_pid, Raxol.Core.UserPreferences}, 1000
+
+    assert_receive {:child_started, ^supervisor_pid,
+                    Raxol.Core.UserPreferences},
+                   1000
 
     # Check if children are running (use registered names)
     assert is_pid(Process.whereis(PluginManager))
@@ -275,7 +278,9 @@ defmodule Raxol.RuntimeTest do
     GenServer.cast(driver_pid, {:test_input, "+"})
 
     # Wait for model update
-    assert_receive {:model_updated, ^dispatcher_pid, %{count: 1, last_clipboard: nil}}, 1000
+    assert_receive {:model_updated, ^dispatcher_pid,
+                    %{count: 1, last_clipboard: nil}},
+                   1000
 
     # Assert model was updated
     assert_model(Process.whereis(Dispatcher), %{count: 1, last_clipboard: nil})
@@ -439,11 +444,13 @@ defmodule Raxol.RuntimeTest do
     )
 
     # Subscribe to dispatcher events before killing it
-    {:ok, _} = Registry.register(:raxol_event_subscriptions, :dispatcher_events, [])
+    {:ok, _} =
+      Registry.register(:raxol_event_subscriptions, :dispatcher_events, [])
 
     # Manually stop the Dispatcher process
     # Use :kill to simulate an unexpected crash
     ref = Process.monitor(dispatcher_pid)
+
     Logger.debug(
       "[TEST supervisor restart] Sending :kill to #{inspect(dispatcher_pid)}"
     )
@@ -616,7 +623,9 @@ defmodule Raxol.RuntimeTest do
         else
           flunk("Process did not become available within \\#{timeout}ms")
         end
-      pid -> pid
+
+      pid ->
+        pid
     end
   end
 
@@ -628,7 +637,9 @@ defmodule Raxol.RuntimeTest do
   defp do_wait_for_model(dispatcher_pid, expected, start, timeout) do
     case GenServer.call(dispatcher_pid, :get_model, 100) do
       {:ok, model} ->
-        expected_with_theme = Map.put(expected, :current_theme_id, "Default Theme")
+        expected_with_theme =
+          Map.put(expected, :current_theme_id, "Default Theme")
+
         if model == expected_with_theme do
           :ok
         else
@@ -636,9 +647,12 @@ defmodule Raxol.RuntimeTest do
             Process.sleep(20)
             do_wait_for_model(dispatcher_pid, expected, start, timeout)
           else
-            flunk("Model did not reach expected state within \\#{timeout}ms. Last: \\#{inspect(model)}")
+            flunk(
+              "Model did not reach expected state within \\#{timeout}ms. Last: \\#{inspect(model)}"
+            )
           end
         end
+
       _ ->
         if System.monotonic_time(:millisecond) - start < timeout do
           Process.sleep(20)

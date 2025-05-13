@@ -3,62 +3,62 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
   import Mox
   alias Raxol.Core.Runtime.Plugins.FileWatcher
   alias FileWatcherTestHelper, as: Helper
+  import Raxol.Test.Mocks
 
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
-
-  # Define mocks
-  defmock(FileSystemMock, for: FileSystem.Behaviour)
-  defmock(ManagerMock, for: Raxol.Core.Runtime.Plugins.Manager.Behaviour)
-  defmock(FileMock, for: File.Behaviour)
 
   # Setup default mocks and test environment
   setup do
     pid = Helper.setup_mocks()
     Helper.cleanup_test_plugins()
+
     on_exit(fn ->
       Helper.stop_manager(pid)
       Helper.cleanup_test_plugins()
     end)
+
     :ok
   end
 
   # Helper function to create a valid file stat
   defp valid_file_stat do
-    {:ok, %File.Stat{
-      size: 0,
-      type: :regular,
-      access: :read,
-      atime: {{2024, 1, 1}, {0, 0, 0}},
-      mtime: {{2024, 1, 1}, {0, 0, 0}},
-      ctime: {{2024, 1, 1}, {0, 0, 0}},
-      mode: 0o644,
-      links: 1,
-      major_device: 0,
-      minor_device: 0,
-      inode: 0,
-      uid: 0,
-      gid: 0
-    }}
+    {:ok,
+     %File.Stat{
+       size: 0,
+       type: :regular,
+       access: :read,
+       atime: {{2024, 1, 1}, {0, 0, 0}},
+       mtime: {{2024, 1, 1}, {0, 0, 0}},
+       ctime: {{2024, 1, 1}, {0, 0, 0}},
+       mode: 0o644,
+       links: 1,
+       major_device: 0,
+       minor_device: 0,
+       inode: 0,
+       uid: 0,
+       gid: 0
+     }}
   end
 
   # Helper function to create a directory stat
   defp directory_stat do
-    {:ok, %File.Stat{
-      size: 0,
-      type: :directory,
-      access: :read,
-      atime: {{2024, 1, 1}, {0, 0, 0}},
-      mtime: {{2024, 1, 1}, {0, 0, 0}},
-      ctime: {{2024, 1, 1}, {0, 0, 0}},
-      mode: 0o755,
-      links: 1,
-      major_device: 0,
-      minor_device: 0,
-      inode: 0,
-      uid: 0,
-      gid: 0
-    }}
+    {:ok,
+     %File.Stat{
+       size: 0,
+       type: :directory,
+       access: :read,
+       atime: {{2024, 1, 1}, {0, 0, 0}},
+       mtime: {{2024, 1, 1}, {0, 0, 0}},
+       ctime: {{2024, 1, 1}, {0, 0, 0}},
+       mode: 0o755,
+       links: 1,
+       major_device: 0,
+       minor_device: 0,
+       inode: 0,
+       uid: 0,
+       gid: 0
+     }}
   end
 
   describe "setup_file_watching/1" do
@@ -126,7 +126,8 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
       end)
 
       # Call the function
-      {:error, {:file_access_error, :enoent}} = FileWatcher.handle_file_event(plugin_path, state)
+      {:error, {:file_access_error, :enoent}} =
+        FileWatcher.handle_file_event(plugin_path, state)
     end
 
     test "ignores non-regular files" do
@@ -172,7 +173,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
       # Setup test state with existing timer
       plugin_id = "test_plugin"
       plugin_path = Helper.create_test_plugin("test_plugin")
-      existing_timer = Process.send_after(self(), :test, 1000000)
+      existing_timer = Process.send_after(self(), :test, 1_000_000)
       state = Helper.create_test_state()
       state = put_in(state.reverse_plugin_paths, %{plugin_path => plugin_id})
       state = put_in(state.file_event_timer, existing_timer)
@@ -194,14 +195,16 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
     test "normalizes paths before checking" do
       # Setup test state
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
 
       # Call the function with relative path
-      {:ok, new_state} = FileWatcher.handle_file_event("test/plugins/test_plugin.ex", state)
+      {:ok, new_state} =
+        FileWatcher.handle_file_event("test/plugins/test_plugin.ex", state)
 
       # Verify timer was scheduled
       assert is_reference(new_state.file_event_timer)
@@ -210,12 +213,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles file_event_timer as an invalid reference" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
       # Use an invalid timer reference
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: make_ref()
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> valid_file_stat() end)
       # Should not crash even if timer is not a real timer
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
@@ -225,22 +229,27 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles File.stat returning unexpected tuple" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> :unexpected_tuple end)
       # Should treat as error
-      assert {:error, {:file_access_error, :unexpected_tuple}} = FileWatcher.handle_file_event(plugin_path, state)
+      assert {:error, {:file_access_error, :unexpected_tuple}} =
+               FileWatcher.handle_file_event(plugin_path, state)
     end
 
     test "handles nil plugin_id in reverse_plugin_paths" do
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => nil},
         file_event_timer: nil
       }
+
       # Should treat as unknown file
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert new_state == state
@@ -248,11 +257,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles file_event_timer already nil when cancelling" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> valid_file_stat() end)
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert is_reference(new_state.file_event_timer)
@@ -263,18 +274,22 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
         reverse_plugin_paths: %{},
         file_event_timer: nil
       }
+
       {:ok, new_state} = FileWatcher.handle_file_event("", state)
       assert new_state == state
     end
 
     test "handles File.stat raising an exception" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> raise "stat error" end)
+
       assert_raise RuntimeError, "stat error", fn ->
         FileWatcher.handle_file_event(plugin_path, state)
       end
@@ -282,55 +297,68 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles symlink file type" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path ->
         {:ok, %{type: :symlink, access: :read}}
       end)
+
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert new_state == state
     end
 
     test "handles FIFO file type" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path ->
         {:ok, %{type: :fifo, access: :read}}
       end)
+
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert new_state == state
     end
 
     test "handles regular file but access is not :read" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path ->
         {:ok, %{type: :regular, access: :none}}
       end)
+
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert new_state == state
     end
 
     test "handles File.stat returning nil" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> nil end)
-      assert {:error, {:file_access_error, nil}} = FileWatcher.handle_file_event(plugin_path, state)
+
+      assert {:error, {:file_access_error, nil}} =
+               FileWatcher.handle_file_event(plugin_path, state)
     end
 
     test "handles path as nil" do
@@ -338,6 +366,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
         reverse_plugin_paths: %{},
         file_event_timer: nil
       }
+
       assert {:ok, new_state} = FileWatcher.handle_file_event(nil, state)
       assert new_state == state
     end
@@ -347,29 +376,40 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
         reverse_plugin_paths: %{},
         file_event_timer: nil
       }
+
       assert {:ok, new_state} = FileWatcher.handle_file_event(123, state)
       assert new_state == state
     end
 
     test "handles relative path with .. segments" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/../plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> valid_file_stat() end)
-      {:ok, new_state} = FileWatcher.handle_file_event("test/plugins/../plugins/test_plugin.ex", state)
+
+      {:ok, new_state} =
+        FileWatcher.handle_file_event(
+          "test/plugins/../plugins/test_plugin.ex",
+          state
+        )
+
       assert is_reference(new_state.file_event_timer)
       assert Process.cancel_timer(new_state.file_event_timer)
     end
 
     test "handles state missing file_event_timer key" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id}
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> valid_file_stat() end)
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert is_reference(new_state.file_event_timer)
@@ -377,51 +417,69 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
     end
 
     test "handles reverse_plugin_paths as nil" do
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: nil,
         file_event_timer: nil
       }
-      assert {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
+
+      assert {:ok, new_state} =
+               FileWatcher.handle_file_event(plugin_path, state)
+
       assert new_state == state
     end
 
     test "handles reverse_plugin_paths as a list" do
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: [],
         file_event_timer: nil
       }
-      assert {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
+
+      assert {:ok, new_state} =
+               FileWatcher.handle_file_event(plugin_path, state)
+
       assert new_state == state
     end
 
     test "handles reverse_plugin_paths as an integer" do
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: 123,
         file_event_timer: nil
       }
-      assert {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
+
+      assert {:ok, new_state} =
+               FileWatcher.handle_file_event(plugin_path, state)
+
       assert new_state == state
     end
 
     test "handles state missing reverse_plugin_paths key" do
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         file_event_timer: nil
       }
-      assert {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
+
+      assert {:ok, new_state} =
+               FileWatcher.handle_file_event(plugin_path, state)
+
       assert new_state == state
     end
 
     test "handles file_event_timer as a string" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: "not_a_timer"
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> valid_file_stat() end)
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert is_reference(new_state.file_event_timer)
@@ -430,11 +488,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles file_event_timer as an integer" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: 42
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> valid_file_stat() end)
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert is_reference(new_state.file_event_timer)
@@ -443,11 +503,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles File.stat returning non-File.Stat struct" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> {:ok, %{foo: :bar}} end)
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert new_state == state
@@ -455,12 +517,14 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles File.stat returning tuple with unexpected fields" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
-      expect(FileMock, :stat, fn ^plugin_path -> {:ok, {1,2,3}} end)
+
+      expect(FileMock, :stat, fn ^plugin_path -> {:ok, {1, 2, 3}} end)
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert new_state == state
     end
@@ -468,10 +532,12 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
     test "handles plugin path as empty string in reverse_plugin_paths" do
       plugin_id = "test_plugin"
       plugin_path = ""
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> valid_file_stat() end)
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert is_reference(new_state.file_event_timer)
@@ -480,11 +546,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles plugin path as unicode string" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/тестовый_плагин.ex")
+      plugin_path = Helper.create_test_plugin("тестовый_плагин")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> valid_file_stat() end)
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert is_reference(new_state.file_event_timer)
@@ -493,11 +561,14 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles plugin path as very long string" do
       plugin_id = "test_plugin"
-      long_path = Path.expand("test/plugins/" <> String.duplicate("a", 500) <> ".ex")
+      long_name = String.duplicate("a", 500)
+      long_path = Helper.create_test_plugin(long_name)
+
       state = %{
         reverse_plugin_paths: %{long_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^long_path -> valid_file_stat() end)
       {:ok, new_state} = FileWatcher.handle_file_event(long_path, state)
       assert is_reference(new_state.file_event_timer)
@@ -506,11 +577,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles plugin_id as empty string" do
       plugin_id = ""
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> valid_file_stat() end)
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert is_reference(new_state.file_event_timer)
@@ -519,11 +592,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles plugin_id as integer" do
       plugin_id = 123
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, fn ^plugin_path -> valid_file_stat() end)
       {:ok, new_state} = FileWatcher.handle_file_event(plugin_path, state)
       assert is_reference(new_state.file_event_timer)
@@ -532,11 +607,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles multiple rapid file events" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
+
       state = %{
         reverse_plugin_paths: %{plugin_path => plugin_id},
         file_event_timer: nil
       }
+
       expect(FileMock, :stat, 2, fn ^plugin_path -> valid_file_stat() end)
       {:ok, state1} = FileWatcher.handle_file_event(plugin_path, state)
       {:ok, state2} = FileWatcher.handle_file_event(plugin_path, state1)
@@ -551,7 +628,12 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
       plugin_id = "test_plugin"
       plugin_path = Helper.create_test_plugin("test_plugin")
       state = Helper.create_test_state()
-      state = put_in(state.file_event_timer, Process.send_after(self(), :test, 1000000))
+
+      state =
+        put_in(
+          state.file_event_timer,
+          Process.send_after(self(), :test, 1_000_000)
+        )
 
       # Mock plugin reload
       expect(ManagerMock, :get_plugin, fn ^plugin_id ->
@@ -567,7 +649,8 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
       end)
 
       # Call the function
-      {:ok, new_state} = FileWatcher.handle_debounced_events(plugin_id, plugin_path, state)
+      {:ok, new_state} =
+        FileWatcher.handle_debounced_events(plugin_id, plugin_path, state)
 
       # Verify state
       assert new_state.file_event_timer == nil
@@ -578,7 +661,12 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
       plugin_id = "test_plugin"
       plugin_path = Helper.create_test_plugin("test_plugin")
       state = Helper.create_test_state()
-      state = put_in(state.file_event_timer, Process.send_after(self(), :test, 1000000))
+
+      state =
+        put_in(
+          state.file_event_timer,
+          Process.send_after(self(), :test, 1_000_000)
+        )
 
       # Mock plugin reload failure
       expect(ManagerMock, :get_plugin, fn ^plugin_id ->
@@ -603,19 +691,21 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
       # Setup test state
       state = Helper.create_test_state()
       state = put_in(state.file_watching_enabled?, true)
-      state = put_in(state.plugin_paths, %{
-        "plugin1" => "path/to/plugin1.ex",
-        "plugin2" => "path/to/plugin2.ex"
-      })
+
+      state =
+        put_in(state.plugin_paths, %{
+          "plugin1" => "path/to/plugin1.ex",
+          "plugin2" => "path/to/plugin2.ex"
+        })
 
       # Call the function
       new_state = FileWatcher.update_file_watcher(state)
 
       # Verify reverse mapping was created with normalized paths
       assert new_state.reverse_plugin_paths == %{
-        Path.expand("path/to/plugin1.ex") => "plugin1",
-        Path.expand("path/to/plugin2.ex") => "plugin2"
-      }
+               Path.expand("path/to/plugin1.ex") => "plugin1",
+               Path.expand("path/to/plugin2.ex") => "plugin2"
+             }
     end
 
     test "returns unchanged state when file watching is disabled" do
@@ -634,7 +724,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
   describe "cleanup_file_watching/1" do
     test "stops file watcher process" do
       # Setup test state with watcher PID
-      watcher_pid = spawn(fn -> receive do :stop -> :ok end end)
+      watcher_pid =
+        spawn(fn ->
+          receive do
+            :stop -> :ok
+          end
+        end)
+
       state = Helper.create_test_state()
       state = put_in(state.file_watcher_pid, watcher_pid)
 
@@ -648,7 +744,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "cancels pending timer" do
       # Setup test state with timer
-      timer_ref = Process.send_after(self(), :test, 1000000)
+      timer_ref = Process.send_after(self(), :test, 1_000_000)
       state = Helper.create_test_state()
       state = put_in(state.file_event_timer, timer_ref)
 
@@ -664,7 +760,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
   describe "reload_plugin/2" do
     test "successfully reloads an existing plugin" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
 
       # Mock plugin manager responses
       expect(ManagerMock, :get_plugin, fn ^plugin_id ->
@@ -684,18 +780,19 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
 
     test "handles plugin not found error" do
       plugin_id = "nonexistent_plugin"
-      plugin_path = "test/plugins/nonexistent_plugin.ex"
+      plugin_path = Helper.create_test_plugin("nonexistent_plugin")
 
       expect(ManagerMock, :get_plugin, fn ^plugin_id ->
         {:error, :not_found}
       end)
 
-      assert {:error, :plugin_not_found} = FileWatcher.reload_plugin(plugin_id, plugin_path)
+      assert {:error, :plugin_not_found} =
+               FileWatcher.reload_plugin(plugin_id, plugin_path)
     end
 
     test "handles unload failure" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
 
       expect(ManagerMock, :get_plugin, fn ^plugin_id ->
         {:ok, %{id: plugin_id}}
@@ -705,12 +802,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
         {:error, :unload_failed}
       end)
 
-      assert {:error, {:unload_failed, :unload_failed}} = FileWatcher.reload_plugin(plugin_id, plugin_path)
+      assert {:error, {:unload_failed, :unload_failed}} =
+               FileWatcher.reload_plugin(plugin_id, plugin_path)
     end
 
     test "handles load failure" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
 
       expect(ManagerMock, :get_plugin, fn ^plugin_id ->
         {:ok, %{id: plugin_id}}
@@ -724,12 +822,13 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
         {:error, :load_failed}
       end)
 
-      assert {:error, {:reload_failed, :load_failed}} = FileWatcher.reload_plugin(plugin_id, plugin_path)
+      assert {:error, {:reload_failed, :load_failed}} =
+               FileWatcher.reload_plugin(plugin_id, plugin_path)
     end
 
     test "handles unexpected errors during reload" do
       plugin_id = "test_plugin"
-      plugin_path = Path.expand("test/plugins/test_plugin.ex")
+      plugin_path = Helper.create_test_plugin("test_plugin")
 
       expect(ManagerMock, :get_plugin, fn ^plugin_id ->
         {:ok, %{id: plugin_id}}
@@ -739,8 +838,9 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
         raise "Unexpected error"
       end)
 
-      assert {:error, {:reload_error, %RuntimeError{message: "Unexpected error"}}} =
-        FileWatcher.reload_plugin(plugin_id, plugin_path)
+      assert {:error,
+              {:reload_error, %RuntimeError{message: "Unexpected error"}}} =
+               FileWatcher.reload_plugin(plugin_id, plugin_path)
     end
   end
 
@@ -751,7 +851,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcherTest do
   Once recursive watching is implemented, this test should be enabled and completed.
   """
   test "handles recursive directory watching" do
-    # TODO: Implement test for recursive directory watching once the feature is available.
+    # NOTE: Implement test for recursive directory watching once the feature is available.
     # This test is currently skipped and serves as a placeholder for future work.
     assert true
   end

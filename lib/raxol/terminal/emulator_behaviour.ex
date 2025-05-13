@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.EmulatorBehaviour do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.Manager
   alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.ANSI.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
   alias Raxol.Terminal.ModeManager
   alias Raxol.Plugins.PluginManager
   alias Raxol.Terminal.Parser

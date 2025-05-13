@@ -160,7 +160,8 @@ defmodule Raxol.Animation.FrameworkTest do
       wait_for_animation_start("test_element", animation.name)
 
       # Verify announcement was made
-      assert_receive {:accessibility_announcement, "Test animation started"}, 100
+      assert_receive {:accessibility_announcement, "Test animation started"},
+                     100
     end
 
     test "applies animation values to state" do
@@ -234,7 +235,9 @@ defmodule Raxol.Animation.FrameworkTest do
 
       # Verify both animations were applied
       assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
-      assert get_in(updated_state, [:elements, "test_element", :position]) == 100
+
+      assert get_in(updated_state, [:elements, "test_element", :position]) ==
+               100
     end
 
     test "meets performance requirements" do
@@ -255,7 +258,9 @@ defmodule Raxol.Animation.FrameworkTest do
       wait_for_animation_completion("test_element", animation.name)
 
       end_time = System.monotonic_time()
-      duration = System.convert_time_unit(end_time - start_time, :native, :millisecond)
+
+      duration =
+        System.convert_time_unit(end_time - start_time, :native, :millisecond)
 
       # Verify performance requirements
       assert duration < 16, "Animation frame time too high"

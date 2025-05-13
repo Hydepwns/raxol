@@ -16,7 +16,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyResolutionTest do
 
     test "resolves complex dependency graph" do
       plugins = %{
-        "plugin_a" => %{dependencies: [{"plugin_b", ">= 1.0.0"}, {"plugin_c", ">= 1.0.0"}]},
+        "plugin_a" => %{
+          dependencies: [{"plugin_b", ">= 1.0.0"}, {"plugin_c", ">= 1.0.0"}]
+        },
         "plugin_b" => %{dependencies: [{"plugin_c", ">= 1.0.0"}]},
         "plugin_c" => %{dependencies: []},
         "plugin_d" => %{dependencies: [{"plugin_a", ">= 1.0.0"}]}
@@ -46,7 +48,11 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyResolutionTest do
       }
 
       actual = DependencyManager.resolve_load_order(plugins)
-      IO.inspect(actual, label: "Actual return value for circular dependency test")
+
+      IO.inspect(actual,
+        label: "Actual return value for circular dependency test"
+      )
+
       assert {:error, :circular_dependency, cycle, chain} = actual
       assert length(cycle) > 0
       assert length(chain) > 0
@@ -61,7 +67,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyResolutionTest do
         "plugin_c" => %{dependencies: [{"plugin_a", ">= 1.0.0"}]}
       }
 
-      assert {:error, :circular_dependency, cycle, chain} = DependencyManager.resolve_load_order(plugins)
+      assert {:error, :circular_dependency, cycle, chain} =
+               DependencyManager.resolve_load_order(plugins)
+
       assert length(cycle) > 0
       assert length(chain) > 0
       assert "plugin_a" in cycle
@@ -72,7 +80,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyResolutionTest do
     test "handles deeply nested circular dependencies" do
       plugins = DependencyManagerTestHelper.create_dependency_chain(5)
 
-      assert {:error, :circular_dependency, cycle, chain} = DependencyManager.resolve_load_order(plugins)
+      assert {:error, :circular_dependency, cycle, chain} =
+               DependencyManager.resolve_load_order(plugins)
+
       assert length(cycle) == 5
       assert length(chain) > 5
     end
@@ -82,33 +92,52 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyResolutionTest do
       loaded_plugins = %{"my_plugin" => %{version: "1.0.0"}}
 
       assert {:error, :self_dependency, ["my_plugin"], ["my_plugin"]} ==
-               DependencyManager.check_dependencies("my_plugin", plugin_metadata, loaded_plugins)
+               DependencyManager.check_dependencies(
+                 "my_plugin",
+                 plugin_metadata,
+                 loaded_plugins
+               )
     end
 
     test "handles duplicate dependencies" do
       plugin_metadata = %{
         dependencies: [
           {"plugin_a", ">= 1.0.0"},
-          {"plugin_a", ">= 2.0.0"},  # Duplicate with different version
-          {"plugin_a", ">= 1.0.0"}   # Exact duplicate
+          # Duplicate with different version
+          {"plugin_a", ">= 2.0.0"},
+          # Exact duplicate
+          {"plugin_a", ">= 1.0.0"}
         ]
       }
+
       loaded_plugins = %{"plugin_a" => %{version: "2.1.0"}}
 
-      assert :ok == DependencyManager.check_dependencies("my_plugin", plugin_metadata, loaded_plugins)
+      assert :ok ==
+               DependencyManager.check_dependencies(
+                 "my_plugin",
+                 plugin_metadata,
+                 loaded_plugins
+               )
     end
 
     test "handles conflicting version requirements" do
       plugin_metadata = %{
         dependencies: [
           {"plugin_a", ">= 1.0.0"},
-          {"plugin_a", "<= 0.9.0"}  # Conflicting version requirement
+          # Conflicting version requirement
+          {"plugin_a", "<= 0.9.0"}
         ]
       }
+
       loaded_plugins = %{"plugin_a" => %{version: "1.0.0"}}
 
       assert {:error, :conflicting_requirements, conflicts, ["my_plugin"]} =
-               DependencyManager.check_dependencies("my_plugin", plugin_metadata, loaded_plugins)
+               DependencyManager.check_dependencies(
+                 "my_plugin",
+                 plugin_metadata,
+                 loaded_plugins
+               )
+
       assert length(conflicts) == 1
     end
   end

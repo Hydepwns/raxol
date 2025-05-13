@@ -88,6 +88,7 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
 
     test "reset/1 clears all buffers and resets to ground state" do
       state = Manager.new()
+
       state = %{
         state
         | state: :escape,
@@ -112,17 +113,25 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
       state = Manager.new()
 
       # Test ground state handling
-      {:continue, _emulator, new_state, _rest} = Manager.process_input(emulator, state, "Hello")
+      {:continue, _emulator, new_state, _rest} =
+        Manager.process_input(emulator, state, "Hello")
+
       assert new_state.state == :ground
 
       # Test escape state handling
       state = %{state | state: :escape}
-      {:continue, _emulator, new_state, _rest} = Manager.process_input(emulator, state, "\e[")
+
+      {:continue, _emulator, new_state, _rest} =
+        Manager.process_input(emulator, state, "\e[")
+
       assert new_state.state == :csi_entry
 
       # Test unknown state handling (should return to ground)
       state = %{state | state: :unknown}
-      {:continue, _emulator, new_state, _rest} = Manager.process_input(emulator, state, "test")
+
+      {:continue, _emulator, new_state, _rest} =
+        Manager.process_input(emulator, state, "test")
+
       assert new_state.state == :ground
     end
   end

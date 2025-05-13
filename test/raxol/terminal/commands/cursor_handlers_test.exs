@@ -12,6 +12,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
       cursor: CursorManager.new(),
       style: Raxol.Terminal.ANSI.TextFormatting.new()
     }
+
     {:ok, emulator: emulator}
   end
 
@@ -19,13 +20,15 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
     test "moves cursor to specified position", %{emulator: emulator} do
       # Test with 1-based coordinates (ANSI standard)
       result = CursorHandlers.handle_H(emulator, [3, 4])
-      assert result.cursor.position == {3, 2} # Converted to 0-based
+      # Converted to 0-based
+      assert result.cursor.position == {3, 2}
     end
 
     test "clamps coordinates to screen bounds", %{emulator: emulator} do
       # Test with out-of-bounds coordinates
       result = CursorHandlers.handle_H(emulator, [20, 20])
-      assert result.cursor.position == {9, 9} # Max bounds for 10x10 screen
+      # Max bounds for 10x10 screen
+      assert result.cursor.position == {9, 9}
     end
 
     test "handles missing parameters", %{emulator: emulator} do

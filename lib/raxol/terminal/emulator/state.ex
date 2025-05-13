@@ -17,11 +17,14 @@ defmodule Raxol.Terminal.Emulator.State do
   Sets a terminal mode.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_mode(Core.t(), atom(), boolean()) :: {:ok, Core.t()} | {:error, String.t()}
-  def set_mode(%Core{} = emulator, mode, value) when is_atom(mode) and is_boolean(value) do
+  @spec set_mode(Core.t(), atom(), boolean()) ::
+          {:ok, Core.t()} | {:error, String.t()}
+  def set_mode(%Core{} = emulator, mode, value)
+      when is_atom(mode) and is_boolean(value) do
     case ModeManager.set_mode(emulator.mode_manager, mode, value) do
       {:ok, updated_mode_manager} ->
         {:ok, %{emulator | mode_manager: updated_mode_manager}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -48,11 +51,13 @@ defmodule Raxol.Terminal.Emulator.State do
   Sets the character set state.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_charset_state(Core.t(), CharacterSets.charset_state()) :: {:ok, Core.t()} | {:error, String.t()}
+  @spec set_charset_state(Core.t(), CharacterSets.charset_state()) ::
+          {:ok, Core.t()} | {:error, String.t()}
   def set_charset_state(%Core{} = emulator, charset_state) do
     case CharacterSets.validate_state(charset_state) do
       :ok ->
         {:ok, %{emulator | charset_state: charset_state}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -76,6 +81,7 @@ defmodule Raxol.Terminal.Emulator.State do
     case TerminalState.push(emulator.state) do
       {:ok, updated_state} ->
         {:ok, %{emulator | state: updated_state}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -90,6 +96,7 @@ defmodule Raxol.Terminal.Emulator.State do
     case TerminalState.pop(emulator.state) do
       {:ok, updated_state} ->
         {:ok, %{emulator | state: updated_state}}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -108,8 +115,10 @@ defmodule Raxol.Terminal.Emulator.State do
   Sets the memory limit for the terminal.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_memory_limit(Core.t(), non_neg_integer()) :: {:ok, Core.t()} | {:error, String.t()}
-  def set_memory_limit(%Core{} = emulator, limit) when is_integer(limit) and limit > 0 do
+  @spec set_memory_limit(Core.t(), non_neg_integer()) ::
+          {:ok, Core.t()} | {:error, String.t()}
+  def set_memory_limit(%Core{} = emulator, limit)
+      when is_integer(limit) and limit > 0 do
     {:ok, %{emulator | memory_limit: limit}}
   end
 
@@ -131,7 +140,8 @@ defmodule Raxol.Terminal.Emulator.State do
   Returns {:ok, updated_emulator}.
   """
   @spec set_hyperlink_url(Core.t(), String.t() | nil) :: {:ok, Core.t()}
-  def set_hyperlink_url(%Core{} = emulator, url) when is_binary(url) or is_nil(url) do
+  def set_hyperlink_url(%Core{} = emulator, url)
+      when is_binary(url) or is_nil(url) do
     {:ok, %{emulator | current_hyperlink_url: url}}
   end
 

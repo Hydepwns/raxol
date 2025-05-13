@@ -529,6 +529,10 @@ defmodule Raxol.UI.Renderer do
 
   # Clause to handle when attrs is a map with just style
   defp resolve_styles(%{style: style}, _component_type, theme) do
-    resolve_styles(%{fg: @default_fg, bg: @default_bg, style: style}, nil, theme)
+    resolve_styles(
+      %{fg: @default_fg, bg: @default_bg, style: style},
+      nil,
+      theme
+    )
   end
 end

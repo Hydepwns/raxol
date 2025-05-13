@@ -44,14 +44,25 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     content_size = calculate_content_size(scroll.children, available_size)
 
     # Calculate scrollbar visibility and position
-    scrollbar_info = calculate_scrollbars(content_size, {viewport_width, viewport_height})
+    scrollbar_info =
+      calculate_scrollbars(content_size, {viewport_width, viewport_height})
 
     # Apply viewport clipping and offset
-    clipped_content = apply_viewport(scroll.children, content_size, {offset_x, offset_y}, {viewport_width, viewport_height})
+    clipped_content =
+      apply_viewport(
+        scroll.children,
+        content_size,
+        {offset_x, offset_y},
+        {viewport_width, viewport_height}
+      )
 
     # Add scrollbars if enabled
     if scroll.scrollbars do
-      add_scrollbars(clipped_content, scrollbar_info, {viewport_width, viewport_height})
+      add_scrollbars(
+        clipped_content,
+        scrollbar_info,
+        {viewport_width, viewport_height}
+      )
     else
       clipped_content
     end
@@ -67,7 +78,10 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     {width, height}
   end
 
-  defp calculate_scrollbars({content_width, content_height}, {viewport_width, viewport_height}) do
+  defp calculate_scrollbars(
+         {content_width, content_height},
+         {viewport_width, viewport_height}
+       ) do
     # Calculate if scrollbars are needed and their positions
     horizontal_needed = content_width > viewport_width
     vertical_needed = content_height > viewport_height
@@ -75,11 +89,19 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     %{
       horizontal: %{
         needed: horizontal_needed,
-        position: if(horizontal_needed, do: calculate_scrollbar_position(content_width, viewport_width), else: 0)
+        position:
+          if(horizontal_needed,
+            do: calculate_scrollbar_position(content_width, viewport_width),
+            else: 0
+          )
       },
       vertical: %{
         needed: vertical_needed,
-        position: if(vertical_needed, do: calculate_scrollbar_position(content_height, viewport_height), else: 0)
+        position:
+          if(vertical_needed,
+            do: calculate_scrollbar_position(content_height, viewport_height),
+            else: 0
+          )
       }
     }
   end
@@ -93,7 +115,12 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     0
   end
 
-  defp apply_viewport(children, content_size, {offset_x, offset_y}, {viewport_width, viewport_height}) do
+  defp apply_viewport(
+         children,
+         content_size,
+         {offset_x, offset_y},
+         {viewport_width, viewport_height}
+       ) do
     # Apply viewport clipping and offset to content
     # This would handle:
     # - Content clipping
@@ -102,7 +129,11 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     children
   end
 
-  defp add_scrollbars(content, scrollbar_info, {viewport_width, viewport_height}) do
+  defp add_scrollbars(
+         content,
+         scrollbar_info,
+         {viewport_width, viewport_height}
+       ) do
     # Add scrollbars to the content
     # This would handle:
     # - Scrollbar rendering
@@ -116,7 +147,9 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
   """
   def update_offset(scroll, {new_x, new_y}) do
     # Validate and constrain the new offset
-    {content_width, content_height} = calculate_content_size(scroll.children, scroll.viewport)
+    {content_width, content_height} =
+      calculate_content_size(scroll.children, scroll.viewport)
+
     {viewport_width, viewport_height} = scroll.viewport
 
     constrained_x = max(0, min(new_x, content_width - viewport_width))

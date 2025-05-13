@@ -29,7 +29,7 @@ defmodule Raxol.Style.Colors.Adaptive do
   ```
   """
 
-  alias Raxol.Style.Colors.{Color, Palette, Theme, Utilities}
+  alias Raxol.Style.Colors.{Color, Theme, Utilities}
 
   # Cache for capabilities to avoid repeated detection
   @capabilities_cache_name :raxol_terminal_capabilities
@@ -220,63 +220,32 @@ defmodule Raxol.Style.Colors.Adaptive do
   end
 
   @doc """
-  Adapts a palette to the current terminal capabilities.
+  Adapts a theme (canonical structure) to the current terminal capabilities and background.
 
   ## Parameters
 
-  - `palette` - The palette to adapt
+  - `theme` - The canonical theme map to adapt
 
   ## Examples
 
-      iex> palette = Raxol.Style.Colors.Palette.nord()
-      iex> adapted = Raxol.Style.Colors.Adaptive.adapt_palette(palette)
-      iex> adapted.name
-      "Nord (Adapted)"  # Adapted to terminal capabilities
-  """
-  def adapt_palette(%Palette{} = palette) do
-    # Adapt each color in the palette
-    adapted_colors =
-      Map.new(palette.colors, fn {key, color} ->
-        {key, adapt_color(color)}
-      end)
-
-    # Create a new palette with adapted colors
-    %Palette{
-      palette
-      | name: "#{palette.name} (Adapted)",
-        colors: adapted_colors
-    }
-  end
-
-  @doc """
-  Adapts a theme to the current terminal capabilities and background.
-
-  ## Parameters
-
-  - `theme` - The theme to adapt
-
-  ## Examples
-
-      iex> theme = Raxol.Style.Colors.Theme.from_palette(Raxol.Style.Colors.Palette.nord())
+      iex> theme = Raxol.UI.Theming.Theme.default_theme()
       iex> adapted = Raxol.Style.Colors.Adaptive.adapt_theme(theme)
       iex> adapted.name
-      "Nord (Adapted)"  # Adapted to terminal capabilities
+      "default (Adapted)"  # Adapted to terminal capabilities
   """
-  def adapt_theme(%Theme{} = theme) do
-    # Create a temporary Palette struct from the theme's palette map
-    # Use the theme's name for the temporary palette
-    temp_palette_struct = %Palette{name: theme.name, colors: theme.palette}
+  def adapt_theme(theme) when is_map(theme) do
+    # Adapt each color in the canonical theme's :colors map
+    adapted_colors =
+      theme.colors
+      |> Enum.map(fn {k, v} ->
+        {k, adapt_color(Color.from_hex(v)) |> Map.get(:hex, v)}
+      end)
+      |> Enum.into(%{})
 
-    # Adapt the palette based on color support
-    adapted_palette_struct = adapt_palette(temp_palette_struct)
-
-    # Return a new theme with the adapted palette map and name
-    %Theme{
-      theme
-      | name: adapted_palette_struct.name,
-        palette: adapted_palette_struct.colors
-        # Keep original dark_mode, ui_mappings etc.
-    }
+    # Return a new theme map with the adapted colors and updated name
+    theme
+    |> Map.put(:name, "#{theme.name} (Adapted)")
+    |> Map.put(:colors, adapted_colors)
   end
 
   @doc """

@@ -36,6 +36,7 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         buffer_manager: %MockBufferManager{memory_usage: 1500},
         scroll_buffer: %MockScrollBuffer{memory_usage: 2500}
       }
+
       assert MemoryManager.estimate_memory_usage(state) == 4000
     end
 
@@ -44,6 +45,7 @@ defmodule Raxol.Terminal.MemoryManagerTest do
         buffer_manager: %{},
         scroll_buffer: %{}
       }
+
       assert MemoryManager.estimate_memory_usage(state) == 0
     end
   end
@@ -52,8 +54,12 @@ defmodule Raxol.Terminal.MemoryManagerTest do
     test "returns correct sum for real State with default config" do
       config = Raxol.Terminal.Config.Defaults.generate_default_config()
       state = Raxol.Terminal.Integration.State.new(80, 24, config)
+
       # By default, both buffer_manager and scroll_buffer should have memory_usage fields
-      expected = (state.buffer_manager.memory_usage || 0) + (state.scroll_buffer.memory_usage || 0)
+      expected =
+        (state.buffer_manager.memory_usage || 0) +
+          (state.scroll_buffer.memory_usage || 0)
+
       assert MemoryManager.estimate_memory_usage(state) == expected
     end
 
@@ -63,7 +69,13 @@ defmodule Raxol.Terminal.MemoryManagerTest do
       # Manually set memory_usage fields
       buffer_manager = Map.put(state.buffer_manager, :memory_usage, 1111)
       scroll_buffer = Map.put(state.scroll_buffer, :memory_usage, 2222)
-      state = %{state | buffer_manager: buffer_manager, scroll_buffer: scroll_buffer}
+
+      state = %{
+        state
+        | buffer_manager: buffer_manager,
+          scroll_buffer: scroll_buffer
+      }
+
       assert MemoryManager.estimate_memory_usage(state) == 3333
     end
 

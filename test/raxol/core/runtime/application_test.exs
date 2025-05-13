@@ -26,8 +26,8 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
 
     @impl true
     def view(state) do
-      Raxol.Core.Renderer.View.panel(title: "Counter") do
-        Raxol.Core.Renderer.View.row() do
+      Raxol.Core.Renderer.View.panel title: "Counter" do
+        Raxol.Core.Renderer.View.row do
           [
             Raxol.View.Components.button(label: "-", on_click: :decrement),
             Raxol.Core.Renderer.View.text("Count: #{state.count}"),

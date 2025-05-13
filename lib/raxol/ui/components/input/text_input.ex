@@ -27,6 +27,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
           optional(:on_submit) => (String.t() -> any()),
           optional(:on_cancel) => (-> any()) | nil,
           optional(:theme) => map(),
+          optional(:style) => map(),
           optional(:mask_char) => String.t() | nil,
           optional(:max_length) => integer() | nil,
           optional(:validator) => (String.t() -> boolean()) | nil
@@ -41,7 +42,9 @@ defmodule Raxol.UI.Components.Input.TextInput do
           validator: (String.t() -> boolean()) | nil,
           on_submit: (String.t() -> any()) | nil,
           on_change: (String.t() -> any()) | nil,
-          mask_char: String.t() | nil
+          mask_char: String.t() | nil,
+          theme: map(),
+          style: map()
         }
 
   require Logger
@@ -58,7 +61,9 @@ defmodule Raxol.UI.Components.Input.TextInput do
       validator: props[:validator],
       on_submit: props[:on_submit],
       on_change: props[:on_change],
-      mask_char: props[:mask_char]
+      mask_char: props[:mask_char],
+      theme: props[:theme] || %{},
+      style: props[:style] || %{}
     }
 
     {:ok, initial_state}
@@ -227,6 +232,12 @@ defmodule Raxol.UI.Components.Input.TextInput do
   end
 
   @impl true
+  def mount(state), do: state
+
+  @impl true
+  def unmount(state), do: state
+
+  @impl true
   def render(state, _context) do
     value = state.value
     placeholder = state.placeholder
@@ -238,11 +249,17 @@ defmodule Raxol.UI.Components.Input.TextInput do
         value
       end
 
+    display_text = if(value == "", do: placeholder, else: masked_text)
+
+    merged_style =
+      Map.merge(state.theme[:input] || %{}, state.style[:input] || %{})
+
     %{
       type: :text_input,
-      text: if(value == "", do: placeholder, else: masked_text),
+      text: display_text,
       cursor_pos: state.cursor_pos,
-      focused: state.focused
+      focused: state.focused,
+      style: merged_style
     }
   end
 

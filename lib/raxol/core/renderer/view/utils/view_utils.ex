@@ -59,19 +59,23 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
   end
 
   defp apply_foreground(text, nil), do: text
+
   defp apply_foreground(text, color) when is_atom(color) do
     code = color_to_code(color)
     "\e[38;5;#{code}m#{text}\e[39m"
   end
+
   defp apply_foreground(text, {r, g, b}) do
     "\e[38;2;#{r};#{g};#{b}m#{text}\e[39m"
   end
 
   defp apply_background(text, nil), do: text
+
   defp apply_background(text, color) when is_atom(color) do
     code = color_to_code(color)
     "\e[48;5;#{code}m#{text}\e[49m"
   end
+
   defp apply_background(text, {r, g, b}) do
     "\e[48;2;#{r};#{g};#{b}m#{text}\e[49m"
   end
@@ -97,7 +101,8 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
       :bright_magenta -> 13
       :bright_cyan -> 14
       :bright_white -> 15
-      _ -> 7 # Default to white
+      # Default to white
+      _ -> 7
     end
   end
 
@@ -140,6 +145,7 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     Map.merge(base_view, override_view, fn
       :children, base_children, override_children ->
         base_children ++ override_children
+
       _key, _base_value, override_value ->
         override_value
     end)

@@ -26,7 +26,9 @@ defmodule Raxol.Test.SetupHelpers do
 
     # Setup preferences with test-specific name
     prefs_name = Keyword.get(opts, :prefs_name, __MODULE__.TestPrefs)
-    {:ok, _pid} = start_supervised({UserPreferences, [test_mode?: true, name: prefs_name]})
+
+    {:ok, _pid} =
+      start_supervised({UserPreferences, [test_mode?: true, name: prefs_name]})
 
     # Set default preferences
     set_default_preferences(prefs_name)
@@ -57,7 +59,12 @@ defmodule Raxol.Test.SetupHelpers do
     UserPreferences.set([:accessibility, :reduced_motion], false, prefs_name)
     UserPreferences.set([:accessibility, :keyboard_focus], true, prefs_name)
     UserPreferences.set([:accessibility, :large_text], false, prefs_name)
-    UserPreferences.set([:accessibility, :silence_announcements], false, prefs_name)
+
+    UserPreferences.set(
+      [:accessibility, :silence_announcements],
+      false,
+      prefs_name
+    )
   end
 
   @doc """

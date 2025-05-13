@@ -3,20 +3,32 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
   Manages character set state and operations.
   """
 
-  @type charset :: :us_ascii | :dec_special_graphics | :uk | :us | :finnish |
-                 :french | :french_canadian | :german | :italian |
-                 :norwegian_danish | :portuguese | :spanish | :swedish | :swiss
+  @type charset ::
+          :us_ascii
+          | :dec_special_graphics
+          | :uk
+          | :us
+          | :finnish
+          | :french
+          | :french_canadian
+          | :german
+          | :italian
+          | :norwegian_danish
+          | :portuguese
+          | :spanish
+          | :swedish
+          | :swiss
 
   @type charset_state :: %{
-    active: charset(),
-    single_shift: charset() | nil,
-    g0: charset(),
-    g1: charset(),
-    g2: charset(),
-    g3: charset(),
-    gl: :g0 | :g1 | :g2 | :g3,
-    gr: :g0 | :g1 | :g2 | :g3
-  }
+          active: charset(),
+          single_shift: charset() | nil,
+          g0: charset(),
+          g1: charset(),
+          g2: charset(),
+          g3: charset(),
+          gl: :g0 | :g1 | :g2 | :g3,
+          gr: :g0 | :g1 | :g2 | :g3
+        }
 
   @doc """
   Creates a new character set state with default values.

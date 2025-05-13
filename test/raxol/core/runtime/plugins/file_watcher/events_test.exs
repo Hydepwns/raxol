@@ -3,22 +3,21 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.EventsTest do
   import Mox
   alias Raxol.Core.Runtime.Plugins.FileWatcher.Events
   alias FileWatcherTestHelper, as: Helper
+  import Raxol.Test.Mocks
 
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!
-
-  # Define mocks
-  defmock(FileMock, for: File.Behaviour)
-  defmock(ManagerMock, for: Raxol.Core.Runtime.Plugins.Manager.Behaviour)
 
   # Setup default mocks and test environment
   setup do
     pid = Helper.setup_mocks()
     Helper.cleanup_test_plugins()
+
     on_exit(fn ->
       Helper.stop_manager(pid)
       Helper.cleanup_test_plugins()
     end)
+
     :ok
   end
 
@@ -47,7 +46,8 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.EventsTest do
       end)
 
       # Call the function
-      {:error, {:file_access_error, :enoent}} = Events.handle_file_event(plugin_path, state)
+      {:error, {:file_access_error, :enoent}} =
+        Events.handle_file_event(plugin_path, state)
     end
 
     test "ignores non-regular files" do
@@ -93,7 +93,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.EventsTest do
       # Setup test state with existing timer
       plugin_id = "test_plugin"
       plugin_path = Helper.create_test_plugin("test_plugin")
-      existing_timer = Process.send_after(self(), :test, :infinity)
+      existing_timer = Process.send_after(self(), :test, 1_000_000)
       state = Helper.create_test_state()
       state = put_in(state.reverse_plugin_paths, %{plugin_path => plugin_id})
       state = put_in(state.file_event_timer, existing_timer)
@@ -120,7 +120,8 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.EventsTest do
       state = put_in(state.reverse_plugin_paths, %{plugin_path => plugin_id})
 
       # Call the function with relative path
-      {:ok, new_state} = Events.handle_file_event("test/plugins/test_plugin.ex", state)
+      {:ok, new_state} =
+        Events.handle_file_event("test/plugins/test_plugin.ex", state)
 
       # Verify timer was scheduled
       assert is_reference(new_state.file_event_timer)
@@ -134,7 +135,12 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.EventsTest do
       plugin_id = "test_plugin"
       plugin_path = Helper.create_test_plugin("test_plugin")
       state = Helper.create_test_state()
-      state = put_in(state.file_event_timer, Process.send_after(self(), :test, :infinity))
+
+      state =
+        put_in(
+          state.file_event_timer,
+          Process.send_after(self(), :test, 1_000_000)
+        )
 
       # Mock plugin reload
       expect(ManagerMock, :get_plugin, fn ^plugin_id ->
@@ -150,7 +156,8 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.EventsTest do
       end)
 
       # Call the function
-      {:ok, new_state} = Events.handle_debounced_events(plugin_id, plugin_path, state)
+      {:ok, new_state} =
+        Events.handle_debounced_events(plugin_id, plugin_path, state)
 
       # Verify state
       assert new_state.file_event_timer == nil
@@ -161,7 +168,12 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.EventsTest do
       plugin_id = "test_plugin"
       plugin_path = Helper.create_test_plugin("test_plugin")
       state = Helper.create_test_state()
-      state = put_in(state.file_event_timer, Process.send_after(self(), :test, :infinity))
+
+      state =
+        put_in(
+          state.file_event_timer,
+          Process.send_after(self(), :test, 1_000_000)
+        )
 
       # Mock plugin reload failure
       expect(ManagerMock, :get_plugin, fn ^plugin_id ->

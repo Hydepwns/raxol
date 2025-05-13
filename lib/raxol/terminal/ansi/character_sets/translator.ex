@@ -8,6 +8,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   """
   def translate_char(codepoint, active_set, single_shift) do
     set = single_shift || active_set
+
     case set do
       :us_ascii -> codepoint
       :dec_special_graphics -> translate_dec_special_graphics(codepoint)
@@ -40,38 +41,70 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # DEC Special Graphics character set translations
   defp translate_dec_special_graphics(codepoint) do
     case codepoint do
-      ?_ -> ?─  # Horizontal line
-      ?` -> ?◆  # Diamond
-      ?a -> ?▒  # Checkerboard
-      ?b -> ?␉  # Tab
-      ?c -> ?␌  # Form feed
-      ?d -> ?␍  # Carriage return
-      ?e -> ?␊  # Line feed
-      ?f -> ?°  # Degree symbol
-      ?g -> ?±  # Plus/minus
-      ?h -> ?␤  # New line
-      ?i -> ?␋  # Vertical tab
-      ?j -> ?┘  # Lower right corner
-      ?k -> ?┐  # Upper right corner
-      ?l -> ?┌  # Upper left corner
-      ?m -> ?└  # Lower left corner
-      ?n -> ?┼  # Cross
-      ?o -> ?⎺  # Scan line 1
-      ?p -> ?⎻  # Scan line 3
-      ?q -> ?─  # Horizontal line
-      ?r -> ?⎼  # Scan line 7
-      ?s -> ?⎽  # Scan line 9
-      ?t -> ?├  # Left tee
-      ?u -> ?┤  # Right tee
-      ?v -> ?┴  # Bottom tee
-      ?w -> ?┬  # Top tee
-      ?x -> ?│  # Vertical line
-      ?y -> ?≤  # Less than or equal
-      ?z -> ?≥  # Greater than or equal
-      ?{ -> ?π  # Pi
-      ?| -> ?≠  # Not equal
-      ?} -> ?£  # Pound sterling
-      ?~ -> ?·  # Bullet
+      # Horizontal line
+      ?_ -> ?─
+      # Diamond
+      ?` -> ?◆
+      # Checkerboard
+      ?a -> ?▒
+      # Tab
+      ?b -> ?␉
+      # Form feed
+      ?c -> ?␌
+      # Carriage return
+      ?d -> ?␍
+      # Line feed
+      ?e -> ?␊
+      # Degree symbol
+      ?f -> ?°
+      # Plus/minus
+      ?g -> ?±
+      # New line
+      ?h -> ?␤
+      # Vertical tab
+      ?i -> ?␋
+      # Lower right corner
+      ?j -> ?┘
+      # Upper right corner
+      ?k -> ?┐
+      # Upper left corner
+      ?l -> ?┌
+      # Lower left corner
+      ?m -> ?└
+      # Cross
+      ?n -> ?┼
+      # Scan line 1
+      ?o -> ?⎺
+      # Scan line 3
+      ?p -> ?⎻
+      # Horizontal line
+      ?q -> ?─
+      # Scan line 7
+      ?r -> ?⎼
+      # Scan line 9
+      ?s -> ?⎽
+      # Left tee
+      ?t -> ?├
+      # Right tee
+      ?u -> ?┤
+      # Bottom tee
+      ?v -> ?┴
+      # Top tee
+      ?w -> ?┬
+      # Vertical line
+      ?x -> ?│
+      # Less than or equal
+      ?y -> ?≤
+      # Greater than or equal
+      ?z -> ?≥
+      # Pi
+      ?{ -> ?π
+      # Not equal
+      ?| -> ?≠
+      # Pound sterling
+      ?} -> ?£
+      # Bullet
+      ?~ -> ?·
       _ -> codepoint
     end
   end
@@ -79,7 +112,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # UK character set translations
   defp translate_uk(codepoint) do
     case codepoint do
-      ?# -> ?£  # Pound sterling
+      # Pound sterling
+      ?# -> ?£
       _ -> codepoint
     end
   end
@@ -90,12 +124,18 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # Finnish character set translations
   defp translate_finnish(codepoint) do
     case codepoint do
-      ?[ -> ?Ä  # A with umlaut
-      ?\\ -> ?Ö  # O with umlaut
-      ?] -> ?Å  # A with ring
-      ?{ -> ?ä  # a with umlaut
-      ?| -> ?ö  # o with umlaut
-      ?} -> ?å  # a with ring
+      # A with umlaut
+      ?[ -> ?Ä
+      # O with umlaut
+      ?\\ -> ?Ö
+      # A with ring
+      ?] -> ?Å
+      # a with umlaut
+      ?{ -> ?ä
+      # o with umlaut
+      ?| -> ?ö
+      # a with ring
+      ?} -> ?å
       _ -> codepoint
     end
   end
@@ -103,14 +143,22 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # French character set translations
   defp translate_french(codepoint) do
     case codepoint do
-      ?# -> ?£  # Pound sterling
-      ?@ -> ?à  # a with grave
-      ?[ -> ?°  # Degree
-      ?\\ -> ?ç  # c with cedilla
-      ?] -> ?§  # Section
-      ?{ -> ?é  # e with acute
-      ?| -> ?ù  # u with grave
-      ?} -> ?è  # e with grave
+      # Pound sterling
+      ?# -> ?£
+      # a with grave
+      ?@ -> ?à
+      # Degree
+      ?[ -> ?°
+      # c with cedilla
+      ?\\ -> ?ç
+      # Section
+      ?] -> ?§
+      # e with acute
+      ?{ -> ?é
+      # u with grave
+      ?| -> ?ù
+      # e with grave
+      ?} -> ?è
       _ -> codepoint
     end
   end
@@ -118,14 +166,22 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # French Canadian character set translations
   defp translate_french_canadian(codepoint) do
     case codepoint do
-      ?# -> ?é  # e with acute
-      ?@ -> ?à  # a with grave
-      ?[ -> ?â  # a with circumflex
-      ?\\ -> ?ç  # c with cedilla
-      ?] -> ?ê  # e with circumflex
-      ?{ -> ?î  # i with circumflex
-      ?| -> ?ô  # o with circumflex
-      ?} -> ?û  # u with circumflex
+      # e with acute
+      ?# -> ?é
+      # a with grave
+      ?@ -> ?à
+      # a with circumflex
+      ?[ -> ?â
+      # c with cedilla
+      ?\\ -> ?ç
+      # e with circumflex
+      ?] -> ?ê
+      # i with circumflex
+      ?{ -> ?î
+      # o with circumflex
+      ?| -> ?ô
+      # u with circumflex
+      ?} -> ?û
       _ -> codepoint
     end
   end
@@ -133,15 +189,24 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # German character set translations
   defp translate_german(codepoint) do
     case codepoint do
-      ?# -> ?§  # Section
-      ?@ -> ?§  # Section
-      ?[ -> ?Ä  # A with umlaut
-      ?\\ -> ?Ö  # O with umlaut
-      ?] -> ?Ü  # U with umlaut
-      ?{ -> ?ä  # a with umlaut
-      ?| -> ?ö  # o with umlaut
-      ?} -> ?ü  # u with umlaut
-      ?~ -> ?ß  # Sharp s
+      # Section
+      ?# -> ?§
+      # Section
+      ?@ -> ?§
+      # A with umlaut
+      ?[ -> ?Ä
+      # O with umlaut
+      ?\\ -> ?Ö
+      # U with umlaut
+      ?] -> ?Ü
+      # a with umlaut
+      ?{ -> ?ä
+      # o with umlaut
+      ?| -> ?ö
+      # u with umlaut
+      ?} -> ?ü
+      # Sharp s
+      ?~ -> ?ß
       _ -> codepoint
     end
   end
@@ -149,14 +214,22 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # Italian character set translations
   defp translate_italian(codepoint) do
     case codepoint do
-      ?# -> ?£  # Pound sterling
-      ?@ -> ?§  # Section
-      ?[ -> ?°  # Degree
-      ?\\ -> ?ç  # c with cedilla
-      ?] -> ?é  # e with acute
-      ?{ -> ?ù  # u with grave
-      ?| -> ?ò  # o with grave
-      ?} -> ?è  # e with grave
+      # Pound sterling
+      ?# -> ?£
+      # Section
+      ?@ -> ?§
+      # Degree
+      ?[ -> ?°
+      # c with cedilla
+      ?\\ -> ?ç
+      # e with acute
+      ?] -> ?é
+      # u with grave
+      ?{ -> ?ù
+      # o with grave
+      ?| -> ?ò
+      # e with grave
+      ?} -> ?è
       _ -> codepoint
     end
   end
@@ -164,15 +237,24 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # Norwegian/Danish character set translations
   defp translate_norwegian_danish(codepoint) do
     case codepoint do
-      ?# -> ?#  # Number sign
-      ?@ -> ?@  # Commercial at
-      ?[ -> ?Æ  # AE
-      ?\\ -> ?Ø  # O with stroke
-      ?] -> ?Å  # A with ring
-      ?{ -> ?æ  # ae
-      ?| -> ?ø  # o with stroke
-      ?} -> ?å  # a with ring
-      ?~ -> ?~  # Tilde
+      # Number sign
+      ?# -> ?#
+      # Commercial at
+      ?@ -> ?@
+      # AE
+      ?[ -> ?Æ
+      # O with stroke
+      ?\\ -> ?Ø
+      # A with ring
+      ?] -> ?Å
+      # ae
+      ?{ -> ?æ
+      # o with stroke
+      ?| -> ?ø
+      # a with ring
+      ?} -> ?å
+      # Tilde
+      ?~ -> ?~
       _ -> codepoint
     end
   end
@@ -180,14 +262,22 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # Portuguese character set translations
   defp translate_portuguese(codepoint) do
     case codepoint do
-      ?# -> ?£  # Pound sterling
-      ?@ -> ?@  # Commercial at
-      ?[ -> ?Ã  # A with tilde
-      ?\\ -> ?Ç  # C with cedilla
-      ?] -> ?É  # E with acute
-      ?{ -> ?ã  # a with tilde
-      ?| -> ?ç  # c with cedilla
-      ?} -> ?é  # e with acute
+      # Pound sterling
+      ?# -> ?£
+      # Commercial at
+      ?@ -> ?@
+      # A with tilde
+      ?[ -> ?Ã
+      # C with cedilla
+      ?\\ -> ?Ç
+      # E with acute
+      ?] -> ?É
+      # a with tilde
+      ?{ -> ?ã
+      # c with cedilla
+      ?| -> ?ç
+      # e with acute
+      ?} -> ?é
       _ -> codepoint
     end
   end
@@ -195,14 +285,22 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # Spanish character set translations
   defp translate_spanish(codepoint) do
     case codepoint do
-      ?# -> ?ñ  # n with tilde
-      ?@ -> ?¿  # Inverted question mark
-      ?[ -> ?¡  # Inverted exclamation mark
-      ?\\ -> ?Ñ  # N with tilde
-      ?] -> ?§  # Section
-      ?{ -> ?á  # a with acute
-      ?| -> ?í  # i with acute
-      ?} -> ?ó  # o with acute
+      # n with tilde
+      ?# -> ?ñ
+      # Inverted question mark
+      ?@ -> ?¿
+      # Inverted exclamation mark
+      ?[ -> ?¡
+      # N with tilde
+      ?\\ -> ?Ñ
+      # Section
+      ?] -> ?§
+      # a with acute
+      ?{ -> ?á
+      # i with acute
+      ?| -> ?í
+      # o with acute
+      ?} -> ?ó
       _ -> codepoint
     end
   end
@@ -210,15 +308,24 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # Swedish character set translations
   defp translate_swedish(codepoint) do
     case codepoint do
-      ?# -> ?#  # Number sign
-      ?@ -> ?@  # Commercial at
-      ?[ -> ?Ä  # A with umlaut
-      ?\\ -> ?Ö  # O with umlaut
-      ?] -> ?Å  # A with ring
-      ?{ -> ?ä  # a with umlaut
-      ?| -> ?ö  # o with umlaut
-      ?} -> ?å  # a with ring
-      ?~ -> ?~  # Tilde
+      # Number sign
+      ?# -> ?#
+      # Commercial at
+      ?@ -> ?@
+      # A with umlaut
+      ?[ -> ?Ä
+      # O with umlaut
+      ?\\ -> ?Ö
+      # A with ring
+      ?] -> ?Å
+      # a with umlaut
+      ?{ -> ?ä
+      # o with umlaut
+      ?| -> ?ö
+      # a with ring
+      ?} -> ?å
+      # Tilde
+      ?~ -> ?~
       _ -> codepoint
     end
   end
@@ -226,14 +333,22 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   # Swiss character set translations
   defp translate_swiss(codepoint) do
     case codepoint do
-      ?# -> ?ù  # u with grave
-      ?@ -> ?à  # a with grave
-      ?[ -> ?é  # e with acute
-      ?\\ -> ?ç  # c with cedilla
-      ?] -> ?ê  # e with circumflex
-      ?{ -> ?î  # i with circumflex
-      ?| -> ?è  # e with grave
-      ?} -> ?ô  # o with circumflex
+      # u with grave
+      ?# -> ?ù
+      # a with grave
+      ?@ -> ?à
+      # e with acute
+      ?[ -> ?é
+      # c with cedilla
+      ?\\ -> ?ç
+      # e with circumflex
+      ?] -> ?ê
+      # i with circumflex
+      ?{ -> ?î
+      # e with grave
+      ?| -> ?è
+      # o with circumflex
+      ?} -> ?ô
       _ -> codepoint
     end
   end

@@ -46,10 +46,18 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     row_sizes = calculate_row_sizes(grid.rows, height, gap_y)
 
     # Place children in grid cells
-    placed_children = place_children(grid.children, column_sizes, row_sizes, grid.gap)
+    placed_children =
+      place_children(grid.children, column_sizes, row_sizes, grid.gap)
 
     # Apply alignment and justification
-    aligned_children = apply_alignment(placed_children, column_sizes, row_sizes, grid.align, grid.justify)
+    aligned_children =
+      apply_alignment(
+        placed_children,
+        column_sizes,
+        row_sizes,
+        grid.align,
+        grid.justify
+      )
 
     aligned_children
   end
@@ -58,14 +66,15 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     case columns do
       n when is_integer(n) ->
         # Equal width columns
-        column_width = (total_width - (gap * (n - 1))) / n
+        column_width = (total_width - gap * (n - 1)) / n
         List.duplicate(column_width, n)
 
       sizes when is_list(sizes) ->
         # Custom column sizes
         total_units = Enum.sum(sizes)
+
         Enum.map(sizes, fn size ->
-          (size / total_units) * (total_width - (gap * (length(sizes) - 1)))
+          size / total_units * (total_width - gap * (length(sizes) - 1))
         end)
     end
   end
@@ -74,14 +83,15 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     case rows do
       n when is_integer(n) ->
         # Equal height rows
-        row_height = (total_height - (gap * (n - 1))) / n
+        row_height = (total_height - gap * (n - 1)) / n
         List.duplicate(row_height, n)
 
       sizes when is_list(sizes) ->
         # Custom row sizes
         total_units = Enum.sum(sizes)
+
         Enum.map(sizes, fn size ->
-          (size / total_units) * (total_height - (gap * (length(sizes) - 1)))
+          size / total_units * (total_height - gap * (length(sizes) - 1))
         end)
     end
   end

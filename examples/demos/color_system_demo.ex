@@ -38,7 +38,8 @@ defmodule Raxol.Examples.ColorSystemDemo do
   @impl Raxol.Core.Runtime.Application
   def view(state) do
     theme = state.theme
-    adapted_theme = Adaptive.adapt_theme(theme) # Get adapted theme
+    # Get adapted theme
+    adapted_theme = Adaptive.adapt_theme(theme)
 
     UI.box padding: 1 do
       UI.column spacing: 1 do
@@ -46,8 +47,8 @@ defmodule Raxol.Examples.ColorSystemDemo do
           # Theme Info Section
           UI.box border: :single do
             UI.column do
-              [UI.label(content: "--- Theme Info ---")] ++
-              render_theme_info(theme)
+              ([UI.label(content: "--- Theme Info ---")] ++
+                 render_theme_info(theme))
               |> Enum.map(&UI.label(&1))
             end
           end,
@@ -55,26 +56,26 @@ defmodule Raxol.Examples.ColorSystemDemo do
           # Palette View Section
           UI.box border: :single do
             UI.column do
-              [UI.label(content: "--- Palette View ---")] ++
-              render_palette_view(theme.palette)
+              ([UI.label(content: "--- Palette View ---")] ++
+                 render_palette_view(theme.colors))
               |> Enum.map(&UI.label(&1))
             end
           end,
 
           # Color Adaptation Section
           UI.box border: :single do
-             UI.column do
-               [UI.label(content: "--- Color Adaptation ---")] ++
-               render_color_adaptation_view(theme, adapted_theme)
-               |> Enum.map(&UI.label(&1))
+            UI.column do
+              ([UI.label(content: "--- Color Adaptation ---")] ++
+                 render_color_adaptation_view(theme, adapted_theme))
+              |> Enum.map(&UI.label(&1))
             end
           end,
 
           # Accessibility View Section
           UI.box border: :single do
             UI.column do
-              [UI.label(content: "--- Accessibility View ---")] ++
-              render_accessibility_view(theme)
+              ([UI.label(content: "--- Accessibility View ---")] ++
+                 render_accessibility_view(theme))
               |> Enum.map(&UI.label(&1))
             end
           end
@@ -85,19 +86,23 @@ defmodule Raxol.Examples.ColorSystemDemo do
 
   @impl Raxol.Core.Runtime.Application
   def update(msg, state) do
-    Logger.debug("Unhandled update: #{inspect msg}")
+    Logger.debug("Unhandled update: #{inspect(msg)}")
     {state, []}
   end
 
   @impl Raxol.Core.Runtime.Application
   def handle_event(event) do
-    Logger.debug("ColorSystemDemo received unhandled event (handle_event/1): #{inspect event}")
-    [] # Return empty list of commands
+    Logger.debug(
+      "ColorSystemDemo received unhandled event (handle_event/1): #{inspect(event)}"
+    )
+
+    # Return empty list of commands
+    []
   end
 
   @impl Raxol.Core.Runtime.Application
   def handle_message(msg, state) do
-    Logger.debug("Unhandled handle_message: #{inspect msg}")
+    Logger.debug("Unhandled handle_message: #{inspect(msg)}")
     {state, []}
   end
 
@@ -111,15 +116,14 @@ defmodule Raxol.Examples.ColorSystemDemo do
 
   @impl Raxol.Core.Runtime.Application
   def terminate(reason, _state) do
-    Logger.info("Terminating Color System Demo: #{inspect reason}")
+    Logger.info("Terminating Color System Demo: #{inspect(reason)}")
     :ok
   end
 
   # --- Helper Functions (Modified) ---
 
   defp create_demo_theme do
-    # Create a demo palette
-    palette = %Palette{
+    Theme.new(%{
       name: "Demo",
       colors: %{
         primary: Color.from_hex("#0077CC"),
@@ -127,39 +131,38 @@ defmodule Raxol.Examples.ColorSystemDemo do
         accent: Color.from_hex("#FF0000"),
         text: Color.from_hex("#333333"),
         background: Color.from_hex("#FFFFFF")
-      }
-    }
-
-    # Create a theme from the palette
-    # Convert Palette struct to map to match Theme.from_palette spec
-    Theme.from_palette(Map.from_struct(palette))
+      },
+      styles: %{},
+      dark_mode: false,
+      high_contrast: false
+    })
   end
 
   # Modified to return list of strings
   defp render_theme_info(theme) do
     [
       "Theme: #{theme.name}",
-      "Background: #{inspect theme.background}",
-      "Primary: #{inspect theme.ui_colors.primary}",
-      "Secondary: #{inspect theme.ui_colors.secondary}",
-      "Accent: #{inspect theme.ui_colors.accent}",
-      "Text: #{inspect theme.ui_colors.text}"
+      "Background: #{inspect(theme.colors.background)}",
+      "Primary: #{inspect(theme.colors.primary)}",
+      "Secondary: #{inspect(theme.colors.secondary)}",
+      "Accent: #{inspect(theme.colors.accent)}",
+      "Text: #{inspect(theme.colors.text)}"
     ]
   end
 
   # Modified to return list of strings
-  defp render_palette_view(palette) do
+  defp render_palette_view(colors) do
     [
-      "Palette: #{palette.name}",
       "Colors:"
-    ] ++ render_color_list(palette.colors)
+    ] ++ render_color_list(colors)
   end
 
   # Returns list of strings
   defp render_color_list(colors) do
     colors
     |> Enum.map(fn {name, color} ->
-      "  #{name}: #{color.hex}"
+      hex = if is_struct(color, Color), do: color.hex, else: inspect(color)
+      "  #{name}: #{hex}"
     end)
   end
 
@@ -168,19 +171,19 @@ defmodule Raxol.Examples.ColorSystemDemo do
     [
       "Original Theme:",
       "----------------"
-    ]
-    ++ render_theme_info(original_theme)
-    ++ ["", "Adapted Theme:", "---------------"]
-    ++ render_theme_info(adapted_theme)
+    ] ++
+      render_theme_info(original_theme) ++
+      ["", "Adapted Theme:", "---------------"] ++
+      render_theme_info(adapted_theme)
   end
 
   # Modified to return list of strings
   defp render_accessibility_view(theme) do
     [
-      "Background-Text Contrast: #{check_contrast(theme.background, theme.ui_colors.text)}",
-      "Background-Primary Contrast: #{check_contrast(theme.background, theme.ui_colors.primary)}",
-      "Background-Secondary Contrast: #{check_contrast(theme.background, theme.ui_colors.secondary)}",
-      "Background-Accent Contrast: #{check_contrast(theme.background, theme.ui_colors.accent)}"
+      "Background-Text Contrast: #{check_contrast(theme.colors.background, theme.colors.text)}",
+      "Background-Primary Contrast: #{check_contrast(theme.colors.background, theme.colors.primary)}",
+      "Background-Secondary Contrast: #{check_contrast(theme.colors.background, theme.colors.secondary)}",
+      "Background-Accent Contrast: #{check_contrast(theme.colors.background, theme.colors.accent)}"
     ]
   end
 

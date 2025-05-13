@@ -1,8 +1,8 @@
-defmodule Raxol.Components.Input.MultiLineInput.NavigationHelperTest do
+defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Components.Input.MultiLineInput, as: State
-  alias Raxol.Components.Input.MultiLineInput.NavigationHelper
+  alias Raxol.UI.Components.Input.MultiLineInput, as: State
+  alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
 
   # Helper to create a minimal state for testing
   defp create_state(
@@ -16,7 +16,7 @@ defmodule Raxol.Components.Input.MultiLineInput.NavigationHelperTest do
       placeholder: "",
       width: elem(dimensions, 0),
       height: elem(dimensions, 1),
-      style: %{},
+      theme: %{},
       wrap: :word,
       cursor_pos: cursor,
       scroll_offset: scroll,

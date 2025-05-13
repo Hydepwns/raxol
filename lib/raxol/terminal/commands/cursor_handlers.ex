@@ -16,7 +16,12 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   Helper function to handle cursor movement operations.
   Takes the emulator, movement function, and movement parameters.
   """
-  @spec handle_cursor_movement(Emulator.t(), (CursorManager.t(), integer(), integer(), integer() -> CursorManager.t()), integer()) :: Emulator.t()
+  @spec handle_cursor_movement(
+          Emulator.t(),
+          (CursorManager.t(), integer(), integer(), integer() ->
+             CursorManager.t()),
+          integer()
+        ) :: Emulator.t()
   def handle_cursor_movement(emulator, movement_fn, amount) do
     active_buffer = Emulator.get_active_buffer(emulator)
     width = ScreenBuffer.get_width(active_buffer)
@@ -33,7 +38,10 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     active_buffer = Emulator.get_active_buffer(emulator)
     width = ScreenBuffer.get_width(active_buffer)
     height = ScreenBuffer.get_height(active_buffer)
-    new_cursor = CursorManager.move_to(emulator.cursor, {col - 1, row - 1}, width, height)
+
+    new_cursor =
+      CursorManager.move_to(emulator.cursor, {col - 1, row - 1}, width, height)
+
     %{emulator | cursor: new_cursor}
   end
 
@@ -69,6 +77,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec handle_E(Emulator.t(), list(integer())) :: Emulator.t()
   def handle_E(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
+
     emulator
     |> handle_cursor_movement(&CursorManager.move_down/4, amount)
     |> handle_cursor_movement(&CursorManager.move_to_column/4, 0)
@@ -78,6 +87,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec handle_F(Emulator.t(), list(integer())) :: Emulator.t()
   def handle_F(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
+
     emulator
     |> handle_cursor_movement(&CursorManager.move_up/4, amount)
     |> handle_cursor_movement(&CursorManager.move_to_column/4, 0)
@@ -87,7 +97,12 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   @spec handle_G(Emulator.t(), list(integer())) :: Emulator.t()
   def handle_G(emulator, params) do
     column = get_valid_pos_param(params, 0, 1)
-    handle_cursor_movement(emulator, &CursorManager.move_to_column/4, column - 1)
+
+    handle_cursor_movement(
+      emulator,
+      &CursorManager.move_to_column/4,
+      column - 1
+    )
   end
 
   @doc "Handles Cursor Vertical Absolute (VPA - 'd')"
@@ -101,7 +116,15 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     new_row = min(row - 1, height - 1)
     {current_col, _} = emulator.cursor.position
     width = ScreenBuffer.get_width(active_buffer)
-    new_cursor = CursorManager.move_to(emulator.cursor, {current_col, new_row}, width, height)
+
+    new_cursor =
+      CursorManager.move_to(
+        emulator.cursor,
+        {current_col, new_row},
+        width,
+        height
+      )
+
     %{emulator | cursor: new_cursor}
   end
 
@@ -111,13 +134,23 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   Gets a parameter value with validation.
   Returns the parameter value if valid, or the default value if invalid.
   """
-  @spec get_valid_param(list(integer() | nil), non_neg_integer(), integer(), integer(), integer()) :: integer()
+  @spec get_valid_param(
+          list(integer() | nil),
+          non_neg_integer(),
+          integer(),
+          integer(),
+          integer()
+        ) :: integer()
   defp get_valid_param(params, index, default, min, max) do
     case Enum.at(params, index, default) do
       value when is_integer(value) and value >= min and value <= max ->
         value
+
       _ ->
-        Logger.warning("Invalid parameter value at index #{index}, using default #{default}")
+        Logger.warning(
+          "Invalid parameter value at index #{index}, using default #{default}"
+        )
+
         default
     end
   end
@@ -126,7 +159,11 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   Gets a parameter value with validation for non-negative integers.
   Returns the parameter value if valid, or the default value if invalid.
   """
-  @spec get_valid_non_neg_param(list(integer() | nil), non_neg_integer(), non_neg_integer()) :: non_neg_integer()
+  @spec get_valid_non_neg_param(
+          list(integer() | nil),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: non_neg_integer()
   defp get_valid_non_neg_param(params, index, default) do
     get_valid_param(params, index, default, 0, 9999)
   end
@@ -135,7 +172,11 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   Gets a parameter value with validation for positive integers.
   Returns the parameter value if valid, or the default value if invalid.
   """
-  @spec get_valid_pos_param(list(integer() | nil), non_neg_integer(), pos_integer()) :: pos_integer()
+  @spec get_valid_pos_param(
+          list(integer() | nil),
+          non_neg_integer(),
+          pos_integer()
+        ) :: pos_integer()
   defp get_valid_pos_param(params, index, default) do
     get_valid_param(params, index, default, 1, 9999)
   end

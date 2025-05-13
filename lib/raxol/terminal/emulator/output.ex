@@ -15,15 +15,20 @@ defmodule Raxol.Terminal.Emulator.Output do
   Processes output data.
   Returns {:ok, updated_emulator, commands} or {:error, reason}.
   """
-  @spec process_output(Core.t(), String.t()) :: {:ok, Core.t(), list()} | {:error, String.t()}
+  @spec process_output(Core.t(), String.t()) ::
+          {:ok, Core.t(), list()} | {:error, String.t()}
   def process_output(%Core{} = emulator, data) when is_binary(data) do
     # Add data to output buffer
-    updated_emulator = %{emulator | output_buffer: emulator.output_buffer <> data}
+    updated_emulator = %{
+      emulator
+      | output_buffer: emulator.output_buffer <> data
+    }
 
     # Process the output buffer
     case process_buffer(updated_emulator) do
       {:ok, final_emulator, commands} ->
         {:ok, final_emulator, commands}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -55,12 +60,14 @@ defmodule Raxol.Terminal.Emulator.Output do
   Flushes the output buffer.
   Returns {:ok, updated_emulator, commands} or {:error, reason}.
   """
-  @spec flush_output_buffer(Core.t()) :: {:ok, Core.t(), list()} | {:error, String.t()}
+  @spec flush_output_buffer(Core.t()) ::
+          {:ok, Core.t(), list()} | {:error, String.t()}
   def flush_output_buffer(%Core{} = emulator) do
     case process_buffer(emulator) do
       {:ok, updated_emulator, commands} ->
         # Clear the buffer after processing
         {:ok, %{updated_emulator | output_buffer: ""}, commands}
+
       {:error, reason} ->
         {:error, reason}
     end
@@ -97,7 +104,8 @@ defmodule Raxol.Terminal.Emulator.Output do
   Returns {:ok, updated_emulator}.
   """
   @spec write_control(Core.t(), char()) :: {:ok, Core.t()}
-  def write_control(%Core{} = emulator, char) when is_integer(char) and char in 0..31 do
+  def write_control(%Core{} = emulator, char)
+      when is_integer(char) and char in 0..31 do
     write(emulator, <<char>>)
   end
 
@@ -125,6 +133,7 @@ defmodule Raxol.Terminal.Emulator.Output do
     case Parser.parse(emulator.parser_state, emulator.output_buffer) do
       {:ok, updated_state, commands} ->
         {:ok, %{emulator | parser_state: updated_state}, commands}
+
       {:error, reason} ->
         {:error, reason}
     end

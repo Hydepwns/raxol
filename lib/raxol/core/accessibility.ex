@@ -32,6 +32,7 @@ defmodule Raxol.Core.Accessibility do
   """
 
   alias Raxol.Core.Events.Manager, as: EventManager
+
   alias Raxol.Core.Accessibility.{
     Announcements,
     EventHandlers,
@@ -40,6 +41,7 @@ defmodule Raxol.Core.Accessibility do
     Preferences,
     ThemeIntegration
   }
+
   require Logger
 
   @doc """
@@ -92,12 +94,42 @@ defmodule Raxol.Core.Accessibility do
 
     # Apply all settings
     Preferences.set_option(:enabled, true, user_preferences_pid_or_name)
-    Preferences.set_option(:screen_reader, Keyword.get(updated_options, :screen_reader), user_preferences_pid_or_name)
-    Preferences.set_option(:high_contrast, Keyword.get(updated_options, :high_contrast), user_preferences_pid_or_name)
-    Preferences.set_option(:reduced_motion, Keyword.get(updated_options, :reduced_motion), user_preferences_pid_or_name)
-    Preferences.set_option(:keyboard_focus, Keyword.get(updated_options, :keyboard_focus), user_preferences_pid_or_name)
-    Preferences.set_option(:large_text, Keyword.get(updated_options, :large_text), user_preferences_pid_or_name)
-    Preferences.set_option(:silence_announcements, Keyword.get(updated_options, :silence_announcements), user_preferences_pid_or_name)
+
+    Preferences.set_option(
+      :screen_reader,
+      Keyword.get(updated_options, :screen_reader),
+      user_preferences_pid_or_name
+    )
+
+    Preferences.set_option(
+      :high_contrast,
+      Keyword.get(updated_options, :high_contrast),
+      user_preferences_pid_or_name
+    )
+
+    Preferences.set_option(
+      :reduced_motion,
+      Keyword.get(updated_options, :reduced_motion),
+      user_preferences_pid_or_name
+    )
+
+    Preferences.set_option(
+      :keyboard_focus,
+      Keyword.get(updated_options, :keyboard_focus),
+      user_preferences_pid_or_name
+    )
+
+    Preferences.set_option(
+      :large_text,
+      Keyword.get(updated_options, :large_text),
+      user_preferences_pid_or_name
+    )
+
+    Preferences.set_option(
+      :silence_announcements,
+      Keyword.get(updated_options, :silence_announcements),
+      user_preferences_pid_or_name
+    )
 
     # Reset internal state
     Process.put(:accessibility_disabled, false)
@@ -121,7 +153,8 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def disable(user_preferences_pid_or_name \\ nil) do
-    target_prefs = user_preferences_pid_or_name || Preferences.default_prefs_name()
+    target_prefs =
+      user_preferences_pid_or_name || Preferences.default_prefs_name()
 
     Logger.debug(
       "Disabling accessibility features for #{inspect(target_prefs)}"

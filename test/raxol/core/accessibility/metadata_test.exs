@@ -29,8 +29,11 @@ defmodule Raxol.Core.Accessibility.MetadataTest do
       initial_metadata = %{label: "Old Label"}
       updated_metadata = %{label: "New Label"}
 
-      :ok = Accessibility.register_element_metadata("test_button", initial_metadata)
-      :ok = Accessibility.register_element_metadata("test_button", updated_metadata)
+      :ok =
+        Accessibility.register_element_metadata("test_button", initial_metadata)
+
+      :ok =
+        Accessibility.register_element_metadata("test_button", updated_metadata)
 
       retrieved = Accessibility.get_element_metadata("test_button")
       assert retrieved == updated_metadata

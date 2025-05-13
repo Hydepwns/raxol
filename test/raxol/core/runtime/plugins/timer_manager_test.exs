@@ -10,7 +10,7 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManagerTest do
 
     test "cancels existing timer and returns updated state" do
       # Create a timer that will never fire
-      timer_ref = Process.send_after(self(), :test_message, 1000000)
+      timer_ref = Process.send_after(self(), :test_message, 1_000_000)
       state = %{file_event_timer: timer_ref}
 
       # Cancel the timer
@@ -37,7 +37,7 @@ defmodule Raxol.Core.Runtime.Plugins.TimerManagerTest do
 
     test "cancels existing timer before scheduling new one" do
       # Create an initial timer
-      initial_timer = Process.send_after(self(), :initial_message, 1000000)
+      initial_timer = Process.send_after(self(), :initial_message, 1_000_000)
       state = %{file_event_timer: initial_timer}
 
       # Schedule new timer

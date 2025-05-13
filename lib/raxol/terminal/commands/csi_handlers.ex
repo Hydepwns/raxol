@@ -7,6 +7,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   """
 
   alias Raxol.Terminal.Emulator
+
   alias Raxol.Terminal.Commands.{
     CursorHandlers,
     BufferHandlers,
@@ -16,13 +17,17 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     WindowHandlers,
     ParameterValidation
   }
+
   alias Raxol.Terminal.ANSI.SGRHandler
   require Logger
 
   @doc "Handles Select Graphic Rendition (SGR - 'm')"
   @spec handle_m(Emulator.t(), list(integer())) :: Emulator.t()
   def handle_m(emulator, params) do
-    Logger.debug("[SGR Handler] Input Style: #{inspect(emulator.style)}, Params: #{inspect(params)}")
+    Logger.debug(
+      "[SGR Handler] Input Style: #{inspect(emulator.style)}, Params: #{inspect(params)}"
+    )
+
     new_style = SGRHandler.apply_sgr_params(params, emulator.style)
     Logger.debug("[SGR Handler] Output Style: #{inspect(new_style)}")
     %{emulator | style: new_style}
@@ -52,10 +57,13 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
   # Delegate device status handlers
   defdelegate handle_n(emulator, params), to: DeviceHandlers
-  defdelegate handle_c(emulator, params, intermediates_buffer), to: DeviceHandlers
+
+  defdelegate handle_c(emulator, params, intermediates_buffer),
+    to: DeviceHandlers
 
   # Delegate mode handlers
-  defdelegate handle_h_or_l(emulator, params, intermediates_buffer, final_byte), to: ModeHandlers
+  defdelegate handle_h_or_l(emulator, params, intermediates_buffer, final_byte),
+    to: ModeHandlers
 
   # Delegate window manipulation handlers
   defdelegate handle_t(emulator, params), to: WindowHandlers
@@ -89,16 +97,31 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   end
 
   # Helper function to map cursor style code to style atom
-  @spec map_cursor_style(non_neg_integer(), CursorManager.style()) :: CursorManager.style()
+  @spec map_cursor_style(non_neg_integer(), CursorManager.style()) ::
+          CursorManager.style()
   defp map_cursor_style(style, current_style) do
     case style do
-      0 -> :blink_block
-      1 -> :blink_block
-      2 -> :steady_block
-      3 -> :blink_underline
-      4 -> :steady_underline
-      5 -> :blink_bar
-      6 -> :steady_bar
+      0 ->
+        :blink_block
+
+      1 ->
+        :blink_block
+
+      2 ->
+        :steady_block
+
+      3 ->
+        :blink_underline
+
+      4 ->
+        :steady_underline
+
+      5 ->
+        :blink_bar
+
+      6 ->
+        :steady_bar
+
       _ ->
         Logger.warning("Unknown cursor style: #{style}")
         current_style
@@ -112,9 +135,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
     charset = map_charset_code(code, final_byte)
 
     if charset do
-      %{emulator | charset_state: %{emulator.charset_state | current_charset: charset}}
+      %{
+        emulator
+        | charset_state: %{emulator.charset_state | current_charset: charset}
+      }
     else
-      Logger.warning("Unknown charset code: #{code} for final byte: #{final_byte}")
+      Logger.warning(
+        "Unknown charset code: #{code} for final byte: #{final_byte}"
+      )
+
       emulator
     end
   end
@@ -151,8 +180,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   @spec handle_r(Emulator.t(), list(integer())) :: Emulator.t()
   def handle_r(emulator, params) do
     height = emulator.height
-    top = (Enum.at(params, 0, 1)) - 1
-    bottom = (Enum.at(params, 1, height)) - 1
+    top = Enum.at(params, 0, 1) - 1
+    bottom = Enum.at(params, 1, height) - 1
 
     valid_region = top >= 0 and bottom < height and top < bottom
     is_full_screen = top == 0 and bottom == height - 1

@@ -13,7 +13,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1000000)
+      state_id = :rand.uniform(1_000_000)
       {:ok, %{state_id: state_id, handled: false}}
     end
 
@@ -26,7 +26,8 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def handle_test_cmd(_arg, state) do
       # Update state with a timestamp to track when it was handled
-      {:ok, %{state | handled: true, handled_at: System.monotonic_time()}, :test_ok}
+      {:ok, %{state | handled: true, handled_at: System.monotonic_time()},
+       :test_ok}
     end
   end
 
@@ -36,7 +37,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1000000)
+      state_id = :rand.uniform(1_000_000)
       {:ok, %{state_id: state_id, error_type: :missing_implementation}}
     end
 
@@ -56,7 +57,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1000000)
+      state_id = :rand.uniform(1_000_000)
       {:ok, %{state_id: state_id, error_type: :bad_return}}
     end
 
@@ -95,7 +96,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1000000)
+      state_id = :rand.uniform(1_000_000)
       {:ok, %{state_id: state_id, dependencies: dependencies()}}
     end
 
@@ -125,10 +126,11 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1000000)
+      state_id = :rand.uniform(1_000_000)
 
       # Use a timer to simulate a timeout instead of sleeping forever
       Process.send_after(self(), :timeout_simulated, 100)
+
       receive do
         :timeout_simulated -> {:error, :timeout_simulated}
       end
@@ -148,7 +150,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1000000)
+      state_id = :rand.uniform(1_000_000)
 
       # Raise a more descriptive error with the state ID for better debugging
       raise "Plugin initialization failed: Intentional crash for testing error handling (State ID: #{state_id})"
@@ -159,10 +161,11 @@ defmodule Raxol.Test.PluginTestFixtures do
       state
     end
 
-    def get_commands, do: [
-      {:trigger_input_crash, :handle_input_crash, 1},
-      {:trigger_output_crash, :handle_output_crash, 1}
-    ]
+    def get_commands,
+      do: [
+        {:trigger_input_crash, :handle_input_crash, 1},
+        {:trigger_output_crash, :handle_output_crash, 1}
+      ]
 
     def handle_input_crash(_arg, _state) do
       raise "Intentional crash in input handler"
@@ -180,7 +183,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1000000)
+      state_id = :rand.uniform(1_000_000)
       {:ok, %{state_id: state_id, metadata_errors: metadata_errors()}}
     end
 
@@ -206,12 +209,17 @@ defmodule Raxol.Test.PluginTestFixtures do
     def metadata do
       # Return invalid metadata structure to test error handling
       %{
-        id: nil,  # Invalid ID
-        version: "not_a_semver",  # Invalid version format
+        # Invalid ID
+        id: nil,
+        # Invalid version format
+        version: "not_a_semver",
         dependencies: [
-          {"invalid_dependency", "invalid_version"},  # Invalid: wrong format
-          {"missing_required_field", nil},  # Invalid: missing required field
-          {:invalid_type, 123}  # Invalid: wrong type
+          # Invalid: wrong format
+          {"invalid_dependency", "invalid_version"},
+          # Invalid: missing required field
+          {"missing_required_field", nil},
+          # Invalid: wrong type
+          {:invalid_type, 123}
         ],
         # Missing required fields
         name: nil,
@@ -228,7 +236,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1000000)
+      state_id = :rand.uniform(1_000_000)
       {:ok, %{state_id: state_id, dependencies: dependencies()}}
     end
 
@@ -259,7 +267,7 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1000000)
+      state_id = :rand.uniform(1_000_000)
       {:ok, %{state_id: state_id, dependencies: dependencies()}}
     end
 
@@ -286,7 +294,7 @@ defmodule Raxol.Test.PluginTestFixtures do
   # Helper function to create a unique plugin state
   def create_unique_state do
     %{
-      state_id: :rand.uniform(1000000),
+      state_id: :rand.uniform(1_000_000),
       created_at: System.monotonic_time()
     }
   end

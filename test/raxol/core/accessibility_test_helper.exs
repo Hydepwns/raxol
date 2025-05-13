@@ -4,6 +4,8 @@ defmodule Raxol.Core.AccessibilityTestHelper do
   """
 
   alias Raxol.Core.UserPreferences
+  import ExUnit.Assertions
+  import ExUnit.Callbacks
 
   def wait_for_state(condition, timeout \\ 100) do
     ref = make_ref()
@@ -61,9 +63,11 @@ defmodule Raxol.Core.AccessibilityTestHelper do
     Raxol.Core.Accessibility.register_element_metadata("search_button", %{
       label: "Search"
     })
+
     Raxol.Core.Accessibility.register_element_metadata("text_input", %{
       label: "Username"
     })
+
     Raxol.Core.Accessibility.register_element_metadata("submit_button", %{
       label: "Submit Form"
     })

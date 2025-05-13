@@ -234,7 +234,7 @@ defmodule Raxol do
     require Logger
     Logger.info("Setting theme: #{theme.name}")
     # Persist the theme choice (e.g., Application config)
-    # Application.put_env(:raxol, :theme, theme) # Comment out undefined function
+    Application.put_env(:raxol, :theme, theme)
     :ok
   end
 

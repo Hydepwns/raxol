@@ -1,33 +1,24 @@
 defmodule Raxol.Style.Colors.PersistenceTest do
   use ExUnit.Case, async: false
 
-  alias Raxol.Style.Colors.{Color, Palette, Persistence}
+  alias Raxol.Style.Colors.{Color, Persistence}
   alias Raxol.Style.Colors.Theme, as: Theme
+  alias Raxol.UI.Theming.Theme
 
-  @test_theme %Theme{
+  @test_theme %{
     name: "Test Theme",
-    palette: %{
-      primary: Color.from_hex("#0077CC"),
-      secondary: Color.from_hex("#666666"),
-      accent: Color.from_hex("#FF9900"),
-      background: Color.from_hex("#FFFFFF"),
-      surface: Color.from_hex("#F5F5F5"),
-      error: Color.from_hex("#CC0000"),
-      warning: Color.from_hex("#FF9900"),
-      info: Color.from_hex("#0099CC"),
-      success: Color.from_hex("#009900")
+    colors: %{
+      primary: "#0077CC",
+      secondary: "#666666",
+      accent: "#FF9900",
+      background: "#FFFFFF",
+      surface: "#F5F5F5",
+      error: "#CC0000",
+      warning: "#FF9900",
+      info: "#0099CC",
+      success: "#009900"
     },
-    ui_mappings: %{
-      app_background: "background",
-      surface_background: "surface",
-      primary_button: "primary",
-      secondary_button: "secondary",
-      accent_button: "accent",
-      error_text: "error",
-      success_text: "success",
-      warning_text: "warning",
-      info_text: "info"
-    },
+    styles: %{},
     dark_mode: false,
     high_contrast: false
   }
@@ -62,7 +53,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
 
       # Verify theme matches
       assert loaded_theme.name == @test_theme.name
-      assert loaded_theme.palette == @test_theme.palette
+      assert loaded_theme.colors == @test_theme.colors
     end
 
     test "loads non-existent theme" do
@@ -106,7 +97,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
 
       # Verify theme matches
       assert loaded_theme.name == @test_theme.name
-      assert loaded_theme.palette == @test_theme.palette
+      assert loaded_theme.colors == @test_theme.colors
     end
   end
 
@@ -154,7 +145,7 @@ defmodule Raxol.Style.Colors.PersistenceTest do
 
       # Verify theme matches
       assert current_theme.name == @test_theme.name
-      assert current_theme.palette == @test_theme.palette
+      assert current_theme.colors == @test_theme.colors
     end
 
     test "loads default theme when no theme is set" do

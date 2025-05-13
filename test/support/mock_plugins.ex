@@ -3,7 +3,16 @@ defmodule Raxol.Test.MockPlugins do
   defmodule MockDependencyPlugin do
     @behaviour Raxol.Plugins.Behaviour
 
-    def init(_config), do: {:ok, %{name: "mock_dependency_plugin", version: "1.0.0", dependencies: [], raxol_compatibility: "~>1.0"}}
+    def init(_config),
+      do:
+        {:ok,
+         %{
+           name: "mock_dependency_plugin",
+           version: "1.0.0",
+           dependencies: [],
+           raxol_compatibility: "~>1.0"
+         }}
+
     def terminate(_reason, _state), do: :ok
     def handle_output(state, output), do: {:ok, state, output}
     def handle_input(state, input), do: {:ok, state, input}
@@ -13,13 +22,17 @@ defmodule Raxol.Test.MockPlugins do
     @behaviour Raxol.Plugins.Behaviour
 
     def init(_config) do
-      {:ok, %{
-        name: "mock_dependent_plugin",
-        version: "1.0.0",
-        dependencies: [%{"name" => "mock_dependency_plugin", "version" => ">=1.0.0"}],
-        raxol_compatibility: "~>1.0"
-      }}
+      {:ok,
+       %{
+         name: "mock_dependent_plugin",
+         version: "1.0.0",
+         dependencies: [
+           %{"name" => "mock_dependency_plugin", "version" => ">=1.0.0"}
+         ],
+         raxol_compatibility: "~>1.0"
+       }}
     end
+
     def terminate(_reason, _state), do: :ok
     def handle_output(state, output), do: {:ok, state, output}
     def handle_input(state, input), do: {:ok, state, input}
@@ -29,16 +42,20 @@ defmodule Raxol.Test.MockPlugins do
     @behaviour Raxol.Plugins.Behaviour
 
     def init(_config) do
-      {:ok, %{
-        name: "mock_incompatible_plugin",
-        version: "1.0.0",
-        raxol_compatibility: "~>2.0.0" # Incompatible with Manager API version "1.0"
-      }}
+      {:ok,
+       %{
+         name: "mock_incompatible_plugin",
+         version: "1.0.0",
+         # Incompatible with Manager API version "1.0"
+         raxol_compatibility: "~>2.0.0"
+       }}
     end
+
     def terminate(_reason, _state), do: :ok
     def handle_output(state, output), do: {:ok, state, output}
     def handle_input(state, input), do: {:ok, state, input}
   end
+
   # --- End Mock Plugins ---
 
   # --- Mock Plugin for Event Testing ---
@@ -83,6 +100,7 @@ defmodule Raxol.Test.MockPlugins do
     def handle_input(state, input_data) do
       updated_events = [{:input, input_data} | state.handled_events]
       new_plugin_state_map = %{state | handled_events: updated_events}
+
       # Plugins that process input might return the (possibly modified) input_data
       {:ok, new_plugin_state_map, input_data}
     end
@@ -95,22 +113,33 @@ defmodule Raxol.Test.MockPlugins do
     end
 
     def handle_terminal_event(state, event_type, event_data) do
-      updated_events = [{:terminal, event_type, event_data} | state.handled_events]
+      updated_events = [
+        {:terminal, event_type, event_data} | state.handled_events
+      ]
+
       new_plugin_state_map = %{state | handled_events: updated_events}
       {:ok, new_plugin_state_map}
     end
 
     def handle_custom_event(state, event_type, event_data) do
-      updated_events = [{:custom, event_type, event_data} | state.handled_events]
+      updated_events = [
+        {:custom, event_type, event_data} | state.handled_events
+      ]
+
       new_plugin_state_map = %{state | handled_events: updated_events}
       {:ok, new_plugin_state_map}
     end
 
     # Other required callbacks for Raxol.Plugins.Behaviour
-    def handle_output(state, output), do: {:ok, state, output} # Pass through output
-    def get_commands(_state), do: [] # No commands
-    def handle_command(state, _command_name, _params), do: {:error, :not_implemented, state}
+    # Pass through output
+    def handle_output(state, output), do: {:ok, state, output}
+    # No commands
+    def get_commands(_state), do: []
+
+    def handle_command(state, _command_name, _params),
+      do: {:error, :not_implemented, state}
   end
+
   # --- End Mock Plugin for Event Testing ---
 
   # --- Mock Plugin for Command Testing ---
@@ -125,11 +154,13 @@ defmodule Raxol.Test.MockPlugins do
         dependencies: []
         # No specific state needed for these tests if handlers are external
       }
+
       {:ok, initial_state}
     end
 
     def terminate(_reason, state), do: {:ok, state}
-    def get_commands(_state), do: [] # Commands registered dynamically in tests
+    # Commands registered dynamically in tests
+    def get_commands(_state), do: []
     def handle_output(state, output), do: {:ok, state, output}
     def handle_input(state, input_data), do: {:ok, state, input_data}
     def handle_mouse_event(state, event_data), do: {:ok, state}
@@ -137,6 +168,7 @@ defmodule Raxol.Test.MockPlugins do
     def handle_custom_event(state, _et, _ed), do: {:ok, state}
     # No handle_command needed if all commands use externally provided handlers
   end
+
   # --- End Mock Plugin for Command Testing ---
 
   # --- Mock Plugin for Crash Testing ---
@@ -149,8 +181,10 @@ defmodule Raxol.Test.MockPlugins do
         version: "1.0.0",
         raxol_compatibility: "~>1.0",
         dependencies: [],
-        crash_on_command: true # Default to crashing
+        # Default to crashing
+        crash_on_command: true
       }
+
       {:ok, initial_state}
     end
 
@@ -158,8 +192,14 @@ defmodule Raxol.Test.MockPlugins do
 
     def get_commands(_state) do
       [
-        %{name: :induce_crash, description: "Raises an error to simulate a plugin crash."},
-        %{name: :toggle_crash_on_command, description: "Toggles whether induce_crash actually crashes."}
+        %{
+          name: :induce_crash,
+          description: "Raises an error to simulate a plugin crash."
+        },
+        %{
+          name: :toggle_crash_on_command,
+          description: "Toggles whether induce_crash actually crashes."
+        }
       ]
     end
 
@@ -188,6 +228,7 @@ defmodule Raxol.Test.MockPlugins do
     def handle_terminal_event(state, _et, _ed), do: {:ok, state}
     def handle_custom_event(state, _et, _ed), do: {:ok, state}
   end
+
   # --- End Mock Plugin for Crash Testing ---
 
   # --- Mock Plugin for Init Crash Testing ---
@@ -201,13 +242,17 @@ defmodule Raxol.Test.MockPlugins do
     # Minimal implementations for other callbacks
     def terminate(_reason, state), do: {:ok, state}
     def get_commands(_state), do: []
-    def handle_command(state, _command_name, _params), do: {:error, :not_implemented, state}
+
+    def handle_command(state, _command_name, _params),
+      do: {:error, :not_implemented, state}
+
     def handle_output(state, output), do: {:ok, state, output}
     def handle_input(state, input_data), do: {:ok, state, input_data}
     def handle_mouse_event(state, event_data), do: {:ok, state}
     def handle_terminal_event(state, _et, _ed), do: {:ok, state}
     def handle_custom_event(state, _et, _ed), do: {:ok, state}
   end
+
   # --- End Mock Plugin for Init Crash Testing ---
 
   # --- Mock Plugin for Terminate Crash Testing ---
@@ -225,12 +270,16 @@ defmodule Raxol.Test.MockPlugins do
 
     # Minimal implementations for other callbacks
     def get_commands(_state), do: []
-    def handle_command(state, _command_name, _params), do: {:error, :not_implemented, state}
+
+    def handle_command(state, _command_name, _params),
+      do: {:error, :not_implemented, state}
+
     def handle_output(state, output), do: {:ok, state, output}
     def handle_input(state, input_data), do: {:ok, state, input_data}
     def handle_mouse_event(state, event_data), do: {:ok, state}
     def handle_terminal_event(state, _et, _ed), do: {:ok, state}
     def handle_custom_event(state, _et, _ed), do: {:ok, state}
   end
+
   # --- End Mock Plugin for Terminate Crash Testing ---
 end

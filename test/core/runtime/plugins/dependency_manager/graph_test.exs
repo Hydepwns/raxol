@@ -16,7 +16,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
 
     test "handles optional dependencies" do
       plugins = %{
-        "plugin_a" => %{dependencies: [{"plugin_b", ">= 1.0.0", %{optional: true}}]},
+        "plugin_a" => %{
+          dependencies: [{"plugin_b", ">= 1.0.0", %{optional: true}}]
+        },
         "plugin_b" => %{dependencies: []}
       }
 
@@ -91,7 +93,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
         "plugin_b" => [{"plugin_a", ">= 1.0.0", %{optional: false}}]
       }
 
-      assert {:error, :circular_dependency, cycle} = Graph.get_all_dependencies("plugin_a", graph)
+      assert {:error, :circular_dependency, cycle} =
+               Graph.get_all_dependencies("plugin_a", graph)
+
       assert "plugin_a" in cycle
       assert "plugin_b" in cycle
     end
@@ -114,7 +118,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
 
     test "handles complex dependency chains" do
       graph = %{
-        "plugin_a" => [{"plugin_b", ">= 1.0.0", %{optional: false}}, {"plugin_c", ">= 1.0.0", %{optional: false}}],
+        "plugin_a" => [
+          {"plugin_b", ">= 1.0.0", %{optional: false}},
+          {"plugin_c", ">= 1.0.0", %{optional: false}}
+        ],
         "plugin_b" => [{"plugin_d", ">= 1.0.0", %{optional: false}}],
         "plugin_c" => [{"plugin_d", ">= 1.0.0", %{optional: false}}],
         "plugin_d" => []
@@ -124,7 +131,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
       assert "plugin_b" in deps
       assert "plugin_c" in deps
       assert "plugin_d" in deps
-      assert length(deps) == 3  # No duplicates
+      # No duplicates
+      assert length(deps) == 3
     end
   end
 end

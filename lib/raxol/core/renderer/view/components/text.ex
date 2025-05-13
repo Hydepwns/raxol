@@ -59,7 +59,9 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
     |> String.split(" ")
     |> Enum.reduce({[], ""}, fn word, {lines, current_line} ->
       if String.length(current_line) + String.length(word) + 1 <= width do
-        new_line = if current_line == "", do: word, else: current_line <> " " <> word
+        new_line =
+          if current_line == "", do: word, else: current_line <> " " <> word
+
         {lines, new_line}
       else
         {lines ++ [current_line], word}
@@ -71,8 +73,16 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
   end
 
   defp align_text(lines, width, :left), do: lines
-  defp align_text(lines, width, :right), do: Enum.map(lines, &String.pad_leading(&1, width))
-  defp align_text(lines, width, :center), do: Enum.map(lines, &String.pad_leading(&1, div(width + String.length(&1), 2)))
+
+  defp align_text(lines, width, :right),
+    do: Enum.map(lines, &String.pad_leading(&1, width))
+
+  defp align_text(lines, width, :center),
+    do:
+      Enum.map(
+        lines,
+        &String.pad_leading(&1, div(width + String.length(&1), 2))
+      )
 
   defp apply_styles(lines, styles) do
     Enum.map(lines, fn line ->

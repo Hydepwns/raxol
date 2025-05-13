@@ -62,7 +62,10 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
       iex> EventHandlers.handle_theme_changed({:theme_changed, %{theme: "dark"}})
       :ok
   """
-  def handle_theme_changed({:theme_changed, %{theme: theme_name}}, _pid_or_name \\ nil) do
+  def handle_theme_changed(
+        {:theme_changed, %{theme: theme_name}},
+        _pid_or_name \\ nil
+      ) do
     Logger.info(
       "[Test Log - Accessibility] handle_theme_changed triggered for theme: #{inspect(theme_name)}"
     )
