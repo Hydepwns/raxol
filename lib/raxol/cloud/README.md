@@ -1,6 +1,24 @@
-# Raxol Cloud Integration System
+# Raxol Cloud Subsystem
 
-The Raxol Cloud Integration System provides a comprehensive yet concise set of tools for integrating Raxol applications with cloud services.
+- Integrates Raxol applications with cloud and edge services: monitoring, config, service discovery, and deployment.
+
+## Key Modules
+
+- `cloud` — Main API entry point
+- `core` — Core integration logic
+- `config` — Configuration management
+- `state_manager` — State and process management
+- `monitoring` — Metrics and health tracking
+- `edge_computing` — Edge/cloud execution
+
+## Extension Points
+
+- Public APIs: `cloud`, `monitoring`, `config`, `edge_computing`
+
+## References
+
+- See [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md) for system overview
+- See module docs and `examples/snippets/showcase/cloud_integration.exs` for usage
 
 ## Features
 

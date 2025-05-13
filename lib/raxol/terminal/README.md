@@ -1,6 +1,27 @@
-# Raxol Terminal System
+# Raxol Terminal Subsystem
 
-The Raxol Terminal System provides a comprehensive terminal emulation solution with advanced buffer management, cursor control, and scrolling capabilities. This document outlines the architecture and components of the system.
+- Handles terminal I/O, buffer management, parsing, cursor, and command execution.
+
+## Key Modules
+
+- `Buffer.Manager` — Screen buffer operations (double buffering, damage tracking)
+- `Cursor.Manager` — Cursor state and movement
+- `State.Manager` — Terminal state/configuration
+- `Command.Manager` — Command processing and execution
+- `Style.Manager` — Text styling and formatting
+- `Emulator` — Terminal emulation core
+- `Integration` — Connects and synchronizes terminal components
+- `ANSI` — Escape sequence parsing and handling
+
+## Extension Points
+
+- Behaviours: `Driver.Behaviour`, `ScreenBuffer.Behaviour`, `Emulator.Behaviour`
+- Public APIs: `Integration`, `Emulator`, `Buffer.Manager`
+
+## References
+
+- See [ARCHITECTURE.md](../../../docs/ARCHITECTURE.md) for system overview
+- See module docs for implementation details
 
 ## Reorganization Notice
 

@@ -1,14 +1,15 @@
 # Raxol
 
 [![Hex pm](https://img.shields.io/hexpm/v/raxol.svg)](https://hex.pm/packages/raxol)
-[![License](https://img.shields.io/badge/License-MIT-blue.svg)](LICENSE.md)
 [![GitHub Actions CI](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml/badge.svg)](https://github.com/Hydepwns/raxol/actions/workflows/ci.yml)
 
-**Raxol** is a modern toolkit for building interactive terminal (TUI) applications in Elixir. It offers a powerful component system, a flexible runtime, and a robust plugin architecture—making it easy to create beautiful, responsive terminal UIs.
+**Raxol** is a modern toolkit for building interactive terminal (TUI) applications in Elixir.
+It offers a powerful component system, a flexible runtime, and a robust plugin architecture—making it easy to create beautiful, responsive terminal UIs.
 
-> **Note:** Raxol is in active development (pre-release). APIs may change as we improve the toolkit.
-
-<!-- TODO: Add a screenshot or GIF demo here -->
+> **Note:** Raxol is in active development (pre-release).
+> APIs will change as we improve the toolkit.
+>
+> <!-- TODO: Add a screenshot or GIF demo here -->
 
 ## ✨ Features
 
@@ -25,34 +26,46 @@
 Add Raxol to your `mix.exs`:
 
 ```elixir
+# mix.exs, check hex.pm/packages/raxol
 def deps do
   [
-    {:raxol, "~> 0.2.0"} # Check Hex for the latest version
+    {:raxol, "~> 0.3.0"}
   ]
 end
 ```
 
-Then fetch dependencies:
+## Common Commands
 
 ```bash
+# Fetch dependencies
 mix deps.get
+
+# Run tests
+mix test
+mix test.watch
+mix credo
+mix dialyzer
+mix format
+mix compile --warnings-as-errors
 ```
 
-## 🛠️ Example: A Simple Counter
+## 🛠️ Example: A Simple Counter App
 
 ```elixir
-defmodule MyApp do
+defmodule ExampleApp do
   use Raxol.Core.Runtime.Application
   import Raxol.View.Elements
 
   @impl true
   def init(_), do: {:ok, %{count: 0}}
 
+  # Raxol event handling
   @impl true
   def update(:increment, state), do: {:ok, %{state | count: state.count + 1}, []}
   def update(:decrement, state), do: {:ok, %{state | count: state.count - 1}, []}
   def update(_, state), do: {:ok, state, []}
 
+  # Raxol view DSL
   @impl true
   def view(state) do
     view do
@@ -67,47 +80,34 @@ defmodule MyApp do
   end
 end
 
-# Start your app:
-Raxol.start_link(MyApp)
+# Starts ExampleApp
+Raxol.start_link(ExampleApp)
 ```
 
-Explore more in the [Getting Started Tutorial](docs/guides/01_getting_started/quick_start.md) and the `/examples` directory.
+> **Above example uses Raxol view DSL**, which lets you build TUI layouts and UI elements declaratively using Elixir macros.
+> Compose layouts and UI elements with a syntax _similar_ to HTML— but in pure, undiddled, and unopinionated Elixir.
 
-## 📚 Documentation
+**How the View DSL works:**
 
-- [Main Docs Index](docs/README.md)
-- [Architecture Overview](docs/ARCHITECTURE.md)
-- [CHANGELOG](CHANGELOG.md)
-- [UI Components & Layout](docs/guides/03_components_and_layout/components/README.md)
+- `panel/1` – Draws a bordered panel with an optional title.
+- `row/1` and `column/1` – Arrange child elements horizontally or vertically.
+- `button/1` – Interactive button with label and event handler.
+- `text/1` – Displays static or dynamic text.
+
+You can nest these macros to create complex layouts.
+All properties (like `title`, `label`, `on_click`, etc.) are passed as keyword lists.
+For more, see the [UI Components & Layout Guide](docs/guides/03_components_and_layout/components/README.md).
+
+## 📚 Resources
+
 - [Accessibility Guide](docs/guides/05_development_and_testing/development/planning/accessibility/accessibility_guide.md)
+- [Architecture Overview](docs/ARCHITECTURE.md)
+- [Changelog](CHANGELOG.md)
+- [Docs Index](docs/README.md)
 - [Plugin Development](docs/guides/04_extending_raxol/plugin_development.md)
-- [VS Code Extension](docs/guides/04_extending_raxol/vscode_extension.md)
-- [Development Setup](docs/guides/05_development_and_testing/DevelopmentSetup.md)
 - [Testing Guide](docs/guides/05_development_and_testing/testing.md)
-- [Performance Testing](docs/testing/performance_testing.md)
 - [Terminal Details](docs/guides/02_core_concepts/terminal/README.md)
-
-## 🧑‍💻 Development
-
-Raxol is evolving quickly! Recent updates include:
-
-- A revamped plugin system
-- Performance testing infrastructure
-- Event-based test synchronization
-- System interaction adapters for testability
-
-**Test suite status (2025-05-08):** 279 failures, 17 invalid, 21 skipped (see `CHANGELOG.md` for details).
-
-### Common Commands
-
-```bash
-mix deps.get
-mix test
-mix credo
-mix dialyzer
-mix compile --warnings-as-errors
-mix format
-```
+- [VS Code Extension](docs/guides/04_extending_raxol/vscode_extension.md)
 
 ## License
 
