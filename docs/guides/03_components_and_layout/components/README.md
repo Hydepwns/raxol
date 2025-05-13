@@ -285,6 +285,57 @@ Raxol provides many other components located in `lib/raxol/ui/components/`.
 - `slider`: Select a value within a range.
 - `form`: (Likely) Groups related input components.
 
+### `<multi_line_input>` / `multi_line_input/1`
+
+A multi-line text editor component supporting line wrapping, scrolling, selection, clipboard, and accessibility features. Now harmonized with the modern component system (style/theme merging, accessibility props, lifecycle hooks).
+
+**Attributes / Options:**
+
+- `value`: The current text value (string, default: "").
+- `placeholder`: Placeholder text when empty (string, default: "").
+- `width`, `height`: Dimensions in cells (integers, default: 40x10).
+- `wrap`: Line wrapping mode (`:none`, `:char`, `:word`, default: `:word`).
+- `style`: Custom styles (map, merged with theme and context styles).
+- `theme`: Theme overrides (map, merged with context theme).
+- `aria_label`: Accessibility label (string, optional).
+- `tooltip`: Tooltip/help text (string, optional).
+- `on_change`: Callback when text changes (function, optional).
+
+**Example (`View.Elements`):**
+
+```elixir
+multi_line_input \
+  value: state.notes,
+  placeholder: "Enter notes...",
+  width: 60,
+  height: 8,
+  wrap: :word,
+  style: [text_color: :cyan, selection_color: :magenta],
+  theme: %{cursor_color: :yellow},
+  aria_label: "Notes field",
+  tooltip: "Type your notes here",
+  on_change: fn new_text -> send(self(), {:notes_changed, new_text}) end
+```
+
+**Example (`~H`):**
+
+```elixir
+~H"""
+<multi_line_input
+  value={@notes}
+  placeholder="Enter notes..."
+  width={60}
+  height={8}
+  wrap=":word"
+  style={%{text_color: :cyan, selection_color: :magenta}}
+  theme={%{cursor_color: :yellow}}
+  aria_label="Notes field"
+  tooltip="Type your notes here"
+  on_change={&handle_notes_change/1}
+/>
+"""
+```
+
 **Display Components (`lib/raxol/ui/components/display/`):**
 
 - `table`: Displays tabular data. Takes data and column definitions directly via attributes (e.g., `:headers`, `:data`) after refactoring.

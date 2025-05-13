@@ -1,32 +1,61 @@
 # Test Suite Tracking
 
-## Test Suite Status (as of 2025-06-11)
+## Test Suite Status (as of 2025-06-11, post-TextField fix)
 
-- **Total Tests:** 2191
-- **Doctests:** 34
-- **Failures:** 977
+- **Total Tests:** (see below, suite did not complete due to CompileError)
+- **Doctests:** (unknown)
+- **Failures:** (suite halted on CompileError)
 - **Invalid:** N/A
-- **Skipped:** 12
+- **Skipped:** (unknown)
 
-### Major Failure Categories (2025-06-11)
+### Major Failure Categories (2025-06-11, post-TextField fix)
 
-- **UndefinedFunctionError in Raxol.Terminal.Commands.CSIHandlers**
+- **CompileError in test/core/runtime/plugins/dependency_manager/core_test.exs**
 
-  - `function Raxol.Terminal.Commands.CSIHandlers.handle_r/2 is undefined or private`
-  - This error appears in many terminal emulator and parser tests, likely blocking or cascading into other failures.
+  - Module redefinition: `Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest` is being defined multiple times.
+  - This blocks the suite from running to completion.
 
-- **ModeManager Insert Mode Failure**
-  - `test handles terminal modes (Raxol.Components.Terminal.EmulatorTest)`
-  - Assertion: `assert state.core_emulator.mode_manager.insert_mode == true` (left: false, right: true)
-  - Warning: `[ModeManager] Unhandled mode to set: :insert_mode`
-  - Indicates insert mode is not being set or handled correctly in ModeManager.
+- **UndefinedFunctionError in MultiLineInput.EventHandler tests**
 
-### Progress Notes (2025-06-11)
+  - Several tests in `test/raxol/components/input/multi_line_input/event_handler_test.exs` fail due to missing `handle_event/2` implementation.
 
-- KeyError for :single_shift is resolved (argument order bug in translate_char fixed).
-- ModeManager insert_mode failure and terminal driver test helper issues are resolved (helper import, pattern match, and assertion issues fixed).
-- The test suite now runs to completion, with failures reduced to 977. Major failures are now dominated by scroll region assertion (handle_r/2 in CSIHandlers not implemented) and screen resizing assertion errors.
-- Next step: implement or stub handle_r/2 in Raxol.Terminal.Commands.CSIHandlers, address screen resizing assertion failures, and re-run the suite to assess remaining issues.
+- **Assertion failures in ApplicationTest**
+  - Some tests in `test/raxol/core/runtime/application_test.exs` fail due to mismatched command lists and missing view helpers.
+
+### Progress Notes (2025-06-11, post-TextField fix)
+
+- TextField component and tests are now passing.
+- The suite compiles and runs, but is blocked by a module redefinition CompileError in dependency_manager/core_test.exs.
+- Several MultiLineInput.EventHandler tests fail due to missing implementation.
+- Some ApplicationTest tests fail due to assertion mismatches and missing helpers.
+- Next step: fix the module redefinition in core_test.exs to allow the suite to run to completion, then address the remaining high-frequency errors.
+
+### New: Error Frequency Summary (2025-06-11)
+
+A condensed error log from the latest test run shows the most frequent issues:
+
+- `[error] [Elixir.Raxol.Core.Runtime.Plugins.Manager] :runtime_pid is missing or invalid in init opts: []` (63x)
+- `{:error, :missing_dependencies, ["plugin_b"], ["plugin_a"]}` (45x)
+- `UndefinedFunctionError: Raxol.Terminal.Cursor.Manager.move_to/3 is undefined or private` (25x)
+- `UndefinedFunctionError: StateManager.new/0 is undefined` (23x)
+- `UndefinedFunctionError: Raxol.DataCase.setup/1 is undefined or private` (21x)
+- `UndefinedFunctionError: Raxol.UI.Theming.Theme.component_style/2 is undefined or private` (17x)
+- `FunctionClauseError: no function clause matching in Raxol.Core.UserPreferences.handle_info/2` (17x)
+- `UndefinedFunctionError: :erlang.trace_receive/1 is undefined or private` (16x)
+- ...and many more (see tmp/test_errors_summary.txt for full list).
+
+#### Immediate Next Focus
+
+- **Top priority:** Implement or stub `move_to/3` in `Raxol.Terminal.Cursor.Manager` to address 25+ test failures and unblock further progress.
+- After that, address other high-frequency undefined functions and missing helpers.
+
+### Action Plan (2025-06-11)
+
+- [x] Fix ArgumentError in file_watcher/events_test.exs (`:infinity` in `Process.send_after`)
+- [x] Centralize ManagerMock definition to resolve duplicate mock errors
+- [ ] Implement or stub `move_to/3` in `Raxol.Terminal.Cursor.Manager`
+- [ ] Re-run test suite and update this file with new failure counts and details
+- [ ] Continue triaging by error frequency and impact
 
 ### Minor Failure Categories (2025-06-10)
 

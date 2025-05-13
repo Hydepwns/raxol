@@ -222,3 +222,19 @@ defmodule Raxol.Terminal.InputTest do
   end
 end
 ```
+
+## Component Input APIs and Harmonization
+
+Modern Raxol input components, such as `MultiLineInput`, now follow a harmonized API and set of conventions for props, theming, and event handling. This harmonization ensures a consistent developer experience and predictable behavior across all major input components.
+
+### Key Features of the Harmonized API
+
+- **Unified Props:** Standardized support for `value`, `placeholder`, `width`, `height`, `wrap`, `style`, `theme`, `aria_label`, `tooltip`, and `on_change` props.
+- **Consistent Theming:** All input components now accept a `theme` prop and support the latest theming system, making it easy to apply custom or application-wide themes.
+- **Event Handling:** The `on_change` prop and related event handlers follow a consistent signature and behavior across components.
+- **Accessibility:** Props like `aria_label` and `tooltip` are supported for improved accessibility and user guidance.
+- **Extensibility:** The harmonized API makes it easier to extend or compose input components in custom UIs.
+
+For detailed usage examples and a full list of supported props, see the [Main UI Components Guide](../../03_component_reference/Elements.md#multilineinput).
+
+> **Note:** Legacy input components may not support all harmonized props or conventions. It is recommended to use the modern, harmonized components for new development.

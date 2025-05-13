@@ -67,4 +67,12 @@ Applications running within Raxol typically don't interact with cursor state dir
 - The actual appearance of the cursor (block, underline, bar), its blinking behavior, and its color are primarily determined by the **hosting terminal emulator** and its settings.
 - Raxol sends the standard ANSI sequences, but the terminal interprets them. Support for sequences like DECSCUSR can vary.
 
+## Harmonized Cursor Management in Input Components
+
+Modern input components such as `MultiLineInput` now use a harmonized API for managing their internal cursor position, selection, and focus. This ensures consistent cursor behavior, keyboard navigation, and accessibility support across all major input components.
+
+For usage details and supported props, see the [Main UI Components Guide](../../03_component_reference/Elements.md#multilineinput).
+
+> **Note:** Legacy input components may not fully support the harmonized cursor conventions. Prefer the modern components for new development.
+
 (Previous content based on a hypothetical `Raxol.Terminal.Cursor` module, including its API, configuration, specific animation system, events, and examples, has been removed.)
