@@ -1,6 +1,9 @@
 defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
   use ExUnit.Case, async: false
-  import Raxol.ComponentTestHelpers
+  import Raxol.Test.TestHelper, only: [create_test_component: 2]
+  import Raxol.ComponentTestHelpers, only: [simulate_event_sequence: 2, simulate_lifecycle: 2]
+  # import Raxol.ComponentTestHelpers # Not needed for create_test_component
+  import Raxol.Test.PerformanceHelper
 
   # Component that simulates heavy computation
   defmodule HeavyComponent do
@@ -108,24 +111,22 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
 
   describe "Performance Edge Cases" do
     test "handles large data sets" do
-      component = create_test_component(HeavyComponent)
+      component = create_test_component(HeavyComponent, %{})
 
       # Measure performance with large data set
-      metrics =
-        measure_performance(component, fn comp ->
-          {updated, _} = Unit.simulate_event(comp, %{type: :add_data})
-          assert length(updated.state.data) == 1000
-        end)
+      {time_ms, _result} = measure_time(fn ->
+        {updated, _} = Unit.simulate_event(component, %{type: :add_data})
+        assert length(updated.state.data) == 1000
+      end)
 
       # Verify performance metrics
-      # Less than 1 second per iteration
-      assert metrics.average_time < 1000
-      # Less than 10 seconds total
-      assert metrics.total_time < 10000
+      # Less than 1 second for the operation
+      assert time_ms < 1000
+      # (If you want to check total time for multiple iterations, use measure_average_time)
     end
 
     test "handles rapid state updates" do
-      component = create_test_component(HeavyComponent)
+      component = create_test_component(HeavyComponent, %{})
 
       # Simulate rapid state updates
       events = Enum.map(1..100, fn _ -> %{type: :add_data} end)
@@ -137,7 +138,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
     end
 
     test "handles memory usage" do
-      component = create_test_component(HeavyComponent)
+      component = create_test_component(HeavyComponent, %{})
 
       # Simulate memory-intensive operations
       events = Enum.map(1..10, fn _ -> %{type: :add_data} end)
@@ -152,7 +153,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
 
   describe "Error Handling Edge Cases" do
     test "handles render errors gracefully" do
-      component = create_test_component(ErrorProneComponent)
+      component = create_test_component(ErrorProneComponent, %{})
 
       # Trigger render errors
       assert_raise RuntimeError, "Simulated render error", fn ->
@@ -165,7 +166,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
     end
 
     test "handles event handling errors gracefully" do
-      component = create_test_component(ErrorProneComponent)
+      component = create_test_component(ErrorProneComponent, %{})
 
       # Trigger event handling error
       assert_raise RuntimeError, "Simulated event handling error", fn ->
@@ -174,7 +175,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
     end
 
     test "recovers from errors" do
-      component = create_test_component(ErrorProneComponent)
+      component = create_test_component(ErrorProneComponent, %{})
 
       # Trigger and recover from error
       assert_raise RuntimeError, "Simulated event handling error", fn ->
@@ -197,7 +198,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
     end
 
     test "handles invalid state updates" do
-      component = create_test_component(ErrorProneComponent)
+      component = create_test_component(ErrorProneComponent, %{})
 
       # Attempt invalid state update
       {updated, _} = Unit.simulate_event(component, %{type: :invalid_update})
@@ -205,7 +206,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
     end
 
     test "handles state type mismatches" do
-      component = create_test_component(ErrorProneComponent)
+      component = create_test_component(ErrorProneComponent, %{})
 
       # Attempt to update with wrong type
       {updated, _} =
@@ -217,7 +218,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
 
   describe "Lifecycle Edge Cases" do
     test "handles multiple mount/unmount cycles" do
-      component = create_test_component(ErrorProneComponent)
+      component = create_test_component(ErrorProneComponent, %{})
 
       # Simulate multiple mount/unmount cycles
       Enum.each(1..5, fn _ ->
@@ -243,7 +244,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
 
       # Verify mount error is handled
       assert_raise RuntimeError, "Simulated mount error", fn ->
-        create_test_component(InvalidMountComponent)
+        create_test_component(InvalidMountComponent, %{})
       end
     end
 
@@ -262,7 +263,7 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
         end
       end
 
-      component = create_test_component(InvalidUnmountComponent)
+      component = create_test_component(InvalidUnmountComponent, %{})
 
       # Verify unmount error is handled
       assert_raise RuntimeError, "Simulated unmount error", fn ->

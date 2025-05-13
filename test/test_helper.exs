@@ -33,6 +33,8 @@ Mox.defmock(Raxol.Terminal.Config.EnvironmentAdapterMock,
 
 Mox.defmock(FileSystemMock, for: FileSystem.Behaviour)
 
+Mox.defmock(SystemInteractionMock, for: Raxol.System.Interaction)
+
 # Set up test environment
 Application.put_env(:raxol, :test_mode, true)
 
@@ -46,5 +48,12 @@ Code.require_file("raxol/terminal/driver_test_helper.exs", __DIR__)
 # Ensure all support helpers are loaded
 Enum.each(
   Path.wildcard(Path.join([__DIR__, "support", "*.ex"])),
+  &Code.require_file/1
+)
+
+Code.require_file("core/runtime/plugins/edge_cases/helper.ex", Path.join(__DIR__, "raxol"))
+
+Enum.each(
+  Path.wildcard(Path.join([__DIR__, "raxol/core/runtime/plugins/edge_cases", "*.ex"])),
   &Code.require_file/1
 )

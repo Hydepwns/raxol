@@ -17,43 +17,12 @@ defmodule Raxol.Test.Mocks do
   # Mox.defmock(SystemMock, for: System)
   # Mox.defmock(NotificationPluginMock, for: Raxol.Core.Plugins.Core.NotificationPlugin)
 
-  # Defmock accessibility operations - COMMENT OUT as Raxol.Core.Accessibility is not a behaviour
-  # Mox.defmock(AccessibilityMock, for: Raxol.Core.Accessibility)
-
   # Mock for the SystemInteraction behaviour
   Mox.defmock(SystemInteractionMock, for: Raxol.Core.SystemInteraction)
-
-  # Mock for the Accessibility Behaviour
-  Mox.defmock(Raxol.Mocks.AccessibilityMock,
-    for: Raxol.Core.Accessibility.Behaviour
-  )
-
-  # Mock for the FocusManager Behaviour
-  Mox.defmock(Raxol.Mocks.FocusManagerMock,
-    for: Raxol.Core.FocusManager.Behaviour
-  )
-
-  # Mock for the KeyboardShortcuts Behaviour
-  Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock,
-    for: Raxol.Core.KeyboardShortcutsBehaviour
-  )
 
   # Mock for the Manager Behaviour
   Mox.defmock(ManagerMock, for: Raxol.Core.Runtime.Plugins.Manager.Behaviour)
 
-  # Removed EventManagerBehaviour and defmock for EventManagerMock
-
   # Global mock for File behaviour
   Mox.defmock(FileMock, for: File.Behaviour)
 end
-
-# The Raxol.Core.Accessibility.Mock module definition below should be removed.
-# defmodule Raxol.Core.Accessibility.Mock do
-#   @moduledoc false
-#   require Mox
-#
-#   # use Mox # <-- Temporarily commented out due to persistent UndefinedFunctionError
-#
-#   # Assuming this signature based on usage
-#   # Mox.defmock(__MODULE__, [announce: 2], for: Raxol.Core.Accessibility)
-# end

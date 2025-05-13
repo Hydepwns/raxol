@@ -1,8 +1,11 @@
 defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   use ExUnit.Case, async: false
-  import Raxol.ComponentTestHelpers
-  alias Raxol.UI.Components.Unit
-  alias Raxol.UI.Components.Manager, as: ComponentManager
+  # import Raxol.ComponentTestHelpers
+  alias Raxol.Test.Unit, as: Unit
+  alias Raxol.Core.Runtime.ComponentManager, as: ComponentManager
+  use Raxol.Test.Integration
+  import Raxol.Test.Integration.Assertions
+  import Raxol.Test.TestHelper
 
   # Parent component that manages child components
   defmodule ParentComponent do
@@ -119,8 +122,8 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} =
-        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+      {:ok, parent, child} =
+        Raxol.Test.Integration.setup_component_hierarchy(
           ParentComponent,
           ChildComponent
         )
@@ -138,8 +141,8 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} =
-        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+      {:ok, parent, child} =
+        Raxol.Test.Integration.setup_component_hierarchy(
           ParentComponent,
           ChildComponent
         )
@@ -171,8 +174,8 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} =
-        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+      {:ok, parent, child} =
+        Raxol.Test.Integration.setup_component_hierarchy(
           ParentComponent,
           ChildComponent
         )
@@ -203,8 +206,8 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, [child1, child2]} =
-        Raxol.ComponentTestHelpers.setup_component_hierarchy(ParentComponent, [
+      {:ok, parent, [child1, child2]} =
+        Raxol.Test.Integration.setup_component_hierarchy(ParentComponent, [
           ChildComponent,
           ChildComponent
         ])
@@ -231,8 +234,8 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} =
-        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+      {:ok, parent, child} =
+        Raxol.Test.Integration.setup_component_hierarchy(
           ParentComponent,
           ChildComponent
         )
@@ -257,8 +260,8 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} =
-        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+      {:ok, parent, child} =
+        Raxol.Test.Integration.setup_component_hierarchy(
           ParentComponent,
           ChildComponent
         )
@@ -281,8 +284,8 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} =
-        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+      {:ok, parent, child} =
+        Raxol.Test.Integration.setup_component_hierarchy(
           ParentComponent,
           ChildComponent
         )
@@ -310,8 +313,8 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} =
-        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+      {:ok, parent, child} =
+        Raxol.Test.Integration.setup_component_hierarchy(
           ParentComponent,
           ChildComponent
         )
@@ -332,8 +335,8 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
         create_test_component(ChildComponent, %{parent_id: parent.state.id})
 
       # Set up hierarchy
-      {parent, child} =
-        Raxol.ComponentTestHelpers.setup_component_hierarchy(
+      {:ok, parent, child} =
+        Raxol.Test.Integration.setup_component_hierarchy(
           ParentComponent,
           ChildComponent
         )
@@ -348,16 +351,6 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   end
 
   # Helper function to validate parent-child relationships
-  defp assert_hierarchy_valid(parent, children) do
-    # Verify parent has correct children
-    assert parent.state.children == Enum.map(children, & &1.state.id)
-
-    # Verify each child has correct parent
-    Enum.each(children, fn child ->
-      assert child.state.parent_id == parent.state.id
-    end)
-  end
-
   defp verify_hierarchy_valid(parent, children) do
     assert parent.state.children == Enum.map(children, & &1.state.id)
 

@@ -19,12 +19,12 @@ defmodule Raxol.ComponentTestHelpers do
   @doc """
   Creates a test component with configurable initial state and options.
   """
-  def create_test_component(module, props \\ %{}) do
-    id = :crypto.strong_rand_bytes(8) |> Base.encode16()
-    state = module.init(Map.merge(%{id: id}, props))
-    {state, _} = module.mount(state)
-    %{module: module, state: state}
-  end
+  # def create_test_component(module, props \\ %{}) do
+  #   id = :crypto.strong_rand_bytes(8) |> Base.encode16()
+  #   state = module.init(Map.merge(%{id: id}, props))
+  #   {state, _} = module.mount(state)
+  #   %{module: module, state: state}
+  # end
 
   @doc """
   Simulates a complete component lifecycle sequence.
@@ -65,42 +65,45 @@ defmodule Raxol.ComponentTestHelpers do
 
   @doc """
   Measures component performance with a given workload.
+  DEPRECATED: Use Raxol.Test.PerformanceHelper.measure_time/1 or related helpers instead.
   """
-  def measure_performance(component, workload_fn, iterations \\ 100) do
-    start_time = System.monotonic_time()
-
-    Enum.each(1..iterations, fn _ ->
-      workload_fn.(component)
-    end)
-
-    end_time = System.monotonic_time()
-
-    duration =
-      System.convert_time_unit(end_time - start_time, :native, :millisecond)
-
-    %{
-      total_time: duration,
-      average_time: duration / iterations,
-      iterations: iterations
-    }
-  end
+  # def measure_performance(component, workload_fn, iterations \\ 100) do
+  #   start_time = System.monotonic_time()
+  #
+  #   Enum.each(1..iterations, fn _ ->
+  #     workload_fn.(component)
+  #   end)
+  #
+  #   end_time = System.monotonic_time()
+  #
+  #   duration =
+  #     System.convert_time_unit(end_time - start_time, :native, :millisecond)
+  #
+  #   %{
+  #     total_time: duration,
+  #     average_time: duration / iterations,
+  #     iterations: iterations
+  #   }
+  # end
 
   @doc """
-  Validates component accessibility features.
+  DEPRECATED: Use Raxol.AccessibilityTestHelpers for accessibility assertions and simulation.
+  This helper will be removed in a future release.
   """
-  def validate_accessibility(component) do
-    # Render with accessibility context
-    {_updated, rendered} =
-      component.module.render(component.state, %{
-        accessibility: %{
-          high_contrast: true,
-          screen_reader: true
-        }
-      })
-
-    # Validate rendered output
-    validate_rendered_accessibility(rendered)
-  end
+  @deprecated "Use Raxol.AccessibilityTestHelpers instead."
+  # def validate_accessibility(component) do
+  #   # Render with accessibility context
+  #   {_updated, rendered} =
+  #     component.module.render(component.state, %{
+  #       accessibility: %{
+  #         high_contrast: true,
+  #         screen_reader: true
+  #       }
+  #     })
+  #
+  #   # Validate rendered output
+  #   validate_rendered_accessibility(rendered)
+  # end
 
   # Private Helpers
 
@@ -132,71 +135,35 @@ defmodule Raxol.ComponentTestHelpers do
     Map.get(component.state, :__lifecycle_events__, [])
   end
 
-  defp validate_rendered_accessibility(rendered) do
-    # Basic accessibility checks
-    checks = [
-      has_contrast_ratio: check_contrast_ratio(rendered),
-      has_aria_labels: check_aria_labels(rendered),
-      has_keyboard_navigation: check_keyboard_navigation(rendered)
-    ]
-
-    # Return validation results
-    %{
-      passed: Enum.all?(checks, fn {_key, value} -> value end),
-      checks: checks
-    }
-  end
-
-  defp check_contrast_ratio(_rendered) do
-    # TODO: Implement contrast ratio checking
-    true
-  end
-
-  defp check_aria_labels(_rendered) do
-    # TODO: Implement ARIA label checking
-    true
-  end
-
-  defp check_keyboard_navigation(_rendered) do
-    # TODO: Implement keyboard navigation checking
-    true
-  end
-
-  @doc """
-  Sets up a component hierarchy with parent and child components.
-  """
-  def setup_component_hierarchy(parent_module, child_module)
-      when is_atom(child_module) do
-    parent = create_test_component(parent_module)
-    child = create_test_component(child_module, %{parent_id: parent.state.id})
-    parent = %{parent | state: %{parent.state | children: [child.state.id]}}
-    {parent, child}
-  end
-
-  def setup_component_hierarchy(parent_module, child_modules)
-      when is_list(child_modules) do
-    parent = create_test_component(parent_module)
-
-    children =
-      Enum.map(child_modules, fn module ->
-        create_test_component(module, %{parent_id: parent.state.id})
-      end)
-
-    child_ids = Enum.map(children, & &1.state.id)
-    parent = %{parent | state: %{parent.state | children: child_ids}}
-    {parent, children}
-  end
-
-  @doc """
-  Asserts that a component hierarchy is valid.
-  """
-  def assert_hierarchy_valid(parent, children) do
-    assert parent.state.children == Enum.map(children, & &1.state.id)
-
-    Enum.each(children, fn child ->
-      assert child.state.parent_id == parent.state.id
-    end)
-  end
+  # defp validate_rendered_accessibility(rendered) do
+  #   # Basic accessibility checks
+  #   checks = [
+  #     has_contrast_ratio: check_contrast_ratio(rendered),
+  #     has_aria_labels: check_aria_labels(rendered),
+  #     has_keyboard_navigation: check_keyboard_navigation(rendered)
+  #   ]
+  #
+  #   # Return validation results
+  #   %{
+  #     passed: Enum.all?(checks, fn {_key, value} -> value end),
+  #     checks: checks
+  #   }
+  # end
+  #
+  # defp check_contrast_ratio(_rendered) do
+  #   # TODO: Implement contrast ratio checking
+  #   true
+  # end
+  #
+  # defp check_aria_labels(_rendered) do
+  #   # TODO: Implement ARIA label checking
+  #   true
+  # end
+  #
+  # defp check_keyboard_navigation(_rendered) do
+  #   # TODO: Implement keyboard navigation checking
+  #   true
+  # end
 
   @doc """
   Mounts a child component with a parent, updating the child's state to reference the parent as needed.

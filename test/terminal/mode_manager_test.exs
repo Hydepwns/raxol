@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.ModeManagerTest do
         output_buffer: "",
         # Default scroll region
         scroll_region: nil,
-        charset_state: Raxol.Terminal.ANSI.CharacterSets.new(),
+        charset_state: Raxol.Terminal.ANSI.CharacterSets.CharacterSets.new(),
         tab_stops:
           MapSet.new(Enum.filter(1..80, fn col -> rem(col - 1, 8) == 0 end))
       }

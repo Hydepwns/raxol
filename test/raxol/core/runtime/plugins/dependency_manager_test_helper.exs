@@ -36,25 +36,26 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManagerTestHelper do
     end)
   end
 
-  def measure_memory_usage(fun) do
-    :erlang.garbage_collect()
-    before = :erlang.memory(:total)
-    result = fun.()
-    :erlang.garbage_collect()
-    mem_after = :erlang.memory(:total)
-    {result, mem_after - before}
-  end
+  # Performance helpers are now provided by Raxol.Test.PerformanceHelper
+  # def measure_memory_usage(fun) do
+  #   :erlang.garbage_collect()
+  #   before = :erlang.memory(:total)
+  #   result = fun.()
+  #   :erlang.garbage_collect()
+  #   mem_after = :erlang.memory(:total)
+  #   {result, mem_after - before}
+  # end
 
-  def measure_time(fun) do
-    {time, result} = :timer.tc(fun)
-    {result, time}
-  end
+  # def measure_time(fun) do
+  #   {time, result} = :timer.tc(fun)
+  #   {result, time}
+  # end
 
-  def assert_memory_stable(memory_diff, max_diff \\ 1_000_000) do
-    assert abs(memory_diff) < max_diff
-  end
+  # def assert_memory_stable(memory_diff, max_diff \\ 1_000_000) do
+  #   assert abs(memory_diff) < max_diff
+  # end
 
-  def assert_performance(time, max_time) do
-    assert time < max_time
-  end
+  # def assert_performance(time, max_time) do
+  #   assert time < max_time
+  # end
 end

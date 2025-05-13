@@ -2,6 +2,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
   # Can switch back to async with Mox
   use ExUnit.Case
   import Mox
+  import Raxol.Test.ClipboardHelpers
 
   # Remove Mox.defmock - it's configured in config/test.exs
   # Mox.defmock(ClipboardMock, for: Raxol.System.Clipboard.Behaviour)
@@ -57,7 +58,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       args = [test_content]
 
       # Mock the behaviour call using Mox with the configured mock
-      expect(@clipboard_mock, :copy, fn ^test_content -> :ok end)
+      expect_clipboard_copy(@clipboard_mock, test_content, :ok)
 
       # Call the plugin's registered handler (arity 2 for write)
       assert {:ok, ^initial_state, :clipboard_write_ok} =
@@ -75,9 +76,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       error_reason = {:os_error, "cmd failed"}
 
       # Mock the behaviour call failure using Mox with the configured mock
-      expect(@clipboard_mock, :copy, fn ^test_content ->
-        {:error, error_reason}
-      end)
+      expect_clipboard_copy(@clipboard_mock, test_content, {:error, error_reason})
 
       # Call the plugin's registered handler (arity 2 for write)
       assert {:error, {:clipboard_write_failed, ^error_reason}, ^initial_state} =
@@ -94,7 +93,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       args = []
 
       # Mock the behaviour call using Mox with the configured mock
-      expect(@clipboard_mock, :paste, fn -> {:ok, clipboard_content} end)
+      expect_clipboard_paste(@clipboard_mock, {:ok, clipboard_content})
 
       # Call the plugin's registered handler (arity 1 for read)
       assert {:ok, ^initial_state, {:clipboard_content, ^clipboard_content}} =
@@ -111,7 +110,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       error_reason = :command_not_found
 
       # Mock the behaviour call failure using Mox with the configured mock
-      expect(@clipboard_mock, :paste, fn -> {:error, error_reason} end)
+      expect_clipboard_paste(@clipboard_mock, {:error, error_reason})
 
       # Call the plugin's command handler with the mock-injected state
       assert {:error, {:clipboard_read_failed, ^error_reason}, ^initial_state} =

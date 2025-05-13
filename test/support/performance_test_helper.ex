@@ -3,8 +3,11 @@ defmodule Raxol.Test.PerformanceTestHelper do
   import ExUnit.Assertions
 
   @moduledoc """
-  Helper functions for performance testing and benchmarking.
+  DEPRECATED: Use Raxol.Test.PerformanceHelper instead.
+  This module is deprecated and will be removed in a future release.
+  Please update your tests to use Raxol.Test.PerformanceHelper.
   """
+  @deprecated "Use Raxol.Test.PerformanceHelper instead."
 
   @doc """
   Measures the average execution time of an operation over multiple iterations.
