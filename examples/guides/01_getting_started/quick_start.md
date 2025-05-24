@@ -42,8 +42,6 @@ Then, fetch the dependency:
 mix deps.get
 ```
 
-For more details, see the [Development Setup](../../05_development_and_testing/DevelopmentSetup.md).
-
 ## 2. Create Your Application Module
 
 Create a new Elixir file, for example, `lib/my_raxol_app/application.ex`, and define your application module. This module will use `Raxol.Core.Runtime.Application` and implement the `render/1` callback to define the user interface.
@@ -170,7 +168,7 @@ end
 
 **Subscriptions (`subscribe/1`)**
 
-For handling external events like timers or keyboard events not tied to specific components, you can implement the `subscribe/1` callback. It returns subscriptions that send messages to `update/2`. See `examples/basic/subscriptions.exs` for details and the [Async Operations Guide](../../02_core_concepts/async_operations.md) for a full explanation.
+For handling external events like timers or keyboard events not tied to specific components, you can implement the `subscribe/1` callback. It returns subscriptions that send messages to `update/2`. See `examples/basic/subscriptions.exs` for details.
 
 ## 3. Start the Application
 
@@ -205,7 +203,4 @@ Make sure `MyRaxolApp.Application` is listed in your `mix.exs` `application/0` f
 
 Congratulations! You've built and run your first Raxol application.
 
-- Explore the different built-in [UI Components](../../03_components_and_layout/components/README.md).
-- Dive deeper into [Asynchronous Operations (Subscriptions & Commands)](../../02_core_concepts/async_operations.md).
-- Configure the application startup using [Runtime Options](../../02_core_concepts/runtime_options.md).
 - Check out the `/examples` directory in the Raxol repository for more advanced use cases.

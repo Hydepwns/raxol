@@ -31,8 +31,6 @@ defmodule Raxol.UI.Components.Base.Component do
 end
 ```
 
-See also: [Component Architecture Guide](../../component_architecture.md) for lifecycle, hierarchy, and best practices.
-
 ### Lifecycle Hooks
 
 1. **init/1**
