@@ -190,8 +190,8 @@ defmodule Raxol.MixProject do
       main: "readme",
       extras: [
         "README.md",
-        "docs/guides/01_getting_started/quick_start.md",
-        "docs/guides/04_extending_raxol/vscode_extension.md"
+        "examples/guides/01_getting_started/quick_start.md",
+        "examples/guides/04_extending_raxol/vscode_extension.md"
       ],
       source_url: "https://github.com/Hydepwns/raxol",
       source_ref: "v#{@version}",
