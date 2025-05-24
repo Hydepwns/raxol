@@ -11,4 +11,12 @@ defmodule Raxol.Animation.Animation do
   defdelegate start_animation(name, id, opts), to: Raxol.Animation.Framework
   defdelegate apply_animations_to_state(state), to: Raxol.Animation.Framework
   defdelegate get_current_value(name, id), to: Raxol.Animation.Framework
+
+  def init(opts \\ %{}, user_preferences_pid \\ nil) do
+    Raxol.Animation.Framework.init(opts, user_preferences_pid)
+  end
+
+  def should_reduce_motion?(user_preferences_pid \\ nil) do
+    Raxol.Animation.Framework.should_reduce_motion?(user_preferences_pid)
+  end
 end

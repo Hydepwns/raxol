@@ -12,13 +12,14 @@ defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
   alias Raxol.Test.MockPlugins.MockOnTerminateCrashPlugin
 
   setup context do
-    reloading_enabled = Keyword.has_key?(context.tags, :enable_plugin_reloading)
+    reloading_enabled = Keyword.has_key?(context[:tags] || [], :enable_plugin_reloading)
 
     {:ok, _pid} =
       Manager.start_link(
         command_registry_table: :test_command_registry,
         plugin_config: %{},
-        enable_plugin_reloading: reloading_enabled
+        enable_plugin_reloading: reloading_enabled,
+        runtime_pid: self()
       )
 
     :ok = Manager.initialize()
@@ -40,7 +41,10 @@ defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
     end
 
     test "handles plugin init crash gracefully", %{emulator: _emulator} do
-      assert {:error, _} = Manager.load_plugin("mock_on_init_crash_plugin", %{})
+      assert match?(
+               {:error, _},
+               Manager.load_plugin("mock_on_init_crash_plugin", %{})
+             )
     end
 
     test "handles plugin terminate crash gracefully", %{emulator: _emulator} do

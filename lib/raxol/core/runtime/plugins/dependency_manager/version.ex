@@ -18,26 +18,36 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
   * `{:error, reason}` - If there's an error or the version doesn't satisfy the requirement
   """
   def check_version(version, requirement) do
-    with {:ok, parsed_version} <- Version.parse(version),
-         {:ok, parsed_requirement} <- parse_version_requirement(requirement) do
-      case parsed_requirement do
-        {:or, requirements} ->
-          if Enum.any?(requirements, &Version.match?(parsed_version, &1)) do
+    with {:ok, _} <- Version.parse(version),
+         {:ok, parsed_req} <- parse_version_requirement(requirement) do
+      case parsed_req do
+        {:or, reqs} ->
+          # reqs is a list of parsed requirements
+          if Enum.any?(reqs, fn req -> Version.match?(version, req) end) do
             :ok
           else
             {:error, :version_mismatch}
           end
 
-        requirement ->
-          if Version.match?(parsed_version, requirement) do
+        req ->
+          if Version.match?(version, req) do
             :ok
           else
             {:error, :version_mismatch}
           end
       end
     else
-      {:error, :invalid_version} -> {:error, :invalid_version_format}
-      {:error, :invalid_requirement} -> {:error, :invalid_requirement_format}
+      {:error, :invalid_version_format} ->
+        {:error, :invalid_version_format}
+
+      {:error, :invalid_requirement_format} ->
+        {:error, :invalid_requirement_format}
+
+      {:error, :invalid_requirement} ->
+        {:error, :invalid_requirement_format}
+
+      _ ->
+        {:error, :invalid_version_format}
     end
   end
 
@@ -80,6 +90,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
           {:error, :invalid_requirement}
         end
     end
+  end
+
+  def parse_version_requirement(requirement) do
+    {:error, :invalid_requirement}
   end
 
   @doc """

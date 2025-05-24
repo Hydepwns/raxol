@@ -18,12 +18,13 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
   Returns a tuple of {active_buffer, cursor_pos, default_style}.
   """
   @spec get_buffer_state(Emulator.t()) ::
-          {ScreenBuffer.t(), {integer(), integer()}, Cell.style()}
+          {ScreenBuffer.t(), {integer(), integer()},
+           Raxol.Terminal.ANSI.TextFormatting.text_style()}
   def get_buffer_state(emulator) do
     active_buffer = Emulator.get_active_buffer(emulator)
-    cursor_pos = Emulator.get_cursor_position(emulator)
-    default_style = emulator.style
-    {active_buffer, cursor_pos, default_style}
+    cursor_pos = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+    blank_style = Raxol.Terminal.ANSI.TextFormatting.new()
+    {active_buffer, cursor_pos, blank_style}
   end
 
   @doc """
@@ -35,7 +36,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
           :screen | :line,
           integer(),
           {integer(), integer()}
-        ) :: Emulator.t()
+        ) :: {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_erase(emulator, type, erase_param, {row, col}) do
     {active_buffer, _, default_style} = get_buffer_state(emulator)
 
@@ -66,40 +67,54 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
           active_buffer
       end
 
-    Emulator.update_active_buffer(emulator, new_buffer)
+    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc "Handles Erase in Display (ED - 'J')"
-  @spec handle_J(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_J(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_J(emulator, params) do
-    erase_param = get_valid_bool_param(params, 0, 0)
+    erase_param = get_valid_param(params, 0, 0, 0, 3)
     {_, cursor_pos, _} = get_buffer_state(emulator)
     handle_erase(emulator, :screen, erase_param, cursor_pos)
   end
 
   @doc "Handles Erase in Line (EL - 'K')"
-  @spec handle_K(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_K(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_K(emulator, params) do
-    erase_param = get_valid_bool_param(params, 0, 0)
+    erase_param = get_valid_param(params, 0, 0, 0, 2)
     {_, cursor_pos, _} = get_buffer_state(emulator)
     handle_erase(emulator, :line, erase_param, cursor_pos)
   end
 
   # Helper function to clear scrollback buffer
   @spec clear_scrollback(ScreenBuffer.t(), Cell.style()) :: ScreenBuffer.t()
-  defp clear_scrollback(buffer, default_style) do
-    # Create a new buffer with only the current viewport content
-    viewport_height = ScreenBuffer.get_height(buffer)
+  defp clear_scrollback(buffer, _default_style) do
+    # Get current viewport dimensions and content
+    current_width = ScreenBuffer.get_width(buffer)
+    current_height = ScreenBuffer.get_height(buffer)
 
-    new_buffer =
-      ScreenBuffer.new(
-        ScreenBuffer.get_width(buffer),
-        viewport_height,
-        default_style
-      )
+    current_cells =
+      Enum.map(0..(current_height - 1), fn y ->
+        ScreenBuffer.get_line(buffer, y) ||
+          List.duplicate(Cell.new(), current_width)
+      end)
 
-    # Copy the current viewport content to the new buffer
-    ScreenBuffer.copy_region(buffer, new_buffer, 0, 0, viewport_height)
+    # Create a new buffer struct with the viewport content and empty scrollback
+    %ScreenBuffer{
+      cells: current_cells,
+      width: current_width,
+      height: current_height,
+      # Effectively clears scrollback
+      scrollback: [],
+      # Preserve limit
+      scrollback_limit: buffer.scrollback_limit,
+      # Selections are usually cleared on such operations
+      selection: nil,
+      # Scroll region is also typically reset
+      scroll_region: nil
+    }
   end
 
   # --- Parameter Validation Helpers ---
@@ -122,7 +137,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
 
       _ ->
         Logger.warning(
-          "Invalid parameter value at index #{index}, using default #{default}"
+          "Invalid parameter value at index #{index}, using default #{default}",
+          []
         )
 
         default

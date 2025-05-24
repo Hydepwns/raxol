@@ -76,11 +76,18 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       error_reason = {:os_error, "cmd failed"}
 
       # Mock the behaviour call failure using Mox with the configured mock
-      expect_clipboard_copy(@clipboard_mock, test_content, {:error, error_reason})
+      expect_clipboard_copy(
+        @clipboard_mock,
+        test_content,
+        {:error, error_reason}
+      )
 
       # Call the plugin's registered handler (arity 2 for write)
-      assert {:error, {:clipboard_write_failed, ^error_reason}, ^initial_state} =
+      assert match?(
+               {:error, {:clipboard_write_failed, ^error_reason},
+                ^initial_state},
                ClipboardPlugin.handle_clipboard_command(args, initial_state)
+             )
 
       # Verification handled by :verify_on_exit!
     end
@@ -113,8 +120,11 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       expect_clipboard_paste(@clipboard_mock, {:error, error_reason})
 
       # Call the plugin's command handler with the mock-injected state
-      assert {:error, {:clipboard_read_failed, ^error_reason}, ^initial_state} =
+      assert match?(
+               {:error, {:clipboard_read_failed, ^error_reason},
+                ^initial_state},
                ClipboardPlugin.handle_command(command_name, args, initial_state)
+             )
 
       # Verification handled by :verify_on_exit!
     end
@@ -123,18 +133,21 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       # Use helper to get state with mock (although mock isn't called)
       initial_state = initial_state_with_mock()
       # Test calling write handler (arity 2) with wrong args
-      # Wrong args for write
-      assert {:error, :unhandled_clipboard_command, ^initial_state} =
+      assert match?(
+               {:error, :unhandled_clipboard_command, ^initial_state},
                ClipboardPlugin.handle_clipboard_command([], initial_state)
+             )
 
       # Test calling read handler (arity 1) with wrong args (impossible? it takes only state)
       # This test case might be invalid now.
       # Let's just test calling the write handler with wrong arity again
-      assert {:error, :unhandled_clipboard_command, ^initial_state} =
+      assert match?(
+               {:error, :unhandled_clipboard_command, ^initial_state},
                ClipboardPlugin.handle_clipboard_command(
                  ["unexpected"],
                  initial_state
                )
+             )
     end
   end
 

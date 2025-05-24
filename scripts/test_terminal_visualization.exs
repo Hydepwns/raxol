@@ -97,7 +97,7 @@ defmodule TerminalVisualizationTest do
 
     # Save the test layout to file
     IO.puts("Saving test dashboard layout...")
-    case Raxol.Components.Dashboard.Dashboard.save_layout(widgets) do
+    case Raxol.UI.Components.Dashboard.Dashboard.save_layout(widgets) do
       :ok -> IO.puts("Dashboard layout saved successfully")
       {:error, reason} -> IO.puts("Failed to save dashboard layout: #{inspect(reason)}")
     end

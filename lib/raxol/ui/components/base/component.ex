@@ -113,8 +113,6 @@ defmodule Raxol.UI.Components.Base.Component do
     quote do
       @behaviour Raxol.UI.Components.Base.Component
 
-      alias Raxol.Core.Events.Event
-
       # Default implementations
       def mount(state), do: {state, []}
       def unmount(state), do: state

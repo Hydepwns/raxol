@@ -8,8 +8,6 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
 
   # For sixel_state type
   alias Raxol.Terminal.ANSI.SixelGraphics
-  # Needed?
-  alias Raxol.Terminal.ANSI.SixelPalette
 
   @doc """
   Renders the image stored in the pixel_buffer as a Sixel data stream.
@@ -57,8 +55,8 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
         used_colors
         |> MapSet.to_list()
         |> Enum.map(fn color_index ->
-          case Map.get(palette, color_index) do
-            {r, g, b} ->
+          case get_palette_color(palette, color_index) do
+            {:ok, {r, g, b}} ->
               # Convert RGB 0-255 to Sixel 0-100 scale
               sixel_r = round(r * 100 / 255)
               sixel_g = round(g * 100 / 255)
@@ -69,12 +67,8 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
                 Integer.to_string(sixel_g)::binary, ";",
                 Integer.to_string(sixel_b)::binary>>
 
-            nil ->
-              # Color not found in palette, skip definition (or use default?)
-              Logger.warning(
-                "Sixel Render: Color index #{color_index} not found in palette."
-              )
-
+            {:error, _} ->
+              Logger.warning("Sixel Render: Color index #{color_index} not found in palette.", [])
               ""
           end
         end)
@@ -105,8 +99,7 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
   defp generate_pixel_data(pixel_buffer, width, height, _used_colors) do
     # Assume SixelPalette.rgb_to_color_index/2 exists and returns index or nil
     # Need to pass the palette state from the parsing stage!
-    # Placeholder: Assume `palette` variable is available
-    # Added placeholder palette, prefixed unused
+    # Placeholder: Assume `_palette` variable is available
     _palette = %{}
 
     # Sixel data is built column by column, band by band (6 rows high).
@@ -273,4 +266,13 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
 
     IO.iodata_to_binary(List.flatten(final_data))
   end
+
+  # Helper for safe palette access
+  defp get_palette_color(palette, index) when is_integer(index) and index >= 0 and index <= 255 do
+    case Map.get(palette, index) do
+      nil -> {:error, :invalid_color_index}
+      color -> {:ok, color}
+    end
+  end
+  defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
 end

@@ -1,9 +1,7 @@
 defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
   use ExUnit.Case, async: true
   alias Raxol.Core.Runtime.Plugins.DependencyManager
-  alias Raxol.Plugins.Manager.Core, as: PluginManager
 
-  # Test plugins with dependencies
   defmodule TestPluginA do
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
@@ -59,22 +57,17 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
   describe "plugin manager integration" do
     test "loads plugins in correct dependency order" do
       plugins = [TestPluginA, TestPluginB, TestPluginC, TestPluginD]
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:ok, updated_manager} =
-               PluginManager.load_plugins(manager, plugins)
+               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
 
-      # Verify plugins are loaded in correct order
       loaded_plugins = updated_manager.loaded_plugins
       load_order = Map.keys(loaded_plugins)
 
-      # B should be loaded first (no dependencies)
       assert Enum.at(load_order, 0) == :plugin_b
-      # A should be loaded second (depends on B)
       assert Enum.at(load_order, 1) == :plugin_a
-      # C should be loaded third (depends on A and B)
       assert Enum.at(load_order, 2) == :plugin_c
-      # D should be loaded last (depends on C)
       assert Enum.at(load_order, 3) == :plugin_d
     end
 
@@ -106,14 +99,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       end
 
       plugins = [TestPluginE, TestPluginF]
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:ok, updated_manager} =
-               PluginManager.load_plugins(manager, plugins)
+               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
 
       loaded_plugins = updated_manager.loaded_plugins
 
-      # Verify plugins are loaded and versions are correct
       assert loaded_plugins[:plugin_f].version == "1.5.0"
       assert loaded_plugins[:plugin_e].version == "2.0.0"
     end
@@ -146,9 +138,11 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       end
 
       plugins = [TestPluginG, TestPluginH]
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
-      assert {:error, reason} = PluginManager.load_plugins(manager, plugins)
+      assert {:error, reason} =
+               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
+
       assert String.contains?(reason, "circular dependency")
     end
 
@@ -183,15 +177,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       end
 
       plugins = [TestPluginI, TestPluginK]
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
-      # Should succeed even though plugin_j is missing (it's optional)
       assert {:ok, updated_manager} =
-               PluginManager.load_plugins(manager, plugins)
+               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
 
       loaded_plugins = updated_manager.loaded_plugins
 
-      # Verify plugins are loaded
       assert loaded_plugins[:plugin_k]
       assert loaded_plugins[:plugin_i]
       refute loaded_plugins[:plugin_j]
@@ -199,25 +191,27 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
     test "handles plugin unloading and reloading" do
       plugins = [TestPluginA, TestPluginB]
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
-      # Load plugins
       assert {:ok, manager_after_load} =
-               PluginManager.load_plugins(manager, plugins)
+               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
 
       assert Map.has_key?(manager_after_load.loaded_plugins, :plugin_a)
       assert Map.has_key?(manager_after_load.loaded_plugins, :plugin_b)
 
-      # Unload plugin A
       assert {:ok, manager_after_unload} =
-               PluginManager.unload_plugin(manager_after_load, "plugin_a")
+               Raxol.Plugins.Manager.Core.unload_plugin(
+                 manager_after_load,
+                 "plugin_a"
+               )
 
       refute Map.has_key?(manager_after_unload.loaded_plugins, :plugin_a)
       assert Map.has_key?(manager_after_unload.loaded_plugins, :plugin_b)
 
-      # Reload plugin A
       assert {:ok, manager_after_reload} =
-               PluginManager.load_plugins(manager_after_unload, [TestPluginA])
+               Raxol.Plugins.Manager.Core.load_plugins(manager_after_unload, [
+                 TestPluginA
+               ])
 
       assert Map.has_key?(manager_after_reload.loaded_plugins, :plugin_a)
       assert Map.has_key?(manager_after_reload.loaded_plugins, :plugin_b)
@@ -300,11 +294,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
     test "lifecycle events are called in correct order" do
       plugins = [LifecycleTestPluginA, LifecycleTestPluginB]
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
-      # Load plugins
       assert {:ok, updated_manager} =
-               PluginManager.load_plugins(manager, plugins)
+               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
 
       # Verify initialization order (B should initialize before A)
       assert Process.get(:lifecycle_plugin_b_init)
@@ -316,13 +309,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
       # Unload plugins
       assert {:ok, _} =
-               PluginManager.unload_plugin(
+               Raxol.Plugins.Manager.Core.unload_plugin(
                  updated_manager,
                  "lifecycle_plugin_a"
                )
 
       assert {:ok, _} =
-               PluginManager.unload_plugin(
+               Raxol.Plugins.Manager.Core.unload_plugin(
                  updated_manager,
                  "lifecycle_plugin_b"
                )
@@ -361,11 +354,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         end
       end
 
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       # Test init error
       assert {:error, reason} =
-               PluginManager.load_plugins(manager, [ErrorTestPlugin])
+               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+                 ErrorTestPlugin
+               ])
 
       assert String.contains?(reason, "Init failed")
 
@@ -399,7 +394,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       end
 
       assert {:error, reason} =
-               PluginManager.load_plugins(manager, [ErrorTestPlugin])
+               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+                 ErrorTestPlugin
+               ])
 
       assert String.contains?(reason, "Start failed")
     end
@@ -435,10 +432,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         end
       end
 
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:ok, updated_manager} =
-               PluginManager.load_plugins(manager, [StateTestPlugin])
+               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+                 StateTestPlugin
+               ])
 
       # Verify state is maintained through lifecycle
       plugin_state = updated_manager.loaded_plugins[:state_test_plugin]
@@ -447,7 +446,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
       # Unload and verify final state
       assert {:ok, _} =
-               PluginManager.unload_plugin(updated_manager, "state_test_plugin")
+               Raxol.Plugins.Manager.Core.unload_plugin(
+                 updated_manager,
+                 "state_test_plugin"
+               )
 
       final_state = Process.get(:final_state)
       assert final_state.init_state == "initialized"
@@ -503,11 +505,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         end
       end
 
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       # Test with default config
       assert {:ok, updated_manager} =
-               PluginManager.load_plugins(manager, [ConfigTestPlugin])
+               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+                 ConfigTestPlugin
+               ])
 
       plugin_config = updated_manager.loaded_plugins[:config_test_plugin]
       assert plugin_config.setting1 == "default1"
@@ -519,7 +523,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       custom_config = %{setting1: "custom1", setting3: "new"}
 
       assert {:ok, updated_manager2} =
-               PluginManager.load_plugins(manager, [
+               Raxol.Plugins.Manager.Core.load_plugins(manager, [
                  {ConfigTestPlugin, custom_config}
                ])
 
@@ -535,7 +539,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
       # Verify final state after unload
       assert {:ok, _} =
-               PluginManager.unload_plugin(
+               Raxol.Plugins.Manager.Core.unload_plugin(
                  updated_manager2,
                  "config_test_plugin"
                )
@@ -613,15 +617,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         end
       end
 
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       # Test concurrent loading
       tasks = [
         Task.async(fn ->
-          PluginManager.load_plugins(manager, [ConcurrentTestPluginA])
+          Raxol.Plugins.Manager.Core.load_plugins(manager, [
+            ConcurrentTestPluginA
+          ])
         end),
         Task.async(fn ->
-          PluginManager.load_plugins(manager, [ConcurrentTestPluginB])
+          Raxol.Plugins.Manager.Core.load_plugins(manager, [
+            ConcurrentTestPluginB
+          ])
         end)
       ]
 
@@ -641,10 +649,16 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       # Test concurrent unloading
       tasks = [
         Task.async(fn ->
-          PluginManager.unload_plugin(manager, "concurrent_plugin_a")
+          Raxol.Plugins.Manager.Core.unload_plugin(
+            manager,
+            "concurrent_plugin_a"
+          )
         end),
         Task.async(fn ->
-          PluginManager.unload_plugin(manager, "concurrent_plugin_b")
+          Raxol.Plugins.Manager.Core.unload_plugin(
+            manager,
+            "concurrent_plugin_b"
+          )
         end)
       ]
 
@@ -660,17 +674,24 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       assert Process.get(:concurrent_plugin_b_stop)
 
       # Test mixed concurrent operations
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:ok, manager} =
-               PluginManager.load_plugins(manager, [ConcurrentTestPluginA])
+               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+                 ConcurrentTestPluginA
+               ])
 
       tasks = [
         Task.async(fn ->
-          PluginManager.load_plugins(manager, [ConcurrentTestPluginB])
+          Raxol.Plugins.Manager.Core.load_plugins(manager, [
+            ConcurrentTestPluginB
+          ])
         end),
         Task.async(fn ->
-          PluginManager.unload_plugin(manager, "concurrent_plugin_a")
+          Raxol.Plugins.Manager.Core.unload_plugin(
+            manager,
+            "concurrent_plugin_a"
+          )
         end)
       ]
 
@@ -758,11 +779,11 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         end
       end
 
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       # Load plugins
       assert {:ok, updated_manager} =
-               PluginManager.load_plugins(manager, [
+               Raxol.Plugins.Manager.Core.load_plugins(manager, [
                  CommunicatingPluginA,
                  CommunicatingPluginB
                ])
@@ -786,13 +807,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
       # Unload plugins
       assert {:ok, _} =
-               PluginManager.unload_plugin(
+               Raxol.Plugins.Manager.Core.unload_plugin(
                  updated_manager,
                  "communicating_plugin_a"
                )
 
       assert {:ok, _} =
-               PluginManager.unload_plugin(
+               Raxol.Plugins.Manager.Core.unload_plugin(
                  updated_manager,
                  "communicating_plugin_b"
                )
@@ -880,10 +901,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       end
 
       # Test partial initialization failure
-      {:ok, manager} = PluginManager.new()
+      {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:error, reason} =
-               PluginManager.load_plugins(manager, [
+               Raxol.Plugins.Manager.Core.load_plugins(manager, [
                  RecoveryTestPluginA,
                  RecoveryTestPluginB
                ])
@@ -895,7 +916,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
       # Test recovery after initialization failure
       assert {:ok, updated_manager} =
-               PluginManager.load_plugins(manager, [
+               Raxol.Plugins.Manager.Core.load_plugins(manager, [
                  RecoveryTestPluginA,
                  RecoveryTestPluginB
                ])
@@ -914,10 +935,16 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
       # Test graceful degradation during unload
       assert {:ok, _} =
-               PluginManager.unload_plugin(updated_manager, "recovery_plugin_a")
+               Raxol.Plugins.Manager.Core.unload_plugin(
+                 updated_manager,
+                 "recovery_plugin_a"
+               )
 
       assert {:ok, _} =
-               PluginManager.unload_plugin(updated_manager, "recovery_plugin_b")
+               Raxol.Plugins.Manager.Core.unload_plugin(
+                 updated_manager,
+                 "recovery_plugin_b"
+               )
     end
   end
 end

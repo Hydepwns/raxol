@@ -18,6 +18,7 @@ defmodule Raxol.Cloud.Monitoring.Health do
   end
 
   def check(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     health_state = get_health_state()
 
     components_to_check =

@@ -1,0 +1,358 @@
+defmodule Raxol.Terminal.Commands.DCSHandlersTest do
+  use ExUnit.Case, async: true
+  import ExUnit.CaptureLog
+
+  alias Raxol.Terminal.Commands.DCSHandlers
+  alias Raxol.Terminal.Emulator
+  # For new_emulator
+  alias Raxol.Terminal.ANSI.TextFormatting
+  # For new_emulator
+  alias Raxol.Terminal.ScreenBuffer
+  # For new_emulator
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  # For Sixel tests
+  alias Raxol.Terminal.ANSI.SixelGraphics
+  # For Sixel tests to get cell
+  alias Raxol.Terminal.Buffer.Operations, as: BufferOps
+  # For Sixel tests to check cell content
+  alias Raxol.Terminal.Cell
+
+  # Helper to create a default emulator for tests
+  defp new_emulator(opts \\ []) do
+    width = Keyword.get(opts, :width, 80)
+    height = Keyword.get(opts, :height, 24)
+    # Adjust if name changed
+    scroll_region = Keyword.get(opts, :scroll_region, nil)
+    cursor_style = Keyword.get(opts, :cursor_style, :blinking_block)
+    output_buffer = Keyword.get(opts, :output_buffer, "")
+    sixel_state = Keyword.get(opts, :sixel_state, nil)
+    cursor_pos = Keyword.get(opts, :cursor_position, {0, 0})
+
+    # Create more complete screen buffers
+    main_buffer = ScreenBuffer.new(width, height, 1000)
+    alternate_buffer = ScreenBuffer.new(width, height, 0)
+
+    %Emulator{
+      width: width,
+      height: height,
+      scroll_region: scroll_region,
+      cursor_style: cursor_style,
+      output_buffer: output_buffer,
+      style: TextFormatting.new(),
+      # Sixel uses position
+      cursor: %CursorManager{
+        position: cursor_pos,
+        style: cursor_style,
+        state: :visible
+      },
+      main_screen_buffer: main_buffer,
+      alternate_screen_buffer: alternate_buffer,
+      active_buffer_type: :main,
+      # Store initial sixel state
+      sixel_state: sixel_state
+      # Ensure all fields accessed by Emulator.get_active_buffer/update_active_buffer are present
+    }
+  end
+
+  describe "handle_dcs/5 - DECRQSS (Request Status String)" do
+    test "responds to DECRQSS SGR query (\"m\")" do
+      emulator = new_emulator()
+      params = []
+      intermediates = "!"
+      final_byte = ?|
+      data_string = "m"
+
+      updated_emulator =
+        DCSHandlers.handle_dcs(
+          emulator,
+          params,
+          intermediates,
+          final_byte,
+          data_string
+        )
+
+      # Expected: DCS 1 ! | 0 m ST  (SGR is simplified to "0")
+      assert updated_emulator.output_buffer == "\eP1!|0m\e\\"
+    end
+
+    test "responds to DECRQSS scroll region query (\"r\") - full screen" do
+      emulator = new_emulator(height: 24, scroll_region: nil)
+      params = []
+      intermediates = "!"
+      final_byte = ?|
+      data_string = "r"
+
+      updated_emulator =
+        DCSHandlers.handle_dcs(
+          emulator,
+          params,
+          intermediates,
+          final_byte,
+          data_string
+        )
+
+      # Expected: DCS 1 ! | 1;24 r ST
+      assert updated_emulator.output_buffer == "\eP1!|1;24r\e\\"
+    end
+
+    test "responds to DECRQSS scroll region query (\"r\") - custom region" do
+      # scroll_region is 0-indexed {top, bottom}
+      # lines 5 to 20
+      emulator = new_emulator(height: 24, scroll_region: {4, 19})
+      params = []
+      intermediates = "!"
+      final_byte = ?|
+      data_string = "r"
+
+      updated_emulator =
+        DCSHandlers.handle_dcs(
+          emulator,
+          params,
+          intermediates,
+          final_byte,
+          data_string
+        )
+
+      # Expected: DCS 1 ! | 5;20 r ST (1-indexed)
+      assert updated_emulator.output_buffer == "\eP1!|5;20r\e\\"
+    end
+
+    test "responds to DECRQSS cursor style query (\" q\") - blinking block" do
+      emulator = new_emulator(cursor_style: :blinking_block)
+      params = []
+      intermediates = "!"
+      final_byte = ?|
+      # Note leading space
+      data_string = " q"
+
+      updated_emulator =
+        DCSHandlers.handle_dcs(
+          emulator,
+          params,
+          intermediates,
+          final_byte,
+          data_string
+        )
+
+      # Expected: DCS 1 ! | 1 q ST (blinking_block maps to 1)
+      assert updated_emulator.output_buffer == "\eP1!|1 q\e\\"
+    end
+
+    test "responds to DECRQSS cursor style query (\" q\") - steady underline" do
+      emulator = new_emulator(cursor_style: :steady_underline)
+      params = []
+      intermediates = "!"
+      final_byte = ?|
+      data_string = " q"
+
+      updated_emulator =
+        DCSHandlers.handle_dcs(
+          emulator,
+          params,
+          intermediates,
+          final_byte,
+          data_string
+        )
+
+      # Expected: DCS 1 ! | 4 q ST (steady_underline maps to 4)
+      assert updated_emulator.output_buffer == "\eP1!|4 q\e\\"
+    end
+
+    test "handles unknown DECRQSS request type gracefully" do
+      emulator = new_emulator()
+      params = []
+      intermediates = "!"
+      final_byte = ?|
+      data_string = "unknown_request"
+
+      log =
+        capture_log(fn ->
+          updated_emulator =
+            case DCSHandlers.handle_dcs(
+                   emulator,
+                   params,
+                   intermediates,
+                   final_byte,
+                   data_string
+                 ) do
+              {:ok, emu} -> emu
+              {:error, _reason, emu} -> emu
+              %Emulator{} = emu -> emu
+            end
+
+          # Ensure emulator state is unchanged for output_buffer
+          assert updated_emulator.output_buffer == emulator.output_buffer
+          # Check if the whole emulator is unchanged
+          assert updated_emulator == emulator
+        end)
+
+      assert log =~ "Unhandled DECRQSS request type: \"unknown_request\""
+    end
+  end
+
+  describe "handle_dcs/5 - Sixel Graphics" do
+    test "processes a simple Sixel sequence and updates screen buffer and sixel_state" do
+      # Initial emulator state
+      # Test with a non-origin cursor
+      initial_cursor_pos = {5, 5}
+
+      emulator =
+        new_emulator(cursor_position: initial_cursor_pos, sixel_state: nil)
+
+      # Sixel data string: "#1?" means color 1, sixel '?' (000001 - top-left most pixel bit)
+      # This should place one Sixel pixel using color index 1.
+      # The SixelGraphics module defines how this string translates to pixel_buffer and palette.
+      # Let's assume SixelGraphics.process_sequence with "#1?" results in:
+      # - pixel_buffer: %{{0,0} => 1} (color index 1 at sixel coord 0,0)
+      # - palette: %{1 => {0, 0, 255}} (e.g., blue for color 1 for predictability)
+      # - and other fields like sixel_cursor_pos, etc. are updated.
+      # For the purpose of testing DCSHandlers, we rely on SixelGraphics doing its job.
+      # The blit_sixel_to_buffer will then take this and update the screen.
+
+      # Color 1, sixel '?'
+      sixel_data_string = "#1?"
+
+      # Sixel params are usually parsed by SixelGraphics from the data string itself or are defaults
+      params = []
+      # No intermediates specified for common Sixel like DCS q data ST
+      intermediates = ""
+      final_byte = ?q
+
+      # Mock SixelGraphics.process_sequence to return a predictable state
+      # This makes the test more robust to changes in SixelGraphics internal parsing
+      # and focuses on DCSHandlers' integration logic.
+      # However, direct mocking isn't straightforward without a mocking library here.
+      # So, we'll test the integration, assuming SixelGraphics produces expected output for simple input.
+      # If SixelGraphics.new() initializes palette with color 1 as blue {0,0,255}:
+      # And if SixelGraphics.process_sequence("#1?") creates pixel_buffer %{{0,0} => 1}
+
+      updated_emulator =
+        DCSHandlers.handle_dcs(
+          emulator,
+          params,
+          intermediates,
+          final_byte,
+          sixel_data_string
+        )
+
+      # 1. Check if sixel_state on emulator is updated
+      refute is_nil(updated_emulator.sixel_state),
+             "Emulator sixel_state should be initialized/updated"
+
+      # A more specific check would be on updated_emulator.sixel_state.pixel_buffer or .palette
+      # but this depends heavily on Raxol.Terminal.ANSI.SixelGraphics.process_sequence behavior for "#1?"
+      # For now, we assume it's non-nil and has been processed.
+      # Let's assume color 1 in the default palette is {0,0,255} (blue) for this test.
+      # Hypothetical: SixelGraphics default palette
+      expected_rgb_color_for_index_1 = {0, 0, 255}
+
+      # 2. Check screen buffer for the rendered Sixel
+      # blit_sixel_to_buffer maps Sixel pixels (0,0) to cell (cursor_x + 0, cursor_y + 0)
+      # It uses cell_width=2, cell_height=4 by default.
+      # A single sixel '?' (000001) means the top-most pixel line in the 6-pixel Sixel row is active.
+      # The blitter averages or takes dominant color. For a single pixel, it should be its color.
+      {cx, cy} = initial_cursor_pos
+      active_buffer = Emulator.get_active_buffer(updated_emulator)
+      cell_at_cursor = BufferOps.get_cell(active_buffer, cx, cy)
+
+      refute is_nil(cell_at_cursor),
+             "Cell at cursor should exist after Sixel blit"
+
+      # Cell content is a space, style contains background color
+      assert cell_at_cursor.char == " ", "Sixel cell char should be a space"
+
+      # Check background color of the cell
+      # This requires knowing what color index 1 maps to in the Sixel palette
+      # and how blit_sixel_to_buffer determines the cell color.
+      # If palette has {1 => {0,0,255}}, style should be background {:rgb, 0,0,255}
+      expected_cell_style =
+        TextFormatting.new() |> TextFormatting.set_background({:rgb, 0, 0, 255})
+
+      # The actual style might have other defaults if TextFormatting.new() is complex
+      # So, we check only the background part that Sixel would set.
+      assert cell_at_cursor.style.background == {:rgb, 0, 0, 255},
+             "Cell background should match Sixel color. Expected blue, got #{inspect(cell_at_cursor.style.background)}"
+    end
+
+    test "initializes sixel_state if nil on emulator" do
+      emulator = new_emulator(sixel_state: nil)
+      # Empty data, just to trigger the handler
+      sixel_data_string = ""
+
+      updated_emulator =
+        DCSHandlers.handle_dcs(emulator, [], "", ?q, sixel_data_string)
+
+      refute is_nil(updated_emulator.sixel_state)
+      assert %Raxol.Terminal.ANSI.SixelGraphics{} = updated_emulator.sixel_state
+    end
+
+    test "uses existing sixel_state if present on emulator" do
+      initial_sixel_state = %Raxol.Terminal.ANSI.SixelGraphics{
+        palette: %{99 => {1, 2, 3}},
+        sixel_cursor_pos: {10, 10}
+      }
+
+      emulator = new_emulator(sixel_state: initial_sixel_state)
+      # Empty data
+      sixel_data_string = ""
+
+      # We expect SixelGraphics.process_sequence to be called with initial_sixel_state.
+      # The result will be a new state, but it should have started from initial_sixel_state.
+      # This is hard to verify without deeper mocking of SixelGraphics.process_sequence.
+      # For now, check that sixel_state is still a SixelGraphics struct and not just a fresh Map.get default.
+      updated_emulator =
+        DCSHandlers.handle_dcs(emulator, [], "", ?q, sixel_data_string)
+
+      refute is_nil(updated_emulator.sixel_state)
+      assert %Raxol.Terminal.ANSI.SixelGraphics{} = updated_emulator.sixel_state
+
+      # A simple check: if SixelGraphics.new() has an empty palette, and process_sequence with empty data doesn't change it,
+      # then the palette should remain as our initial one.
+      # This is an assumption about SixelGraphics.process_sequence with empty data.
+      # A better test would involve SixelGraphics returning a known modified state.
+      assert updated_emulator.sixel_state.palette == %{99 => {1, 2, 3}}
+    end
+  end
+
+  describe "handle_dcs/5 - DECDLD (Downloadable Character Set)" do
+    test "logs warning and does not crash for DECDLD sequence, returns emulator" do
+      # Use the new helper
+      emulator = new_emulator()
+      params = [1, 2, 3]
+      intermediates = "|"
+      # DECDLD expects codepoint
+      final_byte = ?p
+      data_string = "some-data"
+
+      log =
+        capture_log(fn ->
+          updated_emulator =
+            case DCSHandlers.handle_dcs(
+                   emulator,
+                   params,
+                   intermediates,
+                   final_byte,
+                   data_string
+                 ) do
+              {:ok, emu} -> emu
+              {:error, _reason, emu} -> emu
+              %Emulator{} = emu -> emu
+            end
+
+          # Check if the returned value is an emulator struct and output buffer is unchanged
+          assert %Emulator{} = updated_emulator
+          assert updated_emulator.output_buffer == emulator.output_buffer
+
+          # More robust check: ensure only expected logging happened, not other side effects
+          # original emulator but with potentially different log state if that were tracked
+          assert updated_emulator == %{
+                   emulator
+                   | output_buffer: emulator.output_buffer
+                 }
+        end)
+
+      assert log =~ "DECDLD"
+      assert log =~ "not yet implemented"
+    end
+  end
+end

@@ -14,12 +14,20 @@ defmodule Raxol.Terminal.Cursor.Manager do
             saved_style: nil,
             saved_state: nil,
             custom_shape: nil,
-            custom_dimensions: nil
+            custom_dimensions: nil,
+            shape: {1, 1},
+            blink_rate: 530,
+            history: [],
+            history_index: 0,
+            history_limit: 100
 
   @type position :: {non_neg_integer(), non_neg_integer()}
   @type style :: :block | :underline | :bar | :custom
   @type state :: :visible | :hidden | :blinking
-  @type cursor :: %__MODULE__{
+  @typedoc """
+  Cursor struct representing position, style, state, and saved values.
+  """
+  @type t :: %__MODULE__{
           position: position(),
           style: style(),
           state: state(),
@@ -27,14 +35,19 @@ defmodule Raxol.Terminal.Cursor.Manager do
           saved_style: style() | nil,
           saved_state: state() | nil,
           custom_shape: any() | nil,
-          custom_dimensions: any() | nil
+          custom_dimensions: any() | nil,
+          shape: {integer(), integer()},
+          blink_rate: integer(),
+          history: list(),
+          history_index: integer(),
+          history_limit: integer()
         }
 
   @doc """
   Creates a new cursor with default values.
   """
-  def new(_opts \\ []) do
-    %__MODULE__{}
+  def new(opts \\ []) do
+    struct(__MODULE__, opts)
   end
 
   @doc """
@@ -136,19 +149,30 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @doc """
-  Updates the cursor's blink state.
+  Updates the cursor's blink state and returns the updated cursor and visibility.
   """
   def update_blink(cursor) do
     case cursor.state do
       :blinking ->
-        case cursor.style do
-          :visible -> %{cursor | style: :hidden}
-          :hidden -> %{cursor | style: :visible}
-          _ -> cursor
-        end
+        visible = cursor.style != :hidden
+
+        new_cursor =
+          case cursor.style do
+            :visible -> %{cursor | style: :hidden}
+            :hidden -> %{cursor | style: :visible}
+            _ -> cursor
+          end
+
+        {new_cursor, !visible}
+
+      :visible ->
+        {cursor, true}
+
+      :hidden ->
+        {cursor, false}
 
       _ ->
-        cursor
+        {cursor, true}
     end
   end
 
@@ -254,7 +278,8 @@ defmodule Raxol.Terminal.Cursor.Manager do
       cursor
       | style: :custom,
         custom_shape: shape,
-        custom_dimensions: dimensions
+        custom_dimensions: dimensions,
+        shape: dimensions
     }
   end
 
@@ -266,14 +291,36 @@ defmodule Raxol.Terminal.Cursor.Manager do
   end
 
   @doc """
-  Adds the current cursor state to history (stub; not yet implemented).
+  Adds the current cursor state to history.
   """
-  def add_to_history(%__MODULE__{} = cursor), do: cursor
+  def add_to_history(%__MODULE__{} = cursor) do
+    history =
+      if length(cursor.history) >= cursor.history_limit do
+        [cursor | Enum.take(cursor.history, cursor.history_limit - 1)]
+      else
+        [cursor | cursor.history]
+      end
+
+    %{cursor | history: history, history_index: 0}
+  end
 
   @doc """
-  Restores the cursor state from history (stub; not yet implemented).
+  Restores the cursor state from history.
   """
-  def restore_from_history(%__MODULE__{} = cursor), do: cursor
+  def restore_from_history(%__MODULE__{} = cursor) do
+    case cursor.history do
+      [last | rest] ->
+        %{
+          last
+          | history: rest,
+            history_index: 0,
+            history_limit: cursor.history_limit
+        }
+
+      _ ->
+        cursor
+    end
+  end
 
   # Private helper functions
 

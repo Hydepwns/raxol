@@ -267,6 +267,14 @@ defmodule Raxol.Core.Events.Manager do
     :ok
   end
 
+  @doc """
+  Triggers an event with a type and payload (alias for dispatch/1).
+  This is provided for API compatibility; use dispatch/1 for generic events.
+  """
+  def trigger(event_type, payload) do
+    dispatch({event_type, payload})
+  end
+
   # Private functions
 
   defp extract_event_type(event) when is_atom(event), do: event

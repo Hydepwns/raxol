@@ -398,7 +398,8 @@ defmodule Raxol.Examples.ComponentShowcase do
   def update(message, state) do
     # NOTE: Implement message handling for this component if needed in the future.
     Logger.warning(
-      "Unhandled update message in ComponentShowcase: #{inspect(message)}"
+      "Unhandled update message in ComponentShowcase: #{inspect(message)}",
+      []
     )
 
     state

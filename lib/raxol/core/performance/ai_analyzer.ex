@@ -205,10 +205,10 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
     Overall Risk: #{risk.overall_risk}
 
     Area Risks:
-    #{Enum.map(risk.areas, fn {area, level} -> "  #{area}: #{level}" end) |> Enum.join("\n")}
+    #{Enum.map_join(risk.areas, "\n", fn {area, level} -> "  #{area}: #{level}" end)}
 
     Trends:
-    #{Enum.map(risk.trends, fn {area, trend} -> "  #{area}: #{trend}" end) |> Enum.join("\n")}
+    #{Enum.map_join(risk.trends, "\n", fn {area, trend} -> "  #{area}: #{trend}" end)}
     """
   end
 
@@ -218,25 +218,24 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
 
     <h3>Area Risks</h3>
     <ul>
-      #{Enum.map(risk.areas, fn {area, level} -> "<li>#{area}: <span class=\"#{level}\">#{level}</span></li>" end) |> Enum.join("\n")}
+      #{Enum.map_join(risk.areas, "\n", fn {area, level} -> "<li>#{area}: <span class=\"#{level}\">#{level}</span></li>" end)}
     </ul>
 
     <h3>Trends</h3>
     <ul>
-      #{Enum.map(risk.trends, fn {area, trend} -> "<li>#{area}: #{trend}</li>" end) |> Enum.join("\n")}
+      #{Enum.map_join(risk.trends, "\n", fn {area, trend} -> "<li>#{area}: #{trend}</li>" end)}
     </ul>
     """
   end
 
   defp format_impact(impact) do
-    Enum.map(impact, fn {area, value} -> "#{area}: #{value}" end)
-    |> Enum.join("\n")
+    Enum.map_join(impact, "\n", fn {area, value} -> "#{area}: #{value}" end)
   end
 
   defp format_impact_html(impact) do
     """
     <ul>
-      #{Enum.map(impact, fn {area, value} -> "<li><strong>#{area}:</strong> #{value}</li>" end) |> Enum.join("\n")}
+      #{Enum.map_join(impact, "\n", fn {area, value} -> "<li><strong>#{area}:</strong> #{value}</li>" end)}
     </ul>
     """
   end

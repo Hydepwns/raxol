@@ -24,6 +24,7 @@ defmodule Raxol.Cloud.Core do
   * `:providers` - List of cloud providers to enable
   """
   def init(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     # Extract options
     edge_opts = Keyword.get(opts, :edge, [])
     monitoring_opts = Keyword.get(opts, :monitoring, [])
@@ -100,6 +101,7 @@ defmodule Raxol.Cloud.Core do
   * `:timeout` - Timeout in milliseconds
   """
   def execute(fun, opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     # Log execution
     operation_id = "op-#{:erlang.system_time(:microsecond)}"
 
@@ -146,6 +148,7 @@ defmodule Raxol.Cloud.Core do
   Records a metric with the given name and value.
   """
   def record_metric(name, value, opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Monitoring.record_metric(name, value, opts)
   end
 
@@ -153,6 +156,7 @@ defmodule Raxol.Cloud.Core do
   Records an error or exception.
   """
   def record_error(error, opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Monitoring.record_error(error, opts)
   end
 
@@ -160,6 +164,7 @@ defmodule Raxol.Cloud.Core do
   Runs a health check on the system.
   """
   def run_health_check(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Monitoring.run_health_check(opts)
   end
 
@@ -167,6 +172,7 @@ defmodule Raxol.Cloud.Core do
   Triggers an alert with the given type and data.
   """
   def trigger_alert(type, data, opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Monitoring.trigger_alert(type, data, opts)
   end
 
@@ -176,6 +182,7 @@ defmodule Raxol.Cloud.Core do
   Discovers services available in the current environment.
   """
   def discover_services(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Integrations.discover_services(opts)
   end
 
@@ -183,6 +190,7 @@ defmodule Raxol.Cloud.Core do
   Registers the current application as a service.
   """
   def register_service(opts) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Integrations.register_service(opts)
   end
 
@@ -190,6 +198,7 @@ defmodule Raxol.Cloud.Core do
   Deploys an application component.
   """
   def deploy(opts) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Integrations.deploy(opts)
   end
 
@@ -197,6 +206,7 @@ defmodule Raxol.Cloud.Core do
   Scales a service based on current metrics and conditions.
   """
   def scale(opts) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     Integrations.scale(opts)
   end
 

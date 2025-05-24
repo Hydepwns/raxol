@@ -6,7 +6,6 @@ defmodule Raxol.Terminal.Buffer.Writer do
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.CharacterHandling
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
@@ -14,7 +13,6 @@ defmodule Raxol.Terminal.Buffer.Writer do
   Handles wide characters by taking up two cells when necessary.
   Accepts an optional style to apply to the cell.
   """
-  # Suppress spurious exact_eq warning
   @dialyzer {:nowarn_function, write_char: 5}
   @spec write_char(
           ScreenBuffer.t(),
@@ -26,10 +24,20 @@ defmodule Raxol.Terminal.Buffer.Writer do
   def write_char(%ScreenBuffer{} = buffer, x, y, char, style \\ nil)
       when x >= 0 and y >= 0 do
     if y < buffer.height and x < buffer.width do
-      # Convert char binary to integer codepoint before calling get_char_width
       codepoint = hd(String.to_charlist(char))
-      width = CharacterHandling.get_char_width(codepoint)
-      cell_style = style || %{}
+      width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
+
+      cell_style =
+        case style do
+          nil ->
+            TextFormatting.new()
+
+          s when is_map(s) ->
+            Map.merge(TextFormatting.new(), s)
+
+          _ ->
+            TextFormatting.new()
+        end
 
       cells =
         List.update_at(buffer.cells, y, fn row ->
@@ -65,7 +73,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
           ScreenBuffer.t()
   def write_string(%ScreenBuffer{} = buffer, x, y, string)
       when x >= 0 and y >= 0 do
-    segments = CharacterHandling.process_bidi_text(string)
+    segments = Raxol.Terminal.CharacterHandling.process_bidi_text(string)
 
     Enum.reduce(segments, {buffer, x}, fn {_type, segment},
                                           {acc_buffer, acc_x} ->
@@ -92,7 +100,7 @@ defmodule Raxol.Terminal.Buffer.Writer do
                                                            {acc_buffer, acc_x} ->
       # Convert char binary to integer codepoint before calling get_char_width
       codepoint = hd(String.to_charlist(char))
-      width = CharacterHandling.get_char_width(codepoint)
+      width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
 
       if acc_x + width <= acc_buffer.width do
         # Call write_char from this module

@@ -47,11 +47,6 @@ defmodule Raxol.Terminal.Emulator.WritingBufferTest do
       # Use the correct Elixir escape sequence representation: \e
       {emulator_after, _output} = Emulator.process_input(emulator, "\e[2J")
       buffer_after = Emulator.get_active_buffer(emulator_after)
-
-      # --- DEBUG ---
-      # IO.inspect(Enum.at(buffer_after.cells, 0), label: "First Row After Clear") # Keep commented out for now
-      # --- END DEBUG ---
-
       # Verify the buffer cells contain spaces (cleared), ignore style
       all_spaces =
         Enum.all?(buffer_after.cells, fn row ->

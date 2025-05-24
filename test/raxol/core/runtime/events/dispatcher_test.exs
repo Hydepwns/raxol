@@ -22,7 +22,12 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
   # Simple Mock GenServer for PluginManager
   defmodule Mock.PluginManager do
     use GenServer
-    def start_link(_opts), do: GenServer.start_link(__MODULE__, nil)
+
+    def start_link(_opts) do
+      # Accept :runtime_pid for compatibility, ignore it
+      GenServer.start_link(__MODULE__, nil)
+    end
+
     def init(_), do: {:ok, nil}
     # Allow call for filter_event
     def handle_call({:filter_event, event}, _from, state),

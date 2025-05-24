@@ -112,7 +112,7 @@ defmodule Raxol.UI.Layout.PanelsTest do
       panel = %{
         type: :panel,
         attrs: %{title: "Panel with Child"},
-        children: %{type: :label, attrs: %{content: "Child Content"}}
+        children: %{type: :label, attrs: [content: "Child Content"]}
       }
 
       space = %{x: 0, y: 0, width: 80, height: 24}
@@ -143,8 +143,8 @@ defmodule Raxol.UI.Layout.PanelsTest do
         type: :panel,
         attrs: %{title: "Panel with Children"},
         children: [
-          %{type: :label, attrs: %{content: "First Child"}},
-          %{type: :label, attrs: %{content: "Second Child"}}
+          %{type: :label, attrs: [content: "First Child"]},
+          %{type: :label, attrs: [content: "Second Child"]}
         ]
       }
 

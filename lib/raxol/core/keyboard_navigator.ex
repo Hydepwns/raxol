@@ -151,10 +151,10 @@ defmodule Raxol.Core.KeyboardNavigator do
 
     case event do
       {:key, key, modifiers} ->
-        next_key = Access.get(config, :next_key)
-        prev_key = Access.get(config, :previous_key)
-        activate_keys = Access.get(config, :activate_keys)
-        dismiss_key = Access.get(config, :dismiss_key)
+        next_key = Keyword.get(config, :next_key)
+        prev_key = Keyword.get(config, :previous_key)
+        activate_keys = Keyword.get(config, :activate_keys)
+        dismiss_key = Keyword.get(config, :dismiss_key)
 
         cond do
           key == next_key and modifiers == [] ->

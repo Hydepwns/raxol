@@ -73,8 +73,8 @@ defmodule Raxol.Core.Runtime.Supervisor do
     plugin_manager_spec = %{
       # Use potentially overridden module
       id: plugin_manager_mod,
-      # Assuming start_link([])
-      start: {plugin_manager_mod, :start_link, [[]]},
+      # Pass supervisor's PID as :runtime_pid
+      start: {plugin_manager_mod, :start_link, [[runtime_pid: self()]]},
       type: :worker,
       restart: :permanent,
       shutdown: 5000

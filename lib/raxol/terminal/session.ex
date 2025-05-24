@@ -134,7 +134,11 @@ defmodule Raxol.Terminal.Session do
   @impl true
   def init({id, width, height, title, theme}) do
     # Create emulator with explicit dimensions
-    emulator = Emulator.new(width, height)
+    scrollback_limit =
+      Application.get_env(:raxol, :terminal, [])
+      |> Keyword.get(:scrollback_lines, 1000)
+
+    emulator = Emulator.new(width, height, scrollback: scrollback_limit)
 
     # Create a default screen buffer without relying on get_active_buffer
     # Default to main buffer - no need to pattern match since we know new emulators default to :main
@@ -262,7 +266,11 @@ defmodule Raxol.Terminal.Session do
     theme = Map.get(config, :theme, state.theme)
 
     # Create emulator with explicit dimensions
-    emulator = Emulator.new(width, height)
+    scrollback_limit =
+      Application.get_env(:raxol, :terminal, [])
+      |> Keyword.get(:scrollback_lines, 1000)
+
+    emulator = Emulator.new(width, height, scrollback: scrollback_limit)
 
     # Access the screen buffer directly without pattern matching that can't succeed
     # Default to main buffer - no need to pattern match since we know new emulators default to :main

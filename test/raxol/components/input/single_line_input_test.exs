@@ -1,7 +1,7 @@
-defmodule Raxol.Components.Input.SingleLineInputTest do
+defmodule Raxol.UI.Components.Input.SingleLineInputTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Components.Input.SingleLineInput
+  alias Raxol.UI.Components.Input.SingleLineInput
   alias Raxol.Core.Events.Event
 
   describe "init/1" do

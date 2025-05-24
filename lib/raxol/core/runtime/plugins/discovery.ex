@@ -18,15 +18,47 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
   def initialize(state) do
     with {:ok, state} <- StateManager.initialize(state),
          {:ok, state} <- FileWatcher.setup_file_watching(state) do
-      {:ok, state}
+      # Merge plugin_dirs and plugins_dir into a list of dirs
+      plugin_dirs =
+        (state.plugin_dirs || []) ++
+          if state.plugins_dir, do: [state.plugins_dir], else: []
+
+      # Remove duplicates
+      plugin_dirs = Enum.uniq(plugin_dirs)
+      # Discover plugins in all directories
+      case Loader.discover_plugins(plugin_dirs) do
+        {:ok, _plugins} ->
+          {:ok,
+           %{
+             state
+             | initialized: true,
+               file_watching_enabled?: state.file_watching_enabled? || false,
+               command_registry_table:
+                 state.command_registry_table || :undefined
+           }}
+
+        {:error, reason} ->
+          {:error, reason}
+      end
     end
   end
 
   @doc """
-  Discovers plugins in the given directories.
+  Discovers plugins in the given state (all plugin_dirs and plugins_dir).
   """
-  def discover_plugins(dirs) do
-    Loader.discover_plugins(dirs)
+  def discover_plugins(state) do
+    plugin_dirs =
+      (state.plugin_dirs || []) ++
+        if state.plugins_dir, do: [state.plugins_dir], else: []
+
+    plugin_dirs = Enum.uniq(plugin_dirs)
+
+    Enum.reduce_while(plugin_dirs, {:ok, state}, fn dir, {:ok, acc_state} ->
+      case discover_plugins_in_dir(dir, acc_state) do
+        {:ok, new_state} -> {:cont, {:ok, new_state}}
+        {:error, reason} -> {:halt, {:error, reason}}
+      end
+    end)
   end
 
   @doc """
@@ -38,10 +70,12 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
   end
 
   @doc """
-  Lists all discovered plugins in load order.
+  Lists all discovered plugins in load order as {id, metadata}.
   """
   def list_plugins(state) do
-    {:ok, state.load_order}
+    Enum.map(state.load_order || [], fn id ->
+      {id, Map.get(state.metadata || %{}, id)}
+    end)
   end
 
   @doc """

@@ -160,7 +160,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
                     updated_states =
                       Map.put(state.plugin_states, plugin_id, new_plugin_state)
 
-                    # Return result to PluginManager
+                    # Return result to plugin manager
                     {:ok, updated_states}
 
                   {:ok, {:error, reason_tuple, new_plugin_state}} ->
@@ -172,7 +172,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
                     updated_states =
                       Map.put(state.plugin_states, plugin_id, new_plugin_state)
 
-                    # Return error to PluginManager
+                    # Return error to plugin manager
                     {:error, reason_tuple, updated_states}
 
                   {:ok, invalid_return} ->
@@ -180,7 +180,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
                       "Plugin #{inspect(plugin_module)} returned unexpected value from command handler: #{inspect(invalid_return)}. Expected {:ok, state, result} or {:error, reason, state}."
                     )
 
-                    # Return generic error to PluginManager
+                    # Return generic error to plugin manager
                     {:error, {:unexpected_plugin_return, invalid_return},
                      state.plugin_states}
 
@@ -196,6 +196,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
                       "Exception handling command '#{command_name_str}' in #{inspect(plugin_module)}: #{inspect(reason)}"
                     )
 
+                    # Return exception error to plugin manager
                     {:error, {:exception, reason}, state.plugin_states}
                 end
               rescue
@@ -205,7 +206,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
                     Stacktrace: #{inspect(__STACKTRACE__)}"
                   )
 
-                  # Return exception error to PluginManager
+                  # Return exception error to plugin manager
                   {:error, {:exception, error}, state.plugin_states}
               end
             else
@@ -213,7 +214,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
                 "Could not find state for plugin #{inspect(plugin_module)} handling command '#{command_name_str}'"
               )
 
-              # Return error to PluginManager
+              # Return error to plugin manager
               {:error, :missing_plugin_state, state.plugin_states}
             end
 

@@ -25,7 +25,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @doc """
   Creates a new parser state with default values.
   """
-  @spec new() :: State.t()
+  @spec new() :: map()
   def new do
     %State{
       state: :ground,
@@ -40,7 +40,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @doc """
   Gets the current parser state.
   """
-  @spec get_current_state(State.t()) :: State.t()
+  @spec get_current_state(map()) :: map()
   def get_current_state(state) do
     state
   end
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @doc """
   Sets the parser state to a new value.
   """
-  @spec set_state(State.t(), State.t()) :: State.t()
+  @spec set_state(map(), map()) :: map()
   def set_state(_current_state, new_state) do
     new_state
   end
@@ -57,9 +57,9 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   Processes input in the current parser state.
   Returns the updated emulator and parser state.
   """
-  @spec process_input(Emulator.t(), State.t(), binary()) ::
-          {:continue, Emulator.t(), State.t(), binary()}
-          | {:incomplete, Emulator.t(), State.t()}
+  @spec process_input(Emulator.t(), map(), binary()) ::
+          {:continue, Emulator.t(), map(), binary()}
+          | {:incomplete, Emulator.t(), map()}
           | {:handled, Emulator.t()}
   def process_input(emulator, state, input) do
     case state.state do
@@ -105,7 +105,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @doc """
   Transitions to a new parser state, clearing relevant buffers.
   """
-  @spec transition_to(State.t(), atom()) :: State.t()
+  @spec transition_to(map(), atom()) :: map()
   def transition_to(state, new_state) do
     case new_state do
       :ground ->
@@ -178,7 +178,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @doc """
   Appends a byte to the params buffer.
   """
-  @spec append_param(State.t(), binary()) :: State.t()
+  @spec append_param(map(), binary()) :: map()
   def append_param(state, byte) do
     %{state | params_buffer: state.params_buffer <> byte}
   end
@@ -186,7 +186,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @doc """
   Appends a byte to the intermediates buffer.
   """
-  @spec append_intermediate(State.t(), binary()) :: State.t()
+  @spec append_intermediate(map(), binary()) :: map()
   def append_intermediate(state, byte) do
     %{state | intermediates_buffer: state.intermediates_buffer <> byte}
   end
@@ -194,7 +194,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @doc """
   Appends a byte to the payload buffer.
   """
-  @spec append_payload(State.t(), binary()) :: State.t()
+  @spec append_payload(map(), binary()) :: map()
   def append_payload(state, byte) do
     %{state | payload_buffer: state.payload_buffer <> byte}
   end
@@ -202,7 +202,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @doc """
   Sets the final byte for the current sequence.
   """
-  @spec set_final_byte(State.t(), integer()) :: State.t()
+  @spec set_final_byte(map(), integer()) :: map()
   def set_final_byte(state, byte) do
     %{state | final_byte: byte}
   end
@@ -210,7 +210,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @doc """
   Sets the G-set being designated.
   """
-  @spec set_designating_gset(State.t(), non_neg_integer()) :: State.t()
+  @spec set_designating_gset(map(), non_neg_integer()) :: map()
   def set_designating_gset(state, gset) do
     %{state | designating_gset: gset}
   end
@@ -218,7 +218,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   @doc """
   Clears all buffers and resets the state to ground.
   """
-  @spec reset(State.t()) :: State.t()
+  @spec reset(map()) :: map()
   def reset(state) do
     %{
       state

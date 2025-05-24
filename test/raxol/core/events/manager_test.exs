@@ -52,7 +52,7 @@ defmodule Raxol.Core.Events.ManagerTest do
       handlers = EventManager.get_handlers()
       assert Map.has_key?(handlers, :test_event)
 
-      event_handlers = handlers[:test_event]
+      event_handlers = Map.get(handlers, :test_event)
       assert length(event_handlers) == 2
       assert Enum.member?(event_handlers, {__MODULE__, :dummy_handler})
       assert Enum.member?(event_handlers, {__MODULE__, :another_handler})
@@ -66,7 +66,7 @@ defmodule Raxol.Core.Events.ManagerTest do
       # Verify handler was registered only once
       handlers = EventManager.get_handlers()
       assert Map.has_key?(handlers, :test_event)
-      assert handlers[:test_event] == [{__MODULE__, :dummy_handler}]
+      assert Map.get(handlers, :test_event) == [{__MODULE__, :dummy_handler}]
     end
   end
 
@@ -99,7 +99,7 @@ defmodule Raxol.Core.Events.ManagerTest do
       # Verify only that handler was unregistered
       handlers = EventManager.get_handlers()
       assert Map.has_key?(handlers, :test_event)
-      assert handlers[:test_event] == [{__MODULE__, :another_handler}]
+      assert Map.get(handlers, :test_event) == [{__MODULE__, :another_handler}]
     end
 
     test "does nothing for unregistered handler" do

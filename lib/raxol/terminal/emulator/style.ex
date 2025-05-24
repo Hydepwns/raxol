@@ -6,28 +6,25 @@ defmodule Raxol.Terminal.Emulator.Style do
 
   require Logger
 
-  alias Raxol.Terminal.{
-    ANSI.TextFormatting,
-    Core
-  }
+  alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Emulator
 
   @doc """
   Sets the text style attributes.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_attributes(Core.t(), list()) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def set_attributes(%Core{} = emulator, attributes) when is_list(attributes) do
-    case TextFormatting.set_attributes(emulator.style, attributes) do
-      {:ok, updated_style} ->
-        {:ok, %{emulator | style: updated_style}}
+  @spec set_attributes(Emulator.t(), list()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
+  def set_attributes(%Emulator{} = emulator, attributes) when is_list(attributes) do
+    updated_style =
+      Enum.reduce(attributes, emulator.style, fn attr, style ->
+        TextFormatting.apply_attribute(style, attr)
+      end)
 
-      {:error, reason} ->
-        {:error, reason}
-    end
+    {:ok, %{emulator | style: updated_style}}
   end
 
-  def set_attributes(%Core{} = _emulator, invalid_attributes) do
+  def set_attributes(%Emulator{} = _emulator, invalid_attributes) do
     {:error, "Invalid attributes: #{inspect(invalid_attributes)}"}
   end
 
@@ -35,40 +32,30 @@ defmodule Raxol.Terminal.Emulator.Style do
   Sets the foreground color.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_foreground(Core.t(), TextFormatting.color()) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def set_foreground(%Core{} = emulator, color) do
-    case TextFormatting.set_foreground(emulator.style, color) do
-      {:ok, updated_style} ->
-        {:ok, %{emulator | style: updated_style}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+  @spec set_foreground(Emulator.t(), atom() | tuple()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
+  def set_foreground(%Emulator{} = emulator, color) do
+    updated_style = TextFormatting.set_foreground(emulator.style, color)
+    {:ok, %{emulator | style: updated_style}}
   end
 
   @doc """
   Sets the background color.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_background(Core.t(), TextFormatting.color()) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def set_background(%Core{} = emulator, color) do
-    case TextFormatting.set_background(emulator.style, color) do
-      {:ok, updated_style} ->
-        {:ok, %{emulator | style: updated_style}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+  @spec set_background(Emulator.t(), atom() | tuple()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
+  def set_background(%Emulator{} = emulator, color) do
+    updated_style = TextFormatting.set_background(emulator.style, color)
+    {:ok, %{emulator | style: updated_style}}
   end
 
   @doc """
   Resets all text attributes to default.
   Returns {:ok, updated_emulator}.
   """
-  @spec reset_attributes(Core.t()) :: {:ok, Core.t()}
-  def reset_attributes(%Core{} = emulator) do
+  @spec reset_attributes(Emulator.t()) :: {:ok, Emulator.t()}
+  def reset_attributes(%Emulator{} = emulator) do
     updated_style = TextFormatting.reset(emulator.style)
     {:ok, %{emulator | style: updated_style}}
   end
@@ -77,20 +64,26 @@ defmodule Raxol.Terminal.Emulator.Style do
   Sets the text intensity (bold, faint).
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_intensity(Core.t(), :normal | :bold | :faint) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def set_intensity(%Core{} = emulator, intensity)
-      when intensity in [:normal, :bold, :faint] do
-    case TextFormatting.set_intensity(emulator.style, intensity) do
-      {:ok, updated_style} ->
-        {:ok, %{emulator | style: updated_style}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+  @spec set_intensity(Emulator.t(), :normal | :bold | :faint) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
+  def set_intensity(%Emulator{} = emulator, :bold) do
+    updated_style = TextFormatting.apply_attribute(emulator.style, :bold)
+    {:ok, %{emulator | style: updated_style}}
   end
 
-  def set_intensity(%Core{} = _emulator, invalid_intensity) do
+  def set_intensity(%Emulator{} = emulator, :faint) do
+    updated_style = TextFormatting.apply_attribute(emulator.style, :faint)
+    {:ok, %{emulator | style: updated_style}}
+  end
+
+  def set_intensity(%Emulator{} = emulator, :normal) do
+    updated_style =
+      TextFormatting.apply_attribute(emulator.style, :normal_intensity)
+
+    {:ok, %{emulator | style: updated_style}}
+  end
+
+  def set_intensity(%Emulator{} = _emulator, invalid_intensity) do
     {:error, "Invalid intensity: #{inspect(invalid_intensity)}"}
   end
 
@@ -98,77 +91,62 @@ defmodule Raxol.Terminal.Emulator.Style do
   Sets the text decoration (underline, strikethrough, etc.).
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_decoration(Core.t(), TextFormatting.decoration()) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def set_decoration(%Core{} = emulator, decoration) do
-    case TextFormatting.set_decoration(emulator.style, decoration) do
-      {:ok, updated_style} ->
-        {:ok, %{emulator | style: updated_style}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+  @spec set_decoration(Emulator.t(), atom()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
+  def set_decoration(%Emulator{} = emulator, decoration) do
+    updated_style = TextFormatting.apply_attribute(emulator.style, decoration)
+    {:ok, %{emulator | style: updated_style}}
   end
 
   @doc """
   Sets the text blink mode.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_blink(Core.t(), :none | :slow | :rapid) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def set_blink(%Core{} = emulator, blink)
-      when blink in [:none, :slow, :rapid] do
-    case TextFormatting.set_blink(emulator.style, blink) do
-      {:ok, updated_style} ->
-        {:ok, %{emulator | style: updated_style}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+  @spec set_blink(Emulator.t(), :none | :slow | :rapid) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
+  def set_blink(%Emulator{} = emulator, :none) do
+    updated_style = TextFormatting.apply_attribute(emulator.style, :no_blink)
+    {:ok, %{emulator | style: updated_style}}
   end
 
-  def set_blink(%Core{} = _emulator, invalid_blink) do
-    {:error, "Invalid blink mode: #{inspect(invalid_blink)}"}
+  def set_blink(%Emulator{} = emulator, _blink) do
+    updated_style = TextFormatting.apply_attribute(emulator.style, :blink)
+    {:ok, %{emulator | style: updated_style}}
   end
 
   @doc """
   Sets the text visibility.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_visibility(Core.t(), :visible | :hidden) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def set_visibility(%Core{} = emulator, visibility)
-      when visibility in [:visible, :hidden] do
-    case TextFormatting.set_visibility(emulator.style, visibility) do
-      {:ok, updated_style} ->
-        {:ok, %{emulator | style: updated_style}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+  @spec set_visibility(Emulator.t(), :visible | :hidden) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
+  def set_visibility(%Emulator{} = emulator, :visible) do
+    updated_style = TextFormatting.apply_attribute(emulator.style, :reveal)
+    {:ok, %{emulator | style: updated_style}}
   end
 
-  def set_visibility(%Core{} = _emulator, invalid_visibility) do
-    {:error, "Invalid visibility: #{inspect(invalid_visibility)}"}
+  def set_visibility(%Emulator{} = emulator, :hidden) do
+    updated_style = TextFormatting.apply_attribute(emulator.style, :conceal)
+    {:ok, %{emulator | style: updated_style}}
   end
 
   @doc """
   Sets the text inverse mode.
   Returns {:ok, updated_emulator} or {:error, reason}.
   """
-  @spec set_inverse(Core.t(), boolean()) ::
-          {:ok, Core.t()} | {:error, String.t()}
-  def set_inverse(%Core{} = emulator, inverse) when is_boolean(inverse) do
-    case TextFormatting.set_inverse(emulator.style, inverse) do
-      {:ok, updated_style} ->
-        {:ok, %{emulator | style: updated_style}}
-
-      {:error, reason} ->
-        {:error, reason}
-    end
+  @spec set_inverse(Emulator.t(), boolean()) ::
+          {:ok, Emulator.t()} | {:error, String.t()}
+  def set_inverse(%Emulator{} = emulator, true) do
+    updated_style = TextFormatting.apply_attribute(emulator.style, :reverse)
+    {:ok, %{emulator | style: updated_style}}
   end
 
-  def set_inverse(%Core{} = _emulator, invalid_inverse) do
+  def set_inverse(%Emulator{} = emulator, false) do
+    updated_style = TextFormatting.apply_attribute(emulator.style, :no_reverse)
+    {:ok, %{emulator | style: updated_style}}
+  end
+
+  def set_inverse(%Emulator{} = _emulator, invalid_inverse) do
     {:error, "Invalid inverse mode: #{inspect(invalid_inverse)}"}
   end
 
@@ -176,8 +154,8 @@ defmodule Raxol.Terminal.Emulator.Style do
   Gets the current text style.
   Returns the current style.
   """
-  @spec get_style(Core.t()) :: TextFormatting.text_style()
-  def get_style(%Core{} = emulator) do
+  @spec get_style(Emulator.t()) :: TextFormatting.text_style()
+  def get_style(%Emulator{} = emulator) do
     emulator.style
   end
 end

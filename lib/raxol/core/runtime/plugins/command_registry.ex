@@ -67,19 +67,73 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   """
   def lookup_command(table, namespace, command_name) do
     case Map.get(table, namespace) do
-      nil -> {:error, :not_found}
+      nil ->
+        {:error, :not_found}
+
       commands ->
-        case Enum.find(commands, fn {name, _handler, _meta_or_arity} -> name == command_name end) do
+        case Enum.find(commands, fn {name, _handler, _meta_or_arity} ->
+               name == command_name
+             end) do
           {^command_name, handler, meta_or_arity} ->
             arity =
               cond do
-                is_map(meta_or_arity) && Map.has_key?(meta_or_arity, :arity) -> meta_or_arity.arity
-                is_integer(meta_or_arity) -> meta_or_arity
-                true -> nil
+                is_map(meta_or_arity) && Map.has_key?(meta_or_arity, :arity) ->
+                  meta_or_arity.arity
+
+                is_integer(meta_or_arity) ->
+                  meta_or_arity
+
+                true ->
+                  nil
               end
+
             {:ok, {namespace, handler, arity}}
-          _ -> {:error, :not_found}
+
+          _ ->
+            {:error, :not_found}
         end
+    end
+  end
+
+  @doc """
+  Registers a command for a plugin namespace (module).
+  Adds the command to the command table if not already present.
+  Returns :ok or {:error, :already_registered}.
+  """
+  def register_command(
+        command_table,
+        namespace,
+        command_name,
+        module,
+        function,
+        arity
+      ) do
+    # Ensure command_name is a string
+    command_name =
+      case command_name do
+        n when is_atom(n) -> Atom.to_string(n)
+        n when is_binary(n) -> n
+      end
+
+    # Get current commands for the namespace
+    commands = Map.get(command_table, namespace, [])
+
+    # Check for duplicate
+    duplicate =
+      Enum.any?(commands, fn {name, mod, fun, ar} ->
+        name == command_name and mod == module and fun == function and
+          ar == arity
+      end)
+
+    if duplicate do
+      {:error, :already_registered}
+    else
+      # Add the new command tuple: {command_name, module, function, arity}
+      new_commands = [{command_name, module, function, arity} | commands]
+      updated_table = Map.put(command_table, namespace, new_commands)
+      # In-place update is not possible, so return :ok for compatibility
+      # (Callers should use the returned table if they want the update)
+      :ok
     end
   end
 

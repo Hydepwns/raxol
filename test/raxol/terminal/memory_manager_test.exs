@@ -53,6 +53,12 @@ defmodule Raxol.Terminal.MemoryManagerTest do
   describe "estimate_memory_usage/1 (integration)" do
     test "returns correct sum for real State with default config" do
       config = Raxol.Terminal.Config.Defaults.generate_default_config()
+
+      behavior_keys =
+        Raxol.Terminal.Config.Defaults.default_behavior_config() |> Map.keys()
+
+      behavior = Map.take(config, behavior_keys)
+      config = Map.put(config, :behavior, behavior)
       state = Raxol.Terminal.Integration.State.new(80, 24, config)
 
       # By default, both buffer_manager and scroll_buffer should have memory_usage fields
@@ -65,6 +71,12 @@ defmodule Raxol.Terminal.MemoryManagerTest do
 
     test "returns correct sum for State with custom memory_usage values" do
       config = Raxol.Terminal.Config.Defaults.generate_default_config()
+
+      behavior_keys =
+        Raxol.Terminal.Config.Defaults.default_behavior_config() |> Map.keys()
+
+      behavior = Map.take(config, behavior_keys)
+      config = Map.put(config, :behavior, behavior)
       state = Raxol.Terminal.Integration.State.new(80, 24, config)
       # Manually set memory_usage fields
       buffer_manager = Map.put(state.buffer_manager, :memory_usage, 1111)
@@ -81,6 +93,12 @@ defmodule Raxol.Terminal.MemoryManagerTest do
 
     test "returns correct value if only buffer_manager has memory_usage" do
       config = Raxol.Terminal.Config.Defaults.generate_default_config()
+
+      behavior_keys =
+        Raxol.Terminal.Config.Defaults.default_behavior_config() |> Map.keys()
+
+      behavior = Map.take(config, behavior_keys)
+      config = Map.put(config, :behavior, behavior)
       state = Raxol.Terminal.Integration.State.new(80, 24, config)
       buffer_manager = Map.put(state.buffer_manager, :memory_usage, 555)
       state = %{state | buffer_manager: buffer_manager, scroll_buffer: nil}
@@ -89,6 +107,12 @@ defmodule Raxol.Terminal.MemoryManagerTest do
 
     test "returns correct value if only scroll_buffer has memory_usage" do
       config = Raxol.Terminal.Config.Defaults.generate_default_config()
+
+      behavior_keys =
+        Raxol.Terminal.Config.Defaults.default_behavior_config() |> Map.keys()
+
+      behavior = Map.take(config, behavior_keys)
+      config = Map.put(config, :behavior, behavior)
       state = Raxol.Terminal.Integration.State.new(80, 24, config)
       scroll_buffer = Map.put(state.scroll_buffer, :memory_usage, 777)
       state = %{state | buffer_manager: nil, scroll_buffer: scroll_buffer}

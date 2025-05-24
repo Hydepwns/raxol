@@ -5,7 +5,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
     <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
     <title>Raxol Home</title>
-    <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")}/>
+    <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/@static/app.css")}/>
   </head>
   <body>
     <h1>Welcome to Raxol!</h1>
@@ -15,6 +15,6 @@
     <%# Uncomment if TerminalLive is set up %>
     <%# <.link href={~p"/terminal"}>Go to Terminal</.link> %>
 
-    <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/assets/app.js")}></script>
+    <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/@static/app.js")}></script>
   </body>
 </html>

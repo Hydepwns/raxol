@@ -2,7 +2,6 @@ defmodule Raxol.UI.BasicRenderingTest do
   use ExUnit.Case
   alias Raxol.UI.Renderer
   alias Raxol.UI.RendererTestHelper, as: Helper
-  import Raxol.Test.Visual.Assertions
 
   test "handles empty elements" do
     element = Helper.create_test_element(:box, 0, 0, %{width: 0, height: 0})

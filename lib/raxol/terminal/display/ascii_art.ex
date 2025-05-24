@@ -137,14 +137,14 @@ defmodule Raxol.Terminal.Display.AsciiArt do
     top_bottom = "╭" <> String.duplicate("─", max_length + 2) <> "╮"
 
     middle =
-      Enum.map(lines, fn line ->
+      Enum.map_join(lines, "\n", fn line ->
         padding = String.duplicate(" ", max_length - String.length(line))
         "│ #{line}#{padding} │"
       end)
 
     bottom = "╰" <> String.duplicate("─", max_length + 2) <> "╯"
 
-    ([top_bottom] ++ middle ++ [bottom])
+    [top_bottom, middle, bottom]
     |> Enum.join("\n")
   end
 
@@ -168,16 +168,14 @@ defmodule Raxol.Terminal.Display.AsciiArt do
     header_row =
       headers
       |> Enum.with_index()
-      |> Enum.map(fn {header, i} ->
+      |> Enum.map_join(" │ ", fn {header, i} ->
         String.pad_trailing(header, Enum.at(col_widths, i))
       end)
-      |> Enum.join(" │ ")
 
     # Create separator
     separator =
       col_widths
-      |> Enum.map(fn width -> String.duplicate("─", width) end)
-      |> Enum.join("─┼─")
+      |> Enum.map_join("─┼─", fn width -> String.duplicate("─", width) end)
 
     # Create data rows
     data_rows =
@@ -185,10 +183,9 @@ defmodule Raxol.Terminal.Display.AsciiArt do
       |> Enum.map(fn row ->
         row
         |> Enum.with_index()
-        |> Enum.map(fn {cell, i} ->
+        |> Enum.map_join(" │ ", fn {cell, i} ->
           String.pad_trailing(cell, Enum.at(col_widths, i))
         end)
-        |> Enum.join(" │ ")
       end)
 
     # Combine all parts

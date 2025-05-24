@@ -21,7 +21,6 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
         %State{state: :dcs_passthrough} = parser_state,
         input
       ) do
-    # IO.inspect({:parse_loop_dcs_passthrough, parser_state.state, input}, label: "DEBUG_PARSER")
     case input do
       <<>> ->
         # Incomplete DCS string - return current state

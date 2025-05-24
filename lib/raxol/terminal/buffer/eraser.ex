@@ -6,7 +6,6 @@ defmodule Raxol.Terminal.Buffer.Eraser do
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.Buffer.Writer
   alias Raxol.Terminal.ANSI.TextFormatting
   require Logger
 

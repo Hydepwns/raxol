@@ -12,12 +12,10 @@ defmodule Raxol.Terminal.ControlCodes do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.Movement
   alias Raxol.Terminal.Cursor.Manager
-  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.ModeManager
   # Needed for RIS
   alias Raxol.Terminal.ANSI.TerminalState
-  # Added alias for system interactions
-  alias Raxol.System.Interaction
 
   # C0 Constants
   @nul 0
@@ -43,66 +41,51 @@ defmodule Raxol.Terminal.ControlCodes do
   """
   @spec handle_c0(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def handle_c0(emulator, char_codepoint) do
-    case char_codepoint do
-      @nul ->
-        Logger.debug("NUL received, ignoring")
-        emulator
-
-      @bel ->
-        handle_bel(emulator)
-
-      @bs ->
-        handle_bs(emulator)
-
-      @ht ->
-        handle_ht(emulator)
-
-      @lf ->
-        handle_lf(emulator)
-
-      # Treat VT like LF for now
-      @vt ->
-        handle_lf(emulator)
-
-      # Treat FF like LF for now
-      @ff ->
-        handle_lf(emulator)
-
-      @cr ->
-        handle_cr(emulator)
-
-      @so ->
-        handle_so(emulator)
-
-      @si ->
-        handle_si(emulator)
-
-      @can ->
-        handle_can(emulator)
-
-      @sub ->
-        handle_sub(emulator)
-
-      @esc ->
-        # Should be handled by the parser's state transitions
-        Logger.debug("ESC received unexpectedly in C0 handler, ignoring")
-        emulator
-
-      @del ->
-        Logger.debug("DEL received, ignoring")
-        emulator
-
-      # Add other C0 codes as needed (e.g., ENQ, ACK, DC1-4, NAK, SYN, ETB, EM, FS, GS, RS, US)
-      _ ->
-        Logger.debug("Unhandled C0 control code: #{char_codepoint}")
-        emulator
-    end
+    handler = c0_handler_for(char_codepoint)
+    handler.(emulator)
   end
 
-  @spec handle_bel(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  defp c0_handler_for(@nul),
+    do: fn emulator ->
+      Logger.debug("NUL received, ignoring")
+      emulator
+    end
+
+  defp c0_handler_for(@bel), do: &handle_bel/1
+  defp c0_handler_for(@bs), do: &handle_bs/1
+  defp c0_handler_for(@ht), do: &handle_ht/1
+  defp c0_handler_for(@lf), do: &handle_lf/1
+  defp c0_handler_for(@vt), do: &handle_lf/1
+  defp c0_handler_for(@ff), do: &handle_lf/1
+  defp c0_handler_for(@cr), do: &handle_cr/1
+  defp c0_handler_for(@so), do: &handle_so/1
+  defp c0_handler_for(@si), do: &handle_si/1
+  defp c0_handler_for(@can), do: &handle_can/1
+  defp c0_handler_for(@sub), do: &handle_sub/1
+
+  defp c0_handler_for(@esc),
+    do: fn emulator ->
+      Logger.debug("ESC received unexpectedly in C0 handler, ignoring")
+      emulator
+    end
+
+  defp c0_handler_for(@del),
+    do: fn emulator ->
+      Logger.debug("DEL received, ignoring")
+      emulator
+    end
+
+  defp c0_handler_for(_),
+    do: fn emulator ->
+      Logger.debug("Unhandled C0 control code")
+      emulator
+    end
+
+  @doc """
+  Handles bell control code.
+  """
   def handle_bel(emulator) do
-    Logger.info("BEL received - Ringing bell.")
-    Interaction.ring_bell()
+    System.cmd("tput", ["bel"])
     emulator
   end
 
@@ -117,7 +100,7 @@ defmodule Raxol.Terminal.ControlCodes do
   @doc "Handle Horizontal Tab (HT)"
   def handle_ht(%Emulator{} = emulator) do
     # Move cursor to the next tab stop
-    {current_col, _} = emulator.cursor.position
+    {current_col, _} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
     active_buffer = Emulator.get_active_buffer(emulator)
     width = ScreenBuffer.get_width(active_buffer)
     # Placeholder: move to next multiple of 8 or end of line
@@ -130,7 +113,7 @@ defmodule Raxol.Terminal.ControlCodes do
   @doc "Handle Line Feed (LF), New Line (NL), Vertical Tab (VT)"
   def handle_lf(%Emulator{} = emulator) do
     Logger.debug(
-      "[handle_lf] Input: cursor=#{inspect(emulator.cursor.position)}, last_exceeded=#{emulator.last_col_exceeded}"
+      "[handle_lf] Input: cursor=#{inspect(Raxol.Terminal.Emulator.get_cursor_position(emulator))}, last_exceeded=#{emulator.last_col_exceeded}"
     )
 
     # 1. Handle pending wrap if necessary, then check for scrolling *once*
@@ -138,7 +121,7 @@ defmodule Raxol.Terminal.ControlCodes do
       if emulator.last_col_exceeded do
         Logger.debug("[handle_lf] Pending wrap detected")
         # Perform the deferred wrap: move cursor to col 0, next line
-        {_cx, cy} = emulator.cursor.position
+        {_cx, cy} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
         wrapped_cursor = Movement.move_to_position(emulator.cursor, 0, cy + 1)
 
         Logger.debug(
@@ -158,7 +141,7 @@ defmodule Raxol.Terminal.ControlCodes do
         scrolled_emulator = Emulator.maybe_scroll(emulator_after_wrap)
 
         Logger.debug(
-          "[handle_lf] State after wrap scroll check: cursor=#{inspect(scrolled_emulator.cursor.position)}"
+          "[handle_lf] State after wrap scroll check: cursor=#{inspect(Raxol.Terminal.Emulator.get_cursor_position(scrolled_emulator))}"
         )
 
         # This state is now ready for the final cursor move
@@ -171,7 +154,7 @@ defmodule Raxol.Terminal.ControlCodes do
         scrolled_emulator = Emulator.maybe_scroll(emulator)
 
         Logger.debug(
-          "[handle_lf] State after no-wrap scroll check: cursor=#{inspect(scrolled_emulator.cursor.position)}"
+          "[handle_lf] State after no-wrap scroll check: cursor=#{inspect(Raxol.Terminal.Emulator.get_cursor_position(scrolled_emulator))}"
         )
 
         # This state is ready for the final cursor move
@@ -184,7 +167,7 @@ defmodule Raxol.Terminal.ControlCodes do
     {_buffer_width, buffer_height} = ScreenBuffer.get_dimensions(active_buffer)
 
     # Get effective scroll region (used for clamping Y after move)
-    {scroll_top, scroll_bottom_inclusive} =
+    {_scroll_top, scroll_bottom_inclusive} =
       case emulator_after_wrap_and_scroll.scroll_region do
         {top, bottom}
         when is_integer(top) and top >= 0 and is_integer(bottom) and
@@ -269,7 +252,7 @@ defmodule Raxol.Terminal.ControlCodes do
 
     if y != clamped_y do
       Logger.debug(
-        "[clamp_cursor] Clamped Y from #{y} to #{clamped_y} (region #{scroll_top}-#{scroll_bottom_inclusive}) "
+        "[clamp_cursor] Clamped Y from \\#{y} to \\#{clamped_y} (region \\#{scroll_top}-\\#{scroll_bottom_inclusive}) "
       )
 
       Manager.move_to(cursor, x, clamped_y)
@@ -281,7 +264,7 @@ defmodule Raxol.Terminal.ControlCodes do
   @doc "Handle Carriage Return (CR)"
   def handle_cr(%Emulator{} = emulator) do
     Logger.debug(
-      "[handle_cr] Input: cursor=#{inspect(emulator.cursor.position)}, last_exceeded=#{emulator.last_col_exceeded}"
+      "[handle_cr] Input: cursor=#{inspect(Raxol.Terminal.Emulator.get_cursor_position(emulator))}, last_exceeded=#{emulator.last_col_exceeded}"
     )
 
     # 1. Check for pending wrap
@@ -289,7 +272,7 @@ defmodule Raxol.Terminal.ControlCodes do
       if emulator.last_col_exceeded do
         Logger.debug("[handle_cr] Pending wrap detected")
         # Perform the deferred wrap: move cursor to col 0, next line
-        {_cx, cy} = emulator.cursor.position
+        {_cx, cy} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
         wrapped_cursor = Movement.move_to_position(emulator.cursor, 0, cy + 1)
 
         Logger.debug(
@@ -305,7 +288,7 @@ defmodule Raxol.Terminal.ControlCodes do
           })
 
         Logger.debug(
-          "[handle_cr] State after pending wrap + scroll: cursor=#{inspect(maybe_scrolled_emulator.cursor.position)}, last_exceeded=#{maybe_scrolled_emulator.last_col_exceeded}"
+          "[handle_cr] State after pending wrap + scroll: cursor=#{inspect(Raxol.Terminal.Emulator.get_cursor_position(maybe_scrolled_emulator))}, last_exceeded=#{maybe_scrolled_emulator.last_col_exceeded}"
         )
 
         maybe_scrolled_emulator
@@ -317,7 +300,7 @@ defmodule Raxol.Terminal.ControlCodes do
     # 2. Perform CR logic on potentially updated state
     Logger.debug("[handle_cr] Moving cursor to column 0")
     # Get current Y coordinate
-    {_cx, cy} = emulator_after_pending_wrap.cursor.position
+    {_cx, cy} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
 
     final_cursor =
       Movement.move_to_position(emulator_after_pending_wrap.cursor, 0, cy)
@@ -355,12 +338,12 @@ defmodule Raxol.Terminal.ControlCodes do
     emulator
   end
 
-  @spec handle_sub(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
+  @doc """
+  Handles substitute character control code.
+  """
   def handle_sub(emulator) do
-    Logger.info("SUB received - Triggering substitute action.")
-    Interaction.substitute_character()
-
-    # TODO: Should SUB potentially cancel the current escape sequence in the parser state?
+    # Print a substitute character (typically displayed as ^Z)
+    System.cmd("echo", ["-n", "^Z"])
     emulator
   end
 
@@ -405,7 +388,7 @@ defmodule Raxol.Terminal.ControlCodes do
   # ESC H - Horizontal Tabulation Set
   def handle_hts(emulator) do
     # Set a tab stop at the current cursor column.
-    {x, _y} = emulator.cursor.position
+    {x, _y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
     new_tab_stops = MapSet.put(emulator.tab_stops, x)
     %{emulator | tab_stops: new_tab_stops}
   end
@@ -413,7 +396,7 @@ defmodule Raxol.Terminal.ControlCodes do
   @doc "Handle Reverse Index (RI) - ESC M"
   def handle_ri(%Emulator{} = emulator) do
     # Move cursor up one line. If at the top margin, scroll down.
-    {_col, row} = emulator.cursor.position
+    {_col, row} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
     active_buffer = Emulator.get_active_buffer(emulator)
 
     {top_margin, _} =

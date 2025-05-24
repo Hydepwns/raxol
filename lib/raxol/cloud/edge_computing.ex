@@ -84,6 +84,7 @@ defmodule Raxol.Cloud.EdgeComputing do
       :ok
   """
   def init(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     state = State.new()
 
     # Override defaults with provided options
@@ -122,6 +123,8 @@ defmodule Raxol.Cloud.EdgeComputing do
   Updates the edge computing configuration.
   """
   def update_config(state \\ nil, config) do
+    config = if is_map(config), do: Enum.into(config, []), else: config
+
     with_state(state, fn s ->
       # Merge new config with existing config
       updated_config =
@@ -162,6 +165,7 @@ defmodule Raxol.Cloud.EdgeComputing do
       {:ok, result}
   """
   def execute(func, opts \\ []) when is_function(func, 0) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     state = get_state()
 
     execute_location = determine_execution_location(state, opts)

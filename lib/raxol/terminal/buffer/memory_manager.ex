@@ -11,12 +11,16 @@ defmodule Raxol.Terminal.Buffer.MemoryManager do
   This is a rough estimation based on buffer dimensions and an estimated cell size.
   """
   @spec calculate_buffer_usage(ScreenBuffer.t()) :: non_neg_integer()
-  def calculate_buffer_usage(%ScreenBuffer{} = buffer) do
-    # Rough estimation of memory usage based on buffer size and content
-    buffer_size = buffer.width * buffer.height
-    # Estimated bytes per cell (adjust as needed)
-    cell_size = 100
-    buffer_size * cell_size
+  def calculate_buffer_usage(buffer) do
+    case buffer do
+      %ScreenBuffer{} = buffer ->
+        buffer_size = buffer.width * buffer.height
+        cell_size = 100
+        usage = buffer_size * cell_size
+        usage
+      _ ->
+        0
+    end
   end
 
   @doc """
@@ -26,7 +30,8 @@ defmodule Raxol.Terminal.Buffer.MemoryManager do
   def get_total_usage(active_buffer, back_buffer) do
     active_usage = calculate_buffer_usage(active_buffer)
     back_usage = calculate_buffer_usage(back_buffer)
-    active_usage + back_usage
+    total = active_usage + back_usage
+    total
   end
 
   @doc """

@@ -9,6 +9,13 @@ defmodule Raxol.Core.Renderer.View do
   alias Raxol.Core.Renderer.View.Style.Border
   alias Raxol.Core.Renderer.View.Components.{Text, Box, Scroll}
   alias Raxol.Core.Renderer.View.Utils.ViewUtils
+  alias Raxol.Renderer.Layout, as: LayoutEngine
+
+  @typedoc """
+  Style options for a view. Typically a list of atoms, e.g., [:bold, :underline].
+  See `Raxol.Core.Renderer.View.Types.style/0` for details.
+  """
+  @type style :: Types.style()
 
   @doc """
   Creates a new view with the specified type and options.
@@ -100,8 +107,12 @@ defmodule Raxol.Core.Renderer.View do
 
   ## Examples
 
-      View.row(children: [text("Hello"), text("World")])
-      View.row(align: :center, gap: 2)
+      View.row do
+        [text("Hello"), text("World")]
+      end
+      View.row align: :center, gap: 2 do
+        [text("A"), text("B")]
+      end
   """
   def row(opts \\ []) do
     Flex.row(opts)
@@ -123,9 +134,10 @@ defmodule Raxol.Core.Renderer.View do
       View.flex(direction: :column, children: [text("Hello"), text("World")])
       View.flex(align: :center, gap: 2, wrap: true)
   """
-  def flex(opts \\ []) do
-    Flex.container(opts)
-  end
+
+  # def flex(opts, children) do
+  #   Flex.container(Keyword.merge(opts, children: children))
+  # end
 
   @doc """
   Creates a new grid layout.
@@ -185,6 +197,14 @@ defmodule Raxol.Core.Renderer.View do
   end
 
   @doc """
+  Applies layout to a view, calculating absolute positions for all elements.
+  Delegates to Raxol.Renderer.Layout.apply_layout/2.
+  """
+  def layout(view, dimensions) do
+    LayoutEngine.apply_layout(view, dimensions)
+  end
+
+  @doc """
   Macro for creating a row layout with a do-block for children.
 
   ## Examples
@@ -231,18 +251,27 @@ defmodule Raxol.Core.Renderer.View do
         [View.text("A"), View.text("B")]
       end
   """
-  defmacro border_wrap(opts, do: block) when is_list(opts) do
+  defmacro border_wrap(style, do: block) do
     quote do
-      Raxol.Core.Renderer.View.Style.Border.wrap(unquote(block), unquote(opts))
+      Raxol.Core.Renderer.View.Style.Border.wrap(unquote(block),
+        style: unquote(style)
+      )
     end
   end
 
-  defmacro border_wrap(style, opts, do: block) do
+  @doc """
+  Macro for creating a border around a view with a do-block for children,
+  allowing style and other options.
+
+  ## Examples
+      View.border :single, size: {5,5}, title: "Box" do
+        View.text("Content")
+      end
+  """
+  defmacro border(style, opts, do: block) do
     quote do
-      Raxol.Core.Renderer.View.Style.Border.wrap(
-        unquote(block),
-        Keyword.merge([style: unquote(style)], unquote(opts))
-      )
+      all_opts = Keyword.merge(unquote(opts), style: unquote(style))
+      Raxol.Core.Renderer.View.Style.Border.wrap(unquote(block), all_opts)
     end
   end
 
@@ -388,6 +417,8 @@ defmodule Raxol.Core.Renderer.View do
   ## Examples
       View.panel(children: [View.text("Hello")])
       View.panel(border: :double, title: "Panel")
+
+  NOTE: Only panel/1 (with a keyword list) is supported. Update any panel/2 usages to panel/1.
   """
   def panel(opts \\ []) do
     border = Keyword.get(opts, :border, :single)
@@ -410,6 +441,40 @@ defmodule Raxol.Core.Renderer.View do
       |> Keyword.merge(if(style != [], do: [style: style], else: []))
 
     __MODULE__.box(box_opts)
+  end
+
+  @doc """
+  Macro for creating a flex layout with a do-block for children.
+
+  ## Examples
+
+      View.flex direction: :row do
+        [View.text("A"), View.text("B")]
+      end
+  """
+  defmacro flex(opts, do: block) do
+    quote do
+      Raxol.Core.Renderer.View.Layout.Flex.container(
+        Keyword.merge(unquote(opts), children: unquote(block))
+      )
+    end
+  end
+
+  def flex(opts) do
+    Raxol.Core.Renderer.View.Layout.Flex.container(opts)
+  end
+
+  defmacro shadow(opts, do: block) do
+    quote do
+      # Placeholder: just returns children, actual shadow logic TBD
+      # Needs to be a map representing a view element.
+      %{
+        # Placeholder type
+        type: :shadow_wrapper,
+        opts: unquote(opts),
+        children: unquote(block)
+      }
+    end
   end
 
   defp normalize_spacing(view) do

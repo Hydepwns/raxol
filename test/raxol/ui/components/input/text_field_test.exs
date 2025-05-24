@@ -4,7 +4,7 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
   alias Raxol.UI.Components.Input.TextField
   alias Raxol.Core.Renderer.Element
 
-  defp create_state(props \\ %{}) do
+  defp create_state(props) do
     {:ok, state} = TextField.init(props)
     state
   end
@@ -16,7 +16,6 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
       state = create_state(%{value: "Styled", theme: theme, style: style})
       rendered = TextField.render(state, %{theme: theme})
       assert %Element{attributes: %{style: merged}} = rendered
-      IO.inspect(merged.border, label: "merged.border")
       assert merged.border.style in [:solid, :none, "solid", "none"]
       assert merged.color == "#654321"
     end
@@ -32,14 +31,12 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
     test "renders value and placeholder" do
       state = create_state(%{value: "Hello"})
       rendered = TextField.render(state, %{theme: {}})
-      IO.inspect(rendered.children, label: "children for value")
       [text_elem] = rendered.children
       assert text_elem.tag == :text
       assert text_elem.content == "Hello"
 
       state2 = create_state(%{value: "", placeholder: "Type here"})
       rendered2 = TextField.render(state2, %{theme: {}})
-      IO.inspect(rendered2.children, label: "children for placeholder")
       [text_elem] = rendered2.children
       assert text_elem.tag == :text
       assert text_elem.content == "Type here"
@@ -50,7 +47,6 @@ defmodule Raxol.UI.Components.Input.TextFieldTest do
     test "renders masked value if secret is true" do
       state = create_state(%{value: "secret", secret: true})
       rendered = TextField.render(state, %{theme: {}})
-      IO.inspect(rendered.children, label: "children for masked value")
       [text_elem] = rendered.children
       assert text_elem.tag == :text
       assert text_elem.content == "******"

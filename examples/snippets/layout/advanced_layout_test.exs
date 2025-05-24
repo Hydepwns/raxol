@@ -11,7 +11,6 @@ defmodule Raxol.Docs.Guides.Examples.Layout.AdvancedLayoutTest do
 
   @impl true
   def update(message, model) do
-    IO.inspect(message, label: "Unhandled message")
     model
   end
 

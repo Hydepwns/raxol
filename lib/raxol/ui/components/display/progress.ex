@@ -91,7 +91,15 @@ defmodule Raxol.UI.Components.Display.Progress do
   @impl Component
   def update({:update_props, new_props}, state) do
     # Merge normalized new props into the current state
-    updated_state = Map.merge(state, normalize_props(new_props))
+    norm_new = normalize_props(new_props)
+    # Merge style and theme maps deeply
+    updated_state =
+      state
+      |> Map.merge(norm_new, fn
+        :style, old, new -> Map.merge(old || %{}, new || %{})
+        :theme, old, new -> deep_merge(old || %{}, new || %{})
+        _k, _old, new -> new
+      end)
 
     # Handle animation tick based on the potentially updated state
     final_state = maybe_update_animation(updated_state)
@@ -278,8 +286,8 @@ defmodule Raxol.UI.Components.Display.Progress do
     |> Map.put_new(:show_percentage, false)
     |> Map.put_new(:animated, false)
     |> Map.put_new(:label, nil)
-    # Allow nil theme initially
-    |> Map.put_new_lazy(:theme, fn -> nil end)
+    # Default theme to %{} instead of nil
+    |> Map.put_new(:theme, %{})
     |> Map.put_new(:style, %{})
     |> Map.put_new(:aria_label, nil)
     |> Map.put_new(:tooltip, nil)
@@ -314,9 +322,9 @@ defmodule Raxol.UI.Components.Display.Progress do
       animation_char = Enum.at(@animation_chars, animation_frame)
 
       # Insert animation character at the transition point
-      # Need slicing adjustment if empty_part is ""
+      # Instead of String.slice(empty_part, 1..-1//-1), use String.slice(empty_part, 1, String.length(empty_part) - 1)
       trail =
-        if empty_width > 0, do: String.slice(empty_part, 1..-1//-1), else: ""
+        if empty_width > 0, do: String.slice(empty_part, 1, String.length(empty_part) - 1), else: ""
 
       filled_part <> animation_char <> trail
     else
@@ -324,6 +332,14 @@ defmodule Raxol.UI.Components.Display.Progress do
       filled_part <> empty_part
     end
   end
+
+  # Deep merge helper for nested maps (used for theme)
+  defp deep_merge(map1, map2) when is_map(map1) and is_map(map2) do
+    Map.merge(map1, map2, fn _k, v1, v2 ->
+      if is_map(v1) and is_map(v2), do: deep_merge(v1, v2), else: v2
+    end)
+  end
+  defp deep_merge(_map1, map2), do: map2
 
   # Optional callbacks provided by `use Component` if not defined:
   # def mount(state), do: {state, []}

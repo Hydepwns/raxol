@@ -87,7 +87,7 @@ defmodule Raxol.System.Clipboard do
         end
 
       _other_os ->
-        Logger.warning("Clipboard copy not supported on this OS.")
+        Logger.warning("Clipboard copy not supported on this OS.", [])
         {:error, :unsupported_os}
     end
   end
@@ -183,7 +183,7 @@ defmodule Raxol.System.Clipboard do
         end
 
       _other_os ->
-        Logger.warning("Clipboard paste not supported on this OS.")
+        Logger.warning("Clipboard paste not supported on this OS.", [])
         {:error, :unsupported_os}
     end
   end

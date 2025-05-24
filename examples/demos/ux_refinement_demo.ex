@@ -22,7 +22,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
   alias Raxol.Core.UXRefinement
   alias Raxol.Core.FocusManager
-  alias Raxol.Components.FocusRing
+  alias Raxol.UI.Components.FocusRing
   alias Raxol.Core.Runtime.Command
   alias Raxol.View.Elements, as: UI
   require Logger
@@ -144,7 +144,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
     focus_ring_component =
       if focused_position do
         # Raxol.View.Elements.component(
-        #   Raxol.Components.FocusRing,
+        #   Raxol.UI.Components.FocusRing,
         #   id: :focus_ring,
         #   model: model.focus_ring_model,
         #   focused_element_id: focused_id,
@@ -152,7 +152,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
         # )
         # Construct component map directly
         %{
-          type: Raxol.Components.FocusRing,
+          type: Raxol.UI.Components.FocusRing,
           id: :focus_ring,
           # Pass props directly, assuming component handles its own model state
           # model: model.focus_ring_model,
@@ -163,10 +163,10 @@ defmodule Raxol.Examples.UXRefinementDemo do
         nil # Explicitly return nil if no position
       end
 
-    # Raxol.View.Elements.component Raxol.Components.AppContainer, id: :app_container do
+    # Raxol.View.Elements.component Raxol.UI.Components.AppContainer, id: :app_container do
     # Use AppContainer map directly as the root element
     %{
-      type: Raxol.Components.AppContainer,
+      type: Raxol.UI.Components.AppContainer,
       id: :app_container,
       children: [
         # START OF LIST
@@ -252,7 +252,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
 
               # Hint display at the bottom
               # Raxol.View.Elements.component(
-              #   Raxol.Components.HintDisplay,
+              #   Raxol.UI.Components.HintDisplay,
               #   id: :hint_display,
               #   hints: all_hints,
               #   position: :bottom
@@ -260,7 +260,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
               # )
               # Construct component map directly
               %{
-                type: Raxol.Components.HintDisplay,
+                type: Raxol.UI.Components.HintDisplay,
                 id: :hint_display,
                 hints: all_hints,
                 position: :bottom

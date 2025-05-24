@@ -4,8 +4,6 @@ defmodule RaxolWeb.CoreComponents do
   """
 
   use Phoenix.Component
-  # import Phoenix.HTML
-  # use PhoenixHTMLHelpers, except: [label: 1]
 
   @doc """
   Renders a button with the given text and options.

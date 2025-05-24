@@ -2,6 +2,12 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
   use ExUnit.Case, async: true
   alias Raxol.Terminal.Commands.ParameterValidation
 
+  setup do
+    # Provide a minimal emulator struct with width and height fields for validation
+    emulator = %{width: 10, height: 10}
+    {:ok, emulator: emulator}
+  end
+
   describe "validate_coordinates/2" do
     test "returns valid coordinates within bounds", %{emulator: emulator} do
       # Test coordinates within screen bounds

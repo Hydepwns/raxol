@@ -10,6 +10,14 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
 
   setup :verify_on_exit!
 
+  # Recursive helper to extract all text content from a rendered tree
+  defp extract_texts(tree) when is_list(tree),
+    do: Enum.flat_map(tree, &extract_texts/1)
+
+  defp extract_texts(%{type: :text, props: %{content: content}}), do: [content]
+  defp extract_texts(%{children: children}), do: extract_texts(children)
+  defp extract_texts(_), do: []
+
   describe "init/1" do
     test "initializes with default values when no props provided" do
       assert_raise ArgumentError, "SelectList requires :options prop", fn ->
@@ -63,7 +71,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
 
     test "validates option format" do
       assert_raise ArgumentError,
-                   "SelectList options must be {label, value} tuples",
+                   "SelectList options must be {label, value} or {label, value, style} tuples",
                    fn ->
                      SelectList.init(%{options: ["invalid"]})
                    end
@@ -79,7 +87,16 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
   describe "update/2" do
     setup do
       options = [{"Option 1", :opt1}, {"Option 2", :opt2}, {"Option 3", :opt3}]
-      state = SelectList.init(%{options: options})
+
+      state =
+        SelectList.init(%{
+          options: options,
+          max_height: 10,
+          show_pagination: false,
+          current_page: 0,
+          page_size: 10
+        })
+
       {:ok, state: state}
     end
 
@@ -87,7 +104,17 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       new_options = [{"New 1", :new1}, {"New 2", :new2}]
 
       {new_state, _} =
-        SelectList.update({:update_props, %{options: new_options}}, state)
+        SelectList.update(
+          {:update_props,
+           %{
+             options: new_options,
+             max_height: 10,
+             show_pagination: false,
+             current_page: 0,
+             page_size: 10
+           }},
+          state
+        )
 
       assert new_state.options == new_options
       assert new_state.filtered_options == nil
@@ -116,11 +143,20 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
 
     test "handles selection", %{state: state} do
       # Single selection
-      {state1, _} = SelectList.update({:select_option, 1}, state)
+      state_with_on_select =
+        state
+        |> Map.put(:on_select, fn _ -> :selected end)
+        |> Map.put(:on_change, fn _ -> :ok end)
+
+      {state1, _} = SelectList.update({:select_option, 1}, state_with_on_select)
       assert state1.focused_index == 1
 
       # Multiple selection
-      state2 = %{state1 | multiple: true}
+      state2 =
+        state1
+        |> Map.put(:multiple, true)
+        |> Map.put(:on_change, fn _ -> :ok end)
+
       {state3, _} = SelectList.update({:select_option, 2}, state2)
       assert MapSet.size(state3.selected_indices) == 1
       assert MapSet.member?(state3.selected_indices, 2)
@@ -134,7 +170,11 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
 
     test "handles focus", %{state: state} do
       on_focus = fn index -> send(self(), {:focused, index}) end
-      state1 = %{state | on_focus: on_focus}
+
+      state1 =
+        state
+        |> Map.put(:on_focus, on_focus)
+        |> Map.put(:on_change, fn _ -> :ok end)
 
       {state2, _} = SelectList.update({:set_focus, true}, state1)
       assert state2.has_focus == true
@@ -169,7 +209,11 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
         Raxol.UI.Components.Input.SelectList.init(%{
           options: options,
           enable_search: true,
-          searchable_fields: [:email]
+          searchable_fields: [:email],
+          max_height: 10,
+          show_pagination: false,
+          current_page: 0,
+          page_size: 10
         })
 
       # Simulate entering a search term 'bob'
@@ -191,26 +235,9 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
              ]
 
       # Render and check only filtered options are present
-      rendered = Raxol.UI.Components.Input.SelectList.render(state2)
+      rendered = Raxol.UI.Components.Input.SelectList.render(state2, %{})
 
-      texts =
-        rendered
-        |> List.flatten()
-        |> Enum.flat_map(fn
-          %{type: :text, props: %{content: content}} ->
-            [content]
-
-          %{children: children} ->
-            Enum.flat_map(children, fn c ->
-              if is_map(c) and Map.has_key?(c, :props) and
-                   Map.has_key?(c.props, :content),
-                 do: [c.props.content],
-                 else: []
-            end)
-
-          _ ->
-            []
-        end)
+      texts = extract_texts(rendered)
 
       assert Enum.any?(texts, &String.contains?(&1, "Bob"))
       assert Enum.any?(texts, &String.contains?(&1, "Bobby"))
@@ -229,7 +256,11 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
         Raxol.UI.Components.Input.SelectList.init(%{
           options: options,
           enable_search: true,
-          empty_message: "Nothing found!"
+          empty_message: "Nothing found!",
+          max_height: 10,
+          show_pagination: false,
+          current_page: 0,
+          page_size: 10
         })
 
       # Simulate entering a search term that matches nothing
@@ -246,26 +277,9 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       assert state2.filtered_options == []
 
       # Render and check the empty message is present
-      rendered = Raxol.UI.Components.Input.SelectList.render(state2)
+      rendered = Raxol.UI.Components.Input.SelectList.render(state2, %{})
 
-      texts =
-        rendered
-        |> List.flatten()
-        |> Enum.flat_map(fn
-          %{type: :text, props: %{content: content}} ->
-            [content]
-
-          %{children: children} ->
-            Enum.flat_map(children, fn c ->
-              if is_map(c) and Map.has_key?(c, :props) and
-                   Map.has_key?(c.props, :content),
-                 do: [c.props.content],
-                 else: []
-            end)
-
-          _ ->
-            []
-        end)
+      texts = extract_texts(rendered)
 
       assert Enum.any?(texts, &String.contains?(&1, "Nothing found!"))
       refute Enum.any?(texts, &String.contains?(&1, "Alpha"))
@@ -284,7 +298,11 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       state =
         Raxol.UI.Components.Input.SelectList.init(%{
           options: options,
-          enable_search: true
+          enable_search: true,
+          max_height: 10,
+          show_pagination: false,
+          current_page: 0,
+          page_size: 10
         })
 
       # Simulate entering a lowercase search term for a capitalized label
@@ -318,52 +336,18 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       assert state4.filtered_options == [{"banana", :banana}]
 
       # Render and check only filtered options are present for each case
-      rendered2 = Raxol.UI.Components.Input.SelectList.render(state2)
+      rendered2 = Raxol.UI.Components.Input.SelectList.render(state2, %{})
 
-      texts2 =
-        rendered2
-        |> List.flatten()
-        |> Enum.flat_map(fn
-          %{type: :text, props: %{content: content}} ->
-            [content]
-
-          %{children: children} ->
-            Enum.flat_map(children, fn c ->
-              if is_map(c) and Map.has_key?(c, :props) and
-                   Map.has_key?(c.props, :content),
-                 do: [c.props.content],
-                 else: []
-            end)
-
-          _ ->
-            []
-        end)
+      texts2 = extract_texts(rendered2)
 
       assert Enum.any?(texts2, &String.contains?(&1, "Apple"))
       assert Enum.any?(texts2, &String.contains?(&1, "Pineapple"))
       refute Enum.any?(texts2, &String.contains?(&1, "banana"))
       refute Enum.any?(texts2, &String.contains?(&1, "Grape"))
 
-      rendered4 = Raxol.UI.Components.Input.SelectList.render(state4)
+      rendered4 = Raxol.UI.Components.Input.SelectList.render(state4, %{})
 
-      texts4 =
-        rendered4
-        |> List.flatten()
-        |> Enum.flat_map(fn
-          %{type: :text, props: %{content: content}} ->
-            [content]
-
-          %{children: children} ->
-            Enum.flat_map(children, fn c ->
-              if is_map(c) and Map.has_key?(c, :props) and
-                   Map.has_key?(c.props, :content),
-                 do: [c.props.content],
-                 else: []
-            end)
-
-          _ ->
-            []
-        end)
+      texts4 = extract_texts(rendered4)
 
       assert Enum.any?(texts4, &String.contains?(&1, "banana"))
       refute Enum.any?(texts4, &String.contains?(&1, "Apple"))
@@ -385,7 +369,11 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       state =
         Raxol.UI.Components.Input.SelectList.init(%{
           options: options,
-          enable_search: true
+          enable_search: true,
+          max_height: 10,
+          show_pagination: false,
+          current_page: 0,
+          page_size: 10
         })
 
       # Filter for options containing 'Al' (should match 'Alpha' and 'Alphabet')
@@ -413,7 +401,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       }
 
       state3 =
-        Raxol.UI.Components.Input.SelectList.Navigation.update_focus_state(
+        Raxol.UI.Components.Input.SelectList.Navigation.update_focus_and_scroll(
           state3,
           1
         )
@@ -422,7 +410,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
 
       # Simulate up arrow (should move back to first filtered option)
       state4 =
-        Raxol.UI.Components.Input.SelectList.Navigation.update_focus_state(
+        Raxol.UI.Components.Input.SelectList.Navigation.update_focus_and_scroll(
           state3,
           0
         )
@@ -431,7 +419,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
 
       # Simulate down arrow past end (should stay at last filtered option)
       state5 =
-        Raxol.UI.Components.Input.SelectList.Navigation.update_focus_state(
+        Raxol.UI.Components.Input.SelectList.Navigation.update_focus_and_scroll(
           state4,
           2
         )
@@ -481,7 +469,11 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
 
     test "handles selection", %{state: state} do
       on_select = fn value -> send(self(), {:selected, value}) end
-      state1 = %{state | on_select: on_select}
+
+      state1 =
+        state
+        |> Map.put(:on_select, on_select)
+        |> Map.put(:on_change, fn _ -> :ok end)
 
       # Enter key
       event = %Event{type: :key, data: %{key: "Enter"}}
@@ -525,8 +517,8 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       assert state2.is_search_focused == true
 
       # Click on option
-      event = %Event{type: :mouse, data: %{x: 1, y: 2}}
-      {state3, _} = SelectList.handle_event(event, %{}, state)
+      event = %Event{type: :mouse, data: %{x: 1, y: 3}}
+      {state3, _} = SelectList.handle_event(event, %{}, state1)
       assert state3.focused_index == 1
     end
 
@@ -552,8 +544,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
   describe "theming, style, and lifecycle" do
     test "applies style and theme props to container and options" do
       options = [
-        {"Styled Option", :styled,
-         %{background_color: "#ffcccc", color: "#990000"}},
+        {"Styled Option", :styled, %{color: "#990000"}},
         {"Normal Option", :normal}
       ]
 
@@ -574,16 +565,21 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
         Raxol.UI.Components.Input.SelectList.init(%{
           options: options,
           theme: theme,
-          style: style
+          style: style,
+          max_height: 10,
+          show_pagination: false,
+          current_page: 0,
+          page_size: 10,
+          on_change: fn _ -> :ok end
         })
 
-      rendered = Raxol.UI.Components.Input.SelectList.render(state)
+      rendered = Raxol.UI.Components.Input.SelectList.render(state, %{})
       # Container should have merged style
       container = Enum.find(rendered, &(&1[:type] == :container))
       assert container.props.style.border == "2px solid #00ff00"
       assert container.props.style.border_radius == "8px"
       # First option should have per-option style merged
-      [first_option, second_option] = container.children
+      [first_option, _second_option] = container.children
 
       assert (first_option.children
               |> hd
@@ -595,7 +591,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       assert first_option.props.style.font_style == "italic"
       # Selected color from style overrides theme
       state = %{state | selected_indices: MapSet.new([0])}
-      rendered = Raxol.UI.Components.Input.SelectList.render(state)
+      rendered = Raxol.UI.Components.Input.SelectList.render(state, %{})
       container = Enum.find(rendered, &(&1[:type] == :container))
       first_option = hd(container.children)
 
@@ -605,7 +601,7 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       assert text_style.color == "#654321"
       # Focused background from theme
       state = %{state | focused_index: 0}
-      rendered = Raxol.UI.Components.Input.SelectList.render(state)
+      rendered = Raxol.UI.Components.Input.SelectList.render(state, %{})
       container = Enum.find(rendered, &(&1[:type] == :container))
       first_option = hd(container.children)
       assert first_option.props.style.background_color == "#abcdef"
@@ -624,20 +620,21 @@ defmodule Raxol.UI.Components.Input.SelectListTest do
       state =
         Raxol.UI.Components.Input.SelectList.init(%{
           options: options,
-          max_height: 5
+          max_height: 5,
+          on_change: fn _ -> :ok end
         })
 
-      rendered = Raxol.UI.Components.Input.SelectList.render(state)
+      rendered = Raxol.UI.Components.Input.SelectList.render(state, %{})
       container = Enum.find(rendered, &(&1[:type] == :container))
       assert container.props.style.max_height == 5
       # Update max_height
       {state2, _} =
         Raxol.UI.Components.Input.SelectList.update(
-          {:update_props, %{max_height: 10}},
+          {:update_props, %{max_height: 10, options: options}},
           state
         )
 
-      rendered2 = Raxol.UI.Components.Input.SelectList.render(state2)
+      rendered2 = Raxol.UI.Components.Input.SelectList.render(state2, %{})
       container2 = Enum.find(rendered2, &(&1[:type] == :container))
       assert container2.props.style.max_height == 10
     end

@@ -24,7 +24,20 @@ defmodule Raxol.Terminal.TerminalUtils do
     # Try to detect dimensions (multiple methods with fallbacks)
     {width, height} =
       with {:error, _} <- detect_with_io(:io),
-           {:error, _} <- detect_with_termbox(),
+           {:error, _} <-
+             (if real_tty?() and Mix.env() != :test do
+                Logger.debug(
+                  "[TerminalUtils] TTY detected, attempting detect_with_termbox..."
+                )
+
+                detect_with_termbox()
+              else
+                Logger.debug(
+                  "[TerminalUtils] Not a real TTY, skipping detect_with_termbox."
+                )
+
+                {:error, :not_a_tty}
+              end),
            {:error, _} <- detect_with_stty() do
         Logger.warning(
           "Could not determine terminal dimensions. Using defaults."
@@ -108,6 +121,8 @@ defmodule Raxol.Terminal.TerminalUtils do
 
   # Try to detect with rrex_termbox
   defp detect_with_termbox do
+    Logger.debug("[TerminalUtils] Calling ExTermbox.width/height (NIF)...")
+
     with {:ok, width} <- ExTermbox.width(),
          {:ok, height} <- ExTermbox.height() do
       {:ok, width, height}
@@ -142,6 +157,21 @@ defmodule Raxol.Terminal.TerminalUtils do
       e ->
         Logger.debug("Error in detect_with_stty: #{inspect(e)}")
         {:error, e}
+    end
+  end
+
+  # Add a robust TTY check
+  @doc """
+  Returns true if the current process is attached to a real TTY device.
+  """
+  def real_tty? do
+    case System.cmd("tty", []) do
+      {tty, 0} ->
+        tty = String.trim(tty)
+        tty != "not a tty" and String.starts_with?(tty, "/dev/")
+
+      _ ->
+        false
     end
   end
 end

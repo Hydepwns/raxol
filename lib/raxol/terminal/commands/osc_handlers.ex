@@ -9,11 +9,24 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   alias Raxol.System.Clipboard
   require Logger
 
-  @doc "Handles OSC 0 (Set Icon Name and Window Title) or OSC 2 (Set Window Title)"
-  @spec handle_0_or_2(Emulator.t(), String.t()) :: Emulator.t()
+  @doc """
+  Handles OSC 1 (Set Icon Name)
+  """
+  @spec handle_1(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_1(emulator, pt) do
+    Logger.debug("OSC 1: Set Icon Name to '#{pt}'")
+    {:ok, %{emulator | icon_name: pt}}
+  end
+
+  @doc """
+  Handles OSC 0 (Set Icon Name and Window Title) or OSC 2 (Set Window Title)
+  """
+  @spec handle_0_or_2(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_0_or_2(emulator, pt) do
-    Logger.debug("OSC 0/2: Set Window Title to '#{pt}'")
-    %{emulator | window_title: pt}
+    Logger.debug("OSC 0/2: Set Window Title and Icon Name to '#{pt}'")
+    {:ok, %{emulator | window_title: pt, icon_name: pt}}
   end
 
   @doc """
@@ -35,56 +48,49 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   - For set: Updated emulator with new color in palette
   - For query: Emulator with response in output_buffer
   """
-  @spec handle_4(Emulator.t(), String.t()) :: Emulator.t()
+  @spec handle_4(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_4(emulator, pt) do
-    parse_osc4(emulator, pt)
-  end
-
-  @doc "Handles OSC 7 (Set/Query Current Working Directory URL)"
-  @spec handle_7(Emulator.t(), String.t()) :: Emulator.t()
-  def handle_7(emulator, pt) do
-    # OSC 7: Current Working Directory
-    # Pt format: file://hostname/path or just /path
-    uri = pt
-    Logger.info("OSC 7: Reported CWD: #{uri}")
-    # TODO: Store CWD in state or emit event if needed?
-    # For now, just acknowledge by logging.
-    emulator
-  end
-
-  @doc "Handles OSC 8 (Hyperlink)"
-  @spec handle_8(Emulator.t(), String.t()) :: Emulator.t()
-  def handle_8(emulator, pt) do
-    case String.split(pt, ";", parts: 2) do
-      # We expect params;uri
-      [params_str, uri] ->
-        Logger.debug("OSC 8: Hyperlink: URI='#{uri}', Params='#{params_str}'")
-        # TODO: Optionally parse params (e.g., id=...)
-        # For now, just store the URI if needed for rendering later
-        # %{emulator | current_hyperlink_url: uri}
-        # Not storing hyperlink state currently
-        emulator
-
-      # Handle cases with missing params: OSC 8;;uri ST (common)
-      # Or just uri without params: OSC 8;uri ST (allowed?)
-      # Treat as just URI for now if only one part
-      [uri] ->
-        Logger.debug("OSC 8: Hyperlink: URI='#{uri}', No Params")
-        # Not storing hyperlink state currently
-        emulator
-
-      # Handle malformed OSC 8
-      _ ->
-        Logger.warning("Malformed OSC 8 sequence: PT='#{pt}'")
-        emulator
+    case parse_osc4(emulator, pt) do
+      {:ok, emu} -> {:ok, emu}
+      {:error, reason, emu} -> {:error, reason, emu}
+      emu when is_map(emu) -> {:ok, emu}
     end
   end
 
-  @doc "Handles OSC 52 (Set/Query Clipboard Data)"
-  @spec handle_52(Emulator.t(), String.t()) :: Emulator.t()
+  @doc "Handles OSC 7 (Set/Query Current Working Directory URL) and stores it in emulator state."
+  @spec handle_7(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_7(emulator, pt) do
+    uri = pt
+    Logger.info("OSC 7: Reported CWD: #{uri}")
+    {:ok, %{emulator | cwd: uri}}
+  end
+
+  @doc "Handles OSC 8 (Hyperlink) and stores hyperlink state in emulator."
+  @spec handle_8(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_8(emulator, pt) do
+    case String.split(pt, ";", parts: 2) do
+      [params_str, uri] ->
+        Logger.debug("OSC 8: Hyperlink: URI='#{uri}', Params='#{params_str}'")
+        {:ok, %{emulator | current_hyperlink: %{uri: uri, params: params_str}}}
+
+      [uri] ->
+        Logger.debug("OSC 8: Hyperlink: URI='#{uri}', No Params")
+        {:ok, %{emulator | current_hyperlink: %{uri: uri, params: nil}}}
+
+      _ ->
+        Logger.warn("Malformed OSC 8 sequence: PT='#{pt}'")
+        {:error, :malformed_osc_8, emulator}
+    end
+  end
+
+  @doc "Handles OSC 52 (Set/Query Clipboard Data) with selection clarification."
+  @spec handle_52(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_52(emulator, pt) do
     case String.split(pt, ";", parts: 2) do
-      # Set clipboard: "c;DATA_BASE64"
       [selection_char, data_base64]
       when selection_char in ["c", "p"] and data_base64 != "?" ->
         case Base.decode64(data_base64) do
@@ -93,86 +99,98 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
               "OSC 52: Set Clipboard (#{selection_char}): '#{data_str}'"
             )
 
-            # Use alias Raxol.System.Clipboard
+            # Only system clipboard is supported; both 'c' and 'p' map to Clipboard.copy
             Clipboard.copy(data_str)
-
-            # TODO: Need to decide which selection (p/c) Clipboard.put targets or if it needs options.
-            emulator
+            {:ok, emulator}
 
           :error ->
             Logger.warning(
               "OSC 52: Failed to decode base64 data: '#{data_base64}'"
             )
 
-            emulator
+            {:error, :decode_base64_failed, emulator}
         end
 
-      # Query clipboard: "c;?"
       [selection_char, "?"] when selection_char in ["c", "p"] ->
         Logger.debug("OSC 52: Query Clipboard (#{selection_char})")
-        # TODO: Read from appropriate selection (p/c)
-        # Use alias Raxol.System.Clipboard
+
         case Clipboard.paste() do
           {:ok, content} ->
             response_data = Base.encode64(content)
             response = "\e]52;#{selection_char};#{response_data}\e\\"
             Logger.debug("OSC 52: Response: #{inspect(response)}")
-            %{emulator | output_buffer: emulator.output_buffer <> response}
+
+            {:ok,
+             %{emulator | output_buffer: emulator.output_buffer <> response}}
 
           {:error, reason} ->
             Logger.warning(
               "OSC 52: Failed to get clipboard: #{inspect(reason)}"
             )
 
-            emulator
+            {:error, :clipboard_paste_failed, emulator}
         end
 
       _ ->
-        Logger.warning("Malformed OSC 52 sequence: PT='#{pt}'")
-        emulator
+        Logger.warn("Malformed OSC 52 sequence: PT='#{pt}'")
+        {:error, :malformed_osc_52, emulator}
     end
   end
 
   # --- OSC 4 Helpers (Moved from Executor) ---
 
-  @spec parse_osc4(Emulator.t(), String.t()) :: Emulator.t()
+  @spec parse_osc4(Emulator.t(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   defp parse_osc4(emulator, pt) do
     case String.split(pt, ";", parts: 2) do
       [c_str, spec_or_query] ->
         case Integer.parse(c_str) do
           {color_index, ""} when color_index >= 0 and color_index <= 255 ->
-            handle_osc4_color(emulator, color_index, spec_or_query)
+            case handle_osc4_color(emulator, color_index, spec_or_query) do
+              {:ok, emu} -> {:ok, emu}
+              {:error, reason, emu} -> {:error, reason, emu}
+              emu when is_map(emu) -> {:ok, emu}
+            end
 
           _ ->
-            Logger.warning("OSC 4: Invalid color index '#{c_str}'")
-            emulator
+            Logger.warn("OSC 4: Invalid color index '#{c_str}'")
+            {:error, :invalid_color_index, emulator}
         end
 
       _ ->
-        Logger.warning("OSC 4: Malformed parameter string '#{pt}'")
-        emulator
+        Logger.warn("OSC 4: Malformed parameter string '#{pt}'")
+        {:error, :malformed_osc4_param, emulator}
     end
   end
 
-  @spec handle_osc4_color(Emulator.t(), integer(), String.t()) :: Emulator.t()
+  @spec handle_osc4_color(Emulator.t(), integer(), String.t()) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   defp handle_osc4_color(emulator, color_index, "?") do
-    # Query color
     Logger.debug("OSC 4: Query color index #{color_index}")
-    # TODO: Query default palette if not in dynamic map?
-    # For now, default to black if not set.
-    {r, g, b} = Map.get(emulator.color_palette, color_index, {0, 0, 0})
-
-    # Format response as rgb:RRRR/GGGG/BBBB (adjust range if needed)
-    # Assuming {r,g,b} are 0-255, xterm expects 0-65535, so scale up.
-    r_scaled = Integer.to_string(div(r * 65535, 255), 16)
-    g_scaled = Integer.to_string(div(g * 65535, 255), 16)
-    b_scaled = Integer.to_string(div(b * 65535, 255), 16)
-    spec_response = "rgb:#{r_scaled}/#{g_scaled}/#{b_scaled}"
-
-    response_str = "\e]4;#{color_index};#{spec_response}\e\\"
-    Logger.debug("OSC 4: Response: #{inspect(response_str)}")
-    %{emulator | output_buffer: emulator.output_buffer <> response_str}
+    # Query dynamic palette, then fallback to default_palette if not set
+    case get_palette_color(emulator.color_palette, color_index) ||
+           (emulator.default_palette && get_palette_color(emulator.default_palette, color_index)) do
+      {:ok, {r, g, b}} ->
+        r_scaled = Integer.to_string(div(r * 65_535, 255), 16)
+        g_scaled = Integer.to_string(div(g * 65_535, 255), 16)
+        b_scaled = Integer.to_string(div(b * 65_535, 255), 16)
+        spec_response = "rgb:#{r_scaled}/#{g_scaled}/#{b_scaled}"
+        response_str = "\e]4;#{color_index};#{spec_response}\e\\"
+        Logger.debug("OSC 4: Response: #{inspect(response_str)}")
+        {:ok, %{emulator | output_buffer: emulator.output_buffer <> response_str}}
+      _ ->
+        {:error, :invalid_color_index, emulator}
+    end
   end
+
+  # Helper for safe palette access
+  defp get_palette_color(palette, index) when is_integer(index) and index >= 0 and index <= 255 do
+    case Map.get(palette, index) do
+      nil -> {:error, :invalid_color_index}
+      color -> {:ok, color}
+    end
+  end
+  defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
 
   defp handle_osc4_color(emulator, color_index, spec) do
     # Set color
@@ -183,11 +201,11 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
         )
 
         new_palette = Map.put(emulator.color_palette, color_index, {r, g, b})
-        %{emulator | color_palette: new_palette}
+        {:ok, %{emulator | color_palette: new_palette}}
 
       {:error, reason} ->
-        Logger.warning("OSC 4: Invalid color spec '#{spec}': #{reason}")
-        emulator
+        Logger.warn("OSC 4: Invalid color spec '#{spec}': #{reason}")
+        {:error, :invalid_color_spec, emulator}
     end
   end
 
@@ -315,7 +333,7 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
       case Integer.parse(hex_str, 16) do
         {val, ""} ->
           # Scale to 0-255. Max value is 0xFFFF (65535).
-          scaled_val = round(val * 255 / 65535)
+          scaled_val = round(val * 255 / 65_535)
           # Alternative: simple bit shift approximation?
           # scaled_val = val >>> (len * 4 - 8) # if len > 2 ?
           {:ok, max(0, min(255, scaled_val))}

@@ -6,7 +6,6 @@ defmodule Raxol.Terminal.Integration.Config do
   require Logger
 
   alias Raxol.Terminal.Config
-  alias Raxol.Terminal.Config.{Utils, Defaults}
   alias Raxol.Terminal.Integration.State
 
   @doc """
@@ -102,25 +101,25 @@ defmodule Raxol.Terminal.Integration.Config do
   end
 
   defp update_buffer_manager(buffer_manager, config) do
-    Manager.update_limits(
+    Raxol.Terminal.Buffer.Manager.update_limits(
       buffer_manager,
-      config.behavior.scrollback_lines,
+      config.behavior.scrollback_limit,
       config.memory_limit || 50 * 1024 * 1024
     )
   end
 
   defp update_renderer(renderer, config) do
-    Renderer.update_colors(renderer, config.ansi.colors)
+    Raxol.Terminal.Renderer.update_colors(renderer, config.ansi.colors)
   end
 
   defp update_scroll_buffer(scroll_buffer, config) do
-    Scroll.update_size(scroll_buffer, config.behavior.scrollback_lines)
+    Raxol.Terminal.Buffer.Scroll.update_size(scroll_buffer, config.behavior.scrollback_limit)
   end
 
   defp update_command_history(command_history, config) do
-    History.update_size(
+    Raxol.Terminal.Commands.History.update_size(
       command_history,
-      (config.behavior.save_history && 1000) || 0
+      (config.behavior.enable_command_history && 1000) || 0
     )
   end
 end

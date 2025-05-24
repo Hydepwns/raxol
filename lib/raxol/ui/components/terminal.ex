@@ -1,0 +1,137 @@
+defmodule Raxol.UI.Components.Terminal do
+  @moduledoc """
+  A terminal component that emulates a standard terminal within the UI.
+  """
+
+  @typedoc """
+  State for the Terminal component.
+
+  - :id - unique identifier
+  - :width - terminal width
+  - :height - terminal height
+  - :buffer - list of lines
+  - :style - style map
+  """
+  @type t :: %__MODULE__{
+    id: any(),
+    width: non_neg_integer(),
+    height: non_neg_integer(),
+    buffer: [String.t()],
+    style: map()
+  }
+
+  # Use standard component behaviour
+  use Raxol.UI.Components.Base.Component
+  require Logger
+
+  # Require view macros
+  require Raxol.View.Elements
+
+  # Define state struct
+  defstruct id: nil,
+            width: 80,
+            height: 24,
+            # Add buffer, emulator state, etc.
+            # Example: List of lines
+            buffer: [],
+            style: %{}
+
+  # --- Component Behaviour Callbacks ---
+
+  @doc "Initializes the Terminal component state from props."
+  @spec init(map()) :: map()
+  @impl Raxol.UI.Components.Base.Component
+  def init(props) do
+    # Initialize terminal state using props, providing defaults
+    %__MODULE__{
+      id: Map.get(props, :id, nil),
+      width: props[:width] || 80,
+      height: props[:height] || 24,
+      # Use buffer from props or default to []
+      buffer: props[:buffer] || [],
+      style: props[:style] || %{}
+      # Initialize other relevant fields if added later
+    }
+  end
+
+  @doc "Updates the Terminal component state in response to messages. Handles writing, clearing, etc."
+  @spec update(term(), map()) :: {map(), list()}
+  @impl Raxol.UI.Components.Base.Component
+  def update(msg, state) do
+    # Handle messages to write to terminal, clear, etc.
+    Logger.debug(
+      "Terminal #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
+    )
+
+    # Placeholder
+    {state, []}
+  end
+
+  @doc "Handles key events for the Terminal component."
+  @spec handle_event(map(), map(), map()) :: {map(), list()}
+  @impl Raxol.UI.Components.Base.Component
+  # Use map matching
+  def handle_event(%{type: :key} = event, %{} = _props, state) do
+    # Process key event, send to terminal emulator/process
+    Logger.debug(
+      "Terminal #{Map.get(state, :id, nil)} received key event: #{inspect(event.data)}"
+    )
+
+    # Placeholder: Append key to buffer for simple echo
+    new_buffer = state.buffer ++ ["Key: #{inspect(event.data.key)}"]
+    {%{state | buffer: new_buffer}, []}
+  end
+
+  # Catch-all handle_event
+  @doc "Handles other events for the Terminal component."
+  @spec handle_event(map(), map(), map()) :: {map(), list()}
+  @impl Raxol.UI.Components.Base.Component
+  def handle_event(event, %{} = _props, state) do
+    Logger.debug(
+      "Terminal #{Map.get(state, :id, nil)} received event: #{inspect(event.type)}"
+    )
+
+    {state, []}
+  end
+
+  # --- Render Logic ---
+
+  @doc "Renders the Terminal component, displaying the buffer as lines."
+  @spec render(map(), map()) :: map()
+  @impl Raxol.UI.Components.Base.Component
+  def render(state, %{} = _props) do
+    # Generate label elements
+    label_elements =
+      Enum.map(state.buffer, fn line_content ->
+        # Still use label macro for consistency, or build map directly
+        Raxol.View.Elements.label(content: line_content)
+      end)
+
+    # Create column element map explicitly
+    column_element = %{
+      type: :column,
+      # Assuming no specific attrs for column here
+      attrs: [],
+      # Assign the list of labels
+      children: label_elements
+    }
+
+    # Create box element map explicitly, using column as child
+    box_element = %{
+      type: :box,
+      # Ensure attrs is a Keyword list as expected by test
+      attrs: [
+        id: Map.get(state, :id, nil),
+        width: state.width,
+        height: state.height,
+        style: state.style
+      ],
+      # Assign the column map
+      children: column_element
+    }
+
+    # Return the final element structure
+    box_element
+  end
+
+end

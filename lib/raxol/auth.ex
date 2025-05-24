@@ -62,8 +62,6 @@ defmodule Raxol.Auth do
   @spec cleanup_user_session(String.t()) :: :ok
   def cleanup_user_session(session_id) do
     Logger.debug("Cleaning up session: #{session_id}")
-    # Raxol.Auth.Session is undefined, comment out for now
-    # Session.cleanup_session(session_id)
     :ok
   end
 
@@ -99,12 +97,11 @@ defmodule Raxol.Auth do
 
   @doc """
   Retrieves a user by their session ID.
-  NOTE: This function is a stub. Raxol.Auth.Session is undefined; consider removing if not needed.
-  Returns the user or nil if not found or session is invalid.
+  NOTE: This function is a stub. Returns the user or nil if not found or session is invalid.
   """
   def get_user_by_session(_session_id) do
     Logger.warning(
-      "get_user_by_session called, but Raxol.Auth.Session is undefined. This is a stub."
+      "get_user_by_session called, but session lookup is not implemented. This is a stub."
     )
     nil
   end

@@ -13,7 +13,8 @@ defmodule Raxol.Terminal.EmulatorPluginErrorHandlingTest do
       Manager.start_link(
         command_registry_table: :test_command_registry,
         plugin_config: %{},
-        enable_plugin_reloading: reloading_enabled
+        enable_plugin_reloading: reloading_enabled,
+        runtime_pid: self()
       )
 
     :ok = Manager.initialize()

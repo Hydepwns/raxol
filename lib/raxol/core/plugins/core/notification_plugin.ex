@@ -222,8 +222,16 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   def filter_event(event, state), do: {:ok, event, state}
 
   # Defensive: handle_command/2 returns an error indicating incorrect arity
-  def handle_command(_command, _args) do
+  # Add a wrapper for backward compatibility with tests
+  @doc """
+  Wrapper for handle_command/2 for backward compatibility. Delegates to handle_command/3 if possible.
+  """
+  def handle_command([a, b], state) when is_binary(a) and is_binary(b) do
+    handle_command(:notify, [a, b], state)
+  end
+
+  def handle_command(_args, _state) do
     {:error, :invalid_arity,
-     "NotificationPlugin.handle_command/2 is not supported. Use handle_command/3 with state."}
+     "NotificationPlugin.handle_command/2 is not supported for these arguments. Use handle_command/3 with state."}
   end
 end

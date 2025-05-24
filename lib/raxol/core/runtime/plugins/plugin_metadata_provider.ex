@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginMetadataProvider do
   Defines the behaviour for plugins that provide metadata like ID, version, and dependencies.
 
   Plugins can optionally implement this behaviour to declare their metadata,
-  which the `PluginManager` uses for dependency resolution and management.
+  which the plugin manager uses for dependency resolution and management.
   """
 
   @typedoc """
@@ -19,7 +19,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginMetadataProvider do
         }
 
   @doc """
-  Callback invoked by the `PluginManager` to retrieve the plugin's metadata.
+  Callback invoked by the plugin manager to retrieve the plugin's metadata.
   """
   @callback get_metadata() :: metadata()
 end

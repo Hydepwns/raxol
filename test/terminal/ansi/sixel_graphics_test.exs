@@ -34,7 +34,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
   describe "process_sequence/2" do
     test "processes basic Sixel data" do
       state = SixelGraphics.new()
-      input = "\ePq#1A\e\\\\"
+      input = "\ePq#1A\e\\"
       {new_state, response} = SixelGraphics.process_sequence(state, input)
       assert response == :ok
       assert new_state.current_color == 1
@@ -45,7 +45,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
     test "processes color selection and data" do
       state = SixelGraphics.new()
-      input = "\ePq#1~\e\\\\"
+      input = "\ePq#1~\e\\"
       {new_state, response} = SixelGraphics.process_sequence(state, input)
       assert response == :ok
       assert new_state.current_color == 1
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
     test "processes carriage return ($)" do
       state = SixelGraphics.new()
-      input = "\ePq#0A$#0A\e\\\\"
+      input = "\ePq#0A$#0A\e\\"
       {new_state, response} = SixelGraphics.process_sequence(state, input)
       assert response == :ok
       # First 'A' at x=0, second 'A' at x=0 after CR
@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
     test "processes line feed (-)" do
       state = SixelGraphics.new()
-      input = "\ePq-A\e\\\\"
+      input = "\ePq-A\e\\"
       {new_state, response} = SixelGraphics.process_sequence(state, input)
       assert response == :ok
       # '-' advances y by 6, resets x to 0
@@ -89,14 +89,14 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
 
     test "handles non-Sixel DCS sequences gracefully" do
       state = SixelGraphics.new()
-      input = "\eP!pSomeData\e\\\\"
+      input = "\eP!pSomeData\e\\"
       {_new_state, response} = SixelGraphics.process_sequence(state, input)
       assert response == {:error, :missing_or_misplaced_q}
     end
 
     test "processes complex Sixel sequence with attributes" do
       state = SixelGraphics.new()
-      input = "\ePq\"1;1;100;50#1;1;66;50;100!3A$-A\e\\\\"
+      input = "\ePq\"1;1;100;50#1;1;66;50;100!3A$-A\e\\"
       {new_state, response} = SixelGraphics.process_sequence(state, input)
       assert response == :ok
 
@@ -130,7 +130,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       state = SixelGraphics.new()
 
       # Test exact termination
-      input_exact = "\ePq?\e\\\\"
+      input_exact = "\ePq?\e\\"
 
       {new_state_exact, response_exact} =
         SixelGraphics.process_sequence(state, input_exact)
@@ -140,7 +140,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphicsTest do
       assert new_state_exact.pixel_buffer == %{}
 
       # Test embedded ST
-      input_embedded = "\ePq?\e\\\\extra"
+      input_embedded = "\ePq?\e\\extra"
 
       {_new_state_embedded, response_embedded} =
         SixelGraphics.process_sequence(state, input_embedded)

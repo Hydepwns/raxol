@@ -32,7 +32,7 @@ defmodule Raxol.I18nAccessibilityTest do
   require Raxol.I18nTestHelpers
   import Raxol.I18nTestHelpers
   # Ensure mocks are compiled/available
-  import Raxol.Test.Mocks
+  # import Raxol.Test.Mocks # This file doesn't exist, removing import
   import Mox
 
   # Import the actual Gettext helpers
@@ -40,18 +40,16 @@ defmodule Raxol.I18nAccessibilityTest do
 
   # Alias the core I18n module
   alias Raxol.Core.I18n
+  # Alias the module we intend to stub
+  alias Raxol.Core.Accessibility
+  # Alias the mock implementation
+  alias Raxol.Core.Accessibility.Mock, as: AccessibilityMock
 
   # NOTE (2024-05-02): Still investigating persistent Mox compilation error:
   # Mox compilation error: "UndefinedFunctionError: function Mox.__using__/1 is undefined or private".
   # This prevents the test suite from running. The root cause needs investigation.
   # See TEST_PLAN.md for more details.
-
-  # Define the mock inside the test module or a dedicated test support file
-  # defmodule Raxol.Core.Accessibility.Mock do
-  #   # Correct usage: Call defmock inside the mock module
-  #   # Mox.defmock(Raxol.Core.Accessibility.Mock, for: Raxol.Core.AccessibilityBehaviour)
-  #   # ^^^ Still causing UndefinedFunctionError for Mox.__using__/1
-  # end
+  # ^^^ This note should now be outdated if the issue was local defmock attempts.
 
   setup :verify_on_exit!
   setup :set_mox_global
@@ -59,6 +57,8 @@ defmodule Raxol.I18nAccessibilityTest do
   # Add I18n initialization to setup
   setup do
     Raxol.Core.I18n.init()
+    # Stub Raxol.Core.Accessibility with our manual mock implementation
+    Mox.stub_with(Accessibility, AccessibilityMock)
     :ok
   end
 
@@ -105,18 +105,16 @@ defmodule Raxol.I18nAccessibilityTest do
       expected_translation = I18n.t(key)
 
       with_locale(locale, fn ->
-        # Expect the announcement function to be called with the translated string
-        # expect(Raxol.Core.Accessibility.Mock, :announce, fn message ->
-        #   assert message == expected_translation
-        # end)
+        # Expect the announcement function on the MOCK to be called with the translated string
+        expect(AccessibilityMock, :announce, fn message, _opts, _pid_or_name ->
+          assert message == expected_translation
+          # Mox callbacks should return :ok or the expected value
+          :ok
+        end)
 
-        # Call the code that should trigger the announcement (replace with actual code)
-        # Raxol.Core.SomeModule.delete_item_and_announce(key)
-        # For now, simulate the announcement call directly for testing purpose
-        # Raxol.Core.Accessibility.announce(Raxol.t(key))
-
-        # Since Mox is disabled, manually assert the translation
-        assert I18n.t(key) == expected_translation
+        # Call the code that should trigger the announcement.
+        # This is the actual module, which is now stubbed to call AccessibilityMock
+        Accessibility.announce(I18n.t(key), [], nil)
       end)
     end
 

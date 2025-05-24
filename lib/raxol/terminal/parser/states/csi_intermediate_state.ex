@@ -21,7 +21,6 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
         %State{state: :csi_intermediate} = parser_state,
         input
       ) do
-    # IO.inspect({:parse_loop_csi_intermediate, parser_state.state, input}, label: "DEBUG_PARSER")
     case input do
       <<>> ->
         # Incomplete CSI sequence - return current state
@@ -55,10 +54,6 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
       # Final byte (0x40 - 0x7E)
       <<final_byte, rest_after_final::binary>>
       when final_byte >= ?@ and final_byte <= ?~ ->
-        # Execute the command
-        IO.inspect(emulator.main_screen_buffer,
-          label: "CSI_INTERMEDIATE_PRE_EXECUTE: main_screen_buffer"
-        )
 
         final_emulator =
           Executor.execute_csi_command(
@@ -67,10 +62,6 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
             parser_state.intermediates_buffer,
             final_byte
           )
-
-        IO.inspect(final_emulator.main_screen_buffer,
-          label: "CSI_INTERMEDIATE_POST_EXECUTE: main_screen_buffer"
-        )
 
         Logger.debug(
           "CSIIntermediate: After execute, emulator.scroll_region=#{inspect(final_emulator.scroll_region)}"

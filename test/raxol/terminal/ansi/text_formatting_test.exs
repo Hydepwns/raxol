@@ -57,6 +57,31 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
       assert style.underline == true
     end
 
+    test "adds framed, encircled, and overlined attributes" do
+      style = TextFormatting.new()
+      style = TextFormatting.apply_attribute(style, :framed)
+      assert style.framed == true
+      style = TextFormatting.apply_attribute(style, :encircled)
+      assert style.encircled == true
+      style = TextFormatting.apply_attribute(style, :overlined)
+      assert style.overlined == true
+    end
+
+    test "removes framed, encircled, and overlined attributes" do
+      style = TextFormatting.new()
+      style = TextFormatting.apply_attribute(style, :framed)
+      style = TextFormatting.apply_attribute(style, :encircled)
+      style = TextFormatting.apply_attribute(style, :overlined)
+      assert style.framed == true
+      assert style.encircled == true
+      assert style.overlined == true
+      style = TextFormatting.apply_attribute(style, :not_framed_encircled)
+      assert style.framed == false
+      assert style.encircled == false
+      style = TextFormatting.apply_attribute(style, :not_overlined)
+      assert style.overlined == false
+    end
+
     test "can add multiple decorations" do
       style = TextFormatting.new()
       style = TextFormatting.apply_attribute(style, :underline)
@@ -239,4 +264,57 @@ defmodule Raxol.Terminal.ANSI.TextFormattingTest do
 
   # Note: Tests for merge/2 and other functions that might have existed before
   # are removed as they are not present in the current text_formatting.ex
+
+  describe "parse_sgr_param/2 (test-only public)" do
+    test "parses attribute SGR code (bold)" do
+      style = TextFormatting.new()
+      style = TextFormatting.parse_sgr_param(1, style)
+      assert style.bold == true
+    end
+
+    test "parses color SGR code (foreground red)" do
+      style = TextFormatting.new()
+      style = TextFormatting.parse_sgr_param(31, style)
+      assert style.foreground == :red
+    end
+
+    test "parses bright color SGR code (bright blue foreground)" do
+      style = TextFormatting.new()
+      style = TextFormatting.parse_sgr_param(94, style)
+      assert style.foreground == :blue or style.foreground == :bright_blue
+    end
+
+    test "parses 8-bit foreground color SGR code" do
+      style = TextFormatting.new()
+      style = TextFormatting.parse_sgr_param({:fg_8bit, 42}, style)
+      assert style.foreground == {:index, 42}
+    end
+
+    test "parses 24-bit RGB background color SGR code" do
+      style = TextFormatting.new()
+      style = TextFormatting.parse_sgr_param({:bg_rgb, 10, 20, 30}, style)
+      assert style.background == {:rgb, 10, 20, 30}
+    end
+
+    test "returns unchanged style for unknown code" do
+      style = TextFormatting.new()
+      style2 = TextFormatting.parse_sgr_param(999, style)
+      assert style2 == style
+    end
+
+    test "parses SGR 51-55 (framed, encircled, overlined, not_framed_encircled, not_overlined)" do
+      style = TextFormatting.new()
+      style = TextFormatting.parse_sgr_param(51, style)
+      assert style.framed == true
+      style = TextFormatting.parse_sgr_param(52, style)
+      assert style.encircled == true
+      style = TextFormatting.parse_sgr_param(53, style)
+      assert style.overlined == true
+      style = TextFormatting.parse_sgr_param(54, style)
+      assert style.framed == false
+      assert style.encircled == false
+      style = TextFormatting.parse_sgr_param(55, style)
+      assert style.overlined == false
+    end
+  end
 end

@@ -152,8 +152,8 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
                    {"Content-Type", "application/json"}
                  ]
 
-          assert opts[:timeout] == 5000
-          assert opts[:recv_timeout] == 5000
+          assert Map.get(opts, :timeout) == 5000
+          assert Map.get(opts, :recv_timeout) == 5000
 
           {:ok,
            %{
@@ -244,8 +244,8 @@ defmodule Raxol.Core.Performance.AIIntegrationTest do
 
         # Mock HTTPoison to verify options
         expect(HTTPoison, :request, fn _method, _url, _body, _headers, opts ->
-          assert opts[:timeout] == 10000
-          assert opts[:recv_timeout] == 10000
+          assert Map.get(opts, :timeout) == 10000
+          assert Map.get(opts, :recv_timeout) == 10000
 
           {:ok,
            %{

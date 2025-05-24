@@ -58,9 +58,32 @@ defmodule Raxol.Style.Colors.Formats do
     hex_string = String.trim_leading(hex_string, "#")
 
     case String.length(hex_string) do
-      6 -> parse_rgb_hex(hex_string)
-      8 -> parse_rgba_hex(hex_string)
-      _ -> raise ArgumentError, "Invalid hex color format"
+      3 ->
+        # Expand short RGB (e.g., F00 -> FF0000)
+        [r, g, b] = String.graphemes(hex_string)
+        expanded = r <> r <> g <> g <> b <> b
+        parse_rgb_hex(expanded)
+
+      4 ->
+        # Expand short RGBA (e.g., F008 -> FF000088)
+        [r, g, b, a] = String.graphemes(hex_string)
+        expanded = r <> r <> g <> g <> b <> b <> a <> a
+        parse_rgba_hex(expanded)
+
+      6 ->
+        case parse_rgb_hex(hex_string) do
+          {r, g, b} -> {r, g, b}
+          {:error, :invalid_hex} = err -> err
+        end
+
+      8 ->
+        case parse_rgba_hex(hex_string) do
+          {r, g, b, a} -> {r, g, b, a}
+          {:error, :invalid_hex} = err -> err
+        end
+
+      _ ->
+        {:error, :invalid_hex}
     end
   end
 
@@ -173,22 +196,37 @@ defmodule Raxol.Style.Colors.Formats do
   # --- Private Helpers ---
 
   defp parse_rgb_hex(hex) do
-    <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
-    {r, ""} = Integer.parse(r, 16)
-    {g, ""} = Integer.parse(g, 16)
-    {b, ""} = Integer.parse(b, 16)
-    {r, g, b}
+    if byte_size(hex) == 6 do
+      <<r::binary-size(2), g::binary-size(2), b::binary-size(2)>> = hex
+
+      with {r, ""} <- Integer.parse(r, 16),
+           {g, ""} <- Integer.parse(g, 16),
+           {b, ""} <- Integer.parse(b, 16) do
+        {r, g, b}
+      else
+        _ -> {:error, :invalid_hex}
+      end
+    else
+      {:error, :invalid_hex}
+    end
   end
 
   defp parse_rgba_hex(hex) do
-    <<r::binary-size(2), g::binary-size(2), b::binary-size(2),
-      a::binary-size(2)>> = hex
+    if byte_size(hex) == 8 do
+      <<r::binary-size(2), g::binary-size(2), b::binary-size(2),
+        a::binary-size(2)>> = hex
 
-    {r, ""} = Integer.parse(r, 16)
-    {g, ""} = Integer.parse(g, 16)
-    {b, ""} = Integer.parse(b, 16)
-    {a, ""} = Integer.parse(a, 16)
-    {r, g, b, a}
+      with {r, ""} <- Integer.parse(r, 16),
+           {g, ""} <- Integer.parse(g, 16),
+           {b, ""} <- Integer.parse(b, 16),
+           {a, ""} <- Integer.parse(a, 16) do
+        {r, g, b, a}
+      else
+        _ -> {:error, :invalid_hex}
+      end
+    else
+      {:error, :invalid_hex}
+    end
   end
 
   defp find_closest_ansi_256(r, g, b) do

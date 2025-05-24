@@ -103,23 +103,65 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
     if num_options == 0 do
       state
     else
+      clamped_index = min(max(new_index, 0), num_options - 1)
       # Calculate new scroll offset to keep focused item visible
       new_scroll_offset =
         cond do
-          # If focused item is above visible area, scroll up
-          new_index < state.scroll_offset ->
-            new_index
+          clamped_index < state.scroll_offset ->
+            clamped_index
 
-          # If focused item is below visible area, scroll down
-          new_index >= state.scroll_offset + state.page_size ->
-            new_index - state.page_size + 1
+          clamped_index >= state.scroll_offset + state.page_size ->
+            clamped_index - state.page_size + 1
 
-          # Otherwise keep current scroll position
           true ->
             state.scroll_offset
         end
 
-      %{state | focused_index: new_index, scroll_offset: new_scroll_offset}
+      %{state | focused_index: clamped_index, scroll_offset: new_scroll_offset}
     end
+  end
+
+  @doc """
+  Calculates the index of the option clicked based on the y position and current state.
+  Returns the index, or -1 if out of bounds.
+  """
+  def calculate_clicked_index(y, state) do
+    # Assume y is the vertical position relative to the top of the options list.
+    # If there is a header/search input, y should be offset accordingly by the caller.
+    # Each option is assumed to take 1 row (can be adjusted if needed).
+    index = state.scroll_offset + y
+    effective_options = Pagination.get_effective_options(state)
+
+    if index >= 0 and index < length(effective_options) do
+      index
+    else
+      -1
+    end
+  end
+
+  @doc """
+  Recalculates scroll position to ensure the focused item is visible after a resize or visible_height change.
+  Always returns a valid state map.
+  """
+  def update_scroll_position(state) do
+    effective_options = Pagination.get_effective_options(state)
+    num_options = length(effective_options)
+    visible_height = state.visible_height || state.page_size
+    focused_index = state.focused_index
+
+    # Clamp scroll_offset so focused_index is visible
+    new_scroll_offset =
+      cond do
+        focused_index < state.scroll_offset ->
+          focused_index
+
+        focused_index >= state.scroll_offset + visible_height ->
+          max(0, focused_index - visible_height + 1)
+
+        true ->
+          state.scroll_offset
+      end
+
+    %{state | scroll_offset: new_scroll_offset}
   end
 end

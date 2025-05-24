@@ -27,28 +27,6 @@ defmodule FormValidationExample do
     {:ok, socket}
   end
 
-  # @impl Raxol.App
-  # def update(msg, state) do
-  #   case msg do
-  #     # Update state when input changes and clear the specific error
-  #     {:input_changed, field, value} when field in [:name, :email] ->
-  #       new_state = Map.put(state, field, value)
-  #       new_errors = Map.delete(state.errors, field)
-  #       {:ok, %{new_state | errors: new_errors}}
-  #
-  #     # Validate and update errors on submit
-  #     :submit ->
-  #       errors = validate(state)
-  #       IO.inspect(errors, label: "Validation Errors")
-  #       # If no errors, maybe show success or clear form (TBD)
-  #       # For now, just update the errors map
-  #       {:ok, %{state | errors: errors}}
-  #
-  #     # Default case (ignore other messages)
-  #     _ ->
-  #       {:ok, state}
-  #   end
-  # end
   @impl Raxol.Component
   def handle_event("input_changed", %{"field" => field_str, "value" => value}, socket) do
     field = String.to_existing_atom(field_str)
@@ -60,7 +38,6 @@ defmodule FormValidationExample do
   @impl Raxol.Component
   def handle_event("submit", _params, socket) do
     errors = validate(socket.assigns)
-    # IO.inspect(errors, label: "Validation Errors") # Keep for debugging if needed
     {:noreply, assign(socket, :errors, errors)}
   end
 

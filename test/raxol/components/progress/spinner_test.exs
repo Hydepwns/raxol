@@ -1,6 +1,6 @@
-defmodule Raxol.Components.Progress.SpinnerTest do
+defmodule Raxol.UI.Components.Progress.SpinnerTest do
   use ExUnit.Case
-  alias Raxol.Components.Progress.Spinner
+  alias Raxol.UI.Components.Progress.Spinner
   alias Raxol.Core.Events.Event
 
   describe "init/1" do
@@ -9,7 +9,7 @@ defmodule Raxol.Components.Progress.SpinnerTest do
       assert state.style == :dots
       assert state.frames == ~w(⠋ ⠙ ⠹ ⠸ ⠼ ⠴ ⠦ ⠧ ⠇ ⠏)
       assert state.frame_index == 0
-      assert state.colors == [:white]
+      assert Map.get(state, :colors) == [:white]
       assert state.color_index == 0
       assert state.speed == 80
       assert state.text == nil
@@ -30,7 +30,7 @@ defmodule Raxol.Components.Progress.SpinnerTest do
       assert state.style == :line
       assert state.frames == ~w(| / - \\)
       assert state.frame_index == 0
-      assert state.colors == [:red, :blue]
+      assert Map.get(state, :colors) == [:red, :blue]
       assert state.color_index == 0
       assert state.speed == 100
       assert state.text == "Loading"
@@ -112,7 +112,7 @@ defmodule Raxol.Components.Progress.SpinnerTest do
 
     test "sets colors", %{state: state} do
       new_state = Spinner.update({:set_colors, [:green, :yellow]}, state)
-      assert new_state.colors == [:green, :yellow]
+      assert Map.get(new_state, :colors) == [:green, :yellow]
       assert new_state.color_index == 0
     end
 
@@ -133,7 +133,7 @@ defmodule Raxol.Components.Progress.SpinnerTest do
 
       # Test again to ensure wrap-around
       dots_frames_count =
-        length(Raxol.Components.Progress.Spinner.init(%{}).frames)
+        length(Raxol.UI.Components.Progress.Spinner.init(%{}).frames)
 
       state_at_end = %{state | frame_index: dots_frames_count - 1}
       {wrapped_state, _} = Spinner.handle_event(event, %{}, state_at_end)
@@ -159,14 +159,14 @@ defmodule Raxol.Components.Progress.SpinnerTest do
       state = Spinner.loading()
       assert state.style == :dots
       assert state.text == "Loading"
-      assert state.colors == [:white]
+      assert Map.get(state, :colors) == [:white]
     end
 
     test "processing/1 creates processing spinner" do
       state = Spinner.processing("Working")
       assert state.style == :dots
       assert state.text == "Working"
-      assert state.colors == [:blue, :cyan, :green]
+      assert Map.get(state, :colors) == [:blue, :cyan, :green]
       assert state.speed == 100
     end
 
@@ -174,7 +174,7 @@ defmodule Raxol.Components.Progress.SpinnerTest do
       state = Spinner.saving()
       assert state.style == :pulse
       assert state.text == "Saving"
-      assert state.colors == [:yellow, :green]
+      assert Map.get(state, :colors) == [:yellow, :green]
       assert state.speed == 500
     end
 
@@ -182,7 +182,7 @@ defmodule Raxol.Components.Progress.SpinnerTest do
       state = Spinner.error("Failed")
       assert state.style == :pulse
       assert state.text == "Failed"
-      assert state.colors == [:red]
+      assert Map.get(state, :colors) == [:red]
       assert state.speed == 1000
     end
   end

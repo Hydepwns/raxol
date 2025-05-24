@@ -3,7 +3,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
 
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.Core.Events.Event
-  alias Raxol.Components.Input.TextWrapping
+  alias Raxol.UI.Components.Input.TextWrapping
 
   describe "init/1" do
     test "initializes with default values when no props provided" do
@@ -245,11 +245,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
 
       width = 20
 
-      # Inspect the input string and its graphemes
-      IO.inspect(value, label: "Test Input String")
-      IO.inspect(String.graphemes(value), label: "Input String Graphemes")
-      IO.inspect(length(String.graphemes(value)), label: "Input Grapheme Count")
-
       lines = TextWrapping.wrap_line_by_char(value, width)
 
       assert length(lines) == 10
@@ -294,7 +289,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInputTest do
 
       width = 20
       lines = TextWrapping.wrap_line_by_word(value, width)
-      # IO.inspect(lines, label: "Wrapped Lines") # Debug print removed
 
       assert length(lines) == 10
       assert Enum.at(lines, 0) == "Lopadotemachoselacho"

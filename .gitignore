@@ -46,12 +46,9 @@ yarn-debug.log
 yarn-error.log
 
 # Build output and generated files
-/assets/node_modules/
 **/dist/
-/extensions/vscode/dist/
 
 # Phoenix
-/priv/static/assets/
 /priv/static/cache_manifest.json
 
 # Elixir
@@ -59,7 +56,6 @@ yarn-error.log
 
 # VS Code Extension
 /extensions/vscode/out/
-/extensions/vscode/*.js
 
 # Dialyzer Persistent Lookup Tables
 /priv/plts/*.plt

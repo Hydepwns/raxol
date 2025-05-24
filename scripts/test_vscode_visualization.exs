@@ -100,18 +100,18 @@ defmodule VSCodeVisualizationTest do
     }
 
     # Initialize the dashboard model
-    {:ok, dashboard_model} = Raxol.Components.Dashboard.Dashboard.init(widgets, grid_config)
+    {:ok, dashboard_model} = Raxol.UI.Components.Dashboard.Dashboard.init(widgets, grid_config)
 
     # Save the test layout to file
     IO.puts("Saving test dashboard layout...")
-    case Raxol.Components.Dashboard.Dashboard.save_layout(widgets) do
+    case Raxol.UI.Components.Dashboard.Dashboard.save_layout(widgets) do
       :ok -> IO.puts("Dashboard layout saved successfully")
       {:error, reason} -> IO.puts("Failed to save dashboard layout: #{inspect(reason)}")
     end
 
     # Test loading the dashboard layout
     IO.puts("\nLoading dashboard layout...")
-    loaded_widgets = Raxol.Components.Dashboard.Dashboard.load_layout()
+    loaded_widgets = Raxol.UI.Components.Dashboard.Dashboard.load_layout()
     IO.puts("Loaded #{length(loaded_widgets)} widgets")
 
     # Render the dashboard with the test model
@@ -123,7 +123,7 @@ defmodule VSCodeVisualizationTest do
     }
 
     # Call dashboard render function
-    widget_views = Raxol.Components.Dashboard.Dashboard.render(props)
+    widget_views = Raxol.UI.Components.Dashboard.Dashboard.render(props)
     IO.puts("Dashboard rendered with #{length(widget_views)} widget views")
 
     # Display visualization widget configurations

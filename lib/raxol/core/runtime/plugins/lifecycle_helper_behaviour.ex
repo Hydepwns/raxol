@@ -87,5 +87,35 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper.Behaviour do
               plugin_config :: map()
             ) :: {:ok, map()} | {:error, any()}
 
+  @doc """
+  Initializes a plugin with the given module and options.
+  """
+  @callback init_plugin(module :: module(), opts :: map()) ::
+              {:ok, map()} | {:error, any()}
+
+  @doc """
+  Terminates a plugin with the given plugin_id, state, and reason.
+  """
+  @callback terminate_plugin(
+              plugin_id :: any(),
+              state :: map(),
+              reason :: any()
+            ) :: :ok | {:error, any()}
+
+  @doc """
+  Cleans up a plugin with the given plugin_id and state.
+  """
+  @callback cleanup_plugin(plugin_id :: any(), state :: map()) ::
+              :ok | {:error, any()}
+
+  @doc """
+  Handles a state transition for a plugin.
+  """
+  @callback handle_state_transition(
+              plugin_id :: any(),
+              transition :: any(),
+              state :: map()
+            ) :: {:ok, map()} | {:error, any()}
+
   # Add other callbacks here if the Manager interacts with more LifecycleHelper functions
 end

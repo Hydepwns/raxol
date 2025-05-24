@@ -31,7 +31,7 @@ defmodule RaxolWeb.UserAuth do
     case Raxol.Auth.create_user_session(user.id, user.role) do
       # Temporary handling for the placeholder :ok return
       :ok ->
-        Logger.warning(
+        Logger.warn(
           "[UserAuth] Using placeholder session data due to Auth.create_user_session returning :ok."
         )
 

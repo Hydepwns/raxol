@@ -11,12 +11,7 @@ defmodule Raxol.Terminal.Configuration do
   """
 
   alias Raxol.Terminal.Config.Defaults
-  # Keep other aliases if needed by new/update or future getters/loaders
-  # alias Raxol.Terminal.Config.Application
-  # alias Raxol.Terminal.Config.Capabilities
-  # alias Raxol.Terminal.Config.Profiles
-  # alias Raxol.Terminal.Config.Validation, as: Validator
-  # alias Raxol.Core.Preferences.Store
+  alias Raxol.Core.Preferences.Store
 
   require Logger
 
@@ -146,6 +141,19 @@ defmodule Raxol.Terminal.Configuration do
     struct_fields = __MODULE__.__struct__() |> Map.keys()
     config_for_struct = Map.take(merged_config_map, struct_fields)
 
+    # PATCH: Set scrollback_height from scrollback_limit if not set
+    config_for_struct =
+      if Map.get(config_for_struct, :scrollback_height) == nil and
+           Map.has_key?(merged_config_map, :scrollback_limit) do
+        Map.put(
+          config_for_struct,
+          :scrollback_height,
+          merged_config_map[:scrollback_limit]
+        )
+      else
+        config_for_struct
+      end
+
     struct(__MODULE__, config_for_struct)
   end
 
@@ -157,11 +165,37 @@ defmodule Raxol.Terminal.Configuration do
     struct(config, opts)
   end
 
-  # TODO: Add logic for loading/merging external config files (e.g., from TOML/YAML).
-  #       This function would likely call Defaults.generate_default_config(),
-  #       load the external file, merge them, and then call new/1 with the final map.
-  # def load_from_file(path, opts \\ []) do ... end
+  @doc """
+  Loads configuration from a TOML or YAML file, merges with defaults and opts, and returns a new config struct.
+  """
+  def load_from_file(path, opts \\ []) do
+    ext = Path.extname(path) |> String.downcase()
 
-  # TODO: Add simple getter functions for config values if direct access is discouraged.
-  # def get_config_value(%__MODULE__{} = config, key) do Map.get(config, key) end
+    parsed =
+      cond do
+        ext == ".toml" ->
+          case :toml.decode_file(path) do
+            {:ok, map} -> map
+            {:error, _} -> %{}
+          end
+
+        ext in [".yaml", ".yml"] ->
+          case YamlElixir.read_from_file(path) do
+            {:ok, map} -> map
+            {:error, _} -> %{}
+          end
+
+        true ->
+          %{}
+      end
+
+    # Merge: defaults < file < opts
+    file_opts = Enum.into(parsed, [])
+    new(Enum.concat(file_opts, opts))
+  end
+
+  @doc """
+  Gets a config value by key.
+  """
+  def get_config_value(%__MODULE__{} = config, key), do: Map.get(config, key)
 end

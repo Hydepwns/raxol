@@ -8,8 +8,9 @@ defmodule Raxol.Terminal.Emulator.Buffer do
 
   alias Raxol.Terminal.{
     ScreenBuffer,
-    Buffer.Manager,
-    Core
+    Buffer.Manager.Buffer,
+    Core,
+    Emulator
   }
 
   @doc """
@@ -61,9 +62,9 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   @spec scroll_up(Core.t(), non_neg_integer()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def scroll_up(%Core{} = emulator, lines) when lines > 0 do
-    active_buffer = Core.get_active_buffer(emulator)
+    active_buffer = Emulator.get_active_buffer(emulator)
 
-    case Manager.scroll_up(active_buffer, lines, emulator.scroll_region) do
+    case Buffer.scroll_up(active_buffer, lines, emulator.scroll_region) do
       {:ok, updated_buffer} ->
         updated_emulator = update_active_buffer(emulator, updated_buffer)
         {:ok, updated_emulator}
@@ -84,9 +85,9 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   @spec scroll_down(Core.t(), non_neg_integer()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def scroll_down(%Core{} = emulator, lines) when lines > 0 do
-    active_buffer = Core.get_active_buffer(emulator)
+    active_buffer = Emulator.get_active_buffer(emulator)
 
-    case Manager.scroll_down(active_buffer, lines, emulator.scroll_region) do
+    case Buffer.scroll_down(active_buffer, lines, emulator.scroll_region) do
       {:ok, updated_buffer} ->
         updated_emulator = update_active_buffer(emulator, updated_buffer)
         {:ok, updated_emulator}
@@ -106,9 +107,9 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   """
   @spec clear_buffer(Core.t()) :: {:ok, Core.t()} | {:error, String.t()}
   def clear_buffer(%Core{} = emulator) do
-    active_buffer = Core.get_active_buffer(emulator)
+    active_buffer = Emulator.get_active_buffer(emulator)
 
-    case Manager.clear(active_buffer) do
+    case Buffer.clear(active_buffer) do
       {:ok, updated_buffer} ->
         updated_emulator = update_active_buffer(emulator, updated_buffer)
         {:ok, updated_emulator}
@@ -125,11 +126,11 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   @spec clear_from_cursor_to_end(Core.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def clear_from_cursor_to_end(%Core{} = emulator) do
-    active_buffer = Core.get_active_buffer(emulator)
+    active_buffer = Emulator.get_active_buffer(emulator)
 
-    case Manager.clear_from_cursor_to_end(
+    case Buffer.clear_from_cursor_to_end(
            active_buffer,
-           emulator.cursor.position
+           Raxol.Terminal.Emulator.get_cursor_position(emulator)
          ) do
       {:ok, updated_buffer} ->
         updated_emulator = update_active_buffer(emulator, updated_buffer)
@@ -147,11 +148,11 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   @spec clear_from_cursor_to_start(Core.t()) ::
           {:ok, Core.t()} | {:error, String.t()}
   def clear_from_cursor_to_start(%Core{} = emulator) do
-    active_buffer = Core.get_active_buffer(emulator)
+    active_buffer = Emulator.get_active_buffer(emulator)
 
-    case Manager.clear_from_cursor_to_start(
+    case Buffer.clear_from_cursor_to_start(
            active_buffer,
-           emulator.cursor.position
+           Raxol.Terminal.Emulator.get_cursor_position(emulator)
          ) do
       {:ok, updated_buffer} ->
         updated_emulator = update_active_buffer(emulator, updated_buffer)
@@ -168,9 +169,9 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   """
   @spec clear_line(Core.t()) :: {:ok, Core.t()} | {:error, String.t()}
   def clear_line(%Core{} = emulator) do
-    active_buffer = Core.get_active_buffer(emulator)
+    active_buffer = Emulator.get_active_buffer(emulator)
 
-    case Manager.clear_line(active_buffer, emulator.cursor.position) do
+    case Buffer.clear_line(active_buffer, Raxol.Terminal.Emulator.get_cursor_position(emulator)) do
       {:ok, updated_buffer} ->
         updated_emulator = update_active_buffer(emulator, updated_buffer)
         {:ok, updated_emulator}

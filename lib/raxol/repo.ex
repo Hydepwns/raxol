@@ -108,7 +108,7 @@ defmodule Raxol.Repo do
     end
   end
 
-  # def config do
-  #   Application.get_env(:raxol, __MODULE__, [])
-  # end
+  def config do
+    Application.get_env(:raxol, __MODULE__, [])
+  end
 end

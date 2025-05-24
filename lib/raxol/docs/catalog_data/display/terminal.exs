@@ -3,7 +3,7 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
 %Component{
   id: :terminal,
   name: "Terminal",
-  module: Raxol.Components.Terminal,
+  module: Raxol.UI.Components.Terminal,
   description: "Displays output styled like a terminal window.",
   examples: [],
   properties: [

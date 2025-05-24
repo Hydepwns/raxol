@@ -104,6 +104,18 @@ defmodule Raxol.Core.Runtime.Events.DispatcherEdgeCasesTest do
 
     Mox.stub(ThemeMock, :get_theme, fn _ -> {:ok, %{}} end)
 
+    # Stub all ThemeBehaviour callbacks to prevent missing function errors
+    Mox.stub(ThemeMock, :register, fn _ -> :ok end)
+    Mox.stub(ThemeMock, :get, fn _ -> nil end)
+    Mox.stub(ThemeMock, :list, fn -> [] end)
+    Mox.stub(ThemeMock, :default_theme, fn -> %{} end)
+    Mox.stub(ThemeMock, :dark_theme, fn -> %{} end)
+    Mox.stub(ThemeMock, :component_style, fn _, _ -> %{} end)
+    Mox.stub(ThemeMock, :color, fn _, _ -> nil end)
+    Mox.stub(ThemeMock, :get_color, fn _, _, _ -> nil end)
+    Mox.stub(ThemeMock, :apply_theme, fn e, _ -> e end)
+    Mox.stub(ThemeMock, :init, fn -> :ok end)
+
     # Registry for events
     Registry.start_link(keys: :duplicate, name: :raxol_event_subscriptions)
 

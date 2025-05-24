@@ -331,7 +331,7 @@ defmodule Raxol.Examples.FocusRingShowcase do
 
         # Focus ring component
         %{
-          type: Raxol.Components.FocusRing,
+          type: Raxol.UI.Components.FocusRing,
           id: :focus_ring,
           assigns: state.focus_ring
         }

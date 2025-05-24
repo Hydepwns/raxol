@@ -9,7 +9,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       view = %{
         type: :view,
         children: [
-          %{type: :label, attrs: %{content: "Hello, World!"}}
+          %{type: :label, attrs: [content: "Hello, World!"]}
         ]
       }
 
@@ -36,7 +36,7 @@ defmodule Raxol.UI.Layout.EngineTest do
             type: :panel,
             attrs: %{title: "Test Panel"},
             children: [
-              %{type: :label, attrs: %{content: "Panel Content"}}
+              %{type: :label, attrs: [content: "Panel Content"]}
             ]
           }
         ]
@@ -89,15 +89,15 @@ defmodule Raxol.UI.Layout.EngineTest do
               %{
                 type: :column,
                 children: [
-                  %{type: :label, attrs: %{content: "Top Left"}},
-                  %{type: :label, attrs: %{content: "Bottom Left"}}
+                  %{type: :label, attrs: [content: "Top Left"]},
+                  %{type: :label, attrs: [content: "Bottom Left"]}
                 ]
               },
               %{
                 type: :column,
                 children: [
-                  %{type: :label, attrs: %{content: "Top Right"}},
-                  %{type: :label, attrs: %{content: "Bottom Right"}}
+                  %{type: :label, attrs: [content: "Top Right"]},
+                  %{type: :label, attrs: [content: "Bottom Right"]}
                 ]
               }
             ]
@@ -155,7 +155,7 @@ defmodule Raxol.UI.Layout.EngineTest do
 
   describe "measure_element/2" do
     test "measures a label element" do
-      element = %{type: :label, attrs: %{content: "Test Label"}}
+      element = %{type: :label, attrs: [content: "Test Label"]}
       available_space = %{width: 80, height: 24}
 
       dimensions = Engine.measure_element(element, available_space)
@@ -209,7 +209,7 @@ defmodule Raxol.UI.Layout.EngineTest do
         type: :panel,
         attrs: %{},
         children: [
-          %{type: :label, attrs: %{content: String.duplicate("X", 15)}}
+          %{type: :label, attrs: [content: String.duplicate("X", 15)]}
         ]
       }
 
@@ -226,7 +226,7 @@ defmodule Raxol.UI.Layout.EngineTest do
       element = %{
         type: :panel,
         attrs: %{width: 30, height: 5},
-        children: [%{type: :label, attrs: %{content: "Short"}}]
+        children: [%{type: :label, attrs: [content: "Short"]}]
       }
 
       available_space = %{width: 80, height: 24}
@@ -241,13 +241,13 @@ defmodule Raxol.UI.Layout.EngineTest do
         attrs: %{columns: 2, gap_x: 1, gap_y: 1},
         children: [
           # Width 10
-          %{type: :label, attrs: %{content: "AAAAAAAAAA"}},
+          %{type: :label, attrs: [content: "AAAAAAAAAA"]},
           # Width 2
-          %{type: :label, attrs: %{content: "BB"}},
+          %{type: :label, attrs: [content: "BB"]},
           # Width 3
-          %{type: :label, attrs: %{content: "CCC"}},
+          %{type: :label, attrs: [content: "CCC"]},
           # Width 6
-          %{type: :label, attrs: %{content: "DDDDDD"}}
+          %{type: :label, attrs: [content: "DDDDDD"]}
         ]
       }
 
@@ -265,7 +265,7 @@ defmodule Raxol.UI.Layout.EngineTest do
 
     test "constrains element size to available space" do
       # Create a label with very long text
-      element = %{type: :label, attrs: %{content: String.duplicate("A", 100)}}
+      element = %{type: :label, attrs: [content: String.duplicate("A", 100)]}
       available_space = %{width: 50, height: 24}
 
       dimensions = Engine.measure_element(element, available_space)

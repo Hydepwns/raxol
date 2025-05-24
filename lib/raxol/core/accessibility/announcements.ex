@@ -28,9 +28,10 @@ defmodule Raxol.Core.Accessibility.Announcements do
       iex> Announcements.announce("Error occurred", priority: :high, interrupt: true)
       :ok
   """
-  def announce(message, opts \\ [], user_preferences_pid_or_name \\ nil)
-      when is_binary(message) do
-    # Check if announcements are disabled
+  def announce(message, opts \\ [], user_preferences_pid_or_name) when is_binary(message) do
+    if is_nil(user_preferences_pid_or_name) do
+      raise "Accessibility.Announcements.announce/3 must be called with a user_preferences_pid_or_name."
+    end
     disabled = Process.get(:accessibility_disabled) == true
 
     # Check if announcements are silenced
@@ -50,7 +51,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
         :ok
 
       # Do nothing if screen reader is disabled
-      not screen_reader_enabled ->
+      screen_reader_enabled == false ->
         :ok
 
       true ->
@@ -83,23 +84,31 @@ defmodule Raxol.Core.Accessibility.Announcements do
   end
 
   @doc """
-  Get the next announcement to be read by screen readers.
+  Get the next announcement to be read by screen readers for a specific user/context.
+
+  ## Parameters
+  * `user_preferences_pid_or_name` - The PID or registered name of the UserPreferences process to use (optional).
 
   ## Examples
-
-      iex> Announcements.get_next_announcement()
+      iex> Announcements.get_next_announcement(:user1)
       "Button clicked"
   """
-  def get_next_announcement do
-    queue = Process.get(:accessibility_announcements) || []
+  def get_next_announcement(user_preferences_pid_or_name) do
+    key =
+      if user_preferences_pid_or_name do
+        {:accessibility_announcements, user_preferences_pid_or_name}
+      else
+        :accessibility_announcements
+      end
+
+    queue = Process.get(key) || []
 
     case queue do
       [] ->
         nil
 
       [next | rest] ->
-        # Update queue
-        Process.put(:accessibility_announcements, rest)
+        Process.put(key, rest)
         next.message
     end
   end

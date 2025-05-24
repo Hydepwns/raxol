@@ -1,12 +1,10 @@
 defmodule Raxol.Terminal.Buffer.CharEditor do
   @moduledoc """
-  Handles character insertion and deletion within the Raxol.Terminal.ScreenBuffer lines.
+  Handles character editing operations in the terminal buffer.
   """
 
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Buffer.Updater
   alias Raxol.Terminal.Cell
-  # Keep for style type hint
   alias Raxol.Terminal.ANSI.TextFormatting
 
   @doc """
@@ -30,26 +28,20 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         default_style
       )
       when row >= 0 and col >= 0 and count > 0 do
-    # Ensure row is valid
     if row < buffer.height do
-      # Create blank cell with space character
       blank_cell = %Cell{char: " ", style: default_style}
       blank_cells_to_insert = List.duplicate(blank_cell, count)
 
-      # Update the specific line
       new_cells =
         List.update_at(buffer.cells, row, fn line ->
           {left_part, right_part} = Enum.split(line, col)
-          # Combine parts with inserted blanks
-          combined_line = left_part ++ blank_cells_to_insert ++ right_part
-
-          # Ensure the line has the correct width by taking only the first `buffer.width` cells
-          Enum.take(combined_line, buffer.width)
+          {to_shift, _rest} = Enum.split(right_part, buffer.width - col - count)
+          combined_line = left_part ++ blank_cells_to_insert ++ to_shift
+          combined_line ++ List.duplicate(blank_cell, buffer.width - length(combined_line))
         end)
 
       %{buffer | cells: new_cells}
     else
-      # Row out of bounds
       buffer
     end
   end
@@ -78,29 +70,21 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
         default_style
       )
       when row >= 0 and col >= 0 and count > 0 do
-    # Ensure row is valid
     if row < buffer.height do
-      # Ensure col is within bounds
       eff_col = min(col, buffer.width - 1)
-      # Ensure count doesn't exceed available characters
       eff_count = min(count, buffer.width - eff_col)
-
-      # Explicitly create blank cell with space character
       blank_cell = %Cell{char: " ", style: default_style}
-      blank_cells_to_add = List.duplicate(blank_cell, eff_count)
 
-      # Update the specific line
       new_cells =
         List.update_at(buffer.cells, row, fn line ->
           {left_part, part_to_modify} = Enum.split(line, eff_col)
-          # Skip deleted chars and take the rest
           right_part_kept = Enum.drop(part_to_modify, eff_count)
-          left_part ++ right_part_kept ++ blank_cells_to_add
+          combined_line = left_part ++ right_part_kept
+          combined_line ++ List.duplicate(blank_cell, buffer.width - length(combined_line))
         end)
 
       %{buffer | cells: new_cells}
     else
-      # Row out of bounds
       buffer
     end
   end

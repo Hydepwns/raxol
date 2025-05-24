@@ -226,5 +226,67 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert emulator.style.background == :blue
       assert emulator.style.bold == false
     end
+
+    test "handles SGR 8-bit foreground color (38;5;<n>m)" do
+      emulator = Emulator.new()
+      # Set 8-bit foreground color to index 42
+      {emulator, _} = Emulator.process_input(emulator, "\e[38;5;42m")
+      assert emulator.style.foreground == {:index, 42}
+    end
+
+    test "handles SGR 8-bit background color (48;5;<n>m)" do
+      emulator = Emulator.new()
+      # Set 8-bit background color to index 99
+      {emulator, _} = Emulator.process_input(emulator, "\e[48;5;99m")
+      assert emulator.style.background == {:index, 99}
+    end
+
+    test "handles SGR 24-bit foreground color (38;2;<r>;<g>;<b>m)" do
+      emulator = Emulator.new()
+      # Set 24-bit foreground color to (10, 20, 30)
+      {emulator, _} = Emulator.process_input(emulator, "\e[38;2;10;20;30m")
+      assert emulator.style.foreground == {:rgb, 10, 20, 30}
+    end
+
+    test "handles SGR 24-bit background color (48;2;<r>;<g>;<b>m)" do
+      emulator = Emulator.new()
+      # Set 24-bit background color to (200, 150, 100)
+      {emulator, _} = Emulator.process_input(emulator, "\e[48;2;200;150;100m")
+      assert emulator.style.background == {:rgb, 200, 150, 100}
+    end
+
+    test "handles SGR 51-55 (framed, encircled, overlined, not_framed_encircled, not_overlined)" do
+      emulator = Emulator.new()
+      {emulator, _} = Emulator.process_input(emulator, "\e[51m")
+      assert emulator.style.framed == true
+      {emulator, _} = Emulator.process_input(emulator, "\e[52m")
+      assert emulator.style.encircled == true
+      {emulator, _} = Emulator.process_input(emulator, "\e[53m")
+      assert emulator.style.overlined == true
+      {emulator, _} = Emulator.process_input(emulator, "\e[54m")
+      assert emulator.style.framed == false
+      assert emulator.style.encircled == false
+      {emulator, _} = Emulator.process_input(emulator, "\e[55m")
+      assert emulator.style.overlined == false
+    end
+  end
+
+  describe "SGR attribute application (parameterized)" do
+    [
+      {"bold", "\e[1m", :bold, true},
+      {"italic", "\e[3m", :italic, true},
+      {"underline", "\e[4m", :underline, true},
+      {"blink", "\e[5m", :blink, true},
+      {"reverse", "\e[7m", :reverse, true},
+      {"conceal", "\e[8m", :conceal, true},
+      {"strikethrough", "\e[9m", :strikethrough, true}
+    ]
+    |> Enum.each(fn {desc, seq, attr, expected} ->
+      test "applies SGR #{desc}" do
+        emulator = Emulator.new()
+        {emulator, _} = Emulator.process_input(emulator, unquote(seq))
+        assert Map.get(emulator.style, unquote(attr)) == unquote(expected)
+      end
+    end)
   end
 end

@@ -32,6 +32,7 @@ defmodule Raxol.Animation.FrameworkTest do
     UserPreferences.set("accessibility.reduced_motion", false)
     UserPreferences.set("accessibility.screen_reader", true)
     UserPreferences.set("accessibility.silence_announcements", false)
+
     # Accessibility.clear_announcements() -- replaced by with_screen_reader_spy in tests
 
     # Wait for preferences to be applied
@@ -61,7 +62,8 @@ defmodule Raxol.Animation.FrameworkTest do
         Framework.create_animation(:test_animation, %{
           type: :fade,
           from: 0,
-          to: 1
+          to: 1,
+          target_path: [:opacity]
         })
 
       assert animation.name == :test_animation
@@ -82,7 +84,8 @@ defmodule Raxol.Animation.FrameworkTest do
           easing: :ease_out_cubic,
           from: 0,
           to: 100,
-          direction: :right
+          direction: :right,
+          target_path: [:position]
         })
 
       assert animation.name == :custom_animation
@@ -100,10 +103,11 @@ defmodule Raxol.Animation.FrameworkTest do
         Framework.create_animation(:test_animation, %{
           type: :fade,
           from: 0,
-          to: 1
+          to: 1,
+          target_path: [:opacity]
         })
 
-      assert :ok == Framework.start_animation(animation.name, "test_element")
+      assert :ok == Framework.start_animation(animation.name, "test_element", %{}, user_preferences_pid)
       wait_for_animation_start("test_element", animation.name)
     end
 
@@ -131,22 +135,23 @@ defmodule Raxol.Animation.FrameworkTest do
           # Matches initial state
           from: 0,
           # Final value
-          to: 1
+          to: 1,
+          target_path: [:opacity]
         })
 
       # Start the animation
-      :ok = Framework.start_animation(animation.name, "test_element")
+      :ok = Framework.start_animation(animation.name, "test_element", %{}, user_preferences_pid)
       wait_for_animation_start("test_element", animation.name)
 
       # Apply animation immediately
-      updated_state = Framework.apply_animations_to_state(initial_state)
+      updated_state = Framework.apply_animations_to_state(initial_state, user_preferences_pid)
 
       # Verify the final state was applied immediately due to reduced motion
       assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
     end
 
-    test "announces animations to screen readers when configured" do
-      with_screen_reader_spy(fn ->
+    test "announces animations to screen readers when configured", %{user_preferences_pid: user_preferences_pid} do
+      with_screen_reader_spy(user_preferences_pid, fn ->
         # Create an animation with screen reader announcement
         animation =
           Framework.create_animation(:test_animation, %{
@@ -154,15 +159,17 @@ defmodule Raxol.Animation.FrameworkTest do
             from: 0,
             to: 1,
             announce_to_screen_reader: true,
-            description: "Test animation"
+            description: "Test animation",
+            target_path: [:opacity]
           })
 
         # Start the animation
-        :ok = Framework.start_animation(animation.name, "test_element")
+        :ok = Framework.start_animation(animation.name, "test_element", %{}, user_preferences_pid)
         wait_for_animation_start("test_element", animation.name)
 
         # Verify announcement was made
-        assert_announced("Test animation started")
+        assert_receive {:accessibility_announcement, "Test animation started"},
+                       100
       end)
     end
 
@@ -183,14 +190,15 @@ defmodule Raxol.Animation.FrameworkTest do
           # Set duration to 0
           duration: 0,
           from: 0,
-          to: 1
+          to: 1,
+          target_path: [:opacity]
         })
 
-      :ok = Framework.start_animation(animation.name, "test_element")
+      :ok = Framework.start_animation(animation.name, "test_element", %{}, user_preferences_pid)
       wait_for_animation_start("test_element", animation.name)
 
       # Apply animation to state
-      updated_state = Framework.apply_animations_to_state(initial_state)
+      updated_state = Framework.apply_animations_to_state(initial_state, user_preferences_pid)
 
       # Verify state was updated
       assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
@@ -214,7 +222,8 @@ defmodule Raxol.Animation.FrameworkTest do
           # Set duration to 0
           duration: 0,
           from: 0,
-          to: 1
+          to: 1,
+          target_path: [:opacity]
         })
 
       slide_animation =
@@ -223,17 +232,18 @@ defmodule Raxol.Animation.FrameworkTest do
           # Set duration to 0
           duration: 0,
           from: 0,
-          to: 100
+          to: 100,
+          target_path: [:position]
         })
 
-      :ok = Framework.start_animation(fade_animation.name, "test_element")
-      :ok = Framework.start_animation(slide_animation.name, "test_element")
+      :ok = Framework.start_animation(fade_animation.name, "test_element", %{}, user_preferences_pid)
+      :ok = Framework.start_animation(slide_animation.name, "test_element", %{}, user_preferences_pid)
 
       wait_for_animation_start("test_element", fade_animation.name)
       wait_for_animation_start("test_element", slide_animation.name)
 
       # Apply animations to state
-      updated_state = Framework.apply_animations_to_state(initial_state)
+      updated_state = Framework.apply_animations_to_state(initial_state, user_preferences_pid)
 
       # Verify both animations were applied
       assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
@@ -249,13 +259,14 @@ defmodule Raxol.Animation.FrameworkTest do
           type: :fade,
           duration: 100,
           from: 0,
-          to: 1
+          to: 1,
+          target_path: [:opacity]
         })
 
       # Measure animation performance
       start_time = System.monotonic_time()
 
-      :ok = Framework.start_animation(animation.name, "test_element")
+      :ok = Framework.start_animation(animation.name, "test_element", %{}, user_preferences_pid)
       wait_for_animation_start("test_element", animation.name)
       wait_for_animation_completion("test_element", animation.name)
 

@@ -46,11 +46,15 @@ defmodule Raxol.Session do
     session_id = generate_session_id()
     token = generate_token()
 
+    scrollback_limit =
+      Application.get_env(:raxol, :terminal, [])
+      |> Keyword.get(:scrollback_lines, 1000)
+
     session = %{
       id: session_id,
       user_id: user_id,
       token: token,
-      emulator: Emulator.new(80, 24),
+      emulator: Emulator.new(80, 24, scrollback: scrollback_limit),
       created_at: DateTime.utc_now(),
       last_active: DateTime.utc_now()
     }

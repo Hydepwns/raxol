@@ -4,6 +4,7 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
   # remove charactersets terminal ansi
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
+  alias Raxol.Terminal.ANSI.CharacterSets
 
   # Define initial state if used consistently
   # Consider a setup block if state creation is complex or repeated
@@ -102,9 +103,7 @@ defmodule Raxol.Terminal.Emulator.CharacterSetsTest do
 
     test "designate G2 works in isolation" do
       emulator = Emulator.new(80, 24)
-      IO.inspect(emulator.charset_state.g2, label: "Initial g2:")
       {final_emulator, ""} = Emulator.process_input(emulator, "\e*0")
-      IO.inspect(final_emulator.charset_state.g2, label: "Final g2:")
       assert final_emulator.charset_state.g2 == :dec_special_graphics
     end
   end

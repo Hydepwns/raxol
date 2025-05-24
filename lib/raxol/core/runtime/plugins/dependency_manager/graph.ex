@@ -62,7 +62,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
       })
       ["plugin_a", "plugin_b", "plugin_a"]
   """
-  def build_dependency_chain(cycle, graph) do
+  def build_dependency_chain(cycle, _graph) do
     # Add the first element again to complete the cycle
     cycle ++ [List.first(cycle)]
   end
@@ -97,6 +97,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Graph do
             {:halt, {:error, :circular_dependency, [plugin_id | cycle]}}
         end
       end)
+      |> case do
+        {:ok, deps} -> {:ok, Enum.uniq(deps)}
+        error -> error
+      end
     end
   end
 end

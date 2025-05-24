@@ -384,7 +384,7 @@ dashboard.updateWidget("widget-id", {
 ### Elixir Theme Example
 
 ```elixir
-alias Raxol.Components.Dashboard.ThemeManager
+alias Raxol.UI.Components.Dashboard.ThemeManager
 
 # Register a custom theme
 ThemeManager.register_theme(:high_contrast, %{
@@ -505,9 +505,9 @@ dashboard.loadLayout("performance-dashboard");
 ### Elixir API Example
 
 ```elixir
-alias Raxol.Components.Dashboard.Dashboard
-alias Raxol.Components.Dashboard.Widgets.ChartWidget
-alias Raxol.Components.Dashboard.Widgets.TreeMapWidget
+alias Raxol.UI.Components.Dashboard.Dashboard
+alias Raxol.UI.Components.Dashboard.Widgets.ChartWidget
+alias Raxol.UI.Components.Dashboard.Widgets.TreeMapWidget
 
 # Initialize a dashboard with widgets
 {:ok, dashboard} = Dashboard.init([

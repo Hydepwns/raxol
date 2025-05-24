@@ -119,7 +119,6 @@ defmodule Raxol.Metrics do
       database_connections: get_db_connections(),
       response_times: update_response_times(state.response_times),
       error_rates: update_error_rates(state.error_rates),
-      # Preserve existing gauges and counters
       gauges: Map.get(state, :gauges, %{}),
       counters: Map.get(state, :counters, %{}),
       last_updated: DateTime.utc_now()
@@ -128,8 +127,6 @@ defmodule Raxol.Metrics do
     schedule_metrics_collection()
     {:noreply, new_state}
   end
-
-  # Private functions
 
   defp initial_state do
     %{

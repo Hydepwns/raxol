@@ -21,17 +21,18 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
           (CursorManager.t(), integer(), integer(), integer() ->
              CursorManager.t()),
           integer()
-        ) :: Emulator.t()
+        ) :: {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_cursor_movement(emulator, movement_fn, amount) do
     active_buffer = Emulator.get_active_buffer(emulator)
     width = ScreenBuffer.get_width(active_buffer)
     height = ScreenBuffer.get_height(active_buffer)
     new_cursor = movement_fn.(emulator.cursor, amount, width, height)
-    %{emulator | cursor: new_cursor}
+    {:ok, %{emulator | cursor: new_cursor}}
   end
 
   @doc "Handles Cursor Position (CUP - 'H')"
-  @spec handle_H(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_H(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_H(emulator, params) do
     row = get_valid_pos_param(params, 0, 1)
     col = get_valid_pos_param(params, 1, 1)
@@ -42,59 +43,70 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     new_cursor =
       CursorManager.move_to(emulator.cursor, {col - 1, row - 1}, width, height)
 
-    %{emulator | cursor: new_cursor}
+    {:ok, %{emulator | cursor: new_cursor}}
   end
 
   @doc "Handles Cursor Up (CUU - 'A')"
-  @spec handle_A(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_A(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_A(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_up/4, amount)
   end
 
   @doc "Handles Cursor Down (CUD - 'B')"
-  @spec handle_B(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_B(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_B(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_down/4, amount)
   end
 
   @doc "Handles Cursor Forward (CUF - 'C')"
-  @spec handle_C(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_C(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_C(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_right/4, amount)
   end
 
   @doc "Handles Cursor Backward (CUB - 'D')"
-  @spec handle_D(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_D(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_D(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
     handle_cursor_movement(emulator, &CursorManager.move_left/4, amount)
   end
 
   @doc "Handles Cursor Next Line (CNL - 'E')"
-  @spec handle_E(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_E(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_E(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
 
     emulator
     |> handle_cursor_movement(&CursorManager.move_down/4, amount)
-    |> handle_cursor_movement(&CursorManager.move_to_column/4, 0)
+    |> (fn {:ok, emu} ->
+          handle_cursor_movement(emu, &CursorManager.move_to_column/4, 0)
+        end).()
   end
 
   @doc "Handles Cursor Previous Line (CPL - 'F')"
-  @spec handle_F(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_F(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_F(emulator, params) do
     amount = get_valid_non_neg_param(params, 0, 1)
 
     emulator
     |> handle_cursor_movement(&CursorManager.move_up/4, amount)
-    |> handle_cursor_movement(&CursorManager.move_to_column/4, 0)
+    |> (fn {:ok, emu} ->
+          handle_cursor_movement(emu, &CursorManager.move_to_column/4, 0)
+        end).()
   end
 
   @doc "Handles Cursor Horizontal Absolute (CHA - 'G')"
-  @spec handle_G(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_G(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_G(emulator, params) do
     column = get_valid_pos_param(params, 0, 1)
 
@@ -106,15 +118,14 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   end
 
   @doc "Handles Cursor Vertical Absolute (VPA - 'd')"
-  @spec handle_d(Emulator.t(), list(integer() | nil)) :: Emulator.t()
+  @spec handle_d(Emulator.t(), list(integer() | nil)) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_d(emulator, params) do
     row = get_valid_pos_param(params, 0, 1)
-    # Need terminal height to constrain movement
     active_buffer = Emulator.get_active_buffer(emulator)
     height = ScreenBuffer.get_height(active_buffer)
-    # Convert to 0-based index and clamp to bounds
     new_row = min(row - 1, height - 1)
-    {current_col, _} = emulator.cursor.position
+    {current_col, _} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
     width = ScreenBuffer.get_width(active_buffer)
 
     new_cursor =
@@ -125,7 +136,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         height
       )
 
-    %{emulator | cursor: new_cursor}
+    {:ok, %{emulator | cursor: new_cursor}}
   end
 
   # --- Parameter Validation Helpers ---
@@ -147,7 +158,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         value
 
       _ ->
-        Logger.warning(
+        Logger.warn(
           "Invalid parameter value at index #{index}, using default #{default}"
         )
 

@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.State.Manager do
   Manages terminal state including modes, character sets, and state stack.
   """
 
-  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.ModeManager
   require Logger

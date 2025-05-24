@@ -312,17 +312,36 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
   @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
+  Show help for available keyboard shortcuts for the current context.
+
+  Returns a formatted string of available shortcuts. This version matches the behaviour and can be called without arguments.
+
+  ## Examples
+
+      iex> KeyboardShortcuts.show_shortcuts_help()
+      {:ok, help_string}
+  """
+  def show_shortcuts_help() do
+    show_shortcuts_help(nil)
+  end
+
+  @impl Raxol.Core.KeyboardShortcutsBehaviour
+  @doc """
   Display help for available shortcuts.
 
   This function generates a help message for all shortcuts available in the current context
   and announces it through the accessibility system if enabled.
 
+  ## Parameters
+
+  * `user_preferences_pid_or_name` - The PID or name of the user preferences process
+
   ## Examples
 
-      iex> KeyboardShortcuts.show_shortcuts_help()
+      iex> KeyboardShortcuts.show_shortcuts_help(self())
       :ok
   """
-  def show_shortcuts_help do
+  def show_shortcuts_help(user_preferences_pid_or_name) do
     # Get current context
     current_context = get_current_context()
 
@@ -344,8 +363,8 @@ defmodule Raxol.Core.KeyboardShortcuts do
     full_message = help_message <> shortcuts_help
 
     # Announce through accessibility system if available
-    if function_exported?(Accessibility, :announce, 2) do
-      Accessibility.announce(full_message, priority: :medium)
+    if function_exported?(Accessibility, :announce, 3) do
+      Accessibility.announce(full_message, [priority: :medium], user_preferences_pid_or_name)
     end
 
     # Return formatted help

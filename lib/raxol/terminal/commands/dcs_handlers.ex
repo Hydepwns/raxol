@@ -3,16 +3,16 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
   Handles the execution logic for specific DCS commands.
 
   Functions are called by `Raxol.Terminal.Commands.Executor` after initial parsing.
+
+  - Implements DCS handlers for DECRQSS (Request Status String), Sixel Graphics, and stubs DECDLD (Downloadable Character Set).
+  - DECRQSS supports status queries for SGR ("m"), scroll region ("r"), cursor style (" q"), and page length ("t").
+  - Sixel graphics are parsed and blitted to the screen buffer.
+  - DECDLD is stubbed and logs a warning; not yet implemented.
   """
 
   alias Raxol.Terminal.Emulator
-  # Needed for param parsing if done here
-  alias Raxol.Terminal.Commands.Parser
   # Add alias for TextFormatting
   alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.ScreenBuffer
-  # For DECRQSS ' q'
-  alias Raxol.Terminal.Cursor.Manager
   require Logger
 
   @doc "Dispatches DCS command execution based on intermediates and final byte."
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
           String.t(),
           non_neg_integer(),
           String.t()
-        ) :: Emulator.t()
+        ) :: {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_dcs(
         emulator,
         params,
@@ -39,98 +39,211 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
       # DECRQSS (Request Status String): DCS ! | Pt ST
       # Using final byte | as marker
       {"!", ?|} ->
-        handle_decrqss(emulator, data_string)
+        case handle_decrqss(emulator, data_string) do
+          %Emulator{} = emu -> {:ok, emu}
+          {:ok, emu} -> {:ok, emu}
+          {:error, reason, emu} -> {:error, reason, emu}
+        end
 
       # Sixel Graphics: DCS <params> q <data> ST
       # The parser should ideally handle Sixel data streaming separately.
       {_intermediates, ?q} ->
         Logger.debug(
-          "DCS Sixel Graphics (Params: #{inspect(params)}, Data Length: #{byte_size(data_string)}) - Stubbed in DCSHandlers"
+          "DCS Sixel Graphics (Params: #{inspect(params)}, Data Length: #{byte_size(data_string)}) - Processing in DCSHandlers"
         )
 
-        # TODO: Pass data_string to the SixelGraphics module/parser state machine
-        # This likely involves updating the main Parser state, not direct execution here.
-        # Potential call: SixelGraphics.handle_data(emulator.sixel_state, data_string)
-        emulator
+        # Get or initialize the current Sixel state from the emulator
+        sixel_state =
+          Map.get(emulator, :sixel_state) ||
+            Raxol.Terminal.ANSI.SixelGraphics.new()
+
+        {updated_sixel_state, _result} =
+          Raxol.Terminal.ANSI.SixelGraphics.process_sequence(
+            sixel_state,
+            data_string
+          )
+
+        # --- Sixel Rendering: Blit to screen buffer ---
+        buffer = Emulator.get_active_buffer(emulator)
+        cursor = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+        new_buffer = blit_sixel_to_buffer(buffer, updated_sixel_state, cursor)
+        emu = Emulator.update_active_buffer(emulator, new_buffer)
+        {:ok, %{emu | sixel_state: updated_sixel_state}}
+
+      # DECDLD (User-Defined Keys): DCS P1;P2;... | p <data> ST
+      # Not yet implemented
+      {"|", ?p} ->
+        case handle_decdld(emulator, params, data_string) do
+          %Emulator{} = emu -> {:ok, emu}
+          {:ok, emu} -> {:ok, emu}
+          {:error, reason, emu} -> {:error, reason, emu}
+        end
 
       # Unhandled DCS
       _ ->
-        Logger.warning(
+        Logger.warn(
           "Unhandled DCS command in DCSHandlers: params=#{inspect(params)}, intermediates=#{inspect(intermediates_buffer)}, final=#{final_byte}"
         )
 
-        emulator
+        {:error, :unhandled_dcs, emulator}
     end
   end
 
   # --- Specific DCS Handlers ---
 
-  @doc "Handles DECRQSS (Request Status String)"
-  defp handle_decrqss(emulator, requested_status) do
-    Logger.debug("DCS DECRQSS: Request status '#{requested_status}'")
+  defp handle_decrqss(emulator, data_string) do
+    response_payload =
+      case data_string do
+        "m" ->
+          # SGR attributes: Response DCS 1 ! | Ps ... Ps m ST
+          TextFormatting.format_sgr_params(emulator.text_style) <> "m"
 
-    # Query the emulator state and format the response
-    case requested_status do
-      # SGR - Graphics Rendition Combination
-      "m" ->
-        # Format: P1$r<Ps>m   (Ps is semicolon-separated SGR codes)
-        sgr_params = TextFormatting.format_sgr_params(emulator.style)
-        response_payload = "#{sgr_params}m"
-        send_dcs_response(emulator, "1", requested_status, response_payload)
+        "r" ->
+          # Scroll region: Response DCS 1 ! | Pt ; Pb r ST
+          # Pt, Pb are 1-based
+          {top, bottom} =
+            case emulator.scroll_region do
+              # Convert 0-indexed to 1-based
+              {t, b} -> {t + 1, b + 1}
+              # Full screen
+              nil -> {1, emulator.height}
+            end
 
-      # DECSTBM - Set Top and Bottom Margins
-      "r" ->
-        # Format: P1$r<Pt>;<Pb>r (Pt=top, Pb=bottom)
-        {top, bottom} =
-          emulator.scroll_region ||
-            {0,
-             ScreenBuffer.get_height(Emulator.get_active_buffer(emulator)) - 1}
+          "#{top};#{bottom}r"
 
-        response_payload = "#{top + 1};#{bottom + 1}r"
-        send_dcs_response(emulator, "1", requested_status, response_payload)
+        # Note the leading space
+        " q" ->
+          # Cursor style: Response DCS 1 ! | Ps q ST
+          ps =
+            case emulator.cursor_style do
+              # or 0
+              :blinking_block -> 1
+              :steady_block -> 2
+              :blinking_underline -> 3
+              :steady_underline -> 4
+              :blinking_bar -> 5
+              :steady_bar -> 6
+              # Default/unknown for styles not in this list or if cursor_style is complex
+              _ -> 0
+            end
 
-      # DECSCUSR - Set Cursor Style
-      # Note the leading space in the request string
-      " q" ->
-        # Format: P1$r<Ps> q (Ps=cursor style code)
-        # Map the style atom to the DECSCUSR code (using steady codes)
-        cursor_style_code =
-          case emulator.cursor_style do
-            :block -> 2
-            :underline -> 4
-            :bar -> 6
-            # Default/fallback to block if unknown style encountered
-            _ -> 2
-          end
+          # Include the space in the response payload before 'q'
+          "#{ps} q"
 
-        response_payload = "#{cursor_style_code} q"
-        send_dcs_response(emulator, "1", requested_status, response_payload)
+        _ ->
+          Logger.warn(
+            "Unhandled DECRQSS request type: #{inspect(data_string)}"
+          )
 
-      # TODO: Add more DECRQSS handlers (e.g., DECSLPP, DECSLRM, etc.)
-      _ ->
-        Logger.warning(
-          "DECRQSS: Unsupported status request '#{requested_status}'"
-        )
+          # No response for unhandled types
+          nil
+      end
 
-        # Respond with P0$r (invalid/unsupported request)
-        send_dcs_response(emulator, "0", requested_status, "")
+    if response_payload do
+      # DCS <validity> ! | <response_payload> ST
+      # Validity 1 for "ok"
+      # ST is ESC \
+      # Note: Standard DCS is \eP, not \e[
+      # Standard ST is \e\\
+      full_response = "\eP1!|#{response_payload}\e\\"
+      Logger.debug("DECRQSS response: #{inspect(full_response)}")
+
+      {:ok,
+       %{emulator | output_buffer: emulator.output_buffer <> full_response}}
+    else
+      {:error, :unhandled_decrqss, emulator}
     end
+  end
+
+  defp handle_decdld(emulator, params, data_string) do
+    Logger.warn(
+      "DECDLD handler invoked with params: #{inspect(params)}, data_string: #{inspect(data_string)} (not yet implemented)"
+    )
+
+    {:error, :decdld_not_implemented, emulator}
   end
 
   # --- Helper Functions (Moved from Executor) ---
 
-  @doc "Sends a formatted DCS response."
-  defp send_dcs_response(
-         emulator,
-         validity,
-         _requested_status,
-         response_payload
-       ) do
-    # Format: DCS <validity> ! | <response_payload> ST
-    # Note: The original request (e.g., "m") is NOT part of the standard response payload format P...$r...
-    # The payload itself contains the terminating character (m, r, q, etc.)
-    response_str = "\eP#{validity}!|#{response_payload}\e\\"
-    Logger.debug("Sending DCS Response: #{inspect(response_str)}")
-    %{emulator | output_buffer: emulator.output_buffer <> response_str}
+  # --- Helper: Blit Sixel image to screen buffer ---
+  defp blit_sixel_to_buffer(buffer, sixel_state, {cursor_x, cursor_y}) do
+    alias Raxol.Terminal.Cell
+    alias Raxol.Terminal.ANSI.TextFormatting
+    pixel_buffer = sixel_state.pixel_buffer
+    palette = sixel_state.palette
+
+    # Determine image bounds
+    max_x =
+      Enum.max_by(Map.keys(pixel_buffer), &elem(&1, 0), fn -> {0, 0} end)
+      |> elem(0)
+
+    max_y =
+      Enum.max_by(Map.keys(pixel_buffer), &elem(&1, 1), fn -> {0, 0} end)
+      |> elem(1)
+
+    # Map Sixel pixels to cells: 1 cell per 2x4 Sixel pixels (adjust as needed)
+    cell_width = 2
+    cell_height = 4
+    cells_x = div(max_x + cell_width, cell_width)
+    cells_y = div(max_y + cell_height, cell_height)
+
+    changes =
+      for cell_y <- 0..(cells_y - 1), cell_x <- 0..(cells_x - 1) do
+        # Top-left pixel in this cell
+        px0 = cell_x * cell_width
+        py0 = cell_y * cell_height
+        # Gather all Sixel pixels in this cell
+        pixels =
+          for dx <- 0..(cell_width - 1),
+              dy <- 0..(cell_height - 1),
+              do: Map.get(pixel_buffer, {px0 + dx, py0 + dy})
+
+        # Most common color index (mode)
+        color_index =
+          pixels
+          |> Enum.filter(& &1)
+          |> Enum.frequencies()
+          |> Enum.max_by(fn {_k, v} -> v end, fn -> {nil, 0} end)
+          |> elem(0)
+
+        rgb = case color_index do
+          nil -> nil
+          idx ->
+            case get_palette_color(palette, idx) do
+              {:ok, color} -> color
+              {:error, _} ->
+                Logger.warning("DCS Sixel: Color index #{inspect(idx)} not found in palette.", [])
+                nil
+            end
+        end
+
+        style =
+          if rgb do
+            TextFormatting.set_background(
+              TextFormatting.new(),
+              {:rgb, elem(rgb, 0), elem(rgb, 1), elem(rgb, 2)}
+            )
+          else
+            TextFormatting.new()
+          end
+
+        cell = Cell.new(" ", style)
+        # Place at (cursor_x + cell_x, cursor_y + cell_y)
+        {cursor_x + cell_x, cursor_y + cell_y, cell}
+      end
+      |> Enum.filter(fn {x, y, _cell} ->
+        x < buffer.width and y < buffer.height
+      end)
+
+    Raxol.Terminal.Buffer.Operations.update(buffer, changes)
   end
+
+  # Helper for safe palette access
+  defp get_palette_color(palette, index) when is_integer(index) and index >= 0 and index <= 255 do
+    case Map.get(palette, index) do
+      nil -> {:error, :invalid_color_index}
+      color -> {:ok, color}
+    end
+  end
+  defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
 end

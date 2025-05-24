@@ -4,173 +4,208 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
 
+  # Default char dimensions from WindowHandlers for calculations
+  @default_char_width_px WindowHandlers.default_char_width_px()
+  @default_char_height_px WindowHandlers.default_char_height_px()
+  @default_desktop_cols WindowHandlers.default_desktop_cols()
+  @default_desktop_rows WindowHandlers.default_desktop_rows()
+
   setup do
+    initial_char_width = 80
+    initial_char_height = 24
+
     emulator = %Emulator{
       window_state: %{
         title: "",
         icon_name: "",
-        size: {80, 24},
+        # Storing char dimensions
+        size: {initial_char_width, initial_char_height},
+        size_pixels:
+          {initial_char_width * @default_char_width_px,
+           initial_char_height * @default_char_height_px},
+        # Assuming pixels
         position: {0, 0},
         stacking_order: :normal,
         iconified: false,
         maximized: false,
+        # Storing char dimensions
         previous_size: nil
       },
-      main_screen_buffer: ScreenBuffer.new(80, 24),
-      alternate_screen_buffer: ScreenBuffer.new(80, 24),
-      output_buffer: ""
+      main_screen_buffer:
+        ScreenBuffer.new(initial_char_width, initial_char_height),
+      alternate_screen_buffer:
+        ScreenBuffer.new(initial_char_width, initial_char_height),
+      output_buffer: "",
+      # Ensure width/height fields on emulator also match initial char dimensions
+      width: initial_char_width,
+      height: initial_char_height
     }
 
     {:ok, emulator: emulator}
   end
 
-  describe "handle_t/2" do
-    test "handles window deiconify", %{emulator: emulator} do
-      emulator = %{
+  describe "handle_t/2 - Window Actions" do
+    test "handles window deiconify (op 1)", %{emulator: emulator} do
+      emulator_iconified = %{
         emulator
         | window_state: %{emulator.window_state | iconified: true}
       }
 
-      new_emulator = WindowHandlers.handle_t(emulator, [1])
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator_iconified, [1])
       assert new_emulator.window_state.iconified == false
     end
 
-    test "handles window iconify", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [2])
+    test "handles window iconify (op 2)", %{emulator: emulator} do
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator, [2])
       assert new_emulator.window_state.iconified == true
     end
 
-    test "handles window move", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [3, 10, 20])
+    test "handles window move (op 3)", %{emulator: emulator} do
+      # Params: [op, y, x]
+      # y=20, x=10
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator, [3, 20, 10])
+      # {x,y}
       assert new_emulator.window_state.position == {10, 20}
     end
 
-    test "handles window resize", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [4, 100, 50])
-      assert new_emulator.window_state.size == {100, 50}
-      assert ScreenBuffer.get_width(new_emulator.main_screen_buffer) == 100
-      assert ScreenBuffer.get_height(new_emulator.main_screen_buffer) == 50
-      assert ScreenBuffer.get_width(new_emulator.alternate_screen_buffer) == 100
-      assert ScreenBuffer.get_height(new_emulator.alternate_screen_buffer) == 50
+    test "handles window resize in pixels (op 4)", %{emulator: emulator} do
+      # Params: [op, height_px, width_px]
+      px_h = 160
+      px_w = 320
+      # 160/16 = 10
+      expected_char_h = div(px_h, @default_char_height_px)
+      # 320/8  = 40
+      expected_char_w = div(px_w, @default_char_width_px)
+
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator, [4, px_h, px_w])
+
+      assert new_emulator.window_state.size ==
+               {expected_char_w, expected_char_h}
+
+      assert new_emulator.window_state.size_pixels == {px_w, px_h}
+
+      assert ScreenBuffer.get_width(new_emulator.main_screen_buffer) ==
+               expected_char_w
+
+      assert ScreenBuffer.get_height(new_emulator.main_screen_buffer) ==
+               expected_char_h
     end
 
-    test "handles window raise", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [5])
+    test "handles window raise (op 5)", %{emulator: emulator} do
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator, [5])
       assert new_emulator.window_state.stacking_order == :above
     end
 
-    test "handles window lower", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [6])
+    test "handles window lower (op 6)", %{emulator: emulator} do
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator, [6])
       assert new_emulator.window_state.stacking_order == :below
     end
 
-    test "handles window refresh", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [7])
+    test "handles window refresh (op 7) as no-op", %{emulator: emulator} do
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator, [7])
       assert new_emulator == emulator
     end
 
-    test "handles window maximize", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [9])
+    test "handles window maximize (op 9)", %{emulator: emulator} do
+      initial_char_w = emulator.window_state.size |> elem(0)
+      initial_char_h = emulator.window_state.size |> elem(1)
+
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator, [9])
       assert new_emulator.window_state.maximized == true
-      assert new_emulator.window_state.size == {100, 50}
-      assert new_emulator.window_state.previous_size == {80, 24}
-      assert ScreenBuffer.get_width(new_emulator.main_screen_buffer) == 100
-      assert ScreenBuffer.get_height(new_emulator.main_screen_buffer) == 50
+      # Default maximized char dimensions from WindowHandlers
+      assert new_emulator.window_state.size == {160, 60}
+
+      assert new_emulator.window_state.previous_size ==
+               {initial_char_w, initial_char_h}
+
+      assert ScreenBuffer.get_width(new_emulator.main_screen_buffer) == 160
+      assert ScreenBuffer.get_height(new_emulator.main_screen_buffer) == 60
     end
 
-    test "handles window restore", %{emulator: emulator} do
-      # First maximize
-      emulator = WindowHandlers.handle_t(emulator, [9])
-      # Then restore
-      new_emulator = WindowHandlers.handle_t(emulator, [10])
+    test "handles window restore (op 10)", %{emulator: emulator} do
+      initial_char_w = emulator.window_state.size |> elem(0)
+      initial_char_h = emulator.window_state.size |> elem(1)
+
+      {:ok, emulator_maximized} = WindowHandlers.handle_t(emulator, [9])
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator_maximized, [10])
+
       assert new_emulator.window_state.maximized == false
-      assert new_emulator.window_state.size == {80, 24}
-      assert ScreenBuffer.get_width(new_emulator.main_screen_buffer) == 80
-      assert ScreenBuffer.get_height(new_emulator.main_screen_buffer) == 24
-    end
+      assert new_emulator.window_state.size == {initial_char_w, initial_char_h}
 
-    test "handles window state report", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [11])
-      assert new_emulator.output_buffer == "\e[8;24;80t\e[3;0;0t"
-    end
+      assert ScreenBuffer.get_width(new_emulator.main_screen_buffer) ==
+               initial_char_w
 
-    test "handles window size report", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [13])
-      assert new_emulator.output_buffer == "\e[8;24;80t"
-    end
-
-    test "handles window position report", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [14])
-      assert new_emulator.output_buffer == "\e[3;0;0t"
-    end
-
-    test "handles screen size report", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [18])
-      assert new_emulator.output_buffer == "\e[8;24;80t"
-    end
-
-    test "handles screen size in pixels report", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [19])
-      assert new_emulator.output_buffer == "\e[9;1024;768t"
-    end
-
-    test "handles unknown window operation", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [999])
-      assert new_emulator == emulator
-    end
-
-    test "handles invalid parameters gracefully", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [])
-      assert new_emulator == emulator
+      assert ScreenBuffer.get_height(new_emulator.main_screen_buffer) ==
+               initial_char_h
     end
   end
 
-  describe "parameter validation edge cases" do
-    test "handles negative window position values", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [3, -10, -20])
-      assert new_emulator.window_state.position == {0, 0}
+  describe "handle_t/2 - Window Reports" do
+    test "handles report window state (op 11) - normal", %{emulator: emulator} do
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator, [11])
+      assert new_emulator.output_buffer == "\e[1t"
     end
 
-    test "handles negative window size values", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [4, -100, -50])
-      assert new_emulator.window_state.size == {80, 24}
+    test "handles report window state (op 11) - iconified", %{
+      emulator: emulator
+    } do
+      emulator_iconified = %{
+        emulator
+        | window_state: %{emulator.window_state | iconified: true}
+      }
+
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator_iconified, [11])
+      assert new_emulator.output_buffer == "\e[2t"
     end
 
-    test "handles zero window size values", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [4, 0, 0])
-      assert new_emulator.window_state.size == {80, 24}
+    test "handles report window position (op 14 / xterm 13t)", %{
+      emulator: emulator
+    } do
+      # Set position to {x=10, y=20} pixels
+      positioned_emulator = %{
+        emulator
+        | window_state: %{emulator.window_state | position: {10, 20}}
+      }
+
+      {:ok, new_emulator} = WindowHandlers.handle_t(positioned_emulator, [14])
+      # y,x
+      assert new_emulator.output_buffer == "\e[3;20;10t"
     end
 
-    test "handles extremely large window size values", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [4, 9999, 9999])
-      assert new_emulator.window_state.size == {9999, 9999}
-      assert ScreenBuffer.get_width(new_emulator.main_screen_buffer) == 9999
-      assert ScreenBuffer.get_height(new_emulator.main_screen_buffer) == 9999
+    test "handles report window size in pixels (op 13 / xterm 14t)", %{
+      emulator: emulator
+    } do
+      # Initial char size 80x24 -> 640x384 pixels
+      px_w = 80 * @default_char_width_px
+      px_h = 24 * @default_char_height_px
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator, [13])
+      # height, width
+      assert new_emulator.output_buffer == "\e[4;#{px_h};#{px_w}t"
     end
 
-    test "handles missing parameters for window move", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [3])
-      assert new_emulator.window_state.position == {0, 0}
+    test "handles report text area size in chars (op 18)", %{emulator: emulator} do
+      # Initial char size 80x24
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator, [18])
+      # rows, cols
+      assert new_emulator.output_buffer == "\e[8;24;80t"
     end
 
-    test "handles missing parameters for window resize", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [4])
-      assert new_emulator.window_state.size == {80, 24}
+    test "handles report desktop size in chars (op 19)", %{emulator: emulator} do
+      {:ok, new_emulator} = WindowHandlers.handle_t(emulator, [19])
+      # rows, cols
+      assert new_emulator.output_buffer ==
+               "\e[9;#{@default_desktop_rows};#{@default_desktop_cols}t"
+    end
+  end
+
+  describe "handle_t/2 - General and Parameter Edge Cases" do
+    test "handles unknown window operation", %{emulator: emulator} do
+      new_emulator = WindowHandlers.handle_t(emulator, [999])
+      # Should be no-op, logs warning
+      assert new_emulator == emulator
     end
 
-    test "handles non-integer parameters", %{emulator: emulator} do
-      new_emulator =
-        WindowHandlers.handle_t(emulator, [3, "invalid", "invalid"])
-
-      assert new_emulator.window_state.position == {0, 0}
-    end
-
-    test "handles nil parameters", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [3, nil, nil])
-      assert new_emulator.window_state.position == {0, 0}
-    end
-
-    test "handles empty parameter list", %{emulator: emulator} do
+    test "handles empty parameter list for op (no-op)", %{emulator: emulator} do
       new_emulator = WindowHandlers.handle_t(emulator, [])
       assert new_emulator == emulator
     end
@@ -180,34 +215,102 @@ defmodule Raxol.Terminal.Commands.WindowHandlersTest do
       assert new_emulator == emulator
     end
 
-    test "handles non-integer operation parameter", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, ["invalid"])
-      assert new_emulator == emulator
+    # Parameter validation for move (op 3: [op, y, x])
+    test "handles negative window position values for move (op 3)", %{
+      emulator: emulator
+    } do
+      # y, x
+      new_emulator = WindowHandlers.handle_t(emulator, [3, -20, -10])
+      # Defaults to {0,0}
+      assert new_emulator.window_state.position == {0, 0}
     end
 
-    test "handles negative operation parameter", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [-1])
-      assert new_emulator == emulator
+    test "handles missing parameters for window move (op 3)", %{
+      emulator: emulator
+    } do
+      new_emulator = WindowHandlers.handle_t(emulator, [3])
+      # Defaults
+      assert new_emulator.window_state.position == {0, 0}
     end
 
-    test "handles window move with partial parameters", %{emulator: emulator} do
+    test "handles window move (op 3) with partial y param only", %{
+      emulator: emulator
+    } do
+      # y=10, x defaults to 0
       new_emulator = WindowHandlers.handle_t(emulator, [3, 10])
-      assert new_emulator.window_state.position == {10, 0}
+      # {x,y}
+      assert new_emulator.window_state.position == {0, 10}
     end
 
-    test "handles window resize with partial parameters", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [4, 100])
-      assert new_emulator.window_state.size == {100, 24}
+    # Parameter validation for resize (op 4: [op, height_px, width_px])
+    test "handles non-positive window size values for resize (op 4)", %{
+      emulator: emulator
+    } do
+      default_px_w = 80 * @default_char_width_px
+      default_px_h = 24 * @default_char_height_px
+      expected_default_char_w = 80
+      expected_default_char_h = 24
+
+      # height_px, width_px
+      new_emulator_neg = WindowHandlers.handle_t(emulator, [4, -100, -50])
+      # get_window_size_params_pixels defaults to 640,384 if invalid
+      assert new_emulator_neg.window_state.size_pixels == {640, 384}
+
+      assert new_emulator_neg.window_state.size ==
+               {div(640, @default_char_width_px),
+                div(384, @default_char_height_px)}
+
+      new_emulator_zero = WindowHandlers.handle_t(emulator, [4, 0, 0])
+      assert new_emulator_zero.window_state.size_pixels == {640, 384}
+
+      assert new_emulator_zero.window_state.size ==
+               {div(640, @default_char_width_px),
+                div(384, @default_char_height_px)}
     end
 
-    test "handles window move with extra parameters", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [3, 10, 20, 30, 40])
-      assert new_emulator.window_state.position == {10, 20}
+    test "handles missing parameters for window resize (op 4)", %{
+      emulator: emulator
+    } do
+      new_emulator = WindowHandlers.handle_t(emulator, [4])
+      assert new_emulator.window_state.size_pixels == {640, 384}
+
+      assert new_emulator.window_state.size ==
+               {div(640, @default_char_width_px),
+                div(384, @default_char_height_px)}
     end
 
-    test "handles window resize with extra parameters", %{emulator: emulator} do
-      new_emulator = WindowHandlers.handle_t(emulator, [4, 100, 50, 200, 100])
-      assert new_emulator.window_state.size == {100, 50}
+    test "handles window resize (op 4) with partial height_px param only", %{
+      emulator: emulator
+    } do
+      # height_px=160, width_px defaults
+      new_emulator = WindowHandlers.handle_t(emulator, [4, 160])
+      # uses default if not enough params
+      assert new_emulator.window_state.size_pixels == {640, 384}
+
+      assert new_emulator.window_state.size ==
+               {div(640, @default_char_width_px),
+                div(384, @default_char_height_px)}
+    end
+
+    # General invalid param types
+    test "handles non-integer parameters for move (op 3)", %{emulator: emulator} do
+      new_emulator =
+        WindowHandlers.handle_t(emulator, [3, "invalid", "invalid"])
+
+      assert new_emulator.window_state.position == {0, 0}
+    end
+
+    test "handles non-integer parameters for resize (op 4)", %{
+      emulator: emulator
+    } do
+      new_emulator =
+        WindowHandlers.handle_t(emulator, [4, "invalid", "invalid"])
+
+      assert new_emulator.window_state.size_pixels == {640, 384}
+
+      assert new_emulator.window_state.size ==
+               {div(640, @default_char_width_px),
+                div(384, @default_char_height_px)}
     end
   end
 end

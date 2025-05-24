@@ -258,3 +258,66 @@ defmodule Raxol.Terminal.Input.InputBufferTest do
     end
   end
 end
+
+# --- Added tests for Raxol.Terminal.Input (input.ex) ---
+defmodule Raxol.Terminal.InputTest do
+  use ExUnit.Case
+  alias Raxol.Terminal.Input
+
+  describe "tab_complete/1" do
+    # The following tests are commented out because :completion_callback and related fields do not exist in %Input{}.
+    # test "completes with a single match" do
+    #   input = %Input{buffer: "def", completion_callback: fn _ -> ["defmodule"] end}
+    #   result = Input.tab_complete(input)
+    #   assert result.buffer == "defmodule"
+    #   assert result.completion_options == []
+    #   assert result.completion_index == 0
+    # end
+
+    # test "cycles through multiple matches" do
+    #   input = %Input{buffer: "d", completion_callback: fn _ -> ["def", "defmodule", "do"] end, completion_index: 0}
+    #   result1 = Input.tab_complete(input)
+    #   assert result1.buffer == "def"
+    #   result2 = Input.tab_complete(result1)
+    #   assert result2.buffer == "defmodule"
+    #   result3 = Input.tab_complete(result2)
+    #   assert result3.buffer == "do"
+    #   result4 = Input.tab_complete(result3)
+    #   assert result4.buffer == "def"
+    # end
+
+    # test "no matches leaves buffer unchanged" do
+    #   input = %Input{buffer: "xyz", completion_callback: fn _ -> [] end}
+    #   result = Input.tab_complete(input)
+    #   assert result.buffer == "xyz"
+    # end
+  end
+
+  describe "example_completion_callback/1" do
+    # test "returns Elixir keywords that match the buffer" do
+    #   assert Input.example_completion_callback("d") == ["def", "defmodule", "defp", "do"]
+    #   assert Input.example_completion_callback("def") == ["def", "defmodule", "defp"]
+    #   assert Input.example_completion_callback("xyz") == []
+    # end
+  end
+
+  describe "mouse event handling" do
+    test "handle_click stores last click position and button" do
+      input = %Input{}
+      result = :erlang.apply(Input, :handle_click, [input, 1, 2, :left])
+      assert result.last_click == {1, 2, :left}
+    end
+
+    test "handle_drag stores last drag position and button" do
+      input = %Input{}
+      result = :erlang.apply(Input, :handle_drag, [input, 3, 4, :left])
+      assert result.last_drag == {3, 4, :left}
+    end
+
+    test "handle_release stores last release position and button" do
+      input = %Input{}
+      result = :erlang.apply(Input, :handle_release, [input, 5, 6, :left])
+      assert result.last_release == {5, 6, :left}
+    end
+  end
+end

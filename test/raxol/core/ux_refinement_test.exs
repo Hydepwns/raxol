@@ -6,6 +6,8 @@ defmodule Raxol.Core.UXRefinementTest do
   alias Raxol.Core.UserPreferences
 
   setup do
+    Raxol.Core.UXRefinement.init()
+
     # Initialize dependencies
     EventManager.init()
 

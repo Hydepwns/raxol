@@ -31,11 +31,6 @@ defmodule Raxol.Test.Integration do
 
   import ExUnit.Assertions
   alias Raxol.Core.Events.{Event, Subscription}
-  # Removed unused aliases
-  # alias Raxol.Terminal.Cell
-  # alias Raxol.Terminal.ScreenBuffer
-  # alias Raxol.View
-  # alias Raxol.Widget
 
   defmacro __using__(_opts) do
     quote do

@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
   DEC private modes (prefixed with `?`).
   """
   @spec handle_h_or_l(Emulator.t(), list(integer()), String.t(), char()) ::
-          Emulator.t()
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_h_or_l(emulator, params, intermediates_buffer, final_byte) do
     action = if final_byte == ?h, do: :set, else: :reset
 
@@ -28,83 +28,31 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
         do: &ModeManager.set_mode/2,
         else: &ModeManager.reset_mode/2
 
-    if intermediates_buffer == "?" do
-      handle_dec_private_mode(emulator, params, apply_mode_func, action)
-    else
-      handle_standard_mode(emulator, params, apply_mode_func, action)
-    end
+    result =
+      if intermediates_buffer == "?" do
+        handle_dec_private_mode(emulator, params, apply_mode_func)
+      else
+        handle_standard_mode(emulator, params, apply_mode_func)
+      end
+
+    {:ok, result}
   end
 
   # Helper function to handle DEC private modes
   @spec handle_dec_private_mode(
           Emulator.t(),
           list(integer()),
-          function(),
-          :set | :reset
+          fun()
         ) :: Emulator.t()
-  defp handle_dec_private_mode(emulator, params, apply_mode_func, action) do
-    # Process each mode parameter
-    Enum.reduce(params, emulator, fn param, acc ->
-      case param do
-        # Cursor Keys Mode (DECCKM)
-        1 ->
-          apply_mode_func.(acc, [:cursor_keys])
+  defp handle_dec_private_mode(emulator, params, apply_mode_func) do
+    Enum.reduce(params, emulator, fn param_code, acc_emulator ->
+      mode_atom = ModeManager.lookup_private(param_code)
 
-        # ANSI/VT52 Mode (DECANM)
-        2 ->
-          apply_mode_func.(acc, [:ansi_mode])
-
-        # Column Mode (DECCOLM)
-        3 ->
-          apply_mode_func.(acc, [:column_mode])
-
-        # Scrolling Mode (DECSCLM)
-        4 ->
-          apply_mode_func.(acc, [:smooth_scroll])
-
-        # Screen Mode (DECSCNM)
-        5 ->
-          apply_mode_func.(acc, [:reverse_video])
-
-        # Origin Mode (DECOM)
-        6 ->
-          apply_mode_func.(acc, [:origin_mode])
-
-        # Auto Wrap Mode (DECAWM)
-        7 ->
-          apply_mode_func.(acc, [:auto_wrap])
-
-        # Auto Repeat Mode (DECARM)
-        8 ->
-          apply_mode_func.(acc, [:auto_repeat])
-
-        # Interlace Mode (DECINLM)
-        9 ->
-          apply_mode_func.(acc, [:interlace])
-
-        # Line Feed/New Line Mode (DECLNM)
-        20 ->
-          apply_mode_func.(acc, [:line_feed_new_line])
-
-        # Cursor Blinking (DECSCUSR)
-        12 ->
-          apply_mode_func.(acc, [:cursor_blink])
-
-        # Cursor Visibility (DECTCEM)
-        25 ->
-          apply_mode_func.(acc, [:cursor_visible])
-
-        # Bracketed Paste Mode
-        2004 ->
-          apply_mode_func.(acc, [:bracketed_paste])
-
-        # Focus Reporting Mode
-        1004 ->
-          apply_mode_func.(acc, [:focus_reporting])
-
-        _ ->
-          Logger.warning("Unknown DEC private mode: #{param}")
-          acc
+      if mode_atom do
+        apply_mode_func.(acc_emulator, [mode_atom])
+      else
+        Logger.warn("Unknown DEC private mode code: ?#{param_code}")
+        acc_emulator
       end
     end)
   end
@@ -113,32 +61,44 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
   @spec handle_standard_mode(
           Emulator.t(),
           list(integer()),
-          function(),
-          :set | :reset
+          fun()
         ) :: Emulator.t()
-  defp handle_standard_mode(emulator, params, apply_mode_func, action) do
-    # Process each mode parameter
-    Enum.reduce(params, emulator, fn param, acc ->
-      case param do
-        # Keyboard Action Mode (KAM)
-        2 ->
-          apply_mode_func.(acc, [:keyboard_action])
+  defp handle_standard_mode(emulator, params, apply_mode_func) do
+    Enum.reduce(params, emulator, fn param_code, acc_emulator ->
+      mode_atom = ModeManager.lookup_standard(param_code)
 
-        # Insert/Replace Mode (IRM)
-        4 ->
-          apply_mode_func.(acc, [:insert_mode])
+      if mode_atom do
+        apply_mode_func.(acc_emulator, [mode_atom])
+      else
+        # Fallback for codes not directly in ModeManager.@standard_modes but might be aliases
+        # This section is to maintain previous explicit mappings if they are not in ModeManager's tables
+        # but were handled by ModeManager.do_set_mode/do_reset_mode via different atoms.
+        # Ideally, ModeManager's tables should be comprehensive.
+        case param_code do
+          # Keyboard Action Mode (KAM) - ModeManager does not list, but might handle :keyboard_action
+          2 ->
+            # Assuming ModeManager might handle a generic :keyboard_action if sent
+            # This is speculative and depends on ModeManager's internal handling.
+            # For now, we'll log if not in ModeManager's map.
+            Logger.warn(
+              "Standard mode code 2 (KAM) not directly in ModeManager's map. Effect depends on ModeManager internals."
+            )
 
-        # Send/Receive Mode (SRM)
-        12 ->
-          apply_mode_func.(acc, [:send_receive])
+            # Or attempt apply_mode_func.(acc_emulator, [:keyboard_action]) if confident
+            acc_emulator
 
-        # Echo Mode (ERM)
-        20 ->
-          apply_mode_func.(acc, [:echo])
+          # Send/Receive Mode (SRM) - ModeManager does not list
+          12 ->
+            Logger.warn(
+              "Standard mode code 12 (SRM) not directly in ModeManager's map. Effect depends on ModeManager internals."
+            )
 
-        _ ->
-          Logger.warning("Unknown standard mode: #{param}")
-          acc
+            acc_emulator
+
+          _ ->
+            Logger.warn("Unknown standard mode code: #{param_code}")
+            acc_emulator
+        end
       end
     end)
   end
@@ -162,7 +122,7 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
         value
 
       _ ->
-        Logger.warning(
+        Logger.warn(
           "Invalid parameter value at index #{index}, using default #{default}"
         )
 
@@ -181,5 +141,25 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
         ) :: non_neg_integer()
   defp get_valid_non_neg_param(params, index, default) do
     get_valid_param(params, index, default, 0, 9999)
+  end
+
+  @doc """
+  Handles Set Mode (SM - CSI h).
+  Calls handle_h_or_l/4 with final_byte ?h and no intermediates.
+  """
+  @spec handle_h(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_h(emulator, params) do
+    handle_h_or_l(emulator, params, "", ?h)
+  end
+
+  @doc """
+  Handles Reset Mode (RM - CSI l).
+  Calls handle_h_or_l/4 with final_byte ?l and no intermediates.
+  """
+  @spec handle_l(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_l(emulator, params) do
+    handle_h_or_l(emulator, params, "", ?l)
   end
 end

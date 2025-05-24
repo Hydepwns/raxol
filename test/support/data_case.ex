@@ -19,7 +19,7 @@ defmodule Raxol.DataCase do
       import Ecto
       import Ecto.Changeset
       import Ecto.Query
-      import Raxol.DataCase
+      import Raxol.DataCase, except: [setup: 1]
     end
   end
 
@@ -44,6 +44,17 @@ defmodule Raxol.DataCase do
     else
       fun.()
     end
+  end
+
+  # Public setup/1 for use in other test helpers
+  def setup(tags) do
+    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+
+    unless tags[:async] do
+      Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
+    end
+
+    :ok
   end
 
   @doc """

@@ -31,10 +31,32 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
           strikethrough: boolean(),
           fraktur: boolean(),
           double_underline: boolean(),
+          framed: boolean(),
+          encircled: boolean(),
+          overlined: boolean(),
           foreground: color(),
           background: color(),
           hyperlink: String.t() | nil
         }
+
+  @ansi_color_map %{
+    30 => :black,
+    31 => :red,
+    32 => :green,
+    33 => :yellow,
+    34 => :blue,
+    35 => :magenta,
+    36 => :cyan,
+    37 => :white,
+    40 => :black,
+    41 => :red,
+    42 => :green,
+    43 => :yellow,
+    44 => :blue,
+    45 => :magenta,
+    46 => :cyan,
+    47 => :white
+  }
 
   @doc """
   Creates a new text style map with default values.
@@ -52,6 +74,9 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
           strikethrough: false,
           fraktur: false,
           double_underline: false,
+          framed: false,
+          encircled: false,
+          overlined: false,
           foreground: nil,
           background: nil,
           hyperlink: nil
@@ -70,6 +95,9 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       strikethrough: false,
       fraktur: false,
       double_underline: false,
+      framed: false,
+      encircled: false,
+      overlined: false,
       foreground: nil,
       background: nil,
       hyperlink: nil
@@ -318,6 +346,21 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
       :bg_bright_white ->
         %{style | background: :white}
 
+      :framed ->
+        %{style | framed: true}
+
+      :encircled ->
+        %{style | encircled: true}
+
+      :overlined ->
+        %{style | overlined: true}
+
+      :not_framed_encircled ->
+        %{style | framed: false, encircled: false}
+
+      :not_overlined ->
+        %{style | overlined: false}
+
       _ ->
         style
     end
@@ -401,6 +444,8 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     nil
   end
 
+  # Converts a standard ANSI 3/4-bit color code to a color name atom.
+
   @doc """
   Converts a standard ANSI 3/4-bit color code to a color name atom.
 
@@ -417,30 +462,7 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   """
   @spec ansi_code_to_color_name(integer()) :: color() | nil
-  def ansi_code_to_color_name(code) do
-    case code do
-      30 -> :black
-      31 -> :red
-      32 -> :green
-      33 -> :yellow
-      34 -> :blue
-      35 -> :magenta
-      36 -> :cyan
-      37 -> :white
-      40 -> :black
-      41 -> :red
-      42 -> :green
-      43 -> :yellow
-      44 -> :blue
-      45 -> :magenta
-      46 -> :cyan
-      47 -> :white
-      # TODO: Add bright color codes (90-97, 100-107) if needed and map them appropriately
-      # For now, map them to nil or their base color
-      # Or handle bright colors if desired
-      _ -> nil
-    end
-  end
+  def ansi_code_to_color_name(code), do: Map.get(@ansi_color_map, code, nil)
 
   @doc """
   Resets all text formatting attributes to their default values.
@@ -520,190 +542,107 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
     style.hyperlink
   end
 
-  @doc """
-  Helper to parse a single SGR parameter.
-  """
-  defp parse_sgr_param(param, %{} = current_style) do
-    case param do
-      # Reset
-      # Reset all attributes
-      0 ->
-        new()
+  # Make parse_sgr_param/2 public for test and external use
+  def parse_sgr_param(param, style), do: do_parse_sgr_param(param, style)
 
-      1 ->
-        apply_attribute(current_style, :bold)
+  # Move the original private implementations to a helper
+  defp do_parse_sgr_param(param, %{} = current_style) when is_integer(param) do
+    cond do
+      param in 0..29 ->
+        handle_attribute_code(param, current_style)
 
-      2 ->
-        apply_attribute(current_style, :faint)
+      param in 30..37 or param in 40..47 ->
+        handle_color_code(param, current_style)
 
-      3 ->
-        apply_attribute(current_style, :italic)
+      param in 90..97 or param in 100..107 ->
+        handle_bright_color_code(param, current_style)
 
-      4 ->
-        apply_attribute(current_style, :underline)
-
-      5 ->
-        apply_attribute(current_style, :blink)
-
-      7 ->
-        apply_attribute(current_style, :reverse)
-
-      8 ->
-        apply_attribute(current_style, :conceal)
-
-      9 ->
-        apply_attribute(current_style, :strikethrough)
-
-      20 ->
-        apply_attribute(current_style, :fraktur)
-
-      21 ->
-        apply_attribute(current_style, :double_underline)
-
-      22 ->
-        apply_attribute(current_style, :normal_intensity)
-
-      23 ->
-        apply_attribute(current_style, :no_italic_fraktur)
-
-      24 ->
-        apply_attribute(current_style, :no_underline)
-
-      25 ->
-        apply_attribute(current_style, :no_blink)
-
-      27 ->
-        apply_attribute(current_style, :no_reverse)
-
-      28 ->
-        apply_attribute(current_style, :reveal)
-
-      29 ->
-        apply_attribute(current_style, :no_strikethrough)
-
-      30 ->
-        apply_attribute(current_style, :black)
-
-      31 ->
-        apply_attribute(current_style, :red)
-
-      32 ->
-        apply_attribute(current_style, :green)
-
-      33 ->
-        apply_attribute(current_style, :yellow)
-
-      34 ->
-        apply_attribute(current_style, :blue)
-
-      35 ->
-        apply_attribute(current_style, :magenta)
-
-      36 ->
-        apply_attribute(current_style, :cyan)
-
-      37 ->
-        apply_attribute(current_style, :white)
-
-      38 ->
-        apply_attribute(current_style, :default_fg)
-
-      39 ->
-        apply_attribute(current_style, :default_fg)
-
-      40 ->
-        apply_attribute(current_style, :bg_black)
-
-      41 ->
-        apply_attribute(current_style, :bg_red)
-
-      42 ->
-        apply_attribute(current_style, :bg_green)
-
-      43 ->
-        apply_attribute(current_style, :bg_yellow)
-
-      44 ->
-        apply_attribute(current_style, :bg_blue)
-
-      45 ->
-        apply_attribute(current_style, :bg_magenta)
-
-      46 ->
-        apply_attribute(current_style, :bg_cyan)
-
-      47 ->
-        apply_attribute(current_style, :bg_white)
-
-      # Bright foreground colors (90-97)
-      90 ->
-        apply_attribute(current_style, :bright_black)
-
-      91 ->
-        apply_attribute(current_style, :bright_red)
-
-      92 ->
-        apply_attribute(current_style, :bright_green)
-
-      93 ->
-        apply_attribute(current_style, :bright_yellow)
-
-      94 ->
-        apply_attribute(current_style, :bright_blue)
-
-      95 ->
-        apply_attribute(current_style, :bright_magenta)
-
-      96 ->
-        apply_attribute(current_style, :bright_cyan)
-
-      97 ->
-        apply_attribute(current_style, :bright_white)
-
-      # Bright background colors (100-107)
-      100 ->
-        apply_attribute(current_style, :bg_bright_black)
-
-      101 ->
-        apply_attribute(current_style, :bg_bright_red)
-
-      102 ->
-        apply_attribute(current_style, :bg_bright_green)
-
-      103 ->
-        apply_attribute(current_style, :bg_bright_yellow)
-
-      104 ->
-        apply_attribute(current_style, :bg_bright_blue)
-
-      105 ->
-        apply_attribute(current_style, :bg_bright_magenta)
-
-      106 ->
-        apply_attribute(current_style, :bg_bright_cyan)
-
-      107 ->
-        apply_attribute(current_style, :bg_bright_white)
-
-      # Set Foreground Color (8-bit)
-      {:fg_8bit, index} when index >= 0 and index <= 255 ->
-        apply_color(current_style, :foreground, {:index, index})
-
-      # Set Background Color (8-bit)
-      {:bg_8bit, index} when index >= 0 and index <= 255 ->
-        apply_color(current_style, :background, {:index, index})
-
-      # Set Foreground Color (24-bit)
-      {:fg_rgb, r, g, b} ->
-        apply_color(current_style, :foreground, {:rgb, r, g, b})
-
-      # Set Background Color (24-bit)
-      {:bg_rgb, r, g, b} ->
-        apply_color(current_style, :background, {:rgb, r, g, b})
-
-      # Unknown/Ignored
-      _ ->
+      true ->
         current_style
     end
   end
+
+  defp do_parse_sgr_param({:fg_8bit, index}, style)
+       when index >= 0 and index <= 255 do
+    apply_color(style, :foreground, {:index, index})
+  end
+
+  defp do_parse_sgr_param({:bg_8bit, index}, style)
+       when index >= 0 and index <= 255 do
+    apply_color(style, :background, {:index, index})
+  end
+
+  defp do_parse_sgr_param({:fg_rgb, r, g, b}, style) do
+    apply_color(style, :foreground, {:rgb, r, g, b})
+  end
+
+  defp do_parse_sgr_param({:bg_rgb, r, g, b}, style) do
+    apply_color(style, :background, {:rgb, r, g, b})
+  end
+
+  defp do_parse_sgr_param(_param, style), do: style
+
+  # Handles attribute codes (0-29)
+  defp handle_attribute_code(param, style) do
+    case param do
+      0 -> new()
+      1 -> apply_attribute(style, :bold)
+      2 -> apply_attribute(style, :faint)
+      3 -> apply_attribute(style, :italic)
+      4 -> apply_attribute(style, :underline)
+      5 -> apply_attribute(style, :blink)
+      7 -> apply_attribute(style, :reverse)
+      8 -> apply_attribute(style, :conceal)
+      9 -> apply_attribute(style, :strikethrough)
+      20 -> apply_attribute(style, :fraktur)
+      21 -> apply_attribute(style, :double_underline)
+      22 -> apply_attribute(style, :normal_intensity)
+      23 -> apply_attribute(style, :no_italic_fraktur)
+      24 -> apply_attribute(style, :no_underline)
+      25 -> apply_attribute(style, :no_blink)
+      27 -> apply_attribute(style, :no_reverse)
+      28 -> apply_attribute(style, :reveal)
+      29 -> apply_attribute(style, :no_strikethrough)
+      _ -> style
+    end
+  end
+
+  # Handles standard color codes (30-37 foreground, 40-47 background)
+  defp handle_color_code(param, style) when param in 30..37 do
+    color = ansi_code_to_color_name(param)
+    apply_attribute(style, color)
+  end
+
+  defp handle_color_code(param, style) when param in 40..47 do
+    color = ansi_code_to_color_name(param)
+    apply_attribute(style, ("bg_" <> Atom.to_string(color)) |> String.to_atom())
+  end
+
+  # Handles bright color codes (90-97 foreground, 100-107 background)
+  defp handle_bright_color_code(param, style) when param in 90..97 do
+    color = ansi_code_to_color_name(param - 60)
+
+    apply_attribute(
+      style,
+      ("bright_" <> Atom.to_string(color)) |> String.to_atom()
+    )
+  end
+
+  defp handle_bright_color_code(param, style) when param in 100..107 do
+    color = ansi_code_to_color_name(param - 60)
+
+    apply_attribute(
+      style,
+      ("bg_bright_" <> Atom.to_string(color)) |> String.to_atom()
+    )
+  end
+
+  # -- TEST HOOKS --
+
+  @doc """
+  Returns the default text style for the terminal emulator.
+  This is an alias for new/0 for compatibility.
+  """
+  @spec default_style() :: text_style()
+  def default_style, do: new()
 end

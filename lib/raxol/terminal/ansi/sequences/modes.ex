@@ -6,7 +6,6 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   including screen modes, input modes, and rendering modes.
   """
 
-  alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ModeManager
   require Logger
 
@@ -92,5 +91,12 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   def set_alternate_buffer(emulator, use_alternate) do
     buffer_type = if use_alternate, do: :alternate, else: :main
     %{emulator | active_buffer_type: buffer_type}
+  end
+
+  @doc """
+  Sets or resets ANSI modes.
+  """
+  def handle_mode_sequence(_emulator, _params, _private \\ false) do
+    # Implementation...
   end
 end

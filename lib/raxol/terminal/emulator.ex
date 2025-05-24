@@ -2,26 +2,37 @@ defmodule Raxol.Terminal.Emulator do
   @moduledoc """
   Manages the state of the terminal emulator, including screen buffer,
   cursor position, attributes, and modes.
+
+  ## Scrollback Limit Configuration
+
+  The scrollback buffer limit can be set via application config:
+
+      config :raxol, :terminal, scrollback_lines: 1000
+
+  Or overridden per emulator instance by passing the `:scrollback` option to `new/3`:
+
+      Emulator.new(80, 24, scrollback: 2000)
+
   """
 
   @behaviour Raxol.Terminal.EmulatorBehaviour
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Operations
-  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.Cursor.Manager
   alias Raxol.Terminal.ModeManager
   alias Raxol.Terminal.Parser
-  alias Raxol.Plugins.PluginManager
+  alias Raxol.Plugins.Manager.Core
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ControlCodes
   alias Raxol.Terminal.Style.Manager, as: StyleManager
   alias Raxol.Terminal.Buffer.Manager, as: BufferManager
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.ANSI.Processor
-  alias Raxol.Terminal.State.Manager, as: StateManager
+  alias Raxol.Terminal.ANSI.CharacterSets.StateManager
   alias Raxol.Terminal.Command.Manager, as: CommandManager
 
   require Logger
@@ -47,20 +58,22 @@ defmodule Raxol.Terminal.Emulator do
           alternate_screen_buffer: ScreenBuffer.t(),
           active_buffer_type: :main | :alternate,
           cursor: Manager.t(),
+          saved_cursor: Manager.t() | nil,
           scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
           style: TextFormatting.text_style(),
           memory_limit: non_neg_integer(),
           charset_state: CharacterSets.charset_state(),
           mode_manager: ModeManager.t(),
-          plugin_manager: PluginManager.t(),
+          plugin_manager: Manager.t(Core),
           options: map(),
           current_hyperlink_url: String.t() | nil,
           window_title: String.t() | nil,
           icon_name: String.t() | nil,
           tab_stops: MapSet.t(),
           output_buffer: String.t(),
+          color_palette: map(),
           cursor_style: cursor_style_type(),
-          parser_state: Parser.State.t(),
+          parser_state: map(),
           command_history: list(),
           max_command_history: non_neg_integer(),
           current_command_buffer: String.t(),
@@ -79,13 +92,22 @@ defmodule Raxol.Terminal.Emulator do
             iconified: boolean(),
             maximized: boolean(),
             previous_size: {non_neg_integer(), non_neg_integer()} | nil
-          }
+          },
+          scrollback_buffer: list(),
+          cwd: String.t() | nil,
+          current_hyperlink: map() | nil,
+          default_palette: map() | nil,
+          scrollback_limit: non_neg_integer(),
+          session_id: String.t() | nil,
+          client_options: map(),
+          # --- Added for Sixel graphics state tracking ---
+          sixel_state: map() | nil
         }
 
   # Use Manager struct
   defstruct cursor: Manager.new(),
             # TODO: This might need updating to save Manager state?
-            saved_cursor: {1, 1},
+            saved_cursor: nil,
             style: TextFormatting.new(),
             # Manages G0-G3 designation and invocation
             charset_state: CharacterSets.new(),
@@ -109,14 +131,15 @@ defmodule Raxol.Terminal.Emulator do
             # Flag for VT100 line wrapping behavior (DECAWM)
             last_col_exceeded: false,
             # Initialize Plugin Manager,
-            plugin_manager: PluginManager.new(),
+            plugin_manager: Core.new(),
             # Add parser state
-            parser_state: %Parser.State{},
+            parser_state: %{},
             options: %{},
             current_hyperlink_url: nil,
             window_title: nil,
             icon_name: nil,
             output_buffer: "",
+            color_palette: %{},
             cursor_style: :blinking_block,
             # Command History
             command_history: [],
@@ -138,34 +161,53 @@ defmodule Raxol.Terminal.Emulator do
               iconified: false,
               maximized: false,
               previous_size: nil
-            }
+            },
+            scrollback_buffer: [],
+            cwd: nil,
+            current_hyperlink: nil,
+            default_palette: nil,
+            scrollback_limit: 1000,
+            session_id: nil,
+            client_options: %{},
+            # --- Added for Sixel graphics state tracking ---
+            sixel_state: nil
 
   @doc """
   Creates a new terminal emulator instance with the specified dimensions and options.
 
+  ## Options
+
+    * `:scrollback` - Maximum number of scrollback lines (default: from config or 1000)
+    * `:memorylimit` - Memory limit (default: 1_000_000)
+    * `:max_command_history` - Max command history (default: 100)
+
   ## Examples
 
-      iex> emulator = Raxol.Terminal.Emulator.new(80, 24, %{})
-      iex> emulator.width
-      80
-      iex> emulator.height
-      24
-      iex> emulator.cursor.position
-      {0, 0}
+      iex> emulator = Raxol.Terminal.Emulator.new(80, 24, scrollback: 2000)
+      iex> emulator.scrollback_limit
+      2000
 
   """
   @spec new(non_neg_integer(), non_neg_integer(), keyword()) :: t()
   @dialyzer {:nowarn_function, new: 3}
   @impl Raxol.Terminal.EmulatorBehaviour
   def new(width \\ 80, height \\ 24, opts \\ []) do
-    scrollback_limit = Keyword.get(opts, :scrollback, 1000)
+    # Get default from config if not provided
+    config_limit =
+      Application.get_env(:raxol, :terminal, [])
+      |> Keyword.get(:scrollback_lines, 1000)
+
+    scrollback_limit = Keyword.get(opts, :scrollback, config_limit)
     memory_limit = Keyword.get(opts, :memorylimit, 1_000_000)
     max_command_history_opt = Keyword.get(opts, :max_command_history, 100)
-    plugin_manager = PluginManager.new()
+    # Extract session_id and client_options from opts
+    session_id = Keyword.get(opts, :session_id)
+    client_options = Keyword.get(opts, :client_options, %{})
+
+    plugin_manager = Core.new()
     initial_cursor = Manager.new()
     initial_mode_manager = ModeManager.new()
     initial_charset_state = CharacterSets.new()
-    initial_state_stack = TerminalState.new()
     initial_parser_state = %Parser.State{}
     command_manager = CommandManager.new()
 
@@ -175,25 +217,38 @@ defmodule Raxol.Terminal.Emulator do
 
     %__MODULE__{
       cursor: initial_cursor,
-      saved_cursor: {1, 1},
+      saved_cursor: nil,
       style: TextFormatting.new(),
       charset_state: initial_charset_state,
       mode_manager: initial_mode_manager,
       main_screen_buffer: main_buffer,
       alternate_screen_buffer: alternate_buffer,
       active_buffer_type: :main,
-      state_stack: initial_state_stack,
+      state_stack: TerminalState.new(),
       scroll_region: nil,
       memory_limit: memory_limit,
       tab_stops: BufferManager.default_tab_stops(width),
       last_col_exceeded: false,
       plugin_manager: plugin_manager,
       parser_state: initial_parser_state,
-      options: %{},
+      # Store remaining opts
+      options:
+        Enum.reduce(
+          [
+            :session_id,
+            :client_options,
+            :scrollback,
+            :memorylimit,
+            :max_command_history
+          ],
+          opts,
+          fn key, acc -> Keyword.delete(acc, key) end
+        ),
       current_hyperlink_url: nil,
       window_title: nil,
       icon_name: nil,
       output_buffer: "",
+      color_palette: %{},
       cursor_style: :blinking_block,
       command_history: [],
       max_command_history: max_command_history_opt,
@@ -201,7 +256,7 @@ defmodule Raxol.Terminal.Emulator do
       last_key_event: nil,
       width: width,
       height: height,
-      state: initial_state_stack,
+      state: StateManager.new(),
       command: command_manager,
       window_state: %{
         title: "",
@@ -212,7 +267,15 @@ defmodule Raxol.Terminal.Emulator do
         iconified: false,
         maximized: false,
         previous_size: nil
-      }
+      },
+      scrollback_buffer: [],
+      cwd: nil,
+      current_hyperlink: nil,
+      default_palette: nil,
+      scrollback_limit: scrollback_limit,
+      session_id: session_id,
+      client_options: client_options,
+      sixel_state: nil
     }
   end
 
@@ -222,22 +285,10 @@ defmodule Raxol.Terminal.Emulator do
   """
   @impl Raxol.Terminal.EmulatorBehaviour
   def new(width, height, session_id, client_options) do
-    Logger.warn(
-      "Emulator.new/4 called with session_id: #{inspect(session_id)} and client_options: #{inspect(client_options)}. These are currently ignored."
-    )
+    # Call the existing new/3, passing through session_id and client_options.
+    emulator_instance =
+      new(width, height, session_id: session_id, client_options: client_options)
 
-    # Call the existing new/3, passing through width, height, and an empty list for opts for now.
-    # TODO: Properly utilize session_id and client_options or integrate them into opts for new/3.
-    # This will return t() directly as expected by the behaviour if new/3 returns t()
-    new(width, height, [])
-
-    # If new/3 is meant to return {:ok, t()} for the behaviour, this needs adjustment.
-    # Based on current new/3 signature, it returns t().
-    # The behaviour for new/4 is {:ok, t()} | {:error, any()}, so we wrap it.
-    # However, the mock is `{:ok, %Emulator{}}` so this should be fine for now as new/3 returns %Emulator{}
-    # Let's make it return {:ok, emulator_instance} to match the behaviour callback precisely for new/4.
-    # Calls the new/3 above
-    emulator_instance = new(width, height, [])
     {:ok, emulator_instance}
   end
 
@@ -275,64 +326,12 @@ defmodule Raxol.Terminal.Emulator do
 
   @doc """
   Processes input from the user, handling both regular characters and escape sequences.
-  Processes the entire input string recursively.
-
-  ## Examples
-
-      iex> emulator = Raxol.Terminal.Emulator.new(80, 24, %{})
-      iex> {emulator, _} = Raxol.Terminal.Emulator.process_input(emulator, "a")
-      # Cursor position is now 1-based, so {1, 1} after 'a'
-      iex> emulator.cursor.position
-      {1, 1}
-      iex> emulator = Raxol.Terminal.Emulator.new()
-      iex> {emulator, _} = Raxol.Terminal.Emulator.process_input(emulator, "\e[1;31mRed\e[0m Text")
-      iex> {x, y} = emulator.cursor.position
-      iex> x # Length of "Red Text" (8 chars) + starting at 1 = 9
-      9
-      iex> emulator.style.foreground # Should be reset by \e[0m
-      nil
-
+  Delegates to Raxol.Terminal.InputHandler.process_terminal_input/2.
   """
   @spec process_input(t(), String.t()) :: {t(), String.t()}
   @impl Raxol.Terminal.EmulatorBehaviour
   def process_input(%__MODULE__{} = emulator, input) when is_binary(input) do
-    # Get the current parser state from the emulator
-    current_parser_state = emulator.parser_state
-
-    # === BRACKETED PASTE CHECK ===
-    if ModeManager.mode_enabled?(emulator.mode_manager, :bracketed_paste) do
-      wrapped_paste = <<"\e[200~", input::binary, "\e[201~">>
-      state_after_paste_event = %{emulator | output_buffer: ""}
-      {state_after_paste_event, wrapped_paste}
-    else
-      # Call the public parse_chunk function (if not in bracketed paste mode)
-      parse_result = Parser.parse_chunk(emulator, current_parser_state, input)
-
-      # Inspect the raw result from the parser
-      # IO.inspect(parse_result, label: "[Emulator.process_input] Parser.parse_chunk returned:")
-
-      {final_emulator, final_parser_state} = parse_result
-
-      # Directly update the parser state on the result and return
-      final_emulator_updated = %{
-        final_emulator
-        | parser_state: final_parser_state
-      }
-
-      # For debugging, inspect right before return
-      # IO.inspect(final_emulator_updated.charset_state, label: "[Emulator.process_input simplified] Returning charset_state:")
-      # IO.inspect(final_emulator_updated.charset_state, label: "[Emulator.process_input] Returning charset_state:")
-
-      # Restore original logic
-      output_to_send = final_emulator_updated.output_buffer
-
-      final_emulator_state_no_output = %{
-        final_emulator_updated
-        | output_buffer: ""
-      }
-
-      {final_emulator_state_no_output, output_to_send}
-    end
+    Raxol.Terminal.InputHandler.process_terminal_input(emulator, input)
   end
 
   # --- Active Buffer Helpers ---
@@ -364,7 +363,7 @@ defmodule Raxol.Terminal.Emulator do
   # Removed process_printable_character/2 - Moved to InputHandler
 
   # --- CSI Sequence Handling ---
-  # TODO: Move CSI handling logic to InputHandler
+  # Logic moved to InputHandler which calls Parser, which calls Commands.Executor for CSI.
 
   @doc """
   Resizes the emulator's screen buffers.
@@ -402,7 +401,7 @@ defmodule Raxol.Terminal.Emulator do
     new_tab_stops = BufferManager.default_tab_stops(new_width)
 
     # Clamp cursor position
-    {cur_x, cur_y} = emulator.cursor.position
+    {cur_x, cur_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
     clamped_x = min(max(cur_x, 0), new_width - 1)
     clamped_y = min(max(cur_y, 0), new_height - 1)
     new_cursor = %{emulator.cursor | position: {clamped_x, clamped_y}}
@@ -433,25 +432,6 @@ defmodule Raxol.Terminal.Emulator do
   end
 
   @doc """
-  Gets the current cursor position from the emulator.
-
-  ## Parameters
-
-  * `emulator` - The emulator to get the cursor position from
-
-  ## Returns
-
-  A tuple {x, y} representing the cursor position
-  """
-  @spec get_cursor_position(Raxol.Terminal.Emulator.t()) ::
-          {non_neg_integer(), non_neg_integer()}
-  @dialyzer {:nowarn_function, get_cursor_position: 1}
-  @impl Raxol.Terminal.EmulatorBehaviour
-  def get_cursor_position(%__MODULE__{} = emulator) do
-    emulator.cursor.position
-  end
-
-  @doc """
   Gets whether the cursor is currently visible.
 
   ## Parameters
@@ -475,7 +455,7 @@ defmodule Raxol.Terminal.Emulator do
   # and the subsequent cursor position, considering autowrap mode.
   # Returns: {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded}
   defp calculate_write_position(%__MODULE__{} = emulator, width) do
-    {cursor_x, cursor_y} = emulator.cursor.position
+    {cursor_x, cursor_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
     autowrap_enabled = emulator.mode_manager.auto_wrap
     last_col_exceeded = emulator.last_col_exceeded
     buffer = get_active_buffer(emulator)
@@ -821,4 +801,12 @@ defmodule Raxol.Terminal.Emulator do
   defdelegate update_max_history(emulator, new_size),
     to: CommandManager,
     as: :update_max_history
+
+  @doc """
+  Clears the scrollback buffer.
+  """
+  @spec clear_scrollback(t()) :: t()
+  def clear_scrollback(emulator) do
+    %{emulator | scrollback_buffer: []}
+  end
 end

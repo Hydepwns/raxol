@@ -11,6 +11,18 @@ It offers a powerful component system, a flexible runtime, and a robust plugin a
 >
 > <!-- TODO: Add a screenshot or GIF demo here -->
 
+## Architecture
+
+- Terminal: I/O, buffer, cursor, command, style, parser, input.
+- Core: Lifecycle, events, plugins, color, UX.
+- Plugins: Modular/extensible.
+- Style: Color/theming/layout.
+- UI: Components/layout/render.
+- AI: Content gen, perf.
+- Animation: Anim, easing, gestures.
+
+See [ARCHITECTURE.md](docs/ARCHITECTURE.md).
+
 ## ✨ Features
 
 - **Component Model:** Build UIs from reusable, stateful components.
@@ -48,6 +60,14 @@ mix dialyzer
 mix format
 mix compile --warnings-as-errors
 ```
+
+## 📦 Static Assets
+
+All static assets (JavaScript, CSS, images, etc.) are located in the `priv/static/@static` directory.
+
+- If you need to add or update frontend assets, use the `@static` folder.
+- The asset pipeline (npm, bundlers, etc.) should be run from `priv/static/@static`.
+- References to static files in templates and code should use the `/@static/` path prefix.
 
 ## 🛠️ Example: A Simple Counter App
 

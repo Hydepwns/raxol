@@ -74,9 +74,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
 
   describe "parse_version_requirement/1" do
     test "parses simple version requirements" do
-      assert {:ok, _} = Version.parse_version_requirement(">= 1.0.0")
-      assert {:ok, _} = Version.parse_version_requirement("== 1.0.0")
-      assert {:ok, _} = Version.parse_version_requirement("~> 1.0")
+      assert match?({:ok, _}, Version.parse_version_requirement(">= 1.0.0"))
+      assert match?({:ok, _}, Version.parse_version_requirement("== 1.0.0"))
+      assert match?({:ok, _}, Version.parse_version_requirement("~> 1.0"))
     end
 
     test "parses complex version requirements" do

@@ -23,12 +23,21 @@ defmodule Raxol.Application do
           # Start the Dynamic Supervisor for Raxol applications
           Raxol.DynamicSupervisor,
           # Start the UserPreferences GenServer
-          Raxol.Core.UserPreferences,
-          # Start the Terminal Driver
-          # Dispatcher PID is not available at startup; passing nil for now.
-          {Raxol.Terminal.Driver, nil}
-          # Add other core persistent processes here if needed (e.g., PluginManager, TerminalDriver? Check ARCHITECTURE)
-        ]
+          Raxol.Core.UserPreferences
+        ] ++
+          if IO.ANSI.enabled?() do
+            [
+              # Start the Terminal Driver only if in a TTY
+              {Raxol.Terminal.Driver, nil}
+            ]
+          else
+            Logger.warning(
+              "[Raxol.Application] Not attached to a TTY. Terminal driver will not be started.",
+              []
+            )
+
+            []
+          end
       end
 
     # See https://hexdocs.pm/elixir/Supervisor.html

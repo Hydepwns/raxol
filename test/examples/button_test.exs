@@ -4,18 +4,10 @@ defmodule Raxol.Examples.ButtonTest do
   use Raxol.Test.Integration
   use Raxol.Test.Visual
   import ExUnit.Callbacks
-  import Raxol.TestHelpers
-  # import Raxol.Test.ButtonHelpers # REMOVED - Helpers seem outdated/incorrect
 
-  # alias Raxol.Examples.Button # OLD ALIAS
-  # NEW ALIAS
   alias Raxol.UI.Components.Input.Button
-  # Alias TestHelper for setup/teardown
   alias Raxol.Test.TestHelper
-  # Alias the Form mock for testing
-  # Assuming Form mock exists or is defined elsewhere
   alias Form
-  # Add import for canonical visual assertions
   import Raxol.Test.Visual.Assertions
 
   setup do
@@ -31,48 +23,46 @@ defmodule Raxol.Examples.ButtonTest do
 
   describe "unit tests" do
     test "initializes with default state", _context do
-      {:ok, button} = Raxol.Test.Unit.setup_isolated_component(Button)
-      # Assuming Button component has state like this
+      result = Raxol.Test.Unit.setup_isolated_component(Button)
+      assert match?({:ok, _}, result)
+      {:ok, button} = result
       assert button.state.label == "Button"
       assert button.state.disabled == false
     end
 
     test "handles click events", _context do
-      # Define atomic inside the test
       clicked = :atomics.new(1, signed: false)
-      # Initialize to 1
       :atomics.put(clicked, 1, 1)
 
-      {:ok, button} =
+      result =
         Raxol.Test.Unit.setup_isolated_component(Button, %{
           on_click: fn -> :atomics.add(clicked, 1, :relaxed) end
         })
 
-      # Ignore commands for now
+      assert match?({:ok, _}, result)
+      {:ok, button} = result
+
       {updated, _commands} =
         Raxol.Test.Unit.simulate_event(
           button,
           Raxol.Core.Events.Event.new(:click, target: button.state.id)
         )
 
-      # Assert based on expected Button behaviour
-      # Remove pressed state check, check side effect instead
-      # assert updated.state.pressed == true
       assert :atomics.get(clicked, 1) == 2, "on_click function was not called"
-      # assert :clicked in commands # Command assertion might be invalid now
     end
 
     test "handles disable state", _context do
-      # Define atomic inside the test
       clicked = :atomics.new(1, signed: false)
-      # Initialize to 1
       :atomics.put(clicked, 1, 1)
 
-      {:ok, button} =
+      result =
         Raxol.Test.Unit.setup_isolated_component(Button, %{
           disabled: true,
           on_click: fn -> :atomics.add(clicked, 1, :relaxed) end
         })
+
+      assert match?({:ok, _}, result)
+      {:ok, button} = result
 
       {updated, commands} =
         Raxol.Test.Unit.simulate_event(
@@ -80,25 +70,18 @@ defmodule Raxol.Examples.ButtonTest do
           Raxol.Core.Events.Event.new(:click, target: button.state.id)
         )
 
-      # Expect state not to change
       assert updated.state == button.state
-      # Expect no commands
       assert commands == []
 
       assert :atomics.get(clicked, 1) == 1,
              "on_click function was called unexpectedly"
     end
 
-    # @tag :skip # REMOVED - This test might pass now?
-    # Test integration tests handles system events properly
-    # Re-written as a unit test for isolated component event handling
-    # Changed name, unused context
     test "unit tests handles system events properly", _context do
-      # Ensure button responds correctly to system-level events
-      # Like window resize or focus changes
-      {:ok, button} = Raxol.Test.Unit.setup_isolated_component(Button)
+      result = Raxol.Test.Unit.setup_isolated_component(Button)
+      assert match?({:ok, _}, result)
+      {:ok, button} = result
 
-      # Simulate focus gain
       {button_focused, _cmd1} =
         Raxol.Test.Unit.simulate_event(
           button,
@@ -107,7 +90,6 @@ defmodule Raxol.Examples.ButtonTest do
 
       assert button_focused.state.focused == true
 
-      # Simulate focus loss
       {button_unfocused, _cmd2} =
         Raxol.Test.Unit.simulate_event(
           button_focused,
@@ -131,23 +113,28 @@ defmodule Raxol.Examples.ButtonTest do
       theme = %{fg: :red, bg: :blue, focused_fg: :green}
       style = %{fg: :yellow, bg: :magenta}
 
-      {:ok, button} =
+      result =
         Raxol.Test.Unit.setup_isolated_component(Button, %{
           theme: theme,
           style: style,
           focused: true
         })
 
+      assert match?({:ok, _}, result)
+      {:ok, button} = result
+
       view = Raxol.Test.Visual.render_component(button)
-      # Style should override theme
       assert view.attrs.fg == :yellow
       assert view.attrs.bg == :magenta
-      # Focused_fg from theme should be overridden if present in style
-      # (if style had focused_fg, it would override)
     end
 
     test "mount and unmount lifecycle hooks are called and return state" do
-      state = %{label: "Test", theme: test_theme(), style: %{}}
+      state = %{
+        label: "Test",
+        theme: Raxol.Test.TestHelper.test_theme(),
+        style: %{}
+      }
+
       mounted = Button.mount(state)
       assert mounted == state
       unmounted = Button.unmount(mounted)
@@ -156,16 +143,12 @@ defmodule Raxol.Examples.ButtonTest do
   end
 
   describe "integration tests" do
-    # Form and helpers confirmed with mock_form.ex
     test "button in form interaction", context do
-      # Adjust return value expectation
       {form, button} =
         Raxol.Test.Integration.setup_component_hierarchy(Form, Button, context)
 
-      # Simulate button click
       Raxol.Test.Integration.simulate_user_action(button, {:click, {1, 1}})
 
-      # Verify event propagation (Adjust assertions as needed)
       Raxol.Test.Integration.Assertions.assert_child_received(button, :clicked)
 
       Raxol.Test.Integration.Assertions.assert_parent_updated(
@@ -176,19 +159,15 @@ defmodule Raxol.Examples.ButtonTest do
       Raxol.Test.Integration.Assertions.assert_state_synchronized(
         [form, button],
         fn [form_state, button_state] ->
-          # Example assertion
           form_state.submitted && button_state.pressed
         end
       )
     end
 
-    # @tag :skip # REMOVED - This test might pass now?
     test "contains errors properly", context do
-      # Adjust return value expectation
       {form, button} =
         Raxol.Test.Integration.setup_component_hierarchy(Form, Button, context)
 
-      # Assuming this helper takes 3 args, not 4
       Raxol.Test.Integration.Assertions.assert_error_contained(
         form,
         button,
@@ -202,17 +181,11 @@ defmodule Raxol.Examples.ButtonTest do
 
   describe "visual tests" do
     test "renders with correct style", %{button: button} do
-      # Capture the rendered output
       view = Raxol.Test.Visual.render_component(button)
-      # Basic checks on the view structure
       assert is_list(view)
-      # Example: check for button text
-      # This requires a helper to extract text content from the view structure
-      # assert Raxol.Test.Visual.Helpers.view_contains_text?(view, button.state.label)
     end
 
     test "matches snapshot", %{button: button, context: context} do
-      # Ensure the component matches a pre-recorded snapshot
       assert_matches_snapshot(
         button,
         "button_submit",
@@ -220,8 +193,6 @@ defmodule Raxol.Examples.ButtonTest do
       )
     end
 
-    # RE-SKIP - Visual test. May require snapshot updates or review of assert_responsive's failure details.
-    @tag :skip
     test "adapts to different sizes", _context do
       button = Raxol.Test.Visual.setup_visual_component(Button, %{})
 
@@ -231,8 +202,6 @@ defmodule Raxol.Examples.ButtonTest do
       )
     end
 
-    # RE-SKIP - Visual test. May require snapshot updates for different themes or review of assert_theme_consistent's failure details.
-    @tag :skip
     test "maintains consistent structure across themes", _context do
       button = Raxol.Test.Visual.setup_visual_component(Button, %{})
 
@@ -242,32 +211,21 @@ defmodule Raxol.Examples.ButtonTest do
       )
     end
 
-    # @tag :skip
     test "aligns properly", _context do
       button = Raxol.Test.Visual.setup_visual_component(Button, %{})
-      # output = Raxol.Test.Visual.capture_render(button) # Returns view map
-      # Call render_component directly
       view = Raxol.Test.Visual.render_component(button)
 
-      # Assert view is a map (basic check)
       assert is_map(view)
-      # assert output # Placeholder assertion
     end
 
     test "handles different states visually", _context do
-      # Normal
       button_normal = Raxol.Test.Visual.setup_visual_component(Button, %{})
-      # output = Raxol.Test.Visual.capture_render(button) # Returns view map
-      # Call render_component directly
       normal_view = Raxol.Test.Visual.render_component(button_normal)
       assert normal_view.attrs.disabled == false
 
-      # Disabled
       button_disabled =
         Raxol.Test.Visual.setup_visual_component(Button, %{disabled: true})
 
-      # disabled_output = Raxol.Test.Visual.capture_render(disabled_button) # Returns view map
-      # Call render_component directly
       disabled_view = Raxol.Test.Visual.render_component(button_disabled)
       assert disabled_view.attrs.disabled == true
     end

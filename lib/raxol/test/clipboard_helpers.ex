@@ -8,7 +8,6 @@ defmodule Raxol.Test.ClipboardHelpers do
 
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
-  alias Raxol.Core.Runtime.Command
 
   @doc """
   Creates a MultiLineInput state for clipboard tests.
@@ -37,7 +36,7 @@ defmodule Raxol.Test.ClipboardHelpers do
   Asserts that the clipboard write command is present in the command list with the expected content.
   """
   def assert_clipboard_write(commands, expected_content) do
-    expected_cmd = Command.clipboard_write(expected_content)
+    expected_cmd = {:clipboard_write, expected_content}
     assert [^expected_cmd] = commands
   end
 
@@ -45,7 +44,7 @@ defmodule Raxol.Test.ClipboardHelpers do
   Asserts that the clipboard read command is present in the command list.
   """
   def assert_clipboard_read(commands) do
-    expected_cmd = Command.clipboard_read()
+    expected_cmd = {:clipboard_read}
     assert [^expected_cmd] = commands
   end
 

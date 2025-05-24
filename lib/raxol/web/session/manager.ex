@@ -12,10 +12,7 @@ defmodule Raxol.Web.Session.Manager do
   use GenServer
 
   alias Raxol.Web.Session.{Storage, Recovery, Cleanup, Monitor, Session}
-  # alias Raxol.Logger # Remove this alias
   require Logger
-
-  # Client API
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -45,23 +42,16 @@ defmodule Raxol.Web.Session.Manager do
     GenServer.call(__MODULE__, :get_active_sessions)
   end
 
-  # Server Callbacks
-
   @impl true
   def init(_opts) do
-    # Initialize session storage
     :ok = Storage.init()
 
-    # Initialize session recovery
     :ok = Recovery.init()
 
-    # Initialize session cleanup
     :ok = Cleanup.init()
 
-    # Initialize session monitoring
     {:ok, _monitor_state} = Monitor.init(%{})
 
-    # Create initial state
     state = %{
       sessions: %{},
       cleanup_interval: :timer.minutes(5),
@@ -91,7 +81,6 @@ defmodule Raxol.Web.Session.Manager do
     # Store session
     case Storage.store(session) do
       {:ok, _} ->
-        # Update state
         new_state = %{
           state
           | sessions: Map.put(state.sessions, session_id, session)
@@ -120,8 +109,6 @@ defmodule Raxol.Web.Session.Manager do
               "Failed to update session last_active time: #{inspect(reason)}"
             )
 
-            # Decide if we should return the old session or an error
-            # Return old session for now
             {:reply, {:ok, session}, state}
         end
 
@@ -163,7 +150,6 @@ defmodule Raxol.Web.Session.Manager do
   def handle_call({:end_session, session_id}, _from, state) do
     case Storage.get(session_id) do
       {:ok, session} ->
-        # Mark session as ended
         ended_session = %{
           session
           | status: :ended,

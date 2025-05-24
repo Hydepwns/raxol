@@ -208,9 +208,81 @@ defmodule Raxol.Terminal.Input do
     end
   end
 
+  @doc """
+  Sets a callback function for context-aware tab completion.
+  The callback receives the current buffer and returns a list of completion options.
+  """
+  def set_completion_callback(%__MODULE__{} = input, callback)
+      when is_function(callback, 1) do
+    %{input | completion_callback: callback}
+  end
+
+  @doc """
+  Triggers or cycles tab completion. If a callback is set, cycles through options; otherwise, inserts spaces.
+  """
+  def tab_complete(%__MODULE__{} = input) do
+    if is_function(input.completion_callback, 1) do
+      current_buffer = input.buffer
+      options = input.completion_callback.(current_buffer)
+
+      cond do
+        options == [] ->
+          input
+
+        length(options) == 1 ->
+          %{
+            input
+            | buffer: Enum.at(options, 0),
+              completion_options: [],
+              completion_index: 0
+          }
+
+        length(options) > 1 ->
+          new_index = rem((input.completion_index || 0) + 1, length(options))
+
+          %{
+            input
+            | buffer: Enum.at(options, new_index),
+              completion_options: options,
+              completion_index: new_index
+          }
+      end
+    else
+      # Fallback: insert spaces
+      tab_width = 4
+      spaces = String.duplicate(" ", tab_width)
+      %{input | buffer: input.buffer <> spaces}
+    end
+  end
+
+  @doc """
+  Example completion callback: completes common Elixir keywords.
+  """
+  def example_completion_callback(buffer) do
+    keywords = [
+      "def",
+      "defmodule",
+      "defp",
+      "if",
+      "else",
+      "case",
+      "cond",
+      "end",
+      "do",
+      "fn",
+      "receive",
+      "try",
+      "catch",
+      "rescue",
+      "after"
+    ]
+
+    Enum.filter(keywords, &String.starts_with?(&1, buffer))
+  end
+
   # Private functions
 
-  defp handle_enter(%__MODULE__{} = input) do
+  def handle_enter(%__MODULE__{} = input) do
     if input.buffer != "" do
       input
       |> add_to_history(input.buffer)
@@ -220,39 +292,32 @@ defmodule Raxol.Terminal.Input do
     end
   end
 
-  defp handle_backspace(%__MODULE__{} = input) do
+  def handle_backspace(%__MODULE__{} = input) do
     %{input | buffer: String.slice(input.buffer, 0..-2//1)}
   end
 
-  defp handle_tab(%__MODULE__{} = input) do
-    # Basic tab completion: insert spaces
-    # TODO: Implement context-aware tab completion later
-    # Or get from config/options
-    tab_width = 4
-    spaces = String.duplicate(" ", tab_width)
-    %{input | buffer: input.buffer <> spaces}
-  end
+  def handle_tab(%__MODULE__{} = input), do: tab_complete(input)
 
-  defp handle_escape(%__MODULE__{} = input) do
+  def handle_escape(%__MODULE__{} = input) do
     %{input | mode: :normal}
   end
 
-  defp handle_printable(%__MODULE__{} = input, char) do
+  def handle_printable(%__MODULE__{} = input, char) do
     %{input | buffer: input.buffer <> char}
   end
 
-  defp handle_click(%__MODULE__{} = input, _x, _y, _button) do
-    # TODO: Implement click handling
-    input
+  def handle_click(%__MODULE__{} = input, x, y, button) do
+    # Basic click handling: store last click position and button
+    %{input | last_click: {x, y, button}}
   end
 
-  defp handle_drag(%__MODULE__{} = input, _x, _y, _button) do
-    # TODO: Implement drag handling
-    input
+  def handle_drag(%__MODULE__{} = input, x, y, button) do
+    # Basic drag handling: store last drag position and button
+    %{input | last_drag: {x, y, button}}
   end
 
-  defp handle_release(%__MODULE__{} = input, _x, _y, _button) do
-    # TODO: Implement release handling
-    input
+  def handle_release(%__MODULE__{} = input, x, y, button) do
+    # Basic release handling: store last release position and button
+    %{input | last_release: {x, y, button}}
   end
 end

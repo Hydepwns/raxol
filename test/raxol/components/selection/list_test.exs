@@ -1,7 +1,7 @@
-defmodule Raxol.Components.Selection.ListTest do
+defmodule Raxol.UI.Components.Selection.ListTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Components.Selection.List
+  alias Raxol.UI.Components.Selection.List
   alias Raxol.Core.Events.Event
 
   describe "init/1" do
@@ -157,7 +157,7 @@ defmodule Raxol.Components.Selection.ListTest do
       assert commands == []
 
       # Test with callback
-      cb = fn item -> IO.inspect(item) end
+      cb = fn _item -> :ok end
       state_with_cb = %{state_sel_1 | on_select: cb}
 
       {_new_state_cb, commands_cb} =
@@ -201,14 +201,14 @@ defmodule Raxol.Components.Selection.ListTest do
     custom_renderer = fn item -> "Custom: #{item}" end
 
     state =
-      Raxol.Components.Selection.List.init(%{
+      Raxol.UI.Components.Selection.List.init(%{
         id: :custom_render_list,
         items: ["a", "b", "c"],
         item_renderer: custom_renderer
       })
 
     # Render the list
-    rendered = Raxol.Components.Selection.List.render(state, %{})
+    rendered = Raxol.UI.Components.Selection.List.render(state, %{})
 
     # Navigate the rendered structure to get the labels
     # rendered = %{type: :box, children: %{type: :column, children: [box1, box2, box3]}}
@@ -221,7 +221,7 @@ defmodule Raxol.Components.Selection.ListTest do
       assert box.type == :box
       [label] = box.children
       assert label.type == :label
-      assert label.content == "Custom: #{item}"
+      assert Keyword.get(label.attrs, :content) == "Custom: #{item}"
     end)
   end
 

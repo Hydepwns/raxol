@@ -1,5 +1,6 @@
 defmodule RaxolWeb.UserSocket do
   use Phoenix.Socket
+  require Logger
 
   # Channels
   channel("terminal:*", RaxolWeb.TerminalChannel)

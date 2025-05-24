@@ -35,6 +35,10 @@ defmodule RaxolWeb.ChannelCase do
     # Start the endpoint server for tests requiring it
     start_endpoint(tags)
 
+    on_exit(fn ->
+      Application.stop(:raxol)
+    end)
+
     :ok
   end
 

@@ -493,4 +493,50 @@ defmodule Raxol.System.Updater do
         do_self_update(version)
     end
   end
+
+  @doc """
+  Checks for updates and applies them if available.
+
+  ## Options
+  - `:force` (boolean): Force update check, bypassing interval.
+  - `:use_delta` (boolean): Use delta updates if available (default: true).
+  - `:version` (string): Update to a specific version (default: latest).
+
+  ## Returns
+  - `:ok` if update was successful.
+  - `{:no_update, version}` if already up to date.
+  - `{:error, reason}` if an error occurred.
+  """
+  def update(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+    force = Keyword.get(opts, :force, false)
+    use_delta = Keyword.get(opts, :use_delta, true)
+    version = Keyword.get(opts, :version)
+
+    try do
+      # 1. Determine target version
+      target_version =
+        case version do
+          nil ->
+            case check_for_updates(force: force) do
+              {:update_available, v} -> v
+              {:no_update, v} -> throw({:no_update, v})
+              {:error, reason} -> throw({:error, reason})
+            end
+
+          v ->
+            v
+        end
+
+      # 2. Apply update
+      case self_update(target_version, use_delta: use_delta) do
+        :ok -> :ok
+        {:no_update, v} -> {:no_update, v}
+        {:error, reason} -> {:error, reason}
+      end
+    catch
+      {:no_update, v} -> {:no_update, v}
+      {:error, reason} -> {:error, reason}
+    end
+  end
 end

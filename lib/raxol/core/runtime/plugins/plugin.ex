@@ -2,7 +2,7 @@ defmodule Raxol.Core.Runtime.Plugins.Plugin do
   @moduledoc """
   Defines the behaviour for Raxol plugins.
 
-  Plugins must implement this behaviour to be loaded and managed by the PluginManager.
+  Plugins must implement this behaviour to be loaded and managed by the plugin manager.
   """
 
   @type config :: map()
@@ -15,7 +15,7 @@ defmodule Raxol.Core.Runtime.Plugins.Plugin do
   Called when the plugin is first initialized.
 
   Should return `{:ok, initial_state}` or `{:error, reason}`.
-  The `initial_state` will be managed by the PluginManager.
+  The `initial_state` will be managed by the plugin manager.
   """
   @callback init(config :: config()) :: {:ok, state()} | {:error, any()}
 
@@ -51,7 +51,7 @@ defmodule Raxol.Core.Runtime.Plugins.Plugin do
               {:ok, event()} | :halt | any()
 
   @doc """
-  Optional callback to handle commands delegated by the PluginManager.
+  Optional callback to handle commands delegated by the plugin manager.
 
   Should return `{:ok, new_state, result}` or `{:error, reason, new_state}`.
   The `result` can be sent back to the original command requester if needed.

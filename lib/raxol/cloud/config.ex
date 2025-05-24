@@ -450,23 +450,7 @@ defmodule Raxol.Cloud.Config do
   defp unflatten_map(map) do
     Enum.reduce(map, %{}, fn {key, value}, acc ->
       keys = String.split(key, ".")
-      put_in_path(acc, keys, value)
-    end)
-  end
-
-  defp put_in_path(map, [key], value) do
-    key =
-      if key =~ ~r/^\d+$/, do: String.to_integer(key), else: String.to_atom(key)
-
-    Map.put(map, key, value)
-  end
-
-  defp put_in_path(map, [key | rest], value) do
-    key =
-      if key =~ ~r/^\d+$/, do: String.to_integer(key), else: String.to_atom(key)
-
-    Map.update(map, key, put_in_path(%{}, rest, value), fn existing ->
-      put_in_path(existing, rest, value)
+      acc
     end)
   end
 

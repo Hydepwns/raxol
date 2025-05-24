@@ -162,7 +162,7 @@ defmodule Raxol.Terminal.ANSI.SixelPalette do
     l = max(0.0, min(1.0, l))
     s = max(0.0, min(1.0, s))
 
-    if s == 0 do
+    if Kernel.is_zero(s) do
       # Achromatic
       grey = round(l * 255)
       {:ok, {grey, grey, grey}}

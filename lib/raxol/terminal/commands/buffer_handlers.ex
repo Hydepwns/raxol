@@ -9,7 +9,6 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.Commands.{Scrolling, Editor}
   require Logger
 
@@ -18,12 +17,14 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
   Returns a tuple of {active_buffer, cursor_pos, default_style}.
   """
   @spec get_buffer_state(Emulator.t()) ::
-          {ScreenBuffer.t(), {integer(), integer()}, Cell.style()}
+          {ScreenBuffer.t(), {integer(), integer()},
+           Raxol.Terminal.ANSI.TextFormatting.text_style()}
   def get_buffer_state(emulator) do
     active_buffer = Emulator.get_active_buffer(emulator)
-    cursor_pos = Emulator.get_cursor_position(emulator)
-    default_style = emulator.style
-    {active_buffer, cursor_pos, default_style}
+    cursor_pos = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+    # Use a blank style for new/empty cells
+    blank_style = Raxol.Terminal.ANSI.TextFormatting.new()
+    {active_buffer, cursor_pos, blank_style}
   end
 
   @doc """
@@ -43,7 +44,8 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
   end
 
   @doc "Handles Insert Line (IL - 'L')"
-  @spec handle_L(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_L(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_L(emulator, params) do
     count = get_valid_non_neg_param(params, 0, 1)
 
@@ -53,11 +55,12 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
     new_buffer =
       Editor.insert_lines(active_buffer, current_row, count, default_style)
 
-    Emulator.update_active_buffer(emulator, new_buffer)
+    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc "Handles Delete Line (DL - 'M')"
-  @spec handle_M(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_M(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_M(emulator, params) do
     count = get_valid_non_neg_param(params, 0, 1)
 
@@ -67,11 +70,12 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
     new_buffer =
       Editor.delete_lines(active_buffer, current_row, count, default_style)
 
-    Emulator.update_active_buffer(emulator, new_buffer)
+    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc "Handles Delete Character (DCH - 'P')"
-  @spec handle_P(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_P(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_P(emulator, params) do
     count = get_valid_non_neg_param(params, 0, 1)
 
@@ -87,11 +91,12 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
         default_style
       )
 
-    Emulator.update_active_buffer(emulator, new_buffer)
+    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc "Handles Insert Character (ICH - '@')"
-  @spec handle_at(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_at(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_at(emulator, params) do
     count = get_valid_non_neg_param(params, 0, 1)
 
@@ -107,11 +112,12 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
         default_style
       )
 
-    Emulator.update_active_buffer(emulator, new_buffer)
+    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   @doc "Handles Erase Character (ECH - 'X')"
-  @spec handle_X(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_X(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_X(emulator, params) do
     count = get_valid_non_neg_param(params, 0, 1)
 
@@ -127,15 +133,41 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
         default_style
       )
 
-    Emulator.update_active_buffer(emulator, new_buffer)
+    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+  end
+
+  @doc "Handles Scroll Up (SU - 'S')"
+  @spec handle_S(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_S(emulator, params) do
+    count = get_valid_non_neg_param(params, 0, 1)
+    active_buffer = Emulator.get_active_buffer(emulator)
+    scroll_region = emulator.scroll_region
+    blank_style = Raxol.Terminal.ANSI.TextFormatting.new()
+
+    new_buffer =
+      Scrolling.scroll_up(active_buffer, count, scroll_region, blank_style)
+
+    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+  end
+
+  @doc "Handles Scroll Down (SD - 'T')"
+  @spec handle_T(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_T(emulator, params) do
+    count = get_valid_non_neg_param(params, 0, 1)
+    active_buffer = Emulator.get_active_buffer(emulator)
+    scroll_region = emulator.scroll_region
+    blank_style = Raxol.Terminal.ANSI.TextFormatting.new()
+
+    new_buffer =
+      Scrolling.scroll_down(active_buffer, count, scroll_region, blank_style)
+
+    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
   end
 
   # --- Parameter Validation Helpers ---
 
-  @doc """
-  Gets a parameter value with validation.
-  Returns the parameter value if valid, or the default value if invalid.
-  """
   @spec get_valid_param(
           list(integer() | nil),
           non_neg_integer(),
@@ -144,23 +176,16 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
           integer()
         ) :: integer()
   defp get_valid_param(params, index, default, min, max) do
-    case Enum.at(params, index, default) do
+    param = Enum.at(params, index, default)
+    case param do
       value when is_integer(value) and value >= min and value <= max ->
         value
-
       _ ->
-        Logger.warning(
-          "Invalid parameter value at index #{index}, using default #{default}"
-        )
-
+        Logger.warning("BufferHandlers: Invalid parameter value: #{inspect(param)}", [])
         default
     end
   end
 
-  @doc """
-  Gets a parameter value with validation for non-negative integers.
-  Returns the parameter value if valid, or the default value if invalid.
-  """
   @spec get_valid_non_neg_param(
           list(integer() | nil),
           non_neg_integer(),

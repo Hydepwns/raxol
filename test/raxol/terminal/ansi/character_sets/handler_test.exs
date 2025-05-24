@@ -1,6 +1,7 @@
 defmodule Raxol.Terminal.ANSI.CharacterSets.HandlerTest do
   use ExUnit.Case
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager
+  alias Raxol.Terminal.ANSI.CharacterSets.Handler
   # remove charactersets terminal ansi.{Handler, StateManager}
 
   describe "handle_sequence/2" do

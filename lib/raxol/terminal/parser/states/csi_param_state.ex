@@ -21,7 +21,6 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
       "CSIParamState ENTER: input=#{inspect(input)}, params_buffer=#{inspect(parser_state.params_buffer)}"
     )
 
-    # IO.inspect({:parse_loop_csi_param, parser_state.state, input}, label: "DEBUG_PARSER")
     case input do
       <<>> ->
         # Incomplete CSI sequence - return current state

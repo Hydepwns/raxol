@@ -17,6 +17,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   @default_width 40
   @default_height 10
 
+  @typedoc "State for the MultiLineInput component. See @type t for field details."
   @type t :: %__MODULE__{
           id: String.t() | nil,
           value: String.t(),
@@ -57,6 +58,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
             tooltip: nil,
             lines: [""]
 
+  @spec init(map()) :: __MODULE__.t()
   @impl true
   @doc """
   Initializes the MultiLineInput state, harmonizing style/theme/extra props and splitting lines for editing.
@@ -102,13 +104,24 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     }
   end
 
+  @doc """
+  Mounts the MultiLineInput component. Performs any setup needed after initialization.
+  """
+  @spec mount(__MODULE__.t()) :: __MODULE__.t()
   @impl true
   def mount(state), do: state
 
+  @doc """
+  Unmounts the MultiLineInput component, performing any necessary cleanup.
+  """
+  @spec unmount(__MODULE__.t()) :: __MODULE__.t()
   @impl true
   def unmount(state), do: state
 
-  @impl true
+  @doc """
+  Updates the MultiLineInput component state in response to messages or prop changes.
+  """
+  @spec update(term(), __MODULE__.t()) :: {:noreply, __MODULE__.t(), any()} | {:noreply, __MODULE__.t()} | any()
   def update({:update_props, new_props}, state) do
     new_state = Map.merge(state, new_props)
     new_state = ensure_cursor_visible(new_state)
@@ -180,7 +193,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
            ),
            0
          ) != nil do
-        Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(state)
+        Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
+          state
+        )
       else
         {state, ""}
       end
@@ -272,7 +287,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
 
   def update({:select_all}, state) do
     new_state =
-      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.select_all(state)
+      Raxol.UI.Components.Input.MultiLineInput.NavigationHelper.select_all(
+        state
+      )
 
     {:noreply, new_state, nil}
   end
@@ -386,7 +403,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
          ),
          0
        ) != nil do
-      Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(state)
+      Raxol.UI.Components.Input.MultiLineInput.TextHelper.delete_selection(
+        state
+      )
     else
       {:noreply, state}
     end
@@ -466,8 +485,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     {:noreply, state, nil}
   end
 
+  @doc """
+  Handles events for the MultiLineInput component, such as keypresses, mouse events, and context changes.
+  """
   @impl true
-  def handle_event(event, context, state) do
+  def handle_event(event, _context, state) do
     # Delegate to the legacy EventHandler for translation
     case Raxol.UI.Components.Input.MultiLineInput.EventHandler.handle_event(
            event,
@@ -480,7 +502,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
       {:noreply, new_state, cmds} ->
         {:noreply, new_state, cmds}
 
-      other ->
+      _other ->
         # Fallback for any other return shape
         {:noreply, state, nil}
     end
@@ -607,6 +629,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     {:noreply, ensure_cursor_visible(final_state), nil}
   end
 
+  @doc """
+  Renders the MultiLineInput component using the current state and context.
+  """
+  @spec render(__MODULE__.t(), map()) :: any()
   @impl true
   def render(state, context) do
     # Merge themes: context.theme < state.theme

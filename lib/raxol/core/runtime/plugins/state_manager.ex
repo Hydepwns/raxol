@@ -237,4 +237,9 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
   def set_plugin_state(plugin_id, new_state, state_maps) do
     update_plugin_state(plugin_id, new_state, state_maps)
   end
+
+  @doc """
+  Initializes the plugin state. Returns {:ok, state}.
+  """
+  def initialize(state), do: {:ok, state}
 end

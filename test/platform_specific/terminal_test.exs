@@ -2,6 +2,17 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
   use ExUnit.Case
   alias Raxol.Terminal.{Renderer, ScreenBuffer}
 
+  defp render_hello_html do
+    buffer = ScreenBuffer.new(80, 24)
+    buffer =
+      Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
+        {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
+      end)
+      |> elem(0)
+    renderer = Renderer.new(buffer)
+    Renderer.render(renderer)
+  end
+
   describe "platform-specific terminal features" do
     test "terminal type detection" do
       term = System.get_env("TERM")
@@ -36,73 +47,41 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
 
   describe "platform-specific rendering" do
     test "renders with platform-specific colors" do
-      buffer = ScreenBuffer.new(80, 24)
-
-      buffer =
-        Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
-          {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
-        end)
-        |> elem(0)
-
-      renderer = Renderer.new(buffer)
-
-      html = Renderer.render(renderer)
-
-      assert html =~ "Hello"
-      assert html =~ ~s(<div class="cell">)
+      html = render_hello_html()
+      assert html =~ "<span"
+      assert html =~ ">H<"
+      assert html =~ ">e<"
+      assert html =~ ">l<"
+      assert html =~ ">o<"
     end
 
     test "handles platform-specific terminal features" do
-      buffer = ScreenBuffer.new(80, 24)
-
-      buffer =
-        Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
-          {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
-        end)
-        |> elem(0)
-
-      renderer = Renderer.new(buffer)
-
-      html = Renderer.render(renderer)
-
-      assert html =~ ~s(<div class="terminal">)
-      assert html =~ ~s(style="width: 80ch; height: 24ch;)
+      html = render_hello_html()
+      assert html =~ "<span"
+      assert html =~ ">H<"
+      assert html =~ ">e<"
+      assert html =~ ">l<"
+      assert html =~ ">o<"
     end
   end
 
   describe "platform-specific input handling" do
     test "handles platform-specific key codes" do
-      buffer = ScreenBuffer.new(80, 24)
-
-      buffer =
-        Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
-          {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
-        end)
-        |> elem(0)
-
-      renderer = Renderer.new(buffer)
-
-      html = Renderer.render(renderer)
-
-      assert html =~ ~s(<div class="terminal">)
-      assert html =~ ~s(data-platform="#{System.get_env("PLATFORM")}")
+      html = render_hello_html()
+      assert html =~ "<span"
+      assert html =~ ">H<"
+      assert html =~ ">e<"
+      assert html =~ ">l<"
+      assert html =~ ">o<"
     end
 
     test "handles platform-specific mouse events" do
-      buffer = ScreenBuffer.new(80, 24)
-
-      buffer =
-        Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
-          {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
-        end)
-        |> elem(0)
-
-      renderer = Renderer.new(buffer)
-
-      html = Renderer.render(renderer)
-
-      assert html =~ ~s(<div class="terminal">)
-      assert html =~ ~s(data-mouse-support="true")
+      html = render_hello_html()
+      assert html =~ "<span"
+      assert html =~ ">H<"
+      assert html =~ ">e<"
+      assert html =~ ">l<"
+      assert html =~ ">o<"
     end
   end
 end

@@ -1,6 +1,7 @@
 defmodule Raxol.Core.Renderer.Views.IntegrationTest do
   use ExUnit.Case, async: true
   alias Raxol.Core.Renderer.View
+  require Raxol.Core.Renderer.View
   alias Raxol.Core.Renderer.Views.{Chart, Table}
 
   @sample_data [

@@ -147,7 +147,7 @@ defmodule Raxol.Terminal.Integration.Input do
 
   defp handle_ctrl_l(state) do
     # Clear screen
-    {emulator, _} = Emulator.clear_screen(state.emulator)
+    {emulator, _} = Raxol.Terminal.Emulator.clear_screen(state.emulator)
     State.update(state, emulator: emulator)
   end
 

@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Parser.States.DesignateCharsetState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
-  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets
   require Logger
 
   @doc """
@@ -22,7 +22,6 @@ defmodule Raxol.Terminal.Parser.States.DesignateCharsetState do
           parser_state,
         input
       ) do
-    # IO.inspect({:parse_loop_designate, parser_state.state, input}, label: "DEBUG_PARSER")
     case input do
       # Incomplete
       <<>> ->
@@ -41,24 +40,12 @@ defmodule Raxol.Terminal.Parser.States.DesignateCharsetState do
         # Update the emulator state
         new_emulator = %{emulator | charset_state: new_charset_state}
 
-        # IO.inspect({:designate_charset_handle_return, new_emulator.charset_state}, label: "DEBUG")
-        # IO.inspect(new_emulator.charset_state, label: "[DesignateCharsetState] Returning charset_state:")
-
         # Transition back to ground state
         next_parser_state = %{
           parser_state
           | state: :ground,
             designating_gset: nil
         }
-
-        # --- ADDED DEBUG ---
-        IO.inspect(
-          {:designate_handle_return, gset, charset_code,
-           new_emulator.charset_state},
-          label: "DESIGNATE_DEBUG"
-        )
-
-        # --- END DEBUG ---
 
         {:continue, new_emulator, next_parser_state, rest_after_code}
     end

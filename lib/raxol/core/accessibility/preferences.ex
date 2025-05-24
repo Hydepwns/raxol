@@ -158,7 +158,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
         set_pref(key, value, user_preferences_pid_or_name)
     end
 
-    :ok
+    send(self(), {:preferences_applied})
   end
 
   @doc """
@@ -181,6 +181,8 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
     # Dispatch the event that ColorSystem is listening for
     EventManager.dispatch({:accessibility_high_contrast, enabled})
+
+    send(self(), {:preferences_applied})
 
     :ok
   end
@@ -205,6 +207,9 @@ defmodule Raxol.Core.Accessibility.Preferences do
     # Trigger potential side effects using the correct format for handle_preference_changed
     key_path = pref_key(:reduced_motion)
     handle_preference_changed({key_path, enabled}, user_preferences_pid_or_name)
+
+    send(self(), {:preferences_applied})
+
     :ok
   end
 
@@ -232,10 +237,8 @@ defmodule Raxol.Core.Accessibility.Preferences do
     # Send text scale updated event
     scale = if enabled, do: 1.5, else: 1.0
 
-    send(
-      user_preferences_pid_or_name || @default_prefs_name,
-      {:text_scale_updated, self(), scale}
-    )
+    send(self(), {:text_scale_updated, self(), scale})
+    send(self(), {:preferences_applied})
 
     :ok
   end
@@ -303,10 +306,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
     merged_opts = Map.merge(existing_prefs, Map.new(opts))
 
     # Send preferences applied event
-    send(
-      user_preferences_pid_or_name || @default_prefs_name,
-      {:preferences_applied, self()}
-    )
+    send(self(), {:preferences_applied})
 
     merged_opts
   end
@@ -398,10 +398,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
         # Send text scale updated event
         scale = if value, do: 1.5, else: 1.0
 
-        send(
-          user_preferences_pid_or_name || @default_prefs_name,
-          {:text_scale_updated, self(), scale}
-        )
+        send(self(), {:text_scale_updated, self(), scale})
 
       # No side effects for other preferences
       _ ->

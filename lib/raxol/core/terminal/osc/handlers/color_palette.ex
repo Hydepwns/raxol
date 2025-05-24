@@ -44,13 +44,12 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
         end
 
       {:query, index} ->
-        case Map.get(state.palette, index) do
-          nil ->
-            {:error, {:invalid_index, index}}
-
-          color ->
+        case get_palette_color(state.palette, index) do
+          {:ok, color} ->
             response = format_color_response(index, color)
             {:ok, state, response}
+          {:error, _} ->
+            {:error, {:invalid_index, index}}
         end
 
       {:error, reason} ->
@@ -184,7 +183,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
       case Integer.parse(hex_str, 16) do
         {val, ""} ->
           # Scale to 0-255. Max value is 0xFFFF (65535).
-          scaled_val = round(val * 255 / 65535)
+          scaled_val = round(val * 255 / 65_535)
           {:ok, max(0, min(255, scaled_val))}
 
         _ ->
@@ -198,9 +197,18 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   defp format_color_response(index, {r, g, b}) do
     # Format: OSC 4;index;rgb:r/g/b
     # Scale up to 16-bit range (0-65535)
-    r_scaled = Integer.to_string(div(r * 65535, 255), 16)
-    g_scaled = Integer.to_string(div(g * 65535, 255), 16)
-    b_scaled = Integer.to_string(div(b * 65535, 255), 16)
+    r_scaled = Integer.to_string(div(r * 65_535, 255), 16)
+    g_scaled = Integer.to_string(div(g * 65_535, 255), 16)
+    b_scaled = Integer.to_string(div(b * 65_535, 255), 16)
     "4;#{index};rgb:#{r_scaled}/#{g_scaled}/#{b_scaled}"
   end
+
+  # Helper for safe palette access
+  defp get_palette_color(palette, index) when is_integer(index) and index >= 0 and index <= 255 do
+    case Map.get(palette, index) do
+      nil -> {:error, :invalid_color_index}
+      color -> {:ok, color}
+    end
+  end
+  defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
 end

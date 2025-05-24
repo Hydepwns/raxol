@@ -9,14 +9,14 @@ defmodule Raxol.Plugins.EventHandler do
 
   require Logger
 
-  alias Raxol.Plugins.PluginManager
+  alias Raxol.Plugins.Manager.Core
 
   @doc """
   Dispatches an 'input' event to all enabled plugins implementing `handle_input/2`.
   """
-  @spec handle_input(PluginManager.t(), binary()) ::
-          {:ok, PluginManager.t()} | {:error, any()}
-  def handle_input(%PluginManager{} = manager, input) do
+  @spec handle_input(Core.t(), binary()) ::
+          {:ok, Core.t()} | {:error, any()}
+  def handle_input(%Core{} = manager, input) do
     dispatch_event(
       manager,
       :handle_input,
@@ -29,9 +29,9 @@ defmodule Raxol.Plugins.EventHandler do
   @doc """
   Dispatches a 'resize' event to all enabled plugins implementing `handle_resize/3`.
   """
-  @spec handle_resize(PluginManager.t(), integer(), integer()) ::
-          {:ok, PluginManager.t()} | {:error, any()}
-  def handle_resize(%PluginManager{} = manager, width, height) do
+  @spec handle_resize(Core.t(), integer(), integer()) ::
+          {:ok, Core.t()} | {:error, any()}
+  def handle_resize(%Core{} = manager, width, height) do
     dispatch_event(
       manager,
       :handle_resize,
@@ -43,11 +43,11 @@ defmodule Raxol.Plugins.EventHandler do
 
   @doc """
   Dispatches a 'mouse' event (older format) to all enabled plugins implementing `handle_mouse/3`.
-  This corresponds to the `PluginManager.process_mouse/3` function.
+  This corresponds to the previous plugin manager's process_mouse/3 function.
   """
-  @spec handle_mouse_legacy(PluginManager.t(), tuple(), map()) ::
-          {:ok, PluginManager.t()} | {:error, any()}
-  def handle_mouse_legacy(%PluginManager{} = manager, event, emulator_state) do
+  @spec handle_mouse_legacy(Core.t(), tuple(), map()) ::
+          {:ok, Core.t()} | {:error, any()}
+  def handle_mouse_legacy(%Core{} = manager, event, emulator_state) do
     dispatch_event(
       manager,
       :handle_mouse,
@@ -61,9 +61,9 @@ defmodule Raxol.Plugins.EventHandler do
   Dispatches an 'output' event to all enabled plugins implementing `handle_output/2`.
   Accumulates transformed output.
   """
-  @spec handle_output(PluginManager.t(), binary()) ::
-          {:ok, PluginManager.t(), binary()} | {:error, any()}
-  def handle_output(%PluginManager{} = manager, output) do
+  @spec handle_output(Core.t(), binary()) ::
+          {:ok, Core.t(), binary()} | {:error, any()}
+  def handle_output(%Core{} = manager, output) do
     # Initial accumulator includes the output
     initial_acc = {:ok, manager, output}
 
@@ -79,9 +79,9 @@ defmodule Raxol.Plugins.EventHandler do
   @doc """
   Dispatches a mouse event (new format with propagation control) to enabled plugins implementing `handle_mouse/3`.
   """
-  @spec handle_mouse_event(PluginManager.t(), map(), map()) ::
-          {:ok, PluginManager.t(), :propagate | :halt} | {:error, any()}
-  def handle_mouse_event(%PluginManager{} = manager, event, rendered_cells) do
+  @spec handle_mouse_event(Core.t(), map(), map()) ::
+          {:ok, Core.t(), :propagate | :halt} | {:error, any()}
+  def handle_mouse_event(%Core{} = manager, event, rendered_cells) do
     # Initial accumulator includes the propagation state
     initial_acc = {:ok, manager, :propagate}
 
@@ -96,14 +96,14 @@ defmodule Raxol.Plugins.EventHandler do
 
   @doc """
   Dispatches a key event (map) to enabled plugins implementing `handle_input/2`.
-  NOTE: Uses `handle_input/2` as per the original PluginManager logic. Consider adding
+  NOTE: Uses `handle_input/2` as per the original plugin manager logic. Consider adding
         a dedicated `handle_key_event` callback to the Plugin behaviour later.
   Accumulates commands and handles propagation control.
   """
-  @spec handle_key_event(PluginManager.t(), map(), map()) ::
-          {:ok, PluginManager.t(), list(any()), :propagate | :halt}
+  @spec handle_key_event(Core.t(), map(), map()) ::
+          {:ok, Core.t(), list(any()), :propagate | :halt}
           | {:error, any()}
-  def handle_key_event(%PluginManager{} = manager, event, rendered_cells) do
+  def handle_key_event(%Core{} = manager, event, rendered_cells) do
     # Initial accumulator includes commands list and propagation state
     initial_acc = {:ok, manager, [], :propagate}
     # Note: Calling :handle_input with event map, requires plugin to handle it
@@ -130,7 +130,7 @@ defmodule Raxol.Plugins.EventHandler do
 
   # Use fun() instead
   @spec dispatch_event(
-          PluginManager.t(),
+          Core.t(),
           callback_name(),
           event_args(),
           accumulator(),

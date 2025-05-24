@@ -119,8 +119,7 @@ defmodule Raxol.Accounts do
     end)
   end
 
-  # Placeholder User struct if needed, otherwise remove
-  # defmodule User do
-  #   defstruct [:id, :email, :password_hash]
-  # end
+  defmodule User do
+    defstruct [:id, :email, :password_hash]
+  end
 end

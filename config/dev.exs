@@ -23,12 +23,13 @@ config :raxol, RaxolWeb.Endpoint,
   check_origin: false,
   code_reloader: true,
   debug_errors: true,
-  secret_key_base: "your-secret-key-base",
-  watchers: [
-    esbuild:
-      {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
-    sass: {DartSass, :install_and_run, [:default, ~w(--watch)]}
-  ]
+  secret_key_base: "your-secret-key-base"
+
+# watchers: [
+#   esbuild:
+#     {Esbuild, :install_and_run, [:default, ~w(--sourcemap=inline --watch)]},
+#   sass: {DartSass, :install_and_run, [:default, ~w(--watch)]}
+# ]
 
 # Watch static and templates for browser reloading.
 config :raxol, RaxolWeb.Endpoint,

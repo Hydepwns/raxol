@@ -3,7 +3,7 @@ alias Raxol.Docs.ComponentCatalog.{Component, Example, Property}
 %Component{
   id: :markdown_renderer,
   name: "Markdown Renderer",
-  module: Raxol.Components.MarkdownRenderer,
+  module: Raxol.UI.Components.MarkdownRenderer,
   description: "Renders Markdown text into HTML.",
   examples: [],
   properties: [

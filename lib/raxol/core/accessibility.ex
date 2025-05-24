@@ -1,5 +1,6 @@
 defmodule Raxol.Core.Accessibility do
   @behaviour Raxol.Core.Accessibility.Behaviour
+
   @moduledoc """
   Accessibility module for Raxol terminal UI applications.
 
@@ -213,7 +214,7 @@ defmodule Raxol.Core.Accessibility do
 
   * `message` - The message to announce
   * `opts` - Options for the announcement
-  * `user_preferences_pid_or_name` - The PID or registered name of the UserPreferences process to use (optional).
+  * `user_preferences_pid_or_name` - The PID or registered name of the UserPreferences process to use (required).
 
   ## Options
 
@@ -222,14 +223,16 @@ defmodule Raxol.Core.Accessibility do
 
   ## Examples
 
-      iex> Accessibility.announce("Button clicked")
+      iex> Accessibility.announce("Button clicked", [], pid)
       :ok
 
-      iex> Accessibility.announce("Error occurred", priority: :high, interrupt: true)
+      iex> Accessibility.announce("Error occurred", [priority: :high, interrupt: true], pid)
       :ok
   """
-  def announce(message, opts \\ [], user_preferences_pid_or_name \\ nil)
-      when is_binary(message) do
+  def announce(message, opts \\ [], user_preferences_pid_or_name) when is_binary(message) do
+    if is_nil(user_preferences_pid_or_name) do
+      raise "Accessibility.announce/3 must be called with a user_preferences_pid_or_name."
+    end
     Announcements.announce(message, opts, user_preferences_pid_or_name)
   end
 
@@ -243,8 +246,8 @@ defmodule Raxol.Core.Accessibility do
       iex> Accessibility.get_next_announcement()
       "Button clicked"
   """
-  def get_next_announcement do
-    Announcements.get_next_announcement()
+  def get_next_announcement(user_preferences_pid_or_name) do
+    Announcements.get_next_announcement(user_preferences_pid_or_name)
   end
 
   @doc """
@@ -338,7 +341,7 @@ defmodule Raxol.Core.Accessibility do
       %{background: ...}  # Returns the current color scheme
   """
   def get_color_scheme do
-    ThemeIntegration.get_color_scheme()
+    ThemeIntegration.get_theme()
   end
 
   @doc """
@@ -420,8 +423,8 @@ defmodule Raxol.Core.Accessibility do
   # --- Event Handlers ---
 
   @doc false
-  def handle_focus_change(event) do
-    EventHandlers.handle_focus_change(event)
+  def handle_focus_change(event, user_preferences_pid_or_name) do
+    EventHandlers.handle_focus_change(event, user_preferences_pid_or_name)
   end
 
   @doc false
@@ -435,20 +438,16 @@ defmodule Raxol.Core.Accessibility do
   end
 
   @doc false
-  def handle_theme_changed(event, pid_or_name \\ nil) do
-    EventHandlers.handle_theme_changed(event, pid_or_name)
+  def handle_theme_changed(event, user_preferences_pid_or_name) do
+    EventHandlers.handle_theme_changed(event, user_preferences_pid_or_name)
   end
 
   # --- Legacy Functions ---
 
   @doc false
+  def high_contrast_enabled?(user_preferences_pid_or_name \\ nil)
   def high_contrast_enabled?(user_preferences_pid_or_name) do
-    Legacy.high_contrast_enabled?(user_preferences_pid_or_name)
-  end
-
-  @doc false
-  def high_contrast_enabled?() do
-    get_option(:display, :high_contrast, false)
+    Preferences.get_option(:high_contrast, user_preferences_pid_or_name, false)
   end
 
   @doc false
@@ -482,13 +481,6 @@ defmodule Raxol.Core.Accessibility do
   end
 
   @doc """
-  Checks if high contrast mode is enabled.
-  """
-  def high_contrast_enabled?(user_preferences_pid_or_name \\ nil) do
-    Preferences.get_high_contrast(user_preferences_pid_or_name)
-  end
-
-  @doc """
   Checks if screen reader support is enabled.
   """
   def screen_reader_enabled?(_opts) do
@@ -508,4 +500,35 @@ defmodule Raxol.Core.Accessibility do
   def color_scheme(_opts) do
     get_option(:display, :color_scheme, :default)
   end
+
+  @doc """
+  Subscribe a process (by ref) to accessibility announcement events.
+  """
+  def subscribe_to_announcements(ref) do
+    EventManager.register_handler(
+      :accessibility_announce,
+      ref,
+      :handle_announcement
+    )
+
+    :ok
+  end
+
+  @doc """
+  Unsubscribe a process (by ref) from accessibility announcement events.
+  """
+  def unsubscribe_from_announcements(ref) do
+    EventManager.unregister_handler(
+      :accessibility_announce,
+      ref,
+      :handle_announcement
+    )
+
+    :ok
+  end
+
+  @doc false
+  def get_next_announcement(), do: get_next_announcement(nil)
+
+  def __mock_for__, do: Raxol.Core.Accessibility.Mock
 end

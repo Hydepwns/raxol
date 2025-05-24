@@ -5,8 +5,11 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
   describe "build_dependency_graph/1" do
     test "builds graph from plugin metadata" do
       plugins = %{
-        "plugin_a" => %{dependencies: [{"plugin_b", ">= 1.0.0"}]},
-        "plugin_b" => %{dependencies: []}
+        "plugin_a" => %{
+          dependencies: [{"plugin_b", ">= 1.0.0"}],
+          version: "1.0.0"
+        },
+        "plugin_b" => %{dependencies: [], version: "1.0.0"}
       }
 
       graph = Graph.build_dependency_graph(plugins)
@@ -17,9 +20,10 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
     test "handles optional dependencies" do
       plugins = %{
         "plugin_a" => %{
-          dependencies: [{"plugin_b", ">= 1.0.0", %{optional: true}}]
+          dependencies: [{"plugin_b", ">= 1.0.0", %{optional: true}}],
+          version: "1.0.0"
         },
-        "plugin_b" => %{dependencies: []}
+        "plugin_b" => %{dependencies: [], version: "1.0.0"}
       }
 
       graph = Graph.build_dependency_graph(plugins)
@@ -28,8 +32,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
 
     test "handles simple plugin IDs" do
       plugins = %{
-        "plugin_a" => %{dependencies: ["plugin_b"]},
-        "plugin_b" => %{dependencies: []}
+        "plugin_a" => %{dependencies: ["plugin_b"], version: "1.0.0"},
+        "plugin_b" => %{dependencies: [], version: "1.0.0"}
       }
 
       graph = Graph.build_dependency_graph(plugins)
@@ -43,8 +47,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
 
     test "handles plugins with no dependencies" do
       plugins = %{
-        "plugin_a" => %{dependencies: []},
-        "plugin_b" => %{dependencies: []}
+        "plugin_a" => %{dependencies: [], version: "1.0.0"},
+        "plugin_b" => %{dependencies: [], version: "1.0.0"}
       }
 
       graph = Graph.build_dependency_graph(plugins)
@@ -82,7 +86,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
         "plugin_c" => []
       }
 
-      assert {:ok, deps} = Graph.get_all_dependencies("plugin_a", graph)
+      result = Graph.get_all_dependencies("plugin_a", graph)
+      assert match?({:ok, _}, result)
+      {:ok, deps} = result
       assert "plugin_b" in deps
       assert "plugin_c" in deps
     end
@@ -93,9 +99,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
         "plugin_b" => [{"plugin_a", ">= 1.0.0", %{optional: false}}]
       }
 
-      assert {:error, :circular_dependency, cycle} =
-               Graph.get_all_dependencies("plugin_a", graph)
-
+      result = Graph.get_all_dependencies("plugin_a", graph)
+      assert match?({:error, :circular_dependency, _}, result)
+      {:error, :circular_dependency, cycle} = result
       assert "plugin_a" in cycle
       assert "plugin_b" in cycle
     end
@@ -105,7 +111,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
         "plugin_a" => []
       }
 
-      assert {:ok, []} = Graph.get_all_dependencies("plugin_a", graph)
+      result = Graph.get_all_dependencies("plugin_a", graph)
+      assert match?({:ok, []}, result)
     end
 
     test "handles plugins not in the graph" do
@@ -113,7 +120,8 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
         "plugin_a" => []
       }
 
-      assert {:ok, []} = Graph.get_all_dependencies("nonexistent", graph)
+      result = Graph.get_all_dependencies("nonexistent", graph)
+      assert match?({:ok, []}, result)
     end
 
     test "handles complex dependency chains" do
@@ -127,11 +135,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.GraphTest do
         "plugin_d" => []
       }
 
-      assert {:ok, deps} = Graph.get_all_dependencies("plugin_a", graph)
+      result = Graph.get_all_dependencies("plugin_a", graph)
+      assert match?({:ok, _}, result)
+      {:ok, deps} = result
       assert "plugin_b" in deps
       assert "plugin_c" in deps
       assert "plugin_d" in deps
-      # No duplicates
+
       assert length(deps) == 3
     end
   end

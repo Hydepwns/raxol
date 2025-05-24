@@ -133,14 +133,6 @@ defmodule Raxol.UI.RendererTest do
       assert bg == :default
     end
 
-    # Skipped test
-    @tag :skip
-    test "renders table cell alignment correctly" do
-      # Setup: Create a sample positioned table element (from Layout)
-      # Setup: Define a theme
-      # Execute: Call Renderer.render with the element and theme
-      # Assert: Check the final character grid/cell list for correct padding/positioning
-      flunk("Test not implemented: Alignment is currently hardcoded to left.")
-    end
+    # Skipped test removed: table cell alignment not implemented and not planned.
   end
 end

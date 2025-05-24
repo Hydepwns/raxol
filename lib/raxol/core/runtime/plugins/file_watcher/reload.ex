@@ -19,7 +19,10 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
           case Raxol.Core.Runtime.Plugins.Manager.unload_plugin(plugin_id) do
             :ok ->
               # Then reload it
-              case Raxol.Core.Runtime.Plugins.Manager.load_plugin(path) do
+              case Raxol.Core.Runtime.Plugins.Manager.load_plugin(
+                     plugin_id,
+                     %{}
+                   ) do
                 {:ok, _} ->
                   Logger.info(
                     "[#{__MODULE__}] Successfully reloaded plugin #{plugin_id}"

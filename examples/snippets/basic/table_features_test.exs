@@ -25,11 +25,9 @@ defmodule Raxol.Docs.Guides.Examples.Basic.TableFeaturesTest do
       # Handle the :on_row_click event from the table
       # Assumes the table sends {:row_clicked, row_data}
       {:row_clicked, row_data} ->
-        IO.inspect(row_data, label: "Row clicked")
         %State{model | selected_row: row_data}
 
       _ ->
-        IO.inspect(message, label: "Unhandled message")
         model
     end
   end

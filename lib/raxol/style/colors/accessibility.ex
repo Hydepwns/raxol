@@ -4,6 +4,7 @@ defmodule Raxol.Style.Colors.Accessibility do
   """
 
   alias Raxol.Style.Colors.Color
+  alias Raxol.Style.Colors.Utilities
   require Logger
 
   # WCAG contrast ratio thresholds
@@ -89,10 +90,16 @@ defmodule Raxol.Style.Colors.Accessibility do
   end
 
   def contrast_ratio(%Color{} = color1, %Color{} = color2) do
-    contrast_ratio(
-      {color1.r, color1.g, color1.b},
-      {color2.r, color2.g, color2.b}
-    )
+    l1 = relative_luminance(color1)
+    l2 = relative_luminance(color2)
+    # WCAG contrast ratio formula
+    (max(l1, l2) + 0.05) / (min(l1, l2) + 0.05)
+  end
+
+  def contrast_ratio({r1, g1, b1}, {r2, g2, b2}) do
+    c1 = %Color{r: r1, g: g1, b: b1}
+    c2 = %Color{r: r2, g: g2, b: b2}
+    contrast_ratio(c1, c2)
   end
 
   @doc """
@@ -153,27 +160,11 @@ defmodule Raxol.Style.Colors.Accessibility do
       iex> Raxol.Style.Colors.Accessibility.suggest_text_color("#EEEEEE").hex
       "#000000"
   """
-  def suggest_text_color(background) when is_binary(background) do
-    case Color.from_hex(background) do
-      %Color{} = c -> suggest_text_color(c)
-      # Default to black for invalid bg
-      _ -> Color.from_hex("#000000")
-    end
-  end
+  def suggest_text_color(background) do
+    bg =
+      if is_binary(background), do: Color.from_hex(background), else: background
 
-  def suggest_text_color(%Color{} = background) do
-    black = Color.from_hex("#000000")
-    white = Color.from_hex("#FFFFFF")
-
-    ratio_with_white = contrast_ratio(background, white)
-    ratio_with_black = contrast_ratio(background, black)
-
-    if ratio_with_white >= ratio_with_black do
-      # Prefer white if contrast is equal or better
-      white
-    else
-      black
-    end
+    Utilities.best_bw_contrast(bg)
   end
 
   @doc """
@@ -242,9 +233,7 @@ defmodule Raxol.Style.Colors.Accessibility do
         accessible_color_pair(c, level)
 
       _ ->
-        Logger.warning(
-          "Invalid hex color for accessible_color_pair: #{inspect(base_color)}"
-        )
+        Logger.warning("Accessibility: Could not find accessible color pair for #{inspect(base_color)}", [])
 
         # Return nil for invalid base color
         nil
@@ -290,77 +279,403 @@ defmodule Raxol.Style.Colors.Accessibility do
     end
   end
 
-  # --- Private Helpers ---
-
   # Define the missing helper function
   defp min_contrast(:aaa), do: 7.0
   defp min_contrast(_level), do: 4.5
 
-  @doc """
-  Darkens a color until it meets the specified contrast ratio with a background color.
+  # --- High Contrast Mode Helpers ---
 
-  Requires HSL module for `darken` function.
+  defp adjust_until_contrast(
+         color,
+         background,
+         target_ratio,
+         adjust_fun,
+         direction,
+         max_steps \\ 30,
+         step \\ 0.7
+       ) do
+    do_adjust_until_contrast(
+      color,
+      background,
+      target_ratio,
+      adjust_fun,
+      direction,
+      max_steps,
+      step
+    )
+  end
+
+  defp do_adjust_until_contrast(
+         color,
+         _background,
+         _target_ratio,
+         _adjust_fun,
+         _direction,
+         0,
+         _step
+       ),
+       do: color
+
+  defp do_adjust_until_contrast(
+         color,
+         background,
+         target_ratio,
+         adjust_fun,
+         direction,
+         steps,
+         step
+       ) do
+    adjusted = adjust_fun.(color, step)
+    orig_lum = relative_luminance(color)
+    adj_lum = relative_luminance(adjusted)
+
+    cond do
+      contrast_ratio(adjusted, background) >= target_ratio and
+          ((direction == :lighter and adj_lum > orig_lum) or
+             (direction == :darker and adj_lum < orig_lum)) ->
+        adjusted
+
+      true ->
+        do_adjust_until_contrast(
+          adjusted,
+          background,
+          target_ratio,
+          adjust_fun,
+          direction,
+          steps - 1,
+          min(step * 1.5, 1.0)
+        )
+    end
+  end
+
+  @spec lighten_until_contrast(Color.t(), Color.t(), number()) ::
+          Color.t() | nil
+  def lighten_until_contrast(color, background, target_ratio) do
+    adjust_until_contrast(
+      color,
+      background,
+      target_ratio,
+      &Raxol.Style.Colors.HSL.lighten/2,
+      :lighter
+    )
+  end
+
+  @spec darken_until_contrast(Color.t(), Color.t(), number()) :: Color.t() | nil
+  def darken_until_contrast(color, background, target_ratio) do
+    adjust_until_contrast(
+      color,
+      background,
+      target_ratio,
+      &Raxol.Style.Colors.HSL.darken/2,
+      :darker
+    )
+  end
+
+  defp luminance_changed?(orig, adjusted, :lighter),
+    do: relative_luminance(adjusted) > relative_luminance(orig)
+
+  defp luminance_changed?(orig, adjusted, :darker),
+    do: relative_luminance(adjusted) < relative_luminance(orig)
+
+  # --- Stubs for missing functions (to resolve UndefinedFunctionError) ---
+
+  @spec suggest_accessible_color(
+          Color.t() | String.t(),
+          Color.t() | String.t() | Keyword.t()
+        ) :: String.t()
+  def suggest_accessible_color(color, opts) when is_list(opts) do
+    # Convert color to Color struct if it's a hex string
+    color = if is_binary(color), do: Color.from_hex(color), else: color
+
+    # Extract options
+    level = Keyword.get(opts, :level, :aa)
+    background = Keyword.get(opts, :background)
+    _prefer = Keyword.get(opts, :prefer, :auto)
+
+    # Convert background
+    bg =
+      if is_binary(background),
+        do: Color.from_hex(background),
+        else: background || Color.from_hex("#FFFFFF")
+
+    # Get minimum contrast ratio based on level
+    min_ratio =
+      case level do
+        :aaa -> @contrast_aaa
+        :aa -> @contrast_aa
+      end
+
+    # If the original color is already accessible, return it
+    case check_contrast(color, bg, level) do
+      {:ok, _} ->
+        color.hex
+
+      _ ->
+        bg_lum = relative_luminance(bg)
+
+        # Try to adjust the color
+        suggested =
+          if bg_lum < 0.5 do
+            # Dark background, try lightening then darkening
+            lightened = lighten_until_contrast(color, bg, min_ratio)
+
+            if lightened && Utilities.contrast_ratio(lightened, bg) >= min_ratio &&
+                 luminance_changed?(color, lightened, :lighter) &&
+                 lightened.hex != color.hex do
+              lightened.hex
+            else
+              darkened = darken_until_contrast(color, bg, min_ratio)
+
+              if darkened && Utilities.contrast_ratio(darkened, bg) >= min_ratio &&
+                   luminance_changed?(color, darkened, :darker) &&
+                   darkened.hex != color.hex do
+                darkened.hex
+              else
+                nil
+              end
+            end
+          else
+            # Light background, try darkening then lightening
+            darkened = darken_until_contrast(color, bg, min_ratio)
+
+            if darkened && Utilities.contrast_ratio(darkened, bg) >= min_ratio &&
+                 luminance_changed?(color, darkened, :darker) &&
+                 darkened.hex != color.hex do
+              darkened.hex
+            else
+              lightened = lighten_until_contrast(color, bg, min_ratio)
+
+              if lightened &&
+                   Utilities.contrast_ratio(lightened, bg) >= min_ratio &&
+                   luminance_changed?(color, lightened, :lighter) &&
+                   lightened.hex != color.hex do
+                lightened.hex
+              else
+                nil
+              end
+            end
+          end
+
+        # Unconditional fallback: if no adjustment worked or the result is the original, return fallback
+        if is_nil(suggested) or suggested == color.hex do
+          if bg_lum < 0.5, do: "#FFFFFF", else: "#000000"
+        else
+          suggested
+        end
+    end
+  end
+
+  def suggest_accessible_color(color, background) when is_binary(background) do
+    suggest_accessible_color(color, background: background)
+  end
+
+  @spec generate_accessible_palette(
+          Color.t() | String.t(),
+          Color.t() | String.t() | Keyword.t()
+        ) :: map()
+  def generate_accessible_palette(base_color, opts) when is_list(opts) do
+    # Extract options
+    background = Keyword.get(opts, :background)
+    level = Keyword.get(opts, :level, :aa)
+
+    # Convert colors
+    base =
+      if is_binary(base_color), do: Color.from_hex(base_color), else: base_color
+
+    bg =
+      if is_binary(background),
+        do: Color.from_hex(background),
+        else: background || Color.from_hex("#FFFFFF")
+
+    # Generate accessible colors
+    text =
+      suggest_accessible_color(Color.from_hex("#000000"),
+        background: bg.hex,
+        level: level
+      )
+
+    secondary =
+      suggest_accessible_color(base.hex, background: bg.hex, level: level)
+
+    # Create a contrasting accent color by rotating hue and ensuring contrast
+    rotated = Raxol.Style.Colors.HSL.rotate_hue(base, 180)
+
+    accent =
+      suggest_accessible_color(rotated.hex, background: bg.hex, level: level)
+
+    # Validate and adjust if needed
+    colors = %{
+      primary: base.hex,
+      secondary: secondary,
+      accent: accent,
+      background: bg.hex,
+      text: text
+    }
+
+    case validate_colors(colors, background: bg.hex, level: level) do
+      {:ok, _} -> colors
+      {:error, _} -> adjust_palette(colors, bg.hex)
+    end
+  end
+
+  def generate_accessible_palette(base_color, background)
+      when is_binary(background) do
+    generate_accessible_palette(base_color, background: background)
+  end
+
+  @spec validate_colors(map(), Color.t() | String.t() | Keyword.t()) ::
+          {:ok, map()} | {:error, Keyword.t()}
+  def validate_colors(colors, opts) when is_list(opts) do
+    # Extract options
+    level = Keyword.get(opts, :level, :aa)
+    background = Keyword.get(opts, :background)
+
+    # Convert background and colors
+    bg =
+      if is_binary(background),
+        do: Color.from_hex(background),
+        else: background || Color.from_hex("#FFFFFF")
+
+    colors_map =
+      Map.new(colors, fn {k, v} ->
+        {k, if(is_binary(v), do: Color.from_hex(v), else: v)}
+      end)
+
+    # Validate each color against the background
+    issues =
+      colors_map
+      |> Enum.reject(fn {key, _} -> key == :background end)
+      |> Enum.flat_map(fn {key, color} ->
+        case check_contrast(color, bg, level) do
+          {:ok, _} -> []
+          {:error, _} -> [{key, :insufficient_contrast}]
+        end
+      end)
+
+    if Enum.empty?(issues) do
+      {:ok, colors}
+    else
+      {:error, issues}
+    end
+  end
+
+  def validate_colors(colors, background) when is_binary(background) do
+    validate_colors(colors, background: background)
+  end
+
+  @spec get_optimal_text_color(Color.t() | String.t()) :: String.t()
+  def get_optimal_text_color(background) do
+    # Convert background to Color struct if it's a hex string
+    bg =
+      if is_binary(background), do: Color.from_hex(background), else: background
+
+    black = Color.from_hex("#000000")
+    white = Color.from_hex("#FFFFFF")
+
+    ratio_with_white = contrast_ratio(bg, white)
+    ratio_with_black = contrast_ratio(bg, black)
+
+    if ratio_with_white >= ratio_with_black do
+      "#FFFFFF"
+    else
+      "#000000"
+    end
+  end
+
+  @doc """
+  Checks if two colors have sufficient contrast according to WCAG guidelines.
 
   ## Parameters
 
-  - `color` - The color to darken (Color struct)
-  - `background` - The background color (Color struct)
-  - `target_ratio` - The target contrast ratio to achieve
+  - `color1` - First color
+  - `color2` - Second color
+  - `level` - WCAG level (:aa or :aaa)
+  - `size` - Text size (:normal or :large)
 
   ## Returns
-  - A Color struct representing the darkened color
+
+  - `{:ok, ratio}` if contrast is sufficient
+  - `{:error, {:contrast_too_low, ratio, min_ratio}}` if contrast is insufficient
   """
-  @spec darken_until_contrast(Color.t(), Color.t(), number()) :: Color.t()
-  def darken_until_contrast(
-        %Color{} = color,
-        %Color{} = background,
-        target_ratio
-      ) do
-    if contrast_ratio(color, background) >= target_ratio do
-      color
-    else
-      # Need Raxol.Style.Colors.HSL.darken/2
-      # Adjust step as needed, prefixed unused
-      _darken_step = 0.05
-      # Added warning
-      Logger.warning(
-        "HSL.darken/2 not implemented, returning original color in darken_until_contrast"
-      )
+  def check_contrast(color1, color2, level \\ :aa, size \\ :normal) do
+    ratio = contrast_ratio(color1, color2)
 
-      # TODO: Re-implement the loop logic using _darken_step
-      # Ensure the implementation uses the step and respects MAX_ADJUSTMENT_STEPS
-      # Return original color as placeholder
-      color
+    min_ratio =
+      case {level, size} do
+        {:aaa, :normal} -> @contrast_aaa
+        {:aaa, :large} -> @contrast_aaa_large
+        {:aa, :normal} -> @contrast_aa
+        {:aa, :large} -> @contrast_aa_large
+      end
+
+    if ratio >= min_ratio do
+      {:ok, ratio}
+    else
+      {:error, {:contrast_too_low, ratio, min_ratio}}
     end
   end
 
-  @spec lighten_until_contrast(Color.t(), Color.t(), number()) :: Color.t()
-  def lighten_until_contrast(
-        %Color{} = color,
-        %Color{} = background,
-        target_ratio
-      ) do
-    if contrast_ratio(color, background) >= target_ratio do
-      color
-    else
-      # Need Raxol.Style.Colors.HSL.lighten/2
-      # Adjust step as needed, prefixed unused
-      _lighten_step = 0.05
-      # Added warning
-      Logger.warning(
-        "HSL.lighten/2 not implemented, returning original color in lighten_until_contrast"
-      )
+  @doc """
+  Adjusts a color palette to ensure all colors are accessible against a background.
 
-      # TODO: Re-implement the loop logic using _lighten_step
-      # Ensure the implementation uses the step and respects MAX_ADJUSTMENT_STEPS
-      # Return original color as placeholder
-      color
+  ## Parameters
+
+  - `colors` - Map of colors to adjust
+  - `background` - Background color to check against
+
+  ## Returns
+
+  - Map of adjusted colors
+  """
+  @spec adjust_palette(map(), Color.t() | String.t()) :: map()
+  def adjust_palette(colors, background) do
+    bg =
+      if is_binary(background), do: Color.from_hex(background), else: background
+
+    # First try to make each color accessible while preserving its character
+    adjusted =
+      colors
+      |> Enum.map(fn {key, color} ->
+        if key == :background do
+          {key, color}
+        else
+          # Try to adjust while preserving hue
+          adjusted_color =
+            suggest_accessible_color(color, background: bg.hex, level: :aa)
+
+          {key, adjusted_color}
+        end
+      end)
+      |> Map.new()
+
+    # Validate the adjusted colors
+    case validate_colors(adjusted, background: bg.hex, level: :aa) do
+      {:ok, _} ->
+        adjusted
+
+      {:error, _} ->
+        # If still not accessible, use more aggressive adjustments
+        colors
+        |> Enum.map(fn {key, _color} ->
+          if key == :background do
+            {key, background}
+          else
+            # Use black or white based on background luminance
+            bg_lum = relative_luminance(bg)
+            new_color = if bg_lum < 0.5, do: "#FFFFFF", else: "#000000"
+            {key, new_color}
+          end
+        end)
+        |> Map.new()
     end
   end
 
-  # --- High Contrast Mode Helpers ---
-
-  # defp find_accessible_pair(_base_color, _base_hsl, _target_contrast, _is_dark_target, attempts) do
-  # Removed unused function
-  # end
+  @spec is_suitable_for_text?(Color.t() | String.t(), Color.t() | String.t()) ::
+          boolean()
+  def is_suitable_for_text?(color, background) do
+    case check_contrast(color, background, :aa) do
+      {:ok, _} -> true
+      _ -> false
+    end
+  end
 end

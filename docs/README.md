@@ -23,6 +23,26 @@ Welcome! This is your starting point for all things Raxol—a powerful toolkit f
 - [Examples](../examples/): Runnable demos and code snippets.
 - [CHANGELOG](../CHANGELOG.md): Version history and updates.
 
+## Subsystems
+
+- [Terminal](../lib/raxol/terminal/README.md)
+- [Core](../lib/raxol/core/README.md)
+- [Plugins](../lib/raxol/plugins/README.md)
+- [Style](../lib/raxol/style/README.md)
+- [UI](../lib/raxol/ui/README.md)
+- [AI](../lib/raxol/ai/README.md)
+- [Animation](../lib/raxol/animation/README.md)
+
+## 📦 Static Assets
+
+All static assets (JavaScript, CSS, images, etc.) located in the `priv/static/@static` directory.
+
+- If you need to add or update frontend assets, use the `@static` folder.
+- The asset pipeline (npm, bundlers, etc.) should be run from `priv/static/@static`.
+- References to static files in templates and code should use the `/@static/` path prefix.
+
+> **Note:** This replaces the previous `assets` folder. Update any custom scripts or documentation accordingly.
+
 ## 🧭 How to Navigate
 
 - New to Raxol? Start with the Installation and Getting Started guides.
@@ -37,6 +57,6 @@ Raxol is built for speed and reliability. Automated tests enforce strict perform
 - **Screen updates:** < 2ms average, < 5ms (95th percentile)
 - **Concurrent operations:** < 5ms average, < 10ms (95th percentile)
 
-See the [Performance Testing Guide](/docs/testing/performance_testing.md) for more details.
+See the [Performance Testing Guide](testing/performance_testing.md) for more details.
 
 Happy hacking!

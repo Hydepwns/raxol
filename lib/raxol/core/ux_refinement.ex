@@ -18,11 +18,11 @@ defmodule Raxol.Core.UXRefinement do
   require Logger
 
   # alias Raxol.Core.FocusManager # Removed as it's called via helper
-  alias Raxol.Components.FocusRing
+  alias Raxol.UI.Components.FocusRing
   # alias Raxol.Core.Accessibility # Removed as it's called via helper
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.KeyboardShortcuts
-  alias Raxol.Components.HintDisplay
+  alias Raxol.UI.Components.HintDisplay
   alias Raxol.Core.KeyboardNavigator
 
   # --- Module Helpers for Dependencies ---
@@ -80,6 +80,7 @@ defmodule Raxol.Core.UXRefinement do
 
   * `feature` - The feature to enable
   * `opts` - Options for the feature
+  * `user_preferences_pid_or_name` - The PID or registered name of the UserPreferences process to use (required)
 
   ## Examples
 
@@ -89,109 +90,63 @@ defmodule Raxol.Core.UXRefinement do
       iex> UXRefinement.enable_feature(:accessibility, high_contrast: true)
       :ok
   """
-  def enable_feature(feature, opts \\ [])
+  def enable_feature(feature, opts \\ [], user_preferences_pid_or_name)
 
-  def enable_feature(:focus_management, _opts) do
-    # Ensure events are initialized first
-    ensure_feature_enabled(:events)
-
-    # Register the feature as enabled
+  def enable_feature(:focus_management, _opts, user_preferences_pid_or_name) do
+    ensure_feature_enabled(:events, user_preferences_pid_or_name)
     _ = register_enabled_feature(:focus_management)
-
     :ok
   end
 
-  def enable_feature(:keyboard_navigation, _opts) do
-    # Ensure focus management is enabled
-    ensure_feature_enabled(:focus_management)
-
-    # Initialize keyboard navigator
+  def enable_feature(:keyboard_navigation, _opts, user_preferences_pid_or_name) do
+    ensure_feature_enabled(:focus_management, user_preferences_pid_or_name)
     KeyboardNavigator.init()
-
-    # Register the feature as enabled
     _ = register_enabled_feature(:keyboard_navigation)
-
     :ok
   end
 
-  def enable_feature(:hints, _opts) do
-    # Initialize hint display
+  def enable_feature(:hints, _opts, user_preferences_pid_or_name) do
     hint_config = HintDisplay.init(%{})
-    # Store the hint config for later use if needed
     Process.put(:ux_refinement_hint_config, hint_config)
-
-    # Initialize hint registry if not already done
     Process.put(:ux_refinement_hints, %{})
-
-    # Register the feature as enabled
     _ = register_enabled_feature(:hints)
-
     :ok
   end
 
-  def enable_feature(:focus_ring, opts) do
-    # Ensure focus management is enabled
-    ensure_feature_enabled(:focus_management)
-
-    # Initialize focus ring with options - Handle the default [] case
+  def enable_feature(:focus_ring, opts, user_preferences_pid_or_name) do
+    ensure_feature_enabled(:focus_management, user_preferences_pid_or_name)
     focus_ring_opts = if is_list(opts) and opts == [], do: %{}, else: opts
-
     focus_ring_config = FocusRing.init(focus_ring_opts)
-    # Store the focus ring config for later use if needed
     Process.put(:ux_refinement_focus_ring_config, focus_ring_config)
-
-    # Register the feature as enabled
     _ = register_enabled_feature(:focus_ring)
-
     :ok
   end
 
-  def enable_feature(:accessibility, opts) do
-    # Ensure events are enabled
-    ensure_feature_enabled(:events)
-
-    # Initialize accessibility features
-    accessibility_module().enable(opts, nil)
-
-    # Initialize metadata registry if not already done
+  def enable_feature(:accessibility, opts, user_preferences_pid_or_name) do
+    ensure_feature_enabled(:events, user_preferences_pid_or_name)
+    accessibility_module().enable(opts, user_preferences_pid_or_name)
     Process.put(:ux_refinement_metadata, %{})
-
-    # Register focus change handler
-    _ =
-      focus_manager_module().register_focus_change_handler(
-        &handle_accessibility_focus_change/2
-      )
-
-    # Register the feature as enabled
+    _ = focus_manager_module().register_focus_change_handler(
+      &handle_accessibility_focus_change/3
+    )
     _ = register_enabled_feature(:accessibility)
-
     :ok
   end
 
-  def enable_feature(:keyboard_shortcuts, _opts) do
-    # Initialize keyboard shortcuts FIRST
+  def enable_feature(:keyboard_shortcuts, _opts, user_preferences_pid_or_name) do
     keyboard_shortcuts_module().init()
-
-    # Ensure events are enabled AFTER
-    ensure_feature_enabled(:events)
-
-    # Register the feature as enabled
+    ensure_feature_enabled(:events, user_preferences_pid_or_name)
     _ = register_enabled_feature(:keyboard_shortcuts)
-
     :ok
   end
 
-  def enable_feature(:events, _opts) do
-    # Initialize events manager if not already done
+  def enable_feature(:events, _opts, user_preferences_pid_or_name) do
     EventManager.init()
-
-    # Register the feature as enabled
     _ = register_enabled_feature(:events)
-
     :ok
   end
 
-  def enable_feature(unknown_feature, _opts) do
+  def enable_feature(unknown_feature, _opts, _user_preferences_pid_or_name) do
     {:error, "Unknown feature: #{unknown_feature}"}
   end
 
@@ -241,20 +196,12 @@ defmodule Raxol.Core.UXRefinement do
   end
 
   def disable_feature(:accessibility) do
-    # Clean up accessibility features
     accessibility_module().disable()
-
-    # Clear metadata registry
     Process.put(:ux_refinement_metadata, %{})
-
-    # Unregister focus change handler
     focus_manager_module().unregister_focus_change_handler(
-      &handle_accessibility_focus_change/2
+      &handle_accessibility_focus_change/3
     )
-
-    # Unregister the feature
     unregister_enabled_feature(:accessibility)
-
     :ok
   end
 
@@ -323,7 +270,7 @@ defmodule Raxol.Core.UXRefinement do
   """
   def register_hint(component_id, hint) when is_binary(hint) do
     # Ensure hints feature is enabled
-    ensure_feature_enabled(:hints)
+    ensure_feature_enabled(:hints, component_id)
 
     # Register a basic hint
     # Also calls register_component_hint with the hint as the basic level
@@ -370,7 +317,7 @@ defmodule Raxol.Core.UXRefinement do
 
   def register_component_hint(component_id, hint_info) when is_map(hint_info) do
     # Ensure hints feature is enabled
-    ensure_feature_enabled(:hints)
+    ensure_feature_enabled(:hints, component_id)
 
     # Normalize hint info
     normalized_hint_info = normalize_hint_info(hint_info)
@@ -405,7 +352,7 @@ defmodule Raxol.Core.UXRefinement do
   """
   def get_hint(component_id) do
     # Ensure hints feature is enabled
-    ensure_feature_enabled(:hints)
+    ensure_feature_enabled(:hints, component_id)
 
     # Get hints registry
     hints = Process.get(:ux_refinement_hints)
@@ -433,7 +380,7 @@ defmodule Raxol.Core.UXRefinement do
   def get_component_hint(component_id, level)
       when level in [:basic, :detailed, :examples] do
     # Ensure hints feature is enabled
-    ensure_feature_enabled(:hints)
+    ensure_feature_enabled(:hints, component_id)
 
     # Get hints registry
     hints = Process.get(:ux_refinement_hints)
@@ -463,7 +410,7 @@ defmodule Raxol.Core.UXRefinement do
   """
   def get_component_shortcuts(component_id) do
     # Ensure hints feature is enabled
-    ensure_feature_enabled(:hints)
+    ensure_feature_enabled(:hints, component_id)
 
     # Get hints registry
     hints = Process.get(:ux_refinement_hints)
@@ -504,7 +451,7 @@ defmodule Raxol.Core.UXRefinement do
     :ok
   end
 
-  defp ensure_feature_enabled(:events) do
+  defp ensure_feature_enabled(:events, user_preferences_pid_or_name) do
     # Initialize events manager if not already done
     EventManager.init()
     # Register the feature as enabled
@@ -513,25 +460,17 @@ defmodule Raxol.Core.UXRefinement do
     :ok
   end
 
-  # Add a helper to avoid infinite recursion if ensure_feature_enabled calls enable_feature
-  defp ensure_feature_enabled(feature) when feature != :events do
+  defp ensure_feature_enabled(feature, user_preferences_pid_or_name) when feature != :events do
     if !feature_enabled?(feature) do
-      enable_feature(feature)
+      enable_feature(feature, [], user_preferences_pid_or_name)
     else
       :ok
     end
   end
 
-  defp handle_accessibility_focus_change(old_focus, new_focus) do
-    # This function is called by FocusManager when focus changes
-    # It should make an announcement using the Accessibility module
-    # (Consider moving this logic directly into Accessibility.handle_focus_change if appropriate)
-
+  defp handle_accessibility_focus_change(old_focus, new_focus, user_preferences_pid_or_name) do
     if feature_enabled?(:accessibility) do
-      # Get accessible name/label for the new_focus element
-      # Prefer metadata registered via UXRefinement or Accessibility
       metadata = get_accessibility_metadata(new_focus) || %{}
-      # Fallback to ID if no label
       label = Map.get(metadata, :label, new_focus)
 
       announcement_message =
@@ -541,9 +480,7 @@ defmodule Raxol.Core.UXRefinement do
           "Focus moved from #{get_accessibility_metadata(old_focus)[:label] || old_focus} to #{label}"
         end
 
-      # Use the announce function which checks for :silence_announcements
-      # Low priority for general focus changes
-      announce(announcement_message, priority: :low)
+      announce(announcement_message, [priority: :low], user_preferences_pid_or_name)
     end
 
     :ok
@@ -562,7 +499,7 @@ defmodule Raxol.Core.UXRefinement do
 
   defp maybe_register_shortcuts(component_id, %{shortcuts: shortcuts})
        when is_list(shortcuts) do
-    ensure_feature_enabled(:keyboard_shortcuts)
+    ensure_feature_enabled(:keyboard_shortcuts, component_id)
     # Use the helper
     ks_module = keyboard_shortcuts_module()
 
@@ -577,8 +514,9 @@ defmodule Raxol.Core.UXRefinement do
         )
 
       _invalid_shortcut_format ->
-        Logger.warn(
-          "Invalid shortcut format for component #{component_id}: must be {key_string, description_string}"
+        Logger.warning(
+          "Invalid shortcut format for component #{component_id}: must be {key_string, description_string}",
+          []
         )
     end)
   end
@@ -615,16 +553,16 @@ defmodule Raxol.Core.UXRefinement do
   @doc """
   Display help for available keyboard shortcuts.
   """
-  def show_shortcuts_help do
-    ensure_feature_enabled(:keyboard_shortcuts)
-    keyboard_shortcuts_module().show_shortcuts_help()
+  def show_shortcuts_help(user_preferences_pid_or_name) do
+    ensure_feature_enabled(:keyboard_shortcuts, user_preferences_pid_or_name)
+    keyboard_shortcuts_module().show_shortcuts_help(user_preferences_pid_or_name)
   end
 
   @doc """
   Set the active context for keyboard shortcuts.
   """
   def set_shortcuts_context(context) do
-    ensure_feature_enabled(:keyboard_shortcuts)
+    ensure_feature_enabled(:keyboard_shortcuts, context)
     keyboard_shortcuts_module().set_context(context)
   end
 
@@ -633,16 +571,21 @@ defmodule Raxol.Core.UXRefinement do
   If no context is provided, returns shortcuts for the current active context.
   """
   def get_available_shortcuts(context \\ nil) do
-    ensure_feature_enabled(:keyboard_shortcuts)
+    ensure_feature_enabled(:keyboard_shortcuts, context)
     keyboard_shortcuts_module().get_shortcuts_for_context(context)
   end
 
   @doc """
   Make an announcement for screen readers.
+
+  ## Parameters
+  * `message` - The message to announce
+  * `opts` - Options for the announcement
+  * `user_preferences_pid_or_name` - The PID or registered name of the UserPreferences process to use (required)
   """
-  def announce(message, opts \\ []) do
+  def announce(message, opts \\ [], user_preferences_pid_or_name) do
     if feature_enabled?(:accessibility) do
-      accessibility_module().announce(message, opts)
+      accessibility_module().announce(message, opts, user_preferences_pid_or_name)
     else
       Logger.debug(
         "[UXRefinement] Accessibility not enabled, announcement skipped: #{message}"

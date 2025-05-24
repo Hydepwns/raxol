@@ -1,7 +1,7 @@
 defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   use Raxol.DataCase, async: true
 
-  alias Raxol.Components.FocusRing
+  alias Raxol.UI.Components.FocusRing
   alias Raxol.Core.Accessibility.ThemeIntegration
   alias Raxol.Core.Events.Manager, as: EventManager
 
@@ -72,8 +72,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
   describe "handle_high_contrast/1" do
     test "updates component styles for high contrast mode" do
       # Subscribe to theme change events
-      ref = make_ref()
-      EventManager.subscribe(ref, :theme_changed)
+      {:ok, ref} = EventManager.subscribe([:theme_changed])
 
       # Handle high contrast event
       assert :ok =
@@ -93,13 +92,12 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       assert scheme.foreground == :white
 
       # Cleanup subscription
-      EventManager.unsubscribe(ref, :theme_changed)
+      EventManager.unsubscribe(ref)
     end
 
     test "updates component styles for standard mode" do
       # Subscribe to theme change events
-      ref = make_ref()
-      EventManager.subscribe(ref, :theme_changed)
+      {:ok, ref} = EventManager.subscribe([:theme_changed])
 
       # Handle standard contrast event
       assert :ok =
@@ -119,15 +117,14 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       assert scheme.foreground == {:rgb, 220, 220, 220}
 
       # Cleanup subscription
-      EventManager.unsubscribe(ref, :theme_changed)
+      EventManager.unsubscribe(ref)
     end
   end
 
   describe "handle_reduced_motion/1" do
     test "disables animations when reduced motion is enabled" do
       # Subscribe to theme change events
-      ref = make_ref()
-      EventManager.subscribe(ref, :theme_changed)
+      {:ok, ref} = EventManager.subscribe([:theme_changed])
 
       # Handle reduced motion event
       assert :ok =
@@ -142,13 +139,12 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       assert ThemeIntegration.get_active_variant() == :reduced_motion
 
       # Cleanup subscription
-      EventManager.unsubscribe(ref, :theme_changed)
+      EventManager.unsubscribe(ref)
     end
 
     test "enables animations when reduced motion is disabled" do
       # Subscribe to theme change events
-      ref = make_ref()
-      EventManager.subscribe(ref, :theme_changed)
+      {:ok, ref} = EventManager.subscribe([:theme_changed])
 
       # Handle reduced motion event
       assert :ok =
@@ -163,15 +159,14 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       assert ThemeIntegration.get_active_variant() == :standard
 
       # Cleanup subscription
-      EventManager.unsubscribe(ref, :theme_changed)
+      EventManager.unsubscribe(ref)
     end
   end
 
   describe "handle_large_text/1" do
     test "sets text scale for large text mode" do
       # Subscribe to theme change events
-      ref = make_ref()
-      EventManager.subscribe(ref, :theme_changed)
+      {:ok, ref} = EventManager.subscribe([:theme_changed])
 
       # Handle large text event
       assert :ok =
@@ -186,13 +181,12 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       assert ThemeIntegration.get_text_scale() == 1.5
 
       # Cleanup subscription
-      EventManager.unsubscribe(ref, :theme_changed)
+      EventManager.unsubscribe(ref)
     end
 
     test "sets text scale for standard text mode" do
       # Subscribe to theme change events
-      ref = make_ref()
-      EventManager.subscribe(ref, :theme_changed)
+      {:ok, ref} = EventManager.subscribe([:theme_changed])
 
       # Handle standard text event
       assert :ok =
@@ -207,15 +201,14 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       assert ThemeIntegration.get_text_scale() == 1.0
 
       # Cleanup subscription
-      EventManager.unsubscribe(ref, :theme_changed)
+      EventManager.unsubscribe(ref)
     end
   end
 
   describe "apply_settings/1" do
     test "applies accessibility settings" do
       # Subscribe to theme change events
-      ref = make_ref()
-      EventManager.subscribe(ref, :theme_changed)
+      {:ok, ref} = EventManager.subscribe([:theme_changed])
 
       # Apply settings
       assert :ok =
@@ -237,15 +230,14 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       assert ThemeIntegration.get_text_scale() == 1.5
 
       # Cleanup subscription
-      EventManager.unsubscribe(ref, :theme_changed)
+      EventManager.unsubscribe(ref)
     end
   end
 
   describe "get_color_scheme/0" do
     test "returns high contrast colors when high contrast is enabled" do
       # Subscribe to theme change events
-      ref = make_ref()
-      EventManager.subscribe(ref, :theme_changed)
+      {:ok, ref} = EventManager.subscribe([:theme_changed])
 
       # Enable high contrast
       assert :ok = ThemeIntegration.apply_settings(high_contrast: true)
@@ -260,13 +252,12 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       assert scheme.foreground == :white
 
       # Cleanup subscription
-      EventManager.unsubscribe(ref, :theme_changed)
+      EventManager.unsubscribe(ref)
     end
 
     test "returns standard colors when high contrast is disabled" do
       # Subscribe to theme change events
-      ref = make_ref()
-      EventManager.subscribe(ref, :theme_changed)
+      {:ok, ref} = EventManager.subscribe([:theme_changed])
 
       # Disable high contrast
       assert :ok = ThemeIntegration.apply_settings(high_contrast: false)
@@ -281,13 +272,12 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       assert scheme.foreground == {:rgb, 220, 220, 220}
 
       # Cleanup subscription
-      EventManager.unsubscribe(ref, :theme_changed)
+      EventManager.unsubscribe(ref)
     end
 
     test "returns standard colors when accessibility options are not set" do
       # Subscribe to theme change events
-      ref = make_ref()
-      EventManager.subscribe(ref, :theme_changed)
+      {:ok, ref} = EventManager.subscribe([:theme_changed])
 
       # Apply default settings
       assert :ok = ThemeIntegration.apply_settings([])
@@ -302,7 +292,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegrationTest do
       assert scheme.foreground == {:rgb, 220, 220, 220}
 
       # Cleanup subscription
-      EventManager.unsubscribe(ref, :theme_changed)
+      EventManager.unsubscribe(ref)
     end
   end
 
