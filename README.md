@@ -41,7 +41,7 @@ Add Raxol to your `mix.exs`:
 # mix.exs, check hex.pm/packages/raxol
 def deps do
   [
-    {:raxol, "~> 0.3.0"}
+    {:raxol, "~> 0.4.0"}
   ]
 end
 ```
@@ -116,18 +116,18 @@ Raxol.start_link(ExampleApp)
 
 You can nest these macros to create complex layouts.
 All properties (like `title`, `label`, `on_click`, etc.) are passed as keyword lists.
-For more, see the [UI Components & Layout Guide](docs/guides/03_components_and_layout/components/README.md).
+For more, see the [UI Components & Layout Guide](examples/guides/03_components_and_layout/components/README.md).
 
 ## 📚 Resources
 
-- [Accessibility Guide](docs/guides/05_development_and_testing/development/planning/accessibility/accessibility_guide.md)
+- [Accessibility Guide](examples/guides/05_development_and_testing/development/planning/accessibility/accessibility_guide.md)
 - [Architecture Overview](docs/ARCHITECTURE.md)
 - [Changelog](CHANGELOG.md)
 - [Docs Index](docs/README.md)
-- [Plugin Development](docs/guides/04_extending_raxol/plugin_development.md)
-- [Testing Guide](docs/guides/05_development_and_testing/testing.md)
-- [Terminal Details](docs/guides/02_core_concepts/terminal/README.md)
-- [VS Code Extension](docs/guides/04_extending_raxol/vscode_extension.md)
+- [Plugin Development](examples/guides/04_extending_raxol/plugin_development.md)
+- [Testing Guide](examples/guides/05_development_and_testing/testing.md)
+- [Terminal Details](examples/guides/02_core_concepts/terminal/README.md)
+- [VS Code Extension](examples/guides/04_extending_raxol/vscode_extension.md)
 
 ## License
 

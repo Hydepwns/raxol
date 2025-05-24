@@ -11,8 +11,6 @@ tags: [components, layout, ui, guides, documentation]
 
 This document overviews the Raxol UI component system (`Base.Component` behaviour, `View.Elements` DSL, HEEx-like syntax) and the flexbox-inspired layout engine.
 
-For detailed API documentation, see [Component API Reference](../../../components/api/component_api_reference.md).
-
 ## Core Concepts
 
 - **Components:** Reusable UI elements that manage their own state and rendering logic. They implement the `Raxol.UI.Components.Base.Component` behaviour.

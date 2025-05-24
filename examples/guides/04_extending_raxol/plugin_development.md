@@ -406,5 +406,3 @@ end
 This example shows state (`%{count: 0}`), initialized in `init/1` and updated/passed through `handle_command/3`.
 
 ## Dependencies
-
-> **API Reference:** [Dependency Manager API Reference](../../components/api/dependency_manager.md)

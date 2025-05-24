@@ -178,5 +178,3 @@ mix run scripts/release.exs --env prod --platform [macos|linux|windows]
 ```bash
 mix deps.get
 ```
-
-For more details, see the [Development Setup](../../05_development_and_testing/DevelopmentSetup.md).

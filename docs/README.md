@@ -19,7 +19,7 @@ Welcome! This is your starting point for all things Raxol—a powerful toolkit f
 ## 🗂️ Key Sections
 
 - [Architecture](ARCHITECTURE.md): System overview and design principles.
-- [UI Components & Layout](../docs/guides/03_components_and_layout/components/README.md): Built-in components and layout system.
+- [UI Components & Layout Guide](../examples/guides/03_components_and_layout/components/README.md): Built-in components and layout system.
 - [Examples](../examples/): Runnable demos and code snippets.
 - [CHANGELOG](../CHANGELOG.md): Version history and updates.
 
@@ -56,7 +56,5 @@ Raxol is built for speed and reliability. Automated tests enforce strict perform
 - **Event processing:** < 1ms average, < 2ms (95th percentile)
 - **Screen updates:** < 2ms average, < 5ms (95th percentile)
 - **Concurrent operations:** < 5ms average, < 10ms (95th percentile)
-
-See the [Performance Testing Guide](testing/performance_testing.md) for more details.
 
 Happy hacking!
