@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.DriverTestHelper do
   end
 
   def wait_for_driver_ready(driver_pid, timeout \\ 500) do
-    case :erlang.trace_receive(timeout) do
+    receive do
       {:driver_ready, ^driver_pid} ->
         :ok
 
@@ -24,8 +24,11 @@ defmodule Raxol.Terminal.DriverTestHelper do
 
       other ->
         flunk(
-          "Expected {:driver_ready, #{inspect(driver_pid)}}, got: #{inspect(other)}"
+          "Expected {:driver_ready, \\#{inspect(driver_pid)}}, got: \\#{inspect(other)}"
         )
+    after
+      timeout ->
+        flunk("Timeout waiting for {:driver_ready, \\#{inspect(driver_pid)}}")
     end
   end
 

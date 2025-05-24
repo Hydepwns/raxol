@@ -9,6 +9,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
     # Create a test emulator with a 10x10 screen
     emulator = %Emulator{
       main_screen_buffer: ScreenBuffer.new(10, 10),
+      alternate_screen_buffer: ScreenBuffer.new(10, 10),
       cursor: CursorManager.new(),
       style: Raxol.Terminal.ANSI.TextFormatting.new()
     }

@@ -59,7 +59,7 @@ defmodule Raxol.Core.Runtime.Command do
       Command.notify("Task Complete", "Your background job finished.")
   """
 
-  alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
+  # alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
   require Logger
 
   @type t :: %__MODULE__{
@@ -234,25 +234,25 @@ defmodule Raxol.Core.Runtime.Command do
         send(context.runtime_pid, :quit_runtime)
 
       %{type: :clipboard_write, data: text} ->
-        # Delegate to PluginManager with namespace, data as a list, and dispatcher_pid
+        # Delegate to plugin manager with namespace, data as a list, and dispatcher_pid
         GenServer.cast(
-          PluginManager,
+          Raxol.Core.Plugins.Core.ClipboardPlugin,
           {:handle_command, :clipboard_write,
            Raxol.Core.Plugins.Core.ClipboardPlugin, [text], context.pid}
         )
 
       %{type: :clipboard_read} ->
-        # Delegate to PluginManager with namespace, data as an empty list, and dispatcher_pid
+        # Delegate to plugin manager with namespace, data as an empty list, and dispatcher_pid
         GenServer.cast(
-          PluginManager,
+          Raxol.Core.Plugins.Core.ClipboardPlugin,
           {:handle_command, :clipboard_read,
            Raxol.Core.Plugins.Core.ClipboardPlugin, [], context.pid}
         )
 
       %{type: :notify, data: {title, body}} ->
-        # Delegate to PluginManager with namespace, data as a list [title, body], and dispatcher_pid
+        # Delegate to plugin manager with namespace, data as a list [title, body], and dispatcher_pid
         GenServer.cast(
-          PluginManager,
+          Raxol.Core.Plugins.Core.NotificationPlugin,
           {:handle_command, :notify, Raxol.Core.Plugins.Core.NotificationPlugin,
            [title, body], context.pid}
         )

@@ -1,4 +1,4 @@
-defmodule Raxol.Components.Input.TestMultiLineInput do
+defmodule Raxol.UI.Components.Input.TestMultiLineInput do
   @moduledoc """
   A special version of MultiLineInput that directly returns test values
   for the failing test cases.

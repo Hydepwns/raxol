@@ -57,8 +57,8 @@ defmodule Raxol.UI.Components.Input.SelectList.Pagination do
   Gets the effective options list (filtered or original) based on current state.
   """
   def get_effective_options(state) do
-    if state.is_filtering and state.filtered_options do
-      state.filtered_options
+    if state.is_filtering do
+      state.filtered_options || []
     else
       state.options
     end

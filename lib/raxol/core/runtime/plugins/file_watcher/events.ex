@@ -11,7 +11,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
   Handles file system events.
   Returns updated state with debounced reload timer if needed.
   """
-  def handle_file_event(path, state) do
+  def handle_file_event(path, state, file_mod \\ File) do
     # Normalize the path
     normalized_path = Path.expand(path)
 
@@ -36,7 +36,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
         end
 
         # Verify the file still exists and is readable
-        case File.stat(normalized_path) do
+        case file_mod.stat(normalized_path) do
           {:ok, %{type: :regular, access: :read}} ->
             # Schedule a debounced reload
             timer_ref =

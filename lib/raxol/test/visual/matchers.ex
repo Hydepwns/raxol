@@ -217,6 +217,6 @@ defmodule Raxol.Test.Visual.Matchers do
   defp ansi_style_code(:blink), do: IO.ANSI.blink_slow()
   defp ansi_style_code(:reverse), do: IO.ANSI.reverse()
   defp ansi_style_code(:hidden), do: IO.ANSI.conceal()
-  defp ansi_style_code(:strike), do: IO.ANSI.crossed_out()
+  defp ansi_style_code(:strikethrough), do: IO.ANSI.crossed_out()
   defp ansi_style_code(_), do: ""
 end

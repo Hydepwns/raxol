@@ -8,7 +8,7 @@ defmodule Raxol.Docs.TutorialViewer do
   import Raxol.View.Elements
 
   # Removed unused aliases for CodeBlock, MarkdownRenderer
-  # alias Raxol.Components.{MarkdownRenderer, CodeBlock}
+  # alias Raxol.UI.Components.{MarkdownRenderer, CodeBlock}
 
   alias Raxol.Docs.InteractiveTutorial
   alias Raxol.Docs.InteractiveTutorial.Models.{Tutorial, Step}
@@ -74,7 +74,6 @@ defmodule Raxol.Docs.TutorialViewer do
             {:ok, new_model}
 
           {:error, reason} ->
-            IO.inspect(reason, label: "Error starting tutorial")
             # Show error
             {:ok, %{model | feedback_message: "Error: #{reason}"}}
         end
@@ -96,6 +95,7 @@ defmodule Raxol.Docs.TutorialViewer do
           :tutorial_completed ->
             # NOTE: Showing completion message via feedback_message. Enhance with modal/notification if desired.
             IO.puts("Tutorial completed!")
+
             new_model = %{
               model
               | status: :selecting_tutorial,
@@ -110,8 +110,6 @@ defmodule Raxol.Docs.TutorialViewer do
             {:ok, new_model}
 
           {:error, reason} ->
-            IO.inspect(reason, label: "Error going to next step")
-
             # Don't clear feedback here, might be useful ("already at last step")
             # Stay on current step
             {:ok, model}
@@ -132,8 +130,6 @@ defmodule Raxol.Docs.TutorialViewer do
             {:ok, new_model}
 
           {:error, reason} ->
-            IO.inspect(reason, label: "Error going to previous step")
-
             # Don't clear feedback here, might be useful ("already at first step")
             # Stay on current step
             {:ok, model}
@@ -184,7 +180,6 @@ defmodule Raxol.Docs.TutorialViewer do
         :ok
 
       _ ->
-        IO.inspect(message, label: "Unhandled TutorialViewer message")
         {:ok, model}
     end
   end
@@ -282,7 +277,8 @@ defmodule Raxol.Docs.TutorialViewer do
         panel(title: "Example Code") do
           # NOTE: Use a syntax-highlighting code block component if available in the future.
           # Use the CodeBlock component
-          {Raxol.Components.CodeBlock, [content: step.example_code, language: step.language || "elixir"]}
+          {Raxol.UI.Components.CodeBlock,
+           [content: step.example_code, language: step.language || "elixir"]}
         end
       end
 
@@ -320,6 +316,7 @@ defmodule Raxol.Docs.TutorialViewer do
 
             Raxol.View.Elements.row gap: 10, style: "margin-top: 10px;" do
               button(content: "Validate", on_click: :validate_exercise)
+
               # NOTE: Check if hints are available for the step before enabling in the future.
               button(content: "Get Hint", on_click: :get_hint)
             end
@@ -349,7 +346,6 @@ defmodule Raxol.Docs.TutorialViewer do
   # Correct signature handle_event/1
   def handle_event(event) do
     # Handle UI events based on the event structure
-    # IO.inspect(event, label: "TutorialViewer Event") # Optional: Debugging
     case event do
       {:ui, _ui_event_details} ->
         # TODO: Handle UI events if needed

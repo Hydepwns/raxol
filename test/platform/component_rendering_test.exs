@@ -2,11 +2,11 @@
 #   use ExUnit.Case, async: true
 #   import ExUnit.CaptureIO
 #
-#   alias Raxol.Components.Box
-#   alias Raxol.Components.Button
-#   # alias Raxol.Components.ProgressBar # Original alias was wrong
-#   alias Raxol.Components.Progress.ProgressBar # Correct path
-#   alias Raxol.Components.Text
+#   alias Raxol.UI.Components.Box
+#   alias Raxol.UI.Components.Button
+#   # alias Raxol.UI.Components.ProgressBar # Original alias was wrong
+#   alias Raxol.UI.Components.Progress.ProgressBar # Correct path
+#   alias Raxol.UI.Components.Text
 #   alias Raxol.System.Platform
 #
 #   # This test verifies that core UI components render correctly across platforms

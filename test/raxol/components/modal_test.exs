@@ -1,9 +1,9 @@
-defmodule Raxol.Components.ModalTest do
+defmodule Raxol.UI.Components.ModalTest do
   # use ExUnit.Case, async: true
   # Run synchronously
   use ExUnit.Case
 
-  alias Raxol.Components.Modal
+  alias Raxol.UI.Components.Modal
   # Used for component struct creation helper
   alias Raxol.Core.Runtime.Application
   # For checking rendered elements
@@ -253,7 +253,7 @@ defmodule Raxol.Components.ModalTest do
     field3_row_children = field3_row_map.children
     input3_map = Enum.at(field3_row_children, 1)
     # This is the map we generated: %{type: Dropdown, attrs: ...}
-    assert input3_map.type == Raxol.Components.Selection.Dropdown
+    assert input3_map.type == Raxol.UI.Components.Selection.Dropdown
   end
 
   test "form update handles :field_update for text_input" do

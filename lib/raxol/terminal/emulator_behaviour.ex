@@ -9,9 +9,9 @@ defmodule Raxol.Terminal.EmulatorBehaviour do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cursor.Manager
   alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.ModeManager
-  alias Raxol.Plugins.PluginManager
+  alias Raxol.Plugins.Manager.Core
   alias Raxol.Terminal.Parser
 
   # Define the expected structure of the emulator state for specs
@@ -27,7 +27,7 @@ defmodule Raxol.Terminal.EmulatorBehaviour do
           memory_limit: non_neg_integer(),
           charset_state: CharacterSets.charset_state(),
           mode_manager: ModeManager.t(),
-          plugin_manager: PluginManager.t(),
+          plugin_manager: Core.t(),
           options: map(),
           current_hyperlink_url: String.t() | nil,
           window_title: String.t() | nil,
@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.EmulatorBehaviour do
           output_buffer: String.t(),
           # Assuming atom type based on emulator.ex
           cursor_style: atom(),
-          parser_state: Parser.State.t(),
+          parser_state: map(),
           command_history: list(),
           max_command_history: non_neg_integer(),
           current_command_buffer: String.t(),

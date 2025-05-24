@@ -10,6 +10,7 @@ defmodule Raxol.UI.Layout.Panels do
   """
 
   alias Raxol.UI.Layout.Engine
+  require Logger
 
   @doc """
   Processes a panel element, calculating layout for it and its children.
@@ -114,7 +115,8 @@ defmodule Raxol.UI.Layout.Panels do
           # Should not happen based on Panel definition if type specs are followed
           # but good to be defensive.
           Logger.warning(
-            "Panels.process received unexpected children format: #{inspect(children_input)}"
+            "Panels.process received unexpected children format: #{inspect(children_input)}",
+            []
           )
 
           []

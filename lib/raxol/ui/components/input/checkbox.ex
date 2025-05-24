@@ -55,7 +55,11 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     state
   end
 
+  @doc """
+  Initializes the Checkbox component state from the given props.
+  """
   @impl true
+  @spec init(keyword()) :: {:ok, t()}
   def init(props) do
     id =
       Keyword.get(props, :id, "checkbox-#{:erlang.unique_integer([:positive])}")
@@ -77,20 +81,32 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     {:ok, state}
   end
 
+  @doc """
+  Mounts the Checkbox component. Performs any setup needed after initialization.
+  """
   @impl true
+  @spec mount(t()) :: {t(), list()}
   def mount(state) do
     # Could register focus, subscriptions, etc. if needed
     # For now, just return state and []
     {state, []}
   end
 
+  @doc """
+  Unmounts the Checkbox component, performing any necessary cleanup.
+  """
   @impl true
+  @spec unmount(t()) :: t()
   def unmount(state) do
     # Cleanup any resources, subscriptions, etc. if needed
     state
   end
 
+  @doc """
+  Updates the Checkbox component state in response to messages or prop changes.
+  """
   @impl true
+  @spec update(map(), t()) :: {:ok, t(), list()}
   def update(props, state) when is_map(props) do
     # Merge new props into state, with style/theme merged as in other components
     merged_style = Map.merge(state.style || %{}, Map.get(props, :style, %{}))
@@ -105,7 +121,11 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     {:ok, new_state, []}
   end
 
+  @doc """
+  Updates the Checkbox component state in response to unknown messages (ignored).
+  """
   @impl true
+  @spec update(term(), t()) :: {:ok, t(), list()}
   def update(_msg, state) do
     # Ignore unknown messages for now
     {:ok, state, []}
@@ -144,7 +164,11 @@ defmodule Raxol.UI.Components.Input.Checkbox do
     {:noreply, new_state, commands}
   end
 
+  @doc """
+  Renders the Checkbox component using the current state and context.
+  """
   @impl true
+  @spec render(t(), map()) :: any()
   def render(state, context) do
     # Harmonize theme merging: context.theme < state.theme < state.style
     theme = Map.merge(context.theme || %{}, state.theme || %{})

@@ -189,5 +189,9 @@ defmodule Raxol.Terminal.Config.Defaults do
     }
   end
 
+  def minimal_config do
+    generate_default_config()
+  end
+
   # Removed minimal_config - use generate_default_config and override as needed
 end

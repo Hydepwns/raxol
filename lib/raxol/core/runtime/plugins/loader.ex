@@ -81,14 +81,165 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
           end) and
             function_exported?(module_atom, :metadata, 0) ->
           try do
-            _metadata = module_atom.metadata()
+            metadata = module_atom.metadata()
 
-            Logger.debug(
-              "[#{__MODULE__}] Successfully called metadata/0 on #{inspect(module_atom)}."
-            )
+            # --- ADDED VALIDATION ---
+            version = Map.get(metadata, :version)
+            id = Map.get(metadata, :id)
+            dependencies = Map.get(metadata, :dependencies, [])
 
-            # Return the module itself, as per callback expectation
-            {:ok, module_atom}
+            optional_dependencies =
+              Map.get(metadata, :optional_dependencies, [])
+
+            name = Map.get(metadata, :name)
+            description = Map.get(metadata, :description)
+            author = Map.get(metadata, :author)
+
+            errors = []
+
+            # Helper to check if a value is a non-empty string (trimmed)
+            is_nonempty_string = fn val ->
+              is_binary(val) and String.trim(val) != ""
+            end
+
+            # Validate :id
+            errors =
+              cond do
+                is_nil(id) ->
+                  [:missing_id | errors]
+
+                is_binary(id) and String.trim(id) == "" ->
+                  [:empty_id | errors]
+
+                not (is_atom(id) or is_nonempty_string.(id)) ->
+                  [:invalid_id_type | errors]
+
+                true ->
+                  errors
+              end
+
+            # Validate :version (semver check already below)
+            errors =
+              if not is_nonempty_string.(version) do
+                [:missing_version | errors]
+              else
+                errors
+              end
+
+            # Validate :dependencies
+            errors =
+              cond do
+                is_nil(dependencies) ->
+                  [:missing_dependencies | errors]
+
+                is_list(dependencies) == false ->
+                  [:invalid_dependencies_type | errors]
+
+                true ->
+                  Enum.reduce(dependencies, errors, fn dep, acc ->
+                    case dep do
+                      {dep_id, ver_req} ->
+                        valid_id =
+                          is_atom(dep_id) or is_nonempty_string.(dep_id)
+
+                        valid_ver = is_binary(ver_req)
+
+                        if valid_id and valid_ver,
+                          do: acc,
+                          else: [:invalid_dependency_format | acc]
+
+                      {dep_id, ver_req, _opts} ->
+                        valid_id =
+                          is_atom(dep_id) or is_nonempty_string.(dep_id)
+
+                        valid_ver = is_binary(ver_req)
+
+                        if valid_id and valid_ver,
+                          do: acc,
+                          else: [:invalid_dependency_format | acc]
+
+                      _ ->
+                        [:invalid_dependency_format | acc]
+                    end
+                  end)
+              end
+
+            # Validate :optional_dependencies
+            errors =
+              if optional_dependencies != nil and
+                   not is_list(optional_dependencies) do
+                [:invalid_optional_dependencies_type | errors]
+              else
+                Enum.reduce(optional_dependencies || [], errors, fn dep, acc ->
+                  case dep do
+                    {dep_id, ver_req} ->
+                      valid_id = is_atom(dep_id) or is_nonempty_string.(dep_id)
+                      valid_ver = is_binary(ver_req)
+
+                      if valid_id and valid_ver,
+                        do: acc,
+                        else: [:invalid_optional_dependency_format | acc]
+
+                    {dep_id, ver_req, _opts} ->
+                      valid_id = is_atom(dep_id) or is_nonempty_string.(dep_id)
+                      valid_ver = is_binary(ver_req)
+
+                      if valid_id and valid_ver,
+                        do: acc,
+                        else: [:invalid_optional_dependency_format | acc]
+
+                    _ ->
+                      [:invalid_optional_dependency_format | acc]
+                  end
+                end)
+              end
+
+            # Validate :name, :description, :author (if present)
+            errors =
+              if name != nil and not is_nonempty_string.(name) do
+                [:invalid_name | errors]
+              else
+                errors
+              end
+
+            errors =
+              if description != nil and not is_nonempty_string.(description) do
+                [:invalid_description | errors]
+              else
+                errors
+              end
+
+            errors =
+              if author != nil and not is_nonempty_string.(author) do
+                [:invalid_author | errors]
+              else
+                errors
+              end
+
+            # Validate version is semver (already checked below, but move here for error aggregation)
+            errors =
+              if is_nonempty_string.(version) do
+                case Version.parse(version) do
+                  {:ok, _parsed} -> errors
+                  :error -> [:invalid_version_format | errors]
+                end
+              else
+                errors
+              end
+
+            if errors != [] do
+              Logger.error(
+                "[#{__MODULE__}] Plugin #{inspect(module_atom)} metadata validation failed: #{inspect(errors)} | Metadata: #{inspect(metadata)}"
+              )
+
+              {:error, :invalid_metadata, Enum.reverse(errors), metadata}
+            else
+              Logger.debug(
+                "[#{__MODULE__}] Successfully called metadata/0 on #{inspect(module_atom)}."
+              )
+
+              {:ok, module_atom}
+            end
           rescue
             e ->
               Logger.error(
@@ -198,19 +349,129 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   end
 
   @doc """
-  Sorts plugins based on dependencies (Placeholder - consider for removal or refactor).
+  Sorts plugins based on dependencies.
 
-  Currently returns the input list unsorted.
-  Requires metadata extraction to be implemented first for actual sorting.
-  Returns `{:ok, sorted_plugin_ids}` or `{:error, reason}`.
+  Takes a list of plugin structures (e.g., `Raxol.Core.Runtime.Plugins.Plugin.t()`),
+  each containing at least an `:id` and a `:dependencies` field.
+  The `:dependencies` field is expected to be a list of `{dependency_id, version_requirement}` tuples.
+
+  Returns `{:ok, sorted_plugin_ids}` in topological order, or
+  `{:error, :cycle_detected, problematic_ids}` if a cycle is found,
+  or `{:error, :missing_dependency, %{plugin_id: id, missing_dep_id: dep_id}}`
+  if a declared dependency is not found within the input plugin list.
   """
-  def sort_plugins(plugin_list) do
-    # TODO: Implement topological sort based on dependencies extracted from metadata.
-    Logger.debug(
-      "[#{__MODULE__}] Sorting plugins (placeholder - returning original order)."
-    )
+  def sort_plugins(plugins_with_metadata) when is_list(plugins_with_metadata) do
+    # Validate that all declared dependencies are present in the input list.
+    # This is crucial for the integrity of the sort.
+    known_plugin_ids = Enum.map(plugins_with_metadata, & &1.id) |> MapSet.new()
 
-    {:ok, plugin_list}
+    missing_dep_check =
+      Enum.find_value(plugins_with_metadata, fn plugin ->
+        Enum.find_value(plugin.dependencies, fn {dep_id, _req} ->
+          unless MapSet.member?(known_plugin_ids, dep_id) do
+            {:error, :missing_dependency,
+             %{plugin_id: plugin.id, missing_dep_id: dep_id}}
+          else
+            # Continue checking
+            nil
+          end
+        end)
+      end)
+
+    if missing_dep_check do
+      # A missing dependency was found, return the error
+      missing_dep_check
+    else
+      # Proceed with topological sort
+      adj_list =
+        plugins_with_metadata
+        |> Enum.map(& &1.id)
+        |> Enum.into(%{}, fn id -> {id, []} end)
+
+      {in_degree, adj_list_populated} =
+        Enum.reduce(plugins_with_metadata, {%{}, adj_list}, fn plugin,
+                                                               {acc_in_degree,
+                                                                acc_adj_list} ->
+          # Initialize in_degree for the current plugin
+          num_deps = Enum.count(plugin.dependencies)
+          new_in_degree = Map.put(acc_in_degree, plugin.id, num_deps)
+
+          # Populate adjacency list: if P depends on D, edge D -> P
+          new_adj_list =
+            Enum.reduce(plugin.dependencies, acc_adj_list, fn {dep_id, _req},
+                                                              current_adj ->
+              # dep_id is guaranteed to be in known_plugin_ids due to the check above
+              Map.update!(current_adj, dep_id, fn dependents ->
+                [plugin.id | dependents]
+              end)
+            end)
+
+          {new_in_degree, new_adj_list}
+        end)
+
+      initial_queue =
+        in_degree
+        |> Enum.filter(fn {_id, count} -> count == 0 end)
+        |> Enum.map(fn {id, _count} -> id end)
+        # Reverse to maintain a more stable order for items with same priority if desired,
+        # though :queue doesn't guarantee FIFO among items added in a batch like this.
+        # For deterministic output, could sort initial_queue by ID here.
+        |> Enum.reverse()
+        |> :queue.from_list()
+
+      {_final_queue, sorted_order_reversed, final_in_degree, count_sorted_nodes} =
+        loop_topo_sort(initial_queue, [], in_degree, adj_list_populated, 0)
+
+      if count_sorted_nodes == MapSet.size(known_plugin_ids) do
+        {:ok, Enum.reverse(sorted_order_reversed)}
+      else
+        problematic_ids =
+          final_in_degree
+          |> Enum.filter(fn {_id, count} -> count > 0 end)
+          |> Enum.map(fn {id, _count} -> id end)
+
+        {:error, :cycle_detected, problematic_ids}
+      end
+    end
+  end
+
+  defp loop_topo_sort(
+         queue,
+         sorted_acc,
+         in_degree_map,
+         adj_list_map,
+         nodes_processed_count
+       ) do
+    if :queue.is_empty(queue) do
+      {queue, sorted_acc, in_degree_map, nodes_processed_count}
+    else
+      {{:value, u_id}, remaining_queue} = :queue.out(queue)
+      new_sorted_acc = [u_id | sorted_acc]
+      new_nodes_processed_count = nodes_processed_count + 1
+
+      dependents_of_u = Map.get(adj_list_map, u_id, [])
+
+      {updated_queue, updated_in_degree_map} =
+        Enum.reduce(dependents_of_u, {remaining_queue, in_degree_map}, fn v_id,
+                                                                          {current_q,
+                                                                           current_id_map} ->
+          new_v_in_degree = Map.update!(current_id_map, v_id, &(&1 - 1))
+
+          if Map.get(new_v_in_degree, v_id) == 0 do
+            {:queue.in(v_id, current_q), new_v_in_degree}
+          else
+            {current_q, new_v_in_degree}
+          end
+        end)
+
+      loop_topo_sort(
+        updated_queue,
+        new_sorted_acc,
+        updated_in_degree_map,
+        adj_list_map,
+        new_nodes_processed_count
+      )
+    end
   end
 
   @doc """

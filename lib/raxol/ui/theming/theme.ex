@@ -15,6 +15,7 @@ defmodule Raxol.UI.Theming.Theme do
   @type color_value :: Color.t() | atom() | String.t()
   @type style_map :: %{atom() => any()}
 
+  @derive Jason.Encoder
   defstruct [
     :id,
     :name,
@@ -23,14 +24,51 @@ defmodule Raxol.UI.Theming.Theme do
     :component_styles,
     :variants,
     :metadata,
-    :fonts
+    :fonts,
+    :ui_mappings
   ]
+
+  @behaviour Access
+
+  # Access behaviour implementation
+  @impl Access
+  def fetch(%__MODULE__{} = theme, key) when is_atom(key) or is_binary(key) do
+    Map.fetch(theme, key)
+  end
+
+  @impl Access
+  def get_and_update(%__MODULE__{} = theme, key, fun)
+      when is_atom(key) or is_binary(key) do
+    Map.get_and_update(theme, key, fun)
+  end
+
+  @impl Access
+  def pop(%__MODULE__{} = theme, key) when is_atom(key) or is_binary(key) do
+    Map.pop(theme, key)
+  end
 
   @doc """
   Creates a new theme with the given attributes.
   """
-  def new(attrs \\ %{}) do
-    struct!(__MODULE__, Map.merge(default_attrs(), attrs))
+  def new(), do: new(default_attrs())
+
+  def new(attrs) when is_map(attrs) do
+    attrs =
+      if Map.has_key?(attrs, :colors) do
+        Map.update!(attrs, :colors, fn colors ->
+          Enum.into(colors, %{}, fn
+            {k, v} when is_binary(v) ->
+              {k, Raxol.Style.Colors.Color.from_hex(v)}
+
+            {k, v} ->
+              {k, v}
+          end)
+        end)
+      else
+        attrs
+      end
+
+    struct(__MODULE__, attrs)
   end
 
   @doc """
@@ -53,9 +91,16 @@ defmodule Raxol.UI.Theming.Theme do
     case get_in(theme, [:component_styles, component_type]) do
       nil ->
         require Logger
-        Logger.warn("Theme missing component style for #{inspect(component_type)}; returning empty map.")
+
+        Logger.warning(
+          "Theme missing component style for #{inspect(component_type)}; returning empty map.",
+          []
+        )
+
         %{}
-      style -> style
+
+      style ->
+        style
     end
   end
 
@@ -130,6 +175,19 @@ defmodule Raxol.UI.Theming.Theme do
           foreground: "#FFFFFF",
           border: "#4A9CD5",
           checked: "#4A9CD5"
+        },
+        text_field: %{
+          border: :single,
+          padding: {0, 1}
+        },
+        table: %{
+          border: :single,
+          header_background: Color.from_hex("#222831"),
+          header_foreground: Color.from_hex("#FFFFFF"),
+          row_background: Color.from_hex("#1E1E1E"),
+          row_foreground: Color.from_hex("#FFFFFF"),
+          selected_row_background: Color.from_hex("#4A9CD5"),
+          selected_row_foreground: Color.from_hex("#FFFFFF")
         }
       }
     })
@@ -180,9 +238,16 @@ defmodule Raxol.UI.Theming.Theme do
     case get_in(theme, [:component_styles, component_type]) do
       nil ->
         require Logger
-        Logger.warn("Theme missing component style for #{inspect(component_type)}; returning empty map.")
+
+        Logger.warning(
+          "Theme missing component style for #{inspect(component_type)}; returning empty map.",
+          []
+        )
+
         %{}
-      style -> style
+
+      style ->
+        style
     end
   end
 
@@ -233,6 +298,18 @@ defmodule Raxol.UI.Theming.Theme do
           size: 12,
           weight: "normal"
         }
+      },
+      ui_mappings: %{
+        app_background: :background,
+        surface_background: :surface,
+        primary_button: :primary,
+        secondary_button: :secondary,
+        accent_button: :accent,
+        error_text: :error,
+        success_text: :success,
+        warning_text: :warning,
+        info_text: :info,
+        text: :text
       }
     }
   end
@@ -272,5 +349,46 @@ defmodule Raxol.UI.Theming.Theme do
   def current do
     # This is a placeholder; in a real app, you might store the current theme in the process or app env
     get(:default)
+  end
+
+  def default_theme_id(), do: :default
+
+  # Add a custom Jason.Encoder implementation for Theme to handle tuple keys in variants
+  if Code.ensure_loaded?(Jason) do
+    defimpl Jason.Encoder, for: Raxol.UI.Theming.Theme do
+      def encode(%Raxol.UI.Theming.Theme{} = theme, opts) do
+        map = Map.from_struct(theme)
+        # Convert tuple keys in variants to string keys
+        map =
+          if Map.has_key?(map, :variants) and is_map(map.variants) do
+            Map.update!(map, :variants, fn variants ->
+              variants
+              |> Enum.map(fn {k, v} ->
+                key =
+                  case k do
+                    {a, b} -> "#{a}:#{b}"
+                    _ -> to_string(k)
+                  end
+
+                {key, v}
+              end)
+              |> Map.new()
+            end)
+          else
+            map
+          end
+
+        Jason.Encode.map(map, opts)
+      end
+    end
+  end
+
+  # Implement String.Chars protocol for Theme
+  if Code.ensure_loaded?(String.Chars) do
+    defimpl String.Chars, for: Raxol.UI.Theming.Theme do
+      def to_string(theme) do
+        "#<Theme id=#{inspect(theme.id)} name=#{inspect(theme.name)} colors=#{inspect(Map.keys(theme.colors))}>"
+      end
+    end
   end
 end

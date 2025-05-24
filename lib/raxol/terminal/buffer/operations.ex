@@ -8,7 +8,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.CharacterHandling
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Buffer.Writer
   alias Raxol.Terminal.Buffer.Eraser

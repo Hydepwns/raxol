@@ -5,8 +5,6 @@ defmodule Raxol.Web.Manager do
 
   use GenServer
 
-  # Client API
-
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
   end
@@ -19,8 +17,6 @@ defmodule Raxol.Web.Manager do
        opts: opts
      }}
   end
-
-  # Server callbacks
 
   def handle_call({:register_session, session_id, session_data}, _from, state) do
     new_state = put_in(state, [:sessions, session_id], session_data)

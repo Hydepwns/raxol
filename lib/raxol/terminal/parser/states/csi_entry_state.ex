@@ -16,7 +16,6 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
           | {:finished, Emulator.t(), State.t()}
           | {:incomplete, Emulator.t(), State.t()}
   def handle(emulator, %State{state: :csi_entry} = parser_state, input) do
-    # IO.inspect({:parse_loop_csi_entry, parser_state.state, input}, label: "DEBUG_PARSER")
     case input do
       <<>> ->
         # Incomplete CSI sequence - return current state

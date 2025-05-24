@@ -19,6 +19,7 @@ defmodule Raxol.UI.Terminal do
   alias Raxol.Style.Colors.System, as: ColorSystem
   alias Raxol.Core.I18n
 
+  @spec clear() :: :ok
   @doc """
   Clear the terminal screen.
 
@@ -32,6 +33,7 @@ defmodule Raxol.UI.Terminal do
     :ok
   end
 
+  @spec move_cursor(integer(), integer()) :: :ok
   @doc """
   Move the cursor to a specific position.
 
@@ -50,6 +52,7 @@ defmodule Raxol.UI.Terminal do
     :ok
   end
 
+  @spec print(String.t(), keyword()) :: :ok
   @doc """
   Print text with optional styling.
 
@@ -90,6 +93,7 @@ defmodule Raxol.UI.Terminal do
     :ok
   end
 
+  @spec println(String.t(), keyword()) :: :ok
   @doc """
   Print text followed by a newline.
 
@@ -106,6 +110,7 @@ defmodule Raxol.UI.Terminal do
     :ok
   end
 
+  @spec print_centered(String.t(), keyword()) :: :ok
   @doc """
   Print centered text.
 
@@ -130,6 +135,7 @@ defmodule Raxol.UI.Terminal do
     :ok
   end
 
+  @spec print_horizontal_line(keyword()) :: :ok
   @doc """
   Print a horizontal line spanning the terminal width.
 
@@ -155,6 +161,7 @@ defmodule Raxol.UI.Terminal do
     :ok
   end
 
+  @spec read_key(keyword()) :: {:ok, term()} | :timeout | {:error, term()}
   @doc """
   Read a keypress from the user.
 
@@ -211,6 +218,7 @@ defmodule Raxol.UI.Terminal do
     result
   end
 
+  @spec print_box(String.t(), keyword()) :: :ok
   @doc """
   Print a box with content.
 
@@ -286,7 +294,7 @@ defmodule Raxol.UI.Terminal do
     end
 
     # Print content
-    # _content_padding = div(width - 2 - content_width, 2) # Comment out unused variable calculation
+    _content_padding = div(width - 2 - content_width, 2) # Prefixed with underscore to avoid unused variable warning
 
     Enum.each(lines, fn line ->
       line_str = "│ " <> String.pad_trailing(line, width - 4) <> " │"

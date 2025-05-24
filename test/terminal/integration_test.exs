@@ -304,23 +304,12 @@ defmodule Raxol.Terminal.IntegrationTest do
       {_final_state, output_paste} = Emulator.process_input(state, paste_text)
       expected_output = "\e[200~multi\nline\npaste\e[201~"
 
-      # IO.inspect({output_paste, expected_output}, label: "[IntegrationTest] PASTE ASSERTION CHECK") # DEBUG
       assert inspect(output_paste) == inspect(expected_output)
     end
   end
 
   describe "modifier key integration" do
-    # Skipped: Feature not fully implemented. Requires design for modifier key sequence parsing (e.g., CSI u or XTerm-style) and how Emulator surfaces these events.
-    @tag :skip
-    test "handles modifier keys" do
-      # TODO: Implement test once modifier key handling in Emulator is designed/implemented.
-      # Example considerations:
-      # 1. Define expected input sequence (e.g., CSI value;modifier u, or other common terminal extension).
-      # 2. Define how Emulator makes this parsed key + modifier available (e.g., internal event, output sequence for driver).
-      # 3. Write assertions based on that.
-      # Placeholder until implemented
-      assert true
-    end
+    # Skipped test removed: feature not implemented and not planned.
   end
 
   describe "sixel graphics integration" do

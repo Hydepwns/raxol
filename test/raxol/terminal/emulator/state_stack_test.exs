@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Emulator.StateStackTest do
   use ExUnit.Case
-  # @tag :skip # Temporarily skip due to persistent UndefinedFunctionError
+  # # @tag :skip # Temporarily skip due to persistent UndefinedFunctionError
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Cursor.Manager
@@ -151,6 +151,56 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       # Let's skip this as the main logic is tested above
     end
 
-    # TODO: Add tests for DEC modes 1047 and 1049 explicitly
+    test "DEC mode 1047 switches to alternate buffer and restores state" do
+      emulator = Emulator.new(80, 24)
+      # Write to main buffer
+      {emulator, _} = Emulator.process_input(emulator, "MainBuf")
+      main_buffer_snapshot = Emulator.get_active_buffer(emulator)
+      # Switch to alternate buffer (DECSET ?1047h)
+      {emulator, _} = Emulator.process_input(emulator, "\e[?1047h")
+      assert emulator.active_buffer_type == :alternate
+      # Write to alternate buffer
+      {emulator, _} = Emulator.process_input(emulator, "AltBuf")
+      alt_buffer_snapshot = Emulator.get_active_buffer(emulator)
+      # Switch back to main buffer (DECRST ?1047l)
+      {emulator, _} = Emulator.process_input(emulator, "\e[?1047l")
+      assert emulator.active_buffer_type == :main
+      # Main buffer should be unchanged
+      assert Emulator.get_active_buffer(emulator) == main_buffer_snapshot
+      # Alternate buffer should retain its content for next switch
+      {emulator, _} = Emulator.process_input(emulator, "\e[?1047h")
+      assert Emulator.get_active_buffer(emulator) == alt_buffer_snapshot
+    end
+
+    test "DEC mode 1049 switches to alternate buffer, clears it, and restores state" do
+      emulator = Emulator.new(80, 24)
+      # Write to main buffer
+      {emulator, _} = Emulator.process_input(emulator, "MainBuf")
+      main_buffer_snapshot = Emulator.get_active_buffer(emulator)
+      # Switch to alternate buffer (DECSET ?1049h)
+      {emulator, _} = Emulator.process_input(emulator, "\e[?1049h")
+      assert emulator.active_buffer_type == :alternate
+      # Alternate buffer should be cleared
+      alt_buffer = Emulator.get_active_buffer(emulator)
+
+      assert Enum.all?(alt_buffer.cells, fn row ->
+               Enum.all?(row, &(&1.char == " "))
+             end)
+
+      # Write to alternate buffer
+      {emulator, _} = Emulator.process_input(emulator, "AltBuf")
+      # Switch back to main buffer (DECRST ?1049l)
+      {emulator, _} = Emulator.process_input(emulator, "\e[?1049l")
+      assert emulator.active_buffer_type == :main
+      # Main buffer should be unchanged
+      assert Emulator.get_active_buffer(emulator) == main_buffer_snapshot
+      # Alternate buffer should be cleared again on next switch
+      {emulator, _} = Emulator.process_input(emulator, "\e[?1049h")
+      alt_buffer2 = Emulator.get_active_buffer(emulator)
+
+      assert Enum.all?(alt_buffer2.cells, fn row ->
+               Enum.all?(row, &(&1.char == " "))
+             end)
+    end
   end
 end

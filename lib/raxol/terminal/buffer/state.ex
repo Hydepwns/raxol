@@ -154,9 +154,8 @@ defmodule Raxol.Terminal.Buffer.State do
   @spec get_content(ScreenBuffer.t()) :: String.t()
   def get_content(%ScreenBuffer{} = buffer) do
     buffer.cells
-    |> Enum.map(fn row ->
+    |> Enum.map_join("\n", fn row ->
       row |> Enum.map_join("", &Cell.get_char/1) |> String.trim_trailing()
     end)
-    |> Enum.join("\n")
   end
 end

@@ -12,18 +12,13 @@ defmodule Raxol.Terminal.ANSI.Processor do
   """
 
   use GenServer
+  require Logger
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Manager, as: BufferManager
+  alias Raxol.Terminal.Buffer.Eraser
   alias Raxol.Terminal.ANSI.Sequences.{Cursor, Colors}
-  alias Raxol.Terminal.ANSI.{TextFormatting, CharacterSets}
+  alias Raxol.Terminal.ANSI.{TextFormatting, CharacterSets.CharacterSets}
   alias Raxol.Terminal.Commands.Screen
-  alias Raxol.Terminal.ANSI.ScreenModes, as: ANSIScreenModes
-  # alias Raxol.Terminal.Emulator
-  # alias Raxol.Terminal.Commands.History
-  # alias Raxol.Terminal.Commands.Modes, as: CmdModes
-  # alias Raxol.Terminal.ScreenModes
-
-  require Logger
 
   # ANSI sequence types
   @type sequence_type :: :csi | :osc | :sos | :pm | :apc | :esc | :text
@@ -413,72 +408,114 @@ defmodule Raxol.Terminal.ANSI.Processor do
   defp handle_erase_display(sequence, state) do
     # Parse the erase mode
     mode = parse_param(sequence.params, 0)
+    # Get cursor position from the buffer_manager's state
+    {cursor_x, cursor_y} = state.buffer_manager.cursor_position
 
-    # Update the buffer based on the erase mode
-    new_buffer_manager =
+    # Update the active_buffer based on the erase mode
+    new_active_buffer =
       case mode do
+        # Erase from cursor to end of screen ED0
         0 ->
-          BufferManager.erase_from_cursor_to_end(
-            state.buffer_manager,
+          Eraser.clear_screen_from(
+            state.buffer_manager.active_buffer,
+            cursor_y,
+            cursor_x,
             state.current_style
           )
 
+        # Erase from beginning of screen to cursor ED1
         1 ->
-          BufferManager.erase_from_beginning_to_cursor(
-            state.buffer_manager,
+          Eraser.clear_screen_to(
+            state.buffer_manager.active_buffer,
+            cursor_y,
+            cursor_x,
             state.current_style
           )
 
+        # Erase entire screen ED2
         2 ->
-          BufferManager.clear_visible_display(
-            state.buffer_manager,
+          Eraser.clear_screen(
+            state.buffer_manager.active_buffer,
             state.current_style
           )
 
+        # Erase entire screen and delete all lines saved in the scrollback buffer ED3
         3 ->
-          BufferManager.clear_entire_display_with_scrollback(
-            state.buffer_manager,
-            state.current_style
-          )
+          # This typically involves clearing the visible screen and also telling the
+          # buffer manager to clear its scrollback. Eraser only handles the visible buffer.
+          # For now, just clear visible screen. A more complete implementation would
+          # involve a call to the BufferManager to clear scrollback.
+          cleared_buffer =
+            Eraser.clear_screen(
+              state.buffer_manager.active_buffer,
+              state.current_style
+            )
+
+          # TODO: Add call to BufferManager to clear scrollback if such functionality exists or is added.
+          # Example: state.buffer_manager |> BufferManager.clear_scrollback() (hypothetical)
+          cleared_buffer
 
         _ ->
-          state.buffer_manager
+          # Unknown mode, return buffer unchanged
+          state.buffer_manager.active_buffer
       end
 
-    new_state = %{state | buffer_manager: new_buffer_manager}
+    # Update the active_buffer within the buffer_manager state
+    new_buffer_manager_state = %{
+      state.buffer_manager
+      | active_buffer: new_active_buffer
+    }
+
+    new_state = %{state | buffer_manager: new_buffer_manager_state}
     {:ok, new_state}
   end
 
   defp handle_erase_line(sequence, state) do
     # Parse the erase mode
     mode = parse_param(sequence.params, 0)
+    {cursor_x, cursor_y} = state.buffer_manager.cursor_position
 
-    # Update the buffer based on the erase mode
-    new_buffer_manager =
+    # Update the active_buffer based on the erase mode
+    new_active_buffer =
       case mode do
+        # Erase from cursor to end of line EL0
         0 ->
-          BufferManager.erase_from_cursor_to_end_of_line(
-            state.buffer_manager,
+          Eraser.clear_line_from(
+            state.buffer_manager.active_buffer,
+            cursor_y,
+            cursor_x,
             state.current_style
           )
 
+        # Erase from beginning of line to cursor EL1
         1 ->
-          BufferManager.erase_from_beginning_of_line_to_cursor(
-            state.buffer_manager,
+          Eraser.clear_line_to(
+            state.buffer_manager.active_buffer,
+            cursor_y,
+            cursor_x,
             state.current_style
           )
 
+        # Erase entire line EL2
         2 ->
-          BufferManager.clear_current_line(
-            state.buffer_manager,
+          Eraser.clear_line(
+            state.buffer_manager.active_buffer,
+            cursor_y,
             state.current_style
           )
 
         _ ->
-          state.buffer_manager
+          # Unknown mode, return buffer unchanged
+          state.buffer_manager.active_buffer
       end
 
-    new_state = %{state | buffer_manager: new_buffer_manager}
+    # Update the active_buffer within the buffer_manager state
+    new_buffer_manager_state = %{
+      state.buffer_manager
+      | active_buffer: new_active_buffer
+    }
+
+    new_state = %{state | buffer_manager: new_buffer_manager_state}
     {:ok, new_state}
   end
 
@@ -567,18 +604,5 @@ defmodule Raxol.Terminal.ANSI.Processor do
         :error -> default
       end
     end)
-  end
-
-  # Add this clause to handle SGR sequences
-  defp handle_sequence({:text_attributes, attrs}, state) do
-    # Update the style stored in the GenServer state
-    # Iterate through attributes and apply them individually
-    new_style =
-      Enum.reduce(attrs, state.current_style, fn attr, current_style ->
-        # Use apply_attribute/2 instead of apply_attributes/2
-        TextFormatting.apply_attribute(current_style, attr)
-      end)
-
-    %{state | current_style: new_style}
   end
 end

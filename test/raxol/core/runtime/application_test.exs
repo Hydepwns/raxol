@@ -11,13 +11,17 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     @impl true
     def init(_context), do: %{count: 0, initialized: true}
 
+    def update({:add, amount}, model) do
+      {%{model | count: model.count + amount},
+       [{:command, :operation_complete}]}
+    end
+
     @impl true
     def update(message, state) do
       new_state =
         case message do
           :increment -> Map.update!(state, :count, &(&1 + 1))
           :decrement -> Map.update!(state, :count, &(&1 - 1))
-          {:add, amount} -> Map.update!(state, :count, &(&1 + amount))
           _ -> state
         end
 
@@ -47,11 +51,6 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
         ) do
       # For testing purposes, just return the state unchanged
       {state, []}
-    end
-
-    def update({:add, amount}, model) do
-      {%{model | count: model.count + amount},
-       [{:command, :operation_complete}]}
     end
 
     def subscribe(model) do

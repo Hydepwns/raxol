@@ -16,7 +16,6 @@ defmodule Raxol.Terminal.Parser.States.DCSEntryState do
           | {:finished, Emulator.t(), State.t()}
           | {:incomplete, Emulator.t(), State.t()}
   def handle(emulator, %State{state: :dcs_entry} = parser_state, input) do
-    # IO.inspect({:parse_loop_dcs_entry, parser_state.state, input}, label: "DEBUG_PARSER")
     case input do
       <<>> ->
         # Incomplete DCS sequence - return current state

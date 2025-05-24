@@ -1,10 +1,14 @@
-defmodule Raxol.Terminal.ANSI.CharacterSets.CharacterSets do
+defmodule Raxol.Terminal.ANSI.CharacterSets do
   @moduledoc """
   Manages character set switching and translation for the terminal emulator.
   Supports G0, G1, G2, G3 character sets and their switching operations.
   """
 
-  alias Raxol.Terminal.ANSI.CharacterTranslations
+  alias Raxol.Terminal.ANSI.CharacterSets.{
+    ASCII,
+    DEC,
+    UK
+  }
   alias Logger
   alias Raxol.Terminal.ANSI.CharacterSets.Translator
 
@@ -41,36 +45,36 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.CharacterSets do
   @type gset_name :: :g0 | :g1 | :g2 | :g3
   @type gl_gr_target :: :gl | :gr
 
-  @type charset_state :: %__MODULE__{
-          g0: charset(),
-          g1: charset(),
-          g2: charset(),
-          g3: charset(),
+  @type charset_state :: %{
+          g0: module(),
+          g1: module(),
+          g2: module(),
+          g3: module(),
+          current: module(),
           gl: gset_name(),
           gr: gset_name(),
           # single_shift will store the actual charset (:us_ascii, :german, etc.)
           # that is active for the next character due to SS2/SS3.
           # It's nil if no single shift is active.
-          single_shift: charset() | nil,
+          single_shift: module() | nil,
           locked_shift: boolean()
         }
-
-  defstruct g0: :us_ascii,
-            g1: :us_ascii,
-            g2: :us_ascii,
-            g3: :us_ascii,
-            gl: :g0,
-            gr: :g1,
-            # Stays as is, will hold the target charset
-            single_shift: nil,
-            locked_shift: false
 
   @doc """
   Creates a new character set state with default values.
   """
-  @spec new() :: charset_state()
-  def new() do
-    %__MODULE__{}
+  def new do
+    %{
+      g0: ASCII,
+      g1: DEC,
+      g2: UK,
+      g3: UK,
+      current: ASCII,
+      gl: :g0,
+      gr: :g1,
+      single_shift: nil,
+      locked_shift: false
+    }
   end
 
   @doc """
@@ -99,7 +103,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.CharacterSets do
   @doc """
   Switches the specified character set to the given charset.
   """
-  @spec switch_charset(charset_state(), :g0 | :g1 | :g2 | :g3, charset()) ::
+  @spec switch_charset(charset_state(), :g0 | :g1 | :g2 | :g3, module()) ::
           charset_state()
   def switch_charset(state, set, charset) do
     %{state | set => charset}
@@ -127,7 +131,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.CharacterSets do
   The caller is responsible for calling clear_single_shift after processing
   the character if a single shift was active.
   """
-  @spec get_active_charset(charset_state()) :: charset()
+  @spec get_active_charset(charset_state()) :: module()
   def get_active_charset(state) do
     cond do
       # If a single shift is active, it takes precedence
@@ -174,15 +178,15 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.CharacterSets do
   @doc """
   Sets the active character set.
   """
-  @spec set_active(charset_state(), charset()) :: charset_state()
+  @spec set_active(charset_state(), module()) :: charset_state()
   def set_active(state, set) do
-    %{state | active: set}
+    %{state | current: set}
   end
 
   @doc """
   Sets the locking shift character set.
   """
-  @spec set_locking_shift(charset_state(), charset()) :: charset_state()
+  @spec set_locking_shift(charset_state(), module()) :: charset_state()
   def set_locking_shift(state, _set) do
     %{state | locked_shift: true}
   end
@@ -190,7 +194,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.CharacterSets do
   @doc """
   Sets the character set designator.
   """
-  @spec set_designator(charset_state(), :g0 | :g1 | :g2 | :g3, charset()) ::
+  @spec set_designator(charset_state(), :g0 | :g1 | :g2 | :g3, module()) ::
           charset_state()
   def set_designator(state, designator, set) do
     case designator do
@@ -251,4 +255,24 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.CharacterSets do
       code
     )
   end
+
+  @typedoc """
+  Character set state struct for terminal emulation (G0-G3, GL/GR, single/locked shift).
+  """
+  @type t :: charset_state()
+end
+
+defmodule Raxol.Terminal.ANSI.CharacterSets.ASCII do
+  def translate_char(codepoint), do: codepoint
+  def translate_string(string), do: string
+end
+
+defmodule Raxol.Terminal.ANSI.CharacterSets.DEC do
+  def translate_char(codepoint), do: codepoint
+  def translate_string(string), do: string
+end
+
+defmodule Raxol.Terminal.ANSI.CharacterSets.UK do
+  def translate_char(codepoint), do: codepoint
+  def translate_string(string), do: string
 end

@@ -23,7 +23,7 @@ config :burrito,
         include_erts: true,
         extra_steps: [],
         config: [
-          # MacOS-specific configuration values 
+          # MacOS-specific configuration values
           strip: false,
           executable: "raxol_dev",
           identifier: "io.github.hydepwns.raxol-dev",
@@ -117,7 +117,7 @@ config :burrito,
             app_name: "Raxol",
             app_version: Mix.Project.config()[:version],
             publisher: "Hydepwns",
-            setup_icon_file: "assets/icons/raxol.ico",
+            setup_icon_file: "@static/icons/raxol.ico",
             gui_app: true
           ]
         ]

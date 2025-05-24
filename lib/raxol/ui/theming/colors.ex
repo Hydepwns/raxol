@@ -104,14 +104,18 @@ defmodule Raxol.UI.Theming.Colors do
   """
   def lighten(color, amount) when amount >= 0 and amount <= 1 do
     hex = to_hex(color)
-    {r, g, b} = hex_to_rgb(hex)
 
-    # Simple linear interpolation with white
-    r = round(r + (255 - r) * amount)
-    g = round(g + (255 - g) * amount)
-    b = round(b + (255 - b) * amount)
+    case hex_to_rgb(hex) do
+      {r, g, b} ->
+        # Simple linear interpolation with white
+        r = round(r + (255 - r) * amount)
+        g = round(g + (255 - g) * amount)
+        b = round(b + (255 - b) * amount)
+        rgb_to_hex(r, g, b)
 
-    rgb_to_hex(r, g, b)
+      {:error, _} = err ->
+        err
+    end
   end
 
   @doc """
@@ -126,14 +130,18 @@ defmodule Raxol.UI.Theming.Colors do
   """
   def darken(color, amount) when amount >= 0 and amount <= 1 do
     hex = to_hex(color)
-    {r, g, b} = hex_to_rgb(hex)
 
-    # Simple linear interpolation with black
-    r = round(r * (1 - amount))
-    g = round(g * (1 - amount))
-    b = round(b * (1 - amount))
+    case hex_to_rgb(hex) do
+      {r, g, b} ->
+        # Simple linear interpolation with black
+        r = round(r * (1 - amount))
+        g = round(g * (1 - amount))
+        b = round(b * (1 - amount))
+        rgb_to_hex(r, g, b)
 
-    rgb_to_hex(r, g, b)
+      {:error, _} = err ->
+        err
+    end
   end
 
   @doc """
@@ -153,9 +161,9 @@ defmodule Raxol.UI.Theming.Colors do
     {r1, g1, b1} = hex_to_rgb(hex1)
     {r2, g2, b2} = hex_to_rgb(hex2)
 
-    r = round(r1 * (1 - alpha) + r2 * alpha)
-    g = round(g1 * (1 - alpha) + g2 * alpha)
-    b = round(b1 * (1 - alpha) + b2 * alpha)
+    r = round(r1 * alpha + r2 * (1 - alpha))
+    g = round(g1 * alpha + g2 * (1 - alpha))
+    b = round(b1 * alpha + b2 * (1 - alpha))
 
     rgb_to_hex(r, g, b)
   end
@@ -441,4 +449,16 @@ defmodule Raxol.UI.Theming.Colors do
 
   # Removed unused distance/2 function
   # defp distance(c1, c2), do: :math.sqrt(color_distance_sq(c1, c2))
+
+  @doc """
+  Checks if two colors are accessible according to WCAG contrast requirements.
+
+  ## Examples
+
+      iex> accessible?("#FFFFFF", "#000000", :aa, :normal)
+      true
+  """
+  def accessible?(color1, color2, level, size) do
+    meets_contrast_requirements?(color1, color2, level, size)
+  end
 end

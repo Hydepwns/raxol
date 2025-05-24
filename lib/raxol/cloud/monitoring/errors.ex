@@ -16,6 +16,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   end
 
   def record(error, opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     errors_state = get_errors_state()
 
     # Create error entry
@@ -43,6 +44,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   end
 
   def get(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     errors_state = get_errors_state()
 
     limit = Keyword.get(opts, :limit, 100)
@@ -63,7 +65,7 @@ defmodule Raxol.Cloud.Monitoring.Errors do
       DateTime.compare(error.timestamp, since) in [:gt, :eq] &&
         DateTime.compare(error.timestamp, until) in [:lt, :eq] &&
         (severity == nil || error.severity == severity) &&
-        (tags == nil || Enum.all?(tags, &(&1 in error.tags)))
+        (tags == nil || Enum.all?(tags, &(&1 in Map.get(error, :tags, []))))
     end)
     |> Enum.take(limit)
   end
@@ -88,6 +90,8 @@ defmodule Raxol.Cloud.Monitoring.Errors do
   end
 
   defp get_stacktrace(opts) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+
     Keyword.get(
       opts,
       :stacktrace,

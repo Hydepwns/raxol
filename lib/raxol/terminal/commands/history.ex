@@ -153,4 +153,28 @@ defmodule Raxol.Terminal.Commands.History do
   def list(%__MODULE__{} = history) do
     history.commands
   end
+
+  @doc """
+  Adds to the emulator's command history if the input is a newline (10),
+  or appends to the current command buffer if it's a printable character.
+  Returns the updated emulator struct.
+  """
+  def maybe_add_to_history(emulator, 10) do
+    # On newline, add the current buffer to history if not empty, then clear buffer
+    cmd = String.trim(emulator.current_command_buffer)
+    if cmd != "" do
+      updated_history = [cmd | emulator.command_history] |> Enum.take(emulator.max_command_history)
+      %{emulator | command_history: updated_history, current_command_buffer: ""}
+    else
+      %{emulator | current_command_buffer: ""}
+    end
+  end
+
+  def maybe_add_to_history(emulator, char) when is_integer(char) and char >= 32 and char <= 0x10FFFF do
+    # Append printable character to current_command_buffer
+    new_buffer = emulator.current_command_buffer <> <<char::utf8>>
+    %{emulator | current_command_buffer: new_buffer}
+  end
+
+  def maybe_add_to_history(emulator, _), do: emulator
 end

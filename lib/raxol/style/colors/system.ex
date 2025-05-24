@@ -123,17 +123,20 @@ defmodule Raxol.Style.Colors.System do
       "#0088DD"
   """
   def get_color(color_name, variant \\ :base) do
-    # Get the current theme
     current_theme = get_current_theme()
+    # Always check for the variant tuple key first
+    color =
+      Map.get(current_theme.variants || %{}, {color_name, variant}) ||
+        if get_high_contrast() do
+          get_high_contrast_color(current_theme, color_name, variant)
+        else
+          get_standard_color(current_theme, color_name, variant)
+        end
 
-    # Get high contrast setting
-    high_contrast = get_high_contrast()
-
-    # Get color from theme
-    if high_contrast do
-      get_high_contrast_color(current_theme, color_name, variant)
-    else
-      get_standard_color(current_theme, color_name, variant)
+    case color do
+      %Color{} = c -> c
+      hex when is_binary(hex) -> Color.from_hex(hex)
+      _ -> nil
     end
   end
 
@@ -218,81 +221,170 @@ defmodule Raxol.Style.Colors.System do
     Process.get(:color_system_high_contrast, false)
   end
 
+  defp get_standard_color(nil, _color_name, _variant), do: nil
+
   defp get_standard_color(theme, color_name, variant) do
-    # Try variant first, then base color
-    Map.get(theme.variants, {color_name, variant}) ||
-      Map.get(theme.colors, color_name) ||
-      default_color(color_name)
+    val =
+      Map.get(theme.variants || %{}, {color_name, variant}) ||
+        Map.get(theme.colors, color_name) ||
+        Map.get(
+          theme.variants || %{},
+          {to_string(color_name), to_string(variant)}
+        ) ||
+        Map.get(theme.colors, to_string(color_name))
+
+    case val do
+      %Color{} = c -> c
+      hex when is_binary(hex) -> Color.from_hex(hex)
+      _ -> nil
+    end
   end
 
   defp get_high_contrast_color(theme, color_name, variant) do
-    # Try high contrast variant first, then high contrast base color
-    Map.get(theme.variants, {color_name, variant, :high_contrast}) ||
-      Map.get(theme.colors, color_name) ||
-      get_standard_color(theme, color_name, variant) ||
-      default_color(color_name)
-  end
+    val =
+      Map.get(theme.variants, {color_name, variant, :high_contrast}) ||
+        Map.get(theme.colors, color_name) ||
+        get_standard_color(theme, color_name, variant) ||
+        Map.get(
+          theme.variants,
+          {to_string(color_name), to_string(variant), "high_contrast"}
+        ) ||
+        Map.get(theme.colors, to_string(color_name))
 
-  defp generate_high_contrast_colors(colors) do
-    # Assume background is either explicitly defined or defaults to black/white
-    bg_color_hex = Map.get(colors, :background, "#000000")
-
-    # Correctly handle the return from Color.from_hex for background
-    bg_color_struct =
-      case Color.from_hex(bg_color_hex) do
-        %Color{} = color -> color
-        # Fallback to black on error
-        {:error, _} -> Color.from_hex("#000000")
-      end
-
-    bg_lightness =
-      HSL.rgb_to_hsl(bg_color_struct.r, bg_color_struct.g, bg_color_struct.b)
-      |> elem(2)
-
-    # Adjust colors for high contrast based on background lightness
-    Enum.into(colors, %{}, fn {name, color_hex} ->
-      # Correctly handle the return from Color.from_hex in the loop
-      case Color.from_hex(color_hex) do
-        # Match the struct directly
-        %Color{} = color_struct ->
-          # Correctly assign the result from HSL functions
-          contrast_color_struct =
-            if bg_lightness > 0.5 do
-              # Dark background: Darken colors (assuming light text)
-              HSL.darken(color_struct, 0.5)
-            else
-              # Light background: Lighten colors (assuming dark text)
-              HSL.lighten(color_struct, 0.5)
-            end
-
-          # Convert back to hex for storage
-          {name, Color.to_hex(contrast_color_struct)}
-
-        {:error, _} ->
-          # Keep original if invalid
-          {name, color_hex}
-      end
-    end)
-  end
-
-  defp default_color(color_name) do
-    # Define some basic fallback colors
-    case color_name do
-      :foreground -> "#FFFFFF"
-      :background -> "#000000"
-      :primary -> "#0077CC"
-      :secondary -> "#6C757D"
-      :success -> "#28A745"
-      :danger -> "#DC3545"
-      :warning -> "#FFC107"
-      :info -> "#17A2B8"
-      # Generic fallback
-      _ -> "#CCCCCC"
+    case val do
+      %Color{} = c -> c
+      hex when is_binary(hex) -> Color.from_hex(hex)
+      _ -> nil
     end
   end
 
   @spec get_current_theme_name() :: atom() | String.t()
   def get_current_theme_name do
     Process.get(:color_system_current_theme, @default_theme)
+  end
+
+  @doc """
+  Get a UI color by role (e.g., :primary_button) from the current theme.
+  Resolves the role using the theme's ui_mappings, then fetches the color.
+  Returns nil if the role or color is not found.
+  """
+  @spec get_ui_color(atom()) :: any()
+  def get_ui_color(ui_role) do
+    theme = get_current_theme()
+
+    case Map.fetch(theme.ui_mappings || %{}, ui_role) do
+      {:ok, color_name} when is_atom(color_name) ->
+        get_color(color_name)
+
+      {:ok, color_name} when is_binary(color_name) ->
+        get_color(String.to_atom(color_name))
+
+      _ ->
+        nil
+    end
+  end
+
+  @doc """
+  Get all UI colors for the current theme as a map of role => color.
+  """
+  @spec get_all_ui_colors() :: map()
+  def get_all_ui_colors() do
+    theme = get_current_theme()
+
+    if theme == nil do
+      %{}
+    else
+      get_all_ui_colors(theme)
+    end
+  end
+
+  @doc """
+  Get all UI colors for a specific theme as a map of role => color.
+  """
+  def get_all_ui_colors(theme) do
+    (theme.ui_mappings || %{})
+    |> Enum.map(fn {role, color_name} ->
+      color_atom =
+        if is_atom(color_name), do: color_name, else: String.to_atom(color_name)
+
+      {role, get_color_from_theme(theme, color_atom)}
+    end)
+    |> Enum.into(%{})
+  end
+
+  defp get_color_from_theme(theme, color_name, variant \\ :base) do
+    val =
+      Map.get(theme.variants || %{}, {color_name, variant}) ||
+        Map.get(theme.colors, color_name)
+
+    case val do
+      %Color{} = c -> c
+      hex when is_binary(hex) -> Color.from_hex(hex)
+      _ -> nil
+    end
+  end
+
+  # --- Color manipulation functions (stubs/implementations) ---
+  def lighten_color(%Color{} = color, amount) do
+    Color.lighten(color, amount)
+  end
+
+  def darken_color(%Color{} = color, amount) do
+    Color.darken(color, amount)
+  end
+
+  def increase_contrast(%Color{} = color) do
+    Utilities.increase_contrast(color)
+  end
+
+  def adjust_for_contrast(%Color{} = color, %Color{} = background, level, size) do
+    Utilities.adjust_for_contrast(color, background, level, size)
+  end
+
+  def meets_contrast_requirements?(%Color{} = fg, %Color{} = bg, level, size) do
+    Utilities.meets_contrast_requirements?(fg, bg, level, size)
+  end
+
+  # --- Theme creation stubs ---
+  def create_dark_theme do
+    %Theme{
+      id: :dark,
+      name: "Dark Theme",
+      colors: %{
+        primary: Color.from_hex("#90CAF9"),
+        secondary: Color.from_hex("#B0BEC5"),
+        background: Color.from_hex("#121212"),
+        text: Color.from_hex("#FFFFFF")
+      },
+      ui_mappings: %{
+        app_background: :background,
+        surface_background: :background,
+        primary_button: :primary,
+        secondary_button: :secondary,
+        text: :text
+      },
+      metadata: %{dark_mode: true}
+    }
+  end
+
+  def create_high_contrast_theme do
+    %Theme{
+      id: :high_contrast,
+      name: "High Contrast Theme",
+      colors: %{
+        primary: Color.from_hex("#FFFF00"),
+        secondary: Color.from_hex("#000000"),
+        background: Color.from_hex("#000000"),
+        text: Color.from_hex("#FFFFFF")
+      },
+      ui_mappings: %{
+        app_background: :background,
+        surface_background: :background,
+        primary_button: :primary,
+        secondary_button: :secondary,
+        text: :text
+      },
+      metadata: %{high_contrast: true}
+    }
   end
 end

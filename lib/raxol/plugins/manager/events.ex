@@ -6,7 +6,7 @@ defmodule Raxol.Plugins.Manager.Events do
 
   require Logger
 
-  alias Raxol.Plugins.{EventHandler, Lifecycle}
+  alias Raxol.Plugins.EventHandler
   alias Raxol.Plugins.Manager.Core
 
   @doc """

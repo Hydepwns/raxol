@@ -149,6 +149,29 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     GenServer.call(__MODULE__, {:load_plugin, plugin_id, config})
   end
 
+  @doc """
+  Loads a plugin by ID with config and state maps (for test/mocking).
+  """
+  def load_plugin(plugin_id, config, state) do
+    state.lifecycle_helper_module.load_plugin(
+      plugin_id,
+      config,
+      state.plugins,
+      state.metadata,
+      state.plugin_states,
+      state.load_order,
+      state.command_registry_table,
+      state.plugin_config
+    )
+  end
+
+  @doc """
+  Catch-all for load_plugin/4 to prevent UndefinedFunctionError. Raises a clear error if called.
+  """
+  def load_plugin(_a, _b, _c, _d) do
+    raise "Raxol.Core.Runtime.Plugins.Manager.load_plugin/4 is not implemented. Use load_plugin/2 or load_plugin/3."
+  end
+
   # --- Event Filtering Hook ---
 
   @doc "Placeholder for allowing plugins to filter events."
@@ -242,97 +265,170 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl true
   def init(opts) do
-    IO.inspect(opts, label: "Manager init opts")
-
     # CommandRegistry.new() is likely just creating the ETS table name atom, keep it here
     cmd_reg_table =
       Keyword.get(opts, :command_registry_table) ||
         Raxol.Core.Runtime.Plugins.CommandRegistry.new()
 
-    # Extract runtime_pid from opts (passed by supervisor)
+    # Extract runtime_pid from opts (passed by supervisor/Lifecycle)
     runtime_pid = Keyword.get(opts, :runtime_pid)
 
     unless is_pid(runtime_pid) do
       Logger.error(
         "[#{__MODULE__}] :runtime_pid is missing or invalid in init opts: #{inspect(opts)}"
       )
-    end
 
-    # Get config options
-    app_env_plugin_config =
-      Application.get_env(:raxol, :plugin_manager_config, %{})
+      # Hard fail if runtime_pid is missing or invalid
+      # This ensures Lifecycle doesn't proceed with a non-functional PluginManager
+      # Removed 'opts' from here to match GenServer.init return
+      {:stop, :missing_runtime_pid}
+    else
+      # Get config options
+      app_env_plugin_config =
+        Application.get_env(:raxol, :plugin_manager_config, %{})
 
-    opts_plugin_config = Keyword.get(opts, :plugin_config, %{})
-    initial_plugin_config = Map.merge(app_env_plugin_config, opts_plugin_config)
+      opts_plugin_config = Keyword.get(opts, :plugin_config, %{})
 
-    # Get plugin directories, ensure it's a list
-    plugin_dirs =
-      case Keyword.get(opts, :plugin_dirs, [@default_plugins_dir]) do
-        dirs when is_list(dirs) -> dirs
-        dir when is_binary(dir) -> [dir]
-        _ -> [@default_plugins_dir]
-      end
+      initial_plugin_config =
+        Map.merge(app_env_plugin_config, opts_plugin_config)
 
-    IO.inspect(plugin_dirs, label: "Manager init plugin_dirs")
+      # Get plugin directories, ensure it's a list
+      plugin_dirs =
+        case Keyword.get(opts, :plugin_dirs, [@default_plugins_dir]) do
+          dirs when is_list(dirs) -> dirs
+          dir when is_binary(dir) -> [dir]
+          _ -> [@default_plugins_dir]
+        end
 
-    enable_reloading =
-      Keyword.get(opts, :enable_plugin_reloading, false) && Mix.env() == :dev
+      enable_reloading =
+        Keyword.get(opts, :enable_plugin_reloading, false) && Mix.env() == :dev
 
-    # Configurable modules
-    loader_mod =
-      Keyword.get(opts, :loader_module, Raxol.Core.Runtime.Plugins.Loader)
+      # Configurable modules
+      loader_mod =
+        Keyword.get(opts, :loader_module, Raxol.Core.Runtime.Plugins.Loader)
 
-    lifecycle_helper_mod =
-      Keyword.get(
-        opts,
-        :lifecycle_helper_module,
-        Raxol.Core.Runtime.Plugins.LifecycleHelper
+      lifecycle_helper_mod =
+        Keyword.get(
+          opts,
+          :lifecycle_helper_module,
+          Raxol.Core.Runtime.Plugins.LifecycleHelper
+        )
+
+      # Start file watcher if enabled (only in dev)
+      {file_watcher_pid, file_watching_enabled?} =
+        if enable_reloading and Code.ensure_loaded?(FileSystem) do
+          FileWatcher.setup_file_watching(%{
+            plugin_dirs: plugin_dirs,
+            file_watching_enabled?: true
+          })
+        else
+          if enable_reloading and Mix.env() != :dev do
+            Logger.warning(
+              "[#{__MODULE__}] Plugin reloading via file watching only enabled in :dev environment."
+            )
+          end
+
+          if enable_reloading and !Code.ensure_loaded?(FileSystem) do
+            Logger.warning(
+              "[#{__MODULE__}] FileSystem dependency not found. Cannot enable plugin reloading."
+            )
+          end
+
+          {nil, false}
+        end
+
+      initial_state = %State{
+        command_registry_table: cmd_reg_table,
+        plugin_config: initial_plugin_config,
+        plugin_dirs: plugin_dirs,
+        plugin_paths: %{},
+        reverse_plugin_paths: %{},
+        file_watcher_pid: file_watcher_pid,
+        file_watching_enabled?: file_watching_enabled?,
+        runtime_pid: runtime_pid,
+        loader_module: loader_mod,
+        lifecycle_helper_module: lifecycle_helper_mod,
+        # Explicitly false until :__internal_initialize__ completes
+        initialized: false
+      }
+
+      # Asynchronously trigger internal initialization
+      send(self(), :__internal_initialize__)
+
+      Logger.info(
+        "[#{__MODULE__}] Initialized with runtime_pid: #{inspect(runtime_pid)}. Triggered internal initialization."
       )
 
-    # Start file watcher if enabled (only in dev)
-    {file_watcher_pid, file_watching_enabled?} =
-      if enable_reloading and Code.ensure_loaded?(FileSystem) do
-        FileWatcher.setup_file_watching(%{
-          plugin_dirs: plugin_dirs,
-          file_watching_enabled?: false
-        })
-      else
-        if enable_reloading and Mix.env() != :dev do
+      {:ok, initial_state}
+    end
+  end
+
+  @impl true
+  def handle_info(:__internal_initialize__, state) do
+    Logger.info(
+      "[#{__MODULE__}] Starting internal plugin discovery and initialization."
+    )
+
+    case Discovery.initialize(state) do
+      {:ok, updated_state_after_discovery} ->
+        final_state = %{updated_state_after_discovery | initialized: true}
+
+        if final_state.runtime_pid do
+          send(final_state.runtime_pid, {:plugin_manager_ready, self()})
+
+          Logger.info(
+            "[#{__MODULE__}] PluginManager fully initialized and ready. Notified runtime PID: #{inspect(final_state.runtime_pid)}"
+          )
+        else
+          # This case should ideally not happen if init ensures runtime_pid
           Logger.warning(
-            "[#{__MODULE__}] Plugin reloading via file watching only enabled in :dev environment."
+            "[#{__MODULE__}] PluginManager initialized, but no runtime_pid found in state to notify.",
+            []
           )
         end
 
-        if enable_reloading and !Code.ensure_loaded?(FileSystem) do
-          Logger.warning(
-            "[#{__MODULE__}] FileSystem dependency not found. Cannot enable plugin reloading."
-          )
-        end
+        {:noreply, final_state}
 
-        {nil, false}
-      end
+      {:error, reason} ->
+        Logger.error(
+          "[#{__MODULE__}] Failed during internal initialization (Discovery.initialize). Reason: #{inspect(reason)}"
+        )
 
-    {:ok,
-     %State{
-       command_registry_table: cmd_reg_table,
-       plugin_config: initial_plugin_config,
-       plugin_dirs: plugin_dirs,
-       plugin_paths: %{},
-       reverse_plugin_paths: %{},
-       file_watcher_pid: file_watcher_pid,
-       file_watching_enabled?: file_watching_enabled?,
-       runtime_pid: runtime_pid,
-       loader_module: loader_mod,
-       lifecycle_helper_module: lifecycle_helper_mod
-     }}
+        # PluginManager is in a failed state but running. Lifecycle won't get 'ready'.
+        # Consider if it should stop itself or if Lifecycle's timeout for ready message handles this.
+        # Keep current state, initialized remains false
+        {:noreply, state}
+    end
   end
 
   @impl true
   def handle_call(:initialize, _from, state) do
-    case Discovery.initialize(state) do
-      {:ok, updated_state} -> {:reply, :ok, updated_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
+    # This public API might still be used for re-initialization or explicit trigger.
+    # However, primary initialization is now async via :__internal_initialize__.
+    # If called when already initialized, it could re-run discovery, or return current status.
+    if state.initialized do
+      Logger.info(
+        "[#{__MODULE__}] :initialize called, but already initialized. Re-running discovery."
+      )
+    else
+      Logger.info(
+        "[#{__MODULE__}] :initialize called. Triggering internal initialization if not already started by init/1."
+      )
+
+      # This ensures that if :__internal_initialize__ hasn't run yet (e.g. race condition or direct call),
+      # it gets a chance. Or, if it already ran, this might re-run it.
+      # The logic in handle_info(:__internal_initialize__) is idempotent regarding sending the ready message
+      # if structured to only send it once, or Lifecycle needs to handle multiple ready messages.
+      # For simplicity, let's make this call also trigger the internal init,
+      # and rely on Lifecycle to handle one :plugin_manager_ready message.
+      send(self(), :__internal_initialize__)
     end
+
+    # The actual result of initialization will be signaled asynchronously.
+    # This call can reply :ok to indicate the command was received.
+    # Or, it could be made to wait for the :__internal_initialize__ if a synchronous response is needed here.
+    # For now, reply :ok immediately.
+    {:reply, :ok, state}
   end
 
   @impl true
@@ -436,10 +532,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   end
 
   @impl true
-  def handle_info(
-        {:fs_error, _pid, {path, reason}},
-        %{file_watching_enabled?: true} = state
-      ) do
+  def handle_info({:fs_error, _pid, {path, reason}}, %{file_watching_enabled?: true} = state) do
     Logger.error(
       "[#{__MODULE__}] File system watcher error for path #{path}: #{inspect(reason)}"
     )
@@ -466,6 +559,16 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
         Logger.error("Failed to process command: #{inspect(reason)}")
         {:reply, {:error, reason}, state}
     end
+  end
+
+  @impl true
+  def handle_call(:get_plugins, _from, state) do
+    {:reply, state.plugins, state}
+  end
+
+  @impl true
+  def handle_call(:get_plugin_states, _from, state) do
+    {:reply, state.plugin_states, state}
   end
 
   # --- Stubs for missing Plugin Manager functions ---
@@ -511,5 +614,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     TimerManager.cancel_existing_timer(state)
 
     :ok
+  end
+
+  @doc """
+  Stops the Plugin Manager GenServer.
+  """
+  def stop(pid \\ __MODULE__) do
+    GenServer.stop(pid)
   end
 end

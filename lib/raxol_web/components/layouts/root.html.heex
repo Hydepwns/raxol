@@ -8,8 +8,8 @@
     <.live_title suffix=" · Raxol">
       <%= assigns[:page_title] || "Raxol" %>
     </.live_title>
-    <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/assets/app.css")}/>
-    <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/assets/app.js")}></script>
+    <link phx-track-static rel="stylesheet" href={Routes.static_path(@conn, "/@static/app.css")}/>
+    <script defer phx-track-static type="text/javascript" src={Routes.static_path(@conn, "/@static/app.js")}></script>
   </head>
   <body class="app-container">
     <header class="app-header">
@@ -35,4 +35,4 @@
       <% end %>
     </nav>
   </body>
-</html> 
+</html>

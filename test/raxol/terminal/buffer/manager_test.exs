@@ -1,11 +1,20 @@
+ExUnit.configure(max_printable_chars: 1000)
+
+alias Raxol.Terminal.Buffer.Manager
+alias Raxol.Terminal.Buffer.Manager.State
+alias Raxol.Terminal.Buffer.Manager.Memory
+alias Raxol.Terminal.Buffer.Manager.Damage
+alias Raxol.Terminal.Buffer.Manager.Cursor
+alias Raxol.Terminal.Buffer.Manager.Scrollback
+alias Raxol.Terminal.ScreenBuffer
+
 defmodule Raxol.Terminal.Buffer.ManagerTest do
-  use ExUnit.Case, async: true
-  alias Raxol.Terminal.Buffer.Manager
+  use ExUnit.Case, async: false
   alias Raxol.Terminal.Cell
 
   describe "new/3" do
     test "creates a new buffer manager with default values" do
-      {:ok, manager} = Manager.new(80, 24)
+      {:ok, manager} = Raxol.Terminal.Buffer.Manager.new(80, 24)
       assert manager.active_buffer.width == 80
       assert manager.active_buffer.height == 24
       assert manager.back_buffer.width == 80
@@ -16,34 +25,38 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     end
 
     test "creates a new buffer manager with custom scrollback height" do
-      {:ok, manager} = Manager.new(80, 24, 2000)
+      {:ok, manager} = Raxol.Terminal.Buffer.Manager.new(80, 24, 2000)
       assert manager.scrollback.limit == 2000
     end
 
     test "creates a new buffer manager with custom memory limit" do
-      {:ok, manager} = Manager.new(80, 24, 1000, 5_000_000)
+      {:ok, manager} = Raxol.Terminal.Buffer.Manager.new(80, 24, 1000, 5_000_000)
       assert manager.memory_limit == 5_000_000
     end
   end
 
   describe "switch_buffers/1" do
     test "switches active and back buffers" do
-      {:ok, initial_manager} = Manager.new(80, 24)
+      {:ok, initial_manager} = Raxol.Terminal.Buffer.Manager.new(80, 24)
+
+      # Mutate the active buffer so it differs from the back buffer
+      mutated_active = %{initial_manager.active_buffer | cells: List.replace_at(initial_manager.active_buffer.cells, 0, [Raxol.Terminal.Cell.new("A") | tl(hd(initial_manager.active_buffer.cells))])}
+      manager = %{initial_manager | active_buffer: mutated_active}
 
       # Simulate setting cursor position on the manager
-      manager = Manager.set_cursor_position(initial_manager, 10, 5)
+      manager = Raxol.Terminal.Buffer.Manager.set_cursor_position(manager, 10, 5)
 
       # Switch buffers
-      manager = Manager.switch_buffers(manager)
+      manager = Raxol.Terminal.Buffer.Manager.State.switch_buffers(manager)
 
       # Check that buffers were switched (cursor is on manager, not buffer)
       # Also check that damage regions were cleared by switch_buffers
       # Cursor position should remain
-      assert Manager.get_cursor_position(manager) == {10, 5}
-      assert Manager.get_damage_regions(manager) == []
+      assert Raxol.Terminal.Buffer.Manager.get_cursor_position(manager) == {10, 5}
+      assert Raxol.Terminal.Buffer.Manager.get_damage_regions(manager) == []
       # Buffers themselves should have swapped
-      assert manager.active_buffer != initial_manager.active_buffer
-      assert manager.back_buffer == initial_manager.active_buffer
+      refute manager.active_buffer == initial_manager.active_buffer
+      assert manager.back_buffer == mutated_active
     end
   end
 
@@ -54,7 +67,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       regions = Manager.get_damage_regions(manager)
 
       assert length(regions) == 1
-      assert hd(regions) == {0, 0, 10, 5}
+      assert hd(regions) == {0, 0, 9, 4}
     end
 
     test "merges overlapping damage regions" do
@@ -64,18 +77,18 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       regions = Manager.get_damage_regions(manager)
 
       assert length(regions) == 1
-      assert hd(regions) == {0, 0, 15, 5}
+      assert hd(regions) == {0, 0, 19, 4}
     end
 
     test "keeps separate non-overlapping damage regions" do
       {:ok, manager} = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
-      manager = Manager.mark_damaged(manager, 20, 0, 30, 5)
+      manager = Manager.mark_damaged(manager, 20, 0, 10, 5)
       regions = Manager.get_damage_regions(manager)
 
       assert length(regions) == 2
-      assert {0, 0, 10, 5} in regions
-      assert {20, 0, 30, 5} in regions
+      assert {0, 0, 9, 4} in regions
+      assert {20, 0, 29, 4} in regions
     end
   end
 
@@ -83,12 +96,12 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     test "returns all damage regions" do
       {:ok, manager} = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
-      manager = Manager.mark_damaged(manager, 20, 0, 30, 5)
+      manager = Manager.mark_damaged(manager, 20, 0, 10, 5)
 
       regions = Manager.get_damage_regions(manager)
       assert length(regions) == 2
-      assert {0, 0, 10, 5} in regions
-      assert {20, 0, 30, 5} in regions
+      assert {0, 0, 9, 4} in regions
+      assert {20, 0, 29, 4} in regions
     end
   end
 
@@ -97,7 +110,7 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       {:ok, manager} = Manager.new(80, 24)
       manager = Manager.mark_damaged(manager, 0, 0, 10, 5)
       manager = Manager.mark_damaged(manager, 20, 0, 30, 5)
-      manager = Manager.clear_damage_regions(manager)
+      manager = Manager.clear_damage(manager)
 
       assert Manager.get_damage_regions(manager) == []
     end
@@ -106,6 +119,11 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
   describe "update_memory_usage/1" do
     test "updates memory usage tracking" do
       {:ok, manager} = Manager.new(80, 24)
+      # Fill the buffer with cells to ensure non-zero memory usage
+      active_buffer = %{manager.active_buffer | cells: create_test_cells(80, 24)}
+      manager = %{manager | active_buffer: active_buffer}
+      assert is_struct(manager.active_buffer, Raxol.Terminal.ScreenBuffer)
+      assert is_struct(manager.back_buffer, Raxol.Terminal.ScreenBuffer)
       manager = Manager.update_memory_usage(manager)
 
       assert manager.memory_usage > 0
@@ -118,9 +136,24 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       active_buffer = manager.active_buffer
       active_buffer = %{active_buffer | cells: create_test_cells(80, 24)}
 
-      manager = %{manager | active_buffer: active_buffer}
-      manager = Manager.update_memory_usage(manager)
+      # Assert dimensions are still correct
+      assert active_buffer.width == 80
+      assert active_buffer.height == 24
+      assert manager.back_buffer.width == 80
+      assert manager.back_buffer.height == 24
 
+      manager = %{manager | active_buffer: active_buffer}
+
+      # Assert again after update
+      assert manager.active_buffer.width == 80
+      assert manager.active_buffer.height == 24
+      assert manager.back_buffer.width == 80
+      assert manager.back_buffer.height == 24
+
+      assert is_struct(manager.active_buffer, Raxol.Terminal.ScreenBuffer)
+      assert is_struct(manager.back_buffer, Raxol.Terminal.ScreenBuffer)
+
+      manager = Manager.update_memory_usage(manager)
       assert manager.memory_usage > 0
     end
   end
@@ -148,12 +181,27 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     end
   end
 
+  describe "memory usage update" do
+    test "memory usage is updated" do
+      {:ok, manager} = Manager.new(80, 24)
+      # Fill the buffer with cells to ensure non-zero memory usage
+      active_buffer = %{manager.active_buffer | cells: create_test_cells(80, 24)}
+      manager = %{manager | active_buffer: active_buffer}
+      # Calculate usage directly
+      usage = Manager.Memory.calculate_buffer_usage(manager.active_buffer)
+      assert is_struct(manager.active_buffer, Raxol.Terminal.ScreenBuffer)
+      assert is_struct(manager.back_buffer, Raxol.Terminal.ScreenBuffer)
+      manager = Manager.update_memory_usage(manager)
+      assert manager.memory_usage > 0
+    end
+  end
+
   # Helper functions
 
   defp create_test_cells(width \\ 10, height \\ 5) do
     for _y <- 0..(height - 1) do
       for _x <- 0..(width - 1) do
-        Cell.new("X")
+        Raxol.Terminal.Cell.new("X")
       end
     end
   end

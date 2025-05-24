@@ -13,7 +13,7 @@ This document outlines common types of test failures encountered in the Raxol pr
 
 - **Common Cause**:
   - The test setup (e.g., within a `setup` block or the test function itself) did not anticipate a specific call to a mocked module that occurs in the code path being tested.
-  - If mocks are defined in one process (e.g., the main test process) but called from another (e.g., a GenServer managed by the `PluginManager`), global mock setup (`setup :set_mox_global` and ensuring mocks are passed correctly) might be necessary.
+  - If mocks are defined in one process (e.g., the main test process) but called from another (e.g., a GenServer managed by the Raxol.Plugins.Manager.Core), global mock setup (`setup :set_mox_global` and ensuring mocks are passed correctly) might be necessary.
 - **Solution**:
   - Carefully trace the code path executed by the test.
   - Before the code that triggers the call to the mocked function is executed, ensure you have a corresponding `Mox.expect/3` (if you want to verify the call happens) or `Mox.stub/3` / `Mox.stub_with/2` (if you just want to provide a return value without strict verification).

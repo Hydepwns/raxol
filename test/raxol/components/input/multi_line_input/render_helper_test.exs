@@ -4,8 +4,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
   # @tag :skip # Skip: Tests call RenderHelper.render_view/2 which does not exist
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.RenderHelper
-  alias Raxol.UI.Style
-  alias Raxol.Terminal.Cell
+  # alias Raxol.UI.Style
+  # alias Raxol.Terminal.Cell
 
   # Helper to create a minimal state for testing
   defp create_state(
@@ -24,7 +24,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
       selection_start: sel_start,
       selection_end: sel_end,
       scroll_offset: scroll_offset,
-      theme: test_theme(),
+      theme: mock_theme(),
       id: "test_input"
       # Add other required fields if RenderHelper depends on them
       # value: Enum.join(lines, "\n"), # Might be needed if helpers rely on it
@@ -48,166 +48,133 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.RenderHelperTest do
     }
   end
 
+  # Helper to extract style from attrs (handles both map and keyword list)
+  defp extract_style(attrs) do
+    cond do
+      is_list(attrs) -> Keyword.get(attrs, :style)
+      is_map(attrs) -> Map.get(attrs, :style)
+      true -> nil
+    end
+  end
+
+  # Helper to assert rendered line segments and styles
+  defp assert_rendered_segments(result, expected) do
+    Enum.zip(result, expected)
+    |> Enum.each(fn {seg, {content, style}} ->
+      assert seg.content == content
+      assert extract_style(seg.attrs) == style
+    end)
+  end
+
   describe "Render Helper Functions" do
-    # Rewritten test for render_line/3
-    test "render_line/3 applies default style" do
-      # Cursor not on this line
+    test "render_line/4 applies default style" do
       state = create_state(["hi"], {1, 1})
       line_index = 0
       line_content = "hi"
-
-      # Call the actual render_line function
-      rendered_row_element =
-        RenderHelper.render_line(line_index, line_content, state)
-
-      # Expected structure: row wrapping a single label
-      assert rendered_row_element.type == :row
-      assert length(rendered_row_element.children) == 1
-      label_element = hd(rendered_row_element.children)
-
-      assert label_element.type == :label
-      assert label_element.content == "hi"
-      # Check style passed through (matches default text_color)
-      assert label_element.style == [color: :white]
-    end
-
-    # These tests need similar rewriting to test the specific functions
-    test "applies selection style from component theme" do
-      # state = create_state(["hello"], {0, 4}, {0, 0}, {5, 1}, {{0, 1}, {0, 3}}) # Select "ell"
-      # Call render_line_with_selection or render_line and check output structure/styles
-      # Placeholder
-      assert true
-    end
-
-    test "applies cursor style from component theme (overrides selection)" do
-      # state = create_state(["hello"], {0, 2}, {0, 0}, {5, 1}, {{0, 1}, {0, 3}})
-      # Call render_line_with_cursor or render_line and check output structure/styles
-      # Placeholder
-      assert true
-    end
-
-    test "handles scroll offset correctly" do
-      # This test doesn't make sense for RenderHelper functions, as scroll offset
-      # is handled by the main component deciding *which* lines to render.
-      # RenderHelper functions only care about the content of the line they receive.
-      # Placeholder
-      assert true
-    end
-
-    # Original, flawed tests removed/commented out below
-    # test "renders visible lines within dimensions" do ... end
-    # test "applies default style" do ... end
-    # test "applies selection style from component theme" do ... end
-    # test "applies cursor style from component theme (overrides selection)" do ... end
-    # test "handles scroll offset correctly" do ... end
-
-    # TODO: Add tests for render_line_with_cursor
-    # TODO: Add tests for render_line_with_selection (various cases)
-    # TODO: Add tests for line number rendering variation in render_line
-
-    test "render_line/3 applies selection style from component theme" do
-      # Line content: "test_line"
-      # Selection:  "es" which is index 1 to 3 (exclusive end for slice)
-      # So, selection_start: {0,1}, selection_end: {0,3}
-      # Expected parts: "t" (normal), "es" (selected), "t_line" (normal)
-      line_content = "test_line"
-
-      # cursor_pos can be anywhere, let's put it outside the line for simplicity of this test
-      # The selection tuple is {start_pos, end_pos}
-      state = create_state([line_content], {1, 0}, {0, 0}, {{0, 1}, {0, 3}})
-
-      # The line we are rendering is index 0
-      line_index = 0
-
-      line_element = RenderHelper.render_line(line_index, line_content, state)
-
-      # Expected structure from RenderHelper.render_line_with_selection (single line case):
-      # Raxol.View.Elements.row [] do
-      #   [
-      #     Raxol.View.Elements.label(content: before_selection, style: [color: state.style.text_color]),
-      #     Raxol.View.Elements.label(content: selected, style: [color: state.style.text_color, background: state.style.selection_color]),
-      #     Raxol.View.Elements.label(content: after_selection, style: [color: state.style.text_color])
-      #   ]
-      # end
-      # (Assuming line numbers are off by default in create_state)
-
-      assert line_element.type == :row
-
-      assert length(line_element.children) == 3,
-             "Expected 3 child elements for selection, got #{length(line_element.children)}. Children: #{inspect(line_element.children)}"
-
-      children = line_element.children
-      # :white from create_state
-      default_text_color = state.style.text_color
-      # :blue from create_state
-      selection_bg_color = state.style.selection_color
-
-      # Part 1: Before selection
-      assert elem(children, 0).type == :label
-      assert elem(children, 0).content == "t"
-      assert elem(children, 0).style == [color: default_text_color]
-
-      # Part 2: Selected part
-      assert elem(children, 1).type == :label
-      assert elem(children, 1).content == "es"
-
-      assert elem(children, 1).style == [
-               color: default_text_color,
-               background: selection_bg_color
-             ]
-
-      # Part 3: After selection
-      assert elem(children, 2).type == :label
-      assert elem(children, 2).content == "t_line"
-      assert elem(children, 2).style == [color: default_text_color]
-    end
-
-    test "render_line/3 applies cursor style when focused and no selection" do
-      line_content = "test_line"
-      # Cursor at 's' (index 2)
-      cursor_pos = {0, 2}
-
-      # No selection
-      base_state = create_state([line_content], cursor_pos, {0, 0}, nil)
-
-      state = %{
-        base_state
-        | focused: true,
-          # Example cursor style
-          style:
-            Map.put(base_state.style, :cursor, background: :red, color: :black)
+      theme = %{
+        components: %{
+          multi_line_input: %{
+            text_style: %{color: :white}
+          }
+        }
       }
-
-      # Cursor is on this line_index
-      line_index = 0
-
-      line_element = RenderHelper.render_line(line_index, line_content, state)
-
-      assert line_element.type == :row
-      children = line_element.children
-
-      assert length(children) == 3,
-             "Expected 3 child elements for cursor line, got #{length(children)}. Children: #{inspect(children)}"
-
-      expected_text_style = [color: state.style.text_color]
-      expected_cursor_style = state.style.cursor
-
-      # Part 1: Before cursor
-      assert elem(children, 0).type == :label
-      assert elem(children, 0).content == "te"
-      assert elem(children, 0).style == expected_text_style
-
-      # Part 2: Cursor element
-      assert elem(children, 1).type == :label
-      assert elem(children, 1).content == "│"
-      assert elem(children, 1).style == expected_cursor_style
-
-      # Part 3: After cursor (including char at cursor position)
-      assert elem(children, 2).type == :label
-      assert elem(children, 2).content == "st_line"
-      assert elem(children, 2).style == expected_text_style
+      rendered = RenderHelper.render_line(line_index, line_content, state, theme)
+      assert Enum.at(rendered, 0).content == "hi"
+      assert extract_style(Enum.at(rendered, 0).attrs) == %{color: :white}
     end
 
-    # Test "render_visible_lines/1 handles scroll offset correctly" was removed as it was fundamentally flawed.
+    # Remove or update all tests that use render_line/3 or expect .style on state
+    # The following tests are now commented out or marked for rewrite:
+    # test "render_line/3 applies default style" ...
+    # test "applies selection style from component theme" ...
+    # test "applies cursor style from component theme (overrides selection)" ...
+    # test "handles scroll offset correctly" ...
+    # test "render_line/3 applies selection style from component theme" ...
+    # test "render_line/3 applies cursor style when focused and no selection" ...
+    # These are replaced by the edge-case tests below.
+  end
+
+  describe "render_line/4 edge cases" do
+    setup do
+      # Minimal theme for direct style mapping
+      theme = %{
+        components: %{
+          multi_line_input: %{
+            selection_style: %{background: :blue},
+            cursor_style: %{background: :red},
+            text_style: %{color: :white}
+          }
+        }
+      }
+      %{theme: theme}
+    end
+
+    test "cursor at start of line", %{theme: theme} do
+      state = create_state(["abc"], {0, 0}) |> Map.put(:focused, true)
+      line = "abc"
+      result = Raxol.UI.Components.Input.MultiLineInput.RenderHelper.render_line(0, line, state, theme)
+      # Should render: [cursor 'a', 'bc']
+      assert Enum.at(result, 0).content == "a"
+      assert extract_style(Enum.at(result, 0).attrs) == %{background: :red}
+      assert Enum.at(result, 1).content == "bc"
+    end
+
+    test "cursor at end of line", %{theme: theme} do
+      state = create_state(["abc"], {0, 3}) |> Map.put(:focused, true)
+      line = "abc"
+      result = Raxol.UI.Components.Input.MultiLineInput.RenderHelper.render_line(0, line, state, theme)
+      # Should render: ["abc"] (no cursor, since it's after the end)
+      assert Enum.count(result) == 1
+      assert Enum.at(result, 0).content == "abc"
+    end
+
+    test "selection within single line", %{theme: theme} do
+      state = create_state(["abcdef"], {0, 0}, {0, 0}, {{0, 1}, {0, 3}})
+      line = "abcdef"
+      result = Raxol.UI.Components.Input.MultiLineInput.RenderHelper.render_line(0, line, state, theme)
+      assert Enum.at(result, 0).content == "a"
+      assert Enum.at(result, 1).content == "bc"
+      assert extract_style(Enum.at(result, 1).attrs) == %{background: :blue}
+      assert Enum.at(result, 2).content == "def"
+    end
+
+    test "selection across multiple lines, only highlights this line's part", %{theme: theme} do
+      state = create_state(["abcdef"], {1, 0}, {0, 0}, {{0, 2}, {2, 1}})
+      line = "abcdef"
+      # This is line 0, so selection from col 2 to end
+      result = Raxol.UI.Components.Input.MultiLineInput.RenderHelper.render_line(0, line, state, theme)
+      assert Enum.at(result, 0).content == "ab"
+      assert extract_style(Enum.at(result, 0).attrs)[:background] == :blue
+      assert Enum.at(result, 1).content == "cdef"
+    end
+
+    test "empty line with cursor", %{theme: theme} do
+      state = create_state([""], {0, 0}) |> Map.put(:focused, true)
+      line = ""
+      result = Raxol.UI.Components.Input.MultiLineInput.RenderHelper.render_line(0, line, state, theme)
+      # Should render nothing or a single label with empty content
+      # NOTE: This test may fail if implementation does not handle empty lines gracefully
+      assert Enum.count(result) == 0 or Enum.at(result, 0).content == ""
+    end
+
+    test "out-of-bounds cursor/selection does not crash", %{theme: theme} do
+      state = create_state(["abc"], {0, 10}, {0, 0}, {{0, 20}, {0, 25}}) |> Map.put(:focused, true)
+      line = "abc"
+      result = Raxol.UI.Components.Input.MultiLineInput.RenderHelper.render_line(0, line, state, theme)
+      # Should not raise, should render the line as-is
+      # NOTE: This test may fail if implementation does not guard against out-of-bounds
+      assert Enum.at(result, 0).content == "abc"
+    end
+
+    test "selection within single line, inspect second label", %{theme: theme} do
+      state = create_state(["abcdef"], {0, 0}, {0, 0}, {{0, 1}, {0, 3}})
+      line = "abcdef"
+      result = Raxol.UI.Components.Input.MultiLineInput.RenderHelper.render_line(0, line, state, theme)
+      assert_rendered_segments(result, [
+        {"a", nil},
+        {"bc", %{background: :blue}},
+        {"def", nil}
+      ])
+    end
   end
 end

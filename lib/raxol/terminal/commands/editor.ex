@@ -1,15 +1,12 @@
 defmodule Raxol.Terminal.Commands.Editor do
   @moduledoc """
-  Handles editor operations for the terminal buffer.
-
-  This module provides functions for inserting and deleting lines and characters,
-  as well as erasing characters in the terminal buffer. It also handles screen
-  and line operations like clearing the screen or parts of it.
+  Handles editor-related terminal commands.
   """
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.{LineEditor, CharEditor, Eraser}
   alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.Emulator
 
   @doc """
   Inserts a specified number of blank lines at the current cursor position.
@@ -81,111 +78,97 @@ defmodule Raxol.Terminal.Commands.Editor do
           TextFormatting.text_style()
         ) :: ScreenBuffer.t()
   def erase_chars(buffer, row, col, count, default_style) do
-    # First delete the characters
-    buffer = delete_chars(buffer, row, col, count, default_style)
-    # Then insert blank characters
-    insert_chars(buffer, row, col, count, default_style)
+    # Erase 'count' characters starting at {col, row} by replacing them with spaces.
+    # Ensure coordinates and count are within bounds.
+    end_col = col + count - 1
+
+    # Use Eraser.clear_region to replace the specified character cells with blanks.
+    # Note: Eraser.clear_region handles clamping of coordinates internally.
+    Eraser.clear_region(buffer, row, col, row, end_col, default_style)
   end
 
   @doc """
-  Clears the screen or a part of it based on the mode parameter.
+  Clears the screen based on the mode parameter.
 
   ## Parameters
 
-  * `buffer` - The current screen buffer
-  * `cursor_pos` - The current cursor position {x, y}
+  * `emulator` - The current emulator state
   * `mode` - The clear mode:
     * 0 - Clear from cursor to end of screen
     * 1 - Clear from beginning of screen to cursor
-    * 2 - Clear entire screen but don't move cursor
-    * 3 - Clear entire screen including scrollback
-  * `default_style` - The style to use for cleared areas
+    * 2 - Clear entire screen
+    * 3 - Clear entire screen and scrollback
 
   ## Returns
 
-  * Updated screen buffer
+  * Updated emulator state
   """
-  @spec clear_screen(
-          ScreenBuffer.t(),
-          {non_neg_integer(), non_neg_integer()},
-          integer(),
-          TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
-  def clear_screen(buffer, cursor_pos, mode, default_style) do
+  @spec clear_screen(Emulator.t(), integer(), {non_neg_integer(), non_neg_integer()}, map()) :: Emulator.t()
+  def clear_screen(emulator, mode, cursor_pos, default_style) do
+    buffer = Emulator.get_active_buffer(emulator)
+    {cursor_x, cursor_y} = cursor_pos
+
     case mode do
-      0 -> Eraser.clear_screen_from(buffer, cursor_pos, default_style)
-      1 -> Eraser.clear_screen_to(buffer, cursor_pos, default_style)
-      2 -> Eraser.clear_screen(buffer, default_style)
-      3 -> clear_screen_with_scrollback(buffer, default_style)
-      _ -> buffer
+      # Clear from cursor to end of screen
+      0 ->
+        new_buffer = Eraser.clear_screen_from(buffer, cursor_y, cursor_x, default_style)
+        Emulator.update_active_buffer(emulator, new_buffer)
+
+      # Clear from beginning of screen to cursor
+      1 ->
+        new_buffer = Eraser.clear_screen_to(buffer, cursor_y, cursor_x, default_style)
+        Emulator.update_active_buffer(emulator, new_buffer)
+
+      # Clear entire screen
+      2 ->
+        new_buffer = Eraser.clear_screen(buffer, default_style)
+        Emulator.update_active_buffer(emulator, new_buffer)
+
+      # Clear entire screen and scrollback
+      3 ->
+        new_buffer = Eraser.clear_screen(buffer, default_style)
+        # Clear scrollback as well
+        emulator = Emulator.clear_scrollback(emulator)
+        Emulator.update_active_buffer(emulator, new_buffer)
+
+      # Unknown mode, do nothing
+      _ ->
+        emulator
     end
   end
 
   @doc """
-  Clears a line or a part of it based on the mode parameter.
+  Clears a line or part of a line based on the mode parameter.
 
   ## Parameters
 
-  * `buffer` - The current screen buffer
-  * `cursor_pos` - The current cursor position {x, y}
+  * `emulator` - The current emulator state
   * `mode` - The clear mode:
     * 0 - Clear from cursor to end of line
     * 1 - Clear from beginning of line to cursor
     * 2 - Clear entire line
-  * `default_style` - The style to use for cleared areas
 
   ## Returns
 
-  * Updated screen buffer
+  * Updated emulator state
   """
-  @spec clear_line(
-          ScreenBuffer.t(),
-          {non_neg_integer(), non_neg_integer()},
-          integer(),
-          TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
-  def clear_line(buffer, cursor_pos, mode, default_style) do
-    case mode do
-      0 -> Eraser.clear_line_from(buffer, cursor_pos, default_style)
-      1 -> Eraser.clear_line_to(buffer, cursor_pos, default_style)
-      2 -> Eraser.clear_line(buffer, elem(cursor_pos, 1), default_style)
-      _ -> buffer
-    end
-  end
+  @spec clear_line(Emulator.t(), integer(), {non_neg_integer(), non_neg_integer()}, map()) :: Emulator.t()
+  def clear_line(emulator, mode, cursor_pos, default_style) do
+    buffer = Emulator.get_active_buffer(emulator)
+    {cursor_x, cursor_y} = cursor_pos
 
-  @doc """
-  Clears a rectangular region of the screen.
+    new_buffer =
+      case mode do
+        # Clear from cursor to end of line
+        0 -> Eraser.clear_line_from(buffer, cursor_y, cursor_x, default_style)
+        # Clear from beginning of line to cursor
+        1 -> Eraser.clear_line_to(buffer, cursor_y, cursor_x, default_style)
+        # Clear entire line
+        2 -> Eraser.clear_line(buffer, cursor_y, default_style)
+        # Unknown mode, do nothing
+        _ -> buffer
+      end
 
-  ## Parameters
-
-  * `buffer` - The current screen buffer
-  * `start_x` - Starting x coordinate
-  * `start_y` - Starting y coordinate
-  * `end_x` - Ending x coordinate
-  * `end_y` - Ending y coordinate
-  * `default_style` - The style to use for cleared areas
-
-  ## Returns
-
-  * Updated screen buffer
-  """
-  @spec clear_region(
-          ScreenBuffer.t(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          non_neg_integer(),
-          TextFormatting.text_style()
-        ) :: ScreenBuffer.t()
-  def clear_region(buffer, start_x, start_y, end_x, end_y, default_style) do
-    Eraser.clear_region(buffer, start_x, start_y, end_x, end_y, default_style)
-  end
-
-  # Private helper function to clear screen and scrollback
-  defp clear_screen_with_scrollback(buffer, default_style) do
-    # First clear the screen
-    buffer = Eraser.clear_screen(buffer, default_style)
-    # Then clear the scrollback
-    %{buffer | scrollback: []}
+    Emulator.update_active_buffer(emulator, new_buffer)
   end
 end

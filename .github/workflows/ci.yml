@@ -179,7 +179,7 @@ jobs:
           fi
 
           # Install npm dependencies in assets if package.json exists
-          if [ -f "assets/package.json" ]; then
+          if [ -f "@static/package.json" ]; then
             echo "Installing npm dependencies in assets"
             cd assets && npm install && cd ..
           fi

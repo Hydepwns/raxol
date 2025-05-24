@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.ControlCodes
-  alias Raxol.Terminal.ANSI.CharacterSets.CharacterSets
+  alias Raxol.Terminal.ANSI.CharacterSets
   require Logger
 
   @doc """
@@ -17,19 +17,14 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
           | {:finished, Emulator.t(), State.t()}
           | {:incomplete, Emulator.t(), State.t()}
   def handle(emulator, %State{state: :escape} = parser_state, input) do
-    # --- REMOVED DEBUG ---
-    # IO.inspect({:escape_state_entry, input}, label: "ESCAPE_STATE_ENTRY_DEBUG")
-    # --- END DEBUG ---
     case input do
       # Empty input
       <<>> ->
-        # IO.inspect({:parse_loop_escape_empty, parser_state.state, ""}, label: "DEBUG_PARSER")
         # Incomplete - return current state
         {:incomplete, emulator, parser_state}
 
       # CSI
       <<91, rest_after_csi::binary>> ->
-        # IO.inspect({:parse_loop_escape_csi, parser_state.state, input}, label: "DEBUG_PARSER")
         # Clear buffers for the new sequence
         next_parser_state = %{
           parser_state
@@ -42,7 +37,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # OSC
       <<93, rest_after_osc::binary>> ->
-        # IO.inspect({:parse_loop_escape_osc, parser_state.state, input}, label: "DEBUG_PARSER")
         next_parser_state = %{
           parser_state
           | state: :osc_string,
@@ -53,7 +47,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # DCS
       <<80, rest_after_dcs::binary>> ->
-        # IO.inspect({:parse_loop_escape_dcs, parser_state.state, input}, label: "DEBUG_PARSER")
         next_parser_state = %{
           parser_state
           | state: :dcs_entry,
@@ -66,7 +59,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # Designate G0
       <<?(, rest_after::binary>> ->
-        # IO.inspect({:parse_loop_escape_designate_g0, parser_state.state, input}, label: "DEBUG_PARSER")
         next_parser_state = %{
           parser_state
           | state: :designate_charset,
@@ -77,7 +69,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # Designate G1
       <<?), rest_after::binary>> ->
-        # IO.inspect({:parse_loop_escape_designate_g1, parser_state.state, input}, label: "DEBUG_PARSER")
         next_parser_state = %{
           parser_state
           | state: :designate_charset,
@@ -88,24 +79,16 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # Designate G2
       <<?*, rest_after::binary>> ->
-        # --- REMOVED DEBUG ---
-        # IO.inspect({:escape_state_handling_g2, parser_state.designating_gset}, label: "ESCAPE_STATE_DEBUG")
-        # --- END DEBUG ---
-        # IO.inspect({:parse_loop_escape_designate_g2, parser_state.state, input}, label: "DEBUG_PARSER")
         next_parser_state = %{
           parser_state
           | state: :designate_charset,
             designating_gset: 2
         }
 
-        # --- REMOVED DEBUG ---
-        # IO.inspect({:escape_state_g2_return, next_parser_state}, label: "ESCAPE_STATE_DEBUG")
-        # --- END DEBUG ---
         {:continue, emulator, next_parser_state, rest_after}
 
       # Designate G3
       <<?+, rest_after::binary>> ->
-        # IO.inspect({:parse_loop_escape_designate_g3, parser_state.state, input}, label: "DEBUG_PARSER")
         next_parser_state = %{
           parser_state
           | state: :designate_charset,
@@ -114,14 +97,19 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
         {:continue, emulator, next_parser_state, rest_after}
 
-      # SS2
+      # SS2 (Single Shift 2)
       <<78, rest_after_ss::binary>> ->
-        # IO.inspect({:parse_loop_escape_ss2, parser_state.state, input}, label: "DEBUG_PARSER")
-        Logger.info("[Parser] SS2 received - Not implemented")
-        # TODO: Implement SS2 handling (invoke G2 for next char)
-        # Return to ground after SS2
-        next_parser_state = %{parser_state | state: :ground}
+        Logger.info("[Parser] SS2 received - will use G2 for next char only")
+        # Set single_shift to :ss2 and return to ground
+        next_parser_state = %{parser_state | state: :ground, single_shift: :ss2}
         {:continue, emulator, next_parser_state, rest_after_ss}
+
+      # SS3 (Single Shift 3)
+      <<79, rest_after_ss3::binary>> ->
+        Logger.info("[Parser] SS3 received - will use G3 for next char only")
+        # Set single_shift to :ss3 and return to ground
+        next_parser_state = %{parser_state | state: :ground, single_shift: :ss3}
+        {:continue, emulator, next_parser_state, rest_after_ss3}
 
       # LS2 (Invoke G2 in GL)
       <<?n, rest_after::binary>> ->
@@ -153,7 +141,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # RIS
       <<?c, rest_after::binary>> ->
-        # IO.inspect({:parse_loop_escape_ris, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
         new_emulator = ControlCodes.handle_ris(emulator)
         next_parser_state = %{parser_state | state: :ground}
@@ -161,7 +148,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # IND
       <<?D, rest_after::binary>> ->
-        # IO.inspect({:parse_loop_escape_ind, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
         new_emulator = ControlCodes.handle_ind(emulator)
         next_parser_state = %{parser_state | state: :ground}
@@ -169,7 +155,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # NEL
       <<?E, rest_after::binary>> ->
-        # IO.inspect({:parse_loop_escape_nel, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
         new_emulator = ControlCodes.handle_nel(emulator)
         next_parser_state = %{parser_state | state: :ground}
@@ -177,7 +162,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # HTS
       <<?H, rest_after::binary>> ->
-        # IO.inspect({:parse_loop_escape_hts, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
         new_emulator = ControlCodes.handle_hts(emulator)
         next_parser_state = %{parser_state | state: :ground}
@@ -185,7 +169,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # RI
       <<?M, rest_after::binary>> ->
-        # IO.inspect({:parse_loop_escape_ri, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
         new_emulator = ControlCodes.handle_ri(emulator)
         next_parser_state = %{parser_state | state: :ground}
@@ -193,7 +176,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # DECSC
       <<?7, rest_after::binary>> ->
-        # IO.inspect({:parse_loop_escape_decsc, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
         new_emulator = ControlCodes.handle_decsc(emulator)
         next_parser_state = %{parser_state | state: :ground}
@@ -201,7 +183,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # DECRC
       <<?8, rest_after::binary>> ->
-        # IO.inspect({:parse_loop_escape_decrc, parser_state.state, input}, label: "DEBUG_PARSER")
         # Call back to Emulator
         new_emulator = ControlCodes.handle_decrc(emulator)
         next_parser_state = %{parser_state | state: :ground}
@@ -209,7 +190,6 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # Fallback for unhandled char after ESC
       <<char_codepoint, rest_after_char::binary>> ->
-        # IO.inspect({:parse_loop_escape_fallback, parser_state.state, input, char_codepoint}, label: "DEBUG_PARSER")
         Logger.debug(
           "[Parser] Unhandled char #{inspect(char_codepoint)} after ESC, returning to ground."
         )

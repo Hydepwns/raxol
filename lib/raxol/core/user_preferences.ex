@@ -84,6 +84,28 @@ defmodule Raxol.Core.UserPreferences do
     GenServer.call(pid_or_name, :get_all)
   end
 
+  @doc """
+  Returns the current theme id as an atom, defaulting to :default if not set or invalid.
+  """
+  def get_theme_id(pid_or_name \\ __MODULE__) do
+    theme = get([:theme, :active_id], pid_or_name) || get(:theme, pid_or_name)
+
+    cond do
+      is_atom(theme) ->
+        theme
+
+      is_binary(theme) ->
+        try do
+          String.to_existing_atom(theme)
+        rescue
+          ArgumentError -> :default
+        end
+
+      true ->
+        :default
+    end
+  end
+
   # --- Server Callbacks ---
 
   @impl true
@@ -183,6 +205,16 @@ defmodule Raxol.Core.UserPreferences do
 
     # Reset the timer ref in state
     {:noreply, %{state | save_timer: nil}}
+  end
+
+  # Catch-all for unexpected messages
+  @impl true
+  def handle_info(msg, state) do
+    Logger.warning(
+      "[UserPreferences] Ignoring unexpected message in handle_info: #{inspect(msg)}"
+    )
+
+    {:noreply, state}
   end
 
   # --- Internal Helpers ---

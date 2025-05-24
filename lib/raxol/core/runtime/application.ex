@@ -165,7 +165,11 @@ defmodule Raxol.Core.Runtime.Application do
       end
 
       def subscribe_interval(interval, msg) do
-        Subscription.interval(interval, msg)
+        if is_integer(interval) and interval > 0 do
+          Subscription.interval(interval, msg)
+        else
+          {:error, :invalid_argument}
+        end
       end
     end
   end
@@ -209,7 +213,8 @@ defmodule Raxol.Core.Runtime.Application do
       end
     else
       Logger.warning(
-        "[#{__MODULE__}] Application module #{inspect(app_module)} does not export init/1. Using default empty state."
+        "[#{__MODULE__}] Application module #{inspect(app_module)} does not export init/1. Using default empty state.",
+        []
       )
 
       # Default if init/1 is not exported

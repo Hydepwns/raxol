@@ -183,6 +183,22 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
       49 ->
         TextFormatting.apply_attribute(current_style, :default_bg)
 
+      # SGR 51-55: Framed, Encircled, Overlined, Not Framed/Encircled, Not Overlined
+      51 ->
+        TextFormatting.apply_attribute(current_style, :framed)
+
+      52 ->
+        TextFormatting.apply_attribute(current_style, :encircled)
+
+      53 ->
+        TextFormatting.apply_attribute(current_style, :overlined)
+
+      54 ->
+        TextFormatting.apply_attribute(current_style, :not_framed_encircled)
+
+      55 ->
+        TextFormatting.apply_attribute(current_style, :not_overlined)
+
       # TODO: Add codes 51-55 (framed, encircled, overlined, etc.) if needed
       # Bright Foreground Colors (90-97) - Implies Bold
       param when param >= 90 and param <= 97 ->

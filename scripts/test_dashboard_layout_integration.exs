@@ -109,7 +109,7 @@ defmodule DashboardLayoutIntegrationTest do
     IO.puts("\n[TEST 1] Dashboard initialization with visualization widgets")
 
     # Initialize the dashboard model
-    {:ok, dashboard_model} = Raxol.Components.Dashboard.Dashboard.init(widgets, grid_config)
+    {:ok, dashboard_model} = Raxol.UI.Components.Dashboard.Dashboard.init(widgets, grid_config)
     IO.puts("Dashboard model initialized with #{length(widgets)} widgets")
 
     # Render the dashboard to verify widget creation
@@ -119,7 +119,7 @@ defmodule DashboardLayoutIntegrationTest do
       app_text: "Sample app text for integration test"
     }
 
-    widget_views = Raxol.Components.Dashboard.Dashboard.render(props)
+    widget_views = Raxol.UI.Components.Dashboard.Dashboard.render(props)
     IO.puts("Dashboard rendered with #{length(widget_views)} widget views")
 
     # --- TEST 2: Widget Resizing ---
@@ -138,7 +138,7 @@ defmodule DashboardLayoutIntegrationTest do
     end)
 
     # Create updated dashboard model
-    {:ok, resized_dashboard_model} = Raxol.Components.Dashboard.Dashboard.init(widgets_after_resize, grid_config)
+    {:ok, resized_dashboard_model} = Raxol.UI.Components.Dashboard.Dashboard.init(widgets_after_resize, grid_config)
 
     # Render dashboard with resized widget
     resized_props = %{
@@ -147,7 +147,7 @@ defmodule DashboardLayoutIntegrationTest do
       app_text: "Sample app text for resize test"
     }
 
-    resized_widget_views = Raxol.Components.Dashboard.Dashboard.render(resized_props)
+    resized_widget_views = Raxol.UI.Components.Dashboard.Dashboard.render(resized_props)
     IO.puts("Dashboard re-rendered after widget resize with #{length(resized_widget_views)} widget views")
 
     # --- TEST 3: Widget Dragging ---
@@ -166,7 +166,7 @@ defmodule DashboardLayoutIntegrationTest do
     end)
 
     # Create updated dashboard model
-    {:ok, moved_dashboard_model} = Raxol.Components.Dashboard.Dashboard.init(widgets_after_move, grid_config)
+    {:ok, moved_dashboard_model} = Raxol.UI.Components.Dashboard.Dashboard.init(widgets_after_move, grid_config)
 
     # Render dashboard with moved widget
     moved_props = %{
@@ -175,7 +175,7 @@ defmodule DashboardLayoutIntegrationTest do
       app_text: "Sample app text for drag test"
     }
 
-    moved_widget_views = Raxol.Components.Dashboard.Dashboard.render(moved_props)
+    moved_widget_views = Raxol.UI.Components.Dashboard.Dashboard.render(moved_props)
     IO.puts("Dashboard re-rendered after widget move with #{length(moved_widget_views)} widget views")
 
     # --- TEST 4: Layout Persistence ---
@@ -184,12 +184,12 @@ defmodule DashboardLayoutIntegrationTest do
 
     # Save the layout
     IO.puts("Saving dashboard layout...")
-    save_result = Raxol.Components.Dashboard.Dashboard.save_layout(widgets_after_move)
+    save_result = Raxol.UI.Components.Dashboard.Dashboard.save_layout(widgets_after_move)
     IO.puts("Save result: #{inspect(save_result)}")
 
     # Load the layout
     IO.puts("Loading dashboard layout...")
-    loaded_widgets = Raxol.Components.Dashboard.Dashboard.load_layout()
+    loaded_widgets = Raxol.UI.Components.Dashboard.Dashboard.load_layout()
     IO.puts("Loaded #{length(loaded_widgets)} widgets")
 
     # Verify the loaded widgets match the saved widgets
@@ -223,7 +223,7 @@ defmodule DashboardLayoutIntegrationTest do
     end
 
     # Initialize dashboard from loaded widgets
-    {:ok, loaded_dashboard_model} = Raxol.Components.Dashboard.Dashboard.init(loaded_widgets, grid_config)
+    {:ok, loaded_dashboard_model} = Raxol.UI.Components.Dashboard.Dashboard.init(loaded_widgets, grid_config)
 
     # Render dashboard with loaded widgets
     loaded_props = %{
@@ -232,7 +232,7 @@ defmodule DashboardLayoutIntegrationTest do
       app_text: "Sample app text for loaded layout"
     }
 
-    loaded_widget_views = Raxol.Components.Dashboard.Dashboard.render(loaded_props)
+    loaded_widget_views = Raxol.UI.Components.Dashboard.Dashboard.render(loaded_props)
     IO.puts("Dashboard rendered with loaded layout: #{length(loaded_widget_views)} widget views")
 
     # --- TEST 5: Real-Time Rendering Test ---
@@ -258,7 +258,7 @@ defmodule DashboardLayoutIntegrationTest do
     end)
 
     # Initialize dashboard with smaller grid
-    {:ok, small_dashboard_model} = Raxol.Components.Dashboard.Dashboard.init(small_grid_widgets, small_grid_config)
+    {:ok, small_dashboard_model} = Raxol.UI.Components.Dashboard.Dashboard.init(small_grid_widgets, small_grid_config)
 
     # Render dashboard with smaller grid
     small_props = %{
@@ -267,7 +267,7 @@ defmodule DashboardLayoutIntegrationTest do
       app_text: "Small grid test"
     }
 
-    small_widget_views = Raxol.Components.Dashboard.Dashboard.render(small_props)
+    small_widget_views = Raxol.UI.Components.Dashboard.Dashboard.render(small_props)
     IO.puts("Dashboard rendered with smaller grid: #{length(small_widget_views)} widget views")
 
     # Write test results to file

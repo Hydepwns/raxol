@@ -103,8 +103,10 @@ defmodule Raxol.Plugins.NotificationPluginTest do
       end)
 
       # Call handle_command/2
-      assert {:error, {:command_not_found, :notify_send}, _} =
+      assert match?(
+               {:error, {:command_not_found, :notify_send}, _},
                NotificationPlugin.handle_command(args, state)
+             )
     end
 
     test "handles notify-send command failure on Linux", %{
@@ -126,8 +128,10 @@ defmodule Raxol.Plugins.NotificationPluginTest do
       end)
 
       # Call handle_command/2
-      assert {:error, {:command_failed, 1, "Error output"}, _} =
+      assert match?(
+               {:error, {:command_failed, 1, "Error output"}, _},
                NotificationPlugin.handle_command(args, state)
+             )
     end
 
     test "handles unsupported OS", %{current_state: state, args: args} do

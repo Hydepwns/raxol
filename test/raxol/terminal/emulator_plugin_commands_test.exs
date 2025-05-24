@@ -13,7 +13,8 @@ defmodule Raxol.Terminal.EmulatorPluginCommandsTest do
       Manager.start_link(
         command_registry_table: :test_command_registry,
         plugin_config: %{},
-        enable_plugin_reloading: reloading_enabled
+        enable_plugin_reloading: reloading_enabled,
+        runtime_pid: self()
       )
 
     :ok = Manager.initialize()
@@ -24,19 +25,5 @@ defmodule Raxol.Terminal.EmulatorPluginCommandsTest do
 
   describe "plugin commands" do
     # ... existing code ...
-  end
-
-  # Helper function for command handler test
-  defp test_command_handler(_plugin_id, _command, _params) do
-    {:ok, %{result: "success"}}
-  end
-
-  # Helper for command validation test
-  defp validating_command_handler(_plugin_id, _command, %{valid: true} = params) do
-    {:ok, %{status: "valid params", received: params}}
-  end
-
-  defp validating_command_handler(_plugin_id, _command, _invalid_params) do
-    {:error, :invalid_parameters}
   end
 end

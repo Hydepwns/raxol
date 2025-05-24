@@ -122,4 +122,18 @@ defmodule Raxol.Terminal.Buffer.Selection do
       end)
     end
   end
+
+  @doc """
+  Creates a new selection struct or map with the given start and end coordinates.
+  If no coordinates are provided, initializes with nil (no selection).
+  """
+  @spec new(non_neg_integer(), non_neg_integer()) :: %{
+          selection:
+            {non_neg_integer(), non_neg_integer(), non_neg_integer(),
+             non_neg_integer()}
+        }
+  def new(x, y) when x >= 0 and y >= 0 do
+    # By convention, a selection is a map with a :selection field
+    %{selection: {x, y, x, y}}
+  end
 end

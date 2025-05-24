@@ -11,30 +11,36 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
   require Logger
 
   @doc "Handles Device Status Report (DSR - 'n')"
-  @spec handle_n(Emulator.t(), list(integer())) :: Emulator.t()
+  @spec handle_n(Emulator.t(), list(integer())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_n(emulator, params) do
-    code = get_valid_non_neg_param(params, 0, 0)
+    code =
+      case params do
+        [] -> 5
+        [0] -> 5
+        [val | _] -> val
+      end
+
     response = generate_dsr_response(code, emulator)
 
     if response do
-      %{emulator | output: emulator.output <> response}
+      {:ok, %{emulator | output_buffer: emulator.output_buffer <> response}}
     else
-      emulator
+      {:error, :unknown_dsr_code, emulator}
     end
   end
 
   @doc "Handles Device Attributes (DA - 'c')"
-  @spec handle_c(Emulator.t(), list(integer()), String.t()) :: Emulator.t()
+  @spec handle_c(Emulator.t(), list(integer()), String.t()) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_c(emulator, _params, intermediates_buffer) do
     response = generate_da_response(intermediates_buffer)
-    %{emulator | output: emulator.output <> response}
-  end
 
-  @doc "Handles Device Status Report (CPR - '6n') (stub)."
-  @spec handle_6n(Emulator.t(), list(integer())) :: Emulator.t()
-  def handle_6n(emulator, _params) do
-    # Stub: Implement actual logic if needed
-    emulator
+    if response do
+      {:ok, %{emulator | output_buffer: emulator.output_buffer <> response}}
+    else
+      {:error, :invalid_da_response, emulator}
+    end
   end
 
   # Helper function to generate DSR response based on code
@@ -44,7 +50,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
     case code do
       # Report cursor position (CPR)
       6 ->
-        {col, row} = emulator.cursor.position
+        {col, row} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
         # Convert to 1-based for response
         "\e[#{row + 1};#{col + 1}R"
 
@@ -54,7 +60,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
         "\e[0n"
 
       _ ->
-        Logger.warning("Unknown DSR code: #{code}")
+        Logger.warning("Unknown DSR code: #{code}", [])
         nil
     end
   end
@@ -63,50 +69,10 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
   @spec generate_da_response(String.t()) :: String.t()
   defp generate_da_response(intermediates_buffer) do
     case intermediates_buffer do
-      # Secondary DA: VT100 with no options
-      ">" -> "\e[>0;0;0c"
-      # Primary DA: VT100 with no options
-      _ -> "\e[?1;0c"
+      # Secondary DA: VT220
+      ">" -> "\e[>0;1;0c"
+      # Primary DA: VT220
+      _ -> "\e[?1;2c"
     end
-  end
-
-  # --- Parameter Validation Helpers ---
-
-  @doc """
-  Gets a parameter value with validation.
-  Returns the parameter value if valid, or the default value if invalid.
-  """
-  @spec get_valid_param(
-          list(integer() | nil),
-          non_neg_integer(),
-          integer(),
-          integer(),
-          integer()
-        ) :: integer()
-  defp get_valid_param(params, index, default, min, max) do
-    case Enum.at(params, index, default) do
-      value when is_integer(value) and value >= min and value <= max ->
-        value
-
-      _ ->
-        Logger.warning(
-          "Invalid parameter value at index #{index}, using default #{default}"
-        )
-
-        default
-    end
-  end
-
-  @doc """
-  Gets a parameter value with validation for non-negative integers.
-  Returns the parameter value if valid, or the default value if invalid.
-  """
-  @spec get_valid_non_neg_param(
-          list(integer() | nil),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: non_neg_integer()
-  defp get_valid_non_neg_param(params, index, default) do
-    get_valid_param(params, index, default, 0, 9999)
   end
 end

@@ -10,7 +10,8 @@ defmodule Raxol.Terminal.Core do
     :state,
     :memory_limit,
     :current_hyperlink_url,
-    :tab_stops
+    :tab_stops,
+    :scroll_region
   ]
 
   @type t :: %__MODULE__{
@@ -20,6 +21,7 @@ defmodule Raxol.Terminal.Core do
           state: any(),
           memory_limit: integer() | nil,
           current_hyperlink_url: String.t() | nil,
-          tab_stops: any()
+          tab_stops: any(),
+          scroll_region: {non_neg_integer(), non_neg_integer()} | nil
         }
 end

@@ -9,7 +9,7 @@ defmodule Raxol.System.DeltaUpdater do
   alias Raxol.System.Updater
   alias Raxol.System.DeltaUpdaterSystemAdapterImpl
 
-  @system_adapter Application.get_env(
+  @system_adapter Application.compile_env(
                     :raxol,
                     :system_adapter,
                     DeltaUpdaterSystemAdapterImpl

@@ -70,6 +70,7 @@ defmodule Raxol.Style.Colors.Color do
       case Formats.from_hex(hex_string) do
         {r, g, b} -> from_rgb(r, g, b)
         {r, g, b, a} -> from_rgba(r, g, b, a)
+        {:error, :invalid_hex} = err -> err
       end
     rescue
       ArgumentError -> {:error, :invalid_hex}
@@ -143,7 +144,47 @@ defmodule Raxol.Style.Colors.Color do
       9
   """
   def to_ansi_16(%__MODULE__{r: r, g: g, b: b}) do
-    Formats.rgb_to_ansi({r, g, b})
+    ansi_16_palette = [
+      # Black
+      {0, {0, 0, 0}},
+      # Red
+      {1, {205, 0, 0}},
+      # Green
+      {2, {0, 205, 0}},
+      # Yellow
+      {3, {205, 205, 0}},
+      # Blue
+      {4, {0, 0, 238}},
+      # Magenta
+      {5, {205, 0, 205}},
+      # Cyan
+      {6, {0, 205, 205}},
+      # White (light gray)
+      {7, {229, 229, 229}},
+      # Bright Black (dark gray)
+      {8, {127, 127, 127}},
+      # Bright Red
+      {9, {255, 0, 0}},
+      # Bright Green
+      {10, {0, 255, 0}},
+      # Bright Yellow
+      {11, {255, 255, 0}},
+      # Bright Blue
+      {12, {92, 92, 255}},
+      # Bright Magenta
+      {13, {255, 0, 255}},
+      # Bright Cyan
+      {14, {0, 255, 255}},
+      # Bright White
+      {15, {255, 255, 255}}
+    ]
+
+    {index, _} =
+      Enum.min_by(ansi_16_palette, fn {_idx, {pr, pg, pb}} ->
+        (r - pr) * (r - pr) + (g - pg) * (g - pg) + (b - pb) * (b - pb)
+      end)
+
+    index
   end
 
   @doc """
@@ -213,9 +254,9 @@ defmodule Raxol.Style.Colors.Color do
   @spec alpha_blend(t(), t(), float()) :: t()
   def alpha_blend(%__MODULE__{} = color1, %__MODULE__{} = color2, alpha)
       when alpha >= 0 and alpha <= 1 do
-    r = round(color1.r * (1 - alpha) + color2.r * alpha)
-    g = round(color1.g * (1 - alpha) + color2.g * alpha)
-    b = round(color1.b * (1 - alpha) + color2.b * alpha)
+    r = trunc(color1.r * alpha + color2.r * (1 - alpha))
+    g = trunc(color1.g * alpha + color2.g * (1 - alpha))
+    b = trunc(color1.b * alpha + color2.b * (1 - alpha))
     from_rgb(r, g, b)
   end
 

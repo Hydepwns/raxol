@@ -186,8 +186,10 @@ defmodule Raxol.Test.PerformanceHelper do
       ) do
     avg_time = measure_average_time(operation, iterations)
 
-    ExUnit.Assertions.assert avg_time < threshold,
-           "Average time for #{name} operation (#{avg_time}ms) exceeds #{threshold}ms threshold"
+    ExUnit.Assertions.assert(
+      avg_time < threshold,
+      "Average time for #{name} operation (#{avg_time}ms) exceeds #{threshold}ms threshold"
+    )
   end
 
   @doc """
@@ -210,8 +212,10 @@ defmodule Raxol.Test.PerformanceHelper do
 
     avg_time = time / (iterations * length(operations))
 
-    ExUnit.Assertions.assert avg_time < threshold,
-           "Average time for #{name} operations (#{avg_time}ms) exceeds #{threshold}ms threshold"
+    ExUnit.Assertions.assert(
+      avg_time < threshold,
+      "Average time for #{name} operations (#{avg_time}ms) exceeds #{threshold}ms threshold"
+    )
   end
 
   @doc """
@@ -233,8 +237,10 @@ defmodule Raxol.Test.PerformanceHelper do
   def assert_memory_usage(operation, name, threshold \\ 1_000_000) do
     {memory, _} = measure_memory(operation)
 
-    ExUnit.Assertions.assert memory < threshold,
-           "Memory usage for #{name} operation (#{memory} bytes) exceeds #{threshold} bytes threshold"
+    ExUnit.Assertions.assert(
+      memory < threshold,
+      "Memory usage for #{name} operation (#{memory} bytes) exceeds #{threshold} bytes threshold"
+    )
   end
 
   @doc """
@@ -249,10 +255,14 @@ defmodule Raxol.Test.PerformanceHelper do
     {time, _} = measure_time(operation)
     {memory, _} = measure_memory(operation)
 
-    ExUnit.Assertions.assert time < time_threshold,
-           "Time for #{name} operation (#{time}ms) exceeds #{time_threshold}ms threshold"
+    ExUnit.Assertions.assert(
+      time < time_threshold,
+      "Time for #{name} operation (#{time}ms) exceeds #{time_threshold}ms threshold"
+    )
 
-    ExUnit.Assertions.assert memory < memory_threshold,
-           "Memory usage for #{name} operation (#{memory} bytes) exceeds #{memory_threshold} bytes threshold"
+    ExUnit.Assertions.assert(
+      memory < memory_threshold,
+      "Memory usage for #{name} operation (#{memory} bytes) exceeds #{memory_threshold} bytes threshold"
+    )
   end
 end

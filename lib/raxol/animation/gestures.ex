@@ -15,6 +15,7 @@ defmodule Raxol.Animation.Gestures do
   """
 
   alias Raxol.Animation.Physics.{PhysicsEngine, Vector}
+  alias Raxol.Core.ComponentUtils
 
   # Gesture state
   defmodule State do

@@ -25,6 +25,7 @@ defmodule Raxol.UI.Components.Input.Button do
           role: :primary | :secondary | :danger | :success | nil
         }
 
+  @spec new(map()) :: t()
   @doc """
   Creates a new Button state map, applying defaults.
   Expects opts to be a Map.
@@ -65,8 +66,9 @@ defmodule Raxol.UI.Components.Input.Button do
   end
 
   @doc """
-  Initializes the button component state.
+  Initializes the Button component state from the given props.
   """
+  @spec init(map()) :: {:ok, t()}
   @impl Component
   def init(state) do
     # Use Button.new to ensure defaults are applied from props
@@ -74,20 +76,30 @@ defmodule Raxol.UI.Components.Input.Button do
     {:ok, initialized_state}
   end
 
+  @doc """
+  Mounts the Button component. Performs any setup needed after initialization.
+  """
+  @spec mount(t()) :: t()
   @impl Component
   def mount(state), do: state
 
+  @doc """
+  Unmounts the Button component, performing any necessary cleanup.
+  """
+  @spec unmount(t()) :: t()
   @impl Component
   def unmount(state), do: state
 
   @doc """
-  Updates the button component state based on external messages.
+  Updates the Button component state in response to messages or prop changes.
   """
+  @spec update(t(), term()) :: {:noreply, t()}
   @impl Component
   def update(state, _message) do
     {:noreply, state}
   end
 
+  @spec render(t(), map()) :: map()
   @doc """
   Renders the button component based on its current state.
 
@@ -145,6 +157,7 @@ defmodule Raxol.UI.Components.Input.Button do
     }
   end
 
+  @spec handle_event(t(), any(), map()) :: {:update, t(), list()} | {:handled, t()} | :passthrough
   @doc """
   Handles input events for the button component.
 
@@ -190,15 +203,14 @@ defmodule Raxol.UI.Components.Input.Button do
         %Raxol.Core.Events.Event{type: :keypress, data: %{key: key}},
         _context
       ) do
-    # Check disabled
-    if !button.disabled and (key == :space or key == :enter) do
+    if button.disabled or (key != :space and key != :enter) do
+      :passthrough
+    else
       # Execute the click handler if it exists
       if button.on_click, do: button.on_click.()
       # Consider adding :pressed state update here if needed
       # Return handled instead of :noreply
       {:handled, button}
-    else
-      :passthrough
     end
   end
 

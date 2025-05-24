@@ -15,7 +15,8 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
     {:ok, terminal} = Emulator.new(80, 24)
 
     # Start the terminal manager
-    {:ok, manager_pid} = Manager.start_link(terminal: terminal)
+    {:ok, manager_pid} =
+      Manager.start_link(terminal: terminal, runtime_pid: self())
 
     # Add manager to context
     env = Map.put(env, :manager, manager_pid)
@@ -58,7 +59,7 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
 
     test "handles screen updates efficiently", %{
       manager: manager,
-      terminal: terminal
+      _terminal: terminal
     } do
       # Generate screen update commands
       updates = generate_screen_updates(100)

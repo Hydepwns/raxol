@@ -113,7 +113,30 @@ defmodule Raxol.Terminal.Buffer.Manager.Damage do
       1
   """
   def merge_regions(%State{} = state) do
-    new_tracker = DamageTracker.merge_regions(state.damage_tracker)
-    %{state | damage_tracker: new_tracker}
+    # Get all damage regions
+    regions = DamageTracker.get_regions(state.damage_tracker)
+
+    # Sort regions by start position
+    sorted_regions = Enum.sort_by(regions, fn {start, _end} -> start end)
+
+    # Merge overlapping regions
+    merged_regions =
+      Enum.reduce(sorted_regions, [], fn
+        region, [] ->
+          [region]
+
+        {start2, end2}, [{start1, end1} | rest] ->
+          if start2 <= end1 + 1 do
+            [{start1, max(end1, end2)} | rest]
+          else
+            [{start2, end2}, {start1, end1} | rest]
+          end
+      end)
+
+    # Create new tracker with merged regions
+    new_tracker = DamageTracker.clear_regions(state.damage_tracker)
+    Enum.reduce(merged_regions, new_tracker, fn {start, end_pos}, acc ->
+      DamageTracker.add_region(acc, start, end_pos)
+    end)
   end
 end

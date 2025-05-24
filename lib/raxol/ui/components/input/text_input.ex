@@ -49,8 +49,11 @@ defmodule Raxol.UI.Components.Input.TextInput do
 
   require Logger
 
-  # Implementation of Component callbacks
+  @doc """
+  Initializes the TextInput component state from the given props.
+  """
   @impl true
+  @spec init(map()) :: {:ok, map()}
   def init(props) do
     initial_state = %{
       value: props[:value] || "",
@@ -69,7 +72,11 @@ defmodule Raxol.UI.Components.Input.TextInput do
     {:ok, initial_state}
   end
 
+  @doc """
+  Handles events for the TextInput component, such as keypresses, focus, blur, and mouse events.
+  """
   @impl true
+  @spec handle_event(map(), map(), map()) :: {map(), list()}
   def handle_event(state, %Event{type: :key, data: key_data}, _context) do
     key = key_data.key
     modifiers = key_data.modifiers || []
@@ -225,19 +232,35 @@ defmodule Raxol.UI.Components.Input.TextInput do
     {state, []}
   end
 
+  @doc """
+  Updates the TextInput component state in response to messages or prop changes.
+  """
   @impl true
+  @spec update(term(), map()) :: map()
   def update(message, state) do
     Logger.debug("[TextInput] Received unhandled message: #{inspect(message)}")
     state
   end
 
+  @doc """
+  Mounts the TextInput component. Performs any setup needed after initialization.
+  """
   @impl true
+  @spec mount(map()) :: map()
   def mount(state), do: state
 
+  @doc """
+  Unmounts the TextInput component, performing any necessary cleanup.
+  """
   @impl true
+  @spec unmount(map()) :: map()
   def unmount(state), do: state
 
+  @doc """
+  Renders the TextInput component using the current state and context.
+  """
   @impl true
+  @spec render(map(), map()) :: any()
   def render(state, _context) do
     value = state.value
     placeholder = state.placeholder

@@ -41,6 +41,10 @@ defmodule RaxolWeb.ConnCase do
     # Ensure Endpoint is started for LiveView tests
     start_endpoint(tags)
 
+    on_exit(fn ->
+      Application.stop(:raxol)
+    end)
+
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
 

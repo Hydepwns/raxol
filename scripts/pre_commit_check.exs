@@ -129,7 +129,6 @@ defmodule PreCommitCheck do
         Path.expand(path) |> Path.relative_to_cwd()
       end)
 
-    # IO.inspect(normalized_markdown_files, label: "Found markdown files (normalized, excluding deps)")
     all_files_set = MapSet.new(normalized_markdown_files)
 
     broken_links =
@@ -215,16 +214,6 @@ defmodule PreCommitCheck do
         normalized_target_file =
           Path.expand(target_file) |> Path.relative_to_cwd()
 
-        # if normalized_target_file == ".github/workflows/README.md" do
-        #   IO.inspect(%{
-        #     checking_for: normalized_target_file,
-        #     is_member: MapSet.member?(all_files_set, normalized_target_file),
-        #     all_files_set_has_it: Enum.member?(all_files_set, ".github/workflows/README.md"),
-        #     # To see if it's there, let's convert set to list and filter
-        #     set_contains_path: Enum.find(MapSet.to_list(all_files_set), fn p -> p == ".github/workflows/README.md" end)
-        #   }, label: "DEBUG: .github/workflows/README.md check")
-        # end
-
         if MapSet.member?(all_files_set, normalized_target_file) or
              File.dir?(normalized_target_file) or
              File.exists?(normalized_target_file) do
@@ -235,7 +224,6 @@ defmodule PreCommitCheck do
             :ok
           end
         else
-          # IO.inspect(%{check: normalized_target_file, against: all_files_set}, label: "File Check Failed")
           {:error,
            "Target file or directory `#{normalized_target_file}` (resolved from `#{url}` in `#{source_file}`) not found"}
         end

@@ -10,184 +10,195 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
     # Create a test emulator with a 10x10 screen
     emulator = %Emulator{
       main_screen_buffer: ScreenBuffer.new(10, 10),
+      alternate_screen_buffer: ScreenBuffer.new(10, 10),
       cursor: CursorManager.new(),
       style: TextFormatting.new()
+      # ModeManager should be initialized in Emulator.new()
+      # mode_manager: Raxol.Terminal.ModeManager.new() # Add this if not auto-initialized
     }
 
     {:ok, emulator: emulator}
   end
 
-  describe "handle_h/2 (Set Mode)" do
-    test "enables insert mode (4)", %{emulator: emulator} do
-      result = ModeHandlers.handle_h(emulator, [4])
-      assert result.insert_mode == true
+  describe "handle_h_or_l/4 (Set/Reset Mode)" do
+    # --- Standard ANSI Modes ---
+    test "sets and resets Insert Mode (IRM - 4)", %{emulator: emulator} do
+      # Set Mode
+      {:ok, res_set} = ModeHandlers.handle_h_or_l(emulator, [4], "", ?h)
+      assert res_set.mode_manager.insert_mode == true
+
+      # Reset Mode
+      {:ok, res_reset} = ModeHandlers.handle_h_or_l(res_set, [4], "", ?l)
+      assert res_reset.mode_manager.insert_mode == false
     end
 
-    test "enables cursor visibility (25)", %{emulator: emulator} do
-      result = ModeHandlers.handle_h(emulator, [25])
-      assert result.cursor.visible == true
-    end
+    # --- DEC Private Modes (with '?' intermediate) ---
+    test "sets and resets Auto Wrap Mode (DECAWM - ?7)", %{emulator: emulator} do
+      # Set Mode
+      {:ok, res_set} = ModeHandlers.handle_h_or_l(emulator, [7], "?", ?h)
+      assert res_set.mode_manager.auto_wrap == true
 
-    test "enables origin mode (6)", %{emulator: emulator} do
-      result = ModeHandlers.handle_h(emulator, [6])
-      assert result.origin_mode == true
-    end
-
-    test "enables auto wrap (7)", %{emulator: emulator} do
-      result = ModeHandlers.handle_h(emulator, [7])
-      assert result.auto_wrap == true
-    end
-
-    test "enables reverse video (5)", %{emulator: emulator} do
-      result = ModeHandlers.handle_h(emulator, [5])
-      assert result.reverse_video == true
-    end
-
-    test "enables smooth scroll (4)", %{emulator: emulator} do
-      result = ModeHandlers.handle_h(emulator, [4])
-      assert result.smooth_scroll == true
-    end
-
-    test "sets screen mode to wide (3)", %{emulator: emulator} do
-      result = ModeHandlers.handle_h(emulator, [3])
-      assert result.screen_mode == :wide
-    end
-
-    test "sets column mode to wide (3)", %{emulator: emulator} do
-      result = ModeHandlers.handle_h(emulator, [3])
-      assert result.column_mode == :wide
-    end
-
-    test "handles multiple parameters", %{emulator: emulator} do
-      result = ModeHandlers.handle_h(emulator, [4, 25, 6])
-      assert result.insert_mode == true
-      assert result.cursor.visible == true
-      assert result.origin_mode == true
-    end
-
-    test "handles missing parameter", %{emulator: emulator} do
-      result = ModeHandlers.handle_h(emulator, [])
-      assert result == emulator
-    end
-  end
-
-  describe "handle_l/2 (Reset Mode)" do
-    test "disables insert mode (4)", %{emulator: emulator} do
-      # First enable insert mode
-      emulator = %{emulator | insert_mode: true}
-      result = ModeHandlers.handle_l(emulator, [4])
-      assert result.insert_mode == false
-    end
-
-    test "disables cursor visibility (25)", %{emulator: emulator} do
-      # First enable cursor visibility
-      emulator = %{emulator | cursor: %{emulator.cursor | visible: true}}
-      result = ModeHandlers.handle_l(emulator, [25])
-      assert result.cursor.visible == false
-    end
-
-    test "disables origin mode (6)", %{emulator: emulator} do
-      # First enable origin mode
-      emulator = %{emulator | origin_mode: true}
-      result = ModeHandlers.handle_l(emulator, [6])
-      assert result.origin_mode == false
-    end
-
-    test "disables auto wrap (7)", %{emulator: emulator} do
-      # First enable auto wrap
-      emulator = %{emulator | auto_wrap: true}
-      result = ModeHandlers.handle_l(emulator, [7])
-      assert result.auto_wrap == false
-    end
-
-    test "disables reverse video (5)", %{emulator: emulator} do
-      # First enable reverse video
-      emulator = %{emulator | reverse_video: true}
-      result = ModeHandlers.handle_l(emulator, [5])
-      assert result.reverse_video == false
-    end
-
-    test "disables smooth scroll (4)", %{emulator: emulator} do
-      # First enable smooth scroll
-      emulator = %{emulator | smooth_scroll: true}
-      result = ModeHandlers.handle_l(emulator, [4])
-      assert result.smooth_scroll == false
-    end
-
-    test "resets screen mode to normal (3)", %{emulator: emulator} do
-      # First set screen mode to wide
-      emulator = %{emulator | screen_mode: :wide}
-      result = ModeHandlers.handle_l(emulator, [3])
-      assert result.screen_mode == :normal
-    end
-
-    test "resets column mode to normal (3)", %{emulator: emulator} do
-      # First set column mode to wide
-      emulator = %{emulator | column_mode: :wide}
-      result = ModeHandlers.handle_l(emulator, [3])
-      assert result.column_mode == :normal
-    end
-
-    test "handles multiple parameters", %{emulator: emulator} do
-      # First enable all modes
-      emulator = %{
+      # Reset Mode
+      # Ensure it's set before reset for a clear test
+      emulator_awm_on = %{
         emulator
-        | insert_mode: true,
-          cursor: %{emulator.cursor | visible: true},
-          origin_mode: true
+        | mode_manager: %{emulator.mode_manager | auto_wrap: true}
       }
 
-      result = ModeHandlers.handle_l(emulator, [4, 25, 6])
-      assert result.insert_mode == false
-      assert result.cursor.visible == false
-      assert result.origin_mode == false
+      {:ok, res_reset} =
+        ModeHandlers.handle_h_or_l(emulator_awm_on, [7], "?", ?l)
+
+      assert res_reset.mode_manager.auto_wrap == false
     end
 
-    test "handles missing parameter", %{emulator: emulator} do
-      result = ModeHandlers.handle_l(emulator, [])
-      assert result == emulator
-    end
-  end
-
-  describe "handle_s/2 (Save Cursor)" do
-    test "saves cursor position and attributes", %{emulator: emulator} do
-      # Set cursor position and attributes
-      emulator = %{
+    test "sets and resets Cursor Visible Mode (DECTCEM - ?25)", %{
+      emulator: emulator
+    } do
+      # Reset first to ensure it can be set (default is often true)
+      emulator_cursor_hidden = %{
         emulator
-        | cursor: %{emulator.cursor | position: {5, 5}},
-          style: Map.merge(TextFormatting.new(), %{bold: true, fg_color: :red})
+        | mode_manager: %{emulator.mode_manager | cursor_visible: false}
       }
 
-      result = ModeHandlers.handle_s(emulator, [])
+      {:ok, res_set} =
+        ModeHandlers.handle_h_or_l(emulator_cursor_hidden, [25], "?", ?h)
 
-      # Verify saved state
-      assert result.saved_cursor.position == {5, 5}
-      assert result.saved_cursor.style.bold == true
-      assert result.saved_cursor.style.fg_color == :red
+      assert res_set.mode_manager.cursor_visible == true
+
+      # Reset Mode
+      {:ok, res_reset} = ModeHandlers.handle_h_or_l(res_set, [25], "?", ?l)
+      assert res_reset.mode_manager.cursor_visible == false
     end
-  end
 
-  describe "handle_u/2 (Restore Cursor)" do
-    test "restores cursor position and attributes", %{emulator: emulator} do
-      # First save cursor state
-      saved_cursor = %{
-        position: {5, 5},
-        style: Map.merge(TextFormatting.new(), %{bold: true, fg_color: :red})
+    test "sets and resets Origin Mode (DECOM - ?6)", %{emulator: emulator} do
+      {:ok, res_set} = ModeHandlers.handle_h_or_l(emulator, [6], "?", ?h)
+      assert res_set.mode_manager.origin_mode == true
+
+      emulator_om_on = %{
+        emulator
+        | mode_manager: %{emulator.mode_manager | origin_mode: true}
       }
 
-      emulator = %{emulator | saved_cursor: saved_cursor}
+      {:ok, res_reset} =
+        ModeHandlers.handle_h_or_l(emulator_om_on, [6], "?", ?l)
 
-      result = ModeHandlers.handle_u(emulator, [])
-
-      # Verify restored state
-      assert result.cursor.position == {5, 5}
-      assert result.style.bold == true
-      assert result.style.fg_color == :red
+      assert res_reset.mode_manager.origin_mode == false
     end
 
-    test "handles no saved cursor", %{emulator: emulator} do
-      result = ModeHandlers.handle_u(emulator, [])
-      assert result == emulator
+    test "sets and resets Screen Mode Reverse (DECSCNM - ?5)", %{
+      emulator: emulator
+    } do
+      {:ok, res_set} = ModeHandlers.handle_h_or_l(emulator, [5], "?", ?h)
+      assert res_set.mode_manager.screen_mode_reverse == true
+
+      emulator_smr_on = %{
+        emulator
+        | mode_manager: %{emulator.mode_manager | screen_mode_reverse: true}
+      }
+
+      {:ok, res_reset} =
+        ModeHandlers.handle_h_or_l(emulator_smr_on, [5], "?", ?l)
+
+      assert res_reset.mode_manager.screen_mode_reverse == false
+    end
+
+    test "sets and resets Bracketed Paste Mode (?2004)", %{emulator: emulator} do
+      {:ok, res_set} = ModeHandlers.handle_h_or_l(emulator, [2004], "?", ?h)
+      assert res_set.mode_manager.bracketed_paste_mode == true
+
+      emulator_bpm_on = %{
+        emulator
+        | mode_manager: %{emulator.mode_manager | bracketed_paste_mode: true}
+      }
+
+      {:ok, res_reset} =
+        ModeHandlers.handle_h_or_l(emulator_bpm_on, [2004], "?", ?l)
+
+      assert res_reset.mode_manager.bracketed_paste_mode == false
+    end
+
+    # Test for column mode switching (side effect)
+    test "sets 132 column mode (DECCCOLM - ?3) and resets", %{
+      emulator: emulator
+    } do
+      # Set to 132
+      {:ok, res_set_132} = ModeHandlers.handle_h_or_l(emulator, [3], "?", ?h)
+      assert res_set_132.mode_manager.column_width_mode == :wide
+      assert ScreenBuffer.get_width(res_set_132.main_screen_buffer) == 132
+
+      # Ensure alt buffer also resized if it existed (or check default if created on demand)
+      # For simplicity, we'll assume main buffer resize is indicative
+
+      # Reset (should go to normal/80)
+      {:ok, res_reset_80} =
+        ModeHandlers.handle_h_or_l(res_set_132, [3], "?", ?l)
+
+      assert res_reset_80.mode_manager.column_width_mode == :normal
+      assert ScreenBuffer.get_width(res_reset_80.main_screen_buffer) == 80
+    end
+
+    test "handles multiple parameters for DEC private modes", %{
+      emulator: emulator
+    } do
+      # Set multiple DEC private modes
+      # DECAWM, DECTCEM
+      {:ok, res_set} = ModeHandlers.handle_h_or_l(emulator, [7, 25], "?", ?h)
+      assert res_set.mode_manager.auto_wrap == true
+      assert res_set.mode_manager.cursor_visible == true
+
+      # Reset them
+      {:ok, res_reset} = ModeHandlers.handle_h_or_l(res_set, [7, 25], "?", ?l)
+      assert res_reset.mode_manager.auto_wrap == false
+      assert res_reset.mode_manager.cursor_visible == false
+    end
+
+    test "handles multiple parameters for standard ANSI modes", %{
+      emulator: emulator
+    } do
+      # Set multiple standard modes
+      # IRM, LNM
+      {:ok, res_set} = ModeHandlers.handle_h_or_l(emulator, [4, 20], "", ?h)
+      assert res_set.mode_manager.insert_mode == true
+      assert res_set.mode_manager.line_feed_mode == true
+
+      # Reset them
+      {:ok, res_reset} = ModeHandlers.handle_h_or_l(res_set, [4, 20], "", ?l)
+      assert res_reset.mode_manager.insert_mode == false
+      assert res_reset.mode_manager.line_feed_mode == false
+    end
+
+    test "handles empty parameters (no-op)", %{emulator: emulator} do
+      {:ok, res_no_change_h} = ModeHandlers.handle_h_or_l(emulator, [], "", ?h)
+      assert res_no_change_h == emulator
+
+      {:ok, res_no_change_l} = ModeHandlers.handle_h_or_l(emulator, [], "", ?l)
+      assert res_no_change_l == emulator
+
+      {:ok, res_no_change_dec_h} =
+        ModeHandlers.handle_h_or_l(emulator, [], "?", ?h)
+
+      assert res_no_change_dec_h == emulator
+
+      {:ok, res_no_change_dec_l} =
+        ModeHandlers.handle_h_or_l(emulator, [], "?", ?l)
+
+      assert res_no_change_dec_l == emulator
+    end
+
+    test "handles unknown mode parameters gracefully (no-op)", %{
+      emulator: emulator
+    } do
+      {:ok, res_unknown_std} =
+        ModeHandlers.handle_h_or_l(emulator, [999], "", ?h)
+
+      # Should log a warning and be a no-op
+      assert res_unknown_std == emulator
+
+      {:ok, res_unknown_dec} =
+        ModeHandlers.handle_h_or_l(emulator, [999], "?", ?h)
+
+      # Should log a warning and be a no-op
+      assert res_unknown_dec == emulator
     end
   end
 end

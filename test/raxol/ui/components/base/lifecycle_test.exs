@@ -2,15 +2,23 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
   use ExUnit.Case, async: true
   doctest Raxol.UI.Components.Base.Lifecycle
 
-  import Raxol.TestHelpers
+  import Raxol.Test.TestHelper
+
+  import Raxol.UI.Components.Base.Lifecycle,
+    only: [mount: 3, render: 2, process_event: 3, update: 2, unmount: 2]
 
   # Define a test component that implements the Component behavior
   defmodule TestComponent do
     @behaviour Raxol.UI.Components.Base.Component
 
-    # Track lifecycle events
+    defstruct id: nil,
+              value: nil,
+              lifecycle_events: [],
+              render_count: 0,
+              handle_event_count: 0
+
     def new(opts \\ []) do
-      %{
+      %__MODULE__{
         id:
           Keyword.get(
             opts,
@@ -25,19 +33,22 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
     end
 
     @impl true
+    def mount(component, _context \\ %{}) do
+      updated =
+        Map.update!(component, :lifecycle_events, &[{:mount, :called} | &1])
+
+      {updated, []}
+    end
+
+    @impl true
     def render(component, _context) do
       updated = Map.update!(component, :render_count, &(&1 + 1))
 
       updated =
         Map.update!(updated, :lifecycle_events, &[{:render, :called} | &1])
 
-      %{
-        type: :test_component,
-        id: updated.id,
-        attrs: %{
-          value: updated.value
-        }
-      }
+      {updated,
+       %{type: :test_component, id: updated.id, attrs: %{value: updated.value}}}
     end
 
     @impl true
@@ -48,43 +59,42 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
         Map.update!(updated, :lifecycle_events, &[{:handle_event, event} | &1])
 
       case event do
-        %{type: :test, value: value} ->
-          {:update, %{updated | value: value}}
-
-        %{type: :no_change} ->
-          {:handled, updated}
-
-        _ ->
-          :passthrough
+        %{type: :test, value: value} -> {:update, %{updated | value: value}}
+        %{type: :no_change} -> {:handled, updated}
+        _ -> :passthrough
       end
     end
 
-    # Extra functions to simulate mount/unmount hooks
-    def mount(component) do
-      Map.update!(component, :lifecycle_events, &[{:mount, :called} | &1])
-    end
-
-    def update(component, props) do
+    @impl true
+    def update(component, props, _context \\ %{}) do
       updated = Map.merge(component, props)
-      Map.update!(updated, :lifecycle_events, &[{:update, props} | &1])
+
+      updated =
+        Map.update!(updated, :lifecycle_events, &[{:update, props} | &1])
+
+      updated
     end
 
-    def unmount(component) do
-      Map.update!(component, :lifecycle_events, &[{:unmount, :called} | &1])
+    @impl true
+    def unmount(component, _context \\ %{}) do
+      updated =
+        Map.update!(component, :lifecycle_events, &[{:unmount, :called} | &1])
+
+      {updated, []}
     end
   end
 
   describe "component lifecycle" do
     test "mount adds event to lifecycle" do
       component = TestComponent.new()
-      mounted = TestComponent.mount(component)
+      {mounted, _} = mount(component, %{}, %{})
 
       assert Enum.at(mounted.lifecycle_events, 0) == {:mount, :called}
     end
 
     test "unmount adds event to lifecycle" do
       component = TestComponent.new()
-      unmounted = TestComponent.unmount(component)
+      {unmounted, _} = unmount(component, %{})
 
       assert Enum.at(unmounted.lifecycle_events, 0) == {:unmount, :called}
     end
@@ -94,26 +104,24 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       context = %{theme: test_theme()}
 
       # First render
-      TestComponent.render(component, context)
+      {rendered, _view} = render(component, context)
 
       # Render should be idempotent - verify by rendering multiple times
-      rendered_element_map =
-        component
-        |> TestComponent.render(context)
+      {rendered_element_map, _view2} = render(rendered, context)
 
       # |> TestComponent.render(context) # Cannot pipe element map back to render
       # |> TestComponent.render(context)
 
       # We cannot easily assert the internal count change with this structure.
       # Asserting on the returned element map instead.
-      assert rendered_element_map.type == :test_component
+      assert _view2.type == :test_component
       # assert rendered.render_count == 4 # This assertion is flawed
       # assert length(rendered.lifecycle_events) == 4 # This assertion is flawed
     end
 
     test "update correctly merges props" do
       component = TestComponent.new(value: "initial")
-      updated = TestComponent.update(component, %{value: "updated"})
+      updated = TestComponent.update(component, %{value: "updated"}, %{})
 
       assert updated.value == "updated"
 
@@ -185,30 +193,25 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
     test "full component lifecycle" do
       # Create and mount
       component = TestComponent.new(value: "initial", id: "test-123")
-      mounted = TestComponent.mount(component)
+      {mounted, _} = mount(component, %{}, %{})
 
       # Render
-      context = %{theme: test_theme()}
-      rendered_element_map = TestComponent.render(mounted, context)
+      {rendered, _view} = render(mounted, %{theme: test_theme()})
 
       # Handle events - Pass the state BEFORE render (mounted)
       {:update, after_event} =
-        TestComponent.handle_event(
-          # Pass the state, not the rendered map
-          mounted,
-          %{type: :test, value: "updated"},
-          context
-        )
+        process_event(mounted, %{type: :test, value: "updated"}, %{
+          theme: test_theme()
+        })
 
       # Render again after update - Pass the updated state (after_event)
-      re_rendered_element_map = TestComponent.render(after_event, context)
+      {re_rendered, _view2} = render(after_event, %{theme: test_theme()})
 
       # Update props
-      # Pass state
-      updated = TestComponent.update(after_event, %{value: "final"})
+      updated = TestComponent.update(after_event, %{value: "final"}, %{})
 
       # Unmount
-      unmounted = TestComponent.unmount(updated)
+      {unmounted, _} = unmount(updated, %{})
 
       # Verify the full history
       events = Enum.reverse(unmounted.lifecycle_events)

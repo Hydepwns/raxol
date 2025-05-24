@@ -102,31 +102,44 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
   describe "resolve_load_order/1" do
     test "resolves simple dependency chain" do
       plugins = %{
-        "plugin_a" => %{dependencies: [{"plugin_b", ">= 1.0.0"}]},
-        "plugin_b" => %{dependencies: []}
+        "plugin_a" => %{
+          dependencies: [{"plugin_b", ">= 1.0.0"}],
+          version: "1.0.0"
+        },
+        "plugin_b" => %{dependencies: [], version: "1.0.0"}
       }
 
-      assert {:ok, load_order} = Core.resolve_load_order(plugins)
+      result = Core.resolve_load_order(plugins)
+      assert match?({:ok, _}, result)
+      {:ok, load_order} = result
       assert load_order == ["plugin_b", "plugin_a"]
     end
 
     test "resolves complex dependency graph" do
       plugins = %{
         "plugin_a" => %{
-          dependencies: [{"plugin_b", ">= 1.0.0"}, {"plugin_c", ">= 1.0.0"}]
+          dependencies: [{"plugin_b", ">= 1.0.0"}, {"plugin_c", ">= 1.0.0"}],
+          version: "1.0.0"
         },
-        "plugin_b" => %{dependencies: [{"plugin_c", ">= 1.0.0"}]},
-        "plugin_c" => %{dependencies: []},
-        "plugin_d" => %{dependencies: [{"plugin_a", ">= 1.0.0"}]}
+        "plugin_b" => %{
+          dependencies: [{"plugin_c", ">= 1.0.0"}],
+          version: "1.0.0"
+        },
+        "plugin_c" => %{dependencies: [], version: "1.0.0"},
+        "plugin_d" => %{
+          dependencies: [{"plugin_a", ">= 1.0.0"}],
+          version: "1.0.0"
+        }
       }
 
-      assert {:ok, load_order} = Core.resolve_load_order(plugins)
+      result = Core.resolve_load_order(plugins)
+      assert match?({:ok, _}, result)
+      {:ok, load_order} = result
       assert "plugin_c" in load_order
       assert "plugin_b" in load_order
       assert "plugin_a" in load_order
       assert "plugin_d" in load_order
 
-      # Verify dependencies are loaded before dependents
       c_index = Enum.find_index(load_order, &(&1 == "plugin_c"))
       b_index = Enum.find_index(load_order, &(&1 == "plugin_b"))
       a_index = Enum.find_index(load_order, &(&1 == "plugin_a"))
@@ -139,13 +152,19 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
 
     test "detects circular dependencies" do
       plugins = %{
-        "plugin_a" => %{dependencies: [{"plugin_b", ">= 1.0.0"}]},
-        "plugin_b" => %{dependencies: [{"plugin_a", ">= 1.0.0"}]}
+        "plugin_a" => %{
+          dependencies: [{"plugin_b", ">= 1.0.0"}],
+          version: "1.0.0"
+        },
+        "plugin_b" => %{
+          dependencies: [{"plugin_a", ">= 1.0.0"}],
+          version: "1.0.0"
+        }
       }
 
-      assert {:error, :circular_dependency, cycle, chain} =
-               Core.resolve_load_order(plugins)
-
+      result = Core.resolve_load_order(plugins)
+      assert match?({:error, :circular_dependency, _, _}, result)
+      {:error, :circular_dependency, cycle, chain} = result
       assert length(cycle) > 0
       assert length(chain) > 0
       assert "plugin_a" in cycle
@@ -154,11 +173,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.CoreTest do
 
     test "handles plugins with no dependencies" do
       plugins = %{
-        "plugin_a" => %{dependencies: []},
-        "plugin_b" => %{dependencies: []}
+        "plugin_a" => %{dependencies: [], version: "1.0.0"},
+        "plugin_b" => %{dependencies: [], version: "1.0.0"}
       }
 
-      assert {:ok, load_order} = Core.resolve_load_order(plugins)
+      result = Core.resolve_load_order(plugins)
+      assert match?({:ok, _}, result)
+      {:ok, load_order} = result
       assert length(load_order) == 2
       assert "plugin_a" in load_order
       assert "plugin_b" in load_order

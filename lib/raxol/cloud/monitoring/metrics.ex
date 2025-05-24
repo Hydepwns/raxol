@@ -18,6 +18,7 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
   end
 
   def record(name, value, opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     metrics_state = get_metrics_state()
 
     # Create metric entry
@@ -63,6 +64,7 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
   end
 
   def get(name, opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     metrics_state = get_metrics_state()
 
     limit = Keyword.get(opts, :limit, 100)
@@ -86,7 +88,7 @@ defmodule Raxol.Cloud.Monitoring.Metrics do
         |> Enum.filter(fn metric ->
           DateTime.compare(metric.timestamp, since) in [:gt, :eq] &&
             DateTime.compare(metric.timestamp, until) in [:lt, :eq] &&
-            (tags == nil || Enum.all?(tags, &(&1 in metric.tags)))
+            (tags == nil || Enum.all?(tags, &(&1 in Map.get(metric, :tags, []))))
         end)
         |> Enum.take(limit)
     end

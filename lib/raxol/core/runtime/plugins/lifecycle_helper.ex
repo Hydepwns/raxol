@@ -46,11 +46,19 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
          {:ok, initial_state} <-
            Loader.initialize_plugin(plugin_module, config),
          :ok <-
+           StateManager.update_plugin_state(plugin_id, initial_state),
+         :ok <-
            CommandRegistry.register_plugin_commands(
              plugin_module,
              initial_state,
              command_table
            ) do
+      # Register the plugin in the GenServer-based registry
+      Raxol.Core.Runtime.Plugins.Registry.register_plugin(
+        plugin_id,
+        plugin_metadata
+      )
+
       # Update state maps with proper error handling
       updated_maps = %{
         plugins: Map.put(plugins, plugin_id, plugin_module),
@@ -179,6 +187,8 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     with {:ok, plugin_metadata} <- Map.fetch(metadata, plugin_id),
          :ok <-
            CommandRegistry.unregister_plugin_commands(plugin_id, command_table) do
+      # Unregister the plugin from the GenServer-based registry
+      Raxol.Core.Runtime.Plugins.Registry.unregister_plugin(plugin_id)
       # Remove plugin from metadata and states
       meta = Map.delete(metadata, plugin_id)
       sts = Map.delete(states, plugin_id)
@@ -269,5 +279,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
         error -> {:halt, error}
       end
     end)
+  end
+
+  @doc """
+  Catch-all for load_plugin/3. Raises a clear error if called with the wrong arity.
+  """
+  def load_plugin(_a, _b, _c) do
+    raise "Raxol.Core.Runtime.Plugins.LifecycleHelper.load_plugin/3 is not implemented. Use load_plugin/8."
   end
 end

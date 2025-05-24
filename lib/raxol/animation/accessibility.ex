@@ -38,4 +38,21 @@ defmodule Raxol.Animation.Accessibility do
 
     Map.put(animation, :duration, cognitive_duration)
   end
+
+  @doc """
+  Adapts an animation definition based on reduced motion and cognitive accessibility settings.
+  If reduced_motion is true, applies reduced motion adaptation.
+  If cognitive_accessibility is true, applies cognitive accessibility adaptation.
+  Otherwise, returns the animation unchanged.
+  """
+  def adapt_animation(animation, reduced_motion, cognitive_accessibility) do
+    cond do
+      reduced_motion ->
+        adapt_for_reduced_motion(animation)
+      cognitive_accessibility ->
+        adapt_for_cognitive_accessibility(animation)
+      true ->
+        animation
+    end
+  end
 end

@@ -1,9 +1,11 @@
 defmodule Raxol.Core.Runtime.ComponentManagerTest do
   use ExUnit.Case, async: false
-  import ExUnit.CaptureLog
 
   alias Raxol.Core.Runtime.ComponentManager
-  alias Raxol.Core.Runtime.ComponentManagerTest.TestComponent
+
+  alias Raxol.Test.ComponentManagerTestMocks.Raxol.Core.Runtime.ComponentManagerTest.TestComponent
+
+  require Raxol.Test.ComponentManagerTestMocks
 
   setup do
     # Start ComponentManager with clean state

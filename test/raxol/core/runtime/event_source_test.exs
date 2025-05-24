@@ -75,7 +75,10 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
     test "handles crashes", %{context: context} do
       # Test that the process crashes but is restarted
       pid =
-        Raxol.TestHelpers.start_test_event_source(%{data: :test_data}, context)
+        Raxol.Test.TestHelper.start_test_event_source(
+          %{data: :test_data},
+          context
+        )
 
       # Killing the process should trigger a restart
       Process.exit(pid, :kill)
@@ -90,7 +93,16 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
       :timer.sleep(100)
 
       # The source should still be alive (check using the registered name)
-      # assert Process.whereis(TestSource) # TestSource is not a registered name
+      assert context.event_source_pid != nil
+
+      # Simulate starting a test event source via helper
+      test_event_source_pid =
+        Raxol.Test.TestHelper.start_test_event_source(
+          %{data: :test_data},
+          context
+        )
+
+      assert Process.alive?(test_event_source_pid)
     end
   end
 end

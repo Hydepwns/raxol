@@ -8,7 +8,6 @@ defmodule Raxol.Terminal.MemoryManager do
   require Logger
 
   alias Raxol.Terminal.Buffer.Manager, as: BufferManager
-  alias Raxol.Terminal.Integration
   alias Raxol.Terminal.Integration.State
 
   defstruct manager_pid: nil
@@ -106,8 +105,8 @@ defmodule Raxol.Terminal.MemoryManager do
   Sums the memory usage of the buffer manager, scroll buffer, and other relevant components.
   Returns the total in bytes.
   """
-  @spec estimate_memory_usage(State.t()) :: non_neg_integer()
-  def estimate_memory_usage(%State{} = state) do
+  @spec estimate_memory_usage(map()) :: non_neg_integer()
+  def estimate_memory_usage(state) when is_map(state) do
     buffer_manager_usage =
       case Map.fetch(state, :buffer_manager) do
         {:ok, bm} -> Map.get(bm, :memory_usage, 0)

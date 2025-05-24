@@ -30,7 +30,6 @@ defmodule Raxol.Docs.Guides.Examples.Interactive.EventHandlingTest do
 
       # Catch-all for other messages
       _ ->
-        IO.inspect(message, label: "Unhandled message")
         model
     end
   end

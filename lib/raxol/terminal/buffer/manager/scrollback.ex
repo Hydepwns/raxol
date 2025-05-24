@@ -18,7 +18,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       "Hello, World!"
   """
   def add_line(%State{} = state, line) do
-    new_scrollback = Scrollback.add_line(state.scrollback, line)
+    new_scrollback = Scrollback.add_lines(state.scrollback, [line])
     %{state | scrollback: new_scrollback}
   end
 

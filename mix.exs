@@ -1,7 +1,7 @@
 defmodule Raxol.MixProject do
   use Mix.Project
 
-  @version "0.3.0"
+  @version "0.4.0"
   @source_url "https://github.com/Hydepwns/raxol"
 
   def project do
@@ -91,8 +91,8 @@ defmodule Raxol.MixProject do
       {:jason, "~> 1.4"},
 
       # Database and persistence
-      {:ecto_sql, "~> 3.10"},
-      {:postgrex, "~> 0.19.0", runtime: false},
+      {:ecto_sql, "~> 3.11"},
+      {:postgrex, "~> 0.20.0", runtime: false},
       # For password hashing
       {:bcrypt_elixir, "~> 3.0"},
 
@@ -139,7 +139,8 @@ defmodule Raxol.MixProject do
       {:bandit, "~> 1.5"},
       {:excoveralls, "~> 0.18", only: :test},
       {:hackney, "~> 1.9"},
-      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false}
+      {:ex_doc, ">= 0.0.0", only: :dev, runtime: false},
+      {:toml, "~> 0.6"}
     ]
   end
 

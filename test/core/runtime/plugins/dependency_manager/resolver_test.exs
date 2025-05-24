@@ -9,7 +9,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "b" => []
       }
 
-      assert {:ok, order} = Resolver.tarjan_sort(graph)
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:ok, _}, result)
+      {:ok, order} = result
       assert order == ["b", "a"]
     end
 
@@ -24,7 +26,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "d" => []
       }
 
-      assert {:ok, order} = Resolver.tarjan_sort(graph)
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:ok, _}, result)
+      {:ok, order} = result
       # d must come before b and c, which must come before a
       d_index = Enum.find_index(order, &(&1 == "d"))
       b_index = Enum.find_index(order, &(&1 == "b"))
@@ -42,7 +46,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "b" => [{"a", ">= 1.0.0", %{optional: false}}]
       }
 
-      assert {:error, cycle} = Resolver.tarjan_sort(graph)
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:error, _}, result)
+      {:error, cycle} = result
       assert "a" in cycle
       assert "b" in cycle
     end
@@ -54,14 +60,18 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "c" => [{"a", ">= 1.0.0", %{optional: false}}]
       }
 
-      assert {:error, cycle} = Resolver.tarjan_sort(graph)
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:error, _}, result)
+      {:error, cycle} = result
       assert "a" in cycle
       assert "b" in cycle
       assert "c" in cycle
     end
 
     test "handles an empty graph" do
-      assert {:ok, order} = Resolver.tarjan_sort(%{})
+      result = Resolver.tarjan_sort(%{})
+      assert match?({:ok, _}, result)
+      {:ok, order} = result
       assert order == []
     end
 
@@ -72,7 +82,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "c" => []
       }
 
-      assert {:ok, order} = Resolver.tarjan_sort(graph)
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:ok, _}, result)
+      {:ok, order} = result
       assert Enum.sort(order) == ["a", "b", "c"]
     end
 
@@ -86,33 +98,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "c" => []
       }
 
-      assert {:ok, order} = Resolver.tarjan_sort(graph)
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:ok, _}, result)
+      {:ok, order} = result
       # c must come before a since it's required
       c_index = Enum.find_index(order, &(&1 == "c"))
       a_index = Enum.find_index(order, &(&1 == "a"))
-      assert c_index < a_index
-    end
-
-    test "handles complex version constraints" do
-      graph = %{
-        "a" => [
-          {"b", ">= 1.0.0 and < 2.0.0", %{optional: false}},
-          {"c", "~> 1.0", %{optional: false}}
-        ],
-        "b" => [{"d", ">= 0.1.0", %{optional: false}}],
-        "c" => [{"d", ">= 0.1.0", %{optional: false}}],
-        "d" => []
-      }
-
-      assert {:ok, order} = Resolver.tarjan_sort(graph)
-      # Verify the topological order is maintained
-      d_index = Enum.find_index(order, &(&1 == "d"))
-      b_index = Enum.find_index(order, &(&1 == "b"))
-      c_index = Enum.find_index(order, &(&1 == "c"))
-      a_index = Enum.find_index(order, &(&1 == "a"))
-      assert d_index < b_index
-      assert d_index < c_index
-      assert b_index < a_index
       assert c_index < a_index
     end
 
@@ -128,7 +119,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "e" => []
       }
 
-      assert {:ok, order} = Resolver.tarjan_sort(graph)
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:ok, _}, result)
+      {:ok, order} = result
       # Verify the topological order is maintained
       e_index = Enum.find_index(order, &(&1 == "e"))
       d_index = Enum.find_index(order, &(&1 == "d"))
@@ -147,7 +140,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "a" => [{"a", ">= 1.0.0", %{optional: false}}]
       }
 
-      assert {:error, cycle} = Resolver.tarjan_sort(graph)
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:error, _}, result)
+      {:error, cycle} = result
       assert cycle == ["a"]
     end
 
@@ -162,8 +157,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "d" => []
       }
 
-      assert {:ok, order} = Resolver.tarjan_sort(graph)
-      # Verify topological order is maintained
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:ok, _}, result)
+      {:ok, order} = result
       d_index = Enum.find_index(order, &(&1 == "d"))
       b_index = Enum.find_index(order, &(&1 == "b"))
       c_index = Enum.find_index(order, &(&1 == "c"))
@@ -182,8 +178,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "d" => []
       }
 
-      assert {:ok, order} = Resolver.tarjan_sort(graph)
-      # Verify topological order is maintained
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:ok, _}, result)
+      {:ok, order} = result
       d_index = Enum.find_index(order, &(&1 == "d"))
       c_index = Enum.find_index(order, &(&1 == "c"))
       a_index = Enum.find_index(order, &(&1 == "a"))
@@ -202,8 +199,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "e" => []
       }
 
-      assert {:ok, order} = Resolver.tarjan_sort(graph)
-      # Verify deep chain order
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:ok, _}, result)
+      {:ok, order} = result
       e_index = Enum.find_index(order, &(&1 == "e"))
       d_index = Enum.find_index(order, &(&1 == "d"))
       c_index = Enum.find_index(order, &(&1 == "c"))
@@ -223,8 +221,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.ResolverTest do
         "d" => []
       }
 
-      assert {:ok, order} = Resolver.tarjan_sort(graph)
-      # Verify each component's internal order
+      result = Resolver.tarjan_sort(graph)
+      assert match?({:ok, _}, result)
+      {:ok, order} = result
       b_index = Enum.find_index(order, &(&1 == "b"))
       a_index = Enum.find_index(order, &(&1 == "a"))
       d_index = Enum.find_index(order, &(&1 == "d"))

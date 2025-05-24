@@ -1,6 +1,6 @@
 defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
-  use ExUnit.Case, async: true
-  import Raxol.TestHelpers
+  use ExUnit.Case, async: false
+  import Raxol.Test.TestHelper
 
   alias Raxol.Core.Runtime.Plugins.{CommandHelper, CommandRegistry}
   alias Raxol.Core.Runtime.Plugins.Manager.State, as: ManagerState

@@ -95,8 +95,8 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
   Handles file system events.
   Returns updated state with debounced reload timer if needed.
   """
-  def handle_file_event(path, state) do
-    Events.handle_file_event(path, state)
+  def handle_file_event(path, state, file_mod \\ File) do
+    Events.handle_file_event(path, state, file_mod)
   end
 
   @doc """

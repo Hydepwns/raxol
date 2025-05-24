@@ -6,9 +6,6 @@ defmodule Raxol.Terminal.Buffer.Scroller do
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
-  # Import State to access helper functions now moved there
-  import Raxol.Terminal.Buffer.State, only: [get_scroll_region_boundaries: 1]
-  # Import Operations for replace_region_content (still remaining there for now)
   import Raxol.Terminal.Buffer.Operations, only: [replace_region_content: 4]
 
   @doc """

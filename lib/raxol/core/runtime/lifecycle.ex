@@ -1,227 +1,393 @@
 defmodule Raxol.Core.Runtime.Lifecycle do
   @moduledoc "Manages the application lifecycle, including startup, shutdown, and terminal interaction."
 
+  use GenServer
   require Logger
 
+  alias Raxol.Core.Runtime.Events.Dispatcher
+  # Added for initial command execution
+  alias Raxol.Core.Runtime.Command
+  # Added for PluginManager integration
+  alias Raxol.Core.Runtime.Plugins.Manager
+
+  defmodule State do
+    @moduledoc false
+    defstruct app_module: nil,
+              options: [],
+              # Derived from app_module or options
+              app_name: nil,
+              width: 80,
+              height: 24,
+              debug_mode: false,
+              # PID of the PluginManager
+              plugin_manager: nil,
+              # ETS table ID / name
+              command_registry_table: nil,
+              initial_commands: [],
+              dispatcher_pid: nil,
+              # Application's own model
+              model: %{},
+              # Flag to indicate Dispatcher is ready
+              dispatcher_ready: false,
+              # Flag to indicate PluginManager is ready
+              plugin_manager_ready: false
+  end
+
   @doc """
-  Starts a Raxol application with the given module and options.
+  Starts and links a new Raxol application lifecycle manager.
 
   ## Options
-    * `:title` - The window title (default: "Raxol Application")
-    * `:fps` - Frames per second (default: 60)
-    * `:quit_keys` - List of keys that will quit the application (default: [:ctrl_c])
-    * `:debug` - Enable debug mode (default: false)
-    * `:width` - Terminal width (default: 80)
-    * `:height` - Terminal height (default: 24)
+    * `:name` - Optional name for registering the GenServer. If not provided, a name
+                will be derived from `app_module`.
+    * `:width` - Terminal width (default: 80).
+    * `:height` - Terminal height (default: 24).
+    * `:debug` - Enable debug mode (default: false).
+    * `:initial_commands` - A list of `Raxol.Core.Runtime.Command` structs to execute on startup.
+    * `:plugin_manager_opts` - Options to pass to the PluginManager's start_link function.
+    * Other options are passed to the application module's `init/1` function.
   """
-  def start_application(app_module, options \\ []) do
-    Logger.debug("[Lifecycle] Entered start_application/2")
+  def start_link(app_module, options \\ []) when is_atom(app_module) do
+    name_option = Keyword.get(options, :name, derive_process_name(app_module))
+    GenServer.start_link(__MODULE__, {app_module, options}, name: name_option)
+  end
 
-    Logger.info(
-      "[#{__MODULE__}] start_application called for #{inspect(app_module)} with options: #{inspect(options)}"
-    )
-
-    app_name = get_app_name(app_module)
-    Logger.debug("[#{__MODULE__}] Determined app_name: #{inspect(app_name)}")
-
-    Logger.debug("[Lifecycle] Attempting DynamicSupervisor.start_child...")
-
-    # Construct initial state map for Dispatcher
-    dispatcher_initial_state = %{
-      app_module: app_module,
-      # TODO: Get actual width/height from options or defaults
-      width: Keyword.get(options, :width, 80),
-      height: Keyword.get(options, :height, 24),
-      # TODO: Where does plugin_manager and command_registry_table come from?
-      # Placeholder
-      plugin_manager: nil,
-      # Placeholder
-      command_registry_table: nil,
-      # TODO: Get initial commands if any
-      # Placeholder
-      initial_commands: [],
-      # Assuming Application.init provides the initial model map
-      model: %{}
-    }
-
-    # Define the child spec map
-    child_spec = %{
-      id: Raxol.Core.Runtime.Events.Dispatcher,
-      # Call start_link/2 explicitly
-      # TODO: Determine the correct runtime_pid
-      start:
-        {Raxol.Core.Runtime.Events.Dispatcher, :start_link,
-         [nil, dispatcher_initial_state]}
-      # type: :worker, # Default
-      # restart: :permanent # Default
-    }
-
-    case DynamicSupervisor.start_child(
-           Raxol.DynamicSupervisor,
-           # {Raxol.Core.Runtime.Events.Dispatcher, {app_module, app_name, options}} # Old tuple format
-           # Use map-based spec
-           child_spec
-         ) do
-      {:ok, pid} ->
-        Logger.debug(
-          "[Lifecycle] DynamicSupervisor.start_child returned {:ok, pid}"
-        )
-
-        Logger.info(
-          "[#{__MODULE__}] Application process started successfully. PID: #{inspect(pid)}"
-        )
-
-        {:ok, pid}
-
-      {:error, reason} ->
-        Logger.debug(
-          "[Lifecycle] DynamicSupervisor.start_child returned {:error, reason}"
-        )
-
-        Logger.error(
-          "[#{__MODULE__}] Failed to start application process. Reason: #{inspect(reason)}"
-        )
-
-        {:error, reason}
-    end
+  defp derive_process_name(app_module) do
+    Module.concat(__MODULE__, Atom.to_string(app_module))
   end
 
   @doc """
-  Stops a running application.
-
-  Returns `:ok` if the application was stopped successfully,
-  `{:error, :app_not_running}` if the application is not running.
+  Stops the Raxol application lifecycle manager.
+  `pid_or_name` can be the PID or the registered name of the Lifecycle GenServer.
   """
-  def stop_application(app_name)
-      when is_binary(app_name) or is_atom(app_name) do
-    Logger.info("Stopping application: #{app_name}")
-
-    # Simplified: Assume stopping logic doesn't require lookup via AppRegistry anymore
-    # case lookup_app(app_name) do
-    #   {:ok, pid} ->
-    #     Logger.debug("Found application PID: #{inspect pid}. Terminating...")
-    #     # Terminate the application process
-    #     Process.exit(pid, :shutdown)
-    #     :ok
-    #   :error ->
-    #     Logger.error("Application not found: #{app_name}")
-    #     {:error, :not_found}
-    # end
-    # Return OK assuming stop was requested
-    :ok
-  end
-
-  @doc """
-  Registers an application with the registry.
-  """
-  def register_application(app_name, pid) do
-    # Use CommandRegistry or another mechanism if needed, AppRegistry removed
-    Logger.info("Application registered: #{app_name} with PID: #{inspect(pid)}")
-    # AppRegistry.register(app_name, pid)
-    :ok
-  end
-
-  @doc """
-  Looks up an application by name.
-
-  Returns `{:ok, pid}` if the application is found, `:error` otherwise.
-  """
-  def lookup_app(app_name) do
-    # AppRegistry removed, lookup might not be needed or done differently
-    Logger.info("Looking up application: #{app_name}")
-    # AppRegistry.lookup(app_name)
-    # Return error tuple instead of nil
-    {:error, :not_found}
-  end
-
-  @doc """
-  Initializes the appropriate environment (TTY or VS Code) based on the runtime options.
-  """
-  def initialize_environment(state) do
-    Logger.info("Initializing environment...")
-    # Assume initialization logic is now mode-agnostic or handled elsewhere
-    # is_vscode? check removed
-    # if Platform.is_vscode?() do
-    #   Logger.info("VS Code environment detected.")
-    #   # Specific VS Code setup if needed
-    # else
-    #   Logger.info("Native terminal environment detected.")
-    #   # Native terminal setup
-    # end
-    # Return unchanged state
-    state
-  end
-
-  @doc """
-  Cleans up resources when an application is shutting down.
-  """
-  def handle_cleanup(state) do
-    Logger.info("Lifecycle cleaning up for app: #{state.app_name}")
-    # Cleanup associated resources (e.g., ETS tables, processes)
-    # Unregister from CommandRegistry if applicable
-    # AppRegistry removed
-    # AppRegistry.unregister(state.app_name)
-    :ok
-  end
-
-  @doc """
-  Handles errors during application execution.
-
-  Logs the error and attempts to recover if possible.
-  """
-  def handle_error(reason, state) do
-    # Log errors using the specific error handler
-    case reason do
-      :init_error ->
-        # Use Termbox.err_string if available, otherwise a generic message
-        error_code = state.init_status
-        error_msg = "Termbox initialization error: code #{error_code}"
-        Logger.error("[Lifecycle] #{error_msg}")
-
-      :shutdown_error ->
-        error_code = state.shutdown_status
-        error_msg = "Termbox shutdown error: code #{error_code}"
-        Logger.error("[Lifecycle] #{error_msg}")
-
-      _ ->
-        Logger.error("[Lifecycle] Unknown error: #{inspect(reason)}")
-    end
-
-    # Optionally, return a tuple to stop the GenServer or perform other actions
-    {:stop, :normal, %{}}
-  end
-
-  # Private functions
-
-  defp get_app_name(app_module) do
-    cond do
-      function_exported?(app_module, :app_name, 0) ->
-        app_module.app_name()
-
-      true ->
-        :default
-    end
+  def stop(pid_or_name) do
+    GenServer.cast(pid_or_name, :shutdown)
   end
 
   # GenServer callbacks
 
-  # Comment out @impl true as no behaviour is declared
-  # @impl true
-  def init(init_arg) do
+  @impl true
+  def init({app_module, options}) do
     Logger.info(
-      "Starting Raxol.Core.Runtime.Lifecycle with args: #{inspect(init_arg)}"
+      "[#{__MODULE__}] initializing for #{inspect(app_module)} with options: #{inspect(options)}"
     )
 
-    # TODO: Implement proper initialization based on init_arg
-    # For now, just return a basic state map
-    {:ok,
-     %{
-       init_arg: init_arg,
-       app_module: nil,
-       init_status: nil,
-       shutdown_status: nil
-     }}
+    width = Keyword.get(options, :width, 80)
+    height = Keyword.get(options, :height, 24)
+
+    debug_mode =
+      Keyword.get(options, :debug_mode, Keyword.get(options, :debug, false))
+
+    registry_table_name =
+      Module.concat(CommandRegistryTable, Atom.to_string(app_module))
+
+    _command_registry_table =
+      :ets.new(registry_table_name, [
+        :set,
+        :protected,
+        :named_table,
+        read_concurrency: true
+      ])
+
+    initial_commands = Keyword.get(options, :initial_commands, [])
+    app_name = get_app_name(app_module, options)
+
+    # Start PluginManager
+    # PluginManager is expected to send `{:plugin_manager_ready, self()}` to its parent (Lifecycle)
+    plugin_manager_opts = Keyword.get(options, :plugin_manager_opts, [])
+
+    case Manager.start_link(plugin_manager_opts) do
+      {:ok, pm_pid} ->
+        Logger.info(
+          "[#{__MODULE__}] PluginManager started with PID: #{inspect(pm_pid)}"
+        )
+
+        initial_model_args = %{width: width, height: height, options: options}
+        initialized_model = initialize_app_model(app_module, initial_model_args)
+
+        dispatcher_initial_state = %{
+          app_module: app_module,
+          model: initialized_model,
+          width: width,
+          height: height,
+          debug_mode: debug_mode,
+          # Pass PluginManager PID to Dispatcher
+          plugin_manager: pm_pid,
+          command_registry_table: registry_table_name
+        }
+
+        case Dispatcher.start_link(self(), dispatcher_initial_state) do
+          {:ok, dispatcher_pid} ->
+            state = %State{
+              app_module: app_module,
+              options: options,
+              app_name: app_name,
+              width: width,
+              height: height,
+              debug_mode: debug_mode,
+              plugin_manager: pm_pid,
+              command_registry_table: registry_table_name,
+              initial_commands: initial_commands,
+              dispatcher_pid: dispatcher_pid,
+              model: initialized_model,
+              # Will be set to true by :runtime_initialized
+              dispatcher_ready: false,
+              # Will be set to true by :plugin_manager_ready
+              plugin_manager_ready: false
+            }
+
+            Logger.info(
+              "[#{__MODULE__}] successfully initialized for #{inspect(app_module)}. Dispatcher PID: #{inspect(dispatcher_pid)}"
+            )
+
+            {:ok, state}
+
+          {:error, reason} ->
+            Logger.error(
+              "[#{__MODULE__}] Failed to start Dispatcher. Reason: #{inspect(reason)}"
+            )
+
+            # Stop PluginManager if Dispatcher fails
+            Manager.stop(pm_pid)
+            :ets.delete(registry_table_name)
+            {:stop, {:dispatcher_start_failed, reason}}
+        end
+
+      {:error, reason} ->
+        Logger.error(
+          "[#{__MODULE__}] Failed to start PluginManager. Reason: #{inspect(reason)}"
+        )
+
+        # Ensure ETS table is cleaned up
+        :ets.delete(registry_table_name)
+        {:stop, {:plugin_manager_start_failed, reason}}
+    end
   end
 
-  # TODO: Add other GenServer callbacks (handle_call, handle_cast, handle_info, terminate)
+  defp initialize_app_model(app_module, initial_model_args) do
+    if function_exported?(app_module, :init, 1) do
+      case app_module.init(initial_model_args) do
+        {:ok, model} ->
+          model
+
+        {_, model} ->
+          Logger.warning(
+            "[#{__MODULE__}] #{inspect(app_module)}.init returned a tuple, using model: #{inspect(model)}",
+            []
+          )
+
+          model
+
+        model when is_map(model) ->
+          Logger.info(
+            "[#{__MODULE__}] #{inspect(app_module)}.init returned a map directly, using model: #{inspect(model)}"
+          )
+
+          model
+
+        _ ->
+          Logger.warning(
+            "[#{__MODULE__}] #{inspect(app_module)}.init(#{inspect(initial_model_args)}) did not return {:ok, model} or a map. Using empty model.",
+            []
+          )
+
+          %{}
+      end
+    else
+      Logger.info(
+        "[#{__MODULE__}] #{inspect(app_module)}.init/1 not exported. Using empty model."
+      )
+
+      %{}
+    end
+  end
+
+  @impl true
+  def handle_info({:runtime_initialized, dispatcher_pid}, state) do
+    Logger.info(
+      "Runtime Lifecycle for #{inspect(state.app_module)} received :runtime_initialized from Dispatcher #{inspect(dispatcher_pid)}."
+    )
+
+    new_state = %{state | dispatcher_ready: true}
+    updated_state = maybe_process_initial_commands(new_state)
+    {:noreply, updated_state}
+  end
+
+  @impl true
+  def handle_info({:plugin_manager_ready, plugin_manager_pid}, state) do
+    Logger.info(
+      "[#{__MODULE__}] Plugin Manager ready notification received from #{inspect(plugin_manager_pid)}."
+    )
+
+    new_state = %{state | plugin_manager_ready: true}
+    updated_state = maybe_process_initial_commands(new_state)
+    {:noreply, updated_state}
+  end
+
+  defp maybe_process_initial_commands(state = %State{}) do
+    if state.dispatcher_ready && state.plugin_manager_ready &&
+         Enum.any?(state.initial_commands) do
+      Logger.info(
+        "Dispatcher and PluginManager ready. Dispatching initial commands: #{inspect(state.initial_commands)}"
+      )
+
+      context = %{
+        # Dispatcher PID for command execution context
+        pid: state.dispatcher_pid,
+        command_registry_table: state.command_registry_table,
+        runtime_pid: self()
+      }
+
+      Enum.each(state.initial_commands, fn command ->
+        if match?(%Raxol.Core.Runtime.Command{}, command) do
+          Raxol.Core.Runtime.Command.execute(command, context)
+        else
+          Logger.error(
+            "Invalid initial command found: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}."
+          )
+        end
+      end)
+
+      # Clear commands after processing
+      %{state | initial_commands: []}
+    else
+      # Log why commands aren't processed if applicable and initial_commands is not empty
+      if Enum.any?(state.initial_commands) do
+        cond do
+          not state.dispatcher_ready and not state.plugin_manager_ready ->
+            Logger.info(
+              "Waiting for Dispatcher and PluginManager to be ready before processing initial commands."
+            )
+
+          not state.dispatcher_ready ->
+            Logger.info(
+              "Waiting for Dispatcher to be ready before processing initial commands."
+            )
+
+          not state.plugin_manager_ready ->
+            Logger.info(
+              "Waiting for PluginManager to be ready before processing initial commands."
+            )
+        end
+      end
+
+      state
+    end
+  end
+
+  @impl true
+  def handle_info(:render_needed, state) do
+    Logger.debug(
+      "[#{__MODULE__}] Received :render_needed. Passing through or logging."
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(unhandled_message, state) do
+    Logger.warning(
+      "[#{__MODULE__}] Unhandled info message: #{inspect(unhandled_message)}"
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_cast(:shutdown, state) do
+    Logger.info(
+      "[#{__MODULE__}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
+    )
+
+    if state.dispatcher_pid do
+      Logger.info(
+        "[#{__MODULE__}] Stopping Dispatcher PID: #{inspect(state.dispatcher_pid)}"
+      )
+
+      GenServer.stop(state.dispatcher_pid, :shutdown, :infinity)
+    end
+
+    if state.plugin_manager do
+      Logger.info(
+        "[#{__MODULE__}] Stopping PluginManager PID: #{inspect(state.plugin_manager)}"
+      )
+
+      # Assuming PluginManager has a similar stop mechanism or is a GenServer
+      # If Manager.stop/1 is the correct API:
+      # Manager.stop(state.plugin_manager)
+      # If it's a GenServer and linked, it might be stopped automatically or use GenServer.stop
+      GenServer.stop(state.plugin_manager, :shutdown, :infinity)
+    end
+
+    {:stop, :normal, state}
+  end
+
+  @impl true
+  def handle_cast(unhandled_message, state) do
+    Logger.warning(
+      "[#{__MODULE__}] Unhandled cast message: #{inspect(unhandled_message)}"
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_call(:get_full_state, _from, state) do
+    {:reply, state, state}
+  end
+
+  @impl true
+  def handle_call(unhandled_message, _from, state) do
+    Logger.warning(
+      "[#{__MODULE__}] Unhandled call message: #{inspect(unhandled_message)}"
+    )
+
+    {:reply, {:error, :unknown_call}, state}
+  end
+
+  @impl true
+  def terminate(reason, state) do
+    Logger.info(
+      "[#{__MODULE__}] terminating for #{inspect(state.app_name)}. Reason: #{inspect(reason)}"
+    )
+
+    # Ensure PluginManager is stopped if not already by :shutdown cast
+    # This is a fallback, proper shutdown should happen in handle_cast(:shutdown, ...)
+    if state.plugin_manager && Process.alive?(state.plugin_manager) do
+      Logger.info(
+        "[#{__MODULE__}] Terminate: Ensuring PluginManager PID #{inspect(state.plugin_manager)} is stopped."
+      )
+
+      # Using GenServer.stop as a generic way to try and stop it if it's a GenServer.
+      # This might produce an error if it's already stopped or not a GenServer.
+      try do
+        GenServer.stop(state.plugin_manager, :shutdown, :infinity)
+      rescue
+        _e ->
+          Logger.warning(
+            "[#{__MODULE__}] Terminate: Failed to explicitly stop PluginManager #{inspect(state.plugin_manager)}, it might have already stopped.",
+            []
+          )
+      end
+    end
+
+    if state.command_registry_table &&
+         :ets.info(state.command_registry_table) != :undefined do
+      :ets.delete(state.command_registry_table)
+
+      Logger.debug(
+        "[#{__MODULE__}] Deleted ETS table: #{inspect(state.command_registry_table)}"
+      )
+    else
+      Logger.debug(
+        "[#{__MODULE__}] ETS table #{inspect(state.command_registry_table)} not found or already deleted."
+      )
+    end
+
+    :ok
+  end
+
+  # Private helper functions
+  defp get_app_name(app_module, options) do
+    Keyword.get(options, :app_name, Atom.to_string(app_module))
+  end
 end

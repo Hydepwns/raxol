@@ -1,6 +1,6 @@
-defmodule Raxol.Components.TableTest do
+defmodule Raxol.UI.Components.TableTest do
   use ExUnit.Case, async: true
-  alias Raxol.Components.Table
+  alias Raxol.UI.Components.Table
 
   @test_columns [
     %{
@@ -38,7 +38,9 @@ defmodule Raxol.Components.TableTest do
     # Initialize any required dependencies
     :ok = Raxol.UI.Theming.Theme.init()
     :ok = Raxol.Core.UserPreferences.start_link(test_mode?: true)
-    {:ok, _} = Raxol.Core.Renderer.Manager.start_link([])
+    result = Raxol.Core.Renderer.Manager.start_link([])
+    assert match?({:ok, _}, result)
+    {:ok, _} = result
 
     # Return the test context
     {:ok,
@@ -50,12 +52,15 @@ defmodule Raxol.Components.TableTest do
 
   describe "initialization" do
     test "initializes with default options", %{columns: columns, data: data} do
-      {:ok, state} =
+      result =
         Table.init(%{
           id: :test_table,
           columns: columns,
           data: data
         })
+
+      assert match?({:ok, _}, result)
+      {:ok, state} = result
 
       assert state.id == :test_table
       assert state.columns == columns
@@ -74,7 +79,7 @@ defmodule Raxol.Components.TableTest do
     end
 
     test "initializes with custom options", %{columns: columns, data: data} do
-      {:ok, state} =
+      result =
         Table.init(%{
           id: :test_table,
           columns: columns,
@@ -86,6 +91,9 @@ defmodule Raxol.Components.TableTest do
             page_size: 2
           }
         })
+
+      assert match?({:ok, _}, result)
+      {:ok, state} = result
 
       assert state.options == %{
                paginate: true,
@@ -100,7 +108,7 @@ defmodule Raxol.Components.TableTest do
 
   describe "data processing" do
     setup %{columns: columns, data: data} do
-      {:ok, state} =
+      result =
         Table.init(%{
           id: :test_table,
           columns: columns,
@@ -113,11 +121,16 @@ defmodule Raxol.Components.TableTest do
           }
         })
 
+      assert match?({:ok, _}, result)
+      {:ok, state} = result
+
       {:ok, %{state: state}}
     end
 
     test "filtering works correctly", %{state: state} do
-      {:ok, updated_state} = Table.update({:filter, "alice"}, state)
+      result = Table.update({:filter, "alice"}, state)
+      assert match?({:ok, _}, result)
+      {:ok, updated_state} = result
       rendered = Table.render(updated_state, %{})
 
       # Check rendered content structure instead of string inspection
@@ -131,7 +144,9 @@ defmodule Raxol.Components.TableTest do
     end
 
     test "sorting works correctly", %{state: state} do
-      {:ok, updated_state} = Table.update({:sort, :age}, state)
+      result = Table.update({:sort, :age}, state)
+      assert match?({:ok, _}, result)
+      {:ok, updated_state} = result
       rendered = Table.render(updated_state, %{})
 
       # Verify sort order through row content
@@ -143,7 +158,9 @@ defmodule Raxol.Components.TableTest do
     end
 
     test "pagination works correctly", %{state: state} do
-      {:ok, page1_state} = Table.update({:set_page, 1}, state)
+      result = Table.update({:set_page, 1}, state)
+      assert match?({:ok, _}, result)
+      {:ok, page1_state} = result
       rendered = Table.render(page1_state, %{})
 
       # Verify first page content
@@ -155,7 +172,9 @@ defmodule Raxol.Components.TableTest do
       assert Enum.at(second_row.children, 1).content == "Bob        "
 
       # Verify second page content
-      {:ok, page2_state} = Table.update({:set_page, 2}, state)
+      result = Table.update({:set_page, 2}, state)
+      assert match?({:ok, _}, result)
+      {:ok, page2_state} = result
       rendered = Table.render(page2_state, %{})
       [header | rows] = get_in(rendered, [:children, Access.at(0)])
       assert length(rows) == 2
@@ -166,7 +185,7 @@ defmodule Raxol.Components.TableTest do
 
   describe "event handling" do
     setup %{columns: columns, data: data} do
-      {:ok, state} =
+      result =
         Table.init(%{
           id: :test_table,
           columns: columns,
@@ -179,69 +198,94 @@ defmodule Raxol.Components.TableTest do
           }
         })
 
+      assert match?({:ok, _}, result)
+      {:ok, state} = result
+
       {:ok, %{state: state}}
     end
 
     test "handles arrow key navigation for pagination", %{state: state} do
       assert state.current_page == 1
 
-      {:ok, state_after_right} =
-        Table.handle_event({:key, {:arrow_right, []}}, %{}, state)
+      result = Table.handle_event({:key, {:arrow_right, []}}, %{}, state)
+      assert match?({:ok, _}, result)
+      {:ok, state_after_right} = result
 
       assert state_after_right.current_page == 2
 
-      {:ok, state_after_left} =
+      result =
         Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_right)
+
+      assert match?({:ok, _}, result)
+      {:ok, state_after_left} = result
 
       assert state_after_left.current_page == 1
 
-      {:ok, state_after_left_again} =
+      result =
         Table.handle_event({:key, {:arrow_left, []}}, %{}, state_after_left)
+
+      assert match?({:ok, _}, result)
+      {:ok, state_after_left_again} = result
 
       assert state_after_left_again.current_page == 1
     end
 
     test "handles button clicks for pagination", %{state: state} do
-      {:ok, state_after_next} =
+      result =
         Table.handle_event({:button_click, "test_table_next_page"}, %{}, state)
+
+      assert match?({:ok, _}, result)
+      {:ok, state_after_next} = result
 
       assert state_after_next.current_page == 2
 
-      {:ok, state_after_prev} =
+      result =
         Table.handle_event(
           {:button_click, "test_table_prev_page"},
           %{},
           state_after_next
         )
 
+      assert match?({:ok, _}, result)
+      {:ok, state_after_prev} = result
+
       assert state_after_prev.current_page == 1
     end
 
     test "handles sort button clicks", %{state: state} do
-      {:ok, state_after_sort} =
+      result =
         Table.handle_event({:button_click, "test_table_sort_age"}, %{}, state)
+
+      assert match?({:ok, _}, result)
+      {:ok, state_after_sort} = result
 
       assert state_after_sort.sort_by == :age
       assert state_after_sort.sort_direction == :asc
 
-      {:ok, state_after_reverse} =
+      result =
         Table.handle_event(
           {:button_click, "test_table_sort_age"},
           %{},
           state_after_sort
         )
 
+      assert match?({:ok, _}, result)
+      {:ok, state_after_reverse} = result
+
       assert state_after_reverse.sort_by == :age
       assert state_after_reverse.sort_direction == :desc
     end
 
     test "handles search input", %{state: state} do
-      {:ok, state_after_search} =
+      result =
         Table.handle_event(
           {:text_input, "test_table_search", "Alice"},
           %{},
           state
         )
+
+      assert match?({:ok, _}, result)
+      {:ok, state_after_search} = result
 
       assert state_after_search.filter_term == "Alice"
       assert state_after_search.current_page == 1
@@ -250,7 +294,7 @@ defmodule Raxol.Components.TableTest do
 
   describe "theming and style" do
     setup %{columns: columns, data: data} do
-      {:ok, state} =
+      result =
         Table.init(%{
           id: :test_table,
           columns: columns,
@@ -262,6 +306,9 @@ defmodule Raxol.Components.TableTest do
             page_size: 10
           }
         })
+
+      assert match?({:ok, _}, result)
+      {:ok, state} = result
 
       {:ok, %{state: state}}
     end
@@ -295,7 +342,7 @@ defmodule Raxol.Components.TableTest do
       columns: columns,
       data: data
     } do
-      {:ok, state} =
+      result =
         Table.init(%{
           id: :styled,
           columns: columns,
@@ -303,18 +350,24 @@ defmodule Raxol.Components.TableTest do
           style: %{border_color: :red}
         })
 
+      assert match?({:ok, _}, result)
+      {:ok, state} = result
+
       rendered = Table.render(state, %{})
-      assert rendered.style[:border_color] == :red
+      assert Map.get(rendered.style, :border_color) == :red
     end
 
     test "box style is overridden by theme", %{columns: columns, data: data} do
       theme = %{box: %{border_color: :green}}
 
-      {:ok, state} =
+      result =
         Table.init(%{id: :themed, columns: columns, data: data, theme: theme})
 
+      assert match?({:ok, _}, result)
+      {:ok, state} = result
+
       rendered = Table.render(state, %{})
-      assert rendered.style[:border_color] == :green
+      assert Map.get(rendered.style, :border_color) == :green
     end
 
     test "header style is overridden by theme and style prop", %{
@@ -324,7 +377,7 @@ defmodule Raxol.Components.TableTest do
       theme = %{header: %{underline: true}}
       style = %{header: %{italic: true}}
 
-      {:ok, state} =
+      result =
         Table.init(%{
           id: :headerstyled,
           columns: columns,
@@ -332,6 +385,9 @@ defmodule Raxol.Components.TableTest do
           theme: theme,
           style: style
         })
+
+      assert match?({:ok, _}, result)
+      {:ok, state} = result
 
       rendered = Table.render(state, %{})
       [header | _] = get_in(rendered, [:children, Access.at(0)])
@@ -350,7 +406,7 @@ defmodule Raxol.Components.TableTest do
     } do
       theme = %{row: %{bg: :yellow}, selected_row: %{bg: :red, fg: :black}}
 
-      {:ok, state} =
+      result =
         Table.init(%{
           id: :rowstyled,
           columns: columns,
@@ -358,6 +414,9 @@ defmodule Raxol.Components.TableTest do
           theme: theme,
           style: %{}
         })
+
+      assert match?({:ok, _}, result)
+      {:ok, state} = result
 
       # Unselected row
       rendered = Table.render(state, %{})
@@ -399,8 +458,11 @@ defmodule Raxol.Components.TableTest do
         %{id: :age, label: "Age", width: 5, align: :center}
       ]
 
-      {:ok, state} =
+      result =
         Table.init(%{id: :colstyled, columns: custom_columns, data: data})
+
+      assert match?({:ok, _}, result)
+      {:ok, state} = result
 
       rendered = Table.render(state, %{})
       [header | rows] = get_in(rendered, [:children, Access.at(0)])

@@ -15,9 +15,9 @@ defmodule Raxol.Docs.ComponentCatalog do
   * Search functionality
   """
 
-  # TODO: Consolidate component source directories.
-  # Currently, components exist in both `lib/raxol/components/` and `lib/raxol/ui/components/`.
-  # Need to establish a canonical location and refactor references accordingly.
+  # TODO: Ensure all component source modules are located under `lib/raxol/ui/components/`
+  # and are correctly referenced by the catalog data in `lib/raxol/docs/catalog_data/`.
+  # (Original concern about `lib/raxol/components/` seems resolved as this path is not actively used).
 
   # Component category
   defmodule Category do
@@ -146,7 +146,7 @@ defmodule Raxol.Docs.ComponentCatalog do
             String.downcase(component.description),
             query_downcase
           ) ||
-          Enum.any?(component.tags, fn tag ->
+          Enum.any?(Map.get(component, :tags, []), fn tag ->
             String.contains?(String.downcase(tag), query_downcase)
           end)
       end)

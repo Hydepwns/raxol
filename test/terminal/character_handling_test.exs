@@ -13,17 +13,17 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
 
   describe "character width" do
     test "calculates character width correctly" do
-      assert CharacterHandling.get_char_width("中") == 2
-      assert CharacterHandling.get_char_width("日") == 2
-      assert CharacterHandling.get_char_width("a") == 1
-      assert CharacterHandling.get_char_width("1") == 1
+      assert Raxol.Terminal.CharacterHandling.get_char_width("中") == 2
+      assert Raxol.Terminal.CharacterHandling.get_char_width("日") == 2
+      assert Raxol.Terminal.CharacterHandling.get_char_width("a") == 1
+      assert Raxol.Terminal.CharacterHandling.get_char_width("1") == 1
     end
   end
 
   describe "combining characters" do
     test "handles combining characters correctly" do
-      assert CharacterHandling.is_combining_char?(0x0301)
-      assert CharacterHandling.get_char_width("e\u0301") == 1
+      assert Raxol.Terminal.CharacterHandling.is_combining_char?(0x0301)
+      assert Raxol.Terminal.CharacterHandling.get_char_width("e\u0301") == 1
     end
   end
 
@@ -47,12 +47,12 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
 
   describe "string width" do
     test "calculates string width correctly" do
-      assert CharacterHandling.get_string_width("Hello") == 5
+      assert Raxol.Terminal.CharacterHandling.get_string_width("Hello") == 5
       # 5 (Hello) + 1 (space) + 2 (世) + 2 (界) = 10
-      assert CharacterHandling.get_string_width("Hello 世界") == 10
+      assert Raxol.Terminal.CharacterHandling.get_string_width("Hello 世界") == 10
       # 'e' + combining accent = width 1. 5 + 0 = 5
       # Width doesn't include combining char
-      assert CharacterHandling.get_string_width("Hello\u0301") == 5
+      assert Raxol.Terminal.CharacterHandling.get_string_width("Hello\u0301") == 5
     end
   end
 end

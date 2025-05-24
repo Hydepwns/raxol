@@ -6,7 +6,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
   # For broader theme usage if needed
   alias Raxol.UI.Theming.Theme
 
-  import Raxol.TestHelpers
+  import Raxol.Test.TestHelper
 
   # Helper to extract text content from rendered elements at a specific line
   # defp get_line_text(elements, y) do
@@ -37,7 +37,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
   describe "Table Rendering" do
     @describetag :component
     setup do
-      state = %{scroll_top: 0}
+      state = %{scroll_top: 0, filter_term: ""}
 
       basic_attrs = %{
         id: :basic_table,
@@ -88,6 +88,9 @@ defmodule Raxol.UI.Components.Display.TableTest do
     @describetag :component
     setup do
       {:ok, initial_component_state} = Table.init(%{id: :event_table_std})
+
+      initial_component_state =
+        Map.put_new(initial_component_state, :filter_term, "")
 
       event_context =
         default_context()
@@ -207,6 +210,9 @@ defmodule Raxol.UI.Components.Display.TableTest do
     setup do
       {:ok, initial_component_state} = Table.init(%{id: :event_table_minimal})
 
+      initial_component_state =
+        Map.put_new(initial_component_state, :filter_term, "")
+
       # Context with style for 4 visible data rows, but data will be varied per test
       base_context =
         default_context()
@@ -263,6 +269,9 @@ defmodule Raxol.UI.Components.Display.TableTest do
     @describetag :component
     setup do
       {:ok, initial_component_state} = Table.init(%{id: :event_table_h1})
+
+      initial_component_state =
+        Map.put_new(initial_component_state, :filter_term, "")
 
       # Data with 3 items. Style height 2 means 1 data row visible (height - 1 for header).
       context_h1 =
@@ -388,6 +397,10 @@ defmodule Raxol.UI.Components.Display.TableTest do
     @describetag :component
     setup do
       {:ok, initial_component_state} = Table.init(%{id: :lifecycle_table})
+
+      initial_component_state =
+        Map.put_new(initial_component_state, :filter_term, "")
+
       {:ok, state: initial_component_state}
     end
 

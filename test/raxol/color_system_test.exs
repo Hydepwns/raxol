@@ -181,7 +181,7 @@ defmodule Raxol.ColorSystemTest do
     test "adapts focus ring color for high contrast mode" do
       # Initialize a default focus ring state
       initial_state =
-        Raxol.Components.FocusRing.init(%{
+        Raxol.UI.Components.FocusRing.init(%{
           # Example position
           position: {10, 5, 20, 3},
           color: :blue,
@@ -189,7 +189,7 @@ defmodule Raxol.ColorSystemTest do
         })
 
       # Render with initial state
-      initial_render = Raxol.Components.FocusRing.render(initial_state, %{})
+      initial_render = Raxol.UI.Components.FocusRing.render(initial_state, %{})
       initial_color = get_in(initial_render, [:attrs, :style, :border_color])
       assert initial_color == :blue
 
@@ -198,7 +198,7 @@ defmodule Raxol.ColorSystemTest do
 
       # Render with high contrast state
       high_contrast_render =
-        Raxol.Components.FocusRing.render(high_contrast_state, %{})
+        Raxol.UI.Components.FocusRing.render(high_contrast_state, %{})
 
       high_contrast_color =
         get_in(high_contrast_render, [:attrs, :style, :border_color])

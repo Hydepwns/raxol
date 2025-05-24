@@ -6,7 +6,7 @@ defmodule Raxol.Plugins.CellProcessor do
 
   require Logger
 
-  alias Raxol.Plugins.PluginManager
+  alias Raxol.Plugins.Manager.Core
 
   @doc """
   Processes a list of cells, allowing relevant plugins to handle placeholders.
@@ -30,11 +30,11 @@ defmodule Raxol.Plugins.CellProcessor do
   Returns `{:ok, updated_manager_state, final_cell_list, collected_commands}` where
   `updated_manager_state` reflects any changes to plugin states.
   """
-  @spec process(PluginManager.t(), list(map()), map()) ::
-          {:ok, PluginManager.t(), list(map()), list(binary())}
+  @spec process(Core.t(), list(map()), map()) ::
+          {:ok, Core.t(), list(map()), list(binary())}
           # In case of error during processing
           | {:error, any()}
-  def process(%PluginManager{} = manager, cells, emulator_state)
+  def process(%Core{} = manager, cells, emulator_state)
       when is_list(cells) do
     Logger.debug("[CellProcessor.process] Processing #{length(cells)} cells...")
 
@@ -109,12 +109,12 @@ defmodule Raxol.Plugins.CellProcessor do
   # Handles the interaction with a specific plugin for a given placeholder.
   # Returns {updated_manager, replacement_cells, new_commands}
   @spec handle_placeholder_with_plugin(
-          PluginManager.t(),
+          Core.t(),
           String.t(),
           map(),
           map()
         ) ::
-          {PluginManager.t(), list(map()), list(binary())}
+          {Core.t(), list(map()), list(binary())}
   defp handle_placeholder_with_plugin(
          manager,
          plugin_name,
@@ -193,8 +193,8 @@ CELL DATA: #{inspect(placeholder_cell)}"
 
   # Processes the return value from the plugin's handle_cells function.
   # Returns {updated_manager, replacement_cells, new_commands}
-  @spec process_plugin_handle_cells_result(PluginManager.t(), String.t(), any()) ::
-          {PluginManager.t(), list(map()), list(binary())}
+  @spec process_plugin_handle_cells_result(Core.t(), String.t(), any()) ::
+          {Core.t(), list(map()), list(binary())}
   defp process_plugin_handle_cells_result(
          manager,
          plugin_name,

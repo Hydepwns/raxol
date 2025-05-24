@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
     %Emulator{
       cursor: %Manager{position: cursor_pos},
       style: style,
-      charset_state: CharacterSets.new(),
+      charset_state: Raxol.Terminal.ANSI.CharacterSets.new(),
       mode_manager: ModeManager.new(),
       scroll_region: scroll_region,
       cursor_style: cursor_style
@@ -50,7 +50,10 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
       [saved_state | _] = stack
       assert saved_state.cursor == %Manager{position: {10, 5}}
       assert saved_state.style == initial_style
-      assert saved_state.charset_state == CharacterSets.new()
+
+      assert saved_state.charset_state ==
+               Raxol.Terminal.ANSI.CharacterSets.new()
+
       assert saved_state.mode_manager == ModeManager.new()
       assert saved_state.scroll_region == {5, 15}
       assert saved_state.cursor_style == :blinking_block

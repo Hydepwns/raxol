@@ -48,7 +48,8 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
 
       _ ->
         Logger.warning(
-          "Invalid parameter value at index #{index}, using default #{default}"
+          "Invalid parameter value at index #{index}, using default #{default}",
+          []
         )
 
         default
@@ -148,16 +149,23 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   def validate_coordinates(emulator, params) do
     width = Map.get(emulator, :width, 10) - 1
     height = Map.get(emulator, :height, 10) - 1
+
     x =
       case Enum.at(params, 0) do
-        v when is_integer(v) and v >= 0 and v <= width -> v
+        v when is_integer(v) and v < 0 -> 0
+        v when is_integer(v) and v > width -> width
+        v when is_integer(v) -> v
         _ -> 0
       end
+
     y =
       case Enum.at(params, 1) do
-        v when is_integer(v) and v >= 0 and v <= height -> v
+        v when is_integer(v) and v < 0 -> 0
+        v when is_integer(v) and v > height -> height
+        v when is_integer(v) -> v
         _ -> 0
       end
+
     {x, y}
   end
 
@@ -166,7 +174,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   """
   def validate_count(_emulator, params) do
     case Enum.at(params, 0) do
-      v when is_integer(v) and v >= 1 and v <= 10 -> v
+      v when is_integer(v) and v >= 1 and v <= 10 ->
+        v
+
       _ ->
         v =
           case Enum.at(params, 0) do
@@ -174,6 +184,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
             v when is_integer(v) and v > 10 -> 10
             _ -> 1
           end
+
         v
     end
   end
@@ -217,7 +228,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   def normalize_parameters(params, expected_length) do
     params
     |> Enum.take(expected_length)
-    |> then(fn taken -> taken ++ List.duplicate(nil, expected_length - length(taken)) end)
+    |> then(fn taken ->
+      taken ++ List.duplicate(nil, expected_length - length(taken))
+    end)
   end
 
   @doc """

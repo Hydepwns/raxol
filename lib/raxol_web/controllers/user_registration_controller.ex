@@ -16,7 +16,8 @@ defmodule RaxolWeb.UserRegistrationController do
 
   @spec create(Plug.Conn.t(), %{required(String.t()) => map()}) :: Plug.Conn.t()
   def create(conn, %{"user" => user_params}) do
-    changeset = Raxol.Auth.User.registration_changeset(%Raxol.Auth.User{}, user_params)
+    changeset =
+      Raxol.Auth.User.registration_changeset(%Raxol.Auth.User{}, user_params)
 
     case Raxol.Repo.insert(changeset) do
       {:ok, user} ->

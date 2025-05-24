@@ -42,19 +42,21 @@ defmodule Raxol.Terminal.Integration.State do
     emulator = Emulator.new(width, height)
 
     {:ok, buffer_manager} =
-      Manager.new(
+      Raxol.Terminal.Buffer.Manager.new(
         width,
         height,
-        config.behavior.scrollback_lines,
+        config.behavior.scrollback_limit,
         config.memory_limit || 50 * 1024 * 1024
       )
 
     renderer =
       Renderer.new(Emulator.get_active_buffer(emulator), config.ansi.colors)
 
-    scroll_buffer = Scroll.new(config.behavior.scrollback_lines)
-    cursor_manager = Manager.new()
-    command_history = History.new((config.behavior.save_history && 1000) || 0)
+    scroll_buffer = Buffer.Scroll.new(config.behavior.scrollback_limit)
+    cursor_manager = Cursor.Manager.new()
+
+    command_history =
+      History.new((config.behavior.enable_command_history && 1000) || 0)
 
     %__MODULE__{
       emulator: emulator,
@@ -81,7 +83,7 @@ defmodule Raxol.Terminal.Integration.State do
   """
   def get_visible_content(%__MODULE__{} = state) do
     state.buffer_manager
-    |> Manager.get_visible_content()
+    |> Raxol.Terminal.Buffer.Manager.get_visible_content()
     |> Enum.map(&Tuple.to_list/1)
     |> Enum.map(&Enum.join/1)
     |> Enum.join("\n")
@@ -92,7 +94,7 @@ defmodule Raxol.Terminal.Integration.State do
   """
   def get_cursor_position(%__MODULE__{} = state) do
     state.cursor_manager
-    |> Manager.get_position()
+    |> Raxol.Terminal.Cursor.Manager.get_position()
   end
 
   @doc """
@@ -100,7 +102,7 @@ defmodule Raxol.Terminal.Integration.State do
   """
   def get_scroll_position(%__MODULE__{} = state) do
     state.scroll_buffer
-    |> Scroll.get_position()
+    |> Raxol.Terminal.Buffer.Scroll.get_position()
   end
 
   @doc """
@@ -108,7 +110,7 @@ defmodule Raxol.Terminal.Integration.State do
   """
   def get_command_history(%__MODULE__{} = state) do
     state.command_history
-    |> History.get_entries()
+    |> Raxol.Terminal.Commands.History.get_entries()
   end
 
   @doc """
@@ -123,6 +125,6 @@ defmodule Raxol.Terminal.Integration.State do
   """
   def get_memory_usage(%__MODULE__{} = state) do
     state.buffer_manager
-    |> Manager.get_memory_usage()
+    |> Raxol.Terminal.Buffer.Manager.get_memory_usage()
   end
 end

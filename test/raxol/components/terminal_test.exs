@@ -1,6 +1,6 @@
-defmodule Raxol.Components.TerminalTest do
+defmodule Raxol.UI.Components.TerminalTest do
   use ExUnit.Case
-  alias Raxol.Components.Terminal
+  alias Raxol.UI.Components.Terminal
   alias Raxol.Core.Events.Event
 
   defp initial_terminal_state(opts \\ []) do
@@ -88,10 +88,10 @@ defmodule Raxol.Components.TerminalTest do
       rendered = Terminal.render(terminal, %{})
 
       assert rendered.type == :box
-      assert rendered.attrs[:id] == terminal.id
-      assert rendered.attrs[:width] == terminal.width
-      assert rendered.attrs[:height] == terminal.height
-      assert rendered.attrs[:style] == terminal.style
+      assert Map.get(rendered.attrs, :id) == terminal.id
+      assert Map.get(rendered.attrs, :width) == terminal.width
+      assert Map.get(rendered.attrs, :height) == terminal.height
+      assert Map.get(rendered.attrs, :style) == terminal.style
 
       column = rendered.children
       assert is_map(column)
@@ -101,9 +101,9 @@ defmodule Raxol.Components.TerminalTest do
       assert length(column.children) == 2
       [label1, label2] = column.children
       assert label1.type == :label
-      assert label1.attrs[:content] == "Line 1"
+      assert Map.get(label1.attrs, :content) == "Line 1"
       assert label2.type == :label
-      assert label2.attrs[:content] == "Line 2"
+      assert Map.get(label2.attrs, :content) == "Line 2"
     end
   end
 end

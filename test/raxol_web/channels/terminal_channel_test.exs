@@ -23,7 +23,8 @@ defmodule RaxolWeb.TerminalChannelTest do
 
   # Import Mox for function mocking
   import Mox
-  import Raxol.TestHelpers
+  # import Raxol.TestHelpers
+  import Raxol.Test.TestHelper
 
   # Ensure Mox is validated on exit
   setup :verify_on_exit!
@@ -51,7 +52,7 @@ defmodule RaxolWeb.TerminalChannelTest do
       topic: topic
     } do
       # Set up mock expectations
-      expect(EmulatorMock, :new, fn _width, _height ->
+      expect(EmulatorMock, :new, fn _width, _height, _opts ->
         {:ok, %Emulator{}}
       end)
 
@@ -70,7 +71,7 @@ defmodule RaxolWeb.TerminalChannelTest do
 
     test "rejects invalid session topics" do
       # Expect new/4 to be called even for invalid topics
-      expect(EmulatorMock, :new, fn _width, _height ->
+      expect(EmulatorMock, :new, fn _width, _height, _opts ->
         {:ok, %Emulator{}}
       end)
 

@@ -134,6 +134,43 @@ defmodule Raxol.Style.Colors.Utilities do
     }
   end
 
+  @doc """
+  Checks if two colors have sufficient contrast according to WCAG guidelines.
+  """
+  def check_contrast(color1, color2, level \\ :aa, size \\ :normal) do
+    ratio = contrast_ratio(color1, color2)
+
+    min_ratio =
+      case {level, size} do
+        {:aaa, :normal} -> 7.0
+        {:aaa, :large} -> 4.5
+        {:aa, :normal} -> 4.5
+        {:aa, :large} -> 3.0
+      end
+
+    if ratio >= min_ratio do
+      {:ok, ratio}
+    else
+      {:error, {:contrast_too_low, ratio, min_ratio}}
+    end
+  end
+
+  @doc """
+  Returns black or white, whichever has better contrast with the background.
+  """
+  def best_bw_contrast(background, min_ratio \\ 4.5) do
+    black = Color.from_hex("#000000")
+    white = Color.from_hex("#FFFFFF")
+    ratio_black = contrast_ratio(background, black)
+    ratio_white = contrast_ratio(background, white)
+
+    cond do
+      ratio_white >= min_ratio and ratio_white >= ratio_black -> white
+      ratio_black >= min_ratio -> black
+      true -> if ratio_white > ratio_black, do: white, else: black
+    end
+  end
+
   # Private helpers
 
   defp convert_to_linear(value) do
@@ -155,25 +192,44 @@ defmodule Raxol.Style.Colors.Utilities do
     end
   end
 
-  defp darken_until_contrast(color, background, required_ratio, step \\ 0.1) do
+  defp darken_until_contrast(
+         color,
+         background,
+         required_ratio,
+         step \\ 0.1,
+         iter \\ 0
+       ) do
     current_ratio = contrast_ratio(color, background)
 
-    if current_ratio >= required_ratio do
+    if current_ratio >= required_ratio or iter >= 50 do
       color
     else
       darker = darken_color(color, step)
-      darken_until_contrast(darker, background, required_ratio, step)
+      darken_until_contrast(darker, background, required_ratio, step, iter + 1)
     end
   end
 
-  defp lighten_until_contrast(color, background, required_ratio, step \\ 0.1) do
+  defp lighten_until_contrast(
+         color,
+         background,
+         required_ratio,
+         step \\ 0.1,
+         iter \\ 0
+       ) do
     current_ratio = contrast_ratio(color, background)
 
-    if current_ratio >= required_ratio do
+    if current_ratio >= required_ratio or iter >= 50 do
       color
     else
       lighter = lighten_color(color, step)
-      lighten_until_contrast(lighter, background, required_ratio, step)
+
+      lighten_until_contrast(
+        lighter,
+        background,
+        required_ratio,
+        step,
+        iter + 1
+      )
     end
   end
 

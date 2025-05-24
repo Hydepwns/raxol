@@ -1,8 +1,6 @@
 defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
   use ExUnit.Case, async: true
 
-  import Raxol.TestHelpers
-
   alias Raxol.UI.Components.Input.MultiLineInput, as: State
   alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
 
@@ -32,6 +30,8 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
       id: "test_mle"
     }
   end
+
+  defp test_theme, do: %{}
 
   describe "move_cursor/2" do
     test "moves cursor left" do
@@ -257,6 +257,4 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
       assert new_state.selection_end == nil
     end
   end
-
-  # TODO: Add tests for ensure_cursor_visible, word movement
 end

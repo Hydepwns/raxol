@@ -134,5 +134,101 @@ defmodule Raxol.Terminal.Parser.State.ManagerTest do
 
       assert new_state.state == :ground
     end
+
+    test "SS2 (ESC N and 0x8E) sets single_shift and is cleared after one char" do
+      state = Manager.new()
+      emulator = %Emulator{charset_state: Raxol.Terminal.ANSI.CharacterSets.new()}
+
+      # ESC N (0x1B 0x4E)
+      {:continue, _emu, state_after_esc_n, _rest} =
+        Manager.process_input(emulator, %{state | state: :escape}, <<78, "A">>)
+      assert state_after_esc_n.single_shift == :ss2 or state_after_esc_n.single_shift == nil
+
+      # C1 SS2 (0x8E)
+      {:continue, _emu, state_after_c1_ss2, _rest} =
+        Manager.process_input(emulator, state, <<142, "A">>)
+      assert state_after_c1_ss2.single_shift == :ss2 or state_after_c1_ss2.single_shift == nil
+    end
+
+    test "SS3 (ESC O and 0x8F) sets single_shift and is cleared after one char" do
+      state = Manager.new()
+      emulator = %Emulator{charset_state: Raxol.Terminal.ANSI.CharacterSets.new()}
+
+      # ESC O (0x1B 0x4F)
+      {:continue, _emu, state_after_esc_o, _rest} =
+        Manager.process_input(emulator, %{state | state: :escape}, <<79, "B">>)
+      assert state_after_esc_o.single_shift == :ss3 or state_after_esc_o.single_shift == nil
+
+      # C1 SS3 (0x8F)
+      {:continue, _emu, state_after_c1_ss3, _rest} =
+        Manager.process_input(emulator, state, <<143, "B">>)
+      assert state_after_c1_ss3.single_shift == :ss3 or state_after_c1_ss3.single_shift == nil
+    end
+  end
+
+  describe "SS2/SS3 edge cases" do
+    test "multiple SS2 in a row only affects next char each time" do
+      state = Manager.new()
+      emulator = %Emulator{charset_state: Raxol.Terminal.ANSI.CharacterSets.new()}
+
+      # ESC N (SS2) + "A" + ESC N (SS2) + "B"
+      {:continue, _emu, state1, rest1} = Manager.process_input(emulator, %{state | state: :escape}, <<78, "A", 27, 78, "B">>)
+      # After first SS2 + "A", single_shift should be nil
+      assert state1.single_shift == nil
+      # The rest should be ESC N (27, 78) + "B"
+      # Process the rest
+      {:continue, _emu, state2, _rest2} = Manager.process_input(emulator, %{state1 | state: :escape}, rest1)
+      assert state2.single_shift == nil
+    end
+
+    test "multiple SS3 in a row only affects next char each time" do
+      state = Manager.new()
+      emulator = %Emulator{charset_state: Raxol.Terminal.ANSI.CharacterSets.new()}
+
+      # ESC O (SS3) + "A" + ESC O (SS3) + "B"
+      {:continue, _emu, state1, rest1} = Manager.process_input(emulator, %{state | state: :escape}, <<79, "A", 27, 79, "B">>)
+      assert state1.single_shift == nil
+      {:continue, _emu, state2, _rest2} = Manager.process_input(emulator, %{state1 | state: :escape}, rest1)
+      assert state2.single_shift == nil
+    end
+
+    test "SS2 at end of input sets single_shift but does not persist after use" do
+      state = Manager.new()
+      emulator = %Emulator{charset_state: Raxol.Terminal.ANSI.CharacterSets.new()}
+      # ESC N (SS2) at end
+      {:continue, _emu, state1, rest1} = Manager.process_input(emulator, %{state | state: :escape}, <<78>>)
+      assert state1.single_shift == :ss2
+      # Now process a printable character
+      {:continue, _emu, state2, _rest2} = Manager.process_input(emulator, state1, "A")
+      assert state2.single_shift == nil
+    end
+
+    test "SS3 at end of input sets single_shift but does not persist after use" do
+      state = Manager.new()
+      emulator = %Emulator{charset_state: Raxol.Terminal.ANSI.CharacterSets.new()}
+      # ESC O (SS3) at end
+      {:continue, _emu, state1, rest1} = Manager.process_input(emulator, %{state | state: :escape}, <<79>>)
+      assert state1.single_shift == :ss3
+      # Now process a printable character
+      {:continue, _emu, state2, _rest2} = Manager.process_input(emulator, state1, "B")
+      assert state2.single_shift == nil
+    end
+
+    test "SS2 followed by non-printable character clears single_shift" do
+      state = Manager.new()
+      emulator = %Emulator{charset_state: Raxol.Terminal.ANSI.CharacterSets.new()}
+      # ESC N (SS2) + BEL (7)
+      {:continue, _emu, state1, rest1} = Manager.process_input(emulator, %{state | state: :escape}, <<78, 7>>)
+      # After non-printable, single_shift should be cleared
+      assert state1.single_shift == nil
+    end
+
+    test "SS3 followed by non-printable character clears single_shift" do
+      state = Manager.new()
+      emulator = %Emulator{charset_state: Raxol.Terminal.ANSI.CharacterSets.new()}
+      # ESC O (SS3) + BEL (7)
+      {:continue, _emu, state1, rest1} = Manager.process_input(emulator, %{state | state: :escape}, <<79, 7>>)
+      assert state1.single_shift == nil
+    end
   end
 end

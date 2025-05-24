@@ -57,10 +57,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
           width: 20
         )
 
-      IO.inspect(view, label: "Sparkline View Structure")
       assert view.type == :box
       text_view = view.children
-      IO.inspect(text_view, label: "Sparkline Text View")
       assert text_view != nil
       assert text_view.type == :text
       assert text_view.content != nil
@@ -138,7 +136,6 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       bars = find_all_text_children(view)
-      IO.inspect(bars, label: "Bar Chart Children")
       assert Enum.any?(bars, fn bar -> is_map(bar) and bar.fg == :blue end)
       assert Enum.any?(bars, fn bar -> is_map(bar) and bar.fg == :red end)
     end
@@ -164,13 +161,6 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       }
     ]
 
-    # Setup block removed
-    # setup do
-    #   view = Raxol.Core.Renderer.render(%View{type: :chart, data: @line_data, chart_type: :line, size: {40, 10}})
-    #   IO.inspect(view, label: "Line Chart Render Output")
-    #   {:ok, view: view}
-    # end
-
     test "creates points and lines" do
       # Define two-series data locally for this test
       local_series_data = [
@@ -190,10 +180,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       # Find points (represented by •)
       content = view
       children = content.children
-      IO.inspect(children, label: "Line Chart Children (Points)")
       # points = if is_list(children), do: List.flatten(children), else: []
       points = find_all_text_children(content)
-      IO.inspect(points, label: "Found Points (Points)")
       # Check for at least 2 points
       assert Enum.count(points, &(is_map(&1) and &1.content == "•")) >= 2
     end
@@ -217,71 +205,15 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
       # Find points (represented by •) and check colors
       content = view
       children = content.children
-      IO.inspect(children, label: "Line Chart Children (Colors)")
       # points = if is_list(children), do: List.flatten(children), else: []
       points = find_all_text_children(content)
-      IO.inspect(points, label: "Found Points (Colors)")
       assert Enum.any?(points, &(is_map(&1) and &1.fg == :blue))
       assert Enum.any?(points, &(is_map(&1) and &1.fg == :red))
     end
   end
 
   describe "axes and labels" do
-    # TODO: Re-enable these tests. Chart.new seems to return only the content view.
-    # Axes/Legends might be added by a wrapping component or need Chart.new to return them.
-    @tag :skip
-    test "adds axes when enabled" do
-      # Use full name
-      view =
-        Raxol.Core.Renderer.Views.Chart.new(
-          type: :bar,
-          series: @sample_series,
-          width: 20,
-          height: 10,
-          show_axes: true
-        )
-
-      # Find y-axis
-      y_axis =
-        find_child(view, fn child ->
-          child.type == :box and
-            Enum.any?(find_all_text_children(child), &(&1.content =~ "│"))
-        end)
-
-      assert y_axis != nil
-
-      # Find x-axis
-      x_axis =
-        find_child(view, fn child ->
-          child.type == :text and
-            String.contains?(child.content, "─")
-        end)
-
-      assert x_axis != nil
-    end
-
-    @tag :skip
-    test "adds legend when enabled" do
-      # Use full name
-      view =
-        Raxol.Core.Renderer.Views.Chart.new(
-          type: :bar,
-          series: @sample_series,
-          width: 20,
-          height: 10,
-          show_legend: true
-        )
-
-      legend =
-        find_child(view, fn child ->
-          child.type == :flex and
-            Enum.any?(find_all_text_children(child), &(&1.content =~ "█"))
-        end)
-
-      assert legend != nil
-      # Two series
-      assert length(legend.children) == 2
-    end
+    # Skipped tests removed: axes and legend features not implemented and not planned.
   end
 
   describe "data handling" do

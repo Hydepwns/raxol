@@ -29,24 +29,26 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
           attributes: map(),
           # image_data: binary()    # Obsolete: Replaced by pixel_buffer
           # Resulting image data %{ {x, y} => color_index }
-          pixel_buffer: map()
+          pixel_buffer: map(),
+          sixel_cursor_pos: {integer(), integer()} | nil
         }
 
   @type sixel_attribute ::
           :normal | :double_width | :double_height | :double_size
 
+  defstruct palette: %{},
+            current_color: 0,
+            position: {0, 0},
+            attributes: %{width: :normal, height: :normal, size: :normal},
+            pixel_buffer: %{},
+            sixel_cursor_pos: nil
+
   @doc """
   Creates a new Sixel state with default values.
   """
-  @spec new() :: %{
-          palette: map(),
-          current_color: 0,
-          position: {0, 0},
-          attributes: %{width: :normal, height: :normal, size: :normal},
-          pixel_buffer: %{}
-        }
+  @spec new() :: %__MODULE__{}
   def new do
-    %{
+    %__MODULE__{
       palette: SixelPalette.initialize_palette(),
       current_color: 0,
       position: {0, 0},
@@ -55,7 +57,8 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
         height: :normal,
         size: :normal
       },
-      pixel_buffer: %{}
+      pixel_buffer: %{},
+      sixel_cursor_pos: nil
     }
   end
 
@@ -115,7 +118,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
                 case parse_result do
                   {:ok, final_parser_state} ->
                     # Update the main state with results from the parser
-                    updated_state = %{
+                    updated_state = %__MODULE__{
                       state
                       | # Palette might have changed
                         palette: final_parser_state.palette,
@@ -123,7 +126,9 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
                         attributes: final_parser_state.raster_attrs,
                         pixel_buffer: final_parser_state.pixel_buffer,
                         position: {final_parser_state.x, final_parser_state.y},
-                        current_color: final_parser_state.color_index
+                        current_color: final_parser_state.color_index,
+                        sixel_cursor_pos:
+                          {final_parser_state.x, final_parser_state.y}
                     }
 
                     # Logger.debug("process_sequence: Returning OK, final state: #{inspect(updated_state)}")

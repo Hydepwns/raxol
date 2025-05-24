@@ -122,7 +122,9 @@ defmodule Raxol.Terminal.ModeManager do
             # Tracks the active alt screen mode
             alt_screen_mode: nil,
             # Bracketed paste mode
-            bracketed_paste_mode: false
+            bracketed_paste_mode: false,
+            # Added for the new logic
+            active_buffer_type: :main
 
   # TODO: Consider saved state for 1048 (DECSC/DECRC) - maybe managed by TerminalState?
   # TODO: Consider saved state for 1047/1049 - maybe managed by TerminalState?
@@ -264,7 +266,7 @@ defmodule Raxol.Terminal.ModeManager do
 
       # Unknown/Unhandled
       _ ->
-        Logger.warning(
+        Logger.warn(
           "[ModeManager] Unhandled mode to set: #{inspect(mode_atom)}"
         )
 
@@ -347,7 +349,7 @@ defmodule Raxol.Terminal.ModeManager do
 
       # Unknown/Unhandled
       _ ->
-        Logger.warning(
+        Logger.warn(
           "[ModeManager] Unhandled mode to reset: #{inspect(mode_atom)}"
         )
 
@@ -604,9 +606,39 @@ defmodule Raxol.Terminal.ModeManager do
           emulator
         end
 
-      if mm_state.alt_screen_mode == :mode_1049 do
-        :ok
-      end
+      # Explicitly set the active buffer type back to main
+      emulator_to_update = %{emulator_after_restore | active_buffer_type: :main}
+
+      emulator_to_update =
+        if mm_state.alt_screen_mode == :mode_1049 do
+          # Clear the alternate buffer before switching away from it
+          # Get the configured screen buffer module
+          screen_buffer_impl =
+            Application.get_env(
+              :raxol,
+              :screen_buffer_impl,
+              Raxol.Terminal.ScreenBuffer
+            )
+
+          text_formatting_impl =
+            Application.get_env(
+              :raxol,
+              :text_formatting_impl,
+              Raxol.Terminal.ANSI.TextFormatting
+            )
+
+          if alt_buf = emulator_to_update.alternate_screen_buffer do
+            cleared_alt_buf =
+              screen_buffer_impl.clear(alt_buf, text_formatting_impl.new())
+
+            %{emulator_to_update | alternate_screen_buffer: cleared_alt_buf}
+          else
+            # Should not happen if 1049 was active, but good to be defensive
+            emulator_to_update
+          end
+        else
+          emulator_to_update
+        end
 
       # Update ModeManager's internal state
       new_mm_state = %{
@@ -615,8 +647,8 @@ defmodule Raxol.Terminal.ModeManager do
           alt_screen_mode: nil
       }
 
-      # Ensure this uses emulator_after_restore
-      update_mm_state(emulator_after_restore, new_mm_state)
+      # Ensure this uses emulator_to_update (which has active_buffer_type set correctly)
+      update_mm_state(emulator_to_update, new_mm_state)
     end
   end
 

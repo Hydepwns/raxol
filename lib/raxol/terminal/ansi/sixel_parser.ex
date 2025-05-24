@@ -4,7 +4,6 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
   """
 
   require Logger
-  import Bitwise
 
   alias Raxol.Terminal.ANSI.SixelPatternMap
   # Needed for color definitions/selection
@@ -339,7 +338,7 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
                   Enum.reduce(
                     0..(repeat - 1),
                     {state.pixel_buffer, start_x, state.max_x},
-                    fn i, {current_buffer, current_x, current_max_x} ->
+                    fn _i, {current_buffer, current_x, current_max_x} ->
                       # Generate pixels for the pattern at the current column (current_x)
                       pixels_for_this_column =
                         Enum.reduce(0..5, %{}, fn bit_index, acc ->
@@ -379,11 +378,6 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
                     max_y: max(state.max_y, y + 5),
                     color_index: state.color_index
                 }
-
-                IO.inspect(
-                  {char_byte, remaining_data, updated_state.pixel_buffer},
-                  label: "Before Recurse Data Char"
-                )
 
                 parse(remaining_data, updated_state)
 

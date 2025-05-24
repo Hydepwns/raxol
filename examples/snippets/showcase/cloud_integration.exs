@@ -21,42 +21,28 @@ IO.puts("Initializing cloud system...")
 case status do
   :ok ->
     IO.puts("✅ Cloud system initialized successfully")
-    
+
   :error ->
     IO.puts("❌ Failed to initialize cloud system: #{inspect(result)}")
     System.halt(1)
 end
 
-IO.puts("")
 
-# Get current configuration
-IO.puts("Current configuration:")
 edge_config = Raxol.Cloud.config(:get, :edge)
-IO.inspect(edge_config, label: "Edge Config", pretty: true)
-IO.puts("")
 
 # Update configuration
-IO.puts("Updating configuration...")
 {status, result} = Raxol.Cloud.config(:set, [:edge, :mode], :hybrid)
 
 case status do
   :ok ->
     IO.puts("✅ Configuration updated successfully")
-    
+
   :error ->
     IO.puts("❌ Failed to update configuration: #{inspect(result)}")
 end
 
-IO.puts("")
+Raxol.Cloud.status()
 
-# Get system status
-IO.puts("System status:")
-status = Raxol.Cloud.status()
-IO.inspect(status, label: "Status", pretty: true)
-IO.puts("")
-
-# Record some metrics using the monitor API
-IO.puts("Recording metrics...")
 Raxol.Cloud.monitor(:metric, "example.counter", value: 1, tags: ["example:true"])
 Raxol.Cloud.monitor(:metric, "example.gauge", value: 42.5, tags: ["example:true"])
 Raxol.Cloud.monitor(:metric, "example.timer", value: 123.45, tags: ["example:true", "operation:test"])
@@ -66,8 +52,8 @@ IO.puts("")
 # Record an error
 IO.puts("Recording an error...")
 error = %RuntimeError{message: "This is a test error"}
-Raxol.Cloud.monitor(:error, error, 
-  context: %{test: true}, 
+Raxol.Cloud.monitor(:error, error,
+  context: %{test: true},
   severity: :warning,
   tags: ["example:true"]
 )
@@ -83,7 +69,7 @@ IO.puts("")
 # Execute a function at the edge or in the cloud
 IO.puts("Executing a function...")
 {status, result} = Raxol.Cloud.execute(
-  fn -> 
+  fn ->
     # Simulate some work
     Process.sleep(100)
     {:ok, %{data: "test", timestamp: DateTime.utc_now()}}
@@ -95,8 +81,7 @@ case status do
   :ok ->
     {location, data} = result
     IO.puts("✅ Function executed successfully at #{location}")
-    IO.inspect(data, label: "Result", pretty: true)
-    
+
   :error ->
     IO.puts("❌ Function execution failed: #{inspect(result)}")
 end
@@ -113,7 +98,7 @@ case status do
     Enum.each(services, fn service ->
       IO.puts("  - #{service.name} (#{service.type}): #{service.endpoint}")
     end)
-    
+
   :error ->
     IO.puts("❌ Service discovery failed: #{inspect(services)}")
 end
@@ -132,7 +117,7 @@ IO.puts("Registering a service...")
 case status do
   :ok ->
     IO.puts("✅ Service registered: #{result.registration_id}")
-    
+
   :error ->
     IO.puts("❌ Service registration failed: #{inspect(result)}")
 end
@@ -151,7 +136,7 @@ IO.puts("Deploying a component...")
 case status do
   :ok ->
     IO.puts("✅ Deployment started: #{result.deployment_id}")
-    
+
   :error ->
     IO.puts("❌ Deployment failed: #{inspect(result)}")
 end
@@ -173,7 +158,7 @@ IO.puts("Scaling a service...")
 case status do
   :ok ->
     IO.puts("✅ Scaling initiated: #{result.service} from #{result.current} to #{result.target} instances")
-    
+
   :error ->
     IO.puts("❌ Scaling failed: #{inspect(result)}")
 end
@@ -191,7 +176,7 @@ IO.puts("Getting a service connection...")
 case status do
   :ok ->
     IO.puts("✅ Service connection established: #{result.endpoint}")
-    
+
   :error ->
     IO.puts("❌ Service connection failed: #{inspect(result)}")
 end

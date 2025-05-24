@@ -33,6 +33,16 @@ For subsystem details, see the referenced README files.
 
 - Each layer is implemented as a subsystem (see below).
 
+## Subsystems
+
+- Terminal: I/O, buffer, cursor, command, style, parser, input. (`lib/raxol/terminal`)
+- Core: App lifecycle, events, plugins, color, UX. (`lib/raxol/core`)
+- Plugins: Modular, extensible, dependency resolution. (`lib/raxol/plugins`)
+- Style: Color, theming, layout utils. (`lib/raxol/style`)
+- UI: Components, layout, theming, render. (`lib/raxol/ui`)
+- AI: Content generation, perf. tuning. (`lib/raxol/ai`)
+- Animation: Animation, easing, gestures. (`lib/raxol/animation`)
+
 ## Core Subsystems
 
 ### Terminal

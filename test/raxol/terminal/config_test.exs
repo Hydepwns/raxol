@@ -2,7 +2,8 @@ defmodule Raxol.Terminal.ConfigTest do
   use ExUnit.Case
   use Raxol.DataCase
   import Mox
-  import Raxol.TestHelpers
+  # import Raxol.TestHelpers
+  import Raxol.Test.TestHelper
 
   # Aliases for the modules under test
   alias Raxol.Terminal.Config

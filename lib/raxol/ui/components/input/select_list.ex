@@ -74,11 +74,16 @@ defmodule Raxol.UI.Components.Input.SelectList do
           :visible_height => integer() | nil,
           :last_key_time => integer() | nil,
           :search_buffer => String.t(),
-          :search_timer => reference() | nil
+          :search_timer => reference() | nil,
+          :on_focus => (integer() -> any()) | nil
         }
 
   # --- Component Implementation ---
 
+  @doc """
+  Initializes the SelectList component state from the given props.
+  """
+  @spec init(map()) :: map()
   @impl true
   def init(props) do
     validate_props!(props)
@@ -105,13 +110,18 @@ defmodule Raxol.UI.Components.Input.SelectList do
       search_buffer: "",
       search_timer: nil,
       theme: %{},
-      style: %{}
+      style: %{},
+      on_focus: nil
     }
 
     # Merge validated props with default internal state
     Map.merge(defaults, props)
   end
 
+  @doc """
+  Updates the SelectList component state in response to messages or prop changes.
+  """
+  @spec update(term(), map()) :: {map(), any()} | {map(), nil}
   @impl true
   def update({:update_props, new_props}, state) do
     validate_props!(new_props)
@@ -144,7 +154,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
     # Merge everything together, with new_props taking precedence
     updated_state = Map.merge(state, reset_state)
-    Map.merge(updated_state, new_props)
+    {Map.merge(updated_state, new_props), nil}
   end
 
   def update({:search, search_text}, state) do
@@ -157,14 +167,17 @@ defmodule Raxol.UI.Components.Input.SelectList do
     timer_ref = Process.send_after(self(), {:apply_search, search_text}, 300)
 
     # Update buffer immediately
-    %{state | search_buffer: search_text, search_timer: timer_ref}
+    {%{state | search_buffer: search_text, search_timer: timer_ref}, nil}
   end
 
   def update({:apply_search, search_text}, state) do
-    Search.update_search_state(
-      %{state | search_text: search_text, search_timer: nil},
-      search_text
-    )
+    new_state =
+      Search.update_search_state(
+        %{state | search_text: search_text, search_timer: nil},
+        search_text
+      )
+
+    {new_state, nil}
   end
 
   def update({:select_option, index}, state) do
@@ -172,116 +185,291 @@ defmodule Raxol.UI.Components.Input.SelectList do
   end
 
   def update({:set_page, page_num}, state) do
-    Pagination.update_page_state(state, page_num)
+    new_state = Pagination.update_page_state(state, page_num)
+    {new_state, nil}
   end
 
   def update({:set_focus, has_focus}, state) do
     new_state = %{state | has_focus: has_focus}
 
-    # Call on_focus callback if provided
     if has_focus and state.on_focus do
       state.on_focus.(state.focused_index)
     end
 
-    new_state
+    {new_state, nil}
   end
 
   def update({:toggle_search_focus}, state) do
-    # Only toggle if search is enabled
     if state.enable_search do
       new_state = %{state | is_search_focused: !state.is_search_focused}
 
-      # If focusing search, clear any existing search
-      if new_state.is_search_focused do
-        %{
-          new_state
-          | search_text: "",
-            search_buffer: "",
-            filtered_options: nil,
-            is_filtering: false
-        }
-      else
+      cleared_state = %{
         new_state
-      end
+        | search_text: "",
+          search_buffer: "",
+          filtered_options: nil,
+          is_filtering: false
+      }
+
+      {cleared_state, nil}
     else
-      state
+      {state, nil}
     end
   end
 
   def update({:set_visible_height, height}, state) do
-    # Update the visible height based on available space
-    %{state | visible_height: height}
+    {%{state | visible_height: height}, nil}
   end
 
-  def update(_message, state) do
-    # Other messages aren't handled, return state unchanged
-    state
+  def update({:set_search_focus, true}, state) do
+    new_state = %{
+      state
+      | is_search_focused: true,
+        search_text: "",
+        search_buffer: "",
+        filtered_options: nil,
+        is_filtering: false
+    }
+
+    {new_state, nil}
   end
 
+  def update(message, state) do
+    # If state is an empty map or missing required fields, initialize a default state
+    state =
+      cond do
+        is_map(state) and map_size(state) == 0 -> init(%{options: []})
+        not is_map(state) -> init(%{options: []})
+        not Map.has_key?(state, :options) -> init(%{options: []})
+        true -> state
+      end
+
+    do_update(message, state)
+  end
+
+  defp do_update({:update_props, new_props}, state),
+    do: update({:update_props, new_props}, state)
+
+  defp do_update({:search, search_text}, state),
+    do: update({:search, search_text}, state)
+
+  defp do_update({:apply_search, search_text}, state),
+    do: update({:apply_search, search_text}, state)
+
+  defp do_update({:select_option, index}, state),
+    do: update({:select_option, index}, state)
+
+  defp do_update({:set_page, page_num}, state),
+    do: update({:set_page, page_num}, state)
+
+  defp do_update({:set_focus, has_focus}, state),
+    do: update({:set_focus, has_focus}, state)
+
+  defp do_update({:toggle_search_focus}, state),
+    do: update({:toggle_search_focus}, state)
+
+  defp do_update({:set_visible_height, height}, state),
+    do: update({:set_visible_height, height}, state)
+
+  defp do_update({:set_search_focus, true}, state),
+    do: update({:set_search_focus, true}, state)
+
+  defp do_update(_message, state), do: {state, nil}
+
+  @doc """
+  Handles events for the SelectList component, such as keypresses, mouse events, and context changes.
+  """
+  @spec handle_event(map(), term(), map()) :: {map(), any()} | {map(), nil}
   @impl true
-  def handle_event(event, state, _context) do
-    case event do
-      {:key, :up} ->
-        handle_key_up(state)
+  def handle_event(%{__struct__: _} = event, context, state) do
+    handle_event(Map.from_struct(event), context, state)
+  end
 
-      {:key, :down} ->
-        handle_key_down(state)
+  def handle_event(%{type: :key, data: %{key: key}}, context, state) do
+    state = ensure_state(state)
 
-      {:key, :enter} ->
-        handle_enter(state)
+    cond do
+      key in ["Down", :down] ->
+        Navigation.handle_arrow_down(state) |> then(&{&1, nil})
 
-      {:key, :backspace} ->
-        handle_backspace(state)
+      key in ["Up", :up] ->
+        Navigation.handle_arrow_up(state) |> then(&{&1, nil})
 
-      {:mouse, :click, _x, y} ->
-        handle_mouse_click(y, state)
+      key in ["PageDown", :pagedown] ->
+        Navigation.handle_page_down(state) |> then(&{&1, nil})
 
-      {:focus, :gain} ->
-        handle_focus_gain(state)
+      key in ["PageUp", :pageup] ->
+        Navigation.handle_page_up(state) |> then(&{&1, nil})
 
-      {:focus, :lose} ->
-        handle_focus_lose(state)
+      key in ["Home", :home] ->
+        Navigation.handle_home(state) |> then(&{&1, nil})
 
-      {:resize, _width, _height} ->
-        handle_resize(state)
+      key in ["End", :end] ->
+        Navigation.handle_end(state) |> then(&{&1, nil})
 
-      _ ->
-        state
+      key in ["Enter", :enter] ->
+        {new_state, commands} =
+          Selection.update_selection_state(state, state.focused_index)
+
+        Enum.each(commands, fn
+          {:callback, fun, args} -> apply(fun, args)
+          _ -> :ok
+        end)
+
+        {new_state, nil}
+
+      key in ["Tab", :tab] ->
+        if state.enable_search do
+          new_state = %{state | is_search_focused: !state.is_search_focused}
+
+          cleared_state = %{
+            new_state
+            | search_text: "",
+              search_buffer: "",
+              filtered_options: nil,
+              is_filtering: false
+          }
+
+          {cleared_state, nil}
+        else
+          {state, nil}
+        end
+
+      key in ["Backspace", :backspace] ->
+        if state.is_search_focused and state.search_buffer != "" do
+          new_buffer = String.slice(state.search_buffer, 0..-2)
+          {new_state, _} = update({:search, new_buffer}, state)
+          {new_state, nil}
+        else
+          {state, nil}
+        end
+
+      is_binary(key) and String.length(key) == 1 and state.enable_search and
+          state.is_search_focused ->
+        # Always update search_buffer immediately for character keys
+        {new_state, _} = update({:search, state.search_buffer <> key}, state)
+        {new_state, nil}
+
+      true ->
+        {state, nil}
     end
   end
 
-  @impl true
-  def render(state) do
-    Renderer.render(state)
+  def handle_event(%{type: :focus}, context, state) do
+    state = ensure_state(state)
+    {new_state, _} = update({:set_focus, true}, state)
+    {new_state, nil}
   end
 
+  def handle_event(%{type: :blur}, context, state) do
+    state = ensure_state(state)
+    {new_state, _} = update({:set_focus, false}, state)
+    {new_state, nil}
+  end
+
+  def handle_event(
+        %{type: :resize, data: %{width: _w, height: h}},
+        context,
+        state
+      ) do
+    state = ensure_state(state)
+    {new_state, _} = update({:set_visible_height, h}, state)
+    {Navigation.update_scroll_position(new_state), nil}
+  end
+
+  def handle_event(%{type: :mouse, data: %{x: _x, y: y}}, context, state) do
+    state = ensure_state(state)
+
+    cond do
+      state.enable_search and y == 1 ->
+        # Always set is_search_focused to true on search box click
+        {new_state, _} = update({:set_search_focus, true}, state)
+        {new_state, nil}
+
+      y >= 2 ->
+        # Option click: y-2 (0-based index)
+        index = Navigation.calculate_clicked_index(y - 2, state)
+        effective_options = Pagination.get_effective_options(state)
+
+        if index >= 0 and index < length(effective_options) do
+          {maybe_new_state, commands} =
+            Selection.update_selection_state(state, index)
+
+          # Always set focused_index to the clicked index, even if selection didn't change
+          new_state = Map.put(maybe_new_state, :focused_index, index)
+
+          Enum.each(commands, fn
+            {:callback, fun, args} -> apply(fun, args)
+            _ -> :ok
+          end)
+
+          {new_state, nil}
+        else
+          {state, nil}
+        end
+
+      true ->
+        {state, nil}
+    end
+  end
+
+  @doc """
+  Renders the SelectList component using the current state and context.
+  """
+  @spec render(map(), map()) :: any()
+  @impl true
+  def render(state, context) do
+    Renderer.render(state, context)
+  end
+
+  @doc """
+  Mounts the SelectList component. Performs any setup needed after initialization.
+  """
   @impl true
   def mount(state), do: state
 
+  @doc """
+  Unmounts the SelectList component, performing any necessary cleanup.
+  """
   @impl true
   def unmount(state), do: state
 
   # --- Private Helper Functions ---
 
   defp validate_props!(props) do
-    unless Map.has_key?(props, :options) do
+    if not Map.has_key?(props, :options) do
       raise ArgumentError, "SelectList requires :options prop"
     end
 
-    unless is_list(props.options) do
+    if not is_list(props.options) do
       raise ArgumentError, "SelectList :options must be a list"
     end
 
     # Validate each option
     Enum.each(props.options, fn option ->
-      unless is_tuple(option) and tuple_size(option) == 2 do
-        raise ArgumentError, "SelectList options must be {label, value} tuples"
-      end
+      cond do
+        is_tuple(option) and tuple_size(option) == 2 ->
+          {label, _value} = option
 
-      {label, _value} = option
+          unless is_binary(label) do
+            raise ArgumentError, "SelectList option labels must be strings"
+          end
 
-      unless is_binary(label) do
-        raise ArgumentError, "SelectList option labels must be strings"
+        is_tuple(option) and tuple_size(option) == 3 ->
+          {label, _value, style} = option
+
+          unless is_binary(label) do
+            raise ArgumentError, "SelectList option labels must be strings"
+          end
+
+          unless is_map(style) do
+            raise ArgumentError,
+                  "SelectList option style (third element) must be a map"
+          end
+
+        true ->
+          raise ArgumentError,
+                "SelectList options must be {label, value} or {label, value, style} tuples"
       end
     end)
   end
@@ -289,7 +477,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
   defp handle_key_up(state) do
     if state.focused_index > 0 do
       new_index = state.focused_index - 1
-      Navigation.update_focus_state(state, new_index)
+      Navigation.update_focus_and_scroll(state, new_index)
     else
       state
     end
@@ -300,7 +488,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
     if state.focused_index < length(options) - 1 do
       new_index = state.focused_index + 1
-      Navigation.update_focus_state(state, new_index)
+      Navigation.update_focus_and_scroll(state, new_index)
     else
       state
     end
@@ -308,7 +496,13 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   defp handle_enter(state) do
     if state.focused_index >= 0 do
-      Selection.update_selection_state(state, state.focused_index)
+      result = Selection.update_selection_state(state, state.focused_index)
+
+      case result do
+        {new_state, _} -> new_state
+        new_state when is_map(new_state) -> new_state
+        _ -> state
+      end
     else
       state
     end
@@ -317,24 +511,32 @@ defmodule Raxol.UI.Components.Input.SelectList do
   defp handle_backspace(state) do
     if state.is_search_focused and state.search_buffer != "" do
       new_buffer = String.slice(state.search_buffer, 0..-2)
-      update({:search, new_buffer}, state)
+      {new_state, _} = update({:search, new_buffer}, state)
+      new_state
     else
       state
     end
   end
 
   defp handle_focus_gain(state) do
-    update({:set_focus, true}, state)
+    {new_state, _} = update({:set_focus, true}, state)
+    new_state
   end
 
   defp handle_focus_lose(state) do
-    update({:set_focus, false}, state)
+    {new_state, _} = update({:set_focus, false}, state)
+    new_state
   end
 
   defp handle_resize(state) do
     # Recalculate visible height and update scroll position if needed
     if state.visible_height do
-      Navigation.update_scroll_position(state)
+      result = Navigation.update_scroll_position(state)
+
+      case result do
+        new_state when is_map(new_state) -> new_state
+        _ -> state
+      end
     else
       state
     end
@@ -347,12 +549,27 @@ defmodule Raxol.UI.Components.Input.SelectList do
       index = Navigation.calculate_clicked_index(y, state)
 
       if index >= 0 and index < length(state.options) do
-        Selection.update_selection_state(state, index)
+        result = Selection.update_selection_state(state, index)
+
+        case result do
+          {new_state, _} -> new_state
+          new_state when is_map(new_state) -> new_state
+          _ -> state
+        end
       else
         state
       end
     else
       state
+    end
+  end
+
+  defp ensure_state(state) do
+    cond do
+      is_map(state) and map_size(state) == 0 -> init(%{options: []})
+      not is_map(state) -> init(%{options: []})
+      not Map.has_key?(state, :options) -> init(%{options: []})
+      true -> state
     end
   end
 end

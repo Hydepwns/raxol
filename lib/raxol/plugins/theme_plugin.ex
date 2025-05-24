@@ -8,6 +8,7 @@ defmodule Raxol.Plugins.ThemePlugin do
 
   defstruct [
     :name,
+    :version,
     :enabled,
     :config,
     :current_theme,
@@ -25,6 +26,7 @@ defmodule Raxol.Plugins.ThemePlugin do
     {:ok,
      %__MODULE__{
        name: "theme",
+       version: "0.1.0",
        enabled: true,
        config: config,
        current_theme: theme,

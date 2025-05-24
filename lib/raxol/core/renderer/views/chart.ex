@@ -1,4 +1,6 @@
 defmodule Raxol.Core.Renderer.Views.Chart do
+  require Raxol.Core.Renderer.View
+
   @moduledoc """
   Chart view component for data visualization.
 
@@ -12,6 +14,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   """
 
   alias Raxol.Core.Renderer.View
+  alias Raxol.Core.Renderer.View.Types
 
   @type chart_type :: :bar | :line | :sparkline
   @type orientation :: :vertical | :horizontal
@@ -41,53 +44,112 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   Creates a new chart view.
   """
   def new(opts) do
-    type = Keyword.get(opts, :type, :bar)
-    orientation = Keyword.get(opts, :orientation, :vertical)
-    series = Keyword.get(opts, :series, [])
-    width = Keyword.get(opts, :width, 40)
-    height = Keyword.get(opts, :height, 10)
-    show_axes = Keyword.get(opts, :show_axes, true)
-    show_labels = Keyword.get(opts, :show_labels, true)
-    show_legend = Keyword.get(opts, :show_legend, true)
-    style = Keyword.get(opts, :style, [])
-
-    # Calculate data range
-    {min, max} = calculate_range(series, opts[:min], opts[:max])
-
-    # Create chart content based on type
-    content =
-      case type do
-        :bar -> create_bar_chart(series, min, max, width, height, orientation)
-        :line -> create_line_chart(series, min, max, width, height)
-        :sparkline -> create_sparkline(series, min, max, width)
-      end
-
-    # Add axes if needed
-    content =
-      if show_axes do
-        add_axes(content, min, max, width, height, orientation)
-      else
-        content
-      end
-
-    # Add labels if needed
-    content =
-      if show_labels do
-        add_labels(content, series, width, height)
-      else
-        content
-      end
-
-    # Add legend if needed
-    content =
-      if show_legend do
-        add_legend(content, series)
-      else
-        content
-      end
-
-    View.box(style: style, children: content)
+    options = parse_chart_options(opts)
+    content = build_chart_content(options)
+    View.box(style: options.style, children: content)
   end
+
+  defp parse_chart_options(opts) do
+    %{
+      type: Keyword.get(opts, :type, :bar),
+      orientation: Keyword.get(opts, :orientation, :vertical),
+      series: Keyword.get(opts, :series, []),
+      width: Keyword.get(opts, :width, 40),
+      height: Keyword.get(opts, :height, 10),
+      show_axes: Keyword.get(opts, :show_axes, true),
+      show_labels: Keyword.get(opts, :show_labels, true),
+      show_legend: Keyword.get(opts, :show_legend, true),
+      style: Keyword.get(opts, :style, []),
+      min: Keyword.get(opts, :min, nil),
+      max: Keyword.get(opts, :max, nil)
+    }
+  end
+
+  defp build_chart_content(options) do
+    {min, max} = calculate_range(options.series, options.min, options.max)
+
+    content =
+      build_chart_main_content(
+        options.type,
+        options.series,
+        min,
+        max,
+        options.width,
+        options.height,
+        options.orientation
+      )
+
+    content
+    |> maybe_add_axes(options, min, max)
+    |> maybe_add_labels(options)
+    |> maybe_add_legend(options)
+  end
+
+  defp build_chart_main_content(
+         :bar,
+         series,
+         min,
+         max,
+         width,
+         height,
+         orientation
+       ),
+       do: create_bar_chart(series, min, max, width, height, orientation)
+
+  defp build_chart_main_content(
+         :line,
+         series,
+         min,
+         max,
+         width,
+         height,
+         _orientation
+       ),
+       do: create_line_chart(series, min, max, width, height)
+
+  defp build_chart_main_content(
+         :sparkline,
+         series,
+         min,
+         max,
+         width,
+         _height,
+         _orientation
+       ),
+       do: create_sparkline(series, min, max, width)
+
+  defp maybe_add_axes(
+         content,
+         %{
+           show_axes: true,
+           width: width,
+           height: height,
+           orientation: orientation
+         } = options,
+         min,
+         max
+       ) do
+    add_axes(content, min, max, width, height, orientation)
+  end
+
+  defp maybe_add_axes(content, _options, _min, _max), do: content
+
+  defp maybe_add_labels(content, %{
+         show_labels: true,
+         series: series,
+         width: width,
+         height: height
+       }) do
+    add_labels(content, series, width, height)
+  end
+
+  defp maybe_add_labels(content, _options), do: content
+
+  defp maybe_add_legend(content, %{show_legend: true, series: series}) do
+    add_legend(content, series)
+  end
+
+  defp maybe_add_legend(content, _options), do: content
 
   # Private Helpers
 
@@ -108,214 +170,268 @@ defmodule Raxol.Core.Renderer.Views.Chart do
 
   defp create_bar_chart(series, min, max, width, height, orientation) do
     case orientation do
-      :vertical -> create_vertical_bars(series, min, max, width, height)
-      :horizontal -> create_horizontal_bars(series, min, max, width, height)
+      :vertical -> create_bars(series, min, max, width, height, :vertical)
+      :horizontal -> create_bars(series, min, max, width, height, :horizontal)
     end
   end
 
-  defp create_vertical_bars(series, min, max, width, height) do
-    # Calculate total data points only if series is not empty
+  defp create_bars(series, min, max, width, height, orientation) do
     total_points = Enum.sum(Enum.map(series, &length(&1.data)))
 
-    # Handle empty data case
     if total_points == 0 do
-      View.flex direction: :row do
-        # Return empty view
-        []
-      end
+      empty_bars_flex(orientation)
     else
-      bar_width = div(width, total_points)
+      config = bar_config(orientation, min, max, width, height, total_points)
+      bars = create_bars_for_series(series, config)
 
-      bars =
-        series
-        |> Enum.flat_map(fn %{data: data, color: color} ->
-          data
-          |> Enum.map(fn value ->
-            bar_height = scale_value(value, min, max, 1, height) |> round()
-            chars = create_vertical_bar(bar_height, height)
-
-            View.text(chars,
-              size: {bar_width, height},
-              fg: color
-            )
-          end)
-        end)
-
-      View.flex direction: :row do
-        bars
-      end
+      View.flex(config.direction, do: bars)
     end
   end
 
-  defp create_horizontal_bars(series, min, max, width, height) do
-    # Calculate total data points only if series is not empty
-    total_points = Enum.sum(Enum.map(series, &length(&1.data)))
+  defp empty_bars_flex(:vertical), do: View.flex(direction: :row, do: [])
+  defp empty_bars_flex(:horizontal), do: View.flex(direction: :column, do: [])
 
-    # Handle empty data case
-    if total_points == 0 do
-      View.flex direction: :column do
-        # Return empty view
-        []
-      end
-    else
-      bar_height = div(height, total_points)
+  defp create_bars_for_series(series, config) do
+    Enum.flat_map(series, fn %{data: data, color: color} ->
+      Enum.map(data, fn value ->
+        bar_length = config.scale_fun.(value)
+        chars = config.create_bar_fun.(bar_length, config.bar_secondary)
 
-      bars =
-        series
-        |> Enum.flat_map(fn %{data: data, color: color} ->
-          data
-          |> Enum.map(fn value ->
-            bar_width = scale_value(value, min, max, 1, width) |> round()
-            chars = create_horizontal_bar(bar_width, width)
+        View.text(chars,
+          size: config.size_fun.(config.bar_size, config.bar_secondary),
+          fg: color
+        )
+      end)
+    end)
+  end
 
-            View.text(chars,
-              size: {width, bar_height},
-              fg: color
-            )
-          end)
-        end)
+  defp bar_config(:vertical, min, max, width, height, total_points) do
+    %{
+      bar_primary: width,
+      bar_secondary: height,
+      scale_fun: fn v -> scale_value(v, min, max, 1, height) |> round() end,
+      create_bar_fun: &create_vertical_bar/2,
+      bar_size: div(width, total_points),
+      size_fun: fn bar_size, bar_secondary -> {bar_size, bar_secondary} end,
+      direction: :row
+    }
+  end
 
-      View.flex direction: :column do
-        bars
-      end
-    end
+  defp bar_config(:horizontal, min, max, width, height, total_points) do
+    %{
+      bar_primary: height,
+      bar_secondary: width,
+      scale_fun: fn v -> scale_value(v, min, max, 1, width) |> round() end,
+      create_bar_fun: &create_horizontal_bar/2,
+      bar_size: div(height, total_points),
+      size_fun: fn bar_secondary, bar_size -> {bar_secondary, bar_size} end,
+      direction: :column
+    }
   end
 
   defp create_line_chart(series, min, max, width, height) do
     lines =
       series
       |> Enum.map(fn %{data: data, color: color} ->
-        points =
-          data
-          |> Enum.with_index()
-          |> Enum.map(fn {value, x_idx} ->
-            # Scale x based on index and width
-            x = floor(x_idx / (length(data) - 1) * (width - 1))
-            # Scale y based on value and height, then floor
-            y = floor(scale_value(value, min, max, 0, height - 1))
-            {x, y}
-          end)
-
-        create_line(points, width, height, color)
+        points = generate_line_points(data, min, max, width, height)
+        render_line_canvas(points, width, height, color)
       end)
 
     View.box(children: lines)
   end
 
+  defp generate_line_points(data, min, max, width, height) do
+    len = length(data)
+
+    Enum.with_index(data)
+    |> Enum.map(fn {value, x_idx} ->
+      x = calc_line_x(x_idx, len, width)
+      y = calc_line_y(value, min, max, height)
+      {x, y}
+    end)
+  end
+
+  defp calc_line_x(x_idx, len, width) when len > 1 do
+    Float.floor(x_idx / (len - 1) * (width - 1)) |> trunc()
+  end
+
+  # single point case
+  defp calc_line_x(_x_idx, _len, width), do: 0
+
+  defp calc_line_y(value, min, max, height) do
+    Float.floor(scale_value(value, min, max, 0, height - 1)) |> trunc()
+  end
+
+  defp render_line_canvas(points, width, height, color) do
+    points
+    |> build_line_canvas(width, height)
+    |> canvas_to_view_cells(color)
+  end
+
+  defp build_line_canvas(points, width, height) do
+    canvas = blank_canvas(width, height)
+    draw_lines_on_canvas(canvas, points)
+  end
+
+  defp draw_lines_on_canvas(canvas, points) do
+    Enum.chunk_every(points, 2, 1, :discard)
+    |> Enum.reduce(canvas, fn [start_point, end_point], acc ->
+      mark_line_points(acc, start_point, end_point)
+    end)
+  end
+
+  defp mark_line_points(canvas, {x1, y1}, {x2, y2}) do
+    # Bresenham's line algorithm
+    dx = abs(x2 - x1)
+    dy = -abs(y2 - y1)
+    sx = if x1 < x2, do: 1, else: -1
+    sy = if y1 < y2, do: 1, else: -1
+    err = dx + dy
+
+    draw_bresenham(canvas, x1, y1, x2, y2, sx, sy, err, dx, dy)
+  end
+
+  defp draw_bresenham(canvas, x, y, x2, y2, sx, sy, err, dx, dy, depth \\ 0) do
+    # Defensive: prevent runaway recursion
+    if depth > 10_000 do
+      canvas
+    else
+      # Defensive: check bounds
+      if x < 0 or y < 0 or is_nil(Enum.at(canvas, y)) or
+           is_nil(Enum.at(Enum.at(canvas, y), x)) do
+        canvas
+      else
+        canvas = put_in(canvas, [Access.at(y), Access.at(x)], "•")
+
+        if x == x2 and y == y2 do
+          canvas
+        else
+          e2 = 2 * err
+
+          {next_x, next_err_x} =
+            if e2 >= dy, do: {x + sx, err + dy}, else: {x, err}
+
+          {next_y, next_err_y} =
+            if e2 <= dx, do: {y + sy, err + dx}, else: {y, err}
+
+          draw_bresenham(
+            canvas,
+            next_x,
+            next_y,
+            x2,
+            y2,
+            sx,
+            sy,
+            next_err_y,
+            dx,
+            dy,
+            depth + 1
+          )
+        end
+      end
+    end
+  end
+
+  defp canvas_to_view_cells(canvas, color) do
+    for {row, y} <- Enum.with_index(canvas),
+        {cell, x} <- Enum.with_index(row),
+        cell != nil and cell != " " do
+      View.text(cell, position: {x, y}, fg: color)
+    end
+  end
+
   defp create_sparkline([series], min, max, width) do
     %{data: data, color: color} = series
-    values = Enum.map(data, &scale_value(&1, min, max, 0, 7))
-    chars = Enum.map(values, &Enum.at(@bar_chars, floor(&1)))
+    chars = sparkline_chars(data, min, max)
+    fitted_chars = fit_sparkline_chars(chars, width)
 
-    # Pad the character list with spaces if it's shorter than the width
-    padded_chars =
-      if length(chars) < width do
-        chars ++ List.duplicate(" ", width - length(chars))
-      else
-        # Optionally truncate if longer? For now, let View.text handle it.
-        chars
-      end
-
-    View.text(Enum.join(padded_chars),
+    View.text(Enum.join(fitted_chars),
       size: {width, 1},
       fg: color
     )
   end
 
+  defp sparkline_chars(data, min, max) do
+    data
+    |> Enum.map(&scale_sparkline_value(&1, min, max))
+    |> Enum.map(&sparkline_char/1)
+  end
+
+  defp scale_sparkline_value(value, min, max) do
+    scale_value(value, min, max, 0, 7)
+  end
+
+  defp sparkline_char(scaled_value) do
+    Enum.at(@bar_chars, floor(scaled_value))
+  end
+
+  defp fit_sparkline_chars(chars, width) do
+    char_count = length(chars)
+
+    cond do
+      char_count < width ->
+        # Pad with spaces if not enough chars
+        chars ++ List.duplicate(" ", width - char_count)
+
+      char_count > width ->
+        # Truncate if too many chars
+        Enum.take(chars, width)
+
+      true ->
+        # Return as-is if just right
+        chars
+    end
+  end
+
   defp create_vertical_bar(bar_height, total_height)
        when is_integer(bar_height) and is_integer(total_height) do
-    # Clamp height to valid range
-    clamped_height = :erlang.max(0, :erlang.min(bar_height, total_height))
-
-    # Each char represents 8 levels
-    full = div(clamped_height, 8)
-    remainder = rem(clamped_height, 8)
-
-    full_blocks = String.duplicate("█", full)
-
-    partial_block =
-      if remainder > 0 do
-        Enum.at(@bar_chars, remainder)
-      else
-        ""
-      end
-
-    # Calculate needed padding from the top
-    padding_size = total_height - full - String.length(partial_block)
-    padding = String.duplicate(" ", :erlang.max(0, padding_size))
-
-    # Build bar from top down
-    padding <> partial_block <> full_blocks
+    build_bar_string(bar_height, total_height, :vertical)
   end
 
   defp create_horizontal_bar(bar_width, total_width)
        when is_integer(bar_width) and is_integer(total_width) do
-    # Clamp width to valid range
-    clamped_width = :erlang.max(0, :erlang.min(bar_width, total_width))
+    build_bar_string(bar_width, total_width, :horizontal)
+  end
 
-    # Each char represents 8 levels
-    full = div(clamped_width, 8)
-    remainder = rem(clamped_width, 8)
+  defp build_bar_string(bar_length, total_length, direction) do
+    clamped = clamp_bar_length(bar_length, total_length)
+    {full_blocks, partial_block} = bar_blocks(clamped)
+    padding = bar_padding(total_length, full_blocks, partial_block)
+    bar_blocks_string(direction, padding, partial_block, full_blocks)
+  end
 
-    full_blocks = String.duplicate("█", full)
+  defp bar_padding(total_length, full_blocks, partial_block) do
+    padding_size = total_length - full_blocks - String.length(partial_block)
+    String.duplicate(" ", :erlang.max(0, padding_size))
+  end
+
+  defp bar_blocks_string(:vertical, padding, partial_block, full_blocks),
+    do: padding <> partial_block <> String.duplicate("█", full_blocks)
+
+  defp bar_blocks_string(:horizontal, padding, partial_block, full_blocks),
+    do: String.duplicate("█", full_blocks) <> partial_block <> padding
+
+  defp clamp_bar_length(bar_length, total_length) do
+    :erlang.max(0, :erlang.min(bar_length, total_length))
+  end
+
+  defp bar_blocks(clamped_length) do
+    full_blocks = div(clamped_length, 8)
+    remainder = rem(clamped_length, 8)
 
     partial_block =
-      if remainder > 0 do
-        Enum.at(@bar_chars, remainder)
-      else
-        ""
-      end
+      if remainder > 0, do: Enum.at(@bar_chars, remainder), else: ""
 
-    # Calculate needed padding from the right
-    padding_size = total_width - full - String.length(partial_block)
-    padding = String.duplicate(" ", :erlang.max(0, padding_size))
-
-    # Build bar from left to right
-    full_blocks <> partial_block <> padding
+    {full_blocks, partial_block}
   end
 
   defp create_line(points, width, height, color) do
-    # Create a blank canvas
-    canvas =
-      for _y <- 0..(height - 1) do
-        for _x <- 0..(width - 1) do
-          " "
-        end
-      end
-
-    # Draw lines between points
-    canvas =
-      Enum.chunk_every(points, 2, 1, :discard)
-      |> Enum.reduce(canvas, fn [{x1, y1}, {x2, y2}], acc ->
-        draw_line(acc, {x1, y1}, {x2, y2})
-      end)
-
-    # Convert to view cells
-    canvas
-    |> Enum.with_index()
-    |> Enum.map(fn {row, y} ->
-      row
-      |> Enum.with_index()
-      |> Enum.map(fn {cell, x} ->
-        if cell do
-          View.text(cell,
-            position: {x, y},
-            fg: color
-          )
-        end
-      end)
-      |> Enum.reject(&is_nil/1)
-    end)
-    |> List.flatten()
+    points
+    |> build_line_canvas(width, height)
+    |> canvas_to_view_cells(color)
   end
 
-  defp draw_line(canvas, {x1, y1}, {x2, y2}) do
-    # Basic Bresenham's line algorithm (simplified for now)
-    # TODO: Implement a proper Bresenham or similar algorithm
-    # For now, just mark the start and end points
-    canvas = put_in(canvas, [Access.at(y1), Access.at(x1)], "•")
-    put_in(canvas, [Access.at(y2), Access.at(x2)], "•")
-  end
+  defp draw_line(canvas, p1, p2), do: mark_line_points(canvas, p1, p2)
 
   defp scale_value(value, min, max, new_min, new_max) do
     # Avoid division by zero if min == max
@@ -326,20 +442,61 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     end
   end
 
-  defp add_axes(content, _min, _max, _width, _height, _orientation) do
-    # TODO: Refactor to use a more structured approach for drawing axes
-    # Consider using a dedicated drawing library or module for better separation
-    # Placeholder implementation
-    content
+  @doc """
+  Adds axes to the chart content.
+  - content: the chart content
+  - min, max: data range
+  - width, height: chart dimensions
+  - orientation: :vertical or :horizontal
+  """
+  defp add_axes(content, min, max, width, height, orientation) do
+    # Draw a simple X and Y axis using ASCII characters
+    axis_y = View.text("|", position: {0, 0}, fg: :bright_black)
+
+    axis_x =
+      View.text(String.duplicate("-", width),
+        position: {0, height - 1},
+        fg: :bright_black
+      )
+
+    [axis_y, axis_x | List.wrap(content)]
   end
 
-  defp add_labels(content, _series, _width, _height) do
-    # TODO: Implement label drawing logic
-    content
+  @doc """
+  Adds labels to the chart content.
+  - content: the chart content
+  - series: the data series
+  - width, height: chart dimensions
+  """
+  defp add_labels(content, series, width, height) do
+    # Add min/max labels at the Y axis
+    min_label = View.text("min", position: {0, height - 1}, fg: :bright_black)
+    max_label = View.text("max", position: {0, 0}, fg: :bright_black)
+    [min_label, max_label | List.wrap(content)]
   end
 
-  defp add_legend(content, _series) do
-    # TODO: Implement legend drawing logic
-    content
+  @doc """
+  Adds a legend to the chart content.
+  - content: the chart content
+  - series: the data series
+  """
+  defp add_legend(content, series) do
+    # Add a simple legend at the top
+    legend =
+      series
+      |> Enum.with_index()
+      |> Enum.map(fn {%{name: name, color: color}, idx} ->
+        View.text("■ #{name}", position: {idx * 10, 0}, fg: color)
+      end)
+
+    legend ++ List.wrap(content)
+  end
+
+  defp blank_canvas(width, height) do
+    for _y <- 0..(height - 1) do
+      for _x <- 0..(width - 1) do
+        " "
+      end
+    end
   end
 end

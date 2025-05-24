@@ -27,6 +27,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   * `:memory_test` - Whether to track memory usage (default: true)
   """
   def run_benchmark(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     output_path = Keyword.get(opts, :output_path, "benchmark_results")
     dataset_sizes = Keyword.get(opts, :datasets, [10, 100, 1000, 10000])
     iterations = Keyword.get(opts, :iterations, 5)
@@ -126,7 +127,6 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
           # Raxol.RuntimeDebug.get_memory_snapshot()
           memory_info = nil
           # Raxol.RuntimeDebug.stop_memory_tracking()
-          # IO.inspect(memory_info, label: "Memory Info #{label}") # DEBUG
           memory_info
         else
           nil
@@ -210,7 +210,6 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
           # Raxol.RuntimeDebug.get_memory_snapshot()
           memory_info = nil
           # Raxol.RuntimeDebug.stop_memory_tracking()
-          # IO.inspect(memory_info, label: "Memory Info #{label}") # DEBUG
           memory_info
         else
           nil

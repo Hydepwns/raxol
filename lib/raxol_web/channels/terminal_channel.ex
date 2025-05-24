@@ -11,11 +11,10 @@ defmodule RaxolWeb.TerminalChannel do
   """
 
   use RaxolWeb, :channel
-  alias Raxol.Terminal.{Emulator, Renderer, Input, ScreenBuffer}
-  # alias Phoenix.Channel # Unused
-  # alias Raxol.Terminal.Input.InputHandler # Unused (commented out call)
-  # alias Phoenix.Socket # Unused
-  # require Logger # <-- Removed
+  alias Raxol.Terminal.Renderer
+  alias Raxol.Terminal.Emulator
+  alias Raxol.Terminal.Input
+  require Logger
 
   @type t :: %__MODULE__{
           emulator: Emulator.t(),
@@ -31,7 +30,11 @@ defmodule RaxolWeb.TerminalChannel do
   @dialyzer {:nowarn_function, join: 3}
   def join("terminal:" <> session_id, _params, socket) do
     if authorized?(socket) do
-      emulator = Emulator.new(80, 24)
+      scrollback_limit =
+        Application.get_env(:raxol, :terminal, [])
+        |> Keyword.get(:scrollback_lines, 1000)
+
+      emulator = Emulator.new(80, 24, scrollback: scrollback_limit)
       input = Input.new()
       renderer = Renderer.new(emulator.main_screen_buffer)
 
@@ -53,15 +56,15 @@ defmodule RaxolWeb.TerminalChannel do
   def handle_in("input", %{"data" => data}, socket) do
     state = socket.assigns.terminal_state
 
-    {emulator, _output} = Emulator.process_input(state.emulator, data)
+    {emulator, _output} = Raxol.Terminal.Emulator.process_input(state.emulator, data)
     renderer = %{state.renderer | screen_buffer: emulator.main_screen_buffer}
 
     new_state = %{state | emulator: emulator, renderer: renderer}
     socket = assign(socket, :terminal_state, new_state)
 
     # Revert: Push the rendered output again
-    {cursor_x, cursor_y} = Emulator.get_cursor_position(emulator)
-    cursor_visible = Emulator.get_cursor_visible(emulator)
+    {cursor_x, cursor_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+    cursor_visible = Raxol.Terminal.Emulator.get_cursor_visible(emulator)
 
     push(socket, "output", %{
       html: Renderer.render(renderer),
@@ -80,19 +83,19 @@ defmodule RaxolWeb.TerminalChannel do
   def handle_in("resize", %{"width" => width, "height" => height}, socket) do
     state = socket.assigns.terminal_state
 
-    emulator = Emulator.resize(state.emulator, width, height)
+    emulator = Raxol.Terminal.Emulator.resize(state.emulator, width, height)
     renderer = %{state.renderer | screen_buffer: emulator.main_screen_buffer}
 
     new_state = %{state | emulator: emulator, renderer: renderer}
 
     socket = assign(socket, :terminal_state, new_state)
 
-    {cursor_x, cursor_y} = Emulator.get_cursor_position(emulator)
-    cursor_visible = Emulator.get_cursor_visible(emulator)
+    {cursor_x, cursor_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+    cursor_visible = Raxol.Terminal.Emulator.get_cursor_visible(emulator)
 
     reply = {:reply, :ok, socket}
 
-    push_result =
+    _push_result =
       push(socket, "output", %{
         html: Renderer.render(renderer),
         cursor: %{
@@ -106,11 +109,36 @@ defmodule RaxolWeb.TerminalChannel do
   end
 
   @impl true
-  def handle_in("scroll", %{"offset" => _offset}, socket) do
+  def handle_in("scroll", %{"offset" => offset}, socket) do
     state = socket.assigns.terminal_state
+    emulator = state.emulator
+
+    new_emulator =
+      cond do
+        offset < 0 ->
+          Raxol.Terminal.Commands.Screen.scroll_up(emulator, abs(offset))
+
+        offset > 0 ->
+          Raxol.Terminal.Commands.Screen.scroll_down(emulator, abs(offset))
+
+        true ->
+          emulator
+      end
+
+    renderer = %{
+      state.renderer
+      | screen_buffer: new_emulator.main_screen_buffer
+    }
+
+    new_state = %{state | emulator: new_emulator, renderer: renderer}
+    socket = assign(socket, :terminal_state, new_state)
+
+    # Optionally, include scrollback size for UI
+    scrollback_size = length(new_emulator.scrollback_buffer || [])
 
     push(socket, "output", %{
-      html: Renderer.render(state.renderer)
+      html: Renderer.render(renderer),
+      scrollback_size: scrollback_size
     })
 
     {:reply, :ok, socket}
@@ -132,7 +160,17 @@ defmodule RaxolWeb.TerminalChannel do
   end
 
   @impl true
-  def terminate(reason, socket) do
+  def handle_in("set_scrollback_limit", %{"limit" => limit}, socket) do
+    state = socket.assigns.terminal_state
+    limit = if is_integer(limit), do: limit, else: String.to_integer("#{limit}")
+    emulator = %{state.emulator | scrollback_limit: limit}
+    new_state = %{state | emulator: emulator}
+    socket = assign(socket, :terminal_state, new_state)
+    {:reply, :ok, socket}
+  end
+
+  @impl true
+  def terminate(_reason, _socket) do
     :ok
   end
 
@@ -165,18 +203,9 @@ defmodule RaxolWeb.TerminalChannel do
   #   end)
   # end
 
-  # Keep the commented out original resize handler
-  # @impl true
-  # def handle_in(\"resize\", %{\"width\" => width, \"height\" => height}, socket) do
-  # ... (rest of original handler)
-  # end
-
   # Pushes rendered output and cursor state to the client
   defp push_output(socket, state) do
     buffer = state.emulator.main_screen_buffer
-    # Ensure theme is correctly passed if available
-    # Assuming state.renderer holds the current theme map if set
-    # Default to empty map
     current_theme = Map.get(state.renderer, :theme, %{})
 
     html_content =
@@ -185,9 +214,9 @@ defmodule RaxolWeb.TerminalChannel do
     payload = %{
       html: html_content,
       cursor: %{
-        x: Emulator.get_cursor_position(state.emulator) |> elem(0),
-        y: Emulator.get_cursor_position(state.emulator) |> elem(1),
-        visible: Emulator.get_cursor_visible(state.emulator)
+        x: Raxol.Terminal.Emulator.get_cursor_position(state.emulator) |> elem(0),
+        y: Raxol.Terminal.Emulator.get_cursor_position(state.emulator) |> elem(1),
+        visible: Raxol.Terminal.Emulator.get_cursor_visible(state.emulator)
       }
     }
 
@@ -199,7 +228,4 @@ defmodule RaxolWeb.TerminalChannel do
       Task.start_link(fn -> push(socket, "output", payload) end)
     end
   end
-
-  # Helper to get terminal state from socket
-  # ... existing code ...
 end

@@ -87,7 +87,7 @@ defmodule LayoutPersistenceTest do
     # Save the layout
     IO.puts("Saving complex dashboard layout with #{length(complex_widgets)} widgets...")
 
-    case Raxol.Components.Dashboard.Dashboard.save_layout(complex_widgets) do
+    case Raxol.UI.Components.Dashboard.Dashboard.save_layout(complex_widgets) do
       :ok ->
         IO.puts("Layout saved successfully")
 
@@ -99,7 +99,7 @@ defmodule LayoutPersistenceTest do
     # Test 2: Load the saved layout
     IO.puts("\n[TEST 2] Loading the saved layout")
 
-    loaded_widgets = Raxol.Components.Dashboard.Dashboard.load_layout()
+    loaded_widgets = Raxol.UI.Components.Dashboard.Dashboard.load_layout()
     IO.puts("Loaded #{length(loaded_widgets)} widgets")
 
     # Test 3: Verify the loaded widgets match the saved widgets
@@ -189,7 +189,7 @@ defmodule LayoutPersistenceTest do
     # Save updated layout
     IO.puts("Saving updated layout...")
 
-    case Raxol.Components.Dashboard.Dashboard.save_layout(updated_widgets) do
+    case Raxol.UI.Components.Dashboard.Dashboard.save_layout(updated_widgets) do
       :ok ->
         IO.puts("Updated layout saved successfully")
 
@@ -200,7 +200,7 @@ defmodule LayoutPersistenceTest do
 
     # Load updated layout
     IO.puts("\nLoading updated layout...")
-    updated_loaded_widgets = Raxol.Components.Dashboard.Dashboard.load_layout()
+    updated_loaded_widgets = Raxol.UI.Components.Dashboard.Dashboard.load_layout()
 
     # Verify changes were preserved
     updated_chart = Enum.find(updated_loaded_widgets, fn w -> w.id == "chart-quarterly" end)

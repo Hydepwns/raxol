@@ -49,7 +49,8 @@ defmodule Raxol.System.DeltaUpdaterTest do
       # Test with a version that has delta available
       result = DeltaUpdater.check_delta_availability("1.2.0")
 
-      assert {:ok, delta_info} = result
+      assert match?({:ok, _}, result)
+      {:ok, delta_info} = result
       assert delta_info.delta_size == 1_500_000
       assert delta_info.full_size == 15_000_000
       assert delta_info.savings_percent == 90
@@ -89,7 +90,7 @@ defmodule Raxol.System.DeltaUpdaterTest do
       # Test with a version that doesn't have delta available
       result = DeltaUpdater.check_delta_availability("1.3.0")
 
-      assert {:error, _reason} = result
+      assert match?({:error, _}, result)
     end
   end
 

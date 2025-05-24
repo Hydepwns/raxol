@@ -10,9 +10,6 @@ IO.puts("===== Raxol Database Diagnostics =====\n")
 
 # Get database config
 db_config = Application.get_env(:raxol, Raxol.Repo)
-IO.puts("Database configuration:")
-IO.inspect(Keyword.drop(db_config, [:password]), pretty: true)
-IO.puts("")
 
 # Check Postgres installation
 IO.puts("Checking PostgreSQL installation...")

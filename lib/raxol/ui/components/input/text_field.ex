@@ -9,6 +9,35 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   @behaviour Raxol.UI.Components.Base.Component
 
+  @typedoc """
+  State for the TextField component.
+
+  - :id - unique identifier
+  - :value - current text value
+  - :placeholder - placeholder text
+  - :style - style map
+  - :theme - theme map
+  - :disabled - whether the field is disabled
+  - :secret - whether to mask input (e.g., password)
+  - :focused - whether the field is focused
+  - :cursor_pos - cursor position
+  - :scroll_offset - horizontal scroll offset
+  - :width - visible width of the field (not in defstruct, but added in init)
+  """
+  @type t :: %__MODULE__{
+    id: any(),
+    value: String.t(),
+    placeholder: String.t(),
+    style: map(),
+    theme: map(),
+    disabled: boolean(),
+    secret: boolean(),
+    focused: boolean(),
+    cursor_pos: non_neg_integer(),
+    scroll_offset: non_neg_integer(),
+    width: non_neg_integer()
+  }
+
   defstruct id: nil,
             value: "",
             placeholder: "",
@@ -19,8 +48,13 @@ defmodule Raxol.UI.Components.Input.TextField do
             # Internal state
             focused: false,
             cursor_pos: 0,
-            scroll_offset: 0
+            scroll_offset: 0,
+            width: 20
 
+  @doc """
+  Initializes the TextField component state from the given props.
+  """
+  @spec init(map()) :: {:ok, map()}
   @impl true
   def init(props) do
     id = props[:id] || Raxol.Core.ID.generate()
@@ -30,9 +64,17 @@ defmodule Raxol.UI.Components.Input.TextField do
     {:ok, state}
   end
 
+  @doc """
+  Mounts the TextField component. Performs any setup needed after initialization.
+  """
+  @spec mount(map()) :: map()
   @impl true
   def mount(state), do: state
 
+  @doc """
+  Updates the TextField component state in response to messages or prop changes.
+  """
+  @spec update(term(), map()) :: {:noreply, map()} | {:noreply, map(), any()}
   @impl true
   def update({:update_props, new_props}, state) do
     updated_state = Map.merge(state, Map.new(new_props))
@@ -66,12 +108,17 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   @impl true
   def update(message, state) do
-    IO.inspect(message, label: "Unhandled TextField update")
+    _message = message
     {:noreply, state}
   end
 
+  @doc """
+  Handles events for the TextField component, such as keypresses, focus, and blur.
+  """
+  @spec handle_event(map(), term(), map()) :: {:noreply, map()} | {:noreply, map(), any()}
   @impl true
   def handle_event(state, {:keypress, key, modifiers}, context) do
+    _context = context
     if state.disabled do
       {:noreply, state}
     else
@@ -92,7 +139,8 @@ defmodule Raxol.UI.Components.Input.TextField do
     {:noreply, state}
   end
 
-  defp handle_keypress(state, key, _modifiers, _context) when is_binary(key) do
+  defp handle_keypress(state, key, _modifiers, context) when is_binary(key) do
+    _context = context
     # Insert character
     {left, right} = String.split_at(state.value, state.cursor_pos)
     new_value = left <> key <> right
@@ -221,8 +269,12 @@ defmodule Raxol.UI.Components.Input.TextField do
     {:noreply, state}
   end
 
+  @doc """
+  Renders the TextField component using the current state and context.
+  """
+  @spec render(map(), map()) :: any()
   @impl true
-  def render(state, context) do
+  def render(state, _context) do
     theme = Map.get(state, :theme, %{})
     component_theme_style = Theme.component_style(theme, :text_field)
     style = Raxol.Style.merge(component_theme_style, state.style)
@@ -297,6 +349,9 @@ defmodule Raxol.UI.Components.Input.TextField do
     Element.new(:view, %{style: style}, do: text_children)
   end
 
+  @doc """
+  Unmounts the TextField component, performing any necessary cleanup.
+  """
   @impl true
   def unmount(state), do: state
 

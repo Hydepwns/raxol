@@ -123,10 +123,10 @@ defmodule Raxol.Plugins.ImagePlugin do
         else
           # Attempt to generate the sequence
           Logger.debug(
-            "[ImagePlugin.handle_cells] sequence_just_generated=false. BEFORE generate_sequence_from_path for path: assets/static/images/logo.png"
+            "[ImagePlugin.handle_cells] sequence_just_generated=false. BEFORE generate_sequence_from_path for path: @static/static/images/logo.png"
           )
 
-          case generate_sequence_from_path("assets/static/images/logo.png") do
+          case generate_sequence_from_path("@static/static/images/logo.png") do
             {:ok, sequence} ->
               Logger.debug(
                 "[ImagePlugin.handle_cells] Sequence generated successfully."
@@ -135,13 +135,13 @@ defmodule Raxol.Plugins.ImagePlugin do
               # Return {:ok, state_with_flag_set, cells_to_render, command_to_send}
               # Cells to render is empty because the command handles the display.
               # Mark sequence_just_generated as true for the *next* call.
-              # Wrap command in a list as expected by PluginManager
+              # Wrap command in a list as expected by plugin manager
               {:ok, %{plugin | sequence_just_generated: true}, [],
                [{:direct_output, sequence}]}
 
             {:error, reason} ->
               Logger.error(
-                "[ImagePlugin.handle_cells] Failed to generate sequence for assets/static/images/logo.png: #{inspect(reason)}"
+                "[ImagePlugin.handle_cells] Failed to generate sequence for @static/static/images/logo.png: #{inspect(reason)}"
               )
 
               # Failed to generate, decline to handle the placeholder

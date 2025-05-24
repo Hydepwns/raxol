@@ -8,7 +8,6 @@ defmodule Raxol.Database do
   - Handles database errors gracefully
   """
 
-  require Logger
   alias Raxol.Database.ConnectionManager
   alias Raxol.Repo
 

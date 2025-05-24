@@ -91,6 +91,8 @@ defmodule Raxol.UI.Components.Display.Table do
 
   # --- Component Implementation ---
 
+  @doc "Initializes the Table component state from props."
+  @spec init(map()) :: {:ok, state()}
   @impl true
   def init(attrs) do
     id = Map.get(attrs, :id) || Raxol.Core.ID.generate()
@@ -122,12 +124,23 @@ defmodule Raxol.UI.Components.Display.Table do
     {:ok, internal_state}
   end
 
+  @doc "Mounts the Table component, performing any setup needed."
+  @spec mount(state()) :: {:ok, state(), list()}
   @impl true
   def mount(state) do
     # Initialize any subscriptions or setup needed
     {:ok, state, []}
   end
 
+  @doc "Updates the Table component state in response to messages. Handles prop updates, sorting, filtering, and selection."
+  @spec update(term(), state()) :: {:noreply, state()}
+  @impl true
+  def update(message, state) do
+    Logger.warning("Unhandled Table update: #{inspect(message)}")
+    {:noreply, state}
+  end
+
+  @spec update({:update_props, map()}, state()) :: {:noreply, state()}
   @impl true
   def update({:update_props, new_props}, state) do
     # Update state with new props while preserving internal state
@@ -137,6 +150,7 @@ defmodule Raxol.UI.Components.Display.Table do
     {:noreply, updated_state}
   end
 
+  @spec update({:sort, atom()}, state()) :: {:noreply, state()}
   @impl true
   def update({:sort, column}, state) do
     new_direction =
@@ -151,24 +165,22 @@ defmodule Raxol.UI.Components.Display.Table do
     {:noreply, updated_state}
   end
 
+  @spec update({:filter, String.t()}, state()) :: {:noreply, state()}
   @impl true
   def update({:filter, term}, state) do
     updated_state = %{state | filter_term: term}
     {:noreply, updated_state}
   end
 
+  @spec update({:select_row, integer()}, state()) :: {:noreply, state()}
   @impl true
   def update({:select_row, row_index}, state) do
     updated_state = %{state | selected_row: row_index}
     {:noreply, updated_state}
   end
 
-  @impl true
-  def update(message, state) do
-    Logger.warning("Unhandled Table update: #{inspect(message)}")
-    {:noreply, state}
-  end
-
+  @doc "Handles events for the Table component."
+  @spec handle_event(state(), term(), map()) :: {:noreply, state()} | {:noreply, state(), list()}
   @impl true
   def handle_event(state, event, context) do
     attrs = context.attrs
@@ -240,6 +252,8 @@ defmodule Raxol.UI.Components.Display.Table do
     end
   end
 
+  @doc "Renders the Table component."
+  @spec render(state(), map()) :: any()
   @impl true
   def render(state, context) do
     attrs = context.attrs
@@ -278,6 +292,7 @@ defmodule Raxol.UI.Components.Display.Table do
     )
   end
 
+  @spec unmount(state()) :: {:ok, state()}
   @impl true
   def unmount(state) do
     # Clean up any resources
@@ -394,8 +409,10 @@ defmodule Raxol.UI.Components.Display.Table do
     cond do
       is_struct(theme, Raxol.UI.Theming.Theme) ->
         Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
+
       is_map(theme) and Map.has_key?(theme, :component_styles) ->
         Raxol.UI.Theming.Theme.get_component_style(theme, component_type)
+
       true ->
         %{}
     end

@@ -76,4 +76,11 @@ defmodule Raxol.Plugins.Manager.Core do
   def update_config(%__MODULE__{} = manager, config) do
     %{manager | config: config}
   end
+
+  @doc """
+  Loads a plugin module and initializes it. Delegates to Raxol.Plugins.Lifecycle.load_plugin/3.
+  """
+  def load_plugin(%__MODULE__{} = manager, module) when is_atom(module) do
+    Lifecycle.load_plugin(manager, module)
+  end
 end

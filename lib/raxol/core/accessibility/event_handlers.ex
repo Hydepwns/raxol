@@ -14,13 +14,13 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
       iex> EventHandlers.handle_focus_change({:focus_change, nil, "search_button"})
       :ok
   """
-  def handle_focus_change({:focus_change, _old_element, new_element}) do
-    if Preferences.get_option(:screen_reader) do
+  def handle_focus_change({:focus_change, _old_element, new_element}, user_preferences_pid_or_name) do
+    if Preferences.get_option(:screen_reader, user_preferences_pid_or_name) do
       # Get accessible name/label for the element if metadata exists
       announcement = Metadata.get_accessible_name(new_element)
 
       if announcement do
-        Announcements.announce(announcement)
+        Announcements.announce(announcement, [], user_preferences_pid_or_name)
       end
 
       Logger.debug("Focus changed to: #{inspect(new_element)}")
@@ -28,6 +28,8 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
 
     :ok
   end
+
+  def handle_focus_change(event), do: raise "handle_focus_change/2 must be called with a user_preferences_pid_or_name."
 
   @doc """
   Handle preference changes triggered internally or via EventManager.
@@ -64,14 +66,25 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
   """
   def handle_theme_changed(
         {:theme_changed, %{theme: theme_name}},
-        _pid_or_name \\ nil
+        user_preferences_pid_or_name
       ) do
     Logger.info(
       "[Test Log - Accessibility] handle_theme_changed triggered for theme: #{inspect(theme_name)}"
     )
 
     announce_message = "Theme changed to #{theme_name}"
-    Announcements.announce(announce_message)
+    Announcements.announce(announce_message, [], user_preferences_pid_or_name)
     :ok
+  end
+
+  def handle_theme_changed(_, _), do: :ok
+
+  # Add String.Chars protocol implementation for Theme
+  if Code.ensure_loaded?(Raxol.UI.Theming.Theme) do
+    defimpl String.Chars, for: Raxol.UI.Theming.Theme do
+      def to_string(theme) do
+        "Theme: #{theme.name} (id: #{theme.id})"
+      end
+    end
   end
 end

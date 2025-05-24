@@ -29,7 +29,7 @@ defmodule Raxol.Style.Colors.HSL do
 
     h = _calculate_hue(r_norm, g_norm, b_norm, max, delta)
     l = (max + min) / 2
-    s = if delta == 0.0, do: 0.0, else: delta / (1 - abs(2 * l - 1))
+    s = if Kernel.is_zero(delta), do: 0.0, else: delta / (1 - abs(2 * l - 1))
 
     {h, s, l}
   end
@@ -38,7 +38,7 @@ defmodule Raxol.Style.Colors.HSL do
     hue =
       cond do
         # Achromatic
-        delta == 0.0 -> 0.0
+        Kernel.is_zero(delta) -> 0.0
         max == r -> 60.0 * rem(round((g - b) / delta), 6)
         max == g -> 60.0 * ((b - r) / delta + 2.0)
         # max == b

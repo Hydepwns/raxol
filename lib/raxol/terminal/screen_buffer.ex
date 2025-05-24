@@ -52,7 +52,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
     if !(is_number(width) and is_number(height)) do
       Logger.warning(
-        "Invalid dimensions provided to ScreenBuffer.new: width=#{inspect(width)}, height=#{inspect(height)}. Using defaults."
+        "Invalid dimensions provided to ScreenBuffer.new: width=#{inspect(width)}, height=#{inspect(height)}. Using defaults.",
+        []
       )
     end
 
@@ -68,7 +69,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
           {1000, warning}
       end
 
-    if scrollback_warning, do: Logger.warning(scrollback_warning)
+    if scrollback_warning, do: Logger.warning(scrollback_warning, [])
 
     %__MODULE__{
       cells:

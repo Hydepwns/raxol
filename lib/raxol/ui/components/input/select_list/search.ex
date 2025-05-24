@@ -11,12 +11,15 @@ defmodule Raxol.UI.Components.Input.SelectList.Search do
   Returns nil if no search text is provided, otherwise returns filtered options.
   """
   def filter_options(options, search_text, searchable_fields) do
-    if search_text == "" do
+    unless search_text != "" do
       nil
     else
-      Enum.filter(options, fn option ->
-        search_matches?(option, search_text, searchable_fields)
-      end)
+      filtered =
+        Enum.filter(options, fn option ->
+          search_matches?(option, search_text, searchable_fields)
+        end)
+
+      filtered
     end
   end
 

@@ -8,9 +8,9 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
   @doc """
   Renders the SelectList component.
   """
-  def render(state) do
+  def render(state, _context) do
     effective_options = Pagination.get_effective_options(state)
-    num_options = length(effective_options)
+    _num_options = length(effective_options)
 
     # Get visible options based on pagination
     visible_options =
@@ -141,9 +141,13 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
         }
       ]
     else
-      Enum.map_with_index(visible_options, fn option, index ->
-        case option do
-          {label, value, opt_style} ->
+      Enum.with_index(visible_options)
+      |> Enum.map(fn {option, index} ->
+        cond do
+          is_tuple(option) and tuple_size(option) == 3 ->
+            # {label, value, opt_style}
+            {label, value, opt_style} = option
+
             render_option(
               state,
               label,
@@ -152,8 +156,20 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
               opt_style
             )
 
-          {label, value} ->
+          is_tuple(option) and tuple_size(option) == 2 ->
+            # {label, value} (value may be a map or any type)
+            {label, value} = option
             render_option(state, label, value, index + state.scroll_offset, %{})
+
+          true ->
+            # Fallback: render as string
+            render_option(
+              state,
+              to_string(option),
+              nil,
+              index + state.scroll_offset,
+              %{}
+            )
         end
       end)
     end
@@ -202,23 +218,38 @@ defmodule Raxol.UI.Components.Input.SelectList.Renderer do
           props: %{
             content: if(is_selected, do: "✓ #{label}", else: "  #{label}"),
             style:
-              Map.merge(
-                %{
-                  color:
-                    if(is_selected,
-                      do:
-                        state.theme[:selected_color] ||
-                          state.style[:selected_color] || "#0066cc",
-                      else:
-                        state.theme[:option_color] || state.style[:option_color] ||
-                          "#333"
-                    )
-                },
+              if is_selected do
                 Map.merge(
-                  state.theme[:option_text] || %{},
-                  state.style[:option_text] || %{}
+                  Map.merge(
+                    %{
+                      color:
+                        state.style[:selected_color] ||
+                          state.theme[:selected_color] || "#0066cc"
+                    },
+                    Map.merge(
+                      state.theme[:option_text] || %{},
+                      state.style[:option_text] || %{}
+                    )
+                  ),
+                  # Per-option style merged, but color is always overridden
+                  Map.drop(opt_style || %{}, [:color, "color"])
                 )
-              )
+              else
+                Map.merge(
+                  Map.merge(
+                    %{
+                      color:
+                        opt_style[:color] || state.theme[:option_color] ||
+                          state.style[:option_color] || "#333"
+                    },
+                    Map.merge(
+                      state.theme[:option_text] || %{},
+                      state.style[:option_text] || %{}
+                    )
+                  ),
+                  opt_style || %{}
+                )
+              end
           }
         }
       ]

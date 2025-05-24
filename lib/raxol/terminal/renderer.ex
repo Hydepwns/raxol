@@ -43,7 +43,7 @@ defmodule Raxol.Terminal.Renderer do
   renderer = Renderer.new(buffer)
 
   # Render with selection
-  selection = Selection.new({0, 0}, {0, 5})
+  selection = %{selection: {0, 0, 0, 5}}
   output = Renderer.render(renderer, selection: selection)
 
   # Render with validation
@@ -108,7 +108,7 @@ defmodule Raxol.Terminal.Renderer do
 
       iex> screen_buffer = ScreenBuffer.new(80, 24)
       iex> renderer = Renderer.new(screen_buffer)
-      iex> selection = Selection.new({0, 0}, {0, 5})
+      iex> selection = %{selection: {0, 0, 0, 5}}
       iex> output = Renderer.render(renderer, selection: selection)
       iex> output =~ "background-color: #0000FF"
       true

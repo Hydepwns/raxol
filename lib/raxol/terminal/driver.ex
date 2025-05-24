@@ -21,6 +21,9 @@ defmodule Raxol.Terminal.Driver do
   # Use ExTermbox instead of :rrex_termbox
   alias ExTermbox
 
+  # Add import for real_tty? from TerminalUtils
+  import Raxol.Terminal.TerminalUtils, only: [real_tty?: 0]
+
   # Allow nil initially
   @type dispatcher_pid :: pid() | nil
   @type original_stty :: String.t()
@@ -56,15 +59,26 @@ defmodule Raxol.Terminal.Driver do
     )
 
     # Get original terminal settings
-    original_stty =
-      case System.cmd("stty", ["-g"]) do
+    output =
+      case System.cmd("stty", ["size"]) do
         {output, 0} -> String.trim(output)
-        {_error, _exit_code} -> nil
+        # fallback to default size as a string
+        {_, _} -> "80 24"
       end
 
-    # Initialize terminal in raw mode
+    # Initialize terminal in raw mode only if attached to a TTY
     if Mix.env() != :test do
-      _ = ExTermbox.init()
+      if real_tty?() do
+        Logger.debug(
+          "[TerminalDriver] TTY detected, calling ExTermbox.init()..."
+        )
+
+        _ = ExTermbox.init()
+      else
+        Logger.warning(
+          "[#{__MODULE__}] Not attached to a TTY. Skipping ExTermbox.init(). Terminal features will be disabled."
+        )
+      end
     end
 
     # Send driver_ready event to the test process
@@ -72,7 +86,7 @@ defmodule Raxol.Terminal.Driver do
       send(self(), {:driver_ready, self()})
     end
 
-    {:ok, %State{dispatcher_pid: dispatcher_pid, original_stty: original_stty}}
+    {:ok, %State{dispatcher_pid: dispatcher_pid, original_stty: output}}
   end
 
   @impl true
@@ -178,40 +192,49 @@ defmodule Raxol.Terminal.Driver do
 
   defp get_terminal_size do
     if Mix.env() == :test do
-      # Default predictable size for tests
       {:ok, 80, 24}
     else
-      # Try to get size from rrex_termbox first
-      with {:ok, width} <- ExTermbox.width(),
-           {:ok, height} <- ExTermbox.height() do
-        {:ok, width, height}
+      if real_tty?() do
+        Logger.debug(
+          "[TerminalDriver] TTY detected, calling ExTermbox.width/height..."
+        )
+
+        with {:ok, width} <- ExTermbox.width(),
+             {:ok, height} <- ExTermbox.height() do
+          {:ok, width, height}
+        else
+          _ -> stty_size_fallback()
+        end
       else
-        _ ->
-          # Fall back to stty if rrex_termbox fails
-          try do
-            output = String.trim(:os.cmd("stty size"))
-
-            case String.split(output) do
-              [rows, cols] ->
-                {:ok, String.to_integer(cols), String.to_integer(rows)}
-
-              _ ->
-                Logger.warning(
-                  "Unexpected output from 'stty size': #{inspect(output)}"
-                )
-
-                {:error, :invalid_format}
-            end
-          catch
-            type, reason ->
-              Logger.error(
-                "Error getting terminal size via 'stty size': #{type}: #{inspect(reason)}"
-              )
-
-              Logger.error(Exception.format_stacktrace(__STACKTRACE__))
-              {:error, reason}
-          end
+        stty_size_fallback()
       end
+    end
+  end
+
+  defp stty_size_fallback do
+    try do
+      {output, 0} = System.cmd("stty", ["size"])
+      output = String.trim(output)
+
+      case String.split(output) do
+        [rows, cols] ->
+          {:ok, String.to_integer(cols), String.to_integer(rows)}
+
+        _ ->
+          Logger.warning(
+            "Unexpected output from 'stty size': #{inspect(output)}"
+          )
+
+          {:error, :invalid_format}
+      end
+    catch
+      type, reason ->
+        Logger.error(
+          "Error getting terminal size via 'stty size': #{type}: #{inspect(reason)}"
+        )
+
+        Logger.error(Exception.format_stacktrace(__STACKTRACE__))
+        {:error, reason}
     end
   end
 

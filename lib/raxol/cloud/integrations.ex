@@ -37,6 +37,7 @@ defmodule Raxol.Cloud.Integrations do
       :ok
   """
   def init(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     # Extract configuration for each component
     edge_opts = Keyword.get(opts, :edge, [])
     monitoring_opts = Keyword.get(opts, :monitoring, [])
@@ -86,6 +87,7 @@ defmodule Raxol.Cloud.Integrations do
       {:ok, result}
   """
   def execute(fun, opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     start_time = :os.system_time(:millisecond)
 
     result =
@@ -133,6 +135,7 @@ defmodule Raxol.Cloud.Integrations do
       {:ok, %{deployment_id: "dep-12345", status: :in_progress}}
   """
   def deploy(opts) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     required = [:component, :version, :environment]
 
     case validate_required_options(opts, required) do
@@ -185,6 +188,7 @@ defmodule Raxol.Cloud.Integrations do
       ]}
   """
   def discover_services(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     type = Keyword.get(opts, :type, :all)
     provider = Keyword.get(opts, :provider, :all)
     region = Keyword.get(opts, :region)
@@ -260,6 +264,7 @@ defmodule Raxol.Cloud.Integrations do
       {:ok, %{registration_id: "reg-12345", status: :registered}}
   """
   def register_service(opts) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     required = [:name, :type, :endpoint]
 
     case validate_required_options(opts, required) do
@@ -309,6 +314,7 @@ defmodule Raxol.Cloud.Integrations do
       {:ok, %{service: "api-server", current: 2, target: 4, status: :scaling}}
   """
   def scale(opts) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     required = [:service]
 
     case validate_required_options(opts, required) do

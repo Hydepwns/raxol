@@ -1,7 +1,7 @@
-defmodule Raxol.Components.Progress.ProgressBarTest do
+defmodule Raxol.UI.Components.Progress.ProgressBarTest do
   use ExUnit.Case, async: true
 
-  alias Raxol.Components.Progress.ProgressBar
+  alias Raxol.UI.Components.Progress.ProgressBar
   alias Raxol.Core.Events.Event
 
   describe "init/1" do

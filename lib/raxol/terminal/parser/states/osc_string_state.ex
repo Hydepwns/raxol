@@ -21,7 +21,6 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
         %State{state: :osc_string} = parser_state,
         input
       ) do
-    # IO.inspect({:parse_loop_osc_string, parser_state.state, input}, label: "DEBUG_PARSER")
     case input do
       <<>> ->
         # Incomplete OSC string - return current state

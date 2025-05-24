@@ -14,6 +14,7 @@ defmodule Raxol.AI.PerformanceOptimization do
 
   alias Raxol.Benchmarks.Performance, as: Benchmarks
   alias Raxol.Core.UXRefinement
+  alias Raxol.Core.ComponentUtils
 
   # State for the optimization system
   defmodule State do
@@ -63,6 +64,8 @@ defmodule Raxol.AI.PerformanceOptimization do
       :ok
   """
   def init(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
+
     if UXRefinement.feature_enabled?(:ai_performance_optimization) do
       state = State.new()
 
@@ -172,49 +175,63 @@ defmodule Raxol.AI.PerformanceOptimization do
       false
   """
   def should_render?(component_name, context \\ %{}) do
-    # Default to rendering everything if optimization is off
     if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
       true
     else
       with_state(fn state ->
-        # Skip if predictive rendering is disabled
         if !feature_enabled?(:predictive_rendering, state) do
           {state, true}
         else
-          # Get component's render history
           metrics = Map.get(state.render_metrics, component_name)
 
-          # Default result when we don't have enough data
           result =
-            if metrics == nil or metrics.count < 5 do
-              true
-            else
-              # Simple visibility check - this would be more sophisticated in a real implementation
-              Map.get(context, :visible, true) and
-                (Map.get(context, :in_viewport, true) or
-                   is_important_component?(component_name, state))
-            end
+            predictive_render_decision(metrics, component_name, context, state)
 
-          # Track the decision in usage patterns for future optimization
           usage_patterns =
-            Map.update(
+            update_usage_patterns(
               state.usage_patterns,
               component_name,
-              %{render_decisions: [result], context_history: [context]},
-              fn patterns ->
-                %{
-                  render_decisions:
-                    [result | patterns.render_decisions] |> Enum.take(20),
-                  context_history:
-                    [context | patterns.context_history] |> Enum.take(5)
-                }
-              end
+              result,
+              context
             )
 
           {%{state | usage_patterns: usage_patterns}, result}
         end
       end)
     end
+  end
+
+  defp predictive_render_decision(nil, _component_name, _context, _state),
+    do: true
+
+  defp predictive_render_decision(
+         %{count: count},
+         _component_name,
+         _context,
+         _state
+       )
+       when count < 5,
+       do: true
+
+  defp predictive_render_decision(_metrics, component_name, context, state) do
+    Map.get(context, :visible, true) and
+      (Map.get(context, :in_viewport, true) or
+         ComponentUtils.is_important_component?(component_name, state))
+  end
+
+  defp update_usage_patterns(usage_patterns, component_name, result, context) do
+    Map.update(
+      usage_patterns,
+      component_name,
+      %{render_decisions: [result], context_history: [context]},
+      fn patterns ->
+        %{
+          render_decisions:
+            [result | patterns.render_decisions] |> Enum.take(20),
+          context_history: [context | patterns.context_history] |> Enum.take(5)
+        }
+      end
+    )
   end
 
   @doc """
@@ -226,53 +243,36 @@ defmodule Raxol.AI.PerformanceOptimization do
       16  # milliseconds (approximately 60fps)
   """
   def get_refresh_rate(component_name) do
-    # Default to 60fps if optimization is off
     if !UXRefinement.feature_enabled?(:ai_performance_optimization) do
       16
     else
       with_state(fn state ->
-        # Skip if adaptive throttling is disabled
         if !feature_enabled?(:adaptive_throttling, state) do
           {state, 16}
         else
-          # Get component's usage patterns
           metrics = Map.get(state.render_metrics, component_name)
           usage = Map.get(state.component_usage, component_name)
-
-          # Default rates
-          default_rates = %{
-            # ~60fps
-            high: 16,
-            # ~30fps
-            medium: 33,
-            # 10fps
-            low: 100,
-            # 4fps
-            idle: 250
-          }
-
-          # Calculate refresh rate based on metrics and usage
-          refresh_rate =
-            cond do
-              metrics == nil or metrics.count < 5 ->
-                default_rates.high
-
-              usage == :idle ->
-                default_rates.idle
-
-              usage == :low ->
-                default_rates.low
-
-              usage == :medium ->
-                default_rates.medium
-
-              true ->
-                default_rates.high
-            end
-
+          refresh_rate = calculate_refresh_rate(metrics, usage)
           {state, refresh_rate}
         end
       end)
+    end
+  end
+
+  defp calculate_refresh_rate(metrics, usage) do
+    default_rates = %{
+      high: 16,
+      medium: 33,
+      low: 100,
+      idle: 250
+    }
+
+    cond do
+      metrics == nil or metrics.count < 5 -> default_rates.high
+      usage == :idle -> default_rates.idle
+      usage == :low -> default_rates.low
+      usage == :medium -> default_rates.medium
+      true -> default_rates.high
     end
   end
 
@@ -402,13 +402,6 @@ defmodule Raxol.AI.PerformanceOptimization do
 
   defp feature_enabled?(feature, state) do
     MapSet.member?(state.enabled_features, feature)
-  end
-
-  defp is_important_component?(component_name, _state) do
-    # This would be more sophisticated in a real implementation
-    String.contains?(component_name, "header") or
-      String.contains?(component_name, "navigation") or
-      String.contains?(component_name, "menu")
   end
 
   defp collect_baseline_metrics do

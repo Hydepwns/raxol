@@ -69,6 +69,7 @@ defmodule Raxol.Terminal.Buffer.Manager do
       true
   """
   def start_link(opts \\ []) do
+    opts = if is_map(opts), do: Enum.into(opts, []), else: opts
     GenServer.start_link(__MODULE__, opts)
   end
 
@@ -157,16 +158,16 @@ defmodule Raxol.Terminal.Buffer.Manager do
   end
 
   @doc """
-  Clears all damage regions.
-
-  ## Examples
-
-      iex> {:ok, pid} = Buffer.Manager.start_link()
-      iex> :ok = Buffer.Manager.clear_damage(pid)
-      iex> Buffer.Manager.get_damage(pid)
-      []
+  Clears all damage regions in the buffer manager state struct (pure version).
   """
-  def clear_damage(pid) do
+  def clear_damage(%State{} = state) do
+    Damage.clear_regions(state)
+  end
+
+  @doc """
+  Clears all damage regions in the buffer manager state struct (PID version).
+  """
+  def clear_damage(pid) when is_pid(pid) do
     GenServer.call(pid, :clear_damage)
   end
 
@@ -229,17 +230,16 @@ defmodule Raxol.Terminal.Buffer.Manager do
   @doc """
   Marks a region of the buffer as damaged (needs redraw).
   """
-  def mark_damaged(state, _x, _y, _width, _height) do
-    # Stub: No-op, just return state
-    state
+  def mark_damaged(state, x, y, width, height) do
+    # Mark the region from (x, y) to (x + width - 1, y + height - 1)
+    Damage.mark_region(state, x, y, x + width - 1, y + height - 1)
   end
 
   @doc """
   Updates the memory usage for the buffer manager.
   """
-  def update_memory_usage(state) do
-    # Stub: No-op, just return state
-    state
+  def update_memory_usage(%State{} = state) do
+    Memory.update_usage(state)
   end
 
   @doc """
@@ -248,6 +248,67 @@ defmodule Raxol.Terminal.Buffer.Manager do
   def set_cursor_position(state, x, y) do
     # Stub: Update a cursor_position field if present, else just return state
     Map.put(state, :cursor_position, {x, y})
+  end
+
+  @doc """
+  Checks if the buffer needs to scroll (stub implementation).
+  Returns the state unchanged for now.
+  """
+  def maybe_scroll(state) do
+    state
+  end
+
+  @doc """
+  Returns all damaged regions in the buffer manager state.
+  """
+  def get_damage_regions(state) do
+    Damage.get_regions(state)
+  end
+
+  @doc """
+  Returns true if the buffer manager's memory usage is within limits.
+  """
+  def within_memory_limits?(state) do
+    Memory.within_limits?(state)
+  end
+
+  @doc """
+  Gets the active buffer based on the active_buffer_type.
+  """
+  def get_active_buffer(%{active_buffer_type: :main, main_screen_buffer: buffer}), do: buffer
+
+  @doc """
+  Gets the active buffer based on the active_buffer_type.
+  """
+  def get_active_buffer(%{active_buffer_type: :alternate, alternate_screen_buffer: buffer}), do: buffer
+
+  @doc """
+  Updates the active buffer based on the active_buffer_type.
+  """
+  def update_active_buffer(%{active_buffer_type: :main} = emulator, new_buffer) do
+    %{emulator | main_screen_buffer: new_buffer}
+  end
+
+  @doc """
+  Updates the active buffer based on the active_buffer_type.
+  """
+  def update_active_buffer(%{active_buffer_type: :alternate} = emulator, new_buffer) do
+    %{emulator | alternate_screen_buffer: new_buffer}
+  end
+
+  @doc """
+  Gets the cursor position from the manager state.
+  """
+  def get_cursor_position(state) do
+    state.cursor_position
+  end
+
+  @doc """
+  Updates the memory usage for the buffer manager.
+  """
+  def update_memory_usage(pid) when is_pid(pid) do
+    GenServer.call(pid, :get_state)
+    |> update_memory_usage()
   end
 
   # Server Callbacks
