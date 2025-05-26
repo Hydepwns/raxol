@@ -129,6 +129,18 @@ For more, see the [UI Components & Layout Guide](examples/guides/03_components_a
 - [Terminal Details](examples/guides/02_core_concepts/terminal/README.md)
 - [VS Code Extension](examples/guides/04_extending_raxol/vscode_extension.md)
 
+## Prometheus Metrics and Monitoring
+
+Raxol exposes advanced terminal metrics for Prometheus at the `/metrics` endpoint (enabled by default in the Phoenix router). These include:
+
+- Histogram of scroll deltas (`raxol_terminal_scroll_event_delta`)
+- Summary of paste event text lengths (`raxol_terminal_paste_event_length`)
+- Counters for focus, resize, mode, clipboard, selection, paste, and cursor events
+
+To scrape these metrics, add a scrape config to your Prometheus server (see `docs/testing/prometheus.md`).
+
+You can extend or customize metrics in `Raxol.Terminal.TelemetryPrometheus`.
+
 ## License
 
 MIT © 2024 Raxol Team
