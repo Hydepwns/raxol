@@ -15,7 +15,7 @@ defmodule Raxol.Core.UXRefinement do
   All features can be enabled or disabled individually to customize the UX to your needs.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # alias Raxol.Core.FocusManager # Removed as it's called via helper
   alias Raxol.UI.Components.FocusRing
@@ -429,7 +429,7 @@ defmodule Raxol.Core.UXRefinement do
     if feature_enabled?(:accessibility) do
       accessibility_module().get_element_metadata(component_id)
     else
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[UXRefinement] Accessibility not enabled, metadata retrieval skipped for #{component_id}"
       )
 
@@ -514,10 +514,7 @@ defmodule Raxol.Core.UXRefinement do
         )
 
       _invalid_shortcut_format ->
-        Logger.warning(
-          "Invalid shortcut format for component #{component_id}: must be {key_string, description_string}",
-          []
-        )
+        Raxol.Core.Runtime.Log.warning_with_context("Invalid shortcut format for component #{component_id}: must be {key_string, description_string}", %{})
     end)
   end
 
@@ -531,7 +528,7 @@ defmodule Raxol.Core.UXRefinement do
   defp shortcut_callback(component_id, description) do
     fn ->
       # Keep debug for now
-      Logger.debug("Shortcut activated for #{component_id}: #{description}")
+      Raxol.Core.Runtime.Log.debug("Shortcut activated for #{component_id}: #{description}")
       # Also attempt to set focus to the component associated with the hint
       focus_manager_module().set_focus(component_id)
       :ok
@@ -587,7 +584,7 @@ defmodule Raxol.Core.UXRefinement do
     if feature_enabled?(:accessibility) do
       accessibility_module().announce(message, opts, user_preferences_pid_or_name)
     else
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[UXRefinement] Accessibility not enabled, announcement skipped: #{message}"
       )
 
@@ -618,7 +615,7 @@ defmodule Raxol.Core.UXRefinement do
     else
       # If accessibility is not fully enabled, we might still want to store metadata
       # This depends on the desired behavior. For now, log and no-op.
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[UXRefinement] Accessibility not enabled, metadata registration skipped for #{component_id}"
       )
 

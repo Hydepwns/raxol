@@ -9,7 +9,7 @@ defmodule Raxol.ColorSystemTest do
   alias Raxol.Style.Colors.System, as: ColorSystem
   alias Raxol.Animation.Framework
   alias Raxol.Core.Accessibility.ThemeIntegration
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Helper to setup Accessibility and UserPreferences
   # setup :configure_env do
@@ -81,7 +81,7 @@ defmodule Raxol.ColorSystemTest do
 
       # Get the primary color before high contrast
       normal_primary = ColorSystem.get_color(:primary)
-      # Logger.info("[Test Log] Normal primary: #{inspect(normal_primary)}")
+      # Raxol.Core.Runtime.Log.info("[Test Log] Normal primary: #{inspect(normal_primary)}")
 
       # Enable high contrast mode
       Accessibility.set_high_contrast(true)
@@ -91,7 +91,7 @@ defmodule Raxol.ColorSystemTest do
       # Get the primary color after high contrast
       high_contrast_primary = ColorSystem.get_color(:primary)
 
-      # Logger.info("[Test Log] High contrast primary: #{inspect(high_contrast_primary)}")
+      # Raxol.Core.Runtime.Log.info("[Test Log] High contrast primary: #{inspect(high_contrast_primary)}")
 
       # Verify colors are different in high contrast mode
       assert normal_primary != high_contrast_primary
@@ -99,7 +99,7 @@ defmodule Raxol.ColorSystemTest do
       # Get the background color (also after high contrast is enabled)
       background = ColorSystem.get_color(:background)
 
-      # Logger.info("[Test Log] Background (post high-contrast): #{inspect(background)}")
+      # Raxol.Core.Runtime.Log.info("[Test Log] Background (post high-contrast): #{inspect(background)}")
 
       # Log the calculated ratio before asserting
       # Ensure Raxol.Style.Colors.Utilities is available or use the test helper's path
@@ -109,7 +109,7 @@ defmodule Raxol.ColorSystemTest do
           background
         )
 
-      # Logger.info("[Test Log] Calculated contrast ratio for high_contrast_primary vs background: #{inspect(ratio_for_log)}")
+      # Raxol.Core.Runtime.Log.info("[Test Log] Calculated contrast ratio for high_contrast_primary vs background: #{inspect(ratio_for_log)}")
 
       assert_sufficient_contrast(high_contrast_primary, background)
     end

@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.InputHandler do
   alias Raxol.Terminal.Parser
   alias Raxol.System.Clipboard
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # TODO: Move handler functions here from Emulator module.
 
@@ -191,7 +191,7 @@ defmodule Raxol.Terminal.InputHandler do
       # The parser itself, when receiving CSI sequences like 200~ and 201~, would act.
 
       # For a direct move, I will replicate the original structure, but add a note.
-      # Logger.warning("Bracketed paste mode interaction in process_terminal_input might need review.")
+      # Raxol.Core.Runtime.Log.warning("Bracketed paste mode interaction in process_terminal_input might need review.")
       # if ModeManager.mode_enabled?(emulator.mode_manager, :bracketed_paste) do
       #   wrapped_paste_output = <<"\e[200~", input::binary, "\e[201~">>
       #   # Emulator state doesn't change, but this output is sent.
@@ -275,9 +275,7 @@ defmodule Raxol.Terminal.InputHandler do
     new_charset_state = emulator.charset_state
 
     unless is_binary(translated_char) do
-      require Logger
-
-      Logger.error(
+      Raxol.Core.Runtime.Log.error(
         "Expected translated_char to be a string, got: #{inspect(translated_char)}"
       )
     end
@@ -304,7 +302,7 @@ defmodule Raxol.Terminal.InputHandler do
     emulator_after_write =
       if write_y < buffer_height do
         # Use Operations module for buffer modifications
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[InputHandler] Writing char codepoint '#{translated_char}' with style: #{inspect(emulator.style)}"
         )
 
@@ -327,8 +325,9 @@ defmodule Raxol.Terminal.InputHandler do
         # Update the emulator with the modified buffer
         Emulator.update_active_buffer(emulator, buffer_after_write)
       else
-        Logger.warning(
-          "Attempted write out of bounds (y=#{write_y}, height=#{buffer_height}), skipping write."
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Attempted write out of bounds (y=#{write_y}, height=#{buffer_height}), skipping write.",
+          %{}
         )
 
         # No change to emulator if write is skipped
@@ -525,7 +524,7 @@ defmodule Raxol.Terminal.InputHandler do
 
       # Unknown sequence
       _ ->
-        Logger.warning("Unknown control sequence: #{inspect(sequence)}", [])
+        Raxol.Core.Runtime.Log.warning_with_context("Unknown control sequence: #{inspect(sequence)}", %{})
         {char_sets, char_sets}
     end
   end
@@ -556,7 +555,7 @@ defmodule Raxol.Terminal.InputHandler do
   end
 
   defp calculate_new_cursor_x(emulator, _char, codepoint) do
-    # Logger.info(
+    # Raxol.Core.Runtime.Log.info(
     #   "Calculating new cursor X for codepoint: #{codepoint}, char: #{<<codepoint::utf8>>}"
     # )
     _width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)

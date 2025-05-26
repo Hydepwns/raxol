@@ -28,7 +28,7 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Require view macros
   require Raxol.View.Elements
@@ -70,7 +70,7 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle internal messages (e.g., from key events)
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "SingleLineInput #{state.id} received message: #{inspect(msg)}"
     )
 
@@ -96,7 +96,7 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
     # Handle keyboard events, mouse clicks (focus), etc.
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "SingleLineInput #{state.id} received event: #{inspect(event)}"
     )
 

@@ -10,7 +10,7 @@ defmodule Raxol.Examples.Form do
   """
 
   use Raxol.Core.Runtime.Application
-  require Logger
+  require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   alias Raxol.View.Elements, as: UI
 
@@ -29,7 +29,7 @@ defmodule Raxol.Examples.Form do
 
   def update({:submit}, state) do
     # Log submission, don't emit command
-    Logger.info("Form submitted: #{inspect state.form_data}")
+    Raxol.Core.Runtime.Log.info("Form submitted: #{inspect state.form_data}")
     {%{state | submitted: true}, []}
   end
 

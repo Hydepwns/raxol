@@ -63,12 +63,12 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       # Create the table
       view =
-        Table.new(
+        Table.new(%{
           columns: columns,
           data: @sample_data,
           border: :single,
           header_style: [:bold]
-        )
+        })
 
       context = %{width: 80, height: 20}
       alias Raxol.Renderer.Layout
@@ -209,7 +209,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       # Create summary table
       summary_table =
-        Table.new(
+        Table.new(%{
           columns: [
             %{
               header: "Metric",
@@ -238,7 +238,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
             }
           ],
           border: :single
-        )
+        })
 
       # Create trend chart
       trend_chart =
@@ -328,7 +328,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
     test "combines table with chart detail view" do
       # Create selectable table
       table =
-        Table.new(
+        Table.new(%{
           columns: [
             %{
               header: "ID",
@@ -356,7 +356,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
           selectable: true,
           selected: 0,
           border: :single
-        )
+        })
 
       # Create detail chart for selected item
       selected_item = Enum.at(@sample_data, 0)
@@ -420,7 +420,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
 
       # Create tab content
       table_view =
-        Table.new(
+        Table.new(%{
           columns: [
             %{
               header: "ID",
@@ -439,7 +439,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
           ],
           data: @sample_data,
           border: :single
-        )
+        })
 
       chart_view =
         Chart.new(
@@ -486,7 +486,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
       view =
         View.border border: :double, padding: 1 do
           View.border border: :single do
-            Table.new(
+            Table.new(%{
               columns: [
                 %{
                   header: "Name",
@@ -505,7 +505,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
               ],
               data: @sample_data,
               border: :single
-            )
+            })
           end
         end
 
@@ -644,7 +644,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
         View.border :double, padding: 1 do
           View.border :single do
             # Pass opts as a keyword list with correct keys
-            Table.new(
+            Table.new(%{
               columns: columns,
               data: data,
               row_style: fn _row_index, row_data ->
@@ -652,7 +652,7 @@ defmodule Raxol.Core.Renderer.Views.IntegrationTest do
               end,
               header_style: [:bold]
               # striped, selectable, selected, border options use defaults from Table.new
-            )
+            })
           end
         end
 

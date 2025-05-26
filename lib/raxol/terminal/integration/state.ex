@@ -110,7 +110,7 @@ defmodule Raxol.Terminal.Integration.State do
   """
   def get_command_history(%__MODULE__{} = state) do
     state.command_history
-    |> Raxol.Terminal.Commands.History.get_entries()
+    |> Raxol.Terminal.Commands.History.list()
   end
 
   @doc """

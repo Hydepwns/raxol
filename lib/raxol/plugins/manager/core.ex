@@ -4,7 +4,7 @@ defmodule Raxol.Plugins.Manager.Core do
   Handles basic plugin management operations and state.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Plugins.{
     Plugin,

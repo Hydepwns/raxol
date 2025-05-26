@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Emulator.Input do
   Provides functions for key event handling, command history, and input parsing.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{
     ScreenBuffer,

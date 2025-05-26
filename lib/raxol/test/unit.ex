@@ -93,7 +93,7 @@ defmodule Raxol.Test.Unit do
     # Call handle_event/3, passing empty map as opts for now
     IO.puts("Simulating event: #{inspect(event)}")
     IO.puts("Initial component state: #{inspect(component.state)}")
-    result = component.module.handle_event(event, component.state, %{})
+    result = component.module.handle_event(component, event, %{})
     IO.puts("handle_event result: #{inspect(result)}")
 
     {new_state_map, commands} =
@@ -128,6 +128,11 @@ defmodule Raxol.Test.Unit do
     send(self(), {:commands, commands})
 
     {updated_component, commands}
+  end
+
+  # Allow simulate_event to accept plain maps as events for test convenience
+  def simulate_event(component, event) when is_map(event) do
+    simulate_event(component, Raxol.Core.Events.Event.custom_event(event))
   end
 
   @doc """

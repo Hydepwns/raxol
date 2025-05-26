@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
   Handles file system events and debouncing for plugin reloading.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @file_event_debounce_ms 1000
 
@@ -19,7 +19,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
     case Map.get(state.reverse_plugin_paths, normalized_path) do
       nil ->
         # Not a plugin file, ignore
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[#{__MODULE__}] Ignoring file event for unknown path: #{normalized_path}"
         )
 
@@ -30,7 +30,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
         if state.file_event_timer do
           Process.cancel_timer(state.file_event_timer)
 
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "[#{__MODULE__}] Cancelled existing timer for plugin #{plugin_id}"
           )
         end
@@ -46,7 +46,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
                 @file_event_debounce_ms
               )
 
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[#{__MODULE__}] Scheduled reload for plugin #{plugin_id} in #{@file_event_debounce_ms}ms"
             )
 
@@ -54,15 +54,16 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
 
           {:ok, _} ->
             # Not a regular file or not readable
-            Logger.warning(
-              "[#{__MODULE__}] File #{normalized_path} is not a regular file or not readable"
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "File #{normalized_path} is not a regular file or not readable",
+              %{}
             )
 
             {:ok, state}
 
           {:error, reason} ->
             # File doesn't exist or can't be accessed
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "[#{__MODULE__}] Cannot access file #{normalized_path}: #{inspect(reason)}"
             )
 
@@ -85,14 +86,14 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Events do
            path
          ) do
       :ok ->
-        Logger.info(
+        Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Successfully reloaded plugin #{plugin_id} after file change"
         )
 
         {:ok, new_state}
 
       {:error, reason} ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "[#{__MODULE__}] Failed to reload plugin #{plugin_id}: #{inspect(reason)}"
         )
 

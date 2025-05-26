@@ -18,6 +18,7 @@ defmodule Raxol.I18nTestHelpers do
   import Raxol.AccessibilityTestHelpers
 
   alias Raxol.Core.I18n, as: Gettext
+  alias Raxol.Core.UserPreferences
 
   @doc """
   Executes the given function with a specific locale set.
@@ -205,9 +206,7 @@ defmodule Raxol.I18nTestHelpers do
             refute label == default_label,
                    "Component '#{component_id}' '#{label_type}' label ('#{label}') was not translated from default locale ('#{default_label}')"
           else
-            require Logger
-
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "Could not compare label for '#{component_id}' '#{label_type}' as default label was nil"
             )
           end

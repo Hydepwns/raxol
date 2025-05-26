@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.Commands.Executor
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Processes input when the parser is in the :csi_entry state.
@@ -77,6 +77,7 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
       # Final byte
       <<final_byte, rest_after_final::binary>>
       when final_byte >= ?@ and final_byte <= ?~ ->
+        Raxol.Core.Runtime.Log.debug("[CSIEntryState] Executing CSI final byte: #{inspect(<<final_byte>>)}, params: '#{parser_state.params_buffer}', intermediates: '#{parser_state.intermediates_buffer}'")
         # Check for X10 Mouse Report: CSI M Cb Cx Cy ( ESC [ M Cb Cx Cy )
         # This is identified by final_byte == ?M, empty params, and empty intermediates.
         if final_byte == ?M and parser_state.params_buffer == "" and
@@ -95,7 +96,7 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
                 # Construct \e[MCbCxCy
                 mouse_report_sequence = <<27, 91, ?M, cb, cx, cy>>
 
-                Logger.debug(
+                Raxol.Core.Runtime.Log.debug(
                   "[CSIEntryState] X10-style Mouse Report detected. Mode: #{active_mouse_mode}. Echoing: #{inspect(mouse_report_sequence)}"
                 )
 
@@ -118,7 +119,7 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
                 # Not enough bytes for a full CbCxCy mouse report.
                 # This could be an incomplete sequence or just CSI M (DL).
                 # Fallback to default M (e.g., Delete Character via Executor).
-                Logger.debug(
+                Raxol.Core.Runtime.Log.debug(
                   "[CSIEntryState] CSI M with active mouse mode, but not enough bytes for X10 CbCxCy. Falling back to Executor."
                 )
 
@@ -147,7 +148,7 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
           else
             # Not a mouse mode that processes raw X10, or it's CSI M intended for DL.
             # Proceed with normal execution for M (Delete Character).
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[CSIEntryState] CSI M detected, but not in a relevant X10-echoing mouse mode (mode: #{active_mouse_mode}) or params/intermediates were present. Executing."
             )
 
@@ -175,7 +176,7 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
           end
         else
           # Not (final_byte == ?M with empty params/intermediates). Handle all other final bytes normally.
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "[CSIEntryState] Standard CSI Final Byte: #{<<final_byte>>}. Params: '#{parser_state.params_buffer}', Intermediates: '#{parser_state.intermediates_buffer}'. Executing."
           )
 
@@ -186,6 +187,8 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
               parser_state.intermediates_buffer,
               final_byte
             )
+
+          Raxol.Core.Runtime.Log.debug("[CSIEntryState] After CSI command: style=#{inspect(new_emulator_other.style)}, state=#{inspect(parser_state.state)}")
 
           # Transition back to Ground state, clearing buffers for the next sequence
           next_parser_state_other = %{
@@ -203,7 +206,7 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
       # Ignored byte in CSI Entry (e.g., CAN, SUB)
       <<ignored_byte, rest_after_ignored::binary>>
       when ignored_byte == 0x18 or ignored_byte == 0x1A ->
-        Logger.debug("Ignoring CAN/SUB byte in CSI Entry")
+        Raxol.Core.Runtime.Log.debug("Ignoring CAN/SUB byte in CSI Entry")
         # Abort sequence, go to ground
         next_parser_state = %{parser_state | state: :ground}
         {:continue, emulator, next_parser_state, rest_after_ignored}
@@ -212,15 +215,14 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
       <<ignored_byte, rest_after_ignored::binary>>
       when (ignored_byte >= 0 and ignored_byte <= 23) or
              (ignored_byte >= 27 and ignored_byte <= 31) or ignored_byte == 127 ->
-        Logger.debug("Ignoring C0/DEL byte #{ignored_byte} in CSI Entry")
+        Raxol.Core.Runtime.Log.debug("Ignoring C0/DEL byte #{ignored_byte} in CSI Entry")
         # Stay in state, ignore byte
         {:continue, emulator, parser_state, rest_after_ignored}
 
       # Unhandled byte - go to ground
       <<unhandled_byte, rest_after_unhandled::binary>> ->
-        Logger.warning(
-          "Unhandled byte #{unhandled_byte} in CSI Entry state, returning to ground."
-        )
+        msg = "Unhandled byte #{unhandled_byte} in CSI Entry state, returning to ground."
+        Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 
         next_parser_state = %{parser_state | state: :ground}
         {:continue, emulator, next_parser_state, rest_after_unhandled}

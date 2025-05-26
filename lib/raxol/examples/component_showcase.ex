@@ -4,7 +4,7 @@
 
 defmodule Raxol.Examples.ComponentShowcase do
   use Raxol.UI.Components.Base.Component
-  require Logger
+  require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   import Raxol.View.Elements
 
@@ -397,7 +397,7 @@ defmodule Raxol.Examples.ComponentShowcase do
   @impl Raxol.UI.Components.Base.Component
   def update(message, state) do
     # NOTE: Implement message handling for this component if needed in the future.
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Unhandled update message in ComponentShowcase: #{inspect(message)}",
       []
     )

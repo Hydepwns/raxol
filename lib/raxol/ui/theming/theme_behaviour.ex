@@ -41,4 +41,7 @@ defmodule Raxol.UI.Theming.ThemeBehaviour do
   # Add init/0 if it's part of the public API used by others
   @doc "Initializes the theme system."
   @callback init() :: :ok
+
+  @doc "Gets the current theme system version as a string."
+  @callback current_version() :: String.t()
 end

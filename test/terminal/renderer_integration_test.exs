@@ -1,7 +1,7 @@
 defmodule Raxol.Terminal.RendererIntegrationTest do
   use ExUnit.Case
   alias Raxol.Terminal.{Renderer, ScreenBuffer, Cell}
-  alias Raxol.Terminal.Selection
+  alias Raxol.Terminal.Buffer.Selection
   alias Raxol.Terminal.Validation
 
   setup do

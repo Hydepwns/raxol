@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Emulator
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   defstruct position: {0, 0},
             style: :block,
@@ -301,7 +301,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
         [cursor | cursor.history]
       end
 
-    %{cursor | history: history, history_index: 0}
+    %{cursor | history: history, history_index: length(history)}
   end
 
   @doc """

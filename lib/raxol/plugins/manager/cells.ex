@@ -4,7 +4,7 @@ defmodule Raxol.Plugins.Manager.Cells do
   Provides functions for processing and transforming cells through plugins.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Plugins.{CellProcessor, Lifecycle}
   alias Raxol.Plugins.Manager.Core

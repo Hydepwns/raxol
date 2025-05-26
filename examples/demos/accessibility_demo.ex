@@ -16,7 +16,7 @@ defmodule Raxol.Examples.AccessibilityDemo do
   use Raxol.Core.Runtime.Application
 
   # Add necessary aliases and requires
-  require Logger
+  require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   alias Raxol.View.Elements, as: UI
   alias Raxol.Core.Accessibility
@@ -37,7 +37,7 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
   @impl Raxol.Core.Runtime.Application
   def init(_opts) do
-    Logger.info("Initializing AccessibilityDemo...")
+    Raxol.Core.Runtime.Log.info("Initializing AccessibilityDemo...")
 
     # Perform initial setup (moved from setup_demo_ui)
     setup_focus_and_hints()
@@ -172,12 +172,12 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
   def update({:keyboard_event, event}, state) do
     # Log other key events if needed
-    Logger.debug("Ignoring Keyboard Event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug("Ignoring Keyboard Event: #{inspect(event)}")
     {state, []}
   end
 
   def update(msg, state) do
-    Logger.debug("Received unhandled update message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug("Received unhandled update message: #{inspect(msg)}")
     {state, []}
   end
 
@@ -238,7 +238,7 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
   @impl Raxol.Core.Runtime.Application
   def handle_event(event) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "AccessibilityDemo received unhandled event (handle_event/1): #{inspect(event)}"
     )
 
@@ -248,7 +248,7 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
   @impl Raxol.Core.Runtime.Application
   def handle_message(message, state) do
-    Logger.debug("Received unhandled message: #{inspect(message)}")
+    Raxol.Core.Runtime.Log.debug("Received unhandled message: #{inspect(message)}")
     {state, []}
   end
 
@@ -264,7 +264,7 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
   @impl Raxol.Core.Runtime.Application
   def terminate(reason, _state) do
-    Logger.info("Terminating AccessibilityDemo: #{inspect(reason)}")
+    Raxol.Core.Runtime.Log.info("Terminating AccessibilityDemo: #{inspect(reason)}")
     :ok
   end
 
@@ -349,11 +349,4 @@ defmodule Raxol.Examples.AccessibilityDemo do
   defp get_hint(component_id, level, default) do
     UXRefinement.get_component_hint(component_id, level) || default
   end
-
-  # Removed old simulation functions (simulate_tab_press, simulate_enter_press, etc.)
-  # Removed old event_loop and run functions
-  # Removed show_current_hint, show_current_theme_info (logic moved/replaced)
-  # Removed pref_key (use direct list keys for UserPreferences)
 end
-
-# End of module

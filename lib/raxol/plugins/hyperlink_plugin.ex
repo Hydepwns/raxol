@@ -6,8 +6,8 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
   @behaviour Raxol.Plugins.Plugin
   alias Raxol.Plugins.Plugin
 
-  # Require Logger for logging macros
-  require Logger
+  # Require Raxol.Core.Runtime.Log for logging macros
+  require Raxol.Core.Runtime.Log
 
   # Define the struct type matching the Plugin behaviour
   @type t :: %Plugin{
@@ -89,7 +89,7 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
         # Look up cell data using the passed rendered_cells map
         case Map.get(rendered_cells, {click_x, click_y}) do
           %{style: %{hyperlink: url}} when is_binary(url) and url != "" ->
-            Logger.debug("[HyperlinkPlugin] Clicked on hyperlink: #{url}")
+            Raxol.Core.Runtime.Log.debug("[HyperlinkPlugin] Clicked on hyperlink: #{url}")
             # Attempt to open the URL
             case open_url(url) do
               :ok ->
@@ -155,11 +155,11 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
 
     case System.cmd(command, [url], stderr_to_stdout: true) do
       {_output, 0} ->
-        Logger.info("[HyperlinkPlugin] Opened URL: #{url}")
+        Raxol.Core.Runtime.Log.info("[HyperlinkPlugin] Opened URL: #{url}")
         :ok
 
       {output, exit_code} ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "[HyperlinkPlugin] Failed to open URL '#{url}' with command '#{command}'. Exit code: #{exit_code}, Output: #{output}"
         )
 

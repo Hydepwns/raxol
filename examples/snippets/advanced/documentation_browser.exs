@@ -21,13 +21,13 @@ defmodule DocumentationBrowser do
 
   alias Raxol.Core.Commands.Command
   alias Raxol.Core.Events.Event
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @header "Docs Browser (UP/DOWN: Select Module | j/k: Scroll Content | q/Ctrl+C: Quit)"
 
   @impl true
   def init(_context) do
-    Logger.debug("DocumentationBrowser: init/1")
+    Raxol.Core.Runtime.Log.debug("DocumentationBrowser: init/1")
     # Get loaded Elixir modules
     modules =
       Code.available_modules()
@@ -62,7 +62,7 @@ defmodule DocumentationBrowser do
           view_height: view_height
         } = model
       ) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "DocumentationBrowser: update/2 received message: \#{inspect(message)}"
     )
 
@@ -116,7 +116,7 @@ defmodule DocumentationBrowser do
 
       # Assume command results are wrapped
       {:command_result, :content_updated, content} ->
-        Logger.debug("DocumentationBrowser: Content updated.")
+        Raxol.Core.Runtime.Log.debug("DocumentationBrowser: Content updated.")
         lines = String.split(content, "\n")
         # Reset scroll on new content
         {:ok,
@@ -138,7 +138,7 @@ defmodule DocumentationBrowser do
   # Renamed from render/1
   @impl true
   def view(%{view_height: view_height} = model) do
-    Logger.debug("DocumentationBrowser: view/1")
+    Raxol.Core.Runtime.Log.debug("DocumentationBrowser: view/1")
 
     view do
       # Use box and column/row from Elements DSL
@@ -180,7 +180,7 @@ defmodule DocumentationBrowser do
   end
 
   defp update_cmd(model) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "DocumentationBrowser: Creating content update command for module index \#{model.module_cursor}"
     )
 
@@ -197,7 +197,7 @@ defmodule DocumentationBrowser do
   defp fetch_content(module_index, modules) do
     selected = Enum.at(modules, module_index)
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "DocumentationBrowser: Fetching docs for \#{inspect(selected)}"
     )
 
@@ -219,7 +219,7 @@ defmodule DocumentationBrowser do
     end
   catch
     kind, reason ->
-      IO.puts(
+      Raxol.Core.Runtime.Log.error(
         "Error fetching docs for \#{inspect(selected)}: \#{kind} - \#{inspect(reason)}"
       )
 
@@ -227,7 +227,7 @@ defmodule DocumentationBrowser do
   end
 end
 
-Logger.info("DocumentationBrowser: Starting Raxol...")
+Raxol.Core.Runtime.Log.info("DocumentationBrowser: Starting Raxol...")
 # Use standard startup
 {:ok, _pid} = Raxol.start_link(DocumentationBrowser, [])
-Logger.info("DocumentationBrowser: Raxol started. Running...")
+Raxol.Core.Runtime.Log.info("DocumentationBrowser: Raxol started. Running...")

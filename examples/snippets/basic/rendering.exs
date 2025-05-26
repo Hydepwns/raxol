@@ -12,14 +12,13 @@ defmodule RenderingDemo do
   alias Raxol.Core.Runtime.Events.Subscription
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Commands.Command
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @spacebar " " # Spacebar character
 
   @impl true
   def init(_context) do
-    Logger.debug("RenderingDemo: init/1")
-    # Return :ok tuple
+    Raxol.Core.Runtime.Log.debug("RenderingDemo: init/1")
     {:ok,
      %{
        current_time: DateTime.utc_now(),
@@ -36,7 +35,7 @@ defmodule RenderingDemo do
 
   @impl true
   def update(message, model) do
-    Logger.debug("RenderingDemo: update/2 received message: \#{inspect(message)}")
+    Raxol.Core.Runtime.Log.debug("RenderingDemo: update/2 received message: \#{inspect(message)}")
     case message do
       # Use Event struct for key presses
       %Event{type: :key, data: %{key: :char, char: @spacebar}} ->
@@ -66,18 +65,15 @@ defmodule RenderingDemo do
     end
   end
 
-  # Renamed from subscribe/1
   @impl true
   def subscriptions(_model) do
-    Logger.debug("RenderingDemo: subscriptions/1")
-    # Subscribe to ticks every 500ms
+    Raxol.Core.Runtime.Log.debug("RenderingDemo: subscriptions/1")
     Subscription.interval(500, :tick)
   end
 
-  # Renamed from render/1
   @impl true
   def view(model) do
-    Logger.debug("RenderingDemo: view/1")
+    Raxol.Core.Runtime.Log.debug("RenderingDemo: view/1")
     # No need for explicit Raxol.View.Elements.row when imported
     view do
       box title: "Rendering Demo", style: [[:height, :fill], [:padding, 1], [:border, :single]] do
@@ -131,10 +127,6 @@ defmodule RenderingDemo do
   end
 end
 
-Logger.info("RenderingDemo: Starting Raxol...")
-# Use standard startup
+Raxol.Core.Runtime.Log.info("RenderingDemo: Starting Raxol...")
 {:ok, _pid} = Raxol.start_link(RenderingDemo, [])
-Logger.info("RenderingDemo: Raxol started. Running...")
-
-# For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
-Process.sleep(2000)
+Raxol.Core.Runtime.Log.info("RenderingDemo: Raxol started. Running...")

@@ -33,7 +33,7 @@ defmodule Raxol.Core.I18n do
   ```
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.Accessibility
@@ -97,8 +97,9 @@ defmodule Raxol.Core.I18n do
         :ok
 
       {:error, reason} ->
-        Logger.warning(
-          "Failed to load translations for default locale: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Failed to load translations for default locale: #{inspect(reason)}",
+          %{}
         )
 
         :ok
@@ -226,8 +227,9 @@ defmodule Raxol.Core.I18n do
           EventManager.broadcast({:locale_changed, previous_locale, locale})
 
         {:error, reason} ->
-          Logger.warning(
-            "Failed to load translations for locale #{locale}: #{inspect(reason)}"
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Failed to load translations for locale #{locale}: #{inspect(reason)}",
+            %{}
           )
       end
 

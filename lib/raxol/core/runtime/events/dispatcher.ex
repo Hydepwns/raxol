@@ -7,7 +7,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   use GenServer
   @behaviour Raxol.Core.Runtime.Events.Dispatcher.Behaviour
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   require Raxol.Core.Events.Event
   require Raxol.Core.Runtime.Command
   require Raxol.Core.UserPreferences
@@ -93,7 +93,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       do_dispatch_event(event, state)
     rescue
       error ->
-        Logger.error("Error dispatching event: #{inspect(error)}")
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Error dispatching event",
+          error,
+          __STACKTRACE__,
+          %{module: __MODULE__, event: event, state: state}
+        )
         {:error, {:dispatch_error, error}, state}
     end
   end
@@ -133,7 +138,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
         updated_state =
           if new_theme_id != current_theme_id do
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "Theme changed in model: #{current_theme_id} -> #{new_theme_id}. Updating preferences."
             )
 
@@ -145,24 +150,27 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
           end
 
         # Inform RenderingEngine about the state change
-        Logger.debug("State changed, sending :render_needed to Runtime")
+        Raxol.Core.Runtime.Log.debug("State changed, sending :render_needed to Runtime")
         send(state.runtime_pid, :render_needed)
 
         # Return tuple indicating success, the new state, and commands
         {:ok, updated_state, commands}
 
       {:error, reason} ->
-        # Application update failed
-        Logger.error("Application update failed: #{inspect(reason)}")
-        # Return tuple indicating handled error
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Application update failed",
+          reason,
+          nil,
+          %{module: __MODULE__, app_module: app_module, message: message, current_model: current_model, event: event}
+        )
         {:error, reason}
 
       other ->
-        Logger.warning(
-          "Unexpected return from #{app_module}.update: #{inspect(other)}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unexpected return from #{app_module}.update",
+          %{module: __MODULE__, app_module: app_module, message: message, current_model: current_model, event: event, other: other},
+          %{}
         )
-
-        # Return tuple indicating handled error
         {:error, {:unexpected_return, other}}
     end
   end
@@ -188,8 +196,12 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         {:ok, %{state | focused: focused}}
 
       %Event{type: :error, data: %{error: error}} ->
-        # Handle error events
-        Logger.error("System error event: #{inspect(error)}")
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "System error event",
+          error,
+          nil,
+          %{module: __MODULE__, event: event, state: state}
+        )
         {:error, error, state}
 
       _ ->
@@ -215,7 +227,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   @doc "Broadcasts an event payload to all subscribers of a topic."
   @spec broadcast(atom(), map()) :: :ok | {:error, term()}
   def broadcast(topic, payload) when is_atom(topic) and is_map(payload) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Broadcasting on topic '#{topic}': #{inspect(payload)}"
     )
 
@@ -235,7 +247,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl true
   def handle_cast({:dispatch, event}, state) do
-    Logger.debug("[Dispatcher] handle_cast :dispatch event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug("[Dispatcher] handle_cast :dispatch event: #{inspect(event)}")
 
     # Delegate to the main event handling logic
     case handle_event(event, state) do
@@ -243,13 +255,13 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         # Broadcast event globally if successfully handled by app logic
         # Ensure event.type and event.data are appropriate for broadcast
         if is_atom(event.type) and is_map(event.data) do
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "[Dispatcher] Broadcasting event: #{inspect(event.type)} via internal broadcast"
           )
 
           _ = __MODULE__.broadcast(event.type, event.data)
         else
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning(
             "[Dispatcher] Event not broadcast due to invalid type/data: #{inspect(event)}"
           )
         end
@@ -257,18 +269,20 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
         {:noreply, new_state}
 
       {:error, reason} ->
-        Logger.error(
-          "[Dispatcher] Error handling event in handle_cast: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[Dispatcher] Error handling event in handle_cast",
+          reason,
+          nil,
+          %{module: __MODULE__, event: event, state: state}
         )
-
-        # Or handle error more gracefully
         {:noreply, state}
 
       other ->
-        Logger.warning(
-          "[Dispatcher] Unexpected return from handle_event in handle_cast: #{inspect(other)}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[Dispatcher] Unexpected return from handle_event in handle_cast",
+          %{module: __MODULE__, event: event, state: state, other: other},
+          %{}
         )
-
         {:noreply, state}
     end
   end
@@ -278,7 +292,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     # This message is from Terminal.Driver to register itself.
     # No specific action needed here other than acknowledging it if necessary.
     # Or, if the dispatcher needs to know about the driver's PID, store it.
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Dispatcher] Received :register_dispatcher (already registered via init)"
     )
 
@@ -288,8 +302,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   # Catch-all for other cast messages
   @impl true
   def handle_cast(unhandled_message, state) do
-    Logger.warning(
-      "[Dispatcher] Unhandled cast message: #{inspect(unhandled_message)}"
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[Dispatcher] Unhandled cast message: #{inspect(unhandled_message)}",
+      %{}
     )
 
     {:noreply, state}
@@ -302,7 +317,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
     # Construct the full message tuple
     full_message = {:command_result, msg}
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Received command result, forwarding to app: #{inspect(full_message)}"
     )
 
@@ -325,27 +340,33 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
           process_commands(commands, context)
         rescue
           error ->
-            Logger.error(
-              "[Dispatcher] Error processing commands from command result: #{inspect(error)}\\nStacktrace: #{inspect(__STACKTRACE__)}"
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[Dispatcher] Error processing commands from command result",
+              error,
+              nil,
+              %{module: __MODULE__, msg: msg}
             )
-
-            # Decide if we should still update the model or not. Usually yes.
         end
 
         {:noreply, %{state | model: updated_model}}
 
       # Handle cases where delegate_update itself might fail
       {:error, reason} ->
-        Logger.error(
-          "[Dispatcher] Error calling delegate_update in handle_info: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[Dispatcher] Error calling delegate_update in handle_info",
+          reason,
+          nil,
+          %{module: __MODULE__, msg: msg, state: state}
         )
 
         # Keep old state
         {:noreply, state}
 
       other ->
-        Logger.warning(
-          "[Dispatcher] Unexpected return from delegate_update in handle_info: #{inspect(other)}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[Dispatcher] Unexpected return from delegate_update in handle_info",
+          %{module: __MODULE__, msg: msg, state: state, other: other},
+          %{}
         )
 
         # Keep old state
@@ -356,7 +377,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   # Catch-all for other messages
   @impl GenServer
   def handle_info(msg, state) do
-    Logger.warning("Dispatcher received unexpected message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
     {:noreply, state}
   end
 
@@ -367,7 +388,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl true
   def handle_call(:get_render_context, _from, state) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Dispatcher received :get_render_context call. State: #{inspect(state)}"
     )
 
@@ -376,7 +397,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
       theme_id: state.current_theme_id
     }
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Dispatcher returning render context: #{inspect(render_context)}"
     )
 
@@ -385,7 +406,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
 
   @impl GenServer
   def terminate(reason, _state) do
-    Logger.info("Event Dispatcher terminating. Reason: #{inspect(reason)}")
+    Raxol.Core.Runtime.Log.info("Event Dispatcher terminating. Reason: #{inspect(reason)}")
     # The linked Registry process (named @registry_name) should be automatically
     # terminated by OTP when this Dispatcher process exits, due to the link
     # established in init/1. No explicit stop is needed here for the registry.
@@ -397,7 +418,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   defp do_dispatch_event(event, state) do
     # Log the event if in debug mode
     if state.debug_mode do
-      Logger.debug("Dispatching event: #{inspect(event)}")
+      Raxol.Core.Runtime.Log.debug("Dispatching event: #{inspect(event)}")
     end
 
     # Determine if this is a system event or application event
@@ -463,7 +484,7 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
   # --- Command Processing ---
 
   defp process_commands(commands, context) when is_list(commands) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Dispatcher.process_commands] Processing commands: #{inspect(commands)} with context: #{inspect(context)}"
     )
 
@@ -477,8 +498,9 @@ defmodule Raxol.Core.Runtime.Events.Dispatcher do
           Command.execute(cmd, context)
 
         _ ->
-          Logger.warning(
-            "[#{__MODULE__}] Invalid command format: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}. Ignoring."
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "[#{__MODULE__}] Invalid command format: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}. Ignoring.",
+            %{command: command}
           )
       end
     end)

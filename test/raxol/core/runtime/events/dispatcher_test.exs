@@ -4,7 +4,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
   # Use Mox instead
   import Mox
   # Added for stub logging
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Mox mocks definition
   defmock(ApplicationMock, for: Raxol.Core.Runtime.Application)
@@ -89,7 +89,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
 
         # Default case (log unexpected calls)
         unexpected_cmd, _context ->
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning(
             "Unexpected call to Command.execute stub in test '#{__ENV__.function}': #{inspect(unexpected_cmd)}"
           )
 
@@ -109,7 +109,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
           :ok
 
         server, topic, msg ->
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning(
             "Unexpected call to PubSub.broadcast stub in test '#{__ENV__.function}': #{inspect({server, topic, msg})}"
           )
 
@@ -189,7 +189,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
 
         # Default case (log unexpected calls)
         unexpected_cmd, _context ->
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning(
             "Unexpected call to Command.execute stub in test '#{__ENV__.function}': #{inspect(unexpected_cmd)}"
           )
 
@@ -208,7 +208,7 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
           :ok
 
         server, topic, msg ->
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning(
             "Unexpected call to PubSub.broadcast stub in test '#{__ENV__.function}': #{inspect({server, topic, msg})}"
           )
 

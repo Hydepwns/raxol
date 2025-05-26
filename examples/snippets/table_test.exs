@@ -6,11 +6,11 @@ IO.puts "SCRIPT_START: table_test.exs beginning execution."
 defmodule TableTest do
   use Raxol.Core.Runtime.Application
   import Raxol.View.Elements
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @impl true
   def init(_context) do
-    Logger.info("TableTest: init/1 starting...")
+    Raxol.Core.Runtime.Log.info("TableTest: init/1 starting...")
     {:ok,
      %{
        table_data: [
@@ -24,14 +24,14 @@ defmodule TableTest do
 
   @impl true
   def update(_message, model) do
-    Logger.debug("TableTest: update/2 called")
+    Raxol.Core.Runtime.Log.debug("TableTest: update/2 called")
     # No updates needed for this minimal test
     {:ok, model, []}
   end
 
   @impl true
   def view(model) do
-    Logger.info("TableTest: view/1 starting...")
+    Raxol.Core.Runtime.Log.info("TableTest: view/1 starting...")
     view do # Wrap in top-level view
       column style: %{padding: 1, gap: 1} do
         label(content: "Table Test:", style: [:bold])
@@ -52,7 +52,7 @@ defmodule TableTest do
   end
 end
 
-Logger.info("TableTest: Starting Raxol.start_link...")
+Raxol.Core.Runtime.Log.info("TableTest: Starting Raxol.start_link...")
 # Start the Raxol application
 {:ok, _pid} = Raxol.start_link(TableTest, [])
-Logger.info("TableTest: Raxol.start_link completed. Entering sleep.")
+Raxol.Core.Runtime.Log.info("TableTest: Raxol.start_link completed. Entering sleep.")

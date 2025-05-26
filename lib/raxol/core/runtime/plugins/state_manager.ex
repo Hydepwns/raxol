@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
   Manages plugin state and state transitions.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Updates the plugin state maps with a new plugin.

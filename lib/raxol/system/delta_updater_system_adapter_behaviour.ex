@@ -89,4 +89,10 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterBehaviour do
               new_exe :: String.t(),
               platform :: String.t()
             ) :: :ok | {:error, reason :: any()}
+
+  @doc "Gets the current version string."
+  @callback current_version() :: String.t()
+
+  @doc "Performs a simple HTTP GET request and returns the body as a string."
+  @callback http_get(url :: String.t()) :: {:ok, String.t()} | {:error, any()}
 end

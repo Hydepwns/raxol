@@ -52,4 +52,34 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
   def updater_do_replace_executable(current_exe, new_exe, platform) do
     Updater.do_replace_executable(current_exe, new_exe, platform)
   end
+
+  @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
+  def current_version() do
+    # Try to get the version from Mix.Project if available, otherwise fallback
+    case Application.spec(:raxol, :vsn) do
+      nil ->
+        # Try Mix.Project.config if available (compile time)
+        if Code.ensure_loaded?(Mix.Project) do
+          config = Mix.Project.config()
+          to_string(config[:version] || "0.0.0")
+        else
+          "0.0.0"
+        end
+      vsn ->
+        to_string(vsn)
+    end
+  end
+
+  @impl Raxol.System.DeltaUpdaterSystemAdapterBehaviour
+  def http_get(url) do
+    # Perform a real HTTP GET using :httpc and return the body as a string
+    case :httpc.request(:get, {to_charlist(url), []}, [], []) do
+      {:ok, {{_http_vsn, 200, _reason_phrase}, _headers, body}} ->
+        {:ok, IO.iodata_to_binary(body)}
+      {:ok, {{_http_vsn, status, _reason_phrase}, _headers, body}} ->
+        {:error, {:http_error, status, IO.iodata_to_binary(body)}}
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
 end

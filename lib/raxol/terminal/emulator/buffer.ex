@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   Provides functions for buffer operations, scroll region handling, and buffer switching.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{
     ScreenBuffer,
@@ -130,7 +130,7 @@ defmodule Raxol.Terminal.Emulator.Buffer do
 
     case Buffer.clear_from_cursor_to_end(
            active_buffer,
-           Raxol.Terminal.Emulator.get_cursor_position(emulator)
+           emulator.cursor
          ) do
       {:ok, updated_buffer} ->
         updated_emulator = update_active_buffer(emulator, updated_buffer)
@@ -152,7 +152,7 @@ defmodule Raxol.Terminal.Emulator.Buffer do
 
     case Buffer.clear_from_cursor_to_start(
            active_buffer,
-           Raxol.Terminal.Emulator.get_cursor_position(emulator)
+           emulator.cursor
          ) do
       {:ok, updated_buffer} ->
         updated_emulator = update_active_buffer(emulator, updated_buffer)
@@ -171,7 +171,7 @@ defmodule Raxol.Terminal.Emulator.Buffer do
   def clear_line(%Core{} = emulator) do
     active_buffer = Emulator.get_active_buffer(emulator)
 
-    case Buffer.clear_line(active_buffer, Raxol.Terminal.Emulator.get_cursor_position(emulator)) do
+    case Buffer.clear_line(active_buffer, emulator.cursor) do
       {:ok, updated_buffer} ->
         updated_emulator = update_active_buffer(emulator, updated_buffer)
         {:ok, updated_emulator}

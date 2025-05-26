@@ -102,7 +102,7 @@ defmodule Raxol do
 
   alias Raxol.Core.Runtime.Application
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Runs a Raxol application.
@@ -231,8 +231,8 @@ defmodule Raxol do
   ```
   """
   def set_theme(theme) do
-    require Logger
-    Logger.info("Setting theme: #{theme.name}")
+    require Raxol.Core.Runtime.Log
+    Raxol.Core.Runtime.Log.info("Setting theme: #{theme.name}")
     # Persist the theme choice (e.g., Application config)
     Application.put_env(:raxol, :theme, theme)
     :ok

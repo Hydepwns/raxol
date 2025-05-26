@@ -19,7 +19,7 @@ if !File.exists?("_build/dev/lib/raxol/ebin") do
 end
 
 defmodule VSCodeVisualizationTest do
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   def run do
     IO.puts("\n=== Testing Visualization Components in Dashboard Layout ===\n")

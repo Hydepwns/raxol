@@ -90,9 +90,9 @@ defmodule Raxol.UI.Theming.Theme do
   def get_component_style(%__MODULE__{} = theme, component_type) do
     case get_in(theme, [:component_styles, component_type]) do
       nil ->
-        require Logger
+        require Raxol.Core.Runtime.Log
 
-        Logger.warning(
+        Raxol.Core.Runtime.Log.warning(
           "Theme missing component style for #{inspect(component_type)}; returning empty map.",
           []
         )
@@ -237,9 +237,9 @@ defmodule Raxol.UI.Theming.Theme do
   def get_component_style(theme, component_type) do
     case get_in(theme, [:component_styles, component_type]) do
       nil ->
-        require Logger
+        require Raxol.Core.Runtime.Log
 
-        Logger.warning(
+        Raxol.Core.Runtime.Log.warning(
           "Theme missing component style for #{inspect(component_type)}; returning empty map.",
           []
         )

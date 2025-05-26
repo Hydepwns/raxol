@@ -4,7 +4,7 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
   Currently provides a text placeholder, but intended for protocols like sixel or kitty.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
   alias Raxol.Plugins.Visualization.DrawingUtils
   alias Raxol.Style
@@ -24,8 +24,9 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
 
     # Basic validation
     if width < 1 or height < 1 do
-      Logger.warning(
-        "[ImageRenderer] Bounds too small for image rendering: #{inspect(bounds)}"
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "[ImageRenderer] Bounds too small for image rendering: #{inspect(bounds)}",
+        %{}
       )
 
       # Return empty grid if bounds are zero/negative
@@ -39,7 +40,7 @@ defmodule Raxol.Plugins.Visualization.ImageRenderer do
         e ->
           stacktrace = __STACKTRACE__
 
-          Logger.error(
+          Raxol.Core.Runtime.Log.error(
             "[ImageRenderer] Error rendering image: #{inspect(e)}\nStacktrace: #{inspect(stacktrace)}"
           )
 

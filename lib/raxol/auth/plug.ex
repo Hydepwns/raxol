@@ -10,7 +10,7 @@ defmodule Raxol.Auth.Plug do
   # alias Raxol.Repo # Removed - Unused
   # alias Raxol.Accounts.User # Removed - Unused
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   def init(opts), do: opts
 
@@ -33,11 +33,11 @@ defmodule Raxol.Auth.Plug do
   Authenticates a user by email and password.
   """
   def authenticate_user(conn, email, password) do
-    Logger.debug("Authenticating user: #{email}")
+    Raxol.Core.Runtime.Log.debug("Authenticating user: #{email}")
 
     case Accounts.authenticate_user(email, password) do
       {:ok, user} ->
-        Logger.debug("Authentication successful for user ID: #{user.id}")
+        Raxol.Core.Runtime.Log.debug("Authentication successful for user ID: #{user.id}")
 
         conn
         |> put_session(:user_id, user.id)
@@ -74,13 +74,13 @@ defmodule Raxol.Auth.Plug do
     # if Accounts.has_permission?(user, module, action) do
     #   conn
     # else
-    #   Logger.warning("Authorization failed for user #{user.id} on #{inspect(module)}.#{action}")
+    #   Raxol.Core.Runtime.Log.warning("Authorization failed for user #{user.id} on #{inspect(module)}.#{action}")
     #   conn
     #   |> put_status(:forbidden)
     #   |> text("Forbidden")
     #   |> halt()
     # end
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Skipping permission check for #{inspect(module)}.#{action} - has_permission? not implemented."
     )
 

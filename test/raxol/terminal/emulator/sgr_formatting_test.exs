@@ -289,4 +289,21 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       end
     end)
   end
+
+  describe "SGR sequence followed by text" do
+    test "writes text after SGR and buffer has correct style" do
+      emulator = Emulator.new()
+      # Write SGR for bold red, then text
+      {emulator, _} = Emulator.process_input(emulator, "\e[1;31mBold Red")
+      buffer = Raxol.Terminal.Emulator.get_active_buffer(emulator)
+      # Get the first cell (should be 'B')
+      first_cell = buffer.cells |> List.first() |> List.first()
+      assert first_cell.char == "B"
+      assert first_cell.style.bold == true
+      assert first_cell.style.foreground == :red
+      # Optionally check the rest of the text
+      text = buffer.cells |> List.first() |> Enum.take(8) |> Enum.map(& &1.char) |> Enum.join("")
+      assert text =~ "Bold Red"
+    end
+  end
 end

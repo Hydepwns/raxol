@@ -8,7 +8,7 @@ defmodule Raxol.Core.Runtime.Rendering.Buffer do
   * Optimizing rendering by only updating changed cells
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @typedoc """
   A cell represents a single character position on the screen.

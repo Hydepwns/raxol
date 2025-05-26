@@ -4,7 +4,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
   This module integrates with an AI agent to provide deep insights and actionable suggestions.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Performance.Analyzer
 
@@ -47,7 +47,7 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
 
     # Send data to AI agent for analysis
     # TODO: Implement actual AI integration call
-    Logger.warning("AI analysis not implemented, falling back to mock analysis")
+    Raxol.Core.Runtime.Log.warning_with_context("AI analysis not implemented, falling back to mock analysis", %{})
     generate_mock_analysis(ai_data)
   end
 

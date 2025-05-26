@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.ControlCodes
   alias Raxol.Terminal.ANSI.CharacterSets
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Processes input when the parser is in the :escape state.
@@ -99,14 +99,14 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # SS2 (Single Shift 2)
       <<78, rest_after_ss::binary>> ->
-        Logger.info("[Parser] SS2 received - will use G2 for next char only")
+        Raxol.Core.Runtime.Log.info("[Parser] SS2 received - will use G2 for next char only")
         # Set single_shift to :ss2 and return to ground
         next_parser_state = %{parser_state | state: :ground, single_shift: :ss2}
         {:continue, emulator, next_parser_state, rest_after_ss}
 
       # SS3 (Single Shift 3)
       <<79, rest_after_ss3::binary>> ->
-        Logger.info("[Parser] SS3 received - will use G3 for next char only")
+        Raxol.Core.Runtime.Log.info("[Parser] SS3 received - will use G3 for next char only")
         # Set single_shift to :ss3 and return to ground
         next_parser_state = %{parser_state | state: :ground, single_shift: :ss3}
         {:continue, emulator, next_parser_state, rest_after_ss3}
@@ -190,7 +190,7 @@ defmodule Raxol.Terminal.Parser.States.EscapeState do
 
       # Fallback for unhandled char after ESC
       <<char_codepoint, rest_after_char::binary>> ->
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[Parser] Unhandled char #{inspect(char_codepoint)} after ESC, returning to ground."
         )
 

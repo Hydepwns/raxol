@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Rendering.Painter do
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Paints the render tree into draw commands or buffer updates.
@@ -21,23 +21,23 @@ defmodule Raxol.UI.Rendering.Painter do
     # If the composed_data is identical to the previous composed tree, reuse the previous painted output
     if composed_data === previous_composed_tree &&
          previous_painted_output != nil do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Paint Stage: Reusing previous_painted_output as composed_data is identical to previous_composed_tree."
       )
 
       previous_painted_output
     else
       if composed_data === previous_composed_tree do
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "Paint Stage: composed_data is identical, but no previous_painted_output to reuse. Repainting."
         )
       else
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "Paint Stage: composed_data differs from previous_composed_tree or no previous. Repainting. Details: composed_data: #{inspect(composed_data)}, prev_composed_tree: #{inspect(previous_composed_tree)}"
         )
       end
 
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Paint Stage: Starting with composed_stage_output: #{inspect(composed_data)}"
       )
 
@@ -50,7 +50,7 @@ defmodule Raxol.UI.Rendering.Painter do
 
   defp do_paint_node(composed_node, parent_x_offset, parent_y_offset)
        when not is_map(composed_node) do
-    Logger.warn(
+    Raxol.Core.Runtime.Log.warning(
       "Paint Stage: Encountered non-map node, expected composed map structure: #{inspect(composed_node)}"
     )
 
@@ -87,7 +87,7 @@ defmodule Raxol.UI.Rendering.Painter do
               properties[:text] || properties[:label] || properties[:value]
           }
 
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "Paint Stage: Generated draw_element op for #{original_type}: #{inspect(paint_op)}"
           )
 
@@ -109,22 +109,22 @@ defmodule Raxol.UI.Rendering.Painter do
               )
           }
 
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "Paint Stage: Generated draw_primitive op: #{inspect(paint_op)}"
           )
 
           [paint_op]
 
         :unprocessed_map_wrapper ->
-          Logger.warn(
-            "Paint Stage: Encountered :unprocessed_map_wrapper for node: #{inspect(composed_node[:original_node][:type])}. Painting children only."
+          Raxol.Core.Runtime.Log.warning(
+            "Paint Stage: Encountered :unprocessed_map_wrapper for node: #{inspect(if is_map(composed_node[:original_node]), do: Map.get(composed_node[:original_node], :type, nil), else: nil)}. Painting children only."
           )
 
           # Don't paint the wrapper itself, only its children (handled below)
           []
 
         unknown_type ->
-          Logger.warn(
+          Raxol.Core.Runtime.Log.warning(
             "Paint Stage: Unknown composed_type: #{inspect(unknown_type)} for node: #{inspect(composed_node)}"
           )
 

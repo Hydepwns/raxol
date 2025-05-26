@@ -8,7 +8,7 @@ defmodule Raxol.Database.ConnectionManager do
   - Provides tools for debugging connection issues
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   alias Raxol.Repo
 
   @max_retries 5
@@ -55,12 +55,12 @@ defmodule Raxol.Database.ConnectionManager do
           true
 
         {:error, error} ->
-          Logger.error("Database connection check failed: #{inspect(error)}")
+          Raxol.Core.Runtime.Log.error("Database connection check failed: #{inspect(error)}")
           false
       end
     rescue
       error ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "Database connection check failed with exception: #{inspect(error)}"
         )
 
@@ -79,22 +79,23 @@ defmodule Raxol.Database.ConnectionManager do
       try do
         # Check if connection is working
         if healthy?() do
-          Logger.info("Database connection is healthy")
+          Raxol.Core.Runtime.Log.info("Database connection is healthy")
         else
           # Try to restart the connection
-          Logger.warning(
-            "Database connection is unhealthy, attempting to restart..."
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Database connection is unhealthy, attempting to restart...",
+            %{}
           )
 
           restart_connection()
         end
       rescue
         e ->
-          Logger.error("Error checking database connection: #{inspect(e)}")
+          Raxol.Core.Runtime.Log.error("Error checking database connection: #{inspect(e)}")
           restart_connection()
       end
     else
-      Logger.warning("Repo process not found, database may not be started")
+      Raxol.Core.Runtime.Log.warning("Repo process not found, database may not be started")
     end
 
     :ok
@@ -107,7 +108,7 @@ defmodule Raxol.Database.ConnectionManager do
   def restart_connection do
     # Only attempt restart if the Repo process exists
     if Process.whereis(Repo) do
-      Logger.info("Attempting to restart database connection...")
+      Raxol.Core.Runtime.Log.info("Attempting to restart database connection...")
 
       # Close existing connections in the pool
       try do
@@ -116,23 +117,23 @@ defmodule Raxol.Database.ConnectionManager do
                "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = current_database() AND pid <> pg_backend_pid()"
              ) do
           {:ok, _} ->
-            Logger.info("Successfully closed existing connections")
+            Raxol.Core.Runtime.Log.info("Successfully closed existing connections")
 
           {:error, error} ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Error closing existing connections: #{inspect(error)}"
             )
         end
       rescue
         e ->
-          Logger.error("Exception closing existing connections: #{inspect(e)}")
+          Raxol.Core.Runtime.Log.error("Exception closing existing connections: #{inspect(e)}")
       end
 
       # Check connection again
       if healthy?() do
-        Logger.info("Database connection successfully restarted")
+        Raxol.Core.Runtime.Log.info("Database connection successfully restarted")
       else
-        Logger.error("Failed to restart database connection")
+        Raxol.Core.Runtime.Log.error("Failed to restart database connection")
       end
     end
 
@@ -156,17 +157,17 @@ defmodule Raxol.Database.ConnectionManager do
         )
 
       e ->
-        Logger.error("Database operation failed with error: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error("Database operation failed with error: #{inspect(e)}")
 
         if attempt < max_retries do
-          Logger.info(
+          Raxol.Core.Runtime.Log.info(
             "Retrying operation (attempt #{attempt + 1}/#{max_retries})..."
           )
 
           Process.sleep(retry_delay_ms)
           retry_operation(operation, attempt + 1, max_retries, retry_delay_ms)
         else
-          Logger.error("Operation failed after #{max_retries} attempts")
+          Raxol.Core.Runtime.Log.error("Operation failed after #{max_retries} attempts")
           {:error, e}
         end
     end
@@ -180,9 +181,9 @@ defmodule Raxol.Database.ConnectionManager do
          retry_delay_ms
        ) do
     # Log detailed Postgrex error information for debugging
-    Logger.error("Postgrex error: #{inspect(error)}")
-    Logger.error("Postgres error code: #{error.postgres.code}")
-    Logger.error("Postgres message: #{error.postgres.message}")
+    Raxol.Core.Runtime.Log.error("Postgrex error: #{inspect(error)}")
+    Raxol.Core.Runtime.Log.error("Postgres error code: #{error.postgres.code}")
+    Raxol.Core.Runtime.Log.error("Postgres message: #{error.postgres.message}")
 
     # Check if the error is retryable (connection-related)
     is_retryable =
@@ -227,7 +228,7 @@ defmodule Raxol.Database.ConnectionManager do
       # Exponential backoff for connection errors
       backoff_ms = retry_delay_ms * :math.pow(2, attempt)
 
-      Logger.info(
+      Raxol.Core.Runtime.Log.info(
         "Retrying operation after #{backoff_ms}ms (attempt #{attempt + 1}/#{max_retries})..."
       )
 
@@ -235,9 +236,9 @@ defmodule Raxol.Database.ConnectionManager do
       retry_operation(operation, attempt + 1, max_retries, retry_delay_ms)
     else
       if not is_retryable do
-        Logger.error("Non-retryable Postgres error, giving up immediately")
+        Raxol.Core.Runtime.Log.error("Non-retryable Postgres error, giving up immediately")
       else
-        Logger.error("Operation failed after #{max_retries} attempts")
+        Raxol.Core.Runtime.Log.error("Operation failed after #{max_retries} attempts")
       end
 
       {:error, error}

@@ -11,7 +11,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   # alias Raxol.UI.Components.Dashboard.Widgets.TextInputWidget
   use Raxol.UI.Components.Base.Component
   require Raxol.View.Elements
-  require Logger
+  require Raxol.Core.Runtime.Log
   alias Raxol.View.Elements, as: UI
   # Add alias
   alias Raxol.UI.Components.Dashboard.LayoutPersistence
@@ -69,13 +69,13 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
     # Check if loaded_widgets is a non-empty list
     widgets =
       if is_list(loaded_widgets) && loaded_widgets != [] do
-        Logger.info(
+        Raxol.Core.Runtime.Log.info(
           "Initializing dashboard from saved layout with #{length(loaded_widgets)} widgets"
         )
 
         loaded_widgets
       else
-        Logger.info(
+        Raxol.Core.Runtime.Log.info(
           "No saved layout found, initializing dashboard with #{length(default_widgets)} default widgets"
         )
 
@@ -86,7 +86,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
     if validate_widgets(widgets) do
       {:ok, %Model{widgets: widgets, grid_config: grid_config}}
     else
-      Logger.error(
+      Raxol.Core.Runtime.Log.error(
         "Invalid widget configurations in saved layout, using defaults"
       )
 
@@ -139,7 +139,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
             # {new_widget_state, commands} = WidgetModule.update(child_msg, widget_state)
             # new_widgets = Map.put(state.widgets, widget_id, new_widget_state)
             # {state | widgets: new_widgets}, commands
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "Routing msg to widget #{widget_id}: #{inspect(child_msg)}"
             )
 
@@ -147,7 +147,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
             {state, []}
 
           :error ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Dashboard received msg for unknown widget: #{widget_id}"
             )
 
@@ -155,7 +155,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
         end
 
       _ ->
-        Logger.debug("Dashboard received message: #{inspect(msg)}")
+        Raxol.Core.Runtime.Log.debug("Dashboard received message: #{inspect(msg)}")
         {state, []}
     end
   end
@@ -164,7 +164,7 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, _props, state) do
     # Placeholder: Handle events, potentially focus related for widgets
-    Logger.debug("Dashboard received event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug("Dashboard received event: #{inspect(event)}")
     {state, []}
   end
 

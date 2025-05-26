@@ -16,7 +16,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
 
   alias Raxol.Core.Terminal.Color
   alias Raxol.Core.Terminal.State
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Handles OSC 4 commands for color palette management.
@@ -175,17 +175,21 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
     end
   end
 
-  # Parses hex color component (1-4 digits), scales to 0-255
+  # Parses hex color component (1-4 digits), scales to 0-255 appropriately
   defp parse_hex_component(hex_str) do
     len = byte_size(hex_str)
 
     if len >= 1 and len <= 4 do
       case Integer.parse(hex_str, 16) do
         {val, ""} ->
-          # Scale to 0-255. Max value is 0xFFFF (65535).
-          scaled_val = round(val * 255 / 65_535)
+          scaled_val =
+            case len do
+              1 -> round(val * 255 / 15)
+              2 -> val
+              3 -> round(val * 255 / 4095)
+              4 -> round(val * 255 / 65_535)
+            end
           {:ok, max(0, min(255, scaled_val))}
-
         _ ->
           :error
       end
@@ -197,9 +201,9 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   defp format_color_response(index, {r, g, b}) do
     # Format: OSC 4;index;rgb:r/g/b
     # Scale up to 16-bit range (0-65535)
-    r_scaled = Integer.to_string(div(r * 65_535, 255), 16)
-    g_scaled = Integer.to_string(div(g * 65_535, 255), 16)
-    b_scaled = Integer.to_string(div(b * 65_535, 255), 16)
+    r_scaled = Integer.to_string(div(r * 65_535, 255), 16) |> String.pad_leading(4, "0")
+    g_scaled = Integer.to_string(div(g * 65_535, 255), 16) |> String.pad_leading(4, "0")
+    b_scaled = Integer.to_string(div(b * 65_535, 255), 16) |> String.pad_leading(4, "0")
     "4;#{index};rgb:#{r_scaled}/#{g_scaled}/#{b_scaled}"
   end
 

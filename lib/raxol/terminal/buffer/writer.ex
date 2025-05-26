@@ -39,6 +39,10 @@ defmodule Raxol.Terminal.Buffer.Writer do
             TextFormatting.new()
         end
 
+      # Debug output for style
+      require Raxol.Core.Runtime.Log
+      Raxol.Core.Runtime.Log.debug("[Buffer.Writer] Writing char '#{char}' at {#{x}, #{y}} with style: #{inspect(cell_style)}")
+
       cells =
         List.update_at(buffer.cells, y, fn row ->
           new_cell = Cell.new(char, cell_style)

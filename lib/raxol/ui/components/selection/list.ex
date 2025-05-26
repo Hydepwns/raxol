@@ -32,7 +32,7 @@ defmodule Raxol.UI.Components.Selection.List do
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
-  require Logger
+  require Raxol.Core.Runtime.Log
   # Require view macros
   require Raxol.View.Elements
 
@@ -78,7 +78,7 @@ defmodule Raxol.UI.Components.Selection.List do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle internal messages (selection, scrolling)
-    Logger.debug("List #{state.id} received message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug("List #{state.id} received message: #{inspect(msg)}")
 
     case msg do
       :select_next -> select_item(state.selected_index + 1, state)
@@ -96,7 +96,7 @@ defmodule Raxol.UI.Components.Selection.List do
   # Correct arity
   def handle_event(event, %{} = _props, state) do
     # Handle keyboard (up/down/enter), mouse clicks
-    Logger.debug("List #{state.id} received event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug("List #{state.id} received event: #{inspect(event)}")
 
     case event do
       %{type: :key, data: %{key: "Up"}} ->

@@ -32,7 +32,7 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Require List component and View macros/helpers
   alias Raxol.UI.Components.Selection.List
@@ -95,7 +95,7 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle internal messages and messages from nested list
-    Logger.debug("Dropdown #{state.id} received message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug("Dropdown #{state.id} received message: #{inspect(msg)}")
 
     case msg do
       :toggle_expand ->
@@ -139,7 +139,7 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
   @doc "Handles key events for the Dropdown component, including toggling expansion and forwarding to the list."
   @impl Raxol.UI.Components.Base.Component
   def handle_event(%{type: :key, data: key_data} = event, %{} = _props, state) do
-    Logger.debug("Dropdown #{state.id} received event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug("Dropdown #{state.id} received event: #{inspect(event)}")
     # Handle keys to toggle expansion, or forward to list if expanded
     case key_data.key do
       "Enter" when not state.expanded ->
@@ -166,7 +166,7 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
   @spec handle_event(map(), map(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
-    Logger.debug("Dropdown #{state.id} received event: #{inspect(event.type)}")
+    Raxol.Core.Runtime.Log.debug("Dropdown #{state.id} received event: #{inspect(event.type)}")
 
     case event do
       %{type: :mouse, data: %{button: :left, action: :press}} ->

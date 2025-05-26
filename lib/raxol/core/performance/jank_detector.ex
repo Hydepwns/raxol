@@ -17,7 +17,7 @@ defmodule Raxol.Core.Performance.JankDetector do
 
   # Check for jank
   if JankDetector.detect_jank?(detector) do
-    Logger.warning("Jank detected")
+    Raxol.Core.Runtime.Log.warning_with_context("Jank detected", %{})
   end
   ```
   """

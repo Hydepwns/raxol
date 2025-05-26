@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
   Handles cleanup of file watching resources.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Cleans up file watching resources.
@@ -12,7 +12,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Cleanup do
   def cleanup_file_watching(state) do
     # Stop the file watcher process if it exists
     if state.file_watcher_pid do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[#{__MODULE__}] Stopping file watcher (PID: #{inspect(state.file_watcher_pid)})."
       )
 

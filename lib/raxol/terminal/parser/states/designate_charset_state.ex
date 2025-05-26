@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Parser.States.DesignateCharsetState do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.ANSI.CharacterSets
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Processes input when the parser is in the :designate_charset state.

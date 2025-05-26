@@ -3,8 +3,7 @@ defmodule Raxol.System.DeltaUpdater do
   Handles delta updates for the Raxol terminal emulator.
   """
 
-  require Logger
-
+  require Raxol.Core.Runtime.Log
   # Called via adapter now
   alias Raxol.System.Updater
   alias Raxol.System.DeltaUpdaterSystemAdapterImpl

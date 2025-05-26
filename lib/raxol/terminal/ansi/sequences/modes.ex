@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
   """
 
   alias Raxol.Terminal.ModeManager
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Set or reset a screen mode.
@@ -39,7 +39,7 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
         ModeManager.reset_mode(emulator, [mode_atom])
       end
     else
-      Logger.warning("[Sequences.Modes] Unknown mode code: #{mode}")
+      Raxol.Core.Runtime.Log.warning_with_context("[Sequences.Modes] Unknown mode code: #{mode}", %{})
       emulator
     end
   end

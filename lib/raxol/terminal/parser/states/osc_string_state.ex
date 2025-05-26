@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.Commands.Executor
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Processes input when the parser is in the :osc_string state.
@@ -24,7 +24,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
     case input do
       <<>> ->
         # Incomplete OSC string - return current state
-        Logger.debug("[Parser] Incomplete OSC string, input ended.")
+        Raxol.Core.Runtime.Log.debug("[Parser] Incomplete OSC string, input ended.")
         {:incomplete, emulator, parser_state}
 
       # String Terminator (ST - ESC \) -- Use escape_char check first
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
       # CAN/SUB abort OSC string
       <<abort_byte, rest_after_abort::binary>>
       when abort_byte == 0x18 or abort_byte == 0x1A ->
-        Logger.debug("Aborting OSC String due to CAN/SUB")
+        Raxol.Core.Runtime.Log.debug("Aborting OSC String due to CAN/SUB")
         next_parser_state = %{parser_state | state: :ground}
         {:continue, emulator, next_parser_state, rest_after_abort}
 
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
 
       # Ignore C0/DEL bytes within OSC string
       <<_ignored_byte, rest_after_ignored::binary>> ->
-        Logger.debug("Ignoring C0/DEL byte in OSC String")
+        Raxol.Core.Runtime.Log.debug("Ignoring C0/DEL byte in OSC String")
         # Stay in state, ignore byte
         {:continue, emulator, parser_state, rest_after_ignored}
     end

@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Command.Manager do
   history, and command execution.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @type t :: %__MODULE__{
           command_history: list(String.t()),

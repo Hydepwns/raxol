@@ -1,6 +1,6 @@
 defmodule RaxolWeb.UserSocket do
   use Phoenix.Socket
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Channels
   channel("terminal:*", RaxolWeb.TerminalChannel)
@@ -18,13 +18,13 @@ defmodule RaxolWeb.UserSocket do
   To connect, url: "ws://localhost:4000/socket/websocket?user_id=123"
   """
   def connect(%{"user_id" => user_id} = _params, socket, _connect_info) do
-    Logger.info("Connecting user with string key user_id: #{user_id}")
+    Raxol.Core.Runtime.Log.info("Connecting user with string key user_id: #{user_id}")
     {:ok, assign(socket, :user_id, user_id)}
   end
 
   # Handle atom keys (e.g., from tests)
   def connect(%{user_id: user_id} = _params, socket, _connect_info) do
-    Logger.info("Connecting user with atom key user_id: #{user_id}")
+    Raxol.Core.Runtime.Log.info("Connecting user with atom key user_id: #{user_id}")
     {:ok, assign(socket, :user_id, user_id)}
   end
 

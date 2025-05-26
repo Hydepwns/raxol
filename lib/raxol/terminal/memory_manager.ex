@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.MemoryManager do
   Can trigger actions like trimming scrollback when limits are exceeded.
   """
   use GenServer
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Buffer.Manager, as: BufferManager
   alias Raxol.Terminal.Integration.State
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.MemoryManager do
     time_since_last_cleanup = now - state.last_cleanup
 
     if time_since_last_cleanup >= state.config.cleanup_interval do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Performing terminal memory check. Interval: #{state.config.cleanup_interval}ms"
       )
 
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.MemoryManager do
     if current_usage > memory_limit do
       bytes_over_limit = current_usage - memory_limit
 
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Memory usage (#{current_usage} bytes) exceeds limit (#{memory_limit} bytes). Over by #{bytes_over_limit} bytes."
       )
 
@@ -74,13 +74,14 @@ defmodule Raxol.Terminal.MemoryManager do
       new_usage = final_buffer_manager.memory_usage
 
       if new_usage > memory_limit do
-        Logger.warning(
-          "Memory usage still high after check. Current: #{new_usage}, Limit: #{memory_limit}. Need more aggressive cleanup."
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Memory usage still high after check. Current: #{new_usage}, Limit: #{memory_limit}. Need more aggressive cleanup.",
+          %{}
         )
 
         # TODO: Implement more aggressive cleanup
       else
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "Memory usage within limits after check. Current usage: #{new_usage} bytes."
         )
       end
@@ -91,7 +92,7 @@ defmodule Raxol.Terminal.MemoryManager do
           last_cleanup: System.monotonic_time(:millisecond)
       }
     else
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Memory usage (#{current_usage} bytes) within limit (#{memory_limit} bytes). No cleanup needed."
       )
 

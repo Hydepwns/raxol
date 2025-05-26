@@ -14,7 +14,7 @@ defmodule Raxol.Metrics do
 
   use GenServer
   alias Raxol.Repo
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # 5 seconds
   @collection_interval 5_000
@@ -46,7 +46,7 @@ defmodule Raxol.Metrics do
     rescue
       ArgumentError ->
         # Handle the case where GenServer is not started (e.g., in tests)
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "Metrics service not available, ignoring gauge: #{name}=#{value}"
         )
 
@@ -71,7 +71,7 @@ defmodule Raxol.Metrics do
     rescue
       ArgumentError ->
         # Handle the case where GenServer is not started (e.g., in tests)
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "Metrics service not available, ignoring increment: #{name}"
         )
 

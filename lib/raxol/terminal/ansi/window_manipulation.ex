@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
   """
 
   alias Raxol.Terminal.ANSI.SequenceParser
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @type window_state :: %{
           title: String.t(),
@@ -49,7 +49,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
             handle_csi_operation(state, params)
 
           :error ->
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[WindowManipulation] Failed to parse CSI 't' params: #{param_string}"
             )
 
@@ -62,7 +62,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
 
       # Regex didn't match
       nil ->
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[WindowManipulation] Invalid CSI sequence format: \e[#{rest}"
         )
 
@@ -80,7 +80,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
         handle_osc_content(state, osc_content)
 
       _ ->
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[WindowManipulation] Unhandled OSC sequence format: \e]#{rest}"
         )
 
@@ -140,7 +140,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
         handle_operation(state, :lower, [])
 
       _ ->
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[WindowManipulation] Unhandled CSI 't' operation with params: #{inspect(params)}"
         )
 
@@ -158,7 +158,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
             handle_osc_operation(state, ps_int, pt)
 
           _ ->
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[WindowManipulation] Invalid OSC Ps parameter: #{ps_str}"
             )
 
@@ -166,7 +166,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
         end
 
       _ ->
-        Logger.debug("[WindowManipulation] Invalid OSC format: #{osc_content}")
+        Raxol.Core.Runtime.Log.debug("[WindowManipulation] Invalid OSC format: #{osc_content}")
         {state, ""}
     end
   end
@@ -267,7 +267,7 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
 
   # Catch-all for unhandled operations or incorrect params
   def handle_operation(state, op, params) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[WindowManipulation] Unhandled operation :#{op} with params #{inspect(params)}"
     )
 

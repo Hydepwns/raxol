@@ -7,7 +7,7 @@ defmodule RaxolWeb.UserAuth do
 
   alias Raxol.Auth
   alias RaxolWeb.Router.Helpers, as: Routes
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Make the remember me cookie valid for 60 days.
   # If you want bump or reduce this value, also change
@@ -31,8 +31,9 @@ defmodule RaxolWeb.UserAuth do
     case Raxol.Auth.create_user_session(user.id, user.role) do
       # Temporary handling for the placeholder :ok return
       :ok ->
-        Logger.warn(
-          "[UserAuth] Using placeholder session data due to Auth.create_user_session returning :ok."
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[UserAuth] Using placeholder session data due to Auth.create_user_session returning :ok.",
+          %{}
         )
 
         session_data = %{
@@ -52,12 +53,12 @@ defmodule RaxolWeb.UserAuth do
 
         # Original clause (Keep commented for reference)
         # {:error, reason} ->
-        #   Logger.error("Failed to create session for user #{user.id}: #{inspect(reason)}")
+        #   Raxol.Core.Runtime.Log.error("Failed to create session for user #{user.id}: #{inspect(reason)}")
 
         # Catch-all for unexpected returns (like the temporary :ok)
         # The following clause is unreachable because create_user_session always returns :ok currently.
         # other ->
-        #   Logger.error("Unexpected return from Auth.create_user_session: #{inspect(other)}")
+        #   Raxol.Core.Runtime.Log.error("Unexpected return from Auth.create_user_session: #{inspect(other)}")
         #   conn
         #   |> put_flash(:error, "Internal error during login.")
     end

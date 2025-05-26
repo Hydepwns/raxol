@@ -7,15 +7,14 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
   - Handling event halting
   """
 
-  alias Raxol.Core.Runtime.Events.Event
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Filters an event through registered plugin filters.
   Returns the filtered event or :halt if the event should be stopped.
   """
   def filter_event(plugin_manager_state, event) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] filter_event called for: #{inspect(event.type)}"
     )
 
@@ -32,8 +31,9 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
           {:halt, :halt}
 
         {:error, reason} ->
-          Logger.warning(
-            "[#{__MODULE__}] Plugin #{plugin_id} filter error: #{inspect(reason)}"
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "[#{__MODULE__}] Plugin #{plugin_id} filter error: #{inspect(reason)}",
+            %{plugin_id: plugin_id, reason: reason, module: __MODULE__}
           )
 
           {:cont, current_event}
@@ -74,8 +74,11 @@ defmodule Raxol.Core.Runtime.Plugins.EventFilter do
           end
         rescue
           e ->
-            Logger.error(
-              "[#{__MODULE__}] Plugin #{plugin_id} filter crashed: #{inspect(e)}"
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] Plugin #{plugin_id} filter crashed",
+              e,
+              nil,
+              %{plugin_id: plugin_id, event: event, module: __MODULE__}
             )
 
             {:error, :filter_crashed}

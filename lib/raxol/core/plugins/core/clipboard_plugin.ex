@@ -6,7 +6,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
 
   @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Define default state and expected options
   # Default to real implementation
@@ -27,7 +27,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
       clipboard_impl: clipboard_impl
     }
 
-    Logger.info("Clipboard Plugin initialized.")
+    Raxol.Core.Runtime.Log.info("Clipboard Plugin initialized.")
     {:ok, state}
   end
 
@@ -46,7 +46,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
   @impl Raxol.Core.Runtime.Plugins.Plugin
   def handle_command(:clipboard_write, [content], state)
       when is_binary(content) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "ClipboardPlugin: Writing to clipboard via #{inspect(state.clipboard_impl)}..."
     )
 
@@ -56,7 +56,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
         {:ok, state, {:ok, :clipboard_write_ok}}
 
       {:error, reason} ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "ClipboardPlugin: Failed to write to clipboard: #{inspect(reason)}"
         )
 
@@ -66,7 +66,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
 
   # Arity 0 means args is []
   def handle_command(:clipboard_read, [], state) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[ClipboardPlugin] Reading from clipboard via #{inspect(state.clipboard_impl)}..."
     )
 
@@ -76,7 +76,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
         {:ok, state, {:ok, content}}
 
       {:error, reason} ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "[ClipboardPlugin] Failed to read from clipboard: #{inspect(reason)}"
         )
 
@@ -86,16 +86,15 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
 
   # Catch-all for unknown commands or mismatched arities handled by this plugin's handle_command/3
   def handle_command(command_name, args, state) do
-    Logger.warning(
-      "ClipboardPlugin received unexpected command '#{command_name}' with args: #{inspect(args)}"
-    )
+    msg = "ClipboardPlugin received unexpected command '#{command_name}' with args: #{inspect(args)}"
+    Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 
     {:error, {:unknown_plugin_command, command_name, args}, state}
   end
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
   def terminate(_reason, _state) do
-    Logger.info("Clipboard Plugin terminated (Behaviour callback).")
+    Raxol.Core.Runtime.Log.info("Clipboard Plugin terminated (Behaviour callback).")
     :ok
   end
 
@@ -108,4 +107,9 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPlugin do
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
   def filter_event(event, state), do: {:ok, event, state}
+
+  # Stub for legacy compatibility: handle_clipboard_command/2
+  def handle_clipboard_command(_command, state) do
+    {:ok, state}
+  end
 end

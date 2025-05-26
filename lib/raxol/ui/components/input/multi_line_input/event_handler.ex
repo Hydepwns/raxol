@@ -9,7 +9,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
   alias Raxol.Core.Events.Event, as: Event
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
   alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Handles key events for MultiLineInput, translating them into update messages for the component. Only processes events when the key state is :pressed or :repeat.
@@ -23,7 +23,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
       )
       when state in [:pressed, :repeat] do
     # Debug logging to see exactly what's coming in
-    Logger.debug("Processing key event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug("Processing key event: #{inspect(event)}")
 
     # Translate key data to update message
     msg =
@@ -128,7 +128,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
 
         # Log unhandled key combinations
         _ ->
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "Unhandled key combination: #{inspect(key)} with modifiers #{inspect(modifiers)}"
           )
 
@@ -137,10 +137,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
 
     # Return the update message directly for the component behaviour
     if msg do
-      Logger.debug("Returning update message: #{inspect(msg)}")
+      Raxol.Core.Runtime.Log.debug("Returning update message: #{inspect(msg)}")
       {:update, msg, input_stat}
     else
-      Logger.debug("No message handler found, returning noreply")
+      Raxol.Core.Runtime.Log.debug("No message handler found, returning noreply")
       {:noreply, input_stat, nil}
     end
   end
@@ -193,7 +193,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
         %Event{type: :key, data: %{key: :pageup}} = event,
         input_state
       ) do
-    Logger.debug("Special case for pageup test: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug("Special case for pageup test: #{inspect(event)}")
     {:update, {:move_cursor_page, :up}, input_state}
   end
 
@@ -204,7 +204,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
         %Event{type: :key, data: %{key: :pagedown}} = event,
         input_state
       ) do
-    Logger.debug("Special case for pagedown test: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug("Special case for pagedown test: #{inspect(event)}")
     {:update, {:move_cursor_page, :down}, input_state}
   end
 
@@ -214,14 +214,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
         input_state
       )
       when key in [:left, :right, :up, :down] do
-    Logger.debug("Special case for shift+#{key} test: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug("Special case for shift+#{key} test: #{inspect(event)}")
     {:update, {:select_and_move, key}, input_state}
   end
 
   # Catch-all for unhandled events
   def handle_event(event, state) do
     # Rename _event to event
-    Logger.debug("Unhandled event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug("Unhandled event: #{inspect(event)}")
     # Ensure the correct tuple arity is returned
     {:noreply, state, nil}
   end

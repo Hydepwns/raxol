@@ -5,7 +5,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
 
   # Add Application behaviour and required aliases/requires
   use Raxol.Core.Runtime.Application
-  require Logger
+  require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   alias Raxol.View.Elements, as: UI
   alias Raxol.Style.Colors.{Color, Palette, Theme, Utilities}
@@ -21,13 +21,13 @@ defmodule Raxol.Examples.ColorSystemDemo do
   Starts the Color System Demo application.
   """
   def run do
-    Logger.info("Starting Color System Demo Application...")
+    Raxol.Core.Runtime.Log.info("Starting Color System Demo Application...")
     Raxol.Core.Runtime.Lifecycle.start_application(__MODULE__, %{})
   end
 
   @impl Raxol.Core.Runtime.Application
   def init(_opts) do
-    Logger.info("Initializing Color System Demo...")
+    Raxol.Core.Runtime.Log.info("Initializing Color System Demo...")
     # Create the demo theme during initialization
     demo_theme = create_demo_theme()
     {:ok, %__MODULE__{theme: demo_theme}}
@@ -86,13 +86,13 @@ defmodule Raxol.Examples.ColorSystemDemo do
 
   @impl Raxol.Core.Runtime.Application
   def update(msg, state) do
-    Logger.debug("Unhandled update: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug("Unhandled update: #{inspect(msg)}")
     {state, []}
   end
 
   @impl Raxol.Core.Runtime.Application
   def handle_event(event) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "ColorSystemDemo received unhandled event (handle_event/1): #{inspect(event)}"
     )
 
@@ -102,7 +102,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
 
   @impl Raxol.Core.Runtime.Application
   def handle_message(msg, state) do
-    Logger.debug("Unhandled handle_message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug("Unhandled handle_message: #{inspect(msg)}")
     {state, []}
   end
 
@@ -116,7 +116,7 @@ defmodule Raxol.Examples.ColorSystemDemo do
 
   @impl Raxol.Core.Runtime.Application
   def terminate(reason, _state) do
-    Logger.info("Terminating Color System Demo: #{inspect(reason)}")
+    Raxol.Core.Runtime.Log.info("Terminating Color System Demo: #{inspect(reason)}")
     :ok
   end
 

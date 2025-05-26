@@ -59,7 +59,7 @@ Raxol.Core.Runtime.Events.Dispatcher.subscribe(self(), [:command_processed])
 # Handle the event
 def handle_info({:command_processed, command, result}, state) do
   # Command has been processed
-  Logger.info("Command processed: #{inspect(command)} with result: #{inspect(result)}")
+  Raxol.Core.Runtime.Log.info("Command processed: #{inspect(command)} with result: #{inspect(result)}")
   {:noreply, state}
 end
 ```
@@ -73,7 +73,7 @@ Raxol.Core.Runtime.Events.Dispatcher.subscribe(self(), [:plugin_load_attempted])
 # Handle the event
 def handle_info({:plugin_load_attempted, plugin_id}, state) do
   # Plugin load was attempted
-  Logger.info("Plugin load attempted: #{plugin_id}")
+  Raxol.Core.Runtime.Log.info("Plugin load attempted: #{plugin_id}")
   {:noreply, state}
 end
 ```
@@ -89,7 +89,7 @@ Raxol.Core.Runtime.Events.Dispatcher.subscribe(self(), [:component_queued_for_re
 # Handle the event
 def handle_info({:component_queued_for_render, component_id}, state) do
   # Component is queued for rendering
-  Logger.debug("Component queued for render: #{component_id}")
+  Raxol.Core.Runtime.Log.debug("Component queued for render: #{component_id}")
   {:noreply, state}
 end
 ```
@@ -105,7 +105,7 @@ Raxol.Core.Runtime.Events.Dispatcher.subscribe(self(), [:preferences_applied])
 # Handle the event
 def handle_info({:preferences_applied, preferences}, state) do
   # Accessibility preferences have been applied
-  Logger.info("Accessibility preferences applied: #{inspect(preferences)}")
+  Raxol.Core.Runtime.Log.info("Accessibility preferences applied: #{inspect(preferences)}")
   {:noreply, state}
 end
 ```
@@ -119,7 +119,7 @@ Raxol.Core.Runtime.Events.Dispatcher.subscribe(self(), [:text_scale_updated])
 # Handle the event
 def handle_info({:text_scale_updated, scale}, state) do
   # Text scale has been updated
-  Logger.info("Text scale updated to: #{scale}")
+  Raxol.Core.Runtime.Log.info("Text scale updated to: #{scale}")
   {:noreply, state}
 end
 ```

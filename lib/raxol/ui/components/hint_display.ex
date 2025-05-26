@@ -4,7 +4,7 @@ defmodule Raxol.UI.Components.HintDisplay do
   """
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Require view macros
   require Raxol.View.Elements
@@ -39,7 +39,7 @@ defmodule Raxol.UI.Components.HintDisplay do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages to update hints or visibility
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "HintDisplay #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
     )
 
@@ -63,7 +63,7 @@ defmodule Raxol.UI.Components.HintDisplay do
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
     # Typically doesn't handle direct events
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "HintDisplay #{Map.get(state, :id, nil)} received event: #{inspect(event)}"
     )
 

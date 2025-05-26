@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.State.Manager do
   alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.ANSI.TerminalState
   alias Raxol.Terminal.ModeManager
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @type t :: %__MODULE__{
           mode_manager: ModeManager.t(),

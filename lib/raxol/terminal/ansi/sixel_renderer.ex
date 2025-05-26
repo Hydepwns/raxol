@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
   Handles rendering Sixel graphics data from a pixel buffer.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   import Bitwise
 
   # For sixel_state type
@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
                 Integer.to_string(sixel_b)::binary>>
 
             {:error, _} ->
-              Logger.warning("Sixel Render: Color index #{color_index} not found in palette.", [])
+              Raxol.Core.Runtime.Log.warning_with_context("Sixel Render: Color index #{color_index} not found in palette.", %{})
               ""
           end
         end)

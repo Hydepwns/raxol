@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Session do
   """
 
   use GenServer
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # alias Raxol.Core.Events.Event # Unused
   # alias Raxol.Core.Runtime.EventLoop # Unused
@@ -169,7 +169,7 @@ defmodule Raxol.Terminal.Session do
       Raxol.Terminal.Registry.register(id, state)
     rescue
       e ->
-        Logger.error("Failed to register session: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error("Failed to register session: #{inspect(e)}")
     end
 
     {:ok, state}
@@ -223,7 +223,7 @@ defmodule Raxol.Terminal.Session do
 
           # Broader pattern matching for error cases
           error_result ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Unexpected result from Emulator.process_input: #{inspect(error_result)}"
             )
 
@@ -231,7 +231,7 @@ defmodule Raxol.Terminal.Session do
         end
       rescue
         e ->
-          Logger.error("Error in process_input: #{inspect(e)}")
+          Raxol.Core.Runtime.Log.error("Error in process_input: #{inspect(e)}")
           state
       end
 
@@ -251,7 +251,7 @@ defmodule Raxol.Terminal.Session do
       Raxol.Terminal.Registry.register(state.id, new_state)
     rescue
       e ->
-        Logger.error("Failed to register updated session state: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error("Failed to register updated session state: #{inspect(e)}")
     end
 
     {:reply, :ok, new_state}

@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
 
   @behaviour Raxol.Terminal.ANSI.TerminalStateBehaviour
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.{CharacterSets, ScreenModes}
 
   @type saved_state :: %{
@@ -101,20 +101,20 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   def apply_restored_data(emulator, nil, _fields_to_restore) do
     # No data to restore, return emulator unchanged
     # Log
-    Logger.debug("[ApplyRestore] No data to restore.")
+    Raxol.Core.Runtime.Log.debug("[ApplyRestore] No data to restore.")
     emulator
   end
 
   def apply_restored_data(emulator, restored_data, fields_to_restore) do
     # Log
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[ApplyRestore] Restoring fields: #{inspect(fields_to_restore)} from data: #{inspect(restored_data)}"
     )
 
     Enum.reduce(fields_to_restore, emulator, fn field, acc_emulator ->
       if Map.has_key?(restored_data, field) do
         # Log
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[ApplyRestore] Applying field: #{field} with value: #{inspect(Map.get(restored_data, field))}"
         )
 

@@ -5,7 +5,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.UserPreferences
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Key prefix for accessibility preferences
   @pref_prefix "accessibility"
@@ -320,14 +320,14 @@ defmodule Raxol.Core.Accessibility.Preferences do
         option_key = Enum.at(key_path, 1)
 
         if pref_root == :accessibility and is_atom(option_key) do
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "[Accessibility] Handling internal pref change: #{option_key} = #{inspect(value)} via pid: #{inspect(user_preferences_pid_or_name)}"
           )
 
           # Trigger side effects
           trigger_side_effects(option_key, value, user_preferences_pid_or_name)
         else
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "[Accessibility] Ignoring internal pref change (non-accessibility key path): #{inspect(key_path)}"
           )
         end
@@ -338,7 +338,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
         option_key = Enum.at(List.wrap(key_path), 1)
 
         if pref_root == :accessibility and is_atom(option_key) do
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "[Accessibility] Handling event pref change: #{option_key} = #{inspect(new_value)}"
           )
 
@@ -349,16 +349,14 @@ defmodule Raxol.Core.Accessibility.Preferences do
             user_preferences_pid_or_name
           )
         else
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "[Accessibility] Ignoring preference change event (not accessibility): #{inspect(key_path)}"
           )
         end
 
       # Case 3: Catch-all for unexpected event formats
       _ ->
-        Logger.warning(
-          "[Accessibility] Received unexpected event format in handle_preference_changed: #{inspect(event)}"
-        )
+        Raxol.Core.Runtime.Log.warning_with_context("[Accessibility] Received unexpected event format in handle_preference_changed: #{inspect(event)}", %{})
     end
 
     :ok
@@ -386,7 +384,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
         )
 
         dispatch_event.({:accessibility_reduced_motion_changed, value})
-        Logger.info("[Accessibility] Reduced motion set to: #{value}")
+        Raxol.Core.Runtime.Log.info("[Accessibility] Reduced motion set to: #{value}")
 
       :large_text ->
         Raxol.Core.Accessibility.ThemeIntegration.handle_large_text(

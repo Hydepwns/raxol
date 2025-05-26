@@ -9,7 +9,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
 
   alias Raxol.UI.Components.Base.Component
   alias Raxol.UI.Theming.Theme
-  require Logger
+  require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
 
   @behaviour Component
@@ -481,7 +481,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def update(msg, state) do
-    Logger.warning("[MultiLineInput] Unhandled update message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.warning("[MultiLineInput] Unhandled update message: #{inspect(msg)}")
     {:noreply, state, nil}
   end
 
@@ -546,7 +546,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
           single_cmd -> [change_event_cmd, single_cmd]
         end
 
-      Logger.debug("Value changed for #{new_state.id}, queueing :change event.")
+      Raxol.Core.Runtime.Log.debug("Value changed for #{new_state.id}, queueing :change event.")
       {:noreply, new_state, new_cmd}
     else
       {:noreply, new_state, existing_cmd}

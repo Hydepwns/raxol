@@ -54,7 +54,7 @@ defmodule Raxol.MixProject do
     [
       mod: {Raxol.Application, []},
       extra_applications:
-        [:logger, :runtime_tools, :swoosh] ++ test_applications()
+        [:runtime_tools, :swoosh] ++ test_applications()
     ]
   end
 

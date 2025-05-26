@@ -1,3 +1,5 @@
+alias Raxol.Test.Unit
+
 defmodule Raxol.ComponentTestHelpers do
   @moduledoc """
   Enhanced test helpers for comprehensive component testing in Raxol.

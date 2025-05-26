@@ -158,4 +158,18 @@ defmodule Raxol.Terminal.Buffer.State do
       row |> Enum.map_join("", &Cell.get_char/1) |> String.trim_trailing()
     end)
   end
+
+  @doc """
+  Replaces the line at the given index with the provided list of cells.
+  Returns the updated buffer.
+  """
+  @spec put_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) :: ScreenBuffer.t()
+  def put_line(%ScreenBuffer{} = buffer, line_index, new_cells) when line_index >= 0 do
+    if line_index < buffer.height and is_list(new_cells) and length(new_cells) == buffer.width do
+      updated_cells = List.replace_at(buffer.cells, line_index, new_cells)
+      %{buffer | cells: updated_cells}
+    else
+      buffer
+    end
+  end
 end

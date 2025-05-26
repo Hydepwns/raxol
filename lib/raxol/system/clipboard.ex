@@ -22,7 +22,7 @@ defmodule Raxol.System.Clipboard do
   # Implement the Behaviour
   @behaviour Behaviour
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Copies the given text to the system clipboard.
@@ -38,7 +38,7 @@ defmodule Raxol.System.Clipboard do
             :ok
 
           {output, exit_code} ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Failed to copy using pbcopy. Exit code: #{exit_code}, Output: #{output}"
             )
 
@@ -49,7 +49,7 @@ defmodule Raxol.System.Clipboard do
         # Linux/Unix - Try xclip for X11 clipboard
         case System.find_executable("xclip") do
           nil ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Clipboard error: `xclip` command not found. Please install it for clipboard support."
             )
 
@@ -64,7 +64,7 @@ defmodule Raxol.System.Clipboard do
                 :ok
 
               {output, exit_code} ->
-                Logger.error(
+                Raxol.Core.Runtime.Log.error(
                   "Failed to copy using xclip. Exit code: #{exit_code}, Output: #{output}"
                 )
 
@@ -79,7 +79,7 @@ defmodule Raxol.System.Clipboard do
             :ok
 
           {output, exit_code} ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Failed to copy using clip. Exit code: #{exit_code}, Output: #{output}"
             )
 
@@ -87,7 +87,7 @@ defmodule Raxol.System.Clipboard do
         end
 
       _other_os ->
-        Logger.warning("Clipboard copy not supported on this OS.", [])
+        Raxol.Core.Runtime.Log.warning_with_context("Clipboard copy not supported on this OS.", %{})
         {:error, :unsupported_os}
     end
   end
@@ -110,7 +110,7 @@ defmodule Raxol.System.Clipboard do
             {:ok, String.trim(output)}
 
           {output, exit_code} ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Failed to paste using pbpaste. Exit code: #{exit_code}, Output: #{output}"
             )
 
@@ -121,7 +121,7 @@ defmodule Raxol.System.Clipboard do
         # Linux/Unix - Try xclip for X11 clipboard
         case System.find_executable("xclip") do
           nil ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Clipboard error: `xclip` command not found. Please install it for clipboard support."
             )
 
@@ -140,7 +140,7 @@ defmodule Raxol.System.Clipboard do
                 if exit_code == 1 and String.trim(output) == "" do
                   {:ok, ""}
                 else
-                  Logger.error(
+                  Raxol.Core.Runtime.Log.error(
                     "Failed to paste using xclip. Exit code: #{exit_code}, Output: #{output}"
                   )
 
@@ -167,14 +167,14 @@ defmodule Raxol.System.Clipboard do
                  "Cannot retrieve the Clipboard.",
                  "Get-Clipboard: Failed to get clipboard content"
                ]) do
-              Logger.debug(
+              Raxol.Core.Runtime.Log.debug(
                 "Clipboard appears empty or inaccessible via PowerShell."
               )
 
               # Treat as empty clipboard
               {:ok, ""}
             else
-              Logger.error(
+              Raxol.Core.Runtime.Log.error(
                 "Failed to paste using PowerShell. Exit code: #{exit_code}, Output: #{output}"
               )
 
@@ -183,7 +183,7 @@ defmodule Raxol.System.Clipboard do
         end
 
       _other_os ->
-        Logger.warning("Clipboard paste not supported on this OS.", [])
+        Raxol.Core.Runtime.Log.warning_with_context("Clipboard paste not supported on this OS.", %{})
         {:error, :unsupported_os}
     end
   end

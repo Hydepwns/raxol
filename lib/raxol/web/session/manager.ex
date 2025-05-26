@@ -12,7 +12,7 @@ defmodule Raxol.Web.Session.Manager do
   use GenServer
 
   alias Raxol.Web.Session.{Storage, Recovery, Cleanup, Monitor, Session}
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   def start_link(opts \\ []) do
     GenServer.start_link(__MODULE__, opts, name: __MODULE__)
@@ -105,7 +105,7 @@ defmodule Raxol.Web.Session.Manager do
             {:reply, {:ok, updated_session}, state}
 
           {:error, reason} ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Failed to update session last_active time: #{inspect(reason)}"
             )
 
@@ -134,7 +134,7 @@ defmodule Raxol.Web.Session.Manager do
             {:reply, {:ok, updated_session}, state}
 
           {:error, reason} ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Failed to update session metadata: #{inspect(reason)}"
             )
 
@@ -167,7 +167,7 @@ defmodule Raxol.Web.Session.Manager do
             {:reply, :ok, new_state}
 
           {:error, reason} ->
-            Logger.error("Failed to mark session as ended: #{inspect(reason)}")
+            Raxol.Core.Runtime.Log.error("Failed to mark session as ended: #{inspect(reason)}")
             {:reply, {:error, reason}, state}
         end
 

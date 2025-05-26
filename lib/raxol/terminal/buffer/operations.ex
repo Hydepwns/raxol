@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Includes writing, clearing, deleting, inserting, resizing, and other operations.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
@@ -295,4 +295,11 @@ defmodule Raxol.Terminal.Buffer.Operations do
                 style \\ TextFormatting.new()
               ),
               to: Eraser
+
+  @doc """
+  Replaces the line at the given index with the provided list of cells.
+  Returns the updated buffer.
+  """
+  @spec put_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) :: ScreenBuffer.t()
+  defdelegate put_line(buffer, line_index, new_cells), to: State
 end

@@ -11,10 +11,10 @@ defmodule Raxol.Core.Runtime.Supervisor do
   """
 
   use Supervisor
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   def start_link(init_arg) do
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] start_link called with args: #{inspect(init_arg)}"
     )
 
@@ -23,7 +23,7 @@ defmodule Raxol.Core.Runtime.Supervisor do
 
   @impl true
   def init(init_arg) do
-    Logger.debug("[#{__MODULE__}] init called with args: #{inspect(init_arg)}")
+    Raxol.Core.Runtime.Log.debug("[#{__MODULE__}] init called with args: #{inspect(init_arg)}")
 
     # Allow overriding child modules via init_arg for testing
     dispatcher_mod =
@@ -94,7 +94,7 @@ defmodule Raxol.Core.Runtime.Supervisor do
     # Add name here for init/1
     opts = [strategy: :one_for_all, name: __MODULE__]
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Initializing supervisor with children: #{inspect(children)} and opts: #{inspect(opts)}"
     )
 

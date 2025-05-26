@@ -15,7 +15,7 @@ defmodule EditorExample do # Renamed module
 
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Commands.Command
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @spacebar " " # Space character
 
@@ -26,14 +26,14 @@ defmodule EditorExample do # Renamed module
 
   @impl true
   def init(_context) do
-    Logger.debug("EditorExample: init/1")
+    Raxol.Core.Runtime.Log.debug("EditorExample: init/1")
     # Return :ok tuple with map model
     {:ok, %{text: ""}}
   end
 
   @impl true
   def update(message, model) do
-    Logger.debug("EditorExample: update/2 received message: \#{inspect(message)}")
+    Raxol.Core.Runtime.Log.debug("EditorExample: update/2 received message: \#{inspect(message)}")
     case message do
       # Use Event struct for key presses
       %Event{type: :key, data: %{key: key_name}} when key_name in @delete_keys ->
@@ -63,7 +63,7 @@ defmodule EditorExample do # Renamed module
   # Renamed from render/1
   @impl true
   def view(%{text: text} = model) do
-    Logger.debug("EditorExample: view/1")
+    Raxol.Core.Runtime.Log.debug("EditorExample: view/1")
     view do
       # Use box and text
       box title: "Simple Editor (q/Ctrl+C to quit)", style: [[:border, :single], [:padding, 1]] do
@@ -74,8 +74,8 @@ defmodule EditorExample do # Renamed module
   end
 end
 
-Logger.info("EditorExample: Starting Raxol...")
+Raxol.Core.Runtime.Log.info("EditorExample: Starting Raxol...")
 # Use standard startup
 {:ok, _pid} = Raxol.start_link(EditorExample, [])
-Logger.info("EditorExample: Raxol started. Running...")
+Raxol.Core.Runtime.Log.info("EditorExample: Raxol started. Running...")
 

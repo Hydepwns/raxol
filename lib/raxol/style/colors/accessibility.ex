@@ -5,7 +5,7 @@ defmodule Raxol.Style.Colors.Accessibility do
 
   alias Raxol.Style.Colors.Color
   alias Raxol.Style.Colors.Utilities
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # WCAG contrast ratio thresholds
   # AA level for normal text
@@ -233,7 +233,7 @@ defmodule Raxol.Style.Colors.Accessibility do
         accessible_color_pair(c, level)
 
       _ ->
-        Logger.warning("Accessibility: Could not find accessible color pair for #{inspect(base_color)}", [])
+        Raxol.Core.Runtime.Log.warning_with_context("Accessibility: Could not find accessible color pair for #{inspect(base_color)}", %{})
 
         # Return nil for invalid base color
         nil
@@ -270,7 +270,7 @@ defmodule Raxol.Style.Colors.Accessibility do
         {base_color, black}
 
       true ->
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "Could not find accessible pair for color: #{inspect(base_color)}"
         )
 

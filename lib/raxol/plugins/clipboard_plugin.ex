@@ -4,7 +4,7 @@ defmodule Raxol.Plugins.ClipboardPlugin do
   """
 
   @behaviour Raxol.Plugins.Plugin
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Alias the new consolidated module
   alias Raxol.System.Clipboard
@@ -56,18 +56,18 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         %{type: :key, modifiers: mods, key: ?c} = _event
       ) do
     if :ctrl in mods do
-      Logger.debug("[Clipboard] Ctrl+C detected.")
+      Raxol.Core.Runtime.Log.debug("[Clipboard] Ctrl+C detected.")
       # Check for finalized selection and stored cells
       if is_tuple(state.selection_start) and is_tuple(state.selection_end) and
            is_map(state.last_cells_at_selection) do
-        Logger.debug("[Clipboard] Triggering yank_selection.")
+        Raxol.Core.Runtime.Log.debug("[Clipboard] Triggering yank_selection.")
         result = yank_selection(state)
         new_state = clear_selection(state)
         # Store the yank result for debugging if needed
         new_state = Map.put(new_state, :last_yank_result, result)
         {:ok, new_state}
       else
-        Logger.debug("[Clipboard] No complete selection available for copy.")
+        Raxol.Core.Runtime.Log.debug("[Clipboard] No complete selection available for copy.")
         {:ok, state}
       end
     else
@@ -81,20 +81,20 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         %{type: :key, modifiers: mods, key: ?v} = _event
       ) do
     if :ctrl in mods do
-      Logger.debug("[Clipboard] Ctrl+V detected.")
+      Raxol.Core.Runtime.Log.debug("[Clipboard] Ctrl+V detected.")
 
       case get_clipboard_content() do
         {:ok, content} when content != "" ->
-          Logger.debug("[Clipboard] Pasting content: #{content}")
+          Raxol.Core.Runtime.Log.debug("[Clipboard] Pasting content: #{content}")
           # Return command for Runtime to handle
           {:ok, state, {:command, {:paste, content}}}
 
         {:ok, ""} ->
-          Logger.debug("[Clipboard] Clipboard is empty, nothing to paste.")
+          Raxol.Core.Runtime.Log.debug("[Clipboard] Clipboard is empty, nothing to paste.")
           {:ok, state}
 
         {:error, reason} ->
-          Logger.error(
+          Raxol.Core.Runtime.Log.error(
             "[Clipboard] Failed to get clipboard content: #{inspect(reason)}"
           )
 
@@ -115,10 +115,10 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         # Call the new consolidated module
         case Clipboard.copy(text) do
           :ok ->
-            Logger.debug("[Clipboard] Yanked selection to clipboard: #{text}")
+            Raxol.Core.Runtime.Log.debug("[Clipboard] Yanked selection to clipboard: #{text}")
 
           {:error, reason} ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "[Clipboard] Failed to yank selection: #{inspect(reason)}"
             )
         end

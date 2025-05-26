@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.ControlCodes do
   Relies on Emulator state and ScreenBuffer for actions.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.ControlCodes do
 
   defp c0_handler_for(@nul),
     do: fn emulator ->
-      Logger.debug("NUL received, ignoring")
+      Raxol.Core.Runtime.Log.debug("NUL received, ignoring")
       emulator
     end
 
@@ -65,19 +65,19 @@ defmodule Raxol.Terminal.ControlCodes do
 
   defp c0_handler_for(@esc),
     do: fn emulator ->
-      Logger.debug("ESC received unexpectedly in C0 handler, ignoring")
+      Raxol.Core.Runtime.Log.debug("ESC received unexpectedly in C0 handler, ignoring")
       emulator
     end
 
   defp c0_handler_for(@del),
     do: fn emulator ->
-      Logger.debug("DEL received, ignoring")
+      Raxol.Core.Runtime.Log.debug("DEL received, ignoring")
       emulator
     end
 
   defp c0_handler_for(_),
     do: fn emulator ->
-      Logger.debug("Unhandled C0 control code")
+      Raxol.Core.Runtime.Log.debug("Unhandled C0 control code")
       emulator
     end
 
@@ -112,19 +112,19 @@ defmodule Raxol.Terminal.ControlCodes do
 
   @doc "Handle Line Feed (LF), New Line (NL), Vertical Tab (VT)"
   def handle_lf(%Emulator{} = emulator) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[handle_lf] Input: cursor=#{inspect(Raxol.Terminal.Emulator.get_cursor_position(emulator))}, last_exceeded=#{emulator.last_col_exceeded}"
     )
 
     # 1. Handle pending wrap if necessary, then check for scrolling *once*
     emulator_after_wrap_and_scroll =
       if emulator.last_col_exceeded do
-        Logger.debug("[handle_lf] Pending wrap detected")
+        Raxol.Core.Runtime.Log.debug("[handle_lf] Pending wrap detected")
         # Perform the deferred wrap: move cursor to col 0, next line
         {_cx, cy} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
         wrapped_cursor = Movement.move_to_position(emulator.cursor, 0, cy + 1)
 
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[handle_lf] Cursor after wrap: #{inspect(wrapped_cursor.position)}"
         )
 
@@ -137,23 +137,23 @@ defmodule Raxol.Terminal.ControlCodes do
         }
 
         # Now check if scrolling is needed in this post-wrap state
-        Logger.debug("[handle_lf] Checking maybe_scroll after wrap")
+        Raxol.Core.Runtime.Log.debug("[handle_lf] Checking maybe_scroll after wrap")
         scrolled_emulator = Emulator.maybe_scroll(emulator_after_wrap)
 
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[handle_lf] State after wrap scroll check: cursor=#{inspect(Raxol.Terminal.Emulator.get_cursor_position(scrolled_emulator))}"
         )
 
         # This state is now ready for the final cursor move
         scrolled_emulator
       else
-        Logger.debug("[handle_lf] No pending wrap")
+        Raxol.Core.Runtime.Log.debug("[handle_lf] No pending wrap")
 
         # No wrap needed, just check if scrolling is needed based on current state
-        Logger.debug("[handle_lf] Checking maybe_scroll (no wrap)")
+        Raxol.Core.Runtime.Log.debug("[handle_lf] Checking maybe_scroll (no wrap)")
         scrolled_emulator = Emulator.maybe_scroll(emulator)
 
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[handle_lf] State after no-wrap scroll check: cursor=#{inspect(Raxol.Terminal.Emulator.get_cursor_position(scrolled_emulator))}"
         )
 
@@ -186,7 +186,7 @@ defmodule Raxol.Terminal.ControlCodes do
         :lnm
       )
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[handle_lf] Performing move down (LNM enabled: #{lnm_enabled})"
     )
 
@@ -200,7 +200,7 @@ defmodule Raxol.Terminal.ControlCodes do
         Movement.move_down(cursor_after_scroll, 1)
       end
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[handle_lf] Cursor after move down (before clamp): #{inspect(final_cursor_before_clamp.position)}"
     )
 
@@ -212,7 +212,7 @@ defmodule Raxol.Terminal.ControlCodes do
     final_cursor =
       Manager.move_to(final_cursor_before_clamp, final_x, final_y_clamped)
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[handle_lf] Final cursor (after clamp): #{inspect(final_cursor.position)}"
     )
 
@@ -223,7 +223,7 @@ defmodule Raxol.Terminal.ControlCodes do
         final_cursor
       )
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[handle_lf] Cursor After Move (After Region Clamp): #{inspect(final_cursor_clamped_region.position)}"
     )
 
@@ -251,7 +251,7 @@ defmodule Raxol.Terminal.ControlCodes do
     clamped_y = max(scroll_top, min(y, scroll_bottom_inclusive))
 
     if y != clamped_y do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[clamp_cursor] Clamped Y from \\#{y} to \\#{clamped_y} (region \\#{scroll_top}-\\#{scroll_bottom_inclusive}) "
       )
 
@@ -263,19 +263,19 @@ defmodule Raxol.Terminal.ControlCodes do
 
   @doc "Handle Carriage Return (CR)"
   def handle_cr(%Emulator{} = emulator) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[handle_cr] Input: cursor=#{inspect(Raxol.Terminal.Emulator.get_cursor_position(emulator))}, last_exceeded=#{emulator.last_col_exceeded}"
     )
 
     # 1. Check for pending wrap
     emulator_after_pending_wrap =
       if emulator.last_col_exceeded do
-        Logger.debug("[handle_cr] Pending wrap detected")
+        Raxol.Core.Runtime.Log.debug("[handle_cr] Pending wrap detected")
         # Perform the deferred wrap: move cursor to col 0, next line
         {_cx, cy} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
         wrapped_cursor = Movement.move_to_position(emulator.cursor, 0, cy + 1)
 
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[handle_cr] Cursor after wrap: #{inspect(wrapped_cursor.position)}"
         )
 
@@ -287,25 +287,25 @@ defmodule Raxol.Terminal.ControlCodes do
               last_col_exceeded: false
           })
 
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[handle_cr] State after pending wrap + scroll: cursor=#{inspect(Raxol.Terminal.Emulator.get_cursor_position(maybe_scrolled_emulator))}, last_exceeded=#{maybe_scrolled_emulator.last_col_exceeded}"
         )
 
         maybe_scrolled_emulator
       else
-        Logger.debug("[handle_cr] No pending wrap")
+        Raxol.Core.Runtime.Log.debug("[handle_cr] No pending wrap")
         emulator
       end
 
     # 2. Perform CR logic on potentially updated state
-    Logger.debug("[handle_cr] Moving cursor to column 0")
+    Raxol.Core.Runtime.Log.debug("[handle_cr] Moving cursor to column 0")
     # Get current Y coordinate
     {_cx, cy} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
 
     final_cursor =
       Movement.move_to_position(emulator_after_pending_wrap.cursor, 0, cy)
 
-    Logger.debug("[handle_cr] Final cursor: #{inspect(final_cursor.position)}")
+    Raxol.Core.Runtime.Log.debug("[handle_cr] Final cursor: #{inspect(final_cursor.position)}")
 
     %{emulator_after_pending_wrap | cursor: final_cursor}
   end
@@ -334,7 +334,10 @@ defmodule Raxol.Terminal.ControlCodes do
   def handle_can(emulator) do
     # CAN: Cancel. Parser should handle this within sequences.
     # If it reaches here, it was outside a sequence.
-    Logger.debug("CAN received outside escape sequence, ignoring")
+    Raxol.Core.Runtime.Log.debug(
+      "CAN received outside escape sequence, ignoring"
+    )
+
     emulator
   end
 
@@ -352,7 +355,7 @@ defmodule Raxol.Terminal.ControlCodes do
   @spec handle_ris(Raxol.Terminal.Emulator.t()) :: Raxol.Terminal.Emulator.t()
   # ESC c - Reset to Initial State
   def handle_ris(emulator) do
-    Logger.info("RIS (Reset to Initial State) received")
+    Raxol.Core.Runtime.Log.info("RIS (Reset to Initial State) received")
     # Re-initialize most state components, keeping buffer dimensions
     active_buffer = Emulator.get_active_buffer(emulator)
     width = ScreenBuffer.get_width(active_buffer)

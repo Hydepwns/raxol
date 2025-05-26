@@ -4,7 +4,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
   """
 
   alias Raxol.Core.Events.Manager, as: EventManager
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Make an announcement for screen readers.

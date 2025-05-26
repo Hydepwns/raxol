@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.ANSI.Parser do
   # alias Raxol.Terminal.Cursor # Unused
   # alias Raxol.Terminal.ANSI.Sequences # Unused
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Parse a string containing ANSI escape sequences into tokens.
@@ -195,7 +195,7 @@ defmodule Raxol.Terminal.ANSI.Parser do
       attr ->
         case parse_text_attribute(attr) do
           nil ->
-            Logger.debug("Unknown SGR parameter: #{attr}")
+            Raxol.Core.Runtime.Log.debug("Unknown SGR parameter: #{attr}")
             parse_sgr_params(rest, acc)
 
           attr_atom ->
@@ -226,7 +226,7 @@ defmodule Raxol.Terminal.ANSI.Parser do
 
   defp parse_extended_color(params) do
     # Invalid format, skip
-    Logger.debug("Invalid extended color format: #{inspect(params)}")
+    Raxol.Core.Runtime.Log.debug("Invalid extended color format: #{inspect(params)}")
     {{:unknown_color, params}, []}
   end
 

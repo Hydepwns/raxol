@@ -4,7 +4,7 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
   with color system, animation framework, and internationalization.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   alias Raxol.Core.UserPreferences
   alias Raxol.Core.I18n
@@ -100,13 +100,13 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
           cycle_option(state, :locale, @available_locales)
 
         :save_preferences ->
-          # Logger.info("Preferences saved (simulated).")
+          # Raxol.Core.Runtime.Log.info("Preferences saved (simulated).")
           # %{state | preferences_saved: true}
           UserPreferences.set("demo.theme", state.theme)
           UserPreferences.set("demo.locale", state.locale)
           UserPreferences.set("demo.high_contrast", state.high_contrast)
           UserPreferences.set("demo.reduced_motion", state.reduced_motion)
-          Logger.info("Preferences saved via UserPreferences.")
+          Raxol.Core.Runtime.Log.info("Preferences saved via UserPreferences.")
           # Keep flag for UI feedback
           %{state | preferences_saved: true}
 
@@ -130,7 +130,7 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
     current_index = Enum.find_index(options, &(&1 == current_value))
 
     if is_nil(current_index) do
-      Logger.warning(
+      Raxol.Core.Runtime.Log.warning(
         "Could not find index for current \#{key}: \#{current_value}"
       )
 
@@ -150,7 +150,7 @@ defmodule Raxol.Examples.IntegratedAccessibilityDemo do
 
     if is_nil(current_index) do
       # Should not happen if active_section is always valid
-      Logger.warning(
+      Raxol.Core.Runtime.Log.warning(
         "Could not find index for active section: \#{state.active_section}"
       )
 

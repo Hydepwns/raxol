@@ -8,7 +8,7 @@ defmodule Raxol.UI.Components.Dashboard.WidgetContainer do
   # Add use Component and placeholders
   use Raxol.UI.Components.Base.Component
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   # Require Elements
   require Raxol.View.Elements
   # Use UI alias

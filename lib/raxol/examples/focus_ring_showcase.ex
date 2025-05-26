@@ -9,7 +9,7 @@ defmodule Raxol.Examples.FocusRingShowcase do
   - Accessibility integration (high contrast mode, reduced motion)
   """
   use Raxol.UI.Components.Base.Component
-  require Logger
+  require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   import Raxol.View.Elements
 

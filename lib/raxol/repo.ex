@@ -3,7 +3,7 @@ defmodule Raxol.Repo do
     otp_app: :raxol,
     adapter: Ecto.Adapters.Postgres
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Initializes the repository.
@@ -20,7 +20,7 @@ defmodule Raxol.Repo do
     # Log database connection info (hide sensitive data)
     safe_config = Keyword.drop(config, [:password])
 
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "Starting database connection with config: #{inspect(safe_config)}"
     )
 
@@ -57,7 +57,7 @@ defmodule Raxol.Repo do
   * `{:error, exception}` - on failure
   """
   def custom_query(sql, params \\ [], opts \\ []) do
-    Logger.debug("Executing SQL: #{sql}, params: #{inspect(params)}")
+    Raxol.Core.Runtime.Log.debug("Executing SQL: #{sql}, params: #{inspect(params)}")
     start_time = System.monotonic_time(:millisecond)
 
     try do
@@ -68,17 +68,17 @@ defmodule Raxol.Repo do
 
       case result do
         {:ok, _} ->
-          Logger.debug("SQL executed successfully in #{execution_time}ms")
+          Raxol.Core.Runtime.Log.debug("SQL executed successfully in #{execution_time}ms")
 
         {:error, error} ->
-          Logger.error("SQL error after #{execution_time}ms: #{inspect(error)}")
+          Raxol.Core.Runtime.Log.error("SQL error after #{execution_time}ms: #{inspect(error)}")
       end
 
       result
     rescue
       error ->
         execution_time = System.monotonic_time(:millisecond) - start_time
-        Logger.error("SQL error after #{execution_time}ms: #{inspect(error)}")
+        Raxol.Core.Runtime.Log.error("SQL error after #{execution_time}ms: #{inspect(error)}")
         {:error, error}
     end
   end
@@ -89,7 +89,7 @@ defmodule Raxol.Repo do
   This adds better error handling and logging around raw SQL queries.
   """
   def custom_query!(sql, params \\ [], opts \\ []) do
-    Logger.debug("Executing SQL: #{sql}, params: #{inspect(params)}")
+    Raxol.Core.Runtime.Log.debug("Executing SQL: #{sql}, params: #{inspect(params)}")
     start_time = System.monotonic_time(:millisecond)
 
     try do
@@ -97,13 +97,13 @@ defmodule Raxol.Repo do
       result = Ecto.Adapters.SQL.query!(__MODULE__, sql, params, opts)
 
       execution_time = System.monotonic_time(:millisecond) - start_time
-      Logger.debug("SQL executed successfully in #{execution_time}ms")
+      Raxol.Core.Runtime.Log.debug("SQL executed successfully in #{execution_time}ms")
 
       result
     rescue
       error ->
         execution_time = System.monotonic_time(:millisecond) - start_time
-        Logger.error("SQL error after #{execution_time}ms: #{inspect(error)}")
+        Raxol.Core.Runtime.Log.error("SQL error after #{execution_time}ms: #{inspect(error)}")
         reraise error, __STACKTRACE__
     end
   end

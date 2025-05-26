@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   invalid.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Gets a parameter value with validation.
@@ -47,9 +47,9 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
         value
 
       _ ->
-        Logger.warning(
+        Raxol.Core.Runtime.Log.warning_with_context(
           "Invalid parameter value at index #{index}, using default #{default}",
-          []
+          %{params: params, index: index, default: default, min: min, max: max}
         )
 
         default

@@ -116,7 +116,7 @@ Called on shutdown, unload, or error. Release resources gracefully (stop process
 ```elixir
 @impl true
 def terminate(reason, state) do
-  Logger.info("Terminating. Reason: #{inspect(reason)}")
+  Raxol.Core.Runtime.Log.info("Terminating. Reason: #{inspect(reason)}")
   :ok
 end
 ```
@@ -363,14 +363,14 @@ A simple counter plugin.
 defmodule CounterPlugin do
   @moduledoc "Simple counter plugin."
   use Raxol.Core.Runtime.Plugins.Plugin
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @impl true
   def init(_config), do: {:ok, %{count: 0}}
 
   @impl true
   def terminate(reason, state) do
-    Logger.info("Counter terminating. Reason: #{inspect(reason)}, Count: #{state.count}")
+    Raxol.Core.Runtime.Log.info("Counter terminating. Reason: #{inspect(reason)}, Count: #{state.count}")
     :ok
   end
 
@@ -404,5 +404,3 @@ end
 ```
 
 This example shows state (`%{count: 0}`), initialized in `init/1` and updated/passed through `handle_command/3`.
-
-## Dependencies

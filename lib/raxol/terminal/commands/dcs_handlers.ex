@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
   alias Raxol.Terminal.Emulator
   # Add alias for TextFormatting
   alias Raxol.Terminal.ANSI.TextFormatting
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc "Dispatches DCS command execution based on intermediates and final byte."
   @spec handle_dcs(
@@ -30,7 +30,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
         final_byte,
         data_string
       ) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Handling DCS command: params=#{inspect(params)}, intermediates=#{inspect(intermediates_buffer)}, final=#{final_byte}, data_len=#{byte_size(data_string)}"
     )
 
@@ -48,7 +48,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
       # Sixel Graphics: DCS <params> q <data> ST
       # The parser should ideally handle Sixel data streaming separately.
       {_intermediates, ?q} ->
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "DCS Sixel Graphics (Params: #{inspect(params)}, Data Length: #{byte_size(data_string)}) - Processing in DCSHandlers"
         )
 
@@ -65,7 +65,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
 
         # --- Sixel Rendering: Blit to screen buffer ---
         buffer = Emulator.get_active_buffer(emulator)
-        cursor = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+        cursor = Raxol.Terminal.Emulator.get_cursor_position(emulator.cursor)
         new_buffer = blit_sixel_to_buffer(buffer, updated_sixel_state, cursor)
         emu = Emulator.update_active_buffer(emulator, new_buffer)
         {:ok, %{emu | sixel_state: updated_sixel_state}}
@@ -81,8 +81,9 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
 
       # Unhandled DCS
       _ ->
-        Logger.warn(
-          "Unhandled DCS command in DCSHandlers: params=#{inspect(params)}, intermediates=#{inspect(intermediates_buffer)}, final=#{final_byte}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unhandled DCS command in DCSHandlers: params=#{inspect(params)}, intermediates=#{inspect(intermediates_buffer)}, final=#{final_byte}",
+          %{}
         )
 
         {:error, :unhandled_dcs, emulator}
@@ -131,8 +132,9 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
           "#{ps} q"
 
         _ ->
-          Logger.warn(
-            "Unhandled DECRQSS request type: #{inspect(data_string)}"
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Unhandled DECRQSS request type: #{inspect(data_string)}",
+            %{}
           )
 
           # No response for unhandled types
@@ -146,7 +148,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
       # Note: Standard DCS is \eP, not \e[
       # Standard ST is \e\\
       full_response = "\eP1!|#{response_payload}\e\\"
-      Logger.debug("DECRQSS response: #{inspect(full_response)}")
+      Raxol.Core.Runtime.Log.debug("DECRQSS response: #{inspect(full_response)}")
 
       {:ok,
        %{emulator | output_buffer: emulator.output_buffer <> full_response}}
@@ -156,8 +158,9 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
   end
 
   defp handle_decdld(emulator, params, data_string) do
-    Logger.warn(
-      "DECDLD handler invoked with params: #{inspect(params)}, data_string: #{inspect(data_string)} (not yet implemented)"
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "DECDLD handler invoked with params: #{inspect(params)}, data_string: #{inspect(data_string)} (not yet implemented)",
+      %{}
     )
 
     {:error, :decdld_not_implemented, emulator}
@@ -212,7 +215,10 @@ defmodule Raxol.Terminal.Commands.DCSHandlers do
             case get_palette_color(palette, idx) do
               {:ok, color} -> color
               {:error, _} ->
-                Logger.warning("DCS Sixel: Color index #{inspect(idx)} not found in palette.", [])
+                Raxol.Core.Runtime.Log.warning_with_context(
+                  "DCS Sixel: Color index #{inspect(idx)} not found in palette.",
+                  %{}
+                )
                 nil
             end
         end

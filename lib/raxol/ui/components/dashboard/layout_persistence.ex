@@ -3,7 +3,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
   Handles saving and loading dashboard widget layouts to disk.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # User-specific config dir
   @layout_file Path.expand("~/.raxol/dashboard_layout.bin")
@@ -30,11 +30,11 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
 
       case File.write(layout_file, binary_data) do
         :ok ->
-          Logger.info("Dashboard layout saved to #{layout_file}")
+          Raxol.Core.Runtime.Log.info("Dashboard layout saved to #{layout_file}")
           :ok
 
         {:error, reason} ->
-          Logger.error(
+          Raxol.Core.Runtime.Log.error(
             "Failed to save dashboard layout to #{layout_file}: #{inspect(reason)}"
           )
 
@@ -42,7 +42,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
       end
     rescue
       e ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "Failed to save dashboard layout to #{layout_file}: #{inspect(e)}"
         )
 
@@ -65,12 +65,12 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
           {:ok, binary_data} ->
             # Use safe binary_to_term
             layout_data = :erlang.binary_to_term(binary_data, [:safe])
-            Logger.info("Dashboard layout loaded from #{layout_file}")
+            Raxol.Core.Runtime.Log.info("Dashboard layout loaded from #{layout_file}")
             # Basic validation: is it a list?
             if is_list(layout_data), do: layout_data, else: nil
 
           {:error, reason} ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Failed to read dashboard layout file #{layout_file}: #{inspect(reason)}"
             )
 
@@ -78,14 +78,14 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
         end
       rescue
         e ->
-          Logger.error(
+          Raxol.Core.Runtime.Log.error(
             "Failed to deserialize dashboard layout from #{layout_file}: #{inspect(e)}"
           )
 
           nil
       end
     else
-      Logger.info("No saved dashboard layout found at #{layout_file}")
+      Raxol.Core.Runtime.Log.info("No saved dashboard layout found at #{layout_file}")
       # Return nil explicitly if file doesn't exist
       nil
     end

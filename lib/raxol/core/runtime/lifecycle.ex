@@ -2,7 +2,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   @moduledoc "Manages the application lifecycle, including startup, shutdown, and terminal interaction."
 
   use GenServer
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Events.Dispatcher
   # Added for initial command execution
@@ -67,7 +67,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def init({app_module, options}) do
-    Logger.info(
+    Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] initializing for #{inspect(app_module)} with options: #{inspect(options)}"
     )
 
@@ -97,7 +97,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
     case Manager.start_link(plugin_manager_opts) do
       {:ok, pm_pid} ->
-        Logger.info(
+        Raxol.Core.Runtime.Log.info_with_context(
           "[#{__MODULE__}] PluginManager started with PID: #{inspect(pm_pid)}"
         )
 
@@ -135,17 +135,19 @@ defmodule Raxol.Core.Runtime.Lifecycle do
               plugin_manager_ready: false
             }
 
-            Logger.info(
+            Raxol.Core.Runtime.Log.info_with_context(
               "[#{__MODULE__}] successfully initialized for #{inspect(app_module)}. Dispatcher PID: #{inspect(dispatcher_pid)}"
             )
 
             {:ok, state}
 
           {:error, reason} ->
-            Logger.error(
-              "[#{__MODULE__}] Failed to start Dispatcher. Reason: #{inspect(reason)}"
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] Failed to start Dispatcher.",
+              reason,
+              nil,
+              %{module: __MODULE__, app_module: app_module, reason: reason}
             )
-
             # Stop PluginManager if Dispatcher fails
             Manager.stop(pm_pid)
             :ets.delete(registry_table_name)
@@ -153,10 +155,12 @@ defmodule Raxol.Core.Runtime.Lifecycle do
         end
 
       {:error, reason} ->
-        Logger.error(
-          "[#{__MODULE__}] Failed to start PluginManager. Reason: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to start PluginManager.",
+          reason,
+          nil,
+          %{module: __MODULE__, app_module: app_module, reason: reason}
         )
-
         # Ensure ETS table is cleaned up
         :ets.delete(registry_table_name)
         {:stop, {:plugin_manager_start_failed, reason}}
@@ -170,30 +174,30 @@ defmodule Raxol.Core.Runtime.Lifecycle do
           model
 
         {_, model} ->
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning_with_context(
             "[#{__MODULE__}] #{inspect(app_module)}.init returned a tuple, using model: #{inspect(model)}",
-            []
+            %{}
           )
 
           model
 
         model when is_map(model) ->
-          Logger.info(
+          Raxol.Core.Runtime.Log.info(
             "[#{__MODULE__}] #{inspect(app_module)}.init returned a map directly, using model: #{inspect(model)}"
           )
 
           model
 
         _ ->
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning_with_context(
             "[#{__MODULE__}] #{inspect(app_module)}.init(#{inspect(initial_model_args)}) did not return {:ok, model} or a map. Using empty model.",
-            []
+            %{}
           )
 
           %{}
       end
     else
-      Logger.info(
+      Raxol.Core.Runtime.Log.info(
         "[#{__MODULE__}] #{inspect(app_module)}.init/1 not exported. Using empty model."
       )
 
@@ -203,7 +207,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def handle_info({:runtime_initialized, dispatcher_pid}, state) do
-    Logger.info(
+    Raxol.Core.Runtime.Log.info_with_context(
       "Runtime Lifecycle for #{inspect(state.app_module)} received :runtime_initialized from Dispatcher #{inspect(dispatcher_pid)}."
     )
 
@@ -214,7 +218,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def handle_info({:plugin_manager_ready, plugin_manager_pid}, state) do
-    Logger.info(
+    Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] Plugin Manager ready notification received from #{inspect(plugin_manager_pid)}."
     )
 
@@ -226,7 +230,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   defp maybe_process_initial_commands(state = %State{}) do
     if state.dispatcher_ready && state.plugin_manager_ready &&
          Enum.any?(state.initial_commands) do
-      Logger.info(
+      Raxol.Core.Runtime.Log.info_with_context(
         "Dispatcher and PluginManager ready. Dispatching initial commands: #{inspect(state.initial_commands)}"
       )
 
@@ -241,7 +245,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
         if match?(%Raxol.Core.Runtime.Command{}, command) do
           Raxol.Core.Runtime.Command.execute(command, context)
         else
-          Logger.error(
+          Raxol.Core.Runtime.Log.error(
             "Invalid initial command found: #{inspect(command)}. Expected %Raxol.Core.Runtime.Command{}."
           )
         end
@@ -254,17 +258,17 @@ defmodule Raxol.Core.Runtime.Lifecycle do
       if Enum.any?(state.initial_commands) do
         cond do
           not state.dispatcher_ready and not state.plugin_manager_ready ->
-            Logger.info(
+            Raxol.Core.Runtime.Log.info(
               "Waiting for Dispatcher and PluginManager to be ready before processing initial commands."
             )
 
           not state.dispatcher_ready ->
-            Logger.info(
+            Raxol.Core.Runtime.Log.info(
               "Waiting for Dispatcher to be ready before processing initial commands."
             )
 
           not state.plugin_manager_ready ->
-            Logger.info(
+            Raxol.Core.Runtime.Log.info(
               "Waiting for PluginManager to be ready before processing initial commands."
             )
         end
@@ -276,7 +280,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def handle_info(:render_needed, state) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Received :render_needed. Passing through or logging."
     )
 
@@ -285,8 +289,9 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def handle_info(unhandled_message, state) do
-    Logger.warning(
-      "[#{__MODULE__}] Unhandled info message: #{inspect(unhandled_message)}"
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[#{__MODULE__}] Unhandled info message: #{inspect(unhandled_message)}",
+      %{}
     )
 
     {:noreply, state}
@@ -294,12 +299,12 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def handle_cast(:shutdown, state) do
-    Logger.info(
+    Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] Received :shutdown cast for #{inspect(state.app_name)}. Stopping dependent processes..."
     )
 
     if state.dispatcher_pid do
-      Logger.info(
+      Raxol.Core.Runtime.Log.info_with_context(
         "[#{__MODULE__}] Stopping Dispatcher PID: #{inspect(state.dispatcher_pid)}"
       )
 
@@ -307,7 +312,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     end
 
     if state.plugin_manager do
-      Logger.info(
+      Raxol.Core.Runtime.Log.info_with_context(
         "[#{__MODULE__}] Stopping PluginManager PID: #{inspect(state.plugin_manager)}"
       )
 
@@ -323,8 +328,9 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def handle_cast(unhandled_message, state) do
-    Logger.warning(
-      "[#{__MODULE__}] Unhandled cast message: #{inspect(unhandled_message)}"
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[#{__MODULE__}] Unhandled cast message: #{inspect(unhandled_message)}",
+      %{}
     )
 
     {:noreply, state}
@@ -337,8 +343,9 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def handle_call(unhandled_message, _from, state) do
-    Logger.warning(
-      "[#{__MODULE__}] Unhandled call message: #{inspect(unhandled_message)}"
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[#{__MODULE__}] Unhandled call message: #{inspect(unhandled_message)}",
+      %{}
     )
 
     {:reply, {:error, :unknown_call}, state}
@@ -346,14 +353,14 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
   @impl true
   def terminate(reason, state) do
-    Logger.info(
+    Raxol.Core.Runtime.Log.info_with_context(
       "[#{__MODULE__}] terminating for #{inspect(state.app_name)}. Reason: #{inspect(reason)}"
     )
 
     # Ensure PluginManager is stopped if not already by :shutdown cast
     # This is a fallback, proper shutdown should happen in handle_cast(:shutdown, ...)
     if state.plugin_manager && Process.alive?(state.plugin_manager) do
-      Logger.info(
+      Raxol.Core.Runtime.Log.info_with_context(
         "[#{__MODULE__}] Terminate: Ensuring PluginManager PID #{inspect(state.plugin_manager)} is stopped."
       )
 
@@ -363,9 +370,9 @@ defmodule Raxol.Core.Runtime.Lifecycle do
         GenServer.stop(state.plugin_manager, :shutdown, :infinity)
       rescue
         _e ->
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning_with_context(
             "[#{__MODULE__}] Terminate: Failed to explicitly stop PluginManager #{inspect(state.plugin_manager)}, it might have already stopped.",
-            []
+            %{}
           )
       end
     end
@@ -374,11 +381,11 @@ defmodule Raxol.Core.Runtime.Lifecycle do
          :ets.info(state.command_registry_table) != :undefined do
       :ets.delete(state.command_registry_table)
 
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[#{__MODULE__}] Deleted ETS table: #{inspect(state.command_registry_table)}"
       )
     else
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[#{__MODULE__}] ETS table #{inspect(state.command_registry_table)} not found or already deleted."
       )
     end

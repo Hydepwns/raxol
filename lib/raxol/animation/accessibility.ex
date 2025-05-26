@@ -4,7 +4,7 @@ defmodule Raxol.Animation.Accessibility do
   specifically adapting animations for reduced motion preferences.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Adapts an animation definition based on reduced motion settings.
@@ -13,7 +13,7 @@ defmodule Raxol.Animation.Accessibility do
   Alternative strategies include setting duration to 0 or changing animation type.
   """
   def adapt_for_reduced_motion(animation) do
-    Logger.debug("[Animation] Adapting '#{animation.name}' for reduced motion.")
+    Raxol.Core.Runtime.Log.debug("[Animation] Adapting '#{animation.name}' for reduced motion.")
     # Use Map.put to avoid potential KeyError with struct-like maps
     adapted_with_duration = Map.put(animation, :duration, 10)
     Map.put(adapted_with_duration, :disabled, true)
@@ -32,7 +32,7 @@ defmodule Raxol.Animation.Accessibility do
     original_duration = animation.duration
     cognitive_duration = round(original_duration * 1.5)
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Animation] Adapting '#{animation.name}' for cognitive accessibility. Duration: #{original_duration} -> #{cognitive_duration}."
     )
 

@@ -310,4 +310,24 @@ defmodule Raxol.Terminal.ScreenBufferTest do
     # Maybe add a test specifically for Eraser.clear_screen if direct testing is desired
     # test "Eraser.clear_screen resets cells" do ... end
   end
+
+  describe "resize" do
+    test "clears selection and scroll region after resizing" do
+      buffer = ScreenBuffer.new(10, 5)
+      # Set a selection
+      buffer = ScreenBuffer.start_selection(buffer, 1, 1)
+      buffer = ScreenBuffer.update_selection(buffer, 3, 2)
+      assert buffer.selection == {1, 1, 3, 2}
+      # Set a scroll region
+      buffer = ScreenBuffer.set_scroll_region(buffer, 1, 3)
+      assert buffer.scroll_region == {1, 3}
+
+      # Resize the buffer
+      buffer = ScreenBuffer.resize(buffer, 8, 4)
+
+      # Both selection and scroll_region should be cleared
+      assert buffer.selection == nil
+      assert buffer.scroll_region == nil
+    end
+  end
 end

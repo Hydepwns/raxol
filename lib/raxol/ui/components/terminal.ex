@@ -22,7 +22,7 @@ defmodule Raxol.UI.Components.Terminal do
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Require view macros
   require Raxol.View.Elements
@@ -59,7 +59,7 @@ defmodule Raxol.UI.Components.Terminal do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages to write to terminal, clear, etc.
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Terminal #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
     )
 
@@ -73,7 +73,7 @@ defmodule Raxol.UI.Components.Terminal do
   # Use map matching
   def handle_event(%{type: :key} = event, %{} = _props, state) do
     # Process key event, send to terminal emulator/process
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Terminal #{Map.get(state, :id, nil)} received key event: #{inspect(event.data)}"
     )
 
@@ -87,7 +87,7 @@ defmodule Raxol.UI.Components.Terminal do
   @spec handle_event(map(), map(), map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Terminal #{Map.get(state, :id, nil)} received event: #{inspect(event.type)}"
     )
 

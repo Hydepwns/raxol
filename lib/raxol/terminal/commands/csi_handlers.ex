@@ -21,18 +21,15 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
   alias Raxol.Terminal.ANSI.SGRHandler
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager, as: CharsetStateManager
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc "Handles Select Graphic Rendition (SGR - 'm')"
   @spec handle_m(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_m(emulator, params) do
-    Logger.debug(
-      "[SGR Handler] Input Style: #{inspect(emulator.style)}, Params: #{inspect(params)}"
-    )
-
+    Raxol.Core.Runtime.Log.debug("[SGR Handler] Input Style: #{inspect(emulator.style)}, Params: #{inspect(params)}")
     new_style = SGRHandler.apply_sgr_params(params, emulator.style)
-    Logger.debug("[SGR Handler] Output Style: #{inspect(new_style)}")
+    Raxol.Core.Runtime.Log.debug("[SGR Handler] Output Style: #{inspect(new_style)}")
     {:ok, %{emulator | style: new_style}}
   end
 
@@ -138,7 +135,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   def handle_u(emulator, _params) do
     case emulator.saved_cursor do
       nil ->
-        Logger.warning("No saved cursor position to restore", [])
+        Raxol.Core.Runtime.Log.warning_with_context("No saved cursor position to restore", %{})
         {:error, :no_saved_cursor, emulator}
 
       saved_cursor ->
@@ -182,7 +179,7 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
         :steady_bar
 
       _ ->
-        Logger.warning("Unknown cursor style: #{style}", [])
+        Raxol.Core.Runtime.Log.warning_with_context("Unknown cursor style: #{style}", %{})
         current_style
     end
   end
@@ -212,14 +209,14 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
           :g3
 
         _ ->
-          Logger.warning("SCS: Unexpected final_byte: #{inspect(final_byte)}", [])
+          Raxol.Core.Runtime.Log.warning_with_context("SCS: Unexpected final_byte: #{inspect(final_byte)}", %{})
           nil
       end
 
     charset_atom = CharsetStateManager.charset_code_to_atom(charset_code)
 
     if target_gset_key && charset_atom do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "SCS: Designating #{inspect(target_gset_key)} to charset #{inspect(charset_atom)} (from char code #{charset_code})"
       )
 
@@ -228,10 +225,8 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
       {:ok, %{emulator | charset_state: updated_charset_state}}
     else
-      Logger.warning(
-        "SCS: Failed to designate charset. Param: '#{charset_param_str}', Char Code: #{inspect(charset_code)}, Final Byte: #{<<final_byte::utf8>>}, Mapped Charset: #{inspect(charset_atom)}, Target GSet: #{inspect(target_gset_key)}",
-        []
-      )
+      msg = "SCS: Failed to designate charset. Param: '#{charset_param_str}', Char Code: #{inspect(charset_code)}, Final Byte: #{<<final_byte::utf8>>}, Mapped Charset: #{inspect(charset_atom)}, Target GSet: #{inspect(target_gset_key)}"
+      Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 
       {:error, :invalid_charset_designation, emulator}
     end

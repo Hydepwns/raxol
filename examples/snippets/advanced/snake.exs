@@ -12,8 +12,6 @@ defmodule Snake do
   alias Raxol.Core.Runtime.Events.Subscription
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Commands.Command
-  require Logger
-
   # Arrow key chars might vary by terminal, handle common patterns or codes if needed
   @up [:key_up]
   @down [:key_down]
@@ -26,7 +24,7 @@ defmodule Snake do
 
   @impl true
   def init(context) do
-    Logger.debug("Snake: init/1 context: \#{inspect(context)}")
+    Raxol.Core.Runtime.Log.debug("Snake: init/1 context: \#{inspect(context)}")
 
     # Assume context provides initial window dimensions if needed, or use defaults
     # Using fixed size for simplicity now, context inspection needed for dynamic size
@@ -51,7 +49,7 @@ defmodule Snake do
 
   @impl true
   def update(message, model) do
-    Logger.debug("Snake: update/2 received message: \#{inspect(message)}")
+    Raxol.Core.Runtime.Log.debug("Snake: update/2 received message: \#{inspect(message)}")
 
     case message do
       # Use Event struct for key presses
@@ -81,7 +79,7 @@ defmodule Snake do
   # Renamed from subscribe/1
   @impl true
   def subscriptions(%{alive: alive}) do
-    Logger.debug("Snake: subscriptions/1 alive: \#{alive}")
+    Raxol.Core.Runtime.Log.debug("Snake: subscriptions/1 alive: \#{alive}")
     # Only subscribe to ticks if the game is active
     if alive do
       Subscription.interval(100, :tick)
@@ -93,7 +91,7 @@ defmodule Snake do
   # Renamed from render/1
   @impl true
   def view(%{chain: chain} = model) do
-    Logger.debug("Snake: view/1")
+    Raxol.Core.Runtime.Log.debug("Snake: view/1")
     score = length(chain) - @initial_length
 
     view do
@@ -155,19 +153,19 @@ defmodule Snake do
 
     cond do
       not next_valid?(next, model) ->
-        Logger.info(
+        Raxol.Core.Runtime.Log.info(
           "Snake: Game Over - Collision detected at \#{inspect(next)}"
         )
 
         %{model | alive: false}
 
       next == model.food ->
-        Logger.debug("Snake: Food eaten at \#{inspect(next)}")
+        Raxol.Core.Runtime.Log.debug("Snake: Food eaten at \#{inspect(next)}")
 
         new_food =
           random_food(model.width - 1, model.height - 1, [next | model.chain])
 
-        Logger.debug("Snake: New food at \#{inspect(new_food)}")
+        Raxol.Core.Runtime.Log.debug("Snake: New food at \#{inspect(new_food)}")
         # Grow snake by prepending head and keeping old tail
         %{model | chain: [next | model.chain], food: new_food}
 
@@ -182,7 +180,7 @@ defmodule Snake do
     food = {Enum.random(0..max_x), Enum.random(0..max_y)}
 
     if food in occupied do
-      Logger.debug("Snake: Random food conflict, retrying...")
+      Raxol.Core.Runtime.Log.debug("Snake: Random food conflict, retrying...")
       random_food(max_x, max_y, occupied)
     else
       food
@@ -217,11 +215,7 @@ defmodule Snake do
   defp next_link({x, y}, :right), do: {x + 1, y}
 end
 
-Logger.info("Snake: Starting Raxol...")
-# Use standard startup
-# Pass initial config if needed
-{:ok, _pid} = Raxol.start_link(Snake, [])
-Logger.info("Snake: Raxol started. Running...")
+Raxol.Core.Runtime.Log.info("Snake: Starting Raxol...")
 
-# For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
-Process.sleep(2000)
+{:ok, _pid} = Raxol.start_link(Snake, [])
+Raxol.Core.Runtime.Log.info("Snake: Raxol started. Running...")

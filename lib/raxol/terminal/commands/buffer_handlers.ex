@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Commands.{Scrolling, Editor}
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Helper function to get active buffer, cursor position, and default style.
@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
            Raxol.Terminal.ANSI.TextFormatting.text_style()}
   def get_buffer_state(emulator) do
     active_buffer = Emulator.get_active_buffer(emulator)
-    cursor_pos = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+    cursor_pos = emulator.cursor
     # Use a blank style for new/empty cells
     blank_style = Raxol.Terminal.ANSI.TextFormatting.new()
     {active_buffer, cursor_pos, blank_style}
@@ -181,7 +181,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
       value when is_integer(value) and value >= min and value <= max ->
         value
       _ ->
-        Logger.warning("BufferHandlers: Invalid parameter value: #{inspect(param)}", [])
+        Raxol.Core.Runtime.Log.warning_with_context("BufferHandlers: Invalid parameter value: #{inspect(param)}", %{})
         default
     end
   end

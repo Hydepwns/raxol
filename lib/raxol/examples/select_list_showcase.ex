@@ -10,7 +10,7 @@ defmodule Raxol.Examples.SelectListShowcase do
   - Styling options
   """
   use Raxol.UI.Components.Base.Component
-  require Logger
+  require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
   import Raxol.View.Elements
 

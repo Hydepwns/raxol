@@ -1,7 +1,7 @@
 defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
   use ExUnit.Case, async: false
   # import Raxol.ComponentTestHelpers
-  alias Raxol.Test.Unit, as: Unit
+  alias Raxol.Test.Unit
   alias Raxol.Core.Runtime.ComponentManager, as: ComponentManager
   use Raxol.Test.Integration
   import Raxol.Test.Integration.Assertions

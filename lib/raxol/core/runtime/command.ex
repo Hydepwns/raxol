@@ -60,7 +60,7 @@ defmodule Raxol.Core.Runtime.Command do
   """
 
   # alias Raxol.Core.Runtime.Plugins.Manager, as: PluginManager
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @type t :: %__MODULE__{
           type:
@@ -199,7 +199,7 @@ defmodule Raxol.Core.Runtime.Command do
   system and should not be called directly by applications.
   """
   def execute(%__MODULE__{} = command, context) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Command.execute] Executing command: #{inspect(command)} with context: #{inspect(context)}"
     )
 
@@ -226,7 +226,7 @@ defmodule Raxol.Core.Runtime.Command do
         execute_system_operation(operation, opts, context)
 
       %{type: :quit} ->
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[Command.execute] Matched :quit. Sending :quit_runtime to #{inspect(context.runtime_pid)}"
         )
 
@@ -268,7 +268,12 @@ defmodule Raxol.Core.Runtime.Command do
             send(context.pid, {:command_result, {:file_write, :ok}})
 
           {:error, reason} ->
-            Logger.error("System command file_write failed: #{reason}")
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "System command file_write failed",
+              reason,
+              nil,
+              %{operation: :file_write, opts: opts, context: context}
+            )
             send(context.pid, {:command_result, {:file_write_error, reason}})
         end
 
@@ -283,7 +288,12 @@ defmodule Raxol.Core.Runtime.Command do
 
       # Add more system operations as needed
       _ ->
-        Logger.warning("Unhandled system operation: #{inspect(operation)}")
+        Raxol.Core.Runtime.Log.warn_with_stacktrace(
+          "Unhandled system operation",
+          operation,
+          nil,
+          %{operation: operation, opts: opts, context: context}
+        )
     end
   end
 end

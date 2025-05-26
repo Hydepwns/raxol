@@ -5,7 +5,7 @@ defmodule Raxol.Runtime.Supervisor do
   """
   use Supervisor
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Events.Dispatcher
   alias Raxol.Core.Runtime.Plugins.Manager
@@ -26,52 +26,52 @@ defmodule Raxol.Runtime.Supervisor do
     app_module =
       case Map.get(init_args, :app_module) do
         nil ->
-          raise ArgumentError,
-                "Missing required :app_module in init_args: #{inspect(init_args)}"
-
+          Raxol.Core.Runtime.Log.error("[Raxol.Runtime.Supervisor] Missing required :app_module in init_args: #{inspect(init_args)}")
+          {:stop, {:missing_required_key, :app_module}}
         value ->
           value
       end
+    if match?({:stop, _}, app_module), do: app_module
 
     initial_model =
       case Map.get(init_args, :initial_model) do
         nil ->
-          raise ArgumentError,
-                "Missing required :initial_model in init_args: #{inspect(init_args)}"
-
+          Raxol.Core.Runtime.Log.error("[Raxol.Runtime.Supervisor] Missing required :initial_model in init_args: #{inspect(init_args)}")
+          {:stop, {:missing_required_key, :initial_model}}
         value ->
           value
       end
+    if match?({:stop, _}, initial_model), do: initial_model
 
     initial_commands =
       case Map.get(init_args, :initial_commands) do
         nil ->
-          raise ArgumentError,
-                "Missing required :initial_commands in init_args: #{inspect(init_args)}"
-
+          Raxol.Core.Runtime.Log.error("[Raxol.Runtime.Supervisor] Missing required :initial_commands in init_args: #{inspect(init_args)}")
+          {:stop, {:missing_required_key, :initial_commands}}
         value ->
           value
       end
+    if match?({:stop, _}, initial_commands), do: initial_commands
 
     initial_term_size =
       case Map.get(init_args, :initial_term_size) do
         nil ->
-          raise ArgumentError,
-                "Missing required :initial_term_size in init_args: #{inspect(init_args)}"
-
+          Raxol.Core.Runtime.Log.error("[Raxol.Runtime.Supervisor] Missing required :initial_term_size in init_args: #{inspect(init_args)}")
+          {:stop, {:missing_required_key, :initial_term_size}}
         value ->
           value
       end
+    if match?({:stop, _}, initial_term_size), do: initial_term_size
 
     runtime_pid =
       case Map.get(init_args, :runtime_pid) do
         nil ->
-          raise ArgumentError,
-                "Missing required :runtime_pid in init_args: #{inspect(init_args)}"
-
+          Raxol.Core.Runtime.Log.error("[Raxol.Runtime.Supervisor] Missing required :runtime_pid in init_args: #{inspect(init_args)}")
+          {:stop, {:missing_required_key, :runtime_pid}}
         value ->
           value
       end
+    if match?({:stop, _}, runtime_pid), do: runtime_pid
 
     debug_mode = Map.get(init_args, :debug_mode, false)
 
@@ -146,8 +146,9 @@ defmodule Raxol.Runtime.Supervisor do
             }
           ]
         else
-          Logger.warning(
-            "[Raxol.Runtime.Supervisor] Not attached to a TTY. Terminal driver will not be started."
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "[Raxol.Runtime.Supervisor] Not attached to a TTY. Terminal driver will not be started.",
+            %{}
           )
 
           []

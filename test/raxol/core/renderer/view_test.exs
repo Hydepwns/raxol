@@ -1,6 +1,7 @@
 defmodule Raxol.Core.Renderer.ViewTest do
   use ExUnit.Case, async: true
   alias Raxol.Core.Renderer.View
+  require Raxol.Core.Renderer.View
 
   describe "new/2" do
     test "creates a basic view" do

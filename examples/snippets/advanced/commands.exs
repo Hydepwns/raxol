@@ -10,20 +10,20 @@ defmodule CommandsExample do
 
   alias Raxol.Core.Commands.Command
   alias Raxol.Core.Events.Event
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @impl true
   def init(_context) do
-    Logger.debug("CommandsExample: init/1")
+    Raxol.Core.Runtime.Log.debug("CommandsExample: init/1")
     {:ok, %{commands: %{}, next_id: 0, executed_commands: []}}
   end
 
   @impl true
   def update(message, %{commands: commands, next_id: id} = model) do
-    Logger.debug("CommandsExample: update/2 received message: \#{inspect(message)}")
+    Raxol.Core.Runtime.Log.debug("CommandsExample: update/2 received message: \#{inspect(message)}")
     case message do
       %Event{type: :key, data: %{key: :char, char: "t"}} ->
-        Logger.info("CommandsExample: Starting command \#{id}")
+        Raxol.Core.Runtime.Log.info("CommandsExample: Starting command \#{id}")
         new_model = %{
           model
           | commands: Map.put(commands, id, {:processing, nil}),
@@ -33,7 +33,7 @@ defmodule CommandsExample do
         {:ok, new_model, [command]}
 
       {:command_result, {:finished, id}, result} ->
-        Logger.info("CommandsExample: Command \#{id} finished with result: \#{result}")
+        Raxol.Core.Runtime.Log.info("CommandsExample: Command \#{id} finished with result: \#{result}")
         new_commands = Map.put(commands, id, {:finished, result})
         new_executed = [{id, result} | model.executed_commands]
         trimmed_executed = Enum.take(new_executed, 10)
@@ -51,15 +51,15 @@ defmodule CommandsExample do
   end
 
   defp process do
-    Logger.debug("CommandsExample: process/0 running...")
+    Raxol.Core.Runtime.Log.debug("CommandsExample: process/0 running...")
     result = Enum.random(1..10_000)
-    Logger.debug("CommandsExample: process/0 finished with \#{result}")
+    Raxol.Core.Runtime.Log.debug("CommandsExample: process/0 finished with \#{result}")
     result
   end
 
   @impl true
   def view(%{commands: commands, executed_commands: executed_commands} = model) do
-    Logger.debug("CommandsExample: view/1")
+    Raxol.Core.Runtime.Log.debug("CommandsExample: view/1")
 
     active_commands_data = for {id, {status, result}} <- commands, status == :processing, do: %{id: id, status: status, result: result || "N/A"}
     finished_commands_data = for {id, {_status, result}} <- commands, not is_nil(result), do: %{id: id, result: result}
@@ -96,7 +96,7 @@ defmodule CommandsExample do
   end
 end
 
-Logger.info("CommandsExample: Starting Raxol...")
+Raxol.Core.Runtime.Log.info("CommandsExample: Starting Raxol...")
 {:ok, _pid} = Raxol.start_link(CommandsExample, [])
-Logger.info("CommandsExample: Raxol started. Running...")
+Raxol.Core.Runtime.Log.info("CommandsExample: Raxol started. Running...")
 

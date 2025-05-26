@@ -87,7 +87,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   use GenServer
   @behaviour Raxol.Core.Runtime.Plugins.Manager.Behaviour
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Debounce interval for file system events (milliseconds)
   @file_event_debounce_ms 500
@@ -250,11 +250,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
           }
 
         {:error, _reason} ->
-          # Log error? Keep state as is.
-          Logger.error(
-            "[#{__MODULE__}] Failed to unload plugin #{plugin_id} during shutdown."
+          Raxol.Core.Runtime.Log.error_with_stacktrace(
+            "[#{__MODULE__}] Failed to unload plugin during shutdown.",
+            nil,
+            nil,
+            %{module: __MODULE__, plugin_id: plugin_id}
           )
-
           acc_state
       end
     end)
@@ -274,13 +275,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     runtime_pid = Keyword.get(opts, :runtime_pid)
 
     unless is_pid(runtime_pid) do
-      Logger.error(
-        "[#{__MODULE__}] :runtime_pid is missing or invalid in init opts: #{inspect(opts)}"
+      Raxol.Core.Runtime.Log.error_with_stacktrace(
+        "[#{__MODULE__}] :runtime_pid is missing or invalid in init opts",
+        nil,
+        nil,
+        %{module: __MODULE__, opts: opts}
       )
-
-      # Hard fail if runtime_pid is missing or invalid
-      # This ensures Lifecycle doesn't proceed with a non-functional PluginManager
-      # Removed 'opts' from here to match GenServer.init return
       {:stop, :missing_runtime_pid}
     else
       # Get config options
@@ -323,13 +323,13 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
           })
         else
           if enable_reloading and Mix.env() != :dev do
-            Logger.warning(
+            Raxol.Core.Runtime.Log.warning_with_context(
               "[#{__MODULE__}] Plugin reloading via file watching only enabled in :dev environment."
             )
           end
 
           if enable_reloading and !Code.ensure_loaded?(FileSystem) do
-            Logger.warning(
+            Raxol.Core.Runtime.Log.warning_with_context(
               "[#{__MODULE__}] FileSystem dependency not found. Cannot enable plugin reloading."
             )
           end
@@ -355,7 +355,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
       # Asynchronously trigger internal initialization
       send(self(), :__internal_initialize__)
 
-      Logger.info(
+      Raxol.Core.Runtime.Log.info(
         "[#{__MODULE__}] Initialized with runtime_pid: #{inspect(runtime_pid)}. Triggered internal initialization."
       )
 
@@ -365,7 +365,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl true
   def handle_info(:__internal_initialize__, state) do
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Starting internal plugin discovery and initialization."
     )
 
@@ -376,27 +376,25 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
         if final_state.runtime_pid do
           send(final_state.runtime_pid, {:plugin_manager_ready, self()})
 
-          Logger.info(
+          Raxol.Core.Runtime.Log.info(
             "[#{__MODULE__}] PluginManager fully initialized and ready. Notified runtime PID: #{inspect(final_state.runtime_pid)}"
           )
         else
           # This case should ideally not happen if init ensures runtime_pid
-          Logger.warning(
-            "[#{__MODULE__}] PluginManager initialized, but no runtime_pid found in state to notify.",
-            []
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "[#{__MODULE__}] PluginManager initialized, but no runtime_pid found in state to notify."
           )
         end
 
         {:noreply, final_state}
 
       {:error, reason} ->
-        Logger.error(
-          "[#{__MODULE__}] Failed during internal initialization (Discovery.initialize). Reason: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed during internal initialization (Discovery.initialize)",
+          reason,
+          nil,
+          %{module: __MODULE__, reason: reason}
         )
-
-        # PluginManager is in a failed state but running. Lifecycle won't get 'ready'.
-        # Consider if it should stop itself or if Lifecycle's timeout for ready message handles this.
-        # Keep current state, initialized remains false
         {:noreply, state}
     end
   end
@@ -407,11 +405,11 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     # However, primary initialization is now async via :__internal_initialize__.
     # If called when already initialized, it could re-run discovery, or return current status.
     if state.initialized do
-      Logger.info(
+      Raxol.Core.Runtime.Log.info(
         "[#{__MODULE__}] :initialize called, but already initialized. Re-running discovery."
       )
     else
-      Logger.info(
+      Raxol.Core.Runtime.Log.info(
         "[#{__MODULE__}] :initialize called. Triggering internal initialization if not already started by init/1."
       )
 
@@ -479,7 +477,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
-        Logger.error("Failed to load plugin #{plugin_id}: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to load plugin #{plugin_id}",
+          nil,
+          nil,
+          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
+        )
         {:reply, {:error, reason}, state}
     end
   end
@@ -518,7 +521,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl true
   def handle_info({:reload_plugin_file_debounced, plugin_id, path}, state) do
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Debounced file change: Reloading plugin #{plugin_id} from path #{path}"
     )
 
@@ -533,8 +536,11 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl true
   def handle_info({:fs_error, _pid, {path, reason}}, %{file_watching_enabled?: true} = state) do
-    Logger.error(
-      "[#{__MODULE__}] File system watcher error for path #{path}: #{inspect(reason)}"
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[#{__MODULE__}] File system watcher error for path #{path}: #{inspect(reason)}",
+      nil,
+      nil,
+      %{module: __MODULE__, path: path, reason: reason}
     )
 
     {:noreply, state}
@@ -556,7 +562,12 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
         {:reply, {:ok, result}, updated_state}
 
       {:error, reason} ->
-        Logger.error("Failed to process command: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to process command: #{inspect(reason)}",
+          nil,
+          nil,
+          %{module: __MODULE__, command: command, reason: reason}
+        )
         {:reply, {:error, reason}, state}
     end
   end
@@ -574,38 +585,56 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   # --- Stubs for missing Plugin Manager functions ---
   @doc "Stub: process_output/2 not yet implemented."
   def process_output(_manager, _output) do
-    Logger.warning("[Plugins.Manager] process_output/2 not implemented.")
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[Plugins.Manager] process_output/2 not implemented.",
+      %{}
+    )
     {:error, :not_implemented}
   end
 
   @doc "Stub: process_mouse/3 not yet implemented."
   def process_mouse(_manager, _event, _emulator_state) do
-    Logger.warning("[Plugins.Manager] process_mouse/3 not implemented.")
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[Plugins.Manager] process_mouse/3 not implemented.",
+      %{}
+    )
     {:error, :not_implemented}
   end
 
   @doc "Stub: process_placeholder/4 not yet implemented."
   def process_placeholder(_manager, _arg1, _arg2, _arg3) do
-    Logger.warning("[Plugins.Manager] process_placeholder/4 not implemented.")
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[Plugins.Manager] process_placeholder/4 not implemented.",
+      %{}
+    )
     {:error, :not_implemented}
   end
 
   @doc "Stub: process_input/2 not yet implemented."
   def process_input(_manager, _input) do
-    Logger.warning("[Plugins.Manager] process_input/2 not implemented.")
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[Plugins.Manager] process_input/2 not implemented.",
+      %{}
+    )
     {:error, :not_implemented}
   end
 
   @doc "Stub: execute_command/4 not yet implemented."
   def execute_command(_manager, _command, _arg1, _arg2) do
-    Logger.warning("[Plugins.Manager] execute_command/4 not implemented.")
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[Plugins.Manager] execute_command/4 not implemented.",
+      %{}
+    )
     {:error, :not_implemented}
   end
 
   # --- Termination ---
   @impl true
   def terminate(reason, state) do
-    Logger.info("[#{__MODULE__}] Terminating (Reason: #{inspect(reason)}).")
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Terminating (Reason: #{inspect(reason)}).",
+      %{module: __MODULE__, reason: reason}
+    )
 
     # Clean up file watching resources
     FileWatcher.cleanup_file_watching(state)

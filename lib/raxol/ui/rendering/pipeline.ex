@@ -40,7 +40,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   alias Raxol.UI.Rendering.Composer
   alias Raxol.UI.Rendering.Painter
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @default_renderer Raxol.Renderer
   # Default to ~60fps for throttling
@@ -192,7 +192,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
   # Updated default usage
   def commit(painted_output, renderer \\ @default_renderer) do
     # painted_output is now a list of paint operation maps from the paint/2 stage.
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Commit Stage: Sending #{Enum.count(painted_output)} paint operations to renderer #{inspect(renderer)}."
     )
 
@@ -245,14 +245,14 @@ defmodule Raxol.UI.Rendering.Pipeline do
   @impl true
   def handle_cast({:update_tree, new_tree}, state) do
     if state.current_tree == new_tree do
-      Logger.debug("Pipeline: No change in tree, skipping render.")
+      Raxol.Core.Runtime.Log.debug("Pipeline: No change in tree, skipping render.")
       {:noreply, state}
     else
       # Delegate to TreeDiffer
       diff_result = TreeDiffer.diff_trees(state.previous_tree, new_tree)
 
       if diff_result == :no_change do
-        Logger.debug("Pipeline: Diff result is :no_change, skipping render.")
+        Raxol.Core.Runtime.Log.debug("Pipeline: Diff result is :no_change, skipping render.")
 
         new_state_after_diff = %{
           state
@@ -262,7 +262,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
         {:noreply, new_state_after_diff}
       else
-        Logger.debug("Pipeline: Tree updated, scheduling render.")
+        Raxol.Core.Runtime.Log.debug("Pipeline: Tree updated, scheduling render.")
         # Store the new tree now, so a scheduled render uses the latest
         updated_state = %{
           state
@@ -283,7 +283,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     tree_to_render = data || state.current_tree
 
     if tree_to_render do
-      Logger.debug("Pipeline: Triggering render for tree.")
+      Raxol.Core.Runtime.Log.debug("Pipeline: Triggering render for tree.")
       # Always treat trigger_render as a full replacement for now
       diff_result = {:replace, tree_to_render}
 
@@ -298,7 +298,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
       {:noreply, final_state}
     else
-      Logger.debug("Pipeline: Triggering render, but no tree available.")
+      Raxol.Core.Runtime.Log.debug("Pipeline: Triggering render, but no tree available.")
       {:noreply, state}
     end
   end
@@ -309,7 +309,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     #       This should ideally queue the request and a separate :animation_tick process it.
     # Send.send(pid, {:animation_frame, ref})
     # {:noreply, state}
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Pipeline: Received request_animation_frame from #{inspect(pid)} with ref #{inspect(ref)}"
     )
 
@@ -321,7 +321,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   @impl true
   def handle_call({:request_animation_frame, pid, ref}, from, state) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Pipeline: Received request_animation_frame call from #{inspect(pid)}, ref #{inspect(ref)}, from #{inspect(from)}"
     )
 
@@ -339,7 +339,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     # TODO: Ensure this is only processed on the next actual animation frame tick.
     #       Currently, if no debouncing is active, it might render immediately or schedule soon.
     if state.current_tree do
-      Logger.debug("Pipeline: Scheduling render for next frame.")
+      Raxol.Core.Runtime.Log.debug("Pipeline: Scheduling render for next frame.")
 
       # The render itself will be triggered by :animation_tick if this flag is true
       new_state = %{state | render_scheduled_for_next_frame: true}
@@ -349,7 +349,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
       # final_state = %{old_state | render_scheduled_for_next_frame: true} # Ensure flag is set even if rendered now
       {:noreply, final_state}
     else
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Pipeline: schedule_render_on_next_frame called, but no current_tree to render."
       )
 
@@ -362,7 +362,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
         {:deferred_render, diff_result, new_tree_for_reference},
         state
       ) do
-    Logger.debug("Pipeline: Executing deferred render.")
+    Raxol.Core.Runtime.Log.debug("Pipeline: Executing deferred render.")
     new_state_after_clear = %{state | render_timer_ref: nil}
 
     {painted_data, composed_data} =
@@ -386,7 +386,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   @impl true
   def handle_info(:animation_tick, state) do
-    Logger.debug("Pipeline: Animation tick.")
+    Raxol.Core.Runtime.Log.debug("Pipeline: Animation tick.")
     # Capture initial state for decision on rescheduling
     initial_requests_q = state.animation_frame_requests
     initial_render_scheduled = state.render_scheduled_for_next_frame
@@ -397,7 +397,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
     # Added 'from'
     for {pid, ref, from} <- responses do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Pipeline: Sending :animation_frame to #{inspect(pid)}, ref #{inspect(ref)} via GenServer.reply to #{inspect(from)}"
       )
 
@@ -413,7 +413,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     # Process render if scheduled for next frame
     final_state =
       if initial_render_scheduled and current_state.current_tree do
-        Logger.debug("Pipeline: Animation tick triggering scheduled render.")
+        Raxol.Core.Runtime.Log.debug("Pipeline: Animation tick triggering scheduled render.")
 
         # Pass the full state to schedule_or_execute_render so it can manage its own state updates (like last_render_time)
         # The diff should be against the previous tree state before this current_tree was set.
@@ -448,7 +448,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
     else
       # No work was done, no new requests during this tick processing (unlikely), so ticker can stop.
       # It will be restarted by new requests or schedule_render_on_next_frame.
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Pipeline: Animation ticker stopping as no work was done or pending."
       )
 
@@ -469,7 +469,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
         else: @min_render_interval_ms + 1
 
     if time_since_last_render >= state.min_render_interval_ms do
-      Logger.debug("Pipeline: Executing render immediately.")
+      Raxol.Core.Runtime.Log.debug("Pipeline: Executing render immediately.")
 
       if state.render_timer_ref,
         do: Process.cancel_timer(state.render_timer_ref)
@@ -493,7 +493,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
       }
     else
       delay = state.min_render_interval_ms - time_since_last_render
-      Logger.debug("Pipeline: Debouncing render. Will render in #{delay}ms.")
+      Raxol.Core.Runtime.Log.debug("Pipeline: Debouncing render. Will render in #{delay}ms.")
 
       # Cancel previous timer if it exists, to ensure only the latest update is rendered.
       if state.render_timer_ref,
@@ -544,7 +544,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
           commit(painted_data, renderer_module)
           {painted_data, composed_data}
         else
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "Render Pipeline: Composition stage resulted in nil, skipping paint and commit."
           )
 
@@ -552,7 +552,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
           {previous_painted_output, composed_data}
         end
       else
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "Render Pipeline: Layout stage resulted in nil, skipping compose, paint and commit."
         )
 
@@ -560,7 +560,7 @@ defmodule Raxol.UI.Rendering.Pipeline do
         {previous_painted_output, previous_composed_tree}
       end
     else
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Render Pipeline: No effective tree to process based on initial diff_result and new_tree_for_reference."
       )
 
@@ -571,14 +571,14 @@ defmodule Raxol.UI.Rendering.Pipeline do
 
   defp ensure_animation_ticker_running(state) do
     if is_nil(state.animation_ticker_ref) do
-      Logger.debug("Pipeline: Animation ticker not running, starting it.")
+      Raxol.Core.Runtime.Log.debug("Pipeline: Animation ticker not running, starting it.")
 
       new_ticker_ref =
         Process.send_after(self(), :animation_tick, @animation_tick_interval_ms)
 
       %{state | animation_ticker_ref: new_ticker_ref}
     else
-      Logger.debug("Pipeline: Animation ticker already running.")
+      Raxol.Core.Runtime.Log.debug("Pipeline: Animation ticker already running.")
       state
     end
   end
