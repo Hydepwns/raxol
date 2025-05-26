@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
-  # require Logger # Uncomment if using Logger.debug statements
+  require Raxol.Core.Runtime.Log
 
   @spec scroll_up(
           ScreenBuffer.t(),
@@ -31,7 +31,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
 
     # If region is invalid, count is too large for the region, or region height is <= 0, no effective scroll
     if region_height <= 0 or count <= 0 or count > region_height do
-      # Logger.debug("Scroll Up: No effective scroll. Top: #{effective_top}, Bottom: #{effective_bottom}, Count: #{count}, Region Height: #{region_height}")
+      Raxol.Core.Runtime.Log.debug("Scroll Up: No effective scroll. Top: #{effective_top}, Bottom: #{effective_bottom}, Count: #{count}, Region Height: #{region_height}")
       buffer
     end
 
@@ -46,12 +46,15 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     # Shift existing lines up
     new_buffer =
       if preserved_lines_count > 0 do
-        Enum.reduce(0..(preserved_lines_count - 1), new_buffer, fn i,
-                                                                   acc_buffer ->
+        Enum.reduce(0..(preserved_lines_count - 1), new_buffer, fn i, acc_buffer ->
           source_row = preserved_lines_source_start + i
           target_row = effective_top + i
-          {_cont, _attr, cells} = ScreenBuffer.get_line(acc_buffer, source_row)
-          ScreenBuffer.put_line(acc_buffer, target_row, cells)
+          cells = ScreenBuffer.get_line(acc_buffer, source_row)
+          if is_list(cells) do
+            ScreenBuffer.put_line(acc_buffer, target_row, cells)
+          else
+            acc_buffer
+          end
         end)
       else
         # No lines to preserve and shift if actual_scroll_count == region_height
@@ -63,15 +66,16 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     blank_line_start_row = effective_top + preserved_lines_count
     blank_line_cells = List.duplicate(Cell.new(" ", blank_style), buffer.width)
 
-    Enum.reduce(0..(actual_scroll_count - 1), new_buffer, fn i, acc_buffer ->
-      ScreenBuffer.put_line(
-        acc_buffer,
-        blank_line_start_row + i,
-        blank_line_cells
-      )
-    end)
+    new_buffer =
+      Enum.reduce(0..(actual_scroll_count - 1), new_buffer, fn i, acc_buffer ->
+        ScreenBuffer.put_line(
+          acc_buffer,
+          blank_line_start_row + i,
+          blank_line_cells
+        )
+      end)
 
-    buffer
+    new_buffer
   end
 
   # No scroll or invalid count
@@ -100,7 +104,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     region_height = effective_bottom - effective_top + 1
 
     if region_height <= 0 or count <= 0 or count > region_height do
-      # Logger.debug("Scroll Down: No effective scroll. Top: #{effective_top}, Bottom: #{effective_bottom}, Count: #{count}, Region Height: #{region_height}")
+      Raxol.Core.Runtime.Log.debug("Scroll Down: No effective scroll. Top: #{effective_top}, Bottom: #{effective_bottom}, Count: #{count}, Region Height: #{region_height}")
       buffer
     end
 
@@ -115,12 +119,17 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     # Shift existing lines down (iterate backwards to avoid overwriting)
     new_buffer =
       if preserved_lines_count > 0 do
-        Enum.reduce_right(0..(preserved_lines_count - 1), new_buffer, fn i,
-                                                                         acc_buffer ->
+        0..(preserved_lines_count - 1)
+        |> Enum.reverse()
+        |> Enum.reduce(new_buffer, fn i, acc_buffer ->
           source_row = effective_top + i
           target_row = effective_top + actual_scroll_count + i
-          {_cont, _attr, cells} = ScreenBuffer.get_line(acc_buffer, source_row)
-          ScreenBuffer.put_line(acc_buffer, target_row, cells)
+          cells = ScreenBuffer.get_line(acc_buffer, source_row)
+          if is_list(cells) do
+            ScreenBuffer.put_line(acc_buffer, target_row, cells)
+          else
+            acc_buffer
+          end
         end)
       else
         # No lines to preserve if actual_scroll_count == region_height
@@ -130,11 +139,12 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     # Fill top lines with blank lines
     blank_line_cells = List.duplicate(Cell.new(" ", blank_style), buffer.width)
 
-    Enum.reduce(0..(actual_scroll_count - 1), new_buffer, fn i, acc_buffer ->
-      ScreenBuffer.put_line(acc_buffer, effective_top + i, blank_line_cells)
-    end)
+    new_buffer =
+      Enum.reduce(0..(actual_scroll_count - 1), new_buffer, fn i, acc_buffer ->
+        ScreenBuffer.put_line(acc_buffer, effective_top + i, blank_line_cells)
+      end)
 
-    buffer
+    new_buffer
   end
 
   # No scroll or invalid count

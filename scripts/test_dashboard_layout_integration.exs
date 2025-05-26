@@ -9,7 +9,7 @@
 # 5. Widget customization
 
 defmodule DashboardLayoutIntegrationTest do
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @visualization_test_file_path "~/.raxol/visualization_test_results.log"
 

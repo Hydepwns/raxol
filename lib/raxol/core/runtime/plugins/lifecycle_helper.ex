@@ -12,7 +12,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     Loader
   }
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @impl true
   def init(opts) do
@@ -85,10 +85,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
         {:error, "Dependency cycle detected: #{inspect(cycle)}"}
 
       {:error, reason} ->
-        Logger.error(
-          "Failed to load plugin #{plugin_id_or_module}: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to load plugin",
+          reason,
+          nil,
+          %{module: __MODULE__, plugin_id_or_module: plugin_id_or_module, reason: reason}
         )
-
         {:error, reason}
     end
   end
@@ -125,10 +127,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
                 {:cont, {:ok, {new_meta, Map.merge(sts, new_states), new_tbl}}}
 
               {:error, reason} ->
-                Logger.error(
-                  "Failed to initialize plugin #{plugin_id}: #{inspect(reason)}"
+                Raxol.Core.Runtime.Log.error_with_stacktrace(
+                  "Failed to initialize plugin",
+                  reason,
+                  nil,
+                  %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
                 )
-
                 {:halt, {:error, reason}}
             end
         end
@@ -167,15 +171,22 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
         {:ok, updated_state, updated_table, updated_metadata}
       else
         {:error, reason} ->
-          Logger.error(
-            "Failed to reload plugin #{plugin_id}: #{inspect(reason)}"
+          Raxol.Core.Runtime.Log.error_with_stacktrace(
+            "Failed to reload plugin",
+            reason,
+            nil,
+            %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
           )
-
           {:error, :reload_failed}
       end
     rescue
       e ->
-        Logger.error("Failed to reload plugin #{plugin_id}: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to reload plugin (exception)",
+          e,
+          __STACKTRACE__,
+          %{module: __MODULE__, plugin_id: plugin_id}
+        )
         {:error, :reload_failed}
     end
   end
@@ -200,7 +211,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
         {:ok, {metadata, states, command_table}}
 
       {:error, reason} ->
-        Logger.error("Failed to unload plugin #{plugin_id}: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to unload plugin",
+          reason,
+          nil,
+          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
+        )
         {:error, reason}
     end
   end
@@ -252,7 +268,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
       {:ok, table}
     else
       {:error, reason} ->
-        Logger.error("Failed to update command table: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to update command table",
+          reason,
+          nil,
+          %{module: __MODULE__, reason: reason}
+        )
         {:error, reason}
     end
   end

@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Buffer.Updater do
   Handles calculating differences and applying updates to the Raxol.Terminal.ScreenBuffer.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
@@ -38,8 +38,9 @@ defmodule Raxol.Terminal.Buffer.Updater do
         end
       end)
     else
-      Logger.warning(
-        "Invalid format passed to ScreenBuffer.Updater.diff/2. Expected list of {x, y, map}. Got: #{inspect(changes)}"
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "Invalid format passed to ScreenBuffer.Updater.diff/2. Expected list of {x, y, map}. Got: #{inspect(changes)}",
+        %{}
       )
 
       # Return empty list for invalid input format
@@ -65,8 +66,9 @@ defmodule Raxol.Terminal.Buffer.Updater do
       when is_integer(x) and is_integer(y) and is_map(cell_map) ->
         case Cell.from_map(cell_map) do
           nil ->
-            Logger.warning(
-              "[ScreenBuffer.Updater.update] Failed to convert cell map: #{inspect(cell_map)} at (#{x}, #{y})"
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "[ScreenBuffer.Updater.update] Failed to convert cell map: #{inspect(cell_map)} at (#{x}, #{y})",
+              %{}
             )
 
             acc_buffer
@@ -76,8 +78,9 @@ defmodule Raxol.Terminal.Buffer.Updater do
         end
 
       invalid_change, acc_buffer ->
-        Logger.warning(
-          "[ScreenBuffer.Updater.update] Invalid change format: #{inspect(invalid_change)}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[ScreenBuffer.Updater.update] Invalid change format: #{inspect(invalid_change)}",
+          %{}
         )
 
         acc_buffer
@@ -97,8 +100,9 @@ defmodule Raxol.Terminal.Buffer.Updater do
           # Handle cases like nil, empty string, or non-binary char if they occur
           # Defaulting to width 1 for space might be reasonable
           # Or log a warning and assume width 1
-          Logger.warn(
-            "Cell char is not a valid string: #{inspect(cell.char)}, assuming width 1"
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Cell char is not a valid string: #{inspect(cell.char)}, assuming width 1",
+            %{}
           )
 
           # Codepoint for space

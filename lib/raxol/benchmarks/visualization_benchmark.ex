@@ -5,7 +5,7 @@ defmodule Raxol.Benchmarks.VisualizationBenchmark do
   for different data sizes and visualization types.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Run a comprehensive benchmark suite for visualization components.

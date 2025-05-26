@@ -2,7 +2,7 @@ defmodule Raxol.Core.Preferences.Persistence do
   @moduledoc """
   Handles persistence (loading/saving) of user preferences to a file.
   """
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @default_filename "user_preferences.bin"
 
@@ -37,13 +37,13 @@ defmodule Raxol.Core.Preferences.Persistence do
           if is_map(preferences) do
             {:ok, preferences}
           else
-            Logger.error("Preferences file content is not a map: #{path}")
+            Raxol.Core.Runtime.Log.error("Preferences file content is not a map: #{path}")
             {:error, :invalid_format}
           end
         rescue
           # Catches errors during binary_to_term (e.g., corrupt data)
           error ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Failed to decode preferences file #{path}: #{inspect(error)}"
             )
 
@@ -54,7 +54,7 @@ defmodule Raxol.Core.Preferences.Persistence do
         {:error, :file_not_found}
 
       {:error, reason} ->
-        Logger.error("Failed to read preferences file #{path}: #{reason}")
+        Raxol.Core.Runtime.Log.error("Failed to read preferences file #{path}: #{reason}")
         {:error, reason}
     end
   end
@@ -76,14 +76,14 @@ defmodule Raxol.Core.Preferences.Persistence do
       File.write(path, binary_data)
     rescue
       error ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "Failed to encode preferences for saving: #{inspect(error)}"
         )
 
         {:error, :encoding_failed}
     catch
       :exit, reason ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "Failed to write preferences file #{path}: #{inspect(reason)}"
         )
 

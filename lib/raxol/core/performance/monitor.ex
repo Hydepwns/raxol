@@ -20,7 +20,7 @@ defmodule Raxol.Core.Performance.Monitor do
 
   # Check for jank
   if Monitor.detect_jank?(monitor) do
-    Logger.warning("UI jank detected")
+    Raxol.Core.Runtime.Log.warning_with_context("UI jank detected", %{})
   end
 
   # Get performance metrics

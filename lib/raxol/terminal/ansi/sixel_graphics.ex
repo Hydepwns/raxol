@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
   - Sixel image attributes
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   # Import Bitwise for operators
   import Bitwise
 
@@ -76,13 +76,13 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
       {st_pos, _st_len} ->
         content_before_st = :binary.part(rest, 0, st_pos)
 
-        # Logger.debug("process_sequence: Found ST at #{st_pos}, content_before_st: #{inspect(content_before_st)}")
+        # Raxol.Core.Runtime.
 
         # Attempt to parse initial DCS parameters first (optional)
         # We assume parameters end before the main Sixel data
         case SixelParser.consume_integer_params(content_before_st) do
           {:ok, initial_params, sixel_data} ->
-            # Logger.debug("process_sequence: Parsed initial params: #{inspect(initial_params)}, sixel_data: #{inspect(sixel_data)}")
+            # Raxol.Core.Runtime.Log.debug("process_sequence: Parsed initial params: #{inspect(initial_params)}, sixel_data: #{inspect(sixel_data)}")
 
             # TODO: Use initial_params if needed (e.g., P1=pixel aspect ratio, P2=background color mode)
             _initial_params_map =
@@ -113,7 +113,7 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
                 parse_result =
                   SixelParser.parse(rest_after_q, initial_parser_state)
 
-                # Logger.debug("process_sequence: parse_sixel_data result: #{inspect(parse_result)}")
+                # Raxol.Core.Runtime.Log.debug("process_sequence: parse_sixel_data result: #{inspect(parse_result)}")
 
                 case parse_result do
                   {:ok, final_parser_state} ->
@@ -131,41 +131,42 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
                           {final_parser_state.x, final_parser_state.y}
                     }
 
-                    # Logger.debug("process_sequence: Returning OK, final state: #{inspect(updated_state)}")
+                    # Raxol.Core.Runtime.Log.debug("process_sequence: Returning OK, final state: #{inspect(updated_state)}")
                     {updated_state, :ok}
 
                   {:error, reason} ->
-                    # Logger.error("Sixel data parsing failed: #{inspect(reason)}")
-                    # Logger.debug("process_sequence: Returning ERROR from parse_sixel_data: #{inspect(reason)}")
+                    # Raxol.Core.Runtime.Log.error("Sixel data parsing failed: #{inspect(reason)}")
+                    # Raxol.Core.Runtime.Log.debug("process_sequence: Returning ERROR from parse_sixel_data: #{inspect(reason)}")
                     # Return original state on error
                     {state, {:error, reason}}
                 end
 
               # If 'q' is missing after parameters
               _ ->
-                # Logger.error("Invalid Sixel DCS: missing 'q' after parameters")
-                # Logger.debug("process_sequence: Returning ERROR :missing_or_misplaced_q")
+                # Raxol.Core.Runtime.Log.error("Invalid Sixel DCS: missing 'q' after parameters")
+                # Raxol.Core.Runtime.Log.debug("process_sequence: Returning ERROR :missing_or_misplaced_q")
                 {state, {:error, :missing_or_misplaced_q}}
             end
 
           # Error parsing initial parameters (rare, as consume_integer_params defaults to empty list)
           {:error, reason, _} ->
-            # Logger.error("Invalid Sixel DCS: error parsing initial parameters: #{inspect(reason)}")
-            # Logger.debug("process_sequence: Returning ERROR :invalid_initial_params")
+            # Raxol.Core.Runtime.Log.error("Invalid Sixel DCS: error parsing initial parameters: #{inspect(reason)}")
+            # Raxol.Core.Runtime.Log.debug("process_sequence: Returning ERROR :invalid_initial_params")
             {state, {:error, :invalid_initial_params}}
         end
 
       :nomatch ->
-        # Logger.error("Invalid Sixel DCS: missing ST '\e'")
-        # Logger.debug("process_sequence: Returning ERROR :missing_st")
+        # Raxol.Core.Runtime.Log.error("Invalid Sixel DCS: missing ST '\e'")
+        # Raxol.Core.Runtime.Log.debug("process_sequence: Returning ERROR :missing_st")
         {state, {:error, :missing_st}}
     end
   end
 
   # Handle non-DCS sequences (restore this clause)
   def process_sequence(state, other_sequence) do
-    Logger.warning(
-      "Received non-Sixel sequence in SixelGraphics: #{inspect(other_sequence)}"
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Received non-Sixel sequence in SixelGraphics: #{inspect(other_sequence)}",
+      %{}
     )
 
     {state, {:error, :invalid_sequence}}

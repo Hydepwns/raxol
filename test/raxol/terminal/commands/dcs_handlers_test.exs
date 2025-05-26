@@ -21,37 +21,25 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
   defp new_emulator(opts \\ []) do
     width = Keyword.get(opts, :width, 80)
     height = Keyword.get(opts, :height, 24)
-    # Adjust if name changed
     scroll_region = Keyword.get(opts, :scroll_region, nil)
     cursor_style = Keyword.get(opts, :cursor_style, :blinking_block)
     output_buffer = Keyword.get(opts, :output_buffer, "")
     sixel_state = Keyword.get(opts, :sixel_state, nil)
     cursor_pos = Keyword.get(opts, :cursor_position, {0, 0})
 
-    # Create more complete screen buffers
-    main_buffer = ScreenBuffer.new(width, height, 1000)
-    alternate_buffer = ScreenBuffer.new(width, height, 0)
+    # Create emulator with all default fields
+    emulator = Emulator.new(width, height)
 
-    %Emulator{
-      width: width,
-      height: height,
+    # Update fields as needed
+    emulator = %{emulator |
       scroll_region: scroll_region,
       cursor_style: cursor_style,
       output_buffer: output_buffer,
-      style: TextFormatting.new(),
-      # Sixel uses position
-      cursor: %CursorManager{
-        position: cursor_pos,
-        style: cursor_style,
-        state: :visible
-      },
-      main_screen_buffer: main_buffer,
-      alternate_screen_buffer: alternate_buffer,
-      active_buffer_type: :main,
-      # Store initial sixel state
-      sixel_state: sixel_state
-      # Ensure all fields accessed by Emulator.get_active_buffer/update_active_buffer are present
+      sixel_state: sixel_state,
+      cursor: %{emulator.cursor | position: cursor_pos, style: cursor_style, state: :visible}
     }
+
+    emulator
   end
 
   describe "handle_dcs/5 - DECRQSS (Request Status String)" do

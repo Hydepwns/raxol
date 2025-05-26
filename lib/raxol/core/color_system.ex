@@ -17,7 +17,7 @@ defmodule Raxol.Core.ColorSystem do
   alias Raxol.Core.Accessibility.ThemeIntegration
   alias Raxol.UI.Theming.Colors
   alias Raxol.Style.Colors.{Color, Utilities}
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Creates a new theme with the given name and colors.
@@ -161,8 +161,9 @@ defmodule Raxol.Core.ColorSystem do
           nil
       end
     else
-      Logger.warning(
-        "ColorSystem: Theme with ID '#{theme_id}' not found. Falling back."
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "ColorSystem: Theme with ID '#{theme_id}' not found. Falling back.",
+        %{}
       )
 
       nil

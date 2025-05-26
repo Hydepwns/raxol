@@ -28,12 +28,7 @@ const LOG_LEVEL = "debug"; // Options: debug, info, warn, error
 
 ```elixir
 # Add to config/test.exs
-config :logger,
-  level: :debug,
-  backends: [:console],
-  compile_time_purge_matching: [
-    [level_lower_than: :debug]
-  ]
+config :raxol, :debug_mode, true
 ```
 
 ## Test Results Template

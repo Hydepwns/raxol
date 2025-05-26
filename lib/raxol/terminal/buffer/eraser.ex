@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Clears a rectangular region of the buffer by replacing cells with blank cells
@@ -36,20 +36,20 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     clamped_bottom = max(0, min(bottom, buffer.height - 1))
     clamped_right = max(0, min(right, buffer.width - 1))
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Eraser.clear_region] Called with: top=#{top}, left=#{left}, bottom=#{bottom}, right=#{right}"
     )
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Eraser.clear_region] Clamped to: top=#{clamped_top}, left=#{clamped_left}, bottom=#{clamped_bottom}, right=#{clamped_right}"
     )
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Eraser.clear_region] Buffer dimensions: width=#{buffer.width}, height=#{buffer.height}"
     )
 
     if clamped_top > clamped_bottom or clamped_left > clamped_right do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[Eraser.clear_region] Invalid region (clamped_top > clamped_bottom or clamped_left > clamped_right), no-op."
       )
 
@@ -57,7 +57,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
       buffer
     else
       # REMOVED condition: Log the exact clamped values for EVERY call that reaches here
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[Eraser.clear_region PARAMS] top_arg: #{top}, left_arg: #{left}, bottom_arg: #{bottom}, right_arg: #{right} --- clamped_top: #{clamped_top}, clamped_left: #{clamped_left}, clamped_bottom: #{clamped_bottom}, clamped_right: #{clamped_right}"
       )
 
@@ -75,17 +75,17 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           # ADDED: Log row_idx and condition_result if we are in the call for LINE 2
           # Check if this is the call originating from clear_line(2)
           if top == 2 and bottom == 2 and left == 0 do
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[Eraser.clear_region CALL FOR LINE 2] row_idx: #{row_idx}, condition_eval: (top=#{clamped_top}, bot=#{clamped_bottom}), condition_result: #{condition_result}"
             )
           end
 
           if condition_result do
             # This row is in the vertical range, modify the horizontal segment
-            Logger.debug("[Eraser.clear_region] Processing row_idx: #{row_idx}")
+            Raxol.Core.Runtime.Log.debug("[Eraser.clear_region] Processing row_idx: #{row_idx}")
 
             # Log the captured values of clamped_left and clamped_right for this iteration
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[Eraser.clear_region] Inside map for row #{row_idx}: effective_left=#{clamped_left}, effective_right=#{clamped_right}"
             )
 
@@ -101,30 +101,30 @@ defmodule Raxol.Terminal.Buffer.Eraser do
             suffix_chars_map = Enum.map(suffix_cells, & &1.char)
             blank_segment_chars_map = Enum.map(blank_row_segment, & &1.char)
 
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[Eraser.clear_region] row_idx: #{row_idx} - Original line chars: #{inspect(original_line_chars_map)}"
             )
 
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[Eraser.clear_region] row_idx: #{row_idx} - Splitting at left: #{clamped_left}, right_plus_1_for_drop: #{clamped_right + 1}"
             )
 
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[Eraser.clear_region] row_idx: #{row_idx} - Prefix chars: #{inspect(prefix_chars_map)} (count: #{length(prefix_cells)})"
             )
 
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[Eraser.clear_region] row_idx: #{row_idx} - Suffix chars: #{inspect(suffix_chars_map)} (count: #{length(suffix_cells)})"
             )
 
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[Eraser.clear_region] row_idx: #{row_idx} - Blank segment to insert: #{inspect(blank_segment_chars_map)} (count: #{length(blank_row_segment)})"
             )
 
             new_line_cells = prefix_cells ++ blank_row_segment ++ suffix_cells
             new_line_chars_map = Enum.map(new_line_cells, & &1.char)
 
-            Logger.debug(
+            Raxol.Core.Runtime.Log.debug(
               "[Eraser.clear_region] row_idx: #{row_idx} - New line chars: #{inspect(new_line_chars_map)}"
             )
 
@@ -184,19 +184,19 @@ defmodule Raxol.Terminal.Buffer.Eraser do
   @spec clear_line(ScreenBuffer.t(), integer(), TextFormatting.text_style()) ::
           ScreenBuffer.t()
   def clear_line(%ScreenBuffer{} = buffer, row, default_style) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Eraser.clear_line] CALLED with row: #{row}, buffer_height: #{buffer.height}"
     )
 
     # Ensure row is valid
     if row >= 0 and row < buffer.height do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[Eraser.clear_line] Condition TRUE, calling clear_region for row: #{row}"
       )
 
       clear_region(buffer, row, 0, row, buffer.width - 1, default_style)
     else
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[Eraser.clear_line] Condition FALSE for row: #{row}, returning original buffer"
       )
 
@@ -255,7 +255,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     # Clear the current line up to the cursor
     buffer_step1 = clear_line_to(buffer, eff_row, eff_col, default_style)
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[clear_screen_to] After clear_line_to, buffer_step1.width: #{buffer_step1.width}, eff_row: #{eff_row}"
     )
 
@@ -267,7 +267,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
       # Assuming width is correct here
       arg_right = buffer_step1.width - 1
 
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[clear_screen_to] PRE-CALL clear_region for lines ABOVE: top=#{arg_top}, left=#{arg_left}, bottom=#{arg_bottom}, right=#{arg_right}, eff_row_val=#{eff_row}, buf_width_val=#{buffer_step1.width}"
       )
 

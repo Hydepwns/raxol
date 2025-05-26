@@ -12,8 +12,7 @@ defmodule Raxol.Auth do
   alias Raxol.Accounts
   # alias Raxol.Auth.Session # Removed - Session module undefined
 
-  # Add require Logger
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Validates a session token and returns the associated user ID.
@@ -44,13 +43,13 @@ defmodule Raxol.Auth do
   """
   @spec create_user_session(integer(), map()) :: :ok
   def create_user_session(user_id, _metadata \\ %{}) do
-    Logger.debug("Creating session for user ID: #{user_id}")
+    Raxol.Core.Runtime.Log.debug("Creating session for user ID: #{user_id}")
     # case Session.create_session(user_id, metadata) do
     #   {:ok, session} ->
-    #     Logger.debug("Session created successfully: #{session.session_id}")
+    #     Raxol.Core.Runtime.Log.debug("Session created successfully: #{session.session_id}")
     #     {:ok, session}
     #   {:error, reason} ->
-    #     Logger.error("Failed to create session: #{inspect(reason)}")
+    #     Raxol.Core.Runtime.Log.error("Failed to create session: #{inspect(reason)}")
     #     {:error, reason}
     # end
     :ok
@@ -61,7 +60,7 @@ defmodule Raxol.Auth do
   """
   @spec cleanup_user_session(String.t()) :: :ok
   def cleanup_user_session(session_id) do
-    Logger.debug("Cleaning up session: #{session_id}")
+    Raxol.Core.Runtime.Log.debug("Cleaning up session: #{session_id}")
     :ok
   end
 
@@ -100,8 +99,9 @@ defmodule Raxol.Auth do
   NOTE: This function is a stub. Returns the user or nil if not found or session is invalid.
   """
   def get_user_by_session(_session_id) do
-    Logger.warning(
-      "get_user_by_session called, but session lookup is not implemented. This is a stub."
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "get_user_by_session called, but session lookup is not implemented. This is a stub.",
+      %{}
     )
     nil
   end

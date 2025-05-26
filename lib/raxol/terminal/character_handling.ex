@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.CharacterHandling do
   - Supporting Unicode character properties
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Determines if a character is a wide character (takes up two cells).

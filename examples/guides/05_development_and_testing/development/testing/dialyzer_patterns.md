@@ -120,10 +120,10 @@ When addressing Dialyzer warnings, consider the following priority order:
     end
     ```
 
-### 17. **Logger Macro Usage**
+### 17. **Raxol.Core.Runtime.Log Macro Usage**
 
-    - **Solution**: Always `require Logger` at the top of modules that use Logger macros.
-    - **Example**: Add `require Logger` to modules using Logger macros.
+    - **Solution**: Always `require Raxol.Core.Runtime.Log` at the top of modules that use Raxol.Core.Runtime.Log macros.
+    - **Example**: Add `require Raxol.Core.Runtime.Log` to modules using Raxol.Core.Runtime.Log macros.
 
 ### 18. **Invalid Contract in @spec**
 

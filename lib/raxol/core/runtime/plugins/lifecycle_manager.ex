@@ -8,7 +8,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   - Managing plugin states during lifecycle changes
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Enables a previously disabled plugin.
@@ -19,7 +19,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
         {:error, :plugin_not_found}
 
       plugin ->
-        Logger.info("[#{__MODULE__}] Enabling plugin: #{plugin_id}")
+        Raxol.Core.Runtime.Log.info_with_context("[#{__MODULE__}] Enabling plugin: #{plugin_id}", %{})
 
         case state.lifecycle_helper_module.enable_plugin(
                plugin,
@@ -32,10 +32,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
             {:ok, %{state | plugin_states: updated_states}}
 
           {:error, reason} ->
-            Logger.error(
-              "[#{__MODULE__}] Failed to enable plugin #{plugin_id}: #{inspect(reason)}"
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] Error enabling plugin",
+              reason,
+              nil,
+              %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
             )
-
             {:error, reason}
         end
     end
@@ -50,7 +52,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
         {:error, :plugin_not_found}
 
       plugin ->
-        Logger.info("[#{__MODULE__}] Disabling plugin: #{plugin_id}")
+        Raxol.Core.Runtime.Log.info_with_context("[#{__MODULE__}] Disabling plugin: #{plugin_id}", %{})
 
         case state.lifecycle_helper_module.disable_plugin(
                plugin,
@@ -63,10 +65,12 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
             {:ok, %{state | plugin_states: updated_states}}
 
           {:error, reason} ->
-            Logger.error(
-              "[#{__MODULE__}] Failed to disable plugin #{plugin_id}: #{inspect(reason)}"
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] Error disabling plugin",
+              reason,
+              nil,
+              %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
             )
-
             {:error, reason}
         end
     end
@@ -81,7 +85,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
         {:error, :plugin_not_found}
 
       plugin ->
-        Logger.info("[#{__MODULE__}] Reloading plugin: #{plugin_id}")
+        Raxol.Core.Runtime.Log.info_with_context("[#{__MODULE__}] Reloading plugin: #{plugin_id}", %{})
 
         # First disable the plugin
         case disable_plugin(plugin_id, state) do
@@ -92,18 +96,22 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
                 {:ok, state_after_enable}
 
               {:error, reason} ->
-                Logger.error(
-                  "[#{__MODULE__}] Failed to re-enable plugin #{plugin_id} after reload: #{inspect(reason)}"
+                Raxol.Core.Runtime.Log.error_with_stacktrace(
+                  "[#{__MODULE__}] Error re-enabling plugin after reload",
+                  reason,
+                  nil,
+                  %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
                 )
-
                 {:error, reason}
             end
 
           {:error, reason} ->
-            Logger.error(
-              "[#{__MODULE__}] Failed to disable plugin #{plugin_id} for reload: #{inspect(reason)}"
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] Error disabling plugin for reload",
+              reason,
+              nil,
+              %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
             )
-
             {:error, reason}
         end
     end
@@ -113,7 +121,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   Loads a plugin with the given configuration.
   """
   def load_plugin(plugin_id, config, state) do
-    Logger.info("[#{__MODULE__}] Loading plugin: #{plugin_id}")
+    Raxol.Core.Runtime.Log.info_with_context("[#{__MODULE__}] Loading plugin: #{plugin_id}", %{})
 
     case state.loader_module.load_plugin(plugin_id, config) do
       {:ok, plugin, metadata} ->
@@ -133,18 +141,22 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
             {:ok, updated_state}
 
           {:error, reason} ->
-            Logger.error(
-              "[#{__MODULE__}] Failed to initialize plugin #{plugin_id}: #{inspect(reason)}"
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] Error loading plugin",
+              reason,
+              nil,
+              %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
             )
-
             {:error, reason}
         end
 
       {:error, reason} ->
-        Logger.error(
-          "[#{__MODULE__}] Failed to load plugin #{plugin_id}: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Error loading plugin",
+          reason,
+          nil,
+          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
         )
-
         {:error, reason}
     end
   end

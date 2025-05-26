@@ -2,7 +2,7 @@
 # Run with: mix run scripts/verify_terminal_dimensions.exs
 
 defmodule TerminalDimensionVerifier do
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   def run do
     IO.puts("Terminal Dimension Verification")

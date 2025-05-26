@@ -66,8 +66,11 @@ defmodule Raxol.Test.MockDB do
   end
 
   def start_link(config) do
-    {:ok, pid} = Task.start_link(fn -> Process.sleep(:infinity) end)
-    {:ok, pid, config}
+    case Task.start_link(fn -> Process.sleep(:infinity) end) do
+      {:ok, pid} -> {:ok, pid, config}
+      {:error, {:already_started, pid}} -> {:ok, pid, config}
+      other -> other
+    end
   end
 
   # Ecto.Adapter.Queryable callbacks

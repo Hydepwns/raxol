@@ -14,18 +14,18 @@ defmodule SubscriptionsExample do
 
   # Alias for subscriptions
   alias Raxol.Core.Runtime.Events.Subscription
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @impl true
   def init(_context) do
-    Logger.debug("SubscriptionsExample: init/1")
+    Raxol.Core.Runtime.Log.debug("SubscriptionsExample: init/1")
     # Return the correct tuple with a map model
     {:ok, %{little_ticks: 0, big_ticks: 0}}
   end
 
   @impl true
   def update(message, model) do
-    Logger.debug("SubscriptionsExample: update/2 received message: \#{inspect(message)}")
+    Raxol.Core.Runtime.Log.debug("SubscriptionsExample: update/2 received message: \#{inspect(message)}")
     case message do
       :little_tick ->
         # Return the correct :ok tuple
@@ -41,10 +41,9 @@ defmodule SubscriptionsExample do
     end
   end
 
-  # Renamed from subscribe/1
   @impl true
   def subscriptions(_model) do
-    Logger.debug("SubscriptionsExample: subscriptions/1")
+    Raxol.Core.Runtime.Log.debug("SubscriptionsExample: subscriptions/1")
     # Assuming Subscription API is correct
     Subscription.batch([
       Subscription.interval(1000, :big_tick),  # Send :big_tick every 1000ms
@@ -52,10 +51,9 @@ defmodule SubscriptionsExample do
     ])
   end
 
-  # Renamed from render/1 to view/1
   @impl true
   def view(%{little_ticks: little_ticks, big_ticks: big_ticks} = model) do
-    Logger.debug("SubscriptionsExample: view/1")
+    Raxol.Core.Runtime.Log.debug("SubscriptionsExample: view/1")
     # Use the Raxol.View.Elements DSL
     view do
       box title: "Subscriptions Example", style: [[:padding, 1], [:border, :single]] do
@@ -69,10 +67,6 @@ defmodule SubscriptionsExample do
   end
 end
 
-Logger.info("SubscriptionsExample: Starting Raxol...")
-# Use the standard startup mechanism
+Raxol.Core.Runtime.Log.info("SubscriptionsExample: Starting Raxol...")
 {:ok, _pid} = Raxol.start_link(SubscriptionsExample, [])
-Logger.info("SubscriptionsExample: Raxol started. Running...")
-
-# For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
-Process.sleep(2000)
+Raxol.Core.Runtime.Log.info("SubscriptionsExample: Raxol started. Running...")

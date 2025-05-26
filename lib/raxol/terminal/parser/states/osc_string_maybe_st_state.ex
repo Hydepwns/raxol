@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.Commands.Executor
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Processes input when the parser is in the :osc_string_maybe_st state.
@@ -47,9 +47,8 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
 
       # Not ST
       <<_unexpected_byte, rest_after_unexpected::binary>> ->
-        Logger.warning(
-          "Malformed OSC termination: ESC not followed by ST. Returning to ground."
-        )
+        msg = "Malformed OSC termination: ESC not followed by ST. Returning to ground."
+        Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 
         # Discard sequence, go to ground
         next_parser_state = %{parser_state | state: :ground}
@@ -58,9 +57,8 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
 
       # Input ended after ESC, incomplete sequence
       <<>> ->
-        Logger.warning(
-          "Malformed OSC termination: Input ended after ESC. Returning to ground."
-        )
+        msg = "Malformed OSC termination: Input ended after ESC. Returning to ground."
+        Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 
         # Go to ground, return emulator as is
         {:handled, emulator}
@@ -68,7 +66,7 @@ defmodule Raxol.Terminal.Parser.States.OSCStringMaybeSTState do
       # Ignore CAN, SUB (abort sequence) - Moved for clarity
       <<ignored_byte, rest_after_ignored::binary>>
       when ignored_byte == 0x18 or ignored_byte == 0x1A ->
-        Logger.debug("Ignoring CAN/SUB byte during OSC String (after ESC)")
+        Raxol.Core.Runtime.Log.debug("Ignoring CAN/SUB byte during OSC String (after ESC)")
         # Abort sequence, go to ground
         next_parser_state = %{parser_state | state: :ground}
         {:continue, emulator, next_parser_state, rest_after_ignored}

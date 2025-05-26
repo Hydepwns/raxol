@@ -50,7 +50,7 @@ defmodule Raxol.Animation.Framework do
   - If you provide a fully qualified path (e.g., `[:elements, "foo", :opacity]`), it will be used as-is.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   alias Raxol.Core.Accessibility
   alias Raxol.Animation.StateManager
   alias Raxol.Animation.Accessibility, as: AnimAccessibility
@@ -80,7 +80,7 @@ defmodule Raxol.Animation.Framework do
       :ok
   """
   def init(opts \\ %{}, user_preferences_pid \\ nil) do
-    Logger.debug("Initializing animation framework...")
+    Raxol.Core.Runtime.Log.debug("Initializing animation framework...")
 
     # Read reduced_motion preference
     reduced_motion_pref =
@@ -368,7 +368,7 @@ defmodule Raxol.Animation.Framework do
         if path do
           set_in_state(state, path, final_value)
         else
-          Logger.error(
+          Raxol.Core.Runtime.Log.error(
             "Animation #{animation_name} for element #{element_id} is missing :target_path."
           )
 
@@ -398,7 +398,7 @@ defmodule Raxol.Animation.Framework do
           })
         rescue
           e ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Error in on_complete callback for animation #{animation_name}: #{inspect(e)}"
             )
         end
@@ -423,7 +423,7 @@ defmodule Raxol.Animation.Framework do
       path = Map.get(animation, :target_path)
 
       unless path do
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "Animation #{animation_name} for element #{element_id} is missing :target_path."
         )
 
@@ -531,8 +531,9 @@ defmodule Raxol.Animation.Framework do
   catch
     # Catch potential errors if path is invalid for the state structure
     :error, reason ->
-      Logger.warning(
-        "[Animation] Failed to get path #{inspect(path)} from state: #{inspect(reason)}"
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "[Animation] Failed to get path #{inspect(path)} from state: #{inspect(reason)}",
+        %{path: path, reason: reason}
       )
 
       # Or return an appropriate default/error indicator
@@ -553,8 +554,9 @@ defmodule Raxol.Animation.Framework do
   catch
     # Catch potential errors if path is invalid for the state structure
     :error, reason ->
-      Logger.warning(
-        "[Animation] Failed to set path #{inspect(path)} in state: #{inspect(reason)}"
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "[Animation] Failed to set path #{inspect(path)} in state: #{inspect(reason)}",
+        %{path: path, reason: reason}
       )
 
       # Return original state on error
@@ -571,8 +573,9 @@ defmodule Raxol.Animation.Framework do
        when not is_list(key) and not is_map(state) do
     # If key is not a list and state is not a map, we cannot proceed
     # This might happen if the path is incorrect or points to a scalar value
-    Logger.warning(
-      "[Animation] Path #{inspect(key)} is not a list and state is not a map. Cannot set value."
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[Animation] Path #{inspect(key)} is not a list and state is not a map. Cannot set value.",
+      %{}
     )
 
     state

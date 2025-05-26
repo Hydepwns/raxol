@@ -13,7 +13,7 @@ defmodule Raxol.Terminal.Configuration do
   alias Raxol.Terminal.Config.Defaults
   alias Raxol.Core.Preferences.Store
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @typep theme_map :: %{atom() => String.t()}
 
@@ -130,9 +130,7 @@ defmodule Raxol.Terminal.Configuration do
              Map.has_key?(__MODULE__.__struct__(), key) do
           Map.put(acc, key, value)
         else
-          Logger.warning(
-            "Ignoring unknown configuration option: #{inspect(key)}"
-          )
+          Raxol.Core.Runtime.Log.warning_with_context("Ignoring unknown configuration option: #{inspect(key)}", %{})
 
           acc
         end

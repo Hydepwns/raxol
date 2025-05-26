@@ -32,7 +32,7 @@ defmodule Raxol.UI.Components.Modal do
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Require view macros and components
   require Raxol.View.Elements
@@ -137,13 +137,13 @@ defmodule Raxol.UI.Components.Modal do
   @spec update(term(), map()) :: {map(), list()}
   def update(msg, state) do
     # Handle messages to show/hide, button clicks, form updates
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Modal #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
     )
 
     case msg do
       :show ->
-        # Logger.debug("Modal Update: Received :show. State BEFORE: #{inspect state}")
+        # Raxol.Core.Runtime.Log.debug("Modal Update: Received :show. State BEFORE: #{inspect state}")
         cmd = set_focus_command(state)
         new_state = %{state | visible: true}
         # Emit state changed event
@@ -152,11 +152,11 @@ defmodule Raxol.UI.Components.Modal do
           {:modal_state_changed, Map.get(state, :id, nil), :visible, true}
         )
 
-        # Logger.debug("Modal Update: State AFTER :show: #{inspect new_state}, Command: #{inspect cmd}")
+        # Raxol.Core.Runtime.Log.debug("Modal Update: State AFTER :show: #{inspect new_state}, Command: #{inspect cmd}")
         {new_state, [cmd]}
 
       :hide ->
-        # Logger.debug("Modal Update: Received :hide. State BEFORE: #{inspect state}")
+        # Raxol.Core.Runtime.Log.debug("Modal Update: Received :hide. State BEFORE: #{inspect state}")
         new_state = %{state | visible: false}
         # Emit state changed event
         send(
@@ -164,7 +164,7 @@ defmodule Raxol.UI.Components.Modal do
           {:modal_state_changed, Map.get(state, :id, nil), :visible, false}
         )
 
-        # Logger.debug("Modal Update: State AFTER :hide: #{inspect new_state}")
+        # Raxol.Core.Runtime.Log.debug("Modal Update: State AFTER :hide: #{inspect new_state}")
         {new_state, []}
 
       # --- Button Clicks ---
@@ -198,17 +198,17 @@ defmodule Raxol.UI.Components.Modal do
         update_field_value(state, field_id, new_value)
 
       {:focus_next_field} ->
-        # Logger.debug("Modal Update: Received :focus_next_field. Current focus: #{state.form_state.focus_index}")
+        # Raxol.Core.Runtime.Log.debug("Modal Update: Received :focus_next_field. Current focus: #{state.form_state.focus_index}")
         new_state_tuple = change_focus(state, 1)
 
-        # Logger.debug("Modal Update: After change_focus for :focus_next_field: #{inspect new_state_tuple}")
+        # Raxol.Core.Runtime.Log.debug("Modal Update: After change_focus for :focus_next_field: #{inspect new_state_tuple}")
         new_state_tuple
 
       {:focus_prev_field} ->
-        # Logger.debug("Modal Update: Received :focus_prev_field. Current focus: #{state.form_state.focus_index}")
+        # Raxol.Core.Runtime.Log.debug("Modal Update: Received :focus_prev_field. Current focus: #{state.form_state.focus_index}")
         new_state_tuple = change_focus(state, -1)
 
-        # Logger.debug("Modal Update: After change_focus for :focus_prev_field: #{inspect new_state_tuple}")
+        # Raxol.Core.Runtime.Log.debug("Modal Update: After change_focus for :focus_prev_field: #{inspect new_state_tuple}")
         new_state_tuple
 
       # --- Old Input Changed (Prompt compatibility) ---
@@ -222,7 +222,7 @@ defmodule Raxol.UI.Components.Modal do
 
       # --- Other ---
       _ ->
-        Logger.warning(
+        Raxol.Core.Runtime.Log.warning(
           "Modal #{Map.get(state, :id, nil)} received unknown message: #{inspect(msg)}"
         )
 
@@ -270,7 +270,7 @@ defmodule Raxol.UI.Components.Modal do
           fun.(value)
 
         _ ->
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning(
             "Invalid validator for field #{field.id}: #{inspect(validator)}"
           )
 
@@ -328,11 +328,11 @@ defmodule Raxol.UI.Components.Modal do
 
   # Helper to generate focus command for the focused field
   defp set_focus_command(state) do
-    # Logger.debug("set_focus_command called with state ID: #{inspect state.id}, focus_index: #{inspect state.form_state.focus_index}, fields: #{inspect state.form_state.fields}")
+    # Raxol.Core.Runtime.Log.debug("set_focus_command called with state ID: #{inspect state.id}, focus_index: #{inspect state.form_state.focus_index}, fields: #{inspect state.form_state.fields}")
     focused_field =
       Enum.at(state.form_state.fields, state.form_state.focus_index)
 
-    # Logger.debug("Focused field: #{inspect focused_field}")
+    # Raxol.Core.Runtime.Log.debug("Focused field: #{inspect focused_field}")
     command =
       if focused_field do
         # Construct the full ID path if the modal has an ID
@@ -341,15 +341,15 @@ defmodule Raxol.UI.Components.Modal do
             do: "#{Map.get(state, :id, nil)}.#{focused_field.id}",
             else: focused_field.id
 
-        # Logger.debug("Generating focus command for field: #{inspect field_full_id}")
+        # Raxol.Core.Runtime.Log.debug("Generating focus command for field: #{inspect field_full_id}")
         {:set_focus, field_full_id}
       else
         # Focus the modal itself if no fields or focus index is invalid
-        # Logger.debug("Generating focus command for modal: #{inspect state.id}")
+        # Raxol.Core.Runtime.Log.debug("Generating focus command for modal: #{inspect state.id}")
         {:set_focus, Map.get(state, :id, nil)}
       end
 
-    # Logger.debug("Final command: #{inspect command}") # Log the generated command
+    # Raxol.Core.Runtime.Log.debug("Final command: #{inspect command}") # Log the generated command
     command
   end
 
@@ -357,7 +357,7 @@ defmodule Raxol.UI.Components.Modal do
   @spec handle_event(term(), map(), map()) :: {map(), list()}
   def handle_event(event, %{} = _props, state) do
     # Handle Escape key to close, Enter/Tab in prompts/forms
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Modal #{Map.get(state, :id, nil)} received event: #{inspect(event)}"
     )
 
@@ -514,11 +514,11 @@ defmodule Raxol.UI.Components.Modal do
 
   defp render_form_content(state) do
     # Render specific inputs for prompt/form types
-    # Logger.debug("[Render Form] Processing #{length(state.form_state.fields)} fields.")
+    # Raxol.Core.Runtime.Log.debug("[Render Form] Processing #{length(state.form_state.fields)} fields.")
     field_elements =
       Enum.with_index(state.form_state.fields)
       |> Enum.map(fn {field, index} ->
-        # Logger.debug("[Render Form] Processing field ##{index}: #{inspect field.id}")
+        # Raxol.Core.Runtime.Log.debug("[Render Form] Processing field ##{index}: #{inspect field.id}")
         # Construct the full ID path for focus management if modal has ID
         field_full_id =
           if Map.get(state, :id, nil),
@@ -574,7 +574,7 @@ defmodule Raxol.UI.Components.Modal do
               %{type: Dropdown, attrs: dropdown_props}
 
             _ ->
-              Logger.warning(
+              Raxol.Core.Runtime.Log.warning(
                 "Unsupported form field type in Modal: #{inspect(field.type)}"
               )
 

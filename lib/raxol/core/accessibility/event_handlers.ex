@@ -4,7 +4,7 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
   """
 
   alias Raxol.Core.Accessibility.{Announcements, Metadata, Preferences}
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Handle focus change events for accessibility announcements.
@@ -23,7 +23,7 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
         Announcements.announce(announcement, [], user_preferences_pid_or_name)
       end
 
-      Logger.debug("Focus changed to: #{inspect(new_element)}")
+      Raxol.Core.Runtime.Log.debug("Focus changed to: #{inspect(new_element)}")
     end
 
     :ok
@@ -52,7 +52,7 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
       :ok
   """
   def handle_locale_changed({:locale_changed, _locale_info}) do
-    Logger.debug("Locale changed event received.")
+    Raxol.Core.Runtime.Log.debug("Locale changed event received.")
     :ok
   end
 
@@ -68,7 +68,7 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
         {:theme_changed, %{theme: theme_name}},
         user_preferences_pid_or_name
       ) do
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "[Test Log - Accessibility] handle_theme_changed triggered for theme: #{inspect(theme_name)}"
     )
 

@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.Commands.Executor do
   alias Raxol.Terminal.Commands.CSIHandlers
   alias Raxol.Terminal.Commands.OSCHandlers
   alias Raxol.Terminal.Commands.DCSHandlers
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Executes a CSI (Control Sequence Introducer) command.
@@ -127,7 +127,7 @@ defmodule Raxol.Terminal.Commands.Executor do
           CSIHandlers.handle_scs(emulator, params_buffer, final_byte)
 
         _ ->
-          Logger.warning("Unknown CSI command: #{inspect(final_byte)}", [])
+          Raxol.Core.Runtime.Log.warning_with_context("Unknown CSI command: #{inspect(final_byte)}", %{})
           {:error, :unhandled_csi, emulator}
       end
 
@@ -136,7 +136,7 @@ defmodule Raxol.Terminal.Commands.Executor do
         new_emulator
 
       {:error, reason, new_emulator} ->
-        Logger.error("CSI handler error: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error("CSI handler error: #{inspect(reason)}")
         new_emulator
 
       %Emulator{} = new_emulator ->
@@ -151,7 +151,7 @@ defmodule Raxol.Terminal.Commands.Executor do
   """
   @spec execute_osc_command(Emulator.t(), String.t()) :: Emulator.t()
   def execute_osc_command(emulator, command_string) do
-    Logger.debug("Executing OSC command: #{inspect(command_string)}")
+    Raxol.Core.Runtime.Log.debug("Executing OSC command: #{inspect(command_string)}")
 
     result =
       case String.split(command_string, ";", parts: 2) do
@@ -183,20 +183,20 @@ defmodule Raxol.Terminal.Commands.Executor do
                   OSCHandlers.handle_52(emulator, pt)
 
                 _ ->
-                  Logger.warning("Unknown OSC command code: #{ps_code}, String: '#{command_string}'", [])
+                  Raxol.Core.Runtime.Log.warning_with_context("Unknown OSC command code: #{ps_code}, String: '#{command_string}'", %{})
                   {:error, :unhandled_osc, emulator}
               end
 
             # Failed to parse Ps as integer
             _ ->
-              Logger.warning("Invalid OSC command code: '#{ps_str}', String: '#{command_string}'", [])
+              Raxol.Core.Runtime.Log.warning_with_context("Invalid OSC command code: '#{ps_str}', String: '#{command_string}'", %{})
               {:error, :invalid_osc_code, emulator}
           end
 
         # Handle OSC sequences with no parameters (e.g., some color requests)
         # Or potentially malformed sequences
         _ ->
-          Logger.warning("OSC: Unexpected command format: '#{command_string}'", [])
+          Raxol.Core.Runtime.Log.warning_with_context("OSC: Unexpected command format: '#{command_string}'", %{})
           {:error, :malformed_osc, emulator}
       end
 
@@ -205,7 +205,7 @@ defmodule Raxol.Terminal.Commands.Executor do
         new_emulator
 
       {:error, reason, new_emulator} ->
-        Logger.error("OSC handler error: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error("OSC handler error: #{inspect(reason)}")
         new_emulator
 
       %Emulator{} = new_emulator ->
@@ -250,7 +250,7 @@ defmodule Raxol.Terminal.Commands.Executor do
         new_emulator
 
       {:error, reason, new_emulator} ->
-        Logger.error("DCS handler error: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error("DCS handler error: #{inspect(reason)}")
         new_emulator
 
       %Emulator{} = new_emulator ->
@@ -274,7 +274,7 @@ defmodule Raxol.Terminal.Commands.Executor do
     # Note: The original request (e.g., "m") is NOT part of the standard response payload format P...$r...
     # The payload itself contains the terminating character (m, r, q, etc.)
     response_str = "\eP#{validity}!|#{response_payload}\e\\"
-    Logger.debug("Sending DCS Response: #{inspect(response_str)}")
+    Raxol.Core.Runtime.Log.debug("Sending DCS Response: #{inspect(response_str)}")
     %{emulator | output_buffer: emulator.output_buffer <> response_str}
   end
 

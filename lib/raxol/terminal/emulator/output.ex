@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Emulator.Output do
   Provides functions for output buffering, processing, and formatting.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.{
     Emulator,

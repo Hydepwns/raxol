@@ -84,7 +84,7 @@ defmodule Raxol.Core.Runtime.Application do
   @type subscription :: term()
   @type element :: Raxol.Core.Renderer.Element.t()
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Initializes the application state.
@@ -177,13 +177,13 @@ defmodule Raxol.Core.Runtime.Application do
   @spec delegate_init(module(), context()) ::
           {model(), list(Command.t())} | {:error, term()}
   def delegate_init(app_module, context) when is_atom(app_module) do
-    Logger.info("[#{__MODULE__}] Delegating init to #{inspect(app_module)}...")
+    Raxol.Core.Runtime.Log.info("[#{__MODULE__}] Delegating init to #{inspect(app_module)}...")
 
     if function_exported?(app_module, :init, 1) do
       try do
         result = app_module.init(context)
 
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned: #{inspect(result)}"
         )
 
@@ -196,27 +196,31 @@ defmodule Raxol.Core.Runtime.Application do
             {model, []}
 
           invalid_return ->
-            Logger.error(
-              "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned invalid value: #{inspect(invalid_return)}. Expected map() or {map(), list()}.
-              Falling back to empty model with no commands."
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned invalid value: #{inspect(invalid_return)}. Expected map() or {map(), list()}. Falling back to empty model with no commands.",
+              nil,
+              nil,
+              %{module: __MODULE__, app_module: app_module, context: context, invalid_return: invalid_return}
             )
 
             {%{}, []}
         end
       rescue
         error ->
-          Logger.error(
-            "[#{__MODULE__}] Error executing #{inspect(app_module)}.init/1: #{inspect(error)}\\nStacktrace: #{inspect(__STACKTRACE__)}"
+          Raxol.Core.Runtime.Log.error_with_stacktrace(
+            "[#{__MODULE__}] Error executing #{inspect(app_module)}.init/1",
+            error,
+            nil,
+            %{module: __MODULE__, app_module: app_module, context: context}
           )
-
           {:error, {:init_failed, error}}
       end
     else
-      Logger.warning(
+      Raxol.Core.Runtime.Log.warning_with_context(
         "[#{__MODULE__}] Application module #{inspect(app_module)} does not export init/1. Using default empty state.",
-        []
+        %{module: __MODULE__, app_module: app_module, context: context, warning: :no_init_exported},
+        nil
       )
-
       # Default if init/1 is not exported
       {%{}, []}
     end
@@ -234,26 +238,31 @@ defmodule Raxol.Core.Runtime.Application do
             {new_model, commands}
 
           invalid_return ->
-            Logger.error(
-              "[#{__MODULE__}] #{inspect(app_module)}.update/2 returned invalid value: #{inspect(invalid_return)}. Expected {map(), list()}.
-              Falling back to previous model with no commands."
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] #{inspect(app_module)}.update/2 returned invalid value: #{inspect(invalid_return)}. Expected {map(), list()}. Falling back to previous model with no commands.",
+              nil,
+              nil,
+              %{module: __MODULE__, app_module: app_module, message: message, current_model: current_model, invalid_return: invalid_return}
             )
-
             {current_model, []}
         end
       rescue
         error ->
-          Logger.error(
-            "[#{__MODULE__}] Error executing #{inspect(app_module)}.update/2: #{inspect(error)}\\nStacktrace: #{inspect(__STACKTRACE__)}"
+          Raxol.Core.Runtime.Log.error_with_stacktrace(
+            "[#{__MODULE__}] Error executing #{inspect(app_module)}.update/2",
+            error,
+            nil,
+            %{module: __MODULE__, app_module: app_module, message: message, current_model: current_model}
           )
-
           {:error, {:update_failed, error}}
       end
     else
-      Logger.error(
-        "[#{__MODULE__}] Application module #{inspect(app_module)} does not implement update/2 callback."
+      Raxol.Core.Runtime.Log.error_with_stacktrace(
+        "[#{__MODULE__}] Application module #{inspect(app_module)} does not implement update/2 callback.",
+        nil,
+        nil,
+        %{module: __MODULE__, app_module: app_module, message: message, current_model: current_model, error: :update_callback_not_implemented}
       )
-
       {:error, :update_callback_not_implemented}
     end
   end
@@ -263,7 +272,7 @@ defmodule Raxol.Core.Runtime.Application do
   """
   @spec get_env(atom(), atom(), any()) :: any()
   def get_env(app, key, default \\ nil) do
-    Logger.debug("[#{__MODULE__}] get_env called for: #{app}.#{key}")
+    Raxol.Core.Runtime.Log.debug("[#{__MODULE__}] get_env called for: #{app}.#{key}")
     # TODO: Implement actual config fetching (e.g., from Application env)
     Application.get_env(app, key, default)
   end

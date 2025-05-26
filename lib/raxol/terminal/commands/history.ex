@@ -177,4 +177,12 @@ defmodule Raxol.Terminal.Commands.History do
   end
 
   def maybe_add_to_history(emulator, _), do: emulator
+
+  @doc """
+  Updates the maximum size of the command history. Truncates the history if needed.
+  """
+  def update_size(%__MODULE__{} = history, new_size) when is_integer(new_size) and new_size > 0 do
+    commands = Enum.take(history.commands, new_size)
+    %{history | commands: commands, max_size: new_size, current_index: min(history.current_index, new_size - 1)}
+  end
 end

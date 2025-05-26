@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.ScreenBuffer
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Helper function to handle cursor movement operations.
@@ -125,7 +125,7 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     active_buffer = Emulator.get_active_buffer(emulator)
     height = ScreenBuffer.get_height(active_buffer)
     new_row = min(row - 1, height - 1)
-    {current_col, _} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+    {current_col, _} = Raxol.Terminal.Emulator.get_cursor_position(emulator.cursor)
     width = ScreenBuffer.get_width(active_buffer)
 
     new_cursor =
@@ -158,8 +158,9 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
         value
 
       _ ->
-        Logger.warn(
-          "Invalid parameter value at index #{index}, using default #{default}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Invalid parameter value at index #{index}, using default #{default}",
+          %{}
         )
 
         default

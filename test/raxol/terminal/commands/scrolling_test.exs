@@ -27,6 +27,11 @@ defmodule Raxol.Terminal.Commands.ScrollingTest do
         buffer_width,
         buffer_height
       )
+      |> then(fn buf ->
+        Enum.reduce(Enum.with_index(initial_lines_content), buf, fn {line, idx}, acc ->
+          ScreenBuffer.put_line(acc, idx, line)
+        end)
+      end)
 
     {:ok,
      buffer: buffer,

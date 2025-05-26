@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   Manages command registration and execution for plugins.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @type command_name :: String.t()
   @type command_handler :: function()
@@ -45,7 +45,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
         execute_with_timeout(handler, args, metadata)
 
       {:error, reason} = error ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "Failed to execute command #{command_name}: #{inspect(reason)}"
         )
 
@@ -233,7 +233,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
       {:ok, updated_table}
     rescue
       e ->
-        Logger.error("Failed to register commands: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error("Failed to register commands: #{inspect(e)}")
         {:error, :registration_failed}
     end
   end
@@ -244,7 +244,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
       {:ok, updated_table}
     rescue
       e ->
-        Logger.error("Failed to unregister commands: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to unregister commands",
+          e,
+          nil,
+          %{plugin_module: plugin_module, module: __MODULE__}
+        )
         {:error, :unregistration_failed}
     end
   end
@@ -255,7 +260,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
         handler.(args, Map.put(context, :plugin_state, plugin_state))
       rescue
         e ->
-          Logger.error("Command execution failed: #{inspect(e)}")
+          Raxol.Core.Runtime.Log.error_with_stacktrace(
+            "Command execution failed",
+            e,
+            nil,
+            %{plugin_state: plugin_state, module: __MODULE__}
+          )
           {:error, {:execution_failed, Exception.message(e)}}
       end
     end
@@ -285,7 +295,12 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
         {:error, :command_timeout}
 
       _kind, reason ->
-        Logger.error("Command execution failed: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Command execution failed in Task.await",
+          reason,
+          nil,
+          %{args: args, module: __MODULE__}
+        )
         {:error, {:execution_failed, Exception.message(reason)}}
     end
   end

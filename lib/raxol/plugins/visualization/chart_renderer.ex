@@ -3,7 +3,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
   Handles rendering logic for chart visualizations within the VisualizationPlugin.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
   alias Raxol.Plugins.Visualization.DrawingUtils
   alias Raxol.Style
@@ -25,8 +25,9 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     title = Map.get(opts, :title, "Chart")
 
     if width < 5 or height < 3 do
-      Logger.warning(
-        "[ChartRenderer] Bounds too small for chart rendering: #{inspect(bounds)}"
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "[ChartRenderer] Bounds too small for chart rendering: #{inspect(bounds)}",
+        %{}
       )
 
       DrawingUtils.draw_box_with_text("!", bounds)
@@ -43,7 +44,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
         e ->
           stacktrace = __STACKTRACE__
 
-          Logger.error(
+          Raxol.Core.Runtime.Log.error(
             "[ChartRenderer] Error rendering chart: #{inspect(e)}\nStacktrace: #{inspect(stacktrace)}"
           )
 
@@ -211,7 +212,7 @@ defmodule Raxol.Plugins.Visualization.ChartRenderer do
     sampled_length = if is_list(sampled_data), do: length(sampled_data), else: 0
 
     if data_length != sampled_length and data_length > 0 do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[ChartRenderer] Data sampled for chart: #{data_length} -> #{sampled_length} points"
       )
     end

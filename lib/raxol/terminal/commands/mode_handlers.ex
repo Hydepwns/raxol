@@ -10,7 +10,7 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ModeManager
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Handles Set Mode (SM - `h`) or Reset Mode (RM - `l`).
@@ -51,7 +51,7 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
       if mode_atom do
         apply_mode_func.(acc_emulator, [mode_atom])
       else
-        Logger.warn("Unknown DEC private mode code: ?#{param_code}")
+        Raxol.Core.Runtime.Log.warning_with_context("Unknown DEC private mode code: ?#{param_code}", %{})
         acc_emulator
       end
     end)
@@ -80,8 +80,9 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
             # Assuming ModeManager might handle a generic :keyboard_action if sent
             # This is speculative and depends on ModeManager's internal handling.
             # For now, we'll log if not in ModeManager's map.
-            Logger.warn(
-              "Standard mode code 2 (KAM) not directly in ModeManager's map. Effect depends on ModeManager internals."
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "Standard mode code 2 (KAM) not directly in ModeManager's map. Effect depends on ModeManager internals.",
+              %{}
             )
 
             # Or attempt apply_mode_func.(acc_emulator, [:keyboard_action]) if confident
@@ -89,14 +90,15 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
 
           # Send/Receive Mode (SRM) - ModeManager does not list
           12 ->
-            Logger.warn(
-              "Standard mode code 12 (SRM) not directly in ModeManager's map. Effect depends on ModeManager internals."
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "Standard mode code 12 (SRM) not directly in ModeManager's map. Effect depends on ModeManager internals.",
+              %{}
             )
 
             acc_emulator
 
           _ ->
-            Logger.warn("Unknown standard mode code: #{param_code}")
+            Raxol.Core.Runtime.Log.warning_with_context("Unknown standard mode code: #{param_code}", %{})
             acc_emulator
         end
       end
@@ -122,8 +124,9 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
         value
 
       _ ->
-        Logger.warn(
-          "Invalid parameter value at index #{index}, using default #{default}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Invalid parameter value at index #{index}, using default #{default}",
+          %{}
         )
 
         default

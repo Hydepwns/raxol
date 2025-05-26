@@ -7,7 +7,7 @@
 # 3. Verifying that all widget configurations are preserved correctly
 
 defmodule LayoutPersistenceTest do
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @layout_test_file_path "~/.raxol/layout_persistence_test.log"
 

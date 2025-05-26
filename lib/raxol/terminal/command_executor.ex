@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.CommandExecutor do
   placeholders during refactoring, but they primarily log warnings and delegate
   to the new modules where possible.
   """
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Commands.Screen
@@ -42,9 +42,10 @@ defmodule Raxol.Terminal.CommandExecutor do
         intermediates_buffer,
         final_byte
       ) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Raxol.Terminal.CommandExecutor.execute_csi_command/4 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Executor.execute_csi_command/4 instead."
+        "Use Raxol.Terminal.Commands.Executor.execute_csi_command/4 instead.",
+      []
     )
 
     Executor.execute_csi_command(
@@ -63,9 +64,10 @@ defmodule Raxol.Terminal.CommandExecutor do
   @spec parse_params(String.t()) ::
           list(integer() | nil | list(integer() | nil))
   def parse_params(params_string) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Raxol.Terminal.CommandExecutor.parse_params/1 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Parser.parse_params/1 instead."
+        "Use Raxol.Terminal.Commands.Parser.parse_params/1 instead.",
+      []
     )
 
     Parser.parse_params(params_string)
@@ -78,9 +80,10 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec get_param(list(integer() | nil), pos_integer(), integer()) :: integer()
   def get_param(params, index, default \\ 1) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Raxol.Terminal.CommandExecutor.get_param/3 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Parser.get_param/3 instead."
+        "Use Raxol.Terminal.Commands.Parser.get_param/3 instead.",
+      []
     )
 
     Parser.get_param(params, index, default)
@@ -123,9 +126,10 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec clear_screen(Emulator.t(), integer()) :: Emulator.t()
   def clear_screen(emulator, mode) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Raxol.Terminal.CommandExecutor.clear_screen/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead.",
+      []
     )
 
     Screen.clear_screen(emulator, mode)
@@ -138,9 +142,10 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec clear_line(Emulator.t(), integer()) :: Emulator.t()
   def clear_line(emulator, mode) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Raxol.Terminal.CommandExecutor.clear_line/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead.",
+      []
     )
 
     Screen.clear_line(emulator, mode)
@@ -153,9 +158,10 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec insert_line(Emulator.t(), integer()) :: Emulator.t()
   def insert_line(emulator, count) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Raxol.Terminal.CommandExecutor.insert_line/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead.",
+      []
     )
 
     Screen.insert_lines(emulator, count)
@@ -168,9 +174,10 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec delete_line(Emulator.t(), integer()) :: Emulator.t()
   def delete_line(emulator, count) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Raxol.Terminal.CommandExecutor.delete_line/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead.",
+      []
     )
 
     Screen.delete_lines(emulator, count)
@@ -183,9 +190,10 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec execute_osc_command(Emulator.t(), String.t()) :: Emulator.t()
   def execute_osc_command(emulator, command_string) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Raxol.Terminal.CommandExecutor.execute_osc_command/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Executor.execute_osc_command/2 instead."
+        "Use Raxol.Terminal.Commands.Executor.execute_osc_command/2 instead.",
+      []
     )
 
     Executor.execute_osc_command(emulator, command_string)
@@ -210,9 +218,10 @@ defmodule Raxol.Terminal.CommandExecutor do
         final_byte,
         payload
       ) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Raxol.Terminal.CommandExecutor.execute_dcs_command/5 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Executor.execute_dcs_command/5 instead."
+        "Use Raxol.Terminal.Commands.Executor.execute_dcs_command/5 instead.",
+      []
     )
 
     Raxol.Terminal.Commands.Executor.execute_dcs_command(
@@ -231,9 +240,10 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec handle_ed(Emulator.t(), integer()) :: Emulator.t()
   def handle_ed(emulator, mode \\ 0) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Raxol.Terminal.CommandExecutor.handle_ed/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead.",
+      []
     )
 
     Raxol.Terminal.Commands.Screen.clear_screen(emulator, mode)
@@ -246,9 +256,10 @@ defmodule Raxol.Terminal.CommandExecutor do
   """
   @spec handle_el(Emulator.t(), integer()) :: Emulator.t()
   def handle_el(emulator, mode \\ 0) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning_with_context(
       "Raxol.Terminal.CommandExecutor.handle_el/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead."
+        "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead.",
+      []
     )
 
     Raxol.Terminal.Commands.Screen.clear_line(emulator, mode)

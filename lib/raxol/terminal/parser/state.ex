@@ -5,6 +5,7 @@ defmodule Raxol.Terminal.Parser.State do
 
   defstruct [
     :state,
+    :params,
     :params_buffer,
     :intermediates_buffer,
     :payload_buffer,

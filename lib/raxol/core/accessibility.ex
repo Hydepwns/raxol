@@ -43,7 +43,7 @@ defmodule Raxol.Core.Accessibility do
     ThemeIntegration
   }
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Enable accessibility features with the given options.
@@ -71,7 +71,7 @@ defmodule Raxol.Core.Accessibility do
       :ok
   """
   def enable(options \\ [], user_preferences_pid_or_name \\ nil) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Enabling accessibility features with options: #{inspect(options)} and pid_or_name: #{inspect(user_preferences_pid_or_name)}"
     )
 
@@ -89,7 +89,7 @@ defmodule Raxol.Core.Accessibility do
     # Override with custom options
     updated_options = Keyword.merge(full_options, options)
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Accessibility] Enabling with options: #{inspect(updated_options)}"
     )
 
@@ -157,7 +157,7 @@ defmodule Raxol.Core.Accessibility do
     target_prefs =
       user_preferences_pid_or_name || Preferences.default_prefs_name()
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Disabling accessibility features for #{inspect(target_prefs)}"
     )
 

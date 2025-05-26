@@ -16,7 +16,7 @@ defmodule Raxol.Terminal.Parser do
   alias Raxol.Terminal.Parser.States.DCSEntryState
   alias Raxol.Terminal.Parser.States.DCSPassthroughState
   alias Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # --- Public API ---
 
@@ -31,6 +31,10 @@ defmodule Raxol.Terminal.Parser do
   """
   @spec parse_chunk(Emulator.t(), Raxol.Terminal.Parser.State.t(), String.t()) ::
           {Emulator.t(), Raxol.Terminal.Parser.State.t(), String.t()}
+  def parse_chunk(emulator, nil, data) do
+    parse_chunk(emulator, %Raxol.Terminal.Parser.State{state: :ground}, data)
+  end
+
   def parse_chunk(emulator, state, data) do
     parse_loop(emulator, state, data)
   end
@@ -220,19 +224,19 @@ defmodule Raxol.Terminal.Parser do
   end
 
   def transition_to_escape(emulator, rest_after_esc) do
-    new_parser_state = %Raxol.Terminal.Parser.State{}
+    new_parser_state = %Raxol.Terminal.Parser.State{state: :escape}
     {emulator, new_parser_state, rest_after_esc}
   end
 
   def transition_to_ground(emulator) do
-    new_parser_state = %Raxol.Terminal.Parser.State{}
+    new_parser_state = %Raxol.Terminal.Parser.State{state: :ground}
     {emulator, new_parser_state, ""}
   end
 
   # --- CATCH-ALL CLAUSE FOR UNHANDLED STATES ---
   defp parse_loop(emulator, parser_state, input) do
-    require Logger
-    Logger.warn("[parse_loop] Unhandled parser state: #{inspect(parser_state)} with input: #{inspect(input)}")
+    msg = "[parse_loop] Unhandled parser state: #{inspect(parser_state)} with input: #{inspect(input)}"
+    Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
     {emulator, parser_state}
   end
 end

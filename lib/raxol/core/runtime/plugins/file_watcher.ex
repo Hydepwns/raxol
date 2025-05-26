@@ -58,7 +58,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher do
     Cleanup
   }
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Creates a new file watcher state.

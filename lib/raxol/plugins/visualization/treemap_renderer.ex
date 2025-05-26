@@ -4,7 +4,7 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
   Uses a squarified layout algorithm.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.Cell
   alias Raxol.Plugins.Visualization.DrawingUtils
   alias Raxol.Style
@@ -25,8 +25,9 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
     # Basic validation for bounds and data
     if width < 1 or height < 1 or is_nil(data) or not is_map(data) or
          map_size(data) == 0 do
-      Logger.warning(
-        "[TreemapRenderer] Invalid data or bounds too small for treemap: #{inspect(bounds)}, data: #{inspect(data)}"
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "[TreemapRenderer] Invalid data or bounds too small for treemap: #{inspect(bounds)}, data: #{inspect(data)}",
+        %{}
       )
 
       if width > 0 and height > 0 do
@@ -48,7 +49,7 @@ defmodule Raxol.Plugins.Visualization.TreemapRenderer do
         e ->
           stacktrace = __STACKTRACE__
 
-          Logger.error(
+          Raxol.Core.Runtime.Log.error(
             "[TreemapRenderer] Error rendering treemap: #{inspect(e)}\nStacktrace: #{inspect(stacktrace)}"
           )
 

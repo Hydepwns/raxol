@@ -11,7 +11,7 @@ defmodule Raxol.Test.PerformanceHelper do
 
   use ExUnit.CaseTemplate
   import ExUnit.Callbacks
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Sets up a test environment optimized for performance testing.

@@ -12,7 +12,7 @@ defmodule Raxol.Terminal.ANSI.Processor do
   """
 
   use GenServer
-  require Logger
+  require Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Buffer.Manager, as: BufferManager
   alias Raxol.Terminal.Buffer.Eraser

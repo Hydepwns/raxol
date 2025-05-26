@@ -11,7 +11,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
   alias Raxol.Terminal.ScreenBuffer
   alias Raxol.Terminal.Cell
   alias Raxol.Terminal.Buffer.Eraser
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Helper function to get active buffer, cursor position, and default style.
@@ -22,7 +22,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
            Raxol.Terminal.ANSI.TextFormatting.text_style()}
   def get_buffer_state(emulator) do
     active_buffer = Emulator.get_active_buffer(emulator)
-    cursor_pos = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+    cursor_pos = emulator.cursor
     blank_style = Raxol.Terminal.ANSI.TextFormatting.new()
     {active_buffer, cursor_pos, blank_style}
   end
@@ -136,9 +136,9 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
         value
 
       _ ->
-        Logger.warning(
+        Raxol.Core.Runtime.Log.warning_with_context(
           "Invalid parameter value at index #{index}, using default #{default}",
-          []
+          %{}
         )
 
         default

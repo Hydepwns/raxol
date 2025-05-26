@@ -1,8 +1,5 @@
 import Config
 
-# Set the overall default log level for the test environment to :debug
-config :logger, level: :debug
-
 # Configure Mox
 # Set the mock implementation for the Clipboard Behaviour
 config :raxol, :mocks, ClipboardBehaviour: ClipboardMock
@@ -35,11 +32,6 @@ config :raxol, RaxolWeb.Endpoint,
     "Pik91mX07sP1JkNY42p6HI97p2aHq3jVIM5wMwpqCNzJ3+t7j3XhYvYq4u8m/u8k",
   server: false,
   pubsub_server: Raxol.PubSub
-
-# Print only warnings and errors during test
-config :logger, level: :warn
-# Set logger level to :debug for this test run
-# config :logger, level: :debug
 
 # Initialize plugs at runtime for faster test compilation
 config :phoenix, :plug_init_mode, :runtime
@@ -100,12 +92,6 @@ config :mox, :exclude_compilation, false
 
 # Configure the KeyboardShortcuts module to use for testing
 config :raxol, :keyboard_shortcuts_module, Raxol.Mocks.KeyboardShortcutsMock
-
-# To set specific log level for a module:
-# config :logger, Raxol.Terminal.Buffer.Eraser, level: :debug
-
-# Configure Mox for testing
-# config :elixir, :mox_test_pid, self() # Commented out as Mox.setup() should handle this
 
 # Configure Raxol specific test settings
 config :raxol, :env, :test

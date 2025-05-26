@@ -48,6 +48,11 @@ defmodule Raxol.Animation.FrameworkTest do
   end
 
   describe "Animation Framework" do
+    setup do
+      {:ok, user_preferences_pid} = Raxol.Core.UserPreferences.start_link([])
+      %{user_preferences_pid: user_preferences_pid}
+    end
+
     test "initializes with default settings" do
       assert :ok == Framework.init()
       # Verify default settings
@@ -97,7 +102,7 @@ defmodule Raxol.Animation.FrameworkTest do
       assert animation.direction == :right
     end
 
-    test "starts animation for an element" do
+    test "starts animation for an element", %{user_preferences_pid: user_preferences_pid} do
       # Create and start a test animation
       animation =
         Framework.create_animation(:test_animation, %{
@@ -111,7 +116,7 @@ defmodule Raxol.Animation.FrameworkTest do
       wait_for_animation_start("test_element", animation.name)
     end
 
-    test "handles reduced motion preferences" do
+    test "handles reduced motion preferences", %{user_preferences_pid: user_preferences_pid} do
       # Enable reduced motion *before* creating/starting
       UserPreferences.set("accessibility.reduced_motion", true)
       Framework.init(%{reduced_motion: true})
@@ -173,7 +178,7 @@ defmodule Raxol.Animation.FrameworkTest do
       end)
     end
 
-    test "applies animation values to state" do
+    test "applies animation values to state", %{user_preferences_pid: user_preferences_pid} do
       # Create initial state
       initial_state = %{
         elements: %{
@@ -204,7 +209,7 @@ defmodule Raxol.Animation.FrameworkTest do
       assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
     end
 
-    test "handles multiple animations on same element" do
+    test "handles multiple animations on same element", %{user_preferences_pid: user_preferences_pid} do
       # Create initial state
       initial_state = %{
         elements: %{
@@ -252,7 +257,7 @@ defmodule Raxol.Animation.FrameworkTest do
                100
     end
 
-    test "meets performance requirements" do
+    test "meets performance requirements", %{user_preferences_pid: user_preferences_pid} do
       # Create a test animation
       animation =
         Framework.create_animation(:perf_test, %{

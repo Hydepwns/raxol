@@ -7,7 +7,7 @@ defmodule Raxol.Core.UserPreferences do
 
   use GenServer
   @behaviour Raxol.Core.UserPreferences.Behaviour
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Use the new Persistence module
   alias Raxol.Core.Preferences.Persistence
@@ -112,7 +112,7 @@ defmodule Raxol.Core.UserPreferences do
   def init(opts) do
     preferences =
       if Keyword.get(opts, :test_mode?, false) do
-        Logger.info(
+        Raxol.Core.Runtime.Log.info(
           "UserPreferences starting in test mode, using defaults only."
         )
 
@@ -120,16 +120,16 @@ defmodule Raxol.Core.UserPreferences do
       else
         case Persistence.load() do
           {:ok, loaded_prefs} ->
-            Logger.info("User preferences loaded successfully.")
+            Raxol.Core.Runtime.Log.info("User preferences loaded successfully.")
             # Deep merge with defaults to ensure all keys exist
             deep_merge(default_preferences(), loaded_prefs)
 
           {:error, :file_not_found} ->
-            Logger.info("No preferences file found, using defaults.")
+            Raxol.Core.Runtime.Log.info("No preferences file found, using defaults.")
             default_preferences()
 
           {:error, reason} ->
-            Logger.warning(
+            Raxol.Core.Runtime.Log.warning(
               "Failed to load preferences (#{reason}), using defaults."
             )
 
@@ -160,11 +160,11 @@ defmodule Raxol.Core.UserPreferences do
 
     case Persistence.save(state.preferences) do
       :ok ->
-        Logger.debug("User preferences saved immediately.")
+        Raxol.Core.Runtime.Log.debug("User preferences saved immediately.")
         {:reply, :ok, %{state | save_timer: nil}}
 
       {:error, reason} ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "Failed to save preferences immediately: #{inspect(reason)}"
         )
 
@@ -180,7 +180,7 @@ defmodule Raxol.Core.UserPreferences do
 
     if current_value != value do
       new_preferences = put_in(state.preferences, path, value)
-      Logger.debug("Preference updated: #{inspect(path)} = #{inspect(value)}")
+      Raxol.Core.Runtime.Log.debug("Preference updated: #{inspect(path)} = #{inspect(value)}")
       new_state = %{state | preferences: new_preferences}
       # Schedule a save after a delay
       {:reply, :ok, schedule_save(new_state)}
@@ -195,10 +195,10 @@ defmodule Raxol.Core.UserPreferences do
   def handle_info(:perform_delayed_save, state) do
     case Persistence.save(state.preferences) do
       :ok ->
-        Logger.debug("User preferences saved after delay.")
+        Raxol.Core.Runtime.Log.debug("User preferences saved after delay.")
 
       {:error, reason} ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "Failed to save preferences after delay: #{inspect(reason)}"
         )
     end
@@ -210,9 +210,7 @@ defmodule Raxol.Core.UserPreferences do
   # Catch-all for unexpected messages
   @impl true
   def handle_info(msg, state) do
-    Logger.warning(
-      "[UserPreferences] Ignoring unexpected message in handle_info: #{inspect(msg)}"
-    )
+    Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 
     {:noreply, state}
   end
@@ -277,7 +275,7 @@ defmodule Raxol.Core.UserPreferences do
     |> Enum.map(&String.to_existing_atom/1)
   catch
     ArgumentError ->
-      Logger.error(
+      Raxol.Core.Runtime.Log.error(
         "Invalid preference path string: #{inspect(path)} - cannot convert segments to atoms."
       )
 

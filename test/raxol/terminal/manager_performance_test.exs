@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
       )
 
       # Log results for analysis
-      Logger.info(
+      Raxol.Core.Runtime.Log.info(
         "Terminal Manager Event Processing Performance:\n#{format_benchmark_results(results)}"
       )
     end
@@ -86,7 +86,7 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
       )
 
       # Log results for analysis
-      Logger.info(
+      Raxol.Core.Runtime.Log.info(
         "Terminal Manager Screen Update Performance:\n#{format_benchmark_results(results)}"
       )
     end
@@ -120,7 +120,7 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
       )
 
       # Log results for analysis
-      Logger.info(
+      Raxol.Core.Runtime.Log.info(
         "Terminal Manager Concurrent Operations Performance:\n#{format_benchmark_results(results)}"
       )
     end

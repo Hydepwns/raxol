@@ -4,7 +4,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   Relies on an implementation of Raxol.System.Interaction for OS interactions.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @behaviour Raxol.Core.Runtime.Plugins.Plugin
 
@@ -21,7 +21,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
         @default_interaction_module
       )
 
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "Notification Plugin initialized (Interaction: #{interaction_mod})."
     )
 
@@ -58,8 +58,9 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   # Catch-all for incorrect args if a command somehow gets routed here
   # with a different signature than what get_commands implies.
   def handle_command(command_name, args, state) do
-    Logger.warning(
-      "NotificationPlugin :handle_command received unexpected command '#{command_name}' with args format: #{inspect(args)}"
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "NotificationPlugin :handle_command received unexpected command '#{command_name}' with args format: #{inspect(args)}",
+      %{}
     )
 
     {:error, {:unexpected_command_args, command_name, args}, state}
@@ -71,7 +72,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
     message = Map.get(data, :message, "Notification")
     title = Map.get(data, :title, "Raxol Notification")
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "NotificationPlugin: Sending notification - Title: '#{title}', Message: '#{message}'"
     )
 
@@ -129,7 +130,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
       # Execute the command if executable found
       {executable, args, _os_name} ->
         try do
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "Executing notification command: #{executable} with args: #{inspect(args)}"
           )
 
@@ -138,8 +139,6 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
                  stderr_to_stdout: true
                ) do
             {_output, 0} ->
-              # Logger.debug("Notification command successful (Output: #{output})")
-              # Return the specific OS success atom for easier testing
               success_atom =
                 case _os_name do
                   :linux -> :notification_sent_linux
@@ -152,7 +151,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
               {:ok, state, success_atom}
 
             {output, exit_code} ->
-              Logger.error(
+              Raxol.Core.Runtime.Log.error(
                 "Notification command failed. Exit Code: #{exit_code}, Output: #{output}"
               )
 
@@ -160,7 +159,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
           end
         rescue
           e ->
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "NotificationPlugin: Error executing notification command: #{inspect(e)}"
             )
 
@@ -175,30 +174,31 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
   defp handle_notification_error(reason_tuple, state) do
     case reason_tuple do
       {:command_not_found, :notify_send} ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "NotificationPlugin: Command 'notify-send' not found. Please install it."
         )
 
         {:error, {:command_not_found, :notify_send}, state}
 
       {:command_not_found, :osascript} ->
-        Logger.error("NotificationPlugin: Command 'osascript' not found.")
+        Raxol.Core.Runtime.Log.error("NotificationPlugin: Command 'osascript' not found.")
         {:error, {:command_not_found, :osascript}, state}
 
       {:command_not_found, :powershell} ->
-        Logger.error("NotificationPlugin: Command 'powershell' not found.")
+        Raxol.Core.Runtime.Log.error("NotificationPlugin: Command 'powershell' not found.")
         {:error, {:command_not_found, :powershell}, state}
 
       {:unsupported_os, os_tuple} ->
-        Logger.warning(
-          "NotificationPlugin: Desktop notifications not supported on this OS: #{inspect(os_tuple)}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "NotificationPlugin: Desktop notifications not supported on this OS: #{inspect(os_tuple)}",
+          %{}
         )
 
         {:ok, state, :notification_skipped_unsupported_os}
 
       # Generic fallback
       _ ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "NotificationPlugin: Unknown notification error: #{inspect(reason_tuple)}"
         )
 
@@ -208,7 +208,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
   def terminate(_reason, _state) do
-    Logger.info("Notification Plugin terminated (Behaviour callback).")
+    Raxol.Core.Runtime.Log.info("Notification Plugin terminated (Behaviour callback).")
     :ok
   end
 

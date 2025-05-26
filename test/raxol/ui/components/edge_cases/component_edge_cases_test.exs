@@ -19,7 +19,8 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       Map.merge(
         %{
           data: [],
-          computation_time: 0
+          computation_time: 0,
+          render_count: 0
         },
         props
       )
@@ -86,7 +87,8 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       Map.merge(
         %{
           error_count: 0,
-          last_error: nil
+          last_error: nil,
+          render_count: 0
         },
         props
       )

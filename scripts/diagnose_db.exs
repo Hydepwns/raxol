@@ -4,7 +4,7 @@
 # Run with: mix run scripts/diagnose_db.exs
 
 Mix.Task.run("loadpaths")
-Logger.configure(level: :info)
+Raxol.Core.Runtime.Log.configure(level: :info)
 
 IO.puts("===== Raxol Database Diagnostics =====\n")
 

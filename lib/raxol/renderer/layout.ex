@@ -246,9 +246,21 @@ defmodule Raxol.Renderer.Layout do
     header_elements ++ data_elements ++ acc
   end
 
+  # Defensive clause for elements with children
+  defp process_element(element, space, acc) when is_map(element) do
+    children = Map.get(element, :children, nil)
+    if is_list(children) do
+      process_children(children, space, acc)
+    else
+      IO.warn("Element is a map but has no children list: #{inspect(element)}")
+      acc
+    end
+  end
+
+  # Fallback for non-map or atom input
   defp process_element(element, _space, acc) do
-    # Default case for unhandled elements
-    [element | acc]
+    IO.warn("Unexpected element in process_element: #{inspect(element)}")
+    acc
   end
 
   # Process a list of children

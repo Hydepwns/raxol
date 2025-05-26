@@ -13,7 +13,10 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
   @spec apply_sgr_params(list(integer() | tuple()), TextFormatting.text_style()) ::
           TextFormatting.text_style()
   def apply_sgr_params(params, current_style) do
-    do_apply_sgr_params(params, current_style)
+    new_style = do_apply_sgr_params(params, current_style)
+    require Raxol.Core.Runtime.Log
+    Raxol.Core.Runtime.Log.debug("[SGRHandler] Applied SGR params #{inspect(params)}; new style: #{inspect(new_style)}")
+    new_style
   end
 
   # Base case: no more parameters

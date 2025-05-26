@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
   alias Raxol.Terminal.Commands.Executor
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Processes input when the parser is in the :csi_intermediate state.
@@ -63,7 +63,7 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
             final_byte
           )
 
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "CSIIntermediate: After execute, emulator.scroll_region=#{inspect(final_emulator.scroll_region)}"
         )
 
@@ -82,7 +82,7 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
       # Ignored byte in CSI Intermediate (e.g., CAN, SUB)
       <<ignored_byte, rest_after_ignored::binary>>
       when ignored_byte == 0x18 or ignored_byte == 0x1A ->
-        Logger.debug("Ignoring CAN/SUB byte in CSI Intermediate")
+        Raxol.Core.Runtime.Log.debug("Ignoring CAN/SUB byte in CSI Intermediate")
         # Abort sequence, go to ground
         next_parser_state = %{parser_state | state: :ground}
         {:continue, emulator, next_parser_state, rest_after_ignored}
@@ -91,14 +91,15 @@ defmodule Raxol.Terminal.Parser.States.CSIIntermediateState do
       <<ignored_byte, rest_after_ignored::binary>>
       when (ignored_byte >= 0 and ignored_byte <= 23) or
              (ignored_byte >= 27 and ignored_byte <= 31) or ignored_byte == 127 ->
-        Logger.debug("Ignoring C0/DEL byte #{ignored_byte} in CSI Intermediate")
+        Raxol.Core.Runtime.Log.debug("Ignoring C0/DEL byte #{ignored_byte} in CSI Intermediate")
         # Stay in state, ignore byte
         {:continue, emulator, parser_state, rest_after_ignored}
 
       # Unhandled byte (including 0x30-0x3F which VTTest ignores here) - go to ground
       <<unhandled_byte, rest_after_unhandled::binary>> ->
-        Logger.warning(
-          "Unhandled byte #{unhandled_byte} in CSI Intermediate state, returning to ground."
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unhandled byte #{unhandled_byte} in CSI Intermediate state, returning to ground.",
+          %{}
         )
 
         next_parser_state = %{parser_state | state: :ground}

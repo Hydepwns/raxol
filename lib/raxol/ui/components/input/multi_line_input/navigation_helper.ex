@@ -6,7 +6,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   # alias Raxol.UI.Components.Input.MultiLineInput # May need state struct definition
   # Need pos_to_index
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Moves the cursor to the specified {row, col} position, clamping to document bounds and clearing selection.

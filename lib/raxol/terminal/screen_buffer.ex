@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
 
   @behaviour Raxol.Terminal.ScreenBufferBehaviour
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Cell
   # alias Raxol.Terminal.CharacterHandling # No longer directly used here
@@ -51,9 +51,9 @@ defmodule Raxol.Terminal.ScreenBuffer do
     actual_height = if is_number(height) and height > 0, do: height, else: 24
 
     if !(is_number(width) and is_number(height)) do
-      Logger.warning(
+      Raxol.Core.Runtime.Log.warning_with_context(
         "Invalid dimensions provided to ScreenBuffer.new: width=#{inspect(width)}, height=#{inspect(height)}. Using defaults.",
-        []
+        %{}
       )
     end
 
@@ -69,7 +69,7 @@ defmodule Raxol.Terminal.ScreenBuffer do
           {1000, warning}
       end
 
-    if scrollback_warning, do: Logger.warning(scrollback_warning, [])
+    if scrollback_warning, do: Raxol.Core.Runtime.Log.warning_with_context(scrollback_warning, %{})
 
     %__MODULE__{
       cells:
@@ -434,4 +434,32 @@ defmodule Raxol.Terminal.ScreenBuffer do
   # def is_in_selection?(buffer, x, y), do: in_selection?(buffer, x, y)
 
   # Note: Removed get_changes/2 as diff/2 now handles the {x,y,map} format directly.
+
+  @doc """
+  Replaces the line at the given index with the provided list of cells.
+  Returns the updated buffer.
+  """
+  @spec put_line(t(), non_neg_integer(), list(Cell.t())) :: t()
+  defdelegate put_line(buffer, line_index, new_cells), to: Operations
+
+  @doc """
+  Prepends a list of lines to the top of the buffer, removing lines from the bottom if needed to maintain height.
+  """
+  def prepend_lines(%__MODULE__{} = buffer, lines) when is_list(lines) do
+    # Ensure each line is the correct width
+    lines = Enum.map(lines, fn line ->
+      if length(line) == buffer.width, do: line, else: List.duplicate(List.first(line) || Raxol.Terminal.Cell.new(), buffer.width)
+    end)
+    new_cells = lines ++ Enum.take(buffer.cells, buffer.height - length(lines))
+    %{buffer | cells: new_cells}
+  end
+
+  @doc """
+  Pops a number of lines from the top of the buffer, returning {popped_lines, new_buffer}.
+  """
+  def pop_top_lines(%__MODULE__{} = buffer, count) when is_integer(count) and count > 0 do
+    {popped, remaining} = Enum.split(buffer.cells, count)
+    new_cells = remaining ++ List.duplicate(List.duplicate(Raxol.Terminal.Cell.new(), buffer.width), count)
+    {popped, %{buffer | cells: new_cells}}
+  end
 end

@@ -7,7 +7,7 @@ defmodule Raxol.Terminal.ModeManager do
   emulator state (like screen buffer switching or resizing).
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Needed for functions modifying Emulator state
   alias Raxol.Terminal.Emulator
@@ -266,8 +266,9 @@ defmodule Raxol.Terminal.ModeManager do
 
       # Unknown/Unhandled
       _ ->
-        Logger.warn(
-          "[ModeManager] Unhandled mode to set: #{inspect(mode_atom)}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unhandled mode to set: #{inspect(mode_atom)}",
+          %{}
         )
 
         # Return unchanged emulator state
@@ -349,8 +350,9 @@ defmodule Raxol.Terminal.ModeManager do
 
       # Unknown/Unhandled
       _ ->
-        Logger.warn(
-          "[ModeManager] Unhandled mode to reset: #{inspect(mode_atom)}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unhandled mode to reset: #{inspect(mode_atom)}",
+          %{}
         )
 
         # Return unchanged emulator state
@@ -452,7 +454,7 @@ defmodule Raxol.Terminal.ModeManager do
 
       # TODO: Add other simple flags as needed
       _ ->
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[ModeManager] mode_enabled? fallback for: #{inspect(mode_flag)}"
         )
 
@@ -508,7 +510,7 @@ defmodule Raxol.Terminal.ModeManager do
     # If already in some alternate buffer mode, and trying to set the same, do nothing or log.
     # Or if trying to set a *different* alt mode, maybe reset first? For now, assume one alt mode at a time.
     if mm_state.alternate_buffer_active && mm_state.alt_screen_mode == type do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[ModeManager] Already in alternate screen mode #{type}. No change."
       )
 
@@ -588,13 +590,13 @@ defmodule Raxol.Terminal.ModeManager do
     mm_state = emulator.mode_manager
 
     unless mm_state.alternate_buffer_active do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[ModeManager] Main buffer already active. No change from reset_alternate_buffer."
       )
 
       emulator
     else
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[ModeManager] Resetting to main buffer from: #{inspect(mm_state.alt_screen_mode)}"
       )
 
@@ -719,7 +721,7 @@ defmodule Raxol.Terminal.ModeManager do
       %{emu_with_restored_data | state_stack: new_stack}
     else
       # No state was restored (stack was empty)
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[ModeManager] Terminal state stack empty, no state to restore."
       )
 
@@ -783,13 +785,13 @@ defmodule Raxol.Terminal.ModeManager do
   # Ensure a catch-all or proper handling for unmapped modes if necessary
   defp handle_decpm_set(state, _unknown_mode) do
     # Log this event, as it indicates an unhandled DEC private mode set.
-    # Logger.warn("Attempted to set unhandled DEC private mode: #{inspect(unknown_mode)}")
+    # Raxol.Core.Runtime.Log.warn("Attempted to set unhandled DEC private mode: #{inspect(unknown_mode)}")
     # Return state unchanged
     state
   end
 
   defp handle_decpm_reset(state, _unknown_mode) do
-    # Logger.warn("Attempted to reset unhandled DEC private mode: #{inspect(unknown_mode)}")
+    # Raxol.Core.Runtime.Log.warn("Attempted to reset unhandled DEC private mode: #{inspect(unknown_mode)}")
     # Return state unchanged
     state
   end

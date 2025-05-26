@@ -5,7 +5,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   and reordering of nodes, supporting both keyed and non-keyed children.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Computes the minimal set of changes (diff) between two UI trees.
@@ -80,7 +80,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
   defp validate_child_has_key!(nil, _list_name), do: :ok
 
   defp validate_child_has_key!(child, list_name) when not is_map(child) do
-    Logger.warn(
+    Raxol.Core.Runtime.Log.warning(
       "Keyed diffing expected map child in #{list_name}, got: #{inspect(child)}. Problems may occur."
     )
 
@@ -89,7 +89,7 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
 
   defp validate_child_has_key!(child, list_name) do
     unless Map.has_key?(child, :key) do
-      Logger.error(
+      Raxol.Core.Runtime.Log.error(
         "Child in #{list_name} is missing :key for keyed diffing: #{inspect(child)}"
       )
 

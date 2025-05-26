@@ -8,7 +8,7 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
   * Managing the priority and order of handlers
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Registers a new event handler for the specified event types.
@@ -102,7 +102,7 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
             {:halt, {new_event, new_state}}
 
           {:error, reason} ->
-            Logger.error("Handler error: #{inspect(reason)}")
+            Raxol.Core.Runtime.Log.error_with_stacktrace("Handler error", reason, nil, %{module: __MODULE__, event: event, state: state})
             {:halt, {:error, reason, current_state}}
         end
       end)
@@ -115,7 +115,7 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
       end
     rescue
       error ->
-        Logger.error("Error executing handlers: #{inspect(error)}")
+        Raxol.Core.Runtime.Log.error_with_stacktrace("Error executing handlers", error, __STACKTRACE__, %{module: __MODULE__, event: event, state: state})
         {:error, {:handler_error, error}, state}
     end
   end

@@ -6,36 +6,30 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
 
   setup do
-    # Create a test emulator with a 10x10 screen
-    emulator = %Emulator{
-      main_screen_buffer: ScreenBuffer.new(10, 10),
-      alternate_screen_buffer: ScreenBuffer.new(10, 10),
-      cursor: CursorManager.new(),
-      style: Raxol.Terminal.ANSI.TextFormatting.new()
-    }
-
+    # Create a test emulator with a 10x10 screen using the proper constructor
+    emulator = Emulator.new(10, 10)
     {:ok, emulator: emulator}
   end
 
   describe "handle_H/2 (Cursor Position)" do
     test "moves cursor to specified position", %{emulator: emulator} do
       # Test with 1-based coordinates (ANSI standard)
-      result = CursorHandlers.handle_H(emulator, [3, 4])
+      {:ok, emulator} = CursorHandlers.handle_H(emulator, [3, 4])
       # Converted to 0-based
-      assert result.cursor.position == {3, 2}
+      assert emulator.cursor.position == {3, 2}
     end
 
     test "clamps coordinates to screen bounds", %{emulator: emulator} do
       # Test with out-of-bounds coordinates
-      result = CursorHandlers.handle_H(emulator, [20, 20])
+      {:ok, emulator} = CursorHandlers.handle_H(emulator, [20, 20])
       # Max bounds for 10x10 screen
-      assert result.cursor.position == {9, 9}
+      assert emulator.cursor.position == {9, 9}
     end
 
     test "handles missing parameters", %{emulator: emulator} do
       # Test with default parameters (1,1)
-      result = CursorHandlers.handle_H(emulator, [])
-      assert result.cursor.position == {0, 0}
+      {:ok, emulator} = CursorHandlers.handle_H(emulator, [])
+      assert emulator.cursor.position == {0, 0}
     end
   end
 
@@ -43,8 +37,8 @@ defmodule Raxol.Terminal.Commands.CursorHandlersTest do
     test "moves cursor up by specified amount", %{emulator: emulator} do
       # Start at position (5,5)
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
-      result = CursorHandlers.handle_A(emulator, [2])
-      assert result.cursor.position == {5, 3}
+      {:ok, emulator} = CursorHandlers.handle_A(emulator, [2])
+      assert emulator.cursor.position == {5, 3}
     end
 
     test "clamps to top of screen", %{emulator: emulator} do

@@ -45,7 +45,7 @@ defmodule Raxol.Examples.ButtonTest do
       {updated, _commands} =
         Raxol.Test.Unit.simulate_event(
           button,
-          Raxol.Core.Events.Event.new(:click, target: button.state.id)
+          Raxol.Core.Events.Event.new(:click, %{target: button.state.id})
         )
 
       assert :atomics.get(clicked, 1) == 2, "on_click function was not called"
@@ -67,7 +67,7 @@ defmodule Raxol.Examples.ButtonTest do
       {updated, commands} =
         Raxol.Test.Unit.simulate_event(
           button,
-          Raxol.Core.Events.Event.new(:click, target: button.state.id)
+          Raxol.Core.Events.Event.new(:click, %{target: button.state.id})
         )
 
       assert updated.state == button.state
@@ -102,7 +102,7 @@ defmodule Raxol.Examples.ButtonTest do
       {button_after_resize, _cmd3} =
         Raxol.Test.Unit.simulate_event(
           button_unfocused,
-          Raxol.Core.Events.Event.window(:resize, {100, 30})
+          Raxol.Core.Events.Event.window(100, 30, :resize)
         )
 
       # State should persist

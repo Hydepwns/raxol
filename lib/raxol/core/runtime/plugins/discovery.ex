@@ -8,7 +8,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
   - Handling plugin dependencies
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Plugins.{FileWatcher, Loader, StateManager}
 
@@ -110,7 +110,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
         end)
 
       false ->
-        Logger.warning("[#{__MODULE__}] Plugin directory not found: #{dir}")
+        Raxol.Core.Runtime.Log.warning_with_context("[#{__MODULE__}] Plugin directory not found: #{dir}", %{})
         {:ok, state}
     end
   end
@@ -142,18 +142,22 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
             {:ok, updated_state}
 
           {:error, reason} ->
-            Logger.error(
-              "[#{__MODULE__}] Failed to initialize discovered plugin #{plugin_id}: #{inspect(reason)}"
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] Failed to initialize discovered plugin",
+              reason,
+              nil,
+              %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
             )
-
             {:error, reason}
         end
 
       {:error, reason} ->
-        Logger.error(
-          "[#{__MODULE__}] Failed to load discovered plugin #{plugin_id}: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to load discovered plugin",
+          reason,
+          nil,
+          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
         )
-
         {:error, reason}
     end
   end

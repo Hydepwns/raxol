@@ -7,7 +7,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPaletteTest do
   describe "handle/2" do
     test "sets color with rgb: format" do
       state = %State{palette: %{}}
-      result = ColorPalette.handle("4;1;rgb:255/0/0", state)
+      result = ColorPalette.handle("4;1;rgb:FF/00/00", state)
       assert {:ok, new_state} = result
       assert new_state.palette[1] == {255, 0, 0}
     end

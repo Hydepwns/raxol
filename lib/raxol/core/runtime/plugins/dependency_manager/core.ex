@@ -4,7 +4,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   Provides the main public API for dependency checking and load order resolution.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Plugins.DependencyManager.{
     Version,
@@ -192,7 +192,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
         end)
 
       if Enum.any?(optional_missing) do
-        Logger.info(
+        Raxol.Core.Runtime.Log.info(
           "Optional dependencies not found for plugin #{plugin_id}: #{inspect(optional_missing)}"
         )
       end

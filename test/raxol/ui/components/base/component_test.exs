@@ -65,6 +65,11 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     def unmount(state) do
       %{state | unmounted: true}
     end
+
+    # Add this to support the required behaviour
+    def handle_event(event, state, _context) do
+      handle_event(event, state)
+    end
   end
 
   describe "Component Lifecycle" do

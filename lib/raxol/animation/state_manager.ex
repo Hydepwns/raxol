@@ -6,7 +6,7 @@ defmodule Raxol.Animation.StateManager do
   definitions, and active instances, currently using the process dictionary.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Assuming Framework might hold struct defs later
   alias Raxol.Animation.Framework

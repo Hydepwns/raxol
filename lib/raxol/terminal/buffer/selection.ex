@@ -136,4 +136,11 @@ defmodule Raxol.Terminal.Buffer.Selection do
     # By convention, a selection is a map with a :selection field
     %{selection: {x, y, x, y}}
   end
+
+  @doc """
+  Compatibility: new/2 for Raxol.Terminal.Selection.new/2 calls.
+  """
+  def new(x, y) when is_integer(x) and is_integer(y) and x >= 0 and y >= 0 do
+    %{selection: {x, y, x, y}}
+  end
 end

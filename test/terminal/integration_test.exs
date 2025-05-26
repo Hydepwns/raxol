@@ -17,7 +17,7 @@ defmodule Raxol.Terminal.IntegrationTest do
   describe "input to screen buffer integration" do
     setup do
       emulator_instance = Emulator.new(80, 24)
-      %{state: emulator_instance}
+      %{state: emulator_instance, ansi: %{}}
     end
 
     test "processes keyboard input and updates screen buffer", %{
@@ -106,7 +106,7 @@ defmodule Raxol.Terminal.IntegrationTest do
   describe "input to ANSI integration" do
     setup do
       initial_emulator_state = Emulator.new(80, 24)
-      %{state: initial_emulator_state}
+      %{state: initial_emulator_state, ansi: %{}}
     end
 
     test "processes ANSI escape sequences", %{state: initial_state} do
@@ -154,7 +154,7 @@ defmodule Raxol.Terminal.IntegrationTest do
   describe "mouse input integration" do
     setup do
       initial_emulator_state = Emulator.new(80, 24)
-      %{state: initial_emulator_state}
+      %{state: initial_emulator_state, ansi: %{}}
     end
 
     test "handles mouse clicks", %{state: initial_state} do
@@ -215,7 +215,7 @@ defmodule Raxol.Terminal.IntegrationTest do
     setup do
       # Initialize with a small history size for testing
       emulator_instance = Emulator.new(80, 24, max_command_history: 3)
-      %{state: emulator_instance}
+      %{state: emulator_instance, ansi: %{}}
     end
 
     test "maintains command history", %{state: initial_state} do
@@ -259,7 +259,7 @@ defmodule Raxol.Terminal.IntegrationTest do
   describe "mode switching integration" do
     setup do
       initial_emulator_state = Emulator.new(80, 24)
-      %{state: initial_emulator_state}
+      %{state: initial_emulator_state, ansi: %{}}
     end
 
     test "handles mode transitions", %{state: initial_state} do
@@ -288,7 +288,7 @@ defmodule Raxol.Terminal.IntegrationTest do
   describe "bracketed paste integration" do
     setup do
       initial_emulator_state = Emulator.new(80, 24)
-      %{state: initial_emulator_state}
+      %{state: initial_emulator_state, ansi: %{}}
     end
 
     test "handles bracketed paste", %{state: initial_state} do

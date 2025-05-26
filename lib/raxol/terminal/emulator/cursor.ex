@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   Handles cursor operations for the terminal emulator.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Cursor.Manager
   alias Raxol.Terminal.Emulator

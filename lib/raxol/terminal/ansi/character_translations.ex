@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
   Maps characters between different character sets according to ANSI standards.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # US ASCII character set (G0)
   @us_ascii_map %{
@@ -490,7 +490,7 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
     rescue
       ArgumentError ->
         # Fallback for invalid codepoints
-        Logger.warning("Invalid codepoint #{codepoint} in charset #{charset}", [])
+        Raxol.Core.Runtime.Log.warning_with_context("Invalid codepoint #{codepoint} in charset #{charset}", %{})
         <<char>>
     end
   end

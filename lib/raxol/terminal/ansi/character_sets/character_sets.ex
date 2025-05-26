@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     DEC,
     UK
   }
-  alias Logger
+  alias Raxol.Core.Runtime.Log
   alias Raxol.Terminal.ANSI.CharacterSets.Translator
 
   @type codepoint :: non_neg_integer()

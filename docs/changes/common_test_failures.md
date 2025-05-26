@@ -135,7 +135,7 @@ By systematically addressing these common error types, we can improve the stabil
         Supervisor.stop(supervisor_pid, :shutdown, :infinity)
       catch
         :exit, reason ->
-          Logger.error("[TEST on_exit] Cleanup failed: #{inspect(reason)}")
+          Raxol.Core.Runtime.Log.error("[TEST on_exit] Cleanup failed: #{inspect(reason)}")
       end
       # Other cleanup steps
     end)

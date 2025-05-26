@@ -2,7 +2,7 @@ defmodule Raxol.UI.Components.Display.Table do
   @moduledoc """
   A component for displaying tabular data with sorting, filtering, and pagination.
   """
-  require Logger
+  require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
 
   # alias Raxol.Core.Renderer.Element
@@ -136,7 +136,7 @@ defmodule Raxol.UI.Components.Display.Table do
   @spec update(term(), state()) :: {:noreply, state()}
   @impl true
   def update(message, state) do
-    Logger.warning("Unhandled Table update: #{inspect(message)}")
+    Raxol.Core.Runtime.Log.warning("Unhandled Table update: #{inspect(message)}")
     {:noreply, state}
   end
 

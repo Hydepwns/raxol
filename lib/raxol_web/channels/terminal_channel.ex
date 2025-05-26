@@ -14,7 +14,7 @@ defmodule RaxolWeb.TerminalChannel do
   alias Raxol.Terminal.Renderer
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Input
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @type t :: %__MODULE__{
           emulator: Emulator.t(),

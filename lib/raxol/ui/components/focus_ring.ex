@@ -10,7 +10,7 @@ defmodule Raxol.UI.Components.FocusRing do
   """
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Require View Elements macros
   require Raxol.View.Elements
@@ -71,7 +71,7 @@ defmodule Raxol.UI.Components.FocusRing do
   @impl true
   def update(msg, state) do
     # Handle internal messages (animation ticks, focus changes)
-    Logger.debug("FocusRing received message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug("FocusRing received message: #{inspect(msg)}")
 
     case msg do
       # Focus change with component type and state information
@@ -154,7 +154,7 @@ defmodule Raxol.UI.Components.FocusRing do
   @impl true
   def handle_event(event, %{} = _props, state) do
     # FocusRing might listen to focus changes or accessibility events
-    Logger.debug("FocusRing received event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug("FocusRing received event: #{inspect(event)}")
 
     case event do
       {:accessibility_high_contrast, enabled} ->

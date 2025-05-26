@@ -8,8 +8,6 @@ import Config
 # if you want to provide default values for your application for
 # 3rd-party users, it should be done in your "mix.exs" file.
 
-config :logger, level: :info
-
 # Configure Ecto repositories
 config :raxol, ecto_repos: [Raxol.Repo]
 
@@ -20,11 +18,6 @@ config :raxol, ecto_repos: [Raxol.Repo]
 # and access this configuration in your application as:
 #
 #     Application.get_env(:ratatouille, :key)
-#
-# You can also configure a 3rd-party app:
-#
-#     config :logger, level: :info
-#
 
 # It is also possible to import configuration files, relative to this
 # directory. For example, you can emulate configuration per environment
@@ -89,9 +82,6 @@ config :raxol, RaxolWeb.Endpoint,
 
 # Enable dev routes for dashboard and mailbox
 config :raxol, dev_routes: true
-
-# Do not include metadata nor timestamps in development logs
-config :logger, :console, format: "[$level] $message\n"
 
 # Set a higher stacktrace during development. Avoid configuring such
 # in production as building large stacktraces may be expensive.

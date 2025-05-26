@@ -300,7 +300,7 @@
 
    # Handle validation errors
    def handle_validation_error(error) do
-     Logger.error("Validation error: #{inspect(error)}")
+     Raxol.Core.Runtime.Log.error("Validation error: #{inspect(error)}")
      {:error, error}
    end
    ```
@@ -318,7 +318,7 @@
 
    # Handle component errors
    def handle_component_error(error) do
-     Logger.error("Component error: #{inspect(error)}")
+     Raxol.Core.Runtime.Log.error("Component error: #{inspect(error)}")
      {:error, error}
    end
    ```

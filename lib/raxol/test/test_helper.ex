@@ -13,7 +13,7 @@ defmodule Raxol.Test.TestHelper do
   import ExUnit.Callbacks
   alias Raxol.Core.Runtime.{EventLoop}
   alias Raxol.Core.Events.{Event}
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Sets up a test environment with all necessary dependencies.

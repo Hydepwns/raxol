@@ -125,7 +125,7 @@ defmodule Raxol.UI.Terminal do
   """
   def print_centered(text, opts \\ []) do
     # Get terminal width
-    {width, _} = get_terminal_size()
+    width = get_terminal_size().width
 
     # Calculate padding
     padding = max(0, div(width - String.length(text), 2))
@@ -151,7 +151,7 @@ defmodule Raxol.UI.Terminal do
   """
   def print_horizontal_line(opts \\ []) do
     # Get terminal width
-    {width, _} = get_terminal_size()
+    width = get_terminal_size().width
 
     # Get line character
     char = Keyword.get(opts, :char, "─")
@@ -446,14 +446,12 @@ defmodule Raxol.UI.Terminal do
     case :io.columns() do
       {:ok, width} ->
         case :io.rows() do
-          {:ok, height} -> {width, height}
+          {:ok, height} -> %{width: width, height: height}
           # Default height
-          _ -> {80, 24}
+          _ -> %{width: 80, height: 24}
         end
-
       # Default size
-      _ ->
-        {80, 24}
+      _ -> %{width: 80, height: 24}
     end
   end
 end

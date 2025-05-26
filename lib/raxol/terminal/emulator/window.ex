@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.Emulator.Window do
   Provides functions for window state, manipulation, and properties.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
 

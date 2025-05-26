@@ -18,7 +18,7 @@ if !File.exists?("_build/dev/lib/raxol/ebin") do
 end
 
 defmodule VisualizationTest do
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   def run do
     IO.puts("\n=== Testing VisualizationPlugin ===\n")

@@ -35,7 +35,7 @@ defmodule Raxol.Terminal.Emulator do
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager
   alias Raxol.Terminal.Command.Manager, as: CommandManager
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @dialyzer [
     {:nowarn_function,
@@ -104,6 +104,10 @@ defmodule Raxol.Terminal.Emulator do
           sixel_state: map() | nil
         }
 
+  # NOTE: The `:position` field is NOT a top-level field of the Emulator struct.
+  # To access the window position, use `emulator.window_state.position`.
+  # Do NOT use `emulator.position` -- this will cause a KeyError.
+
   # Use Manager struct
   defstruct cursor: Manager.new(),
             # TODO: This might need updating to save Manager state?
@@ -133,7 +137,7 @@ defmodule Raxol.Terminal.Emulator do
             # Initialize Plugin Manager,
             plugin_manager: Core.new(),
             # Add parser state
-            parser_state: %{},
+            parser_state: %Raxol.Terminal.Parser.State{state: :ground},
             options: %{},
             current_hyperlink_url: nil,
             window_title: nil,
@@ -208,7 +212,7 @@ defmodule Raxol.Terminal.Emulator do
     initial_cursor = Manager.new()
     initial_mode_manager = ModeManager.new()
     initial_charset_state = CharacterSets.new()
-    initial_parser_state = %Parser.State{}
+    initial_parser_state = %Raxol.Terminal.Parser.State{state: :ground}
     command_manager = CommandManager.new()
 
     # Initialize buffers through BufferManager
@@ -298,7 +302,7 @@ defmodule Raxol.Terminal.Emulator do
   @spec get_active_buffer(t()) :: ScreenBuffer.t()
   @impl Raxol.Terminal.EmulatorBehaviour
   def get_active_buffer(%__MODULE__{active_buffer_type: :main} = emulator) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[get_active_buffer] Type: #{inspect(emulator.active_buffer_type)}, Keys: #{inspect(Map.keys(emulator))}"
     )
 
@@ -313,7 +317,7 @@ defmodule Raxol.Terminal.Emulator do
         emulator.alternate_screen_buffer
       else
         # This should NOT happen based on Emulator.new, but helps diagnose
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "[get_active_buffer] CRITICAL: Type is :alternate but :alternate_screen_buffer key is missing!"
         )
 
@@ -461,7 +465,7 @@ defmodule Raxol.Terminal.Emulator do
     buffer = get_active_buffer(emulator)
     %{width: buffer_width, height: buffer_height} = buffer
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[calc_write] Input: cursor={#{cursor_x}, #{cursor_y}}, width=#{width}, buffer_w=#{buffer_width}, wrap=#{autowrap_enabled}, last_exceeded=#{last_col_exceeded}"
     )
 
@@ -469,7 +473,7 @@ defmodule Raxol.Terminal.Emulator do
       cond do
         # Case 1: Previous character caused wrap flag to be set.
         last_col_exceeded ->
-          Logger.debug("[calc_write] Case 1: Last col exceeded")
+          Raxol.Core.Runtime.Log.debug("[calc_write] Case 1: Last col exceeded")
           target_y = cursor_y + 1
           write_x = 0
           write_y = target_y
@@ -486,12 +490,12 @@ defmodule Raxol.Terminal.Emulator do
         # Case 2: Current write would exceed right margin
         # Note: Using > width-1 means hitting the last column counts
         cursor_x + width > buffer_width - 1 ->
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "[calc_write] Case 2: Exceeds right margin (cursor_x=#{cursor_x}, width=#{width}, buffer_w=#{buffer_width})"
           )
 
           if autowrap_enabled do
-            Logger.debug("[calc_write] Case 2a: Autowrap enabled")
+            Raxol.Core.Runtime.Log.debug("[calc_write] Case 2a: Autowrap enabled")
             # Write at current pos (may be clipped by write_char), SET flag
             # Cursor ADVANCES conceptually for next char wrap
             write_x = cursor_x
@@ -505,7 +509,7 @@ defmodule Raxol.Terminal.Emulator do
             {write_x, write_y, next_cursor_x, next_cursor_y,
              next_last_col_exceeded}
           else
-            Logger.debug("[calc_write] Case 2b: Autowrap disabled")
+            Raxol.Core.Runtime.Log.debug("[calc_write] Case 2b: Autowrap disabled")
 
             # Autowrap disabled: Write at current pos (may clip), cursor stays at last valid pos.
             write_x = cursor_x
@@ -521,7 +525,7 @@ defmodule Raxol.Terminal.Emulator do
 
         # Case 3: Normal character write within the line.
         true ->
-          Logger.debug("[calc_write] Case 3: Normal write")
+          Raxol.Core.Runtime.Log.debug("[calc_write] Case 3: Normal write")
           write_x = cursor_x
           write_y = cursor_y
           next_cursor_x = min(cursor_x + width, buffer_width)
@@ -534,7 +538,7 @@ defmodule Raxol.Terminal.Emulator do
            next_last_col_exceeded}
       end
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[calc_write] Output: write={#{elem(result, 0)}, #{elem(result, 1)}}, next_cursor={#{elem(result, 2)}, #{elem(result, 3)}}, next_last_exceeded=#{elem(result, 4)}"
     )
 

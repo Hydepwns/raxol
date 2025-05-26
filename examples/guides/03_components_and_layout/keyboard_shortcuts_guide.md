@@ -206,7 +206,7 @@ defmodule MyApp do
         handle_other_key_input(key_event, state)
       {:error, reason, state} ->
         # Handle error from shortcut system
-        Logger.error("Keyboard shortcut error: #{inspect(reason)}")
+        Raxol.Core.Runtime.Log.error("Keyboard shortcut error: #{inspect(reason)}")
         {:noreply, state}
     end
   end

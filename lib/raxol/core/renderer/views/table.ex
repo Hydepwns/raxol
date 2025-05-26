@@ -14,7 +14,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   @behaviour Raxol.UI.Components.Base.Component
 
   alias Raxol.Core.Renderer.View
-  require Logger
+  require Raxol.Core.Runtime.Log
   require Raxol.Core.Renderer.View
 
   defstruct columns: [],
@@ -95,9 +95,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   end
 
   def init(props) do
-    Logger.warning(
-      "Table.init/1 called with non-map argument: #{inspect(props)}"
-    )
+    Raxol.Core.Runtime.Log.warning_with_context("Table.init/1 called with non-map argument: #{inspect(props)}", %{})
 
     {:error, :invalid_props, props}
   end
@@ -169,7 +167,7 @@ defmodule Raxol.Core.Renderer.Views.Table do
   end
 
   defp log_component(type, payload) do
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "Table component [#{inspect(self())}] received #{type}: #{inspect(payload)}"
     )
   end

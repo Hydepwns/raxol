@@ -102,9 +102,9 @@ defmodule Raxol.UI.Rendering.Renderer do
       Raxol.Terminal.Emulator.update_active_buffer(emulator, updated_buffer)
 
     new_state = put_emulator(state, updated_emulator)
-    require Logger
+    require Raxol.Core.Runtime.Log
 
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "Partial render ops (line-based): #{inspect(ops)} (buffer updated)"
     )
 
@@ -163,8 +163,8 @@ defmodule Raxol.UI.Rendering.Renderer do
     # Update the buffer for the full tree render
     {new_state, _} = do_partial_render([], data, data, state)
     if state.test_pid, do: send(state.test_pid, {:renderer_rendered, data})
-    require Logger
-    Logger.info("Renderer received render: #{inspect(data)} (buffer updated)")
+    require Raxol.Core.Runtime.Log
+    Raxol.Core.Runtime.Log.info("Renderer received render: #{inspect(data)} (buffer updated)")
     {:noreply, %{new_state | last_render: data}}
   end
 
@@ -182,8 +182,8 @@ defmodule Raxol.UI.Rendering.Renderer do
   def handle_cast({:apply_diff, {:replace, new_tree}, _new_tree}, state) do
     # Full replacement
     if state.test_pid, do: send(state.test_pid, {:renderer_rendered, new_tree})
-    require Logger
-    Logger.info("Renderer received full replacement diff: #{inspect(new_tree)}")
+    require Raxol.Core.Runtime.Log
+    Raxol.Core.Runtime.Log.info("Renderer received full replacement diff: #{inspect(new_tree)}")
     {:noreply, %{state | last_render: new_tree}}
   end
 
@@ -206,9 +206,9 @@ defmodule Raxol.UI.Rendering.Renderer do
           {:renderer_partial_update, path, updated_subtree, updated_tree}
         )
 
-    require Logger
+    require Raxol.Core.Runtime.Log
 
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "Renderer applied partial update at path #{inspect(path)}. Updated subtree: #{inspect(updated_subtree)}"
     )
 

@@ -8,7 +8,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
   * Converting keyboard events to application messages
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Events.Event
 
@@ -38,7 +38,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
       is_debug_toggle?(key, modifiers) ->
         new_debug_mode = not state.debug_mode
 
-        Logger.info(
+        Raxol.Core.Runtime.Log.info(
           "Debug mode #{if new_debug_mode, do: "enabled", else: "disabled"}"
         )
 
@@ -127,7 +127,7 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
         # Unrecognized quit key format
         {:unrecognized, other} ->
-          Logger.warning("Unknown quit key format: #{inspect(other)}")
+          Raxol.Core.Runtime.Log.warning_with_context("Unknown quit key format: #{inspect(other)}", %{})
           false
       end
     end)

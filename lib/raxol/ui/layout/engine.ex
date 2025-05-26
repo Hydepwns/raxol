@@ -8,7 +8,7 @@ defmodule Raxol.UI.Layout.Engine do
   * Managing the layout pipeline
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.UI.Layout.{Grid, Panels, Containers}
   alias Raxol.UI.Layout.Table
@@ -184,15 +184,19 @@ defmodule Raxol.UI.Layout.Engine do
 
   # Catch-all for unknown element types
   def process_element(%{type: type} = element, _space, acc) do
-    Logger.warning(
-      "LayoutEngine: Unknown or unhandled element type: #{inspect(type)}. Element: #{inspect(element)}"
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "LayoutEngine: Unknown or unhandled element type: #{inspect(type)}. Element: #{inspect(element)}",
+      %{}
     )
 
     acc
   end
 
   def process_element(other, _space, acc) do
-    Logger.warning("LayoutEngine: Received non-element data: #{inspect(other)}")
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "LayoutEngine: Received non-element data: #{inspect(other)}",
+      %{}
+    )
     acc
   end
 
@@ -336,8 +340,9 @@ defmodule Raxol.UI.Layout.Engine do
 
       _ ->
         # Fallback for unknown or unmeasurable elements
-        Logger.warning(
-          "LayoutEngine: Cannot measure element type: #{inspect(type)}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "LayoutEngine: Cannot measure element type: #{inspect(type)}",
+          %{}
         )
 
         %{width: 0, height: 0}
@@ -346,8 +351,9 @@ defmodule Raxol.UI.Layout.Engine do
 
   # Catch-all for non-element data or invalid elements
   def measure_element(other, _available_space) do
-    Logger.warning(
-      "LayoutEngine: Cannot measure non-element or invalid element: #{inspect(other)}"
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "LayoutEngine: Cannot measure non-element or invalid element: #{inspect(other)}",
+      %{}
     )
 
     %{width: 0, height: 0}

@@ -6,7 +6,7 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   updates the active theme accordingly.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.UserPreferences
@@ -119,8 +119,8 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
   Updates the theme based on high contrast setting.
   """
   def handle_high_contrast({:accessibility_high_contrast, enabled}) do
-    require Logger
-    Logger.debug("ThemeIntegration handling high contrast event: #{enabled}")
+    require Raxol.Core.Runtime.Log
+    Raxol.Core.Runtime.Log.debug("ThemeIntegration handling high contrast event: #{enabled}")
 
     # Trigger a global UI refresh event
     EventManager.trigger(:ui_refresh_required, %{reason: :theme_change})
@@ -153,8 +153,8 @@ defmodule Raxol.Core.Accessibility.ThemeIntegration do
       :ok
   """
   def handle_reduced_motion({:accessibility_reduced_motion, _enabled}) do
-    require Logger
-    Logger.debug("Restoring FocusRing config for normal motion")
+    require Raxol.Core.Runtime.Log
+    Raxol.Core.Runtime.Log.debug("Restoring FocusRing config for normal motion")
 
     :ok
   end

@@ -4,7 +4,7 @@ defmodule Raxol.UI.Components.Progress do
   """
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Require view macros
   require Raxol.View.Elements
@@ -42,7 +42,7 @@ defmodule Raxol.UI.Components.Progress do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages to update value, change type, etc.
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Progress #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
     )
 
@@ -64,7 +64,7 @@ defmodule Raxol.UI.Components.Progress do
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
     # Handle events if needed
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Progress #{Map.get(state, :id, nil)} received event: #{inspect(event)}"
     )
 

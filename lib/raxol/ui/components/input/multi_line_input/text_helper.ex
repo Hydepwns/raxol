@@ -7,7 +7,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # --- Line Splitting and Wrapping ---
 
@@ -63,7 +63,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     # Add the clamped column index on the target row
     total_index = prefix_sum + newline_count + safe_col
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "pos_to_index: lines=#{inspect(text_lines)}, pos={#{row}, #{col}} -> safe_row=#{safe_row}, safe_col=#{safe_col}, index=#{total_index}"
     )
 
@@ -81,14 +81,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         end_pos_tuple,
         replacement
       ) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "replace_text_range: lines=#{inspect(lines_list)}, start=#{inspect(start_pos_tuple)}, end=#{inspect(end_pos_tuple)}, repl=#{inspect(replacement)}"
     )
 
     start_index = pos_to_index(lines_list, start_pos_tuple)
     end_index = pos_to_index(lines_list, end_pos_tuple)
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "replace_text_range: start_idx=#{start_index}, end_idx=#{end_index}"
     )
 
@@ -103,13 +103,13 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     clamped_start = clamp(norm_start_index, 0, joined_text_len)
     clamped_end = clamp(norm_end_index, 0, joined_text_len)
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "replace_text_range: clamped_start=#{clamped_start}, clamped_end=#{clamped_end}"
     )
 
     # Text Before: Slice up to the start index
     text_before = String.slice(joined_text, 0, clamped_start)
-    Logger.debug("replace_text_range: text_before=#{inspect(text_before)}")
+    Raxol.Core.Runtime.Log.debug("replace_text_range: text_before=#{inspect(text_before)}")
 
     # Text After: Needs to start AT the index for insertion, AFTER for deletion/replace
     is_insertion = start_pos_tuple == end_pos_tuple and replacement != ""
@@ -123,7 +123,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         clamped_end
       end
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "replace_text_range: slice_after_start_index=#{slice_after_start_index}"
     )
 
@@ -134,7 +134,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         max(0, joined_text_len - slice_after_start_index)
       )
 
-    Logger.debug("replace_text_range: text_after=#{inspect(text_after)}")
+    Raxol.Core.Runtime.Log.debug("replace_text_range: text_after=#{inspect(text_after)}")
 
     # Replaced Text Calculation - uses exclusive end index logic
     replaced_length =
@@ -156,7 +156,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
 
     # Construct new text
     new_full_text = text_before <> replacement <> text_after
-    Logger.debug("replace_text_range: new_full_text=#{inspect(new_full_text)}")
+    Raxol.Core.Runtime.Log.debug("replace_text_range: new_full_text=#{inspect(new_full_text)}")
     {new_full_text, replaced_text}
   end
 
@@ -220,7 +220,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
     # Check if selection is valid before proceeding
     if start_pos == nil or end_pos == nil do
       # Or handle differently, maybe return {state, ""}? Logging is good too.
-      Logger.warning(
+      Raxol.Core.Runtime.Log.warning(
         "Attempted to delete invalid selection: #{inspect(state.selection_start)} to #{inspect(state.selection_end)}"
       )
 

@@ -11,7 +11,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
   """
 
   use GenServer
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Use standard Elixir UUID library
   alias UUID
@@ -202,8 +202,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
         invalid_return ->
           # Log error for unexpected return value
-          Logger.error(
-            "Component #{component.module}.update for ID #{component_id} returned invalid value: #{inspect(invalid_return)}"
+          Raxol.Core.Runtime.Log.error_with_stacktrace(
+            "Component update returned invalid value",
+            invalid_return,
+            nil,
+            %{module: component.module, component_id: component_id, state: state}
           )
 
           # Return error, keep original state
@@ -235,8 +238,9 @@ defmodule Raxol.Core.Runtime.ComponentManager do
     case Map.get(state.components, component_id) do
       nil ->
         # Component might have been unmounted before message arrived
-        Logger.warning(
-          "Received scheduled update for unknown component: #{component_id}"
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Received scheduled update for unknown component: #{component_id}",
+          %{}
         )
 
         {:noreply, state}
@@ -308,7 +312,7 @@ defmodule Raxol.Core.Runtime.ComponentManager do
           broadcast_update(msg, component_id, acc)
 
         _ ->
-          Logger.warning("Unknown command type: #{inspect(command)}")
+          Raxol.Core.Runtime.Log.warning_with_context("Unknown command type: #{inspect(command)}", %{})
           acc
       end
     end)
@@ -362,8 +366,9 @@ defmodule Raxol.Core.Runtime.ComponentManager do
             update_in(state.subscriptions, &Map.delete(&1, sub_id))
 
           {:error, reason} ->
-            Logger.warning(
-              "Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}"
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}",
+              %{}
             )
 
             update_in(state.subscriptions, &Map.delete(&1, sub_id))
@@ -388,10 +393,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
           :ok
 
         {:error, reason} ->
-          require Logger
+          require Raxol.Core.Runtime.Log
 
-          Logger.warning(
-            "Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}"
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Failed to stop subscription #{inspect(sub_id)}: #{inspect(reason)}",
+            %{}
           )
 
         _ ->

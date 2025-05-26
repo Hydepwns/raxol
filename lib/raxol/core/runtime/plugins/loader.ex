@@ -5,14 +5,14 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   """
   @behaviour Raxol.Core.Runtime.Plugins.LoaderBehaviour
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   alias Raxol.Core.Runtime.Plugins.Plugin
 
   # --- LoaderBehaviour Callbacks ---
 
   @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
   def discover_plugins(plugin_dirs) when is_list(plugin_dirs) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Discovering plugins in: #{inspect(plugin_dirs)}"
     )
 
@@ -34,10 +34,11 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
               String.to_existing_atom("Elixir." <> module_name_str)
             rescue
               ArgumentError ->
-                Logger.warning(
-                  "[#{__MODULE__}] Could not convert derived module name '#{module_name_str}' to existing atom for file: #{file_path}. Skipping file."
+                Raxol.Core.Runtime.Log.warning_with_context(
+                  "[#{__MODULE__}] Could not convert derived module name '#{module_name_str}' to existing atom for file: #{file_path}. Skipping file.",
+                  %{module: __MODULE__, file_path: file_path, module_name_str: module_name_str},
+                  nil
                 )
-
                 nil
             end
 
@@ -52,17 +53,19 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
         |> Enum.reject(&is_nil/1)
       end)
 
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Discovered #{length(discovered_plugins)} potential plugins."
     )
 
     {:ok, discovered_plugins}
   rescue
     e ->
-      Logger.error(
-        "[#{__MODULE__}] Error during plugin discovery: #{inspect(e)}"
+      Raxol.Core.Runtime.Log.error_with_stacktrace(
+        "[#{__MODULE__}] Error during plugin discovery",
+        e,
+        nil,
+        %{module: __MODULE__, plugin_dirs: plugin_dirs}
       )
-
       {:error, :discovery_failed}
   end
 
@@ -228,13 +231,15 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
               end
 
             if errors != [] do
-              Logger.error(
-                "[#{__MODULE__}] Plugin #{inspect(module_atom)} metadata validation failed: #{inspect(errors)} | Metadata: #{inspect(metadata)}"
+              Raxol.Core.Runtime.Log.error_with_stacktrace(
+                "[#{__MODULE__}] Plugin #{inspect(module_atom)} metadata validation failed: #{inspect(errors)} | Metadata: #{inspect(metadata)}",
+                nil,
+                nil,
+                %{module: __MODULE__, module_atom: module_atom, errors: errors, metadata: metadata}
               )
-
               {:error, :invalid_metadata, Enum.reverse(errors), metadata}
             else
-              Logger.debug(
+              Raxol.Core.Runtime.Log.debug(
                 "[#{__MODULE__}] Successfully called metadata/0 on #{inspect(module_atom)}."
               )
 
@@ -242,26 +247,30 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
             end
           rescue
             e ->
-              Logger.error(
-                "[#{__MODULE__}] Error calling metadata/0 on #{inspect(module_atom)}: #{inspect(e)}"
+              Raxol.Core.Runtime.Log.error_with_stacktrace(
+                "[#{__MODULE__}] Error calling metadata/0 on #{inspect(module_atom)}",
+                e,
+                nil,
+                %{module: __MODULE__, module_atom: module_atom}
               )
-
               {:error, :metadata_call_failed}
           end
 
         true ->
           # Module doesn't provide metadata via PluginMetadataProvider, but it's loaded.
-          Logger.debug(
+          Raxol.Core.Runtime.Log.debug(
             "[#{__MODULE__}] Module #{inspect(module_atom)} loaded, metadata to be handled by caller or defaults."
           )
 
           {:ok, module_atom}
       end
     else
-      Logger.error(
-        "[#{__MODULE__}] Failed to ensure module for metadata is loaded: #{inspect(module_atom)}"
+      Raxol.Core.Runtime.Log.error_with_stacktrace(
+        "[#{__MODULE__}] Failed to ensure module for metadata is loaded",
+        nil,
+        nil,
+        %{module: __MODULE__, module_atom: module_atom}
       )
-
       {:error, :module_not_found_for_metadata}
     end
   end
@@ -269,16 +278,18 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
   def load_plugin_module(module_atom) when is_atom(module_atom) do
     if Code.ensure_loaded?(module_atom) do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[#{__MODULE__}] Module code ensured loaded for: #{inspect(module_atom)}"
       )
 
       {:ok, module_atom}
     else
-      Logger.error(
-        "[#{__MODULE__}] Failed to ensure module code is loaded: #{inspect(module_atom)}"
+      Raxol.Core.Runtime.Log.error_with_stacktrace(
+        "[#{__MODULE__}] Failed to ensure module code is loaded",
+        nil,
+        nil,
+        %{module: __MODULE__, module_atom: module_atom}
       )
-
       {:error, :module_not_found}
     end
   end
@@ -313,7 +324,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   def load_plugin(plugin_id, config \\ %{})
 
   def load_plugin(plugin_id, config) when is_atom(plugin_id) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Attempting to load plugin (legacy): #{inspect(plugin_id)}"
     )
 
@@ -325,26 +336,30 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
         # Uses a simplified default
         metadata = default_metadata(module)
 
-        Logger.info(
+        Raxol.Core.Runtime.Log.info(
           "[#{__MODULE__}] Successfully loaded plugin (legacy): #{inspect(plugin_id)}"
         )
 
         {:ok, module, metadata, config}
 
       {:error, reason} ->
-        Logger.error(
-          "[#{__MODULE__}] Failed to load plugin module (legacy): #{inspect(plugin_id)}, reason: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to load plugin module (legacy)",
+          reason,
+          nil,
+          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
         )
-
         {:error, reason}
     end
   end
 
   def load_plugin(plugin_id, _config) do
-    Logger.error(
-      "[#{__MODULE__}] Invalid plugin ID (legacy): #{inspect(plugin_id)}. Must be an atom."
+    Raxol.Core.Runtime.Log.error_with_stacktrace(
+      "[#{__MODULE__}] Invalid plugin ID (legacy)",
+      nil,
+      nil,
+      %{module: __MODULE__, plugin_id: plugin_id}
     )
-
     {:error, :invalid_plugin_id}
   end
 
@@ -493,21 +508,23 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
 
     if has_provider_behaviour && function_exported?(plugin_module, :metadata, 0) do
       try do
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "[#{__MODULE__}] Found #{inspect(provider_behaviour)} (legacy check). Calling metadata/0."
         )
 
         plugin_module.metadata()
       rescue
         e ->
-          Logger.error(
-            "[#{__MODULE__}] Error calling metadata/0 (legacy check) for #{inspect(plugin_module)}: #{inspect(e)}"
+          Raxol.Core.Runtime.Log.error_with_stacktrace(
+            "[#{__MODULE__}] Error calling metadata/0 (legacy check) for #{inspect(plugin_module)}",
+            e,
+            nil,
+            %{module: __MODULE__, plugin_module: plugin_module}
           )
-
           default_metadata(plugin_module)
       end
     else
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[#{__MODULE__}] #{inspect(provider_behaviour)} not implemented or metadata/0 not exported (legacy check). Using default metadata."
       )
 
@@ -530,10 +547,12 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     if Code.ensure_loaded?(plugin_module) do
       :ok
     else
-      Logger.error(
-        "[#{__MODULE__}] Failed to ensure module code is loaded (legacy load_code): #{inspect(plugin_module)}"
+      Raxol.Core.Runtime.Log.error_with_stacktrace(
+        "[#{__MODULE__}] Failed to ensure module code is loaded (legacy load_code)",
+        nil,
+        nil,
+        %{module: __MODULE__, plugin_module: plugin_module}
       )
-
       {:error, :module_not_found}
     end
   end
@@ -653,10 +672,12 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
       end
     rescue
       error ->
-        Logger.error(
-          "Error during plugin init for #{module}: #{inspect(error)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Error during plugin init",
+          error,
+          nil,
+          %{module: __MODULE__, plugin_module: module}
         )
-
         {:error, {:init_exception, error}}
     end
   end

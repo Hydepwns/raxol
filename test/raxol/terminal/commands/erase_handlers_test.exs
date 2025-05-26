@@ -7,14 +7,15 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
   alias Raxol.Terminal.ANSI.TextFormatting
 
   setup do
-    # Create a test emulator with a 10x10 screen
-    emulator = %Emulator{
+    # Create a test emulator with a 10x10 screen using the proper constructor
+    emulator = Emulator.new(10, 10)
+    # Optionally, reset the buffers and cursor if needed
+    emulator = %{emulator |
       main_screen_buffer: ScreenBuffer.new(10, 10),
       alternate_screen_buffer: ScreenBuffer.new(10, 10),
       cursor: CursorManager.new(),
       style: TextFormatting.new()
     }
-
     {:ok, emulator: emulator}
   end
 

@@ -6,7 +6,7 @@ defmodule Raxol.Plugins.Lifecycle do
   dependencies and configuration persistence.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Alias necessary modules
   alias Raxol.Plugins.{PluginConfig, PluginDependency, Manager.Core}
@@ -66,8 +66,9 @@ defmodule Raxol.Plugins.Lifecycle do
             saved_config
 
           {:error, reason} ->
-            Logger.warning(
-              "Failed to save config for plugin #{plugin_name}: #{inspect(reason)}. Proceeding without saved config."
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "Failed to save config for plugin #{plugin_name}: #{inspect(reason)}. Proceeding without saved config.",
+              %{}
             )
 
             # Use the config state *before* the failed save attempt
@@ -178,8 +179,9 @@ defmodule Raxol.Plugins.Lifecycle do
                 saved_config
 
               {:error, reason} ->
-                Logger.warning(
-                  "Failed to save config after unloading plugin #{name}: #{inspect(reason)}. Proceeding anyway."
+                Raxol.Core.Runtime.Log.warning_with_context(
+                  "Failed to save config after unloading plugin #{name}: #{inspect(reason)}. Proceeding anyway.",
+                  %{}
                 )
 
                 # Use config state before failed save
@@ -234,8 +236,9 @@ defmodule Raxol.Plugins.Lifecycle do
                 saved_config
 
               {:error, reason} ->
-                Logger.warning(
-                  "Failed to save config after enabling plugin #{name}: #{inspect(reason)}. Proceeding anyway."
+                Raxol.Core.Runtime.Log.warning_with_context(
+                  "Failed to save config after enabling plugin #{name}: #{inspect(reason)}. Proceeding anyway.",
+                  %{}
                 )
 
                 manager.config
@@ -303,8 +306,9 @@ defmodule Raxol.Plugins.Lifecycle do
              }}
 
           {:error, reason} ->
-            Logger.warning(
-              "Failed to save config after disabling plugin #{name}: #{inspect(reason)}. Proceeding anyway."
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "Failed to save config after disabling plugin #{name}: #{inspect(reason)}. Proceeding anyway.",
+              %{}
             )
 
             # Continue even if save fails, but use the manager state before the save attempt
@@ -360,7 +364,7 @@ defmodule Raxol.Plugins.Lifecycle do
         case Enum.find(initialized_plugins, &(&1.name == plugin_name)) do
           nil ->
             # This should technically not happen if resolve_dependencies is correct
-            Logger.error(
+            Raxol.Core.Runtime.Log.error(
               "Plugin #{plugin_name} found in sorted list but not in initialized list."
             )
 

@@ -6,7 +6,7 @@ defmodule Raxol.UI.Renderer do
   into styled characters at specific coordinates.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Map representing an element with x, y, width, height, type, attrs, etc.
   @type positioned_element :: map()
@@ -115,7 +115,7 @@ defmodule Raxol.UI.Renderer do
       # or we might need to handle them directly here, applying component-specific styles.
 
       _other ->
-        Logger.warning(
+        Raxol.Core.Runtime.Log.warning(
           "[#{__MODULE__}] Unknown or unhandled element type for rendering: #{inspect(Map.get(element, :type))} - Element: #{inspect(element)}"
         )
 
@@ -140,7 +140,7 @@ defmodule Raxol.UI.Renderer do
   end
 
   defp render_text(_x, _y, text, _attrs, _theme) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning(
       "[#{__MODULE__}] Invalid text content for rendering: #{inspect(text)}. Expected binary."
     )
 
@@ -268,7 +268,7 @@ defmodule Raxol.UI.Renderer do
     all_cells = []
 
     # --- Logging ---
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Renderer.render_table] Rendering table at (#{x},#{y}) W=#{width}. Headers: #{inspect(headers)}, DataRows: #{length(data)}, ColWidths: #{inspect(col_widths)}"
     )
 

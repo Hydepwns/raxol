@@ -29,6 +29,7 @@ defmodule Raxol.Terminal.Parser.State.Manager do
   def new do
     %State{
       state: :ground,
+      params: nil,
       params_buffer: "",
       intermediates_buffer: "",
       payload_buffer: "",

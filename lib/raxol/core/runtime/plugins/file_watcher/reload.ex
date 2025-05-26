@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
   Handles plugin reloading functionality.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Reloads a plugin after file changes.
@@ -24,38 +24,49 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
                      %{}
                    ) do
                 {:ok, _} ->
-                  Logger.info(
+                  Raxol.Core.Runtime.Log.info(
                     "[#{__MODULE__}] Successfully reloaded plugin #{plugin_id}"
                   )
 
                   :ok
 
                 {:error, reason} ->
-                  Logger.error(
-                    "[#{__MODULE__}] Failed to reload plugin #{plugin_id}: #{inspect(reason)}"
+                  Raxol.Core.Runtime.Log.error_with_stacktrace(
+                    "[#{__MODULE__}] Failed to reload plugin #{plugin_id}",
+                    reason,
+                    nil,
+                    %{module: __MODULE__, plugin_id: plugin_id, path: path, reason: reason}
                   )
-
                   {:error, {:reload_failed, reason}}
               end
 
             {:error, reason} ->
-              Logger.error(
-                "[#{__MODULE__}] Failed to unload plugin #{plugin_id}: #{inspect(reason)}"
+              Raxol.Core.Runtime.Log.error_with_stacktrace(
+                "[#{__MODULE__}] Failed to unload plugin #{plugin_id}",
+                reason,
+                nil,
+                %{module: __MODULE__, plugin_id: plugin_id, path: path, reason: reason}
               )
-
               {:error, {:unload_failed, reason}}
           end
         rescue
           e ->
-            Logger.error(
-              "[#{__MODULE__}] Error during plugin reload #{plugin_id}: #{inspect(e)}"
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "[#{__MODULE__}] Error during plugin reload #{plugin_id}",
+              e,
+              __STACKTRACE__,
+              %{module: __MODULE__, plugin_id: plugin_id, path: path}
             )
-
             {:error, {:reload_error, e}}
         end
 
       {:error, :not_found} ->
-        Logger.error("[#{__MODULE__}] Plugin #{plugin_id} not found for reload")
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Plugin #{plugin_id} not found for reload",
+          nil,
+          nil,
+          %{module: __MODULE__, plugin_id: plugin_id, path: path}
+        )
         {:error, :plugin_not_found}
     end
   end

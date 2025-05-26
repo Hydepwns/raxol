@@ -64,4 +64,7 @@ defmodule RaxolWeb.Router do
       live_dashboard("/dashboard", metrics: RaxolWeb.Telemetry)
     end
   end
+
+  # Expose Prometheus metrics endpoint
+  forward "/metrics", TelemetryMetricsPrometheus
 end

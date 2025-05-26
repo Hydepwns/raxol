@@ -7,7 +7,7 @@ defmodule Raxol.Plugins.EventHandler do
   Updates the plugin manager state based on the results returned by the plugins.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Plugins.Manager.Core
 
@@ -176,26 +176,23 @@ defmodule Raxol.Plugins.EventHandler do
                 handle_result_fun.(acc, plugin, callback_name, result)
               rescue
                 e ->
-                  Logger.warning(
-                    "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an exception during #{callback_name} event handling: #{inspect(e)}"
+                  Raxol.Core.Runtime.Log.error_with_stacktrace(
+                    "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an exception during #{callback_name} event handling",
+                    e,
+                    nil,
+                    %{plugin: plugin.name, callback: callback_name, module: __MODULE__}
                   )
-
                   exception = Exception.normalize(:error, e, __STACKTRACE__)
-
-                  # Optionally send to error reporting service
-                  # ErrorReporter.capture_exception(exception, stacktrace: System.stacktrace())
-                  # Halt with error on exception
                   {:halt, {:error, {exception, __STACKTRACE__}}}
               catch
                 kind, value ->
-                  Logger.warning(
-                    "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an error during #{callback_name} event handling: #{inspect(value)}"
+                  Raxol.Core.Runtime.Log.error_with_stacktrace(
+                    "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an error during #{callback_name} event handling",
+                    value,
+                    nil,
+                    %{plugin: plugin.name, callback: callback_name, kind: kind, module: __MODULE__}
                   )
-
                   exception = Exception.normalize(:error, value, __STACKTRACE__)
-
-                  # ErrorReporter.capture_exception(exception, stacktrace: System.stacktrace())
-                  # Halt with error on throw/exit
                   {:halt, {:error, {kind, value, __STACKTRACE__}}}
               end
             else
@@ -241,8 +238,11 @@ defmodule Raxol.Plugins.EventHandler do
         {:cont, {:ok, new_manager_state}}
 
       {:error, reason} ->
-        Logger.error(
-          "Plugin #{plugin.name} failed during event handling: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Plugin #{plugin.name} failed during event handling",
+          reason,
+          nil,
+          %{plugin: plugin.name, module: __MODULE__}
         )
 
         # Halt the reduce_while loop on the first plugin error
@@ -250,8 +250,9 @@ defmodule Raxol.Plugins.EventHandler do
 
       _other ->
         # Log a warning for unexpected return values but continue
-        Logger.warning(
-          "Plugin #{plugin.name} returned unexpected value: #{inspect(_other)}. Ignoring."
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Plugin #{plugin.name} returned unexpected value. Ignoring.",
+          %{plugin: plugin.name, value: _other, module: __MODULE__}
         )
 
         {:cont, {:ok, acc_manager}}
@@ -298,15 +299,19 @@ defmodule Raxol.Plugins.EventHandler do
         {:cont, {:ok, new_manager_state, transformed_output}}
 
       {:error, reason} ->
-        Logger.error(
-          "Plugin #{plugin.name} failed during output handling: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Plugin #{plugin.name} failed during output handling",
+          reason,
+          nil,
+          %{plugin: plugin.name, module: __MODULE__}
         )
 
         {:halt, {:error, reason}}
 
       _other ->
-        Logger.warning(
-          "Plugin #{plugin.name} returned unexpected value from handle_output: #{inspect(_other)}. Ignoring."
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Plugin #{plugin.name} returned unexpected value from handle_output. Ignoring.",
+          %{plugin: plugin.name, value: _other, module: __MODULE__}
         )
 
         {:cont, {:ok, acc_manager, acc_output}}
@@ -353,15 +358,19 @@ defmodule Raxol.Plugins.EventHandler do
         {:halt, {:ok, new_manager_state, :halt}}
 
       {:error, reason} ->
-        Logger.error(
-          "Error from plugin #{plugin.name} in handle_mouse: #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Error from plugin #{plugin.name} in handle_mouse",
+          reason,
+          nil,
+          %{plugin: plugin.name, module: __MODULE__}
         )
 
         {:halt, {:error, reason}}
 
       _other ->
-        Logger.warning(
-          "Invalid return from #{plugin.name}.handle_mouse/3: #{inspect(_other)}. Propagating."
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Invalid return from #{plugin.name}.handle_mouse/3. Propagating.",
+          %{plugin: plugin.name, value: _other, module: __MODULE__}
         )
 
         # Continue propagating if plugin returns invalid value
@@ -415,15 +424,19 @@ defmodule Raxol.Plugins.EventHandler do
       # {:ok, updated_plugin_state, {:command, cmd}, :halt} -> ...
 
       {:error, reason} ->
-        Logger.error(
-          "Error from plugin #{plugin.name} in handle_input (key event): #{inspect(reason)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Error from plugin #{plugin.name} in handle_input (key event)",
+          reason,
+          nil,
+          %{plugin: plugin.name, module: __MODULE__}
         )
 
         {:halt, {:error, reason}}
 
       _other ->
-        Logger.warning(
-          "Invalid return from #{plugin.name}.handle_input/2 (key event): #{inspect(_other)}. Propagating."
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Invalid return from #{plugin.name}.handle_input/2 (key event). Propagating.",
+          %{plugin: plugin.name, value: _other, module: __MODULE__}
         )
 
         # Continue, assuming propagate

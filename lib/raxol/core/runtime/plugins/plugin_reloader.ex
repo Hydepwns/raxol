@@ -7,7 +7,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
   - Handling reload failures and recovery
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Reloads a plugin from disk.
@@ -16,7 +16,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
     if !state.initialized do
       {:error, :not_initialized, state}
     else
-      Logger.info("[#{__MODULE__}] Reloading plugin: #{plugin_id}")
+      Raxol.Core.Runtime.Log.info("[#{__MODULE__}] Reloading plugin: #{plugin_id}")
 
       case state.lifecycle_helper_module.reload_plugin_from_disk(
              plugin_id,
@@ -41,7 +41,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
           new_metadata =
             Map.put(state.metadata, plugin_id, updated_plugin_info.metadata)
 
-          Logger.info(
+          Raxol.Core.Runtime.Log.info(
             "[#{__MODULE__}] Plugin #{plugin_id} reloaded successfully."
           )
 
@@ -55,10 +55,12 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
            }}
 
         {:error, reason} ->
-          Logger.error(
-            "Failed to reload plugin #{plugin_id}: #{inspect(reason)}"
+          Raxol.Core.Runtime.Log.error_with_stacktrace(
+            "Failed to reload plugin",
+            reason,
+            nil,
+            %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
           )
-
           {:error, reason, state}
       end
     end
@@ -68,7 +70,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
   Reloads a plugin by its string ID.
   """
   def reload_plugin_by_id(plugin_id_string, state) do
-    Logger.info(
+    Raxol.Core.Runtime.Log.info(
       "[#{__MODULE__}] Received request to reload plugin by string ID: #{plugin_id_string}"
     )
 
@@ -76,8 +78,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
 
     case Map.get(state.plugins, plugin_id_atom) do
       nil ->
-        Logger.error(
-          "[#{__MODULE__}] Cannot reload plugin atom :#{plugin_id_atom} (from string '#{plugin_id_string}'): Not found."
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Cannot reload plugin atom :#{plugin_id_atom} (from string '#{plugin_id_string}'): Not found.",
+          nil,
+          nil,
+          %{module: __MODULE__, plugin_id_string: plugin_id_string}
         )
 
         {:error, :plugin_not_found, state}
@@ -86,8 +91,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
         plugin_path = Map.get(state.plugin_paths, plugin_id_atom)
 
         if is_nil(plugin_path) do
-          Logger.error(
-            "[#{__MODULE__}] Cannot reload plugin atom :#{plugin_id_atom}: Original path not found."
+          Raxol.Core.Runtime.Log.error_with_stacktrace(
+            "[#{__MODULE__}] Cannot reload plugin atom :#{plugin_id_atom}: Original path not found.",
+            nil,
+            nil,
+            %{module: __MODULE__, plugin_id: plugin_id_atom, plugin_id_string: plugin_id_string}
           )
 
           {:error, :path_not_found, state}
@@ -131,7 +139,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
                   updated_plugin_info.metadata
                 )
 
-              Logger.info(
+              Raxol.Core.Runtime.Log.info(
                 "[#{__MODULE__}] Plugin atom :#{plugin_id_atom} reloaded successfully."
               )
 
@@ -145,10 +153,12 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
                }}
 
             {:error, reason} ->
-              Logger.error(
-                "[#{__MODULE__}] Failed to reload plugin atom :#{plugin_id_atom}: #{inspect(reason)}"
+              Raxol.Core.Runtime.Log.error_with_stacktrace(
+                "[#{__MODULE__}] Failed to reload plugin atom :#{plugin_id_atom}",
+                reason,
+                nil,
+                %{module: __MODULE__, plugin_id: plugin_id_atom, reason: reason}
               )
-
               {:error, reason, state}
           end
         end

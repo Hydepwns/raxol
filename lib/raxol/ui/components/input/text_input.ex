@@ -47,7 +47,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
           style: map()
         }
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Initializes the TextInput component state from the given props.
@@ -238,7 +238,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
   @impl true
   @spec update(term(), map()) :: map()
   def update(message, state) do
-    Logger.debug("[TextInput] Received unhandled message: #{inspect(message)}")
+    Raxol.Core.Runtime.Log.debug("[TextInput] Received unhandled message: #{inspect(message)}")
     state
   end
 

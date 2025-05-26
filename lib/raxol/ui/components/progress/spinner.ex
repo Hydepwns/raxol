@@ -18,7 +18,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
 
   use Raxol.UI.Components.Base.Component
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   import Raxol.View.Elements
 
   @default_speed 80
@@ -149,7 +149,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
         state
       ) do
     # Access event fields using dot notation if needed
-    # Logger.debug("Spinner timer event: #{inspect event.data}")
+    # Raxol.Core.Runtime.Log.debug("Spinner timer event: #{inspect event.data}")
     next_frame = rem(state.frame_index + 1, length(state.frames))
     # Return updated state and potentially commands
     {%{state | frame_index: next_frame}, []}

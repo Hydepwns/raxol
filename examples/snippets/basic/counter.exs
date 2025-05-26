@@ -14,18 +14,18 @@ defmodule CounterExample do
 
   alias Raxol.Core.Events.Event
   alias Raxol.Core.Commands.Command
-  require Logger # Added for consistency, though not used here yet
+  require Raxol.Core.Runtime.Log
 
   @impl true
   def init(_context) do
     # Initial state
-    Logger.debug("CounterExample: init/1")
+    Raxol.Core.Runtime.Log.debug("CounterExample: init/1")
     {:ok, %{count: 0}}
   end
 
   @impl true
   def update(message, model) do
-    Logger.debug("CounterExample: update/2 received message: \#{inspect(message)}")
+    Raxol.Core.Runtime.Log.debug("CounterExample: update/2 received message: \#{inspect(message)}")
     case message do
       # Handle internal button click messages
       :increment ->
@@ -59,7 +59,7 @@ defmodule CounterExample do
 
   @impl true
   def view(model) do
-    Logger.debug("CounterExample: view/1")
+    Raxol.Core.Runtime.Log.debug("CounterExample: view/1")
     # Use the Raxol.View.Elements DSL
     view do
       column style: %{padding: 1, gap: 1, align_items: :center} do
@@ -79,17 +79,16 @@ defmodule CounterExample do
     end
   end
 
-  # Subscriptions are optional, default implementation provided by `use`
-  # @impl true
-  # def subscriptions(_model) do
-  #   []
-  # end
+  @impl true
+  def subscriptions(_model) do
+    []
+  end
 end
 
-Logger.info("CounterExample: Starting Raxol...")
+Raxol.Core.Runtime.Log.info("CounterExample: Starting Raxol...")
 # Run the example using the standard start_link for scripts
 {:ok, _pid} = Raxol.start_link(CounterExample, [])
-Logger.info("CounterExample: Raxol started. Running...")
+Raxol.Core.Runtime.Log.info("CounterExample: Raxol started. Running...")
 
 # For CI/test/demo: sleep for 2 seconds, then exit. Adjust as needed.
 Process.sleep(2000)

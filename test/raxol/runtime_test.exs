@@ -2,7 +2,7 @@ defmodule Raxol.RuntimeTest do
   # Use async: false for tests involving process linking/monitoring/receiving
   use ExUnit.Case, async: false
   # Uncomment this line
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # alias Raxol.Core.Runtime.Application # This alias was causing the issue with Application.put_env
   alias Raxol.Runtime.Supervisor, as: RuntimeSupervisor
@@ -38,40 +38,40 @@ defmodule Raxol.RuntimeTest do
     @impl Raxol.Core.Runtime.Application
     # Ctrl+Q
     def update({:event, %Event{type: :key, data: %{char: <<17>>}}}, model) do
-      Logger.debug("[MockApp.update] Matched Ctrl+Q (char <<17>>)")
+      Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+Q (char <<17>>)")
       {model, [%Command{type: :quit}]}
     end
 
     @impl Raxol.Core.Runtime.Application
     # Ctrl+V
     def update({:event, %Event{type: :key, data: %{char: <<22>>}}}, model) do
-      Logger.debug("[MockApp.update] Matched Ctrl+V")
+      Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+V")
       {model, [%Command{type: :clipboard_read}]}
     end
 
     @impl Raxol.Core.Runtime.Application
     # Ctrl+X
     def update({:event, %Event{type: :key, data: %{char: <<24>>}}}, model) do
-      Logger.debug("[MockApp.update] Matched Ctrl+X")
+      Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+X")
       {model, [%Command{type: :clipboard_write, data: "copied from mock"}]}
     end
 
     @impl Raxol.Core.Runtime.Application
     # Ctrl+N
     def update({:event, %Event{type: :key, data: %{char: <<14>>}}}, model) do
-      Logger.debug("[MockApp.update] Matched Ctrl+N")
+      Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+N")
       {model, [%Command{type: :notify, data: {"MockApp notification", ""}}]}
     end
 
     @impl Raxol.Core.Runtime.Application
     def update({:command_result, {:clipboard_read, {:ok, content}}}, model) do
-      Logger.debug("[MockApp.update] Received clipboard content: #{content}")
+      Raxol.Core.Runtime.Log.debug("[MockApp.update] Received clipboard content: #{content}")
       {%{model | last_clipboard: content}, []}
     end
 
     @impl Raxol.Core.Runtime.Application
     def update({:command_result, {:clipboard_read, {:error, reason}}}, model) do
-      Logger.error(
+      Raxol.Core.Runtime.Log.error(
         "[MockApp.update] Error reading clipboard: #{inspect(reason)}"
       )
 
@@ -80,7 +80,7 @@ defmodule Raxol.RuntimeTest do
 
     @impl Raxol.Core.Runtime.Application
     def update(event_tuple, model) do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[MockApp.update] Fell into default case for event_tuple: #{inspect(event_tuple)}"
       )
 
@@ -89,14 +89,14 @@ defmodule Raxol.RuntimeTest do
 
     @impl Raxol.Core.Runtime.Application
     def handle_tick(model) do
-      # Logger.debug("[MockApp.handle_tick] Tick, model: #{inspect(model)}")
+      # Raxol.Core.Runtime.Log.debug("[MockApp.handle_tick] Tick, model: #{inspect(model)}")
       # No commands on tick for mock
       {model, []}
     end
 
     @impl Raxol.Core.Runtime.Application
     def terminate(reason, model) do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[MockApp.terminate] Terminating. Reason: #{inspect(reason)}, Model: #{inspect(model)}"
       )
 
@@ -166,7 +166,7 @@ defmodule Raxol.RuntimeTest do
           String.trim(output)
 
         {_error_output, exit_code} ->
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning(
             "Failed to get original stty settings (exit code: #{exit_code}). Tests may not restore tty correctly."
           )
 
@@ -435,7 +435,7 @@ defmodule Raxol.RuntimeTest do
     assert {Raxol.Core.Runtime.Events.Dispatcher, dispatcher_pid, :worker, _} =
              dispatcher_info
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[TEST supervisor restart] Found initial Dispatcher: #{inspect(dispatcher_pid)}"
     )
 
@@ -447,19 +447,19 @@ defmodule Raxol.RuntimeTest do
     # Use :kill to simulate an unexpected crash
     ref = Process.monitor(dispatcher_pid)
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[TEST supervisor restart] Sending :kill to #{inspect(dispatcher_pid)}"
     )
 
     Process.exit(dispatcher_pid, :kill)
 
     # Wait for DOWN message
-    Logger.debug("[TEST supervisor restart] Waiting for :DOWN message...")
+    Raxol.Core.Runtime.Log.debug("[TEST supervisor restart] Waiting for :DOWN message...")
 
     assert_receive {:DOWN, ^ref, :process, ^dispatcher_pid, :killed}, 5000
 
     # Wait for the restarted Dispatcher to be ready by subscribing to its events
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[TEST supervisor restart] Waiting for restarted Dispatcher to be ready..."
     )
 
@@ -467,7 +467,7 @@ defmodule Raxol.RuntimeTest do
     assert_receive {:dispatcher_ready, new_dispatcher_pid}, 5000
 
     # Verify the Dispatcher has been restarted by the supervisor
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[TEST supervisor restart] Checking for restarted Dispatcher..."
     )
 
@@ -479,7 +479,7 @@ defmodule Raxol.RuntimeTest do
 
     # ADDED CHECK FOR NIL
     unless new_dispatcher_info do
-      Logger.warning(
+      Raxol.Core.Runtime.Log.warning(
         "[TEST supervisor restart] Supervisor children: #{inspect(Supervisor.which_children(supervisor_pid))}"
       )
 
@@ -491,13 +491,13 @@ defmodule Raxol.RuntimeTest do
     assert {Raxol.Core.Runtime.Events.Dispatcher, ^new_dispatcher_pid, :worker,
             _} = new_dispatcher_info
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[TEST supervisor restart] Found new Dispatcher: #{inspect(new_dispatcher_pid)}"
     )
 
     # Ensure it's a *new* process
     refute new_dispatcher_pid == dispatcher_pid
-    Logger.debug("[TEST supervisor restart] New PID confirmed.")
+    Raxol.Core.Runtime.Log.debug("[TEST supervisor restart] New PID confirmed.")
 
     # Verify the new Dispatcher is functioning (e.g., by getting its model)
     # Use the assert_model helper
@@ -508,12 +508,12 @@ defmodule Raxol.RuntimeTest do
       current_theme_id: "Default Theme"
     }
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[TEST supervisor restart] Asserting model for new Dispatcher..."
     )
 
     assert_model(new_dispatcher_pid, expected_model)
-    Logger.debug("[TEST supervisor restart] Model assertion passed.")
+    Raxol.Core.Runtime.Log.debug("[TEST supervisor restart] Model assertion passed.")
   end
 
   # --- Test Setup Helpers ---
@@ -524,7 +524,7 @@ defmodule Raxol.RuntimeTest do
     disp_pid = Process.whereis(Raxol.Core.Runtime.Events.Dispatcher)
 
     if disp_pid && Process.alive?(disp_pid) do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[TEST setup] Forcing stop of existing Dispatcher: #{inspect(disp_pid)}"
       )
 
@@ -538,7 +538,7 @@ defmodule Raxol.RuntimeTest do
         {:DOWN, ^ref, _, _, _} -> :ok
       after
         500 ->
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning(
             "[TEST setup] Did not receive DOWN for Dispatcher #{inspect(disp_pid)} after kill."
           )
       end
@@ -547,7 +547,7 @@ defmodule Raxol.RuntimeTest do
     reg_pid = Process.whereis(:raxol_event_subscriptions)
 
     if reg_pid && Process.alive?(reg_pid) do
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "[TEST setup] Forcing stop of existing Registry :raxol_event_subscriptions: #{inspect(reg_pid)}"
       )
 
@@ -561,7 +561,7 @@ defmodule Raxol.RuntimeTest do
         {:DOWN, ^ref, _, _, _} -> :ok
       after
         500 ->
-          Logger.warning(
+          Raxol.Core.Runtime.Log.warning(
             "[TEST setup] Did not receive DOWN for Registry #{inspect(reg_pid)} after kill."
           )
       end
@@ -581,7 +581,7 @@ defmodule Raxol.RuntimeTest do
             {:DOWN, ^ref, _, _, _} -> :ok
           after
             500 ->
-              Logger.warning(
+              Raxol.Core.Runtime.Log.warning(
                 "[TEST setup] UserPreferences did not stop cleanly before deleting file."
               )
           end
@@ -597,7 +597,7 @@ defmodule Raxol.RuntimeTest do
 
     try do
       File.rm(prefs_path)
-      Logger.debug("[TEST setup] Deleted preferences file: #{prefs_path}")
+      Raxol.Core.Runtime.Log.debug("[TEST setup] Deleted preferences file: #{prefs_path}")
     rescue
       # Ignore error if file doesn't exist (e.g., :enoent)
       File.Error -> :ok

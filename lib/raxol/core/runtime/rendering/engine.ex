@@ -8,7 +8,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   * Coordinating with the output backends
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   use GenServer
   @behaviour Raxol.Core.Runtime.Rendering.Engine.Behaviour
 
@@ -44,9 +44,9 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # Default GenServer init implementation
   @impl true
   def init(initial_state_map) do
-    Logger.info("Rendering Engine initializing...")
+    Raxol.Core.Runtime.Log.info("Rendering Engine initializing...")
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Rendering Engine init state map: #{inspect(initial_state_map)}"
     )
 
@@ -55,7 +55,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     initial_buffer = ScreenBuffer.new(state.width, state.height)
     new_state = %{state | buffer: initial_buffer}
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Rendering Engine init completed. State: #{inspect(new_state)}"
     )
 
@@ -64,14 +64,14 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   @impl true
   def handle_cast(:render_frame, state) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Rendering Engine received :render_frame cast. State: #{inspect(state)}"
     )
 
     # Fetch the latest model AND theme context from the Dispatcher
     case GenServer.call(state.dispatcher_pid, :get_render_context) do
       {:ok, %{model: current_model, theme_id: current_theme_id}} ->
-        Logger.debug(
+        Raxol.Core.Runtime.Log.debug(
           "Rendering Engine got render context: Model=#{inspect(current_model)}, Theme=#{inspect(current_theme_id)}"
         )
 
@@ -89,7 +89,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
         end
 
       {:error, reason} ->
-        Logger.error(
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
           "RenderingEngine failed to get render context from Dispatcher: #{inspect(reason)}"
         )
 
@@ -99,7 +99,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
 
   @impl true
   def handle_cast({:update_size, %{width: w, height: h}}, state) do
-    Logger.debug("RenderingEngine received size update: #{w}x#{h}")
+    Raxol.Core.Runtime.Log.debug("RenderingEngine received size update: #{w}x#{h}")
     new_state = %{state | width: w, height: h}
     # Optionally, resize buffer immediately or let render handle it
     # Let's resize it here
@@ -111,36 +111,36 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # --- Private Helpers ---
 
   defp do_render_frame(model, theme, state) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Rendering Engine executing do_render_frame. Model=#{inspect(model)}, Theme=#{inspect(theme)}, State=#{inspect(state)}"
     )
 
     try do
       # 1. Get the view from the application
-      Logger.debug("Rendering Engine: Calling app_module.view(model)")
+      Raxol.Core.Runtime.Log.debug("Rendering Engine: Calling app_module.view(model)")
       view = state.app_module.view(model)
-      Logger.debug("Rendering Engine: Got view: #{inspect(view)}")
+      Raxol.Core.Runtime.Log.debug("Rendering Engine: Got view: #{inspect(view)}")
 
       # 2. Calculate layout
       dimensions = %{width: state.width, height: state.height}
 
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Rendering Engine: Calculating layout with dimensions: #{inspect(dimensions)}"
       )
 
       positioned_elements = LayoutEngine.apply_layout(view, dimensions)
 
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Rendering Engine: Got positioned elements: #{inspect(positioned_elements)}"
       )
 
       # 3. Render positioned elements to cells using the provided theme
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Rendering Engine: Rendering to cells with theme: #{inspect(theme)}"
       )
 
       cells = UIRenderer.render_to_cells(positioned_elements, theme)
-      Logger.debug("Rendering Engine: Got cells: #{inspect(cells)}")
+      Raxol.Core.Runtime.Log.debug("Rendering Engine: Got cells: #{inspect(cells)}")
 
       # 4. Apply plugin transforms (if any)
       # TODO: Implement apply_plugin_transforms if needed
@@ -149,7 +149,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
       final_cells = cells
 
       # 5. Send to the appropriate output backend
-      Logger.debug(
+      Raxol.Core.Runtime.Log.debug(
         "Rendering Engine: Sending final cells to backend: #{state.environment}"
       )
 
@@ -161,13 +161,16 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
           render_to_vscode(final_cells, state)
 
         other ->
-          Logger.error("Unknown rendering environment: #{inspect(other)}")
+          Raxol.Core.Runtime.Log.error_with_stacktrace("Unknown rendering environment", other, nil, %{module: __MODULE__, state: state})
           {:error, :unknown_environment, state}
       end
     rescue
       error ->
-        Logger.error(
-          "Render error: #{inspect(error)} \n #{Exception.format_stacktrace(__STACKTRACE__)}"
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Render error",
+          error,
+          __STACKTRACE__,
+          %{module: __MODULE__, state: state}
         )
 
         {:error, {:render_error, error}, state}
@@ -177,7 +180,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
   # --- Private Rendering Backends ---
 
   defp render_to_terminal(cells, state) do
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Executing render_to_terminal. State: #{inspect(state)}"
     )
 
@@ -194,7 +197,7 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     # Render the buffer using the Terminal Renderer
     output_string = Raxol.Terminal.Renderer.render(updated_buffer)
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: Terminal output generated (length: #{String.length(output_string)})"
     )
 
@@ -203,14 +206,14 @@ defmodule Raxol.Core.Runtime.Rendering.Engine do
     # Use IO.write to send the rendered output (ANSI codes) to stdout
     # This assumes the process running this code has direct access to the terminal stdout.
     # In a more complex setup, this might involve sending to a dedicated IO process.
-    Logger.debug("Rendering Engine: Writing output string to IO")
+    Raxol.Core.Runtime.Log.debug("Rendering Engine: Writing output string to IO")
     IO.write(output_string)
-    Logger.debug("Rendering Engine: Finished writing output string to IO")
+    Raxol.Core.Runtime.Log.debug("Rendering Engine: Finished writing output string to IO")
 
     # Return updated state with the new buffer
     updated_state_with_buffer = %{state | buffer: updated_buffer}
 
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "Rendering Engine: render_to_terminal complete. New state: #{inspect(updated_state_with_buffer)}"
     )
 

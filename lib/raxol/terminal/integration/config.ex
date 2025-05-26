@@ -3,7 +3,7 @@ defmodule Raxol.Terminal.Integration.Config do
   Handles configuration management for the terminal integration.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Config
   alias Raxol.Terminal.Integration.State
@@ -27,7 +27,7 @@ defmodule Raxol.Terminal.Integration.Config do
 
       {:error, reason} ->
         # Log the validation error
-        Logger.error(
+        Raxol.Core.Runtime.Log.error(
           "Terminal configuration update failed validation: #{inspect(reason)}"
         )
 

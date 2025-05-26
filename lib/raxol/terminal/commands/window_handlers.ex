@@ -6,7 +6,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   # Assuming average character cell dimensions for pixel reports if not otherwise available
   @default_char_width_px 8
@@ -22,30 +22,22 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
   def handle_t(emulator, params) do
     case params do
       [] ->
-        Logger.warn(
-          "Window manipulation command received with empty parameters"
-        )
+        Raxol.Core.Runtime.Log.warning_with_context("Window manipulation command received with empty parameters", %{})
 
         {:error, :empty_params, emulator}
 
       [nil] ->
-        Logger.warn(
-          "Window manipulation command received with nil operation"
-        )
+        Raxol.Core.Runtime.Log.warning_with_context("Window manipulation command received with nil operation", %{})
 
         {:error, :nil_operation, emulator}
 
       [op | rest] when not is_integer(op) ->
-        Logger.warn(
-          "Window manipulation command received with invalid operation type: #{inspect(op)}"
-        )
+        Raxol.Core.Runtime.Log.warning_with_context("Window manipulation command received with invalid operation type: #{inspect(op)}", %{})
 
         {:error, :invalid_operation_type, emulator}
 
       [op | rest] when op < 0 ->
-        Logger.warn(
-          "Window manipulation command received with negative operation: #{op}"
-        )
+        Raxol.Core.Runtime.Log.warning_with_context("Window manipulation command received with negative operation: #{op}", %{})
 
         {:error, :negative_operation, emulator}
 
@@ -100,7 +92,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
         report_desktop_size_chars(emulator)
 
       _ ->
-        Logger.warn("Unknown window operation: #{op}")
+        Raxol.Core.Runtime.Log.warning_with_context("Unknown window operation: #{op}", %{})
         emulator
     end
   end
@@ -112,9 +104,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
         {x, y}
 
       _ ->
-        Logger.warn(
-          "Window move command received with invalid/insufficient parameters: #{inspect(params)}"
-        )
+        Raxol.Core.Runtime.Log.warning_with_context("Window move command received with invalid/insufficient parameters: #{inspect(params)}", %{})
 
         {0, 0}
     end
@@ -128,9 +118,7 @@ defmodule Raxol.Terminal.Commands.WindowHandlers do
         {width, height}
 
       _ ->
-        Logger.warn(
-          "Window resize (pixels) command received with invalid/insufficient parameters: #{inspect(params)}"
-        )
+        Raxol.Core.Runtime.Log.warning_with_context("Window resize (pixels) command received with invalid/insufficient parameters: #{inspect(params)}", %{})
 
         {640, 384}
     end

@@ -4,7 +4,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   consistent handling of terminal capabilities and dimensions.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
   alias ExTermbox
 
   @doc """
@@ -26,21 +26,22 @@ defmodule Raxol.Terminal.TerminalUtils do
       with {:error, _} <- detect_with_io(:io),
            {:error, _} <-
              (if real_tty?() and Mix.env() != :test do
-                Logger.debug(
+                Raxol.Core.Runtime.Log.debug(
                   "[TerminalUtils] TTY detected, attempting detect_with_termbox..."
                 )
 
                 detect_with_termbox()
               else
-                Logger.debug(
+                Raxol.Core.Runtime.Log.debug(
                   "[TerminalUtils] Not a real TTY, skipping detect_with_termbox."
                 )
 
                 {:error, :not_a_tty}
               end),
            {:error, _} <- detect_with_stty() do
-        Logger.warning(
-          "Could not determine terminal dimensions. Using defaults."
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Could not determine terminal dimensions. Using defaults.",
+          %{}
         )
 
         {default_width, default_height}
@@ -49,13 +50,14 @@ defmodule Raxol.Terminal.TerminalUtils do
       end
 
     if width == 0 or height == 0 do
-      Logger.warning(
-        "Detected invalid terminal dimensions (#{width}x#{height}). Using defaults."
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "Detected invalid terminal dimensions (#{width}x#{height}). Using defaults.",
+        %{}
       )
 
       {default_width, default_height}
     else
-      Logger.debug("Terminal dimensions: #{width}x#{height}")
+      Raxol.Core.Runtime.Log.debug("Terminal dimensions: #{width}x#{height}")
       {width, height}
     end
   end
@@ -105,30 +107,30 @@ defmodule Raxol.Terminal.TerminalUtils do
         {:ok, width, height}
       else
         {:error, reason} ->
-          Logger.debug("io.columns/rows error: #{inspect(reason)}")
+          Raxol.Core.Runtime.Log.debug("io.columns/rows error: #{inspect(reason)}")
           {:error, reason}
 
         other ->
-          Logger.debug("io.columns/rows unexpected return: #{inspect(other)}")
+          Raxol.Core.Runtime.Log.debug("io.columns/rows unexpected return: #{inspect(other)}")
           {:error, :invalid_response}
       end
     rescue
       e ->
-        Logger.debug("Error in detect_with_io: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.debug("Error in detect_with_io: #{inspect(e)}")
         {:error, e}
     end
   end
 
   # Try to detect with rrex_termbox
   defp detect_with_termbox do
-    Logger.debug("[TerminalUtils] Calling ExTermbox.width/height (NIF)...")
+    Raxol.Core.Runtime.Log.debug("[TerminalUtils] Calling ExTermbox.width/height (NIF)...")
 
     with {:ok, width} <- ExTermbox.width(),
          {:ok, height} <- ExTermbox.height() do
       {:ok, width, height}
     else
       error ->
-        Logger.debug("rrex_termbox error: #{inspect(error)}")
+        Raxol.Core.Runtime.Log.debug("rrex_termbox error: #{inspect(error)}")
         {:error, error}
     end
   end
@@ -145,17 +147,17 @@ defmodule Raxol.Terminal.TerminalUtils do
               {:ok, String.to_integer(cols), String.to_integer(rows)}
 
             _ ->
-              Logger.debug("Unexpected stty output format: #{inspect(output)}")
+              Raxol.Core.Runtime.Log.debug("Unexpected stty output format: #{inspect(output)}")
               {:error, :invalid_format}
           end
 
         {output, code} ->
-          Logger.debug("stty exited with code #{code}: #{inspect(output)}")
+          Raxol.Core.Runtime.Log.debug("stty exited with code #{code}: #{inspect(output)}")
           {:error, {:exit_code, code}}
       end
     rescue
       e ->
-        Logger.debug("Error in detect_with_stty: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.debug("Error in detect_with_stty: #{inspect(e)}")
         {:error, e}
     end
   end

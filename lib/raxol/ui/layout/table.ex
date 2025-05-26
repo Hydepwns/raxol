@@ -3,7 +3,7 @@ defmodule Raxol.UI.Layout.Table do
   Handles measurement and positioning logic for Table elements within the LayoutEngine.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Measures the required space for a table and returns a single positioned table element.
@@ -81,7 +81,7 @@ defmodule Raxol.UI.Layout.Table do
     final_height = min(total_content_height, space.height)
 
     # --- Logging ---
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Layout.Table] Measured table: W=#{final_width}, H=#{final_height}, ColWidths=#{inspect(col_widths)}"
     )
 
@@ -112,7 +112,7 @@ defmodule Raxol.UI.Layout.Table do
     }
 
     # --- Logging ---
-    Logger.debug(
+    Raxol.Core.Runtime.Log.debug(
       "[Layout.Table] Returning positioned element: #{inspect(positioned_table)}"
     )
 
@@ -123,7 +123,7 @@ defmodule Raxol.UI.Layout.Table do
 
   # Fallback for invalid table data?
   def measure_and_position(element, _space, acc) do
-    Logger.warning(
+    Raxol.Core.Runtime.Log.warning(
       "Layout.Table: Received unexpected element: #{inspect(element)}"
     )
 

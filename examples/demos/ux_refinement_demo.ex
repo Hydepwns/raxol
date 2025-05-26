@@ -25,7 +25,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
   alias Raxol.UI.Components.FocusRing
   alias Raxol.Core.Runtime.Command
   alias Raxol.View.Elements, as: UI
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   require UI
 
@@ -43,7 +43,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
   Run the UX Refinement demo application.
   """
   def run do
-    Logger.info("Starting UX Refinement Demo Application...")
+    Raxol.Core.Runtime.Log.info("Starting UX Refinement Demo Application...")
 
     # Start Raxol with this module as the Application
     # Pass an empty map as initial opts for init/1
@@ -55,7 +55,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
   """
   @impl Raxol.Core.Runtime.Application
   def init(_opts) do
-    Logger.info("Initializing UX Refinement Demo...") # Add logging
+    Raxol.Core.Runtime.Log.info("Initializing UX Refinement Demo...") # Add logging
 
     # --- Setup moved from run/0 ---
     # Enable UX refinement features

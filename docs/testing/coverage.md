@@ -218,15 +218,15 @@ defmodule Raxol.Test.Coverage.Exclusions do
   def excluded_paths do
     [
       "lib/raxol/test/**",
-      "lib/raxol/config/**",
-      "lib/raxol/logger/**"
+      "lib/raxol/config/**"
     ]
   end
 
   def excluded_functions do
     [
-      {:Raxol.Logger, :log},
-      {:Raxol.Config, :load}
+      {:Raxol.Core.Runtime.Log, :log},
+      {:Raxol.Config, :load},
+      {:Raxol.Core.Runtime.Log, :error_with_stacktrace}
     ]
   end
 end

@@ -4,7 +4,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Core do
   Handles basic setup and state management.
   """
 
-  require Logger
+  require Raxol.Core.Runtime.Log
 
   @doc """
   Sets up file watching for plugin source files.
@@ -14,7 +14,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Core do
     if Code.ensure_loaded?(FileSystem) do
       case FileSystem.start_link(dirs: state.plugin_dirs) do
         {:ok, pid} ->
-          Logger.info(
+          Raxol.Core.Runtime.Log.info(
             "[#{__MODULE__}] File system watcher started for plugin reloading (PID: #{inspect(pid)})."
           )
 
@@ -22,15 +22,16 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Core do
           {pid, true}
 
         {:error, reason} ->
-          Logger.error(
+          Raxol.Core.Runtime.Log.error(
             "[#{__MODULE__}] Failed to start file system watcher: #{inspect(reason)}"
           )
 
           {nil, false}
       end
     else
-      Logger.warning(
-        "[#{__MODULE__}] FileSystem dependency not found. Cannot enable plugin reloading."
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "[#{__MODULE__}] FileSystem dependency not found. Cannot enable plugin reloading.",
+        %{}
       )
 
       {nil, false}
