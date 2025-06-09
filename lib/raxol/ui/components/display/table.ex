@@ -41,7 +41,10 @@ defmodule Raxol.UI.Components.Display.Table do
           optional(:filterable) => boolean(),
           optional(:selectable) => boolean(),
           optional(:striped) => boolean(),
-          optional(:selected) => integer() | nil
+          optional(:selected) => integer() | nil,
+          optional(:type) => :table | :header | :footer,
+          optional(:focused) => boolean(),
+          optional(:disabled) => boolean()
         }
 
   # Tables are typically display-only, so state might be minimal or nil
@@ -65,7 +68,12 @@ defmodule Raxol.UI.Components.Display.Table do
           filter_term: String.t(),
           selected_row: integer() | nil,
           striped: boolean(),
-          border_style: :single | :double | :none | map()
+          border_style: :single | :double | :none | map(),
+          mounted: boolean(),
+          render_count: integer(),
+          type: :table | :header | :footer,
+          focused: boolean(),
+          disabled: boolean()
         }
 
   defstruct id: nil,
@@ -87,7 +95,12 @@ defmodule Raxol.UI.Components.Display.Table do
             filter_term: "",
             selected_row: nil,
             striped: true,
-            border_style: :single
+            border_style: :single,
+            mounted: false,
+            render_count: 0,
+            type: :table,
+            focused: false,
+            disabled: false
 
   # --- Component Implementation ---
 
@@ -118,7 +131,10 @@ defmodule Raxol.UI.Components.Display.Table do
       filter_term: "",
       selected_row: Map.get(attrs, :selected),
       striped: Map.get(attrs, :striped, true),
-      border_style: Map.get(attrs, :border_style, :single)
+      border_style: Map.get(attrs, :border_style, :single),
+      type: :table,
+      focused: Map.get(attrs, :focused, false),
+      disabled: Map.get(attrs, :disabled, false)
     }
 
     {:ok, internal_state}
@@ -136,51 +152,44 @@ defmodule Raxol.UI.Components.Display.Table do
   @spec update(term(), state()) :: {:noreply, state()}
   @impl true
   def update(message, state) do
-    Raxol.Core.Runtime.Log.warning("Unhandled Table update: #{inspect(message)}")
-    {:noreply, state}
-  end
+    case message do
+      {:update_props, new_props} ->
+        # Update state with new props while preserving internal state
+        updated_state = Map.merge(state, Map.new(new_props))
+        # Recalculate column widths if data or headers change
+        updated_state = update_column_widths(updated_state)
+        {:noreply, updated_state}
 
-  @spec update({:update_props, map()}, state()) :: {:noreply, state()}
-  @impl true
-  def update({:update_props, new_props}, state) do
-    # Update state with new props while preserving internal state
-    updated_state = Map.merge(state, Map.new(new_props))
-    # Recalculate column widths if data or headers change
-    updated_state = update_column_widths(updated_state)
-    {:noreply, updated_state}
-  end
+      {:sort, column} ->
+        new_direction =
+          if state.sort_by == column do
+            if state.sort_direction == :asc, do: :desc, else: :asc
+          else
+            :asc
+          end
 
-  @spec update({:sort, atom()}, state()) :: {:noreply, state()}
-  @impl true
-  def update({:sort, column}, state) do
-    new_direction =
-      if state.sort_by == column do
-        if state.sort_direction == :asc, do: :desc, else: :asc
-      else
-        :asc
-      end
+        updated_state = %{state | sort_by: column, sort_direction: new_direction}
+        {:noreply, updated_state}
 
-    updated_state = %{state | sort_by: column, sort_direction: new_direction}
+      {:filter, term} ->
+        updated_state = %{state | filter_term: term}
+        {:noreply, updated_state}
 
-    {:noreply, updated_state}
-  end
+      {:select_row, row_index} ->
+        updated_state = %{state | selected_row: row_index}
+        {:noreply, updated_state}
 
-  @spec update({:filter, String.t()}, state()) :: {:noreply, state()}
-  @impl true
-  def update({:filter, term}, state) do
-    updated_state = %{state | filter_term: term}
-    {:noreply, updated_state}
-  end
-
-  @spec update({:select_row, integer()}, state()) :: {:noreply, state()}
-  @impl true
-  def update({:select_row, row_index}, state) do
-    updated_state = %{state | selected_row: row_index}
-    {:noreply, updated_state}
+      _ ->
+        Raxol.Core.Runtime.Log.warning(
+          "Unhandled Table update: #{inspect(message)}"
+        )
+        {:noreply, state}
+    end
   end
 
   @doc "Handles events for the Table component."
-  @spec handle_event(state(), term(), map()) :: {:noreply, state()} | {:noreply, state(), list()}
+  @spec handle_event(state(), term(), map()) ::
+          {:noreply, state()} | {:noreply, state(), list()}
   @impl true
   def handle_event(state, event, context) do
     attrs = context.attrs
@@ -278,18 +287,22 @@ defmodule Raxol.UI.Components.Display.Table do
     # Apply row styles
     row_styles = get_row_styles(state)
 
-    Elements.table(
-      id: id,
-      style: base_style,
-      data: processed_data,
-      columns: columns_config,
-      _scroll_top: state.scroll_top,
-      _selected_row: state.selected_row,
-      _focused_row: state.focused_row,
-      _focused_col: state.focused_col,
-      _row_styles: row_styles,
-      _header_style: state.header_style
-    )
+    table_element =
+      Elements.table(
+        id: id,
+        style: base_style,
+        data: processed_data,
+        columns: columns_config,
+        _scroll_top: state.scroll_top,
+        _selected_row: state.selected_row,
+        _focused_row: state.focused_row,
+        _focused_col: state.focused_col,
+        _row_styles: row_styles,
+        _header_style: state.header_style
+      )
+
+    # At the end of render, ensure :disabled and :focused are present in the returned map if possible
+    ensure_disabled_focused(table_element, state)
   end
 
   @spec unmount(state()) :: {:ok, state()}
@@ -305,17 +318,6 @@ defmodule Raxol.UI.Components.Display.Table do
   # defp default_row_style(_row_data, _index), do: %{}
   # Removed unused helper
   # defp default_cell_style(_cell_data, _row_index, _col_index), do: %{}
-
-  # Helper to get style property, handling list or map format
-  defp get_style_prop(style, key) when is_list(style) do
-    Keyword.get(style, key)
-  end
-
-  defp get_style_prop(style, key) when is_map(style) do
-    Map.get(style, key)
-  end
-
-  defp get_style_prop(_, _), do: nil
 
   defp visible_height(state)
   # Effectively infinite if not set
@@ -419,15 +421,19 @@ defmodule Raxol.UI.Components.Display.Table do
   end
 
   defp apply_border_style(style, :none) do
-    %{style | border: %{style.border | style: :none}}
+    %{style | border: %{style.border | style: :none, width: 0}}
   end
 
   defp apply_border_style(style, :single) do
-    %{style | border: %{style.border | style: :single}}
+    %{style | border: %{style.border | style: :solid, width: 1}}
+  end
+
+  defp apply_border_style(style, :solid) do
+    %{style | border: %{style.border | style: :solid, width: 1}}
   end
 
   defp apply_border_style(style, :double) do
-    %{style | border: %{style.border | style: :double}}
+    %{style | border: %{style.border | style: :double, width: 1}}
   end
 
   defp apply_border_style(style, custom_border) when is_map(custom_border) do
@@ -449,6 +455,16 @@ defmodule Raxol.UI.Components.Display.Table do
         true ->
           []
       end
+    end
+  end
+
+  defp ensure_disabled_focused(element, state) do
+    if is_map(element) do
+      element
+      |> Map.put_new(:disabled, Map.get(state, :disabled, false))
+      |> Map.put_new(:focused, Map.get(state, :focused, false))
+    else
+      element
     end
   end
 end
