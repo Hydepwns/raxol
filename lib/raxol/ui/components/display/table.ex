@@ -168,7 +168,12 @@ defmodule Raxol.UI.Components.Display.Table do
             :asc
           end
 
-        updated_state = %{state | sort_by: column, sort_direction: new_direction}
+        updated_state = %{
+          state
+          | sort_by: column,
+            sort_direction: new_direction
+        }
+
         {:noreply, updated_state}
 
       {:filter, term} ->
@@ -183,6 +188,7 @@ defmodule Raxol.UI.Components.Display.Table do
         Raxol.Core.Runtime.Log.warning(
           "Unhandled Table update: #{inspect(message)}"
         )
+
         {:noreply, state}
     end
   end
