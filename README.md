@@ -141,6 +141,25 @@ To scrape these metrics, add a scrape config to your Prometheus server (see `doc
 
 You can extend or customize metrics in `Raxol.Terminal.TelemetryPrometheus`.
 
+## Precompiled NIFs
+
+`rrex_termbox` now uses the [`NIFPrecompiled`](https://hex.pm/packages/nif_precompiled) loader to provide precompiled NIFs for common platforms (Linux x64, macOS x64/arm64, Windows x64).
+
+- If a precompiled binary is available for your platform, it will be downloaded and loaded automatically at runtime by the loader module (`ExTermbox.NIFLoader`).
+- If not, the library will attempt to build from source (requires a C toolchain and Erlang/OTP headers).
+- No manual NIF loading is needed in your code—everything is handled automatically.
+
+**Supported platforms:**
+
+- Linux x86_64
+- macOS x86_64
+- macOS arm64 (Apple Silicon)
+- Windows x86_64
+
+If you encounter issues, please open an issue or try building from source.
+
+For more details, see the [rrex_termbox v2.0.4 release page](https://github.com/Hydepwns/rrex_termbox/releases/tag/v2.0.4).
+
 ## License
 
 MIT © 2024 Raxol Team
