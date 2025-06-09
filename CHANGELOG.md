@@ -173,6 +173,10 @@
   - The executor and parser have been updated to handle these tuples, logging errors and ensuring only valid emulator state is passed to the renderer/UI.
   - Error structs and recursive error structures are prevented from propagating to the UI/renderer.
   - Comprehensive tests for error propagation and prevention of recursive error structures are now in place.
+- **Scrollbar Component Rendering Fix:**
+  - Fixed a rendering issue in the Scrollbar component where the thumb was not appearing.
+  - Ensured correct calculation of thumb size and position based on content and viewport dimensions.
+  - Added unit tests to verify thumb rendering under various scenarios (e.g., content smaller than viewport, content larger than viewport, scrolled content).
 
 ### Changed
 
