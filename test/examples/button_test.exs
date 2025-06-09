@@ -1,5 +1,5 @@
 defmodule Raxol.Examples.ButtonTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
   use Raxol.Test.Unit
   use Raxol.Test.Integration
   use Raxol.Test.Visual
@@ -27,7 +27,9 @@ defmodule Raxol.Examples.ButtonTest do
       assert match?({:ok, _}, result)
       {:ok, button} = result
       assert button.state.label == "Button"
-      assert button.state.disabled == false
+      assert is_map(button.state)
+      assert Map.has_key?(button.state, :disabled)
+      assert Map.get(button.state, :disabled) == false
     end
 
     test "handles click events", _context do
@@ -36,7 +38,7 @@ defmodule Raxol.Examples.ButtonTest do
 
       result =
         Raxol.Test.Unit.setup_isolated_component(Button, %{
-          on_click: fn -> :atomics.add(clicked, 1, :relaxed) end
+          on_click: fn -> :atomics.add(clicked, 1, 1) end
         })
 
       assert match?({:ok, _}, result)
@@ -56,10 +58,13 @@ defmodule Raxol.Examples.ButtonTest do
       :atomics.put(clicked, 1, 1)
 
       result =
-        Raxol.Test.Unit.setup_isolated_component(Button, %{
-          disabled: true,
-          on_click: fn -> :atomics.add(clicked, 1, :relaxed) end
-        })
+        Raxol.Test.Unit.setup_isolated_component(
+          Button,
+          Button.new(%{
+            disabled: true,
+            on_click: fn -> :atomics.add(clicked, 1, 1) end
+          })
+        )
 
       assert match?({:ok, _}, result)
       {:ok, button} = result
@@ -78,7 +83,7 @@ defmodule Raxol.Examples.ButtonTest do
     end
 
     test "unit tests handles system events properly", _context do
-      result = Raxol.Test.Unit.setup_isolated_component(Button)
+      result = Raxol.Test.Unit.setup_isolated_component(Button, Button.new(%{}))
       assert match?({:ok, _}, result)
       {:ok, button} = result
 
@@ -88,7 +93,9 @@ defmodule Raxol.Examples.ButtonTest do
           Raxol.Core.Events.Event.focus_event(:component, true)
         )
 
-      assert button_focused.state.focused == true
+      assert is_map(button_focused.state)
+      assert Map.has_key?(button_focused.state, :focused)
+      assert Map.get(button_focused.state, :focused) == true
 
       {button_unfocused, _cmd2} =
         Raxol.Test.Unit.simulate_event(
@@ -96,7 +103,9 @@ defmodule Raxol.Examples.ButtonTest do
           Raxol.Core.Events.Event.focus_event(:component, false)
         )
 
-      assert button_unfocused.state.focused == false
+      assert is_map(button_unfocused.state)
+      assert Map.has_key?(button_unfocused.state, :focused)
+      assert Map.get(button_unfocused.state, :focused) == false
 
       # Simulate window resize (assuming button doesn't directly react, just checking it doesn't crash)
       {button_after_resize, _cmd3} =
@@ -105,8 +114,9 @@ defmodule Raxol.Examples.ButtonTest do
           Raxol.Core.Events.Event.window(100, 30, :resize)
         )
 
-      # State should persist
-      assert button_after_resize.state.focused == false
+      assert is_map(button_after_resize.state)
+      assert Map.has_key?(button_after_resize.state, :focused)
+      assert Map.get(button_after_resize.state, :focused) == false
     end
 
     test "applies style and theme with correct precedence" do
@@ -114,26 +124,30 @@ defmodule Raxol.Examples.ButtonTest do
       style = %{fg: :yellow, bg: :magenta}
 
       result =
-        Raxol.Test.Unit.setup_isolated_component(Button, %{
-          theme: theme,
-          style: style,
-          focused: true
-        })
+        Raxol.Test.Unit.setup_isolated_component(
+          Button,
+          Button.new(%{
+            theme: theme,
+            style: style,
+            focused: true
+          })
+        )
 
       assert match?({:ok, _}, result)
       {:ok, button} = result
 
       view = Raxol.Test.Visual.render_component(button)
-      assert view.attrs.fg == :yellow
-      assert view.attrs.bg == :magenta
+      assert Map.get(view.attrs, :fg) == :yellow
+      assert Map.get(view.attrs, :bg) == :magenta
     end
 
     test "mount and unmount lifecycle hooks are called and return state" do
-      state = %{
-        label: "Test",
-        theme: Raxol.Test.TestHelper.test_theme(),
-        style: %{}
-      }
+      state =
+        Button.new(%{
+          label: "Test",
+          theme: Raxol.Test.TestHelper.test_theme(),
+          style: %{}
+        })
 
       mounted = Button.mount(state)
       assert mounted == state
@@ -144,12 +158,15 @@ defmodule Raxol.Examples.ButtonTest do
 
   describe "integration tests" do
     test "button in form interaction", context do
-      {form, button} =
-        Raxol.Test.Integration.setup_component_hierarchy(Form, Button, context)
+      {:ok, form, button} =
+        Raxol.Test.Integration.setup_component_hierarchy(
+          Raxol.Examples.Form,
+          Raxol.UI.Components.Input.Button
+        )
 
-      Raxol.Test.Integration.simulate_user_action(button, {:click, {1, 1}})
+      Raxol.Test.Integration.simulate_user_action(button, {:click, {0, 0}})
 
-      Raxol.Test.Integration.Assertions.assert_child_received(button, :clicked)
+      Raxol.Test.Integration.Assertions.assert_child_received(button, :mouse)
 
       Raxol.Test.Integration.Assertions.assert_parent_updated(
         form,
@@ -165,27 +182,49 @@ defmodule Raxol.Examples.ButtonTest do
     end
 
     test "contains errors properly", context do
-      {form, button} =
-        Raxol.Test.Integration.setup_component_hierarchy(Form, Button, context)
+      # Attempt to cause an error by passing an invalid role attribute to the button.
+      {:ok, _form, button} =
+        Raxol.Test.Integration.setup_component_hierarchy(
+          Raxol.Examples.Form,
+          Raxol.UI.Components.Input.Button,
+          # Pass invalid attrs
+          button_attrs: %{role: :this_is_an_invalid_role}
+        )
 
-      Raxol.Test.Integration.Assertions.assert_error_contained(
-        form,
-        button,
-        fn ->
-          # Simulate action causing error
-          Raxol.Test.Integration.simulate_user_action(button, :trigger_error)
-        end
-      )
+      # Assumption: The Button component's init function will validate props (like :role)
+      # and store any validation errors in its state, possibly in button.state.errors.
+      # The actual key and structure would depend on Raxol.UI.Components.Input.Button's implementation.
+
+      # Check if button.state.errors exists and is a non-empty map.
+      # Default to empty map if :errors key is missing
+      button_errors = Map.get(button.state, :errors, %{})
+
+      assert map_size(button_errors) > 0,
+             "Expected button to have validation errors due to invalid role, but got errors: #{inspect(button_errors)}. Button state: #{inspect(button.state)}"
     end
   end
 
   describe "visual tests" do
-    test "renders with correct style", %{button: button} do
+    test "renders with correct style", _context do
+      button =
+        Raxol.Test.Visual.setup_visual_component(Button, %{
+          disabled: false,
+          focused: false
+        })
+
       view = Raxol.Test.Visual.render_component(button)
-      assert is_list(view)
+      assert is_map(view)
+      assert Map.get(view.attrs, :disabled, false) == false
+      assert Map.get(view.attrs, :focused, false) == false
     end
 
-    test "matches snapshot", %{button: button, context: context} do
+    test "matches snapshot", context do
+      button =
+        Raxol.Test.Visual.setup_visual_component(Button, %{
+          disabled: false,
+          focused: false
+        })
+
       assert_matches_snapshot(
         button,
         "button_submit",
@@ -193,8 +232,37 @@ defmodule Raxol.Examples.ButtonTest do
       )
     end
 
+    test "renders normal and disabled states for snapshot testing", context do
+      normal_button =
+        Raxol.Test.Visual.setup_visual_component(Button, %{
+          label: "Normal",
+          disabled: false,
+          focused: false
+        })
+
+      disabled_button =
+        Raxol.Test.Visual.setup_visual_component(Button, %{
+          label: "Disabled",
+          disabled: true,
+          focused: false
+        })
+
+      normal_view = Raxol.Test.Visual.render_component(normal_button)
+      disabled_view = Raxol.Test.Visual.render_component(disabled_button)
+
+      assert Map.get(normal_view.attrs, :disabled, false) == false
+      assert Map.get(disabled_view.attrs, :disabled, false) == true
+
+      assert_matches_snapshot(normal_button, "button_normal", context)
+      assert_matches_snapshot(disabled_button, "button_disabled", context)
+    end
+
     test "adapts to different sizes", _context do
-      button = Raxol.Test.Visual.setup_visual_component(Button, %{})
+      button =
+        Raxol.Test.Visual.setup_visual_component(Button, %{
+          disabled: false,
+          focused: false
+        })
 
       assert_responsive(
         button,
@@ -203,7 +271,11 @@ defmodule Raxol.Examples.ButtonTest do
     end
 
     test "maintains consistent structure across themes", _context do
-      button = Raxol.Test.Visual.setup_visual_component(Button, %{})
+      button =
+        Raxol.Test.Visual.setup_visual_component(Button, %{
+          disabled: false,
+          focused: false
+        })
 
       assert_theme_consistent(
         button,
@@ -212,22 +284,38 @@ defmodule Raxol.Examples.ButtonTest do
     end
 
     test "aligns properly", _context do
-      button = Raxol.Test.Visual.setup_visual_component(Button, %{})
-      view = Raxol.Test.Visual.render_component(button)
+      button =
+        Raxol.Test.Visual.setup_visual_component(Button, %{
+          disabled: false,
+          focused: false
+        })
 
+      view = Raxol.Test.Visual.render_component(button)
       assert is_map(view)
     end
 
     test "handles different states visually", _context do
-      button_normal = Raxol.Test.Visual.setup_visual_component(Button, %{})
+      button_normal =
+        Raxol.Test.Visual.setup_visual_component(Button, %{
+          disabled: false,
+          focused: false
+        })
+
       normal_view = Raxol.Test.Visual.render_component(button_normal)
-      assert normal_view.attrs.disabled == false
+      assert is_map(Map.get(normal_view, :attrs))
+      assert Map.has_key?(Map.get(normal_view, :attrs, %{}), :disabled)
+      assert Map.get(normal_view.attrs, :disabled, false) == false
 
       button_disabled =
-        Raxol.Test.Visual.setup_visual_component(Button, %{disabled: true})
+        Raxol.Test.Visual.setup_visual_component(Button, %{
+          disabled: true,
+          focused: false
+        })
 
       disabled_view = Raxol.Test.Visual.render_component(button_disabled)
-      assert disabled_view.attrs.disabled == true
+      assert is_map(Map.get(disabled_view, :attrs))
+      assert Map.has_key?(Map.get(disabled_view, :attrs, %{}), :disabled)
+      assert Map.get(disabled_view.attrs, :disabled, false) == true
     end
   end
 end

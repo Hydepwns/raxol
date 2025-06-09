@@ -11,10 +11,14 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
 
       assert state.id == :cb1
       assert state.checked == false
+      assert is_map(state)
+      assert Map.has_key?(state, :disabled)
       assert state.disabled == false
       assert state.label == ""
       assert state.style == %{}
       assert state.theme == %{}
+      assert is_map(state)
+      assert Map.has_key?(state, :focused)
       assert state.focused == false
       assert state.on_toggle == nil
       assert state.tooltip == nil
@@ -43,10 +47,14 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
 
       assert state.id == :my_cb
       assert state.checked == true
+      assert is_map(state)
+      assert Map.has_key?(state, :disabled)
       assert state.disabled == true
       assert state.label == "Check me"
       assert state.style == %{color: :green}
       assert state.theme == %{fg: :blue}
+      assert is_map(state)
+      assert Map.has_key?(state, :focused)
       assert state.focused == false
       assert state.on_toggle == on_toggle_func
       assert state.tooltip == "tip"
@@ -67,38 +75,38 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
       # Render requires state and context
       hbox_element = Checkbox.render(state, default_context())
 
-      # Check the hbox structure using .tag
-      assert hbox_element.tag == :hbox
-      assert length(hbox_element.children) == 2
+      # Check the hbox structure using :type
+      assert hbox_element[:type] == :hbox
+      assert length(hbox_element[:children]) == 2
 
-      # Check the checkmark text element using .tag and attrs.text
-      check_element = Enum.at(hbox_element.children, 0)
-      assert check_element.tag == :text
-      assert check_element.attributes.text == "[ ]"
+      # Check the checkmark text element using :type and :text
+      check_element = Enum.at(hbox_element[:children], 0)
+      assert check_element[:type] == :text
+      assert check_element[:text] == "[ ]"
 
-      # Check the label text element using .tag and attrs.text
-      label_element = Enum.at(hbox_element.children, 1)
-      assert label_element.tag == :text
-      assert label_element.attributes.text == " Option"
+      # Check the label text element using :type and :text
+      label_element = Enum.at(hbox_element[:children], 1)
+      assert label_element[:type] == :text
+      assert label_element[:text] == " Option"
     end
 
     test "renders checked checkbox" do
       {:ok, state} = Checkbox.init(label: "Option", checked: true)
       hbox_element = Checkbox.render(state, default_context())
 
-      # Check the hbox structure using .tag
-      assert hbox_element.tag == :hbox
-      assert length(hbox_element.children) == 2
+      # Check the hbox structure using :type
+      assert hbox_element[:type] == :hbox
+      assert length(hbox_element[:children]) == 2
 
-      # Check the checkmark text element using .tag and attrs.text
-      check_element = Enum.at(hbox_element.children, 0)
-      assert check_element.tag == :text
-      assert check_element.attributes.text == "[x]"
+      # Check the checkmark text element using :type and :text
+      check_element = Enum.at(hbox_element[:children], 0)
+      assert check_element[:type] == :text
+      assert check_element[:text] == "[x]"
 
-      # Check the label text element using .tag and attrs.text
-      label_element = Enum.at(hbox_element.children, 1)
-      assert label_element.tag == :text
-      assert label_element.attributes.text == " Option"
+      # Check the label text element using :type and :text
+      label_element = Enum.at(hbox_element[:children], 1)
+      assert label_element[:type] == :text
+      assert label_element[:text] == " Option"
     end
 
     test "renders disabled checkbox with disabled style" do
@@ -113,15 +121,15 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
 
       hbox_element = Checkbox.render(state, default_context())
 
-      # Check basic structure using .tag
-      assert hbox_element.tag == :hbox
-      assert length(hbox_element.children) == 2
+      # Check basic structure using :type
+      assert hbox_element[:type] == :hbox
+      assert length(hbox_element[:children]) == 2
 
       # Check that the style applied to the hbox reflects the disabled state
       # Assuming default theme applies {:fg, :gray} or similar for disabled.
       # The render function uses Map.get(base_style, :disabled_fg, Map.get(base_style, :fg, :gray))
       # Let's assert :gray as the expected fallback.
-      assert hbox_element.attributes.style.fg == :gray
+      assert hbox_element[:attrs][:style][:fg] == :gray
     end
   end
 
@@ -154,11 +162,15 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
 
     test "updates the disabled state" do
       {:ok, initial_state} = Checkbox.init(id: :cb_update, disabled: false)
+      assert is_map(initial_state)
+      assert Map.has_key?(initial_state, :disabled)
       assert initial_state.disabled == false
 
       {:ok, updated_state, _cmds} =
         Checkbox.update(%{disabled: true}, initial_state)
 
+      assert is_map(updated_state)
+      assert Map.has_key?(updated_state, :disabled)
       assert updated_state.disabled == true
     end
 
@@ -196,7 +208,8 @@ defmodule Raxol.UI.Components.Input.CheckboxTest do
     # Helper to create initial state
     defp init_state(props \\ []) do
       {:ok, state} = Checkbox.init([id: :cb_event] ++ props)
-      state
+      state = Map.put_new(state, :style, %{})
+      Map.put_new(state, :type, :checkbox)
     end
 
     # Helper to create a click event

@@ -9,6 +9,13 @@ defmodule Raxol.UI.RendererPartialRenderTest do
     # Start the Renderer GenServer with a global name so API calls work
     {:ok, _pid} = Renderer.start_link(name: Raxol.UI.Rendering.Renderer)
     Renderer.set_test_pid(self())
+
+    on_exit(fn ->
+      # Stop the globally named GenServer after the test.
+      # This prevents :already_started errors in subsequent async tests.
+      _ = GenServer.stop(Raxol.UI.Rendering.Renderer, :normal, :infinity)
+    end)
+
     :ok
   end
 

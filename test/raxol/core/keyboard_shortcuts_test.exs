@@ -1,5 +1,6 @@
 defmodule Raxol.Core.KeyboardShortcutsTest do
-  use Raxol.DataCase, async: true
+  # Must be false due to Process dictionary usage
+  use ExUnit.Case, async: false
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.KeyboardShortcuts
@@ -14,6 +15,7 @@ defmodule Raxol.Core.KeyboardShortcutsTest do
     on_exit(fn ->
       # Clean up
       KeyboardShortcuts.cleanup()
+      if Process.whereis(EventManager), do: EventManager.cleanup()
     end)
 
     :ok

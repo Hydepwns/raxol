@@ -52,7 +52,8 @@ defmodule Raxol.Terminal.CharacterHandlingTest do
       assert Raxol.Terminal.CharacterHandling.get_string_width("Hello 世界") == 10
       # 'e' + combining accent = width 1. 5 + 0 = 5
       # Width doesn't include combining char
-      assert Raxol.Terminal.CharacterHandling.get_string_width("Hello\u0301") == 5
+      assert Raxol.Terminal.CharacterHandling.get_string_width("Hello\u0301") ==
+               5
     end
   end
 end

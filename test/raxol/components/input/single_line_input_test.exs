@@ -9,6 +9,7 @@ defmodule Raxol.UI.Components.Input.SingleLineInputTest do
       state = SingleLineInput.init(%{})
       assert state.value == ""
       assert state.placeholder == ""
+      assert Map.has_key?(state, :style)
       assert state.style == %{}
       assert state.focused == false
       assert state.cursor_pos == 0

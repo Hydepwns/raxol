@@ -4,6 +4,14 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
   alias Raxol.UI.Components.Input.MultiLineInput, as: State
   alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
 
+  # Utility to normalize dimensions
+  defp normalize_dimensions(%{width: _, height: _} = dims), do: dims
+
+  defp normalize_dimensions({w, h}) when is_integer(w) and is_integer(h),
+    do: %{width: w, height: h}
+
+  defp normalize_dimensions(_), do: %{width: 10, height: 5}
+
   # Helper to create a minimal state for testing
   defp create_state(
          lines,
@@ -11,11 +19,13 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelperTest do
          dimensions \\ {10, 5},
          scroll \\ {0, 0}
        ) do
+    dims = normalize_dimensions(dimensions)
+
     %State{
       value: Enum.join(lines, "\n"),
       placeholder: "",
-      width: elem(dimensions, 0),
-      height: elem(dimensions, 1),
+      width: dims.width,
+      height: dims.height,
       theme: test_theme(),
       wrap: :word,
       cursor_pos: cursor,

@@ -87,6 +87,8 @@ defmodule Raxol.UI.Components.TerminalTest do
       terminal = initial_terminal_state(buffer: ["Line 1", "Line 2"])
       rendered = Terminal.render(terminal, %{})
 
+      assert is_map(rendered)
+      assert Map.has_key?(rendered, :type)
       assert rendered.type == :box
       assert Map.get(rendered.attrs, :id) == terminal.id
       assert Map.get(rendered.attrs, :width) == terminal.width
@@ -95,13 +97,18 @@ defmodule Raxol.UI.Components.TerminalTest do
 
       column = rendered.children
       assert is_map(column)
+      assert Map.has_key?(column, :type)
       assert column.type == :column
 
       assert is_list(column.children)
       assert length(column.children) == 2
       [label1, label2] = column.children
+      assert is_map(label1)
+      assert Map.has_key?(label1, :type)
       assert label1.type == :label
       assert Map.get(label1.attrs, :content) == "Line 1"
+      assert is_map(label2)
+      assert Map.has_key?(label2, :type)
       assert label2.type == :label
       assert Map.get(label2.attrs, :content) == "Line 2"
     end

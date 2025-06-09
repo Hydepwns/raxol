@@ -13,10 +13,10 @@ defmodule Raxol.ComponentTestHelpers do
   - Accessibility testing
   """
 
-  @doc """
-  Creates a test component with configurable initial state and options.
-  """
-
+  # Commented out function, so its @doc should also be removed or commented.
+  # @doc """
+  # Creates a test component with configurable initial state and options.
+  # """
   # def create_test_component(module, props \\ %{}) do
   #   id = :crypto.strong_rand_bytes(8) |> Base.encode16()
   #   state = module.init(Map.merge(%{id: id}, props))
@@ -61,34 +61,11 @@ defmodule Raxol.ComponentTestHelpers do
     end)
   end
 
-  @doc """
-  Measures component performance with a given workload.
-  DEPRECATED: Use Raxol.Test.PerformanceHelper.measure_time/1 or related helpers instead.
-  """
-
-  # def measure_performance(component, workload_fn, iterations \\ 100) do
-  #   start_time = System.monotonic_time()
-  #
-  #   Enum.each(1..iterations, fn _ ->
-  #     workload_fn.(component)
-  #   end)
-  #
-  #   end_time = System.monotonic_time()
-  #
-  #   duration =
-  #     System.convert_time_unit(end_time - start_time, :native, :millisecond)
-  #
-  #   %{
-  #     total_time: duration,
-  #     average_time: duration / iterations,
-  #     iterations: iterations
-  #   }
-  # end
-
-  @doc """
-  DEPRECATED: Use Raxol.AccessibilityTestHelpers for accessibility assertions and simulation.
-  This helper will be removed in a future release.
-  """
+  # @doc """
+  # Measures component performance with a given workload.
+  # DEPRECATED: Use Raxol.Test.PerformanceHelper.measure_time/1 or related helpers instead.
+  # """
+  # This function is commented out, so its @doc should also be removed or commented.
   @deprecated "Use Raxol.AccessibilityTestHelpers instead."
   # def validate_accessibility(component) do
   #   # Render with accessibility context

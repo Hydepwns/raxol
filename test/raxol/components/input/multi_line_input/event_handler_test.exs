@@ -5,15 +5,26 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandlerTest do
   alias Raxol.UI.Components.Input.MultiLineInput.EventHandler
   alias Raxol.Core.Events.Event
 
+  # Utility to normalize dimensions
+  defp normalize_dimensions(%{width: _, height: _} = dims), do: dims
+
+  defp normalize_dimensions({w, h}) when is_integer(w) and is_integer(h),
+    do: %{width: w, height: h}
+
+  defp normalize_dimensions(_), do: %{width: 10, height: 5}
+
   # Helper to create initial state
   defp create_state(lines \\ [""], cursor_pos \\ {0, 0}, selection) do
     # Use the main MultiLineInput module struct
     sel_start = if selection, do: elem(selection, 0), else: nil
     sel_end = if selection, do: elem(selection, 1), else: nil
+    dims = normalize_dimensions(cursor_pos)
 
     %MultiLineInput{
       lines: lines,
       cursor_pos: cursor_pos,
+      width: dims.width,
+      height: dims.height,
       # Use correct fields
       selection_start: sel_start,
       selection_end: sel_end,

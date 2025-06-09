@@ -5,7 +5,16 @@ defmodule Raxol.Test.ComponentManagerTestMocks do
 
     def init(props) do
       # Ensure all keys are present
-      Map.merge(%{counter: 0, last_message: nil, event_value: nil}, props)
+      Map.merge(
+        %{
+          counter: 0,
+          last_message: nil,
+          event_value: nil,
+          subscriptions: [],
+          error_count: 0
+        },
+        props
+      )
     end
 
     def mount(state) do
@@ -28,6 +37,17 @@ defmodule Raxol.Test.ComponentManagerTestMocks do
       # Return state unchanged, but issue broadcast command
       {Map.put(state, :last_message, :trigger_broadcast),
        [{:broadcast, :broadcast_message}]}
+    end
+
+    def update(:add_subscription, state) do
+      # Add a test subscription
+      {Map.update!(state, :subscriptions, &[:test_sub | &1]),
+       [{:subscribe, [:test_event]}]}
+    end
+
+    def update(:trigger_error, _state) do
+      # Simulate an error condition
+      raise "Test error"
     end
 
     def update(msg, state) do

@@ -9,8 +9,9 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
   # Mimics how the component manager might hold state
   defp create_component_state(props \\ %{}) do
     {:ok, initial_state} = TextInput.init(props)
-    # Return only the state map
-    initial_state
+    # Ensure :style and :type are present
+    state = Map.put_new(initial_state, :style, %{})
+    Map.put_new(state, :type, :text_input)
   end
 
   describe "init/1" do
@@ -207,9 +208,9 @@ defmodule Raxol.UI.Components.Input.TextInputTest do
 
       rendered = TextInput.render(state, %{})
       # Style should be merged, style prop overrides theme
-      assert rendered.style.border == "2px solid #00ff00"
-      assert rendered.style.border_radius == "8px"
-      assert rendered.style.color == "#654321"
+      assert Map.get(rendered.style, :border) == "2px solid #00ff00"
+      assert Map.get(rendered.style, :border_radius) == "8px"
+      assert Map.get(rendered.style, :color) == "#654321"
     end
 
     test "mount/1 and unmount/1 return state unchanged" do

@@ -13,8 +13,9 @@ defmodule Raxol.UI.Components.Selection.ListTest do
       assert state.scroll_offset == 0
       assert state.width == 30
       assert state.height == 10
-      assert state.style == %{}
-      assert state.focused == false
+      assert Map.has_key?(state, :style)
+      assert Map.get(state, :style) == %{}
+      assert Map.get(state, :focused) == false
       assert state.on_select == nil
       assert is_function(state.item_renderer)
     end
@@ -41,8 +42,8 @@ defmodule Raxol.UI.Components.Selection.ListTest do
       assert state.selected_index == 1
       assert state.width == 50
       assert state.height == 5
-      assert state.style == %{color: :red}
-      assert state.focused == true
+      assert Map.get(state, :style) == %{color: :red}
+      assert Map.get(state, :focused) == true
       assert state.on_select == on_select_func
       assert state.item_renderer == item_renderer_func
     end
@@ -92,9 +93,9 @@ defmodule Raxol.UI.Components.Selection.ListTest do
 
     test "handles focus and blur", %{state: state} do
       {focused_state, _} = List.update(:focus, state)
-      assert focused_state.focused == true
+      assert Map.get(focused_state, :focused) == true
       {blurred_state, _} = List.update(:blur, focused_state)
-      assert blurred_state.focused == false
+      assert Map.get(blurred_state, :focused) == false
     end
 
     test "calls on_select when confirming selection (via Enter event)", %{
@@ -213,13 +214,19 @@ defmodule Raxol.UI.Components.Selection.ListTest do
     # Navigate the rendered structure to get the labels
     # rendered = %{type: :box, children: %{type: :column, children: [box1, box2, box3]}}
     column = rendered.children
+    assert is_map(column)
+    assert Map.has_key?(column, :type)
     assert column.type == :column
     boxes = column.children
     assert length(boxes) == 3
 
     Enum.each(Enum.zip(boxes, ["a", "b", "c"]), fn {box, item} ->
+      assert is_map(box)
+      assert Map.has_key?(box, :type)
       assert box.type == :box
       [label] = box.children
+      assert is_map(label)
+      assert Map.has_key?(label, :type)
       assert label.type == :label
       assert Keyword.get(label.attrs, :content) == "Custom: #{item}"
     end)

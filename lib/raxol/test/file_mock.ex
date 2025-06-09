@@ -6,7 +6,7 @@ defmodule FileMock do
   @behaviour File.Behaviour
 
   @impl true
-  def stat(path) do
+  def stat(_path) do
     # Default implementation returns a regular readable file
     {:ok,
      %File.Stat{

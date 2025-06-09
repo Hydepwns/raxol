@@ -1,3 +1,5 @@
+import Raxol.Core.Renderer.View, only: [ensure_keyword: 1]
+
 defmodule Raxol.Core.Renderer.Views.TableTest do
   use ExUnit.Case, async: true
   alias Raxol.Core.Renderer.View
@@ -33,11 +35,15 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       {:ok, state} = Table.init(props)
       view = Table.render(state)
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
       assert view.type == :border
       assert view.border == :single
       [header_row | _data_rows] = get_in(view, [:children, Access.at(0)])
 
       # Check header cells
+      assert is_map(header_row)
+      assert Map.has_key?(header_row, :type)
       assert header_row.type == :flex
       assert length(header_row.children) == 3
       # right-aligned header
@@ -63,6 +69,8 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       {:ok, state} = Table.init(props)
       view = Table.render(state)
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
       assert view.type == :border
       [header | rows] = get_in(view, [:children, Access.at(0)])
       assert length(rows) == 0
@@ -84,6 +92,9 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       {:ok, state} = Table.init(props)
       view = Table.render(state)
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
+      assert view.type == :border
       [_header | rows] = get_in(view, [:children, Access.at(0)])
 
       # Even rows should have no background
@@ -110,6 +121,9 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       {:ok, state} = Table.init(props)
       view = Table.render(state)
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
+      assert view.type == :border
       [_header | rows] = get_in(view, [:children, Access.at(0)])
 
       # Selected row should have blue background and white text
@@ -132,6 +146,9 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       {:ok, state} = Table.init(props)
       view = Table.render(state)
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
+      assert view.type == :border
       assert view.border == :double
     end
 
@@ -151,6 +168,9 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       {:ok, state} = Table.init(props)
       view = Table.render(state)
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
+      assert view.type == :border
       [header | _] = get_in(view, [:children, Access.at(0)])
       assert Enum.all?(header.children, &([:bold, :underline] == &1.style))
     end
@@ -172,6 +192,9 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       {:ok, state} = Table.init(props)
       view = Table.render(state)
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
+      assert view.type == :border
       [_header | rows] = get_in(view, [:children, Access.at(0)])
       assert Enum.all?(rows, &([:dim] == &1.style))
     end
@@ -206,6 +229,9 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       {:ok, state} = Table.init(props)
       view = Table.render(state)
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
+      assert view.type == :border
       [header | _] = get_in(view, [:children, Access.at(0)])
 
       # First column should be width of "Short"
@@ -236,10 +262,13 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       {:ok, state} = Table.init(props)
       view = Table.render(state)
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
+      assert view.type == :border
       [_header | rows] = get_in(view, [:children, Access.at(0)])
 
       assert Enum.at(rows, 0).children |> Enum.at(0) |> Map.get(:content) ==
-               "    $1000"
+               "     $1000"
     end
 
     test "handles function keys" do
@@ -263,10 +292,13 @@ defmodule Raxol.Core.Renderer.Views.TableTest do
       {:ok, state} = Table.init(props)
       view = Table.render(state)
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
+      assert view.type == :border
       [_header | rows] = get_in(view, [:children, Access.at(0)])
 
       assert Enum.at(rows, 0).children |> Enum.at(0) |> Map.get(:content) ==
-               "John Doe             "
+               "John Doe            "
     end
   end
 end

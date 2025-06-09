@@ -51,11 +51,13 @@ defmodule Raxol.UI.Layout.EngineTest do
       # Find the panel box
       box_element = Enum.find(result, fn elem -> elem.type == :box end)
 
-      # assert box_element != nil # TODO: Fix LayoutEngine to generate box for panel
-      # TEMP: Asserting nil for now to proceed
-      assert box_element == nil
-      # assert box_element.x == 0
-      # assert box_element.y == 0
+      assert box_element != nil
+      assert box_element.width == 15
+      assert box_element.height == 3
+      assert box_element.x == 0
+      assert box_element.y == 0
+      assert box_element.attrs.title == "Test Panel"
+      assert box_element.attrs.border == :single
 
       # Find the panel title
       title_element =
@@ -75,8 +77,38 @@ defmodule Raxol.UI.Layout.EngineTest do
 
       assert content_element != nil
       # Content should be inside the panel
-      assert content_element.x > 0
-      assert content_element.y > 0
+      assert content_element.x == box_element.x + 1
+      assert content_element.y == box_element.y + 1
+    end
+
+    test "applies layout to a view with a panel without title" do
+      view = %{
+        type: :view,
+        children: [
+          %{
+            type: :panel,
+            attrs: %{},
+            children: [
+              %{type: :label, attrs: [content: "Panel Content"]}
+            ]
+          }
+        ]
+      }
+
+      dimensions = %{width: 80, height: 24}
+      result = Engine.apply_layout(view, dimensions)
+      box_element = Enum.find(result, fn elem -> elem.type == :box end)
+      assert box_element != nil
+      assert box_element.width == 15
+      assert box_element.height == 3
+
+      title_element =
+        Enum.find(result, fn
+          %{type: :text, attrs: %{original_type: :panel_title}} -> true
+          _ -> false
+        end)
+
+      assert title_element == nil
     end
 
     test "applies layout to nested containers" do
@@ -111,9 +143,7 @@ defmodule Raxol.UI.Layout.EngineTest do
 
       assert is_list(result)
       # Four label elements
-      # assert length(result) == 4 # TODO: Fix LayoutEngine to handle nested containers
-      # TEMP: Asserting 0 for now to proceed
-      assert length(result) == 0
+      assert length(result) == 4
 
       # Find the labels
       top_left =
@@ -146,10 +176,37 @@ defmodule Raxol.UI.Layout.EngineTest do
       assert bottom_right != nil
 
       # Check vertical and horizontal relationships
-      # assert top_left.y < bottom_left.y # Cannot assert positions if elements not found
-      # assert top_right.y < bottom_right.y
-      # assert top_left.x < top_right.x
-      # assert bottom_left.x < bottom_right.x
+      assert top_left.y < bottom_left.y
+      assert top_right.y < bottom_right.y
+      assert top_left.x < top_right.x
+      assert bottom_left.x < bottom_right.x
+    end
+
+    test "layout engine handles nested elements with flex properties" do
+      view = %{
+        type: :view,
+        children: [
+          %{
+            type: :panel,
+            attrs: %{title: "Test Panel"},
+            children: [
+              %{type: :label, attrs: [content: "Panel Content"]}
+            ]
+          }
+        ]
+      }
+
+      dimensions = %{width: 80, height: 24}
+
+      result = Engine.apply_layout(view, dimensions)
+
+      assert is_list(result)
+
+      # Check the box element specifically (assuming it's the first child after layout)
+      box_element = List.first(result)
+      assert box_element.type == :box
+      assert Map.get(box_element.attrs, :title) == "Test Panel"
+      assert Map.get(box_element.attrs, :border) == :single
     end
   end
 

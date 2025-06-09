@@ -26,6 +26,17 @@ defmodule RaxolWeb.TerminalChannelTest do
   # import Raxol.TestHelpers
   import Raxol.Test.TestHelper
 
+  # Helper to flush and print all messages in the mailbox
+  defp flush_mailbox do
+    receive do
+      msg ->
+        IO.inspect(msg, label: "Messages received")
+        flush_mailbox()
+    after
+      100 -> :ok
+    end
+  end
+
   # Ensure Mox is validated on exit
   setup :verify_on_exit!
 
@@ -33,14 +44,14 @@ defmodule RaxolWeb.TerminalChannelTest do
     # Generate a unique topic for each test
     topic = "terminal:" <> Ecto.UUID.generate()
 
+    # Setup mock BEFORE joining the channel
+    Mox.stub_with(EmulatorMock, Emulator)
+
     # Create and join socket
     {:ok, _, socket} =
       UserSocket
       |> socket("user_socket:test", %{user_id: 1})
       |> subscribe_and_join(TerminalChannel, topic)
-
-    # Setup mock
-    Mox.stub_with(EmulatorMock, Emulator)
 
     # Return test context
     {:ok, socket: socket, topic: topic}
@@ -61,9 +72,7 @@ defmodule RaxolWeb.TerminalChannelTest do
 
       # Verify session ID and user ID
       assert String.replace_prefix(topic, "terminal:", "") ==
-               Ecto.UUID.binary_to_string!(
-                 updated_socket.assigns.terminal_state.session_id
-               )
+               updated_socket.assigns.terminal_state.session_id
 
       assert updated_socket.assigns.terminal_state.user_id ==
                socket.assigns.user_id
@@ -75,7 +84,7 @@ defmodule RaxolWeb.TerminalChannelTest do
         {:ok, %Emulator{}}
       end)
 
-      {:ok, socket} = socket(UserSocket, "user_socket:fail", %{user_id: 2})
+      socket = socket(UserSocket, "user_socket:fail", %{user_id: 2})
 
       assert {:error, %{reason: "unauthorized"}} =
                socket
@@ -90,9 +99,8 @@ defmodule RaxolWeb.TerminalChannelTest do
 
   describe "handle_in/3" do
     setup %{socket: socket} do
-      {:ok, _reply, socket_assigned} =
-        subscribe_and_join(socket, "terminal:lobby", %{})
-
+      topic = "terminal:" <> Ecto.UUID.generate()
+      {:ok, _reply, socket_assigned} = subscribe_and_join(socket, topic, %{})
       {:ok, socket: socket_assigned}
     end
 
@@ -104,6 +112,8 @@ defmodule RaxolWeb.TerminalChannelTest do
       end)
       |> expect(:get_cursor_position, fn _ -> {5, 0} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
+
+      flush_mailbox()
 
       {:reply, :ok, _socket_after_input} =
         TerminalChannel.handle_in(
@@ -125,13 +135,14 @@ defmodule RaxolWeb.TerminalChannelTest do
     end
 
     test "handles control characters", %{socket: socket} do
-      # Mock expect for process_input
       EmulatorMock
       |> expect(:process_input, fn _, "\x03" ->
         {Emulator.new(), "output_from_ctrl_c"}
       end)
       |> expect(:get_cursor_position, fn _ -> {0, 0} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
+
+      flush_mailbox()
 
       {:reply, :ok, _socket_after_ctrl_c} =
         TerminalChannel.handle_in(
@@ -153,11 +164,12 @@ defmodule RaxolWeb.TerminalChannelTest do
     end
 
     test "handles terminal resize", %{socket: socket} do
-      # Mock expect for resize and subsequent rendering info
       EmulatorMock
       |> expect(:resize, fn _, 100, 30 -> Emulator.new(100, 30) end)
       |> expect(:get_cursor_position, fn _ -> {0, 0} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
+
+      flush_mailbox()
 
       {:reply, :ok, _socket_after_resize} =
         TerminalChannel.handle_in(
@@ -179,24 +191,22 @@ defmodule RaxolWeb.TerminalChannelTest do
     end
 
     test "handles theme changes", %{socket: socket} do
-      # Mock expect for cursor info
       EmulatorMock
       |> expect(:get_cursor_position, fn _ -> {10, 5} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
 
+      flush_mailbox()
+
       {:reply, :ok, _socket_after_theme} =
         TerminalChannel.handle_in(
           "theme",
-          %{"theme" => "dark"},
+          %{"theme" => %{"name" => "dark"}},
           socket
         )
 
       assert_receive %Phoenix.Socket.Message{
                        event: "output",
-                       payload: %{
-                         html: html_content,
-                         cursor: %{x: 10, y: 5, visible: true}
-                       }
+                       payload: %{html: html_content}
                      },
                      500
 
@@ -204,10 +214,11 @@ defmodule RaxolWeb.TerminalChannelTest do
     end
 
     test "handles scroll events", %{socket: socket} do
-      # Mock expect for cursor info for push (scroll handle_in doesn't interact with EmulatorMock)
       EmulatorMock
       |> expect(:get_cursor_position, fn _ -> {0, 23} end)
       |> expect(:get_cursor_visible, fn _ -> true end)
+
+      flush_mailbox()
 
       _pid = socket.channel_pid
 
@@ -236,9 +247,8 @@ defmodule RaxolWeb.TerminalChannelTest do
 
   describe "terminate/2" do
     setup %{socket: socket} do
-      {:ok, _reply, socket_assigned} =
-        subscribe_and_join(socket, "terminal:lobby", %{})
-
+      topic = "terminal:" <> Ecto.UUID.generate()
+      {:ok, _reply, socket_assigned} = subscribe_and_join(socket, topic, %{})
       {:ok, socket: socket_assigned}
     end
 

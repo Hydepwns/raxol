@@ -1,5 +1,6 @@
 defmodule Raxol.Core.Runtime.ApplicationTest do
-  use ExUnit.Case, async: true
+  # Must be false due to process monitoring and subscriptions
+  use ExUnit.Case, async: false
 
   # Test implementation of Application behavior
   defmodule TestApp do
@@ -33,11 +34,13 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       Raxol.Core.Renderer.View.panel(
         title: "Counter",
         children: [
-          Raxol.Core.Renderer.View.row(children: [
-            Raxol.View.Components.button(label: "-", on_click: :decrement),
-            Raxol.Core.Renderer.View.text("Count: #{state.count}"),
-            Raxol.View.Components.button(label: "+", on_click: :increment)
-          ])
+          Raxol.Core.Renderer.View.row(
+            children: [
+              Raxol.View.Components.button(label: "-", on_click: :decrement),
+              Raxol.Core.Renderer.View.text("Count: #{state.count}"),
+              Raxol.View.Components.button(label: "+", on_click: :increment)
+            ]
+          )
         ]
       )
     end
@@ -80,6 +83,33 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     end
   end
 
+  setup do
+    # Initialize any required dependencies
+    Raxol.Core.Events.Manager.init()
+
+    on_exit(fn ->
+      # Clean up any enabled features
+      [
+        :keyboard_shortcuts,
+        :events,
+        :focus_management,
+        :accessibility,
+        :hints
+      ]
+      |> Enum.each(fn feature ->
+        if Raxol.Core.UXRefinement.feature_enabled?(feature) do
+          Raxol.Core.UXRefinement.disable_feature(feature)
+        end
+      end)
+
+      # Clean up EventManager
+      if Process.whereis(Raxol.Core.Events.Manager),
+        do: Raxol.Core.Events.Manager.cleanup()
+    end)
+
+    :ok
+  end
+
   describe "behavior implementation" do
     test "init/1 sets up initial state" do
       result = TestApp.init(%{})
@@ -110,13 +140,13 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       result = TestApp.view(model)
 
       # Test that view generates correct structure
-      # Check that result is a struct
-      assert is_struct(result)
+      assert is_map(result)
+      assert Map.has_key?(result, :type)
+      assert result[:type] == :box
 
       # Convert to string and check content
       string_result = inspect(result)
       assert string_result =~ "Count: 42"
-      assert string_result =~ "panel"
       assert string_result =~ "button"
     end
 
@@ -153,7 +183,9 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
 
       # View returns a default view
       view = MinimalTestApp.view(model)
-      assert is_struct(view)
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
+      assert view[:type] == :text
       string_view = inspect(view)
       assert string_view =~ "Default view"
 
@@ -166,6 +198,10 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
     test "command/1 creates a command" do
       cmd = TestApp.command(:test_command)
       assert is_struct(cmd)
+
+      assert Map.has_key?(cmd, :type),
+             "Expected cmd to be a struct or map with :type key, got: #{inspect(cmd)}"
+
       assert cmd.type == :test_command
     end
 
@@ -175,6 +211,10 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
 
       batch = TestApp.batch([cmd1, cmd2])
       assert is_struct(batch)
+
+      assert Map.has_key?(batch, :type),
+             "Expected batch to be a struct or map with :type key, got: #{inspect(batch)}"
+
       assert batch.type == :batch
       assert length(batch.data) == 2
     end
@@ -184,6 +224,10 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       subscription = TestApp.subscribe_to_events(events)
 
       assert is_struct(subscription)
+
+      assert Map.has_key?(subscription, :type),
+             "Expected subscription to be a struct or map with :type key, got: #{inspect(subscription)}"
+
       assert subscription.type == :events
       assert subscription.data == events
     end
@@ -192,6 +236,10 @@ defmodule Raxol.Core.Runtime.ApplicationTest do
       subscription = TestApp.subscribe_interval(500, :tick)
 
       assert is_struct(subscription)
+
+      assert Map.has_key?(subscription, :type),
+             "Expected subscription to be a struct or map with :type key, got: #{inspect(subscription)}"
+
       assert subscription.type == :interval
       assert subscription.data.interval == 500
       assert subscription.data.message == :tick

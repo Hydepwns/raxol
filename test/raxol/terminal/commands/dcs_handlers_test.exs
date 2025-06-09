@@ -17,6 +17,11 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
   # For Sixel tests to check cell content
   alias Raxol.Terminal.Cell
 
+  # Add a helper at the top of the file for unwrapping handler results
+  defp unwrap_ok({:ok, value}), do: value
+  defp unwrap_ok({:error, _reason, value}), do: value
+  defp unwrap_ok(value) when is_map(value), do: value
+
   # Helper to create a default emulator for tests
   defp new_emulator(opts \\ []) do
     width = Keyword.get(opts, :width, 80)
@@ -27,16 +32,23 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
     sixel_state = Keyword.get(opts, :sixel_state, nil)
     cursor_pos = Keyword.get(opts, :cursor_position, {0, 0})
 
-    # Create emulator with all default fields
     emulator = Emulator.new(width, height)
 
-    # Update fields as needed
-    emulator = %{emulator |
-      scroll_region: scroll_region,
-      cursor_style: cursor_style,
-      output_buffer: output_buffer,
-      sixel_state: sixel_state,
-      cursor: %{emulator.cursor | position: cursor_pos, style: cursor_style, state: :visible}
+    # Patch only the fields you need, preserving the rest
+    cursor =
+      Raxol.Terminal.Cursor.Manager.new(
+        position: cursor_pos,
+        style: cursor_style,
+        state: :visible
+      )
+
+    emulator = %{
+      emulator
+      | scroll_region: scroll_region,
+        cursor_style: cursor_style,
+        output_buffer: output_buffer,
+        sixel_state: sixel_state,
+        cursor: cursor
     }
 
     emulator
@@ -51,12 +63,14 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       data_string = "m"
 
       updated_emulator =
-        DCSHandlers.handle_dcs(
-          emulator,
-          params,
-          intermediates,
-          final_byte,
-          data_string
+        unwrap_ok(
+          DCSHandlers.handle_dcs(
+            emulator,
+            params,
+            intermediates,
+            final_byte,
+            data_string
+          )
         )
 
       # Expected: DCS 1 ! | 0 m ST  (SGR is simplified to "0")
@@ -71,12 +85,14 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       data_string = "r"
 
       updated_emulator =
-        DCSHandlers.handle_dcs(
-          emulator,
-          params,
-          intermediates,
-          final_byte,
-          data_string
+        unwrap_ok(
+          DCSHandlers.handle_dcs(
+            emulator,
+            params,
+            intermediates,
+            final_byte,
+            data_string
+          )
         )
 
       # Expected: DCS 1 ! | 1;24 r ST
@@ -93,12 +109,14 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       data_string = "r"
 
       updated_emulator =
-        DCSHandlers.handle_dcs(
-          emulator,
-          params,
-          intermediates,
-          final_byte,
-          data_string
+        unwrap_ok(
+          DCSHandlers.handle_dcs(
+            emulator,
+            params,
+            intermediates,
+            final_byte,
+            data_string
+          )
         )
 
       # Expected: DCS 1 ! | 5;20 r ST (1-indexed)
@@ -114,12 +132,14 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       data_string = " q"
 
       updated_emulator =
-        DCSHandlers.handle_dcs(
-          emulator,
-          params,
-          intermediates,
-          final_byte,
-          data_string
+        unwrap_ok(
+          DCSHandlers.handle_dcs(
+            emulator,
+            params,
+            intermediates,
+            final_byte,
+            data_string
+          )
         )
 
       # Expected: DCS 1 ! | 1 q ST (blinking_block maps to 1)
@@ -134,12 +154,14 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       data_string = " q"
 
       updated_emulator =
-        DCSHandlers.handle_dcs(
-          emulator,
-          params,
-          intermediates,
-          final_byte,
-          data_string
+        unwrap_ok(
+          DCSHandlers.handle_dcs(
+            emulator,
+            params,
+            intermediates,
+            final_byte,
+            data_string
+          )
         )
 
       # Expected: DCS 1 ! | 4 q ST (steady_underline maps to 4)
@@ -215,12 +237,14 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       # And if SixelGraphics.process_sequence("#1?") creates pixel_buffer %{{0,0} => 1}
 
       updated_emulator =
-        DCSHandlers.handle_dcs(
-          emulator,
-          params,
-          intermediates,
-          final_byte,
-          sixel_data_string
+        unwrap_ok(
+          DCSHandlers.handle_dcs(
+            emulator,
+            params,
+            intermediates,
+            final_byte,
+            sixel_data_string
+          )
         )
 
       # 1. Check if sixel_state on emulator is updated
@@ -268,7 +292,9 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       sixel_data_string = ""
 
       updated_emulator =
-        DCSHandlers.handle_dcs(emulator, [], "", ?q, sixel_data_string)
+        unwrap_ok(
+          DCSHandlers.handle_dcs(emulator, [], "", ?q, sixel_data_string)
+        )
 
       refute is_nil(updated_emulator.sixel_state)
       assert %Raxol.Terminal.ANSI.SixelGraphics{} = updated_emulator.sixel_state
@@ -289,7 +315,9 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       # This is hard to verify without deeper mocking of SixelGraphics.process_sequence.
       # For now, check that sixel_state is still a SixelGraphics struct and not just a fresh Map.get default.
       updated_emulator =
-        DCSHandlers.handle_dcs(emulator, [], "", ?q, sixel_data_string)
+        unwrap_ok(
+          DCSHandlers.handle_dcs(emulator, [], "", ?q, sixel_data_string)
+        )
 
       refute is_nil(updated_emulator.sixel_state)
       assert %Raxol.Terminal.ANSI.SixelGraphics{} = updated_emulator.sixel_state

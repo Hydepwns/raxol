@@ -1,40 +1,6 @@
 defmodule Raxol.Core.Runtime.EventSourceTest do
-  use ExUnit.Case, async: true
-
-  defmodule TestEventSource do
-    use Raxol.Core.Runtime.EventSource
-
-    @impl true
-    def init(args, context) do
-      if args[:fail_init] do
-        {:error, :init_failed}
-      else
-        {:ok, %{args: args, context: context}}
-      end
-    end
-
-    @impl true
-    def handle_info(:send_event, state) do
-      send_event(state.context, {:test_event, state.args[:data]})
-      {:noreply, state}
-    end
-
-    def handle_info(:stop, state) do
-      {:stop, :normal, state}
-    end
-
-    def handle_info(:raise, _state) do
-      raise "Test error"
-    end
-
-    @impl true
-    def terminate(:normal, state) do
-      send(state.context.pid, :terminated_normally)
-      :ok
-    end
-
-    def terminate(_reason, _state), do: :ok
-  end
+  # Must be false due to process monitoring
+  use ExUnit.Case, async: false
 
   describe "EventSource behaviour" do
     setup do
@@ -46,6 +12,10 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
       args = %{data: :test_data}
       assert {:ok, pid} = TestEventSource.start_link(args, context)
       assert is_pid(pid)
+
+      on_exit(fn ->
+        if Process.alive?(pid), do: Process.exit(pid, :normal)
+      end)
     end
 
     test "fails to initialize when requested", %{context: context} do
@@ -56,6 +26,10 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
     test "sends events to subscriber", %{context: context} do
       args = %{data: :test_data}
       {:ok, pid} = TestEventSource.start_link(args, context)
+
+      on_exit(fn ->
+        if Process.alive?(pid), do: Process.exit(pid, :normal)
+      end)
 
       send(pid, :send_event)
       assert_receive {:subscription, {:test_event, :test_data}}
@@ -71,38 +45,46 @@ defmodule Raxol.Core.Runtime.EventSourceTest do
       assert_receive {:DOWN, ^ref, :process, ^pid, :normal}
     end
 
-    @tag :pending
     test "handles crashes", %{context: context} do
-      # Test that the process crashes but is restarted
-      pid =
-        Raxol.Test.TestHelper.start_test_event_source(
-          %{data: :test_data},
-          context
-        )
+      # Start a DynamicSupervisor for the test
+      {:ok, sup} = DynamicSupervisor.start_link(strategy: :one_for_one)
 
-      # Killing the process should trigger a restart
-      Process.exit(pid, :kill)
+      on_exit(fn ->
+        DynamicSupervisor.stop(sup)
+      end)
 
-      # Monitor the process (reuse same pid variable)
+      # Start the event source under the supervisor
+      child_spec = %{
+        id: TestEventSource,
+        start: {TestEventSource, :start_link, [%{data: :test_data}, context]},
+        restart: :permanent
+      }
+
+      {:ok, pid} = DynamicSupervisor.start_child(sup, child_spec)
+
+      # Monitor the process
       ref = Process.monitor(pid)
 
-      # Expect DOWN message (not checking contents)
+      # Kill the process
+      Process.exit(pid, :kill)
+
+      # Expect DOWN message
       assert_receive {:DOWN, ^ref, :process, ^pid, _}, 500
 
-      # Wait a moment for restart
-      :timer.sleep(100)
+      # Wait for restart
+      :timer.sleep(200)
 
-      # The source should still be alive (check using the registered name)
-      assert context.event_source_pid != nil
+      # Find the new child (should be restarted)
+      [new_pid] =
+        DynamicSupervisor.which_children(sup)
+        |> Enum.map(fn {_, p, _, _} -> p end)
 
-      # Simulate starting a test event source via helper
-      test_event_source_pid =
-        Raxol.Test.TestHelper.start_test_event_source(
-          %{data: :test_data},
-          context
-        )
+      assert Process.alive?(new_pid)
 
-      assert Process.alive?(test_event_source_pid)
+      # Clean up the new process
+      on_exit(fn ->
+        if Process.alive?(new_pid), do: Process.exit(new_pid, :normal)
+      end)
     end
   end
 end

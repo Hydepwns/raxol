@@ -1,5 +1,6 @@
 defmodule Raxol.Core.UXRefinementKeyboardTest do
   use ExUnit.Case, async: false
+  import Mox
   require Raxol.Core.Runtime.Log
 
   # Aliases for mocks will be used directly, e.g., Raxol.Mocks.AccessibilityMock
@@ -16,56 +17,76 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
   # Mox.defmock(Raxol.Mocks.KeyboardShortcutsMock, for: Raxol.Core.KeyboardShortcutsBehaviour)
   # Mocks for Accessibility and FocusManager are defined in test/support/mocks.ex
 
+  setup :verify_on_exit!
+  setup :set_mox_global
+
+  setup do
+    # Initialize event manager for tests
+    EventManager.init()
+
+    on_exit(fn ->
+      # Clean up any enabled features
+      [
+        :keyboard_shortcuts,
+        :events,
+        :focus_management,
+        :accessibility,
+        :hints
+      ]
+      |> Enum.each(fn feature ->
+        if UXRefinement.feature_enabled?(feature) do
+          UXRefinement.disable_feature(feature)
+        end
+      end)
+
+      # Clean up EventManager
+      if Process.whereis(EventManager), do: EventManager.cleanup()
+    end)
+
+    :ok
+  end
+
   describe "keyboard shortcuts integration" do
     test "enable_feature/1 initializes keyboard shortcuts" do
-      # Mox.stub(Raxol.Core.Events.Manager, :init, fn -> :ok end) # Removed stub for non-mock module
-      # Mox.stub(Raxol.Test.Mocks.EventManagerMock, :init, fn -> :ok end) # Removed
-      Mox.expect(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
+      expect(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
 
       assert :ok = UXRefinement.enable_feature(:keyboard_shortcuts)
 
       assert UXRefinement.feature_enabled?(:keyboard_shortcuts)
       assert UXRefinement.feature_enabled?(:events)
-      Mox.verify!(Raxol.Mocks.KeyboardShortcutsMock)
     end
 
     test "disable_feature/1 cleans up keyboard shortcuts" do
-      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
+      stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
       UXRefinement.enable_feature(:keyboard_shortcuts)
 
-      Mox.expect(Raxol.Mocks.KeyboardShortcutsMock, :cleanup, fn -> :ok end)
+      expect(Raxol.Mocks.KeyboardShortcutsMock, :cleanup, fn -> :ok end)
       assert :ok = UXRefinement.disable_feature(:keyboard_shortcuts)
       refute UXRefinement.feature_enabled?(:keyboard_shortcuts)
-      # Original verify
-      Mox.verify!(Raxol.Mocks.KeyboardShortcutsMock)
     end
 
-    # Test "set_shortcuts_context/1 delegates to KeyboardShortcuts"
     test "UXRefinement.set_shortcuts_context/1 delegates to KeyboardShortcutsMock" do
-      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
-      # Ensures KeyboardShortcuts.init is called
+      stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
       UXRefinement.enable_feature(:keyboard_shortcuts)
 
       test_context = :editor
 
-      Mox.expect(Raxol.Mocks.KeyboardShortcutsMock, :set_context, fn context ->
+      expect(Raxol.Mocks.KeyboardShortcutsMock, :set_context, fn context ->
         assert context == test_context
         :ok
       end)
 
       assert UXRefinement.set_shortcuts_context(test_context) == :ok
-      Mox.verify!(Raxol.Mocks.KeyboardShortcutsMock)
     end
 
-    # Test "get_available_shortcuts/1 delegates to KeyboardShortcutsMock"
     test "UXRefinement.get_available_shortcuts/1 delegates to KeyboardShortcutsMock" do
-      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
+      stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
       UXRefinement.enable_feature(:keyboard_shortcuts)
 
       expected_shortcuts_data = %{some: :shortcuts}
 
       # Test with explicit context
-      Mox.expect(
+      expect(
         Raxol.Mocks.KeyboardShortcutsMock,
         :get_shortcuts_for_context,
         fn context ->
@@ -77,10 +98,8 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
       assert UXRefinement.get_available_shortcuts(:editor) ==
                expected_shortcuts_data
 
-      Mox.verify!(Raxol.Mocks.KeyboardShortcutsMock)
-
       # Test with nil context (default argument)
-      Mox.expect(
+      expect(
         Raxol.Mocks.KeyboardShortcutsMock,
         :get_shortcuts_for_context,
         fn context ->
@@ -90,48 +109,38 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
       )
 
       assert UXRefinement.get_available_shortcuts() == expected_shortcuts_data
-      Mox.verify!(Raxol.Mocks.KeyboardShortcutsMock)
     end
 
-    # Test "show_shortcuts_help/0 delegates to KeyboardShortcutsMock"
     test "UXRefinement.show_shortcuts_help/0 delegates to KeyboardShortcutsMock" do
-      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
-      UXRefinement.enable_feature(:keyboard_shortcuts)
+      stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
+      UXRefinement.enable_feature(:keyboard_shortcuts, [], nil)
 
-      Mox.expect(Raxol.Mocks.KeyboardShortcutsMock, :show_shortcuts_help, fn ->
-        # The underlying function returns :ok
-        :ok
-      end)
+      expect(
+        Raxol.Mocks.KeyboardShortcutsMock,
+        :show_shortcuts_help,
+        fn _user_prefs_pid_or_name ->
+          :ok
+        end
+      )
 
-      assert UXRefinement.show_shortcuts_help() == :ok
-      Mox.verify!(Raxol.Mocks.KeyboardShortcutsMock)
+      assert UXRefinement.show_shortcuts_help(nil) == :ok
     end
   end
 
   describe "component shortcuts integration" do
     test "UXRefinement.register_accessibility_metadata/2 calls Accessibility.register_element_metadata" do
-      # Added expect for enable/2
-      Mox.expect(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
-      # Added stub for focus handler
-      Mox.stub(
-        Raxol.Mocks.FocusManagerMock,
-        :register_focus_change_handler,
-        fn _ -> :ok end
-      )
+      expect(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
+
+      stub(Raxol.Mocks.FocusManagerMock, :register_focus_change_handler, fn _ ->
+        :ok
+      end)
 
       UXRefinement.enable_feature(:accessibility)
-      # Stub Accessibility.enable that is called by enable_feature
-      # Mox.stub(Raxol.Mocks.AccessibilityMock, :enable, fn _opts, _pid_or_name -> # This stub might be redundant now
-      Mox.stub(
-        Raxol.Mocks.FocusManagerMock,
-        :register_focus_change_handler,
-        fn _handler -> :ok end
-      )
 
       metadata = %{label: "Search", hint: "Press Enter to search"}
       component_id = "search_button"
 
-      Mox.expect(
+      expect(
         Raxol.Mocks.AccessibilityMock,
         :register_element_metadata,
         fn id, meta ->
@@ -145,12 +154,10 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
                component_id,
                metadata
              ) == :ok
-
-      Mox.verify!(Raxol.Mocks.AccessibilityMock)
     end
 
     test "register_component_hint/2 registers shortcuts via KeyboardShortcuts" do
-      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
+      stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
       UXRefinement.enable_feature(:keyboard_shortcuts)
       UXRefinement.enable_feature(:hints)
       UXRefinement.enable_feature(:focus_management)
@@ -164,7 +171,7 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
         ]
       }
 
-      Mox.expect(
+      expect(
         Raxol.Mocks.KeyboardShortcutsMock,
         :register_shortcut,
         2,
@@ -189,37 +196,26 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
       )
 
       UXRefinement.register_component_hint("search_button", hint_info)
-      Mox.verify!(Raxol.Mocks.KeyboardShortcutsMock)
     end
   end
 
   describe "shortcut handling specific to UXRefinement callbacks" do
     test "shortcut callback from register_component_hint triggers FocusManager.set_focus" do
-      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
-      Mox.stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
+      stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
+      stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
 
-      Mox.stub(
-        Raxol.Mocks.FocusManagerMock,
-        :register_focus_change_handler,
-        fn _ -> :ok end
-      )
+      stub(Raxol.Mocks.FocusManagerMock, :register_focus_change_handler, fn _ ->
+        :ok
+      end)
 
       UXRefinement.enable_feature(:keyboard_shortcuts)
       UXRefinement.enable_feature(:focus_management)
-      # For consistency, as focus changes often have a11y implications
       UXRefinement.enable_feature(:accessibility)
 
-      Mox.stub(
-        Raxol.Mocks.FocusManagerMock,
-        :register_focus_change_handler,
-        fn _ -> :ok end
-      )
-
-      # callback_ref = :atom.unique_to_string(:callback_ref) |> String.to_atom()
       callback_ref = make_ref()
       Process.put(callback_ref, nil)
 
-      Mox.stub(
+      stub(
         Raxol.Mocks.KeyboardShortcutsMock,
         :register_shortcut,
         fn _key, _name, cb_fun, _opts ->
@@ -231,7 +227,6 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
       component_id = "search_button_focus"
 
       UXRefinement.register_component_hint(component_id, %{
-        # Using a distinct shortcut for clarity
         shortcuts: [{"Alt+F", "Focus This Component"}]
       })
 
@@ -243,13 +238,12 @@ defmodule Raxol.Core.UXRefinementKeyboardTest do
         )
       end
 
-      Mox.expect(Raxol.Mocks.FocusManagerMock, :set_focus, fn id ->
+      expect(Raxol.Mocks.FocusManagerMock, :set_focus, fn id ->
         assert id == component_id
         :ok
       end)
 
       shortcut_callback.()
-      Mox.verify!(Raxol.Mocks.FocusManagerMock)
     end
   end
 

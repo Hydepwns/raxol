@@ -5,6 +5,10 @@ defmodule Raxol.Terminal.Emulator.ProcessInputTest do
   alias Raxol.Terminal.Cursor.Manager
   alias Raxol.Terminal.ScreenBuffer
 
+  defp unwrap_ok({:ok, value}), do: value
+  defp unwrap_ok({:error, _reason, value}), do: value
+  defp unwrap_ok(value) when is_map(value), do: value
+
   describe "process_input state machine" do
     # Tests focus on how Emulator.process_input handles various sequences
 

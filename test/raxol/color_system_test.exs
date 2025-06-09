@@ -81,6 +81,7 @@ defmodule Raxol.ColorSystemTest do
 
       # Get the primary color before high contrast
       normal_primary = ColorSystem.get_color(:primary)
+
       # Raxol.Core.Runtime.Log.info("[Test Log] Normal primary: #{inspect(normal_primary)}")
 
       # Enable high contrast mode

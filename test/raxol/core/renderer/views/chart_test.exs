@@ -1,3 +1,5 @@
+import Raxol.Core.Renderer.View, only: [ensure_keyword: 1]
+
 defmodule Raxol.Core.Renderer.Views.ChartTest do
   use ExUnit.Case
 
@@ -27,6 +29,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
           height: 10
         )
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
       assert view.type == :box
       assert view.children != nil
     end
@@ -41,6 +45,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
           height: 10
         )
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
       assert view.type == :box
       assert view.children != nil
     end
@@ -57,6 +63,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
           width: 20
         )
 
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
       assert view.type == :box
       text_view = view.children
       assert text_view != nil
@@ -81,6 +89,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       content = view
+      assert is_map(content)
+      assert Map.has_key?(content, :type)
       assert content.type == :box
     end
 
@@ -96,6 +106,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       content = view
+      assert is_map(content)
+      assert Map.has_key?(content, :type)
       assert content.type == :box
     end
 
@@ -230,6 +242,8 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         )
 
       # Add assertions to verify min/max impact if possible
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
       assert view != nil
     end
 
@@ -238,11 +252,15 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
         Raxol.Core.Renderer.Views.Chart.new(type: :bar, series: [%{data: []}])
 
       # Verify the structure returned for empty data
+      assert is_map(view)
+      assert Map.has_key?(view, :type)
       assert view.type == :box
 
       # The child should be the empty flex container returned by create_vertical_bars
       # Chart.new likely wraps content in a box
       content_view = view.children
+      assert is_map(content_view)
+      assert Map.has_key?(content_view, :type)
       assert content_view.type == :flex
       assert content_view.children == []
     end

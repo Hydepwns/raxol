@@ -43,20 +43,27 @@ defmodule Raxol.Terminal.ModeManagerTest do
       # Alternate buffer usually has no scrollback
       alt_buffer = ScreenBuffer.new(80, 24, 0)
 
-      initial_emulator_state = %Emulator{
-        state_stack: [],
-        cursor: %CursorManager{position: {0, 0}, state: :visible, style: :block},
-        style: TextFormatting.new(),
-        mode_manager: ModeManager.new(),
-        main_screen_buffer: main_buffer,
-        alternate_screen_buffer: alt_buffer,
-        active_buffer_type: :main,
-        output_buffer: "",
-        # Default scroll region
-        scroll_region: nil,
-        charset_state: Raxol.Terminal.ANSI.CharacterSets.new(),
-        tab_stops:
-          MapSet.new(Enum.filter(1..80, fn col -> rem(col - 1, 8) == 0 end))
+      initial_emulator_state = Emulator.new(80, 24)
+
+      initial_emulator_state = %{
+        initial_emulator_state
+        | state_stack: [],
+          cursor: %CursorManager{
+            position: {0, 0},
+            state: :visible,
+            style: :block
+          },
+          style: TextFormatting.new(),
+          mode_manager: ModeManager.new(),
+          main_screen_buffer: main_buffer,
+          alternate_screen_buffer: alt_buffer,
+          active_buffer_type: :main,
+          output_buffer: "",
+          # Default scroll region
+          scroll_region: nil,
+          charset_state: Raxol.Terminal.ANSI.CharacterSets.new(),
+          tab_stops:
+            MapSet.new(Enum.filter(1..80, fn col -> rem(col - 1, 8) == 0 end))
       }
 
       # 2. Expect: TerminalStateMock.save_state/2 to be called once.
@@ -80,4 +87,8 @@ defmodule Raxol.Terminal.ModeManagerTest do
       Mox.verify!(TerminalStateMock)
     end
   end
+
+  defp unwrap_ok({:ok, value}), do: value
+  defp unwrap_ok({:error, _reason, value}), do: value
+  defp unwrap_ok(value) when is_map(value), do: value
 end

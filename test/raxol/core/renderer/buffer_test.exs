@@ -1,3 +1,5 @@
+import Raxol.Core.Renderer.View, only: [ensure_keyword: 1]
+
 defmodule Raxol.Core.Renderer.BufferTest do
   use ExUnit.Case, async: true
   alias Raxol.Core.Renderer.Buffer
@@ -15,6 +17,20 @@ defmodule Raxol.Core.Renderer.BufferTest do
     test "creates a buffer with custom FPS" do
       buffer = Buffer.new(80, 24, 30)
       assert buffer.fps == 30
+    end
+
+    test "handles invalid buffer dimensions" do
+      assert_raise ArgumentError, "Buffer width must be positive", fn ->
+        Buffer.new(0, 24)
+      end
+
+      assert_raise ArgumentError, "Buffer height must be positive", fn ->
+        Buffer.new(80, 0)
+      end
+
+      assert_raise ArgumentError, "FPS must be positive", fn ->
+        Buffer.new(80, 24, 0)
+      end
     end
   end
 
@@ -46,6 +62,143 @@ defmodule Raxol.Core.Renderer.BufferTest do
       assert cell.fg == :red
       assert cell.bg == :blue
       assert cell.style == [:bold]
+    end
+
+    test "handles invalid cell coordinates", %{buffer: buffer} do
+      assert_raise ArgumentError,
+                   "Cell coordinates must be a tuple of two integers",
+                   fn ->
+                     Buffer.put_cell(buffer, "invalid", "a")
+                   end
+
+      assert_raise ArgumentError,
+                   "Cell coordinates must be a tuple of two integers",
+                   fn ->
+                     Buffer.put_cell(buffer, {1, 2, 3}, "a")
+                   end
+    end
+
+    test "handles invalid cell content", %{buffer: buffer} do
+      assert_raise ArgumentError,
+                   "Cell content must be a string of length 1",
+                   fn ->
+                     Buffer.put_cell(buffer, {0, 0}, "invalid")
+                   end
+
+      assert_raise ArgumentError,
+                   "Cell content must be a string of length 1",
+                   fn ->
+                     Buffer.put_cell(buffer, {0, 0}, 123)
+                   end
+    end
+  end
+
+  describe "concurrent operations" do
+    test "handles concurrent cell updates" do
+      buffer = Buffer.new(10, 10)
+
+      # Simulate concurrent updates by rapidly updating cells
+      updated_buffer =
+        1..100
+        |> Enum.reduce(buffer, fn i, acc ->
+          x = rem(i, 10)
+          y = div(i, 10)
+          Buffer.put_cell(acc, {x, y}, "a")
+        end)
+
+      # Verify all cells were updated correctly
+      assert map_size(updated_buffer.back_buffer.cells) == 100
+      assert MapSet.size(updated_buffer.back_buffer.damage) == 100
+    end
+
+    test "handles rapid buffer swaps" do
+      buffer = Buffer.new(10, 10)
+
+      # Simulate rapid buffer swaps
+      {final_buffer, _} =
+        1..10
+        |> Enum.reduce({buffer, true}, fn _, {acc, _} ->
+          # Add some cells
+          acc = Buffer.put_cell(acc, {0, 0}, "a")
+          # Force swap by setting old last_frame_time
+          acc = %{acc | last_frame_time: 0}
+          Buffer.swap_buffers(acc)
+        end)
+
+      # Verify buffer state is consistent
+      assert final_buffer.front_buffer.size == {10, 10}
+      assert final_buffer.back_buffer.size == {10, 10}
+    end
+
+    test "handles concurrent resize operations" do
+      buffer = Buffer.new(10, 10)
+
+      # Simulate concurrent resizes
+      final_buffer =
+        1..5
+        |> Enum.reduce(buffer, fn i, acc ->
+          new_width = 10 + i
+          new_height = 10 + i
+          Buffer.resize(acc, new_width, new_height)
+        end)
+
+      # Verify final dimensions
+      assert final_buffer.front_buffer.size == {15, 15}
+      assert final_buffer.back_buffer.size == {15, 15}
+    end
+  end
+
+  describe "buffer overflow handling" do
+    test "handles cell overflow in x direction" do
+      buffer = Buffer.new(2, 2)
+
+      # Try to write beyond x bounds
+      buffer = Buffer.put_cell(buffer, {2, 0}, "x")
+
+      # Verify cell was not added
+      assert map_size(buffer.back_buffer.cells) == 0
+      assert MapSet.size(buffer.back_buffer.damage) == 0
+    end
+
+    test "handles cell overflow in y direction" do
+      buffer = Buffer.new(2, 2)
+
+      # Try to write beyond y bounds
+      buffer = Buffer.put_cell(buffer, {0, 2}, "x")
+
+      # Verify cell was not added
+      assert map_size(buffer.back_buffer.cells) == 0
+      assert MapSet.size(buffer.back_buffer.damage) == 0
+    end
+
+    test "handles negative coordinate overflow" do
+      buffer = Buffer.new(2, 2)
+
+      # Try to write with negative coordinates
+      buffer = Buffer.put_cell(buffer, {-1, 0}, "x")
+      buffer = Buffer.put_cell(buffer, {0, -1}, "y")
+
+      # Verify cells were not added
+      assert map_size(buffer.back_buffer.cells) == 0
+      assert MapSet.size(buffer.back_buffer.damage) == 0
+    end
+
+    test "handles buffer resize overflow" do
+      buffer = Buffer.new(2, 2)
+
+      # Add cells to original buffer
+      buffer =
+        buffer
+        |> Buffer.put_cell({0, 0}, "a")
+        |> Buffer.put_cell({1, 1}, "b")
+
+      # Resize to smaller size
+      buffer = Buffer.resize(buffer, 1, 1)
+
+      # Verify only cells within new bounds exist
+      assert map_size(buffer.back_buffer.cells) == 1
+      assert MapSet.size(buffer.back_buffer.damage) == 1
+      assert get_in(buffer.back_buffer.cells, [{0, 0}]).char == "a"
     end
   end
 

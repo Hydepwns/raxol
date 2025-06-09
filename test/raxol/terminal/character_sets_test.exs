@@ -6,6 +6,18 @@ defmodule Raxol.Terminal.CharacterSetsTest do
   alias Raxol.Terminal.ANSI.CharacterTranslations
   alias Raxol.Terminal.ANSI.CharacterSets
 
+  setup do
+    # Attempt to resize RenderingEngine buffer to minimize log output on failure.
+    # This assumes RenderingEngine might be running and registered by this name.
+    _ =
+      GenServer.cast(
+        Raxol.Core.Runtime.Rendering.Engine,
+        {:update_size, %{width: 1, height: 1}}
+      )
+
+    :ok
+  end
+
   describe "character set translation" do
     test "translates Latin-1 characters" do
       # Test control characters (use translate_string for consistency)

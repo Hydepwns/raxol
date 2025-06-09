@@ -18,7 +18,6 @@ defmodule Raxol.I18nTestHelpers do
   import Raxol.AccessibilityTestHelpers
 
   alias Raxol.Core.I18n, as: Gettext
-  alias Raxol.Core.UserPreferences
 
   @doc """
   Executes the given function with a specific locale set.
@@ -86,7 +85,8 @@ defmodule Raxol.I18nTestHelpers do
       end
   """
   def with_locale_announcements(locale, user_preferences_pid, fun)
-      when is_binary(locale) and is_pid(user_preferences_pid) and is_function(fun, 0) do
+      when is_binary(locale) and is_pid(user_preferences_pid) and
+             is_function(fun, 0) do
     with_locale(locale, fn ->
       with_screen_reader_spy(user_preferences_pid, fun)
     end)
@@ -184,6 +184,12 @@ defmodule Raxol.I18nTestHelpers do
              is_list(label_types) do
     with_locale(locale, fn ->
       metadata = get_mock_element_metadata(component_id) || %{}
+
+      metadata =
+        metadata
+        |> Map.put_new(:style, %{})
+        |> Map.put_new(:disabled, false)
+        |> Map.put_new(:focused, false)
 
       Enum.each(label_types, fn label_type ->
         label = Map.get(metadata, label_type)

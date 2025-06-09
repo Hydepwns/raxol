@@ -38,7 +38,10 @@ defmodule Raxol.RuntimeTest do
     @impl Raxol.Core.Runtime.Application
     # Ctrl+Q
     def update({:event, %Event{type: :key, data: %{char: <<17>>}}}, model) do
-      Raxol.Core.Runtime.Log.debug("[MockApp.update] Matched Ctrl+Q (char <<17>>)")
+      Raxol.Core.Runtime.Log.debug(
+        "[MockApp.update] Matched Ctrl+Q (char <<17>>)"
+      )
+
       {model, [%Command{type: :quit}]}
     end
 
@@ -65,7 +68,10 @@ defmodule Raxol.RuntimeTest do
 
     @impl Raxol.Core.Runtime.Application
     def update({:command_result, {:clipboard_read, {:ok, content}}}, model) do
-      Raxol.Core.Runtime.Log.debug("[MockApp.update] Received clipboard content: #{content}")
+      Raxol.Core.Runtime.Log.debug(
+        "[MockApp.update] Received clipboard content: #{content}"
+      )
+
       {%{model | last_clipboard: content}, []}
     end
 
@@ -213,6 +219,14 @@ defmodule Raxol.RuntimeTest do
   } do
     # Check if supervisor is running (redundant, start_link succeeded)
     assert is_pid(supervisor_pid)
+
+    # Attempt to resize RenderingEngine buffer to minimize log output on failure
+    # Assumes RenderingEngine is started by the supervisor and registered by this name.
+    _ =
+      GenServer.cast(
+        Raxol.Core.Runtime.Rendering.Engine,
+        {:update_size, %{width: 1, height: 1}}
+      )
 
     # Wait for children to start
     assert_receive {:child_started, ^supervisor_pid, PluginManager}, 1000
@@ -454,7 +468,9 @@ defmodule Raxol.RuntimeTest do
     Process.exit(dispatcher_pid, :kill)
 
     # Wait for DOWN message
-    Raxol.Core.Runtime.Log.debug("[TEST supervisor restart] Waiting for :DOWN message...")
+    Raxol.Core.Runtime.Log.debug(
+      "[TEST supervisor restart] Waiting for :DOWN message..."
+    )
 
     assert_receive {:DOWN, ^ref, :process, ^dispatcher_pid, :killed}, 5000
 
@@ -513,7 +529,10 @@ defmodule Raxol.RuntimeTest do
     )
 
     assert_model(new_dispatcher_pid, expected_model)
-    Raxol.Core.Runtime.Log.debug("[TEST supervisor restart] Model assertion passed.")
+
+    Raxol.Core.Runtime.Log.debug(
+      "[TEST supervisor restart] Model assertion passed."
+    )
   end
 
   # --- Test Setup Helpers ---
@@ -597,7 +616,10 @@ defmodule Raxol.RuntimeTest do
 
     try do
       File.rm(prefs_path)
-      Raxol.Core.Runtime.Log.debug("[TEST setup] Deleted preferences file: #{prefs_path}")
+
+      Raxol.Core.Runtime.Log.debug(
+        "[TEST setup] Deleted preferences file: #{prefs_path}"
+      )
     rescue
       # Ignore error if file doesn't exist (e.g., :enoent)
       File.Error -> :ok

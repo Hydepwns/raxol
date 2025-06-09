@@ -10,33 +10,24 @@ defmodule Raxol.Test.TestHelper do
   """
 
   use ExUnit.CaseTemplate
-  import ExUnit.Callbacks
-  alias Raxol.Core.Runtime.{EventLoop}
+  import ExUnit.Assertions
   alias Raxol.Core.Events.{Event}
   require Raxol.Core.Runtime.Log
 
   @doc """
-  Sets up a test environment with all necessary dependencies.
-
-  Returns a context map with initialized services.
+  Sets up a test environment with necessary services and configurations.
   """
   def setup_test_env do
-    # Start event system
-    # {:ok, event_pid} = start_supervised(Raxol.Core.Events.Manager) # REPLACED
-    Raxol.Core.Events.Manager.init()
-    # {:ok, loop_pid} = start_supervised(EventLoop) # REMOVED
-    # Start plugin manager
-    # {:ok, plugin_manager_pid} = start_supervised(PluginManager)
+    # Start any required services
+    {:ok, _} = Application.ensure_all_started(:raxol)
 
-    # Create test terminal
-    terminal = setup_test_terminal()
-
-    %{
-      # event_manager: event_pid, # REMOVED
-      # event_loop: loop_pid, # REMOVED
-      terminal: terminal
-      # plugin_manager: plugin_manager_pid
+    # Create a test context
+    context = %{
+      test_id: :rand.uniform(1_000_000),
+      start_time: System.monotonic_time()
     }
+
+    {:ok, context}
   end
 
   @doc """
@@ -79,9 +70,44 @@ defmodule Raxol.Test.TestHelper do
   Creates a test component with the given module and initial state.
   """
   def create_test_component(module, initial_state \\ %{}) do
+    # Ensure the component's init/1 is called to set up required keys
+    state =
+      case function_exported?(module, :init, 1) do
+        true -> module.init(initial_state)
+        false -> initial_state
+      end
+
+    state =
+      state
+      |> (fn s ->
+            if Map.has_key?(s, :style), do: s, else: Map.put(s, :style, %{})
+          end).()
+      |> (fn s ->
+            if Map.has_key?(s, :disabled),
+              do: s,
+              else: Map.put(s, :disabled, false)
+          end).()
+      |> (fn s ->
+            if Map.has_key?(s, :focused),
+              do: s,
+              else: Map.put(s, :focused, false)
+          end).()
+      |> (fn s ->
+            attrs = Map.get(s, :attrs, %{})
+
+            attrs =
+              cond do
+                is_list(attrs) -> Map.new(attrs)
+                is_map(attrs) -> attrs
+                true -> %{}
+              end
+
+            Map.put(s, :attrs, attrs)
+          end).()
+
     %{
       module: module,
-      state: initial_state,
+      state: state,
       subscriptions: [],
       rendered: nil
     }
@@ -152,20 +178,9 @@ defmodule Raxol.Test.TestHelper do
   @doc """
   Cleans up test resources and resets the environment.
   """
-  @dialyzer {:nowarn_function, cleanup_test_env: 1}
-  def cleanup_test_env(context) do
-    # Stop supervised processes
-    # NOTE: Removing these as linked processes should stop when the test process exits,
-    # and calling stop_supervised from on_exit callback causes errors.
-    # if context[:plugin_manager] do
-    #   _ = stop_supervised(PluginManager) # REMOVED
-    # end
-
-    # Cleanup test terminal resources if created
-    # if context[:terminal] do
-    #   cleanup_test_terminal(context[:terminal]) # REMOVED - function does not exist
-    # end
-
+  @dialyzer {:nowarn_function, cleanup_test_env: 0}
+  def cleanup_test_env do
+    # Clean up any test-specific resources
     :ok
   end
 
@@ -184,16 +199,6 @@ defmodule Raxol.Test.TestHelper do
     after
       Process.group_leader(self(), original_group_leader)
       StringIO.close(capture_pid)
-    end
-  end
-
-  # Private Helpers
-
-  defp flush_messages do
-    receive do
-      _ -> flush_messages()
-    after
-      0 -> :ok
     end
   end
 

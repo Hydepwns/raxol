@@ -3,6 +3,7 @@ defmodule Raxol.UI.ThemeHandlingTest do
   alias Raxol.UI.Renderer
   alias Raxol.UI.RendererTestHelper, as: Helper
   import Raxol.Test.Visual.Assertions
+  alias Raxol.UI.Theming.Theme
 
   test "handles missing themes" do
     element = Helper.create_test_box(0, 0, 5, 5, %{theme: "nonexistent"})
@@ -125,5 +126,128 @@ defmodule Raxol.UI.ThemeHandlingTest do
     # Should use error variant
     cell = Helper.get_cell_at(cells, 0, 0)
     Helper.assert_cell_style(cell, :red, :black)
+  end
+
+  test "theme initialization" do
+    theme =
+      Helper.create_test_theme(
+        "test",
+        %{
+          primary: "#FF0000",
+          secondary: "#00FF00"
+        },
+        %{
+          button: %{background: "#000000"}
+        },
+        %{
+          default: %{family: "monospace"}
+        }
+      )
+
+    assert theme.name == "test"
+    assert theme.colors.primary == "#FF0000"
+    assert theme.styles.button.background == "#000000"
+    assert theme.fonts.default.family == "monospace"
+  end
+
+  test "theme merging" do
+    base_theme =
+      Helper.create_test_theme(
+        "test",
+        %{
+          primary: "#FF0000",
+          secondary: "#00FF00"
+        },
+        %{
+          button: %{background: "#000000"}
+        },
+        %{
+          default: %{family: "monospace"}
+        }
+      )
+
+    override_theme =
+      Helper.create_test_theme(
+        "test",
+        %{
+          primary: "#0000FF"
+        },
+        %{
+          button: %{text: "#FFFFFF"}
+        },
+        %{
+          default: %{size: 14}
+        }
+      )
+
+    merged = Theme.merge(base_theme, override_theme)
+
+    assert merged.colors.primary == "#0000FF"
+    assert merged.colors.secondary == "#00FF00"
+    assert merged.styles.button.background == "#000000"
+    assert merged.styles.button.text == "#FFFFFF"
+    assert merged.fonts.default.family == "monospace"
+    assert merged.fonts.default.size == 14
+  end
+
+  test "theme inheritance" do
+    parent_theme =
+      Helper.create_test_theme(
+        "parent",
+        %{
+          primary: "#FF0000",
+          secondary: "#00FF00"
+        },
+        %{
+          button: %{background: "#000000"}
+        },
+        %{
+          default: %{family: "monospace"}
+        }
+      )
+
+    child_theme =
+      Helper.create_test_theme(
+        "child",
+        %{
+          primary: "#0000FF"
+        },
+        %{
+          button: %{text: "#FFFFFF"}
+        },
+        %{
+          default: %{size: 14}
+        }
+      )
+
+    inherited = Theme.inherit(parent_theme, child_theme)
+
+    assert inherited.colors.primary == "#0000FF"
+    assert inherited.colors.secondary == "#00FF00"
+    assert inherited.styles.button.background == "#000000"
+    assert inherited.styles.button.text == "#FFFFFF"
+    assert inherited.fonts.default.family == "monospace"
+    assert inherited.fonts.default.size == 14
+  end
+
+  test "theme access" do
+    theme =
+      Helper.create_test_theme(
+        "test",
+        %{
+          primary: "#FF0000",
+          secondary: "#00FF00"
+        },
+        %{
+          button: %{background: "#000000"}
+        },
+        %{
+          default: %{family: "monospace"}
+        }
+      )
+
+    assert Theme.get(theme, [:colors, :primary]) == "#FF0000"
+    assert Theme.get(theme, [:styles, :button, :background]) == "#000000"
+    assert Theme.get(theme, [:fonts, :default, :family]) == "monospace"
   end
 end

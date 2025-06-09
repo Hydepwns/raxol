@@ -58,7 +58,8 @@ defmodule Raxol.AccessibilityTestHelpers do
         assert_announced("File saved successfully")
       end)
   """
-  def with_screen_reader_spy(pid, fun) when is_pid(pid) and is_function(fun, 0) do
+  def with_screen_reader_spy(pid, fun)
+      when is_pid(pid) and is_function(fun, 0) do
     # Initialize announcement spy
     Process.put(:accessibility_test_announcements, [])
     # Register spy handler
@@ -67,11 +68,13 @@ defmodule Raxol.AccessibilityTestHelpers do
       __MODULE__,
       :handle_announcement_spy
     )
+
     try do
       Accessibility.enable([], pid)
       fun.()
     after
       Accessibility.disable(pid)
+
       EventManager.unregister_handler(
         :accessibility_announce,
         __MODULE__,
@@ -415,14 +418,17 @@ defmodule Raxol.AccessibilityTestHelpers do
       {pid, fun} when is_pid(pid) and is_function(fun, 0) ->
         previous = Accessibility.get_option(:reduced_motion, pid)
         Accessibility.set_option(:reduced_motion, true, pid)
+
         try do
           fun.()
         after
           Accessibility.set_option(:reduced_motion, previous, pid)
         end
+
       {fun, nil} when is_function(fun, 0) ->
         previous = Accessibility.get_option(:reduced_motion, nil)
         Accessibility.set_option(:reduced_motion, true, nil)
+
         try do
           fun.()
         after

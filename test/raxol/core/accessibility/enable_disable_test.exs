@@ -29,9 +29,23 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       prefs_name: prefs_name
     } do
       # Set prefs to nil initially
-      UserPreferences.set(Helper.pref_key(:high_contrast), nil, prefs_name)
-      UserPreferences.set(Helper.pref_key(:reduced_motion), nil, prefs_name)
-      UserPreferences.set(Helper.pref_key(:large_text), nil, prefs_name)
+      Raxol.Core.UserPreferences.set(
+        Helper.pref_key(:high_contrast),
+        nil,
+        prefs_name
+      )
+
+      Raxol.Core.UserPreferences.set(
+        Helper.pref_key(:reduced_motion),
+        nil,
+        prefs_name
+      )
+
+      Raxol.Core.UserPreferences.set(
+        Helper.pref_key(:large_text),
+        nil,
+        prefs_name
+      )
 
       # Disable first to clear handlers etc.
       Accessibility.disable(prefs_name)
@@ -48,16 +62,28 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       end)
 
       # Assert default values
-      assert UserPreferences.get(Helper.pref_key(:high_contrast), prefs_name) ==
+      assert Raxol.Core.UserPreferences.get(
+               Helper.pref_key(:high_contrast),
+               prefs_name
+             ) ==
                false
 
-      assert UserPreferences.get(Helper.pref_key(:reduced_motion), prefs_name) ==
+      assert Raxol.Core.UserPreferences.get(
+               Helper.pref_key(:reduced_motion),
+               prefs_name
+             ) ==
                false
 
-      assert UserPreferences.get(Helper.pref_key(:large_text), prefs_name) ==
+      assert Raxol.Core.UserPreferences.get(
+               Helper.pref_key(:large_text),
+               prefs_name
+             ) ==
                false
 
-      assert UserPreferences.get(Helper.pref_key(:screen_reader), prefs_name) ==
+      assert Raxol.Core.UserPreferences.get(
+               Helper.pref_key(:screen_reader),
+               prefs_name
+             ) ==
                true
 
       assert Accessibility.get_text_scale(prefs_name) == 1.0
@@ -67,9 +93,23 @@ defmodule Raxol.Core.Accessibility.EnableDisableTest do
       prefs_name: prefs_name
     } do
       # Set prefs to nil initially
-      UserPreferences.set(Helper.pref_key(:high_contrast), nil, prefs_name)
-      UserPreferences.set(Helper.pref_key(:reduced_motion), nil, prefs_name)
-      UserPreferences.set(Helper.pref_key(:screen_reader), nil, prefs_name)
+      Raxol.Core.UserPreferences.set(
+        Helper.pref_key(:high_contrast),
+        nil,
+        prefs_name
+      )
+
+      Raxol.Core.UserPreferences.set(
+        Helper.pref_key(:reduced_motion),
+        nil,
+        prefs_name
+      )
+
+      Raxol.Core.UserPreferences.set(
+        Helper.pref_key(:screen_reader),
+        nil,
+        prefs_name
+      )
 
       Accessibility.disable(prefs_name)
 

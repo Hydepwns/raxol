@@ -87,10 +87,33 @@ defmodule Raxol.Terminal.ConfigTest do
 
     test "schema/0 validates field types" do
       schema = Schema.schema()
+
+      assert is_map(schema.terminal_type) and
+               Map.has_key?(schema.terminal_type, :type),
+             "Expected schema.terminal_type to be a map with :type key, got: #{inspect(schema.terminal_type)}"
+
       assert schema.terminal_type.type == :atom
+
+      assert is_map(schema.color_mode) and
+               Map.has_key?(schema.color_mode, :type),
+             "Expected schema.color_mode to be a map with :type key, got: #{inspect(schema.color_mode)}"
+
       assert schema.color_mode.type == :atom
+
+      assert is_map(schema.unicode_support) and
+               Map.has_key?(schema.unicode_support, :type),
+             "Expected schema.unicode_support to be a map with :type key, got: #{inspect(schema.unicode_support)}"
+
       assert schema.unicode_support.type == :boolean
+
+      assert is_map(schema.width) and Map.has_key?(schema.width, :type),
+             "Expected schema.width to be a map with :type key, got: #{inspect(schema.width)}"
+
       assert schema.width.type == :integer
+
+      assert is_map(schema.height) and Map.has_key?(schema.height, :type),
+             "Expected schema.height to be a map with :type key, got: #{inspect(schema.height)}"
+
       assert schema.height.type == :integer
     end
   end

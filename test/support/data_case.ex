@@ -24,7 +24,11 @@ defmodule Raxol.DataCase do
   end
 
   setup tags do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+    result = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+
+    if result != :ok and result != {:already, :owner} do
+      raise "Unexpected result from SQL Sandbox checkout: #{inspect(result)}"
+    end
 
     unless tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})
@@ -48,7 +52,11 @@ defmodule Raxol.DataCase do
 
   # Public setup/1 for use in other test helpers
   def setup(tags) do
-    :ok = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+    result = Ecto.Adapters.SQL.Sandbox.checkout(Raxol.Repo)
+
+    if result != :ok and result != {:already, :owner} do
+      raise "Unexpected result from SQL Sandbox checkout: #{inspect(result)}"
+    end
 
     unless tags[:async] do
       Ecto.Adapters.SQL.Sandbox.mode(Raxol.Repo, {:shared, self()})

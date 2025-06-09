@@ -302,7 +302,13 @@ defmodule Raxol.Terminal.Emulator.SgrFormattingTest do
       assert first_cell.style.bold == true
       assert first_cell.style.foreground == :red
       # Optionally check the rest of the text
-      text = buffer.cells |> List.first() |> Enum.take(8) |> Enum.map(& &1.char) |> Enum.join("")
+      text =
+        buffer.cells
+        |> List.first()
+        |> Enum.take(8)
+        |> Enum.map(& &1.char)
+        |> Enum.join("")
+
       assert text =~ "Bold Red"
     end
   end

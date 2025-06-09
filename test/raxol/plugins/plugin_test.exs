@@ -91,7 +91,10 @@ defmodule Raxol.Plugins.PluginTest do
     test "detects and makes URLs clickable" do
       {:ok, plugin} = HyperlinkPlugin.init(%{})
       output = "Check out https://example.com for more info"
-      {:ok, _plugin} = HyperlinkPlugin.handle_output(plugin, output)
+
+      {:ok, _plugin, _modified_output} =
+        HyperlinkPlugin.handle_output(plugin, output)
+
       # Note: The actual URL transformation would be tested in integration tests
       # since it involves terminal escape sequences
     end
@@ -177,7 +180,9 @@ defmodule Raxol.Plugins.PluginTest do
       # Simulate reload
       plugin = PluginManager.get_plugin(manager, "test_plugin")
       assert plugin
-      assert plugin[:foo] == "bar" or plugin.config[:foo] == "bar"
+
+      assert Map.get(plugin, :foo) == "bar" or
+               Map.get(plugin.config, :foo) == "bar"
     end
   end
 end

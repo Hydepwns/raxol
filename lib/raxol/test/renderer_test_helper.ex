@@ -7,22 +7,17 @@ defmodule Raxol.UI.RendererTestHelper do
 
   alias Raxol.UI.Theming.Theme
 
-  def create_test_theme(id, name, description, colors \\ %{}) do
-    %Theme{
-      id: id,
+  def create_test_theme(name, colors, styles, fonts) do
+    %Raxol.UI.Theming.Theme{
       name: name,
-      description: description,
-      colors:
-        Map.merge(
-          %{
-            foreground: :white,
-            background: :black
-          },
-          colors
-        ),
-      fonts: %{},
-      component_styles: %{},
-      variants: %{}
+      colors: colors,
+      styles: styles,
+      fonts: fonts,
+      spacing: %{},
+      borders: %{},
+      shadows: %{},
+      transitions: %{},
+      animations: %{}
     }
   end
 
@@ -50,14 +45,51 @@ defmodule Raxol.UI.RendererTestHelper do
     end)
   end
 
+  defp ensure_id(%Theme{} = map), do: map
+
+  defp ensure_id(map) do
+    if Map.has_key?(map, :id), do: map, else: Map.put(map, :id, :test_id)
+  end
+
+  defp ensure_style(map) do
+    if Map.has_key?(map, :style), do: map, else: Map.put(map, :style, %{})
+  end
+
+  defp ensure_position(map) do
+    if Map.has_key?(map, :position),
+      do: map,
+      else: Map.put(map, :position, {0, 0})
+  end
+
+  defp ensure_disabled(map) do
+    if Map.has_key?(map, :disabled),
+      do: map,
+      else: Map.put(map, :disabled, false)
+  end
+
+  defp ensure_focused(map) do
+    if Map.has_key?(map, :focused), do: map, else: Map.put(map, :focused, false)
+  end
+
+  defp ensure_attrs(map) do
+    if Map.has_key?(map, :attrs), do: map, else: Map.put(map, :attrs, %{})
+  end
+
   def create_test_element(type, x, y, opts \\ %{}) do
     base = %{
       type: type,
       x: x,
-      y: y
+      y: y,
+      position: {x, y}
     }
 
     Map.merge(base, opts)
+    |> ensure_style()
+    |> ensure_id()
+    |> ensure_position()
+    |> ensure_disabled()
+    |> ensure_focused()
+    |> ensure_attrs()
   end
 
   def create_test_box(x, y, width, height, opts \\ %{}) do
@@ -67,10 +99,22 @@ defmodule Raxol.UI.RendererTestHelper do
       y,
       Map.merge(%{width: width, height: height}, opts)
     )
+    |> ensure_style()
+    |> ensure_id()
+    |> ensure_position()
+    |> ensure_disabled()
+    |> ensure_focused()
+    |> ensure_attrs()
   end
 
   def create_test_text(x, y, text, opts \\ %{}) do
     create_test_element(:text, x, y, Map.merge(%{text: text}, opts))
+    |> ensure_style()
+    |> ensure_id()
+    |> ensure_position()
+    |> ensure_disabled()
+    |> ensure_focused()
+    |> ensure_attrs()
   end
 
   def create_test_panel(x, y, width, height, children \\ [], opts \\ %{}) do
@@ -78,15 +122,14 @@ defmodule Raxol.UI.RendererTestHelper do
       :panel,
       x,
       y,
-      Map.merge(
-        %{
-          width: width,
-          height: height,
-          children: children
-        },
-        opts
-      )
+      Map.merge(%{width: width, height: height, children: children}, opts)
     )
+    |> ensure_style()
+    |> ensure_id()
+    |> ensure_position()
+    |> ensure_disabled()
+    |> ensure_focused()
+    |> ensure_attrs()
   end
 
   def create_test_table(x, y, headers, data, opts \\ %{}) do
@@ -94,13 +137,13 @@ defmodule Raxol.UI.RendererTestHelper do
       :table,
       x,
       y,
-      Map.merge(
-        %{
-          headers: headers,
-          data: data
-        },
-        opts
-      )
+      Map.merge(%{headers: headers, data: data}, opts)
     )
+    |> ensure_style()
+    |> ensure_id()
+    |> ensure_position()
+    |> ensure_disabled()
+    |> ensure_focused()
+    |> ensure_attrs()
   end
 end

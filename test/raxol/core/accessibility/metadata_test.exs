@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Accessibility.MetadataTest do
-  use Raxol.DataCase, async: false
+  use ExUnit.Case, async: false
   import Mox
 
   alias Raxol.Core.Accessibility
@@ -10,6 +10,16 @@ defmodule Raxol.Core.Accessibility.MetadataTest do
 
   setup do
     Raxol.Core.I18n.init()
+
+    on_exit(fn ->
+      # Clean up any registered metadata and styles
+      Accessibility.unregister_element_metadata("search_button")
+      Accessibility.unregister_element_metadata("test_button")
+      Accessibility.unregister_element_metadata("empty_button")
+      Accessibility.unregister_component_style(:button)
+      Raxol.Core.I18n.cleanup()
+    end)
+
     :ok
   end
 

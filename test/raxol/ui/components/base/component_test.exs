@@ -18,11 +18,15 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     def init(props) do
       Map.merge(
         %{
+          id: :test_id,
+          type: :test_component,
           counter: 0,
           mounted: false,
           unmounted: false,
           events: [],
-          render_count: 0
+          render_count: 0,
+          position: {0, 0},
+          style: %{}
         },
         props
       )
@@ -69,6 +73,19 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
     # Add this to support the required behaviour
     def handle_event(event, state, _context) do
       handle_event(event, state)
+    end
+
+    def new(props \\ %{}) do
+      Map.merge(
+        %{
+          counter: 0,
+          mounted: false,
+          unmounted: false,
+          events: [],
+          render_count: 0
+        },
+        props
+      )
     end
   end
 
@@ -218,6 +235,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       # Here, we just check that the component renders with accessibility context without error
       {_updated, rendered} =
         component.module.render(component.state, %{
+          theme: %{mode: :test},
           accessibility: %{
             high_contrast: true,
             screen_reader: true
