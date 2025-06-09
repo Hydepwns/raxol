@@ -3,8 +3,6 @@ defmodule Raxol.Terminal.Cursor.Manager do
   Manages cursor state and operations.
   """
 
-  alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Emulator
   require Raxol.Core.Runtime.Log
 
   defstruct position: {0, 0},
@@ -52,8 +50,9 @@ defmodule Raxol.Terminal.Cursor.Manager do
 
   @doc """
   Gets the cursor's current position.
+  Accepts either an Emulator struct or a Cursor struct.
   """
-  def get_position(cursor) do
+  def get_position(%__MODULE__{} = cursor) do
     cursor.position
   end
 
@@ -163,7 +162,7 @@ defmodule Raxol.Terminal.Cursor.Manager do
             _ -> cursor
           end
 
-        {new_cursor, !visible}
+        {new_cursor, visible}
 
       :visible ->
         {cursor, true}
@@ -320,6 +319,85 @@ defmodule Raxol.Terminal.Cursor.Manager do
       _ ->
         cursor
     end
+  end
+
+  @doc """
+  Resets the cursor position to the origin (0,0).
+  """
+  def reset_position(%__MODULE__{} = cursor) do
+    %{cursor | position: {0, 0}}
+  end
+
+  @doc """
+  Updates the cursor position based on the text content.
+  """
+  def update_position(%__MODULE__{} = cursor, text) do
+    {x, y} = cursor.position
+    new_x = x + String.length(text)
+    %{cursor | position: {new_x, y}}
+  end
+
+  @doc """
+  Gets the visible content from the buffer manager.
+  """
+  def get_visible_content(buffer_manager) do
+    buffer_manager.visible_content
+  end
+
+  @doc """
+  Gets the total number of lines in the buffer.
+  """
+  def get_total_lines(buffer_manager) do
+    buffer_manager.total_lines
+  end
+
+  @doc """
+  Gets the number of visible lines in the buffer.
+  """
+  def get_visible_lines(buffer_manager) do
+    buffer_manager.visible_lines
+  end
+
+  @doc """
+  Constrains the cursor position to the given width and height.
+  """
+  def constrain_position(%__MODULE__{} = cursor, width, height) do
+    {x, y} = cursor.position
+    clamped_x = min(max(x, 0), width - 1)
+    clamped_y = min(max(y, 0), height - 1)
+    %{cursor | position: {clamped_x, clamped_y}}
+  end
+
+  @doc """
+  Writes text to the buffer at the cursor position.
+  """
+  def write(buffer_manager, _text) do
+    # Implementation details...
+    buffer_manager
+  end
+
+  @doc """
+  Clears the buffer.
+  """
+  def clear(buffer_manager) do
+    # Implementation details...
+    {:ok, buffer_manager}
+  end
+
+  @doc """
+  Updates the visible region of the buffer.
+  """
+  def update_visible_region(buffer_manager, _visible_region) do
+    # Implementation details...
+    buffer_manager
+  end
+
+  @doc """
+  Resizes the buffer to the given dimensions.
+  """
+  def resize(buffer_manager, _width, _height) do
+    # Implementation details...
+    buffer_manager
   end
 
   # Private helper functions

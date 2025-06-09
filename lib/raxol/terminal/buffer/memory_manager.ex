@@ -18,6 +18,7 @@ defmodule Raxol.Terminal.Buffer.MemoryManager do
         cell_size = 100
         usage = buffer_size * cell_size
         usage
+
       _ ->
         0
     end
@@ -40,5 +41,19 @@ defmodule Raxol.Terminal.Buffer.MemoryManager do
   @spec is_within_limit?(non_neg_integer(), non_neg_integer()) :: boolean()
   def is_within_limit?(current_usage, memory_limit) do
     current_usage <= memory_limit
+  end
+
+  @doc """
+  Estimates the approximate memory usage for a given set of dimensions.
+  """
+  @spec estimate_usage(pos_integer(), pos_integer(), pos_integer()) ::
+          non_neg_integer()
+  def estimate_usage(width, height, scrollback_height) do
+    # Approximate size of a cell in memory (bytes)
+    cell_size = 100
+    main_buffer_usage = width * height * cell_size
+    # Assuming scrollback has same width
+    scrollback_usage = width * scrollback_height * cell_size
+    main_buffer_usage + scrollback_usage
   end
 end

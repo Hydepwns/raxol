@@ -38,7 +38,9 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState do
 
       # Not ST
       <<_unexpected_byte, rest_after_unexpected::binary>> ->
-        msg = "Malformed DCS termination: ESC not followed by ST. Returning to ground."
+        msg =
+          "Malformed DCS termination: ESC not followed by ST. Returning to ground."
+
         Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 
         # Discard sequence, go to ground
@@ -48,11 +50,14 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughMaybeSTState do
 
       # Input ended after ESC, incomplete sequence
       <<>> ->
-        msg = "Malformed DCS termination: Input ended after ESC. Returning to ground."
+        msg =
+          "Malformed DCS termination: Input ended after ESC. Returning to ground."
+
         Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 
-        # Go to ground, return emulator as is
-        {:handled, emulator}
+        # Go to ground
+        next_parser_state = %{parser_state | state: :ground}
+        {:continue, emulator, next_parser_state, ""}
     end
   end
 end

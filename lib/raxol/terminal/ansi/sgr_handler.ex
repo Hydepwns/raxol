@@ -15,7 +15,11 @@ defmodule Raxol.Terminal.ANSI.SGRHandler do
   def apply_sgr_params(params, current_style) do
     new_style = do_apply_sgr_params(params, current_style)
     require Raxol.Core.Runtime.Log
-    Raxol.Core.Runtime.Log.debug("[SGRHandler] Applied SGR params #{inspect(params)}; new style: #{inspect(new_style)}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "[SGRHandler] Applied SGR params #{inspect(params)}; new style: #{inspect(new_style)}"
+    )
+
     new_style
   end
 

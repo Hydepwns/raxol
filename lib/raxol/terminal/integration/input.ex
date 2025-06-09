@@ -72,24 +72,20 @@ defmodule Raxol.Terminal.Integration.Input do
   Handles tab completion for commands.
   """
   def handle_tab_completion(%State{} = state) do
-    # Get the current input line
-    current_input = get_current_input(state)
-
-    # Get possible completions
-    completions = get_completions(current_input)
-
-    case completions do
-      [completion] ->
-        # Single completion, apply it
-        handle_input(state, completion)
-
+    case get_completions(state) do
       [] ->
-        # No completions, do nothing
+        # No completions available
         state
 
-      _ ->
-        # Multiple completions, show them
+      [completion] when is_binary(completion) ->
+        handle_input(state, completion)
+
+      [_ | _] = completions ->
+        # Multiple completions - show them
         show_completions(state, completions)
+
+      _ ->
+        state
     end
   end
 
@@ -109,28 +105,28 @@ defmodule Raxol.Terminal.Integration.Input do
 
   # Private functions
 
-  defp get_current_input(%State{} = state) do
-    state.buffer_manager
-    |> get_current_line()
-    |> String.trim()
-  end
+  defp get_completions(%State{emulator: emulator}) do
+    # Get the current input line from the emulator
+    current_line = emulator.state.current_line || ""
 
-  defp get_current_line(buffer_manager) do
-    # Implementation depends on buffer manager interface
-    # This is a placeholder
-    ""
-  end
+    # Get available commands from the command registry
+    available_commands = Raxol.Terminal.Commands.Registry.list_commands()
 
-  defp get_completions(input) do
-    # Implementation depends on command completion system
-    # This is a placeholder
-    []
+    # Filter commands that start with the current input
+    available_commands
+    |> Enum.filter(&String.starts_with?(&1, current_line))
+    |> Enum.sort()
   end
 
   defp show_completions(state, completions) do
-    # Implementation depends on UI requirements
-    # This is a placeholder
+    # Format completions for display
+    formatted = Enum.join(completions, "  ")
+
+    # Add a newline and show completions
     state
+    |> handle_input("\n")
+    |> handle_input(formatted)
+    |> handle_input("\n")
   end
 
   defp handle_ctrl_c(state) do
@@ -147,7 +143,7 @@ defmodule Raxol.Terminal.Integration.Input do
 
   defp handle_ctrl_l(state) do
     # Clear screen
-    {emulator, _} = Raxol.Terminal.Emulator.clear_screen(state.emulator)
+    emulator = Raxol.Terminal.Commands.Screen.clear_screen(state.emulator, 2)
     State.update(state, emulator: emulator)
   end
 

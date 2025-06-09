@@ -20,16 +20,22 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   }
 
   alias Raxol.Terminal.ANSI.SGRHandler
-  alias Raxol.Terminal.ANSI.CharacterSets.StateManager, as: CharsetStateManager
   require Raxol.Core.Runtime.Log
 
   @doc "Handles Select Graphic Rendition (SGR - 'm')"
   @spec handle_m(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_m(emulator, params) do
-    Raxol.Core.Runtime.Log.debug("[SGR Handler] Input Style: #{inspect(emulator.style)}, Params: #{inspect(params)}")
+    Raxol.Core.Runtime.Log.debug(
+      "[SGR Handler] Input Style: #{inspect(emulator.style)}, Params: #{inspect(params)}"
+    )
+
     new_style = SGRHandler.apply_sgr_params(params, emulator.style)
-    Raxol.Core.Runtime.Log.debug("[SGR Handler] Output Style: #{inspect(new_style)}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "[SGR Handler] Output Style: #{inspect(new_style)}"
+    )
+
     {:ok, %{emulator | style: new_style}}
   end
 
@@ -64,7 +70,40 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
 
   @spec handle_G(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_G(emulator, params), do: CursorHandlers.handle_G(emulator, params)
+  def handle_G(emulator, params) do
+    # Default to 0 if no params or param is not an integer
+    param =
+      case params do
+        [p | _] when is_integer(p) -> p
+        _ -> 0
+      end
+
+    case param do
+      0 ->
+        # Clear horizontal tab stop at current position
+        # Get current cursor column
+        {current_col, _current_row} =
+          Raxol.Terminal.Emulator.get_cursor_position(emulator)
+
+        new_tab_stops = MapSet.delete(emulator.tab_stops, current_col)
+        {:ok, %{emulator | tab_stops: new_tab_stops}}
+
+      3 ->
+        # Clear all horizontal tab stops
+        # Reset to default tab stops based on current width
+        new_tab_stops =
+          Raxol.Terminal.Buffer.Manager.default_tab_stops(emulator.width)
+          |> MapSet.new()
+
+        {:ok, %{emulator | tab_stops: new_tab_stops}}
+
+      _ ->
+        # If not 0 or 3, assume it's Cursor Character Absolute (CHA)
+        # and delegate to the original CursorHandlers.handle_G
+        # This ensures existing CHA functionality is preserved.
+        CursorHandlers.handle_G(emulator, params)
+    end
+  end
 
   @spec handle_d(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
@@ -135,7 +174,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   def handle_u(emulator, _params) do
     case emulator.saved_cursor do
       nil ->
-        Raxol.Core.Runtime.Log.warning_with_context("No saved cursor position to restore", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "No saved cursor position to restore",
+          %{}
+        )
+
         {:error, :no_saved_cursor, emulator}
 
       saved_cursor ->
@@ -179,7 +222,11 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
         :steady_bar
 
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context("Unknown cursor style: #{style}", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unknown cursor style: #{style}",
+          %{}
+        )
+
         current_style
     end
   end
@@ -187,66 +234,212 @@ defmodule Raxol.Terminal.Commands.CSIHandlers do
   @doc "Handles Designate Character Set (SCS - via non-standard CSI sequences)"
   @spec handle_scs(Emulator.t(), String.t(), char()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
-  def handle_scs(emulator, charset_param_str, final_byte) do
-    actual_param_str =
-      if charset_param_str == "", do: "B", else: charset_param_str
+  def handle_scs(emulator, charset_param_str, final_byte)
+      when is_map(emulator) and is_binary(charset_param_str) and
+             is_integer(final_byte) do
+    if not Map.has_key?(emulator, :charset_state) do
+      msg =
+        "SCS: Emulator missing :charset_state key. Emulator: #{inspect(emulator)}"
 
-    charset_code =
-      String.at(actual_param_str, 0) |> String.to_charlist() |> List.first()
-
-    target_gset_key =
-      case final_byte do
-        ?( ->
-          :g0
-
-        ?) ->
-          :g1
-
-        ?* ->
-          :g2
-
-        ?+ ->
-          :g3
-
-        _ ->
-          Raxol.Core.Runtime.Log.warning_with_context("SCS: Unexpected final_byte: #{inspect(final_byte)}", %{})
-          nil
-      end
-
-    charset_atom = CharsetStateManager.charset_code_to_atom(charset_code)
-
-    if target_gset_key && charset_atom do
-      Raxol.Core.Runtime.Log.debug(
-        "SCS: Designating #{inspect(target_gset_key)} to charset #{inspect(charset_atom)} (from char code #{charset_code})"
-      )
-
-      updated_charset_state =
-        Map.put(emulator.charset_state, target_gset_key, charset_atom)
-
-      {:ok, %{emulator | charset_state: updated_charset_state}}
-    else
-      msg = "SCS: Failed to designate charset. Param: '#{charset_param_str}', Char Code: #{inspect(charset_code)}, Final Byte: #{<<final_byte::utf8>>}, Mapped Charset: #{inspect(charset_atom)}, Target GSet: #{inspect(target_gset_key)}"
       Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
+      {:error, :missing_charset_state, emulator}
+    else
+      # Parse the charset parameter string
+      case parse_charset_param(charset_param_str) do
+        {:ok, charset_code} ->
+          # Map the final byte to the appropriate G-set
+          gset = map_final_byte_to_gset(final_byte)
 
-      {:error, :invalid_charset_designation, emulator}
+          if gset do
+            # Map the charset code to the appropriate charset module
+            charset = map_charset_code_to_module(charset_code)
+
+            if charset do
+              # Update the charset state
+              new_charset_state = %{emulator.charset_state | gset => charset}
+              {:ok, %{emulator | charset_state: new_charset_state}}
+            else
+              Raxol.Core.Runtime.Log.warning_with_context(
+                "Unknown charset code: #{charset_code}",
+                %{}
+              )
+
+              {:error, :unknown_charset_code, emulator}
+            end
+          else
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "Invalid final byte for SCS: #{final_byte}",
+              %{}
+            )
+
+            {:error, :invalid_final_byte, emulator}
+          end
+
+        :error ->
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Failed to parse charset parameter: #{charset_param_str}",
+            %{}
+          )
+
+          {:error, :invalid_charset_param, emulator}
+      end
     end
   end
 
-  @doc "Handles DECSTBM (Set Scrolling Region - 'r')"
+  # Helper function to parse charset parameter
+  @spec parse_charset_param(String.t()) :: {:ok, char()} | :error
+  defp parse_charset_param("") do
+    # Default to US ASCII
+    {:ok, ?B}
+  end
+
+  defp parse_charset_param(<<code::utf8>>) when code >= ?A and code <= ?Z do
+    {:ok, code}
+  end
+
+  defp parse_charset_param(_) do
+    :error
+  end
+
+  # Helper function to map final byte to G-set
+  @spec map_final_byte_to_gset(char()) :: :g0 | :g1 | :g2 | :g3 | nil
+  defp map_final_byte_to_gset(final_byte) do
+    case final_byte do
+      ?( -> :g0
+      ?) -> :g1
+      ?* -> :g2
+      ?+ -> :g3
+      _ -> nil
+    end
+  end
+
+  # Helper function to map charset code to module
+  @spec map_charset_code_to_module(char()) :: module() | nil
+  defp map_charset_code_to_module(code) do
+    case code do
+      # DEC Special Graphics
+      code when code in [?0, ?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9, ?<, ?=, ?>, ??] ->
+        Raxol.Terminal.ANSI.CharacterSets.DECSpecialGraphics
+
+      # German character set
+      code
+      when code in [?A..?Z, ?a..?z, ?[, ?\\, ?], ?^, ?_, ?`, ?{, ?|, ?}, ?~] ->
+        Raxol.Terminal.ANSI.CharacterSets.German
+
+      # French character set
+      code when code in [?D..?E] ->
+        Raxol.Terminal.ANSI.CharacterSets.French
+
+      _ ->
+        nil
+    end
+  end
+
+  @doc "Handles cursor movement sequences"
+  @spec handle_cursor_movement(Emulator.t(), list(char())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_cursor_movement(emulator, [direction | _]) do
+    case direction do
+      # Cursor Up
+      ?A -> handle_A(emulator, [1])
+      # Cursor Down
+      ?B -> handle_B(emulator, [1])
+      # Cursor Forward
+      ?C -> handle_C(emulator, [1])
+      # Cursor Backward
+      ?D -> handle_D(emulator, [1])
+      _ -> {:error, :invalid_direction, emulator}
+    end
+  end
+
+  @doc "Handles cursor positioning sequences"
+  @spec handle_cursor_position(Emulator.t(), list(char())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_cursor_position(emulator, params) do
+    case params do
+      # Default to home position
+      [] -> handle_H(emulator, [1, 1])
+      # Convert ASCII to numbers
+      [row, ?;, col] -> handle_H(emulator, [row - ?0, col - ?0])
+      _ -> {:error, :invalid_params, emulator}
+    end
+  end
+
+  @doc "Handles screen clearing sequences"
+  @spec handle_screen_clear(Emulator.t(), list(char())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_screen_clear(emulator, params) do
+    case params do
+      # Clear from cursor to end of screen
+      [] -> handle_J(emulator, [0])
+      # Clear from cursor to beginning of screen
+      [?1] -> handle_J(emulator, [1])
+      # Clear entire screen
+      [?2] -> handle_J(emulator, [2])
+      _ -> {:error, :invalid_params, emulator}
+    end
+  end
+
+  @doc "Handles line clearing sequences"
+  @spec handle_line_clear(Emulator.t(), list(char())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_line_clear(emulator, params) do
+    case params do
+      # Clear from cursor to end of line
+      [] -> handle_K(emulator, [0])
+      # Clear from cursor to beginning of line
+      [?1] -> handle_K(emulator, [1])
+      # Clear entire line
+      [?2] -> handle_K(emulator, [2])
+      _ -> {:error, :invalid_params, emulator}
+    end
+  end
+
+  @doc "Handles device status sequences"
+  @spec handle_device_status(Emulator.t(), list(char())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_device_status(emulator, params) do
+    case params do
+      # Device Status Report
+      [?6, ?n] -> handle_n(emulator, [6])
+      # Cursor Position Report
+      [?6, ?R] -> handle_n(emulator, [6])
+      _ -> {:error, :invalid_params, emulator}
+    end
+  end
+
+  @doc "Handles save/restore cursor sequences"
+  @spec handle_save_restore_cursor(Emulator.t(), list(char())) ::
+          {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
+  def handle_save_restore_cursor(emulator, [action | _]) do
+    case action do
+      # Save Cursor Position
+      ?s -> handle_s(emulator, [])
+      # Restore Cursor Position
+      ?u -> handle_u(emulator, [])
+      _ -> {:error, :invalid_action, emulator}
+    end
+  end
+
+  @doc "Handles Set Scrolling Region (DECSTBM - 'r')"
   @spec handle_r(Emulator.t(), list(integer())) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_r(emulator, params) do
-    height = emulator.height
-    top = Enum.at(params, 0, 1) - 1
-    bottom = Enum.at(params, 1, height) - 1
-    valid_region = top >= 0 and bottom < height and top < bottom
-    is_full_screen = top == 0 and bottom == height - 1
-    new_cursor = %{emulator.cursor | position: {0, 0}}
+    case params do
+      [] ->
+        # Reset scroll region to full screen
+        {:ok, %{emulator | scroll_region: nil}}
 
-    if valid_region and not is_full_screen do
-      {:ok, %{emulator | scroll_region: {top, bottom}, cursor: new_cursor}}
-    else
-      {:ok, %{emulator | scroll_region: nil, cursor: new_cursor}}
+      [top, bottom] when is_integer(top) and is_integer(bottom) ->
+        # Validate and set scroll region
+        if top > 0 and bottom <= emulator.height and top < bottom do
+          {:ok, %{emulator | scroll_region: {top, bottom}}}
+        else
+          {:error, :invalid_scroll_region, emulator}
+        end
+
+      _ ->
+        {:error, :invalid_params, emulator}
     end
   end
 end

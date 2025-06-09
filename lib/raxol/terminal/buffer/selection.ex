@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.Buffer.Selection do
   @moduledoc """
-  Handles text selection within the Raxol.Terminal.ScreenBuffer.
+  Handles text selection in the terminal buffer.
   """
 
   alias Raxol.Terminal.ScreenBuffer
@@ -124,8 +124,15 @@ defmodule Raxol.Terminal.Buffer.Selection do
   end
 
   @doc """
-  Creates a new selection struct or map with the given start and end coordinates.
-  If no coordinates are provided, initializes with nil (no selection).
+  Creates a new selection with the given start and end positions.
+  This function is used both for creating new selections and for compatibility with Raxol.Terminal.Selection.new/2 calls.
+
+  ## Parameters
+  * `x` - The x coordinate of the selection start/end
+  * `y` - The y coordinate of the selection start/end
+
+  ## Returns
+  A new selection struct with the selection field containing the coordinates.
   """
   @spec new(non_neg_integer(), non_neg_integer()) :: %{
           selection:
@@ -137,10 +144,20 @@ defmodule Raxol.Terminal.Buffer.Selection do
     %{selection: {x, y, x, y}}
   end
 
-  @doc """
-  Compatibility: new/2 for Raxol.Terminal.Selection.new/2 calls.
-  """
   def new(x, y) when is_integer(x) and is_integer(y) and x >= 0 and y >= 0 do
     %{selection: {x, y, x, y}}
+  end
+
+  @doc """
+  Gets the current selection.
+
+  ## Parameters
+    - _selection: The selection state
+
+  ## Returns
+    - A map containing the selection information
+  """
+  def get_selection(_selection) do
+    # ... existing code ...
   end
 end

@@ -29,12 +29,20 @@ defmodule Raxol.Terminal.TelemetryMetrics do
     [
       counter("raxol.terminal.focus_changed"),
       counter("raxol.terminal.resized"),
-      counter("raxol.terminal.mode_changed", tags: [:mode], tag_values: &__MODULE__.mode_tag/1),
+      counter("raxol.terminal.mode_changed",
+        tags: [:mode],
+        tag_values: &__MODULE__.mode_tag/1
+      ),
       counter("raxol.terminal.clipboard_event"),
       counter("raxol.terminal.selection_changed"),
       counter("raxol.terminal.paste_event"),
       counter("raxol.terminal.cursor_event"),
-      summary("raxol.terminal.scroll_event.delta", measurement: :delta, unit: :event, tags: [:direction], tag_values: &__MODULE__.scroll_tags/1)
+      summary("raxol.terminal.scroll_event.delta",
+        measurement: :delta,
+        unit: :event,
+        tags: [:direction],
+        tag_values: &__MODULE__.scroll_tags/1
+      )
     ]
   end
 

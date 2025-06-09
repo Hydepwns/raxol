@@ -135,48 +135,4 @@ defmodule Raxol.Terminal.Buffer.Updater do
       buffer
     end
   end
-
-  defp clear_char_at(buffer, x, y) do
-    if x < buffer.width and y < buffer.height do
-      # Check if the character to be cleared is a wide character
-      current_char_data = Raxol.Terminal.Buffer.Reader.get_char_at(buffer, x, y)
-      codepoint = current_char_data.codepoint
-
-      is_wide_char_segment =
-        (Raxol.Terminal.CharacterHandling.get_char_width(codepoint) == 2 and
-           current_char_data.segment == :wide_char_placeholder) or
-          (Raxol.Terminal.CharacterHandling.get_char_width(codepoint) == 2 and x > 0 and
-             Raxol.Terminal.Buffer.Reader.get_char_at(buffer, x - 1, y).segment ==
-               :wide_char_start)
-
-      # Default style for cleared cells
-      cleared_cell = Cell.new(" ") # Cleared cell with default attributes
-
-      # Update the line
-      line_to_update = Map.get(buffer.lines, y, Line.new(buffer.width))
-      updated_cells =
-        if is_wide_char_segment do
-          # If it's part of a wide character, we need to clear both cells
-          # and handle the case where x is the start or the placeholder of the wide char
-          if current_char_data.segment == :wide_char_start do
-            # Current char is the start, clear it and the placeholder to its right
-            Map.put(line_to_update.cells, x, cleared_cell)
-            |> Map.put(x + 1, cleared_cell)
-          else
-            # Current char is the placeholder, clear it and the start to its left
-            Map.put(line_to_update.cells, x, cleared_cell)
-            |> Map.put(x - 1, cleared_cell)
-          end
-        else
-          # Not a wide character, or a standalone character that happens to be wide
-          # but not marked as part of a multi-cell char (should be rare)
-          Map.put(line_to_update.cells, x, cleared_cell)
-        end
-
-      updated_line = %{line_to_update | cells: updated_cells}
-      %{buffer | lines: Map.put(buffer.lines, y, updated_line)}
-    else
-      buffer # x or y is out of bounds
-    end
-  end
 end

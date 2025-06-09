@@ -7,7 +7,6 @@ defmodule Raxol.Terminal.Config.Capabilities do
   """
 
   alias Raxol.Terminal.Config.Defaults
-  alias Raxol.System.EnvironmentAdapterBehaviour
   alias Raxol.System.EnvironmentAdapterImpl
 
   @doc """

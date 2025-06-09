@@ -11,7 +11,9 @@ defmodule Raxol.Terminal.Core do
     :memory_limit,
     :current_hyperlink_url,
     :tab_stops,
-    :scroll_region
+    :scroll_region,
+    mounted: false,
+    render_count: 0
   ]
 
   @type t :: %__MODULE__{

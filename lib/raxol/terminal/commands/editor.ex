@@ -103,7 +103,12 @@ defmodule Raxol.Terminal.Commands.Editor do
 
   * Updated emulator state
   """
-  @spec clear_screen(Emulator.t(), integer(), {non_neg_integer(), non_neg_integer()}, map()) :: Emulator.t()
+  @spec clear_screen(
+          Emulator.t(),
+          integer(),
+          {non_neg_integer(), non_neg_integer()},
+          map()
+        ) :: Emulator.t()
   def clear_screen(emulator, mode, cursor_pos, default_style) do
     buffer = Emulator.get_active_buffer(emulator)
     {cursor_x, cursor_y} = cursor_pos
@@ -111,12 +116,16 @@ defmodule Raxol.Terminal.Commands.Editor do
     case mode do
       # Clear from cursor to end of screen
       0 ->
-        new_buffer = Eraser.clear_screen_from(buffer, cursor_y, cursor_x, default_style)
+        new_buffer =
+          Eraser.clear_screen_from(buffer, cursor_y, cursor_x, default_style)
+
         Emulator.update_active_buffer(emulator, new_buffer)
 
       # Clear from beginning of screen to cursor
       1 ->
-        new_buffer = Eraser.clear_screen_to(buffer, cursor_y, cursor_x, default_style)
+        new_buffer =
+          Eraser.clear_screen_to(buffer, cursor_y, cursor_x, default_style)
+
         Emulator.update_active_buffer(emulator, new_buffer)
 
       # Clear entire screen
@@ -152,7 +161,12 @@ defmodule Raxol.Terminal.Commands.Editor do
 
   * Updated emulator state
   """
-  @spec clear_line(Emulator.t(), integer(), {non_neg_integer(), non_neg_integer()}, map()) :: Emulator.t()
+  @spec clear_line(
+          Emulator.t(),
+          integer(),
+          {non_neg_integer(), non_neg_integer()},
+          map()
+        ) :: Emulator.t()
   def clear_line(emulator, mode, cursor_pos, default_style) do
     buffer = Emulator.get_active_buffer(emulator)
     {cursor_x, cursor_y} = cursor_pos

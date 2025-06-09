@@ -18,8 +18,8 @@ defmodule Raxol.Terminal.Integration do
   alias Raxol.Terminal.Integration.Config
   alias Raxol.Terminal.Buffer.Manager
   alias Raxol.Terminal.Cursor.Manager
-  alias Raxol.Terminal.Renderer
-  alias Raxol.Terminal.Command.History
+  alias Raxol.Terminal.Command.Manager, as: CommandHistoryManager
+  alias Raxol.Terminal.Buffer.Scroll
 
   @doc """
   Initializes a new terminal integration state.
@@ -29,8 +29,8 @@ defmodule Raxol.Terminal.Integration do
     {:ok, buffer_manager} = Manager.new(opts)
     {:ok, cursor_manager} = Manager.new(opts)
     {:ok, renderer} = IntegrationRenderer.new(opts)
-    {:ok, scroll_buffer} = Buffer.Scroll.new(opts)
-    {:ok, command_history} = History.new(opts)
+    scroll_buffer = Scroll.new(1000)
+    command_history = CommandHistoryManager.new(opts)
 
     # Create initial state
     State.new(%{
@@ -73,7 +73,7 @@ defmodule Raxol.Terminal.Integration do
     state = Buffer.clear(state)
 
     # Clear screen
-    state = IntegrationRenderer.clear_screen(state)
+    IntegrationRenderer.clear_screen(state)
 
     # Render the updated state
     render(state)
@@ -121,7 +121,7 @@ defmodule Raxol.Terminal.Integration do
   Gets the current terminal configuration.
   """
   def get_config(%State{} = state) do
-    Config.get_config(state)
+    state.config
   end
 
   @doc """
@@ -169,8 +169,8 @@ defmodule Raxol.Terminal.Integration do
   @doc """
   Gets the current terminal dimensions.
   """
-  def get_dimensions(%State{} = state) do
-    IntegrationRenderer.get_dimensions(state)
+  def get_dimensions(%State{} = _state) do
+    IntegrationRenderer.get_dimensions()
   end
 
   @doc """

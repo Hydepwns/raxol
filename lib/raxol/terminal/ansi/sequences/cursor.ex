@@ -33,8 +33,8 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
     row = min(row, height - 1)
     col = min(col, width - 1)
 
-    # Update cursor position
-    %{emulator | cursor_x: col, cursor_y: row}
+    # Update cursor position (correctly update nested cursor struct)
+    %{emulator | cursor: %{emulator.cursor | position: {col, row}}}
   end
 
   @doc """
@@ -51,8 +51,9 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   """
   def move_cursor_up(emulator, n) do
     n = if n <= 0, do: 1, else: n
-    new_y = max(0, emulator.cursor_y - n)
-    %{emulator | cursor_y: new_y}
+    {cur_x, cur_y} = emulator.cursor.position
+    new_y = max(0, cur_y - n)
+    %{emulator | cursor: %{emulator.cursor | position: {cur_x, new_y}}}
   end
 
   @doc """
@@ -70,8 +71,9 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   def move_cursor_down(emulator, n) do
     n = if n <= 0, do: 1, else: n
     height = ScreenBuffer.get_height(emulator.active_buffer)
-    new_y = min(emulator.cursor_y + n, height - 1)
-    %{emulator | cursor_y: new_y}
+    {cur_x, cur_y} = emulator.cursor.position
+    new_y = min(cur_y + n, height - 1)
+    %{emulator | cursor: %{emulator.cursor | position: {cur_x, new_y}}}
   end
 
   @doc """
@@ -89,8 +91,9 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   def move_cursor_forward(emulator, n) do
     n = if n <= 0, do: 1, else: n
     width = ScreenBuffer.get_width(emulator.active_buffer)
-    new_x = min(emulator.cursor_x + n, width - 1)
-    %{emulator | cursor_x: new_x}
+    {cur_x, cur_y} = emulator.cursor.position
+    new_x = min(cur_x + n, width - 1)
+    %{emulator | cursor: %{emulator.cursor | position: {new_x, cur_y}}}
   end
 
   @doc """
@@ -107,8 +110,9 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   """
   def move_cursor_backward(emulator, n) do
     n = if n <= 0, do: 1, else: n
-    new_x = max(0, emulator.cursor_x - n)
-    %{emulator | cursor_x: new_x}
+    {cur_x, cur_y} = emulator.cursor.position
+    new_x = max(0, cur_x - n)
+    %{emulator | cursor: %{emulator.cursor | position: {new_x, cur_y}}}
   end
 
   @doc """
@@ -123,7 +127,10 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   Updated emulator state with saved cursor position
   """
   def save_cursor_position(emulator) do
-    %{emulator | cursor_saved: {emulator.cursor_x, emulator.cursor_y}}
+    %{
+      emulator
+      | cursor: %{emulator.cursor | saved_position: emulator.cursor.position}
+    }
   end
 
   @doc """
@@ -138,8 +145,8 @@ defmodule Raxol.Terminal.ANSI.Sequences.Cursor do
   Updated emulator state with restored cursor position
   """
   def restore_cursor_position(emulator) do
-    case emulator.cursor_saved do
-      {x, y} -> %{emulator | cursor_x: x, cursor_y: y}
+    case emulator.cursor.saved_position do
+      {x, y} -> %{emulator | cursor: %{emulator.cursor | position: {x, y}}}
       _ -> emulator
     end
   end

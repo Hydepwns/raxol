@@ -6,7 +6,8 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   @doc """
   Translates a character using the active character set.
   """
-  def translate_char(codepoint, active_set, single_shift) do
+  def translate_char(codepoint, active_set, single_shift)
+      when is_integer(codepoint) do
     set = single_shift || active_set
 
     case set do
@@ -28,6 +29,11 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  def translate_char(other, _active_set, _single_shift) do
+    # Optionally log a warning here
+    other
+  end
+
   @doc """
   Translates a string using the active character set.
   """
@@ -39,7 +45,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
   end
 
   # DEC Special Graphics character set translations
-  defp translate_dec_special_graphics(codepoint) do
+  defp translate_dec_special_graphics(codepoint) when is_integer(codepoint) do
     case codepoint do
       # Horizontal line
       ?_ -> ?─
@@ -109,8 +115,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  defp translate_dec_special_graphics(other) do
+    other
+  end
+
   # UK character set translations
-  defp translate_uk(codepoint) do
+  defp translate_uk(codepoint) when is_integer(codepoint) do
     case codepoint do
       # Pound sterling
       ?# -> ?£
@@ -118,11 +128,16 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  defp translate_uk(other) do
+    other
+  end
+
   # US character set translations (default ASCII)
-  defp translate_us(codepoint), do: codepoint
+  defp translate_us(codepoint) when is_integer(codepoint), do: codepoint
+  defp translate_us(other), do: other
 
   # Finnish character set translations
-  defp translate_finnish(codepoint) do
+  defp translate_finnish(codepoint) when is_integer(codepoint) do
     case codepoint do
       # A with umlaut
       ?[ -> ?Ä
@@ -140,8 +155,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  defp translate_finnish(other) do
+    other
+  end
+
   # French character set translations
-  defp translate_french(codepoint) do
+  defp translate_french(codepoint) when is_integer(codepoint) do
     case codepoint do
       # Pound sterling
       ?# -> ?£
@@ -163,8 +182,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  defp translate_french(other) do
+    other
+  end
+
   # French Canadian character set translations
-  defp translate_french_canadian(codepoint) do
+  defp translate_french_canadian(codepoint) when is_integer(codepoint) do
     case codepoint do
       # e with acute
       ?# -> ?é
@@ -186,8 +209,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  defp translate_french_canadian(other) do
+    other
+  end
+
   # German character set translations
-  defp translate_german(codepoint) do
+  defp translate_german(codepoint) when is_integer(codepoint) do
     case codepoint do
       # Section
       ?# -> ?§
@@ -211,8 +238,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  defp translate_german(other) do
+    other
+  end
+
   # Italian character set translations
-  defp translate_italian(codepoint) do
+  defp translate_italian(codepoint) when is_integer(codepoint) do
     case codepoint do
       # Pound sterling
       ?# -> ?£
@@ -234,8 +265,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  defp translate_italian(other) do
+    other
+  end
+
   # Norwegian/Danish character set translations
-  defp translate_norwegian_danish(codepoint) do
+  defp translate_norwegian_danish(codepoint) when is_integer(codepoint) do
     case codepoint do
       # Number sign
       ?# -> ?#
@@ -259,8 +294,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  defp translate_norwegian_danish(other) do
+    other
+  end
+
   # Portuguese character set translations
-  defp translate_portuguese(codepoint) do
+  defp translate_portuguese(codepoint) when is_integer(codepoint) do
     case codepoint do
       # Pound sterling
       ?# -> ?£
@@ -282,8 +321,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  defp translate_portuguese(other) do
+    other
+  end
+
   # Spanish character set translations
-  defp translate_spanish(codepoint) do
+  defp translate_spanish(codepoint) when is_integer(codepoint) do
     case codepoint do
       # n with tilde
       ?# -> ?ñ
@@ -305,8 +348,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  defp translate_spanish(other) do
+    other
+  end
+
   # Swedish character set translations
-  defp translate_swedish(codepoint) do
+  defp translate_swedish(codepoint) when is_integer(codepoint) do
     case codepoint do
       # Number sign
       ?# -> ?#
@@ -330,8 +377,12 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
     end
   end
 
+  defp translate_swedish(other) do
+    other
+  end
+
   # Swiss character set translations
-  defp translate_swiss(codepoint) do
+  defp translate_swiss(codepoint) when is_integer(codepoint) do
     case codepoint do
       # u with grave
       ?# -> ?ù
@@ -351,5 +402,9 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.Translator do
       ?} -> ?ô
       _ -> codepoint
     end
+  end
+
+  defp translate_swiss(other) do
+    other
   end
 end

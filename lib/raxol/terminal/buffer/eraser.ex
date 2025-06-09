@@ -23,7 +23,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           TextFormatting.text_style()
         ) :: ScreenBuffer.t()
   def clear_region(
-        %ScreenBuffer{} = buffer,
+        %{__struct__: _} = buffer,
         top,
         left,
         bottom,
@@ -82,7 +82,9 @@ defmodule Raxol.Terminal.Buffer.Eraser do
 
           if condition_result do
             # This row is in the vertical range, modify the horizontal segment
-            Raxol.Core.Runtime.Log.debug("[Eraser.clear_region] Processing row_idx: #{row_idx}")
+            Raxol.Core.Runtime.Log.debug(
+              "[Eraser.clear_region] Processing row_idx: #{row_idx}"
+            )
 
             # Log the captured values of clamped_left and clamped_right for this iteration
             Raxol.Core.Runtime.Log.debug(
@@ -137,6 +139,12 @@ defmodule Raxol.Terminal.Buffer.Eraser do
 
       %{buffer | cells: new_cells}
     end
+  end
+
+  def clear_region(buffer, _top, _left, _bottom, _right, _default_style)
+      when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 
   @doc """
@@ -302,6 +310,11 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     )
   end
 
+  def clear_screen(buffer, _default_style) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
+
   @doc """
   Erases parts of the current line based on cursor position and type.
   Type can be :to_end, :to_beginning, or :all.
@@ -314,7 +327,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           :to_end | :to_beginning | :all,
           TextFormatting.text_style()
         ) :: ScreenBuffer.t()
-  def erase_in_line(%ScreenBuffer{} = buffer, {col, row}, type, default_style) do
+  def erase_in_line(%{__struct__: _} = buffer, {col, row}, type, default_style) do
     case type do
       :to_end ->
         clear_line_from(buffer, row, col, default_style)
@@ -331,6 +344,12 @@ defmodule Raxol.Terminal.Buffer.Eraser do
     end
   end
 
+  def erase_in_line(buffer, _cursor_pos, _type, _default_style)
+      when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
+
   @doc """
   Erases parts of the display based on cursor position and type.
   Type can be :to_end, :to_beginning, or :all.
@@ -345,7 +364,7 @@ defmodule Raxol.Terminal.Buffer.Eraser do
           TextFormatting.text_style()
         ) :: ScreenBuffer.t()
   def erase_in_display(
-        %ScreenBuffer{} = buffer,
+        %{__struct__: _} = buffer,
         {col, row},
         type,
         default_style
@@ -364,5 +383,11 @@ defmodule Raxol.Terminal.Buffer.Eraser do
         # Ignore other types (like :scrollback which is handled elsewhere)
         buffer
     end
+  end
+
+  def erase_in_display(buffer, _cursor_pos, _type, _default_style)
+      when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 end

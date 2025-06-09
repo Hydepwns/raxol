@@ -170,204 +170,54 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
 
   @doc """
   Applies a text attribute to the style map.
+
+  ## Parameters
+
+  * `style` - The current text style
+  * `attribute` - The attribute to apply (e.g., :bold, :underline, etc.)
+
+  ## Returns
+
+  The updated text style with the new attribute applied.
   """
   @spec apply_attribute(text_style(), atom()) :: text_style()
   def apply_attribute(style, attribute) do
     case attribute do
-      :reset ->
-        new()
-
-      :double_width ->
-        set_double_width(style)
-
-      :double_height_top ->
-        set_double_height_top(style)
-
-      :double_height_bottom ->
-        set_double_height_bottom(style)
-
-      :no_double_width ->
-        %{style | double_width: false}
-
-      :no_double_height ->
-        %{style | double_height: :none}
-
-      :bold ->
-        %{style | bold: true}
-
-      :faint ->
-        %{style | faint: true}
-
-      :italic ->
-        %{style | italic: true}
-
-      :underline ->
-        %{style | underline: true}
-
-      :blink ->
-        %{style | blink: true}
-
-      :reverse ->
-        %{style | reverse: true}
-
-      :conceal ->
-        %{style | conceal: true}
-
-      :strikethrough ->
-        %{style | strikethrough: true}
-
-      :fraktur ->
-        %{style | fraktur: true}
-
-      :double_underline ->
-        %{style | double_underline: true}
-
-      :normal_intensity ->
-        %{style | bold: false, faint: false}
-
-      :no_italic_fraktur ->
-        %{style | italic: false, fraktur: false}
-
-      :no_underline ->
-        new_style = %{style | underline: false, double_underline: false}
-        new_style
-
-      :no_blink ->
-        %{style | blink: false}
-
-      :no_reverse ->
-        %{style | reverse: false}
-
-      :reveal ->
-        %{style | conceal: false}
-
-      :no_strikethrough ->
-        %{style | strikethrough: false}
-
-      :black ->
-        %{style | foreground: :black}
-
-      :red ->
-        %{style | foreground: :red}
-
-      :green ->
-        %{style | foreground: :green}
-
-      :yellow ->
-        %{style | foreground: :yellow}
-
-      :blue ->
-        %{style | foreground: :blue}
-
-      :magenta ->
-        %{style | foreground: :magenta}
-
-      :cyan ->
-        %{style | foreground: :cyan}
-
-      :white ->
-        %{style | foreground: :white}
-
-      :bg_black ->
-        %{style | background: :black}
-
-      :bg_red ->
-        %{style | background: :red}
-
-      :bg_green ->
-        %{style | background: :green}
-
-      :bg_yellow ->
-        %{style | background: :yellow}
-
-      :bg_blue ->
-        %{style | background: :blue}
-
-      :bg_magenta ->
-        %{style | background: :magenta}
-
-      :bg_cyan ->
-        %{style | background: :cyan}
-
-      :bg_white ->
-        %{style | background: :white}
-
-      :default_fg ->
-        %{style | foreground: nil}
-
-      :default_bg ->
-        %{style | background: nil}
-
-      :bright_black ->
-        %{style | foreground: :black}
-
-      :bright_red ->
-        %{style | foreground: :red}
-
-      :bright_green ->
-        %{style | foreground: :green}
-
-      :bright_yellow ->
-        %{style | foreground: :yellow}
-
-      :bright_blue ->
-        %{style | foreground: :blue}
-
-      :bright_magenta ->
-        %{style | foreground: :magenta}
-
-      :bright_cyan ->
-        %{style | foreground: :cyan}
-
-      :bright_white ->
-        %{style | foreground: :white}
-
-      :bg_bright_black ->
-        %{style | background: :black}
-
-      :bg_bright_red ->
-        %{style | background: :red}
-
-      :bg_bright_green ->
-        %{style | background: :green}
-
-      :bg_bright_yellow ->
-        %{style | background: :yellow}
-
-      :bg_bright_blue ->
-        %{style | background: :blue}
-
-      :bg_bright_magenta ->
-        %{style | background: :magenta}
-
-      :bg_bright_cyan ->
-        %{style | background: :cyan}
-
-      :bg_bright_white ->
-        %{style | background: :white}
-
-      :framed ->
-        %{style | framed: true}
-
-      :encircled ->
-        %{style | encircled: true}
-
-      :overlined ->
-        %{style | overlined: true}
-
-      :not_framed_encircled ->
-        %{style | framed: false, encircled: false}
-
-      :not_overlined ->
-        %{style | overlined: false}
-
-      _ ->
-        style
+      :reset -> new()
+      :double_width -> set_double_width(style)
+      :double_height_top -> set_double_height_top(style)
+      :double_height_bottom -> set_double_height_bottom(style)
+      :no_double_width -> %{style | double_width: false}
+      :no_double_height -> %{style | double_height: :none}
+      :bold -> %{style | bold: true}
+      :faint -> %{style | faint: true}
+      :italic -> %{style | italic: true}
+      :underline -> %{style | underline: true}
+      :blink -> %{style | blink: true}
+      :reverse -> %{style | reverse: true}
+      :conceal -> %{style | conceal: true}
+      :strikethrough -> %{style | strikethrough: true}
+      :fraktur -> %{style | fraktur: true}
+      :double_underline -> %{style | double_underline: true}
+      :normal_intensity -> %{style | bold: false, faint: false}
+      :no_italic_fraktur -> %{style | italic: false, fraktur: false}
+      :no_underline -> %{style | underline: false, double_underline: false}
+      _ -> style
     end
   end
 
   @doc """
   Applies a color attribute to the style map.
+
+  ## Parameters
+
+  * `style` - The current text style
+  * `type` - The type of color to apply (:foreground or :background)
+  * `color` - The color to apply
+
+  ## Returns
+
+  The updated text style with the new color applied.
   """
   @spec apply_color(text_style(), :foreground | :background, color()) ::
           text_style()
@@ -380,37 +230,22 @@ defmodule Raxol.Terminal.ANSI.TextFormatting do
   end
 
   @doc """
-  Calculates the effective width of a character based on the current style.
+  Calculates the effective width of a character based on its style.
+
+  ## Parameters
+
+  * `style` - The style map containing width attributes
+  * `_char` - The character to calculate width for (unused)
+
+  ## Returns
+
+  The effective width of the character (1 for normal, 2 for double width).
   """
   @spec effective_width(text_style(), String.t()) :: integer()
-  def effective_width(%{} = style, char) do
-    cond do
-      style.double_width ->
-        2
-
-      # Basic check for wide characters (CJK range approximation)
-      true ->
-        case String.to_charlist(char) do
-          [codepoint] ->
-            # CJK Unified Ideographs, Hangul Syllables, Hiragana, Katakana, etc.
-            # This is an approximation and might not cover all wide chars.
-            # CJK Unified Ideographs
-            # Hangul Syllables
-            # Hiragana, Katakana
-            # Fullwidth Forms
-            if (codepoint >= 0x4E00 and codepoint <= 0x9FFF) or
-                 (codepoint >= 0xAC00 and codepoint <= 0xD7A3) or
-                 (codepoint >= 0x3040 and codepoint <= 0x30FF) or
-                 (codepoint >= 0xFF00 and codepoint <= 0xFFEF) do
-              2
-            else
-              1
-            end
-
-          # Handle multi-grapheme characters or empty string as width 1 (or adjust as needed)
-          _ ->
-            1
-        end
+  def effective_width(style, _char) do
+    case Map.get(style, :double_width, false) do
+      true -> 2
+      _ -> 1
     end
   end
 

@@ -22,7 +22,12 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
            Raxol.Terminal.ANSI.TextFormatting.text_style()}
   def get_buffer_state(emulator) do
     active_buffer = Emulator.get_active_buffer(emulator)
-    cursor_pos = emulator.cursor
+
+    cursor_pos =
+      if is_map(emulator.cursor) and Map.has_key?(emulator.cursor, :position),
+        do: emulator.cursor.position,
+        else: {0, 0}
+
     blank_style = Raxol.Terminal.ANSI.TextFormatting.new()
     {active_buffer, cursor_pos, blank_style}
   end
@@ -119,10 +124,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
 
   # --- Parameter Validation Helpers ---
 
-  @doc """
-  Gets a parameter value with validation.
-  Returns the parameter value if valid, or the default value if invalid.
-  """
+  # Gets a parameter value with validation.
+  # Returns the parameter value if valid, or the default value if invalid.
   @spec get_valid_param(
           list(integer() | nil),
           non_neg_integer(),
@@ -143,15 +146,5 @@ defmodule Raxol.Terminal.Commands.EraseHandlers do
 
         default
     end
-  end
-
-  @doc """
-  Gets a parameter value with validation for boolean values (0 or 1).
-  Returns the parameter value if valid, or the default value if invalid.
-  """
-  @spec get_valid_bool_param(list(integer() | nil), non_neg_integer(), 0..1) ::
-          0..1
-  defp get_valid_bool_param(params, index, default) do
-    get_valid_param(params, index, default, 0, 1)
   end
 end

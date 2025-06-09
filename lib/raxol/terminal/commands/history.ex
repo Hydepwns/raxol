@@ -162,15 +162,20 @@ defmodule Raxol.Terminal.Commands.History do
   def maybe_add_to_history(emulator, 10) do
     # On newline, add the current buffer to history if not empty, then clear buffer
     cmd = String.trim(emulator.current_command_buffer)
+
     if cmd != "" do
-      updated_history = [cmd | emulator.command_history] |> Enum.take(emulator.max_command_history)
+      updated_history =
+        [cmd | emulator.command_history]
+        |> Enum.take(emulator.max_command_history)
+
       %{emulator | command_history: updated_history, current_command_buffer: ""}
     else
       %{emulator | current_command_buffer: ""}
     end
   end
 
-  def maybe_add_to_history(emulator, char) when is_integer(char) and char >= 32 and char <= 0x10FFFF do
+  def maybe_add_to_history(emulator, char)
+      when is_integer(char) and char >= 32 and char <= 0x10FFFF do
     # Append printable character to current_command_buffer
     new_buffer = emulator.current_command_buffer <> <<char::utf8>>
     %{emulator | current_command_buffer: new_buffer}
@@ -181,8 +186,15 @@ defmodule Raxol.Terminal.Commands.History do
   @doc """
   Updates the maximum size of the command history. Truncates the history if needed.
   """
-  def update_size(%__MODULE__{} = history, new_size) when is_integer(new_size) and new_size > 0 do
+  def update_size(%__MODULE__{} = history, new_size)
+      when is_integer(new_size) and new_size > 0 do
     commands = Enum.take(history.commands, new_size)
-    %{history | commands: commands, max_size: new_size, current_index: min(history.current_index, new_size - 1)}
+
+    %{
+      history
+      | commands: commands,
+        max_size: new_size,
+        current_index: min(history.current_index, new_size - 1)
+    }
   end
 end

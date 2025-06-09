@@ -172,4 +172,47 @@ defmodule Raxol.Terminal.ANSI.CharacterSets.StateManager do
       3 -> :g3
     end
   end
+
+  @doc """
+  Gets the mode manager from the emulator state.
+  """
+  def get_mode_manager(emulator) do
+    emulator.mode_manager
+  end
+
+  @doc """
+  Updates the mode manager in the emulator state.
+  """
+  def update_mode_manager(emulator, mode_manager) do
+    %{emulator | mode_manager: mode_manager}
+  end
+
+  @doc """
+  Gets the charset state from the emulator state.
+  """
+  def get_charset_state(emulator) do
+    emulator.charset_state
+  end
+
+  @doc """
+  Updates the charset state in the emulator state.
+  """
+  def update_charset_state(emulator, charset_state) do
+    %{emulator | charset_state: charset_state}
+  end
+
+  @doc """
+  Validates a character set state.
+  Returns :ok if valid, or {:error, reason} if invalid.
+  """
+  def validate_state(state) when is_map(state) do
+    required_keys = [:active, :single_shift, :g0, :g1, :g2, :g3, :gl, :gr]
+
+    case Enum.all?(required_keys, &Map.has_key?(state, &1)) do
+      true -> :ok
+      false -> {:error, :missing_required_keys}
+    end
+  end
+
+  def validate_state(_), do: {:error, :invalid_state}
 end

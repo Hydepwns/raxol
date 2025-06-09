@@ -9,6 +9,13 @@ defmodule Raxol.Terminal.Integration.Config do
   alias Raxol.Terminal.Integration.State
 
   @doc """
+  Gets the default configuration.
+  """
+  def default_config do
+    Raxol.Terminal.Config.Defaults.generate_default_config()
+  end
+
+  @doc """
   Updates the terminal configuration.
 
   Merges the provided `opts` into the current configuration and validates
@@ -39,7 +46,7 @@ defmodule Raxol.Terminal.Integration.Config do
   Resets the configuration to default values.
   """
   def reset_config(%State{} = state) do
-    default_config = Defaults.generate_default_config()
+    default_config = Raxol.Terminal.Config.Defaults.generate_default_config()
     state = apply_config_changes(state, default_config)
     {:ok, state}
   end
@@ -75,10 +82,10 @@ defmodule Raxol.Terminal.Integration.Config do
       state.buffer_manager
       |> update_buffer_manager(new_config)
 
-    # Update renderer with new colors
-    renderer =
-      state.renderer
-      |> update_renderer(new_config)
+    # Update emulator with new colors
+    emulator =
+      state.emulator
+      |> update_emulator(new_config)
 
     # Update scroll buffer with new size
     scroll_buffer =
@@ -93,27 +100,36 @@ defmodule Raxol.Terminal.Integration.Config do
     # Update the state with all changes
     State.update(state, %{
       buffer_manager: buffer_manager,
-      renderer: renderer,
+      emulator: emulator,
       scroll_buffer: scroll_buffer,
       command_history: command_history,
       config: new_config
     })
   end
 
-  defp update_buffer_manager(buffer_manager, config) do
-    Raxol.Terminal.Buffer.Manager.update_limits(
-      buffer_manager,
-      config.behavior.scrollback_limit,
-      config.memory_limit || 50 * 1024 * 1024
-    )
+  defp update_buffer_manager(buffer_manager_state, config) do
+    new_scrollback_limit = config.behavior.scrollback_limit
+    new_memory_limit = config.memory_limit || 50 * 1024 * 1024
+
+    updated_state =
+      buffer_manager_state
+      |> Raxol.Terminal.Buffer.Manager.Scrollback.set_height(
+        new_scrollback_limit
+      )
+      |> Raxol.Terminal.Buffer.Manager.Memory.set_limit(new_memory_limit)
+
+    {:ok, updated_state}
   end
 
-  defp update_renderer(renderer, config) do
-    Raxol.Terminal.Renderer.update_colors(renderer, config.ansi.colors)
+  defp update_emulator(emulator, config) do
+    Raxol.Terminal.Emulator.set_colors(emulator, config.ansi.colors)
   end
 
   defp update_scroll_buffer(scroll_buffer, config) do
-    Raxol.Terminal.Buffer.Scroll.update_size(scroll_buffer, config.behavior.scrollback_limit)
+    Raxol.Terminal.Buffer.Scroll.set_max_height(
+      scroll_buffer,
+      config.behavior.scrollback_limit
+    )
   end
 
   defp update_command_history(command_history, config) do

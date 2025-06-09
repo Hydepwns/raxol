@@ -11,7 +11,8 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   @doc """
   Moves the cursor to a specific position.
   """
-  @spec move_to(Emulator.t(), non_neg_integer(), non_neg_integer()) :: Emulator.t()
+  @spec move_to(Emulator.t(), non_neg_integer(), non_neg_integer()) ::
+          Emulator.t()
   def move_to(%Emulator{} = emulator, row, col) do
     new_cursor = Manager.move_to(emulator.cursor, row, col)
     %{emulator | cursor: new_cursor}
@@ -22,7 +23,9 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   """
   @spec move_up(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def move_up(%Emulator{} = emulator, lines) do
-    new_cursor = Manager.move_up(emulator.cursor, lines, emulator.mode_manager, emulator.scroll_region)
+    new_cursor =
+      Manager.move_up(emulator.cursor, lines, emulator.width, emulator.height)
+
     %{emulator | cursor: new_cursor}
   end
 
@@ -31,7 +34,9 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   """
   @spec move_down(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def move_down(%Emulator{} = emulator, lines) do
-    new_cursor = Manager.move_down(emulator.cursor, lines, emulator.mode_manager, emulator.scroll_region)
+    new_cursor =
+      Manager.move_down(emulator.cursor, lines, emulator.width, emulator.height)
+
     %{emulator | cursor: new_cursor}
   end
 
@@ -40,7 +45,14 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   """
   @spec move_left(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def move_left(%Emulator{} = emulator, cols) do
-    new_cursor = Manager.move_left(emulator.cursor, cols, emulator.mode_manager, emulator.scroll_region)
+    new_cursor =
+      Manager.move_left(
+        emulator.cursor,
+        cols,
+        emulator.mode_manager,
+        emulator.scroll_region
+      )
+
     %{emulator | cursor: new_cursor}
   end
 
@@ -49,7 +61,14 @@ defmodule Raxol.Terminal.Emulator.Cursor do
   """
   @spec move_right(Emulator.t(), non_neg_integer()) :: Emulator.t()
   def move_right(%Emulator{} = emulator, cols) do
-    new_cursor = Manager.move_right(emulator.cursor, cols, emulator.mode_manager, emulator.scroll_region)
+    new_cursor =
+      Manager.move_right(
+        emulator.cursor,
+        cols,
+        emulator.mode_manager,
+        emulator.scroll_region
+      )
+
     %{emulator | cursor: new_cursor}
   end
 

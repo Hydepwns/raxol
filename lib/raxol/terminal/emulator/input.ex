@@ -6,11 +6,7 @@ defmodule Raxol.Terminal.Emulator.Input do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Terminal.{
-    ScreenBuffer,
-    Input,
-    Emulator
-  }
+  alias Raxol.Terminal.Emulator
 
   @doc """
   Processes a key event.
@@ -149,7 +145,7 @@ defmodule Raxol.Terminal.Emulator.Input do
 
       :backspace ->
         # Remove last character from buffer
-        buffer = String.slice(emulator.current_command_buffer, 0..-2)
+        buffer = String.slice(emulator.current_command_buffer, 0..-2//-1)
         set_command_buffer(emulator, buffer)
 
       char when is_binary(char) ->

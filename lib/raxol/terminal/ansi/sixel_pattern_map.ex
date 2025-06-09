@@ -7,8 +7,6 @@ defmodule Raxol.Terminal.ANSI.SixelPatternMap do
   # The valid Sixel characters range from `?` (ASCII 63) to `~` (ASCII 126).
   # The pattern value is `char_code - 63`.
 
-  import Bitwise
-
   @doc """
   Gets the 6-bit integer pattern for a given Sixel character code.
 

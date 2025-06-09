@@ -52,7 +52,7 @@ defmodule Raxol.Terminal.Renderer do
   ```
   """
 
-  alias Raxol.Terminal.{Cell, ScreenBuffer}
+  alias Raxol.Terminal.ScreenBuffer
 
   @type t :: %__MODULE__{
           screen_buffer: ScreenBuffer.t(),
@@ -256,56 +256,38 @@ defmodule Raxol.Terminal.Renderer do
          theme,
          font_settings
        ) do
-    _styles = []
+    styles =
+      []
+      |> maybe_add_style(get_foreground_color(cell, theme), &"color: #{&1}")
+      |> maybe_add_style(
+        get_background_color(cell, theme),
+        &"background-color: #{&1}"
+      )
+      |> maybe_add_style(cell.style.bold, fn _ -> "font-weight: bold" end)
+      |> maybe_add_style(cell.style.italic, fn _ -> "font-style: italic" end)
+      |> maybe_add_style(cell.style.underline, fn _ ->
+        "text-decoration: underline"
+      end)
+      |> maybe_add_style(is_selected?(cell, selection, selections), fn _ ->
+        "background-color: #0000FF"
+      end)
+      |> maybe_add_style(validation && validation.error, fn _ ->
+        "color: #FF0000"
+      end)
+      |> maybe_add_style(validation && validation.warning, fn _ ->
+        "color: #FFA500"
+      end)
+      |> maybe_add_style(font_settings[:family], &"font-family: #{&1}")
+      |> maybe_add_style(font_settings[:size], &"font-size: #{&1}px")
 
-    # Add foreground color
-    if fg = get_foreground_color(cell, theme) do
-      _styles = ["color: #{fg}" | _styles]
-    end
-
-    # Add background color
-    if bg = get_background_color(cell, theme) do
-      _styles = ["background-color: #{bg}" | _styles]
-    end
-
-    # Add text styles
-    if cell.style.bold do
-      _styles = ["font-weight: bold" | _styles]
-    end
-
-    if cell.style.italic do
-      _styles = ["font-style: italic" | _styles]
-    end
-
-    if cell.style.underline do
-      _styles = ["text-decoration: underline" | _styles]
-    end
-
-    # Add selection highlight
-    if is_selected?(cell, selection, selections) do
-      _styles = ["background-color: #0000FF" | _styles]
-    end
-
-    # Add validation styling
-    if validation && validation.error do
-      _styles = ["color: #FF0000" | _styles]
-    end
-
-    if validation && validation.warning do
-      _styles = ["color: #FFA500" | _styles]
-    end
-
-    # Add font settings
-    if family = font_settings[:family] do
-      _styles = ["font-family: #{family}" | _styles]
-    end
-
-    if size = font_settings[:size] do
-      _styles = ["font-size: #{size}px" | _styles]
-    end
-
-    Enum.join(_styles, "; ")
+    Enum.join(styles, "; ")
   end
+
+  defp maybe_add_style(styles, condition, style_fn) when condition do
+    [style_fn.(condition) | styles]
+  end
+
+  defp maybe_add_style(styles, _condition, _style_fn), do: styles
 
   defp get_foreground_color(cell, theme) do
     case cell.style.foreground do

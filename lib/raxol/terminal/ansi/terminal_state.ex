@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.ANSI.TerminalState do
   @moduledoc """
-  Manages terminal state for the terminal emulator.
+  Manages the terminal state including cursor position, attributes, and modes.
   Handles saving and restoring terminal state, including cursor position,
   attributes, character sets, and screen modes.
   """
@@ -8,13 +8,13 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   @behaviour Raxol.Terminal.ANSI.TerminalStateBehaviour
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Terminal.ANSI.{CharacterSets, ScreenModes}
 
   @type saved_state :: %{
           cursor: {non_neg_integer(), non_neg_integer()},
           attributes: map(),
+          style: map(),
           charset_state: CharacterSets.charset_state(),
-          mode_manager: ScreenModes.screen_state(),
+          mode_manager: Raxol.Terminal.ModeManager.t(),
           scroll_region: {non_neg_integer(), non_neg_integer()} | nil,
           cursor_style: atom()
         }
@@ -36,12 +36,12 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   @impl Raxol.Terminal.ANSI.TerminalStateBehaviour
   def save_state(stack, state) do
     saved_state = %{
-      cursor: state.cursor,
-      style: state.style,
-      charset_state: state.charset_state,
-      mode_manager: state.mode_manager,
-      scroll_region: state.scroll_region,
-      cursor_style: state.cursor_style
+      cursor: Map.get(state, :cursor),
+      style: Map.get(state, :style),
+      charset_state: Map.get(state, :charset_state),
+      mode_manager: Map.get(state, :mode_manager),
+      scroll_region: Map.get(state, :scroll_region),
+      cursor_style: Map.get(state, :cursor_style)
     }
 
     [saved_state | stack]
@@ -100,20 +100,17 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
   @impl Raxol.Terminal.ANSI.TerminalStateBehaviour
   def apply_restored_data(emulator, nil, _fields_to_restore) do
     # No data to restore, return emulator unchanged
-    # Log
     Raxol.Core.Runtime.Log.debug("[ApplyRestore] No data to restore.")
     emulator
   end
 
   def apply_restored_data(emulator, restored_data, fields_to_restore) do
-    # Log
     Raxol.Core.Runtime.Log.debug(
       "[ApplyRestore] Restoring fields: #{inspect(fields_to_restore)} from data: #{inspect(restored_data)}"
     )
 
     Enum.reduce(fields_to_restore, emulator, fn field, acc_emulator ->
       if Map.has_key?(restored_data, field) do
-        # Log
         Raxol.Core.Runtime.Log.debug(
           "[ApplyRestore] Applying field: #{field} with value: #{inspect(Map.get(restored_data, field))}"
         )
@@ -124,4 +121,35 @@ defmodule Raxol.Terminal.ANSI.TerminalState do
       end
     end)
   end
+
+  @doc """
+  Pushes a state onto the stack.
+  Returns {:ok, updated_stack} or {:error, reason}.
+  """
+  @spec push(state_stack()) :: {:ok, state_stack()} | {:error, String.t()}
+  def push(stack) do
+    {:ok, stack}
+  end
+
+  @doc """
+  Pops a state from the stack.
+  Returns {:ok, {updated_stack, state}} or {:error, reason}.
+  """
+  @spec pop(state_stack()) ::
+          {:ok, {state_stack(), saved_state()}} | {:error, String.t()}
+  def pop([]) do
+    {:error, "Stack is empty"}
+  end
+
+  def pop([state | rest]) do
+    {:ok, {rest, state}}
+  end
+
+  @doc """
+  Gets the current state from the stack.
+  Returns the current state or nil if stack is empty.
+  """
+  @spec current(state_stack()) :: saved_state() | nil
+  def current([]), do: nil
+  def current([state | _]), do: state
 end

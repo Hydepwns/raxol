@@ -151,7 +151,7 @@ defmodule Raxol.Terminal.State.Manager do
   Saves the current state to the state stack.
   """
   def save_state(%__MODULE__{} = state) do
-    new_stack = TerminalState.push(state.state_stack, state)
+    new_stack = [state | state.state_stack]
     %{state | state_stack: new_stack}
   end
 
@@ -159,13 +159,12 @@ defmodule Raxol.Terminal.State.Manager do
   Restores the previous state from the state stack.
   """
   def restore_state(%__MODULE__{} = state) do
-    case TerminalState.pop(state.state_stack) do
-      {nil, new_stack} ->
-        %{state | state_stack: new_stack}
+    case state.state_stack do
+      [] ->
+        state
 
-      {saved_state, new_stack} ->
-        %{state | state_stack: new_stack}
-        |> Map.merge(saved_state)
+      [saved_state | new_stack] ->
+        %{saved_state | state_stack: new_stack}
     end
   end
 end

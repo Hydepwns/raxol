@@ -7,15 +7,14 @@ defmodule Raxol.Terminal.ModeManager do
   emulator state (like screen buffer switching or resizing).
   """
 
+  use GenServer
+  require Logger
+
   require Raxol.Core.Runtime.Log
 
   # Needed for functions modifying Emulator state
   alias Raxol.Terminal.Emulator
-  # Removed ANSI.TerminalState from here
-  alias Raxol.Terminal.{ScreenBuffer, Cursor.Manager, ANSI.TextFormatting}
-  alias Raxol.Terminal.ANSI.TerminalState
-
-  # alias Raxol.Terminal.ANSI.TerminalState # Keep this alias for the default value if not using Application.get_env directly
+  alias Raxol.Terminal.ANSI.TextFormatting
 
   @screen_buffer_module Application.compile_env(
                           :raxol,
@@ -89,7 +88,7 @@ defmodule Raxol.Terminal.ModeManager do
     132 => :deccolm_132,
     # 80 Column Mode
     80 => :deccolm_80
-    # TODO: Add others if needed (e.g., KAM - Keyboard Action Mode)
+    # KAM (Keyboard Action Mode) could be added here if needed in the future.
   }
 
   # Refined struct based on common modes
@@ -150,6 +149,11 @@ defmodule Raxol.Terminal.ModeManager do
       focus_events_enabled: false,
       bracketed_paste_mode: false
     }
+  end
+
+  @impl GenServer
+  def init(_init_arg) do
+    {:ok, new()}
   end
 
   # --- Mode Lookup ---
@@ -673,7 +677,7 @@ defmodule Raxol.Terminal.ModeManager do
   end
 
   # type can be :full or :cursor_only
-  defp restore_terminal_state(emulator, type \\ :full) do
+  defp restore_terminal_state(emulator, type) do
     # Fetch the implementation module at runtime
     terminal_state_module =
       Application.get_env(
@@ -727,72 +731,5 @@ defmodule Raxol.Terminal.ModeManager do
 
       emulator
     end
-  end
-
-  # Example: DECOM - Origin Mode (?6)
-  defp handle_decpm_set(state, :origin_mode),
-    do: %__MODULE__{state | origin_mode: true}
-
-  defp handle_decpm_reset(state, :origin_mode),
-    do: %__MODULE__{state | origin_mode: false}
-
-  # Example: DECAWM - Autowrap Mode (?7) - Assuming it's a direct field
-  defp handle_decpm_set(state, :auto_wrap),
-    do: %__MODULE__{state | auto_wrap: true}
-
-  defp handle_decpm_reset(state, :auto_wrap),
-    do: %__MODULE__{state | auto_wrap: false}
-
-  # Add other DEC private modes here, ensuring they map to actual struct fields
-  # For mouse modes, they typically affect state.mouse_report_mode
-
-  # Generic fallback for modes not directly mapped to a boolean field,
-  # or for those that need more complex logic (like mouse modes affecting mouse_report_mode)
-  # Ensure this doesn't try to set unknown keys if it's just a struct.
-  # This part is speculative without seeing the original function.
-  # If there was a dynamic `Map.put` before, it needs to be careful.
-  # For specific mouse modes like :x10_mouse, :button_event_mouse, etc.,
-  # they should set state.mouse_report_mode to the appropriate atom
-  # e.g., :normal, :cell_motion, :all_motion
-
-  defp handle_decpm_set(state, :x10_mouse) do
-    %__MODULE__{state | mouse_report_mode: :normal}
-  end
-
-  defp handle_decpm_reset(state, :x10_mouse) do
-    # Resetting x10 usually means no mouse reporting or a default
-    %__MODULE__{state | mouse_report_mode: nil}
-  end
-
-  # For ?1002h
-  defp handle_decpm_set(state, :button_event_mouse) do
-    %__MODULE__{state | mouse_report_mode: :cell_motion}
-  end
-
-  defp handle_decpm_reset(state, :button_event_mouse) do
-    %__MODULE__{state | mouse_report_mode: nil}
-  end
-
-  # For ?1003h
-  defp handle_decpm_set(state, :any_event_mouse) do
-    %__MODULE__{state | mouse_report_mode: :all_motion}
-  end
-
-  defp handle_decpm_reset(state, :any_event_mouse) do
-    %__MODULE__{state | mouse_report_mode: nil}
-  end
-
-  # Ensure a catch-all or proper handling for unmapped modes if necessary
-  defp handle_decpm_set(state, _unknown_mode) do
-    # Log this event, as it indicates an unhandled DEC private mode set.
-    # Raxol.Core.Runtime.Log.warn("Attempted to set unhandled DEC private mode: #{inspect(unknown_mode)}")
-    # Return state unchanged
-    state
-  end
-
-  defp handle_decpm_reset(state, _unknown_mode) do
-    # Raxol.Core.Runtime.Log.warn("Attempted to reset unhandled DEC private mode: #{inspect(unknown_mode)}")
-    # Return state unchanged
-    state
   end
 end

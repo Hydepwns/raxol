@@ -19,7 +19,7 @@ defmodule Raxol.Terminal.Buffer.LineEditor do
           integer(),
           TextFormatting.text_style()
         ) :: ScreenBuffer.t()
-  def insert_lines(%ScreenBuffer{} = buffer, row, count, default_style)
+  def insert_lines(%{__struct__: _} = buffer, row, count, default_style)
       when row >= 0 and count > 0 do
     # Ensure row is within bounds
     eff_row = min(row, buffer.height - 1)
@@ -41,8 +41,10 @@ defmodule Raxol.Terminal.Buffer.LineEditor do
     %{buffer | cells: new_cells}
   end
 
-  # No-op for invalid input
-  def insert_lines(buffer, _row, _count, _default_style), do: buffer
+  def insert_lines(buffer, _row, _count, _blank_cell) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
 
   @doc """
   Deletes a specified number of lines starting from the given row index.

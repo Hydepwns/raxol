@@ -189,7 +189,9 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
                   # Only Pc provided
                   [pc] ->
                     if pc >= 0 and pc <= SixelPalette.max_colors() do
-                      Raxol.Core.Runtime.Log.debug("Sixel Parser: Selecting Color ##{pc}")
+                      Raxol.Core.Runtime.Log.debug(
+                        "Sixel Parser: Selecting Color ##{pc}"
+                      )
 
                       Raxol.Core.Runtime.Log.debug(
                         "Sixel Parser: Setting color_index to #{pc} before recursive call."
@@ -244,7 +246,10 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
             # Use local helper
             case consume_integer_params(rest) do
               {:ok, [pn], remaining_data} when pn > 0 ->
-                Raxol.Core.Runtime.Log.debug("Sixel Parser: Found Repeat Command !#{pn}")
+                Raxol.Core.Runtime.Log.debug(
+                  "Sixel Parser: Found Repeat Command !#{pn}"
+                )
+
                 # We only set the repeat count here.
                 # The *next* character processed will use this count.
                 parse(remaining_data, %{state | repeat_count: pn})

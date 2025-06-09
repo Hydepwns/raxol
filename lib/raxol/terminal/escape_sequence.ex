@@ -101,7 +101,10 @@ defmodule Raxol.Terminal.EscapeSequence do
     if charset_atom do
       {:ok, {:designate_charset, target_g_set, charset_atom}, rest}
     else
-      Raxol.Core.Runtime.Log.debug("Unknown charset code in SCS: #{charset_code}")
+      Raxol.Core.Runtime.Log.debug(
+        "Unknown charset code in SCS: #{charset_code}"
+      )
+
       {:error, :invalid_sequence, <<charset_code, rest::binary>>}
     end
   end
@@ -190,7 +193,10 @@ defmodule Raxol.Terminal.EscapeSequence do
         )
 
         params = parse_params(params_str)
-        Raxol.Core.Runtime.Log.debug("Parsed DEC Private params: #{inspect(params)}")
+
+        Raxol.Core.Runtime.Log.debug(
+          "Parsed DEC Private params: #{inspect(params)}"
+        )
 
         # Calculate the length of the matched prefix ('?' + params + final byte)
         prefix_len =
@@ -198,7 +204,11 @@ defmodule Raxol.Terminal.EscapeSequence do
 
         remaining = String.slice(data, prefix_len..-1)
         result = dispatch_csi_dec_private(params, final_byte, remaining)
-        Raxol.Core.Runtime.Log.debug("Result from dispatch_csi_dec_private: #{inspect(result)}")
+
+        Raxol.Core.Runtime.Log.debug(
+          "Result from dispatch_csi_dec_private: #{inspect(result)}"
+        )
+
         # Return the result
         result
 
@@ -207,7 +217,10 @@ defmodule Raxol.Terminal.EscapeSequence do
 
       # If DEC private fails, try standard CSI format: CSI P... F
       _ ->
-        Raxol.Core.Runtime.Log.debug("DEC Private did not match, trying standard CSI.")
+        Raxol.Core.Runtime.Log.debug(
+          "DEC Private did not match, trying standard CSI."
+        )
+
         # Regex captures: 1=params, 2=final byte
         case Regex.run(~r/^([\d;]*)((?:[@A-Z]|[\\[\\^_`a-z{}~]))/, data,
                capture: :all_but_first
@@ -222,7 +235,11 @@ defmodule Raxol.Terminal.EscapeSequence do
             prefix_len = String.length(params_str) + String.length(final_byte)
             remaining = String.slice(data, prefix_len..-1)
             result = dispatch_csi(params, final_byte, remaining)
-            Raxol.Core.Runtime.Log.debug("Result from dispatch_csi: #{inspect(result)}")
+
+            Raxol.Core.Runtime.Log.debug(
+              "Result from dispatch_csi: #{inspect(result)}"
+            )
+
             result
 
           # If DEC private also fails, check for incompleteness or invalid sequence
@@ -425,7 +442,10 @@ defmodule Raxol.Terminal.EscapeSequence do
     if mode_code do
       {:ok, {:set_mode, mode, mode_code, set?}, remaining}
     else
-      Raxol.Core.Runtime.Log.warning_with_context("Set/Reset Mode sequence missing mode code: #{mode} #{Enum.join(params, ";")}", %{})
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "Set/Reset Mode sequence missing mode code: #{mode} #{Enum.join(params, ";")}",
+        %{}
+      )
 
       {:error, :invalid_sequence, remaining}
     end
@@ -446,7 +466,10 @@ defmodule Raxol.Terminal.EscapeSequence do
   # Unknown standard CSI
   # Mark params as unused
   defp dispatch_csi_unknown(_params, final_byte, remaining) do
-    Raxol.Core.Runtime.Log.debug("Unknown standard CSI sequence: CSI ... #{final_byte}")
+    Raxol.Core.Runtime.Log.debug(
+      "Unknown standard CSI sequence: CSI ... #{final_byte}"
+    )
+
     {:error, :unknown_sequence, final_byte <> remaining}
   end
 
@@ -462,10 +485,4 @@ defmodule Raxol.Terminal.EscapeSequence do
 
     {:ok, {:set_mode, :dec_private, mode_code, action}, remaining}
   end
-
-  # --- Removed old process_* functions ---
-  # def process_cursor_movement(...)
-  # def process_cursor_style(...)
-  # def process_terminal_mode(...)
-  # def parse_sequence(...) # Replaced by parse/1
 end

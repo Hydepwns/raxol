@@ -103,7 +103,7 @@ defmodule Raxol.Terminal.Command.Manager do
 
       # Backspace key - remove last character
       %{key: :backspace} ->
-        new_buffer = String.slice(manager.current_command_buffer, 0..-2)
+        new_buffer = String.slice(manager.current_command_buffer, 0..-2//-1)
         {update_command_buffer(manager, new_buffer), nil}
 
       # Regular character - append to buffer

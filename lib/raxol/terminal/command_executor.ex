@@ -12,12 +12,8 @@ defmodule Raxol.Terminal.CommandExecutor do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.Commands.Screen
   alias Raxol.Terminal.Commands.Parser
   alias Raxol.Terminal.Commands.Executor
-  alias Raxol.Terminal.Commands.CSIHandlers
-  alias Raxol.Terminal.Commands.OSCHandlers
-  alias Raxol.Terminal.Commands.DCSHandlers
   alias Raxol.Terminal.ModeManager
 
   # Display a compile-time deprecation warning
@@ -120,70 +116,6 @@ defmodule Raxol.Terminal.CommandExecutor do
   end
 
   @doc """
-  Clears the screen or a part of it based on the mode parameter.
-
-  DEPRECATED: Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead.
-  """
-  @spec clear_screen(Emulator.t(), integer()) :: Emulator.t()
-  def clear_screen(emulator, mode) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Raxol.Terminal.CommandExecutor.clear_screen/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead.",
-      []
-    )
-
-    Screen.clear_screen(emulator, mode)
-  end
-
-  @doc """
-  Clears a line or part of a line based on the mode parameter.
-
-  DEPRECATED: Use Raxol.Terminal.Commands.Screen.clear_line/2 instead.
-  """
-  @spec clear_line(Emulator.t(), integer()) :: Emulator.t()
-  def clear_line(emulator, mode) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Raxol.Terminal.CommandExecutor.clear_line/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead.",
-      []
-    )
-
-    Screen.clear_line(emulator, mode)
-  end
-
-  @doc """
-  Inserts blank lines at the current cursor position.
-
-  DEPRECATED: Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead.
-  """
-  @spec insert_line(Emulator.t(), integer()) :: Emulator.t()
-  def insert_line(emulator, count) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Raxol.Terminal.CommandExecutor.insert_line/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.insert_lines/2 instead.",
-      []
-    )
-
-    Screen.insert_lines(emulator, count)
-  end
-
-  @doc """
-  Deletes lines at the current cursor position.
-
-  DEPRECATED: Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead.
-  """
-  @spec delete_line(Emulator.t(), integer()) :: Emulator.t()
-  def delete_line(emulator, count) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Raxol.Terminal.CommandExecutor.delete_line/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.delete_lines/2 instead.",
-      []
-    )
-
-    Screen.delete_lines(emulator, count)
-  end
-
-  @doc """
   Executes an OSC (Operating System Command).
 
   DEPRECATED: Use Raxol.Terminal.Commands.Executor.execute_osc_command/2 instead.
@@ -231,37 +163,5 @@ defmodule Raxol.Terminal.CommandExecutor do
       final_byte,
       payload
     )
-  end
-
-  @doc """
-  Erase Display handler.
-
-  DEPRECATED: Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead.
-  """
-  @spec handle_ed(Emulator.t(), integer()) :: Emulator.t()
-  def handle_ed(emulator, mode \\ 0) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Raxol.Terminal.CommandExecutor.handle_ed/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.clear_screen/2 instead.",
-      []
-    )
-
-    Raxol.Terminal.Commands.Screen.clear_screen(emulator, mode)
-  end
-
-  @doc """
-  Erase Line handler.
-
-  DEPRECATED: Use Raxol.Terminal.Commands.Screen.clear_line/2 instead.
-  """
-  @spec handle_el(Emulator.t(), integer()) :: Emulator.t()
-  def handle_el(emulator, mode \\ 0) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "Raxol.Terminal.CommandExecutor.handle_el/2 is deprecated. " <>
-        "Use Raxol.Terminal.Commands.Screen.clear_line/2 instead.",
-      []
-    )
-
-    Raxol.Terminal.Commands.Screen.clear_line(emulator, mode)
   end
 end

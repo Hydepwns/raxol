@@ -41,8 +41,16 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
       # Use provided attributes if they exist, otherwise use calculated dimensions.
       pan = Map.get(attrs, :aspect_num, 1)
       pad = Map.get(attrs, :aspect_den, 1)
-      ph = Map.get(attrs, :width) || width
-      pv = Map.get(attrs, :height) || height
+
+      ph =
+        if is_map(attrs),
+          do: Map.get(attrs, :width),
+          else: if(is_tuple(attrs), do: elem(attrs, 0), else: width)
+
+      pv =
+        if is_map(attrs),
+          do: Map.get(attrs, :height),
+          else: if(is_tuple(attrs), do: elem(attrs, 1), else: height)
 
       # Initial DCS sequence with raster attributes
       dcs_start =
@@ -68,7 +76,11 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
                 Integer.to_string(sixel_b)::binary>>
 
             {:error, _} ->
-              Raxol.Core.Runtime.Log.warning_with_context("Sixel Render: Color index #{color_index} not found in palette.", %{})
+              Raxol.Core.Runtime.Log.warning_with_context(
+                "Sixel Render: Color index #{color_index} not found in palette.",
+                %{}
+              )
+
               ""
           end
         end)
@@ -268,11 +280,13 @@ defmodule Raxol.Terminal.ANSI.SixelRenderer do
   end
 
   # Helper for safe palette access
-  defp get_palette_color(palette, index) when is_integer(index) and index >= 0 and index <= 255 do
+  defp get_palette_color(palette, index)
+       when is_integer(index) and index >= 0 and index <= 255 do
     case Map.get(palette, index) do
       nil -> {:error, :invalid_color_index}
       color -> {:ok, color}
     end
   end
+
   defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
 end

@@ -21,7 +21,9 @@ defmodule Raxol.Terminal.Config.Utils do
     end)
   end
 
-  def deep_merge(_, right), do: right
+  def deep_merge(_, right) when is_map(right), do: right
+
+  def deep_merge(_, _), do: %{}
 
   @doc """
   Converts a keyword list or map of potentially nested options into a nested map.
