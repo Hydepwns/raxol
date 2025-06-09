@@ -14,7 +14,10 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
       iex> EventHandlers.handle_focus_change({:focus_change, nil, "search_button"})
       :ok
   """
-  def handle_focus_change({:focus_change, _old_element, new_element}, user_preferences_pid_or_name) do
+  def handle_focus_change(
+        {:focus_change, _old_element, new_element},
+        user_preferences_pid_or_name
+      ) do
     if Preferences.get_option(:screen_reader, user_preferences_pid_or_name) do
       # Get accessible name/label for the element if metadata exists
       announcement = Metadata.get_accessible_name(new_element)
@@ -29,7 +32,11 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
     :ok
   end
 
-  def handle_focus_change(event), do: raise "handle_focus_change/2 must be called with a user_preferences_pid_or_name."
+  def handle_focus_change(_event),
+    do:
+      raise(
+        "handle_focus_change/2 must be called with a user_preferences_pid_or_name."
+      )
 
   @doc """
   Handle preference changes triggered internally or via EventManager.
@@ -83,7 +90,7 @@ defmodule Raxol.Core.Accessibility.EventHandlers do
   if Code.ensure_loaded?(Raxol.UI.Theming.Theme) do
     defimpl String.Chars, for: Raxol.UI.Theming.Theme do
       def to_string(theme) do
-        "Theme: #{theme.name} (id: #{theme.id})"
+        "Theme: #{theme.name}"
       end
     end
   end

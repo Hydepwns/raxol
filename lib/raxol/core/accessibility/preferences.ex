@@ -7,9 +7,6 @@ defmodule Raxol.Core.Accessibility.Preferences do
   alias Raxol.Core.UserPreferences
   require Raxol.Core.Runtime.Log
 
-  # Key prefix for accessibility preferences
-  @pref_prefix "accessibility"
-
   # Default UserPreferences name
   @default_prefs_name Raxol.Core.UserPreferences
 
@@ -27,7 +24,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
   defp pref_key(key), do: [:accessibility, key]
 
   # Helper to get preference using pid_or_name or default
-  defp get_pref(key, default, pid_or_name \\ nil) do
+  defp get_pref(key, default, pid_or_name) do
     target_pid_or_name = pid_or_name || @default_prefs_name
     # Pass the list path directly
     value = UserPreferences.get(pref_key(key), target_pid_or_name)
@@ -44,7 +41,7 @@ defmodule Raxol.Core.Accessibility.Preferences do
   end
 
   # Helper to set preference using pid_or_name or default
-  defp set_pref(key, value, pid_or_name \\ nil) do
+  defp set_pref(key, value, pid_or_name) do
     target_pid_or_name = pid_or_name || @default_prefs_name
     UserPreferences.set(pref_key(key), value, target_pid_or_name)
   end
@@ -68,57 +65,8 @@ defmodule Raxol.Core.Accessibility.Preferences do
     if Mix.env() == :test do
       # Use direct access for tests
       target_pid_or_name = user_preferences_pid_or_name || @default_prefs_name
-
-      case key do
-        :high_contrast ->
-          # Check if we've set this specific value in the test
-          case UserPreferences.get(pref_key(key), target_pid_or_name) do
-            true -> true
-            false -> false
-            nil -> default || false
-            # Ignore process name or other non-boolean values
-            _ -> default || false
-          end
-
-        :large_text ->
-          case UserPreferences.get(pref_key(key), target_pid_or_name) do
-            true -> true
-            false -> false
-            nil -> default || false
-            _ -> default || false
-          end
-
-        :reduced_motion ->
-          case UserPreferences.get(pref_key(key), target_pid_or_name) do
-            true -> true
-            false -> false
-            nil -> default || false
-            _ -> default || false
-          end
-
-        :screen_reader ->
-          case UserPreferences.get(pref_key(key), target_pid_or_name) do
-            true -> true
-            false -> false
-            # Default true for screen reader
-            nil -> default || true
-            _ -> default || true
-          end
-
-        :enabled ->
-          case UserPreferences.get(pref_key(key), target_pid_or_name) do
-            true -> true
-            false -> false
-            # Default true for enabled
-            nil -> default || true
-            _ -> default || true
-          end
-
-        _ ->
-          # For other keys, just get the value directly
-          value = UserPreferences.get(pref_key(key), target_pid_or_name)
-          if value == nil, do: default, else: value
-      end
+      value = UserPreferences.get(pref_key(key), target_pid_or_name)
+      if value == nil, do: default, else: value
     else
       # Use the regular get_pref for non-test environments
       get_pref(key, default, user_preferences_pid_or_name)
@@ -275,130 +223,28 @@ defmodule Raxol.Core.Accessibility.Preferences do
 
   # --- Private Functions ---
 
-  # Default accessibility options
-  defp default_options do
-    [
-      # Accessibility enabled by default
-      enabled: true,
-      # Screen reader support enabled by default
-      screen_reader: true,
-      high_contrast: false,
-      reduced_motion: false,
-      keyboard_focus: true,
-      large_text: false,
-      silence_announcements: false
-    ]
-  end
+  def handle_preference_changed(
+        {key_path, value},
+        _user_preferences_pid_or_name
+      ) do
+    # When a preference changes, dispatch a general event and specific events
+    # This allows different parts of the application to react to specific changes
+    # e.g., the color system reacting to high_contrast changes
+    EventManager.dispatch({:preference_changed, key_path, value})
 
-  # Loading options (merge defaults, preferences, explicit opts)
-  defp load_options(opts, user_preferences_pid_or_name) do
-    # Start with defaults
-    base_opts = default_options()
+    case key_path do
+      [:accessibility, :high_contrast] ->
+        EventManager.dispatch({:accessibility_high_contrast, value})
 
-    # Merge with any existing preferences
-    existing_prefs =
-      Enum.reduce(base_opts, %{}, fn {key, _default}, acc ->
-        value = get_option(key, user_preferences_pid_or_name)
-        Map.put(acc, key, value)
-      end)
+      [:accessibility, :reduced_motion] ->
+        # Example of dispatching an event for reduced motion
+        EventManager.dispatch({:accessibility_reduced_motion, value})
 
-    # Merge with explicit options
-    merged_opts = Map.merge(existing_prefs, Map.new(opts))
-
-    # Send preferences applied event
-    send(self(), {:preferences_applied})
-
-    merged_opts
-  end
-
-  # Handles preference changes triggered internally or via EventManager
-  def handle_preference_changed(event, user_preferences_pid_or_name \\ nil) do
-    case event do
-      # Case 1: Direct call from set_* functions ({key_path_list, value})
-      {key_path, value} when is_list(key_path) ->
-        pref_root = Enum.at(key_path, 0)
-        option_key = Enum.at(key_path, 1)
-
-        if pref_root == :accessibility and is_atom(option_key) do
-          Raxol.Core.Runtime.Log.debug(
-            "[Accessibility] Handling internal pref change: #{option_key} = #{inspect(value)} via pid: #{inspect(user_preferences_pid_or_name)}"
-          )
-
-          # Trigger side effects
-          trigger_side_effects(option_key, value, user_preferences_pid_or_name)
-        else
-          Raxol.Core.Runtime.Log.debug(
-            "[Accessibility] Ignoring internal pref change (non-accessibility key path): #{inspect(key_path)}"
-          )
-        end
-
-      # Case 2: EventManager call ({:preference_changed, key_path_list, value})
-      {:preference_changed, key_path, new_value} ->
-        pref_root = Enum.at(List.wrap(key_path), 0)
-        option_key = Enum.at(List.wrap(key_path), 1)
-
-        if pref_root == :accessibility and is_atom(option_key) do
-          Raxol.Core.Runtime.Log.debug(
-            "[Accessibility] Handling event pref change: #{option_key} = #{inspect(new_value)}"
-          )
-
-          # Trigger side effects
-          trigger_side_effects(
-            option_key,
-            new_value,
-            user_preferences_pid_or_name
-          )
-        else
-          Raxol.Core.Runtime.Log.debug(
-            "[Accessibility] Ignoring preference change event (not accessibility): #{inspect(key_path)}"
-          )
-        end
-
-      # Case 3: Catch-all for unexpected event formats
-      _ ->
-        Raxol.Core.Runtime.Log.warning_with_context("[Accessibility] Received unexpected event format in handle_preference_changed: #{inspect(event)}", %{})
-    end
-
-    :ok
-  end
-
-  # Handles side effects when preference changes happen
-  defp trigger_side_effects(option_key, value, user_preferences_pid_or_name) do
-    # Common event dispatch pattern
-    dispatch_event = fn event ->
-      EventManager.dispatch(event)
-      Process.put(event, value)
-    end
-
-    case option_key do
-      :high_contrast ->
-        Raxol.Core.Accessibility.ThemeIntegration.handle_high_contrast(
-          {:accessibility_high_contrast, value}
-        )
-
-        dispatch_event.({:accessibility_high_contrast_changed, value})
-
-      :reduced_motion ->
-        Raxol.Core.Accessibility.ThemeIntegration.handle_reduced_motion(
-          {:accessibility_reduced_motion, value}
-        )
-
-        dispatch_event.({:accessibility_reduced_motion_changed, value})
-        Raxol.Core.Runtime.Log.info("[Accessibility] Reduced motion set to: #{value}")
-
-      :large_text ->
-        Raxol.Core.Accessibility.ThemeIntegration.handle_large_text(
-          {:accessibility_large_text, value}
-        )
-
-        dispatch_event.({:accessibility_large_text_changed, value})
-
-        # Send text scale updated event
+      [:accessibility, :large_text] ->
+        # Example of dispatching an event for large text
         scale = if value, do: 1.5, else: 1.0
+        EventManager.dispatch({:text_scale_updated, self(), scale})
 
-        send(self(), {:text_scale_updated, self(), scale})
-
-      # No side effects for other preferences
       _ ->
         :ok
     end

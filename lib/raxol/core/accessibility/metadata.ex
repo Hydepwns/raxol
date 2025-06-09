@@ -112,7 +112,7 @@ defmodule Raxol.Core.Accessibility.Metadata do
         metadata = get_element_metadata(element)
 
         if metadata,
-          do: Map.get(metadata, :label) || "Element #{element}",
+          do: safe_map_get(metadata, :label) || "Element #{element}",
           else: nil
 
       is_map(element) && Map.has_key?(element, :label) ->
@@ -124,12 +124,16 @@ defmodule Raxol.Core.Accessibility.Metadata do
         metadata = get_element_metadata(element.id)
 
         if metadata,
-          do: Map.get(metadata, :label) || "Element #{element.id}",
+          do: safe_map_get(metadata, :label) || "Element #{element.id}",
           else: nil
 
       true ->
         # Default fallback
         "Focus changed"
     end
+  end
+
+  defp safe_map_get(data, key, default \\ nil) do
+    if is_map(data), do: Map.get(data, key, default), else: default
   end
 end

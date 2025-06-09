@@ -28,10 +28,12 @@ defmodule Raxol.Core.Accessibility.Announcements do
       iex> Announcements.announce("Error occurred", priority: :high, interrupt: true)
       :ok
   """
-  def announce(message, opts \\ [], user_preferences_pid_or_name) when is_binary(message) do
+  def announce(message, opts \\ [], user_preferences_pid_or_name)
+      when is_binary(message) do
     if is_nil(user_preferences_pid_or_name) do
       raise "Accessibility.Announcements.announce/3 must be called with a user_preferences_pid_or_name."
     end
+
     disabled = Process.get(:accessibility_disabled) == true
 
     # Check if announcements are silenced
@@ -152,7 +154,7 @@ defmodule Raxol.Core.Accessibility.Announcements do
   defp insert_by_priority(queue, announcement, priority) do
     # medium == normal
     priority_order = %{high: 3, normal: 2, medium: 2, low: 1}
-    announcement_priority = Map.get(priority_order, priority, 2)
+    _announcement_priority = Map.get(priority_order, priority, 2)
 
     Enum.sort_by(queue ++ [announcement], fn item ->
       # Sort descending by priority
