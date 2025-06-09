@@ -15,12 +15,23 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
   defmodule HeavyComponent do
     @behaviour Raxol.UI.Components.Base.Component
 
+    defstruct id: :test_id,
+              type: :heavy_component,
+              value: nil,
+              render_count: 0,
+              mounted: false,
+              position: {0, 0},
+              style: %{}
+
     def init(props) do
       Map.merge(
         %{
           data: [],
           computation_time: 0,
-          render_count: 0
+          render_count: 0,
+          position: {0, 0},
+          type: :heavy_component,
+          style: %{}
         },
         props
       )
@@ -83,12 +94,23 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
   defmodule ErrorProneComponent do
     @behaviour Raxol.UI.Components.Base.Component
 
+    defstruct id: :test_id,
+              type: :error_prone,
+              value: nil,
+              render_count: 0,
+              mounted: false,
+              position: {0, 0},
+              style: %{}
+
     def init(props) do
       Map.merge(
         %{
           error_count: 0,
           last_error: nil,
-          render_count: 0
+          render_count: 0,
+          position: {0, 0},
+          type: :error_prone,
+          style: %{}
         },
         props
       )
@@ -125,12 +147,16 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       raise "Simulated event handling error"
     end
 
-    def handle_event(%Raxol.Core.Events.Event{type: :trigger_error, data: _data}, state) do
+    def handle_event(
+          %Raxol.Core.Events.Event{type: :trigger_error, data: _data},
+          state
+        ) do
       new_state = %{
         state
         | error_count: Map.get(state, :error_count, 0) + 1,
           last_error: :simulated_error
       }
+
       {new_state, []}
     end
 
@@ -152,7 +178,12 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       # Measure performance with large data set
       {time_ms, _result} =
         measure_time(fn ->
-          {updated, _} = Unit.simulate_event(component, Raxol.Core.Events.Event.new(:add_data, %{}))
+          {updated, _} =
+            Unit.simulate_event(
+              component,
+              Raxol.Core.Events.Event.new(:add_data, %{})
+            )
+
           assert length(updated.state.data) == 1000
         end)
 
@@ -167,7 +198,9 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       component = create_test_component(HeavyComponent, %{})
 
       # Simulate rapid state updates
-      events = Enum.map(1..100, fn _ -> Raxol.Core.Events.Event.new(:add_data, %{}) end)
+      events =
+        Enum.map(1..100, fn _ -> Raxol.Core.Events.Event.new(:add_data, %{}) end)
+
       updated = simulate_event_sequence(component, events)
 
       # Verify component remains stable
@@ -179,7 +212,9 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       component = create_test_component(HeavyComponent, %{})
 
       # Simulate memory-intensive operations
-      events = Enum.map(1..10, fn _ -> Raxol.Core.Events.Event.new(:add_data, %{}) end)
+      events =
+        Enum.map(1..10, fn _ -> Raxol.Core.Events.Event.new(:add_data, %{}) end)
+
       updated = simulate_event_sequence(component, events)
 
       # Verify memory usage is reasonable
@@ -208,7 +243,10 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
 
       # Trigger event handling error
       assert_raise RuntimeError, "Simulated event handling error", fn ->
-        Unit.simulate_event(component, Raxol.Core.Events.Event.new(:error_event, %{}))
+        Unit.simulate_event(
+          component,
+          Raxol.Core.Events.Event.new(:error_event, %{})
+        )
       end
     end
 
@@ -217,11 +255,19 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
 
       # Trigger and recover from error
       assert_raise RuntimeError, "Simulated event handling error", fn ->
-        Unit.simulate_event(component, Raxol.Core.Events.Event.new(:error_event, %{}))
+        Unit.simulate_event(
+          component,
+          Raxol.Core.Events.Event.new(:error_event, %{})
+        )
       end
 
       # Verify component can still handle normal events
-      {updated, _} = Unit.simulate_event(component, Raxol.Core.Events.Event.new(:normal_event, %{}))
+      {updated, _} =
+        Unit.simulate_event(
+          component,
+          Raxol.Core.Events.Event.new(:normal_event, %{})
+        )
+
       assert updated.state.error_count == 0
     end
   end
@@ -231,7 +277,12 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       component = create_test_component(ErrorProneComponent, %{last_error: nil})
 
       # Verify component handles nil values
-      {updated, _} = Unit.simulate_event(component, Raxol.Core.Events.Event.new(:trigger_error, %{}))
+      {updated, _} =
+        Unit.simulate_event(
+          component,
+          Raxol.Core.Events.Event.new(:trigger_error, %{})
+        )
+
       assert updated.state.last_error == :simulated_error
     end
 
@@ -239,7 +290,12 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
       component = create_test_component(ErrorProneComponent, %{})
 
       # Attempt invalid state update
-      {updated, _} = Unit.simulate_event(component, Raxol.Core.Events.Event.new(:invalid_update, %{}))
+      {updated, _} =
+        Unit.simulate_event(
+          component,
+          Raxol.Core.Events.Event.new(:invalid_update, %{})
+        )
+
       assert updated.state == component.state
     end
 
@@ -248,7 +304,10 @@ defmodule Raxol.UI.Components.EdgeCases.ComponentEdgeCasesTest do
 
       # Attempt to update with wrong type
       {updated, _} =
-        Unit.simulate_event(component, Raxol.Core.Events.Event.new(:trigger_error, %{value: "string"}))
+        Unit.simulate_event(
+          component,
+          Raxol.Core.Events.Event.new(:trigger_error, %{value: "string"})
+        )
 
       assert updated.state.error_count == 1
     end

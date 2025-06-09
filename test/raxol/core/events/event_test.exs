@@ -6,6 +6,10 @@ defmodule Raxol.Core.Events.EventTest do
     test "creates a new event with type and data" do
       event = Event.new(:test, :data)
       assert %Event{} = event
+
+      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+             "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
+
       assert event.type == :test
       assert event.data == :data
     end
@@ -15,6 +19,9 @@ defmodule Raxol.Core.Events.EventTest do
     test "creates a keyboard event with default modifiers" do
       event = Event.key_event(:enter, :pressed)
       assert %Event{type: :key} = event
+
+      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+             "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
 
       assert %{
                key: :enter,
@@ -27,6 +34,9 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.key_event("a", :released, [:shift, :ctrl])
       assert %Event{type: :key} = event
 
+      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+             "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
+
       assert %{
                key: "a",
                state: :released,
@@ -35,15 +45,12 @@ defmodule Raxol.Core.Events.EventTest do
     end
 
     test "validates key state" do
-      assert_raise FunctionClauseError, fn ->
-        Event.key_event(:enter, :invalid)
-      end
+      assert {:error, :invalid_key_event} = Event.key_event(:enter, :invalid)
     end
 
     test "validates modifiers is a list" do
-      assert_raise FunctionClauseError, fn ->
-        Event.key_event(:enter, :pressed, :not_a_list)
-      end
+      assert {:error, :invalid_key_event} =
+               Event.key_event(:enter, :pressed, :not_a_list)
     end
   end
 
@@ -51,6 +58,9 @@ defmodule Raxol.Core.Events.EventTest do
     test "creates a mouse event with defaults" do
       event = Event.mouse(:left, {10, 20})
       assert %Event{type: :mouse} = event
+
+      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+             "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
 
       assert %{
                button: :left,
@@ -64,6 +74,9 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.mouse_event(:left, {10, 20}, :pressed, [:shift])
       assert %Event{type: :mouse} = event
 
+      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+             "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
+
       assert %{
                button: :left,
                state: :pressed,
@@ -73,15 +86,13 @@ defmodule Raxol.Core.Events.EventTest do
     end
 
     test "validates mouse button" do
-      assert_raise FunctionClauseError, fn ->
-        Event.mouse_event(:invalid, {0, 0}, :pressed)
-      end
+      assert {:error, :invalid_mouse_event} =
+               Event.mouse_event(:invalid, {0, 0}, :pressed)
     end
 
     test "validates mouse state" do
-      assert_raise FunctionClauseError, fn ->
-        Event.mouse_event(:left, {0, 0}, :invalid)
-      end
+      assert {:error, :invalid_mouse_event} =
+               Event.mouse_event(:left, {0, 0}, :invalid)
     end
 
     test "validates position is a 2-tuple" do
@@ -98,6 +109,9 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.window_event(0, 0, :focus)
       assert %Event{type: :window} = event
 
+      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+             "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
+
       assert %{
                action: :focus,
                width: 0,
@@ -109,6 +123,9 @@ defmodule Raxol.Core.Events.EventTest do
       event = Event.window_event(80, 24, :resize)
       assert %Event{type: :window} = event
 
+      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+             "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
+
       assert %{
                action: :resize,
                width: 80,
@@ -117,19 +134,16 @@ defmodule Raxol.Core.Events.EventTest do
     end
 
     test "validates window action" do
-      assert_raise FunctionClauseError, fn ->
-        Event.window_event(0, 0, :invalid)
-      end
+      assert {:error, :invalid_window_event} =
+               Event.window_event(0, 0, :invalid)
     end
 
     test "validates width and height are integers or nil" do
-      assert_raise FunctionClauseError, fn ->
-        Event.window_event(:not_integer, 24, :resize)
-      end
+      assert {:error, :invalid_window_event} =
+               Event.window_event(:not_integer, 24, :resize)
 
-      assert_raise FunctionClauseError, fn ->
-        Event.window_event(80, :not_integer, :resize)
-      end
+      assert {:error, :invalid_window_event} =
+               Event.window_event(80, :not_integer, :resize)
     end
   end
 
@@ -137,6 +151,10 @@ defmodule Raxol.Core.Events.EventTest do
     test "creates a system event (as custom)" do
       event = Event.custom_event(:shutdown)
       assert %Event{type: :custom} = event
+
+      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+             "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
+
       assert event.data == :shutdown
     end
 
@@ -144,6 +162,10 @@ defmodule Raxol.Core.Events.EventTest do
       custom_data = %{type: :"app.custom", value: 123}
       event = Event.custom_event(custom_data)
       assert %Event{type: :custom} = event
+
+      assert (is_struct(event) or is_map(event)) and Map.has_key?(event, :type),
+             "Expected event to be a struct or map with :type key, got: #{inspect(event)}"
+
       assert event.data == custom_data
     end
   end

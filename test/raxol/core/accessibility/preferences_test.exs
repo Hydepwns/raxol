@@ -1,5 +1,5 @@
 defmodule Raxol.Core.Accessibility.PreferencesTest do
-  use Raxol.DataCase
+  use ExUnit.Case, async: false
   import Mox
 
   alias Raxol.Core.Accessibility
@@ -11,6 +11,11 @@ defmodule Raxol.Core.Accessibility.PreferencesTest do
 
   setup do
     Raxol.Core.I18n.init()
+
+    on_exit(fn ->
+      Raxol.Core.I18n.cleanup()
+    end)
+
     :ok
   end
 
@@ -107,7 +112,12 @@ defmodule Raxol.Core.Accessibility.PreferencesTest do
     test "returns default text scale when large_text is false", %{
       prefs_name: prefs_name
     } do
-      UserPreferences.set(Helper.pref_key(:large_text), false, prefs_name)
+      Raxol.Core.UserPreferences.set(
+        Helper.pref_key(:large_text),
+        false,
+        prefs_name
+      )
+
       assert_receive {:preferences_applied, ^prefs_name}, 1000
 
       Accessibility.set_large_text(false, prefs_name)
@@ -119,7 +129,12 @@ defmodule Raxol.Core.Accessibility.PreferencesTest do
     test "returns current text scale when large_text is true", %{
       prefs_name: prefs_name
     } do
-      UserPreferences.set(Helper.pref_key(:large_text), true, prefs_name)
+      Raxol.Core.UserPreferences.set(
+        Helper.pref_key(:large_text),
+        true,
+        prefs_name
+      )
+
       assert_receive {:preferences_applied, ^prefs_name}, 1000
 
       Accessibility.set_large_text(true, prefs_name)

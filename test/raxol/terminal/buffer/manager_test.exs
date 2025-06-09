@@ -30,7 +30,9 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     end
 
     test "creates a new buffer manager with custom memory limit" do
-      {:ok, manager} = Raxol.Terminal.Buffer.Manager.new(80, 24, 1000, 5_000_000)
+      {:ok, manager} =
+        Raxol.Terminal.Buffer.Manager.new(80, 24, 1000, 5_000_000)
+
       assert manager.memory_limit == 5_000_000
     end
   end
@@ -40,11 +42,20 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       {:ok, initial_manager} = Raxol.Terminal.Buffer.Manager.new(80, 24)
 
       # Mutate the active buffer so it differs from the back buffer
-      mutated_active = %{initial_manager.active_buffer | cells: List.replace_at(initial_manager.active_buffer.cells, 0, [Raxol.Terminal.Cell.new("A") | tl(hd(initial_manager.active_buffer.cells))])}
+      mutated_active = %{
+        initial_manager.active_buffer
+        | cells:
+            List.replace_at(initial_manager.active_buffer.cells, 0, [
+              Raxol.Terminal.Cell.new("A")
+              | tl(hd(initial_manager.active_buffer.cells))
+            ])
+      }
+
       manager = %{initial_manager | active_buffer: mutated_active}
 
       # Simulate setting cursor position on the manager
-      manager = Raxol.Terminal.Buffer.Manager.set_cursor_position(manager, 10, 5)
+      manager =
+        Raxol.Terminal.Buffer.Manager.set_cursor_position(manager, 10, 5)
 
       # Switch buffers
       manager = Raxol.Terminal.Buffer.Manager.State.switch_buffers(manager)
@@ -52,7 +63,9 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
       # Check that buffers were switched (cursor is on manager, not buffer)
       # Also check that damage regions were cleared by switch_buffers
       # Cursor position should remain
-      assert Raxol.Terminal.Buffer.Manager.get_cursor_position(manager) == {10, 5}
+      assert Raxol.Terminal.Buffer.Manager.get_cursor_position(manager) ==
+               {10, 5}
+
       assert Raxol.Terminal.Buffer.Manager.get_damage_regions(manager) == []
       # Buffers themselves should have swapped
       refute manager.active_buffer == initial_manager.active_buffer
@@ -120,7 +133,11 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     test "updates memory usage tracking" do
       {:ok, manager} = Manager.new(80, 24)
       # Fill the buffer with cells to ensure non-zero memory usage
-      active_buffer = %{manager.active_buffer | cells: create_test_cells(80, 24)}
+      active_buffer = %{
+        manager.active_buffer
+        | cells: create_test_cells(80, 24)
+      }
+
       manager = %{manager | active_buffer: active_buffer}
       assert is_struct(manager.active_buffer, Raxol.Terminal.ScreenBuffer)
       assert is_struct(manager.back_buffer, Raxol.Terminal.ScreenBuffer)
@@ -185,7 +202,11 @@ defmodule Raxol.Terminal.Buffer.ManagerTest do
     test "memory usage is updated" do
       {:ok, manager} = Manager.new(80, 24)
       # Fill the buffer with cells to ensure non-zero memory usage
-      active_buffer = %{manager.active_buffer | cells: create_test_cells(80, 24)}
+      active_buffer = %{
+        manager.active_buffer
+        | cells: create_test_cells(80, 24)
+      }
+
       manager = %{manager | active_buffer: active_buffer}
       # Calculate usage directly
       usage = Manager.Memory.calculate_buffer_usage(manager.active_buffer)

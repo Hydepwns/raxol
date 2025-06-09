@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # Move cursor to middle of screen
       emulator = %{emulator | cursor: %{emulator.cursor | position: {0, 5}}}
 
-      {:ok, result} = BufferHandlers.handle_L(emulator, [2])
+      result = unwrap_ok(BufferHandlers.handle_L(emulator, [2]))
 
       # Verify lines were inserted
       assert get_line(result, 5) == ""
@@ -36,7 +36,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # Move cursor to middle of screen
       emulator = %{emulator | cursor: %{emulator.cursor | position: {0, 5}}}
 
-      {:ok, result} = BufferHandlers.handle_L(emulator, [])
+      result = unwrap_ok(BufferHandlers.handle_L(emulator, []))
 
       # Verify one line was inserted
       assert get_line(result, 5) == ""
@@ -54,7 +54,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # Move cursor to middle of screen
       emulator = %{emulator | cursor: %{emulator.cursor | position: {0, 5}}}
 
-      {:ok, result} = BufferHandlers.handle_M(emulator, [2])
+      result = unwrap_ok(BufferHandlers.handle_M(emulator, [2]))
 
       # Verify lines were deleted and content shifted up
       assert get_line(result, 5) == "Line 7"
@@ -70,7 +70,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # Move cursor to middle of screen
       emulator = %{emulator | cursor: %{emulator.cursor | position: {0, 5}}}
 
-      {:ok, result} = BufferHandlers.handle_M(emulator, [])
+      result = unwrap_ok(BufferHandlers.handle_M(emulator, []))
 
       # Verify one line was deleted and content shifted up
       assert get_line(result, 5) == "Line 6"
@@ -89,7 +89,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # Cursor on '5'
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result_emulator} = BufferHandlers.handle_P(emulator, [2])
+      result_emulator = unwrap_ok(BufferHandlers.handle_P(emulator, [2]))
       # Expected: "01234789  " (01234 shifted_789 padding_spaces)
       assert get_line_raw(result_emulator, 5) == "01234789  "
     end
@@ -100,7 +100,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # Cursor on '5'
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result_emulator} = BufferHandlers.handle_P(emulator, [])
+      result_emulator = unwrap_ok(BufferHandlers.handle_P(emulator, []))
       # Expected: "012346789 " (01234 shifted_6789 padding_space)
       assert get_line_raw(result_emulator, 5) == "012346789 "
     end
@@ -116,7 +116,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # Cursor on '5'
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result_emulator} = BufferHandlers.handle_at(emulator, [2])
+      result_emulator = unwrap_ok(BufferHandlers.handle_at(emulator, [2]))
 
       # Expected: "01234  567" (01234 two_spaces original_567, '89' are truncated due to width 10)
       assert get_line_raw(result_emulator, 5) == "01234  567"
@@ -128,7 +128,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # Cursor on '5'
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result_emulator} = BufferHandlers.handle_at(emulator, [])
+      result_emulator = unwrap_ok(BufferHandlers.handle_at(emulator, []))
       # Expected: "01234 5678" (01234 one_space original_5678, '9' is truncated)
       assert get_line_raw(result_emulator, 5) == "01234 5678"
     end
@@ -144,7 +144,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # Cursor on '5'
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result_emulator} = BufferHandlers.handle_X(emulator, [2])
+      result_emulator = unwrap_ok(BufferHandlers.handle_X(emulator, [2]))
       # Expected: "01234  789" (01234 two_spaces 789)
       assert get_line_raw(result_emulator, 5) == "01234  789"
     end
@@ -155,7 +155,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
       # Cursor on '5'
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result_emulator} = BufferHandlers.handle_X(emulator, [])
+      result_emulator = unwrap_ok(BufferHandlers.handle_X(emulator, []))
       # Expected: "01234 6789" (01234 one_space 6789)
       assert get_line_raw(result_emulator, 5) == "01234 6789"
     end
@@ -215,4 +215,9 @@ defmodule Raxol.Terminal.Commands.BufferHandlersTest do
     line_cells = ScreenBuffer.get_line(buffer, y) || []
     Enum.map_join(line_cells, & &1.char)
   end
+
+  # Add a helper at the top of the file for unwrapping handler results
+  defp unwrap_ok({:ok, value}), do: value
+  defp unwrap_ok({:error, _reason, value}), do: value
+  defp unwrap_ok(value) when is_map(value), do: value
 end

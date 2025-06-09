@@ -19,17 +19,27 @@ defmodule Raxol.Test.Integration.Assertions do
 
       assert_child_received child, :parent_clicked
   """
-  def assert_child_received(child, expected_event) do
+  def assert_child_received(child_component_map, expected_event_type_atom) do
     {:messages, messages} = Process.info(self(), :messages)
+    # Get the atom like Button
+    child_module_expected = child_component_map.module
 
     received =
       Enum.any?(messages, fn
-        {:event_dispatched, ^child, ^expected_event} -> true
-        _ -> false
+        # Match against the module atom and the event struct's type
+        # {:event_dispatched, ^child_module_expected, %Raxol.Core.Events.Event{type: actual_event_type}} ->
+        #   actual_event_type == expected_event_type_atom
+        # More flexible match
+        {:event_dispatched, mod, event_struct} ->
+          mod == child_module_expected &&
+            event_struct.type == expected_event_type_atom
+
+        _ ->
+          false
       end)
 
     assert received,
-           "Expected child component to receive event #{inspect(expected_event)}"
+           "Expected child component #{inspect(child_module_expected)} to receive event of type #{inspect(expected_event_type_atom)}. Messages: #{inspect(messages)}"
   end
 
   @doc """
@@ -39,17 +49,25 @@ defmodule Raxol.Test.Integration.Assertions do
 
       assert_parent_updated parent, :child_responded
   """
-  def assert_parent_updated(parent, expected_update) do
+  def assert_parent_updated(parent_component_map, expected_event_type_atom) do
     {:messages, messages} = Process.info(self(), :messages)
+    parent_module_expected = parent_component_map.module
 
     updated =
       Enum.any?(messages, fn
-        {:command_executed, ^parent, ^expected_update} -> true
-        _ -> false
+        # {:event_dispatched, ^parent_module_expected, %Raxol.Core.Events.Event{type: actual_event_type}} ->
+        #   actual_event_type == expected_event_type_atom
+        # More flexible match
+        {:event_dispatched, mod, event_struct} ->
+          mod == parent_module_expected &&
+            event_struct.type == expected_event_type_atom
+
+        _ ->
+          false
       end)
 
     assert updated,
-           "Expected parent component to update with #{inspect(expected_update)}"
+           "Expected parent component #{inspect(parent_module_expected)} to have handled an event of type #{inspect(expected_event_type_atom)} (indicating update). Messages: #{inspect(messages)}"
   end
 
   @doc """

@@ -32,7 +32,11 @@ defmodule Raxol.Test.MockTermbox do
   @spec init(opts :: keyword()) :: {:ok, pid()}
   def init(opts \\ []) do
     owner = Keyword.get(opts, :owner, self())
-    Raxol.Core.Runtime.Log.debug("MockTermbox: init called with owner: #{inspect(owner)}")
+
+    Raxol.Core.Runtime.Log.debug(
+      "MockTermbox: init called with owner: #{inspect(owner)}"
+    )
+
     {:ok, self()}
   end
 
@@ -84,28 +88,5 @@ defmodule Raxol.Test.MockTermbox do
   def set_cell(_x, _y, _ch, _fg, _bg) do
     Raxol.Core.Runtime.Log.debug("MockTermbox: set_cell called")
     :ok
-  end
-
-  # Constants module
-  defmodule Constants do
-    def attribute(_name) do
-      # Placeholder
-      0
-    end
-
-    def color(_name) do
-      # Placeholder
-      0
-    end
-
-    def key(_name) do
-      # Placeholder
-      0
-    end
-
-    def event_type(_name) do
-      # Placeholder
-      0
-    end
   end
 end

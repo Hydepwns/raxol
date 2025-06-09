@@ -3,14 +3,12 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
   alias Raxol.Terminal.Commands.ParameterValidation
 
   setup do
-    # Provide a minimal emulator struct with width and height fields for validation
-    emulator = %{width: 10, height: 10}
+    emulator = Raxol.Terminal.Emulator.new(10, 10)
     {:ok, emulator: emulator}
   end
 
   describe "validate_coordinates/2" do
     test "returns valid coordinates within bounds", %{emulator: emulator} do
-      # Test coordinates within screen bounds
       assert ParameterValidation.validate_coordinates(emulator, [5, 5]) ==
                {5, 5}
 
@@ -22,7 +20,6 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
     end
 
     test "clamps coordinates to screen bounds", %{emulator: emulator} do
-      # Test coordinates outside screen bounds
       assert ParameterValidation.validate_coordinates(emulator, [-1, -1]) ==
                {0, 0}
 
@@ -34,7 +31,6 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
     end
 
     test "handles missing parameters", %{emulator: emulator} do
-      # Test with missing parameters (should default to 1,1)
       assert ParameterValidation.validate_coordinates(emulator, []) == {0, 0}
 
       assert ParameterValidation.validate_coordinates(emulator, [nil, nil]) ==
@@ -42,7 +38,6 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
     end
 
     test "handles invalid parameters", %{emulator: emulator} do
-      # Test with invalid parameters (should default to 1,1)
       assert ParameterValidation.validate_coordinates(emulator, [
                "invalid",
                "invalid"

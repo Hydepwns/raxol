@@ -167,15 +167,12 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
 
       diff_for_c3 = {:replace, c3_new_content}
 
-      actual_diff_result = TreeDiffer.diff_trees(old_tree, new_tree)
+      {:update, path, update_details} =
+        TreeDiffer.diff_trees(old_tree, new_tree)
 
-      # Check the overall structure of the diff
-      # Path to the parent node being updated (root in this case)
-      assert Map.get(actual_diff_result, :path) == []
-      update_details = Map.get(actual_diff_result, :update_details)
-      assert Map.get(update_details, :type) == :keyed_children
-
-      actual_ops = Map.get(update_details, :ops)
+      assert path == []
+      assert update_details.type == :keyed_children
+      actual_ops = update_details.ops
 
       # Expected operations (order of adds/updates/removes might vary from internal list construction, but reorder is last)
       expected_structural_ops_map = %{
@@ -265,11 +262,12 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
       child_b = %{type: :li, key: "b", content: "B"}
       new_tree = %{type: :ul, children: [child_a, child_b]}
 
-      actual_diff_result = TreeDiffer.diff_trees(old_tree, new_tree)
-      assert Map.get(actual_diff_result, :path) == []
-      update_details = Map.get(actual_diff_result, :update_details)
-      assert Map.get(update_details, :type) == :keyed_children
-      actual_ops = Map.get(update_details, :ops)
+      {:update, path, update_details} =
+        TreeDiffer.diff_trees(old_tree, new_tree)
+
+      assert path == []
+      assert update_details.type == :keyed_children
+      actual_ops = update_details.ops
 
       assert Enum.member?(actual_ops, {:key_add, "a", child_a})
       assert Enum.member?(actual_ops, {:key_add, "b", child_b})

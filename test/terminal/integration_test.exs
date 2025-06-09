@@ -1,3 +1,5 @@
+Code.require_file("sixel_test_helper.exs", __DIR__)
+
 defmodule Raxol.Terminal.IntegrationTest do
   use ExUnit.Case
   alias Raxol.Terminal.ScreenBuffer
@@ -116,7 +118,7 @@ defmodule Raxol.Terminal.IntegrationTest do
       first_cell =
         state.main_screen_buffer.cells |> List.first() |> List.first()
 
-      assert first_cell.style.foreground == :red
+      assert Map.get(first_cell.style, :foreground) == :red
     end
 
     test "handles multiple ANSI attributes", %{state: initial_state} do
@@ -130,9 +132,9 @@ defmodule Raxol.Terminal.IntegrationTest do
       first_cell =
         state.main_screen_buffer.cells |> List.first() |> List.first()
 
-      assert first_cell.style.bold == true
-      assert first_cell.style.underline == true
-      assert first_cell.style.foreground == :red
+      assert Map.get(first_cell.style, :bold) == true
+      assert Map.get(first_cell.style, :underline) == true
+      assert Map.get(first_cell.style, :foreground) == :red
     end
 
     test "handles cursor positioning", %{state: initial_state} do
@@ -330,6 +332,29 @@ defmodule Raxol.Terminal.IntegrationTest do
 
       # Verify the cell has the SIXEL flag set
       assert first_cell.sixel == true
+    end
+  end
+
+  describe "sixel image rendering" do
+    # Sixel sixel_data and expected_char_grid are defined in helper module
+    import Raxol.Test.Terminal.SixelTestHelper
+
+    test "renders sixel data to character grid with correct colors", %{
+      state: initial_state
+    } do
+      sixel_sequence = "\ePq#{sixel_data()}\e\\"
+
+      {final_state, _output} =
+        Emulator.process_input(initial_state, sixel_sequence)
+
+      # cells = final_state.main_screen_buffer.cells
+      # Check a few specific cells based on sixel_data
+      # Example: Check top-left cell (assuming it's part of the image)
+      first_cell_of_image =
+        final_state.main_screen_buffer.cells |> List.first() |> List.first()
+
+      # Adjust expected color
+      assert Map.get(first_cell_of_image.style, :background) == {0, 0, 0}
     end
   end
 end

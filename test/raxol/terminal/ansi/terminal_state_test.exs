@@ -13,14 +13,20 @@ defmodule Raxol.Terminal.ANSI.TerminalStateTest do
          scroll_region \\ nil,
          cursor_style \\ :blinking_block
        ) do
-    %Emulator{
-      cursor: %Manager{position: cursor_pos},
-      style: style,
-      charset_state: Raxol.Terminal.ANSI.CharacterSets.new(),
-      mode_manager: ModeManager.new(),
-      scroll_region: scroll_region,
-      cursor_style: cursor_style
+    emulator = Emulator.new(80, 24)
+    cursor = Raxol.Terminal.Cursor.Manager.new(position: cursor_pos)
+
+    emulator = %{
+      emulator
+      | cursor: cursor,
+        style: style,
+        charset_state: Raxol.Terminal.ANSI.CharacterSets.new(),
+        mode_manager: ModeManager.new(),
+        scroll_region: scroll_region,
+        cursor_style: cursor_style
     }
+
+    emulator
   end
 
   describe "new/0" do

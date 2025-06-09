@@ -12,7 +12,8 @@ defmodule Raxol.Terminal.EmulatorPluginLifecycleTest do
   alias Raxol.Test.MockPlugins.MockOnTerminateCrashPlugin
 
   setup context do
-    reloading_enabled = Keyword.has_key?(context[:tags] || [], :enable_plugin_reloading)
+    reloading_enabled =
+      Keyword.has_key?(context[:tags] || [], :enable_plugin_reloading)
 
     {:ok, _pid} =
       Manager.start_link(

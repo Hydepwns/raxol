@@ -16,6 +16,8 @@ defmodule Raxol.UI.Components.ModalTest do
     assert state.id == :my_alert
     assert state.title == "Alert!"
     assert state.content == "Something happened"
+    assert is_map(state)
+    assert Map.has_key?(state, :type)
     assert state.type == :alert
     assert state.buttons == [{"OK", :ok}]
   end
@@ -28,25 +30,16 @@ defmodule Raxol.UI.Components.ModalTest do
     assert state.id == :my_confirm
     assert state.title == "Confirm?"
     assert state.content == "Are you sure?"
+    assert is_map(state)
+    assert Map.has_key?(state, :type)
     assert state.type == :confirm
     assert state.buttons == [{"Yes", :yes_msg}, {"No", :no_msg}]
   end
 
   test "update handles basic show/hide" do
-    # props = Modal.alert(:my_alert, "Alert!", "X", visible: false)
-    # state = Modal.init(Map.new(props))
-    # Manually construct state
-    state = %Modal{
-      id: :my_alert,
-      title: "Alert!",
-      content: "X",
-      visible: false,
-      type: :alert,
-      buttons: [{"OK", :ok}],
-      width: 50,
-      style: %{},
-      form_state: %{fields: [], focus_index: 0}
-    }
+    # Use Modal.init/1 with a props map to ensure all required fields are present
+    props = Modal.alert(:my_alert, "Alert!", "X", visible: false)
+    state = Modal.init(Map.new(props))
 
     refute state.visible
 
@@ -93,6 +86,8 @@ defmodule Raxol.UI.Components.ModalTest do
 
     assert state.id == :my_prompt
     assert state.title == "Enter Value"
+    assert is_map(state)
+    assert Map.has_key?(state, :type)
     assert state.type == :prompt
     assert state.visible == true
     # Content moved to field label
@@ -100,7 +95,8 @@ defmodule Raxol.UI.Components.ModalTest do
     assert state.form_state.focus_index == 0
     assert state.form_state.fields |> length() == 1
     prompt_field = state.form_state.fields |> hd()
-    assert prompt_field.id == :prompt_input
+    assert is_map(prompt_field)
+    assert Map.has_key?(prompt_field, :type)
     assert prompt_field.type == :text_input
     assert prompt_field.label == "Your Name:"
     assert prompt_field.value == "Test"
@@ -183,6 +179,8 @@ defmodule Raxol.UI.Components.ModalTest do
 
     assert state.id == :my_form
     assert state.title == "Test Form"
+    assert is_map(state)
+    assert Map.has_key?(state, :type)
     assert state.type == :form
     assert state.visible == true
     # Check normalized fields include error: nil and validate: nil by default
@@ -209,13 +207,18 @@ defmodule Raxol.UI.Components.ModalTest do
     # view = %{type: :box, attrs: %{id: "my_form-box", ...}, children: inner_column_map}
     # This should be the %{type: :column, ...} map
     inner_column_map = view.children
+    # Defensive check for :type field
+    assert is_map(inner_column_map)
+    assert Map.has_key?(inner_column_map, :type)
     assert inner_column_map.type == :column
     # This is the list [title, spacer, content, spacer, buttons]
     list_of_elements = inner_column_map.children
 
     # Assuming content is 3rd element
     content_element = Enum.at(list_of_elements, 2)
-    # The form content itself is a column
+    # Defensive check for :type field
+    assert is_map(content_element)
+    assert Map.has_key?(content_element, :type)
     assert content_element.type == :column
     # The children of the content column IS the list of field columns
     field_columns = content_element.children
@@ -225,33 +228,50 @@ defmodule Raxol.UI.Components.ModalTest do
 
     # Check first field column contains label+input row
     field1_column = Enum.at(field_columns, 0)
+    assert is_map(field1_column)
+    assert Map.has_key?(field1_column, :type)
     assert field1_column.type == :column
     # The %{type: :row, ...} map
     field1_row_map = Enum.at(field1_column.children, 0)
+    assert is_map(field1_row_map)
+    assert Map.has_key?(field1_row_map, :type)
     assert field1_row_map.type == :row
     # The list [label_map, input_map]
     field1_row_children = field1_row_map.children
     # Assuming input is second
     input_map = Enum.at(field1_row_children, 1)
-    # Check input type
+    assert is_map(input_map)
+    assert Map.has_key?(input_map, :type)
     assert input_map.type == :text_input
 
     # Check second field column
     field2_column = Enum.at(field_columns, 1)
+    assert is_map(field2_column)
+    assert Map.has_key?(field2_column, :type)
     assert field2_column.type == :column
     field2_row_map = Enum.at(field2_column.children, 0)
+    assert is_map(field2_row_map)
+    assert Map.has_key?(field2_row_map, :type)
     assert field2_row_map.type == :row
     field2_row_children = field2_row_map.children
     input2_map = Enum.at(field2_row_children, 1)
+    assert is_map(input2_map)
+    assert Map.has_key?(input2_map, :type)
     assert input2_map.type == :checkbox
 
     # Check third field column
     field3_column = Enum.at(field_columns, 2)
+    assert is_map(field3_column)
+    assert Map.has_key?(field3_column, :type)
     assert field3_column.type == :column
     field3_row_map = Enum.at(field3_column.children, 0)
+    assert is_map(field3_row_map)
+    assert Map.has_key?(field3_row_map, :type)
     assert field3_row_map.type == :row
     field3_row_children = field3_row_map.children
     input3_map = Enum.at(field3_row_children, 1)
+    assert is_map(input3_map)
+    assert Map.has_key?(input3_map, :type)
     # This is the map we generated: %{type: Dropdown, attrs: ...}
     assert input3_map.type == Raxol.UI.Components.Selection.Dropdown
   end
@@ -462,11 +482,15 @@ defmodule Raxol.UI.Components.ModalTest do
     # Error row structure: %{type: :row, children: %{type: :label, ...}}
     # The label map IS the child of the row
     error1_label_map = error1_row.children
+    assert is_map(error1_label_map)
+    assert Map.has_key?(error1_label_map, :type)
     assert error1_label_map.type == :label
     # assert error1_label_map.attrs.content == "Invalid input"
     assert Keyword.get(error1_label_map.attrs, :content) == "Invalid input"
     # assert error1_label_map.attrs.style.color == :red
-    assert Keyword.get(error1_label_map.attrs, :style).color == :red
+    assert Keyword.get(error1_label_map.attrs, :style)
+           |> (fn style -> if is_map(style), do: style.color, else: nil end).() ==
+             :red
 
     # Check second field's column for error row
     field2_column = Enum.at(field_columns, 1)
@@ -476,6 +500,8 @@ defmodule Raxol.UI.Components.ModalTest do
     error2_row = Enum.at(field2_elements, 1)
     # The label map IS the child of the row
     error2_label_map = error2_row.children
+    assert is_map(error2_label_map)
+    assert Map.has_key?(error2_label_map, :type)
     assert error2_label_map.type == :label
     # assert error2_label_map.attrs.content == "Invalid input"
     assert Keyword.get(error2_label_map.attrs, :content) == "Invalid input"

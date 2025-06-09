@@ -10,11 +10,12 @@ defmodule Raxol.Test.PluginTestFixtures do
   # Test plugin that implements the Plugin behaviour correctly
   defmodule TestPlugin do
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
+    @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
       state_id = :rand.uniform(1_000_000)
-      {:ok, %{state_id: state_id, handled: false}}
+      {:ok, %{name: "test_plugin", state_id: state_id, handled: false}}
     end
 
     def terminate(_reason, state) do
@@ -24,30 +25,46 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def get_commands, do: [{:test_cmd, :handle_test_cmd, 1}]
 
-    def handle_test_cmd(_arg, state) do
+    def handle_test_cmd(_arg, _state) do
       # Update state with a timestamp to track when it was handled
-      {:ok, %{state | handled: true, handled_at: System.monotonic_time()},
-       :test_ok}
+      {:ok, %{handled: true, handled_at: System.monotonic_time()}, :test_ok}
     end
 
-    # Add metadata/0 function
-    def metadata do
+    # Renamed from metadata/0 to get_metadata/0
+    def get_metadata do
       %{
         id: :test_plugin,
         version: "1.0.0",
         dependencies: []
       }
     end
+
+    # Added Behaviour Callbacks
+    def handle_input(_input, state), do: {:ok, state}
+    def handle_output(_output, state), do: {:ok, state}
+    def enable(state), do: {:ok, state}
+    def disable(state), do: {:ok, state}
+    def filter_event(_event, state), do: {:ok, state}
+
+    def handle_command(_cmd, _args, state),
+      do: {:error, :not_implemented, state}
   end
 
   # Broken plugin that fails to implement required functions
   defmodule BrokenPlugin do
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
+    @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
       # Initialize with a unique state ID to track instances
       state_id = :rand.uniform(1_000_000)
-      {:ok, %{state_id: state_id, error_type: :missing_implementation}}
+
+      {:ok,
+       %{
+         name: "broken_plugin",
+         state_id: state_id,
+         error_type: :missing_implementation
+       }}
     end
 
     def terminate(_reason, state) do
@@ -59,26 +76,38 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     # Missing implementation of handle_broken_cmd/2
 
-    def disable(state), do: {:ok, state}
-
-    # Add metadata/0 function
-    def metadata do
+    # Renamed from metadata/0 to get_metadata/0
+    def get_metadata do
       %{
         id: :broken_plugin,
         version: "1.0.0",
         dependencies: []
       }
     end
+
+    # Added Behaviour Callbacks
+    # Or error for testing
+    def handle_input(_input, state), do: {:ok, state}
+    # Or error for testing
+    def handle_output(_output, state), do: {:ok, state}
+    def enable(state), do: {:ok, state}
+    def disable(state), do: {:ok, state}
+    def filter_event(_event, state), do: {:ok, state}
+
+    def handle_command(_cmd, _args, state),
+      do: {:error, :not_implemented, state}
   end
 
   # Plugin with bad return values
   defmodule BadReturnPlugin do
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
+    @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
-      # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1_000_000)
-      {:ok, %{state_id: state_id, error_type: :bad_return}}
+      state_id = System.unique_integer([:positive])
+
+      {:ok,
+       %{name: "bad_return_plugin", state_id: state_id, error_type: :bad_return}}
     end
 
     def terminate(_reason, state) do
@@ -103,21 +132,27 @@ defmodule Raxol.Test.PluginTestFixtures do
       [:not, :a, :tuple]
     end
 
-    def handle_test_cmd(_arg, state) do
-      # Return wrong format
-      :unexpected_return
+    def handle_test_cmd(_arg, _state) do
+      {:error, :bad_return}
     end
 
-    def disable(state), do: {:ok, state}
-
-    # Add metadata/0 function
-    def metadata do
+    # Renamed from metadata/0 to get_metadata/0
+    def get_metadata do
       %{
         id: :bad_return_plugin,
         version: "1.0.0",
         dependencies: []
       }
     end
+
+    # Added Behaviour Callbacks
+    # Already had handle_input/output
+    def enable(state), do: {:ok, state}
+    def disable(state), do: {:ok, state}
+    def filter_event(_event, state), do: {:ok, state}
+
+    def handle_command(_cmd, _args, state),
+      do: {:error, :not_implemented, state}
   end
 
   # Plugin with invalid dependencies
@@ -126,9 +161,14 @@ defmodule Raxol.Test.PluginTestFixtures do
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
-      # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1_000_000)
-      {:ok, %{state_id: state_id, dependencies: dependencies()}}
+      state_id = System.unique_integer([:positive])
+
+      {:ok,
+       %{
+         name: "dependent_plugin",
+         state_id: state_id,
+         dependencies: dependencies()
+       }}
     end
 
     def terminate(_reason, state) do
@@ -142,7 +182,7 @@ defmodule Raxol.Test.PluginTestFixtures do
     def version, do: "1.0.0"
     def dependencies, do: [{"test_plugin", ">= 1.0.0"}]
 
-    def metadata do
+    def get_metadata do
       %{
         id: id(),
         version: version(),
@@ -150,17 +190,22 @@ defmodule Raxol.Test.PluginTestFixtures do
       }
     end
 
+    def handle_input(_input, state), do: {:ok, state}
+    def handle_output(_output, state), do: {:ok, state}
+    def enable(state), do: {:ok, state}
     def disable(state), do: {:ok, state}
+    def filter_event(_event, state), do: {:ok, state}
+
+    def handle_command(_cmd, _args, state),
+      do: {:error, :not_implemented, state}
   end
 
   # Plugin that times out during initialization
   defmodule TimeoutPlugin do
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
+    @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
-      # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1_000_000)
-
       # Use a timer to simulate a timeout instead of sleeping forever
       Process.send_after(self(), :timeout_simulated, 100)
 
@@ -176,25 +221,34 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def get_commands, do: []
 
-    # Add metadata/0 function
-    def metadata do
+    # Renamed from metadata/0 to get_metadata/0
+    def get_metadata do
       %{
         id: :timeout_plugin,
         version: "1.0.0",
         dependencies: []
       }
     end
+
+    # Added Behaviour Callbacks
+    def handle_input(_input, state), do: {:ok, state}
+    def handle_output(_output, state), do: {:ok, state}
+    def enable(state), do: {:ok, state}
+    def disable(state), do: {:ok, state}
+    def filter_event(_event, state), do: {:ok, state}
+
+    def handle_command(_cmd, _args, state),
+      do: {:error, :not_implemented, state}
   end
 
   # Plugin that crashes during initialization
   defmodule CrashPlugin do
     @behaviour Raxol.Core.Runtime.Plugins.Plugin
+    @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
-      # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1_000_000)
+      state_id = System.unique_integer([:positive])
 
-      # Raise a more descriptive error with the state ID for better debugging
       raise "Plugin initialization failed: Intentional crash for testing error handling (State ID: #{state_id})"
     end
 
@@ -217,14 +271,32 @@ defmodule Raxol.Test.PluginTestFixtures do
       raise "Intentional crash in output handler"
     end
 
-    # Add metadata/0 function
-    def metadata do
+    # Renamed from metadata/0 to get_metadata/0
+    def get_metadata do
       %{
         id: :crash_plugin,
         version: "1.0.0",
         dependencies: []
       }
     end
+
+    # Added Behaviour Callbacks
+    # handle_input and handle_output are effectively implemented by handle_input_crash / handle_output_crash
+    # for the specific commands. Adding general ones for completeness.
+    def handle_input(_input, state), do: {:ok, state}
+    def handle_output(_output, state), do: {:ok, state}
+    def enable(state), do: {:ok, state}
+    def disable(state), do: {:ok, state}
+    def filter_event(_event, state), do: {:ok, state}
+
+    def handle_command(:trigger_input_crash, arg, state),
+      do: handle_input_crash(arg, state)
+
+    def handle_command(:trigger_output_crash, arg, state),
+      do: handle_output_crash(arg, state)
+
+    def handle_command(_cmd, _args, state),
+      do: {:error, :not_implemented, state}
   end
 
   # Plugin that returns invalid metadata
@@ -233,8 +305,7 @@ defmodule Raxol.Test.PluginTestFixtures do
     @behaviour Raxol.Core.Runtime.Plugins.PluginMetadataProvider
 
     def init(_opts) do
-      # Initialize with a unique state ID to track instances
-      state_id = :rand.uniform(1_000_000)
+      state_id = System.unique_integer([:positive])
       {:ok, %{state_id: state_id, metadata_errors: metadata_errors()}}
     end
 
@@ -263,7 +334,7 @@ defmodule Raxol.Test.PluginTestFixtures do
       ]
     end
 
-    def metadata do
+    def get_metadata do
       # Return invalid metadata structure to test error handling
       %{
         # Invalid ID
@@ -284,6 +355,16 @@ defmodule Raxol.Test.PluginTestFixtures do
         author: nil
       }
     end
+
+    # Added Behaviour Callbacks
+    def handle_input(_input, state), do: {:ok, state}
+    def handle_output(_output, state), do: {:ok, state}
+    def enable(state), do: {:ok, state}
+    def disable(state), do: {:ok, state}
+    def filter_event(_event, state), do: {:ok, state}
+
+    def handle_command(_cmd, _args, state),
+      do: {:error, :not_implemented, state}
   end
 
   # Plugin with version mismatch dependency
@@ -306,15 +387,25 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def id, do: :version_mismatch_plugin
     def version, do: "1.0.0"
-    def dependencies, do: [{"test_plugin", ">= 1.0.0"}]
+    def dependencies, do: [{"test_plugin", ">= 2.0.0"}]
 
-    def metadata do
+    def get_metadata do
       %{
         id: id(),
         version: version(),
         dependencies: dependencies()
       }
     end
+
+    # Added Behaviour Callbacks
+    def handle_input(_input, state), do: {:ok, state}
+    def handle_output(_output, state), do: {:ok, state}
+    def enable(state), do: {:ok, state}
+    def disable(state), do: {:ok, state}
+    def filter_event(_event, state), do: {:ok, state}
+
+    def handle_command(_cmd, _args, state),
+      do: {:error, :not_implemented, state}
   end
 
   # Plugin with circular dependency
@@ -337,15 +428,25 @@ defmodule Raxol.Test.PluginTestFixtures do
 
     def id, do: :circular_dependency_plugin
     def version, do: "1.0.0"
-    def dependencies, do: [{"circular_dependency", ">= 1.0.0"}]
+    def dependencies, do: [{:circular_dependency_plugin, ">= 1.0.0"}]
 
-    def metadata do
+    def get_metadata do
       %{
         id: id(),
         version: version(),
         dependencies: dependencies()
       }
     end
+
+    # Added Behaviour Callbacks
+    def handle_input(_input, state), do: {:ok, state}
+    def handle_output(_output, state), do: {:ok, state}
+    def enable(state), do: {:ok, state}
+    def disable(state), do: {:ok, state}
+    def filter_event(_event, state), do: {:ok, state}
+
+    def handle_command(_cmd, _args, state),
+      do: {:error, :not_implemented, state}
   end
 
   # Helper function to create a unique plugin state

@@ -1,5 +1,5 @@
 defmodule Raxol.UI.Components.TableTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case
   alias Raxol.UI.Components.Table
 
   @test_columns [
@@ -37,10 +37,30 @@ defmodule Raxol.UI.Components.TableTest do
   setup do
     # Initialize any required dependencies
     :ok = Raxol.UI.Theming.Theme.init()
-    :ok = Raxol.Core.UserPreferences.start_link(test_mode?: true)
-    result = Raxol.Core.Renderer.Manager.start_link([])
-    assert match?({:ok, _}, result)
-    {:ok, _} = result
+
+    case Raxol.Core.UserPreferences.start_link(test_mode?: true) do
+      {:ok, _pid} ->
+        :ok
+
+      # Ignore if already started
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      other_error ->
+        flunk("UserPreferences failed to start: #{inspect(other_error)}")
+    end
+
+    case Raxol.Core.Renderer.Manager.start_link([]) do
+      {:ok, _pid} ->
+        :ok
+
+      # Ignore if already started
+      {:error, {:already_started, _pid}} ->
+        :ok
+
+      other_error ->
+        flunk("Renderer.Manager failed to start: #{inspect(other_error)}")
+    end
 
     # Return the test context
     {:ok,
@@ -133,11 +153,14 @@ defmodule Raxol.UI.Components.TableTest do
       {:ok, updated_state} = result
       rendered = Table.render(updated_state, %{})
 
-      # Check rendered content structure instead of string inspection
+      assert is_map(rendered)
+      assert Map.has_key?(rendered, :type)
       assert rendered.type == :border
       [header | rows] = get_in(rendered, [:children, Access.at(0)])
       assert length(rows) == 1
       first_row = List.first(rows)
+      assert is_map(first_row)
+      assert Map.has_key?(first_row, :type)
       assert first_row.type == :flex
       assert length(first_row.children) == 3
       assert Enum.at(first_row.children, 1).content == "Alice      "

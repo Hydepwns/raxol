@@ -74,7 +74,12 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
       ref = make_ref()
       :ok = Accessibility.subscribe_to_announcements(ref)
 
-      UserPreferences.set(Helper.pref_key(:screen_reader), false, prefs_name)
+      Raxol.Core.UserPreferences.set(
+        Helper.pref_key(:screen_reader),
+        false,
+        prefs_name
+      )
+
       Accessibility.announce("Should not be announced", [], prefs_name)
 
       refute_receive {:announcement_added, ^ref, _}, 1000
@@ -98,7 +103,7 @@ defmodule Raxol.Core.Accessibility.AnnouncementTest do
     test "announce/2 respects :silence_announcements setting", %{
       prefs_name: prefs_name
     } do
-      UserPreferences.set(
+      Raxol.Core.UserPreferences.set(
         Helper.pref_key(:silence_announcements),
         true,
         prefs_name

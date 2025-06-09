@@ -23,7 +23,10 @@ defmodule Raxol.UI.RendererTest do
     Theme.init()
 
     # Initialize UserPreferences in test mode
-    {:ok, _pid} = UserPreferences.start_link(test_mode?: true)
+    case UserPreferences.start_link(test_mode?: true) do
+      {:ok, _pid} -> :ok
+      {:error, {:already_started, _pid}} -> :ok
+    end
 
     # Create a test theme with the required structure
     test_theme = %Theme{

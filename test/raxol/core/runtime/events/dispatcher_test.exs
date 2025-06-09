@@ -40,6 +40,15 @@ defmodule Raxol.Core.Runtime.Events.DispatcherTest do
   describe "GenServer Callbacks" do
     # No context injected from setup
     test "handle_cast :dispatch dispatches event and updates state" do
+      # Attempt to resize RenderingEngine buffer to minimize log output on failure
+      # This is a temporary measure to help diagnose the actual test failure.
+      # It assumes RenderingEngine is running and registered by this name.
+      _ =
+        GenServer.cast(
+          Raxol.Core.Runtime.Rendering.Engine,
+          {:update_size, %{width: 1, height: 1}}
+        )
+
       # Start Mock Plugin Manager for this test
       {:ok, mock_pm_pid} = Mock.PluginManager.start_link([])
 

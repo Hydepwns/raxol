@@ -67,7 +67,7 @@ defmodule Raxol.Terminal.Emulator.GettersSettersTest do
     assert style.blink == false
     assert style.reverse == false
     assert style.conceal == false
-    assert style.strike == false
+    assert style.strikethrough == false
   end
 
   test "set_style/2 updates the current text style" do
@@ -97,6 +97,6 @@ defmodule Raxol.Terminal.Emulator.GettersSettersTest do
     assert style.blink == false
     assert style.reverse == false
     assert style.conceal == false
-    assert style.strike == false
+    assert style.strikethrough == false
   end
 end

@@ -4,11 +4,13 @@ defmodule Raxol.Terminal.PlatformSpecificTest do
 
   defp render_hello_html do
     buffer = ScreenBuffer.new(80, 24)
+
     buffer =
       Enum.reduce(String.graphemes("Hello"), {buffer, 0}, fn char, {buf, x} ->
         {ScreenBuffer.write_char(buf, x, 0, char, nil), x + 1}
       end)
       |> elem(0)
+
     renderer = Renderer.new(buffer)
     Renderer.render(renderer)
   end

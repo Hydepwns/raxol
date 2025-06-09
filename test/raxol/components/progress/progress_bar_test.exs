@@ -10,6 +10,7 @@ defmodule Raxol.UI.Components.Progress.ProgressBarTest do
       assert state.value == 0
       assert state.max == 100
       assert state.width == 20
+      assert Map.has_key?(state, :style)
       assert state.style == %{}
       assert state.label == nil
       assert state.label_position == :below

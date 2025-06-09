@@ -1,7 +1,6 @@
 if Mix.env() == :test do
   defmodule FileWatcherTestHelper do
     import Mox
-    import ExUnit.Case
 
     @moduledoc """
     Helper module for file watcher tests that provides common setup functions and utilities.
@@ -55,7 +54,7 @@ if Mix.env() == :test do
     Creates a basic test state for file watcher tests.
     """
     def create_test_state(opts \\ %{}) do
-      %{
+      base = %{
         plugin_dirs: ["test/plugins"],
         plugins_dir: "priv/plugins",
         initialized: false,
@@ -75,6 +74,11 @@ if Mix.env() == :test do
         file_watcher_pid: nil,
         file_event_timer: nil
       }
+
+      base
+      |> Map.put_new(:style, %{})
+      |> Map.put_new(:disabled, false)
+      |> Map.put_new(:focused, false)
     end
 
     @doc """

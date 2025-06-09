@@ -53,6 +53,41 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
       assert {:error, :not_found} =
                ComponentManager.unmount("unknown_component")
     end
+
+    test "unmount cleans up component resources" do
+      # Mount component with subscriptions
+      {:ok, component_id} = ComponentManager.mount(TestComponent)
+
+      # Add a subscription
+      {:ok, _} = ComponentManager.update(component_id, :add_subscription)
+
+      # Verify subscription was added
+      component_data = ComponentManager.get_component(component_id)
+      assert component_data.state.subscriptions != nil
+
+      # Unmount component
+      {:ok, _final_state} = ComponentManager.unmount(component_id)
+
+      # Verify component and its resources were cleaned up
+      assert ComponentManager.get_component(component_id) == nil
+      # Verify no orphaned subscriptions remain
+      assert ComponentManager.get_render_queue() == []
+    end
+
+    test "mount handles invalid component module" do
+      assert {:error, :invalid_component} = ComponentManager.mount(nil)
+
+      assert {:error, :invalid_component} =
+               ComponentManager.mount("not_a_module")
+    end
+
+    test "mount handles component init failure" do
+      defmodule BadComponent do
+        def init(_props), do: {:error, :init_failed}
+      end
+
+      assert {:error, :init_failed} = ComponentManager.mount(BadComponent)
+    end
   end
 
   describe "component updates" do
@@ -89,6 +124,44 @@ defmodule Raxol.Core.Runtime.ComponentManagerTest do
     test "update returns error for unknown component" do
       assert {:error, :not_found} =
                ComponentManager.update("unknown_component", :increment)
+    end
+
+    test "update handles component errors gracefully" do
+      defmodule ErrorComponent do
+        def init(_props), do: {:ok, %{error_count: 0}}
+        def mount(state), do: {state, []}
+        def update(:trigger_error, state), do: raise("Test error")
+        def update(_msg, state), do: {state, []}
+      end
+
+      {:ok, component_id} = ComponentManager.mount(ErrorComponent)
+
+      # Attempt to trigger an error
+      assert {:error, :component_error} =
+               ComponentManager.update(component_id, :trigger_error)
+
+      # Verify component remains in a valid state
+      component_data = ComponentManager.get_component(component_id)
+      assert component_data != nil
+      assert component_data.state.error_count == 0
+    end
+
+    test "update handles invalid return values" do
+      defmodule InvalidReturnComponent do
+        def init(_props), do: {:ok, %{}}
+        def mount(state), do: {state, []}
+        def update(_msg, _state), do: :invalid_return
+      end
+
+      {:ok, component_id} = ComponentManager.mount(InvalidReturnComponent)
+
+      # Attempt update with invalid return
+      assert {:error, :invalid_component_return} =
+               ComponentManager.update(component_id, :any_message)
+
+      # Verify component remains in a valid state
+      component_data = ComponentManager.get_component(component_id)
+      assert component_data != nil
     end
   end
 

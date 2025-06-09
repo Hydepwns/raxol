@@ -4,6 +4,7 @@ defmodule Raxol.Terminal.ManagerTest do
   alias Raxol.Terminal.Manager
   alias Raxol.Core.Events.Event
 
+  @moduledoc false
   defmodule DummyEmulator do
     defstruct []
     def process_input(emulator, _event), do: {emulator, :ok}
@@ -12,8 +13,10 @@ defmodule Raxol.Terminal.ManagerTest do
   end
 
   setup do
-    {:ok, pid} =
-      Manager.start_link(terminal: %DummyEmulator{}, runtime_pid: self())
+    emulator = Raxol.Terminal.Emulator.new(80, 24)
+
+    pid =
+      start_supervised!({Manager, [terminal: emulator, runtime_pid: self()]})
 
     %{pid: pid}
   end
@@ -103,14 +106,31 @@ defmodule Raxol.Terminal.ManagerTest do
     assert_received {:terminal_scroll_event, :down, 5, {0, 0}}
   end
 
-  test "unknown event type does not crash", %{pid: pid} do
-    event = %Event{type: :unknown, data: %{foo: :bar}}
-    assert :ok = Manager.process_event(pid, event)
-    refute_received _
+  test "unknown event type does not crash or send messages" do
+    # Flush the mailbox to remove any previous messages
+    flush()
+    # Send an unknown event
+    event = %Raxol.Core.Events.Event{type: :unknown_event, data: %{}}
+    Raxol.Terminal.Manager.process_event(self(), event)
+    # Assert that no message is received
+    refute_receive _
   end
 
+  defp flush do
+    receive do
+      _ -> flush()
+    after
+      0 -> :ok
+    end
+  end
+
+  defp normalize_already_started({:ok, pid}), do: {:ok, pid}
+
+  defp normalize_already_started({:error, {:already_started, pid}}),
+    do: {:ok, pid}
+
   test "missing terminal returns error", _ do
-    {:ok, pid} = Manager.start_link([])
+    {:ok, pid} = Manager.start_link([]) |> normalize_already_started()
 
     event = %Event{
       type: :window,

@@ -15,7 +15,8 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
               value: nil,
               lifecycle_events: [],
               render_count: 0,
-              handle_event_count: 0
+              handle_event_count: 0,
+              mounted: false
 
     def new(opts \\ []) do
       %__MODULE__{
@@ -28,7 +29,8 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
         value: Keyword.get(opts, :value, ""),
         lifecycle_events: [],
         render_count: 0,
-        handle_event_count: 0
+        handle_event_count: 0,
+        mounted: false
       }
     end
 
@@ -90,6 +92,8 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       {mounted, _} = mount(component, %{}, %{})
 
       assert Enum.at(mounted.lifecycle_events, 0) == {:mount, :called}
+      assert Map.has_key?(mounted, :render_count)
+      assert Map.has_key?(mounted, :lifecycle_events)
     end
 
     test "unmount adds event to lifecycle" do
@@ -97,6 +101,8 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       {unmounted, _} = unmount(component, %{})
 
       assert Enum.at(unmounted.lifecycle_events, 0) == {:unmount, :called}
+      assert Map.has_key?(unmounted, :render_count)
+      assert Map.has_key?(unmounted, :lifecycle_events)
     end
 
     test "render increases render count" do
@@ -109,14 +115,9 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
       # Render should be idempotent - verify by rendering multiple times
       {rendered_element_map, _view2} = render(rendered, context)
 
-      # |> TestComponent.render(context) # Cannot pipe element map back to render
-      # |> TestComponent.render(context)
-
-      # We cannot easily assert the internal count change with this structure.
       # Asserting on the returned element map instead.
-      assert _view2.type == :test_component
-      # assert rendered.render_count == 4 # This assertion is flawed
-      # assert length(rendered.lifecycle_events) == 4 # This assertion is flawed
+      assert %{type: :test_component} = _view2
+      assert Map.has_key?(rendered_element_map, :render_count)
     end
 
     test "update correctly merges props" do
@@ -127,6 +128,8 @@ defmodule Raxol.UI.Components.Base.LifecycleTest do
 
       assert Enum.at(updated.lifecycle_events, 0) ==
                {:update, %{value: "updated"}}
+
+      assert Map.has_key?(updated, :render_count)
     end
   end
 

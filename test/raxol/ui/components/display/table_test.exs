@@ -28,7 +28,7 @@ defmodule Raxol.UI.Components.Display.TableTest do
     %{
       theme: test_theme(),
       available_space: %{width: width, height: height},
-      attrs: %{}
+      attrs: %{style: %{}, type: :table}
     }
   end
 
@@ -37,13 +37,14 @@ defmodule Raxol.UI.Components.Display.TableTest do
   describe "Table Rendering" do
     @describetag :component
     setup do
-      state = %{scroll_top: 0, filter_term: ""}
+      {:ok, state} = Table.init(%{})
 
       basic_attrs = %{
         id: :basic_table,
         columns: [%{header: "Col A", key: :a}, %{header: "Col B", key: :b}],
         data: [%{a: 1, b: 2}, %{a: 3, b: 4}],
-        style: %{border: :single}
+        style: %{border: :single},
+        type: :table
       }
 
       full_context = Map.merge(default_context(), %{attrs: basic_attrs})
@@ -72,10 +73,14 @@ defmodule Raxol.UI.Components.Display.TableTest do
       assert Keyword.get(rendered_element.attrs, :_scroll_top) == 0
     end
 
-    test "renders without borders", %{state: state, context: context} do
-      no_border_attrs = Map.put(context.attrs, :style, %{border: :none})
-      no_border_context = Map.put(context, :attrs, no_border_attrs)
-      rendered_element = Table.render(state, no_border_context)
+    test "renders without borders", %{context: context} do
+      # Initialize a state specifically for testing no borders
+      {:ok, state_no_border} = Table.init(%{border_style: :none})
+
+      # The context from setup has context.attrs.style = %{border: :single}
+      # This is fine, as state.border_style = :none in state_no_border should take precedence
+      # via apply_border_style in the Table.render function.
+      rendered_element = Table.render(state_no_border, context)
       assert rendered_element.type == :table
       style_attr = Keyword.get(rendered_element.attrs, :style)
 
@@ -102,7 +107,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
             # 10 items
             data: Enum.map(1..10, &%{a: &1}),
             # Visible height for 4 data rows + header
-            style: %{height: 5}
+            style: %{height: 5},
+            type: :table
           }
         )
 
@@ -222,7 +228,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
             id: :event_table_minimal,
             columns: [%{header: "Col A", key: :a}],
             # Visible height for 4 data rows + header
-            style: %{height: 5}
+            style: %{height: 5},
+            type: :table
           }
         )
 
@@ -284,7 +291,8 @@ defmodule Raxol.UI.Components.Display.TableTest do
             # 3 items
             data: Enum.map(1..3, &%{a: &1}),
             # Visible height for 1 data row + header
-            style: %{height: 2}
+            style: %{height: 2},
+            type: :table
           }
         )
 

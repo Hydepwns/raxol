@@ -1,3 +1,5 @@
+# Remove unused import Raxol.Core.Renderer.View
+
 defmodule Raxol.Test.PerformanceViewGenerators do
   @moduledoc """
   Provides helper functions for generating complex view structures for performance tests.
@@ -19,17 +21,24 @@ defmodule Raxol.Test.PerformanceViewGenerators do
       end
 
     if rem(current_depth, 2) == 0 do
-      View.flex(direction: :row, do: children)
+      View.flex direction: :row do
+        children
+      end
     else
-      View.grid([columns: 3], do: children)
+      View.grid columns: 3 do
+        children
+      end
     end
   end
 
   def count_nested_views(view) do
-    1 +
-      (Map.get(view, :children, [])
-       |> Enum.map(&count_nested_views/1)
-       |> Enum.sum())
+    children = Map.get(view, :children, [])
+
+    if Enum.empty?(children) do
+      1
+    else
+      1 + Enum.sum(Enum.map(children, &count_nested_views/1))
+    end
   end
 
   def create_configurable_test_layout(opts \\ []) do
@@ -62,7 +71,9 @@ defmodule Raxol.Test.PerformanceViewGenerators do
       Enum.map(table_columns_spec, fn
         %{format: :sparkline} = col_spec ->
           key_for_sparkline = Map.get(col_spec, :key, :sales)
-          sparkline_width = Map.get(col_spec, :width, 12)
+
+          sparkline_width =
+            if is_map(col_spec), do: Map.get(col_spec, :width, 12), else: 12
 
           Map.merge(col_spec, %{
             key: key_for_sparkline,
@@ -77,7 +88,7 @@ defmodule Raxol.Test.PerformanceViewGenerators do
           })
 
         col_spec ->
-          Map.put_if_absent(col_spec, :format, fn data_for_cell ->
+          Map.put_new_lazy(col_spec, :format, fn data_for_cell ->
             to_string(data_for_cell)
           end)
       end)
@@ -91,12 +102,12 @@ defmodule Raxol.Test.PerformanceViewGenerators do
       )
 
     charts_view_children =
-      for i <- 1..num_charts do
+      for _i <- 1..num_charts do
         Chart.new(
           type: Enum.random([:bar, :line, :sparkline]),
           series: [
             %{
-              name: "Series \#{i}",
+              name: "Series \#{_i}",
               data:
                 Enum.take_random(table_data_source, chart_data_points)
                 |> Enum.map(&Map.get(&1, :sales, []))
@@ -112,17 +123,20 @@ defmodule Raxol.Test.PerformanceViewGenerators do
       end
 
     charts_panel =
-      View.grid(columns: chart_grid_columns, do: charts_view_children)
+      View.grid columns: chart_grid_columns do
+        charts_view_children
+      end
 
-    flex_children = [
-      View.box(
-        size: {Keyword.get(opts, :table_panel_width, :auto), :auto},
-        children: [table_view]
-      ),
-      charts_panel
-    ]
-
-    main_content = View.flex(direction: :row, do: flex_children)
+    main_content =
+      View.flex direction: :row do
+        [
+          View.box(
+            size: {Keyword.get(opts, :table_panel_width, :auto), :auto},
+            children: [table_view]
+          ),
+          charts_panel
+        ]
+      end
 
     if Keyword.get(opts, :include_top_header, false) do
       View.box(

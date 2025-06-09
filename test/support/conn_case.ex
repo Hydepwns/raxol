@@ -36,14 +36,10 @@ defmodule RaxolWeb.ConnCase do
 
   setup tags do
     # Use DataCase for database setup
-    {:ok, _} = Raxol.DataCase.setup(tags)
+    :ok = Raxol.DataCase.setup(tags)
 
     # Ensure Endpoint is started for LiveView tests
     start_endpoint(tags)
-
-    on_exit(fn ->
-      Application.stop(:raxol)
-    end)
 
     {:ok, conn: Phoenix.ConnTest.build_conn()}
   end
@@ -99,7 +95,7 @@ defmodule RaxolWeb.ConnCase do
     session_token = "placeholder_id_#{user.id}"
 
     conn
+    |> Phoenix.ConnTest.init_test_session(%{})
     |> put_session(:user_token, session_token)
-    |> configure_session(renew: true)
   end
 end

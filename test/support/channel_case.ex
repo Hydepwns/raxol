@@ -30,14 +30,10 @@ defmodule RaxolWeb.ChannelCase do
 
   setup tags do
     # Use DataCase for database setup
-    {:ok, _} = Raxol.DataCase.setup(tags)
+    :ok = Raxol.DataCase.setup(tags)
 
     # Start the endpoint server for tests requiring it
     start_endpoint(tags)
-
-    on_exit(fn ->
-      Application.stop(:raxol)
-    end)
 
     :ok
   end

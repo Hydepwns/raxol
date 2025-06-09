@@ -13,6 +13,8 @@ defmodule Raxol.Style.Colors.GradientTest do
       gradient = Gradient.linear(red, blue, steps)
 
       assert length(gradient.colors) == steps
+      assert is_map(gradient)
+      assert Map.has_key?(gradient, :type)
       assert gradient.type == :linear
       # First color is red
       assert hd(gradient.colors).hex == "#FF0000"
@@ -51,6 +53,8 @@ defmodule Raxol.Style.Colors.GradientTest do
       gradient = Gradient.multi_stop(colors, steps)
 
       assert length(gradient.colors) == steps
+      assert is_map(gradient)
+      assert Map.has_key?(gradient, :type)
       assert gradient.type == :multi_stop
       # First color is red
       assert hd(gradient.colors).hex == "#FF0000"
@@ -96,6 +100,8 @@ defmodule Raxol.Style.Colors.GradientTest do
       gradient = Gradient.rainbow(steps)
 
       assert length(gradient.colors) == steps
+      assert is_map(gradient)
+      assert Map.has_key?(gradient, :type)
       assert gradient.type == :rainbow
     end
   end
@@ -107,6 +113,8 @@ defmodule Raxol.Style.Colors.GradientTest do
       gradient = Gradient.heat_map(steps)
 
       assert length(gradient.colors) == steps
+      assert is_map(gradient)
+      assert Map.has_key?(gradient, :type)
       assert gradient.type == :heat_map
 
       # First color should be blue (cold)

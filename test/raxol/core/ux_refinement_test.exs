@@ -1,17 +1,17 @@
 defmodule Raxol.Core.UXRefinementTest do
-  use ExUnit.Case, async: false
+  use ExUnit.Case, async: true
+  import Mox
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.UXRefinement
   alias Raxol.Core.UserPreferences
 
-  setup do
-    Raxol.Core.UXRefinement.init()
+  # Make sure mocks are verified when the test exits
+  setup :verify_on_exit!
 
+  setup do
     # Initialize dependencies
     EventManager.init()
-
-    # Initialize UXRefinement module
     UXRefinement.init()
 
     on_exit(fn ->
@@ -29,8 +29,8 @@ defmodule Raxol.Core.UXRefinementTest do
         end
       end)
 
-      # Ensure UserPreferences is stopped on exit
-      # if pid && Process.alive?(pid), do: Process.exit(pid, :shutdown)
+      # Clean up EventManager
+      if Process.whereis(EventManager), do: EventManager.cleanup()
     end)
 
     :ok
@@ -72,13 +72,11 @@ defmodule Raxol.Core.UXRefinementTest do
     end
 
     test "enables accessibility feature" do
-      Mox.stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
+      stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
 
-      Mox.stub(
-        Raxol.Mocks.FocusManagerMock,
-        :register_focus_change_handler,
-        fn _ -> :ok end
-      )
+      stub(Raxol.Mocks.FocusManagerMock, :register_focus_change_handler, fn _ ->
+        :ok
+      end)
 
       assert :ok = UXRefinement.enable_feature(:accessibility)
       assert UXRefinement.feature_enabled?(:accessibility)
@@ -131,21 +129,19 @@ defmodule Raxol.Core.UXRefinementTest do
     end
 
     test "disables accessibility feature" do
-      Mox.stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
+      stub(Raxol.Mocks.AccessibilityMock, :enable, fn _, _ -> :ok end)
 
-      Mox.stub(
-        Raxol.Mocks.FocusManagerMock,
-        :register_focus_change_handler,
-        fn _ -> :ok end
-      )
+      stub(Raxol.Mocks.FocusManagerMock, :register_focus_change_handler, fn _ ->
+        :ok
+      end)
 
-      Mox.stub(
+      stub(
         Raxol.Mocks.FocusManagerMock,
         :unregister_focus_change_handler,
         fn _ -> :ok end
       )
 
-      Mox.stub(Raxol.Mocks.AccessibilityMock, :disable, fn -> :ok end)
+      stub(Raxol.Mocks.AccessibilityMock, :disable, fn -> :ok end)
 
       UXRefinement.enable_feature(:accessibility)
       assert :ok = UXRefinement.disable_feature(:accessibility)
@@ -164,7 +160,7 @@ defmodule Raxol.Core.UXRefinementTest do
   describe "register_hint/2 and get_hint/1" do
     setup do
       UXRefinement.enable_feature(:hints)
-      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
+      stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
       :ok
     end
 
@@ -195,7 +191,7 @@ defmodule Raxol.Core.UXRefinementTest do
   describe "register_component_hint/2 and get_component_hint/2" do
     setup do
       UXRefinement.enable_feature(:hints)
-      Mox.stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
+      stub(Raxol.Mocks.KeyboardShortcutsMock, :init, fn -> :ok end)
       :ok
     end
 

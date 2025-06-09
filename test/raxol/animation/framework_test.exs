@@ -21,27 +21,48 @@ defmodule Raxol.Animation.FrameworkTest do
   # Start UserPreferences for these tests
   setup do
     # Use a test-specific name to avoid conflicts
-    {:ok, _pid} =
-      start_supervised({UserPreferences, name: __MODULE__.UserPreferences})
+    # Or a more unique generated name if needed across modules
+    local_user_prefs_name = __MODULE__.UserPreferences
 
-    # Initialize required systems for testing
-    Framework.init()
+    # Start UserPreferences with the specific name and test_mode
+    user_prefs_opts = [name: local_user_prefs_name, test_mode?: true]
+
+    {:ok, _pid} =
+      start_supervised({UserPreferences, user_prefs_opts})
+
+    # Initialize required systems for testing, passing the named UserPreferences
+    Framework.init(%{}, local_user_prefs_name)
     # Accessibility.enable() -- replaced by with_screen_reader_spy in tests
 
-    # Reset relevant prefs before each test
-    UserPreferences.set("accessibility.reduced_motion", false)
-    UserPreferences.set("accessibility.screen_reader", true)
-    UserPreferences.set("accessibility.silence_announcements", false)
+    # Reset relevant prefs before each test, using the named UserPreferences
+    UserPreferences.set(
+      "accessibility.reduced_motion",
+      false,
+      local_user_prefs_name
+    )
+
+    UserPreferences.set(
+      "accessibility.screen_reader",
+      true,
+      local_user_prefs_name
+    )
+
+    UserPreferences.set(
+      "accessibility.silence_announcements",
+      false,
+      local_user_prefs_name
+    )
 
     # Accessibility.clear_announcements() -- replaced by with_screen_reader_spy in tests
 
-    # Wait for preferences to be applied
-    assert_receive {:preferences_applied}, 100
+    # Wait for preferences to be applied (assuming the event might carry the name)
+    assert_receive {:preferences_applied, ^local_user_prefs_name}, 100
 
     on_exit(fn ->
       # Cleanup
+      # Consider if Framework.stop() also needs the prefs name
       Framework.stop()
-      # Accessibility.disable() -- replaced by with_screen_reader_spy in tests
+      # The supervisor will stop the named UserPreferences instance.
     end)
 
     :ok
@@ -72,6 +93,8 @@ defmodule Raxol.Animation.FrameworkTest do
         })
 
       assert animation.name == :test_animation
+      assert is_map(animation)
+      assert Map.has_key?(animation, :type)
       assert animation.type == :fade
       # Default duration
       assert animation.duration == 300
@@ -94,6 +117,8 @@ defmodule Raxol.Animation.FrameworkTest do
         })
 
       assert animation.name == :custom_animation
+      assert is_map(animation)
+      assert Map.has_key?(animation, :type)
       assert animation.type == :slide
       assert animation.duration == 500
       assert animation.easing == :ease_out_cubic
@@ -102,7 +127,9 @@ defmodule Raxol.Animation.FrameworkTest do
       assert animation.direction == :right
     end
 
-    test "starts animation for an element", %{user_preferences_pid: user_preferences_pid} do
+    test "starts animation for an element", %{
+      user_preferences_pid: user_preferences_pid
+    } do
       # Create and start a test animation
       animation =
         Framework.create_animation(:test_animation, %{
@@ -112,11 +139,20 @@ defmodule Raxol.Animation.FrameworkTest do
           target_path: [:opacity]
         })
 
-      assert :ok == Framework.start_animation(animation.name, "test_element", %{}, user_preferences_pid)
+      assert :ok ==
+               Framework.start_animation(
+                 animation.name,
+                 "test_element",
+                 %{},
+                 user_preferences_pid
+               )
+
       wait_for_animation_start("test_element", animation.name)
     end
 
-    test "handles reduced motion preferences", %{user_preferences_pid: user_preferences_pid} do
+    test "handles reduced motion preferences", %{
+      user_preferences_pid: user_preferences_pid
+    } do
       # Enable reduced motion *before* creating/starting
       UserPreferences.set("accessibility.reduced_motion", true)
       Framework.init(%{reduced_motion: true})
@@ -145,17 +181,27 @@ defmodule Raxol.Animation.FrameworkTest do
         })
 
       # Start the animation
-      :ok = Framework.start_animation(animation.name, "test_element", %{}, user_preferences_pid)
+      :ok =
+        Framework.start_animation(
+          animation.name,
+          "test_element",
+          %{},
+          user_preferences_pid
+        )
+
       wait_for_animation_start("test_element", animation.name)
 
       # Apply animation immediately
-      updated_state = Framework.apply_animations_to_state(initial_state, user_preferences_pid)
+      updated_state =
+        Framework.apply_animations_to_state(initial_state, user_preferences_pid)
 
       # Verify the final state was applied immediately due to reduced motion
       assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
     end
 
-    test "announces animations to screen readers when configured", %{user_preferences_pid: user_preferences_pid} do
+    test "announces animations to screen readers when configured", %{
+      user_preferences_pid: user_preferences_pid
+    } do
       with_screen_reader_spy(user_preferences_pid, fn ->
         # Create an animation with screen reader announcement
         animation =
@@ -169,7 +215,14 @@ defmodule Raxol.Animation.FrameworkTest do
           })
 
         # Start the animation
-        :ok = Framework.start_animation(animation.name, "test_element", %{}, user_preferences_pid)
+        :ok =
+          Framework.start_animation(
+            animation.name,
+            "test_element",
+            %{},
+            user_preferences_pid
+          )
+
         wait_for_animation_start("test_element", animation.name)
 
         # Verify announcement was made
@@ -178,7 +231,9 @@ defmodule Raxol.Animation.FrameworkTest do
       end)
     end
 
-    test "applies animation values to state", %{user_preferences_pid: user_preferences_pid} do
+    test "applies animation values to state", %{
+      user_preferences_pid: user_preferences_pid
+    } do
       # Create initial state
       initial_state = %{
         elements: %{
@@ -199,17 +254,27 @@ defmodule Raxol.Animation.FrameworkTest do
           target_path: [:opacity]
         })
 
-      :ok = Framework.start_animation(animation.name, "test_element", %{}, user_preferences_pid)
+      :ok =
+        Framework.start_animation(
+          animation.name,
+          "test_element",
+          %{},
+          user_preferences_pid
+        )
+
       wait_for_animation_start("test_element", animation.name)
 
       # Apply animation to state
-      updated_state = Framework.apply_animations_to_state(initial_state, user_preferences_pid)
+      updated_state =
+        Framework.apply_animations_to_state(initial_state, user_preferences_pid)
 
       # Verify state was updated
       assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
     end
 
-    test "handles multiple animations on same element", %{user_preferences_pid: user_preferences_pid} do
+    test "handles multiple animations on same element", %{
+      user_preferences_pid: user_preferences_pid
+    } do
       # Create initial state
       initial_state = %{
         elements: %{
@@ -241,14 +306,28 @@ defmodule Raxol.Animation.FrameworkTest do
           target_path: [:position]
         })
 
-      :ok = Framework.start_animation(fade_animation.name, "test_element", %{}, user_preferences_pid)
-      :ok = Framework.start_animation(slide_animation.name, "test_element", %{}, user_preferences_pid)
+      :ok =
+        Framework.start_animation(
+          fade_animation.name,
+          "test_element",
+          %{},
+          user_preferences_pid
+        )
+
+      :ok =
+        Framework.start_animation(
+          slide_animation.name,
+          "test_element",
+          %{},
+          user_preferences_pid
+        )
 
       wait_for_animation_start("test_element", fade_animation.name)
       wait_for_animation_start("test_element", slide_animation.name)
 
       # Apply animations to state
-      updated_state = Framework.apply_animations_to_state(initial_state, user_preferences_pid)
+      updated_state =
+        Framework.apply_animations_to_state(initial_state, user_preferences_pid)
 
       # Verify both animations were applied
       assert get_in(updated_state, [:elements, "test_element", :opacity]) == 1
@@ -257,7 +336,9 @@ defmodule Raxol.Animation.FrameworkTest do
                100
     end
 
-    test "meets performance requirements", %{user_preferences_pid: user_preferences_pid} do
+    test "meets performance requirements", %{
+      user_preferences_pid: user_preferences_pid
+    } do
       # Create a test animation
       animation =
         Framework.create_animation(:perf_test, %{
@@ -271,7 +352,14 @@ defmodule Raxol.Animation.FrameworkTest do
       # Measure animation performance
       start_time = System.monotonic_time()
 
-      :ok = Framework.start_animation(animation.name, "test_element", %{}, user_preferences_pid)
+      :ok =
+        Framework.start_animation(
+          animation.name,
+          "test_element",
+          %{},
+          user_preferences_pid
+        )
+
       wait_for_animation_start("test_element", animation.name)
       wait_for_animation_completion("test_element", animation.name)
 

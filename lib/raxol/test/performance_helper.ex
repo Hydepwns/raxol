@@ -26,7 +26,8 @@ defmodule Raxol.Test.PerformanceHelper do
     {:ok, env} = Raxol.Test.TestHelper.setup_test_env()
 
     # Add performance monitoring to context
-    Map.put(env, :performance_monitor, monitor_pid)
+    context = Map.put(env, :performance_monitor, monitor_pid)
+    {:ok, context}
   end
 
   @doc """
@@ -40,7 +41,7 @@ defmodule Raxol.Test.PerformanceHelper do
   def benchmark(fun, opts \\ []) do
     iterations = Keyword.get(opts, :iterations, 1000)
     warmup = Keyword.get(opts, :warmup, 100)
-    timeout = Keyword.get(opts, :timeout, 5000)
+    _timeout = Keyword.get(opts, :timeout, 5000)
 
     # Warmup phase
     for _ <- 1..warmup do

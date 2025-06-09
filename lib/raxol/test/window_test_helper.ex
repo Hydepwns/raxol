@@ -3,32 +3,20 @@ defmodule Raxol.Test.WindowTestHelper do
   Helper functions for window-related tests.
   """
 
-  alias Raxol.Terminal.Emulator
-  alias Raxol.Terminal.ScreenBuffer
-
   @doc """
   Creates a test emulator with default window state.
   """
   def create_test_emulator do
-    %Emulator{
-      window_title: "",
-      icon_name: "",
-      width: 80,
-      height: 24,
-      main_screen_buffer: ScreenBuffer.new(80, 24),
-      alternate_screen_buffer: ScreenBuffer.new(80, 24),
-      output_buffer: "",
-      window_state: %{
-        title: "",
-        icon_name: "",
-        size: {80, 24},
-        position: {0, 0},
-        stacking_order: :normal,
-        iconified: false,
-        maximized: false,
-        previous_size: nil
-      }
-    }
+    emu = Raxol.Terminal.Emulator.new(80, 24)
+
+    if is_map(emu),
+      do:
+        emu
+        |> Map.put_new(:style, %{})
+        |> Map.put_new(:disabled, false)
+        |> Map.put_new(:focused, false)
+        |> Map.put_new(:attrs, %{}),
+      else: emu
   end
 
   @doc """

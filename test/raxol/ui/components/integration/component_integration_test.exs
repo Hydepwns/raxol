@@ -12,16 +12,24 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     @behaviour Raxol.UI.Components.Base.Component
 
     def init(props) do
-      Map.merge(
-        %{
-          children: [],
-          events: [],
-          child_states: %{},
-          mounted: false,
-          unmounted: false
-        },
-        props
-      )
+      {:ok,
+       Map.merge(
+         %{
+           id: :test_id,
+           type: :parent,
+           children: [],
+           events: [],
+           child_states: %{},
+           mounted: false,
+           unmounted: false,
+           render_count: 0,
+           position: {0, 0},
+           style: %{},
+           disabled: false,
+           focused: false
+         },
+         props
+       )}
     end
 
     def mount(state) do
@@ -41,7 +49,10 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
          children: state.children,
          child_states: state.child_states,
          mounted: state.mounted,
-         unmounted: state.unmounted
+         unmounted: state.unmounted,
+         style: Map.get(state, :style, %{}),
+         disabled: Map.get(state, :disabled, false),
+         focused: Map.get(state, :focused, false)
        }}
     end
 
@@ -67,15 +78,23 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
     @behaviour Raxol.UI.Components.Base.Component
 
     def init(props) do
-      Map.merge(
-        %{
-          value: 0,
-          parent_id: nil,
-          mounted: false,
-          unmounted: false
-        },
-        props
-      )
+      {:ok,
+       Map.merge(
+         %{
+           id: :test_id,
+           type: :child,
+           value: 0,
+           parent_id: nil,
+           mounted: false,
+           unmounted: false,
+           render_count: 0,
+           position: {0, 0},
+           style: %{},
+           disabled: false,
+           focused: false
+         },
+         props
+       )}
     end
 
     def mount(state) do
@@ -95,7 +114,10 @@ defmodule Raxol.UI.Components.Integration.ComponentIntegrationTest do
          value: state.value,
          parent_id: state.parent_id,
          mounted: state.mounted,
-         unmounted: state.unmounted
+         unmounted: state.unmounted,
+         style: Map.get(state, :style, %{}),
+         disabled: Map.get(state, :disabled, false),
+         focused: Map.get(state, :focused, false)
        }}
     end
 

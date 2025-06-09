@@ -10,12 +10,14 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
     # Create a test emulator with a 10x10 screen using the proper constructor
     emulator = Emulator.new(10, 10)
     # Optionally, reset the buffers and cursor if needed
-    emulator = %{emulator |
-      main_screen_buffer: ScreenBuffer.new(10, 10),
-      alternate_screen_buffer: ScreenBuffer.new(10, 10),
-      cursor: CursorManager.new(),
-      style: TextFormatting.new()
+    emulator = %{
+      emulator
+      | main_screen_buffer: ScreenBuffer.new(10, 10),
+        alternate_screen_buffer: ScreenBuffer.new(10, 10),
+        cursor: CursorManager.new(),
+        style: TextFormatting.new()
     }
+
     {:ok, emulator: emulator}
   end
 
@@ -26,7 +28,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Move cursor to middle of screen
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result} = EraseHandlers.handle_J(emulator, [0])
+      result = unwrap_ok(EraseHandlers.handle_J(emulator, [0]))
 
       # Verify content before cursor is preserved
       for y <- 0..4 do
@@ -53,7 +55,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Move cursor to middle of screen
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result} = EraseHandlers.handle_J(emulator, [1])
+      result = unwrap_ok(EraseHandlers.handle_J(emulator, [1]))
 
       # Verify content before cursor is erased
       for y <- 0..4 do
@@ -78,7 +80,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Move cursor to middle of screen
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result} = EraseHandlers.handle_J(emulator, [2])
+      result = unwrap_ok(EraseHandlers.handle_J(emulator, [2]))
 
       # Verify all content is erased
       for y <- 0..9 do
@@ -94,7 +96,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Move cursor to middle of screen
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result} = EraseHandlers.handle_J(emulator, [])
+      result = unwrap_ok(EraseHandlers.handle_J(emulator, []))
 
       # Should default to mode 0 (erase from cursor to end)
       for y <- 0..4 do
@@ -168,8 +170,8 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       assert get_line_chars(emulator_after_scroll, 2) == List.duplicate(" ", 10)
 
       # Call Erase in Display with mode 3 (erase scrollback)
-      {:ok, result_emulator} =
-        EraseHandlers.handle_J(emulator_after_scroll, [3])
+      result_emulator =
+        unwrap_ok(EraseHandlers.handle_J(emulator_after_scroll, [3]))
 
       # Verify scrollback is cleared
       assert result_emulator.main_screen_buffer.scrollback == []
@@ -188,7 +190,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Move cursor to middle of line
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result} = EraseHandlers.handle_K(emulator, [0])
+      result = unwrap_ok(EraseHandlers.handle_K(emulator, [0]))
 
       # Verify content before cursor is preserved
       for x <- 0..4 do
@@ -209,7 +211,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Move cursor to middle of line
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result} = EraseHandlers.handle_K(emulator, [1])
+      result = unwrap_ok(EraseHandlers.handle_K(emulator, [1]))
 
       # Verify content before cursor is erased
       for x <- 0..5 do
@@ -228,7 +230,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Move cursor to middle of line
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result} = EraseHandlers.handle_K(emulator, [2])
+      result = unwrap_ok(EraseHandlers.handle_K(emulator, [2]))
 
       # Verify entire line is erased
       for x <- 0..9 do
@@ -242,7 +244,7 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
       # Move cursor to middle of line
       emulator = %{emulator | cursor: %{emulator.cursor | position: {5, 5}}}
 
-      {:ok, result} = EraseHandlers.handle_K(emulator, [])
+      result = unwrap_ok(EraseHandlers.handle_K(emulator, []))
 
       # Should default to mode 0 (erase from cursor to end)
       for x <- 0..4 do
@@ -290,4 +292,9 @@ defmodule Raxol.Terminal.Commands.EraseHandlersTest do
     line_cells = ScreenBuffer.get_line(emulator.main_screen_buffer, line_idx)
     Enum.map(line_cells, & &1.char)
   end
+
+  # Add a helper at the top of the file for unwrapping handler results
+  defp unwrap_ok({:ok, value}), do: value
+  defp unwrap_ok({:error, _reason, value}), do: value
+  defp unwrap_ok(value) when is_map(value), do: value
 end

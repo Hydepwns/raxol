@@ -185,4 +185,6 @@
 #   #     output =~ "\e[48;2;" ||
 #   #     output =~ "\e[58"
 #   # end
+#
+#   # TODO: Implement Unicode and ProgressBar rendering tests once the components are available
 # end

@@ -8,13 +8,16 @@ defmodule Raxol.Terminal.Commands.ModeHandlersTest do
 
   setup do
     # Create a test emulator with a 10x10 screen
-    emulator = %Emulator{
-      main_screen_buffer: ScreenBuffer.new(10, 10),
-      alternate_screen_buffer: ScreenBuffer.new(10, 10),
-      cursor: CursorManager.new(),
-      style: TextFormatting.new()
-      # ModeManager should be initialized in Emulator.new()
-      # mode_manager: Raxol.Terminal.ModeManager.new() # Add this if not auto-initialized
+    emulator = Emulator.new(80, 24)
+
+    emulator = %{
+      emulator
+      | main_screen_buffer: ScreenBuffer.new(10, 10),
+        alternate_screen_buffer: ScreenBuffer.new(10, 10),
+        cursor: CursorManager.new(),
+        style: TextFormatting.new()
+        # ModeManager should be initialized in Emulator.new()
+        # mode_manager: Raxol.Terminal.ModeManager.new() # Add this if not auto-initialized
     }
 
     {:ok, emulator: emulator}

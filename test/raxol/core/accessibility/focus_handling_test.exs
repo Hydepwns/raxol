@@ -3,6 +3,7 @@ defmodule Raxol.Core.Accessibility.FocusHandlingTest do
   import Mox
 
   alias Raxol.Core.Accessibility
+  alias Raxol.Core.UserPreferences
   alias Raxol.Core.AccessibilityTestHelper, as: Helper
 
   setup :verify_on_exit!

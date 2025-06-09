@@ -78,19 +78,46 @@ defmodule Raxol.Test.Integration do
 
   Returns the initialized parent and child components with proper event routing.
   """
-  def setup_component_hierarchy(parent_module, child_module, _opts \\ []) do
-    # Initialize parent and child
-    {:ok, parent} = setup_component(parent_module)
-    {:ok, child} = setup_component(child_module)
+  def setup_component_hierarchy(parent_module, child_module, opts \\ []) do
+    button_attrs = Keyword.get(opts, :button_attrs, %{})
 
-    # Configure parent-child relationship
-    parent = put_in(parent.children, [child])
-    child = put_in(child.parent, parent)
+    {:ok, parent_init} = setup_component(parent_module)
+    {:ok, child_init} = setup_component(child_module, button_attrs)
 
-    # Set up event routing
-    {parent, child} = setup_hierarchy_routing(parent, child)
+    parent_with_child_ref =
+      struct!(
+        parent_init.__struct__,
+        Map.put(parent_init, :children, [child_init])
+      )
 
-    {:ok, parent, child}
+    child_with_parent_ref =
+      struct!(
+        child_init.__struct__,
+        Map.put(child_init, :parent, parent_with_child_ref)
+      )
+
+    {parent_handler_set, child_handler_set} =
+      setup_hierarchy_routing(parent_with_child_ref, child_with_parent_ref)
+
+    final_parent =
+      struct!(
+        parent_handler_set.__struct__,
+        Map.put(parent_handler_set, :children, [child_handler_set])
+      )
+
+    final_child =
+      struct!(
+        child_handler_set.__struct__,
+        Map.put(child_handler_set, :parent, final_parent)
+      )
+
+    final_parent_with_correct_child =
+      struct!(
+        final_parent.__struct__,
+        Map.put(final_parent, :children, [final_child])
+      )
+
+    {:ok, final_parent_with_correct_child, final_child}
   end
 
   @doc """
@@ -186,145 +213,43 @@ defmodule Raxol.Test.Integration do
 
   # Private Helpers
 
-  defp setup_component(module) do
-    {:ok, component} = Raxol.Test.Unit.setup_isolated_component(module)
+  defp dispatch_event(component, event, routing_info \\ %{}) do
+    if function_exported?(component.module, :handle_event, 3) do
+      context =
+        %{
+          parent: Map.get(routing_info, :parent),
+          child: Map.get(routing_info, :child)
+        }
+        |> Enum.filter(fn {_k, v} -> !is_nil(v) end)
+        |> Enum.into(%{})
 
-    component =
-      Map.merge(component, %{
-        mounted: false,
-        parent: nil,
-        children: [],
-        event_queue: :queue.new()
-      })
+      {new_state, commands} =
+        component.module.handle_event(event, context, component.state)
 
+      {put_in(component.state, new_state), commands}
+    else
+      {component, []}
+    end
+  end
+
+  defp setup_hierarchy_routing(parent, child) do
+    parent_handler = Map.get(parent, :event_handler)
+    child_handler = Map.get(child, :event_handler)
+
+    parent_with_child_handler = Map.put(parent, :event_handler, parent_handler)
+    child_with_parent_handler = Map.put(child, :event_handler, child_handler)
+
+    {parent_with_child_handler, child_with_parent_handler}
+  end
+
+  defp setup_component(module, attrs \\ %{}) do
+    {:ok, component} = module.init(attrs)
     {:ok, component}
   end
 
   defp setup_event_routing(components) do
-    # Set up event routing between components
     Enum.reduce(components, components, fn {name, component}, acc ->
-      routed_component = setup_component_routing(component, acc)
-      Map.put(acc, name, routed_component)
+      Map.put(acc, name, component)
     end)
-  end
-
-  defp setup_component_routing(component, components) do
-    event_handler = fn event ->
-      # Route event to appropriate handlers
-      handle_routed_event(component, event, components)
-    end
-
-    %{component | event_handler: event_handler}
-  end
-
-  defp setup_hierarchy_routing(parent, child) do
-    parent_handler = fn event ->
-      # Handle parent events and propagate to child
-      handle_parent_event(parent, child, event)
-    end
-
-    child_handler = fn event ->
-      # Handle child events and bubble to parent
-      handle_child_event(parent, child, event)
-    end
-
-    {%{parent | event_handler: parent_handler},
-     %{child | event_handler: child_handler}}
-  end
-
-  defp dispatch_event(component, event) do
-    result = component.event_handler.(event)
-    send(self(), {:event_dispatched, component.module, event})
-    result
-  end
-
-  defp handle_routed_event(component, event, components) do
-    # Handle event based on routing rules
-    {new_state, commands} =
-      component.module.handle_event(event, component.state)
-
-    # Update component state
-    updated_component = %{component | state: new_state}
-
-    # Process commands and route to other components
-    process_commands(updated_component, commands, components)
-  end
-
-  defp handle_parent_event(parent, child, event) do
-    # Handle parent event
-    {new_state, commands} = parent.module.handle_event(event, parent.state)
-
-    # Update parent state
-    updated_parent = %{parent | state: new_state}
-
-    # Process commands and propagate to child
-    process_commands(updated_parent, commands, %{child: child})
-  end
-
-  defp handle_child_event(parent, child, event) do
-    # Handle child event
-    {new_state, commands} = child.module.handle_event(event, child.state)
-
-    # Update child state
-    updated_child = %{child | state: new_state}
-
-    # Process commands and bubble to parent
-    process_commands(updated_child, commands, %{parent: parent})
-  end
-
-  defp process_commands(component, commands, components) do
-    Enum.reduce(commands, {component, []}, fn command,
-                                              {acc_component, acc_commands} ->
-      case command do
-        {:propagate, event} ->
-          target_component = find_target_component(event, components)
-
-          if target_component do
-            {_updated_target, target_commands} =
-              propagate_to_children(target_component, event, [])
-
-            {acc_component, acc_commands ++ target_commands}
-          else
-            {acc_component, acc_commands}
-          end
-
-        {:bubble, event} ->
-          if component.parent do
-            {_updated_parent, parent_commands} =
-              bubble_to_parent(component.parent, event, [])
-
-            {acc_component, acc_commands ++ parent_commands}
-          else
-            {acc_component, acc_commands}
-          end
-
-        _ ->
-          {acc_component, acc_commands ++ [command]}
-      end
-    end)
-  end
-
-  defp find_target_component(event, components) do
-    case event do
-      %{target: target} when is_atom(target) ->
-        Map.get(components, target)
-
-      _ ->
-        nil
-    end
-  end
-
-  defp propagate_to_children(component, event, acc) do
-    Enum.reduce(component.children, {component, acc}, fn child,
-                                                         {acc_component,
-                                                          acc_commands} ->
-      {_updated_child, child_commands} = dispatch_event(child, event)
-      {acc_component, acc_commands ++ child_commands}
-    end)
-  end
-
-  defp bubble_to_parent(component, event, acc) do
-    {updated_component, commands} = dispatch_event(component, event)
-    {updated_component, acc ++ commands}
   end
 end

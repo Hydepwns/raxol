@@ -7,12 +7,13 @@ defmodule Form do
   Initialize the form component with default state.
   """
   def init(props \\ %{}) do
-    %{
-      submitted: false,
-      button_clicked: nil,
-      fields: Map.get(props, :fields, %{}),
-      on_submit: Map.get(props, :on_submit, fn -> :submitted end)
-    }
+    {:ok,
+     %{
+       submitted: false,
+       button_clicked: nil,
+       fields: Map.get(props, :fields, %{}),
+       on_submit: Map.get(props, :on_submit, fn -> :submitted end)
+     }}
   end
 
   @doc """

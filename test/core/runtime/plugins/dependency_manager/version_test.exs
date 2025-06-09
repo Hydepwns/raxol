@@ -51,23 +51,24 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
     end
 
     test "handles invalid version formats" do
-      assert {:error, :invalid_version} =
+      assert {:error, :invalid_version_format} =
                Version.check_version("invalid", ">= 1.0.0")
 
-      assert {:error, :invalid_version} = Version.check_version("1", ">= 1.0.0")
+      assert {:error, :invalid_version_format} =
+               Version.check_version("1", ">= 1.0.0")
 
-      assert {:error, :invalid_version} =
+      assert {:error, :invalid_version_format} =
                Version.check_version("1.0", ">= 1.0.0")
     end
 
     test "handles invalid requirement formats" do
-      assert {:error, :invalid_requirement} =
+      assert {:error, :invalid_requirement_format} =
                Version.check_version("1.0.0", "invalid")
 
-      assert {:error, :invalid_requirement} =
+      assert {:error, :invalid_requirement_format} =
                Version.check_version("1.0.0", ">")
 
-      assert {:error, :invalid_requirement} =
+      assert {:error, :invalid_requirement_format} =
                Version.check_version("1.0.0", ">= ")
     end
   end
@@ -88,13 +89,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.VersionTest do
     end
 
     test "handles invalid requirement formats" do
-      assert {:error, :invalid_requirement} =
+      assert {:error, :invalid_requirement_format} =
                Version.parse_version_requirement("invalid")
 
-      assert {:error, :invalid_requirement} =
+      assert {:error, :invalid_requirement_format} =
                Version.parse_version_requirement(">")
 
-      assert {:error, :invalid_requirement} =
+      assert {:error, :invalid_requirement_format} =
                Version.parse_version_requirement(">= ")
     end
   end

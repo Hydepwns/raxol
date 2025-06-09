@@ -10,6 +10,17 @@ defmodule Raxol.Test.AssertionHelpers do
   Asserts that a component's state matches expected values.
   """
   def assert_state_match(component, expected) when is_map(expected) do
+    Enum.each([:style, :disabled, :focused], fn key ->
+      assert Map.has_key?(component.state, key),
+             "Expected state to have key #{inspect(key)}"
+
+      assert Map.has_key?(expected, key),
+             "Expected expected state to have key #{inspect(key)}"
+
+      assert Map.get(component.state, key) == Map.get(expected, key),
+             "Expected state.#{key} to be #{inspect(Map.get(expected, key))}, but got: #{inspect(Map.get(component.state, key))}"
+    end)
+
     Enum.each(expected, fn {key, value} ->
       assert Map.get(component.state, key) == value,
              "Expected state.#{key} to be #{inspect(value)}, but got: #{inspect(Map.get(component.state, key))}"
@@ -77,10 +88,9 @@ defmodule Raxol.Test.AssertionHelpers do
   Asserts that a component is responsive across different sizes.
   """
   def assert_responsive(component, sizes) do
-    Enum.each(sizes, fn {width, height} ->
-      context = %{width: width, height: height}
-      output = capture_render(component, context)
+    results = Raxol.Test.Visual.test_responsive_rendering(component, sizes)
 
+    Enum.each(results, fn %{width: width, height: height, output: output} ->
       assert is_binary(output),
              "Component failed to render at size #{width}x#{height}"
     end)
@@ -91,7 +101,7 @@ defmodule Raxol.Test.AssertionHelpers do
   """
   def assert_theme_consistent(component, themes) do
     Enum.each(themes, fn theme ->
-      Raxol.ColorSystem.apply_theme(theme)
+      apply_theme(theme)
       assert_receive {:theme_changed, ^theme}, 100
       output = capture_render(component)
 
@@ -112,5 +122,9 @@ defmodule Raxol.Test.AssertionHelpers do
   defp assert_error_handled(_error) do
     # Placeholder: Need to integrate with error handling/logging mechanism
     true
+  end
+
+  def apply_theme(theme) do
+    Raxol.Style.Colors.System.apply_theme(theme.name)
   end
 end

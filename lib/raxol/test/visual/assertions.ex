@@ -101,7 +101,7 @@ defmodule Raxol.Test.Visual.Assertions do
   def assert_responsive(component, sizes) when is_list(sizes) do
     results = Visual.test_responsive_rendering(component, sizes)
 
-    Enum.each(results, fn {{width, height}, output} ->
+    Enum.each(results, fn %{width: width, height: height, output: output} ->
       assert String.length(output) > 0,
              "Component failed to render at size #{width}x#{height}"
 

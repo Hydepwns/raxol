@@ -70,13 +70,20 @@ defmodule Raxol.Test.Unit do
     end
 
     # Set up the component with mocked dependencies
-    {:ok,
-     %{
-       module: component,
-       state: state,
-       subscriptions: [],
-       event_handler: mock_event_system
-     }}
+    result = %{
+      module: component,
+      state: state,
+      subscriptions: [],
+      event_handler: mock_event_system
+    }
+
+    unless is_map(result) and Map.has_key?(result, :module) and
+             Map.has_key?(result, :state) do
+      raise ArgumentError,
+            "setup_isolated_component/2 expected a map with :module and :state keys, got: #{inspect(result)}"
+    end
+
+    {:ok, result}
   end
 
   # Keep setup_isolated_component/1 for default props
@@ -93,7 +100,7 @@ defmodule Raxol.Test.Unit do
     # Call handle_event/3, passing empty map as opts for now
     IO.puts("Simulating event: #{inspect(event)}")
     IO.puts("Initial component state: #{inspect(component.state)}")
-    result = component.module.handle_event(component, event, %{})
+    result = component.module.handle_event(component.state, event, %{})
     IO.puts("handle_event result: #{inspect(result)}")
 
     {new_state_map, commands} =

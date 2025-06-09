@@ -9,10 +9,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
     def get_metadata do
       %{
         id: :plugin_a,
+        name: "plugin_a",
         version: "1.0.0",
         dependencies: [{:plugin_b, ">= 1.0.0"}]
       }
     end
+
+    @impl true
+    def init(config), do: {:ok, config}
   end
 
   defmodule TestPluginB do
@@ -22,10 +26,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
     def get_metadata do
       %{
         id: :plugin_b,
+        name: "plugin_b",
         version: "1.0.0",
         dependencies: []
       }
     end
+
+    @impl true
+    def init(config), do: {:ok, config}
   end
 
   defmodule TestPluginC do
@@ -35,10 +43,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
     def get_metadata do
       %{
         id: :plugin_c,
+        name: "plugin_c",
         version: "1.0.0",
         dependencies: [{:plugin_a, ">= 1.0.0"}, {:plugin_b, ">= 1.0.0"}]
       }
     end
+
+    @impl true
+    def init(config), do: {:ok, config}
   end
 
   defmodule TestPluginD do
@@ -48,10 +60,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
     def get_metadata do
       %{
         id: :plugin_d,
+        name: "plugin_d",
         version: "1.0.0",
         dependencies: [{:plugin_c, ">= 1.0.0"}]
       }
     end
+
+    @impl true
+    def init(config), do: {:ok, config}
   end
 
   describe "plugin manager integration" do
@@ -60,7 +76,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:ok, updated_manager} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
+               Raxol.Plugins.Manager.State.load_plugins(manager, plugins)
 
       loaded_plugins = updated_manager.loaded_plugins
       load_order = Map.keys(loaded_plugins)
@@ -79,10 +95,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :plugin_e,
+            name: "plugin_e",
             version: "2.0.0",
             dependencies: [{:plugin_f, ">= 1.0.0 and < 2.0.0"}]
           }
         end
+
+        @impl true
+        def init(config), do: {:ok, config}
       end
 
       defmodule TestPluginF do
@@ -92,17 +112,21 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :plugin_f,
+            name: "plugin_f",
             version: "1.5.0",
             dependencies: []
           }
         end
+
+        @impl true
+        def init(config), do: {:ok, config}
       end
 
       plugins = [TestPluginE, TestPluginF]
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:ok, updated_manager} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
+               Raxol.Plugins.Manager.State.load_plugins(manager, plugins)
 
       loaded_plugins = updated_manager.loaded_plugins
 
@@ -118,10 +142,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :plugin_g,
+            name: "plugin_g",
             version: "1.0.0",
             dependencies: [{:plugin_h, ">= 1.0.0"}]
           }
         end
+
+        @impl true
+        def init(config), do: {:ok, config}
       end
 
       defmodule TestPluginH do
@@ -131,17 +159,21 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :plugin_h,
+            name: "plugin_h",
             version: "1.0.0",
             dependencies: [{:plugin_g, ">= 1.0.0"}]
           }
         end
+
+        @impl true
+        def init(config), do: {:ok, config}
       end
 
       plugins = [TestPluginG, TestPluginH]
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:error, reason} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
+               Raxol.Plugins.Manager.State.load_plugins(manager, plugins)
 
       assert String.contains?(reason, "circular dependency")
     end
@@ -154,6 +186,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :plugin_i,
+            name: "plugin_i",
             version: "1.0.0",
             dependencies: [
               {:plugin_j, ">= 1.0.0", %{optional: true}},
@@ -161,6 +194,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
             ]
           }
         end
+
+        @impl true
+        def init(config), do: {:ok, config}
       end
 
       defmodule TestPluginK do
@@ -170,17 +206,21 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :plugin_k,
+            name: "plugin_k",
             version: "1.0.0",
             dependencies: []
           }
         end
+
+        @impl true
+        def init(config), do: {:ok, config}
       end
 
       plugins = [TestPluginI, TestPluginK]
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:ok, updated_manager} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
+               Raxol.Plugins.Manager.State.load_plugins(manager, plugins)
 
       loaded_plugins = updated_manager.loaded_plugins
 
@@ -194,7 +234,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:ok, manager_after_load} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
+               Raxol.Plugins.Manager.State.load_plugins(manager, plugins)
 
       assert Map.has_key?(manager_after_load.loaded_plugins, :plugin_a)
       assert Map.has_key?(manager_after_load.loaded_plugins, :plugin_b)
@@ -209,7 +249,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       assert Map.has_key?(manager_after_unload.loaded_plugins, :plugin_b)
 
       assert {:ok, manager_after_reload} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager_after_unload, [
+               Raxol.Plugins.Manager.State.load_plugins(manager_after_unload, [
                  TestPluginA
                ])
 
@@ -226,6 +266,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       def get_metadata do
         %{
           id: :lifecycle_plugin_a,
+          name: "lifecycle_plugin_a",
           version: "1.0.0",
           dependencies: [{:lifecycle_plugin_b, ">= 1.0.0"}]
         }
@@ -257,6 +298,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       def get_metadata do
         %{
           id: :lifecycle_plugin_b,
+          name: "lifecycle_plugin_b",
           version: "1.0.0",
           dependencies: []
         }
@@ -297,7 +339,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:ok, updated_manager} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, plugins)
+               Raxol.Plugins.Manager.State.load_plugins(manager, plugins)
 
       # Verify initialization order (B should initialize before A)
       assert Process.get(:lifecycle_plugin_b_init)
@@ -333,6 +375,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :error_test_plugin,
+            name: "error_test_plugin",
             version: "1.0.0",
             dependencies: []
           }
@@ -358,7 +401,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
       # Test init error
       assert {:error, reason} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+               Raxol.Plugins.Manager.State.load_plugins(manager, [
                  ErrorTestPlugin
                ])
 
@@ -372,6 +415,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :error_test_plugin,
+            name: "error_test_plugin",
             version: "1.0.0",
             dependencies: []
           }
@@ -394,7 +438,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       end
 
       assert {:error, reason} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+               Raxol.Plugins.Manager.State.load_plugins(manager, [
                  ErrorTestPlugin
                ])
 
@@ -410,6 +454,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :state_test_plugin,
+            name: "state_test_plugin",
             version: "1.0.0",
             dependencies: []
           }
@@ -435,7 +480,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:ok, updated_manager} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+               Raxol.Plugins.Manager.State.load_plugins(manager, [
                  StateTestPlugin
                ])
 
@@ -465,6 +510,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :config_test_plugin,
+            name: "config_test_plugin",
             version: "1.0.0",
             dependencies: [],
             default_config: %{
@@ -509,7 +555,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
       # Test with default config
       assert {:ok, updated_manager} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+               Raxol.Plugins.Manager.State.load_plugins(manager, [
                  ConfigTestPlugin
                ])
 
@@ -523,7 +569,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       custom_config = %{setting1: "custom1", setting3: "new"}
 
       assert {:ok, updated_manager2} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+               Raxol.Plugins.Manager.State.load_plugins(manager, [
                  {ConfigTestPlugin, custom_config}
                ])
 
@@ -561,6 +607,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :concurrent_plugin_a,
+            name: "concurrent_plugin_a",
             version: "1.0.0",
             dependencies: []
           }
@@ -593,6 +640,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :concurrent_plugin_b,
+            name: "concurrent_plugin_b",
             version: "1.0.0",
             dependencies: []
           }
@@ -622,12 +670,12 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       # Test concurrent loading
       tasks = [
         Task.async(fn ->
-          Raxol.Plugins.Manager.Core.load_plugins(manager, [
+          Raxol.Plugins.Manager.State.load_plugins(manager, [
             ConcurrentTestPluginA
           ])
         end),
         Task.async(fn ->
-          Raxol.Plugins.Manager.Core.load_plugins(manager, [
+          Raxol.Plugins.Manager.State.load_plugins(manager, [
             ConcurrentTestPluginB
           ])
         end)
@@ -677,13 +725,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:ok, manager} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+               Raxol.Plugins.Manager.State.load_plugins(manager, [
                  ConcurrentTestPluginA
                ])
 
       tasks = [
         Task.async(fn ->
-          Raxol.Plugins.Manager.Core.load_plugins(manager, [
+          Raxol.Plugins.Manager.State.load_plugins(manager, [
             ConcurrentTestPluginB
           ])
         end),
@@ -717,6 +765,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :communicating_plugin_a,
+            name: "communicating_plugin_a",
             version: "1.0.0",
             dependencies: [{:communicating_plugin_b, ">= 1.0.0"}]
           }
@@ -752,6 +801,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :communicating_plugin_b,
+            name: "communicating_plugin_b",
             version: "1.0.0",
             dependencies: []
           }
@@ -783,7 +833,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
       # Load plugins
       assert {:ok, updated_manager} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+               Raxol.Plugins.Manager.State.load_plugins(manager, [
                  CommunicatingPluginA,
                  CommunicatingPluginB
                ])
@@ -832,6 +882,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :recovery_plugin_a,
+            name: "recovery_plugin_a",
             version: "1.0.0",
             dependencies: [{:recovery_plugin_b, ">= 1.0.0"}]
           }
@@ -879,6 +930,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
         def get_metadata do
           %{
             id: :recovery_plugin_b,
+            name: "recovery_plugin_b",
             version: "1.0.0",
             dependencies: []
           }
@@ -904,7 +956,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
       {:ok, manager} = Raxol.Plugins.Manager.Core.new()
 
       assert {:error, reason} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+               Raxol.Plugins.Manager.State.load_plugins(manager, [
                  RecoveryTestPluginA,
                  RecoveryTestPluginB
                ])
@@ -916,7 +968,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.IntegrationTest do
 
       # Test recovery after initialization failure
       assert {:ok, updated_manager} =
-               Raxol.Plugins.Manager.Core.load_plugins(manager, [
+               Raxol.Plugins.Manager.State.load_plugins(manager, [
                  RecoveryTestPluginA,
                  RecoveryTestPluginB
                ])
