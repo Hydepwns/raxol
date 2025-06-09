@@ -23,7 +23,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
   """
   def handle_event(event, state) do
     case event do
-      %Event{type: :key, data: %{key: _key, state: state, modifiers: _modifiers}}
+      %Event{
+        type: :key,
+        data: %{key: _key, state: state, modifiers: _modifiers}
+      }
       when state in [:pressed, :repeat] ->
         handle_key_event(event, state)
 
