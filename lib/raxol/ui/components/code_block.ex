@@ -21,7 +21,7 @@ defmodule Raxol.UI.Components.CodeBlock do
   def render(state, _context) do
     _language = state[:language] || "text"
     code_content = state[:content] || ""
-    style_opt = state[:style]
+    style_opt = Map.get(state, :style, %{})
     # Unused for now
     custom_class = state[:class]
     _pre_class = Enum.join(Enum.filter(["highlight", custom_class], & &1), " ")
@@ -88,7 +88,14 @@ defmodule Raxol.UI.Components.CodeBlock do
 
   @doc "Initializes the component state from props."
   @spec init(map()) :: map()
-  def init(props), do: props
+  def init(props) when is_map(props) do
+    Map.merge(props, %{
+      mounted: Map.get(props, :mounted, false),
+      render_count: Map.get(props, :render_count, 0)
+    })
+  end
+
+  def init(_), do: %{style: %{}, mounted: false, render_count: 0}
 
   @doc "Updates the component state. No updates are handled by default."
   @spec update(term(), map()) :: map()

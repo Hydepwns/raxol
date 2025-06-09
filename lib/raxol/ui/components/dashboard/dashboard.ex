@@ -30,7 +30,9 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
               # State for active resize operation
               resizing: nil,
               layout: [],
-              id: :dashboard
+              id: :dashboard,
+              mounted: false,
+              render_count: 0
 
     # Add other necessary state fields (e.g., focus)
   end
@@ -50,7 +52,8 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
     }
   end
 
-  @spec init_from_saved_layout(list(), map()) :: {:ok, Model.t()} | {:error, any()}
+  @spec init_from_saved_layout(list(), map()) ::
+          {:ok, Model.t()} | {:error, any()}
   @doc """
   Initializes the Dashboard state from a saved layout.
   If no saved layout exists, returns default widgets with the given grid configuration.
@@ -113,7 +116,8 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
           Enum.all?(required_grid_fields, &Map.has_key?(widget.grid_spec, &1))
 
       valid_type =
-        widget[:type] in [:chart, :treemap, :info, :text_input, :image]
+        is_map(widget) and Map.has_key?(widget, :type) and
+          widget[:type] in [:chart, :treemap, :info, :text_input, :image]
 
       has_required_fields && has_grid_fields && valid_type
     end)
@@ -155,7 +159,10 @@ defmodule Raxol.UI.Components.Dashboard.Dashboard do
         end
 
       _ ->
-        Raxol.Core.Runtime.Log.debug("Dashboard received message: #{inspect(msg)}")
+        Raxol.Core.Runtime.Log.debug(
+          "Dashboard received message: #{inspect(msg)}"
+        )
+
         {state, []}
     end
   end

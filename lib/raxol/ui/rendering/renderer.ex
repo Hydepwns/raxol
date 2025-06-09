@@ -43,7 +43,7 @@ defmodule Raxol.UI.Rendering.Renderer do
   def apply_diff(:no_change, _new_tree), do: :ok
   def apply_diff({:replace, new_tree}, _new_tree), do: render(new_tree)
 
-  def apply_diff({:update, path, changes} = diff, new_tree) do
+  def apply_diff({:update, _path, _changes} = diff, new_tree) do
     GenServer.cast(__MODULE__, {:apply_diff, diff, new_tree})
   end
 
@@ -120,16 +120,18 @@ defmodule Raxol.UI.Rendering.Renderer do
   end
 
   defp ui_tree_to_terminal_ops_with_lines(
-         %{type: :label, attrs: %{text: text}},
+         %{type: :label, attrs: %{text: text}} = element,
          line
-       ) do
+       )
+       when is_map_key(element, :type) and is_map_key(element, :attrs) do
     {[{:draw_text, line, text}], line + 1}
   end
 
   defp ui_tree_to_terminal_ops_with_lines(
-         %{type: :view, children: children},
+         %{type: :view, children: children} = element,
          line
-       ) do
+       )
+       when is_map_key(element, :type) and is_map_key(element, :children) do
     Enum.reduce(children, {[], line}, fn child, {acc, l} ->
       {ops, next_line} = ui_tree_to_terminal_ops_with_lines(child, l)
       {acc ++ ops, next_line}
@@ -164,7 +166,11 @@ defmodule Raxol.UI.Rendering.Renderer do
     {new_state, _} = do_partial_render([], data, data, state)
     if state.test_pid, do: send(state.test_pid, {:renderer_rendered, data})
     require Raxol.Core.Runtime.Log
-    Raxol.Core.Runtime.Log.info("Renderer received render: #{inspect(data)} (buffer updated)")
+
+    Raxol.Core.Runtime.Log.info(
+      "Renderer received render: #{inspect(data)} (buffer updated)"
+    )
+
     {:noreply, %{new_state | last_render: data}}
   end
 
@@ -183,12 +189,16 @@ defmodule Raxol.UI.Rendering.Renderer do
     # Full replacement
     if state.test_pid, do: send(state.test_pid, {:renderer_rendered, new_tree})
     require Raxol.Core.Runtime.Log
-    Raxol.Core.Runtime.Log.info("Renderer received full replacement diff: #{inspect(new_tree)}")
+
+    Raxol.Core.Runtime.Log.info(
+      "Renderer received full replacement diff: #{inspect(new_tree)}"
+    )
+
     {:noreply, %{state | last_render: new_tree}}
   end
 
   def handle_cast(
-        {:apply_diff, {:update, path, changes} = diff, new_tree},
+        {:apply_diff, {:update, path, _changes} = diff, _new_tree},
         state
       ) do
     # Apply the diff to the last_render tree

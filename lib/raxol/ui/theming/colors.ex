@@ -102,23 +102,13 @@ defmodule Raxol.UI.Theming.Colors do
       iex> lighten(:red, 0.5)
       "#FF8080"
   """
-  def lighten(color, amount) when is_integer(amount) and amount >= 0 and amount <= 100 do
-    lighten(color, amount / 100)
-  end
-
-  def lighten(color, amount) when is_float(amount) and amount >= 0 and amount <= 1 do
-    hex = to_hex(color)
-
+  def lighten(hex, amount) when is_binary(hex) and is_number(amount) do
     case hex_to_rgb(hex) do
       {r, g, b} ->
-        # Simple linear interpolation with white
-        r = round(r + (255 - r) * amount)
-        g = round(g + (255 - g) * amount)
-        b = round(b + (255 - b) * amount)
-        rgb_to_hex(r, g, b)
-
-      {:error, _} = err ->
-        err
+        rgb_to_hex(
+          {lighten_component(r, amount), lighten_component(g, amount),
+           lighten_component(b, amount)}
+        )
     end
   end
 
@@ -132,23 +122,13 @@ defmodule Raxol.UI.Theming.Colors do
       iex> darken(:red, 0.5)
       "#800000"
   """
-  def darken(color, amount) when is_integer(amount) and amount >= 0 and amount <= 100 do
-    darken(color, amount / 100)
-  end
-
-  def darken(color, amount) when is_float(amount) and amount >= 0 and amount <= 1 do
-    hex = to_hex(color)
-
+  def darken(hex, amount) when is_binary(hex) and is_number(amount) do
     case hex_to_rgb(hex) do
       {r, g, b} ->
-        # Simple linear interpolation with black
-        r = round(r * (1 - amount))
-        g = round(g * (1 - amount))
-        b = round(b * (1 - amount))
-        rgb_to_hex(r, g, b)
-
-      {:error, _} = err ->
-        err
+        rgb_to_hex(
+          {darken_component(r, amount), darken_component(g, amount),
+           darken_component(b, amount)}
+        )
     end
   end
 
@@ -266,6 +246,9 @@ defmodule Raxol.UI.Theming.Colors do
 
       iex> Colors.to_hex("#00FF00")
       "#00FF00"
+
+      iex> Colors.to_hex({255, 0, 0, 128})
+      "#FF000080"
   """
   def to_hex(color) do
     case color do
@@ -275,9 +258,21 @@ defmodule Raxol.UI.Theming.Colors do
       name when is_atom(name) ->
         @color_names[name]
 
+      {r, g, b, a}
+      when r in 0..255 and g in 0..255 and b in 0..255 and a in 0..255 ->
+        rgba_to_hex(r, g, b, a)
+
       {r, g, b} when r in 0..255 and g in 0..255 and b in 0..255 ->
         rgb_to_hex(r, g, b)
     end
+  end
+
+  defp rgba_to_hex(r, g, b, a) do
+    r_hex = Integer.to_string(r, 16) |> String.pad_leading(2, "0")
+    g_hex = Integer.to_string(g, 16) |> String.pad_leading(2, "0")
+    b_hex = Integer.to_string(b, 16) |> String.pad_leading(2, "0")
+    a_hex = Integer.to_string(a, 16) |> String.pad_leading(2, "0")
+    "##{r_hex}#{g_hex}#{b_hex}#{a_hex}"
   end
 
   @doc """
@@ -468,5 +463,18 @@ defmodule Raxol.UI.Theming.Colors do
   """
   def accessible?(color1, color2, level, size) do
     meets_contrast_requirements?(color1, color2, level, size)
+  end
+
+  defp lighten_component(c, amount) when is_integer(c) and is_number(amount) do
+    round(c + (255 - c) * amount)
+  end
+
+  defp darken_component(c, amount) when is_integer(c) and is_number(amount) do
+    round(c * (1 - amount))
+  end
+
+  defp rgb_to_hex({r, g, b})
+       when is_integer(r) and is_integer(g) and is_integer(b) do
+    :io_lib.format("#~2.16.0B~2.16.0B~2.16.0B", [r, g, b]) |> to_string()
   end
 end

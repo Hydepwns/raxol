@@ -8,17 +8,39 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.InfoWidget do
   # Use UI alias for consistency
   alias Raxol.View.Elements, as: UI
 
-  defstruct title: "Info", content: "No info available", id: :info_widget
+  defstruct title: "Info",
+            content: "No info available",
+            id: :info_widget,
+            mounted: false,
+            render_count: 0,
+            type: :info_widget,
+            style: %{},
+            focused: false,
+            disabled: false
 
   @spec init(map()) :: map()
   @impl Raxol.UI.Components.Base.Component
-  def init(props) do
+  def init(props) when is_map(props) do
     %__MODULE__{
       id: props[:id] || :info_widget,
       title: props[:title] || "Info",
-      content: props[:content] || "No info available"
+      content: props[:content] || "No info available",
+      type: :info_widget,
+      style: Map.get(props, :style, %{}),
+      focused: props[:focused] || false,
+      disabled: props[:disabled] || false,
+      mounted: Map.get(props, :mounted, false),
+      render_count: Map.get(props, :render_count, 0)
     }
   end
+
+  def init(_),
+    do: %__MODULE__{
+      style: %{},
+      type: :info_widget,
+      mounted: false,
+      render_count: 0
+    }
 
   @spec update(term(), map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component

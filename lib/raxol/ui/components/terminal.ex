@@ -1,6 +1,6 @@
 defmodule Raxol.UI.Components.Terminal do
   @moduledoc """
-  A terminal component that emulates a standard terminal within the UI.
+  Terminal component for displaying and interacting with terminal content.
   """
 
   @typedoc """
@@ -13,12 +13,12 @@ defmodule Raxol.UI.Components.Terminal do
   - :style - style map
   """
   @type t :: %__MODULE__{
-    id: any(),
-    width: non_neg_integer(),
-    height: non_neg_integer(),
-    buffer: [String.t()],
-    style: map()
-  }
+          id: any(),
+          width: non_neg_integer(),
+          height: non_neg_integer(),
+          buffer: [String.t()],
+          style: map()
+        }
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
@@ -34,72 +34,102 @@ defmodule Raxol.UI.Components.Terminal do
             # Add buffer, emulator state, etc.
             # Example: List of lines
             buffer: [],
-            style: %{}
+            style: %{},
+            mounted: false,
+            render_count: 0,
+            type: :terminal,
+            focused: false,
+            disabled: false
 
-  # --- Component Behaviour Callbacks ---
+  alias Raxol.Core.Events.Event
 
-  @doc "Initializes the Terminal component state from props."
-  @spec init(map()) :: map()
-  @impl Raxol.UI.Components.Base.Component
+  @doc """
+  Creates a new terminal component with the given options.
+  """
+  @spec new(keyword()) :: t()
+  def new(opts \\ []) do
+    {:ok, state} = init(opts)
+    state
+  end
+
+  @doc """
+  Initializes the terminal component state from the given props.
+  """
+  @impl true
+  @spec init(keyword()) :: {:ok, t()}
   def init(props) do
     # Initialize terminal state using props, providing defaults
-    %__MODULE__{
+    state = %__MODULE__{
       id: Map.get(props, :id, nil),
       width: props[:width] || 80,
       height: props[:height] || 24,
       # Use buffer from props or default to []
       buffer: props[:buffer] || [],
-      style: props[:style] || %{}
+      style: Map.get(props, :style, %{}),
+      type: :terminal,
+      focused: props[:focused] || false,
+      disabled: props[:disabled] || false
       # Initialize other relevant fields if added later
     }
+
+    {:ok, state}
   end
 
-  @doc "Updates the Terminal component state in response to messages. Handles writing, clearing, etc."
-  @spec update(term(), map()) :: {map(), list()}
-  @impl Raxol.UI.Components.Base.Component
-  def update(msg, state) do
-    # Handle messages to write to terminal, clear, etc.
-    Raxol.Core.Runtime.Log.debug(
-      "Terminal #{Map.get(state, :id, nil)} received message: #{inspect(msg)}"
-    )
-
-    # Placeholder
-    {state, []}
+  @doc """
+  Mounts the terminal component. Performs any setup needed after initialization.
+  """
+  @impl true
+  @spec mount(t()) :: {t(), list()}
+  def mount(_state) do
+    # ... existing code ...
   end
 
-  @doc "Handles key events for the Terminal component."
-  @spec handle_event(map(), map(), map()) :: {map(), list()}
-  @impl Raxol.UI.Components.Base.Component
-  # Use map matching
-  def handle_event(%{type: :key} = event, %{} = _props, state) do
-    # Process key event, send to terminal emulator/process
-    Raxol.Core.Runtime.Log.debug(
-      "Terminal #{Map.get(state, :id, nil)} received key event: #{inspect(event.data)}"
-    )
-
-    # Placeholder: Append key to buffer for simple echo
-    new_buffer = state.buffer ++ ["Key: #{inspect(event.data.key)}"]
-    {%{state | buffer: new_buffer}, []}
+  @doc """
+  Unmounts the terminal component, performing any necessary cleanup.
+  """
+  @impl true
+  @spec unmount(t()) :: t()
+  def unmount(_state) do
+    # ... existing code ...
   end
 
-  # Catch-all handle_event
-  @doc "Handles other events for the Terminal component."
-  @spec handle_event(map(), map(), map()) :: {map(), list()}
-  @impl Raxol.UI.Components.Base.Component
-  def handle_event(event, %{} = _props, state) do
-    Raxol.Core.Runtime.Log.debug(
-      "Terminal #{Map.get(state, :id, nil)} received event: #{inspect(event.type)}"
-    )
-
-    {state, []}
+  @doc """
+  Updates the terminal component state in response to messages or prop changes.
+  """
+  @impl true
+  @spec update(map(), t()) :: {:ok, t(), list()}
+  def update(props, _state) when is_map(props) do
+    # ... existing code ...
   end
 
-  # --- Render Logic ---
+  @impl true
+  @spec update(term(), t()) :: {:ok, t(), list()}
+  def update(_msg, _state) do
+    # ... existing code ...
+  end
 
-  @doc "Renders the Terminal component, displaying the buffer as lines."
-  @spec render(map(), map()) :: map()
-  @impl Raxol.UI.Components.Base.Component
-  def render(state, %{} = _props) do
+  @doc """
+  Handles events for the terminal component.
+  """
+  @impl true
+  def handle_event(%Event{type: :key, data: _data}, _context, _state) do
+    # ... existing code ...
+  end
+
+  def handle_event(%Event{type: :mouse, data: _data}, _context, _state) do
+    # ... existing code ...
+  end
+
+  def handle_event(_event, _context, _state) do
+    :ok
+  end
+
+  @doc """
+  Renders the terminal component using the current state and context.
+  """
+  @impl true
+  @spec render(t(), map()) :: any()
+  def render(state, _context) do
     # Generate label elements
     label_elements =
       Enum.map(state.buffer, fn line_content ->
@@ -133,5 +163,4 @@ defmodule Raxol.UI.Components.Terminal do
     # Return the final element structure
     box_element
   end
-
 end

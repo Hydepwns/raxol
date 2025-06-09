@@ -1,9 +1,6 @@
 defmodule Raxol.UI.Components.Table do
   use Surface.Component
-  alias Raxol.Core.Renderer.View
   require Raxol.Core.Renderer.View
-
-  alias Raxol.UI.Events
 
   @moduledoc """
   Table component for displaying and interacting with tabular data.
@@ -76,8 +73,6 @@ defmodule Raxol.UI.Components.Table do
 
   """
 
-  alias Raxol.Core.Renderer.Views.Table, as: TableView
-
   defstruct id: nil,
             columns: [],
             data: [],
@@ -95,7 +90,9 @@ defmodule Raxol.UI.Components.Table do
             scroll_top: 0,
             selected_row: nil,
             style: %{},
-            theme: nil
+            theme: nil,
+            mounted: false,
+            render_count: 0
 
   @type column :: %{
           id: atom(),
@@ -190,11 +187,19 @@ defmodule Raxol.UI.Components.Table do
     {:ok, new_state}
   end
 
+  @spec render(map()) :: any()
+  @doc """
+  Renders the table component with the given state.
+  """
+  def render(state) do
+    render(state, %{})
+  end
+
   @spec render(map(), map()) :: any()
   @doc """
-  Renders the table component.
+  Renders the table component with the given state and context.
   """
-  def render(state, context) do
+  def render(state, _context) do
     theme = state.theme || %{}
     style = state.style || %{}
 
@@ -229,15 +234,13 @@ defmodule Raxol.UI.Components.Table do
       style: box_style,
       children: [
         header,
-        Raxol.Core.Renderer.View.flex(
-          direction: :column,
-          do: rows
-        ),
-        Raxol.Core.Renderer.View.flex(
-          direction: :row,
-          justify: :space_between,
-          do: pagination
-        )
+        Raxol.Core.Renderer.View.flex direction: :column do
+          rows
+        end,
+        Raxol.Core.Renderer.View.flex direction: :row,
+                                      justify: :space_between do
+          pagination
+        end
       ]
     )
   end
@@ -246,123 +249,43 @@ defmodule Raxol.UI.Components.Table do
   @doc """
   Handles events for the table component.
   """
-  def handle_event({:key, {:arrow_down, _}}, _context, state) do
-    filtered_data = filter_data(state.data, state.filter_term)
-    # Account for header
-    visible_rows = state.page_size - 1
-    max_scroll = max(0, length(filtered_data) - visible_rows)
-    new_scroll = min(state.scroll_top + 1, max_scroll)
-    new_state = %{state | scroll_top: new_scroll}
+  def handle_event(event, state, _context) do
+    case event do
+      {:filter, term} ->
+        update({:filter, term}, state)
 
-    # Update selected row if selection is enabled
-    if state.selected_row != nil do
-      new_selected = min(state.selected_row + 1, length(filtered_data) - 1)
-      new_state = %{new_state | selected_row: new_selected}
-    end
+      {:sort, column} ->
+        update({:sort, column}, state)
 
-    {:ok, new_state}
-  end
+      {:set_page, page} ->
+        update({:set_page, page}, state)
 
-  def handle_event({:key, {:arrow_up, _}}, _context, state) do
-    new_scroll = max(0, state.scroll_top - 1)
-    new_state = %{state | scroll_top: new_scroll}
-
-    # Update selected row if selection is enabled
-    if state.selected_row != nil do
-      new_selected = max(0, state.selected_row - 1)
-      new_state = %{new_state | selected_row: new_selected}
-    end
-
-    {:ok, new_state}
-  end
-
-  def handle_event({:key, {:page_down, _}}, _context, state) do
-    filtered_data = filter_data(state.data, state.filter_term)
-    # Account for header
-    visible_rows = state.page_size - 1
-    max_scroll = max(0, length(filtered_data) - visible_rows)
-    new_scroll = min(state.scroll_top + visible_rows, max_scroll)
-    new_state = %{state | scroll_top: new_scroll}
-
-    # Update selected row if selection is enabled
-    if state.selected_row != nil do
-      new_selected =
-        min(state.selected_row + visible_rows, length(filtered_data) - 1)
-
-      new_state = %{new_state | selected_row: new_selected}
-    end
-
-    {:ok, new_state}
-  end
-
-  def handle_event({:key, {:page_up, _}}, _context, state) do
-    # Account for header
-    visible_rows = state.page_size - 1
-    new_scroll = max(0, state.scroll_top - visible_rows)
-    new_state = %{state | scroll_top: new_scroll}
-
-    # Update selected row if selection is enabled
-    if state.selected_row != nil do
-      new_selected = max(0, state.selected_row - visible_rows)
-      new_state = %{new_state | selected_row: new_selected}
-    end
-
-    {:ok, new_state}
-  end
-
-  def handle_event({:mouse, {:click, {_x, y}}}, _context, state) do
-    # Convert y coordinate to row index, accounting for header
-    row_index = y - 1
-
-    if row_index >= 0 and row_index < length(state.data) do
-      {:ok, %{state | selected_row: row_index}}
-    else
-      {:ok, state}
-    end
-  end
-
-  def handle_event({:button_click, button_id}, _context, state) do
-    case button_id do
-      "test_table_next_page" ->
-        filtered_data = filter_data(state.data, state.filter_term)
-        max_page = max(1, ceil(length(filtered_data) / state.page_size))
-        new_page = min(state.current_page + 1, max_page)
-        {:ok, %{state | current_page: new_page, scroll_top: 0}}
-
-      "test_table_prev_page" ->
-        new_page = max(1, state.current_page - 1)
-        {:ok, %{state | current_page: new_page, scroll_top: 0}}
-
-      "test_table_sort_" <> column ->
-        column = String.to_existing_atom(column)
-
-        new_direction =
-          if state.sort_by == column && state.sort_direction == :asc,
-            do: :desc,
-            else: :asc
-
-        {:ok, %{state | sort_by: column, sort_direction: new_direction}}
+      {:select_row, row_index} ->
+        update({:select_row, row_index}, state)
 
       _ ->
         {:ok, state}
     end
   end
 
-  @spec unmount(map()) :: map()
-  def unmount(state) do
-    state
+  @spec unmount(map()) :: :ok
+  def unmount(_state) do
+    :ok
   end
 
-  # Private Helpers
+  # Private helper functions
 
-  defp filter_data(data, term) when term == "", do: data
+  defp filter_data(data, term) when term == "" or is_nil(term), do: data
 
   defp filter_data(data, term) do
     term = String.downcase(term)
 
     Enum.filter(data, fn row ->
       Enum.any?(row, fn {_key, value} ->
-        to_string(value) |> String.downcase() |> String.contains?(term)
+        value
+        |> to_string()
+        |> String.downcase()
+        |> String.contains?(term)
       end)
     end)
   end
@@ -370,126 +293,103 @@ defmodule Raxol.UI.Components.Table do
   defp sort_data(data, nil, _direction), do: data
 
   defp sort_data(data, column, direction) do
-    Enum.sort_by(data, fn row -> row[column] end, fn a, b ->
-      case direction do
-        :asc -> compare_values(a, b)
-        :desc -> compare_values(b, a)
-      end
+    Enum.sort_by(data, fn row ->
+      value = Map.get(row, column)
+      if direction == :asc, do: value, else: {:desc, value}
     end)
   end
 
-  defp compare_values(a, b) when is_number(a) and is_number(b), do: a <= b
-  defp compare_values(a, b) when is_binary(a) and is_binary(b), do: a <= b
-  defp compare_values(a, b) when is_atom(a) and is_atom(b), do: a <= b
-  defp compare_values(a, b) when is_binary(a), do: to_string(a) <= to_string(b)
-  defp compare_values(a, b) when is_binary(b), do: to_string(a) <= to_string(b)
-  defp compare_values(a, b), do: to_string(a) <= to_string(b)
-
   defp paginate_data(data, page, page_size) do
     start_index = (page - 1) * page_size
-    Enum.slice(data, start_index, page_size)
+    end_index = start_index + page_size - 1
+
+    data
+    |> Enum.with_index()
+    |> Enum.filter(fn {_item, index} ->
+      index >= start_index and index <= end_index
+    end)
+    |> Enum.map(fn {item, _index} -> item end)
   end
 
   defp create_header(columns, state) do
     theme = state.theme || %{}
+    style = state.style || %{}
+    header_style = Map.get(style, :header, %{})
 
-    header_style =
-      Map.merge(
-        Map.get(theme, :header, %{}),
-        Map.get(state.style, :header, %{})
-      )
-
-    header_cells =
+    Raxol.Core.Renderer.View.flex direction: :row,
+                                  style:
+                                    Map.merge(
+                                      Map.get(theme, :header, %{}),
+                                      header_style
+                                    ) do
       Enum.map(columns, fn column ->
-        content =
-          if state.options.sortable do
-            "#{column.label} #{sort_indicator(state.sort_by, state.sort_direction, column.id)}"
-          else
-            column.label
-          end
-
-        cell_style =
-          Map.merge(header_style, Map.get(column, :header_style, %{}))
-
         Raxol.Core.Renderer.View.text(
-          content,
-          style: [:bold | Enum.uniq(Keyword.keys(cell_style))],
-          align: column.align
+          column.label,
+          style:
+            Map.merge(
+              Map.get(theme, :header, %{}),
+              Map.get(column, :header_style, %{})
+            )
         )
       end)
-
-    Raxol.Core.Renderer.View.flex(
-      direction: :row,
-      do: header_cells
-    )
+    end
   end
 
-  defp create_rows(data, columns, selected_row, state) do
+  defp create_rows(rows, columns, selected_row, state) do
     theme = state.theme || %{}
     row_style = Map.get(theme, :row, %{})
-    selected_row_style = Map.get(theme, :selected_row, %{bg: :blue, fg: :white})
+    selected_style = Map.get(theme, :selected_row, %{})
 
-    Enum.map(Enum.with_index(data), fn {row, index} ->
-      cells =
+    Enum.map(rows, fn row ->
+      style =
+        if row == selected_row,
+          do: Map.merge(row_style, selected_style),
+          else: row_style
+
+      Raxol.Core.Renderer.View.flex direction: :row,
+                                    style: style do
         Enum.map(columns, fn column ->
-          value = row[column.id]
-
-          formatted =
-            if column.format, do: column.format.(value), else: to_string(value)
-
-          # Compose cell style: theme.row + column.style + selected override
-          base_style = Map.merge(row_style, Map.get(column, :style, %{}))
-
-          style =
-            if index == selected_row do
-              Map.merge(base_style, selected_row_style)
-            else
-              base_style
-            end
+          value = Map.get(row, column.id)
+          formatted_value = format_value(value, column)
 
           Raxol.Core.Renderer.View.text(
-            formatted,
-            align: column.align,
-            style: Enum.uniq(Keyword.keys(style))
+            formatted_value,
+            style:
+              Map.merge(
+                row_style,
+                Map.get(column, :style, %{})
+              )
           )
         end)
-
-      Raxol.Core.Renderer.View.flex(
-        direction: :row,
-        do: cells
-      )
+      end
     end)
   end
 
   defp create_pagination(state) do
     filtered_data = filter_data(state.data, state.filter_term)
-    max_page = max(1, ceil(length(filtered_data) / state.page_size))
+    total_pages = max(1, ceil(length(filtered_data) / state.page_size))
 
-    Raxol.Core.Renderer.View.flex(
-      direction: :row,
-      align: :center,
-      gap: 2,
-      do: [
-        Raxol.Core.Renderer.View.text(
-          "Page #{state.current_page} of #{max_page}"
-        ),
-        Raxol.Core.Renderer.View.flex(
-          direction: :row,
-          gap: 1,
-          do: [
-            Raxol.Core.Renderer.View.text("←", id: "test_table_prev_page"),
-            Raxol.Core.Renderer.View.text("→", id: "test_table_next_page")
-          ]
-        )
-      ]
-    )
+    [
+      Raxol.Core.Renderer.View.button(
+        "Previous",
+        on_click: {:set_page, state.current_page - 1},
+        disabled: state.current_page <= 1
+      ),
+      Raxol.Core.Renderer.View.text(
+        "Page #{state.current_page} of #{total_pages}"
+      ),
+      Raxol.Core.Renderer.View.button(
+        "Next",
+        on_click: {:set_page, state.current_page + 1},
+        disabled: state.current_page >= total_pages
+      )
+    ]
   end
 
-  defp sort_indicator(sort_by, sort_direction, column_id) do
-    cond do
-      sort_by != column_id -> ""
-      sort_direction == :asc -> "↑"
-      sort_direction == :desc -> "↓"
+  defp format_value(value, column) do
+    case column do
+      %{format: format} when is_function(format, 1) -> format.(value)
+      _ -> to_string(value)
     end
   end
 end

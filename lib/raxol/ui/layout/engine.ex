@@ -35,85 +35,164 @@ defmodule Raxol.UI.Layout.Engine do
     }
 
     # Process the view tree
-    process_element(view, available_space, [])
+    result_before_flatten = process_element(view, available_space, [])
+
+    result_before_flatten
     |> List.flatten()
   end
 
-  # --- Element Processing Logic ---
-  # Moved all process_element/3 definitions here for grouping
+  # Main entry point for element processing
+  def process_element(element, space, acc) do
+    # More robust check for element structure before delegating
+    unless is_map(element) and Map.has_key?(element, :type) do
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "LayoutEngine: process_element called with invalid element structure. Element: #{inspect(element)}",
+        %{space: space, acc: acc}
+      )
 
-  # Process a view element
-  def process_element(%{type: :view, children: children}, space, acc)
-      when is_list(children) do
-    # Process children with the available space
-    process_children(children, space, acc)
+      acc
+    end
+
+    # Ensure :attrs and :children keys are always present and safe
+    element =
+      element
+      |> Map.put_new(:attrs, %{})
+      |> Map.put_new(:children, [])
+
+    do_process_element(element, space, acc)
   end
 
-  def process_element(%{type: :view, children: children}, space, acc) do
-    # Handle case where children is not a list
-    process_element(children, space, acc)
+  # Internal processing function with specific clauses
+  defp do_process_element(%{type: :view} = element, space, acc)
+       when is_map_key(element, :type) do
+    children_nodes = Map.get(element, :children, [])
+    children_nodes = if is_list(children_nodes), do: children_nodes, else: []
+
+    elements_from_children = process_children(children_nodes, space)
+
+    elements_from_children ++ acc
   end
 
-  def process_element(%{type: :panel} = panel, space, acc) do
-    # Delegate to panel-specific layout processing
+  defp do_process_element(%{type: :panel} = panel, space, acc)
+       when is_map_key(panel, :type) do
+    children = Map.get(panel, :children, [])
+    children = if is_list(children), do: children, else: []
+    panel = Map.put(panel, :children, children)
     Panels.process(panel, space, acc)
   end
 
-  def process_element(%{type: :row} = row, space, acc) do
-    # Delegate to row layout processing
+  defp do_process_element(%{type: :row} = row_orig, space, acc)
+       when is_map_key(row_orig, :type) do
+    children = Map.get(row_orig, :children, [])
+    attrs = Map.get(row_orig, :attrs, %{})
+    row = %{row_orig | children: children, attrs: attrs}
     Containers.process_row(row, space, acc)
   end
 
-  def process_element(%{type: :column} = column, space, acc) do
-    # Delegate to column layout processing
+  defp do_process_element(%{type: :column} = column_orig, space, acc)
+       when is_map_key(column_orig, :type) do
+    children = Map.get(column_orig, :children, [])
+    attrs = Map.get(column_orig, :attrs, %{})
+    column = %{column_orig | children: children, attrs: attrs}
     Containers.process_column(column, space, acc)
   end
 
-  def process_element(%{type: :grid} = grid, space, acc) do
-    # Delegate to grid layout processing
-    Grid.process(grid, space, acc)
+  defp do_process_element(%{type: :grid} = grid_orig, space, acc)
+       when is_map_key(grid_orig, :type) do
+    children = Map.get(grid_orig, :children, [])
+    attrs = Map.get(grid_orig, :attrs, %{})
+    grid = %{grid_orig | children: children, attrs: attrs}
+    Grid.process_grid(grid, space, acc)
   end
 
   # Process basic text/label
-  def process_element(%{type: type, attrs: attrs} = _element, space, acc)
-      when type in [:label, :text] do
-    # Create a text element at the given position
+  defp do_process_element(
+         %{type: type, attrs: attrs_orig_param} = element_data_orig,
+         space,
+         acc
+       )
+       when is_map(element_data_orig) and type in [:label, :text] do
+    # Step 1: Normalize element_data based on attrs_orig_param
+    element_data_normalized =
+      if is_list(attrs_orig_param) do
+        %{element_data_orig | attrs: Map.new(attrs_orig_param)}
+      else
+        # Use original if attrs wasn't a list
+        element_data_orig
+      end
+
+    # Step 2: Ensure current_attrs is a map, derived from normalized element_data.attrs
+    # This step is crucial. If element_data_normalized does not have an :attrs key, this line will fail.
+    # However, the function clause pattern requires element_data_orig to have :attrs.
+    current_attrs =
+      cond do
+        is_map(element_data_normalized.attrs) ->
+          element_data_normalized.attrs
+
+        # Handle case where original attrs was nil
+        is_nil(element_data_normalized.attrs) ->
+          %{}
+
+        true ->
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "LayoutEngine: Unexpected attrs type for :label/:text after normalization: #{inspect(element_data_normalized.attrs)}",
+            %{element_data_orig: element_data_orig, space: space}
+          )
+
+          # Default to empty map
+          %{}
+      end
+
+    # Original logic for creating the text element
+    text_content =
+      Map.get(current_attrs, :content, Map.get(current_attrs, :text, ""))
+
+    final_attrs = Map.put(current_attrs, :original_type, type)
+
     text_element = %{
       type: :text,
       x: space.x,
       y: space.y,
-      text: Map.get(attrs, :content, Map.get(attrs, :text, "")),
-      # Pass original attributes through, let Renderer handle styling
-      attrs: Map.put(attrs, :original_type, type)
+      text: text_content,
+      # final_attrs is guaranteed to be a map here
+      attrs: final_attrs
     }
 
     [text_element | acc]
   end
 
-  def process_element(%{type: :button, attrs: attrs} = _element, space, acc) do
-    # Create a button element composed of a box and text
-    text = Map.get(attrs, :label, "Button")
-    # Keep original attributes like :disabled, :focused if present
+  defp do_process_element(
+         %{type: :button, attrs: attrs_orig_param} = element,
+         space,
+         acc
+       )
+       when is_map_key(element, :type) do
+    attrs_orig = attrs_orig_param || %{}
+
+    attrs =
+      case attrs_orig do
+        list when is_list(list) -> Map.new(list)
+        map when is_map(map) -> map
+        _ -> %{}
+      end
+
+    text = safe_access_get(attrs, :label, "Button")
     component_attrs = Map.put(attrs, :component_type, :button)
 
     button_elements = [
-      # Button box
       %{
         type: :box,
         x: space.x,
         y: space.y,
         width: min(String.length(text) + 4, space.width),
         height: 3,
-        # Pass attributes, Renderer will use theme + component_type
         attrs: component_attrs
       },
-      # Button text
       %{
         type: :text,
         x: space.x + 2,
         y: space.y + 1,
         text: text,
-        # Pass attributes, Renderer will use theme + component_type
         attrs: component_attrs
       }
     ]
@@ -121,17 +200,27 @@ defmodule Raxol.UI.Layout.Engine do
     button_elements ++ acc
   end
 
-  def process_element(%{type: :text_input, attrs: attrs} = _element, space, acc) do
-    # Create a text input element composed of box and text
-    value = Map.get(attrs, :value, "")
-    placeholder = Map.get(attrs, :placeholder, "")
-    display_text = if value == "", do: placeholder, else: value
+  defp do_process_element(
+         %{type: :text_input, attrs: attrs_orig_param} = element,
+         space,
+         acc
+       )
+       when is_map_key(element, :type) do
+    attrs_orig = attrs_orig_param || %{}
 
-    # Add component_type, potentially pass placeholder/value info if Renderer needs it
+    attrs =
+      case attrs_orig do
+        list when is_list(list) -> Map.new(list)
+        map when is_map(map) -> map
+        _ -> %{}
+      end
+
+    value = safe_access_get(attrs, :value, "")
+    placeholder = safe_access_get(attrs, :placeholder, "")
+    display_text = if value == "", do: placeholder, else: value
     component_attrs = Map.put(attrs, :component_type, :text_input)
 
     text_input_elements = [
-      # Input box
       %{
         type: :box,
         x: space.x,
@@ -140,13 +229,11 @@ defmodule Raxol.UI.Layout.Engine do
         height: 3,
         attrs: component_attrs
       },
-      # Input text (or placeholder)
       %{
         type: :text,
         x: space.x + 2,
         y: space.y + 1,
         text: display_text,
-        # Pass component_attrs; Renderer can check :value == "" and use placeholder style
         attrs: Map.merge(component_attrs, %{is_placeholder: value == ""})
       }
     ]
@@ -154,22 +241,32 @@ defmodule Raxol.UI.Layout.Engine do
     text_input_elements ++ acc
   end
 
-  def process_element(%{type: :checkbox, attrs: attrs} = _element, space, acc) do
-    # Create a checkbox element (simple text for now)
-    checked = Map.get(attrs, :checked, false)
-    label = Map.get(attrs, :label, "")
-    component_attrs = Map.put(attrs, :component_type, :checkbox)
+  defp do_process_element(
+         %{type: :checkbox, attrs: attrs_orig_param} = element,
+         space,
+         acc
+       )
+       when is_map_key(element, :type) do
+    attrs_orig = attrs_orig_param || %{}
 
+    attrs =
+      case attrs_orig do
+        list when is_list(list) -> Map.new(list)
+        map when is_map(map) -> map
+        _ -> %{}
+      end
+
+    checked = safe_access_get(attrs, :checked, false)
+    label = safe_access_get(attrs, :label, "")
+    component_attrs = Map.put(attrs, :component_type, :checkbox)
     checkbox_text = if checked, do: "[✓]", else: "[ ]"
 
     checkbox_elements = [
-      # Checkbox text (box + label)
       %{
         type: :text,
         x: space.x,
         y: space.y,
         text: "#{checkbox_text} #{label}",
-        # Pass attributes for theme styling
         attrs: component_attrs
       }
     ]
@@ -177,13 +274,15 @@ defmodule Raxol.UI.Layout.Engine do
     checkbox_elements ++ acc
   end
 
-  def process_element(%{type: :table} = table_element, space, acc) do
+  defp do_process_element(%{type: :table} = table_element, space, acc)
+       when is_map_key(table_element, :type) do
     # Delegate table measurement and positioning to the dedicated module
     Table.measure_and_position(table_element, space, acc)
   end
 
   # Catch-all for unknown element types
-  def process_element(%{type: type} = element, _space, acc) do
+  defp do_process_element(%{type: type} = element, _space, acc)
+       when is_map_key(element, :type) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "LayoutEngine: Unknown or unhandled element type: #{inspect(type)}. Element: #{inspect(element)}",
       %{}
@@ -192,26 +291,60 @@ defmodule Raxol.UI.Layout.Engine do
     acc
   end
 
-  def process_element(other, _space, acc) do
+  defp do_process_element(other, _space, acc) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "LayoutEngine: Received non-element data: #{inspect(other)}",
       %{}
     )
+
     acc
   end
 
   # Process children of a container element (Helper)
-  defp process_children(children, space, acc) when is_list(children) do
-    # Placeholder: needs proper handling based on container type (row, col, etc.)
-    # For now, just process each child in the same space (will overlap)
-    Enum.reduce(children, acc, fn child, current_acc ->
-      process_element(child, space, current_acc)
-    end)
+  defp process_children(children_list, space) when is_list(children_list) do
+    result =
+      Enum.flat_map(children_list, fn child_node ->
+        # Recursive call with empty acc
+        process_element(child_node, space, [])
+      end)
+
+    result
   end
 
   # --- End Element Processing ---
 
   # --- Element Measurement Logic ---
+
+  defp safe_access_get(data, key, default) when is_map(data),
+    do: Access.get(data, key, default)
+
+  defp safe_access_get(data, key, default)
+       when is_list(data) and (data == [] or is_tuple(hd(data))),
+       do: Keyword.get(data, key, default)
+
+  defp safe_access_get(data, key, default) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "LayoutEngine: safe_access_get called with non-map/keyword data for key '#{key}'. Data: #{inspect(data)}",
+      %{}
+    )
+
+    # Return default if data is not a map or keyword list
+    default
+  end
+
+  defp extract_dim(attrs, key, tuple_index, default) do
+    cond do
+      is_map(attrs) and Map.has_key?(attrs, key) ->
+        Map.get(attrs, key)
+
+      is_tuple(attrs) and tuple_size(attrs) > tuple_index ->
+        elem(attrs, tuple_index)
+
+      true ->
+        default
+    end
+  end
+
   # Function Header for multi-clause function with defaults
   @doc """
   Calculates the intrinsic dimensions (width, height) of an element.
@@ -235,56 +368,68 @@ defmodule Raxol.UI.Layout.Engine do
   # --- Measurement Logic ---
 
   # Handles valid elements (maps with :type and :attrs)
-  def measure_element(%{type: type, attrs: attrs} = element, available_space)
-      when is_atom(type) and is_map(attrs) do
+  def measure_element(
+        %{type: type, attrs: attrs_orig_param} = element,
+        available_space
+      )
+      when is_map_key(element, :type) and is_atom(type) do
+    attrs_orig = attrs_orig_param || %{}
+
+    attrs =
+      case attrs_orig do
+        list when is_list(list) -> Map.new(list)
+        map when is_map(map) -> map
+        _ -> %{}
+      end
+
     case type do
       :text ->
-        text = Map.get(attrs, :text, "")
+        text = safe_access_get(attrs, :text, "")
         %{width: String.length(text), height: 1}
 
       :label ->
-        # Alias for text in measurement
-        text = Map.get(attrs, :content, "")
+        text = safe_access_get(attrs, :content, "")
         %{width: String.length(text), height: 1}
 
       :box ->
-        # Simple box takes explicit size or minimal size
-        width = Map.get(attrs, :width, 1)
-        height = Map.get(attrs, :height, 1)
+        width = extract_dim(attrs, :width, 0, 1)
+        height = extract_dim(attrs, :height, 1, 1)
         %{width: width, height: height}
 
       :button ->
-        text = Map.get(attrs, :label, "Button")
-        # Box: [ Text ]
+        text = safe_access_get(attrs, :label, "Button")
         padding = 4
-        width = min(String.length(text) + padding, available_space.width)
-        # Fixed height for button
+
+        width =
+          min(
+            String.length(text) + padding,
+            extract_dim(available_space, :width, 0, 80)
+          )
+
         height = 3
         %{width: width, height: height}
 
       :text_input ->
-        value = Map.get(attrs, :value, "")
-        placeholder = Map.get(attrs, :placeholder, "")
+        value = safe_access_get(attrs, :value, "")
+        placeholder = safe_access_get(attrs, :placeholder, "")
         display_text = if value == "", do: placeholder, else: value
-        # Box: [ Text ]
         padding = 4
-        # min_width = 10 # Remove min_width constraint for now
-        # Calculate width based on text + padding, constrained by available space
-        width =
-          min(String.length(display_text) + padding, available_space.width)
 
-        # Fixed height for text input
+        width =
+          min(
+            String.length(display_text) + padding,
+            extract_dim(available_space, :width, 0, 80)
+          )
+
         height = 3
         %{width: width, height: height}
 
       :checkbox ->
-        label = Map.get(attrs, :label, "")
-        # "[ ] " or "[✓] " prefix
+        label = safe_access_get(attrs, :label, "")
         width = 4 + String.length(label)
         height = 1
         %{width: width, height: height}
 
-      # Container types delegate to helper measurement functions
       :row ->
         Containers.measure_row(element, available_space)
 
@@ -292,30 +437,19 @@ defmodule Raxol.UI.Layout.Engine do
         Containers.measure_column(element, available_space)
 
       :panel ->
-        # Assuming Panel takes full available space unless constrained
-        # TODO: Implement Panels.measure_panel if needed
-        # %{width: available_space.width, height: available_space.height}
-        # Delegate to Panels module for measurement
         Panels.measure_panel(element, available_space)
 
       :grid ->
-        # TODO: Implement Grid.measure_grid if needed
-        # %{width: available_space.width, height: available_space.height} # Placeholder
-        # Delegate to Grid module for measurement
-        Grid.measure_grid(element, available_space)
+        %{type: :column, children: safe_access_get(element, :children, [])}
+        |> __MODULE__.measure_element(available_space)
 
       :view ->
-        # View takes full available space or measures children if needed
-        # For now, assume it takes available space. A different approach might be needed.
-        # %{width: available_space.width, height: available_space.height} # Placeholder
-        # Measure view based on its children (treat as a column)
-        %{type: :column, children: Map.get(element, :children, [])}
+        %{type: :column, children: safe_access_get(element, :children, [])}
         |> __MODULE__.measure_element(available_space)
 
       :table ->
-        # Basic table measurement (consider headers, widest row)
-        headers = Map.get(attrs, :headers, [])
-        data = Map.get(attrs, :data, [])
+        headers = safe_access_get(attrs, :headers, [])
+        data = safe_access_get(attrs, :data, [])
 
         header_width =
           if headers == [],
@@ -328,14 +462,13 @@ defmodule Raxol.UI.Layout.Engine do
           |> Enum.max(fn -> 0 end)
 
         width = max(header_width, max_data_width)
-        # Header + separator
         header_height = if headers == [], do: 0, else: 2
         data_height = length(data)
         height = header_height + data_height
 
         %{
-          width: min(width, available_space.width),
-          height: min(height, available_space.height)
+          width: min(width, extract_dim(available_space, :width, 0, 80)),
+          height: min(height, extract_dim(available_space, :height, 1, 24))
         }
 
       _ ->
@@ -358,6 +491,4 @@ defmodule Raxol.UI.Layout.Engine do
 
     %{width: 0, height: 0}
   end
-
-  # --- End Measurement Logic ---
 end

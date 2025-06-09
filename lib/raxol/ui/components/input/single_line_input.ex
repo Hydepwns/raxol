@@ -16,15 +16,19 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
   - :on_submit - callback for submit action
   """
   @type t :: %__MODULE__{
-    id: any(),
-    value: String.t(),
-    placeholder: String.t(),
-    style: map(),
-    focused: boolean(),
-    cursor_pos: non_neg_integer(),
-    on_change: (String.t() -> any()) | nil,
-    on_submit: (() -> any()) | nil
-  }
+          id: any(),
+          value: String.t(),
+          placeholder: String.t(),
+          style: map(),
+          focused: boolean(),
+          cursor_pos: non_neg_integer(),
+          on_change: (String.t() -> any()) | nil,
+          on_submit: (-> any()) | nil,
+          mounted: boolean(),
+          render_count: non_neg_integer(),
+          type: atom(),
+          disabled: boolean()
+        }
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
@@ -41,7 +45,11 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
             focused: false,
             cursor_pos: 0,
             on_change: nil,
-            on_submit: nil
+            on_submit: nil,
+            mounted: false,
+            render_count: 0,
+            type: :single_line_input,
+            disabled: false
 
   # --- Component Behaviour Callbacks ---
 
@@ -56,10 +64,13 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
       id: props[:id],
       value: props[:initial_value] || "",
       placeholder: props[:placeholder] || "",
-      style: props[:style] || %{},
+      style: Map.get(props, :style, %{}),
+      focused: Map.get(props, :focused, false),
       on_change: props[:on_change],
       on_submit: props[:on_submit],
-      cursor_pos: String.length(props[:initial_value] || "")
+      cursor_pos: String.length(props[:initial_value] || ""),
+      type: :single_line_input,
+      disabled: Map.get(props, :disabled, false)
     }
   end
 
@@ -159,9 +170,14 @@ defmodule Raxol.UI.Components.Input.SingleLineInput do
         rendered_content
       end
 
-    # Return the element structure directly
-    dsl_result
-    # Or wrap if needed by container: View.to_element(dsl_result)
+    # Ensure :disabled and :focused are present in the returned map if possible
+    if is_map(dsl_result) do
+      dsl_result
+      |> Map.put_new(:disabled, Map.get(state, :disabled, false))
+      |> Map.put_new(:focused, Map.get(state, :focused, false))
+    else
+      dsl_result
+    end
   end
 
   # --- Internal Helpers ---

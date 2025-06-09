@@ -16,19 +16,25 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
   - :focused - whether the dropdown is focused
   - :on_change - callback for selection change
   - :list_state - state of the nested list
+  - :type - type of the dropdown
+  - :disabled - whether the dropdown is disabled
   """
   @type t :: %__MODULE__{
-    id: any(),
-    options: list(),
-    selected_option: any(),
-    expanded: boolean(),
-    width: non_neg_integer(),
-    list_height: non_neg_integer(),
-    style: map(),
-    focused: boolean(),
-    on_change: (any() -> any()) | nil,
-    list_state: any()
-  }
+          id: any(),
+          options: list(),
+          selected_option: any(),
+          expanded: boolean(),
+          width: non_neg_integer(),
+          list_height: non_neg_integer(),
+          style: map(),
+          focused: boolean(),
+          on_change: (any() -> any()) | nil,
+          list_state: any(),
+          mounted: boolean(),
+          render_count: non_neg_integer(),
+          type: atom(),
+          disabled: boolean()
+        }
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
@@ -43,38 +49,33 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
             options: [],
             selected_option: nil,
             expanded: false,
-            # Example default
             width: 20,
-            # Example default
             list_height: 5,
             style: %{},
             focused: false,
             on_change: nil,
-            # Nested list state
-            list_state: nil
+            list_state: nil,
+            mounted: false,
+            render_count: 0,
+            type: :dropdown,
+            disabled: false
 
   # --- Component Behaviour Callbacks ---
 
   @doc "Initializes the Dropdown component state from props."
   @spec init(map()) :: __MODULE__.t()
   @impl Raxol.UI.Components.Base.Component
-  def init(props) do
-    # Initialize state, including nested List state
-    # Ensure options is a list
+  def init(props) when is_map(props) do
     options = props[:options] || []
-    # Use Enum.at for safety
     initial_option = props[:initial_value] || Enum.at(options, 0)
     width = props[:width] || 20
 
     list_props = %{
       id: "#{props[:id]}-list",
       items: props[:options] || [],
-      # Match dropdown width
       width: width,
       height: props[:list_height] || 5,
-      # Internal message
       on_select: {:list_item_selected}
-      # Pass item_renderer if needed
     }
 
     %__MODULE__{
@@ -83,19 +84,27 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
       selected_option: initial_option,
       width: width,
       list_height: props[:list_height] || 5,
-      style: props[:style] || %{},
+      style: Map.get(props, :style, %{}),
       on_change: props[:on_change],
-      # Initialize nested list component
-      list_state: List.init(list_props)
+      list_state: List.init(list_props),
+      type: :dropdown,
+      focused: Map.get(props, :focused, false),
+      disabled: Map.get(props, :disabled, false),
+      mounted: Map.get(props, :mounted, false),
+      render_count: Map.get(props, :render_count, 0)
     }
   end
+
+  def init(_), do: %__MODULE__{type: :dropdown, mounted: false, render_count: 0}
 
   @doc "Updates the Dropdown component state in response to messages."
   @spec update(term(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle internal messages and messages from nested list
-    Raxol.Core.Runtime.Log.debug("Dropdown #{state.id} received message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Dropdown #{state.id} received message: #{inspect(msg)}"
+    )
 
     case msg do
       :toggle_expand ->
@@ -139,7 +148,10 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
   @doc "Handles key events for the Dropdown component, including toggling expansion and forwarding to the list."
   @impl Raxol.UI.Components.Base.Component
   def handle_event(%{type: :key, data: key_data} = event, %{} = _props, state) do
-    Raxol.Core.Runtime.Log.debug("Dropdown #{state.id} received event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Dropdown #{state.id} received event: #{inspect(event)}"
+    )
+
     # Handle keys to toggle expansion, or forward to list if expanded
     case key_data.key do
       "Enter" when not state.expanded ->
@@ -162,11 +174,12 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
     end
   end
 
-  @doc "Handles other events for the Dropdown component, such as mouse clicks."
   @spec handle_event(map(), map(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
-    Raxol.Core.Runtime.Log.debug("Dropdown #{state.id} received event: #{inspect(event.type)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Dropdown #{state.id} received event: #{inspect(event.type)}"
+    )
 
     case event do
       %{type: :mouse, data: %{button: :left, action: :press}} ->
@@ -191,8 +204,14 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
         render_collapsed(state)
       end
 
-    # Return the element structure directly
-    dsl_result
+    # Ensure :disabled and :focused are present in the returned map if possible
+    if is_map(dsl_result) do
+      dsl_result
+      |> Map.put_new(:disabled, Map.get(state, :disabled, false))
+      |> Map.put_new(:focused, Map.get(state, :focused, false))
+    else
+      dsl_result
+    end
   end
 
   # --- Internal Render Helpers ---
@@ -225,7 +244,4 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
       List.render(state.list_state, %{})
     end
   end
-
-  # Remove old handle_dropdown_keys (logic moved to handle_event)
-  # Remove old @impl Component annotation
 end

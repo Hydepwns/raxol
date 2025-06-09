@@ -21,7 +21,12 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
             label: nil,
             # :above, :below, :right
             label_position: :below,
-            show_percentage: false
+            show_percentage: false,
+            mounted: false,
+            render_count: 0,
+            type: :progress_bar,
+            focused: false,
+            disabled: false
 
   # --- Component Behaviour Callbacks ---
 
@@ -34,10 +39,13 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
       value: props[:value] || 0,
       max: props[:max] || 100,
       width: props[:width] || 20,
-      style: props[:style] || %{},
+      style: Map.get(props, :style, %{}),
       label: props[:label],
       label_position: props[:label_position] || :below,
-      show_percentage: props[:show_percentage] || false
+      show_percentage: props[:show_percentage] || false,
+      type: :progress_bar,
+      focused: Map.get(props, :focused, false),
+      disabled: Map.get(props, :disabled, false)
     }
   end
 
@@ -45,7 +53,9 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle messages to update value
-    Raxol.Core.Runtime.Log.debug("ProgressBar #{state.id} received message: #{inspect(msg)}")
+    Raxol.Core.Runtime.Log.debug(
+      "ProgressBar #{state.id} received message: #{inspect(msg)}"
+    )
 
     case msg do
       {:set_value, value} when is_number(value) ->
@@ -60,7 +70,10 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do
     # Handle events if needed
-    Raxol.Core.Runtime.Log.debug("ProgressBar #{state.id} received event: #{inspect(event)}")
+    Raxol.Core.Runtime.Log.debug(
+      "ProgressBar #{state.id} received event: #{inspect(event)}"
+    )
+
     {state, []}
   end
 
@@ -188,8 +201,15 @@ defmodule Raxol.UI.Components.Progress.ProgressBar do
           end
       end
 
-    # Return element structure
-    rendered_view
+    # At the end, ensure :disabled and :focused are present in the returned map if possible
+    if is_map(rendered_view) do
+      rendered_view
+      |> Map.put_new(:disabled, Map.get(state, :disabled, false))
+      |> Map.put_new(:focused, Map.get(state, :focused, false))
+    else
+      rendered_view
+    end
+
     # Or wrap: View.to_element(rendered_view)
   end
 
