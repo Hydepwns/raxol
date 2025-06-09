@@ -25,7 +25,10 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   @spec handle_0_or_2(Emulator.t(), String.t()) ::
           {:ok, Emulator.t()} | {:error, atom(), Emulator.t()}
   def handle_0_or_2(emulator, pt) do
-    Raxol.Core.Runtime.Log.debug("OSC 0/2: Set Window Title and Icon Name to '#{pt}'")
+    Raxol.Core.Runtime.Log.debug(
+      "OSC 0/2: Set Window Title and Icon Name to '#{pt}'"
+    )
+
     {:ok, %{emulator | window_title: pt, icon_name: pt}}
   end
 
@@ -73,15 +76,25 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
   def handle_8(emulator, pt) do
     case String.split(pt, ";", parts: 2) do
       [params_str, uri] ->
-        Raxol.Core.Runtime.Log.debug("OSC 8: Hyperlink: URI='#{uri}', Params='#{params_str}'")
+        Raxol.Core.Runtime.Log.debug(
+          "OSC 8: Hyperlink: URI='#{uri}', Params='#{params_str}'"
+        )
+
         {:ok, %{emulator | current_hyperlink: %{uri: uri, params: params_str}}}
 
       [uri] ->
-        Raxol.Core.Runtime.Log.debug("OSC 8: Hyperlink: URI='#{uri}', No Params")
+        Raxol.Core.Runtime.Log.debug(
+          "OSC 8: Hyperlink: URI='#{uri}', No Params"
+        )
+
         {:ok, %{emulator | current_hyperlink: %{uri: uri, params: nil}}}
 
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context("Malformed OSC 8 sequence: PT='#{pt}'", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Malformed OSC 8 sequence: PT='#{pt}'",
+          %{}
+        )
+
         {:error, :malformed_osc_8, emulator}
     end
   end
@@ -104,31 +117,46 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
             {:ok, emulator}
 
           :error ->
-            Raxol.Core.Runtime.Log.warning_with_context("OSC 52: Failed to decode base64 data: '#{data_base64}'", %{})
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "OSC 52: Failed to decode base64 data: '#{data_base64}'",
+              %{}
+            )
 
             {:error, :decode_base64_failed, emulator}
         end
 
       [selection_char, "?"] when selection_char in ["c", "p"] ->
-        Raxol.Core.Runtime.Log.debug("OSC 52: Query Clipboard (#{selection_char})")
+        Raxol.Core.Runtime.Log.debug(
+          "OSC 52: Query Clipboard (#{selection_char})"
+        )
 
         case Clipboard.paste() do
           {:ok, content} ->
             response_data = Base.encode64(content)
             response = "\e]52;#{selection_char};#{response_data}\e\\"
-            Raxol.Core.Runtime.Log.debug("OSC 52: Response: #{inspect(response)}")
+
+            Raxol.Core.Runtime.Log.debug(
+              "OSC 52: Response: #{inspect(response)}"
+            )
 
             {:ok,
              %{emulator | output_buffer: emulator.output_buffer <> response}}
 
           {:error, reason} ->
-            Raxol.Core.Runtime.Log.warning_with_context("OSC 52: Failed to get clipboard: #{inspect(reason)}", %{})
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "OSC 52: Failed to get clipboard: #{inspect(reason)}",
+              %{}
+            )
 
             {:error, :clipboard_paste_failed, emulator}
         end
 
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context("Malformed OSC 52 sequence: PT='#{pt}'", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Malformed OSC 52 sequence: PT='#{pt}'",
+          %{}
+        )
+
         {:error, :malformed_osc_52, emulator}
     end
   end
@@ -149,12 +177,20 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
             end
 
           _ ->
-            Raxol.Core.Runtime.Log.warning_with_context("OSC 4: Invalid color index '#{c_str}'", %{})
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "OSC 4: Invalid color index '#{c_str}'",
+              %{}
+            )
+
             {:error, :invalid_color_index, emulator}
         end
 
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context("OSC 4: Malformed parameter string '#{pt}'", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "OSC 4: Malformed parameter string '#{pt}'",
+          %{}
+        )
+
         {:error, :malformed_osc4_param, emulator}
     end
   end
@@ -165,28 +201,26 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
     Raxol.Core.Runtime.Log.debug("OSC 4: Query color index #{color_index}")
     # Query dynamic palette, then fallback to default_palette if not set
     case get_palette_color(emulator.color_palette, color_index) ||
-           (emulator.default_palette && get_palette_color(emulator.default_palette, color_index)) do
+           (emulator.default_palette &&
+              get_palette_color(emulator.default_palette, color_index)) do
       {:ok, {r, g, b}} ->
         r_scaled = Integer.to_string(div(r * 65_535, 255), 16)
         g_scaled = Integer.to_string(div(g * 65_535, 255), 16)
         b_scaled = Integer.to_string(div(b * 65_535, 255), 16)
         spec_response = "rgb:#{r_scaled}/#{g_scaled}/#{b_scaled}"
         response_str = "\e]4;#{color_index};#{spec_response}\e\\"
-        Raxol.Core.Runtime.Log.debug("OSC 4: Response: #{inspect(response_str)}")
-        {:ok, %{emulator | output_buffer: emulator.output_buffer <> response_str}}
+
+        Raxol.Core.Runtime.Log.debug(
+          "OSC 4: Response: #{inspect(response_str)}"
+        )
+
+        {:ok,
+         %{emulator | output_buffer: emulator.output_buffer <> response_str}}
+
       _ ->
         {:error, :invalid_color_index, emulator}
     end
   end
-
-  # Helper for safe palette access
-  defp get_palette_color(palette, index) when is_integer(index) and index >= 0 and index <= 255 do
-    case Map.get(palette, index) do
-      nil -> {:error, :invalid_color_index}
-      color -> {:ok, color}
-    end
-  end
-  defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
 
   defp handle_osc4_color(emulator, color_index, spec) do
     # Set color
@@ -199,11 +233,22 @@ defmodule Raxol.Terminal.Commands.OSCHandlers do
         new_palette = Map.put(emulator.color_palette, color_index, {r, g, b})
         {:ok, %{emulator | color_palette: new_palette}}
 
-      {:error, reason} ->
+      {:error, _reason} ->
         Raxol.Core.Runtime
         {:error, :invalid_color_spec, emulator}
     end
   end
+
+  # Helper for safe palette access
+  defp get_palette_color(palette, index)
+       when is_integer(index) and index >= 0 and index <= 255 do
+    case Map.get(palette, index) do
+      nil -> {:error, :invalid_color_index}
+      color -> {:ok, color}
+    end
+  end
+
+  defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
 
   @spec parse_color_spec(String.t()) ::
           {:ok, {r :: integer, g :: integer, b :: integer}}

@@ -50,7 +50,7 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
     case code do
       # Report cursor position (CPR)
       6 ->
-        {col, row} = Raxol.Terminal.Emulator.get_cursor_position(emulator.cursor)
+        {col, row} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
         # Convert to 1-based for response
         "\e[#{row + 1};#{col + 1}R"
 
@@ -60,7 +60,11 @@ defmodule Raxol.Terminal.Commands.DeviceHandlers do
         "\e[0n"
 
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context("Unknown DSR code: #{code}", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unknown DSR code: #{code}",
+          %{}
+        )
+
         nil
     end
   end

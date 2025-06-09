@@ -490,7 +490,11 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
     rescue
       ArgumentError ->
         # Fallback for invalid codepoints
-        Raxol.Core.Runtime.Log.warning_with_context("Invalid codepoint #{codepoint} in charset #{charset}", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Invalid codepoint #{codepoint} in charset #{charset}",
+          %{}
+        )
+
         <<char>>
     end
   end
@@ -505,6 +509,8 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
       {:ok, charlist, _} ->
         translated =
           Enum.map(charlist, fn
+            # Handle [0] explicitly
+            [0] -> translate_char(0, charset)
             int when is_integer(int) -> translate_char(int, charset)
             # skip non-integer (shouldn't happen)
             _ -> ""
@@ -516,6 +522,8 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
         # Handle invalid UTF-8 by treating as bytes
         translated =
           Enum.map(:binary.bin_to_list(string), fn
+            # Handle [0] explicitly
+            [0] -> translate_char(0, charset)
             int when is_integer(int) -> translate_char(int, charset)
             # skip non-integer (shouldn't happen)
             _ -> ""
@@ -527,6 +535,8 @@ defmodule Raxol.Terminal.ANSI.CharacterTranslations do
         # Handle incomplete UTF-8 by treating as bytes
         translated =
           Enum.map(:binary.bin_to_list(string), fn
+            # Handle [0] explicitly
+            [0] -> translate_char(0, charset)
             int when is_integer(int) -> translate_char(int, charset)
             # skip non-integer (shouldn't happen)
             _ -> ""

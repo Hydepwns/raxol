@@ -17,7 +17,8 @@ defmodule Raxol.Terminal.ANSI.Processor do
   alias Raxol.Terminal.Buffer.Manager, as: BufferManager
   alias Raxol.Terminal.Buffer.Eraser
   alias Raxol.Terminal.ANSI.Sequences.{Cursor, Colors}
-  alias Raxol.Terminal.ANSI.{TextFormatting, CharacterSets.CharacterSets}
+  alias Raxol.Terminal.ANSI.TextFormatting
+  alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.Commands.Screen
 
   # ANSI sequence types

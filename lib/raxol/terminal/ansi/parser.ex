@@ -7,11 +7,6 @@ defmodule Raxol.Terminal.ANSI.Parser do
   This is the main entry point for parsing all ANSI sequences.
   """
 
-  # alias Raxol.Terminal.ANSI.State # Unused
-  # alias Raxol.Terminal.ANSI.Actions # Unused
-  # alias Raxol.Terminal.Cursor # Unused
-  # alias Raxol.Terminal.ANSI.Sequences # Unused
-
   require Raxol.Core.Runtime.Log
 
   @doc """
@@ -226,7 +221,10 @@ defmodule Raxol.Terminal.ANSI.Parser do
 
   defp parse_extended_color(params) do
     # Invalid format, skip
-    Raxol.Core.Runtime.Log.debug("Invalid extended color format: #{inspect(params)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Invalid extended color format: #{inspect(params)}"
+    )
+
     {{:unknown_color, params}, []}
   end
 
@@ -274,15 +272,18 @@ defmodule Raxol.Terminal.ANSI.Parser do
   end
 
   defp parse_mode_sequence(sequence) do
-    # Example: \e[?25h (show cursor)
-    case Regex.run(~r/^\e\[\?(\d+)([hl])/, sequence, capture: :all_but_first) do
-      [mode, "h"] ->
-        mode = String.to_integer(mode)
-        {:set_mode, mode, true}
+    case Regex.run(~r/^\e\[\?(\d+)(h|l)/, sequence, capture: :all_but_first) do
+      [code, "h"] ->
+        mode =
+          Raxol.Terminal.ModeManager.lookup_private(String.to_integer(code))
 
-      [mode, "l"] ->
-        mode = String.to_integer(mode)
-        {:set_mode, mode, false}
+        {:set_mode, [mode]}
+
+      [code, "l"] ->
+        mode =
+          Raxol.Terminal.ModeManager.lookup_private(String.to_integer(code))
+
+        {:reset_mode, [mode]}
 
       _ ->
         {:error, "Invalid mode sequence: #{sequence}"}

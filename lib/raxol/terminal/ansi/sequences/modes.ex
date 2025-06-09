@@ -39,7 +39,11 @@ defmodule Raxol.Terminal.ANSI.Sequences.Modes do
         ModeManager.reset_mode(emulator, [mode_atom])
       end
     else
-      Raxol.Core.Runtime.Log.warning_with_context("[Sequences.Modes] Unknown mode code: #{mode}", %{})
+      Raxol.Core.Runtime.Log.warning_with_context(
+        "[Sequences.Modes] Unknown mode code: #{mode}",
+        %{}
+      )
+
       emulator
     end
   end

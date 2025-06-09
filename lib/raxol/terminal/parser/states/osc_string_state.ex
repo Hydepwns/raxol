@@ -24,7 +24,10 @@ defmodule Raxol.Terminal.Parser.States.OSCStringState do
     case input do
       <<>> ->
         # Incomplete OSC string - return current state
-        Raxol.Core.Runtime.Log.debug("[Parser] Incomplete OSC string, input ended.")
+        Raxol.Core.Runtime.Log.debug(
+          "[Parser] Incomplete OSC string, input ended."
+        )
+
         {:incomplete, emulator, parser_state}
 
       # String Terminator (ST - ESC \) -- Use escape_char check first

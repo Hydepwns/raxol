@@ -19,7 +19,11 @@ defmodule Raxol.Terminal.Buffer.Manager.Memory do
   """
   def update_usage(%State{} = state) do
     total_usage =
-      Raxol.Terminal.Buffer.MemoryManager.get_total_usage(state.active_buffer, state.back_buffer)
+      Raxol.Terminal.Buffer.MemoryManager.get_total_usage(
+        state.active_buffer,
+        state.back_buffer
+      )
+
     updated = %{state | memory_usage: total_usage}
     updated
   end

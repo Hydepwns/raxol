@@ -125,7 +125,10 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     active_buffer = Emulator.get_active_buffer(emulator)
     height = ScreenBuffer.get_height(active_buffer)
     new_row = min(row - 1, height - 1)
-    {current_col, _} = Raxol.Terminal.Emulator.get_cursor_position(emulator.cursor)
+
+    {current_col, _} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
     width = ScreenBuffer.get_width(active_buffer)
 
     new_cursor =
@@ -139,57 +142,20 @@ defmodule Raxol.Terminal.Commands.CursorHandlers do
     {:ok, %{emulator | cursor: new_cursor}}
   end
 
-  # --- Parameter Validation Helpers ---
-
-  @doc """
-  Gets a parameter value with validation.
-  Returns the parameter value if valid, or the default value if invalid.
-  """
-  @spec get_valid_param(
-          list(integer() | nil),
-          non_neg_integer(),
-          integer(),
-          integer(),
-          integer()
-        ) :: integer()
-  defp get_valid_param(params, index, default, min, max) do
-    case Enum.at(params, index, default) do
-      value when is_integer(value) and value >= min and value <= max ->
-        value
-
-      _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Invalid parameter value at index #{index}, using default #{default}",
-          %{}
-        )
-
-        default
+  # Private helper functions
+  defp get_valid_non_neg_param(params, index, default) do
+    case Enum.at(params, index) do
+      nil -> default
+      value when is_integer(value) and value >= 0 -> value
+      _ -> default
     end
   end
 
-  @doc """
-  Gets a parameter value with validation for non-negative integers.
-  Returns the parameter value if valid, or the default value if invalid.
-  """
-  @spec get_valid_non_neg_param(
-          list(integer() | nil),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: non_neg_integer()
-  defp get_valid_non_neg_param(params, index, default) do
-    get_valid_param(params, index, default, 0, 9999)
-  end
-
-  @doc """
-  Gets a parameter value with validation for positive integers.
-  Returns the parameter value if valid, or the default value if invalid.
-  """
-  @spec get_valid_pos_param(
-          list(integer() | nil),
-          non_neg_integer(),
-          pos_integer()
-        ) :: pos_integer()
   defp get_valid_pos_param(params, index, default) do
-    get_valid_param(params, index, default, 1, 9999)
+    case Enum.at(params, index) do
+      nil -> default
+      value when is_integer(value) and value > 0 -> value
+      _ -> default
+    end
   end
 end

@@ -77,7 +77,10 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
       # Final byte
       <<final_byte, rest_after_final::binary>>
       when final_byte >= ?@ and final_byte <= ?~ ->
-        Raxol.Core.Runtime.Log.debug("[CSIEntryState] Executing CSI final byte: #{inspect(<<final_byte>>)}, params: '#{parser_state.params_buffer}', intermediates: '#{parser_state.intermediates_buffer}'")
+        Raxol.Core.Runtime.Log.debug(
+          "[CSIEntryState] Executing CSI final byte: #{inspect(<<final_byte>>)}, params: '#{parser_state.params_buffer}', intermediates: '#{parser_state.intermediates_buffer}'"
+        )
+
         # Check for X10 Mouse Report: CSI M Cb Cx Cy ( ESC [ M Cb Cx Cy )
         # This is identified by final_byte == ?M, empty params, and empty intermediates.
         if final_byte == ?M and parser_state.params_buffer == "" and
@@ -188,7 +191,9 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
               final_byte
             )
 
-          Raxol.Core.Runtime.Log.debug("[CSIEntryState] After CSI command: style=#{inspect(new_emulator_other.style)}, state=#{inspect(parser_state.state)}")
+          Raxol.Core.Runtime.Log.debug(
+            "[CSIEntryState] After CSI command: style=#{inspect(new_emulator_other.style)}, state=#{inspect(parser_state.state)}"
+          )
 
           # Transition back to Ground state, clearing buffers for the next sequence
           next_parser_state_other = %{
@@ -215,13 +220,18 @@ defmodule Raxol.Terminal.Parser.States.CSIEntryState do
       <<ignored_byte, rest_after_ignored::binary>>
       when (ignored_byte >= 0 and ignored_byte <= 23) or
              (ignored_byte >= 27 and ignored_byte <= 31) or ignored_byte == 127 ->
-        Raxol.Core.Runtime.Log.debug("Ignoring C0/DEL byte #{ignored_byte} in CSI Entry")
+        Raxol.Core.Runtime.Log.debug(
+          "Ignoring C0/DEL byte #{ignored_byte} in CSI Entry"
+        )
+
         # Stay in state, ignore byte
         {:continue, emulator, parser_state, rest_after_ignored}
 
       # Unhandled byte - go to ground
       <<unhandled_byte, rest_after_unhandled::binary>> ->
-        msg = "Unhandled byte #{unhandled_byte} in CSI Entry state, returning to ground."
+        msg =
+          "Unhandled byte #{unhandled_byte} in CSI Entry state, returning to ground."
+
         Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 
         next_parser_state = %{parser_state | state: :ground}

@@ -6,8 +6,6 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   Enforces a configurable size limit.
   """
 
-  alias Raxol.Terminal.ScreenBuffer.Line
-
   @type t :: %__MODULE__{
           lines: list(Line.t()),
           limit: non_neg_integer()
@@ -22,6 +20,22 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   def new(limit \\ 1000) when is_integer(limit) and limit >= 0 do
     %__MODULE__{limit: limit, lines: []}
   end
+
+  @doc """
+  Sets the scrollback limit for an existing buffer. Trims lines if new limit is smaller.
+  """
+  @spec set_limit(t(), non_neg_integer()) :: t()
+  def set_limit(%__MODULE__{} = scrollback, new_limit)
+      when is_integer(new_limit) and new_limit >= 0 do
+    trimmed_lines = Enum.take(scrollback.lines, new_limit)
+    %__MODULE__{scrollback | lines: trimmed_lines, limit: new_limit}
+  end
+
+  @doc """
+  Gets the current scrollback limit.
+  """
+  @spec get_limit(t()) :: non_neg_integer()
+  def get_limit(%__MODULE__{limit: limit}), do: limit
 
   @doc """
   Adds new lines to the top of the scrollback buffer.
@@ -65,4 +79,50 @@ defmodule Raxol.Terminal.Buffer.Scrollback do
   """
   @spec size(t()) :: non_neg_integer()
   def size(%__MODULE__{lines: lines}), do: length(lines)
+
+  @doc """
+  Gets a specific line from the scrollback buffer by index (0-based from newest).
+  Returns nil if index is out of bounds.
+  """
+  @spec get_line(t(), non_neg_integer()) :: Line.t() | nil
+  def get_line(%__MODULE__{lines: lines}, index)
+      when is_integer(index) and index >= 0 do
+    Enum.at(lines, index)
+  end
+
+  @doc """
+  Gets a range of lines from the scrollback buffer (0-based from newest).
+  """
+  @spec get_lines(t(), non_neg_integer(), non_neg_integer()) :: list(Line.t())
+  def get_lines(%__MODULE__{lines: lines}, start_index, count)
+      when is_integer(start_index) and start_index >= 0 and
+             is_integer(count) and count >= 0 do
+    Enum.slice(lines, start_index, count)
+  end
+
+  @doc """
+  Checks if the scrollback buffer is full (i.e., number of lines equals the limit).
+  """
+  @spec is_full?(t()) :: boolean()
+  def is_full?(%__MODULE__{lines: lines, limit: limit}) do
+    length(lines) >= limit
+  end
+
+  @doc """
+  Gets the oldest line in the scrollback buffer (the one at the limit).
+  Returns nil if the buffer is empty.
+  """
+  @spec get_oldest_line(t()) :: Line.t() | nil
+  def get_oldest_line(%__MODULE__{lines: lines}) do
+    List.last(lines)
+  end
+
+  @doc """
+  Gets the newest line in the scrollback buffer (the one most recently added).
+  Returns nil if the buffer is empty.
+  """
+  @spec get_newest_line(t()) :: Line.t() | nil
+  def get_newest_line(%__MODULE__{lines: lines}) do
+    List.first(lines)
+  end
 end

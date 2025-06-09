@@ -166,7 +166,10 @@ defmodule Raxol.Terminal.ANSI.WindowManipulation do
         end
 
       _ ->
-        Raxol.Core.Runtime.Log.debug("[WindowManipulation] Invalid OSC format: #{osc_content}")
+        Raxol.Core.Runtime.Log.debug(
+          "[WindowManipulation] Invalid OSC format: #{osc_content}"
+        )
+
         {state, ""}
     end
   end

@@ -9,8 +9,7 @@ defmodule Raxol.Terminal.Emulator.State do
   alias Raxol.Terminal.{
     Emulator,
     ANSI.CharacterSets,
-    ANSI.TerminalState,
-    ModeManager
+    ANSI.TerminalState
   }
 
   @doc """
@@ -21,7 +20,7 @@ defmodule Raxol.Terminal.Emulator.State do
           {:ok, Emulator.t()} | {:error, String.t()}
   def set_mode(%Emulator{} = emulator, mode, value)
       when is_atom(mode) and is_boolean(value) do
-    case ModeManager.set_mode(emulator.mode_manager, mode, value) do
+    case Raxol.Terminal.ModeManager.set_mode(emulator.mode_manager, [mode]) do
       {:ok, updated_mode_manager} ->
         {:ok, %{emulator | mode_manager: updated_mode_manager}}
 
@@ -40,7 +39,7 @@ defmodule Raxol.Terminal.Emulator.State do
   """
   @spec get_mode(Emulator.t(), atom()) :: boolean() | nil
   def get_mode(%Emulator{} = emulator, mode) when is_atom(mode) do
-    ModeManager.get_mode(emulator.mode_manager, mode)
+    Map.get(emulator.mode_manager, mode)
   end
 
   def get_mode(%Emulator{} = _emulator, invalid_mode) do
@@ -54,7 +53,7 @@ defmodule Raxol.Terminal.Emulator.State do
   @spec set_charset_state(Emulator.t(), CharacterSets.charset_state()) ::
           {:ok, Emulator.t()} | {:error, String.t()}
   def set_charset_state(%Emulator{} = emulator, charset_state) do
-    case CharacterSets.validate_state(charset_state) do
+    case validate_state(emulator) do
       :ok ->
         {:ok, %{emulator | charset_state: charset_state}}
 
@@ -78,12 +77,15 @@ defmodule Raxol.Terminal.Emulator.State do
   """
   @spec push_state(Emulator.t()) :: {:ok, Emulator.t()} | {:error, String.t()}
   def push_state(%Emulator{} = emulator) do
-    case TerminalState.push(emulator.state) do
+    case Raxol.Terminal.ANSI.TerminalState.push(emulator.state) do
       {:ok, updated_state} ->
         {:ok, %{emulator | state: updated_state}}
 
-      {:error, reason} ->
-        {:error, reason}
+      updated_state when is_map(updated_state) ->
+        {:ok, %{emulator | state: updated_state}}
+
+      _ ->
+        {:error, "Failed to push state"}
     end
   end
 
@@ -93,7 +95,7 @@ defmodule Raxol.Terminal.Emulator.State do
   """
   @spec pop_state(Emulator.t()) :: {:ok, Emulator.t()} | {:error, String.t()}
   def pop_state(%Emulator{} = emulator) do
-    case TerminalState.pop(emulator.state) do
+    case Raxol.Terminal.ANSI.TerminalState.pop(emulator.state) do
       {:ok, updated_state} ->
         {:ok, %{emulator | state: updated_state}}
 
@@ -108,7 +110,7 @@ defmodule Raxol.Terminal.Emulator.State do
   """
   @spec get_current_state(Emulator.t()) :: TerminalState.t() | nil
   def get_current_state(%Emulator{} = emulator) do
-    TerminalState.current(emulator.state)
+    Raxol.Terminal.ANSI.TerminalState.current(emulator.state)
   end
 
   @doc """
@@ -178,5 +180,14 @@ defmodule Raxol.Terminal.Emulator.State do
   @spec get_tab_stops(Emulator.t()) :: MapSet.t()
   def get_tab_stops(%Emulator{} = emulator) do
     emulator.tab_stops
+  end
+
+  defp validate_state(%Emulator{charset_state: charset_state}) do
+    case Raxol.Terminal.ANSI.CharacterSets.StateManager.validate_state(
+           charset_state
+         ) do
+      :ok -> :ok
+      {:error, reason} -> {:error, reason}
+    end
   end
 end

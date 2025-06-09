@@ -5,9 +5,11 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
 
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.Parser.State
-  alias Raxol.Terminal.Commands.Executor
   require Raxol.Core.Runtime.Log
 
+  @behaviour Raxol.Terminal.Parser.StateBehaviour
+
+  @impl Raxol.Terminal.Parser.StateBehaviour
   @doc """
   Processes input when the parser is in the :dcs_passthrough state.
   Collects the DCS data string until ST (ESC \).
@@ -24,7 +26,10 @@ defmodule Raxol.Terminal.Parser.States.DCSPassthroughState do
     case input do
       <<>> ->
         # Incomplete DCS string - return current state
-        Raxol.Core.Runtime.Log.debug("[Parser] Incomplete DCS string, input ended.")
+        Raxol.Core.Runtime.Log.debug(
+          "[Parser] Incomplete DCS string, input ended."
+        )
+
         {:incomplete, emulator, parser_state}
 
       # String Terminator (ST - ESC \) -- Use escape_char check first

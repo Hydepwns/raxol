@@ -94,13 +94,18 @@ defmodule Raxol.Terminal.Parser.States.CSIParamState do
       <<ignored_byte, rest_after_ignored::binary>>
       when (ignored_byte >= 0 and ignored_byte <= 23) or
              (ignored_byte >= 27 and ignored_byte <= 31) or ignored_byte == 127 ->
-        Raxol.Core.Runtime.Log.debug("Ignoring C0/DEL byte #{ignored_byte} in CSI Param")
+        Raxol.Core.Runtime.Log.debug(
+          "Ignoring C0/DEL byte #{ignored_byte} in CSI Param"
+        )
+
         # Stay in state, ignore byte
         {:continue, emulator, parser_state, rest_after_ignored}
 
       # Unhandled byte - go to ground
       <<unhandled_byte, rest_after_unhandled::binary>> ->
-        msg = "Unhandled byte #{unhandled_byte} in CSI Param state, returning to ground."
+        msg =
+          "Unhandled byte #{unhandled_byte} in CSI Param state, returning to ground."
+
         Raxol.Core.Runtime.Log.warning_with_context(msg, %{})
 
         next_parser_state = %{parser_state | state: :ground}

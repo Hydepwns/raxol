@@ -47,7 +47,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       1
   """
   def get_line_count(%State{} = state) do
-    Scrollback.get_line_count(state.scrollback)
+    Scrollback.size(state.scrollback)
   end
 
   @doc """
@@ -76,7 +76,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
       1000
   """
   def get_height(%State{} = state) do
-    state.scrollback.height
+    Scrollback.get_limit(state.scrollback)
   end
 
   @doc """
@@ -91,7 +91,7 @@ defmodule Raxol.Terminal.Buffer.Manager.Scrollback do
   """
   def set_height(%State{} = state, new_height)
       when is_integer(new_height) and new_height > 0 do
-    new_scrollback = Scrollback.set_height(state.scrollback, new_height)
+    new_scrollback = Scrollback.set_limit(state.scrollback, new_height)
     %{state | scrollback: new_scrollback}
   end
 

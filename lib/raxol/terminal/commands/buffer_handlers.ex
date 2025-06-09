@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
            Raxol.Terminal.ANSI.TextFormatting.text_style()}
   def get_buffer_state(emulator) do
     active_buffer = Emulator.get_active_buffer(emulator)
-    cursor_pos = emulator.cursor
+    cursor_pos = emulator.cursor.position
     # Use a blank style for new/empty cells
     blank_style = Raxol.Terminal.ANSI.TextFormatting.new()
     {active_buffer, cursor_pos, blank_style}
@@ -133,7 +133,8 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
         default_style
       )
 
-    {:ok, Emulator.update_active_buffer(emulator, new_buffer)}
+    updated_emulator = Emulator.update_active_buffer(emulator, new_buffer)
+    {:ok, updated_emulator}
   end
 
   @doc "Handles Scroll Up (SU - 'S')"
@@ -177,11 +178,17 @@ defmodule Raxol.Terminal.Commands.BufferHandlers do
         ) :: integer()
   defp get_valid_param(params, index, default, min, max) do
     param = Enum.at(params, index, default)
+
     case param do
       value when is_integer(value) and value >= min and value <= max ->
         value
+
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context("BufferHandlers: Invalid parameter value: #{inspect(param)}", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "BufferHandlers: Invalid parameter value: #{inspect(param)}",
+          %{}
+        )
+
         default
     end
   end

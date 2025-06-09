@@ -7,10 +7,26 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   - Colors and text attributes
   - Screen manipulation
   - Various terminal modes
+
+  ## Features
+
+  * Cursor control (movement, visibility)
+  * Screen manipulation (clearing, scrolling)
+  * Text attributes (bold, underline, etc.)
+  * Color control (foreground, background)
+  * Terminal mode control
   """
 
   @doc """
-  Generates an ANSI sequence for cursor movement.
+  Generates ANSI sequences for cursor movement.
+
+  ## Parameters
+
+  * `n` - Number of positions to move (default: 1)
+
+  ## Returns
+
+  The ANSI escape sequence for the requested cursor movement.
   """
   def cursor_up(n \\ 1), do: "\e[#{n}A"
   def cursor_down(n \\ 1), do: "\e[#{n}B"
@@ -23,7 +39,15 @@ defmodule Raxol.Terminal.ANSI.Emitter do
   def cursor_hide, do: "\e[?25l"
 
   @doc """
-  Generates an ANSI sequence for screen manipulation.
+  Generates ANSI sequences for screen manipulation.
+
+  ## Parameters
+
+  * `n` - Number of lines to scroll (default: 1)
+
+  ## Returns
+
+  The ANSI escape sequence for the requested screen operation.
   """
   def clear_screen, do: "\e[2J"
   def clear_screen_from_cursor, do: "\e[0J"
@@ -36,6 +60,10 @@ defmodule Raxol.Terminal.ANSI.Emitter do
 
   @doc """
   Generates ANSI sequences for text attributes.
+
+  ## Returns
+
+  The ANSI escape sequence for the requested text attribute.
   """
   def reset_attributes, do: "\e[0m"
   def bold, do: "\e[1m"
@@ -57,8 +85,15 @@ defmodule Raxol.Terminal.ANSI.Emitter do
 
   @doc """
   Generates ANSI sequences for colors.
+
+  ## Parameters
+
+  * `color_code` - The color code (0-15 for basic colors)
+
+  ## Returns
+
+  The ANSI escape sequence for the requested color.
   """
-  # Basic 16 colors
   def foreground(color_code) when color_code in 0..15,
     do: "\e[38;5;#{color_code}m"
 

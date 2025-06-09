@@ -131,6 +131,17 @@ defmodule Raxol.Terminal.Buffer.Scroll do
   end
 
   @doc """
+  Scrolls the buffer in the specified direction by the given amount.
+  """
+  def scroll(%__MODULE__{} = scroll, direction, amount) do
+    case direction do
+      :up -> scroll(scroll, -amount)
+      :down -> scroll(scroll, amount)
+      _ -> scroll
+    end
+  end
+
+  @doc """
   Gets the current scroll position.
 
   ## Examples
@@ -172,6 +183,46 @@ defmodule Raxol.Terminal.Buffer.Scroll do
   """
   def clear(%__MODULE__{} = scroll) do
     %{scroll | buffer: [], position: 0, height: 0, memory_usage: 0}
+  end
+
+  @doc """
+  Updates the maximum height of the scroll buffer.
+  Trims the buffer if the new max height is smaller than the current content.
+  """
+  def set_max_height(%__MODULE__{} = scroll, new_max_height)
+      when is_integer(new_max_height) and new_max_height >= 0 do
+    new_buffer =
+      if length(scroll.buffer) > new_max_height do
+        Enum.take(scroll.buffer, new_max_height)
+      else
+        scroll.buffer
+      end
+
+    new_memory_usage = calculate_memory_usage(new_buffer)
+
+    %__MODULE__{
+      scroll
+      | buffer: new_buffer,
+        max_height: new_max_height,
+        height: length(new_buffer),
+        # Ensure position is valid
+        position: min(scroll.position, length(new_buffer) - 1) |> max(0),
+        memory_usage: new_memory_usage
+    }
+  end
+
+  @doc """
+  Gets the visible region of the scroll buffer.
+  """
+  def get_visible_region(%__MODULE__{} = scroll) do
+    {scroll.position, scroll.position + scroll.height - 1}
+  end
+
+  @doc """
+  Resizes the scroll buffer to the new height.
+  """
+  def resize(%__MODULE__{} = scroll, new_height) do
+    %{scroll | height: new_height}
   end
 
   # Private functions

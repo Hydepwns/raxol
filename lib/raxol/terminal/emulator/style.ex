@@ -15,7 +15,8 @@ defmodule Raxol.Terminal.Emulator.Style do
   """
   @spec set_attributes(Emulator.t(), list()) ::
           {:ok, Emulator.t()} | {:error, String.t()}
-  def set_attributes(%Emulator{} = emulator, attributes) when is_list(attributes) do
+  def set_attributes(%Emulator{} = emulator, attributes)
+      when is_list(attributes) do
     updated_style =
       Enum.reduce(attributes, emulator.style, fn attr, style ->
         TextFormatting.apply_attribute(style, attr)

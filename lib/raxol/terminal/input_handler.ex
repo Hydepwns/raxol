@@ -124,115 +124,30 @@ defmodule Raxol.Terminal.InputHandler do
   @spec process_terminal_input(Emulator.t(), String.t()) ::
           {Emulator.t(), String.t()}
   def process_terminal_input(emulator, input) when is_binary(input) do
-    # Get the current parser state from the emulator
     current_parser_state = emulator.parser_state
 
-    # === BRACKETED PASTE CHECK ===
-    if ModeManager.mode_enabled?(emulator.mode_manager, :bracketed_paste) do
-      _wrapped_paste = <<"\e[200~", input::binary, "\e[201~">>
-      # The emulator state for paste events typically doesn't carry forward output_buffer from previous partial commands.
-      _state_after_paste_event = %{emulator | output_buffer: ""}
+    {parsed_emulator, parsed_parser_state, remaining_input_chunk} =
+      Parser.parse_chunk(emulator, current_parser_state, input)
 
-      # This function should return the emulator state and the data to be sent *to the terminal's PTY/client*.
-      # For bracketed paste, the 'input' itself is transformed and becomes part of what's "sent back"
-      # or re-processed as if it came from the PTY.
-      # However, the typical contract for process_input in the Emulator was to return {emulator_state_after_processing, pty_output_from_commands}.
-      # Let's stick to that: the wrapped_paste is an *event* that the terminal itself generates.
-      # The original `Emulator.process_input` returned `{emulator_state_after_processing, pty_output_from_commands}`.
-      # If bracketed paste is active, the 'input' is treated as a literal paste.
-      # The special sequences \\e[200~ and \\e[201~ are *sent by the terminal* to the application
-      # to indicate the start and end of pasted text.
-      # So, if an application sends text while bracketed paste is on, the *terminal* (emulator)
-      # should wrap it. The `output_buffer` here is for application responses (like DSR).
-      # This part of the logic seems to be about how the *emulator interprets application output*
-      # when it itself is in bracketed paste mode, which is a bit circular.
-
-      # Re-evaluating the original logic from Emulator.process_input:
-      # If bracketed paste is enabled, the input *from the PTY/app* is wrapped.
-      # This implies the 'input' here is from the application to the terminal.
-      # The `wrapped_paste` is then what the terminal would effectively send to the underlying application.
-      # The `output_buffer` of the emulator is for responses *from* the terminal back to the application (e.g. DSR).
-      # This seems like a slight misunderstanding in the original `Emulator.process_input` logic
-      # if `input` is from the application. If `input` is from the *user typing*, then the terminal
-      # would send `\\e[200~` + `input` + `\\e[201~` to the application.
-
-      # Assuming `input` is data from the connected application/PTY:
-      # If the *application* sends text while the *terminal* is in bracketed paste mode,
-      # the terminal should just process it normally (display it). The bracketing is for
-      # *user input* at the terminal being sent *to* the application.
-
-      # Let's assume the original intent of this block in Emulator.process_input was for when
-      # the *emulator itself* is programmatically fed input that should be treated as a paste.
-      # In that case, the current `InputHandler` which handles user-facing input (like GUI paste)
-      # might be a better place for such logic.
-
-      # For now, to faithfully move the logic, I'll keep it.
-      # The 'output_to_send' in this context would be what the terminal sends to the connected application.
-      # If the input is from the app, and bracketed paste is on, the app is just sending data.
-      # The `wrapped_paste` being returned as `output_to_send` here is confusing.
-      # It should rather be that `Parser.parse_chunk` handles input, and if that input
-      # *is* `\\e[200~...\\e[201~`, the parser/executor would treat it as pasted data.
-
-      # Sticking to the direct move:
-      # The `wrapped_paste` was returned as the second element, which `Emulator.process_input`
-      # then returned as `output_to_send`. This implies the terminal is echoing back the
-      # wrapped paste to the connected application. This is unusual. Standard terminals
-      # send the wrapped sequence when the *user* pastes.
-      # Let's assume `output_to_send` is for explicit terminal responses (like DSR).
-      # If bracketed paste is active, and we receive `input`, we parse `input` normally.
-      # The bracketing happens when the *user* pastes into the terminal window.
-
-      # Given the ambiguity, I will simplify this part for the move:
-      # The `Parser.parse_chunk` should handle the input string.
-      # Bracketed paste mode affects how the *terminal sends user input to the application*.
-      # It does not typically affect how the terminal *processes data from the application*.
-      # Thus, the special `if ModeManager.mode_enabled?(emulator.mode_manager, :bracketed_paste)`
-      # check at this stage of processing application output is likely misplaced.
-      # The parser itself, when receiving CSI sequences like 200~ and 201~, would act.
-
-      # For a direct move, I will replicate the original structure, but add a note.
-      # Raxol.Core.Runtime.Log.warning("Bracketed paste mode interaction in process_terminal_input might need review.")
-      # if ModeManager.mode_enabled?(emulator.mode_manager, :bracketed_paste) do
-      #   wrapped_paste_output = <<"\e[200~", input::binary, "\e[201~">>
-      #   # Emulator state doesn't change, but this output is sent.
-      #   {emulator, wrapped_paste_output} # This interpretation is unusual.
-      # else
-      # This interpretation seems more standard:
-      parse_result = Parser.parse_chunk(emulator, current_parser_state, input)
-      {final_emulator, final_parser_state} = parse_result
-
-      final_emulator_updated = %{
-        final_emulator
-        | parser_state: final_parser_state
-      }
-
-      output_to_send = final_emulator_updated.output_buffer
-
-      final_emulator_state_no_output = %{
-        final_emulator_updated
-        | output_buffer: ""
-      }
-
-      {final_emulator_state_no_output, output_to_send}
-      # end
-    else
-      parse_result = Parser.parse_chunk(emulator, current_parser_state, input)
-      {final_emulator, final_parser_state} = parse_result
-
-      final_emulator_updated = %{
-        final_emulator
-        | parser_state: final_parser_state
-      }
-
-      output_to_send = final_emulator_updated.output_buffer
-
-      final_emulator_state_no_output = %{
-        final_emulator_updated
-        | output_buffer: ""
-      }
-
-      {final_emulator_state_no_output, output_to_send}
+    unless remaining_input_chunk == "" do
+      Raxol.Core.Runtime.Log.debug(
+        "[InputHandler] Parser.parse_chunk returned remaining input: #{inspect(remaining_input_chunk)}"
+      )
     end
+
+    final_emulator_updated = %{
+      parsed_emulator
+      | parser_state: parsed_parser_state
+    }
+
+    output_to_send = final_emulator_updated.output_buffer
+
+    final_emulator_state_no_output = %{
+      final_emulator_updated
+      | output_buffer: ""
+    }
+
+    {final_emulator_state_no_output, output_to_send}
   end
 
   # --- C0 and Printable Character Handling ---
@@ -285,7 +200,9 @@ defmodule Raxol.Terminal.InputHandler do
 
     # Check if auto wrap mode (DECAWM) is enabled
     auto_wrap_mode = ModeManager.mode_enabled?(emulator.mode_manager, :decawm)
-    {current_cursor_x, current_cursor_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator)
+
+    {current_cursor_x, current_cursor_y} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
     # --- Calculate Write Position & Next Cursor Position ---
     {write_x, write_y, next_cursor_x, next_cursor_y, next_last_col_exceeded} =
@@ -443,7 +360,8 @@ defmodule Raxol.Terminal.InputHandler do
               {acc <> grapheme, sets}
             else
               # Get character width (unused)
-              _width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
+              _width =
+                Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
 
               # Translate character based on current character set
               translated = CharacterSets.translate_char(codepoint, sets)
@@ -469,7 +387,8 @@ defmodule Raxol.Terminal.InputHandler do
       end)
 
     # Process bidirectional text
-    bidi_segments = Raxol.Terminal.CharacterHandling.process_bidi_text(processed)
+    bidi_segments =
+      Raxol.Terminal.CharacterHandling.process_bidi_text(processed)
 
     # Combine segments in correct order
     final_text =
@@ -524,7 +443,11 @@ defmodule Raxol.Terminal.InputHandler do
 
       # Unknown sequence
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context("Unknown control sequence: #{inspect(sequence)}", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unknown control sequence: #{inspect(sequence)}",
+          %{}
+        )
+
         {char_sets, char_sets}
     end
   end
@@ -554,35 +477,53 @@ defmodule Raxol.Terminal.InputHandler do
     process_input(Enum.join(text), updated_sets)
   end
 
-  defp calculate_new_cursor_x(emulator, _char, codepoint) do
-    # Raxol.Core.Runtime.Log.info(
-    #   "Calculating new cursor X for codepoint: #{codepoint}, char: #{<<codepoint::utf8>>}"
-    # )
-    _width = Raxol.Terminal.CharacterHandling.get_char_width(codepoint)
-    # Assuming Screen.write_char handles cursor advancement internally
-    # For now, just return current cursor_x as a placeholder, actual advancement is done by Screen.write_char
-    emulator.cursor_x # This needs to be updated based on actual write logic
-  end
-
   @doc """
   Handles a printable character, using single_shift if set (for SS2/SS3).
   """
-  @spec handle_printable_character(Emulator.t(), integer(), any(), nil | :ss2 | :ss3) :: {Emulator.t(), list()}
-  def handle_printable_character(emulator, char_codepoint, _params, single_shift) do
+  @spec handle_printable_character(
+          Emulator.t(),
+          integer(),
+          any(),
+          nil | :ss2 | :ss3
+        ) :: {Emulator.t(), list()}
+  def handle_printable_character(
+        emulator,
+        char_codepoint,
+        _params,
+        single_shift
+      ) do
     # Use single_shift to select the charset for this character if set
     charset_state = emulator.charset_state
+
     charset_state =
       case single_shift do
-        :ss2 -> Raxol.Terminal.ANSI.CharacterSets.set_single_shift(charset_state, :ss2)
-        :ss3 -> Raxol.Terminal.ANSI.CharacterSets.set_single_shift(charset_state, :ss3)
-        _ -> charset_state
+        :ss2 ->
+          Raxol.Terminal.ANSI.CharacterSets.set_single_shift(
+            charset_state,
+            :ss2
+          )
+
+        :ss3 ->
+          Raxol.Terminal.ANSI.CharacterSets.set_single_shift(
+            charset_state,
+            :ss3
+          )
+
+        _ ->
+          charset_state
       end
 
     # Translate the character using the possibly single-shifted charset
-    translated_char = Raxol.Terminal.ANSI.CharacterSets.translate_char(char_codepoint, charset_state)
+    _translated_char =
+      Raxol.Terminal.ANSI.CharacterSets.translate_char(
+        char_codepoint,
+        charset_state
+      )
 
     # After using single_shift, clear it
-    charset_state = Raxol.Terminal.ANSI.CharacterSets.clear_single_shift(charset_state)
+    charset_state =
+      Raxol.Terminal.ANSI.CharacterSets.clear_single_shift(charset_state)
+
     emulator = %{emulator | charset_state: charset_state}
 
     # Write the translated character to the buffer

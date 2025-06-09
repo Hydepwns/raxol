@@ -21,7 +21,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
           TextFormatting.text_style()
         ) :: ScreenBuffer.t()
   def insert_characters(
-        %ScreenBuffer{} = buffer,
+        %{__struct__: _} = buffer,
         row,
         col,
         count,
@@ -37,7 +37,9 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
           {left_part, right_part} = Enum.split(line, col)
           {to_shift, _rest} = Enum.split(right_part, buffer.width - col - count)
           combined_line = left_part ++ blank_cells_to_insert ++ to_shift
-          combined_line ++ List.duplicate(blank_cell, buffer.width - length(combined_line))
+
+          combined_line ++
+            List.duplicate(blank_cell, buffer.width - length(combined_line))
         end)
 
       %{buffer | cells: new_cells}
@@ -46,8 +48,11 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     end
   end
 
-  # No-op for invalid input
-  def insert_characters(buffer, _row, _col, _count, _default_style), do: buffer
+  def insert_characters(buffer, _row, _col, _count, _default_style)
+      when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
 
   @doc """
   Deletes a specified number of characters starting from the given row and column index.
@@ -63,7 +68,7 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
           TextFormatting.text_style()
         ) :: ScreenBuffer.t()
   def delete_characters(
-        %ScreenBuffer{} = buffer,
+        %{__struct__: _} = buffer,
         row,
         col,
         count,
@@ -80,7 +85,9 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
           {left_part, part_to_modify} = Enum.split(line, eff_col)
           right_part_kept = Enum.drop(part_to_modify, eff_count)
           combined_line = left_part ++ right_part_kept
-          combined_line ++ List.duplicate(blank_cell, buffer.width - length(combined_line))
+
+          combined_line ++
+            List.duplicate(blank_cell, buffer.width - length(combined_line))
         end)
 
       %{buffer | cells: new_cells}
@@ -89,6 +96,9 @@ defmodule Raxol.Terminal.Buffer.CharEditor do
     end
   end
 
-  # No-op for invalid input
-  def delete_characters(buffer, _row, _col, _count, _default_style), do: buffer
+  def delete_characters(buffer, _row, _col, _count, _default_style)
+      when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
 end

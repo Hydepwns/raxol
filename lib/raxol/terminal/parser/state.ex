@@ -3,15 +3,14 @@ defmodule Raxol.Terminal.Parser.State do
   Parser state for the terminal emulator.
   """
 
-  defstruct [
-    :state,
-    :params,
-    :params_buffer,
-    :intermediates_buffer,
-    :payload_buffer,
-    :final_byte,
-    :designating_gset,
-    :single_shift
-    # Add other fields as needed by your parser
-  ]
+  defstruct state: :ground,
+            params: [],
+            params_buffer: "",
+            intermediates_buffer: "",
+            payload_buffer: "",
+            final_byte: nil,
+            designating_gset: nil,
+            single_shift: nil
+
+  # Add other fields as needed by your parser
 end

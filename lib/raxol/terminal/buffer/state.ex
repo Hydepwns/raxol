@@ -15,7 +15,7 @@ defmodule Raxol.Terminal.Buffer.State do
   """
   @spec resize(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           ScreenBuffer.t()
-  def resize(%ScreenBuffer{} = buffer, new_width, new_height)
+  def resize(%{__struct__: _} = buffer, new_width, new_height)
       when is_integer(new_width) and new_width > 0 and is_integer(new_height) and
              new_height > 0 do
     old_width = buffer.width
@@ -62,24 +62,40 @@ defmodule Raxol.Terminal.Buffer.State do
     }
   end
 
+  def resize(buffer, _new_width, _new_height) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
+
   @doc """
   Gets the current width of the screen buffer.
   """
   @spec get_width(ScreenBuffer.t()) :: non_neg_integer()
-  def get_width(%ScreenBuffer{} = buffer) do
+  def get_width(%{__struct__: _} = buffer) do
     buffer.width
+  end
+
+  def get_width(buffer) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 
   @doc """
   Gets the current height of the screen buffer.
   """
   @spec get_height(ScreenBuffer.t()) :: non_neg_integer()
-  def get_height(%ScreenBuffer{} = buffer) do
+  def get_height(%{__struct__: _} = buffer) do
     buffer.height
+  end
+
+  def get_height(buffer) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 
   @doc """
   Gets the dimensions {width, height} of the screen buffer.
+  WARNING: This returns a tuple, NOT a buffer struct. Do not pass its result as a buffer!
   """
   @spec get_dimensions(ScreenBuffer.t()) ::
           {non_neg_integer(), non_neg_integer()}
@@ -92,8 +108,13 @@ defmodule Raxol.Terminal.Buffer.State do
   Returns nil if index is out of bounds.
   """
   @spec get_line(ScreenBuffer.t(), non_neg_integer()) :: list(Cell.t()) | nil
-  def get_line(%ScreenBuffer{} = buffer, line_index) when line_index >= 0 do
+  def get_line(%{__struct__: _} = buffer, line_index) when line_index >= 0 do
     Enum.at(buffer.cells, line_index)
+  end
+
+  def get_line(buffer, _line_index) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 
   @doc """
@@ -102,8 +123,13 @@ defmodule Raxol.Terminal.Buffer.State do
   """
   @spec get_cell(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           Cell.t() | nil
-  def get_cell(%ScreenBuffer{} = buffer, x, y) when x >= 0 and y >= 0 do
+  def get_cell(%{__struct__: _} = buffer, x, y) when x >= 0 and y >= 0 do
     buffer.cells |> Enum.at(y) |> Enum.at(x)
+  end
+
+  def get_cell(buffer, _x, _y) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 
   @doc """
@@ -112,7 +138,12 @@ defmodule Raxol.Terminal.Buffer.State do
   """
   @spec get_cell_at(ScreenBuffer.t(), non_neg_integer(), non_neg_integer()) ::
           Cell.t() | nil
-  def get_cell_at(buffer, x, y), do: get_cell(buffer, x, y)
+  def get_cell_at(%{__struct__: _} = buffer, x, y), do: get_cell(buffer, x, y)
+
+  def get_cell_at(buffer, _x, _y) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
 
   @doc """
   Sets a scroll region in the buffer.
@@ -122,17 +153,27 @@ defmodule Raxol.Terminal.Buffer.State do
           non_neg_integer(),
           non_neg_integer()
         ) :: ScreenBuffer.t()
-  def set_scroll_region(%ScreenBuffer{} = buffer, start_line, end_line)
+  def set_scroll_region(%{__struct__: _} = buffer, start_line, end_line)
       when start_line >= 0 and end_line >= start_line do
     %{buffer | scroll_region: {start_line, end_line}}
+  end
+
+  def set_scroll_region(buffer, _start_line, _end_line) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 
   @doc """
   Clears the scroll region setting in the buffer.
   """
   @spec clear_scroll_region(ScreenBuffer.t()) :: ScreenBuffer.t()
-  def clear_scroll_region(%ScreenBuffer{} = buffer) do
+  def clear_scroll_region(%{__struct__: _} = buffer) do
     %{buffer | scroll_region: nil}
+  end
+
+  def clear_scroll_region(buffer) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 
   @doc """
@@ -141,35 +182,53 @@ defmodule Raxol.Terminal.Buffer.State do
   """
   @spec get_scroll_region_boundaries(ScreenBuffer.t()) ::
           {non_neg_integer(), non_neg_integer()}
-  def get_scroll_region_boundaries(%ScreenBuffer{} = buffer) do
+  def get_scroll_region_boundaries(%{__struct__: _} = buffer) do
     case buffer.scroll_region do
       {start, ending} -> {start, ending}
       nil -> {0, buffer.height - 1}
     end
   end
 
+  def get_scroll_region_boundaries(buffer) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
+
   @doc """
   Converts the screen buffer content to a plain text string.
   """
   @spec get_content(ScreenBuffer.t()) :: String.t()
-  def get_content(%ScreenBuffer{} = buffer) do
+  def get_content(%{__struct__: _} = buffer) do
     buffer.cells
     |> Enum.map_join("\n", fn row ->
       row |> Enum.map_join("", &Cell.get_char/1) |> String.trim_trailing()
     end)
   end
 
+  def get_content(buffer) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
+
   @doc """
   Replaces the line at the given index with the provided list of cells.
   Returns the updated buffer.
   """
-  @spec put_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) :: ScreenBuffer.t()
-  def put_line(%ScreenBuffer{} = buffer, line_index, new_cells) when line_index >= 0 do
-    if line_index < buffer.height and is_list(new_cells) and length(new_cells) == buffer.width do
+  @spec put_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) ::
+          ScreenBuffer.t()
+  def put_line(%{__struct__: _} = buffer, line_index, new_cells)
+      when line_index >= 0 do
+    if line_index < buffer.height and is_list(new_cells) and
+         length(new_cells) == buffer.width do
       updated_cells = List.replace_at(buffer.cells, line_index, new_cells)
       %{buffer | cells: updated_cells}
     else
       buffer
     end
+  end
+
+  def put_line(buffer, _line_index, _new_cells) when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
   end
 end

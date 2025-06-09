@@ -5,7 +5,6 @@ defmodule Raxol.Terminal.Integration.State do
 
   alias Raxol.Terminal.{
     Emulator,
-    Renderer,
     Buffer.Manager,
     Buffer.Scroll,
     Cursor.Manager,
@@ -15,7 +14,6 @@ defmodule Raxol.Terminal.Integration.State do
 
   @type t :: %__MODULE__{
           emulator: Emulator.t(),
-          renderer: Renderer.t(),
           buffer_manager: Manager.t(),
           scroll_buffer: Scroll.t(),
           cursor_manager: Manager.t(),
@@ -26,7 +24,6 @@ defmodule Raxol.Terminal.Integration.State do
 
   defstruct [
     :emulator,
-    :renderer,
     :buffer_manager,
     :scroll_buffer,
     :cursor_manager,
@@ -34,6 +31,13 @@ defmodule Raxol.Terminal.Integration.State do
     :config,
     :last_cleanup
   ]
+
+  @doc """
+  Creates a new terminal state with default dimensions (80x24).
+  """
+  def new(config) do
+    new(80, 24, config)
+  end
 
   @doc """
   Creates a new terminal state with the specified dimensions.
@@ -49,18 +53,14 @@ defmodule Raxol.Terminal.Integration.State do
         config.memory_limit || 50 * 1024 * 1024
       )
 
-    renderer =
-      Renderer.new(Emulator.get_active_buffer(emulator), config.ansi.colors)
-
-    scroll_buffer = Buffer.Scroll.new(config.behavior.scrollback_limit)
-    cursor_manager = Cursor.Manager.new()
+    scroll_buffer = Scroll.new(config.behavior.scrollback_limit)
+    cursor_manager = Raxol.Terminal.Cursor.Manager.new()
 
     command_history =
       History.new((config.behavior.enable_command_history && 1000) || 0)
 
     %__MODULE__{
       emulator: emulator,
-      renderer: renderer,
       buffer_manager: buffer_manager,
       scroll_buffer: scroll_buffer,
       cursor_manager: cursor_manager,

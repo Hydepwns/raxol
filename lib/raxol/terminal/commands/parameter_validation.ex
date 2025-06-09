@@ -147,22 +147,38 @@ defmodule Raxol.Terminal.Commands.ParameterValidation do
   Validates coordinates, clamping to emulator bounds. Defaults to {0, 0} if invalid.
   """
   def validate_coordinates(emulator, params) do
-    width = Map.get(emulator, :width, 10) - 1
-    height = Map.get(emulator, :height, 10) - 1
+    # Get actual dimensions first
+    actual_width =
+      if is_map(emulator),
+        do: Map.get(emulator, :width, 10),
+        else: if(is_tuple(emulator), do: elem(emulator, 0), else: 10)
+
+    actual_height =
+      if is_map(emulator),
+        do: Map.get(emulator, :height, 10),
+        else: if(is_tuple(emulator), do: elem(emulator, 1), else: 10)
+
+    # Max valid coordinates are dimension - 1
+    max_x = actual_width - 1
+    max_y = actual_height - 1
 
     x =
       case Enum.at(params, 0) do
         v when is_integer(v) and v < 0 -> 0
-        v when is_integer(v) and v > width -> width
+        # Clamp to max_x
+        v when is_integer(v) and v > max_x -> max_x
         v when is_integer(v) -> v
+        # Default for non-integer or missing
         _ -> 0
       end
 
     y =
       case Enum.at(params, 1) do
         v when is_integer(v) and v < 0 -> 0
-        v when is_integer(v) and v > height -> height
+        # Clamp to max_y
+        v when is_integer(v) and v > max_y -> max_y
         v when is_integer(v) -> v
+        # Default for non-integer or missing
         _ -> 0
       end
 

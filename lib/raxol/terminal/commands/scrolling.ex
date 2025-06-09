@@ -13,25 +13,38 @@ defmodule Raxol.Terminal.Commands.Scrolling do
           {integer(), integer()} | nil,
           Raxol.Terminal.ANSI.TextFormatting.text_style()
         ) :: ScreenBuffer.t()
-  def scroll_up(buffer, count, scroll_region, blank_style) when count > 0 do
+
+  # Handles invalid region {top, bottom} where top > bottom
+  def scroll_up(buffer, _count, {region_top, region_bottom}, _blank_style)
+      when is_integer(region_top) and is_integer(region_bottom) and
+             region_top > region_bottom do
+    Raxol.Core.Runtime.Log.debug(
+      "Scroll Up: Invalid region (top > bottom). Region: #{inspect({region_top, region_bottom})}. No scroll."
+    )
+
+    buffer
+  end
+
+  # Main scrolling logic for scroll_up
+  def scroll_up(%{__struct__: _} = buffer, count, scroll_region, blank_style)
+      when count > 0 do
     {top_limit, bottom_limit} =
       case scroll_region do
-        {region_top, region_bottom} when region_top <= region_bottom ->
-          {region_top, region_bottom}
-
-        _ ->
-          # Full buffer if region is nil or invalid
-          {0, buffer.height - 1}
+        # At this point, rt <= rb due to the clause above
+        {rt, rb} -> {rt, rb}
+        nil -> {0, buffer.height - 1}
       end
 
-    # Ensure scroll limits are within buffer dimensions
     effective_top = max(0, top_limit)
     effective_bottom = min(buffer.height - 1, bottom_limit)
     region_height = effective_bottom - effective_top + 1
 
     # If region is invalid, count is too large for the region, or region height is <= 0, no effective scroll
     if region_height <= 0 or count <= 0 or count > region_height do
-      Raxol.Core.Runtime.Log.debug("Scroll Up: No effective scroll. Top: #{effective_top}, Bottom: #{effective_bottom}, Count: #{count}, Region Height: #{region_height}")
+      Raxol.Core.Runtime.Log.debug(
+        "Scroll Up: No effective scroll. Top: #{effective_top}, Bottom: #{effective_bottom}, Count: #{count}, Region Height: #{region_height}"
+      )
+
       buffer
     end
 
@@ -46,10 +59,12 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     # Shift existing lines up
     new_buffer =
       if preserved_lines_count > 0 do
-        Enum.reduce(0..(preserved_lines_count - 1), new_buffer, fn i, acc_buffer ->
+        Enum.reduce(0..(preserved_lines_count - 1), new_buffer, fn i,
+                                                                   acc_buffer ->
           source_row = preserved_lines_source_start + i
           target_row = effective_top + i
           cells = ScreenBuffer.get_line(acc_buffer, source_row)
+
           if is_list(cells) do
             ScreenBuffer.put_line(acc_buffer, target_row, cells)
           else
@@ -78,6 +93,12 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     new_buffer
   end
 
+  def scroll_up(buffer, _count, _scroll_region, _blank_style)
+      when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
+
   # No scroll or invalid count
   def scroll_up(buffer, count, _scroll_region, _blank_style) when count <= 0,
     do: buffer
@@ -88,15 +109,32 @@ defmodule Raxol.Terminal.Commands.Scrolling do
           {integer(), integer()} | nil,
           Raxol.Terminal.ANSI.TextFormatting.text_style()
         ) :: ScreenBuffer.t()
-  def scroll_down(buffer, count, scroll_region, blank_style) when count > 0 do
+
+  # Handles invalid region {top, bottom} where top > bottom
+  def scroll_down(buffer, _count, {region_top, region_bottom}, _blank_style)
+      when is_integer(region_top) and is_integer(region_bottom) and
+             region_top > region_bottom do
+    Raxol.Core.Runtime.Log.debug(
+      "Scroll Down: Invalid region (top > bottom). Region: #{inspect({region_top, region_bottom})}. No scroll."
+    )
+
+    buffer
+  end
+
+  # Main scrolling logic for scroll_down
+  def scroll_down(%{__struct__: _} = buffer, count, scroll_region, blank_style)
+      when count > 0 do
     {top_limit, bottom_limit} =
       case scroll_region do
-        {region_top, region_bottom} when region_top <= region_bottom ->
-          {region_top, region_bottom}
+        # At this point, rt <= rb due to the clause above
+        {rt, rb} ->
+          {rt, rb}
 
-        _ ->
-          # Full buffer if region is nil or invalid
+        nil ->
           {0, buffer.height - 1}
+
+          # NOTE: If scroll_region is an invalid format other than {t,b} or nil, it will cause a CaseClauseError here.
+          # This could be made more robust if needed, e.g. by adding a default `_ -> {0, buffer.height - 1}` and logging a warning.
       end
 
     effective_top = max(0, top_limit)
@@ -104,7 +142,10 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     region_height = effective_bottom - effective_top + 1
 
     if region_height <= 0 or count <= 0 or count > region_height do
-      Raxol.Core.Runtime.Log.debug("Scroll Down: No effective scroll. Top: #{effective_top}, Bottom: #{effective_bottom}, Count: #{count}, Region Height: #{region_height}")
+      Raxol.Core.Runtime.Log.debug(
+        "Scroll Down: No effective scroll. Top: #{effective_top}, Bottom: #{effective_bottom}, Count: #{count}, Region Height: #{region_height}"
+      )
+
       buffer
     end
 
@@ -125,6 +166,7 @@ defmodule Raxol.Terminal.Commands.Scrolling do
           source_row = effective_top + i
           target_row = effective_top + actual_scroll_count + i
           cells = ScreenBuffer.get_line(acc_buffer, source_row)
+
           if is_list(cells) do
             ScreenBuffer.put_line(acc_buffer, target_row, cells)
           else
@@ -147,7 +189,13 @@ defmodule Raxol.Terminal.Commands.Scrolling do
     new_buffer
   end
 
-  # No scroll or invalid count
+  def scroll_down(buffer, _count, _scroll_region, _blank_style)
+      when is_tuple(buffer) do
+    raise ArgumentError,
+          "Expected buffer struct, got tuple (did you pass result of get_dimensions/1?)"
+  end
+
+  # No scroll or invalid count (this might be redundant if the invalid region clause is comprehensive)
   def scroll_down(buffer, count, _scroll_region, _blank_style) when count <= 0,
     do: buffer
 end

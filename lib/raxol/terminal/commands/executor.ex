@@ -31,6 +31,10 @@ defmodule Raxol.Terminal.Commands.Executor do
         intermediates_buffer,
         final_byte
       ) do
+    Raxol.Core.Runtime.Log.debug(
+      "[Executor.execute_csi_command] BEFORE: scroll_region=#{inspect(emulator.scroll_region)}, final_byte=#{inspect(final_byte)}"
+    )
+
     # Parse parameters
     params = Parser.parse_params(params_buffer)
 
@@ -127,19 +131,27 @@ defmodule Raxol.Terminal.Commands.Executor do
           CSIHandlers.handle_scs(emulator, params_buffer, final_byte)
 
         _ ->
-          Raxol.Core.Runtime.Log.warning_with_context("Unknown CSI command: #{inspect(final_byte)}", %{})
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Unknown CSI command: #{inspect(final_byte)}",
+            %{}
+          )
+
           {:error, :unhandled_csi, emulator}
       end
 
     case result do
       {:ok, new_emulator} ->
+        Raxol.Core.Runtime.Log.debug(
+          "[Executor.execute_csi_command] AFTER: scroll_region=#{inspect(new_emulator.scroll_region)}, final_byte=#{inspect(final_byte)}"
+        )
+
         new_emulator
 
-      {:error, reason, new_emulator} ->
-        Raxol.Core.Runtime.Log.error("CSI handler error: #{inspect(reason)}")
-        new_emulator
+      {:error, _reason, new_emulator} ->
+        Raxol.Core.Runtime.Log.debug(
+          "[Executor.execute_csi_command] AFTER: scroll_region=#{inspect(new_emulator.scroll_region)}, final_byte=#{inspect(final_byte)}"
+        )
 
-      %Emulator{} = new_emulator ->
         new_emulator
     end
   end
@@ -151,7 +163,9 @@ defmodule Raxol.Terminal.Commands.Executor do
   """
   @spec execute_osc_command(Emulator.t(), String.t()) :: Emulator.t()
   def execute_osc_command(emulator, command_string) do
-    Raxol.Core.Runtime.Log.debug("Executing OSC command: #{inspect(command_string)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Executing OSC command: #{inspect(command_string)}"
+    )
 
     result =
       case String.split(command_string, ";", parts: 2) do
@@ -183,20 +197,32 @@ defmodule Raxol.Terminal.Commands.Executor do
                   OSCHandlers.handle_52(emulator, pt)
 
                 _ ->
-                  Raxol.Core.Runtime.Log.warning_with_context("Unknown OSC command code: #{ps_code}, String: '#{command_string}'", %{})
+                  Raxol.Core.Runtime.Log.warning_with_context(
+                    "Unknown OSC command code: #{ps_code}, String: '#{command_string}'",
+                    %{}
+                  )
+
                   {:error, :unhandled_osc, emulator}
               end
 
             # Failed to parse Ps as integer
             _ ->
-              Raxol.Core.Runtime.Log.warning_with_context("Invalid OSC command code: '#{ps_str}', String: '#{command_string}'", %{})
+              Raxol.Core.Runtime.Log.warning_with_context(
+                "Invalid OSC command code: '#{ps_str}', String: '#{command_string}'",
+                %{}
+              )
+
               {:error, :invalid_osc_code, emulator}
           end
 
         # Handle OSC sequences with no parameters (e.g., some color requests)
         # Or potentially malformed sequences
         _ ->
-          Raxol.Core.Runtime.Log.warning_with_context("OSC: Unexpected command format: '#{command_string}'", %{})
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "OSC: Unexpected command format: '#{command_string}'",
+            %{}
+          )
+
           {:error, :malformed_osc, emulator}
       end
 
@@ -206,9 +232,6 @@ defmodule Raxol.Terminal.Commands.Executor do
 
       {:error, reason, new_emulator} ->
         Raxol.Core.Runtime.Log.error("OSC handler error: #{inspect(reason)}")
-        new_emulator
-
-      %Emulator{} = new_emulator ->
         new_emulator
     end
   end
@@ -246,15 +269,19 @@ defmodule Raxol.Terminal.Commands.Executor do
       )
 
     case result do
-      {:ok, new_emulator} ->
+      {:ok, new_emulator} when is_map(new_emulator) ->
         new_emulator
 
-      {:error, reason, new_emulator} ->
+      {:error, reason, new_emulator} when is_map(new_emulator) ->
         Raxol.Core.Runtime.Log.error("DCS handler error: #{inspect(reason)}")
         new_emulator
 
-      %Emulator{} = new_emulator ->
-        new_emulator
+      other ->
+        Raxol.Core.Runtime.Log.error(
+          "DCS handler returned unexpected value: #{inspect(other)}"
+        )
+
+        emulator
     end
   end
 
@@ -264,55 +291,12 @@ defmodule Raxol.Terminal.Commands.Executor do
 
   # --- DCS Response Helper ---
 
-  defp send_dcs_response(
-         emulator,
-         validity,
-         _requested_status,
-         response_payload
-       ) do
-    # Format: DCS <validity> ! | <response_payload> ST
-    # Note: The original request (e.g., "m") is NOT part of the standard response payload format P...$r...
-    # The payload itself contains the terminating character (m, r, q, etc.)
-    response_str = "\eP#{validity}!|#{response_payload}\e\\"
-    Raxol.Core.Runtime.Log.debug("Sending DCS Response: #{inspect(response_str)}")
-    %{emulator | output_buffer: emulator.output_buffer <> response_str}
-  end
+  # defp send_dcs_response(emulator, parser_state, payload, final_byte) do
+  #   # Implementation
+  # end
 
   # --- SGR Formatting Helper for DECRQSS ---
-  defp format_sgr_params(attrs) do
-    # Reconstruct SGR parameters from current attributes map
-    # Note: Order might matter for some terminals. Reset (0) should be handled.
-    # This is a simplified example.
-    params = []
-    params = if attrs.bold, do: [1 | params], else: params
-    params = if attrs.italic, do: [3 | params], else: params
-    params = if attrs.underline, do: [4 | params], else: params
-    params = if attrs.inverse, do: [7 | params], else: params
-    # Add foreground color
-    params =
-      case attrs.fg do
-        {:ansi, n} when n >= 0 and n <= 7 -> [30 + n | params]
-        {:ansi, n} when n >= 8 and n <= 15 -> [90 + (n - 8) | params]
-        {:color_256, n} -> [38, 5, n | params]
-        {:rgb, r, g, b} -> [38, 2, r, g, b | params]
-        :default -> params
-      end
-
-    # Add background color
-    params =
-      case attrs.bg do
-        {:ansi, n} when n >= 0 and n <= 7 -> [40 + n | params]
-        {:ansi, n} when n >= 8 and n <= 15 -> [100 + (n - 8) | params]
-        {:color_256, n} -> [48, 5, n | params]
-        {:rgb, r, g, b} -> [48, 2, r, g, b | params]
-        :default -> params
-      end
-
-    # Handle reset case (if no attributes set, send 0)
-    if params == [] do
-      "0"
-    else
-      Enum.reverse(params) |> Enum.map_join(&Integer.to_string/1, ";")
-    end
-  end
+  # defp format_sgr_params(attrs) do
+  #   # Implementation
+  # end
 end

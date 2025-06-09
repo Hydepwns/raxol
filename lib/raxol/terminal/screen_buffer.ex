@@ -69,7 +69,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
           {1000, warning}
       end
 
-    if scrollback_warning, do: Raxol.Core.Runtime.Log.warning_with_context(scrollback_warning, %{})
+    if scrollback_warning,
+      do: Raxol.Core.Runtime.Log.warning_with_context(scrollback_warning, %{})
 
     %__MODULE__{
       cells:
@@ -102,7 +103,19 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate write_string(buffer, x, y, string), to: Operations
 
   # --- Scrolling --- (Delegated to Operations, uses Scrollback)
-  @doc "Scrolls up. See `Raxol.Terminal.Buffer.Operations.scroll_up/3`."
+  @doc """
+  Scrolls the buffer up by the specified number of lines.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to scroll
+  * `lines` - Number of lines to scroll up
+  * `scroll_region` - Optional scroll region boundaries {start_line, end_line}
+
+  ## Returns
+
+  The updated screen buffer with content scrolled up.
+  """
   @spec scroll_up(
           t(),
           non_neg_integer(),
@@ -110,7 +123,19 @@ defmodule Raxol.Terminal.ScreenBuffer do
         ) :: t()
   defdelegate scroll_up(buffer, lines, scroll_region \\ nil), to: Operations
 
-  @doc "Scrolls down. See `Raxol.Terminal.Buffer.Operations.scroll_down/3`."
+  @doc """
+  Scrolls the buffer down by the specified number of lines.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to scroll
+  * `lines` - Number of lines to scroll down
+  * `scroll_region` - Optional scroll region boundaries {start_line, end_line}
+
+  ## Returns
+
+  The updated screen buffer with content scrolled down.
+  """
   @spec scroll_down(
           t(),
           non_neg_integer(),
@@ -119,29 +144,95 @@ defmodule Raxol.Terminal.ScreenBuffer do
   defdelegate scroll_down(buffer, lines, scroll_region \\ nil), to: Operations
 
   # --- Scroll Region --- (Delegated to Operations)
-  @doc "Sets scroll region. See `Raxol.Terminal.Buffer.Operations.set_scroll_region/3`."
+  @doc """
+  Sets the scroll region boundaries.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+  * `start_line` - The starting line of the scroll region
+  * `end_line` - The ending line of the scroll region
+
+  ## Returns
+
+  The updated screen buffer with new scroll region boundaries.
+  """
   @spec set_scroll_region(t(), non_neg_integer(), non_neg_integer()) :: t()
   defdelegate set_scroll_region(buffer, start_line, end_line), to: Operations
 
-  @doc "Clears scroll region. See `Raxol.Terminal.Buffer.Operations.clear_scroll_region/1`."
+  @doc """
+  Clears the current scroll region, resetting to full screen.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+
+  ## Returns
+
+  The updated screen buffer with scroll region cleared.
+  """
   @spec clear_scroll_region(t()) :: t()
   defdelegate clear_scroll_region(buffer), to: Operations
 
-  @doc "Gets scrollback size. See `Raxol.Terminal.Buffer.Scrollback.size/1`."
+  @doc """
+  Gets the current scroll position.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to query
+
+  ## Returns
+
+  The current scroll position as a non-negative integer.
+  """
   @spec get_scroll_position(t()) :: non_neg_integer()
   defdelegate get_scroll_position(buffer), to: Scrollback, as: :size
 
-  @doc "Gets scroll region boundaries. See `Raxol.Terminal.Buffer.Operations.get_scroll_region_boundaries/1`."
+  @doc """
+  Gets the current scroll region boundaries.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to query
+
+  ## Returns
+
+  A tuple {start_line, end_line} representing the scroll region boundaries.
+  """
   @spec get_scroll_region_boundaries(t()) ::
           {non_neg_integer(), non_neg_integer()}
   defdelegate get_scroll_region_boundaries(buffer), to: Operations
 
   # --- Selection --- (Delegated to Selection)
-  @doc "Starts selection. See `Raxol.Terminal.Buffer.Selection.start/3`."
+  @doc """
+  Starts a text selection at the specified position.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+  * `x` - The x-coordinate to start selection
+  * `y` - The y-coordinate to start selection
+
+  ## Returns
+
+  The updated screen buffer with selection started.
+  """
   @spec start_selection(t(), non_neg_integer(), non_neg_integer()) :: t()
   defdelegate start_selection(buffer, x, y), to: Selection, as: :start
 
-  @doc "Updates selection. See `Raxol.Terminal.Buffer.Selection.update/3`."
+  @doc """
+  Updates the current text selection to the specified position.
+
+  ## Parameters
+
+  * `buffer` - The screen buffer to modify
+  * `x` - The x-coordinate to update selection to
+  * `y` - The y-coordinate to update selection to
+
+  ## Returns
+
+  The updated screen buffer with selection updated.
+  """
   @spec update_selection(t(), non_neg_integer(), non_neg_integer()) :: t()
   defdelegate update_selection(buffer, x, y), to: Selection, as: :update
 
@@ -198,7 +289,8 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @spec get_height(t()) :: non_neg_integer()
   defdelegate get_height(buffer), to: Operations
 
-  @doc "Gets dimensions. See `Raxol.Terminal.Buffer.Operations.get_dimensions/1`."
+  @impl true
+  @doc "Gets dimensions. See `Raxol.Terminal.Buffer.Operations.get_dimensions/1`.\nWARNING: This returns a tuple, NOT a buffer struct. Do not pass its result as a buffer!"
   @spec get_dimensions(t()) :: {non_neg_integer(), non_neg_integer()}
   defdelegate get_dimensions(buffer), to: Operations
 
@@ -283,12 +375,14 @@ defmodule Raxol.Terminal.ScreenBuffer do
           TextFormatting.text_style(),
           {non_neg_integer(), non_neg_integer()} | nil
         ) :: t()
+  def delete_lines(buffer, start_y, count, default_style, scroll_region \\ nil)
+
   def delete_lines(
         %__MODULE__{} = buffer,
         start_y,
         count,
         default_style,
-        scroll_region \\ nil
+        scroll_region
       )
       when start_y >= 0 and count > 0 do
     {region_top, region_bottom} =
@@ -447,9 +541,17 @@ defmodule Raxol.Terminal.ScreenBuffer do
   """
   def prepend_lines(%__MODULE__{} = buffer, lines) when is_list(lines) do
     # Ensure each line is the correct width
-    lines = Enum.map(lines, fn line ->
-      if length(line) == buffer.width, do: line, else: List.duplicate(List.first(line) || Raxol.Terminal.Cell.new(), buffer.width)
-    end)
+    lines =
+      Enum.map(lines, fn line ->
+        if length(line) == buffer.width,
+          do: line,
+          else:
+            List.duplicate(
+              List.first(line) || Raxol.Terminal.Cell.new(),
+              buffer.width
+            )
+      end)
+
     new_cells = lines ++ Enum.take(buffer.cells, buffer.height - length(lines))
     %{buffer | cells: new_cells}
   end
@@ -457,9 +559,17 @@ defmodule Raxol.Terminal.ScreenBuffer do
   @doc """
   Pops a number of lines from the top of the buffer, returning {popped_lines, new_buffer}.
   """
-  def pop_top_lines(%__MODULE__{} = buffer, count) when is_integer(count) and count > 0 do
+  def pop_top_lines(%__MODULE__{} = buffer, count)
+      when is_integer(count) and count > 0 do
     {popped, remaining} = Enum.split(buffer.cells, count)
-    new_cells = remaining ++ List.duplicate(List.duplicate(Raxol.Terminal.Cell.new(), buffer.width), count)
+
+    new_cells =
+      remaining ++
+        List.duplicate(
+          List.duplicate(Raxol.Terminal.Cell.new(), buffer.width),
+          count
+        )
+
     {popped, %{buffer | cells: new_cells}}
   end
 end

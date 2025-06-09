@@ -1,7 +1,6 @@
 defmodule Raxol.Terminal.Buffer.Operations do
   @moduledoc """
-  Provides functions for manipulating the Raxol.Terminal.ScreenBuffer grid and state.
-  Includes writing, clearing, deleting, inserting, resizing, and other operations.
+  Provides operations for terminal buffer manipulation.
   """
 
   require Raxol.Core.Runtime.Log
@@ -68,7 +67,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
 
   # Helper to replace content within a scroll region (internal)
   # Operates directly on the cells list, returns the updated list.
-  @doc false
   def replace_region_content(
         current_cells,
         scroll_start,
@@ -110,7 +108,6 @@ defmodule Raxol.Terminal.Buffer.Operations do
   """
   @spec get_scroll_region_boundaries(ScreenBuffer.t()) ::
           {non_neg_integer(), non_neg_integer()}
-  @doc false
   defdelegate get_scroll_region_boundaries(buffer), to: State
 
   @doc """
@@ -300,6 +297,19 @@ defmodule Raxol.Terminal.Buffer.Operations do
   Replaces the line at the given index with the provided list of cells.
   Returns the updated buffer.
   """
-  @spec put_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) :: ScreenBuffer.t()
+  @spec put_line(ScreenBuffer.t(), non_neg_integer(), list(Cell.t())) ::
+          ScreenBuffer.t()
   defdelegate put_line(buffer, line_index, new_cells), to: State
+
+  def clear_line(buffer, _y) do
+    # TODO: Implement line clearing
+    buffer
+  end
+
+  def clear_screen(buffer) do
+    # TODO: Implement screen clearing
+    buffer
+  end
+
+  def delete_lines(buffer, _, _, _, _), do: buffer
 end

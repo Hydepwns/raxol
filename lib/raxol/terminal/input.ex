@@ -14,7 +14,13 @@ defmodule Raxol.Terminal.Input do
           mode: atom(),
           history: list(String.t()),
           history_index: non_neg_integer(),
-          history_limit: non_neg_integer()
+          history_limit: non_neg_integer(),
+          completion_callback: (String.t() -> list(String.t())) | nil,
+          completion_options: list(String.t()),
+          completion_index: non_neg_integer() | nil,
+          last_click: {integer(), integer(), integer()} | nil,
+          last_drag: {integer(), integer(), integer()} | nil,
+          last_release: {integer(), integer(), integer()} | nil
         }
 
   defstruct [
@@ -22,7 +28,13 @@ defmodule Raxol.Terminal.Input do
     :mode,
     :history,
     :history_index,
-    :history_limit
+    :history_limit,
+    :completion_callback,
+    :completion_options,
+    :completion_index,
+    :last_click,
+    :last_drag,
+    :last_release
   ]
 
   @doc """
@@ -42,7 +54,10 @@ defmodule Raxol.Terminal.Input do
       mode: :normal,
       history: [],
       history_index: 0,
-      history_limit: history_limit
+      history_limit: history_limit,
+      completion_callback: nil,
+      completion_options: [],
+      completion_index: nil
     }
   end
 

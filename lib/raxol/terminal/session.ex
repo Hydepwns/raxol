@@ -129,6 +129,18 @@ defmodule Raxol.Terminal.Session do
     end
   end
 
+  @doc false
+  @spec child_spec(keyword()) :: Supervisor.child_spec()
+  def child_spec(opts) do
+    %{
+      id: __MODULE__,
+      start: {__MODULE__, :start_link, [opts]},
+      type: :worker,
+      restart: :transient,
+      shutdown: 500
+    }
+  end
+
   # Callbacks
 
   @impl true
@@ -169,7 +181,9 @@ defmodule Raxol.Terminal.Session do
       Raxol.Terminal.Registry.register(id, state)
     rescue
       e ->
-        Raxol.Core.Runtime.Log.error("Failed to register session: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error(
+          "Failed to register session: #{inspect(e)}"
+        )
     end
 
     {:ok, state}
@@ -251,7 +265,9 @@ defmodule Raxol.Terminal.Session do
       Raxol.Terminal.Registry.register(state.id, new_state)
     rescue
       e ->
-        Raxol.Core.Runtime.Log.error("Failed to register updated session state: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error(
+          "Failed to register updated session state: #{inspect(e)}"
+        )
     end
 
     {:reply, :ok, new_state}
@@ -260,8 +276,16 @@ defmodule Raxol.Terminal.Session do
   # Private functions
 
   defp update_state_from_config(state, config) do
-    width = Map.get(config, :width, state.width)
-    height = Map.get(config, :height, state.height)
+    width =
+      if is_map(config),
+        do: Map.get(config, :width, state.width),
+        else: if(is_tuple(config), do: elem(config, 0), else: state.width)
+
+    height =
+      if is_map(config),
+        do: Map.get(config, :height, state.height),
+        else: if(is_tuple(config), do: elem(config, 1), else: state.height)
+
     title = Map.get(config, :title, state.title)
     theme = Map.get(config, :theme, state.theme)
 

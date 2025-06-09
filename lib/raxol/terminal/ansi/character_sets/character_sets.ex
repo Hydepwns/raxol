@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
     DEC,
     UK
   }
-  alias Raxol.Core.Runtime.Log
+
   alias Raxol.Terminal.ANSI.CharacterSets.Translator
 
   @type codepoint :: non_neg_integer()
@@ -229,6 +229,32 @@ defmodule Raxol.Terminal.ANSI.CharacterSets do
   # TODO: Add mappings for other national/special charsets (?F, ?K, etc.)
   # Return nil for unknown codes
   def charset_code_to_atom(_), do: nil
+
+  @doc """
+  Map character code byte to charset module.
+  """
+  # Based on typical VT100/VT220 assignments for SCS
+  # ASCII (typically designated by 'B')
+  def charset_code_to_module(?B), do: Raxol.Terminal.ANSI.CharacterSets.ASCII
+  # DEC Special Graphics and Character Set (typically designated by '0')
+  def charset_code_to_module(?0), do: Raxol.Terminal.ANSI.CharacterSets.DEC
+  # UK National Character Set (typically designated by 'A')
+  def charset_code_to_module(?A), do: Raxol.Terminal.ANSI.CharacterSets.UK
+  # DEC Supplemental (often '<') - Placeholder, actual module may vary
+  def charset_code_to_module(?<), do: Raxol.Terminal.ANSI.CharacterSets.DEC
+  # DEC Technical (often '>') - Placeholder, actual module may vary
+  def charset_code_to_module(?>),
+    do: Raxol.Terminal.ANSI.CharacterSets.DECTechnical
+
+  # Add other specific mappings as needed based on actual available modules
+  # For codes mentioned in tests if they differ or need specific modules:
+  # For "1" -> :dec_supplementary. Need a module for this.
+  # For "16" -> :dec_special_graphics. ?0 already maps to DEC.
+  # For Portuguese code (?" or ?I in StateManager)
+  # def charset_code_to_module(?"), do: Raxol.Terminal.ANSI.CharacterSets.Portuguese # If such a module exists
+  # def charset_code_to_module(??), do: Raxol.Terminal.ANSI.CharacterSets.DECTechnical # If such a module exists
+  # Default for unmapped codes
+  def charset_code_to_module(_), do: nil
 
   @doc """
   Invokes a character set designator into GL or GR.

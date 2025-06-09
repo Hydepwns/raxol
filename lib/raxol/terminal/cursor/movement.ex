@@ -9,7 +9,7 @@ defmodule Raxol.Terminal.Cursor.Movement do
   alias Raxol.Terminal.Cursor.Manager
 
   @doc """
-  Moves the cursor up by the specified number of lines.
+  Moves the cursor up by the specified number of lines, respecting margins.
 
   ## Examples
 
@@ -19,14 +19,20 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {0, 0}  # Already at top, no change
   """
-  def move_up(cursor, count \\ 1) do
-    {x, y} = Manager.get_position(cursor)
-    new_y = max(0, y - count)
-    Manager.move_to(cursor, {x, new_y})
+  @spec move_up(
+          Cursor.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Cursor.t()
+  def move_up(cursor, count \\ 1, _width, _height) do
+    # Move cursor up by count lines, but not above the top margin
+    new_y = max(cursor.y - count, cursor.top_margin)
+    Manager.move_to(cursor, cursor.x, new_y)
   end
 
   @doc """
-  Moves the cursor down by the specified number of lines.
+  Moves the cursor down by the specified number of lines, respecting margins.
 
   ## Examples
 
@@ -36,10 +42,16 @@ defmodule Raxol.Terminal.Cursor.Movement do
       iex> cursor.position
       {0, 2}
   """
-  def move_down(cursor, count \\ 1) do
-    {x, y} = Manager.get_position(cursor)
-    new_y = y + count
-    Manager.move_to(cursor, {x, new_y})
+  @spec move_down(
+          Cursor.t(),
+          non_neg_integer(),
+          non_neg_integer(),
+          non_neg_integer()
+        ) :: Cursor.t()
+  def move_down(cursor, count \\ 1, _width, _height) do
+    # Move cursor down by count lines, but not below the bottom margin
+    new_y = min(cursor.y + count, cursor.bottom_margin)
+    Manager.move_to(cursor, cursor.x, new_y)
   end
 
   @doc """

@@ -5,7 +5,7 @@ defmodule Raxol.Terminal.TerminalUtils do
   """
 
   require Raxol.Core.Runtime.Log
-  alias ExTermbox
+  alias :termbox2_nif, as: Termbox2Nif
 
   @doc """
   Detects terminal dimensions using a multi-layered approach:
@@ -95,10 +95,13 @@ defmodule Raxol.Terminal.TerminalUtils do
     {:error, :not_implemented}
   end
 
-  # Private helper functions
-
-  # Try to detect with :io.columns and :io.rows (most reliable)
-  defp detect_with_io(io_facade \\ :io) do
+  @doc """
+  Detects terminal dimensions using :io.columns and :io.rows.
+  Returns {:ok, width, height} or {:error, reason}.
+  """
+  @spec detect_with_io(atom()) ::
+          {:ok, pos_integer(), pos_integer()} | {:error, term()}
+  def detect_with_io(io_facade) do
     try do
       with {:ok, width} when is_integer(width) and width > 0 <-
              apply(io_facade, :columns, []),
@@ -107,11 +110,17 @@ defmodule Raxol.Terminal.TerminalUtils do
         {:ok, width, height}
       else
         {:error, reason} ->
-          Raxol.Core.Runtime.Log.debug("io.columns/rows error: #{inspect(reason)}")
+          Raxol.Core.Runtime.Log.debug(
+            "io.columns/rows error: #{inspect(reason)}"
+          )
+
           {:error, reason}
 
         other ->
-          Raxol.Core.Runtime.Log.debug("io.columns/rows unexpected return: #{inspect(other)}")
+          Raxol.Core.Runtime.Log.debug(
+            "io.columns/rows unexpected return: #{inspect(other)}"
+          )
+
           {:error, :invalid_response}
       end
     rescue
@@ -121,22 +130,36 @@ defmodule Raxol.Terminal.TerminalUtils do
     end
   end
 
-  # Try to detect with rrex_termbox
-  defp detect_with_termbox do
-    Raxol.Core.Runtime.Log.debug("[TerminalUtils] Calling ExTermbox.width/height (NIF)...")
+  @doc """
+  Detects terminal dimensions using the termbox2 NIF.
+  Returns {:ok, width, height} or {:error, reason}.
+  """
+  @spec detect_with_termbox() ::
+          {:ok, pos_integer(), pos_integer()} | {:error, term()}
+  def detect_with_termbox do
+    Raxol.Core.Runtime.Log.debug(
+      "[TerminalUtils] Calling Termbox2Nif.tb_width/tb_height (NIF)..."
+    )
 
-    with {:ok, width} <- ExTermbox.width(),
-         {:ok, height} <- ExTermbox.height() do
+    width = Termbox2Nif.tb_width()
+    height = Termbox2Nif.tb_height()
+
+    if is_integer(width) and is_integer(height) and width > 0 and height > 0 do
       {:ok, width, height}
     else
-      error ->
-        Raxol.Core.Runtime.Log.debug("rrex_termbox error: #{inspect(error)}")
-        {:error, error}
+      error = {:error, :invalid_termbox_dimensions}
+      Raxol.Core.Runtime.Log.debug("termbox2_nif error: #{inspect(error)}")
+      error
     end
   end
 
-  # Try to detect with stty size command
-  defp detect_with_stty do
+  @doc """
+  Detects terminal dimensions using the stty size command.
+  Returns {:ok, width, height} or {:error, reason}.
+  """
+  @spec detect_with_stty() ::
+          {:ok, pos_integer(), pos_integer()} | {:error, term()}
+  def detect_with_stty do
     try do
       case System.cmd("stty", ["size"]) do
         {output, 0} ->
@@ -147,12 +170,18 @@ defmodule Raxol.Terminal.TerminalUtils do
               {:ok, String.to_integer(cols), String.to_integer(rows)}
 
             _ ->
-              Raxol.Core.Runtime.Log.debug("Unexpected stty output format: #{inspect(output)}")
+              Raxol.Core.Runtime.Log.debug(
+                "Unexpected stty output format: #{inspect(output)}"
+              )
+
               {:error, :invalid_format}
           end
 
         {output, code} ->
-          Raxol.Core.Runtime.Log.debug("stty exited with code #{code}: #{inspect(output)}")
+          Raxol.Core.Runtime.Log.debug(
+            "stty exited with code #{code}: #{inspect(output)}"
+          )
+
           {:error, {:exit_code, code}}
       end
     rescue
@@ -162,10 +191,10 @@ defmodule Raxol.Terminal.TerminalUtils do
     end
   end
 
-  # Add a robust TTY check
   @doc """
   Returns true if the current process is attached to a real TTY device.
   """
+  @spec real_tty?() :: boolean()
   def real_tty? do
     case System.cmd("tty", []) do
       {tty, 0} ->

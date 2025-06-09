@@ -39,7 +39,13 @@ defmodule Raxol.Terminal.Config.Defaults do
       # Safer default, detected later
       image_support: false,
       # Safer default, detected later
-      sound_support: false
+      sound_support: false,
+      # Added: ANSI config for compatibility with code/tests expecting :ansi key
+      ansi: %{
+        enabled: true,
+        color_mode: :basic,
+        colors: %{}
+      }
     }
     |> Map.merge(default_display_config())
     |> Map.merge(default_rendering_config())

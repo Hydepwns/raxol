@@ -51,7 +51,11 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
       if mode_atom do
         apply_mode_func.(acc_emulator, [mode_atom])
       else
-        Raxol.Core.Runtime.Log.warning_with_context("Unknown DEC private mode code: ?#{param_code}", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unknown DEC private mode code: ?#{param_code}",
+          %{}
+        )
+
         acc_emulator
       end
     end)
@@ -98,52 +102,15 @@ defmodule Raxol.Terminal.Commands.ModeHandlers do
             acc_emulator
 
           _ ->
-            Raxol.Core.Runtime.Log.warning_with_context("Unknown standard mode code: #{param_code}", %{})
+            Raxol.Core.Runtime.Log.warning_with_context(
+              "Unknown standard mode code: #{param_code}",
+              %{}
+            )
+
             acc_emulator
         end
       end
     end)
-  end
-
-  # --- Parameter Validation Helpers ---
-
-  @doc """
-  Gets a parameter value with validation.
-  Returns the parameter value if valid, or the default value if invalid.
-  """
-  @spec get_valid_param(
-          list(integer() | nil),
-          non_neg_integer(),
-          integer(),
-          integer(),
-          integer()
-        ) :: integer()
-  defp get_valid_param(params, index, default, min, max) do
-    case Enum.at(params, index, default) do
-      value when is_integer(value) and value >= min and value <= max ->
-        value
-
-      _ ->
-        Raxol.Core.Runtime.Log.warning_with_context(
-          "Invalid parameter value at index #{index}, using default #{default}",
-          %{}
-        )
-
-        default
-    end
-  end
-
-  @doc """
-  Gets a parameter value with validation for non-negative integers.
-  Returns the parameter value if valid, or the default value if invalid.
-  """
-  @spec get_valid_non_neg_param(
-          list(integer() | nil),
-          non_neg_integer(),
-          non_neg_integer()
-        ) :: non_neg_integer()
-  defp get_valid_non_neg_param(params, index, default) do
-    get_valid_param(params, index, default, 0, 9999)
   end
 
   @doc """

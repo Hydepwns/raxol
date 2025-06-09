@@ -25,11 +25,14 @@ defmodule Raxol.Terminal.TelemetryLogger do
       handler_id = "raxol-terminal-logger-" <> Enum.join(event, "-")
       :telemetry.attach(handler_id, event, &__MODULE__.handle_event/4, nil)
     end
+
     :ok
   end
 
   @doc false
   def handle_event(event_name, measurements, metadata, _config) do
-    Logger.info("[TELEMETRY] #{inspect(event_name)}: #{inspect(measurements)} | #{inspect(metadata)}")
+    Logger.info(
+      "[TELEMETRY] #{inspect(event_name)}: #{inspect(measurements)} | #{inspect(metadata)}"
+    )
   end
 end

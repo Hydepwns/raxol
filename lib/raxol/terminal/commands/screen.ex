@@ -31,10 +31,15 @@ defmodule Raxol.Terminal.Commands.Screen do
   @spec clear_screen(Emulator.t(), integer()) :: Emulator.t()
   def clear_screen(emulator, mode) do
     buffer = Emulator.get_active_buffer(emulator)
-    {cursor_x, cursor_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator.cursor)
+
+    {cursor_x, cursor_y} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
+
     default_style = emulator.style
 
-    Raxol.Core.Runtime.Log.debug("[Screen.clear_screen] default_style for mode: #{mode}")
+    Raxol.Core.Runtime.Log.debug(
+      "[Screen.clear_screen] default_style for mode: #{mode}"
+    )
 
     case mode do
       # Clear from cursor to end of screen
@@ -65,7 +70,11 @@ defmodule Raxol.Terminal.Commands.Screen do
 
       # Unknown mode, do nothing
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context("Unknown clear screen mode: #{mode}", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Unknown clear screen mode: #{mode}",
+          %{}
+        )
+
         emulator
     end
   end
@@ -88,7 +97,9 @@ defmodule Raxol.Terminal.Commands.Screen do
   @spec clear_line(Emulator.t(), integer()) :: Emulator.t()
   def clear_line(emulator, mode) do
     buffer = Emulator.get_active_buffer(emulator)
-    {cursor_x, cursor_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator.cursor)
+
+    {cursor_x, cursor_y} =
+      Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
 
     Raxol.Core.Runtime.Log.debug(
       "[Screen.clear_line] CALLED with mode: #{mode}, cursor_x: #{cursor_x}, cursor_y from emulator: #{cursor_y}"
@@ -112,7 +123,11 @@ defmodule Raxol.Terminal.Commands.Screen do
 
         # Unknown mode, do nothing
         _ ->
-          Raxol.Core.Runtime.Log.warning_with_context("Unknown clear line mode: #{mode}", %{})
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Unknown clear line mode: #{mode}",
+            %{}
+          )
+
           buffer
       end
 
@@ -133,7 +148,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   """
   @spec insert_lines(Emulator.t(), integer()) :: Emulator.t()
   def insert_lines(emulator, count) do
-    {_, cursor_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator.cursor)
+    {_, cursor_y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
     buffer = Emulator.get_active_buffer(emulator)
 
     # Apply scroll region constraints if active
@@ -170,7 +185,7 @@ defmodule Raxol.Terminal.Commands.Screen do
   """
   @spec delete_lines(Emulator.t(), integer()) :: Emulator.t()
   def delete_lines(emulator, count) do
-    {_, cursor_y} = Raxol.Terminal.Emulator.get_cursor_position(emulator.cursor)
+    {_, cursor_y} = Raxol.Terminal.Cursor.Manager.get_position(emulator.cursor)
     buffer = Emulator.get_active_buffer(emulator)
 
     # Apply scroll region constraints if active
@@ -207,8 +222,17 @@ defmodule Raxol.Terminal.Commands.Screen do
     buffer = emulator.main_screen_buffer
     {to_restore, remaining_scrollback} = Enum.split(scrollback, count)
     # Move lines from scrollback to the top of the screen buffer
-    new_buffer = Raxol.Terminal.ScreenBuffer.prepend_lines(buffer, Enum.reverse(to_restore))
-    %{emulator | scrollback_buffer: remaining_scrollback, main_screen_buffer: new_buffer}
+    new_buffer =
+      Raxol.Terminal.ScreenBuffer.prepend_lines(
+        buffer,
+        Enum.reverse(to_restore)
+      )
+
+    %{
+      emulator
+      | scrollback_buffer: remaining_scrollback,
+        main_screen_buffer: new_buffer
+    }
   end
 
   @doc """
@@ -216,8 +240,16 @@ defmodule Raxol.Terminal.Commands.Screen do
   """
   def scroll_down(emulator, count) when is_integer(count) and count > 0 do
     buffer = emulator.main_screen_buffer
-    {to_scrollback, new_buffer} = Raxol.Terminal.ScreenBuffer.pop_top_lines(buffer, count)
+
+    {to_scrollback, new_buffer} =
+      Raxol.Terminal.ScreenBuffer.pop_top_lines(buffer, count)
+
     new_scrollback = (emulator.scrollback_buffer || []) ++ to_scrollback
-    %{emulator | scrollback_buffer: new_scrollback, main_screen_buffer: new_buffer}
+
+    %{
+      emulator
+      | scrollback_buffer: new_scrollback,
+        main_screen_buffer: new_buffer
+    }
   end
 end

@@ -132,14 +132,22 @@ defmodule Raxol.Terminal.Config.Application do
 
   # Apply display configuration
   defp apply_display_config(%{display: display}, terminal_pid)
-       when is_map(display) do
+       when is_map(display) or is_tuple(display) do
     pid = terminal_pid || default_terminal_pid()
 
     if pid do
       # Extract relevant display settings
       settings = %{
-        width: Map.get(display, :width),
-        height: Map.get(display, :height),
+        width:
+          if(is_map(display),
+            do: Map.get(display, :width),
+            else: if(is_tuple(display), do: elem(display, 0), else: nil)
+          ),
+        height:
+          if(is_map(display),
+            do: Map.get(display, :height),
+            else: if(is_tuple(display), do: elem(display, 1), else: nil)
+          ),
         title: Map.get(display, :title),
         colors: Map.get(display, :colors),
         truecolor: Map.get(display, :truecolor),

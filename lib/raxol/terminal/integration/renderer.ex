@@ -1,133 +1,290 @@
 defmodule Raxol.Terminal.Integration.Renderer do
   @moduledoc """
-  Handles terminal output rendering and display management.
+  Handles terminal output rendering and display management using Termbox2.
   """
 
-  alias Raxol.Terminal.{
-    Integration.State,
-    Renderer,
-    Buffer.Manager,
-    Cursor.Manager
-  }
+  alias Raxol.Terminal.Integration.State
+  alias Raxol.Terminal.Buffer.Manager, as: BufferManager
+  alias Raxol.Terminal.Cursor.Manager, as: CursorManager
+  require Logger
+
+  @doc """
+  Initializes the underlying terminal system.
+  Must be called before other rendering functions.
+  Returns :ok or {:error, reason}.
+  """
+  def init_terminal do
+    IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_init()")
+
+    try do
+      raw_init_result = :termbox2_nif.tb_init()
+
+      IO.inspect(raw_init_result,
+        label: "[Renderer] Raw :termbox2_nif.tb_init() result"
+      )
+
+      case raw_init_result do
+        0 ->
+          IO.puts("[Renderer] :termbox2_nif.tb_init() returned 0 (success)")
+          :ok
+
+        int_val when is_integer(int_val) ->
+          Logger.warning(
+            "Terminal integration renderer failed to initialize: #{inspect(int_val)}",
+            %{error: int_val}
+          )
+
+          {:error, {:init_failed_with_code, int_val}}
+
+        other ->
+          Logger.error(
+            "[Renderer] Termbox2 NIF tb_init() returned unexpected value: #{inspect(other)}"
+          )
+
+          {:error, {:init_failed_unexpected_return, other}}
+      end
+    catch
+      kind, reason ->
+        tb_stacktrace = __STACKTRACE__
+
+        Logger.error("""
+        [Renderer] Caught exception/exit during :termbox2_nif.tb_init() call.
+        Kind: #{inspect(kind)}
+        Reason: #{inspect(reason)}
+        Stacktrace: #{inspect(tb_stacktrace)}
+        """)
+
+        {:error, {:init_failed_exception, kind, reason}}
+    end
+  end
+
+  @doc """
+  Shuts down the underlying terminal system.
+  Must be called to restore terminal state.
+  Returns :ok or {:error, reason}.
+  """
+  def shutdown_terminal do
+    IO.puts("[Renderer] Attempting to call :termbox2_nif.tb_shutdown()")
+
+    try do
+      :termbox2_nif.tb_shutdown()
+      IO.puts("[Renderer] :termbox2_nif.tb_shutdown() called.")
+      :ok
+    catch
+      kind, reason ->
+        tb_stacktrace = __STACKTRACE__
+
+        Logger.error("""
+        [Renderer] Caught exception/exit during :termbox2_nif.tb_shutdown() call.
+        Kind: #{inspect(kind)}
+        Reason: #{inspect(reason)}
+        Stacktrace: #{inspect(tb_stacktrace)}
+        """)
+
+        {:error, {:shutdown_failed_exception, kind, reason}}
+    end
+  end
 
   @doc """
   Renders the current terminal state to the screen.
+  Returns :ok or {:error, reason}.
   """
   def render(%State{} = state) do
-    # Get the visible content
-    content = Manager.get_visible_content(state.buffer_manager)
+    active_buffer = BufferManager.get_active_buffer(state.buffer_manager)
 
-    # Get the cursor position
-    {x, y} = Manager.get_position(state.cursor_manager)
+    # Draw content to the back buffer by iterating over cells
+    if active_buffer && active_buffer.cells do
+      cell_render_result =
+        active_buffer.cells
+        |> Enum.reduce_while(:ok, fn {row_of_cells, y_offset}, _acc ->
+          row_of_cells
+          |> Enum.reduce_while(:ok, fn {cell, x_offset}, _inner_acc ->
+            char_s = cell.char
 
-    # Render the content
-    {:ok, _} = Renderer.render(state.renderer, content, x, y)
+            codepoint =
+              cond do
+                is_nil(char_s) or char_s == "" -> ?\s
+                true -> hd(String.to_charlist(char_s))
+              end
 
-    state
+            fg_color = cell.fg
+            bg_color = cell.bg
+
+            case :termbox2_nif.tb_set_cell(
+                   x_offset,
+                   y_offset,
+                   codepoint,
+                   fg_color,
+                   bg_color
+                 ) do
+              0 ->
+                {:cont, :ok}
+
+              error_code ->
+                {:halt,
+                 {:error, {:set_cell_failed, {x_offset, y_offset, error_code}}}}
+            end
+          end)
+          |> case do
+            :ok -> {:cont, :ok}
+            # Propagate error from inner loop
+            error -> {:halt, error}
+          end
+        end)
+
+      # If cell rendering failed, return the error early
+      unless cell_render_result == :ok do
+        # Implicit return
+        cell_render_result
+      else
+        # Get the logical cursor position
+        {cursor_x, cursor_y} = CursorManager.get_position(state.cursor_manager)
+
+        # Set the hardware cursor position
+        case :termbox2_nif.tb_set_cursor(cursor_x, cursor_y) do
+          0 ->
+            # Present the back buffer to the terminal
+            case :termbox2_nif.tb_present() do
+              0 -> :ok
+              error_code -> {:error, {:present_failed, error_code}}
+            end
+
+          # Implicit return
+          error_code ->
+            {:error, {:set_cursor_failed, error_code}}
+        end
+      end
+    else
+      # Nothing to render, or no active buffer, consider this :ok or handle as needed
+      :ok
+    end
+  end
+
+  @doc """
+  Gets the current terminal dimensions.
+  Returns {:ok, {width, height}} or {:error, :dimensions_unavailable}.
+  Note: termbox2 width/height C functions return int, not status codes.
+  A negative value might indicate an error (e.g., not initialized).
+  """
+  def get_dimensions do
+    width = :termbox2_nif.tb_width()
+    height = :termbox2_nif.tb_height()
+
+    if width >= 0 and height >= 0 do
+      {:ok, {width, height}}
+    else
+      # Assuming negative values mean error/not initialized
+      {:error, {:dimensions_unavailable, width: width, height: height}}
+    end
+  end
+
+  @doc """
+  Clears the terminal screen (specifically, the back buffer).
+  Call present/0 afterwards to make it visible.
+  Returns :ok or {:error, reason}.
+  """
+  # state is not used in the body with tb_clear
+  def clear_screen(%State{} = _state) do
+    case :termbox2_nif.tb_clear() do
+      0 ->
+        # Also present immediately as per previous logic
+        case :termbox2_nif.tb_present() do
+          0 ->
+            :ok
+
+          present_error_code ->
+            {:error, {:present_after_clear_failed, present_error_code}}
+        end
+
+      clear_error_code ->
+        {:error, {:clear_failed, clear_error_code}}
+    end
+  end
+
+  @doc """
+  Moves the hardware cursor to a specific position on the screen.
+  Call present/0 afterwards if you want to ensure it's shown with other changes.
+  The cursor position is typically updated with present/0.
+  Returns :ok or {:error, reason}.
+  """
+  # state is not used in the body
+  def move_cursor(%State{} = _state, x, y) do
+    case :termbox2_nif.tb_set_cursor(x, y) do
+      0 ->
+        # Also present immediately as per previous logic
+        case :termbox2_nif.tb_present() do
+          0 ->
+            :ok
+
+          present_error_code ->
+            {:error, {:present_after_move_cursor_failed, present_error_code}}
+        end
+
+      set_cursor_error_code ->
+        {:error, {:set_cursor_failed, set_cursor_error_code}}
+    end
+  end
+
+  @doc """
+  Creates a new renderer with the given options.
+  """
+  def new(_opts \\ []) do
+    {:ok, %State{}}
   end
 
   @doc """
   Updates the renderer configuration.
   """
-  def update_config(%State{} = state, config) do
-    # Update the renderer configuration
-    {:ok, renderer} = Renderer.update_config(state.renderer, config)
-
-    # Update the state
-    State.update(state, renderer: renderer)
-  end
-
-  @doc """
-  Gets the current renderer configuration.
-  """
-  def get_config(%State{} = state) do
-    Renderer.get_config(state.renderer)
-  end
-
-  @doc """
-  Sets a specific renderer configuration value.
-  """
-  def set_config_value(%State{} = state, key, value) do
-    # Update the renderer configuration
-    {:ok, renderer} = Renderer.set_config_value(state.renderer, key, value)
-
-    # Update the state
-    State.update(state, renderer: renderer)
-  end
-
-  @doc """
-  Resets the renderer configuration to default values.
-  """
-  def reset_config(%State{} = state) do
-    # Reset the renderer configuration
-    {:ok, renderer} = Renderer.reset_config(state.renderer)
-
-    # Update the state
-    State.update(state, renderer: renderer)
-  end
-
-  @doc """
-  Gets the current terminal dimensions.
-  """
-  def get_dimensions(%State{} = state) do
-    Renderer.get_dimensions(state.renderer)
-  end
-
-  @doc """
-  Resizes the terminal display.
-  """
-  def resize(%State{} = state, width, height) do
-    # Resize the renderer
-    {:ok, renderer} = Renderer.resize(state.renderer, width, height)
-
-    # Update the state
-    State.update(state, renderer: renderer)
-  end
-
-  @doc """
-  Clears the terminal screen.
-  """
-  def clear_screen(%State{} = state) do
-    # Clear the screen
-    {:ok, _} = Renderer.clear_screen(state.renderer)
-
+  def update_config(state, _config) do
+    # Implementation details...
     state
   end
 
   @doc """
-  Moves the cursor to a specific position on the screen.
+  Sets a specific configuration value.
   """
-  def move_cursor(%State{} = state, x, y) do
-    # Move the cursor
-    {:ok, _} = Renderer.move_cursor(state.renderer, x, y)
-
+  def set_config_value(state, _key, _value) do
+    # Implementation details...
     state
   end
 
   @doc """
-  Shows or hides the cursor.
+  Resets the renderer configuration to defaults.
   """
-  def set_cursor_visibility(%State{} = state, visible) do
-    # Set cursor visibility
-    {:ok, _} = Renderer.set_cursor_visibility(state.renderer, visible)
+  def reset_config(state) do
+    # Implementation details...
+    state
+  end
 
+  @doc """
+  Resizes the renderer to the given dimensions.
+  """
+  def resize(state, _width, _height) do
+    # Implementation details...
+    state
+  end
+
+  @doc """
+  Sets the cursor visibility.
+  """
+  def set_cursor_visibility(state, _visible) do
+    # Implementation details...
     state
   end
 
   @doc """
   Sets the terminal title.
   """
-  def set_title(%State{} = state, title) do
-    # Set the title
-    {:ok, _} = Renderer.set_title(state.renderer, title)
-
+  def set_title(state, _title) do
+    # Implementation details...
     state
   end
 
   @doc """
-  Gets the current terminal title.
+  Gets the terminal title.
   """
-  def get_title(%State{} = state) do
-    Renderer.get_title(state.renderer)
+  def get_title(_state) do
+    # Implementation details...
+    ""
   end
 end

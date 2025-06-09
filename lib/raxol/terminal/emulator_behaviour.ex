@@ -12,7 +12,6 @@ defmodule Raxol.Terminal.EmulatorBehaviour do
   alias Raxol.Terminal.ANSI.CharacterSets
   alias Raxol.Terminal.ModeManager
   alias Raxol.Plugins.Manager.Core
-  alias Raxol.Terminal.Parser
 
   # Define the expected structure of the emulator state for specs
   # This should mirror the defstruct in Raxol.Terminal.Emulator
