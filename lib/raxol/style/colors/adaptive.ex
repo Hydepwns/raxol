@@ -29,7 +29,7 @@ defmodule Raxol.Style.Colors.Adaptive do
   ```
   """
 
-  alias Raxol.Style.Colors.{Color, Theme, Utilities}
+  alias Raxol.Style.Colors.{Color, Utilities}
 
   # Cache for capabilities to avoid repeated detection
   @capabilities_cache_name :raxol_terminal_capabilities
@@ -204,7 +204,7 @@ defmodule Raxol.Style.Colors.Adaptive do
 
       :no_color ->
         # No color support, return greyscale value using luminance
-        luminance = Utilities.luminance(color)
+        luminance = Utilities.relative_luminance(color)
         grey_value = round(luminance * 255)
         Color.from_rgb(grey_value, grey_value, grey_value)
 
@@ -213,7 +213,7 @@ defmodule Raxol.Style.Colors.Adaptive do
       # if detect_color_support somehow returns it directly instead of the logic above.
       # Although, the main issue is likely in the caller handling the :true_color Color struct.
       # For now, just ensure this case doesn't crash.
-      other ->
+      _other ->
         # Return original color if support level is unknown/unexpected
         color
     end

@@ -21,7 +21,7 @@ defmodule Raxol.Plugins.ThemePlugin do
   @impl true
   def init(config \\ %{}) do
     theme_name = Map.get(config, :theme, :default)
-    theme = Theme.get(theme_name)
+    current_theme = Theme.get(theme_name) || Theme.default_theme()
 
     {:ok,
      %__MODULE__{
@@ -29,7 +29,7 @@ defmodule Raxol.Plugins.ThemePlugin do
        version: "0.1.0",
        enabled: true,
        config: config,
-       current_theme: theme,
+       current_theme: current_theme,
        api_version: get_api_version(),
        dependencies: get_dependencies()
      }}
@@ -108,9 +108,29 @@ defmodule Raxol.Plugins.ThemePlugin do
 
   @doc """
   Registers a new theme.
+  Can accept either a map of theme attributes or an existing Theme struct.
   """
-  def register_theme(theme_attrs) do
-    theme = Theme.new(theme_attrs)
-    Theme.register(theme)
+  def register_theme(theme_input) do
+    theme_to_register =
+      case theme_input do
+        %Raxol.UI.Theming.Theme{} = existing_theme ->
+          existing_theme
+
+        attrs when is_map(attrs) ->
+          Theme.new(attrs)
+
+        _ ->
+          Raxol.Core.Runtime.Log.error(
+            "[#{__MODULE__}] Invalid input to register_theme: #{inspect(theme_input)}"
+          )
+
+          nil
+      end
+
+    if theme_to_register do
+      Theme.register(theme_to_register)
+    else
+      {:error, :invalid_theme_input_for_registration}
+    end
   end
 end

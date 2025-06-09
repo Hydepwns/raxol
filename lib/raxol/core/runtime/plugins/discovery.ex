@@ -110,7 +110,11 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
         end)
 
       false ->
-        Raxol.Core.Runtime.Log.warning_with_context("[#{__MODULE__}] Plugin directory not found: #{dir}", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "[#{__MODULE__}] Plugin directory not found: #{dir}",
+          %{}
+        )
+
         {:ok, state}
     end
   end
@@ -148,6 +152,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
               nil,
               %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
             )
+
             {:error, reason}
         end
 
@@ -158,6 +163,7 @@ defmodule Raxol.Core.Runtime.Plugins.Discovery do
           nil,
           %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
         )
+
         {:error, reason}
     end
   end

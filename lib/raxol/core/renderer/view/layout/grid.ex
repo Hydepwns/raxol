@@ -4,8 +4,6 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
   Provides functionality for creating and managing grid layouts with customizable columns and rows.
   """
 
-  alias Raxol.Core.Renderer.View.Types
-
   @doc """
   Creates a new grid layout.
 
@@ -96,7 +94,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     end
   end
 
-  defp place_children(children, column_sizes, row_sizes, {gap_x, gap_y}) do
+  defp place_children(children, _column_sizes, _row_sizes, {_gap_x, _gap_y}) do
     # Place children in grid cells based on their position
     # This would handle:
     # - Child positioning
@@ -105,7 +103,7 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     children
   end
 
-  defp apply_alignment(children, column_sizes, row_sizes, align, justify) do
+  defp apply_alignment(children, _column_sizes, _row_sizes, _align, _justify) do
     # Apply alignment and justification to children within their cells
     # This would handle:
     # - Horizontal alignment
@@ -129,5 +127,29 @@ defmodule Raxol.Core.Renderer.View.Layout.Grid do
     else
       grid
     end
+  end
+
+  def container(opts) do
+    raw_children = Keyword.get(opts, :children)
+
+    processed_children_list =
+      cond do
+        is_list(raw_children) -> raw_children
+        # Default to empty list if nil
+        is_nil(raw_children) -> []
+        # Wrap single child in a list
+        true -> [raw_children]
+      end
+
+    # Rebuild opts with the processed children list
+    final_opts = Keyword.put(opts, :children, processed_children_list)
+
+    # Merge all options from final_opts into the base grid map, ensuring :type is :grid
+    # Specific grid options like :columns, :rows, :gap will be taken from final_opts if present.
+    Map.merge(%{type: :grid}, Map.new(final_opts))
+  end
+
+  def validate_children(_children) do
+    # Implementation of validate_children/1
   end
 end

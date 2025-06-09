@@ -93,4 +93,9 @@ defmodule Raxol.Core.FocusManager.Behaviour do
   @callback unregister_focus_change_handler(
               handler_fun :: (String.t() | nil, String.t() | nil -> any())
             ) :: :ok
+
+  @doc """
+  Gets the focus history.
+  """
+  @callback get_focus_history() :: list(String.t() | nil)
 end

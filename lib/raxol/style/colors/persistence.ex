@@ -9,7 +9,6 @@ defmodule Raxol.Style.Colors.Persistence do
   """
 
   alias Raxol.Style.Colors.Color
-  alias Raxol.UI.Theming.Theme
 
   @themes_dir "themes"
   @preferences_file "preferences.json"
@@ -134,11 +133,11 @@ defmodule Raxol.Style.Colors.Persistence do
 
         case load_theme(theme_name) do
           {:ok, theme} -> {:ok, theme}
-          {:error, _reason} -> {:ok, Theme.default_theme()}
+          {:error, _reason} -> {:ok, Raxol.UI.Theming.Theme.default_theme()}
         end
 
       {:error, _reason} ->
-        {:ok, Theme.default_theme()}
+        {:ok, Raxol.UI.Theming.Theme.default_theme()}
     end
   end
 

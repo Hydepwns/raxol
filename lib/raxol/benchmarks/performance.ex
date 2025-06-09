@@ -38,14 +38,20 @@ defmodule Raxol.Benchmarks.Performance do
   ```
   """
   def run_all(opts \\ []) do
+    ensure_keyword = fn
+      kw when is_list(kw) and (kw == [] or is_tuple(hd(kw))) -> kw
+      m when is_map(m) -> Map.to_list(m)
+      _ -> []
+    end
+
     opts =
       Keyword.merge(
-        [
+        ensure_keyword.(
           save_results: true,
           compare_with_baseline: true,
           detailed: false
-        ],
-        opts
+        ),
+        ensure_keyword.(opts)
       )
 
     start_time = System.monotonic_time(:millisecond)

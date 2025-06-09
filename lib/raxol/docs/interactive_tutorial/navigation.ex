@@ -3,7 +3,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
   Handles navigation and progress tracking for tutorials.
   """
 
-  alias Raxol.Docs.InteractiveTutorial.{State, Models.Tutorial}
+  alias Raxol.Docs.InteractiveTutorial.State
 
   @doc """
   Starts a tutorial by ID.
@@ -48,25 +48,23 @@ defmodule Raxol.Docs.InteractiveTutorial.Navigation do
 
       if current_index < length(tutorial.steps) - 1 do
         next_step = Enum.at(tutorial.steps, current_index + 1)
-        updated_state = State.update_progress(state, tutorial_id, next_step.id)
 
-        updated_state = %{
-          updated_state
-          | current_step: next_step.id,
-            history: [{:step_change, tutorial_id, next_step.id} | state.history]
-        }
-
-        {:ok, State.get_current_step(updated_state)}
+        state
+        |> Map.put(:current_step, next_step.id)
+        |> Map.update!(
+          :history,
+          &[{:step_change, tutorial_id, next_step.id} | &1]
+        )
+        |> State.update_progress(tutorial_id, next_step.id)
+        |> then(fn updated_state ->
+          {:ok, State.get_current_step(updated_state)}
+        end)
       else
         # This was the last step, mark tutorial as completed
-        updated_state = State.mark_completed(state, tutorial_id)
-
-        updated_state = %{
-          updated_state
-          | history: [{:tutorial_complete, tutorial_id} | state.history]
-        }
-
-        {:ok, :tutorial_completed}
+        state
+        |> State.mark_completed(tutorial_id)
+        |> Map.update!(:history, &[{:tutorial_complete, tutorial_id} | &1])
+        |> then(fn _ -> {:ok, :tutorial_completed} end)
       end
     else
       _ -> {:error, "No tutorial in progress"}

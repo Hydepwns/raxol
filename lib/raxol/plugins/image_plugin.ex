@@ -107,7 +107,8 @@ defmodule Raxol.Plugins.ImagePlugin do
     )
 
     case placeholder_cell do
-      %{type: :placeholder, value: :image} ->
+      %{type: :placeholder, value: :image} = cell
+      when is_map_key(cell, :type) and is_map_key(cell, :value) ->
         Raxol.Core.Runtime.Log.debug(
           "[ImagePlugin.handle_cells] Matched :image placeholder. sequence_just_generated: #{inspect(plugin.sequence_just_generated)}"
         )
@@ -176,8 +177,15 @@ defmodule Raxol.Plugins.ImagePlugin do
   end
 
   defp generate_image_escape_sequence(base64_data, params) do
-    width = Map.get(params, :width, 0)
-    height = Map.get(params, :height, 0)
+    width =
+      if is_map(params),
+        do: Map.get(params, :width, 0),
+        else: if(is_tuple(params), do: elem(params, 0), else: 0)
+
+    height =
+      if is_map(params),
+        do: Map.get(params, :height, 0),
+        else: if(is_tuple(params), do: elem(params, 1), else: 0)
 
     width_param = if width == 0, do: "auto", else: "#{width}"
     height_param = if height == 0, do: "auto", else: "#{height}"

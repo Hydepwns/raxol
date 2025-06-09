@@ -1,5 +1,5 @@
 #!/bin/bash
-# Summarize test errors and warnings from a test run.
+# Summarize real test failures from a test run.
 # Usage: ./scripts/summarize_test_errors.sh
 
 # Directory for storing test output
@@ -13,34 +13,39 @@ OUTPUT_FILE="$TMP_DIR/test_error_summary.txt"
 mkdir -p "$TMP_DIR"
 
 # Run the test suite and capture all output directly for inspection
-echo "Running mix test with --max-requires 1..."
-if mix test --max-requires 1 > "$INPUT_FILE" 2>&1; then
-  echo "mix test completed successfully." > "$OUTPUT_FILE"
+echo "Running mix test..."
+if mix test > "$INPUT_FILE" 2>&1; then
+  echo "All tests passed!" > "$OUTPUT_FILE"
 else
   echo "mix test failed. Full output in $INPUT_FILE" > "$OUTPUT_FILE"
-  echo "\n--- Error Summary ---" >> "$OUTPUT_FILE"
+  echo "--- Test Failure Summary ---" >> "$OUTPUT_FILE"
 
-  error_patterns=(
-    "UndefinedFunctionError"
-    "KeyError"
-    "FunctionClauseError"
-    "ArgumentError"
-    "MatchError"
-    "Assertion failed"
-    "failed"
-    "error"
-    "No such file or directory"
-    "Compilaation error"
-    "Mox.__using__/1"
-  )
+  # Extract all test failures
+  grep -nE "^[[:space:]]*[0-9]+\\) test " "$INPUT_FILE" | while read -r line; do
+    line_num=$(echo "$line" | cut -d: -f1)
+    test_header=$(echo "$line" | cut -d: -f2-)
 
-  for pattern in "${error_patterns[@]}"; do
-    count=$(grep -c -i "$pattern" "$INPUT_FILE")
-    if [ "$count" -gt 0 ]; then
-      echo "\n=== $pattern (Count: $count) ===" >> "$OUTPUT_FILE"
-      grep -m 5 -i "$pattern" "$INPUT_FILE" >> "$OUTPUT_FILE"
+    # Determine the range of lines for the current test failure's context
+    # Use awk to find the line number of the *next* test header
+    next_test_header_line_num=$(awk -v start_line="$((line_num + 1))" 'NR >= start_line && /^[[:space:]]*[0-9]+\\) test / {print NR; exit}' "$INPUT_FILE")
+
+    echo "$test_header" >> "$OUTPUT_FILE"
+    if [ -z "$next_test_header_line_num" ]; then
+      # No more test headers after this one, so print from the line after the current header to the end of the file
+      awk -v l_num="$line_num" 'NR > l_num' "$INPUT_FILE" >> "$OUTPUT_FILE"
+    else
+      # Print lines from the line after the current header up to the line *before* the next test header
+      awk -v l_num="$line_num" -v next_h_ln="$next_test_header_line_num" 'NR > l_num && NR < next_h_ln' "$INPUT_FILE" >> "$OUTPUT_FILE"
     fi
+    echo "" >> "$OUTPUT_FILE"
   done
+
+  # If no failures found by the general pattern, say so
+  if ! grep -qE "^[[:space:]]*[0-9]+\) test " "$INPUT_FILE"; then
+    echo "No test failures found in the output (or the pattern needs adjustment)." >> "$OUTPUT_FILE"
+  fi
 fi
 
-echo "\nFull summary in $OUTPUT_FILE"
+echo "Full summary in $OUTPUT_FILE"
+echo "Output file size: $(stat -f %z "$OUTPUT_FILE") bytes"
+echo "Number of lines: $(wc -l < "$OUTPUT_FILE")"

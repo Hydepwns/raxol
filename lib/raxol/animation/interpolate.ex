@@ -46,27 +46,6 @@ defmodule Raxol.Animation.Interpolate do
     end
   end
 
-  def value(from_map, to_map, t) when is_map(from_map) and is_map(to_map) do
-    # Iterate over the keys of the 'from_map'. For each key,
-    # if it also exists in 'to_map', interpolate their values.
-    # Keys present in 'from_map' but not in 'to_map' will be carried over from 'from_map'.
-    # Keys present only in 'to_map' will be ignored for interpolation but will appear in the final
-    # result if t >= 1.0 because the top-level 'to_map' is returned then.
-    # This approach prioritizes 'from_map' structure for t < 1.0.
-
-    Map.new(from_map, fn {key, from_value} ->
-      case Map.fetch(to_map, key) do
-        {:ok, to_value} ->
-          # Recursively call value/3 for interpolation
-          {key, value(from_value, to_value, t)}
-
-        :error ->
-          # Key not in to_map, carry over from_value
-          {key, from_value}
-      end
-    end)
-  end
-
   def value(%Color{} = from_color, %Color{} = to_color, t) do
     {h1, s1, l1} = HSL.rgb_to_hsl(from_color.r, from_color.g, from_color.b)
     {h2, s2, l2} = HSL.rgb_to_hsl(to_color.r, to_color.g, to_color.b)
@@ -117,6 +96,27 @@ defmodule Raxol.Animation.Interpolate do
     # Use Color.from_rgb/3 to construct the new Color struct,
     # assuming it correctly sets r, g, b and any other derived fields like :hex.
     Color.from_rgb(r_new, g_new, b_new)
+  end
+
+  def value(from_map, to_map, t) when is_map(from_map) and is_map(to_map) do
+    # Iterate over the keys of the 'from_map'. For each key,
+    # if it also exists in 'to_map', interpolate their values.
+    # Keys present in 'from_map' but not in 'to_map' will be carried over from 'from_map'.
+    # Keys present only in 'to_map' will be ignored for interpolation but will appear in the final
+    # result if t >= 1.0 because the top-level 'to_map' is returned then.
+    # This approach prioritizes 'from_map' structure for t < 1.0.
+
+    Map.new(from_map, fn {key, from_value} ->
+      case Map.fetch(to_map, key) do
+        {:ok, to_value} ->
+          # Recursively call value/3 for interpolation
+          {key, value(from_value, to_value, t)}
+
+        :error ->
+          # Key not in to_map, carry over from_value
+          {key, from_value}
+      end
+    end)
   end
 
   # TODO: Implement interpolation for other types:

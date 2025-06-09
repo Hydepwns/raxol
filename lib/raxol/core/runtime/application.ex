@@ -142,7 +142,7 @@ defmodule Raxol.Core.Runtime.Application do
     quote do
       @behaviour Raxol.Core.Runtime.Application
 
-      import Raxol.Core.Renderer.View
+      import Raxol.Core.Renderer.View, except: [view: 1]
       alias Raxol.Core.Events.Event
       alias Raxol.Core.Runtime.Command
       alias Raxol.Core.Runtime.Subscription
@@ -177,7 +177,9 @@ defmodule Raxol.Core.Runtime.Application do
   @spec delegate_init(module(), context()) ::
           {model(), list(Command.t())} | {:error, term()}
   def delegate_init(app_module, context) when is_atom(app_module) do
-    Raxol.Core.Runtime.Log.info("[#{__MODULE__}] Delegating init to #{inspect(app_module)}...")
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Delegating init to #{inspect(app_module)}..."
+    )
 
     if function_exported?(app_module, :init, 1) do
       try do
@@ -200,7 +202,12 @@ defmodule Raxol.Core.Runtime.Application do
               "[#{__MODULE__}] #{inspect(app_module)}.init/1 returned invalid value: #{inspect(invalid_return)}. Expected map() or {map(), list()}. Falling back to empty model with no commands.",
               nil,
               nil,
-              %{module: __MODULE__, app_module: app_module, context: context, invalid_return: invalid_return}
+              %{
+                module: __MODULE__,
+                app_module: app_module,
+                context: context,
+                invalid_return: invalid_return
+              }
             )
 
             {%{}, []}
@@ -213,14 +220,20 @@ defmodule Raxol.Core.Runtime.Application do
             nil,
             %{module: __MODULE__, app_module: app_module, context: context}
           )
+
           {:error, {:init_failed, error}}
       end
     else
       Raxol.Core.Runtime.Log.warning_with_context(
         "[#{__MODULE__}] Application module #{inspect(app_module)} does not export init/1. Using default empty state.",
-        %{module: __MODULE__, app_module: app_module, context: context, warning: :no_init_exported},
-        nil
+        %{
+          module: __MODULE__,
+          app_module: app_module,
+          context: context,
+          warning: :no_init_exported
+        }
       )
+
       # Default if init/1 is not exported
       {%{}, []}
     end
@@ -242,8 +255,15 @@ defmodule Raxol.Core.Runtime.Application do
               "[#{__MODULE__}] #{inspect(app_module)}.update/2 returned invalid value: #{inspect(invalid_return)}. Expected {map(), list()}. Falling back to previous model with no commands.",
               nil,
               nil,
-              %{module: __MODULE__, app_module: app_module, message: message, current_model: current_model, invalid_return: invalid_return}
+              %{
+                module: __MODULE__,
+                app_module: app_module,
+                message: message,
+                current_model: current_model,
+                invalid_return: invalid_return
+              }
             )
+
             {current_model, []}
         end
       rescue
@@ -252,8 +272,14 @@ defmodule Raxol.Core.Runtime.Application do
             "[#{__MODULE__}] Error executing #{inspect(app_module)}.update/2",
             error,
             nil,
-            %{module: __MODULE__, app_module: app_module, message: message, current_model: current_model}
+            %{
+              module: __MODULE__,
+              app_module: app_module,
+              message: message,
+              current_model: current_model
+            }
           )
+
           {:error, {:update_failed, error}}
       end
     else
@@ -261,8 +287,15 @@ defmodule Raxol.Core.Runtime.Application do
         "[#{__MODULE__}] Application module #{inspect(app_module)} does not implement update/2 callback.",
         nil,
         nil,
-        %{module: __MODULE__, app_module: app_module, message: message, current_model: current_model, error: :update_callback_not_implemented}
+        %{
+          module: __MODULE__,
+          app_module: app_module,
+          message: message,
+          current_model: current_model,
+          error: :update_callback_not_implemented
+        }
       )
+
       {:error, :update_callback_not_implemented}
     end
   end
@@ -272,7 +305,10 @@ defmodule Raxol.Core.Runtime.Application do
   """
   @spec get_env(atom(), atom(), any()) :: any()
   def get_env(app, key, default \\ nil) do
-    Raxol.Core.Runtime.Log.debug("[#{__MODULE__}] get_env called for: #{app}.#{key}")
+    Raxol.Core.Runtime.Log.debug(
+      "[#{__MODULE__}] get_env called for: #{app}.#{key}"
+    )
+
     # TODO: Implement actual config fetching (e.g., from Application env)
     Application.get_env(app, key, default)
   end

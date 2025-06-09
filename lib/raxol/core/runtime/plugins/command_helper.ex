@@ -6,7 +6,6 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Plugins.CommandRegistry
-  alias Raxol.Core.Runtime.Plugins.LifecycleHelper
 
   @doc """
   Finds the plugin responsible for handling a command.
@@ -67,55 +66,75 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
         commands = plugin_module.get_commands()
 
         if is_list(commands) do
-          Enum.each(commands, fn
-            # Match standard command tuple: {name_atom, function_atom, arity_integer}
-            {name, function, arity}
-            when is_atom(name) and is_atom(function) and is_integer(arity) and
-                   arity >= 0 ->
-              # HARDEN: Check function_exported? before registering
-              if function_exported?(plugin_module, function, arity) do
-                CommandRegistry.register_command(
-                  command_table,
-                  # Use module as namespace
-                  plugin_module,
-                  Atom.to_string(name)
-                  |> String.trim()
-                  |> String.downcase(),
-                  # Module containing the function
-                  plugin_module,
-                  function,
-                  arity
-                )
-              else
-                Raxol.Core.Runtime.Log.warning_with_context(
-                  "Plugin #{inspect(plugin_module)} does not export #{function}/#{arity} for command #{inspect(name)}. Skipping registration.",
-                  context: __MODULE__,
-                  stacktrace: nil
-                )
-              end
-            invalid ->
-              Raxol.Core.Runtime.Log.warning_with_context(
-                "Plugin #{inspect(plugin_module)} returned invalid command format in get_commands/0: #{inspect(invalid)}. Expected {name_atom, function_atom, arity_integer}.",
-                context: __MODULE__,
-                stacktrace: nil
-              )
-          end)
+          updated_table =
+            Enum.reduce(commands, command_table, fn
+              {name, function, arity}, acc
+              when is_atom(name) and is_atom(function) and is_integer(arity) and
+                     arity >= 0 ->
+                name_str =
+                  Atom.to_string(name) |> String.trim() |> String.downcase()
+
+                # Disallow spaces in command names
+                if String.contains?(name_str, " ") or
+                     not String.match?(name_str, ~r/^[a-zA-Z0-9_-]+$/) do
+                  Raxol.Core.Runtime.Log.warning_with_context(
+                    "Command name '#{name_str}' is invalid. Skipping registration.",
+                    context: __MODULE__,
+                    stacktrace: nil
+                  )
+
+                  acc
+                else
+                  if function_exported?(plugin_module, function, arity) do
+                    case CommandRegistry.register_command(
+                           acc,
+                           plugin_module,
+                           name_str,
+                           plugin_module,
+                           function,
+                           arity
+                         ) do
+                      new_table when is_map(new_table) -> new_table
+                      _ -> acc
+                    end
+                  else
+                    Raxol.Core.Runtime.Log.warning_with_context(
+                      "Plugin #{inspect(plugin_module)} does not export #{function}/#{arity} for command #{inspect(name)}. Skipping registration.",
+                      context: __MODULE__,
+                      stacktrace: nil
+                    )
+
+                    acc
+                  end
+                end
+
+              _invalid, acc ->
+                acc
+            end)
+
+          updated_table
         else
           Raxol.Core.Runtime.Log.warning_with_context(
             "Plugin #{inspect(plugin_module)} get_commands/0 did not return a list.",
             context: __MODULE__,
             stacktrace: nil
           )
+
+          command_table
         end
       rescue
         error ->
           Raxol.Core.Runtime.Log.error_with_stacktrace(
-            "Error calling get_commands/0 on #{inspect(plugin_module)}: #{inspect(error)}"
+            "Error calling get_commands/0 on #{inspect(plugin_module)}: #{inspect(error)}",
+            error,
+            nil
           )
+
+          command_table
       end
     else
       # No get_commands/0 function exported, nothing to register
-      :ok
+      command_table
     end
   end
 
@@ -129,127 +148,118 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   Returns `{:ok, updated_plugin_states_map} | :not_found | {:error, reason}`.
   """
   def handle_command(command_table, command_name_str, namespace, args, state) do
-    # Validate arguments
     case validate_command_args(args) do
       :ok ->
-        # Arity isn't used in lookup yet
         case find_plugin_for_command(
                command_table,
                command_name_str,
                namespace,
                :unknown
              ) do
-          # Correct match for successful lookup
-          {:ok, {plugin_module, function_atom, _arity}} ->
-            # Find current plugin state
+          {:ok, {plugin_module, handler, _arity}}
+          when is_function(handler, 2) ->
             plugin_id = find_plugin_id_by_module(state.plugins, plugin_module)
 
             if plugin_id && Map.has_key?(state.plugin_states, plugin_id) do
               current_plugin_state = state.plugin_states[plugin_id]
 
-              # HARDEN: Check function_exported? before apply/3
-              if function_exported?(plugin_module, function_atom, 3) do
-                try do
-                  # Call the plugin's handler function using apply(Module, function, [args_list, state])
-                  # Use apply/3 correctly
-                  command_name_atom = String.to_atom(command_name_str)
-
-                  case with_timeout(
-                         fn ->
-                           apply(plugin_module, function_atom, [
-                             command_name_atom,
-                             args,
-                             current_plugin_state
-                           ])
-                         end,
-                         5000
-                       ) do
-                    {:ok, {:ok, new_plugin_state, result_tuple}} ->
-                      Raxol.Core.Runtime.Log.debug(
-                        "Command '#{command_name_str}' handled by #{inspect(plugin_module)}, result: #{inspect(result_tuple)}"
-                      )
-
-                      # Update plugin state in the state map
-                      updated_states =
-                        Map.put(state.plugin_states, plugin_id, new_plugin_state)
-
-                      # Return result to plugin manager
-                      {:ok, updated_states}
-
-                    {:ok, {:error, reason_tuple, new_plugin_state}} ->
-                      Raxol.Core.Runtime.Log.error_with_stacktrace(
-                        "Error handling command '#{command_name_str}' in #{inspect(plugin_module)}: #{inspect(reason_tuple)}"
-                      )
-
-                      # Update plugin state even on error
-                      updated_states =
-                        Map.put(state.plugin_states, plugin_id, new_plugin_state)
-
-                      # Return error to plugin manager
-                      {:error, reason_tuple, updated_states}
-
-                    {:ok, invalid_return} ->
-                      Raxol.Core.Runtime.Log.warning_with_context(
-                        "Plugin #{inspect(plugin_module)} returned unexpected value from command handler: #{inspect(invalid_return)}. Expected {:ok, state, result} or {:error, reason, state}.",
-                        context: __MODULE__,
-                        stacktrace: nil
-                      )
-
-                      # Return generic error to plugin manager
-                      {:error, {:unexpected_plugin_return, invalid_return},
-                       state.plugin_states}
-
-                    {:error, :timeout} ->
-                      Raxol.Core.Runtime.Log.error_with_stacktrace(
-                        "Command '#{command_name_str}' in #{inspect(plugin_module)} timed out after 5 seconds"
-                      )
-
-                      {:error, :command_timeout, state.plugin_states}
-
-                    {:error, reason} ->
-                      Raxol.Core.Runtime.Log.error_with_stacktrace(
-                        "Exception handling command '#{command_name_str}' in #{inspect(plugin_module)}: #{inspect(reason)}"
-                      )
-
-                      # Return exception error to plugin manager
-                      {:error, {:exception, reason}, state.plugin_states}
-                  end
-                rescue
-                  error ->
-                    Raxol.Core.Runtime.Log.error_with_stacktrace(
-                      "Exception handling command '#{command_name_str}' in #{inspect(plugin_module)}: #{inspect(error)}"
+              try do
+                case with_timeout(
+                       fn -> handler.(args, current_plugin_state) end,
+                       5000
+                     ) do
+                  {:ok, new_plugin_state, result_tuple}
+                  when is_map(new_plugin_state) ->
+                    Raxol.Core.Runtime.Log.debug(
+                      "Command '#{command_name_str}' handled by #{inspect(plugin_module)}, result: #{inspect(result_tuple)} (direct match)"
                     )
 
-                    # Return exception error to plugin manager
-                    {:error, {:exception, error}, state.plugin_states}
+                    _updated_states =
+                      Map.put(state.plugin_states, plugin_id, new_plugin_state)
+
+                    {:ok, new_plugin_state, result_tuple, plugin_id}
+
+                  {:error, reason_tuple, new_plugin_state}
+                  when is_map(new_plugin_state) ->
+                    Raxol.Core.Runtime.Log.error_with_stacktrace(
+                      "Error handling command '#{command_name_str}' in #{inspect(plugin_module)}: #{inspect(reason_tuple)} (direct match)",
+                      nil,
+                      nil,
+                      %{
+                        command_name: command_name_str,
+                        plugin_module: plugin_module
+                      }
+                    )
+
+                    {:error, reason_tuple, plugin_id}
+
+                  {status, new_plugin_state}
+                  when status in [:noreply, :reply, :stop] and
+                         is_map(new_plugin_state) ->
+                    Raxol.Core.Runtime.Log.warning_with_context(
+                      "Plugin #{inspect(plugin_module)} returned {#{inspect(status)}, state} from command handler, which is not a valid command return. Expected {:ok, state, result} or {:error, reason, state}.",
+                      context: __MODULE__,
+                      stacktrace: nil
+                    )
+
+                    {:error,
+                     {:unexpected_plugin_return, {status, new_plugin_state}},
+                     plugin_id}
+
+                  {:error, {:exception, _error}} = _invalid_return ->
+                    Raxol.Core.Runtime.Log.error_with_stacktrace(
+                      "Exception handling command '#{command_name_str}' in #{inspect(plugin_module)}: exception (from handler return)",
+                      :exception,
+                      nil,
+                      %{
+                        command_name: command_name_str,
+                        plugin_module: plugin_module
+                      }
+                    )
+
+                    {:error, :exception, plugin_id}
+
+                  invalid_return ->
+                    Raxol.Core.Runtime.Log.warning_with_context(
+                      "Plugin #{inspect(plugin_module)} returned unexpected value from command handler: #{inspect(invalid_return)}. Expected {:ok, state, result} or {:error, reason, state}.",
+                      context: __MODULE__,
+                      stacktrace: nil
+                    )
+
+                    {:error, {:unexpected_plugin_return, invalid_return},
+                     plugin_id}
                 end
-              else
-                Raxol.Core.Runtime.Log.error_with_stacktrace(
-                  "Plugin #{inspect(plugin_module)} does not export #{function_atom}/3 for command '#{command_name_str}'"
-                )
-                {:error, :invalid_command_handler, state.plugin_states}
+              rescue
+                error ->
+                  Raxol.Core.Runtime.Log.error_with_stacktrace(
+                    "Exception handling command '#{command_name_str}' in #{inspect(plugin_module)}: #{inspect(error)}",
+                    error,
+                    nil,
+                    %{
+                      command_name: command_name_str,
+                      plugin_module: plugin_module
+                    }
+                  )
+
+                  {:error, {:exception, error}, plugin_id}
               end
             else
               Raxol.Core.Runtime.Log.error_with_stacktrace(
-                "Could not find state for plugin #{inspect(plugin_module)} handling command '#{command_name_str}'"
+                "Could not find state for plugin #{inspect(plugin_module)} handling command '#{command_name_str}'",
+                nil,
+                nil,
+                %{command_name: command_name_str, plugin_module: plugin_module}
               )
 
-              # Return error to plugin manager
-              {:error, :missing_plugin_state, state.plugin_states}
+              {:error, :missing_plugin_state, plugin_id}
             end
 
-          :not_found ->
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "Command '#{command_name_str}' not found in namespace #{inspect(namespace)}",
-              context: __MODULE__,
-              stacktrace: nil
-            )
-
-            :not_found
+          {:error, :not_found} ->
+            {:error, :not_found, nil}
         end
 
       {:error, reason} ->
-        {:error, reason, state.plugin_states}
+        {:error, reason, nil}
     end
   end
 
@@ -281,7 +291,14 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
 
   # Helper function to execute a function with a timeout
   defp with_timeout(fun, timeout) do
-    task = Task.async(fun)
+    task =
+      Task.async(fn ->
+        try do
+          fun.()
+        rescue
+          error -> {:error, {:exception, error}}
+        end
+      end)
 
     try do
       Task.await(task, timeout)
@@ -299,7 +316,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHelper do
   Unregisters all commands associated with a specific plugin module.
   """
   def unregister_plugin_commands(command_table, plugin_module) do
-    Raxol.Core.Runtime.Log.debug("Unregistering commands for module: #{inspect(plugin_module)}")
+    Raxol.Core.Runtime.Log.debug(
+      "Unregistering commands for module: #{inspect(plugin_module)}"
+    )
+
     # Use correct function name
     CommandRegistry.unregister_commands_by_module(command_table, plugin_module)
   end

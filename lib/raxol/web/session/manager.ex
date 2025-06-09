@@ -167,7 +167,10 @@ defmodule Raxol.Web.Session.Manager do
             {:reply, :ok, new_state}
 
           {:error, reason} ->
-            Raxol.Core.Runtime.Log.error("Failed to mark session as ended: #{inspect(reason)}")
+            Raxol.Core.Runtime.Log.error(
+              "Failed to mark session as ended: #{inspect(reason)}"
+            )
+
             {:reply, {:error, reason}, state}
         end
 

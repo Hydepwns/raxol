@@ -4,8 +4,6 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
   Provides viewport management, scrollbar rendering, and content scrolling.
   """
 
-  alias Raxol.Core.Renderer.View.Types
-
   @doc """
   Creates a new scrollable view.
 
@@ -68,7 +66,7 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     end
   end
 
-  defp calculate_content_size(children, available_size) do
+  defp calculate_content_size(_children, available_size) do
     # Calculate the total size of all children
     # This would handle:
     # - Child dimensions
@@ -106,7 +104,7 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
     }
   end
 
-  defp calculate_scrollbar_position(content_size, viewport_size) do
+  defp calculate_scrollbar_position(_content_size, _viewport_size) do
     # Calculate scrollbar position based on content and viewport size
     # This would handle:
     # - Proportional positioning
@@ -117,9 +115,9 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
 
   defp apply_viewport(
          children,
-         content_size,
-         {offset_x, offset_y},
-         {viewport_width, viewport_height}
+         _content_size,
+         {_offset_x, _offset_y},
+         {_viewport_width, _viewport_height}
        ) do
     # Apply viewport clipping and offset to content
     # This would handle:
@@ -131,8 +129,8 @@ defmodule Raxol.Core.Renderer.View.Components.Scroll do
 
   defp add_scrollbars(
          content,
-         scrollbar_info,
-         {viewport_width, viewport_height}
+         _scrollbar_info,
+         {_viewport_width, _viewport_height}
        ) do
     # Add scrollbars to the content
     # This would handle:

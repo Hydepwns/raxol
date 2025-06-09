@@ -248,16 +248,29 @@ defmodule Raxol.Style.Colors.Color do
 
   ## Examples
 
-      iex> Color.from_hex("#FF0000") |> Color.alpha_blend(Color.from_hex("#0000FF"), 0.5)
+      iex> Color.blend(Color.from_hex("#FF0000"), Color.from_hex("#0000FF"), 0.5)
       %Color{r: 128, g: 0, b: 128, hex: "#800080"}
   """
-  @spec alpha_blend(t(), t(), float()) :: t()
-  def alpha_blend(%__MODULE__{} = color1, %__MODULE__{} = color2, alpha)
-      when alpha >= 0 and alpha <= 1 do
-    r = trunc(color1.r * alpha + color2.r * (1 - alpha))
-    g = trunc(color1.g * alpha + color2.g * (1 - alpha))
-    b = trunc(color1.b * alpha + color2.b * (1 - alpha))
-    from_rgb(r, g, b)
+  @spec blend(t(), t(), float()) :: t()
+  def blend(%__MODULE__{} = color1, %__MODULE__{} = color2, alpha)
+      when is_float(alpha) and alpha >= 0.0 and alpha <= 1.0 do
+    # Simple linear interpolation for each component
+    r = round(color1.r * (1 - alpha) + color2.r * alpha)
+    g = round(color1.g * (1 - alpha) + color2.g * alpha)
+    b = round(color1.b * (1 - alpha) + color2.b * alpha)
+
+    # Alpha blending for the 'a' component if both have it
+    a1 = color1.a || 255
+    a2 = color2.a || 255
+    blended_a_float = a1 * (1 - alpha) + a2 * alpha
+    blended_a = round(blended_a_float)
+
+    # Decide if the result should have an alpha component
+    if color1.a != nil or color2.a != nil or blended_a != 255 do
+      from_rgba(r, g, b, blended_a)
+    else
+      from_rgb(r, g, b)
+    end
   end
 
   @doc """

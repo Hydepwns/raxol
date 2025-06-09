@@ -9,11 +9,10 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
 
   defmodule State do
     @moduledoc false
-    # Default ~60 FPS
+
     defstruct interval_ms: 16,
               timer_ref: nil,
               enabled: false,
-              # Keep track of the engine PID
               engine_pid: nil
   end
 
@@ -68,7 +67,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   @impl true
   def handle_cast({:set_interval, ms}, state) do
     new_state = %{state | interval_ms: ms}
-    # If enabled, reschedule with new interval
+
     updated_state =
       if state.enabled, do: schedule_render_tick(new_state), else: new_state
 
@@ -77,10 +76,8 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
 
   @impl true
   def handle_info(:render_tick, %State{enabled: true} = state) do
-    # Trigger the rendering engine via async cast
     GenServer.cast(state.engine_pid, :render_frame)
 
-    # Reschedule the next tick
     new_state = schedule_render_tick(state)
     {:noreply, new_state}
   end
@@ -91,9 +88,7 @@ defmodule Raxol.Core.Runtime.Rendering.Scheduler do
   # --- Private Helpers ---
 
   defp schedule_render_tick(%State{timer_ref: ref, interval_ms: ms} = state) do
-    # Cancel previous timer if exists
     if ref, do: Process.cancel_timer(ref)
-    # Schedule new timer
     new_timer_ref = Process.send_after(self(), :render_tick, ms)
     %{state | timer_ref: new_timer_ref}
   end

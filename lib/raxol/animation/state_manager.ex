@@ -8,9 +8,6 @@ defmodule Raxol.Animation.StateManager do
 
   require Raxol.Core.Runtime.Log
 
-  # Assuming Framework might hold struct defs later
-  alias Raxol.Animation.Framework
-
   @settings_key :animation_framework_settings
   @animations_key :animation_framework_animations
   @active_animations_key :animation_framework_active_animations

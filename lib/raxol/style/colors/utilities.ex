@@ -1,3 +1,5 @@
+alias Raxol.Style.Colors.Color
+
 defmodule Raxol.Style.Colors.Utilities do
   @moduledoc """
   Shared color utilities for the Raxol color system.
@@ -6,8 +8,6 @@ defmodule Raxol.Style.Colors.Utilities do
   including contrast calculations, accessibility checks, and color format
   conversions.
   """
-
-  alias Raxol.Style.Colors.Color
 
   @doc """
   Calculates the relative luminance of a color according to WCAG 2.0.
@@ -171,6 +171,92 @@ defmodule Raxol.Style.Colors.Utilities do
     end
   end
 
+  @doc """
+  Converts RGB values to HSL.
+
+  ## Parameters
+
+  * `r` - Red component (0-255)
+  * `g` - Green component (0-255)
+  * `b` - Blue component (0-255)
+
+  ## Returns
+
+  A tuple {h, s, l} where:
+  * h is hue (0-360)
+  * s is saturation (0-1)
+  * l is lightness (0-1)
+  """
+  def rgb_to_hsl(r, g, b)
+      when is_integer(r) and is_integer(g) and is_integer(b) do
+    r = r / 255
+    g = g / 255
+    b = b / 255
+
+    max = Enum.max([r, g, b])
+    min = Enum.min([r, g, b])
+    l = (max + min) / 2
+
+    {h, s} =
+      if max == min do
+        {0, 0}
+      else
+        d = max - min
+        s = if l > 0.5, do: d / (2 - max - min), else: d / (max + min)
+
+        h =
+          cond do
+            max == r -> (g - b) / d + if g < b, do: 6, else: 0
+            max == g -> (b - r) / d + 2
+            max == b -> (r - g) / d + 4
+          end
+          |> Kernel.*(60)
+
+        {h, s}
+      end
+
+    {h, s, l}
+  end
+
+  @doc """
+  Converts HSL values to RGB.
+
+  ## Parameters
+
+  * `h` - Hue (0-360)
+  * `s` - Saturation (0-1)
+  * `l` - Lightness (0-1)
+
+  ## Returns
+
+  A tuple {r, g, b} where each component is in the range 0-255
+  """
+  def hsl_to_rgb(h, s, l) when is_number(h) and is_number(s) and is_number(l) do
+    h = rem(h + 360, 360)
+    s = max(0, min(1, s))
+    l = max(0, min(1, l))
+
+    c = (1 - abs(2 * l - 1)) * s
+    x = c * (1 - abs(rem(trunc(h / 60), 2) - 1))
+    m = l - c / 2
+
+    {r1, g1, b1} =
+      cond do
+        h < 60 -> {c, x, 0}
+        h < 120 -> {x, c, 0}
+        h < 180 -> {0, c, x}
+        h < 240 -> {0, x, c}
+        h < 300 -> {x, 0, c}
+        true -> {c, 0, x}
+      end
+
+    {
+      round((r1 + m) * 255),
+      round((g1 + m) * 255),
+      round((b1 + m) * 255)
+    }
+  end
+
   # Private helpers
 
   defp convert_to_linear(value) do
@@ -183,12 +269,12 @@ defmodule Raxol.Style.Colors.Utilities do
 
   defp get_required_ratio(level, size) do
     case {level, size} do
-      {:A, :normal} -> 3.0
-      {:A, :large} -> 3.0
-      {:AA, :normal} -> 4.5
-      {:AA, :large} -> 3.0
-      {:AAA, :normal} -> 7.0
-      {:AAA, :large} -> 4.5
+      {:a, :normal} -> 3.0
+      {:a, :large} -> 3.0
+      {:aa, :normal} -> 4.5
+      {:aa, :large} -> 3.0
+      {:aaa, :normal} -> 7.0
+      {:aaa, :large} -> 4.5
     end
   end
 

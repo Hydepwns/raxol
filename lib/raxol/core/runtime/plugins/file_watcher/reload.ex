@@ -12,7 +12,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
   def reload_plugin(plugin_id, path) do
     # Verify the plugin exists and is loaded
     case Raxol.Core.Runtime.Plugins.Manager.get_plugin(plugin_id) do
-      {:ok, plugin} ->
+      {:ok, _plugin} ->
         # Attempt to reload the plugin
         try do
           # First unload the plugin
@@ -35,8 +35,14 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
                     "[#{__MODULE__}] Failed to reload plugin #{plugin_id}",
                     reason,
                     nil,
-                    %{module: __MODULE__, plugin_id: plugin_id, path: path, reason: reason}
+                    %{
+                      module: __MODULE__,
+                      plugin_id: plugin_id,
+                      path: path,
+                      reason: reason
+                    }
                   )
+
                   {:error, {:reload_failed, reason}}
               end
 
@@ -45,8 +51,14 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
                 "[#{__MODULE__}] Failed to unload plugin #{plugin_id}",
                 reason,
                 nil,
-                %{module: __MODULE__, plugin_id: plugin_id, path: path, reason: reason}
+                %{
+                  module: __MODULE__,
+                  plugin_id: plugin_id,
+                  path: path,
+                  reason: reason
+                }
               )
+
               {:error, {:unload_failed, reason}}
           end
         rescue
@@ -57,6 +69,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
               __STACKTRACE__,
               %{module: __MODULE__, plugin_id: plugin_id, path: path}
             )
+
             {:error, {:reload_error, e}}
         end
 
@@ -67,6 +80,7 @@ defmodule Raxol.Core.Runtime.Plugins.FileWatcher.Reload do
           nil,
           %{module: __MODULE__, plugin_id: plugin_id, path: path}
         )
+
         {:error, :plugin_not_found}
     end
   end

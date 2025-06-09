@@ -12,7 +12,7 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
   @doc """
   Starts the plugin registry GenServer.
   """
-  def start_link(opts \\ []) do
+  def start_link(_opts \\ []) do
     GenServer.start_link(__MODULE__, %{}, name: __MODULE__)
   end
 
@@ -61,13 +61,19 @@ defmodule Raxol.Core.Runtime.Plugins.Registry do
 
   @impl true
   def handle_call({:register_plugin, plugin_id, metadata}, _from, state) do
-    Raxol.Core.Runtime.Log.info("[#{__MODULE__}] Registering plugin: #{inspect(plugin_id)}")
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Registering plugin: #{inspect(plugin_id)}"
+    )
+
     {:reply, :ok, Map.put(state, plugin_id, metadata)}
   end
 
   @impl true
   def handle_call({:unregister_plugin, plugin_id}, _from, state) do
-    Raxol.Core.Runtime.Log.info("[#{__MODULE__}] Unregistering plugin: #{inspect(plugin_id)}")
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Unregistering plugin: #{inspect(plugin_id)}"
+    )
+
     {:reply, :ok, Map.delete(state, plugin_id)}
   end
 

@@ -153,10 +153,15 @@ defmodule Raxol.Core.Renderer.Manager do
 
   defp render_component(component, buffer) do
     # Get component's view
-    view = component.module.render(component.state)
+    view = component.module.view(component.state)
 
-    # Convert view to buffer cells
-    render_view(view, buffer)
+    # Ensure view is correctly defined and contains the expected data
+    if view && is_map(view) do
+      # Convert view to buffer cells
+      render_view(view, buffer)
+    else
+      buffer
+    end
   end
 
   defp render_view(nil, buffer), do: buffer

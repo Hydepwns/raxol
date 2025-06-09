@@ -96,10 +96,9 @@ defmodule Raxol.System.Updater do
   def self_update(version \\ nil, opts \\ []) do
     use_delta = Keyword.get(opts, :use_delta, true)
 
-    # First check if we're running as a compiled binary
-    # TODO: `:burrito_util` module is not available. Commenting out.
-    # is_binary = function_exported?(:burrito_util, :is_binary?, 0) && :burrito_util.is_binary?()
-    # Assume not running as binary for now
+    # Check if we're running as a compiled binary.
+    # This functionality was previously attempted with Burrito, but the utility module was not available.
+    # For now, we assume the application is not running as a standalone binary for self-update purposes.
     is_binary = false
 
     if !is_binary do

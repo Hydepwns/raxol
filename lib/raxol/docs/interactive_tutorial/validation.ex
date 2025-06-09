@@ -24,7 +24,7 @@ defmodule Raxol.Docs.InteractiveTutorial.Validation do
       when is_function(validation_fn, 1) do
     case step.exercise do
       nil -> {:error, "No exercise defined for this step"}
-      exercise -> validation_fn.(solution)
+      _exercise -> validation_fn.(solution)
     end
   end
 

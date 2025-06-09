@@ -6,7 +6,7 @@ defmodule Raxol.Plugins.Manager.State do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Plugins.{Plugin, Lifecycle}
+  alias Raxol.Plugins.Lifecycle
   alias Raxol.Plugins.Manager.Core
 
   @doc """

@@ -29,6 +29,13 @@ defmodule Raxol.Core.Renderer.Element do
   Creates a new element with the given tag and attributes.
   """
   def new(tag, attrs, opts \\ []) do
+    attrs =
+      cond do
+        is_list(attrs) -> attrs
+        is_map(attrs) -> Map.to_list(attrs)
+        true -> []
+      end
+
     children = Keyword.get(opts, :do, [])
     children = if is_list(children), do: children, else: [children]
 

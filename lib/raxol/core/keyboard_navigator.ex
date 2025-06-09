@@ -63,8 +63,17 @@ defmodule Raxol.Core.KeyboardNavigator do
       :ok
   """
   def configure(opts \\ []) do
+    ensure_keyword = fn
+      kw when is_list(kw) and (kw == [] or is_tuple(hd(kw))) -> kw
+      m when is_map(m) -> Map.to_list(m)
+      _ -> []
+    end
+
     current_config = get_config()
-    updated_config = Keyword.merge(current_config, opts)
+
+    updated_config =
+      Keyword.merge(ensure_keyword.(current_config), ensure_keyword.(opts))
+
     Process.put(:keyboard_navigator_config, updated_config)
     :ok
   end

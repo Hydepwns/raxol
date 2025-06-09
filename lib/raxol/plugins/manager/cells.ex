@@ -6,7 +6,7 @@ defmodule Raxol.Plugins.Manager.Cells do
 
   require Raxol.Core.Runtime.Log
 
-  alias Raxol.Plugins.{CellProcessor, Lifecycle}
+  alias Raxol.Plugins.CellProcessor
   alias Raxol.Plugins.Manager.Core
 
   @doc """

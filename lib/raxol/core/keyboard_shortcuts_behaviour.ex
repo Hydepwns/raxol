@@ -30,7 +30,9 @@ defmodule Raxol.Core.KeyboardShortcutsBehaviour do
               list(map())
 
   # show_shortcuts_help/0 in KeyboardShortcuts returns {:ok, String.t()}
-  @callback show_shortcuts_help() :: {:ok, String.t()} | :ok
+  @callback show_shortcuts_help(
+              user_preferences_pid_or_name :: pid() | atom() | nil
+            ) :: {:ok, String.t()} | :ok
 
   @callback trigger_shortcut(
               name :: shortcut_name(),

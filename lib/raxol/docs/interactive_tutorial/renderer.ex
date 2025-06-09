@@ -1,10 +1,9 @@
 defmodule Raxol.Docs.InteractiveTutorial.Renderer do
   @moduledoc """
-  Handles rendering of tutorial content and interactive elements.
+  Handles rendering of interactive tutorial content.
   """
 
   alias Raxol.Docs.InteractiveTutorial.Models.{Tutorial, Step}
-  alias Raxol.Core.UXRefinement
 
   @doc """
   Renders a tutorial's content.

@@ -19,7 +19,7 @@ defmodule Raxol.Core.Events.Event do
           timestamp: DateTime.t()
         }
 
-  defstruct [:type, :data, :timestamp]
+  defstruct [:type, :data, :timestamp, mounted: false, render_count: 0]
 
   # Event constructors for common events
 
@@ -55,12 +55,18 @@ defmodule Raxol.Core.Events.Event do
     * `modifiers` - List of active modifiers (e.g. [:shift, :ctrl])
   """
   def key_event(key, state, modifiers \\ [])
+
+  def key_event(key, state, modifiers)
       when state in [:pressed, :released, :repeat] and is_list(modifiers) do
     new(:key, %{
       key: key,
       state: state,
       modifiers: modifiers
     })
+  end
+
+  def key_event(_key, _state, _modifiers) do
+    {:error, :invalid_key_event}
   end
 
   @doc """
@@ -93,6 +99,8 @@ defmodule Raxol.Core.Events.Event do
     * `modifiers` - List of active modifiers (e.g. [:shift, :ctrl])
   """
   def mouse_event(button, position, state \\ :pressed, modifiers \\ [])
+
+  def mouse_event(button, position, state, modifiers)
       when button in [:left, :right, :middle] and
              state in [:pressed, :released, :double_click] and
              is_tuple(position) and
@@ -103,6 +111,10 @@ defmodule Raxol.Core.Events.Event do
       state: state,
       modifiers: modifiers
     })
+  end
+
+  def mouse_event(_button, _position, _state, _modifiers) do
+    {:error, :invalid_mouse_event}
   end
 
   @doc """
@@ -150,6 +162,10 @@ defmodule Raxol.Core.Events.Event do
       height: height,
       action: action
     })
+  end
+
+  def window_event(_width, _height, _action) do
+    {:error, :invalid_window_event}
   end
 
   @doc """

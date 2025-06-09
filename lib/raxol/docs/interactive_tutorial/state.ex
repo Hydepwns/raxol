@@ -3,7 +3,7 @@ defmodule Raxol.Docs.InteractiveTutorial.State do
   Manages the state of the interactive tutorial system.
   """
 
-  alias Raxol.Docs.InteractiveTutorial.Models.{Tutorial, Step}
+  alias Raxol.Docs.InteractiveTutorial.Models.Tutorial
 
   @type tutorial_id :: String.t()
   @type step_id :: String.t()

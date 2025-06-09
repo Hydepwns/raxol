@@ -14,10 +14,6 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   - rgb(r%,g%,b%) (percentage, 0-100%)
   """
 
-  alias Raxol.Core.Terminal.Color
-  alias Raxol.Core.Terminal.State
-  require Raxol.Core.Runtime.Log
-
   @doc """
   Handles OSC 4 commands for color palette management.
 
@@ -48,6 +44,7 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
           {:ok, color} ->
             response = format_color_response(index, color)
             {:ok, state, response}
+
           {:error, _} ->
             {:error, {:invalid_index, index}}
         end
@@ -189,7 +186,9 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
               3 -> round(val * 255 / 4095)
               4 -> round(val * 255 / 65_535)
             end
+
           {:ok, max(0, min(255, scaled_val))}
+
         _ ->
           :error
       end
@@ -201,18 +200,26 @@ defmodule Raxol.Core.Terminal.OSC.Handlers.ColorPalette do
   defp format_color_response(index, {r, g, b}) do
     # Format: OSC 4;index;rgb:r/g/b
     # Scale up to 16-bit range (0-65535)
-    r_scaled = Integer.to_string(div(r * 65_535, 255), 16) |> String.pad_leading(4, "0")
-    g_scaled = Integer.to_string(div(g * 65_535, 255), 16) |> String.pad_leading(4, "0")
-    b_scaled = Integer.to_string(div(b * 65_535, 255), 16) |> String.pad_leading(4, "0")
+    r_scaled =
+      Integer.to_string(div(r * 65_535, 255), 16) |> String.pad_leading(4, "0")
+
+    g_scaled =
+      Integer.to_string(div(g * 65_535, 255), 16) |> String.pad_leading(4, "0")
+
+    b_scaled =
+      Integer.to_string(div(b * 65_535, 255), 16) |> String.pad_leading(4, "0")
+
     "4;#{index};rgb:#{r_scaled}/#{g_scaled}/#{b_scaled}"
   end
 
   # Helper for safe palette access
-  defp get_palette_color(palette, index) when is_integer(index) and index >= 0 and index <= 255 do
+  defp get_palette_color(palette, index)
+       when is_integer(index) and index >= 0 and index <= 255 do
     case Map.get(palette, index) do
       nil -> {:error, :invalid_color_index}
       color -> {:ok, color}
     end
   end
+
   defp get_palette_color(_palette, _index), do: {:error, :invalid_color_index}
 end

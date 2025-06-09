@@ -25,11 +25,11 @@ defmodule Raxol.Core.UserPreferences do
 
   # --- Client API ---
 
-  @impl GenServer
   def start_link(opts \\ []) do
     # Pass only the test_mode? option to init, defaulting to false.
     init_arg = [test_mode?: Keyword.get(opts, :test_mode?, false)]
-    GenServer.start_link(__MODULE__, init_arg, name: __MODULE__)
+    name_opt = Keyword.get(opts, :name, __MODULE__)
+    GenServer.start_link(__MODULE__, init_arg, name: name_opt)
   end
 
   @doc """
@@ -85,6 +85,14 @@ defmodule Raxol.Core.UserPreferences do
   end
 
   @doc """
+  Resets the preferences to their default values for the current test run.
+  This should only be used in test environments.
+  """
+  def reset_to_defaults_for_test!(pid_or_name \\ __MODULE__) do
+    GenServer.call(pid_or_name, :reset_to_defaults_for_test)
+  end
+
+  @doc """
   Returns the current theme id as an atom, defaulting to :default if not set or invalid.
   """
   def get_theme_id(pid_or_name \\ __MODULE__) do
@@ -106,6 +114,31 @@ defmodule Raxol.Core.UserPreferences do
     end
   end
 
+  @doc """
+  Returns the default preferences map.
+  This includes default values for theme, terminal configuration, accessibility settings,
+  and keybindings.
+  """
+  def default_preferences do
+    %{
+      theme: Raxol.UI.Theming.Theme.default_theme().name,
+      terminal: Raxol.Terminal.Config.Defaults.generate_default_config(),
+      accessibility: %{
+        enabled: true,
+        screen_reader: true,
+        high_contrast: false,
+        reduced_motion: false,
+        keyboard_focus: true,
+        large_text: false,
+        silence_announcements: false
+      },
+      keybindings:
+        %{
+          # Add default keybindings here
+        }
+    }
+  end
+
   # --- Server Callbacks ---
 
   @impl true
@@ -125,7 +158,10 @@ defmodule Raxol.Core.UserPreferences do
             deep_merge(default_preferences(), loaded_prefs)
 
           {:error, :file_not_found} ->
-            Raxol.Core.Runtime.Log.info("No preferences file found, using defaults.")
+            Raxol.Core.Runtime.Log.info(
+              "No preferences file found, using defaults."
+            )
+
             default_preferences()
 
           {:error, reason} ->
@@ -180,7 +216,11 @@ defmodule Raxol.Core.UserPreferences do
 
     if current_value != value do
       new_preferences = put_in(state.preferences, path, value)
-      Raxol.Core.Runtime.Log.debug("Preference updated: #{inspect(path)} = #{inspect(value)}")
+
+      Raxol.Core.Runtime.Log.debug(
+        "Preference updated: #{inspect(path)} = #{inspect(value)}"
+      )
+
       new_state = %{state | preferences: new_preferences}
       # Schedule a save after a delay
       {:reply, :ok, schedule_save(new_state)}
@@ -188,6 +228,23 @@ defmodule Raxol.Core.UserPreferences do
       # Value didn't change, do nothing, but still reply :ok
       {:reply, :ok, state}
     end
+  end
+
+  @impl true
+  def handle_call(:reset_to_defaults_for_test, _from, state) do
+    Raxol.Core.Runtime.Log.info(
+      "UserPreferences resetting to defaults for test."
+    )
+
+    new_preferences = default_preferences()
+    # Cancel any pending save timer as we are resetting
+    new_state = %{
+      state
+      | preferences: new_preferences,
+        save_timer: cancel_save_timer(state.save_timer)
+    }
+
+    {:reply, :ok, new_state}
   end
 
   # Handle the delayed save message
@@ -217,27 +274,6 @@ defmodule Raxol.Core.UserPreferences do
 
   # --- Internal Helpers ---
 
-  defp default_preferences do
-    %{
-      theme: Raxol.UI.Theming.Theme.default_theme().name,
-      terminal: Raxol.Terminal.Config.Defaults.generate_default_config(),
-      accessibility: %{
-        enabled: true,
-        screen_reader: true,
-        high_contrast: false,
-        reduced_motion: false,
-        keyboard_focus: true,
-        large_text: false,
-        silence_announcements: false
-      },
-      keybindings:
-        %{
-          # Default keybindings can be added here
-        }
-    }
-  end
-
-  # Basic deep merge for nested maps
   defp deep_merge(map1, map2) do
     Map.merge(map1, map2, fn _key, val1, val2 ->
       if is_map(val1) and is_map(val2) do

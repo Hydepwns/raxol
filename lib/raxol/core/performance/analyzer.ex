@@ -235,7 +235,7 @@ defmodule Raxol.Core.Performance.Analyzer do
     }
   end
 
-  defp analyze_trends(metrics) do
+  defp analyze_trends(_metrics) do
     %{fps_trend: "stable", memory_trend: "stable", jank_trend: "stable"}
   end
 

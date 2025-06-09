@@ -1,9 +1,9 @@
+alias Raxol.Style.Colors.Color
+
 defmodule Raxol.Style.Colors.HSL do
   @moduledoc """
   Provides functions for HSL color space conversions and adjustments.
   """
-
-  alias Raxol.Style.Colors.Color
 
   @doc """
   Converts RGB values to HSL.
@@ -69,7 +69,7 @@ defmodule Raxol.Style.Colors.HSL do
              s <= 1.0 and is_float(l) and l >= 0.0 and l <= 1.0 do
     c = (1.0 - abs(2.0 * l - 1.0)) * s
     h_prime = h / 60.0
-    x = c * (1.0 - abs(rem(round(h_prime), 2) - 1.0))
+    x = c * (1.0 - abs(:math.fmod(h_prime, 2.0) - 1.0))
     m = l - c / 2.0
 
     {r_prime, g_prime, b_prime} =

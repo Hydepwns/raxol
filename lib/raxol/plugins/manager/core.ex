@@ -8,37 +8,44 @@ defmodule Raxol.Plugins.Manager.Core do
 
   alias Raxol.Plugins.{
     Plugin,
-    PluginConfig,
-    PluginDependency,
-    CellProcessor,
-    EventHandler,
-    Lifecycle
+    PluginConfig
   }
 
   @type t :: %__MODULE__{
           plugins: %{String.t() => Plugin.t()},
-          config: PluginConfig.t(),
-          api_version: String.t()
+          plugin_states: %{String.t() => any()},
+          plugin_config: PluginConfig.t(),
+          metadata: map(),
+          event_handler: function() | nil,
+          api_version: String.t(),
+          loaded_plugins: %{String.t() => Plugin.t()},
+          config: map()
         }
 
   defstruct [
     :plugins,
-    :config,
-    :api_version
+    :plugin_states,
+    :plugin_config,
+    :metadata,
+    :event_handler,
+    api_version: "1.0.0",
+    loaded_plugins: %{},
+    config: %{}
   ]
 
   @doc """
   Creates a new plugin manager with default configuration.
   """
-  def new(_config \\ %{}) do
-    # Initialize with a default PluginConfig
-    initial_config = PluginConfig.new()
-
+  def new(_opts \\ []) do
     %__MODULE__{
       plugins: %{},
-      config: initial_config,
-      # Set a default API version
-      api_version: "1.0"
+      plugin_states: %{},
+      plugin_config: Raxol.Plugins.PluginConfig.new(),
+      metadata: %{},
+      event_handler: nil,
+      api_version: "1.0.0",
+      loaded_plugins: %{},
+      config: %{}
     }
   end
 
@@ -64,10 +71,17 @@ defmodule Raxol.Plugins.Manager.Core do
   end
 
   @doc """
-  Updates the plugins map in the manager.
+  Returns a map of loaded plugin names to plugin structs (for test compatibility).
+  """
+  def loaded_plugins(%__MODULE__{} = manager) do
+    manager.loaded_plugins
+  end
+
+  @doc """
+  Updates the plugins map in the manager and keeps loaded_plugins in sync.
   """
   def update_plugins(%__MODULE__{} = manager, plugins) when is_map(plugins) do
-    %{manager | plugins: plugins}
+    %{manager | plugins: plugins, loaded_plugins: plugins}
   end
 
   @doc """
@@ -81,6 +95,15 @@ defmodule Raxol.Plugins.Manager.Core do
   Loads a plugin module and initializes it. Delegates to Raxol.Plugins.Lifecycle.load_plugin/3.
   """
   def load_plugin(%__MODULE__{} = manager, module) when is_atom(module) do
-    Lifecycle.load_plugin(manager, module)
+    Raxol.Plugins.Lifecycle.load_plugin(manager, module)
+  end
+
+  @doc """
+  Loads a plugin module with specific configuration and initializes it.
+  Delegates to Raxol.Plugins.Lifecycle.load_plugin/3.
+  """
+  def load_plugin(%__MODULE__{} = manager, module, config)
+      when is_atom(module) and is_map(config) do
+    Raxol.Plugins.Lifecycle.load_plugin(manager, module, config)
   end
 end

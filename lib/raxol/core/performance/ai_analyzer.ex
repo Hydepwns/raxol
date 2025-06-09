@@ -47,7 +47,11 @@ defmodule Raxol.Core.Performance.AIAnalyzer do
 
     # Send data to AI agent for analysis
     # TODO: Implement actual AI integration call
-    Raxol.Core.Runtime.Log.warning_with_context("AI analysis not implemented, falling back to mock analysis", %{})
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "AI analysis not implemented, falling back to mock analysis",
+      %{}
+    )
+
     generate_mock_analysis(ai_data)
   end
 

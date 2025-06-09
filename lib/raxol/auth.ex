@@ -103,6 +103,7 @@ defmodule Raxol.Auth do
       "get_user_by_session called, but session lookup is not implemented. This is a stub.",
       %{}
     )
+
     nil
   end
 

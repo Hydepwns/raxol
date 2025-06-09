@@ -11,6 +11,7 @@ defmodule Raxol.MixProject do
       elixir: "~> 1.18.3",
       elixirc_paths: elixirc_paths(Mix.env()),
       compilers: Mix.compilers(),
+      consolidate_protocols: Mix.env() != :test,
       start_permanent: Mix.env() == :prod,
       aliases: aliases(),
       deps: deps(),
@@ -54,12 +55,23 @@ defmodule Raxol.MixProject do
     [
       mod: {Raxol.Application, []},
       extra_applications:
-        [:runtime_tools, :swoosh] ++ test_applications()
+        [
+          :phoenix,
+          :phoenix_html,
+          :phoenix_live_view,
+          :phoenix_pubsub,
+          :ecto_sql,
+          :postgrex,
+          :runtime_tools,
+          :swoosh,
+          :termbox2_nif,
+          :toml
+        ] ++ test_applications()
     ]
   end
 
   defp elixirc_paths(:test),
-    do: ["lib", "test/support"]
+    do: ["lib", "test/support", "examples/demos", "lib/raxol/test"]
 
   defp elixirc_paths(_), do: ["lib"]
 
@@ -75,7 +87,7 @@ defmodule Raxol.MixProject do
     [
       # Core dependencies
       # Terminal rendering library
-      {:rrex_termbox, "~> 2.0.4"},
+      {:termbox2_nif, "~> 0.2.0"},
 
       # --- Added for Tutorial Loading ---
       # Markdown parser
@@ -84,7 +96,13 @@ defmodule Raxol.MixProject do
       {:yaml_elixir, "~> 2.9"},
       # ---------------------------------
 
+      # --- Added for Syntax Highlighting ---
+      {:makeup, "~> 1.1"},
+      {:makeup_elixir, "~> 0.8"},
+      # -----------------------------------
+
       {:phoenix, "~> 1.7.20"},
+      {:phoenix_ecto, "~> 4.4"},
       {:phoenix_live_view, "~> 1.0.0"},
       {:surface, "~> 0.12"},
       {:phoenix_live_dashboard, "~> 0.8.0"},
@@ -105,7 +123,7 @@ defmodule Raxol.MixProject do
 
       # Web interface
       {:plug_cowboy, "~> 2.7"},
-      {:phoenix_html, "~> 4.2"},
+      {:phoenix_html, "~> 4.0.0"},
       {:phoenix_html_helpers, "~> 1.0"},
 
       # Core Plugins Dependencies
@@ -134,6 +152,7 @@ defmodule Raxol.MixProject do
       {:inflex, "~> 2.0"},
       {:telemetry_metrics, "~> 1.0"},
       {:telemetry_poller, "~> 1.0"},
+      {:telemetry_metrics_prometheus, "~> 1.0"},
       {:gettext, "~> 0.26"},
       {:dns_cluster, "~> 0.1.1"},
       {:bandit, "~> 1.5"},

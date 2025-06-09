@@ -98,7 +98,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
   @doc """
   Registers a command for a plugin namespace (module).
   Adds the command to the command table if not already present.
-  Returns :ok or {:error, :already_registered}.
+  Returns the updated command table.
   """
   def register_command(
         command_table,
@@ -118,23 +118,31 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
     # Get current commands for the namespace
     commands = Map.get(command_table, namespace, [])
 
-    # Check for duplicate
+    # Create a handler function wrapper
+    handler = fn args, state -> apply(module, function, [args, state]) end
+
+    # Check for duplicate (by name and arity)
     duplicate =
-      Enum.any?(commands, fn {name, mod, fun, ar} ->
-        name == command_name and mod == module and fun == function and
-          ar == arity
+      Enum.any?(commands, fn {name, _fun, ar} ->
+        name == command_name and ar == arity
       end)
 
     if duplicate do
-      {:error, :already_registered}
+      command_table
     else
-      # Add the new command tuple: {command_name, module, function, arity}
-      new_commands = [{command_name, module, function, arity} | commands]
+      # Add the new command tuple: {command_name, handler, arity}
+      new_commands = [{command_name, handler, arity} | commands]
       updated_table = Map.put(command_table, namespace, new_commands)
-      # In-place update is not possible, so return :ok for compatibility
-      # (Callers should use the returned table if they want the update)
-      :ok
+      updated_table
     end
+  end
+
+  @doc """
+  Unregisters all commands associated with a specific module (namespace).
+  Returns the updated command table.
+  """
+  def unregister_commands_by_module(command_table, module) do
+    Map.delete(command_table, module)
   end
 
   # Private helper functions
@@ -233,7 +241,10 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
       {:ok, updated_table}
     rescue
       e ->
-        Raxol.Core.Runtime.Log.error("Failed to register commands: #{inspect(e)}")
+        Raxol.Core.Runtime.Log.error(
+          "Failed to register commands: #{inspect(e)}"
+        )
+
         {:error, :registration_failed}
     end
   end
@@ -250,6 +261,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
           nil,
           %{plugin_module: plugin_module, module: __MODULE__}
         )
+
         {:error, :unregistration_failed}
     end
   end
@@ -266,6 +278,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
             nil,
             %{plugin_state: plugin_state, module: __MODULE__}
           )
+
           {:error, {:execution_failed, Exception.message(e)}}
       end
     end
@@ -301,6 +314,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandRegistry do
           nil,
           %{args: args, module: __MODULE__}
         )
+
         {:error, {:execution_failed, Exception.message(reason)}}
     end
   end

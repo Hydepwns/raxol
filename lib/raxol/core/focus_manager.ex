@@ -305,6 +305,14 @@ defmodule Raxol.Core.FocusManager do
   end
 
   @doc """
+  Gets the focus history.
+  """
+  @impl true
+  def get_focus_history() do
+    get_focus_state()[:focus_history] || []
+  end
+
+  @doc """
   Get the next focusable element after the given one.
   (Placeholder implementation - mirrors focus_next logic)
   """

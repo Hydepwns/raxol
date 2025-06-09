@@ -242,4 +242,17 @@ defmodule Raxol.View.Elements do
       }
     end
   end
+
+  @doc """
+  Creates a label element with the given text and options.
+  """
+  defmacro label(text, opts \\ []) do
+    quote do
+      %{
+        type: :label,
+        text: unquote(text),
+        style: Keyword.get(unquote(opts), :style, %{})
+      }
+    end
+  end
 end

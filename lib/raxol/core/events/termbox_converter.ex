@@ -8,35 +8,34 @@ defmodule Raxol.Core.Events.TermboxConverter do
 
   import Bitwise
   alias Raxol.Core.Events.Event
-  alias Raxol.Terminal.Constants
 
-  # Define key constants for use in guards
-  @arrow_up Constants.key(:arrow_up)
-  @arrow_down Constants.key(:arrow_down)
-  @arrow_left Constants.key(:arrow_left)
-  @arrow_right Constants.key(:arrow_right)
-  @home Constants.key(:home)
-  @end_key Constants.key(:end)
-  @page_up Constants.key(:pgup)
-  @page_down Constants.key(:pgdn)
-  @delete Constants.key(:delete)
-  @backspace Constants.key(:backspace)
-  @tab Constants.key(:tab)
-  @enter Constants.key(:enter)
-  @esc Constants.key(:esc)
-  @space Constants.key(:space)
-  @f1 Constants.key(:f1)
-  @f2 Constants.key(:f2)
-  @f3 Constants.key(:f3)
-  @f4 Constants.key(:f4)
-  @f5 Constants.key(:f5)
-  @f6 Constants.key(:f6)
-  @f7 Constants.key(:f7)
-  @f8 Constants.key(:f8)
-  @f9 Constants.key(:f9)
-  @f10 Constants.key(:f10)
-  @f11 Constants.key(:f11)
-  @f12 Constants.key(:f12)
+  # Define key constants for use in guards (termbox2_nif key codes)
+  @arrow_up 259
+  @arrow_down 258
+  @arrow_left 260
+  @arrow_right 261
+  @home 262
+  @end_key 360
+  @page_up 339
+  @page_down 338
+  @delete 330
+  @backspace 263
+  @tab 9
+  @enter 13
+  @esc 27
+  @space 32
+  @f1 265
+  @f2 266
+  @f3 267
+  @f4 268
+  @f5 269
+  @f6 270
+  @f7 271
+  @f8 272
+  @f9 273
+  @f10 274
+  @f11 275
+  @f12 276
 
   @doc """
   Converts a rrex_termbox v2.0.1 event map to a Raxol Event struct.

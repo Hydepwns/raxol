@@ -37,7 +37,10 @@ defmodule Raxol.Core.Preferences.Persistence do
           if is_map(preferences) do
             {:ok, preferences}
           else
-            Raxol.Core.Runtime.Log.error("Preferences file content is not a map: #{path}")
+            Raxol.Core.Runtime.Log.error(
+              "Preferences file content is not a map: #{path}"
+            )
+
             {:error, :invalid_format}
           end
         rescue
@@ -54,7 +57,10 @@ defmodule Raxol.Core.Preferences.Persistence do
         {:error, :file_not_found}
 
       {:error, reason} ->
-        Raxol.Core.Runtime.Log.error("Failed to read preferences file #{path}: #{reason}")
+        Raxol.Core.Runtime.Log.error(
+          "Failed to read preferences file #{path}: #{reason}"
+        )
+
         {:error, reason}
     end
   end

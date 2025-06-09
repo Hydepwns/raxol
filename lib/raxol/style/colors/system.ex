@@ -23,7 +23,7 @@ defmodule Raxol.Style.Colors.System do
   hover_color = ColorSystem.get_color(:primary, :hover)
 
   # Register a custom theme
-  ColorSystem.register_theme(:ocean, %{
+  ColorSystem.register_theme(%{
     primary: "#0077CC",
     secondary: "#00AAFF",
     background: "#001133",
@@ -38,7 +38,6 @@ defmodule Raxol.Style.Colors.System do
 
   alias Raxol.Style.Colors.Utilities
   alias Raxol.Core.Events.Manager, as: EventManager
-  alias Raxol.Style.Colors.HSL
   alias Raxol.Style.Colors.Color
   alias Raxol.UI.Theming.Theme
 
@@ -87,7 +86,7 @@ defmodule Raxol.Style.Colors.System do
       end
 
     # Set current theme in process (optional, for compatibility)
-    Process.put(:color_system_current_theme, initial_theme.id)
+    Process.put(:color_system_current_theme, initial_theme.name)
     Process.put(:color_system_high_contrast, high_contrast)
 
     # Register event handlers for accessibility changes
@@ -98,7 +97,7 @@ defmodule Raxol.Style.Colors.System do
     )
 
     # Apply the initial theme
-    apply_theme(initial_theme.id, high_contrast: high_contrast)
+    apply_theme(initial_theme.name, high_contrast: high_contrast)
 
     :ok
   end
@@ -168,7 +167,7 @@ defmodule Raxol.Style.Colors.System do
 
   ## Parameters
 
-  - `theme_id` - The ID of the theme to apply
+  - `theme_name` - The name of the theme to apply
   - `opts` - Additional options
     - `:high_contrast` - Whether to apply high contrast mode (default: current setting)
 
@@ -177,7 +176,7 @@ defmodule Raxol.Style.Colors.System do
   - `:ok` on success
   - `{:error, reason}` on failure
   """
-  def apply_theme(theme_id, opts \\ []) do
+  def apply_theme(theme_name, opts \\ []) do
     high_contrast =
       Keyword.get(
         opts,
@@ -185,8 +184,8 @@ defmodule Raxol.Style.Colors.System do
         Process.get(:color_system_high_contrast, false)
       )
 
-    theme = Theme.get(theme_id)
-    Process.put(:color_system_current_theme, theme.id)
+    theme = Theme.get(theme_name)
+    Process.put(:color_system_current_theme, theme.name)
     Process.put(:color_system_high_contrast, high_contrast)
 
     EventManager.dispatch(
@@ -205,7 +204,7 @@ defmodule Raxol.Style.Colors.System do
 
     # Re-apply current theme with new high contrast setting
     current_theme = get_current_theme()
-    apply_theme(current_theme.id, high_contrast: enabled)
+    apply_theme(current_theme.name, high_contrast: enabled)
 
     EventManager.dispatch({:high_contrast_changed, enabled})
   end
@@ -213,8 +212,8 @@ defmodule Raxol.Style.Colors.System do
   # Private functions
 
   defp get_current_theme do
-    theme_id = Process.get(:color_system_current_theme, @default_theme)
-    Theme.get(theme_id)
+    theme_name = Process.get(:color_system_current_theme, @default_theme)
+    Theme.get(theme_name)
   end
 
   defp get_high_contrast do
@@ -348,8 +347,7 @@ defmodule Raxol.Style.Colors.System do
   # --- Theme creation stubs ---
   def create_dark_theme do
     %Theme{
-      id: :dark,
-      name: "Dark Theme",
+      name: "dark",
       colors: %{
         primary: Color.from_hex("#90CAF9"),
         secondary: Color.from_hex("#B0BEC5"),
@@ -369,8 +367,7 @@ defmodule Raxol.Style.Colors.System do
 
   def create_high_contrast_theme do
     %Theme{
-      id: :high_contrast,
-      name: "High Contrast Theme",
+      name: "high_contrast",
       colors: %{
         primary: Color.from_hex("#FFFF00"),
         secondary: Color.from_hex("#000000"),

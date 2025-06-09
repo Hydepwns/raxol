@@ -3,8 +3,6 @@ defmodule Raxol.Style.Borders do
   Defines border properties for terminal UI elements.
   """
 
-  alias Raxol.Style.Colors.Color
-
   @type t :: %__MODULE__{
           style: :none | :solid | :double | :dashed | :dotted,
           width: integer(),
@@ -35,6 +33,12 @@ defmodule Raxol.Style.Borders do
   Merges two border structs, with the second overriding the first.
   """
   def merge(base, override) when is_map(base) and is_map(override) do
+    Map.merge(base, override)
+  end
+
+  def merge(base, override) do
+    base = if is_map(base), do: base, else: %{}
+    override = if is_map(override), do: override, else: %{}
     Map.merge(base, override)
   end
 end

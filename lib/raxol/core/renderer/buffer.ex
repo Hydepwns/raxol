@@ -99,10 +99,20 @@ defmodule Raxol.Core.Renderer.Buffer do
 
     if now - buffer.last_frame_time >= frame_time do
       # Swap buffers
+      new_empty_back_buffer = %{
+        # Keep the same size
+        size: buffer.back_buffer.size,
+        # Empty cells
+        cells: %{},
+        # Empty damage set
+        damage: MapSet.new()
+      }
+
       new_buffer = %{
         buffer
         | front_buffer: buffer.back_buffer,
-          back_buffer: %{buffer.back_buffer | damage: MapSet.new()},
+          # Use the new empty buffer
+          back_buffer: new_empty_back_buffer,
           last_frame_time: now
       }
 

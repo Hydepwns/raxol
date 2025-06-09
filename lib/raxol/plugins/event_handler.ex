@@ -180,8 +180,13 @@ defmodule Raxol.Plugins.EventHandler do
                     "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an exception during #{callback_name} event handling",
                     e,
                     nil,
-                    %{plugin: plugin.name, callback: callback_name, module: __MODULE__}
+                    %{
+                      plugin: plugin.name,
+                      callback: callback_name,
+                      module: __MODULE__
+                    }
                   )
+
                   exception = Exception.normalize(:error, e, __STACKTRACE__)
                   {:halt, {:error, {exception, __STACKTRACE__}}}
               catch
@@ -190,9 +195,15 @@ defmodule Raxol.Plugins.EventHandler do
                     "[#{__MODULE__}] Plugin '#{inspect(plugin.name)}' raised an error during #{callback_name} event handling",
                     value,
                     nil,
-                    %{plugin: plugin.name, callback: callback_name, kind: kind, module: __MODULE__}
+                    %{
+                      plugin: plugin.name,
+                      callback: callback_name,
+                      kind: kind,
+                      module: __MODULE__
+                    }
                   )
-                  exception = Exception.normalize(:error, value, __STACKTRACE__)
+
+                  _ = Exception.normalize(:error, value, __STACKTRACE__)
                   {:halt, {:error, {kind, value, __STACKTRACE__}}}
               end
             else
@@ -248,11 +259,11 @@ defmodule Raxol.Plugins.EventHandler do
         # Halt the reduce_while loop on the first plugin error
         {:halt, {:error, reason}}
 
-      _other ->
+      other ->
         # Log a warning for unexpected return values but continue
         Raxol.Core.Runtime.Log.warning_with_context(
           "Plugin #{plugin.name} returned unexpected value. Ignoring.",
-          %{plugin: plugin.name, value: _other, module: __MODULE__}
+          %{plugin: plugin.name, value: other, module: __MODULE__}
         )
 
         {:cont, {:ok, acc_manager}}
@@ -308,10 +319,10 @@ defmodule Raxol.Plugins.EventHandler do
 
         {:halt, {:error, reason}}
 
-      _other ->
+      other ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "Plugin #{plugin.name} returned unexpected value from handle_output. Ignoring.",
-          %{plugin: plugin.name, value: _other, module: __MODULE__}
+          %{plugin: plugin.name, value: other, module: __MODULE__}
         )
 
         {:cont, {:ok, acc_manager, acc_output}}
@@ -367,10 +378,10 @@ defmodule Raxol.Plugins.EventHandler do
 
         {:halt, {:error, reason}}
 
-      _other ->
+      other ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "Invalid return from #{plugin.name}.handle_mouse/3. Propagating.",
-          %{plugin: plugin.name, value: _other, module: __MODULE__}
+          %{plugin: plugin.name, value: other, module: __MODULE__}
         )
 
         # Continue propagating if plugin returns invalid value
@@ -433,10 +444,10 @@ defmodule Raxol.Plugins.EventHandler do
 
         {:halt, {:error, reason}}
 
-      _other ->
+      other ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "Invalid return from #{plugin.name}.handle_input/2 (key event). Propagating.",
-          %{plugin: plugin.name, value: _other, module: __MODULE__}
+          %{plugin: plugin.name, value: other, module: __MODULE__}
         )
 
         # Continue, assuming propagate

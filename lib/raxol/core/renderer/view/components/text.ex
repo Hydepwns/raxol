@@ -4,8 +4,6 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
   Provides text styling, wrapping, and alignment functionality.
   """
 
-  alias Raxol.Core.Renderer.View.Types
-
   @doc """
   Creates a new text view.
 
@@ -25,6 +23,7 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
     %{
       type: :text,
       content: content,
+      size: Keyword.get(opts, :size, {1, 1}),
       fg: Keyword.get(opts, :fg),
       bg: Keyword.get(opts, :bg),
       style: Keyword.get(opts, :style, []),
@@ -43,7 +42,7 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
     |> apply_styles(text.style)
   end
 
-  defp wrap_text(text, width, :none), do: [text]
+  defp wrap_text(text, _width, :none), do: [text]
   defp wrap_text(text, width, :char), do: wrap_by_char(text, width)
   defp wrap_text(text, width, :word), do: wrap_by_word(text, width)
 
@@ -72,7 +71,7 @@ defmodule Raxol.Core.Renderer.View.Components.Text do
         end).()
   end
 
-  defp align_text(lines, width, :left), do: lines
+  defp align_text(lines, _width, :left), do: lines
 
   defp align_text(lines, width, :right),
     do: Enum.map(lines, &String.pad_leading(&1, width))

@@ -5,9 +5,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Events.Dispatcher
-  # Added for initial command execution
-  alias Raxol.Core.Runtime.Command
-  # Added for PluginManager integration
+  # alias Raxol.Core.Runtime.Command # Unused alias
   alias Raxol.Core.Runtime.Plugins.Manager
 
   defmodule State do
@@ -148,6 +146,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
               nil,
               %{module: __MODULE__, app_module: app_module, reason: reason}
             )
+
             # Stop PluginManager if Dispatcher fails
             Manager.stop(pm_pid)
             :ets.delete(registry_table_name)
@@ -161,6 +160,7 @@ defmodule Raxol.Core.Runtime.Lifecycle do
           nil,
           %{module: __MODULE__, app_module: app_module, reason: reason}
         )
+
         # Ensure ETS table is cleaned up
         :ets.delete(registry_table_name)
         {:stop, {:plugin_manager_start_failed, reason}}
@@ -227,6 +227,25 @@ defmodule Raxol.Core.Runtime.Lifecycle do
     {:noreply, updated_state}
   end
 
+  @impl true
+  def handle_info(:render_needed, state) do
+    Raxol.Core.Runtime.Log.debug(
+      "[#{__MODULE__}] Received :render_needed. Passing through or logging."
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info(unhandled_message, state) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[#{__MODULE__}] Unhandled info message: #{inspect(unhandled_message)}",
+      %{}
+    )
+
+    {:noreply, state}
+  end
+
   defp maybe_process_initial_commands(state = %State{}) do
     if state.dispatcher_ready && state.plugin_manager_ready &&
          Enum.any?(state.initial_commands) do
@@ -276,25 +295,6 @@ defmodule Raxol.Core.Runtime.Lifecycle do
 
       state
     end
-  end
-
-  @impl true
-  def handle_info(:render_needed, state) do
-    Raxol.Core.Runtime.Log.debug(
-      "[#{__MODULE__}] Received :render_needed. Passing through or logging."
-    )
-
-    {:noreply, state}
-  end
-
-  @impl true
-  def handle_info(unhandled_message, state) do
-    Raxol.Core.Runtime.Log.warning_with_context(
-      "[#{__MODULE__}] Unhandled info message: #{inspect(unhandled_message)}",
-      %{}
-    )
-
-    {:noreply, state}
   end
 
   @impl true
@@ -396,5 +396,48 @@ defmodule Raxol.Core.Runtime.Lifecycle do
   # Private helper functions
   defp get_app_name(app_module, options) do
     Keyword.get(options, :app_name, Atom.to_string(app_module))
+  end
+
+  # === Compatibility Wrappers ===
+  @doc """
+  Initializes the runtime environment. (Stub for test compatibility)
+  """
+  def initialize_environment(options), do: options
+
+  @doc """
+  Starts a Raxol application (compatibility wrapper).
+  """
+  def start_application(app, opts), do: start_link(app, opts)
+
+  @doc """
+  Stops a Raxol application (compatibility wrapper).
+  """
+  def stop_application(val), do: stop(val)
+
+  def lookup_app(_arg) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Called unimplemented lookup_app/1",
+      %{}
+    )
+
+    :not_implemented
+  end
+
+  def handle_error(_arg1, _arg2) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Called unimplemented handle_error/2",
+      %{}
+    )
+
+    :not_implemented
+  end
+
+  def handle_cleanup(_arg) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "Called unimplemented handle_cleanup/1",
+      %{}
+    )
+
+    :not_implemented
   end
 end

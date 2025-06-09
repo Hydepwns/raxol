@@ -24,6 +24,8 @@ defmodule Raxol.Examples.AccessibilityDemo do
   alias Raxol.Core.UserPreferences
   # Re-added alias for hints
   alias Raxol.Core.UXRefinement
+  require Raxol.Core.Renderer.View
+  alias Raxol.Core.Renderer.View
 
   # Define application state
   # Initial focus
@@ -44,11 +46,11 @@ defmodule Raxol.Examples.AccessibilityDemo do
 
     # Make an initial announcement
     Accessibility.announce("Accessibility demo loaded. Use Tab to navigate.",
-      priority: :high
+      [priority: :high],
+      UserPreferences
     )
 
     # Set initial focus (handled by initial state struct)
-    # Ensure FocusManager knows the initial focus
     FocusManager.set_focus("search_button")
 
     initial_state = %__MODULE__{}
@@ -65,19 +67,21 @@ defmodule Raxol.Examples.AccessibilityDemo do
       FocusManager.set_focus(next_focus)
 
       Accessibility.announce(
-        "Focus: #{get_hint(next_focus, :basic, next_focus)}"
+        "Focus: #{get_hint(next_focus, :basic, next_focus)}",
+        [], UserPreferences
       )
 
       {:ok, %{state | focused_element: next_focus}}
     else
       # Cycle focus back to the first element
-      first_focus = FocusManager.get_first_focusable()
+      first_focus = FocusManager.get_next_focusable(nil)
 
       if first_focus do
         FocusManager.set_focus(first_focus)
 
         Accessibility.announce(
-          "Focus: #{get_hint(first_focus, :basic, first_focus)}"
+          "Focus: #{get_hint(first_focus, :basic, first_focus)}",
+          [], UserPreferences
         )
 
         {%{state | focused_element: first_focus}, []}
@@ -97,19 +101,21 @@ defmodule Raxol.Examples.AccessibilityDemo do
       FocusManager.set_focus(prev_focus)
 
       Accessibility.announce(
-        "Focus: #{get_hint(prev_focus, :basic, prev_focus)}"
+        "Focus: #{get_hint(prev_focus, :basic, prev_focus)}",
+        [], UserPreferences
       )
 
       {:ok, %{state | focused_element: prev_focus}}
     else
       # Cycle focus back to the last element
-      last_focus = FocusManager.get_last_focusable()
+      last_focus = FocusManager.get_previous_focusable(nil)
 
       if last_focus do
         FocusManager.set_focus(last_focus)
 
         Accessibility.announce(
-          "Focus: #{get_hint(last_focus, :basic, last_focus)}"
+          "Focus: #{get_hint(last_focus, :basic, last_focus)}",
+          [], UserPreferences
         )
 
         {%{state | focused_element: last_focus}, []}
@@ -124,15 +130,15 @@ defmodule Raxol.Examples.AccessibilityDemo do
     # Handle Enter: Activate focused button
     case state.focused_element do
       "search_button" ->
-        Accessibility.announce("Search action simulated.", priority: :high)
+        Accessibility.announce("Search action simulated.", [priority: :high], UserPreferences)
         {state, []}
 
       "settings_button" ->
-        Accessibility.announce("Settings action simulated.", priority: :high)
+        Accessibility.announce("Settings action simulated.", [priority: :high], UserPreferences)
         {state, []}
 
       "help_button" ->
-        Accessibility.announce("Help action simulated.", priority: :high)
+        Accessibility.announce("Help action simulated.", [priority: :high], UserPreferences)
         {state, []}
 
       # Enter on checkbox does nothing here, use Space
@@ -166,7 +172,7 @@ defmodule Raxol.Examples.AccessibilityDemo do
   end
 
   def update({:activate, button_id}, state) do
-    Accessibility.announce("#{button_id} activated via click.", priority: :high)
+    Accessibility.announce("#{button_id} activated via click.", [priority: :high], UserPreferences)
     {state, []}
   end
 
@@ -182,58 +188,126 @@ defmodule Raxol.Examples.AccessibilityDemo do
   end
 
   @impl Raxol.Core.Runtime.Application
+  @dialyzer {:nowarn_function, view: 1}
   def view(state) do
-    # Add on_click/on_change handlers
-    UI.box id: state.id, border: :rounded, padding: 1 do
-      UI.column do
-        [
-          UI.label(content: state.message),
-          UI.label(content: "Focused: #{state.focused_element}"),
-          UI.button(
-            label: "Search",
-            id: "search_button",
-            focused: state.focused_element == "search_button",
-            on_click: {:activate, "search_button"}
-          ),
-          UI.button(
-            label: "Settings",
-            id: "settings_button",
-            focused: state.focused_element == "settings_button",
-            on_click: {:activate, "settings_button"}
-          ),
-          UI.button(
-            label: "Help",
-            id: "help_button",
-            focused: state.focused_element == "help_button",
-            on_click: {:activate, "help_button"}
-          ),
-          UI.checkbox(
-            label: "High Contrast",
-            id: "high_contrast_toggle",
-            checked:
-              UserPreferences.get([:accessibility, :high_contrast]) || false,
-            focused: state.focused_element == "high_contrast_toggle",
-            on_change: {:toggle, :high_contrast}
-          ),
-          UI.checkbox(
-            label: "Reduced Motion",
-            id: "reduced_motion_toggle",
-            checked:
-              UserPreferences.get([:accessibility, :reduced_motion]) || false,
-            focused: state.focused_element == "reduced_motion_toggle",
-            on_change: {:toggle, :reduced_motion}
-          ),
-          UI.checkbox(
-            label: "Large Text",
-            id: "large_text_toggle",
-            checked:
-              UserPreferences.get([:accessibility, :large_text]) || false,
-            focused: state.focused_element == "large_text_toggle",
-            on_change: {:toggle, :large_text}
-          )
-        ]
+    # --- Calculate focus position BEFORE the main component list ---
+    element_registry = Process.get(:element_position_registry, %{})
+    focused_position = Map.get(element_registry, state.focused_element)
+
+    # --- Conditionally create the focus ring component ---
+    focus_ring_component =
+      if focused_position do
+        # Raxol.View.Elements.component(
+        #   Raxol.UI.Components.FocusRing,
+        #   id: :focus_ring,
+        #   model: state.focus_ring_model,
+        #   focused_element_id: state.focused_element,
+        #   focused_element_position: focused_position
+        # )
+        # Construct component map directly
+        %{
+          type: Raxol.UI.Components.FocusRing,
+          id: :focus_ring,
+          # Pass props directly, assuming component handles its own model state
+          # model: state.focus_ring_model,
+          focused_element_id: state.focused_element,
+          focused_element_position: focused_position
+        }
+      else
+        nil # Explicitly return nil if no position
       end
-    end
+
+    # Raxol.View.Elements.component Raxol.UI.Components.AppContainer, id: :app_container do
+    # Use AppContainer map directly as the root element
+    %{
+      type: Raxol.UI.Components.AppContainer,
+      id: :app_container,
+      children: [
+        # START OF LIST
+        UI.panel title: "Accessibility Demo" do
+          UI.box do
+            [
+              # Main content area (takes up most space)
+              UI.box style: %{height: "fill-1"} do
+                # Layout the three main sections
+                UI.row height: "100%" do
+                  UI.column padding: 1 do
+                    # Wrap all children in an explicit list
+                    [
+                      if state.show_help do
+                        render_help_dialog()
+                      else
+                        # Form elements need to be a list too for the outer list
+                        [
+                          UI.row padding_bottom: 1 do
+                            label_element = UI.label("Username:", style: %{width: 10})
+
+                            input_element =
+                              UI.text_input(
+                                id: "username_input",
+                                value: state.form_data.username,
+                                width: 30,
+                                focus: state.focused_element == "username_input"
+                              )
+
+                            [label_element, input_element]
+                          end,
+                          UI.label(content: state.message),
+                          UI.label(content: "Focused: #{state.focused_element}"),
+                          UI.button(
+                            label: "Search",
+                            id: "search_button",
+                            focused: state.focused_element == "search_button",
+                            on_click: {:activate, "search_button"}
+                          ),
+                          UI.button(
+                            label: "Settings",
+                            id: "settings_button",
+                            focused: state.focused_element == "settings_button",
+                            on_click: {:activate, "settings_button"}
+                          ),
+                          UI.button(
+                            label: "Help",
+                            id: "help_button",
+                            focused: state.focused_element == "help_button",
+                            on_click: {:activate, "help_button"}
+                          ),
+                          UI.checkbox(
+                            label: "High Contrast",
+                            id: "high_contrast_toggle",
+                            checked:
+                              UserPreferences.get([:accessibility, :high_contrast]) || false,
+                            focused: state.focused_element == "high_contrast_toggle",
+                            on_change: {:toggle, :high_contrast}
+                          ),
+                          UI.checkbox(
+                            label: "Reduced Motion",
+                            id: "reduced_motion_toggle",
+                            checked:
+                              UserPreferences.get([:accessibility, :reduced_motion]) || false,
+                            focused: state.focused_element == "reduced_motion_toggle",
+                            on_change: {:toggle, :reduced_motion}
+                          ),
+                          UI.checkbox(
+                            label: "Large Text",
+                            id: "large_text_toggle",
+                            checked:
+                              UserPreferences.get([:accessibility, :large_text]) || false,
+                            focused: state.focused_element == "large_text_toggle",
+                            on_change: {:toggle, :large_text}
+                          )
+                        ]
+                      end
+                    ]
+                  end
+                end
+              end,
+              focus_ring_component
+            ]
+          end
+        end
+      ]
+    }
   end
 
   @impl Raxol.Core.Runtime.Application
@@ -338,7 +412,8 @@ defmodule Raxol.Examples.AccessibilityDemo do
     end
 
     Accessibility.announce(
-      "#{setting |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()} #{if new_value, do: "enabled", else: "disabled"}."
+      "#{setting |> Atom.to_string() |> String.replace("_", " ") |> String.capitalize()} #{if new_value, do: "enabled", else: "disabled"}.",
+      [], UserPreferences
     )
 
     # Return the standard update tuple
@@ -348,5 +423,18 @@ defmodule Raxol.Examples.AccessibilityDemo do
   # Helper to retrieve hint text (basic implementation)
   defp get_hint(component_id, level, default) do
     UXRefinement.get_component_hint(component_id, level) || default
+  end
+
+  defp render_help_dialog do
+    View.box(style: [border: :double, padding: 1]) do
+      [
+        View.text("Accessibility Features", style: [:bold]),
+        View.text("Screen Reader Support"),
+        View.text("High Contrast Mode"),
+        View.text("Keyboard Navigation"),
+        View.text("Focus Management"),
+        View.text("ARIA Attributes")
+      ]
+    end
   end
 end

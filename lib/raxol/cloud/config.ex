@@ -142,6 +142,9 @@ defmodule Raxol.Cloud.Config do
     state = get_state()
     section = Keyword.get(opts, :section)
 
+    # Ensure new_config is a map
+    new_config = if is_map(new_config), do: new_config, else: %{}
+
     # Update configuration
     updated_config =
       if section do
@@ -149,7 +152,11 @@ defmodule Raxol.Cloud.Config do
           state.config,
           section,
           new_config,
-          &Map.merge(&1, new_config)
+          fn existing ->
+            if is_map(existing),
+              do: Map.merge(existing, new_config),
+              else: new_config
+          end
         )
       else
         deep_merge(state.config, new_config)
@@ -449,12 +456,15 @@ defmodule Raxol.Cloud.Config do
 
   defp unflatten_map(map) do
     Enum.reduce(map, %{}, fn {key, value}, acc ->
-      keys = String.split(key, ".")
-      acc
+      keys = String.split(key, ".") |> Enum.map(&String.to_atom/1)
+      put_in(acc, keys, value)
     end)
   end
 
   defp deep_merge(left, right) do
+    left = if is_map(left), do: left, else: %{}
+    right = if is_map(right), do: right, else: %{}
+
     Map.merge(left, right, fn _key, left_value, right_value ->
       if is_map(left_value) and is_map(right_value) do
         deep_merge(left_value, right_value)

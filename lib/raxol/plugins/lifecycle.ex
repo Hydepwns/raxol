@@ -23,18 +23,36 @@ defmodule Raxol.Plugins.Lifecycle do
           {:ok, Core.t()} | {:error, String.t()}
   def load_plugin(%Core{} = manager, module, config \\ %{})
       when is_atom(module) do
-    # Get persisted config for this plugin
+    # Get plugin name for config lookup
     plugin_name =
       Atom.to_string(module)
       |> String.split(".")
       |> List.last()
       |> Macro.underscore()
 
+    # Fetch default_config from plugin metadata (if available)
+    default_config =
+      case function_exported?(module, :get_metadata, 0) do
+        true ->
+          meta = module.get_metadata()
+
+          case meta do
+            %{default_config: dc} when is_map(dc) -> dc
+            _ -> %{}
+          end
+
+        false ->
+          %{}
+      end
+
     persisted_config =
       PluginConfig.get_plugin_config(manager.config, plugin_name)
 
-    # Merge persisted config with provided config
-    merged_config = Map.merge(persisted_config, config)
+    # Merge order: default_config < persisted_config < provided config
+    merged_config =
+      default_config
+      |> Map.merge(persisted_config)
+      |> Map.merge(config)
 
     with {:ok, plugin} <- module.init(merged_config),
          :ok <-
@@ -42,28 +60,30 @@ defmodule Raxol.Plugins.Lifecycle do
              plugin.api_version,
              manager.api_version
            ),
-         {:ok, _} <-
+         :ok <-
            DependencyManager.check_dependencies(
              plugin.name,
              plugin,
              Core.list_plugins(manager),
              []
-           ),
-         # Update plugin config with merged config
-         updated_config =
-           PluginConfig.update_plugin_config(
-             manager.config,
-             plugin_name,
-             merged_config
-           ),
-         # Attempt to save updated config
-         {:ok_or_error, saved_or_original_config} <-
-           {:ok_or_error, PluginConfig.save(updated_config)} do
+           ) do
+      # Update plugin config with merged config
+      updated_config =
+        PluginConfig.update_plugin_config(
+          manager.config,
+          plugin_name,
+          merged_config
+        )
+
+      # Attempt to save updated config
+      save_result = PluginConfig.save(updated_config)
+
       # Determine final config (saved or original if save failed)
       final_config =
-        case saved_or_original_config do
-          {:ok, saved_config} ->
-            saved_config
+        case save_result do
+          # Correctly use the data from save
+          {:ok, saved_config_data} ->
+            saved_config_data
 
           {:error, reason} ->
             Raxol.Core.Runtime.Log.warning_with_context(
@@ -218,7 +238,7 @@ defmodule Raxol.Plugins.Lifecycle do
         {:error, "Plugin #{name} not found"}
 
       plugin ->
-        with {:ok, _} <-
+        with :ok <-
                DependencyManager.check_dependencies(
                  plugin.name,
                  plugin,

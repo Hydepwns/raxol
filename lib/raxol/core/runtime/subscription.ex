@@ -53,6 +53,8 @@ defmodule Raxol.Core.Runtime.Subscription do
     * `:jitter` - Add random jitter to interval (default: 0)
   """
   def interval(interval_ms, msg, opts \\ [])
+
+  def interval(interval_ms, msg, opts)
       when is_integer(interval_ms) and interval_ms > 0 do
     data = %{
       interval: interval_ms,
@@ -62,6 +64,10 @@ defmodule Raxol.Core.Runtime.Subscription do
     }
 
     new(:interval, data)
+  end
+
+  def interval(_interval_ms, _msg, _opts) do
+    {:error, :invalid_interval}
   end
 
   @doc """
@@ -79,6 +85,10 @@ defmodule Raxol.Core.Runtime.Subscription do
     new(:events, event_types)
   end
 
+  def events(_event_types) do
+    {:error, :invalid_events}
+  end
+
   @doc """
   Creates a subscription that watches for file system changes.
 
@@ -88,8 +98,12 @@ defmodule Raxol.Core.Runtime.Subscription do
     * `:create` - File creation
     * `:rename` - File rename
     * `:attrib` - Attribute changes
+
+  Returns `{:error, :invalid_file_watch_args}` if event_types is not a list.
   """
-  def file_watch(path, event_types \\ [:modify]) when is_list(event_types) do
+  def file_watch(path, event_types \\ [:modify])
+
+  def file_watch(path, event_types) when is_list(event_types) do
     data = %{
       path: path,
       events: event_types
@@ -97,6 +111,8 @@ defmodule Raxol.Core.Runtime.Subscription do
 
     new(:file_watch, data)
   end
+
+  def file_watch(_path, _event_types), do: {:error, :invalid_file_watch_args}
 
   @doc """
   Creates a custom subscription using a provided event source.

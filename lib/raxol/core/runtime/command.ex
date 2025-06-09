@@ -220,7 +220,7 @@ defmodule Raxol.Core.Runtime.Command do
         Process.send_after(context.pid, {:command_result, msg}, delay)
 
       %{type: :broadcast, data: msg} ->
-        Raxol.Core.Runtime.Events.Dispatcher.broadcast(msg)
+        Raxol.Core.Runtime.Events.Dispatcher.broadcast(:broadcast_event, msg)
 
       %{type: :system, data: {operation, opts}} ->
         execute_system_operation(operation, opts, context)
@@ -274,6 +274,7 @@ defmodule Raxol.Core.Runtime.Command do
               nil,
               %{operation: :file_write, opts: opts, context: context}
             )
+
             send(context.pid, {:command_result, {:file_write_error, reason}})
         end
 
@@ -288,7 +289,7 @@ defmodule Raxol.Core.Runtime.Command do
 
       # Add more system operations as needed
       _ ->
-        Raxol.Core.Runtime.Log.warn_with_stacktrace(
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
           "Unhandled system operation",
           operation,
           nil,

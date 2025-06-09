@@ -61,7 +61,7 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
   ## Returns
 
   * `{:ok, parsed_requirement}` - The parsed requirement
-  * `{:error, :invalid_requirement}` - If the requirement is invalid
+  * `{:error, :invalid_requirement_format}` - If the requirement is invalid
 
   ## Examples
 
@@ -87,13 +87,13 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
            end) do
           {:ok, {:or, Enum.map(parsed_reqs, fn {:ok, req} -> req end)}}
         else
-          {:error, :invalid_requirement}
+          {:error, :invalid_requirement_format}
         end
     end
   end
 
-  def parse_version_requirement(requirement) do
-    {:error, :invalid_requirement}
+  def parse_version_requirement(_requirement) do
+    {:error, :invalid_requirement_format}
   end
 
   @doc """
@@ -106,14 +106,14 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Version do
   ## Returns
 
   * `{:ok, parsed}` - The parsed requirement
-  * `{:error, :invalid_requirement}` - If the requirement is invalid
+  * `{:error, :invalid_requirement_format}` - If the requirement is invalid
   """
   def parse_single_requirement(req) do
     req = String.trim(req)
 
     case Version.parse_requirement(req) do
       {:ok, parsed} -> {:ok, parsed}
-      _ -> {:error, :invalid_requirement}
+      _ -> {:error, :invalid_requirement_format}
     end
   end
 end

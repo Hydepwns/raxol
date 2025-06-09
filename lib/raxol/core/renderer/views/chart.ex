@@ -14,7 +14,6 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   """
 
   alias Raxol.Core.Renderer.View
-  alias Raxol.Core.Renderer.View.Types
 
   @type chart_type :: :bar | :line | :sparkline
   @type orientation :: :vertical | :horizontal
@@ -125,7 +124,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
            width: width,
            height: height,
            orientation: orientation
-         } = options,
+         } = _options,
          min,
          max
        ) do
@@ -184,12 +183,23 @@ defmodule Raxol.Core.Renderer.Views.Chart do
       config = bar_config(orientation, min, max, width, height, total_points)
       bars = create_bars_for_series(series, config)
 
-      View.flex(config.direction, do: bars)
+      View.flex direction: config.direction do
+        bars
+      end
     end
   end
 
-  defp empty_bars_flex(:vertical), do: View.flex(direction: :row, do: [])
-  defp empty_bars_flex(:horizontal), do: View.flex(direction: :column, do: [])
+  defp empty_bars_flex(:vertical) do
+    View.flex direction: :row do
+      []
+    end
+  end
+
+  defp empty_bars_flex(:horizontal) do
+    View.flex direction: :column do
+      []
+    end
+  end
 
   defp create_bars_for_series(series, config) do
     Enum.flat_map(series, fn %{data: data, color: color} ->
@@ -256,7 +266,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   # single point case
-  defp calc_line_x(_x_idx, _len, width), do: 0
+  defp calc_line_x(_x_idx, _len, _width), do: 0
 
   defp calc_line_y(value, min, max, height) do
     Float.floor(scale_value(value, min, max, 0, height - 1)) |> trunc()
@@ -292,11 +302,9 @@ defmodule Raxol.Core.Renderer.Views.Chart do
   end
 
   defp draw_bresenham(canvas, x, y, x2, y2, sx, sy, err, dx, dy, depth \\ 0) do
-    # Defensive: prevent runaway recursion
     if depth > 10_000 do
       canvas
     else
-      # Defensive: check bounds
       if x < 0 or y < 0 or is_nil(Enum.at(canvas, y)) or
            is_nil(Enum.at(Enum.at(canvas, y), x)) do
         canvas
@@ -308,7 +316,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
         else
           e2 = 2 * err
 
-          {next_x, next_err_x} =
+          {next_x, _next_err_x} =
             if e2 >= dy, do: {x + sx, err + dy}, else: {x, err}
 
           {next_y, next_err_y} =
@@ -425,14 +433,6 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     {full_blocks, partial_block}
   end
 
-  defp create_line(points, width, height, color) do
-    points
-    |> build_line_canvas(width, height)
-    |> canvas_to_view_cells(color)
-  end
-
-  defp draw_line(canvas, p1, p2), do: mark_line_points(canvas, p1, p2)
-
   defp scale_value(value, min, max, new_min, new_max) do
     # Avoid division by zero if min == max
     if max == min do
@@ -442,15 +442,7 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     end
   end
 
-  @doc """
-  Adds axes to the chart content.
-  - content: the chart content
-  - min, max: data range
-  - width, height: chart dimensions
-  - orientation: :vertical or :horizontal
-  """
-  defp add_axes(content, min, max, width, height, orientation) do
-    # Draw a simple X and Y axis using ASCII characters
+  defp add_axes(content, _min, _max, width, height, _orientation) do
     axis_y = View.text("|", position: {0, 0}, fg: :bright_black)
 
     axis_x =
@@ -462,26 +454,13 @@ defmodule Raxol.Core.Renderer.Views.Chart do
     [axis_y, axis_x | List.wrap(content)]
   end
 
-  @doc """
-  Adds labels to the chart content.
-  - content: the chart content
-  - series: the data series
-  - width, height: chart dimensions
-  """
-  defp add_labels(content, series, width, height) do
-    # Add min/max labels at the Y axis
+  defp add_labels(content, _series, _width, height) do
     min_label = View.text("min", position: {0, height - 1}, fg: :bright_black)
     max_label = View.text("max", position: {0, 0}, fg: :bright_black)
     [min_label, max_label | List.wrap(content)]
   end
 
-  @doc """
-  Adds a legend to the chart content.
-  - content: the chart content
-  - series: the data series
-  """
   defp add_legend(content, series) do
-    # Add a simple legend at the top
     legend =
       series
       |> Enum.with_index()
