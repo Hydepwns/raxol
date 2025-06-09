@@ -127,7 +127,11 @@ defmodule Raxol.Core.Runtime.Events.Keyboard do
 
         # Unrecognized quit key format
         {:unrecognized, other} ->
-          Raxol.Core.Runtime.Log.warning_with_context("Unknown quit key format: #{inspect(other)}", %{})
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Unknown quit key format: #{inspect(other)}",
+            %{}
+          )
+
           false
       end
     end)

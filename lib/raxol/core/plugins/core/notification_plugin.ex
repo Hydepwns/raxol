@@ -128,7 +128,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
         handle_notification_error(reason_tuple, state)
 
       # Execute the command if executable found
-      {executable, args, _os_name} ->
+      {executable, args, os_name} ->
         try do
           Raxol.Core.Runtime.Log.debug(
             "Executing notification command: #{executable} with args: #{inspect(args)}"
@@ -140,7 +140,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
                ) do
             {_output, 0} ->
               success_atom =
-                case _os_name do
+                case os_name do
                   :linux -> :notification_sent_linux
                   :macos -> :notification_sent_macos
                   :windows -> :notification_sent_windows
@@ -181,11 +181,17 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
         {:error, {:command_not_found, :notify_send}, state}
 
       {:command_not_found, :osascript} ->
-        Raxol.Core.Runtime.Log.error("NotificationPlugin: Command 'osascript' not found.")
+        Raxol.Core.Runtime.Log.error(
+          "NotificationPlugin: Command 'osascript' not found."
+        )
+
         {:error, {:command_not_found, :osascript}, state}
 
       {:command_not_found, :powershell} ->
-        Raxol.Core.Runtime.Log.error("NotificationPlugin: Command 'powershell' not found.")
+        Raxol.Core.Runtime.Log.error(
+          "NotificationPlugin: Command 'powershell' not found."
+        )
+
         {:error, {:command_not_found, :powershell}, state}
 
       {:unsupported_os, os_tuple} ->
@@ -208,7 +214,10 @@ defmodule Raxol.Core.Plugins.Core.NotificationPlugin do
 
   @impl Raxol.Core.Runtime.Plugins.Plugin
   def terminate(_reason, _state) do
-    Raxol.Core.Runtime.Log.info("Notification Plugin terminated (Behaviour callback).")
+    Raxol.Core.Runtime.Log.info(
+      "Notification Plugin terminated (Behaviour callback)."
+    )
+
     :ok
   end
 

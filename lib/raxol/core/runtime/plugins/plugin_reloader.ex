@@ -16,7 +16,9 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
     if !state.initialized do
       {:error, :not_initialized, state}
     else
-      Raxol.Core.Runtime.Log.info("[#{__MODULE__}] Reloading plugin: #{plugin_id}")
+      Raxol.Core.Runtime.Log.info(
+        "[#{__MODULE__}] Reloading plugin: #{plugin_id}"
+      )
 
       case state.lifecycle_helper_module.reload_plugin_from_disk(
              plugin_id,
@@ -61,6 +63,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
             nil,
             %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
           )
+
           {:error, reason, state}
       end
     end
@@ -95,7 +98,11 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
             "[#{__MODULE__}] Cannot reload plugin atom :#{plugin_id_atom}: Original path not found.",
             nil,
             nil,
-            %{module: __MODULE__, plugin_id: plugin_id_atom, plugin_id_string: plugin_id_string}
+            %{
+              module: __MODULE__,
+              plugin_id: plugin_id_atom,
+              plugin_id_string: plugin_id_string
+            }
           )
 
           {:error, :path_not_found, state}
@@ -159,6 +166,7 @@ defmodule Raxol.Core.Runtime.Plugins.PluginReloader do
                 nil,
                 %{module: __MODULE__, plugin_id: plugin_id_atom, reason: reason}
               )
+
               {:error, reason, state}
           end
         end

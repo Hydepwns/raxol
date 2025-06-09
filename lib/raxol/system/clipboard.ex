@@ -9,25 +9,14 @@ defmodule Raxol.System.Clipboard do
   Wayland clipboard access might require different utilities not currently handled.
   """
 
-  # Define the Behaviour
-  defmodule Behaviour do
-    @moduledoc """
-    Behaviour for clipboard operations.
-    Allows mocking in tests.
-    """
-    @callback copy(content :: String.t()) :: :ok | {:error, any()}
-    @callback paste() :: {:ok, String.t()} | {:error, any()}
-  end
-
-  # Implement the Behaviour
-  @behaviour Behaviour
+  @behaviour Raxol.Core.Clipboard.Behaviour
 
   require Raxol.Core.Runtime.Log
 
   @doc """
   Copies the given text to the system clipboard.
   """
-  @impl Behaviour
+  @impl Raxol.Core.Clipboard.Behaviour
   @spec copy(String.t()) :: :ok | {:error, atom() | String.t()}
   def copy(text) when is_binary(text) do
     case :os.type() do
@@ -87,7 +76,11 @@ defmodule Raxol.System.Clipboard do
         end
 
       _other_os ->
-        Raxol.Core.Runtime.Log.warning_with_context("Clipboard copy not supported on this OS.", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Clipboard copy not supported on this OS.",
+          %{}
+        )
+
         {:error, :unsupported_os}
     end
   end
@@ -98,7 +91,7 @@ defmodule Raxol.System.Clipboard do
   Returns `{:ok, text}` on success, or `{:error, reason}` on failure.
   An empty clipboard is considered success and returns `{:ok, ""}`.
   """
-  @impl Behaviour
+  @impl Raxol.Core.Clipboard.Behaviour
   @spec paste() :: {:ok, String.t()} | {:error, atom() | String.t()}
   def paste do
     case :os.type() do
@@ -183,7 +176,11 @@ defmodule Raxol.System.Clipboard do
         end
 
       _other_os ->
-        Raxol.Core.Runtime.Log.warning_with_context("Clipboard paste not supported on this OS.", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Clipboard paste not supported on this OS.",
+          %{}
+        )
+
         {:error, :unsupported_os}
     end
   end

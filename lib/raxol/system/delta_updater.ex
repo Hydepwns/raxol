@@ -5,7 +5,6 @@ defmodule Raxol.System.DeltaUpdater do
 
   require Raxol.Core.Runtime.Log
   # Called via adapter now
-  alias Raxol.System.Updater
   alias Raxol.System.DeltaUpdaterSystemAdapterImpl
 
   @system_adapter Application.compile_env(

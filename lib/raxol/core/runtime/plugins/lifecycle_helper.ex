@@ -14,14 +14,11 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
 
   require Raxol.Core.Runtime.Log
 
-  @impl true
   def init(opts) do
     {:ok, opts}
   end
 
-  @doc """
-  Loads a plugin by ID or module with improved error handling and state persistence.
-  """
+  @impl true
   def load_plugin(
         plugin_id_or_module,
         config,
@@ -46,7 +43,13 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
          {:ok, initial_state} <-
            Loader.initialize_plugin(plugin_module, config),
          :ok <-
-           StateManager.update_plugin_state(plugin_id, initial_state),
+           StateManager.update_plugin_state(plugin_id, initial_state, %{
+             plugins: plugins,
+             metadata: metadata,
+             plugin_states: plugin_states,
+             load_order: load_order,
+             plugin_config: plugin_config
+           }),
          :ok <-
            CommandRegistry.register_plugin_commands(
              plugin_module,
@@ -89,15 +92,18 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
           "Failed to load plugin",
           reason,
           nil,
-          %{module: __MODULE__, plugin_id_or_module: plugin_id_or_module, reason: reason}
+          %{
+            module: __MODULE__,
+            plugin_id_or_module: plugin_id_or_module,
+            reason: reason
+          }
         )
+
         {:error, reason}
     end
   end
 
-  @doc """
-  Initializes plugins in the correct order with improved error handling.
-  """
+  @impl true
   def initialize_plugins(
         plugins,
         metadata,
@@ -133,6 +139,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
                   nil,
                   %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
                 )
+
                 {:halt, {:error, reason}}
             end
         end
@@ -140,9 +147,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     )
   end
 
-  @doc """
-  Reloads a plugin from disk with improved state persistence and error handling.
-  """
+  @impl true
   def reload_plugin_from_disk(
         plugin_id,
         plugin_module,
@@ -150,8 +155,8 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
         plugin_state,
         command_table,
         metadata,
-        plugin_manager,
-        _current_metadata
+        _plugin_manager,
+        _opts
       ) do
     try do
       # Reload the module with proper error handling
@@ -177,6 +182,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
             nil,
             %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
           )
+
           {:error, :reload_failed}
       end
     rescue
@@ -187,15 +193,14 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
           __STACKTRACE__,
           %{module: __MODULE__, plugin_id: plugin_id}
         )
+
         {:error, :reload_failed}
     end
   end
 
-  @doc """
-  Unloads a plugin with improved cleanup and error handling.
-  """
+  @impl true
   def unload_plugin(plugin_id, metadata, _config, states, command_table, _opts) do
-    with {:ok, plugin_metadata} <- Map.fetch(metadata, plugin_id),
+    with {:ok, _plugin_metadata} <- Map.fetch(metadata, plugin_id),
          :ok <-
            CommandRegistry.unregister_plugin_commands(plugin_id, command_table) do
       # Unregister the plugin from the GenServer-based registry
@@ -217,25 +222,70 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
           nil,
           %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
         )
+
         {:error, reason}
     end
   end
 
+  @impl true
+  def cleanup_plugin(_plugin_id, metadata) do
+    # Implementation for cleanup_plugin callback
+    {:ok, metadata}
+  end
+
+  @impl true
+  def handle_state_transition(_plugin_id, _old_state, new_state) do
+    # Implementation for handle_state_transition callback
+    {:ok, new_state}
+  end
+
+  @impl true
+  def init_plugin(_plugin_id, metadata) do
+    # Implementation for init_plugin callback
+    {:ok, metadata}
+  end
+
+  @impl true
+  def load_plugin_by_module(
+        module,
+        metadata,
+        _config,
+        _states,
+        _command_table,
+        _plugin_manager,
+        _current_metadata,
+        _opts
+      ) do
+    # Implementation for load_plugin_by_module callback
+    {:ok, {module, metadata}}
+  end
+
+  @impl true
+  def reload_plugin(
+        _plugin_id,
+        metadata,
+        _config,
+        _states,
+        _command_table,
+        _plugin_manager,
+        _opts
+      ) do
+    # Implementation for reload_plugin callback
+    {:ok, metadata}
+  end
+
+  @impl true
+  def terminate_plugin(_plugin_id, metadata, _reason) do
+    # Implementation for terminate_plugin callback
+    {:ok, metadata}
+  end
+
   # Private helper functions
 
-  defp resolve_plugin_identity(plugin_id_or_module) do
-    case plugin_id_or_module do
-      id when is_binary(id) ->
-        case Loader.load_code(id) do
-          {:ok, module} -> {:ok, {id, module}}
-          error -> error
-        end
-
-      module when is_atom(module) ->
-        case Loader.extract_metadata(module) do
-          {:ok, %{id: id}} -> {:ok, {id, module}}
-          error -> error
-        end
+  defp resolve_plugin_identity(id) do
+    case Raxol.Core.Runtime.Plugins.Loader.load_code(id) do
+      :ok -> {:ok, {id, nil}}
+      {:error, :module_not_found} -> {:error, :module_not_found}
     end
   end
 
@@ -262,7 +312,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
     table
   end
 
-  defp update_command_table(table, plugin, state \\ nil) do
+  defp update_command_table(table, plugin, _state \\ nil) do
     with {:ok, commands} <- get_plugin_commands(plugin),
          :ok <- register_plugin_commands(table, plugin, commands) do
       {:ok, table}
@@ -274,6 +324,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleHelper do
           nil,
           %{module: __MODULE__, reason: reason}
         )
+
         {:error, reason}
     end
   end

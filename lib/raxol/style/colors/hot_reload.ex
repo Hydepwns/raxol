@@ -9,7 +9,7 @@ defmodule Raxol.Style.Colors.HotReload do
 
   use GenServer
 
-  alias Raxol.Style.Colors.{System, Persistence}
+  alias Raxol.Style.Colors.Persistence
 
   # Check for changes every second
   @check_interval 1000
@@ -182,8 +182,8 @@ defmodule Raxol.Style.Colors.HotReload do
       # Load theme using Persistence module
       case Persistence.load_theme(theme_name) do
         {:ok, theme} ->
-          # Apply theme using System module
-          System.apply_theme(theme)
+          # Apply theme using Raxol module
+          Raxol.set_theme(theme)
 
           # Notify subscribers
           Enum.each(state.subscribers, fn pid ->

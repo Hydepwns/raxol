@@ -15,8 +15,6 @@ defmodule Raxol.Core.Runtime.ComponentManager do
 
   # Use standard Elixir UUID library
   alias UUID
-  # alias Raxol.Core.Events.EventManager # Unused
-  # alias Raxol.Core.Renderer.Manager, as: RendererManager # Unused
   alias Raxol.Core.Runtime.Subscription
 
   # Client API
@@ -206,7 +204,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
             "Component update returned invalid value",
             invalid_return,
             nil,
-            %{module: component.module, component_id: component_id, state: state}
+            %{
+              module: component.module,
+              component_id: component_id,
+              state: state
+            }
           )
 
           # Return error, keep original state
@@ -312,7 +314,11 @@ defmodule Raxol.Core.Runtime.ComponentManager do
           broadcast_update(msg, component_id, acc)
 
         _ ->
-          Raxol.Core.Runtime.Log.warning_with_context("Unknown command type: #{inspect(command)}", %{})
+          Raxol.Core.Runtime.Log.warning_with_context(
+            "Unknown command type: #{inspect(command)}",
+            %{}
+          )
+
           acc
       end
     end)

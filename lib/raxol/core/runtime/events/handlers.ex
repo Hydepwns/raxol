@@ -102,7 +102,13 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
             {:halt, {new_event, new_state}}
 
           {:error, reason} ->
-            Raxol.Core.Runtime.Log.error_with_stacktrace("Handler error", reason, nil, %{module: __MODULE__, event: event, state: state})
+            Raxol.Core.Runtime.Log.error_with_stacktrace(
+              "Handler error",
+              reason,
+              nil,
+              %{module: __MODULE__, event: event, state: state}
+            )
+
             {:halt, {:error, reason, current_state}}
         end
       end)
@@ -115,7 +121,13 @@ defmodule Raxol.Core.Runtime.Events.Handlers do
       end
     rescue
       error ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace("Error executing handlers", error, __STACKTRACE__, %{module: __MODULE__, event: event, state: state})
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Error executing handlers",
+          error,
+          __STACKTRACE__,
+          %{module: __MODULE__, event: event, state: state}
+        )
+
         {:error, {:handler_error, error}, state}
     end
   end

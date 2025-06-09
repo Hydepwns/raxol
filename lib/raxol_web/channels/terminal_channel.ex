@@ -29,7 +29,8 @@ defmodule RaxolWeb.TerminalChannel do
   @impl true
   @dialyzer {:nowarn_function, join: 3}
   def join("terminal:" <> session_id, _params, socket) do
-    if authorized?(socket) do
+    # Only allow if session_id is a valid UUID
+    if valid_uuid?(session_id) do
       scrollback_limit =
         Application.get_env(:raxol, :terminal, [])
         |> Keyword.get(:scrollback_lines, 1000)
@@ -56,7 +57,9 @@ defmodule RaxolWeb.TerminalChannel do
   def handle_in("input", %{"data" => data}, socket) do
     state = socket.assigns.terminal_state
 
-    {emulator, _output} = Raxol.Terminal.Emulator.process_input(state.emulator, data)
+    {emulator, _output} =
+      Raxol.Terminal.Emulator.process_input(state.emulator, data)
+
     renderer = %{state.renderer | screen_buffer: emulator.main_screen_buffer}
 
     new_state = %{state | emulator: emulator, renderer: renderer}
@@ -174,58 +177,10 @@ defmodule RaxolWeb.TerminalChannel do
     :ok
   end
 
-  # Private functions
-
-  defp authorized?(_socket) do
-    # Implement authorization logic
-    true
-  end
-
-  # Unused function
-  # defp process_events(events, emulator, renderer) do
-  #   Enum.reduce(events, {emulator, renderer}, fn event, {emu, ren} ->
-  #     case event do
-  #       {:text, text} ->
-  #         {Emulator.process_input(emu, text), ren}
-  #       {:control, :enter} ->
-  #         {Emulator.process_input(emu, "\n"), ren}
-  #       {:control, :backspace} ->
-  #         {Emulator.process_input(emu, "\b"), ren}
-  #       {:control, :tab} ->
-  #         {Emulator.process_input(emu, "\t"), ren}
-  #       {:escape, sequence} ->
-  #         {Emulator.process_escape_sequence(emu, sequence), ren}
-  #       {:mouse, event} ->
-  #         {Emulator.process_mouse(emu, event), ren}
-  #       _ ->
-  #         {emu, ren}
-  #     end
-  #   end)
-  # end
-
-  # Pushes rendered output and cursor state to the client
-  defp push_output(socket, state) do
-    buffer = state.emulator.main_screen_buffer
-    current_theme = Map.get(state.renderer, :theme, %{})
-
-    html_content =
-      Renderer.render(%Renderer{screen_buffer: buffer, theme: current_theme})
-
-    payload = %{
-      html: html_content,
-      cursor: %{
-        x: Raxol.Terminal.Emulator.get_cursor_position(state.emulator) |> elem(0),
-        y: Raxol.Terminal.Emulator.get_cursor_position(state.emulator) |> elem(1),
-        visible: Raxol.Terminal.Emulator.get_cursor_visible(state.emulator)
-      }
-    }
-
-    # Only use Task.start_link outside of test environment
-    if Mix.env() == :test do
-      push(socket, "output", payload)
-    else
-      # Use Task.start_link for async push in dev/prod
-      Task.start_link(fn -> push(socket, "output", payload) end)
+  defp valid_uuid?(uuid) do
+    case Ecto.UUID.cast(uuid) do
+      {:ok, _} -> true
+      :error -> false
     end
   end
 end

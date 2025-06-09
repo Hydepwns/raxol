@@ -23,7 +23,9 @@ defmodule Raxol.Core.Runtime.Supervisor do
 
   @impl true
   def init(init_arg) do
-    Raxol.Core.Runtime.Log.debug("[#{__MODULE__}] init called with args: #{inspect(init_arg)}")
+    Raxol.Core.Runtime.Log.debug(
+      "[#{__MODULE__}] init called with args: #{inspect(init_arg)}"
+    )
 
     # Allow overriding child modules via init_arg for testing
     dispatcher_mod =

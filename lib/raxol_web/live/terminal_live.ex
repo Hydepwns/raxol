@@ -60,7 +60,7 @@ defmodule RaxolWeb.TerminalLive do
         |> assign(:scroll_offset, 0)
         |> assign(
           :theme,
-          Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.current_theme_id())
+          Raxol.UI.Theming.Theme.get(Raxol.UI.Theming.Theme.current())
         )
         |> assign(:connected, false)
         |> assign(:emulator, emulator)
@@ -93,33 +93,30 @@ defmodule RaxolWeb.TerminalLive do
   end
 
   @impl true
-  def handle_event(
-        "terminal_output",
-        %{"html" => html, "cursor" => cursor} = payload,
-        socket
-      ) do
-    # Broadcast to all users in the session except the sender
-    PubSub.broadcast(
-      Raxol.PubSub,
-      socket.assigns.presence_topic,
-      {:collab_input, payload, socket.assigns.session_id}
-    )
+  def handle_event("disconnect", _params, socket) do
+    # Save scrollback to session (not possible in LiveView)
+    _scrollback = socket.assigns.emulator.scrollback_buffer || []
 
-    {:noreply, assign(socket, terminal_html: html, cursor: cursor)}
+    {
+      :noreply,
+      socket
+      |> assign(:connected, false)
+      # |> put_session("scrollback_buffer", scrollback) # Not available in LiveView
+    }
   end
 
   @impl true
-  def handle_info(
-        {:collab_input, %{"html" => html, "cursor" => cursor},
-         sender_session_id},
-        socket
+  def handle_event("key", %{"key" => _key, "modifiers" => _modifiers}, _socket) do
+    # TODO: Implement this
+  end
+
+  @impl true
+  def handle_event(
+        "mouse",
+        %{"x" => _x, "y" => _y, "button" => _button},
+        _socket
       ) do
-    # Ignore if this message originated from this session
-    if sender_session_id == socket.assigns.session_id do
-      {:noreply, socket}
-    else
-      {:noreply, assign(socket, terminal_html: html, cursor: cursor)}
-    end
+    # TODO: Implement this
   end
 
   @impl true
@@ -182,25 +179,6 @@ defmodule RaxolWeb.TerminalLive do
   end
 
   @impl true
-  def handle_event("theme", %{"theme" => theme}, socket) do
-    socket = assign(socket, theme: theme)
-    {:noreply, push_event(socket, "terminal_theme", %{theme: theme})}
-  end
-
-  @impl true
-  def handle_event("disconnect", _params, socket) do
-    # Save scrollback to session (not possible in LiveView)
-    scrollback = socket.assigns.emulator.scrollback_buffer || []
-
-    {
-      :noreply,
-      socket
-      |> assign(:connected, false)
-      # |> put_session("scrollback_buffer", scrollback) # Not available in LiveView
-    }
-  end
-
-  @impl true
   def handle_event("scroll_to_bottom", _params, socket) do
     emulator = socket.assigns.emulator
     scrollback_size = length(emulator.scrollback_buffer || [])
@@ -237,10 +215,25 @@ defmodule RaxolWeb.TerminalLive do
   end
 
   @impl true
-  def handle_info(%{event: "presence_diff"}, socket) do
-    presences = Presence.list(socket.assigns.presence_topic)
-    users = Map.keys(presences)
-    {:noreply, assign(socket, users: users)}
+  def handle_event("theme", %{"theme" => theme}, socket) do
+    socket = assign(socket, theme: theme)
+    {:noreply, push_event(socket, "terminal_theme", %{theme: theme})}
+  end
+
+  @impl true
+  def handle_event(
+        "terminal_output",
+        %{"html" => html, "cursor" => cursor} = payload,
+        socket
+      ) do
+    # Broadcast to all users in the session except the sender
+    PubSub.broadcast(
+      Raxol.PubSub,
+      socket.assigns.presence_topic,
+      {:collab_input, payload, socket.assigns.session_id}
+    )
+
+    {:noreply, assign(socket, terminal_html: html, cursor: cursor)}
   end
 
   @impl true
@@ -260,6 +253,27 @@ defmodule RaxolWeb.TerminalLive do
     # Also update own cursor immediately
     cursors = Map.put(socket.assigns.cursors, socket.assigns.user_id, cursor)
     {:noreply, assign(socket, cursor: cursor, cursors: cursors)}
+  end
+
+  @impl true
+  def handle_info(
+        {:collab_input, %{"html" => html, "cursor" => cursor},
+         sender_session_id},
+        socket
+      ) do
+    # Ignore if this message originated from this session
+    if sender_session_id == socket.assigns.session_id do
+      {:noreply, socket}
+    else
+      {:noreply, assign(socket, terminal_html: html, cursor: cursor)}
+    end
+  end
+
+  @impl true
+  def handle_info(%{event: "presence_diff"}, socket) do
+    presences = Presence.list(socket.assigns.presence_topic)
+    users = Map.keys(presences)
+    {:noreply, assign(socket, users: users)}
   end
 
   @impl true

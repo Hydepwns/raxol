@@ -4,7 +4,10 @@ defmodule Raxol.Application do
 
   @impl true
   def start(_type, _args) do
-    Raxol.Core.Runtime.Log.info_with_context("No preferences file found, using defaults.", %{})
+    Raxol.Core.Runtime.Log.info_with_context(
+      "No preferences file found, using defaults.",
+      %{}
+    )
 
     children =
       if Mix.env() == :test do
@@ -16,12 +19,18 @@ defmodule Raxol.Application do
       else
         # Use real version for dev/prod
         [
+          # Start the Ecto Repo
+          Raxol.Repo,
+          # Start Phoenix PubSub
+          {Phoenix.PubSub, name: Raxol.PubSub},
+          # Start the RaxolWeb Endpoint
+          RaxolWeb.Endpoint,
+          # Start RaxolWeb Telemetry
+          RaxolWeb.Telemetry,
           # Start the Dynamic Supervisor for Raxol applications
           Raxol.DynamicSupervisor,
           # Start the UserPreferences GenServer
-          Raxol.Core.UserPreferences,
-          # Start the Prometheus exporter for terminal metrics
-          {TelemetryMetricsPrometheus, metrics: Raxol.Terminal.TelemetryPrometheus.metrics()}
+          Raxol.Core.UserPreferences
         ] ++
           if IO.ANSI.enabled?() do
             [
@@ -51,19 +60,30 @@ defmodule Raxol.Test.MockApplicationSupervisor do
   require Raxol.Core.Runtime.Log
 
   def start_link(_args) do
-    Raxol.Core.Runtime.Log.info_with_context("Starting MockApplicationSupervisor for testing", %{})
+    Raxol.Core.Runtime.Log.info_with_context(
+      "Starting MockApplicationSupervisor for testing",
+      %{}
+    )
+
     Supervisor.start_link(__MODULE__, [], name: __MODULE__)
   end
 
   @impl true
   def init(_args) do
-    Raxol.Core.Runtime.Log.info_with_context("Initializing MockApplicationSupervisor with Phoenix PubSub and Repo", %{})
+    Raxol.Core.Runtime.Log.info_with_context(
+      "Initializing MockApplicationSupervisor with Phoenix PubSub and Repo",
+      %{}
+    )
 
     # Add Phoenix.PubSub child spec for tests, using the conventional name
     pubsub_child_spec = {Phoenix.PubSub, name: Raxol.PubSub}
     # Add Raxol.Repo child spec for tests
     repo_child_spec = Raxol.Repo
-    children = [pubsub_child_spec, repo_child_spec]
+    # Add UserPreferences for tests, ensuring it starts in test mode
+    user_preferences_child_spec =
+      {Raxol.Core.UserPreferences, [test_mode?: true]}
+
+    children = [pubsub_child_spec, repo_child_spec, user_preferences_child_spec]
     Supervisor.init(children, strategy: :one_for_one)
   end
 end

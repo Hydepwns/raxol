@@ -92,4 +92,21 @@ defmodule Raxol.Plugins.Manager.Events do
       end
     end)
   end
+
+  @doc """
+  Loads a plugin module and initializes it. Delegates to `Raxol.Plugins.Manager.Core.load_plugin/2` or `/3`.
+  Returns `{:ok, updated_manager}` or `{:error, reason}`.
+  """
+  def load_plugin(%Core{} = manager, module) when is_atom(module) do
+    Core.load_plugin(manager, module)
+  end
+
+  def load_plugin(%Core{} = manager, module, config)
+      when is_atom(module) and is_map(config) do
+    Core.load_plugin(manager, module, config)
+  end
+
+  def new do
+    Core.new()
+  end
 end

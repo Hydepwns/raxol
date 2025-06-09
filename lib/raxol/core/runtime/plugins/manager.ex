@@ -11,25 +11,14 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   - Optionally watching plugin source files for changes and reloading them (dev only).
   """
 
+  # Core runtime dependencies
   alias Raxol.Core.Runtime.Events.Event
-  alias Raxol.Core.Runtime.Plugins.LifecycleHelper
-  alias Raxol.Core.Runtime.Plugins.CommandHelper
-  alias Raxol.Core.Runtime.Plugins.Loader
   alias Raxol.Core.Runtime.Plugins.CommandHandler
   alias Raxol.Core.Runtime.Plugins.FileWatcher
-  alias Raxol.Core.Runtime.Plugins.LifecycleManager
   alias Raxol.Core.Runtime.Plugins.Discovery
   alias Raxol.Core.Runtime.Plugins.StateManager
-  alias Raxol.Core.Runtime.Plugins.EventFilter
   alias Raxol.Core.Runtime.Plugins.PluginReloader
   alias Raxol.Core.Runtime.Plugins.TimerManager
-  # Explicitly alias core plugins
-  alias Raxol.Core.Plugins.Core.ClipboardPlugin
-  # Assume this exists
-  alias Raxol.Core.Plugins.Core.NotificationPlugin
-
-  # Added alias for State
-  alias Raxol.Core.Runtime.Plugins.Manager.State
 
   # Added for file watching
   if Code.ensure_loaded?(FileSystem) do
@@ -40,57 +29,11 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   @type plugin_metadata :: map()
   @type plugin_state :: map()
 
-  # Use the literal default value
-  @default_plugins_dir "priv/plugins"
-
-  # State stored in the process
-  defmodule State do
-    @moduledoc false
-    defstruct [
-      # Map of plugin_id to plugin instance
-      plugins: %{},
-      # Map of plugin_id to plugin metadata
-      metadata: %{},
-      # Map of plugin_id to plugin state
-      plugin_states: %{},
-      # Map of plugin_id to source file path
-      plugin_paths: %{},
-      # Map of source file path back to plugin_id (for file watcher)
-      reverse_plugin_paths: %{},
-      # List of plugin_ids in the order they were loaded
-      load_order: [],
-      # Whether the plugin system has been initialized
-      initialized: false,
-      # ETS table name for the command registry
-      command_registry_table: nil,
-      # Configuration for plugins, keyed by plugin_id
-      plugin_config: %{},
-      # Directory to discover plugins from
-      # Default value
-      plugins_dir: "priv/plugins",
-      # FileSystem watcher PID
-      file_watcher_pid: nil,
-      # Whether file watching is enabled
-      file_watching_enabled?: false,
-      # Debounce timer reference for file events
-      file_event_timer: nil,
-      # Runtime PID
-      runtime_pid: nil,
-      # Get plugin directories, ensure it's a list
-      plugin_dirs: [],
-      # Configurable modules for testing
-      loader_module: Raxol.Core.Runtime.Plugins.Loader,
-      lifecycle_helper_module: Raxol.Core.Runtime.Plugins.LifecycleHelper
-    ]
-  end
-
   use GenServer
   @behaviour Raxol.Core.Runtime.Plugins.Manager.Behaviour
 
   require Raxol.Core.Runtime.Log
-
-  # Debounce interval for file system events (milliseconds)
-  @file_event_debounce_ms 500
+  require Logger
 
   @doc """
   Starts the Plugin Manager GenServer.
@@ -117,6 +60,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   @doc """
   Get a specific plugin by its ID.
   """
+  @impl true
   def get_plugin(plugin_id) do
     GenServer.call(__MODULE__, {:get_plugin, plugin_id})
   end
@@ -176,12 +120,14 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @doc "Placeholder for allowing plugins to filter events."
   @spec filter_event(any(), Event.t()) :: {:ok, Event.t()} | :halt | any()
-  def filter_event(plugin_manager_state, event) do
-    EventFilter.filter_event(plugin_manager_state, event)
+  def filter_event(_plugin_manager_state, event) do
+    # Placeholder for event filtering
+    event
   end
 
   # --- GenServer Callbacks ---
 
+  # Grouped handle_cast/2
   @impl true
   def handle_cast(
         {:handle_command, command_atom, namespace, data, dispatcher_pid},
@@ -203,6 +149,15 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
   end
 
   @impl true
+  def handle_cast({:reload_plugin_by_id, plugin_id_string}, state) do
+    case PluginReloader.reload_plugin_by_id(plugin_id_string, state) do
+      {:ok, updated_state} -> {:noreply, updated_state}
+      {:error, _reason, current_state} -> {:noreply, current_state}
+    end
+  end
+
+  # Grouped handle_info/2
+  @impl true
   def handle_info({:send_clipboard_result, pid, content}, state) do
     CommandHandler.handle_clipboard_result(pid, content)
     {:noreply, state}
@@ -221,9 +176,13 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl true
   def handle_info(:debounce_file_events, state) do
-    case FileWatcher.handle_debounced_events(state) do
+    case FileWatcher.Events.handle_debounced_events(
+           state.plugin_id,
+           state.plugin_path,
+           state
+         ) do
       {:ok, updated_state} -> {:noreply, updated_state}
-      {:error, _reason} -> {:noreply, state}
+      {:error, _reason, updated_state} -> {:noreply, updated_state}
     end
   end
 
@@ -232,135 +191,26 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     # Gracefully unload all plugins in reverse order using LifecycleHelper
     Enum.reduce(Enum.reverse(state.load_order), state, fn plugin_id,
                                                           acc_state ->
-      case state.lifecycle_helper_module.unload_plugin(
+      case acc_state.lifecycle_helper_module.cleanup_plugin(
              plugin_id,
-             acc_state.plugins,
-             acc_state.metadata,
-             acc_state.plugin_states,
-             acc_state.load_order,
-             acc_state.command_registry_table
+             acc_state.metadata
            ) do
-        {:ok, updated_maps} ->
-          %{
-            acc_state
-            | plugins: updated_maps.plugins,
-              metadata: updated_maps.metadata,
-              plugin_states: updated_maps.plugin_states,
-              load_order: updated_maps.load_order
-          }
+        {:ok, updated_metadata} ->
+          %{acc_state | metadata: updated_metadata}
 
-        {:error, _reason} ->
+        {:error, reason} ->
           Raxol.Core.Runtime.Log.error_with_stacktrace(
-            "[#{__MODULE__}] Failed to unload plugin during shutdown.",
-            nil,
+            "[#{__MODULE__}] Failed to cleanup plugin during shutdown.",
+            reason,
             nil,
             %{module: __MODULE__, plugin_id: plugin_id}
           )
+
           acc_state
       end
     end)
 
-    # Keep manager initialized state update
     {:noreply, %{state | initialized: false}}
-  end
-
-  @impl true
-  def init(opts) do
-    # CommandRegistry.new() is likely just creating the ETS table name atom, keep it here
-    cmd_reg_table =
-      Keyword.get(opts, :command_registry_table) ||
-        Raxol.Core.Runtime.Plugins.CommandRegistry.new()
-
-    # Extract runtime_pid from opts (passed by supervisor/Lifecycle)
-    runtime_pid = Keyword.get(opts, :runtime_pid)
-
-    unless is_pid(runtime_pid) do
-      Raxol.Core.Runtime.Log.error_with_stacktrace(
-        "[#{__MODULE__}] :runtime_pid is missing or invalid in init opts",
-        nil,
-        nil,
-        %{module: __MODULE__, opts: opts}
-      )
-      {:stop, :missing_runtime_pid}
-    else
-      # Get config options
-      app_env_plugin_config =
-        Application.get_env(:raxol, :plugin_manager_config, %{})
-
-      opts_plugin_config = Keyword.get(opts, :plugin_config, %{})
-
-      initial_plugin_config =
-        Map.merge(app_env_plugin_config, opts_plugin_config)
-
-      # Get plugin directories, ensure it's a list
-      plugin_dirs =
-        case Keyword.get(opts, :plugin_dirs, [@default_plugins_dir]) do
-          dirs when is_list(dirs) -> dirs
-          dir when is_binary(dir) -> [dir]
-          _ -> [@default_plugins_dir]
-        end
-
-      enable_reloading =
-        Keyword.get(opts, :enable_plugin_reloading, false) && Mix.env() == :dev
-
-      # Configurable modules
-      loader_mod =
-        Keyword.get(opts, :loader_module, Raxol.Core.Runtime.Plugins.Loader)
-
-      lifecycle_helper_mod =
-        Keyword.get(
-          opts,
-          :lifecycle_helper_module,
-          Raxol.Core.Runtime.Plugins.LifecycleHelper
-        )
-
-      # Start file watcher if enabled (only in dev)
-      {file_watcher_pid, file_watching_enabled?} =
-        if enable_reloading and Code.ensure_loaded?(FileSystem) do
-          FileWatcher.setup_file_watching(%{
-            plugin_dirs: plugin_dirs,
-            file_watching_enabled?: true
-          })
-        else
-          if enable_reloading and Mix.env() != :dev do
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "[#{__MODULE__}] Plugin reloading via file watching only enabled in :dev environment."
-            )
-          end
-
-          if enable_reloading and !Code.ensure_loaded?(FileSystem) do
-            Raxol.Core.Runtime.Log.warning_with_context(
-              "[#{__MODULE__}] FileSystem dependency not found. Cannot enable plugin reloading."
-            )
-          end
-
-          {nil, false}
-        end
-
-      initial_state = %State{
-        command_registry_table: cmd_reg_table,
-        plugin_config: initial_plugin_config,
-        plugin_dirs: plugin_dirs,
-        plugin_paths: %{},
-        reverse_plugin_paths: %{},
-        file_watcher_pid: file_watcher_pid,
-        file_watching_enabled?: file_watching_enabled?,
-        runtime_pid: runtime_pid,
-        loader_module: loader_mod,
-        lifecycle_helper_module: lifecycle_helper_mod,
-        # Explicitly false until :__internal_initialize__ completes
-        initialized: false
-      }
-
-      # Asynchronously trigger internal initialization
-      send(self(), :__internal_initialize__)
-
-      Raxol.Core.Runtime.Log.info(
-        "[#{__MODULE__}] Initialized with runtime_pid: #{inspect(runtime_pid)}. Triggered internal initialization."
-      )
-
-      {:ok, initial_state}
-    end
   end
 
   @impl true
@@ -369,9 +219,23 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
       "[#{__MODULE__}] Starting internal plugin discovery and initialization."
     )
 
-    case Discovery.initialize(state) do
-      {:ok, updated_state_after_discovery} ->
-        final_state = %{updated_state_after_discovery | initialized: true}
+    case state.lifecycle_helper_module.initialize_plugins(
+           state.plugins,
+           state.metadata,
+           state.plugin_config,
+           state.plugin_states,
+           state.load_order,
+           state.command_registry_table,
+           %{}
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        final_state = %{
+          state
+          | metadata: updated_metadata,
+            plugin_states: updated_states,
+            command_registry_table: updated_table,
+            initialized: true
+        }
 
         if final_state.runtime_pid do
           send(final_state.runtime_pid, {:plugin_manager_ready, self()})
@@ -380,9 +244,9 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
             "[#{__MODULE__}] PluginManager fully initialized and ready. Notified runtime PID: #{inspect(final_state.runtime_pid)}"
           )
         else
-          # This case should ideally not happen if init ensures runtime_pid
           Raxol.Core.Runtime.Log.warning_with_context(
-            "[#{__MODULE__}] PluginManager initialized, but no runtime_pid found in state to notify."
+            "[#{__MODULE__}] PluginManager initialized, but no runtime_pid found in state to notify.",
+            %{module: __MODULE__}
           )
         end
 
@@ -395,6 +259,97 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
           nil,
           %{module: __MODULE__, reason: reason}
         )
+
+        {:noreply, state}
+    end
+  end
+
+  @impl true
+  def handle_info({:reload_plugin_file_debounced, plugin_id, path}, state) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Debounced file change: Reloading plugin #{plugin_id} from path #{path}"
+    )
+
+    new_state = TimerManager.cancel_existing_timer(state)
+
+    case PluginReloader.reload_plugin(plugin_id, new_state) do
+      {:ok, updated_state} ->
+        {:noreply, updated_state}
+
+      {:error, reason, updated_state} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "[#{__MODULE__}] Failed to reload plugin #{plugin_id}",
+          reason,
+          nil,
+          %{module: __MODULE__, plugin_id: plugin_id, path: path}
+        )
+
+        {:noreply, updated_state}
+    end
+  end
+
+  @impl true
+  def handle_info(
+        {:fs_error, _pid, {path, reason}},
+        %{file_watching_enabled?: true} = state
+      ) do
+    Raxol.Core.Runtime.Log.warning_with_context(
+      "[#{__MODULE__}] File system watcher error for path #{path}: #{inspect(reason)}",
+      %{module: __MODULE__, path: path, reason: reason}
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:fs, _, _}, state) do
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({watcher_pid, true}, state) when is_pid(watcher_pid) do
+    Raxol.Core.Runtime.Log.info(
+      "[#{__MODULE__}] Received status :true from PID: #{inspect(watcher_pid)} (likely FileWatcher)."
+    )
+
+    {:noreply, state}
+  end
+
+  @impl true
+  def handle_info({:file_event, path}, state) do
+    case state.lifecycle_helper_module.reload_plugin_from_disk(
+           state.plugin_id,
+           path,
+           state.plugins,
+           state.metadata,
+           state.plugin_states,
+           state.load_order,
+           state.command_registry_table,
+           state.plugin_config
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        updated_state = %{
+          state
+          | metadata: updated_metadata,
+            plugin_states: updated_states,
+            command_registry_table: updated_table
+        }
+
+        {:noreply, updated_state}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to reload plugin from disk #{state.plugin_id}",
+          nil,
+          nil,
+          %{
+            module: __MODULE__,
+            plugin_id: state.plugin_id,
+            path: path,
+            reason: reason
+          }
+        )
+
         {:noreply, state}
     end
   end
@@ -445,7 +400,10 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl true
   def handle_call({:enable_plugin, plugin_id}, _from, state) do
-    case LifecycleManager.enable_plugin(plugin_id, state) do
+    case Raxol.Core.Runtime.Plugins.LifecycleManager.enable_plugin(
+           plugin_id,
+           state
+         ) do
       {:ok, updated_state} -> {:reply, :ok, updated_state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
@@ -453,7 +411,10 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl true
   def handle_call({:disable_plugin, plugin_id}, _from, state) do
-    case LifecycleManager.disable_plugin(plugin_id, state) do
+    case Raxol.Core.Runtime.Plugins.LifecycleManager.disable_plugin(
+           plugin_id,
+           state
+         ) do
       {:ok, updated_state} -> {:reply, :ok, updated_state}
       {:error, reason} -> {:reply, {:error, reason}, state}
     end
@@ -461,9 +422,37 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl true
   def handle_call({:reload_plugin, plugin_id}, _from, state) do
-    case LifecycleManager.reload_plugin(plugin_id, state) do
-      {:ok, updated_state} -> {:reply, :ok, updated_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
+    # Send plugin reload attempted event
+    send(state.runtime_pid, {:plugin_reload_attempted, plugin_id})
+
+    case state.lifecycle_helper_module.reload_plugin(
+           plugin_id,
+           state.plugins,
+           state.metadata,
+           state.plugin_states,
+           state.load_order,
+           state.command_registry_table,
+           state.plugin_config
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        updated_state = %{
+          state
+          | metadata: updated_metadata,
+            plugin_states: updated_states,
+            command_registry_table: updated_table
+        }
+
+        {:reply, :ok, updated_state}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to reload plugin #{plugin_id}",
+          nil,
+          nil,
+          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
+        )
+
+        {:reply, {:error, reason}, state}
     end
   end
 
@@ -472,8 +461,24 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     # Send plugin load attempted event
     send(state.runtime_pid, {:plugin_load_attempted, plugin_id})
 
-    case LifecycleManager.load_plugin(plugin_id, config, state) do
-      {:ok, updated_state} ->
+    case state.lifecycle_helper_module.load_plugin(
+           plugin_id,
+           config,
+           state.plugins,
+           state.metadata,
+           state.plugin_states,
+           state.load_order,
+           state.command_registry_table,
+           state.plugin_config
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        updated_state = %{
+          state
+          | metadata: updated_metadata,
+            plugin_states: updated_states,
+            command_registry_table: updated_table
+        }
+
         {:reply, :ok, updated_state}
 
       {:error, reason} ->
@@ -483,6 +488,7 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
           nil,
           %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
         )
+
         {:reply, {:error, reason}, state}
     end
   end
@@ -497,78 +503,36 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
 
   @impl true
   def handle_call({:set_plugin_state, plugin_id, new_state}, _from, state) do
-    case StateManager.set_plugin_state(plugin_id, new_state, state) do
-      {:ok, updated_state} -> {:reply, :ok, updated_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-    end
+    updated_state =
+      Raxol.Core.Runtime.Plugins.StateManager.set_plugin_state(
+        plugin_id,
+        new_state,
+        state
+      )
+
+    {:reply, :ok, updated_state}
   end
 
   @impl true
   def handle_call({:update_plugin_state, plugin_id, update_fun}, _from, state) do
-    case StateManager.update_plugin_state(plugin_id, update_fun, state) do
-      {:ok, updated_state} -> {:reply, :ok, updated_state}
-      {:error, reason} -> {:reply, {:error, reason}, state}
-    end
-  end
+    updated_state =
+      Raxol.Core.Runtime.Plugins.StateManager.update_plugin_state(
+        plugin_id,
+        update_fun,
+        state
+      )
 
-  @impl true
-  def handle_cast({:reload_plugin_by_id, plugin_id_string}, state) do
-    case PluginReloader.reload_plugin_by_id(plugin_id_string, state) do
-      {:ok, updated_state} -> {:noreply, updated_state}
-      {:error, _reason, current_state} -> {:noreply, current_state}
-    end
-  end
-
-  @impl true
-  def handle_info({:reload_plugin_file_debounced, plugin_id, path}, state) do
-    Raxol.Core.Runtime.Log.info(
-      "[#{__MODULE__}] Debounced file change: Reloading plugin #{plugin_id} from path #{path}"
-    )
-
-    # Clear the timer ref
-    new_state = TimerManager.cancel_existing_timer(state)
-
-    case PluginReloader.reload_plugin(plugin_id, new_state) do
-      {:ok, updated_state} -> {:noreply, updated_state}
-      {:error, _reason, current_state} -> {:noreply, current_state}
-    end
-  end
-
-  @impl true
-  def handle_info({:fs_error, _pid, {path, reason}}, %{file_watching_enabled?: true} = state) do
-    Raxol.Core.Runtime.Log.error_with_stacktrace(
-      "[#{__MODULE__}] File system watcher error for path #{path}: #{inspect(reason)}",
-      nil,
-      nil,
-      %{module: __MODULE__, path: path, reason: reason}
-    )
-
-    {:noreply, state}
-  end
-
-  # Fallback for other fs messages
-  @impl true
-  def handle_info({:fs, _, _}, state) do
-    # Ignore if file watching not enabled or unexpected message
-    {:noreply, state}
+    {:reply, :ok, updated_state}
   end
 
   @impl true
   def handle_call({:process_command, command}, _from, state) do
-    case CommandHandler.process_command(command, state) do
-      {:ok, result, updated_state} ->
-        # Send command processed event
-        send(state.runtime_pid, {:command_processed, command, result})
-        {:reply, {:ok, result}, updated_state}
-
-      {:error, reason} ->
-        Raxol.Core.Runtime.Log.error_with_stacktrace(
-          "Failed to process command: #{inspect(reason)}",
-          nil,
-          nil,
-          %{module: __MODULE__, command: command, reason: reason}
-        )
-        {:reply, {:error, reason}, state}
+    case Raxol.Core.Runtime.Plugins.CommandHandler.process_command(
+           command,
+           state
+         ) do
+      {:ok, result} -> {:reply, {:ok, result}, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
     end
   end
 
@@ -582,53 +546,123 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     {:reply, state.plugin_states, state}
   end
 
-  # --- Stubs for missing Plugin Manager functions ---
-  @doc "Stub: process_output/2 not yet implemented."
+  @impl true
+  def handle_call({:load_plugin_by_module, module, config}, _from, state) do
+    # Send plugin load attempted event
+    send(state.runtime_pid, {:plugin_load_attempted, module})
+
+    case state.lifecycle_helper_module.load_plugin_by_module(
+           module,
+           config,
+           state.plugins,
+           state.metadata,
+           state.plugin_states,
+           state.load_order,
+           state.command_registry_table,
+           state.plugin_config
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        updated_state = %{
+          state
+          | metadata: updated_metadata,
+            plugin_states: updated_states,
+            command_registry_table: updated_table
+        }
+
+        {:reply, :ok, updated_state}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to load plugin module #{inspect(module)}",
+          nil,
+          nil,
+          %{module: __MODULE__, plugin_module: module, reason: reason}
+        )
+
+        {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:unload_plugin, plugin_id}, _from, state) do
+    # Send plugin unload attempted event
+    send(state.runtime_pid, {:plugin_unload_attempted, plugin_id})
+
+    case state.lifecycle_helper_module.unload_plugin(
+           plugin_id,
+           state.plugins,
+           state.metadata,
+           state.plugin_states,
+           state.command_registry_table,
+           state.plugin_config
+         ) do
+      {:ok, {updated_metadata, updated_states, updated_table}} ->
+        updated_state = %{
+          state
+          | metadata: updated_metadata,
+            plugin_states: updated_states,
+            command_registry_table: updated_table
+        }
+
+        {:reply, :ok, updated_state}
+
+      {:error, reason} ->
+        Raxol.Core.Runtime.Log.error_with_stacktrace(
+          "Failed to unload plugin #{plugin_id}",
+          nil,
+          nil,
+          %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
+        )
+
+        {:reply, {:error, reason}, state}
+    end
+  end
+
   def process_output(_manager, _output) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[Plugins.Manager] process_output/2 not implemented.",
       %{}
     )
+
     {:error, :not_implemented}
   end
 
-  @doc "Stub: process_mouse/3 not yet implemented."
   def process_mouse(_manager, _event, _emulator_state) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[Plugins.Manager] process_mouse/3 not implemented.",
       %{}
     )
+
     {:error, :not_implemented}
   end
 
-  @doc "Stub: process_placeholder/4 not yet implemented."
   def process_placeholder(_manager, _arg1, _arg2, _arg3) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[Plugins.Manager] process_placeholder/4 not implemented.",
       %{}
     )
+
     {:error, :not_implemented}
   end
 
-  @doc "Stub: process_input/2 not yet implemented."
   def process_input(_manager, _input) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[Plugins.Manager] process_input/2 not implemented.",
       %{}
     )
+
     {:error, :not_implemented}
   end
 
-  @doc "Stub: execute_command/4 not yet implemented."
   def execute_command(_manager, _command, _arg1, _arg2) do
     Raxol.Core.Runtime.Log.warning_with_context(
       "[Plugins.Manager] execute_command/4 not implemented.",
       %{}
     )
+
     {:error, :not_implemented}
   end
 
-  # --- Termination ---
   @impl true
   def terminate(reason, state) do
     Raxol.Core.Runtime.Log.info(
@@ -645,10 +679,31 @@ defmodule Raxol.Core.Runtime.Plugins.Manager do
     :ok
   end
 
-  @doc """
-  Stops the Plugin Manager GenServer.
-  """
   def stop(pid \\ __MODULE__) do
     GenServer.stop(pid)
+  end
+
+  @doc """
+  Initializes the GenServer with the provided argument.
+  """
+  @impl true
+  def init(arg) do
+    {:ok, arg}
+  end
+
+  @doc """
+  Loads a plugin by sending a call to the GenServer.
+  """
+  @impl true
+  def load_plugin(plugin_id) do
+    GenServer.call(__MODULE__, {:load_plugin, plugin_id})
+  end
+
+  @doc """
+  Unloads a plugin by sending a call to the GenServer.
+  """
+  @impl true
+  def unload_plugin(plugin_id) do
+    GenServer.call(__MODULE__, {:unload_plugin, plugin_id})
   end
 end

@@ -5,6 +5,8 @@ defmodule RaxolWeb.AuthPlug do
   def init(opts), do: opts
 
   def call(conn, _opts) do
+    conn = fetch_session(conn)
+
     case get_session(conn, :session_token) do
       nil ->
         conn

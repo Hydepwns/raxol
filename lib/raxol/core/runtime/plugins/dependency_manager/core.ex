@@ -7,7 +7,6 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
   require Raxol.Core.Runtime.Log
 
   alias Raxol.Core.Runtime.Plugins.DependencyManager.{
-    Version,
     Graph,
     Resolver
   }
@@ -344,7 +343,9 @@ defmodule Raxol.Core.Runtime.Plugins.DependencyManager.Core do
             false
           end
         end)
-        |> Enum.map(fn {dep_id, req, _} -> {dep_id, plugins[dep_id][:version], req} end)
+        |> Enum.map(fn {dep_id, req, _} ->
+          {dep_id, plugins[dep_id][:version], req}
+        end)
 
       if mismatches != [] do
         {:error, mismatches,

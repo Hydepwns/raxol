@@ -19,7 +19,10 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
         {:error, :plugin_not_found}
 
       plugin ->
-        Raxol.Core.Runtime.Log.info_with_context("[#{__MODULE__}] Enabling plugin: #{plugin_id}", %{})
+        Raxol.Core.Runtime.Log.info_with_context(
+          "[#{__MODULE__}] Enabling plugin: #{plugin_id}",
+          %{}
+        )
 
         case state.lifecycle_helper_module.enable_plugin(
                plugin,
@@ -38,6 +41,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
               nil,
               %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
             )
+
             {:error, reason}
         end
     end
@@ -52,7 +56,10 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
         {:error, :plugin_not_found}
 
       plugin ->
-        Raxol.Core.Runtime.Log.info_with_context("[#{__MODULE__}] Disabling plugin: #{plugin_id}", %{})
+        Raxol.Core.Runtime.Log.info_with_context(
+          "[#{__MODULE__}] Disabling plugin: #{plugin_id}",
+          %{}
+        )
 
         case state.lifecycle_helper_module.disable_plugin(
                plugin,
@@ -71,6 +78,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
               nil,
               %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
             )
+
             {:error, reason}
         end
     end
@@ -84,8 +92,11 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
       nil ->
         {:error, :plugin_not_found}
 
-      plugin ->
-        Raxol.Core.Runtime.Log.info_with_context("[#{__MODULE__}] Reloading plugin: #{plugin_id}", %{})
+      _plugin ->
+        Raxol.Core.Runtime.Log.info_with_context(
+          "[#{__MODULE__}] Reloading plugin: #{plugin_id}",
+          %{}
+        )
 
         # First disable the plugin
         case disable_plugin(plugin_id, state) do
@@ -102,6 +113,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
                   nil,
                   %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
                 )
+
                 {:error, reason}
             end
 
@@ -112,6 +124,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
               nil,
               %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
             )
+
             {:error, reason}
         end
     end
@@ -121,7 +134,10 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
   Loads a plugin with the given configuration.
   """
   def load_plugin(plugin_id, config, state) do
-    Raxol.Core.Runtime.Log.info_with_context("[#{__MODULE__}] Loading plugin: #{plugin_id}", %{})
+    Raxol.Core.Runtime.Log.info_with_context(
+      "[#{__MODULE__}] Loading plugin: #{plugin_id}",
+      %{}
+    )
 
     case state.loader_module.load_plugin(plugin_id, config) do
       {:ok, plugin, metadata} ->
@@ -147,6 +163,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
               nil,
               %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
             )
+
             {:error, reason}
         end
 
@@ -157,6 +174,7 @@ defmodule Raxol.Core.Runtime.Plugins.LifecycleManager do
           nil,
           %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
         )
+
         {:error, reason}
     end
   end

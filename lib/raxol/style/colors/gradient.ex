@@ -1,3 +1,5 @@
+alias Raxol.Style.Colors.Color
+
 defmodule Raxol.Style.Colors.Gradient do
   @moduledoc """
   Creates and manages color gradients for terminal applications.
@@ -31,8 +33,6 @@ defmodule Raxol.Style.Colors.Gradient do
   multi = Gradient.multi_stop(colors, 15)
   ```
   """
-
-  alias Raxol.Style.Colors.Color
 
   defstruct [
     # List of color stops

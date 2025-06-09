@@ -16,7 +16,6 @@ defmodule Raxol.Docs.InteractiveTutorial do
 
   alias Raxol.Docs.InteractiveTutorial.{
     State,
-    Models,
     Loader,
     Navigation,
     Validation,
@@ -122,13 +121,46 @@ defmodule Raxol.Docs.InteractiveTutorial do
   end
 
   @doc """
+  Gets the current position in the tutorial.
+  """
+  def get_current_position do
+    with_state(fn state ->
+      case State.get_current_step(state) do
+        nil ->
+          nil
+
+        step ->
+          {state, {Map.get(state.tutorials, state.current_tutorial), step}}
+      end
+    end)
+  end
+
+  @doc """
   Validates a solution for the current step.
   """
-  def validate_solution(solution) do
+  def validate_exercise(solution) do
     with_state(fn state ->
       case State.get_current_step(state) do
         nil -> {:error, "No tutorial in progress"}
         step -> Validation.validate_solution(step, solution)
+      end
+    end)
+  end
+
+  @doc """
+  Gets a hint for the current step.
+  """
+  def get_hint do
+    with_state(fn state ->
+      case State.get_current_step(state) do
+        nil ->
+          {:error, "No tutorial in progress"}
+
+        step ->
+          case step.hints do
+            [] -> {:error, "No hints available"}
+            hints -> {:ok, List.first(hints)}
+          end
       end
     end)
   end

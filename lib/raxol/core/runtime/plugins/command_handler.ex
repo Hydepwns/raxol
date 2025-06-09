@@ -47,17 +47,24 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
 
         {:ok, updated_plugin_states}
 
-      :not_found ->
+      {:error, :not_found, _} ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "[#{__MODULE__}] Command not found by CommandHelper",
-          %{module: __MODULE__, command_atom: command_atom, namespace: namespace, state: state},
-          nil
+          %{
+            module: __MODULE__,
+            command_atom: command_atom,
+            namespace: namespace,
+            state: state
+          }
         )
+
         error_result_tuple = {:error, :command_not_found}
+
         send(
           dispatcher_pid,
           {:command_result, {command_atom, error_result_tuple}}
         )
+
         {:error, :not_found}
 
       {:error, reason_tuple, plugin_id} ->
@@ -65,13 +72,41 @@ defmodule Raxol.Core.Runtime.Plugins.CommandHandler do
           "[#{__MODULE__}] Error executing command",
           reason_tuple,
           nil,
-          %{module: __MODULE__, command_atom: command_atom, plugin_id: plugin_id, namespace: namespace, state: state}
+          %{
+            module: __MODULE__,
+            command_atom: command_atom,
+            plugin_id: plugin_id,
+            namespace: namespace,
+            state: state
+          }
         )
+
         send(
           dispatcher_pid,
           {:command_result, {command_atom, {:error, reason_tuple}}}
         )
+
         {:error, reason_tuple}
+    end
+  end
+
+  @doc """
+  Processes a command by delegating to the appropriate handler.
+  Returns an updated state and any necessary side effects.
+  """
+  def process_command(command, state) do
+    case command do
+      {command_atom, namespace, data} ->
+        handle_command(command_atom, namespace, data, self(), state)
+
+      {command_atom, data} ->
+        handle_command(command_atom, :default, data, self(), state)
+
+      command_atom when is_atom(command_atom) ->
+        handle_command(command_atom, :default, %{}, self(), state)
+
+      _ ->
+        {:error, :invalid_command}
     end
   end
 

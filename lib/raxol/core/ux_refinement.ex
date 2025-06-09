@@ -17,11 +17,8 @@ defmodule Raxol.Core.UXRefinement do
 
   require Raxol.Core.Runtime.Log
 
-  # alias Raxol.Core.FocusManager # Removed as it's called via helper
   alias Raxol.UI.Components.FocusRing
-  # alias Raxol.Core.Accessibility # Removed as it's called via helper
   alias Raxol.Core.Events.Manager, as: EventManager
-  alias Raxol.Core.KeyboardShortcuts
   alias Raxol.UI.Components.HintDisplay
   alias Raxol.Core.KeyboardNavigator
 
@@ -105,7 +102,7 @@ defmodule Raxol.Core.UXRefinement do
     :ok
   end
 
-  def enable_feature(:hints, _opts, user_preferences_pid_or_name) do
+  def enable_feature(:hints, _opts, _user_preferences_pid_or_name) do
     hint_config = HintDisplay.init(%{})
     Process.put(:ux_refinement_hint_config, hint_config)
     Process.put(:ux_refinement_hints, %{})
@@ -126,9 +123,12 @@ defmodule Raxol.Core.UXRefinement do
     ensure_feature_enabled(:events, user_preferences_pid_or_name)
     accessibility_module().enable(opts, user_preferences_pid_or_name)
     Process.put(:ux_refinement_metadata, %{})
-    _ = focus_manager_module().register_focus_change_handler(
-      &handle_accessibility_focus_change/3
-    )
+
+    _ =
+      focus_manager_module().register_focus_change_handler(
+        &handle_accessibility_focus_change/3
+      )
+
     _ = register_enabled_feature(:accessibility)
     :ok
   end
@@ -140,7 +140,7 @@ defmodule Raxol.Core.UXRefinement do
     :ok
   end
 
-  def enable_feature(:events, _opts, user_preferences_pid_or_name) do
+  def enable_feature(:events, _opts, _user_preferences_pid_or_name) do
     EventManager.init()
     _ = register_enabled_feature(:events)
     :ok
@@ -148,6 +148,10 @@ defmodule Raxol.Core.UXRefinement do
 
   def enable_feature(unknown_feature, _opts, _user_preferences_pid_or_name) do
     {:error, "Unknown feature: #{unknown_feature}"}
+  end
+
+  def enable_feature(feature) do
+    enable_feature(feature, [], nil)
   end
 
   @doc """
@@ -198,9 +202,11 @@ defmodule Raxol.Core.UXRefinement do
   def disable_feature(:accessibility) do
     accessibility_module().disable()
     Process.put(:ux_refinement_metadata, %{})
+
     focus_manager_module().unregister_focus_change_handler(
       &handle_accessibility_focus_change/3
     )
+
     unregister_enabled_feature(:accessibility)
     :ok
   end
@@ -451,7 +457,7 @@ defmodule Raxol.Core.UXRefinement do
     :ok
   end
 
-  defp ensure_feature_enabled(:events, user_preferences_pid_or_name) do
+  defp ensure_feature_enabled(:events, _user_preferences_pid_or_name) do
     # Initialize events manager if not already done
     EventManager.init()
     # Register the feature as enabled
@@ -460,15 +466,20 @@ defmodule Raxol.Core.UXRefinement do
     :ok
   end
 
-  defp ensure_feature_enabled(feature, user_preferences_pid_or_name) when feature != :events do
-    if !feature_enabled?(feature) do
-      enable_feature(feature, [], user_preferences_pid_or_name)
-    else
+  defp ensure_feature_enabled(feature, user_preferences_pid_or_name)
+       when feature != :events do
+    if feature_enabled?(feature) do
       :ok
+    else
+      enable_feature(feature, [], user_preferences_pid_or_name)
     end
   end
 
-  defp handle_accessibility_focus_change(old_focus, new_focus, user_preferences_pid_or_name) do
+  defp handle_accessibility_focus_change(
+         old_focus,
+         new_focus,
+         user_preferences_pid_or_name
+       ) do
     if feature_enabled?(:accessibility) do
       metadata = get_accessibility_metadata(new_focus) || %{}
       label = Map.get(metadata, :label, new_focus)
@@ -480,7 +491,11 @@ defmodule Raxol.Core.UXRefinement do
           "Focus moved from #{get_accessibility_metadata(old_focus)[:label] || old_focus} to #{label}"
         end
 
-      announce(announcement_message, [priority: :low], user_preferences_pid_or_name)
+      announce(
+        announcement_message,
+        [priority: :low],
+        user_preferences_pid_or_name
+      )
     end
 
     :ok
@@ -514,7 +529,10 @@ defmodule Raxol.Core.UXRefinement do
         )
 
       _invalid_shortcut_format ->
-        Raxol.Core.Runtime.Log.warning_with_context("Invalid shortcut format for component #{component_id}: must be {key_string, description_string}", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Invalid shortcut format for component #{component_id}: must be {key_string, description_string}",
+          %{}
+        )
     end)
   end
 
@@ -528,7 +546,10 @@ defmodule Raxol.Core.UXRefinement do
   defp shortcut_callback(component_id, description) do
     fn ->
       # Keep debug for now
-      Raxol.Core.Runtime.Log.debug("Shortcut activated for #{component_id}: #{description}")
+      Raxol.Core.Runtime.Log.debug(
+        "Shortcut activated for #{component_id}: #{description}"
+      )
+
       # Also attempt to set focus to the component associated with the hint
       focus_manager_module().set_focus(component_id)
       :ok
@@ -543,16 +564,15 @@ defmodule Raxol.Core.UXRefinement do
     )
   end
 
-  defp get_hints do
-    Process.get(:ux_refinement_hints)
-  end
-
   @doc """
   Display help for available keyboard shortcuts.
   """
   def show_shortcuts_help(user_preferences_pid_or_name) do
     ensure_feature_enabled(:keyboard_shortcuts, user_preferences_pid_or_name)
-    keyboard_shortcuts_module().show_shortcuts_help(user_preferences_pid_or_name)
+
+    keyboard_shortcuts_module().show_shortcuts_help(
+      user_preferences_pid_or_name
+    )
   end
 
   @doc """
@@ -582,7 +602,11 @@ defmodule Raxol.Core.UXRefinement do
   """
   def announce(message, opts \\ [], user_preferences_pid_or_name) do
     if feature_enabled?(:accessibility) do
-      accessibility_module().announce(message, opts, user_preferences_pid_or_name)
+      accessibility_module().announce(
+        message,
+        opts,
+        user_preferences_pid_or_name
+      )
     else
       Raxol.Core.Runtime.Log.debug(
         "[UXRefinement] Accessibility not enabled, announcement skipped: #{message}"
@@ -622,5 +646,12 @@ defmodule Raxol.Core.UXRefinement do
       # Or store in Process.put(:ux_refinement_metadata, ...) directly if needed
       :ok
     end
+  end
+
+  @doc """
+  Display help for available keyboard shortcuts (no user preferences context).
+  """
+  def show_shortcuts_help do
+    show_shortcuts_help(nil)
   end
 end

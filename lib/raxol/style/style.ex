@@ -128,23 +128,17 @@ defmodule Raxol.Style do
   @doc """
   Merges two styles, with the second overriding the first.
   """
-  def merge(base, override) do
-    layout1 = Map.get(base, :layout) || Layout.new()
-    layout2 = Map.get(override, :layout) || Layout.new()
-    border1 = Map.get(base, :border) || Borders.new()
-    border2 = Map.get(override, :border) || Borders.new()
-
-    %__MODULE__{
-      layout: Layout.merge(layout1, layout2),
-      border: Borders.merge(border1, border2),
-      color: Map.get(override, :color) || Map.get(base, :color),
-      background: Map.get(override, :background) || Map.get(base, :background),
+  def merge(style1, style2) do
+    %{
+      layout: Map.merge(style1.layout, style2.layout),
+      border: Borders.merge(style1.border, style2.border),
+      color: style2.color || style1.color,
+      background: style2.background || style1.background,
       text_decoration:
-        (Map.get(base, :text_decoration, []) ++
-           Map.get(override, :text_decoration, []))
+        (style1.text_decoration ++ style2.text_decoration)
         |> Enum.uniq(),
       decorations:
-        (Map.get(base, :decorations, []) ++ Map.get(override, :decorations, []))
+        (style1.decorations ++ style2.decorations)
         |> Enum.uniq()
     }
   end

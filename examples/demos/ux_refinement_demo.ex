@@ -128,12 +128,12 @@ defmodule Raxol.Examples.UXRefinementDemo do
   end
 
   @doc """
-  Render the application UI.
+  Render the UX refinement demo UI.
   """
-  @dialyzer {:nowarn_function, view: 1}
   @impl Raxol.Core.Runtime.Application
-  def view(model) do
-    focused_id = model.focused_component
+  @dialyzer {:nowarn_function, view: 1}
+  def view(state) do
+    focused_id = state.focused_component
     # all_hints = get_hints_for(focused_id) # Assuming get_hints_for exists and is used elsewhere
 
     # --- Calculate focus position BEFORE the main component list ---
@@ -146,7 +146,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
         # Raxol.View.Elements.component(
         #   Raxol.UI.Components.FocusRing,
         #   id: :focus_ring,
-        #   model: model.focus_ring_model,
+        #   model: state.focus_ring_model,
         #   focused_element_id: focused_id,
         #   focused_element_position: focused_position
         # )
@@ -155,7 +155,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
           type: Raxol.UI.Components.FocusRing,
           id: :focus_ring,
           # Pass props directly, assuming component handles its own model state
-          # model: model.focus_ring_model,
+          # model: state.focus_ring_model,
           focused_element_id: focused_id,
           focused_element_position: focused_position
         }
@@ -180,18 +180,18 @@ defmodule Raxol.Examples.UXRefinementDemo do
                   UI.column padding: 1 do
                     # Wrap all children in an explicit list
                     [
-                      if model.show_help do
+                      if state.show_help do
                         render_help_dialog()
                       else
                         # Form elements need to be a list too for the outer list
                         [
                           UI.row padding_bottom: 1 do
-                            label_element = UI.label("Username:", style: %{width: 10})
+                            label_element = Raxol.View.Elements.label("Username:", style: %{width: 10})
 
                             input_element =
                               UI.text_input(
                                 id: "username_input",
-                                value: model.form_data.username,
+                                value: state.form_data.username,
                                 width: 30,
                                 focus: focused_id == "username_input"
                               )
@@ -199,12 +199,12 @@ defmodule Raxol.Examples.UXRefinementDemo do
                             [label_element, input_element]
                           end,
                           UI.row padding_bottom: 1 do
-                            label_element = UI.label("Password:", style: %{width: 10})
+                            label_element = Raxol.View.Elements.label("Password:", style: %{width: 10})
 
                             input_element =
                               UI.text_input(
                                 id: "password_input",
-                                value: model.form_data.password,
+                                value: state.form_data.password,
                                 width: 30,
                                 password: true,
                                 focus: focused_id == "password_input"
@@ -221,7 +221,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
                                 focus: focused_id == "login_button"
                               )
 
-                            space_element = UI.label(" ")
+                            space_element = Raxol.View.Elements.label(" ")
 
                             reset_button =
                               UI.button(
@@ -231,7 +231,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
                                 focus: focused_id == "reset_button"
                               )
 
-                            space_element2 = UI.label(" ")
+                            space_element2 = Raxol.View.Elements.label(" ")
 
                             help_button =
                               UI.button(
@@ -262,7 +262,7 @@ defmodule Raxol.Examples.UXRefinementDemo do
               %{
                 type: Raxol.UI.Components.HintDisplay,
                 id: :hint_display,
-                hints: all_hints,
+                hints: get_hints_for(state.focused_component),
                 position: :bottom
                 # Style can be added here if needed
               },
@@ -348,10 +348,10 @@ defmodule Raxol.Examples.UXRefinementDemo do
             } do
         UI.column do
           [
-            UI.label(content: "This is a demo of the UX Refinement features in Raxol."),
-            UI.label(content: "Use Tab and Shift+Tab to navigate between form fields."),
-            UI.label(content: "The focus ring indicates which element is focused."),
-            UI.label(content: "Hints at the bottom provide context for each element."),
+            Raxol.View.Elements.label(content: "This is a demo of the UX Refinement features in Raxol."),
+            Raxol.View.Elements.label(content: "Use Tab and Shift+Tab to navigate between form fields."),
+            Raxol.View.Elements.label(content: "The focus ring indicates which element is focused."),
+            Raxol.View.Elements.label(content: "Hints at the bottom provide context for each element."),
 
             UI.row padding_top: 2 do
               [

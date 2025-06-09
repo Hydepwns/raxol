@@ -65,6 +65,7 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
         else
           "0.0.0"
         end
+
       vsn ->
         to_string(vsn)
     end
@@ -76,8 +77,10 @@ defmodule Raxol.System.DeltaUpdaterSystemAdapterImpl do
     case :httpc.request(:get, {to_charlist(url), []}, [], []) do
       {:ok, {{_http_vsn, 200, _reason_phrase}, _headers, body}} ->
         {:ok, IO.iodata_to_binary(body)}
+
       {:ok, {{_http_vsn, status, _reason_phrase}, _headers, body}} ->
         {:error, {:http_error, status, IO.iodata_to_binary(body)}}
+
       {:error, reason} ->
         {:error, reason}
     end

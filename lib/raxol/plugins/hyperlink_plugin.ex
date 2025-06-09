@@ -89,7 +89,10 @@ defmodule Raxol.Plugins.HyperlinkPlugin do
         # Look up cell data using the passed rendered_cells map
         case Map.get(rendered_cells, {click_x, click_y}) do
           %{style: %{hyperlink: url}} when is_binary(url) and url != "" ->
-            Raxol.Core.Runtime.Log.debug("[HyperlinkPlugin] Clicked on hyperlink: #{url}")
+            Raxol.Core.Runtime.Log.debug(
+              "[HyperlinkPlugin] Clicked on hyperlink: #{url}"
+            )
+
             # Attempt to open the URL
             case open_url(url) do
               :ok ->

@@ -9,8 +9,6 @@ defmodule Raxol.Style.Colors.Formats do
   - Named colors
   """
 
-  alias Raxol.Style.Colors.Color
-
   @doc """
   Converts a color to its hex representation.
 

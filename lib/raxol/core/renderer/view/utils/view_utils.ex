@@ -120,12 +120,12 @@ defmodule Raxol.Core.Renderer.View.Utils.ViewUtils do
     {width, height}
   end
 
-  defp get_minimum_size(view) do
+  defp get_minimum_size(_view) do
     # Calculate minimum size based on content and constraints
     {0, 0}
   end
 
-  defp get_maximum_size(view) do
+  defp get_maximum_size(_view) do
     # Calculate maximum size based on content and constraints
     {nil, nil}
   end

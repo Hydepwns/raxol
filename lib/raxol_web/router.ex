@@ -65,6 +65,6 @@ defmodule RaxolWeb.Router do
     end
   end
 
-  # Expose Prometheus metrics endpoint
-  forward "/metrics", TelemetryMetricsPrometheus
+  # Metrics endpoint
+  forward("/metrics", TelemetryMetricsPrometheus.Router)
 end

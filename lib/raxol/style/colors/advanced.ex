@@ -10,7 +10,8 @@ defmodule Raxol.Style.Colors.Advanced do
   - Color harmony generation
   """
 
-  alias Raxol.Style.Colors.{Color, Theme, Utilities, Adaptive}
+  alias Raxol.Style.Colors.Color
+  alias Raxol.Style.Colors.{Adaptive}
   require :math
 
   @type color :: Color.t()

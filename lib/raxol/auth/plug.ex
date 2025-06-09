@@ -37,7 +37,9 @@ defmodule Raxol.Auth.Plug do
 
     case Accounts.authenticate_user(email, password) do
       {:ok, user} ->
-        Raxol.Core.Runtime.Log.debug("Authentication successful for user ID: #{user.id}")
+        Raxol.Core.Runtime.Log.debug(
+          "Authentication successful for user ID: #{user.id}"
+        )
 
         conn
         |> put_session(:user_id, user.id)

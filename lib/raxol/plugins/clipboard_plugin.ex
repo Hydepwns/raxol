@@ -67,7 +67,10 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         new_state = Map.put(new_state, :last_yank_result, result)
         {:ok, new_state}
       else
-        Raxol.Core.Runtime.Log.debug("[Clipboard] No complete selection available for copy.")
+        Raxol.Core.Runtime.Log.debug(
+          "[Clipboard] No complete selection available for copy."
+        )
+
         {:ok, state}
       end
     else
@@ -85,12 +88,18 @@ defmodule Raxol.Plugins.ClipboardPlugin do
 
       case get_clipboard_content() do
         {:ok, content} when content != "" ->
-          Raxol.Core.Runtime.Log.debug("[Clipboard] Pasting content: #{content}")
+          Raxol.Core.Runtime.Log.debug(
+            "[Clipboard] Pasting content: #{content}"
+          )
+
           # Return command for Runtime to handle
           {:ok, state, {:command, {:paste, content}}}
 
         {:ok, ""} ->
-          Raxol.Core.Runtime.Log.debug("[Clipboard] Clipboard is empty, nothing to paste.")
+          Raxol.Core.Runtime.Log.debug(
+            "[Clipboard] Clipboard is empty, nothing to paste."
+          )
+
           {:ok, state}
 
         {:error, reason} ->
@@ -115,7 +124,9 @@ defmodule Raxol.Plugins.ClipboardPlugin do
         # Call the new consolidated module
         case Clipboard.copy(text) do
           :ok ->
-            Raxol.Core.Runtime.Log.debug("[Clipboard] Yanked selection to clipboard: #{text}")
+            Raxol.Core.Runtime.Log.debug(
+              "[Clipboard] Yanked selection to clipboard: #{text}"
+            )
 
           {:error, reason} ->
             Raxol.Core.Runtime.Log.error(

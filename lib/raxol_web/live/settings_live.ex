@@ -109,18 +109,4 @@ defmodule RaxolWeb.SettingsLive do
     changeset = Raxol.Auth.User.changeset(user, user_params)
     {:noreply, assign(socket, changeset: changeset)}
   end
-
-  defp assign_user_and_token(socket, token) do
-    case Accounts.get_user_by_session_token(token) do
-      nil ->
-        socket
-        |> put_flash(:error, "Invalid session token. Please log in again.")
-        |> redirect(to: Routes.user_session_path(socket, :new))
-
-      user ->
-        socket
-        |> assign(:current_user, user)
-        |> assign(:token, token)
-    end
-  end
 end

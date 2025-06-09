@@ -4,6 +4,7 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
   """
 
   require Raxol.Core.Runtime.Log
+  alias Raxol.Core.Runtime.Plugins.State
 
   @doc """
   Updates the plugin state maps with a new plugin.
@@ -227,7 +228,15 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
   Returns a new default plugin manager state struct.
   """
   def new do
-    %Raxol.Core.Runtime.Plugins.Manager.State{}
+    %State{
+      plugins: %{},
+      metadata: %{},
+      plugin_states: %{},
+      load_order: [],
+      command_registry_table: %{},
+      plugin_config: %{},
+      initialized: false
+    }
   end
 
   @doc """

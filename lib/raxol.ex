@@ -231,11 +231,7 @@ defmodule Raxol do
   ```
   """
   def set_theme(theme) do
-    require Raxol.Core.Runtime.Log
-    Raxol.Core.Runtime.Log.info("Setting theme: #{theme.name}")
-    # Persist the theme choice (e.g., Application config)
-    Application.put_env(:raxol, :theme, theme)
-    :ok
+    :application.set_env(:raxol, :theme, theme)
   end
 
   @doc """

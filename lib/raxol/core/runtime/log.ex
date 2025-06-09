@@ -7,7 +7,10 @@ defmodule Raxol.Core.Runtime.Log do
   Logs an error with stacktrace and context.
   """
   def error_with_stacktrace(msg, error, stacktrace, context \\ nil) do
-    error("#{msg}\nError: #{inspect(error)}\nStacktrace: #{Exception.format_stacktrace(stacktrace)}", context)
+    error(
+      "#{msg}\nError: #{inspect(error)}\nStacktrace: #{Exception.format_stacktrace(stacktrace)}",
+      context
+    )
   end
 
   @doc """
@@ -39,9 +42,17 @@ defmodule Raxol.Core.Runtime.Log do
   def warning(msg, context), do: log(:warn, msg, context)
   def error(msg, context), do: log(:error, msg, context)
 
+  def info_with_context(msg) do
+    info_with_context(msg, %{})
+  end
+
   defp log(level, msg, context \\ nil) do
     label = level |> Atom.to_string() |> String.upcase()
-    output = "[#{label}] #{msg}" <> if context, do: " | Context: #{inspect(context)}", else: ""
+
+    output =
+      "[#{label}] #{msg}" <>
+        if context, do: " | Context: #{inspect(context)}", else: ""
+
     IO.puts(output)
   end
 end

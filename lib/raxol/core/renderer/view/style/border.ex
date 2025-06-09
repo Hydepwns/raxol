@@ -21,15 +21,17 @@ defmodule Raxol.Core.Renderer.View.Style.Border do
       Border.wrap(view, style: :double, title: "Title")
   """
   def wrap(view, opts \\ []) do
-    style = Keyword.get(opts, :style, :single)
+    border_type = Keyword.get(opts, :border, Keyword.get(opts, :style, :single))
     title = Keyword.get(opts, :title)
+    padding = Keyword.get(opts, :padding, 0)
     fg = Keyword.get(opts, :fg)
     bg = Keyword.get(opts, :bg)
 
     %{
       type: :border,
       children: [view],
-      border: style,
+      border: border_type,
+      padding: padding,
       title: title,
       fg: fg,
       bg: bg

@@ -11,7 +11,7 @@ config :raxol, Raxol.Repo,
   hostname: "localhost",
   database: "raxol_test#{System.get_env("MIX_TEST_PARTITION")}",
   pool: Ecto.Adapters.SQL.Sandbox,
-  pool_size: 10
+  pool_size: 20
 
 # Override Repo adapter and pool for tests
 # config :raxol, Raxol.Repo, # Commenting out this MockDB override
@@ -28,8 +28,8 @@ config :raxol, database_enabled: true
 # you can enable the server option below.
 config :raxol, RaxolWeb.Endpoint,
   http: [ip: {127, 0, 0, 1}, port: 4002],
-  secret_key_base:
-    "Pik91mX07sP1JkNY42p6HI97p2aHq3jVIM5wMwpqCNzJ3+t7j3XhYvYq4u8m/u8k",
+  # Must be at least 64 bytes for Plug/Phoenix session
+  secret_key_base: String.duplicate("a", 64),
   server: false,
   pubsub_server: Raxol.PubSub
 

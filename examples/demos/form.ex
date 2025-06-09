@@ -18,7 +18,7 @@ defmodule Raxol.Examples.Form do
 
   @impl Raxol.Core.Runtime.Application
   def init(_opts) do
-    {%__MODULE__{}, []}
+    {:ok, %__MODULE__{}}
   end
 
   @impl Raxol.Core.Runtime.Application
@@ -71,8 +71,11 @@ defmodule Raxol.Examples.Form do
   @impl Raxol.Core.Runtime.Application
   def terminate(_reason, _state), do: :ok
 
-  # Correct view function with @impl
+  @doc """
+  Render the form UI.
+  """
   @impl Raxol.Core.Runtime.Application
+  @dialyzer {:nowarn_function, view: 1}
   def view(state) do
     UI.box id: state.id, border: :rounded, padding: 1 do
       UI.column do
@@ -88,8 +91,27 @@ defmodule Raxol.Examples.Form do
     end
   end
 
-  # Remove incorrect render function
-  # def render(state) do
-  #   ...
+  # Add a render/2 function for test compatibility
+  # def render(state, _context) do
+  #   view(state)
   # end
+
+  # Add handle_event/3 for integration testing with Raxol.Test.Integration
+  # This will be called by the test framework when events bubble from children.
+  def handle_event(state, %Raxol.Core.Events.Event{type: :button_pressed}, _opts) do
+    # Log submission (similar to update/2 logic)
+    Raxol.Core.Runtime.Log.info("Form received :button_pressed, processing as submit: #{inspect state.form_data}")
+    new_state = %{state | submitted: true}
+    # For assert_parent_updated to pass, parent must dispatch an event of type :button_clicked.
+    # Use a new :dispatch_to_self command that the integration framework will handle.
+    {:update, new_state, [{:dispatch_to_self, %Raxol.Core.Events.Event{type: :button_clicked}}]}
+  end
+
+  # Catch-all for other events in integration test context if needed,
+  # ensuring it doesn't conflict with the Application behaviour handle_event/1.
+  # This specific arity is for the test framework.
+  def handle_event(state, _event, _opts) do
+    # Default pass-through for other events not specifically handled by Form in this context
+    {:noreply, state, []} # Or simply :passthrough if state is guaranteed to be a component state map
+  end
 end

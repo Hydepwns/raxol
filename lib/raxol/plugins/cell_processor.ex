@@ -35,7 +35,9 @@ defmodule Raxol.Plugins.CellProcessor do
           | {:error, any()}
   def process(%Core{} = manager, cells, emulator_state)
       when is_list(cells) do
-    Raxol.Core.Runtime.Log.debug("[CellProcessor.process] Processing #{length(cells)} cells...")
+    Raxol.Core.Runtime.Log.debug(
+      "[CellProcessor.process] Processing #{length(cells)} cells..."
+    )
 
     # Accumulator: {updated_manager, processed_cells_list_reversed, collected_commands_list}
     initial_acc = {manager, [], []}
@@ -225,10 +227,14 @@ CELL DATA: #{inspect(placeholder_cell)}"
         {updated_manager, plugin_cells, plugin_commands}
 
       # Plugin declined or returned unexpected success format (invalid cells)
-      {:ok, updated_plugin_state, _invalid_cells, plugin_commands} ->
+      {:ok, updated_plugin_state, invalid_cells_param, plugin_commands} ->
         Raxol.Core.Runtime.Log.warning_with_context(
           "[CellProcessor.process] Plugin #{plugin_name} handled placeholder but returned invalid cell format. Treating as decline.",
-          %{plugin_name: plugin_name, invalid_cells: _invalid_cells, plugin_commands: plugin_commands}
+          %{
+            plugin_name: plugin_name,
+            invalid_cells: invalid_cells_param,
+            plugin_commands: plugin_commands
+          }
         )
 
         updated_manager = %{

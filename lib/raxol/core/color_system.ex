@@ -140,21 +140,21 @@ defmodule Raxol.Core.ColorSystem do
 
       # Check variant palette first, then base palette
       # Get variant palette safely
-      variant_definition = Map.get(theme.variants, active_variant_id)
+      variant_definition = safe_map_get(theme.variants, active_variant_id)
 
       variant_palette =
         if variant_definition,
-          do: Map.get(variant_definition, :palette),
+          do: safe_map_get(variant_definition, :palette),
           else: nil
 
       base_palette = theme.colors
 
       cond do
         variant_palette && Map.has_key?(variant_palette, color_name) ->
-          Map.get(variant_palette, color_name)
+          safe_map_get(variant_palette, color_name)
 
         Map.has_key?(base_palette, color_name) ->
-          Map.get(base_palette, color_name)
+          safe_map_get(base_palette, color_name)
 
         true ->
           # Color not found in either palette
@@ -234,5 +234,9 @@ defmodule Raxol.Core.ColorSystem do
         Color.complement(bg)
       end
     end
+  end
+
+  defp safe_map_get(data, key, default \\ nil) do
+    if is_map(data), do: Map.get(data, key, default), else: default
   end
 end

@@ -199,5 +199,9 @@ defmodule Raxol.Core.Events.Subscription do
   # Private Helpers
 
   defp add_filter(opts, _key, nil), do: opts
-  defp add_filter(opts, key, value), do: Keyword.put(opts, key, value)
+
+  defp add_filter(opts, key, value) do
+    opts = if is_list(opts), do: opts, else: []
+    Keyword.put(opts, key, value)
+  end
 end

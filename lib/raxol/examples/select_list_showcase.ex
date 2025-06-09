@@ -609,4 +609,13 @@ defmodule Raxol.Examples.SelectListShowcase do
       :pagination -> "Pagination"
     end
   end
+
+  @impl Raxol.UI.Components.Base.Component
+  def update({:update_props, new_props}, state) do
+    {:noreply, Map.merge(state, new_props)}
+  end
+
+  def update({:tab_selected, tab}, state) do
+    {:noreply, %{state | active_tab: tab}}
+  end
 end

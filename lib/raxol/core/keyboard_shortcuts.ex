@@ -310,7 +310,6 @@ defmodule Raxol.Core.KeyboardShortcuts do
     end)
   end
 
-  @impl Raxol.Core.KeyboardShortcutsBehaviour
   @doc """
   Show help for available keyboard shortcuts for the current context.
 
@@ -364,7 +363,11 @@ defmodule Raxol.Core.KeyboardShortcuts do
 
     # Announce through accessibility system if available
     if function_exported?(Accessibility, :announce, 3) do
-      Accessibility.announce(full_message, [priority: :medium], user_preferences_pid_or_name)
+      Accessibility.announce(
+        full_message,
+        [priority: :medium],
+        user_preferences_pid_or_name
+      )
     end
 
     # Return formatted help

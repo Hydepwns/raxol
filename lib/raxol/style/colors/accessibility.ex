@@ -3,8 +3,8 @@ defmodule Raxol.Style.Colors.Accessibility do
   Provides utilities for color accessibility, focusing on WCAG contrast.
   """
 
-  alias Raxol.Style.Colors.Color
   alias Raxol.Style.Colors.Utilities
+  alias Raxol.Style.Colors.Color
   require Raxol.Core.Runtime.Log
 
   # WCAG contrast ratio thresholds
@@ -233,7 +233,10 @@ defmodule Raxol.Style.Colors.Accessibility do
         accessible_color_pair(c, level)
 
       _ ->
-        Raxol.Core.Runtime.Log.warning_with_context("Accessibility: Could not find accessible color pair for #{inspect(base_color)}", %{})
+        Raxol.Core.Runtime.Log.warning_with_context(
+          "Accessibility: Could not find accessible color pair for #{inspect(base_color)}",
+          %{}
+        )
 
         # Return nil for invalid base color
         nil

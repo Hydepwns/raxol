@@ -84,13 +84,19 @@ defmodule Raxol.Animation.Framework do
 
     # Read reduced_motion preference
     reduced_motion_pref =
-      Raxol.Core.UserPreferences.get([:accessibility, :reduced_motion], user_preferences_pid) || false
+      Raxol.Core.UserPreferences.get(
+        [:accessibility, :reduced_motion],
+        user_preferences_pid
+      ) || false
 
     reduced_motion = Map.get(opts, :reduced_motion, reduced_motion_pref)
 
     # Read cognitive_accessibility preference
     cognitive_accessibility_pref =
-      Raxol.Core.UserPreferences.get([:accessibility, :cognitive_accessibility], user_preferences_pid) ||
+      Raxol.Core.UserPreferences.get(
+        [:accessibility, :cognitive_accessibility],
+        user_preferences_pid
+      ) ||
         false
 
     cognitive_accessibility =
@@ -207,7 +213,12 @@ defmodule Raxol.Animation.Framework do
       iex> AnimationFramework.start_animation(:slide_in, "panel", %{on_complete: &handle_complete/1}, user_preferences_pid)
       :ok
   """
-  def start_animation(animation_name, element_id, opts \\ %{}, user_preferences_pid \\ nil) do
+  def start_animation(
+        animation_name,
+        element_id,
+        opts \\ %{},
+        user_preferences_pid \\ nil
+      ) do
     # Get animation definition via StateManager
     animation_def = StateManager.get_animation(animation_name)
 
@@ -218,35 +229,62 @@ defmodule Raxol.Animation.Framework do
           [^element_id | _] ->
             # Already starts with element_id (rare, but just in case)
             animation_def
+
           [:elements, ^element_id | _] ->
             # Already fully qualified
             animation_def
+
           [property] when is_atom(property) or is_binary(property) ->
-            Map.put(animation_def, :target_path, [:elements, to_string(element_id), property])
+            Map.put(animation_def, :target_path, [
+              :elements,
+              to_string(element_id),
+              property
+            ])
+
           path when is_list(path) ->
             # If already a list but not qualified, check if it starts with :elements
             case path do
               [:elements, id | _] ->
                 id_str = if is_binary(id), do: id, else: to_string(id)
                 elem_id_str = to_string(element_id)
+
                 if id == element_id or id_str == elem_id_str do
                   animation_def
                 else
-                  Map.put(animation_def, :target_path, [:elements, elem_id_str] ++ path)
+                  Map.put(
+                    animation_def,
+                    :target_path,
+                    [:elements, elem_id_str] ++ path
+                  )
                 end
+
               _ ->
-                Map.put(animation_def, :target_path, [:elements, to_string(element_id)] ++ path)
+                Map.put(
+                  animation_def,
+                  :target_path,
+                  [:elements, to_string(element_id)] ++ path
+                )
             end
+
           _ ->
             animation_def
         end
+
       # Check accessibility settings via StateManager
       settings = StateManager.get_settings()
       reduce_motion? = Map.get(settings, :reduced_motion, false)
-      cognitive_accessibility? = Map.get(settings, :cognitive_accessibility, false)
+
+      cognitive_accessibility? =
+        Map.get(settings, :cognitive_accessibility, false)
+
       # Adapt animation for accessibility
       adapted_animation =
-        AnimAccessibility.adapt_animation(animation_def, reduce_motion?, cognitive_accessibility?)
+        AnimAccessibility.adapt_animation(
+          animation_def,
+          reduce_motion?,
+          cognitive_accessibility?
+        )
+
       # Build animation instance
       instance = %{
         animation: adapted_animation,
@@ -254,19 +292,34 @@ defmodule Raxol.Animation.Framework do
         on_complete: Map.get(opts, :on_complete),
         context: Map.get(opts, :context)
       }
+
       # Register animation instance
-      StateManager.put_active_animation(element_id, animation_def.name, instance)
+      StateManager.put_active_animation(
+        element_id,
+        animation_def.name,
+        instance
+      )
+
       # Announce to screen reader if needed
       should_announce =
         Map.get(adapted_animation, :announce_to_screen_reader, false) and
-          not (reduce_motion? and Map.get(adapted_animation, :disabled, false) == true)
+          not (reduce_motion? and
+                 Map.get(adapted_animation, :disabled, false) == true)
+
       if should_announce do
         description = Map.get(adapted_animation, :description)
-        message = if description, do: "#{description} started", else: "Animation started"
+
+        message =
+          if description,
+            do: "#{description} started",
+            else: "Animation started"
+
         Accessibility.announce(message, user_preferences_pid)
       end
+
       # Always send animation_started message for test synchronization
       send(self(), {:animation_started, element_id, animation_def.name})
+
       # If reduced motion, do NOT remove the animation here. Let apply_animations_to_state/2 handle it.
       # if reduce_motion? do
       #   # Remove from active animations and send completion
@@ -357,12 +410,16 @@ defmodule Raxol.Animation.Framework do
       final_value = animation.to
       # Ensure target_path exists in the animation map
       path = Map.get(animation, :target_path)
-      IO.inspect(%{
-        animation: animation,
-        state_before: state,
-        path: path,
-        final_value: final_value
-      }, label: "DEBUG: Animation state update (completion)")
+
+      IO.inspect(
+        %{
+          animation: animation,
+          state_before: state,
+          path: path,
+          final_value: final_value
+        },
+        label: "DEBUG: Animation state update (completion)"
+      )
 
       updated_state =
         if path do
@@ -522,30 +579,6 @@ defmodule Raxol.Animation.Framework do
     end
   end
 
-  # Helper function to get value from nested state (might move later)
-  # This is a simplified version, might need more robust implementation
-  # Consider using Kernel.get_in/2 with Access syntax if paths are lists of keys
-  defp get_in_state(state, path) when is_list(path) do
-    # Use Kernel.get_in for list paths
-    get_in(state, path)
-  catch
-    # Catch potential errors if path is invalid for the state structure
-    :error, reason ->
-      Raxol.Core.Runtime.Log.warning_with_context(
-        "[Animation] Failed to get path #{inspect(path)} from state: #{inspect(reason)}",
-        %{path: path, reason: reason}
-      )
-
-      # Or return an appropriate default/error indicator
-      nil
-  end
-
-  # Handle potential non-list paths if necessary (e.g., single atom key)
-  defp get_in_state(state, key) when not is_list(key) do
-    # Assuming it might be a single key for a top-level map access
-    Map.get(state, key)
-  end
-
   # Helper function to set value in nested state (might move later)
   # Consider using Kernel.put_in/3 with Access syntax if paths are lists of keys
   defp set_in_state(state, path, value) when is_list(path) do
@@ -583,7 +616,11 @@ defmodule Raxol.Animation.Framework do
 
   def should_reduce_motion?(user_preferences_pid \\ nil) do
     reduced_motion_pref =
-      Raxol.Core.UserPreferences.get([:accessibility, :reduced_motion], user_preferences_pid) || false
+      Raxol.Core.UserPreferences.get(
+        [:accessibility, :reduced_motion],
+        user_preferences_pid
+      ) || false
+
     reduced_motion_pref
   end
 

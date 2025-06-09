@@ -1,16 +1,40 @@
 defmodule Raxol.Core.Runtime.Plugins.Loader do
   @moduledoc """
-  Handles loading plugin code, metadata, and discovery.
-  Implements the `Raxol.Core.Runtime.Plugins.LoaderBehaviour`.
+  Handles loading and management of plugins.
   """
-  @behaviour Raxol.Core.Runtime.Plugins.LoaderBehaviour
+
+  use Raxol.UI.Components.Base.Component
+
+  alias Raxol.Core.Runtime.Plugins.Loader.Behaviour
+
+  @behaviour Behaviour
 
   require Raxol.Core.Runtime.Log
-  alias Raxol.Core.Runtime.Plugins.Plugin
 
-  # --- LoaderBehaviour Callbacks ---
+  # --- Component Callbacks ---
 
-  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  @impl Raxol.UI.Components.Base.Component
+  def init(_props) do
+    {:ok, %{}}
+  end
+
+  @impl Raxol.UI.Components.Base.Component
+  def handle_event(_event, _opts, state) do
+    {:ok, state}
+  end
+
+  @impl Raxol.UI.Components.Base.Component
+  def render(_props, _state) do
+    {:ok, []}
+  end
+
+  @impl Raxol.UI.Components.Base.Component
+  def update(_props, state) do
+    {:ok, state}
+  end
+
+  # --- Loader.Behaviour Callbacks ---
+
   def discover_plugins(plugin_dirs) when is_list(plugin_dirs) do
     Raxol.Core.Runtime.Log.debug(
       "[#{__MODULE__}] Discovering plugins in: #{inspect(plugin_dirs)}"
@@ -36,9 +60,13 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
               ArgumentError ->
                 Raxol.Core.Runtime.Log.warning_with_context(
                   "[#{__MODULE__}] Could not convert derived module name '#{module_name_str}' to existing atom for file: #{file_path}. Skipping file.",
-                  %{module: __MODULE__, file_path: file_path, module_name_str: module_name_str},
-                  nil
+                  %{
+                    module: __MODULE__,
+                    file_path: file_path,
+                    module_name_str: module_name_str
+                  }
                 )
+
                 nil
             end
 
@@ -66,10 +94,11 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
         nil,
         %{module: __MODULE__, plugin_dirs: plugin_dirs}
       )
+
       {:error, :discovery_failed}
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  @impl Behaviour
   def load_plugin_metadata(module_atom) when is_atom(module_atom) do
     # For now, we assume metadata is intrinsically part of the module or accessed via it.
     # The primary goal here is to ensure the module providing metadata is "loaded" or accessible.
@@ -235,8 +264,14 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
                 "[#{__MODULE__}] Plugin #{inspect(module_atom)} metadata validation failed: #{inspect(errors)} | Metadata: #{inspect(metadata)}",
                 nil,
                 nil,
-                %{module: __MODULE__, module_atom: module_atom, errors: errors, metadata: metadata}
+                %{
+                  module: __MODULE__,
+                  module_atom: module_atom,
+                  errors: errors,
+                  metadata: metadata
+                }
               )
+
               {:error, :invalid_metadata, Enum.reverse(errors), metadata}
             else
               Raxol.Core.Runtime.Log.debug(
@@ -253,6 +288,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
                 nil,
                 %{module: __MODULE__, module_atom: module_atom}
               )
+
               {:error, :metadata_call_failed}
           end
 
@@ -271,11 +307,12 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
         nil,
         %{module: __MODULE__, module_atom: module_atom}
       )
+
       {:error, :module_not_found_for_metadata}
     end
   end
 
-  @impl Raxol.Core.Runtime.Plugins.LoaderBehaviour
+  @impl Behaviour
   def load_plugin_module(module_atom) when is_atom(module_atom) do
     if Code.ensure_loaded?(module_atom) do
       Raxol.Core.Runtime.Log.debug(
@@ -290,6 +327,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
         nil,
         %{module: __MODULE__, module_atom: module_atom}
       )
+
       {:error, :module_not_found}
     end
   end
@@ -311,16 +349,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   end
 
   # --- Potentially Deprecated or Internal Functions ---
-  # Review if these are still needed or if their logic is now part of the behaviour implementations.
-
-  @doc """
-  Loads a plugin module based on its ID (Original function - consider for removal or refactor).
-
-  Assumes the plugin ID corresponds to an existing module atom.
-  Returns the module atom, placeholder metadata, and config.
-  """
-  @spec load_plugin(atom(), map()) ::
-          {:ok, module(), map(), map()} | {:error, term()}
+  @doc false
   def load_plugin(plugin_id, config \\ %{})
 
   def load_plugin(plugin_id, config) when is_atom(plugin_id) do
@@ -328,12 +357,8 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
       "[#{__MODULE__}] Attempting to load plugin (legacy): #{inspect(plugin_id)}"
     )
 
-    # This function's logic might be superseded by the behaviour implementations.
-    # For now, it can delegate or be kept for specific internal uses not covered by behaviour.
     case load_plugin_module(plugin_id) do
       {:ok, module} ->
-        # Simplified metadata fetching for this legacy function
-        # Uses a simplified default
         metadata = default_metadata(module)
 
         Raxol.Core.Runtime.Log.info(
@@ -349,6 +374,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
           nil,
           %{module: __MODULE__, plugin_id: plugin_id, reason: reason}
         )
+
         {:error, reason}
     end
   end
@@ -360,6 +386,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
       nil,
       %{module: __MODULE__, plugin_id: plugin_id}
     )
+
     {:error, :invalid_plugin_id}
   end
 
@@ -490,71 +517,29 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
   end
 
   @doc """
-  Extracts metadata for a given plugin module (Original function - consider for removal or refactor).
-
-  Checks if the plugin implements `Raxol.Core.Runtime.Plugins.PluginMetadataProvider`.
-  If so, it calls `get_metadata/0` on the module.
-  Otherwise, it returns a default metadata map derived from the module name.
+  Extracts metadata for a given plugin module.
   """
-  def extract_metadata(plugin_module) when is_atom(plugin_module) do
-    # This logic is partially integrated into load_plugin_metadata, but kept for reference
-    provider_behaviour = Raxol.Core.Runtime.Plugins.PluginMetadataProvider
+  def extract_metadata(module) do
+    # Extract metadata from module attributes
+    metadata = %{
+      id: Module.get_attribute(module, :plugin_id),
+      version: Module.get_attribute(module, :plugin_version),
+      dependencies: Module.get_attribute(module, :plugin_dependencies) || [],
+      description: Module.get_attribute(module, :plugin_description),
+      author: Module.get_attribute(module, :plugin_author),
+      license: Module.get_attribute(module, :plugin_license)
+    }
 
-    has_provider_behaviour =
-      function_exported?(plugin_module, :behaviour_info, 1) &&
-        Enum.any?(plugin_module.behaviour_info(:callbacks), fn {b, _} ->
-          b == provider_behaviour
-        end)
-
-    if has_provider_behaviour && function_exported?(plugin_module, :metadata, 0) do
-      try do
-        Raxol.Core.Runtime.Log.debug(
-          "[#{__MODULE__}] Found #{inspect(provider_behaviour)} (legacy check). Calling metadata/0."
-        )
-
-        plugin_module.metadata()
-      rescue
-        e ->
-          Raxol.Core.Runtime.Log.error_with_stacktrace(
-            "[#{__MODULE__}] Error calling metadata/0 (legacy check) for #{inspect(plugin_module)}",
-            e,
-            nil,
-            %{module: __MODULE__, plugin_module: plugin_module}
-          )
-          default_metadata(plugin_module)
-      end
-    else
-      Raxol.Core.Runtime.Log.debug(
-        "[#{__MODULE__}] #{inspect(provider_behaviour)} not implemented or metadata/0 not exported (legacy check). Using default metadata."
-      )
-
-      default_metadata(plugin_module)
-    end
+    # Filter out nil values
+    Enum.reject(metadata, fn {_key, value} -> is_nil(value) end)
+    |> Map.new()
   end
 
   # Helper to generate default metadata (used by legacy and potentially new functions)
+  @doc false
   defp default_metadata(plugin_module) do
     plugin_id = module_to_default_id(plugin_module)
     %{id: plugin_id, version: "0.0.0-dev", dependencies: []}
-  end
-
-  @doc """
-  Ensures the code for a given plugin module is loaded (Original function - renamed to load_code).
-  Returns `:ok` or `{:error, :module_not_found}`.
-  """
-  def load_code(plugin_module) when is_atom(plugin_module) do
-    # This is essentially what load_plugin_module does now.
-    if Code.ensure_loaded?(plugin_module) do
-      :ok
-    else
-      Raxol.Core.Runtime.Log.error_with_stacktrace(
-        "[#{__MODULE__}] Failed to ensure module code is loaded (legacy load_code)",
-        nil,
-        nil,
-        %{module: __MODULE__, plugin_module: plugin_module}
-      )
-      {:error, :module_not_found}
-    end
   end
 
   @doc """
@@ -581,55 +566,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @doc """
-  Extracts metadata from a plugin module.
-
-  ## Parameters
-
-  * `module` - The module to extract metadata from
-
-  ## Returns
-
-  * A map containing the plugin's metadata
-
-  ## Examples
-
-      iex> Loader.extract_metadata(MyPlugin)
-      %{id: "my_plugin", version: "1.0.0", dependencies: []}
-  """
-  def extract_metadata(module) when is_atom(module) do
-    # Extract metadata from module attributes
-    metadata = %{
-      id: Module.get_attribute(module, :plugin_id),
-      version: Module.get_attribute(module, :plugin_version),
-      dependencies: Module.get_attribute(module, :plugin_dependencies) || [],
-      description: Module.get_attribute(module, :plugin_description),
-      author: Module.get_attribute(module, :plugin_author),
-      license: Module.get_attribute(module, :plugin_license)
-    }
-
-    # Filter out nil values
-    Enum.reject(metadata, fn {_key, value} -> is_nil(value) end)
-    |> Map.new()
-  end
-
-  @doc """
-  Checks if a module implements a specific behaviour.
-
-  ## Parameters
-
-  * `module` - The module to check
-  * `behaviour` - The behaviour to check for
-
-  ## Returns
-
-  * `true` if the module implements the behaviour, `false` otherwise
-
-  ## Examples
-
-      iex> Loader.behaviour_implemented?(MyPlugin, Plugin)
-      true
-  """
+  @impl Behaviour
   def behaviour_implemented?(module, behaviour)
       when is_atom(module) and is_atom(behaviour) do
     case Code.ensure_loaded(module) do
@@ -646,24 +583,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
     end
   end
 
-  @doc """
-  Initializes a plugin with the given configuration.
-
-  ## Parameters
-
-  * `module` - The plugin module to initialize
-  * `config` - The configuration to pass to the plugin's init/1 callback
-
-  ## Returns
-
-  * `{:ok, state}` - If initialization was successful
-  * `{:error, reason}` - If initialization failed
-
-  ## Examples
-
-      iex> Loader.initialize_plugin(MyPlugin, %{setting: "value"})
-      {:ok, %{initialized: true}}
-  """
+  @impl Behaviour
   def initialize_plugin(module, config) when is_atom(module) do
     try do
       case module.init(config) do
@@ -678,6 +598,7 @@ defmodule Raxol.Core.Runtime.Plugins.Loader do
           nil,
           %{module: __MODULE__, plugin_module: module}
         )
+
         {:error, {:init_exception, error}}
     end
   end
