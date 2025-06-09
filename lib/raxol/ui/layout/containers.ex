@@ -24,15 +24,16 @@ defmodule Raxol.UI.Layout.Containers do
 
   A list of positioned elements with absolute coordinates.
   """
-  def process_row(%{type: :row, attrs: attrs, children: children}, space, acc)
-      when is_list(children) do
+  def process_row(%{type: :row, attrs: attrs} = row, space, acc) do
+    children = Map.get(row, :children, [])
+    children = if is_list(children), do: children, else: []
     # Calculate spacing between items
     gap = Map.get(attrs, :gap, 1)
     justify = Map.get(attrs, :justify, :start)
     align = Map.get(attrs, :align, :start)
 
     # Skip if no children
-    if children == [] do
+    if Enum.empty?(children) do
       acc
     else
       # Calculate the space each child needs
@@ -44,7 +45,7 @@ defmodule Raxol.UI.Layout.Containers do
       # Total width used by children
       total_width =
         Enum.reduce(child_dimensions, 0, fn dim, acc ->
-          acc + dim.width
+          acc + extract_dim(dim, :width, 0, 0)
         end)
 
       # Space needed for gaps
@@ -80,9 +81,10 @@ defmodule Raxol.UI.Layout.Containers do
         end
 
       # Position each child
-      {_, elements} =
+      {_final_x, child_generated_elements_reversed} =
         Enum.zip(children, child_dimensions)
-        |> Enum.reduce({start_x, []}, fn {child, dims}, {current_x, elements} ->
+        |> Enum.reduce({start_x, []}, fn {child, dims},
+                                         {current_x, elements_acc_for_reduce} ->
           # Calculate y position based on alignment
           child_y =
             case align do
@@ -99,15 +101,21 @@ defmodule Raxol.UI.Layout.Containers do
             height: dims.height
           }
 
-          # Process child element
-          child_elements = Engine.process_element(child, child_space, [])
+          # Process child element, passing empty accumulator for this child's own processing
+          processed_elements_for_this_child =
+            Engine.process_element(child, child_space, [])
 
-          # Return new x position and accumulated elements
-          {current_x + dims.width + effective_gap, child_elements ++ elements}
+          # Return new x position and accumulated elements (reversed order)
+          {current_x + dims.width + effective_gap,
+           processed_elements_for_this_child ++ elements_acc_for_reduce}
         end)
 
-      # Flatten and add to accumulator
-      List.flatten(elements) ++ acc
+      final_child_elements =
+        List.flatten(child_generated_elements_reversed) |> Enum.reverse()
+
+      # Append to the original accumulator from caller
+      all_elements = final_child_elements ++ acc
+      all_elements
     end
   end
 
@@ -126,19 +134,21 @@ defmodule Raxol.UI.Layout.Containers do
 
   A list of positioned elements with absolute coordinates.
   """
-  def process_column(
-        %{type: :column, attrs: attrs, children: children},
-        space,
-        acc
-      )
-      when is_list(children) do
+  def process_column(%{type: :column, attrs: attrs} = column, space, acc) do
+    IO.inspect({column, space, acc},
+      label: "Containers.process_column ENTRY",
+      limit: :infinity
+    )
+
+    children = Map.get(column, :children, [])
+    children = if is_list(children), do: children, else: []
     # Calculate spacing between items
     gap = Map.get(attrs, :gap, 1)
     justify = Map.get(attrs, :justify, :start)
     align = Map.get(attrs, :align, :start)
 
     # Skip if no children
-    if children == [] do
+    if Enum.empty?(children) do
       acc
     else
       # Calculate the space each child needs
@@ -150,7 +160,7 @@ defmodule Raxol.UI.Layout.Containers do
       # Total height used by children
       total_height =
         Enum.reduce(child_dimensions, 0, fn dim, acc ->
-          acc + dim.height
+          acc + extract_dim(dim, :height, 1, 0)
         end)
 
       # Space needed for gaps
@@ -186,10 +196,14 @@ defmodule Raxol.UI.Layout.Containers do
         end
 
       # Position each child
-      {_, elements} =
+      {_final_y, child_generated_elements_reversed} =
         Enum.zip(children, child_dimensions)
-        |> Enum.reduce({start_y, []}, fn {child, dims}, {current_y, elements} ->
-          # Calculate x position based on alignment
+        |> Enum.reduce({start_y, []}, fn {child, dims},
+                                         {current_y, elements_acc_for_reduce} ->
+          IO.inspect(child,
+            label: "Containers.process_column PROCESSING CHILD FOR ENGINE"
+          )
+
           child_x =
             case align do
               :start -> space.x
@@ -205,15 +219,24 @@ defmodule Raxol.UI.Layout.Containers do
             height: dims.height
           }
 
-          # Process child element
-          child_elements = Engine.process_element(child, child_space, [])
+          # Process child element, passing empty accumulator for this child's own processing
+          processed_elements_for_this_child =
+            Engine.process_element(child, child_space, [])
 
-          # Return new y position and accumulated elements
-          {current_y + dims.height + effective_gap, child_elements ++ elements}
+          {current_y + dims.height + effective_gap,
+           processed_elements_for_this_child ++ elements_acc_for_reduce}
         end)
 
-      # Flatten and add to accumulator
-      List.flatten(elements) ++ acc
+      final_child_elements =
+        List.flatten(child_generated_elements_reversed) |> Enum.reverse()
+
+      all_elements = final_child_elements ++ acc
+
+      IO.inspect(all_elements,
+        label: "Containers.process_column RETURNED TO ENGINE"
+      )
+
+      all_elements
     end
   end
 
@@ -231,13 +254,11 @@ defmodule Raxol.UI.Layout.Containers do
 
   The dimensions of the row: %{width: w, height: h}
   """
-  def measure_row(
-        %{type: :row, attrs: _attrs, children: children},
-        available_space
-      )
-      when is_list(children) do
+  def measure_row(%{type: :row} = row, available_space) do
+    children = Map.get(row, :children, [])
+    children = if is_list(children), do: children, else: []
     # Skip if no children
-    if children == [] do
+    if Enum.empty?(children) do
       %{width: 0, height: 0}
     else
       # Calculate the space each child needs
@@ -249,13 +270,13 @@ defmodule Raxol.UI.Layout.Containers do
       # Row width is sum of children's width
       row_width =
         Enum.reduce(child_dimensions, 0, fn dim, acc ->
-          acc + dim.width
+          acc + extract_dim(dim, :width, 0, 0)
         end)
 
       # Row height is the maximum child height
       row_height =
         Enum.reduce(child_dimensions, 0, fn dim, acc ->
-          max(acc, dim.height)
+          max(acc, extract_dim(dim, :height, 1, 0))
         end)
 
       # Return dimensions constrained to available space
@@ -280,13 +301,11 @@ defmodule Raxol.UI.Layout.Containers do
 
   The dimensions of the column: %{width: w, height: h}
   """
-  def measure_column(
-        %{type: :column, attrs: _attrs, children: children},
-        available_space
-      )
-      when is_list(children) do
+  def measure_column(%{type: :column} = column, available_space) do
+    children = Map.get(column, :children, [])
+    children = if is_list(children), do: children, else: []
     # Skip if no children
-    if children == [] do
+    if Enum.empty?(children) do
       %{width: 0, height: 0}
     else
       # Calculate the space each child needs
@@ -298,22 +317,37 @@ defmodule Raxol.UI.Layout.Containers do
       # Column height is sum of children's height
       column_height =
         Enum.reduce(child_dimensions, 0, fn dim, acc ->
-          acc + dim.height
+          acc + extract_dim(dim, :height, 1, 0)
         end)
 
       # Column width is the maximum child width
       column_width =
         Enum.reduce(child_dimensions, 0, fn dim, acc ->
-          max(acc, dim.width)
+          max(acc, extract_dim(dim, :width, 0, 0))
         end)
 
       # Return dimensions constrained to available space
       %{
-        width: min(column_width, available_space.width),
-        height: min(column_height, available_space.height)
+        width:
+          min(column_width, Map.get(available_space, :width, column_width)),
+        height:
+          min(column_height, Map.get(available_space, :height, column_height))
       }
     end
   end
 
   def measure_column(_, _available_space), do: %{width: 0, height: 0}
+
+  defp extract_dim(attrs, key, tuple_index, default) do
+    cond do
+      is_map(attrs) and Map.has_key?(attrs, key) ->
+        Map.get(attrs, key)
+
+      is_tuple(attrs) and tuple_size(attrs) > tuple_index ->
+        elem(attrs, tuple_index)
+
+      true ->
+        default
+    end
+  end
 end

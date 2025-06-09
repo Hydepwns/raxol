@@ -34,7 +34,7 @@ defmodule Raxol.UI.Components.Progress.Spinner do
   @spec init(map()) :: map()
   @impl true
   def init(props) do
-    style = props[:style] || @default_style
+    style = Map.get(props, :style, @default_style)
     frames = get_frames(style, props[:frames])
     colors = props[:colors] || [:white]
 

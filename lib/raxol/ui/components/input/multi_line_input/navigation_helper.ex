@@ -9,7 +9,17 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   require Raxol.Core.Runtime.Log
 
   @doc """
-  Moves the cursor to the specified {row, col} position, clamping to document bounds and clearing selection.
+  Moves the cursor based on the given direction or position.
+
+  ## Parameters
+    * `state` - The current state of the input
+    * `direction_or_pos` - Either a {row, col} tuple for absolute positioning, or one of:
+      * `:left` - Move one character left
+      * `:right` - Move one character right
+      * `:up` - Move one line up
+      * `:down` - Move one line down
+      * `:word_left` - Move one word left
+      * `:word_right` - Move one word right
   """
   def move_cursor(state, {target_row, target_col}) do
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
@@ -30,10 +40,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     }
   end
 
-  # --- Add heads for directional movement ---
-  @doc """
-  Moves the cursor one position to the left, or to the end of the previous line if at the start of a line.
-  """
+  # Moves cursor one position to the left, or to the end of the previous line if at the start of a line
   def move_cursor(state, :left) do
     {row, col} = state.cursor_pos
 
@@ -54,9 +61,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     end
   end
 
-  @doc """
-  Moves the cursor one position to the right, or to the start of the next line if at the end of a line.
-  """
+  # Moves cursor one position to the right, or to the start of the next line if at the end of a line
   def move_cursor(state, :right) do
     {row, col} = state.cursor_pos
     lines = state.lines
@@ -78,9 +83,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     end
   end
 
-  @doc """
-  Moves the cursor up by one line, keeping the same column if possible.
-  """
+  # Moves cursor up by one line, keeping the same column if possible
   def move_cursor(state, :up) do
     {row, col} = state.cursor_pos
     new_row = max(0, row - 1)
@@ -89,9 +92,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     move_cursor(state, {new_row, new_col})
   end
 
-  @doc """
-  Moves the cursor down by one line, keeping the same column if possible.
-  """
+  # Moves cursor down by one line, keeping the same column if possible
   def move_cursor(state, :down) do
     {row, col} = state.cursor_pos
     lines = TextHelper.split_into_lines(state.value, state.width, state.wrap)
@@ -102,21 +103,15 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
     move_cursor(state, {new_row, new_col})
   end
 
-  @doc """
-  Moves the cursor one word to the left.
-  """
+  # Moves cursor one word to the left
   def move_cursor(state, :word_left) do
     move_cursor_word_left(state)
   end
 
-  @doc """
-  Moves the cursor one word to the right.
-  """
+  # Moves cursor one word to the right
   def move_cursor(state, :word_right) do
     move_cursor_word_right(state)
   end
-
-  # --- End added heads ---
 
   # Helper for clamping values (Needed by move_cursor)
   defp clamp(value, min_val, max_val) do
@@ -240,7 +235,10 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.NavigationHelper do
   def move_cursor_page(state, direction) do
     {row, col} = state.cursor_pos
     # Use component height as page size, defaulting to 10 if not available
-    page_size = Map.get(state, :height, 10)
+    page_size =
+      if is_map(state),
+        do: Map.get(state, :height, 10),
+        else: if(is_tuple(state), do: elem(state, 1), else: 10)
 
     target_row =
       case direction do

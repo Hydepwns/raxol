@@ -16,23 +16,43 @@ defmodule Raxol.UI.Components.HintDisplay do
             visible: true,
             # :top, :bottom, :left, :right
             position: :bottom,
-            style: %{}
+            style: %{},
+            mounted: false,
+            render_count: 0,
+            type: :hint_display,
+            focused: false,
+            disabled: false,
+            text: ""
 
   # --- Component Behaviour Callbacks ---
 
   @doc "Initializes the HintDisplay component state from props."
   @spec init(map()) :: %__MODULE__{}
   @impl Raxol.UI.Components.Base.Component
-  def init(props) do
-    # Initialize state
+  def init(props) when is_map(props) do
     %__MODULE__{
       id: Map.get(props, :id, nil),
       hints: props[:hints] || [],
       visible: Map.get(props, :visible, true),
       position: props[:position] || :bottom,
-      style: props[:style] || %{}
+      style: Map.get(props, :style, %{}),
+      type: Map.get(props, :type, :hint_display),
+      focused: Map.get(props, :focused, false),
+      disabled: Map.get(props, :disabled, false),
+      mounted: Map.get(props, :mounted, false),
+      render_count: Map.get(props, :render_count, 0),
+      text: Map.get(props, :text, "")
     }
   end
+
+  def init(_),
+    do: %__MODULE__{
+      style: %{},
+      type: :hint_display,
+      mounted: false,
+      render_count: 0,
+      text: ""
+    }
 
   @doc "Updates the HintDisplay component state in response to messages."
   @spec update(term(), %__MODULE__{}) :: {%__MODULE__{}, list()}
@@ -101,7 +121,13 @@ defmodule Raxol.UI.Components.HintDisplay do
         end
 
       # Return element map directly
-      dsl_result
+      if is_map(dsl_result) do
+        dsl_result
+        |> Map.put_new(:disabled, Map.get(state, :disabled, false))
+        |> Map.put_new(:focused, Map.get(state, :focused, false))
+      else
+        dsl_result
+      end
     else
       # Render nothing if not visible or no hints
       nil
