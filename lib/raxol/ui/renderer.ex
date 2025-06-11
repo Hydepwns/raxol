@@ -229,7 +229,7 @@ defmodule Raxol.UI.Renderer do
   end
 
   # --- Add Table Rendering Logic ---
-  defp render_table(x, y, width, height, attrs, theme) do
+  defp render_table(x, y, width, _height, attrs, theme) do
     headers = Map.get(attrs, :_headers, [])
     data = Map.get(attrs, :_data, [])
     col_widths = Map.get(attrs, :_col_widths, [])

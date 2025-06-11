@@ -39,7 +39,7 @@ defmodule Raxol.UI.Rendering.Layouter do
 
   defp do_layout_node_and_children(nil, _diff), do: nil
 
-  defp do_layout_node_and_children(node_content, diff_for_this_node)
+  defp do_layout_node_and_children(node_content, _diff_for_this_node)
        when not is_map(node_content) do
     Raxol.Core.Runtime.Log.warning_with_context("Layout Engine: Encountered non-map node content: #{inspect(node_content)}. Passing through.", %{})
     node_content
@@ -61,7 +61,7 @@ defmodule Raxol.UI.Rendering.Layouter do
       Map.put(
         current_node_actual_content,
         :layout_attrs,
-        dummy_layout_for_node(current_node_actual_content, diff_for_this_node)
+        dummy_layout_for_node(current_node_actual_content)
       )
     processed_children =
       case diff_for_this_node do
@@ -79,11 +79,11 @@ defmodule Raxol.UI.Rendering.Layouter do
     %{node_with_own_layout | children: processed_children}
   end
 
-  defp map_child_changes_to_new_children_list(children_in_current_node, child_diff_details_map) do
+  defp map_child_changes_to_new_children_list(_children_in_current_node, child_diff_details_map) do
     case child_diff_details_map do
       %{type: :indexed_children, diffs: indexed_child_diffs_list} ->
         Raxol.Core.Runtime.Log.warning_with_context("Layout Engine: Unhandled indexed child diff type: #{inspect(indexed_child_diffs_list)}", [])
-      %{type: :keyed_children, diffs: keyed_child_diffs_list} ->
+      %{type: :keyed_children, diffs: _keyed_child_diffs_list} ->
         []
     end
   end
@@ -95,14 +95,14 @@ defmodule Raxol.UI.Rendering.Layouter do
     end)
   end
 
-  defp dummy_layout_for_node(node_content, diff_type \\ :full) do
+  defp dummy_layout_for_node(node_content) do
     %{
       x: 0,
       y: 0,
       width: 10,
       height: 1,
       node_type: (if is_map(node_content), do: Map.get(node_content, :type, :unknown), else: :unknown),
-      processed_with_diff: diff_type,
+      processed_with_diff: :full,
       timestamp: System.monotonic_time()
     }
   end

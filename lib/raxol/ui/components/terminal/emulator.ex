@@ -3,11 +3,14 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
   Terminal emulator component wrapping the core emulator logic.
   """
 
-  alias Raxol.Terminal.Emulator, as: CoreEmulator
+  alias Raxol.Terminal.{
+    IO.UnifiedIO,
+    Integration.State
+  }
 
   @type emulator_state :: %{
-          core_emulator: CoreEmulator.t()
-        }
+    state: State.t()
+  }
 
   @doc """
   Initializes a new terminal emulator component state.
@@ -18,59 +21,61 @@ defmodule Raxol.UI.Components.Terminal.Emulator do
     width = Map.get(opts, :width)
     height = Map.get(opts, :height)
 
-    # Initialize the core emulator, passing options if provided
-    core_emulator =
-      case {width, height} do
-        {w, h} when is_integer(w) and is_integer(h) -> CoreEmulator.new(w, h)
-        _ -> CoreEmulator.new()
-      end
+    # Initialize the integration state
+    state = State.new(%{
+      width: width,
+      height: height,
+      config: Map.get(opts, :config, %{})
+    })
 
     %{
-      core_emulator: core_emulator
+      state: state
     }
   end
 
   @doc """
-  Processes input and updates terminal state by delegating to the core emulator.
+  Processes input and updates terminal state by delegating to UnifiedIO.
   Returns a tuple `{updated_state, output_string}`.
   """
   @spec process_input(term(), emulator_state()) :: {emulator_state(), term()}
-  def process_input(input, %{core_emulator: current_emulator} = state) do
-    # Delegate processing to the core emulator
-    # Capture the output returned by the core emulator
-    {updated_emulator, output} =
-      CoreEmulator.process_input(current_emulator, input)
+  def process_input(input, %{state: current_state} = state) do
+    # Process input through UnifiedIO
+    {:ok, commands} = UnifiedIO.process_input(input)
 
-    # Update the component's state with the updated core emulator state
-    updated_state = %{state | core_emulator: updated_emulator}
+    # Update the component's state
+    updated_state = %{state | state: current_state}
 
-    # Return the updated state and the output
-    {updated_state, output}
+    # Return the updated state and any commands
+    {updated_state, commands}
   end
 
   @doc """
-  Handles terminal resize events by delegating to the CoreEmulator.
+  Handles terminal resize events by delegating to State.
   This ensures that the terminal's internal buffers and state are correctly
   adjusted while preserving existing content and history where possible.
   """
   @spec handle_resize({integer(), integer()}, emulator_state()) :: emulator_state()
-  def handle_resize({width, height}, %{core_emulator: current_emulator} = state)
-      when is_integer(width) and width > 0 and is_integer(height) and height > 0 do
-    updated_core_emulator = CoreEmulator.resize(current_emulator, width, height)
-    %{state | core_emulator: updated_core_emulator}
+  def handle_resize({width, height}, %{state: current_state} = state) do
+    # Delegate resize to State
+    updated_state = State.resize(current_state, width, height)
+    %{state | state: updated_state}
   end
 
   @doc """
-  Gets the visible content from the UI component's state.
+  Renders the current terminal state.
   """
-  @spec get_visible_content(emulator_state()) :: list()
-  def get_visible_content(_state) do
-    # Implementation here
-    []
+  @spec render(emulator_state()) :: emulator_state()
+  def render(%{state: current_state} = state) do
+    # Delegate rendering to State
+    updated_state = State.render(current_state)
+    %{state | state: updated_state}
   end
 
-  # Private functions removed as logic is now in CoreEmulator
-  # defp init_screen(...)
-  # defp resize_screen(...)
-  # defp clamp_cursor(...)
+  @doc """
+  Cleans up resources when the component is destroyed.
+  """
+  @spec cleanup(emulator_state()) :: :ok
+  def cleanup(%{state: current_state}) do
+    State.cleanup(current_state)
+  end
 end

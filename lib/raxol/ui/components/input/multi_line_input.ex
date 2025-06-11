@@ -8,7 +8,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   """
 
   alias Raxol.UI.Components.Base.Component
-  alias Raxol.UI.Theming.Theme
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
 
@@ -34,6 +33,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
           shift_held: boolean(),
           focused: boolean(),
           on_change: (String.t() -> any()) | nil,
+          on_submit: (() -> any()) | nil,
           aria_label: String.t() | nil,
           tooltip: String.t() | nil,
           lines: [String.t()]
@@ -54,6 +54,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
             shift_held: false,
             focused: false,
             on_change: nil,
+            on_submit: nil,
             aria_label: nil,
             tooltip: nil,
             lines: [""]
@@ -74,6 +75,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     aria_label = props[:aria_label]
     tooltip = props[:tooltip]
     on_change = props[:on_change]
+    on_submit = props[:on_submit]
     # Use the canonical helper for line splitting
     lines =
       Raxol.UI.Components.Input.MultiLineInput.TextHelper.split_into_lines(
@@ -98,6 +100,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
       shift_held: false,
       focused: false,
       on_change: on_change,
+      on_submit: on_submit,
       aria_label: aria_label,
       tooltip: tooltip,
       lines: lines

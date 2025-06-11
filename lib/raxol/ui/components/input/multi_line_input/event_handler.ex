@@ -61,6 +61,9 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
       %Event{type: :key_down, data: %{key: :delete}} ->
         handle_delete(event, state)
 
+      %Event{type: :key_down, data: %{key: :enter, modifiers: [:ctrl]}} ->
+        handle_submit(event, state)
+
       %Event{type: :key_down, data: %{key: key}} when is_binary(key) ->
         handle_character_input(event, state)
 
@@ -395,5 +398,12 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.EventHandler do
     {_scroll_row, _scroll_col} = state.scroll_offset
     # Handle resize event
     {:ok, state}
+  end
+
+  defp handle_submit(_event, state) do
+    if state.on_submit do
+      _ = state.on_submit.()
+    end
+    {:noreply, state, nil}
   end
 end

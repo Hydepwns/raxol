@@ -1,9 +1,6 @@
 defmodule Raxol.UI.Components.Table do
   use Surface.Component
-  alias Raxol.Core.Renderer.View
   require Raxol.Core.Renderer.View
-
-  alias Raxol.UI.Events
 
   @moduledoc """
   Table component for displaying and interacting with tabular data.
@@ -75,8 +72,6 @@ defmodule Raxol.UI.Components.Table do
   ```
 
   """
-
-  alias Raxol.Core.Renderer.Views.Table, as: TableView
 
   defstruct id: nil,
             columns: [],
@@ -194,7 +189,8 @@ defmodule Raxol.UI.Components.Table do
   @doc """
   Renders the table component.
   """
-  def render(state, context) do
+  @impl true
+  def render(state, _context) do
     theme = state.theme || %{}
     style = state.style || %{}
 
@@ -247,73 +243,66 @@ defmodule Raxol.UI.Components.Table do
   Handles events for the table component.
   """
   def handle_event({:key, {:arrow_down, _}}, _context, state) do
-    filtered_data = filter_data(state.data, state.filter_term)
-    # Account for header
-    visible_rows = state.page_size - 1
-    max_scroll = max(0, length(filtered_data) - visible_rows)
-    new_scroll = min(state.scroll_top + 1, max_scroll)
-    new_state = %{state | scroll_top: new_scroll}
-
-    # Update selected row if selection is enabled
-    if state.selected_row != nil do
-      new_selected = min(state.selected_row + 1, length(filtered_data) - 1)
-      new_state = %{new_state | selected_row: new_selected}
-    end
-
-    {:ok, new_state}
+    new_index = min(state.selected_row + 1, length(state.data) - 1)
+    {:ok, %{state | selected_row: new_index}}
   end
 
   def handle_event({:key, {:arrow_up, _}}, _context, state) do
-    new_scroll = max(0, state.scroll_top - 1)
-    new_state = %{state | scroll_top: new_scroll}
-
-    # Update selected row if selection is enabled
-    if state.selected_row != nil do
-      new_selected = max(0, state.selected_row - 1)
-      new_state = %{new_state | selected_row: new_selected}
-    end
-
-    {:ok, new_state}
+    new_index = max(state.selected_row - 1, 0)
+    {:ok, %{state | selected_row: new_index}}
   end
 
   def handle_event({:key, {:page_down, _}}, _context, state) do
-    filtered_data = filter_data(state.data, state.filter_term)
-    # Account for header
-    visible_rows = state.page_size - 1
-    max_scroll = max(0, length(filtered_data) - visible_rows)
-    new_scroll = min(state.scroll_top + visible_rows, max_scroll)
-    new_state = %{state | scroll_top: new_scroll}
-
-    # Update selected row if selection is enabled
-    if state.selected_row != nil do
-      new_selected =
-        min(state.selected_row + visible_rows, length(filtered_data) - 1)
-
-      new_state = %{new_state | selected_row: new_selected}
-    end
-
-    {:ok, new_state}
+    new_index = min(state.selected_row + state.page_size, length(state.data) - 1)
+    {:ok, %{state | selected_row: new_index}}
   end
 
   def handle_event({:key, {:page_up, _}}, _context, state) do
-    # Account for header
-    visible_rows = state.page_size - 1
-    new_scroll = max(0, state.scroll_top - visible_rows)
-    new_state = %{state | scroll_top: new_scroll}
+    new_index = max(state.selected_row - state.page_size, 0)
+    {:ok, %{state | selected_row: new_index}}
+  end
 
-    # Update selected row if selection is enabled
-    if state.selected_row != nil do
-      new_selected = max(0, state.selected_row - visible_rows)
-      new_state = %{new_state | selected_row: new_selected}
+  def handle_event({:key, {:home, _}}, _context, state) do
+    {:ok, %{state | selected_row: 0}}
+  end
+
+  def handle_event({:key, {:end, _}}, _context, state) do
+    {:ok, %{state | selected_row: length(state.data) - 1}}
+  end
+
+  def handle_event({:key, {:enter, _}}, _context, state) do
+    if state.selected_row do
+      {:ok, state}
+    else
+      {:ok, state}
     end
+  end
 
-    {:ok, new_state}
+  def handle_event({:key, {:escape, _}}, _context, state) do
+    {:ok, %{state | selected_row: nil}}
+  end
+
+  def handle_event({:key, {:backspace, _}}, _context, state) do
+    if state.options.searchable do
+      new_term = String.slice(state.filter_term, 0..-2//-1)
+      {:ok, %{state | filter_term: new_term, current_page: 1}}
+    else
+      {:ok, state}
+    end
+  end
+
+  def handle_event({:key, {:char, char}}, _context, state) do
+    if state.options.searchable do
+      new_term = state.filter_term <> char
+      {:ok, %{state | filter_term: new_term, current_page: 1}}
+    else
+      {:ok, state}
+    end
   end
 
   def handle_event({:mouse, {:click, {_x, y}}}, _context, state) do
-    # Convert y coordinate to row index, accounting for header
-    row_index = y - 1
-
+    # Calculate row index based on y position
+    row_index = div(y - 1, 1)  # Assuming each row is 1 unit high
     if row_index >= 0 and row_index < length(state.data) do
       {:ok, %{state | selected_row: row_index}}
     else
@@ -321,32 +310,7 @@ defmodule Raxol.UI.Components.Table do
     end
   end
 
-  def handle_event({:button_click, button_id}, _context, state) do
-    case button_id do
-      "test_table_next_page" ->
-        filtered_data = filter_data(state.data, state.filter_term)
-        max_page = max(1, ceil(length(filtered_data) / state.page_size))
-        new_page = min(state.current_page + 1, max_page)
-        {:ok, %{state | current_page: new_page, scroll_top: 0}}
-
-      "test_table_prev_page" ->
-        new_page = max(1, state.current_page - 1)
-        {:ok, %{state | current_page: new_page, scroll_top: 0}}
-
-      "test_table_sort_" <> column ->
-        column = String.to_existing_atom(column)
-
-        new_direction =
-          if state.sort_by == column && state.sort_direction == :asc,
-            do: :desc,
-            else: :asc
-
-        {:ok, %{state | sort_by: column, sort_direction: new_direction}}
-
-      _ ->
-        {:ok, state}
-    end
-  end
+  def handle_event(_event, _context, state), do: {:ok, state}
 
   @spec unmount(map()) :: map()
   def unmount(state) do
@@ -491,5 +455,10 @@ defmodule Raxol.UI.Components.Table do
       sort_direction == :asc -> "↑"
       sort_direction == :desc -> "↓"
     end
+  end
+
+  @impl true
+  def render(state) do
+    render(state, %{})
   end
 end

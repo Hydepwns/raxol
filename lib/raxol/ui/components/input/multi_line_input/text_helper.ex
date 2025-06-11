@@ -6,7 +6,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
   alias Raxol.UI.Components.Input.TextWrapping
   alias Raxol.UI.Components.Input.MultiLineInput
   alias Raxol.UI.Components.Input.MultiLineInput.NavigationHelper
-  alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
   require Raxol.Core.Runtime.Log
 
   # --- Line Splitting and Wrapping ---
@@ -375,41 +374,6 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelper do
         # Multi-line insertion
         last_line_len = String.length(List.last(lines))
         {row + num_lines - 1, last_line_len}
-      end
-    end
-  end
-
-  # Need normalize_selection here as delete_selection depends on it
-  defp normalize_selection(state) do
-    start_pos = state.selection_start || state.cursor_pos
-    end_pos = state.selection_end || state.cursor_pos
-
-    # Convert to indices and normalize
-    lines = String.split(state.value, "\n")
-    start_index = pos_to_index(lines, start_pos)
-    end_index = pos_to_index(lines, end_pos)
-
-    # Swap if needed
-    if start_index <= end_index do
-      {start_pos, end_pos}
-    else
-      {end_pos, start_pos}
-    end
-  end
-
-  # Helper needed for delete
-  defp calculate_next_position(lines_list, {row, col}) do
-    current_line = Enum.at(lines_list, row) || ""
-
-    if col < String.length(current_line) do
-      {row, col + 1}
-    else
-      # If not the last line, move to start of next line
-      if row < length(lines_list) - 1 do
-        {row + 1, 0}
-      else
-        # At end of last line, stay put
-        {row, col}
       end
     end
   end

@@ -162,7 +162,6 @@ defmodule Raxol.UI.Components.Selection.Dropdown do
     end
   end
 
-  @doc "Handles other events for the Dropdown component, such as mouse clicks."
   @spec handle_event(map(), map(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   def handle_event(event, %{} = _props, state) do

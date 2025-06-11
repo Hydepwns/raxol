@@ -286,19 +286,9 @@ defmodule Raxol.UI.Components.Input.TextInput do
     }
   end
 
-  defp emit_change(state, new_value) do
-    if is_function(state.on_change, 1) do
-      state.on_change.(new_value)
-    end
-
-    :ok
-  end
-
   defp emit_change_side_effect(state, new_value) do
     if is_function(state.on_change, 1) do
       state.on_change.(new_value)
     end
-
-    :ok
   end
 end

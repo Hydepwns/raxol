@@ -154,30 +154,36 @@ defmodule Raxol.UI.Rendering.TreeDiffer do
     old_keys_set = Map.keys(old_children_map_by_key) |> MapSet.new()
     new_keys_set = Map.keys(new_children_map_by_key) |> MapSet.new()
     new_keys_ordered = Enum.map(new_children_list || [], & &1[:key])
-    ops = []
+    _ops = []
 
-    for {new_child_node, _new_idx} <- Enum.with_index(new_children_list || []) do
-      key = new_child_node[:key]
+    ops =
+      Enum.reduce(Enum.with_index(new_children_list || []), [], fn {new_child_node, _new_idx}, acc ->
+        key = new_child_node[:key]
 
-      if MapSet.member?(old_keys_set, key) do
-        old_child_node = old_children_map_by_key[key]
-        # Diff children relative to themselves, so path is [].
-        # Any paths *inside* child_diff will be relative to the child.
-        child_diff = do_diff_trees(old_child_node, new_child_node, [])
+        if MapSet.member?(old_keys_set, key) do
+          old_child_node = old_children_map_by_key[key]
+          # Diff children relative to themselves, so path is [].
+          # Any paths *inside* child_diff will be relative to the child.
+          child_diff = do_diff_trees(old_child_node, new_child_node, [])
 
-        if child_diff != :no_change do
-          ops = [{:key_update, key, child_diff} | ops]
+          if child_diff != :no_change do
+            [{:key_update, key, child_diff} | acc]
+          else
+            acc
+          end
+        else
+          [{:key_add, key, new_child_node} | acc]
         end
-      else
-        ops = [{:key_add, key, new_child_node} | ops]
-      end
-    end
+      end)
 
-    for old_key <- MapSet.to_list(old_keys_set) do
-      unless MapSet.member?(new_keys_set, old_key) do
-        ops = [{:key_remove, old_key} | ops]
-      end
-    end
+    ops =
+      Enum.reduce(MapSet.to_list(old_keys_set), ops, fn old_key, acc ->
+        unless MapSet.member?(new_keys_set, old_key) do
+          [{:key_remove, old_key} | acc]
+        else
+          acc
+        end
+      end)
 
     final_ops_reversed = ops
     has_structural_changes = Enum.any?(final_ops_reversed, fn _ -> true end)

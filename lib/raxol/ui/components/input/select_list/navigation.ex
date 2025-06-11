@@ -144,8 +144,6 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   Always returns a valid state map.
   """
   def update_scroll_position(state) do
-    effective_options = Pagination.get_effective_options(state)
-    num_options = length(effective_options)
     visible_height = state.visible_height || state.page_size
     focused_index = state.focused_index
 
