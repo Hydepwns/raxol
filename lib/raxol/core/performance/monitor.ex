@@ -152,16 +152,31 @@ defmodule Raxol.Core.Performance.Monitor do
     # Update jank detector
     jank_detector = JankDetector.record_frame(state.jank_detector, frame_time)
 
-    # Update metrics
-    metrics_collector =
-      MetricsCollector.record_frame(state.metrics_collector, frame_time)
+    # Record performance metrics
+    Raxol.Core.Metrics.UnifiedCollector.record_performance(
+      :frame_time,
+      frame_time,
+      tags: [:performance, :frame]
+    )
 
-    {:noreply,
-     %{
-       state
-       | jank_detector: jank_detector,
-         metrics_collector: metrics_collector
-     }}
+    # Record FPS
+    fps = 1000 / frame_time
+    Raxol.Core.Metrics.UnifiedCollector.record_performance(
+      :fps,
+      fps,
+      tags: [:performance, :frame]
+    )
+
+    # Record jank if detected
+    if JankDetector.detect_jank?(jank_detector) do
+      Raxol.Core.Metrics.UnifiedCollector.record_performance(
+        :jank,
+        1,
+        tags: [:performance, :frame, :jank]
+      )
+    end
+
+    {:noreply, %{state | jank_detector: jank_detector}}
   end
 
   @impl true
@@ -172,13 +187,42 @@ defmodule Raxol.Core.Performance.Monitor do
 
   @impl true
   def handle_call(:get_metrics, _from, state) do
+    # Get metrics from unified collector
+    performance_metrics = Raxol.Core.Metrics.UnifiedCollector.get_metrics_by_type(:performance)
+    resource_metrics = Raxol.Core.Metrics.UnifiedCollector.get_metrics_by_type(:resource)
+
+    # Calculate metrics
+    fps = case performance_metrics.frame_time do
+      [%{value: frame_time} | _] -> 1000 / frame_time
+      _ -> 0.0
+    end
+
+    avg_frame_time = case performance_metrics.frame_time do
+      [%{value: frame_time} | _] -> frame_time
+      _ -> 0.0
+    end
+
+    jank_count = case performance_metrics.jank do
+      janks when is_list(janks) -> length(janks)
+      _ -> 0
+    end
+
+    memory_usage = case resource_metrics.memory_usage do
+      [%{value: memory} | _] -> memory
+      _ -> 0
+    end
+
+    gc_stats = case resource_metrics.gc_stats do
+      [%{value: stats} | _] -> stats
+      _ -> %{}
+    end
+
     metrics = %{
-      fps: MetricsCollector.get_fps(state.metrics_collector),
-      avg_frame_time:
-        MetricsCollector.get_avg_frame_time(state.metrics_collector),
-      jank_count: JankDetector.get_jank_count(state.jank_detector),
-      memory_usage: state.metrics_collector.memory_usage,
-      gc_stats: state.metrics_collector.gc_stats
+      fps: fps,
+      avg_frame_time: avg_frame_time,
+      jank_count: jank_count,
+      memory_usage: memory_usage,
+      gc_stats: gc_stats
     }
 
     {:reply, metrics, state}
@@ -186,19 +230,35 @@ defmodule Raxol.Core.Performance.Monitor do
 
   @impl true
   def handle_info(:check_memory, state) do
-    # Update memory metrics
-    metrics_collector =
-      MetricsCollector.update_memory_usage(state.metrics_collector)
+    # Get memory metrics
+    memory = :erlang.memory()
+    total_memory = memory[:total]
+    process_memory = memory[:processes]
+
+    # Record memory metrics
+    Raxol.Core.Metrics.UnifiedCollector.record_resource(
+      :total_memory,
+      total_memory,
+      tags: [:memory, :system]
+    )
+
+    Raxol.Core.Metrics.UnifiedCollector.record_resource(
+      :process_memory,
+      process_memory,
+      tags: [:memory, :process]
+    )
+
+    # Record memory ratio
+    Raxol.Core.Metrics.UnifiedCollector.record_resource(
+      :memory_usage_ratio,
+      process_memory / total_memory,
+      tags: [:memory, :ratio]
+    )
 
     # Reschedule memory check
     schedule_memory_check(state.memory_check_interval)
 
-    {:noreply,
-     %{
-       state
-       | metrics_collector: metrics_collector,
-         last_memory_check: System.monotonic_time(:millisecond)
-     }}
+    {:noreply, state}
   end
 
   # Private Helpers
