@@ -11,13 +11,8 @@ defmodule Raxol.UI.RendererTestHelper do
     %Raxol.UI.Theming.Theme{
       name: name,
       colors: colors,
-      styles: styles,
-      fonts: fonts,
-      spacing: %{},
-      borders: %{},
-      shadows: %{},
-      transitions: %{},
-      animations: %{}
+      component_styles: styles,
+      fonts: fonts
     }
   end
 

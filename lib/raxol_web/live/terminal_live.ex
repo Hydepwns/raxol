@@ -14,6 +14,7 @@ defmodule RaxolWeb.TerminalLive do
   use RaxolWeb, :live_view
   alias RaxolWeb.Presence
   alias Phoenix.PubSub
+  alias Raxol.UI.Theming.Theme
 
   @impl true
   def mount(_params, session, socket) do
