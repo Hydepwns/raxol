@@ -1,0 +1,28 @@
+{
+  "name": "Invalid Theme",
+  "version": "1.0.0",
+  "description": "An invalid theme for testing error handling",
+  "author": "Raxol Team",
+  "license": "MIT",
+  "colors": {
+    "background": "invalid_color",
+    "foreground": "#000000",
+    "cursor": "#ffffff",
+    "selection": "#444444"
+  },
+  "font": {
+    "family": 123,
+    "size": "invalid_size",
+    "weight": "invalid_weight",
+    "style": "invalid_style"
+  },
+  "cursor": {
+    "style": "invalid_style",
+    "blink": "invalid_blink",
+    "color": "invalid_color"
+  },
+  "padding": {
+    "x": "invalid_x",
+    "y": "invalid_y"
+  }
+}

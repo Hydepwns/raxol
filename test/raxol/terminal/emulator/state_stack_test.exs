@@ -42,9 +42,9 @@ defmodule Raxol.Terminal.Emulator.StateStackTest do
       emulator2 = %{emulator2 | style: %{emulator2.style | underline: true}}
       # Designate G1 back to ASCII (ESC ) B)
       {emulator2, ""} = Emulator.process_input(emulator2, "\e)B")
-      mode_manager_state2 = emulator2.mode_manager
+      _mode_manager_state2 = emulator2.mode_manager
       # Capture charset state
-      charset_state2 = emulator2.charset_state
+      _charset_state2 = emulator2.charset_state
 
       # Check stack count (indirectly, by testing restore)
 

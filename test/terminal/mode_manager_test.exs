@@ -13,10 +13,7 @@ defmodule Raxol.Terminal.ModeManagerTest do
   alias Raxol.Terminal.ModeManager
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.ANSI.TextFormatting
-  alias Raxol.Terminal.Buffer.Manager, as: BufferManager
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
-  alias Raxol.Terminal.Buffer.Scrollback
   alias MapSet
 
   # test "it should start the mode manager" do
@@ -87,8 +84,4 @@ defmodule Raxol.Terminal.ModeManagerTest do
       Mox.verify!(TerminalStateMock)
     end
   end
-
-  defp unwrap_ok({:ok, value}), do: value
-  defp unwrap_ok({:error, _reason, value}), do: value
-  defp unwrap_ok(value) when is_map(value), do: value
 end

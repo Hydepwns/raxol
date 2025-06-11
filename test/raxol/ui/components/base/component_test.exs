@@ -15,6 +15,7 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
   defmodule TestComponent do
     @behaviour Raxol.UI.Components.Base.Component
 
+    @impl true
     def init(props) do
       Map.merge(
         %{
@@ -32,19 +33,23 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
       )
     end
 
+    @impl true
     def mount(state) do
       new_state = %{state | mounted: true}
       {new_state, [{:command, :mounted}]}
     end
 
+    @impl true
     def update(:increment, state) do
       %{state | counter: state.counter + 1}
     end
 
+    @impl true
     def update(:decrement, state) do
       %{state | counter: state.counter - 1}
     end
 
+    @impl true
     def render(state, context) do
       new_state = %{state | render_count: state.render_count + 1}
 
@@ -57,22 +62,20 @@ defmodule Raxol.UI.Components.Base.ComponentTest do
        }}
     end
 
-    def handle_event(%{type: :test_event, value: value}, state) do
+    @impl true
+    def handle_event(%{type: :test_event, value: value}, state, _context) do
       new_state = %{state | events: [value | state.events]}
       {new_state, [{:command, :event_handled}]}
     end
 
-    def handle_event(_event, state) do
+    @impl true
+    def handle_event(_event, state, _context) do
       {state, []}
     end
 
+    @impl true
     def unmount(state) do
       %{state | unmounted: true}
-    end
-
-    # Add this to support the required behaviour
-    def handle_event(event, state, _context) do
-      handle_event(event, state)
     end
 
     def new(props \\ %{}) do

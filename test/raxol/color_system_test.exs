@@ -8,7 +8,6 @@ defmodule Raxol.ColorSystemTest do
   alias Raxol.Style.Colors.PaletteManager
   alias Raxol.Style.Colors.System, as: ColorSystem
   alias Raxol.Animation.Framework
-  alias Raxol.Core.Accessibility.ThemeIntegration
   require Raxol.Core.Runtime.Log
 
   # Helper to setup Accessibility and UserPreferences
@@ -102,13 +101,11 @@ defmodule Raxol.ColorSystemTest do
 
       # Raxol.Core.Runtime.Log.info("[Test Log] Background (post high-contrast): #{inspect(background)}")
 
-      # Log the calculated ratio before asserting
       # Ensure Raxol.Style.Colors.Utilities is available or use the test helper's path
-      ratio_for_log =
-        Raxol.Style.Colors.Utilities.contrast_ratio(
-          high_contrast_primary,
-          background
-        )
+      _ratio = Raxol.Style.Colors.Utilities.contrast_ratio(
+        high_contrast_primary,
+        background
+      )
 
       # Raxol.Core.Runtime.Log.info("[Test Log] Calculated contrast ratio for high_contrast_primary vs background: #{inspect(ratio_for_log)}")
 

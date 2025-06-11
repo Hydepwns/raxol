@@ -1,6 +1,6 @@
 defmodule Raxol.Terminal.RendererTest do
   use ExUnit.Case
-  alias Raxol.Terminal.{Cell, Renderer, ScreenBuffer}
+  alias Raxol.Terminal.{Renderer, ScreenBuffer}
 
   defp default_buffer(width \\ 80, height \\ 24) do
     ScreenBuffer.new(width, height)

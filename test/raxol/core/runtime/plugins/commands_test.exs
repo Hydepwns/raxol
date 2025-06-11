@@ -3,7 +3,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
   import Raxol.Test.TestHelper
 
   alias Raxol.Core.Runtime.Plugins.{CommandHelper, CommandRegistry}
-  alias Raxol.Core.Runtime.Plugins.Manager.State, as: ManagerState
+  alias Raxol.Core.Runtime.Plugins.State, as: ManagerState
 
   # Mock command handler for testing
   @moduledoc false
@@ -35,7 +35,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     def terminate(_, state), do: state
     def enable(state), do: {:ok, state}
     def disable(state), do: {:ok, state}
-    def filter_event(_event, state), do: {:ok, nil}
+    def filter_event(_event, _state), do: {:ok, nil}
     def handle_command(_cmd, _args, state), do: {:ok, state, :noop}
   end
 
@@ -50,7 +50,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     def terminate(_, state), do: state
     def enable(state), do: {:ok, state}
     def disable(state), do: {:ok, state}
-    def filter_event(_event, state), do: {:ok, nil}
+    def filter_event(_event, _state), do: {:ok, nil}
     def handle_command(_cmd, _args, state), do: {:ok, state, :noop}
   end
 
@@ -62,7 +62,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     def terminate(_, state), do: state
     def enable(state), do: {:ok, state}
     def disable(state), do: {:ok, state}
-    def filter_event(_event, state), do: {:ok, nil}
+    def filter_event(_event, _state), do: {:ok, nil}
     def handle_command(_cmd, _args, state), do: {:ok, state, :noop}
   end
 
@@ -79,7 +79,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     def terminate(_, state), do: state
     def enable(state), do: {:ok, state}
     def disable(state), do: {:ok, state}
-    def filter_event(_event, state), do: {:ok, nil}
+    def filter_event(_event, _state), do: {:ok, nil}
     def handle_command(_cmd, _args, state), do: {:ok, state, :noop}
   end
 
@@ -91,7 +91,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     def terminate(_, state), do: state
     def enable(state), do: {:ok, state}
     def disable(state), do: {:ok, state}
-    def filter_event(_event, state), do: {:ok, nil}
+    def filter_event(_event, _state), do: {:ok, nil}
     def handle_command(_cmd, _args, state), do: {:ok, state, :noop}
   end
 
@@ -102,7 +102,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     def terminate(_, state), do: state
     def enable(state), do: {:ok, state}
     def disable(state), do: {:ok, state}
-    def filter_event(_event, state), do: {:ok, nil}
+    def filter_event(_event, _state), do: {:ok, nil}
     def handle_command(_cmd, _args, state), do: {:ok, state, :noop}
     def get_commands, do: [{:dupe_cmd, :handle_dupe_cmd, 2}]
     def handle_dupe_cmd(_arg, state), do: {:ok, state}
@@ -115,7 +115,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     def terminate(_, state), do: state
     def enable(state), do: {:ok, state}
     def disable(state), do: {:ok, state}
-    def filter_event(_event, state), do: {:ok, nil}
+    def filter_event(_event, _state), do: {:ok, nil}
     def handle_command(_cmd, _args, state), do: {:ok, state, :noop}
     def get_commands, do: [{:invalid_cmd, :non_existent_function, 2}]
   end
@@ -127,7 +127,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     def terminate(_, state), do: state
     def enable(state), do: {:ok, state}
     def disable(state), do: {:ok, state}
-    def filter_event(_event, state), do: {:ok, nil}
+    def filter_event(_event, _state), do: {:ok, nil}
     def handle_command(_cmd, _args, state), do: {:ok, state, :noop}
 
     def get_commands,
@@ -147,7 +147,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     def terminate(_, state), do: state
     def enable(state), do: {:ok, state}
     def disable(state), do: {:ok, state}
-    def filter_event(_event, state), do: {:ok, nil}
+    def filter_event(_event, _state), do: {:ok, nil}
     def handle_command(_cmd, _args, state), do: {:ok, state, :noop}
     def get_commands, do: [{:concurrent_cmd, :handle_cmd, 2}]
     def handle_cmd(_arg, state), do: {:ok, state}
@@ -161,7 +161,7 @@ defmodule Raxol.Core.Runtime.Plugins.CommandsTest do
     def terminate(_, state), do: state
     def enable(state), do: {:ok, state}
     def disable(state), do: {:ok, state}
-    def filter_event(_event, state), do: {:ok, nil}
+    def filter_event(_event, _state), do: {:ok, nil}
     def handle_command(_cmd, _args, state), do: {:ok, state, :noop}
   end
 

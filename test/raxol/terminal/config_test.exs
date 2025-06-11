@@ -1,5 +1,5 @@
 defmodule Raxol.Terminal.ConfigTest do
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   use Raxol.DataCase
   import Mox
   # import Raxol.TestHelpers
@@ -61,6 +61,15 @@ defmodule Raxol.Terminal.ConfigTest do
     animation_loop: true,
     animation_blend: 0.0
   }
+
+  setup do
+    # Clean up any existing config files
+    File.rm_rf!("tmp/configs")
+    File.mkdir_p!("tmp/configs")
+
+    config = Config.new()
+    %{config: config}
+  end
 
   describe "Schema" do
     test "schema/0 returns a valid schema" do
@@ -208,5 +217,102 @@ defmodule Raxol.Terminal.ConfigTest do
     #   # assert is_map(Config.defaults())
     #   assert true # Placeholder
     # end
+  end
+
+  describe "configuration validation" do
+    test "validates dimensions", %{config: config} do
+      # Valid dimensions
+      assert {:ok, updated} = Config.update(config, %{width: 100, height: 50})
+      assert updated.width == 100
+      assert updated.height == 50
+
+      # Invalid dimensions
+      assert {:error, _} = Config.update(config, %{width: -1, height: 50})
+      assert {:error, _} = Config.update(config, %{width: 100, height: 0})
+    end
+
+    test "validates colors", %{config: config} do
+      # Valid colors
+      valid_colors = %{
+        background: {0, 0, 0},
+        foreground: {255, 255, 255}
+      }
+      assert {:ok, updated} = Config.update(config, %{colors: valid_colors})
+      assert updated.colors == valid_colors
+
+      # Invalid colors
+      invalid_colors = %{
+        background: {300, 0, 0},
+        foreground: {0, 0, 300}
+      }
+      assert {:error, _} = Config.update(config, %{colors: invalid_colors})
+    end
+
+    test "validates styles", %{config: config} do
+      # Valid styles
+      valid_styles = %{
+        bold: true,
+        italic: false,
+        underline: :single
+      }
+      assert {:ok, updated} = Config.update(config, %{styles: valid_styles})
+      assert updated.styles == valid_styles
+
+      # Invalid styles
+      invalid_styles = %{
+        bold: "true",
+        italic: 1
+      }
+      assert {:error, _} = Config.update(config, %{styles: invalid_styles})
+    end
+  end
+
+  describe "configuration persistence" do
+    test "can save and load configuration", %{config: config} do
+      # Save configuration
+      assert :ok = Config.save(config, "test_config")
+
+      # Load configuration
+      assert {:ok, loaded_config} = Config.load("test_config")
+      assert loaded_config.width == config.width
+      assert loaded_config.height == config.height
+    end
+
+    test "can list saved configurations" do
+      # Create and save multiple configurations
+      config1 = Config.new(80, 24)
+      config2 = Config.new(100, 50)
+
+      Config.save(config1, "config1")
+      Config.save(config2, "config2")
+
+      # List configurations
+      assert {:ok, configs} = Config.list_saved()
+      assert length(configs) == 2
+      assert "config1" in configs
+      assert "config2" in configs
+    end
+
+    test "handles configuration migration", %{config: config} do
+      # Save v1 configuration
+      assert :ok = Config.save(config, "migrate_test")
+
+      # Simulate version update
+      Application.put_env(:raxol, :config_version, 2)
+
+      # Load and verify migration
+      assert {:ok, migrated_config} = Config.load("migrate_test")
+      assert migrated_config.version == 2
+      assert Map.has_key?(migrated_config.performance, :render_buffer_size)
+    end
+
+    test "handles invalid configuration data" do
+      # Try to load non-existent configuration
+      assert {:error, _} = Config.load("nonexistent")
+
+      # Try to load invalid configuration file
+      File.write!("tmp/configs/invalid.config", "invalid data")
+      assert {:error, _} = Config.load("invalid")
+    end
   end
 end

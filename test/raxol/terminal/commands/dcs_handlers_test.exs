@@ -254,9 +254,6 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       # A more specific check would be on updated_emulator.sixel_state.pixel_buffer or .palette
       # but this depends heavily on Raxol.Terminal.ANSI.SixelGraphics.process_sequence behavior for "#1?"
       # For now, we assume it's non-nil and has been processed.
-      # Let's assume color 1 in the default palette is {0,0,255} (blue) for this test.
-      # Hypothetical: SixelGraphics default palette
-      expected_rgb_color_for_index_1 = {0, 0, 255}
 
       # 2. Check screen buffer for the rendered Sixel
       # blit_sixel_to_buffer maps Sixel pixels (0,0) to cell (cursor_x + 0, cursor_y + 0)
@@ -277,11 +274,6 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
       # This requires knowing what color index 1 maps to in the Sixel palette
       # and how blit_sixel_to_buffer determines the cell color.
       # If palette has {1 => {0,0,255}}, style should be background {:rgb, 0,0,255}
-      expected_cell_style =
-        TextFormatting.new() |> TextFormatting.set_background({:rgb, 0, 0, 255})
-
-      # The actual style might have other defaults if TextFormatting.new() is complex
-      # So, we check only the background part that Sixel would set.
       assert cell_at_cursor.style.background == {:rgb, 0, 0, 255},
              "Cell background should match Sixel color. Expected blue, got #{inspect(cell_at_cursor.style.background)}"
     end
@@ -298,6 +290,7 @@ defmodule Raxol.Terminal.Commands.DCSHandlersTest do
 
       refute is_nil(updated_emulator.sixel_state)
       assert %Raxol.Terminal.ANSI.SixelGraphics{} = updated_emulator.sixel_state
+      assert updated_emulator.sixel_state.position == {0, 0}
     end
 
     test "uses existing sixel_state if present on emulator" do

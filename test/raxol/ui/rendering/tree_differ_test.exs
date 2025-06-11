@@ -21,7 +21,7 @@ defmodule Raxol.UI.Rendering.TreeDifferTest do
 
     test "returns :no_change for identical trees" do
       tree = %{type: :div, children: [%{type: :span, content: "hello"}]}
-      assert TreeDiffer.diff_trees(tree, tree) == :no_change
+      assert TreeDiffer.diff_trees(tree, tree) == {:unchanged, tree}
     end
 
     test "returns :replace when root types differ" do

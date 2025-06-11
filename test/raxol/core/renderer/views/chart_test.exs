@@ -191,8 +191,6 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
 
       # Find points (represented by •)
       content = view
-      children = content.children
-      # points = if is_list(children), do: List.flatten(children), else: []
       points = find_all_text_children(content)
       # Check for at least 2 points
       assert Enum.count(points, &(is_map(&1) and &1.content == "•")) >= 2
@@ -216,8 +214,6 @@ defmodule Raxol.Core.Renderer.Views.ChartTest do
 
       # Find points (represented by •) and check colors
       content = view
-      children = content.children
-      # points = if is_list(children), do: List.flatten(children), else: []
       points = find_all_text_children(content)
       assert Enum.any?(points, &(is_map(&1) and &1.fg == :blue))
       assert Enum.any?(points, &(is_map(&1) and &1.fg == :red))

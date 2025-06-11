@@ -4,10 +4,8 @@ defmodule Raxol.UI.Components.ModalTest do
   use ExUnit.Case
 
   alias Raxol.UI.Components.Modal
-  # Used for component struct creation helper
-  alias Raxol.Core.Runtime.Application
   # For checking rendered elements
-  import Raxol.View.Elements
+  # import Raxol.View.Elements
 
   # --- Alert/Confirm Tests (Basic) ---
   test "init initializes alert modal" do
