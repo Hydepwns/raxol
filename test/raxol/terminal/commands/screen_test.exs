@@ -4,13 +4,7 @@ defmodule Raxol.Terminal.Commands.ScreenTest do
   alias Raxol.Terminal.Commands.Screen
   alias Raxol.Terminal.Emulator
   alias Raxol.Terminal.ScreenBuffer
-  alias Raxol.Terminal.Cell
   alias Raxol.Terminal.ANSI.TextFormatting
-
-  # Restore the helper function
-  defp initial_emulator(width \\ 80, height \\ 24) do
-    Emulator.new(width, height)
-  end
 
   defp assert_entire_buffer_cleared(buffer, width \\ 10, height \\ 5) do
     for y <- 0..(height - 1) do

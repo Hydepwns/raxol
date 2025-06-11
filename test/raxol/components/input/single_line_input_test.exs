@@ -171,8 +171,7 @@ defmodule Raxol.UI.Components.Input.SingleLineInputTest do
     end
 
     test "calls on_submit when Enter is pressed", %{state: _state} do
-      submit_value = :not_submitted
-      on_submit_func = fn value -> submit_value = value end
+      on_submit_func = fn value -> send(self(), {:submit_value, value}) end
 
       state =
         SingleLineInput.init(%{
@@ -188,11 +187,11 @@ defmodule Raxol.UI.Components.Input.SingleLineInputTest do
       {_new_state, commands} = SingleLineInput.handle_event(event, %{}, state)
 
       assert [{^on_submit_func, "submit me"}] = commands
+      assert_receive {:submit_value, "submit me"}
     end
 
     test "calls on_change when text changes", %{state: _state} do
-      change_value = :not_changed
-      on_change_func = fn value -> change_value = value end
+      on_change_func = fn value -> send(self(), {:change_value, value}) end
       state = SingleLineInput.init(%{on_change: on_change_func})
 
       event = %Event{
@@ -203,6 +202,7 @@ defmodule Raxol.UI.Components.Input.SingleLineInputTest do
       {_new_state, commands} = SingleLineInput.handle_event(event, %{}, state)
 
       assert [{^on_change_func, "a"}] = commands
+      assert_receive {:change_value, "a"}
     end
   end
 end

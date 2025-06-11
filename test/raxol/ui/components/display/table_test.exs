@@ -3,8 +3,6 @@ defmodule Raxol.UI.Components.Display.TableTest do
   doctest Raxol.UI.Components.Display.Table
 
   alias Raxol.UI.Components.Display.Table
-  # For broader theme usage if needed
-  alias Raxol.UI.Theming.Theme
 
   import Raxol.Test.TestHelper
 

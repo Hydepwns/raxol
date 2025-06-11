@@ -1,11 +1,8 @@
 defmodule Raxol.Terminal.EmulatorPluginMetadataTest do
   use ExUnit.Case
-  import Raxol.Test.EventAssertions
 
   alias Raxol.Core.Runtime.Plugins.Manager
-  alias Raxol.Plugins.HyperlinkPlugin
   alias Raxol.Terminal.Emulator
-  alias Raxol.Test.MockPlugins.MockEventConsumingPlugin
 
   setup context do
     reloading_enabled = Keyword.has_key?(context.tags, :enable_plugin_reloading)

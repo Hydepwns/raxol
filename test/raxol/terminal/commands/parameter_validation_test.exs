@@ -79,20 +79,20 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
   end
 
   describe "validate_mode/1" do
-    test "returns valid mode values", %{emulator: emulator} do
+    test "returns valid mode values", %{emulator: _emulator} do
       # Test valid mode values
       assert ParameterValidation.validate_mode([0]) == 0
       assert ParameterValidation.validate_mode([1]) == 1
       assert ParameterValidation.validate_mode([2]) == 2
     end
 
-    test "handles missing parameters", %{emulator: emulator} do
+    test "handles missing parameters", %{emulator: _emulator} do
       # Test with missing parameters (should default to 0)
       assert ParameterValidation.validate_mode([]) == 0
       assert ParameterValidation.validate_mode([nil]) == 0
     end
 
-    test "handles invalid parameters", %{emulator: emulator} do
+    test "handles invalid parameters", %{emulator: _emulator} do
       # Test with invalid parameters (should default to 0)
       assert ParameterValidation.validate_mode(["invalid"]) == 0
       assert ParameterValidation.validate_mode([:invalid]) == 0
@@ -102,7 +102,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
   end
 
   describe "validate_color/1" do
-    test "returns valid color values", %{emulator: emulator} do
+    test "returns valid color values", %{emulator: _emulator} do
       # Test valid color values
       assert ParameterValidation.validate_color([0]) == 0
       assert ParameterValidation.validate_color([7]) == 7
@@ -112,19 +112,19 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
       assert ParameterValidation.validate_color([255]) == 255
     end
 
-    test "clamps color values to valid range", %{emulator: emulator} do
+    test "clamps color values to valid range", %{emulator: _emulator} do
       # Test color values outside valid range
       assert ParameterValidation.validate_color([-1]) == 0
       assert ParameterValidation.validate_color([256]) == 255
     end
 
-    test "handles missing parameters", %{emulator: emulator} do
+    test "handles missing parameters", %{emulator: _emulator} do
       # Test with missing parameters (should default to 0)
       assert ParameterValidation.validate_color([]) == 0
       assert ParameterValidation.validate_color([nil]) == 0
     end
 
-    test "handles invalid parameters", %{emulator: emulator} do
+    test "handles invalid parameters", %{emulator: _emulator} do
       # Test with invalid parameters (should default to 0)
       assert ParameterValidation.validate_color(["invalid"]) == 0
       assert ParameterValidation.validate_color([:invalid]) == 0
@@ -132,19 +132,19 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
   end
 
   describe "validate_boolean/1" do
-    test "returns valid boolean values", %{emulator: emulator} do
+    test "returns valid boolean values", %{emulator: _emulator} do
       # Test valid boolean values
       assert ParameterValidation.validate_boolean([0]) == false
       assert ParameterValidation.validate_boolean([1]) == true
     end
 
-    test "handles missing parameters", %{emulator: emulator} do
+    test "handles missing parameters", %{emulator: _emulator} do
       # Test with missing parameters (should default to true)
       assert ParameterValidation.validate_boolean([]) == true
       assert ParameterValidation.validate_boolean([nil]) == true
     end
 
-    test "handles invalid parameters", %{emulator: emulator} do
+    test "handles invalid parameters", %{emulator: _emulator} do
       # Test with invalid parameters (should default to true)
       assert ParameterValidation.validate_boolean(["invalid"]) == true
       assert ParameterValidation.validate_boolean([:invalid]) == true
@@ -154,7 +154,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
   end
 
   describe "normalize_parameters/2" do
-    test "normalizes parameters to expected length", %{emulator: emulator} do
+    test "normalizes parameters to expected length", %{emulator: _emulator} do
       # Test parameter normalization
       assert ParameterValidation.normalize_parameters([1, 2, 3], 5) == [
                1,
@@ -168,7 +168,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
       assert ParameterValidation.normalize_parameters([], 2) == [nil, nil]
     end
 
-    test "truncates parameters if longer than expected", %{emulator: emulator} do
+    test "truncates parameters if longer than expected", %{emulator: _emulator} do
       # Test parameter truncation
       assert ParameterValidation.normalize_parameters([1, 2, 3, 4, 5], 3) == [
                1,
@@ -177,7 +177,7 @@ defmodule Raxol.Terminal.Commands.ParameterValidationTest do
              ]
     end
 
-    test "handles empty parameters", %{emulator: emulator} do
+    test "handles empty parameters", %{emulator: _emulator} do
       # Test with empty parameters
       assert ParameterValidation.normalize_parameters([], 0) == []
       assert ParameterValidation.normalize_parameters([], 3) == [nil, nil, nil]

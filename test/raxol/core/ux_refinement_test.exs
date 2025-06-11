@@ -4,7 +4,6 @@ defmodule Raxol.Core.UXRefinementTest do
 
   alias Raxol.Core.Events.Manager, as: EventManager
   alias Raxol.Core.UXRefinement
-  alias Raxol.Core.UserPreferences
 
   # Make sure mocks are verified when the test exits
   setup :verify_on_exit!

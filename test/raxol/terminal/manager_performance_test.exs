@@ -58,8 +58,7 @@ defmodule Raxol.Terminal.ManagerPerformanceTest do
     end
 
     test "handles screen updates efficiently", %{
-      manager: manager,
-      _terminal: terminal
+      manager: manager
     } do
       # Generate screen update commands
       updates = generate_screen_updates(100)

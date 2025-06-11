@@ -1,7 +1,8 @@
 defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   use ExUnit.Case, async: true
   import Mox
-  import Raxol.Test.ClipboardHelpers
+  import Raxol.Test.Support.ClipboardHelpers
+  import Raxol.Test.ClipboardAssertions
 
   alias Raxol.Core.Plugins.Core.ClipboardPlugin
   alias Raxol.Test.Mocks.ClipboardMock
@@ -22,7 +23,7 @@ defmodule Raxol.Core.Plugins.Core.ClipboardPluginTest do
   end
 
   describe "get_commands/0" do
-    test "returns the expected clipboard commands", %{state: state} do
+    test "returns the expected clipboard commands" do
       commands = ClipboardPlugin.get_commands()
       assert :clipboard_write in commands
       assert :clipboard_read in commands

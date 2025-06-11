@@ -5,7 +5,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
   alias Raxol.UI.Components.Input.MultiLineInput.ClipboardHelper
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
   alias Raxol.Core.Runtime.Command
-  import Raxol.Test.ClipboardHelpers
+  import Raxol.Test.Support.ClipboardHelpers
 
   describe "copy_selection/1" do
     test "returns state and :clipboard_write command with selected text" do
@@ -88,5 +88,34 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.ClipboardHelperTest do
       assert new_state == state
       assert_clipboard_read(commands)
     end
+  end
+
+  defp create_state(value, cursor_pos, selection_start \\ nil) do
+    %MultiLineInput{
+      value: value,
+      lines: String.split(value, "\n"),
+      cursor_pos: cursor_pos,
+      selection_start: selection_start,
+      # Other fields can be defaults as they aren't relevant to clipboard ops
+      id: "test_mli",
+      width: 80,
+      height: 10,
+      scroll_offset: {0, 0},
+      on_change: fn _ -> :ok end,
+      on_submit: fn _ -> :ok end
+    }
+  end
+
+  defp assert_clipboard_write(commands, expected_text) do
+    assert [
+             %Command{
+               type: :clipboard_write,
+               data: ^expected_text
+             }
+           ] = commands
+  end
+
+  defp assert_clipboard_read(commands) do
+    assert [%Command{type: :clipboard_read}] = commands
   end
 end

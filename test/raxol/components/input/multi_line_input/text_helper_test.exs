@@ -5,7 +5,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput.TextHelperTest do
   alias Raxol.UI.Components.Input.MultiLineInput.TextHelper
 
   # Helper to create initial state
-  defp create_state(lines \\ [""], cursor_pos \\ {0, 0}) do
+  defp create_state(lines, cursor_pos) do
     # Create a default struct first
     default_state = %MultiLineInput{}
     # Then override the necessary fields for the test

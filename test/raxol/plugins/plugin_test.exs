@@ -1,20 +1,14 @@
 defmodule Raxol.Plugins.PluginTest do
   use ExUnit.Case
   alias Raxol.Plugins.HyperlinkPlugin
-  alias Raxol.Plugins.Plugin
   alias Raxol.Plugins.Manager.Events, as: PluginManager
-  # alias Raxol.Plugins.Manager.Core, as: PluginManager
-  import Raxol.Test.PluginTestFixtures
 
   alias Raxol.Test.PluginTestFixtures.{
     TestPlugin,
-    BrokenPlugin,
     BadReturnPlugin,
     DependentPlugin,
     TimeoutPlugin,
     CrashPlugin,
-    InvalidMetadataPlugin,
-    VersionMismatchPlugin,
     CircularDependencyPlugin
   }
 

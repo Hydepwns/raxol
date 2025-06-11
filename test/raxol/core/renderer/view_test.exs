@@ -77,7 +77,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
   describe "layout/2" do
     test "layout/2 basic text layout" do
       view = View.text("Hello")
-      result = View.layout(view, %{width: 10, height: 1})
+      result = View.layout(view, [width: 10, height: 1])
 
       # Expected should be a single map, matching the 'left' in the error output
       expected = %{
@@ -102,13 +102,13 @@ defmodule Raxol.Core.Renderer.ViewTest do
       assert_raise ArgumentError,
                    "Container width must be a positive integer",
                    fn ->
-                     View.layout(view, %{width: -1, height: 1})
+                     View.layout(view, [width: -1, height: 1])
                    end
 
       assert_raise ArgumentError,
                    "Container height must be a positive integer",
                    fn ->
-                     View.layout(view, %{width: 10, height: 0})
+                     View.layout(view, [width: 10, height: 0])
                    end
     end
 
@@ -121,7 +121,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
           ]
         end
 
-      result_list = View.layout(view, %{width: 2, height: 1})
+      result_list = View.layout(view, [width: 2, height: 1])
 
       # Verify elements are clipped/positioned correctly
       a = Enum.find(result_list, &(&1.content == "A"))
@@ -186,7 +186,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
         end
 
       # layout/2 returns a flat list of positioned views
-      result_list = View.layout(view, %{width: 10, height: 1})
+      result_list = View.layout(view, [width: 10, height: 1])
 
       # Find the children by id (or content/type if no id)
       a = Enum.find(result_list, &(&1.content == "A"))
@@ -211,7 +211,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
           ]
         end
 
-      result_list = View.layout(view, %{width: 4, height: 2})
+      result_list = View.layout(view, [width: 4, height: 2])
 
       # Find children by content
       one = Enum.find(result_list, &(&1.content == "1"))
@@ -236,7 +236,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
           View.text("Hi")
         end
 
-      result = View.layout(view, %{width: 4, height: 3})
+      result = View.layout(view, [width: 4, height: 3])
 
       # Check content position
       content = Enum.find(result, &(Map.get(&1, :content) == "Hi"))
@@ -249,7 +249,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
           View.text("Content", size: {10, 5})
         end
 
-      result_list = View.layout(view, %{width: 8, height: 4})
+      result_list = View.layout(view, [width: 8, height: 4])
       IO.inspect(result_list, label: "Final result_list in test scroll layout")
 
       # Find the single child content view
@@ -265,7 +265,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
           View.text("Hi", size: {2, 1})
         end
 
-      result = View.layout(view, %{width: 3, height: 2})
+      result = View.layout(view, [width: 3, height: 2])
 
       # Check content position
       content =
@@ -333,7 +333,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
         end
 
       # Parent dimensions match size for simplicity in trace
-      result_list = View.layout(view, %{width: 3, height: 1})
+      result_list = View.layout(view, [width: 3, height: 1])
       IO.inspect(result_list, label: "Simplified Row Wrap Result")
 
       a = Enum.find(result_list, &(&1.content == "A"))
@@ -360,7 +360,7 @@ defmodule Raxol.Core.Renderer.ViewTest do
           ]
         end
 
-      result_list = View.layout(view, %{width: 4, height: 2})
+      result_list = View.layout(view, [width: 4, height: 2])
 
       # Find children by content
       a = Enum.find(result_list, &(&1.content == "A"))

@@ -266,7 +266,7 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
 
   # Tests for non-:notify commands or invalid args
   describe "handle_command catch-all" do
-    setup %{test: test_name} do
+    setup do
       Mox.stub(SystemInteractionMock, :get_os_type, fn -> {:unix, :linux} end)
 
       Mox.stub(SystemInteractionMock, :find_executable, fn _ ->
@@ -317,12 +317,12 @@ defmodule Raxol.Core.Plugins.Core.NotificationPluginTest do
 
   describe "enable/disable/filter_event" do
     test "enable returns :ok" do
-      assert {:ok, state} = NotificationPlugin.enable(%{enabled: false})
+      assert {:ok, _state} = NotificationPlugin.enable(%{enabled: false})
       # Optionally check if state is updated if enable/disable modified it
     end
 
     test "disable returns :ok" do
-      assert {:ok, state} = NotificationPlugin.disable(%{enabled: true})
+      assert {:ok, _state} = NotificationPlugin.disable(%{enabled: true})
       # Optionally check state
     end
 

@@ -68,7 +68,7 @@ defmodule Raxol.Terminal.CursorTest do
     test "update_blink updates cursor blink state" do
       cursor = Manager.new()
       cursor = Manager.set_state(cursor, :blinking)
-      {cursor, visible} = Manager.update_blink(cursor)
+      {_cursor, visible} = Manager.update_blink(cursor)
       assert is_boolean(visible)
     end
 
@@ -220,7 +220,7 @@ defmodule Raxol.Terminal.CursorTest do
     test "update_blink updates cursor blink state" do
       cursor = Manager.new()
       cursor = Style.blink(cursor)
-      {cursor, visible} = Style.update_blink(cursor)
+      {_cursor, visible} = Style.update_blink(cursor)
       assert is_boolean(visible)
     end
 

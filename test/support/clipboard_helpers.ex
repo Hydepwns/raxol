@@ -38,15 +38,15 @@ defmodule Raxol.Test.Support.ClipboardHelpers do
   @doc """
   Expects a clipboard copy operation with the given content.
   """
-  def expect_clipboard_copy(content) do
-    expect(ClipboardMock, :copy, fn ^content -> :ok end)
+  def expect_clipboard_copy(mock, content, result) do
+    expect(mock, :copy, fn ^content -> result end)
   end
 
   @doc """
   Expects a clipboard paste operation that returns the given content.
   """
-  def expect_clipboard_paste(content) do
-    expect(ClipboardMock, :paste, fn -> {:ok, content} end)
+  def expect_clipboard_paste(mock, result) do
+    expect(mock, :paste, fn -> result end)
   end
 
   @doc """

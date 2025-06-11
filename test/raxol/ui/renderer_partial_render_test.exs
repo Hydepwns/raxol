@@ -1,5 +1,5 @@
 defmodule Raxol.UI.RendererPartialRenderTest do
-  use ExUnit.Case, async: true
+  use ExUnit.Case, async: false
 
   alias Raxol.UI.Rendering.Renderer
   alias Raxol.Terminal.Emulator

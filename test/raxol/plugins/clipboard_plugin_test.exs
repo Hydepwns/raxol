@@ -1,8 +1,7 @@
 defmodule Raxol.Plugins.ClipboardPluginTest do
-  # Can switch back to async with Mox
-  use ExUnit.Case
+  use ExUnit.Case, async: true
   import Mox
-  import Raxol.Test.ClipboardHelpers
+  import Raxol.Test.Support.ClipboardHelpers
 
   # Remove Mox.defmock - it's configured in config/test.exs
   # Mox.defmock(ClipboardMock, for: Raxol.System.Clipboard.Behaviour)
@@ -47,7 +46,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
   describe "handle_clipboard_command/1 and /2" do
     # Helper to create initial state with the mock injected
     defp initial_state_with_mock do
-      %ClipboardPlugin{clipboard_impl: @clipboard_mock}
+      %{clipboard_impl: @clipboard_mock}
     end
 
     test "delegates :clipboard_write command to System.Clipboard.copy/1 successfully" do
@@ -76,11 +75,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
       error_reason = {:os_error, "cmd failed"}
 
       # Mock the behaviour call failure using Mox with the configured mock
-      expect_clipboard_copy(
-        @clipboard_mock,
-        test_content,
-        {:error, error_reason}
-      )
+      expect_clipboard_copy(@clipboard_mock, test_content, {:error, error_reason})
 
       # Call the plugin's registered handler (arity 2 for write)
       assert match?(
@@ -164,7 +159,7 @@ defmodule Raxol.Plugins.ClipboardPluginTest do
   describe "optional callbacks" do
     # Use helper for state in these tests too
     defp initial_state_with_mock do
-      %ClipboardPlugin{clipboard_impl: @clipboard_mock}
+      %{clipboard_impl: @clipboard_mock}
     end
 
     test "enable/1 exists" do
