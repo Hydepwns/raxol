@@ -28,6 +28,23 @@ defmodule Raxol.Terminal.Emulator do
   alias Raxol.Terminal.Cursor.Manager, as: CursorManager
   alias Raxol.Terminal.ANSI.CharacterSets.StateManager
   alias Raxol.Terminal.Command.Manager, as: CommandManager
+  alias Raxol.Terminal.Buffer.Operations, as: BufferOps
+  alias Raxol.Terminal.Tab.Manager, as: TabManager
+  alias Raxol.Terminal.Output.Manager, as: OutputManager
+  alias Raxol.Terminal.Window.Manager, as: WindowManager
+  alias Raxol.Terminal.Hyperlink.Manager, as: HyperlinkManager
+  alias Raxol.Terminal.Color.Manager, as: ColorManager
+  alias Raxol.Terminal.History.Manager, as: HistoryManager
+  alias Raxol.Terminal.State.Manager, as: StateManager
+  alias Raxol.Terminal.Scrollback.Manager, as: ScrollbackManager
+  alias Raxol.Terminal.Screen.Manager, as: ScreenManager
+  alias Raxol.Terminal.Parser.StateManager, as: ParserStateManager
+  alias Raxol.Terminal.Plugin.Manager, as: PluginManager
+  alias Raxol.Terminal.Mode.Manager, as: ModeManager
+  alias Raxol.Terminal.Charset.Manager, as: CharsetManager
+  alias Raxol.Terminal.Formatting.Manager, as: FormattingManager
+  alias Raxol.Terminal.TerminalState.Manager, as: TerminalStateManager
+  alias Raxol.Terminal.Buffer.UnifiedManager
 
   require Raxol.Core.Runtime.Log
   require Logger
@@ -242,7 +259,7 @@ defmodule Raxol.Terminal.Emulator do
 
     # Initialize buffers through BufferManager, using actual_width and actual_height
     {main_buffer, alternate_buffer} =
-      BufferManager.initialize_buffers(
+      initialize_buffers(
         actual_width,
         actual_height,
         scrollback_limit
@@ -318,37 +335,24 @@ defmodule Raxol.Terminal.Emulator do
     new(width, height, session_id: session_id, client_options: client_options)
   end
 
-  @doc """
-  Returns the currently active screen buffer (:main or :alternate).
-  """
-  @spec get_active_buffer(t()) :: ScreenBuffer.t()
-  @impl Raxol.Terminal.EmulatorBehaviour
-  def get_active_buffer(%__MODULE__{active_buffer_type: :main} = emulator) do
-    Raxol.Core.Runtime.Log.debug(
-      "[get_active_buffer] Type: #{inspect(emulator.active_buffer_type)}, Keys: #{inspect(Map.keys(emulator))}"
-    )
+  # Delegate screen operations to ScreenManager
+  defdelegate get_active_buffer(emulator), to: ScreenManager
+  defdelegate update_active_buffer(emulator, new_buffer), to: ScreenManager
+  defdelegate switch_buffer(emulator), to: ScreenManager
+  defdelegate initialize_buffers(width, height, scrollback_limit), to: ScreenManager
+  defdelegate resize_buffers(emulator, new_width, new_height), to: ScreenManager
+  defdelegate get_buffer_type(emulator), to: ScreenManager
+  defdelegate set_buffer_type(emulator, type), to: ScreenManager
 
-    # Defensive check instead of case statement
-    type = emulator.active_buffer_type
-    # Assuming type must be :alternate if not :main
-    if type == :main do
-      emulator.main_screen_buffer
-    else
-      # Check key exists before accessing, to provide a better error if needed
-      if Map.has_key?(emulator, :alternate_screen_buffer) do
-        emulator.alternate_screen_buffer
-      else
-        # This should NOT happen based on Emulator.new, but helps diagnose
-        Raxol.Core.Runtime.Log.error(
-          "[get_active_buffer] CRITICAL: Type is :alternate but :alternate_screen_buffer key is missing!"
-        )
-
-        # Raise a more informative error or return nil/main buffer?
-        # Raising here to make the problem explicit if this path is hit.
-        raise KeyError, key: :alternate_screen_buffer, term: emulator
-      end
-    end
-  end
+  # Delegate parser state operations to ParserStateManager
+  defdelegate get_parser_state(emulator), to: ParserStateManager, as: :get_state
+  defdelegate update_parser_state(emulator, state), to: ParserStateManager, as: :update_state
+  defdelegate get_parser_state_name(emulator), to: ParserStateManager, as: :get_state_name
+  defdelegate set_parser_state_name(emulator, state_name), to: ParserStateManager, as: :set_state_name
+  defdelegate reset_parser_to_ground(emulator), to: ParserStateManager, as: :reset_to_ground
+  defdelegate in_ground_state?(emulator), to: ParserStateManager
+  defdelegate in_escape_state?(emulator), to: ParserStateManager
+  defdelegate in_control_sequence_state?(emulator), to: ParserStateManager
 
   @doc """
   Processes input from the user, handling both regular characters and escape sequences.
@@ -486,7 +490,7 @@ defmodule Raxol.Terminal.Emulator do
   """
   @spec maybe_scroll(t()) :: t()
   def maybe_scroll(%__MODULE__{} = emulator) do
-    BufferManager.maybe_scroll(emulator)
+    BufferOps.maybe_scroll(emulator)
   end
 
   @doc """
@@ -776,5 +780,150 @@ defmodule Raxol.Terminal.Emulator do
   """
   def get_colors(emulator) do
     emulator.color_palette
+  end
+
+  # Delegate buffer operations to BufferOps
+  defdelegate resize(emulator, new_width, new_height), to: BufferOps
+  defdelegate maybe_scroll(emulator), to: BufferOps
+  defdelegate index(emulator), to: BufferOps
+  defdelegate next_line(emulator), to: BufferOps
+  defdelegate reverse_index(emulator), to: BufferOps
+
+  # Delegate tab operations to TabManager
+  defdelegate set_horizontal_tab(emulator), to: TabManager
+  defdelegate clear_tab_stop(emulator), to: TabManager
+  defdelegate clear_all_tab_stops(emulator), to: TabManager
+  defdelegate get_next_tab_stop(emulator), to: TabManager
+
+  # Delegate output operations to OutputManager
+  defdelegate enqueue_output(emulator, output), to: OutputManager
+  defdelegate flush_output(emulator), to: OutputManager
+  defdelegate clear_output_buffer(emulator), to: OutputManager
+  defdelegate get_output_buffer(emulator), to: OutputManager
+  defdelegate enqueue_control_sequence(emulator, sequence), to: OutputManager
+
+  # Delegate window operations to WindowManager
+  defdelegate set_window_title(emulator, title), to: WindowManager
+  defdelegate set_icon_name(emulator, name), to: WindowManager
+  defdelegate set_window_size(emulator, width, height), to: WindowManager
+  defdelegate set_window_position(emulator, x, y), to: WindowManager
+  defdelegate set_stacking_order(emulator, order), to: WindowManager
+  defdelegate get_window_state(emulator), to: WindowManager
+  defdelegate save_window_size(emulator), to: WindowManager
+  defdelegate restore_window_size(emulator), to: WindowManager
+
+  # Delegate hyperlink operations to HyperlinkManager
+  defdelegate get_hyperlink_url(emulator), to: HyperlinkManager
+  defdelegate update_hyperlink_url(emulator, url), to: HyperlinkManager
+  defdelegate get_hyperlink_state(emulator), to: HyperlinkManager
+  defdelegate update_hyperlink_state(emulator, state), to: HyperlinkManager
+  defdelegate clear_hyperlink_state(emulator), to: HyperlinkManager
+  defdelegate create_hyperlink(emulator, url, id, params), to: HyperlinkManager
+
+  # Delegate color operations to ColorManager
+  defdelegate set_colors(emulator, colors), to: ColorManager
+  defdelegate get_colors(emulator), to: ColorManager
+  defdelegate get_color(emulator, index), to: ColorManager
+  defdelegate set_color(emulator, index, color), to: ColorManager
+  defdelegate reset_colors(emulator), to: ColorManager
+  defdelegate color_to_rgb(emulator, index), to: ColorManager
+
+  # Delegate history operations to HistoryManager
+  defdelegate get_command_history(emulator), to: HistoryManager
+  defdelegate add_to_history(emulator, command), to: HistoryManager
+  defdelegate clear_history(emulator), to: HistoryManager
+  defdelegate get_history_command(emulator, index), to: HistoryManager
+  defdelegate search_history(emulator, prefix), to: HistoryManager
+  defdelegate get_command_buffer(emulator), to: HistoryManager
+  defdelegate update_command_buffer(emulator, buffer), to: HistoryManager
+  defdelegate get_max_history_size(emulator), to: HistoryManager
+  defdelegate set_max_history_size(emulator, size), to: HistoryManager
+  defdelegate get_last_key_event(emulator), to: HistoryManager
+  defdelegate update_last_key_event(emulator, event), to: HistoryManager
+
+  # Delegate state operations to StateManager
+  defdelegate get_state_stack(emulator), to: StateManager
+  defdelegate update_state_stack(emulator, state_stack), to: StateManager
+  defdelegate get_mode_manager(emulator), to: StateManager
+  defdelegate update_mode_manager(emulator, mode_manager), to: StateManager
+  defdelegate get_charset_state(emulator), to: StateManager
+  defdelegate update_charset_state(emulator, charset_state), to: StateManager
+  defdelegate get_scroll_region(emulator), to: StateManager
+  defdelegate update_scroll_region(emulator, scroll_region), to: StateManager
+  defdelegate get_last_col_exceeded(emulator), to: StateManager
+  defdelegate update_last_col_exceeded(emulator, last_col_exceeded), to: StateManager
+  defdelegate reset_to_initial_state(emulator), to: StateManager
+
+  # Delegate scrollback operations to ScrollbackManager
+  defdelegate get_scrollback_buffer(emulator), to: ScrollbackManager
+  defdelegate add_to_scrollback(emulator, line), to: ScrollbackManager
+  defdelegate clear_scrollback(emulator), to: ScrollbackManager
+  defdelegate get_scrollback_limit(emulator), to: ScrollbackManager
+  defdelegate set_scrollback_limit(emulator, limit), to: ScrollbackManager
+  defdelegate get_scrollback_range(emulator, start, count), to: ScrollbackManager
+  defdelegate get_scrollback_size(emulator), to: ScrollbackManager
+  defdelegate scrollback_empty?(emulator), to: ScrollbackManager
+
+  # Delegate plugin operations to PluginManager
+  defdelegate get_plugin_manager(emulator), to: PluginManager, as: :get_manager
+  defdelegate update_plugin_manager(emulator, manager), to: PluginManager, as: :update_manager
+  defdelegate initialize_plugin(emulator, plugin_name, config), to: PluginManager
+  defdelegate call_plugin_hook(emulator, plugin_name, hook_name, args), to: PluginManager, as: :call_hook
+  defdelegate plugin_loaded?(emulator, plugin_name), to: PluginManager
+  defdelegate get_loaded_plugins(emulator), to: PluginManager
+  defdelegate unload_plugin(emulator, plugin_name), to: PluginManager
+  defdelegate get_plugin_config(emulator, plugin_name), to: PluginManager
+  defdelegate update_plugin_config(emulator, plugin_name, config), to: PluginManager
+
+  # Delegate mode operations to ModeManager
+  defdelegate get_mode_manager(emulator), to: ModeManager, as: :get_manager
+  defdelegate update_mode_manager(emulator, manager), to: ModeManager, as: :update_manager
+  defdelegate set_mode(emulator, mode), to: ModeManager
+  defdelegate reset_mode(emulator, mode), to: ModeManager
+  defdelegate mode_set?(emulator, mode), to: ModeManager
+  defdelegate get_set_modes(emulator), to: ModeManager
+  defdelegate reset_all_modes(emulator), to: ModeManager
+  defdelegate save_modes(emulator), to: ModeManager
+  defdelegate restore_modes(emulator), to: ModeManager
+
+  # Delegate charset operations to CharsetManager
+  defdelegate get_charset_state(emulator), to: CharsetManager, as: :get_state
+  defdelegate update_charset_state(emulator, state), to: CharsetManager, as: :update_state
+  defdelegate designate_charset(emulator, g_set, charset), to: CharsetManager
+  defdelegate invoke_g_set(emulator, g_set), to: CharsetManager
+  defdelegate get_current_g_set(emulator), to: CharsetManager
+  defdelegate get_designated_charset(emulator, g_set), to: CharsetManager
+  defdelegate reset_charset_state(emulator), to: CharsetManager, as: :reset_state
+  defdelegate apply_single_shift(emulator, g_set), to: CharsetManager
+  defdelegate get_single_shift(emulator), to: CharsetManager
+
+  # Delegate formatting operations to FormattingManager
+  defdelegate get_style(emulator), to: FormattingManager
+  defdelegate update_style(emulator, style), to: FormattingManager
+  defdelegate set_attribute(emulator, attribute), to: FormattingManager
+  defdelegate reset_attribute(emulator, attribute), to: FormattingManager
+  defdelegate set_foreground(emulator, color), to: FormattingManager
+  defdelegate set_background(emulator, color), to: FormattingManager
+  defdelegate reset_all_attributes(emulator), to: FormattingManager
+  defdelegate get_foreground(emulator), to: FormattingManager
+  defdelegate get_background(emulator), to: FormattingManager
+  defdelegate attribute_set?(emulator, attribute), to: FormattingManager
+  defdelegate get_set_attributes(emulator), to: FormattingManager
+
+  # Delegate terminal state operations to TerminalStateManager
+  defdelegate get_state_stack(emulator), to: TerminalStateManager
+  defdelegate update_state_stack(emulator, state_stack), to: TerminalStateManager
+  defdelegate save_state(emulator), to: TerminalStateManager
+  defdelegate restore_state(emulator), to: TerminalStateManager
+  defdelegate has_saved_states?(emulator), to: TerminalStateManager
+  defdelegate get_saved_states_count(emulator), to: TerminalStateManager
+  defdelegate clear_saved_states(emulator), to: TerminalStateManager
+  defdelegate get_current_state(emulator), to: TerminalStateManager
+  defdelegate update_current_state(emulator, state), to: TerminalStateManager
+
+  defp initialize_buffers(width, height, scrollback_limit) do
+    {:ok, main_buffer} = UnifiedManager.new(width, height, scrollback_limit)
+    {:ok, alt_buffer} = UnifiedManager.new(width, height, scrollback_limit)
+    {main_buffer, alt_buffer}
   end
 end

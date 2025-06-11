@@ -7,6 +7,7 @@ defmodule Raxol.Terminal.Session do
   - Input/output handling
   - State management
   - Configuration
+  - Session persistence and recovery
   """
 
   use GenServer
@@ -17,6 +18,7 @@ defmodule Raxol.Terminal.Session do
   # alias Raxol.Core.I18n # Unused
   # alias Raxol.Terminal.{Cell, ScreenBuffer, Input, Emulator, Renderer} # Simplify aliases
   alias Raxol.Terminal.{Emulator, Renderer, ScreenBuffer}
+  alias Raxol.Terminal.Session.{Serializer, Storage}
 
   @type t :: %__MODULE__{
           id: String.t(),
@@ -25,7 +27,8 @@ defmodule Raxol.Terminal.Session do
           width: non_neg_integer(),
           height: non_neg_integer(),
           title: String.t(),
-          theme: map()
+          theme: map(),
+          auto_save: boolean()
         }
 
   defstruct [
@@ -35,7 +38,8 @@ defmodule Raxol.Terminal.Session do
     :width,
     :height,
     :title,
-    :theme
+    :theme,
+    auto_save: true
   ]
 
   @doc """
@@ -118,6 +122,50 @@ defmodule Raxol.Terminal.Session do
   @spec update_config(GenServer.server(), map()) :: :ok
   def update_config(pid, config) do
     GenServer.call(pid, {:update_config, config})
+  end
+
+  @doc """
+  Saves the current session state to persistent storage.
+  """
+  @spec save_session(GenServer.server()) :: :ok | {:error, term()}
+  def save_session(pid) do
+    GenServer.call(pid, :save_session)
+  end
+
+  @doc """
+  Loads a session from persistent storage.
+  """
+  @spec load_session(String.t()) :: {:ok, pid()} | {:error, term()}
+  def load_session(session_id) do
+    case Storage.load_session(session_id) do
+      {:ok, session_state} ->
+        start_link(
+          id: session_state.id,
+          width: session_state.width,
+          height: session_state.height,
+          title: session_state.title,
+          theme: session_state.theme
+        )
+
+      {:error, reason} ->
+        {:error, reason}
+    end
+  end
+
+  @doc """
+  Lists all saved sessions.
+  """
+  @spec list_saved_sessions() :: {:ok, [String.t()]} | {:error, term()}
+  def list_saved_sessions do
+    Storage.list_sessions()
+  end
+
+  @doc """
+  Sets whether the session should be automatically saved.
+  """
+  @spec set_auto_save(GenServer.server(), boolean()) :: :ok
+  def set_auto_save(pid, enabled) do
+    GenServer.call(pid, {:set_auto_save, enabled})
   end
 
   @spec count_active_sessions() :: non_neg_integer()
@@ -249,6 +297,11 @@ defmodule Raxol.Terminal.Session do
           state
       end
 
+    # Auto-save if enabled
+    if state.auto_save do
+      Task.start(fn -> Storage.save_session(new_state) end)
+    end
+
     {:noreply, new_state}
   end
 
@@ -271,6 +324,31 @@ defmodule Raxol.Terminal.Session do
     end
 
     {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_call(:save_session, _from, state) do
+    case Storage.save_session(state) do
+      :ok -> {:reply, :ok, state}
+      {:error, reason} -> {:reply, {:error, reason}, state}
+    end
+  end
+
+  @impl true
+  def handle_call({:set_auto_save, enabled}, _from, state) do
+    new_state = %{state | auto_save: enabled}
+    {:reply, :ok, new_state}
+  end
+
+  @impl true
+  def handle_info(:auto_save, state) do
+    if state.auto_save do
+      Task.start(fn -> Storage.save_session(state) end)
+    end
+
+    # Schedule next auto-save
+    Process.send_after(self(), :auto_save, :timer.minutes(5))
+    {:noreply, state}
   end
 
   # Private functions

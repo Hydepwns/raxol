@@ -56,6 +56,20 @@ defmodule Raxol.Terminal.ANSI.SixelParser do
       <<>> ->
         {:ok, state}
 
+      # DCS sequence start
+      <<"\eP", rest::binary>> ->
+        # Check for 'q' after DCS start
+        case rest do
+          <<"q", rest::binary>> ->
+            parse(rest, state)
+          _ ->
+            {:error, :missing_or_misplaced_q}
+        end
+
+      # DCS sequence end
+      <<"\e\\", _rest::binary>> ->
+        {:ok, state}
+
       # Ignore space
       <<" ", rest::binary>> ->
         parse(rest, state)

@@ -17,7 +17,11 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
           data: binary(),
           palette: map(),
           scale: {non_neg_integer(), non_neg_integer()},
-          position: {non_neg_integer(), non_neg_integer()}
+          position: {non_neg_integer(), non_neg_integer()},
+          current_color: non_neg_integer(),
+          attributes: map(),
+          pixel_buffer: map(),
+          sixel_cursor_pos: {non_neg_integer(), non_neg_integer()}
         }
 
   defstruct width: 0,
@@ -25,7 +29,15 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
             data: "",
             palette: %{},
             scale: {1, 1},
-            position: {0, 0}
+            position: {0, 0},
+            current_color: 0,
+            attributes: %{
+              width: :normal,
+              height: :normal,
+              size: :normal
+            },
+            pixel_buffer: %{},
+            sixel_cursor_pos: {0, 0}
 
   @impl true
   @doc """
@@ -274,11 +286,11 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
            %Raxol.Terminal.ANSI.SixelParser.ParserState{
              x: 0,
              y: 0,
-             color_index: 0,
+             color_index: state.current_color,
              repeat_count: 1,
              palette: state.palette,
-             raster_attrs: %{},
-             pixel_buffer: %{},
+             raster_attrs: state.attributes,
+             pixel_buffer: state.pixel_buffer,
              max_x: 0,
              max_y: 0
            }
@@ -288,7 +300,9 @@ defmodule Raxol.Terminal.ANSI.SixelGraphics do
           state
           | palette: parser_state.palette,
             pixel_buffer: parser_state.pixel_buffer,
-            position: {parser_state.x, parser_state.y}
+            position: {parser_state.x, parser_state.y},
+            current_color: parser_state.color_index,
+            attributes: parser_state.raster_attrs
         }
 
         {updated_state, :ok}

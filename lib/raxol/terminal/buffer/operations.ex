@@ -1,6 +1,8 @@
 defmodule Raxol.Terminal.Buffer.Operations do
   @moduledoc """
-  Provides operations for terminal buffer manipulation.
+  Handles buffer-related operations for the terminal emulator.
+  This module is responsible for managing screen buffer operations like resizing,
+  scrolling, and cursor movement within the buffer.
   """
 
   require Raxol.Core.Runtime.Log
@@ -14,6 +16,7 @@ defmodule Raxol.Terminal.Buffer.Operations do
   alias Raxol.Terminal.Buffer.Updater
   alias Raxol.Terminal.Buffer.State
   alias Raxol.Terminal.Buffer.CharEditor
+  alias Raxol.Terminal.Emulator
   # Needed for scroll functions
   # alias Raxol.Terminal.Buffer.Scrollback
 
@@ -312,4 +315,124 @@ defmodule Raxol.Terminal.Buffer.Operations do
   end
 
   def delete_lines(buffer, _, _, _, _), do: buffer
+
+  @doc """
+  Resizes the emulator's screen buffers.
+
+  ## Parameters
+
+  * `emulator` - The emulator to resize
+  * `new_width` - New width in columns
+  * `new_height` - New height in rows
+
+  ## Returns
+
+  Updated emulator with resized buffers
+  """
+  @spec resize(Emulator.t(), non_neg_integer(), non_neg_integer()) :: Emulator.t()
+  def resize(%Emulator{} = emulator, new_width, new_height) do
+    # Resize both buffers
+    new_main_buffer =
+      ScreenBuffer.resize(emulator.main_screen_buffer, new_width, new_height)
+
+    new_alt_buffer =
+      ScreenBuffer.resize(
+        emulator.alternate_screen_buffer,
+        new_width,
+        new_height
+      )
+
+    # Update tab stops for the new width
+    new_tab_stops = default_tab_stops(new_width)
+
+    # Clamp cursor position
+    {cur_x, cur_y} = get_cursor_position(emulator)
+    clamped_x = min(max(cur_x, 0), new_width - 1)
+    clamped_y = min(max(cur_y, 0), new_height - 1)
+    new_cursor = %{emulator.cursor | position: {clamped_x, clamped_y}}
+
+    # Clamp or reset scroll region
+    new_scroll_region =
+      case emulator.scroll_region do
+        {top, bottom}
+        when is_integer(top) and is_integer(bottom) and top < bottom and
+               top >= 0 and bottom < new_height ->
+          {top, bottom}
+
+        _ ->
+          nil
+      end
+
+    # Return updated emulator
+    %{
+      emulator
+      | main_screen_buffer: new_main_buffer,
+        alternate_screen_buffer: new_alt_buffer,
+        tab_stops: new_tab_stops,
+        cursor: new_cursor,
+        scroll_region: new_scroll_region,
+        width: new_width,
+        height: new_height
+    }
+  end
+
+  @doc """
+  Checks if the cursor is below the scroll region and scrolls up if necessary.
+  Called after operations like LF, IND, NEL that might move the cursor off-screen.
+  """
+  @spec maybe_scroll(Emulator.t()) :: Emulator.t()
+  def maybe_scroll(%Emulator{} = emulator) do
+    # Implementation will be moved from BufferManager
+    emulator
+  end
+
+  @doc """
+  Moves the cursor down one line (index operation).
+  """
+  @spec index(Emulator.t()) :: Emulator.t()
+  def index(%Emulator{} = emulator) do
+    {x, y} = get_cursor_position(emulator)
+    new_y = y + 1
+
+    # Check if we need to scroll
+    if new_y >= emulator.height do
+      maybe_scroll(emulator)
+    else
+      set_cursor_position(emulator, {x, new_y}, emulator.width, emulator.height)
+    end
+  end
+
+  @doc """
+  Moves the cursor to the next line.
+  """
+  @spec next_line(Emulator.t()) :: Emulator.t()
+  def next_line(%Emulator{} = emulator) do
+    {_x, _y} = get_cursor_position(emulator)
+    # Implementation will be moved from emulator.ex
+    emulator
+  end
+
+  @doc """
+  Moves the cursor up one line (reverse index operation).
+  """
+  @spec reverse_index(Emulator.t()) :: Emulator.t()
+  def reverse_index(%Emulator{} = emulator) do
+    {x, y} = get_cursor_position(emulator)
+    new_y = max(0, y - 1)
+    set_cursor_position(emulator, {x, new_y}, emulator.width, emulator.height)
+  end
+
+  # Private helper functions
+
+  defp get_cursor_position(%Emulator{cursor: cursor}), do: cursor.position
+
+  defp set_cursor_position(emulator, position, width, height) do
+    # This will be implemented to use CursorManager
+    emulator
+  end
+
+  defp default_tab_stops(width) do
+    # Generate tab stops every 8 columns
+    for i <- 0..(width - 1), rem(i, 8) == 0, do: i
+  end
 end

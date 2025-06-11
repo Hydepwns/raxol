@@ -1,96 +1,76 @@
 defmodule Raxol.Terminal.Config.AnimationCache do
   @moduledoc """
-  Manages caching for terminal animations.
+  Manages caching for terminal animations using the unified caching system.
   """
 
-  # Module attributes for cache table name, ttl, max size, preload dir
-  @animation_cache_table :raxol_animation_cache
-  # 1 hour
-  @animation_cache_ttl 3600
-  # 100MB
-  @max_cache_size 100 * 1024 * 1024
+  alias Raxol.Terminal.Cache.System
+
+  # Module attributes for preload dir
   @preload_dir "priv/animations"
 
-  # --- Functions Moved from Raxol.Terminal.Configuration ---
-
-  @spec init_animation_cache() :: :ok
-  # Make public
+  @doc """
+  Initializes the animation cache.
+  """
   def init_animation_cache do
-    table_name = @animation_cache_table
-
-    if :ets.whereis(table_name) == :undefined do
-      :ets.new(table_name, [:named_table, :public, :set])
-    end
-
+    # The unified cache system is already initialized by the application
     :ok
   end
 
-  @spec get_cached_animation(String.t() | nil) :: map() | nil
-  # Make public
+  @doc """
+  Gets a cached animation.
+
+  ## Parameters
+    * `animation_path` - Path to the animation file
+  """
   def get_cached_animation(animation_path) do
-    table_name = @animation_cache_table
-    cache_ttl = @animation_cache_ttl
-
     case animation_path do
-      nil ->
-        nil
-
-      path ->
-        case :ets.lookup(table_name, path) do
-          [{^path, animation_data, timestamp}] ->
-            if :os.system_time(:second) - timestamp < cache_ttl do
-              animation_data
-            else
-              :ets.delete(table_name, path)
-              nil
-            end
-
-          [] ->
-            nil
-        end
+      nil -> nil
+      path -> System.get(path, namespace: :animation)
     end
   end
 
-  @spec cache_animation(String.t(), atom()) :: :ok | {:error, atom()}
-  # Make public
-  def cache_animation(animation_path, animation_type) do
-    table_name = @animation_cache_table
+  @doc """
+  Caches an animation.
 
+  ## Parameters
+    * `animation_path` - Path to the animation file
+    * `animation_type` - Type of animation (:gif, :video, :shader, :particle)
+  """
+  def cache_animation(animation_path, animation_type) do
     case File.read(animation_path) do
       {:ok, animation_data} ->
         compressed_data = compress_animation(animation_data, animation_type)
         compressed_size = byte_size(compressed_data)
         original_size = byte_size(animation_data)
 
-        if would_exceed_cache_limit(compressed_size) do
-          make_space_for_animation(compressed_size)
+        metadata = %{
+          type: animation_type,
+          size: compressed_size,
+          original_size: original_size,
+          compressed: true
+        }
+
+        case System.put(animation_path, compressed_data,
+          namespace: :animation,
+          metadata: metadata
+        ) do
+          :ok ->
+            if original_size > 0 do
+              compression_ratio = round((1 - compressed_size / original_size) * 100)
+              IO.puts(
+                "Animation cached: #{animation_path} (#{compressed_size} bytes, #{compression_ratio}% compression)"
+              )
+            else
+              IO.puts(
+                "Animation cached: #{animation_path} (#{compressed_size} bytes, empty original file)"
+              )
+            end
+            :ok
+
+          error ->
+            IO.puts("Failed to cache animation: #{inspect(error)}")
+            error
         end
-
-        :ets.insert(table_name, {
-          animation_path,
-          %{
-            type: animation_type,
-            data: compressed_data,
-            size: compressed_size,
-            original_size: original_size,
-            compressed: true
-          },
-          :os.system_time(:second)
-        })
-
-        if original_size > 0 do
-          compression_ratio = round((1 - compressed_size / original_size) * 100)
-
-          IO.puts(
-            "Animation cached: #{animation_path} (#{compressed_size} bytes, #{compression_ratio}% compression)"
-          )
-        else
-          IO.puts(
-            "Animation cached: #{animation_path} (#{compressed_size} bytes, empty original file)"
-          )
-        end
-
-        :ok
 
       {:error, reason} ->
         IO.puts("Failed to cache animation: #{inspect(reason)}")
@@ -98,87 +78,31 @@ defmodule Raxol.Terminal.Config.AnimationCache do
     end
   end
 
-  @spec compress_animation(binary(), atom()) :: binary()
-  defp compress_animation(animation_data, _animation_type) do
-    :zlib.compress(animation_data)
-  end
+  @doc """
+  Decompresses an animation.
 
-  @spec decompress_animation(binary()) :: binary()
-  # Make public
+  ## Parameters
+    * `compressed_data` - Compressed animation data
+  """
   def decompress_animation(compressed_data) do
     :zlib.uncompress(compressed_data)
   end
 
-  @spec would_exceed_cache_limit(non_neg_integer()) :: boolean()
-  defp would_exceed_cache_limit(new_size) do
-    max_cache_size = @max_cache_size
-    current_size = get_cache_size()
-    current_size + new_size > max_cache_size
-  end
-
-  @spec get_cache_size() :: non_neg_integer()
-  # Make public
+  @doc """
+  Gets the current cache size.
+  """
   def get_cache_size do
-    table_name = @animation_cache_table
-
-    if :ets.whereis(table_name) != :undefined do
-      entries = :ets.tab2list(table_name)
-
-      Enum.reduce(entries, 0, fn {_path, %{size: size}, _timestamp}, acc ->
-        acc + size
-      end)
-    else
-      0
+    case System.stats(namespace: :animation) do
+      {:ok, stats} -> stats.size
+      _ -> 0
     end
   end
 
-  @spec make_space_for_animation(non_neg_integer()) :: :ok
-  defp make_space_for_animation(required_size) do
-    table_name = @animation_cache_table
-    max_cache_size = @max_cache_size
-
-    if :ets.whereis(table_name) != :undefined do
-      entries = :ets.tab2list(table_name)
-
-      sorted_entries =
-        Enum.sort_by(entries, fn {_path, _data, timestamp} -> timestamp end)
-
-      current_size = get_cache_size()
-      space_to_free = current_size + required_size - max_cache_size
-      # Use make_ref/Process.put for state in reduce
-      freed_bytes_ref = make_ref()
-      Process.put(freed_bytes_ref, 0)
-
-      Enum.reduce_while(sorted_entries, 0, fn {path, data, _timestamp},
-                                              freed_acc ->
-        entry_size = Map.get(data, :size, 0)
-        new_freed = freed_acc + entry_size
-
-        if new_freed >= space_to_free do
-          # Delete the current one too
-          :ets.delete(table_name, path)
-          # Store final freed amount
-          Process.put(freed_bytes_ref, new_freed)
-          {:halt, new_freed}
-        else
-          :ets.delete(table_name, path)
-          {:cont, new_freed}
-        end
-      end)
-
-      final_freed = Process.get(freed_bytes_ref, 0)
-      Process.delete(freed_bytes_ref)
-      IO.puts("Cache cleaned: freed #{final_freed} bytes")
-    end
-
-    :ok
-  end
-
-  @spec preload_animations() :: :ok
-  # Make public
+  @doc """
+  Preloads animations from the preload directory.
+  """
   def preload_animations do
-    preload_dir = @preload_dir
-    preload_path = Path.expand(preload_dir)
+    preload_path = Path.expand(@preload_dir)
 
     case File.mkdir_p(preload_path) do
       :ok ->
@@ -201,7 +125,73 @@ defmodule Raxol.Terminal.Config.AnimationCache do
     end
   end
 
-  @spec find_animation_files(String.t()) :: [{String.t(), atom()}]
+  @doc """
+  Clears the animation cache.
+  """
+  def clear_animation_cache do
+    System.clear(namespace: :animation)
+    IO.puts("Animation cache cleared")
+    :ok
+  end
+
+  @doc """
+  Gets animation cache statistics.
+  """
+  def get_animation_cache_stats do
+    case System.stats(namespace: :animation) do
+      {:ok, stats} ->
+        %{
+          count: stats.size,
+          total_size: stats.size,
+          total_original_size: stats.size,  # We don't track original size in unified cache
+          average_size: if(stats.size > 0, do: div(stats.size, stats.size), else: 0),
+          compression_ratio: 0,  # We don't track compression ratio in unified cache
+          max_size: stats.max_size,
+          used_percent: if(stats.max_size > 0, do: round(stats.size / stats.max_size * 100), else: 0)
+        }
+
+      _ ->
+        %{
+          count: 0,
+          total_size: 0,
+          total_original_size: 0,
+          average_size: 0,
+          compression_ratio: 0,
+          max_size: 0,
+          used_percent: 0
+        }
+    end
+  end
+
+  @doc """
+  Preloads a single animation.
+
+  ## Parameters
+    * `animation_path` - Path to the animation file
+  """
+  def preload_animation(animation_path) do
+    if File.exists?(animation_path) do
+      animation_type = determine_animation_type(animation_path)
+
+      if animation_type do
+        case cache_animation(animation_path, animation_type) do
+          :ok -> {:ok, animation_type}
+          error -> error
+        end
+      else
+        {:error, :unsupported_animation_type}
+      end
+    else
+      {:error, :file_not_found}
+    end
+  end
+
+  # Private Functions
+
+  defp compress_animation(animation_data, _animation_type) do
+    :zlib.compress(animation_data)
+  end
+
   defp find_animation_files(directory) do
     case File.ls(directory) do
       {:ok, files} ->
@@ -221,8 +211,6 @@ defmodule Raxol.Terminal.Config.AnimationCache do
     end
   end
 
-  @spec determine_animation_type(String.t()) ::
-          :gif | :video | :shader | :particle | nil
   defp determine_animation_type(path) do
     ext = Path.extname(path) |> String.downcase()
 
@@ -237,89 +225,4 @@ defmodule Raxol.Terminal.Config.AnimationCache do
       _ -> nil
     end
   end
-
-  @spec clear_animation_cache() :: :ok
-  # Make public
-  def clear_animation_cache do
-    table_name = @animation_cache_table
-
-    if :ets.whereis(table_name) != :undefined do
-      :ets.delete_all_objects(table_name)
-      IO.puts("Animation cache cleared")
-    end
-
-    :ok
-  end
-
-  @spec get_animation_cache_stats() :: map()
-  # Make public
-  def get_animation_cache_stats do
-    table_name = @animation_cache_table
-    max_cache_size = @max_cache_size
-
-    if :ets.whereis(table_name) != :undefined do
-      entries = :ets.tab2list(table_name)
-      count = length(entries)
-
-      total_size =
-        Enum.reduce(entries, 0, fn {_path, %{size: size}, _ts}, acc ->
-          acc + size
-        end)
-
-      total_original_size =
-        Enum.reduce(entries, 0, fn {_path, %{original_size: size}, _ts}, acc ->
-          acc + size
-        end)
-
-      %{
-        count: count,
-        total_size: total_size,
-        total_original_size: total_original_size,
-        average_size: if(count > 0, do: div(total_size, count), else: 0),
-        compression_ratio:
-          if(total_original_size > 0,
-            do: round((1 - total_size / total_original_size) * 100),
-            else: 0
-          ),
-        max_size: max_cache_size,
-        used_percent:
-          if(max_cache_size > 0,
-            do: round(total_size / max_cache_size * 100),
-            else: 0
-          )
-      }
-    else
-      %{
-        count: 0,
-        total_size: 0,
-        total_original_size: 0,
-        average_size: 0,
-        compression_ratio: 0,
-        max_size: max_cache_size,
-        used_percent: 0
-      }
-    end
-  end
-
-  @spec preload_animation(String.t()) :: {:ok, atom()} | {:error, atom()}
-  # Make public
-  def preload_animation(animation_path) do
-    if File.exists?(animation_path) do
-      animation_type = determine_animation_type(animation_path)
-
-      if animation_type do
-        case cache_animation(animation_path, animation_type) do
-          :ok -> {:ok, animation_type}
-          error -> error
-        end
-      else
-        {:error, :unsupported_animation_type}
-      end
-    else
-      {:error, :file_not_found}
-    end
-  end
-
-  # Functions to set module attributes are commented out as it's not standard practice.
-  # These should be managed via Application config or a state process.
 end

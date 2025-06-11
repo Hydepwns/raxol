@@ -5,9 +5,14 @@ defmodule Raxol.Terminal.Config do
   - Color settings
   - Input handling
   - Terminal state management
+  - Configuration validation
+  - Configuration persistence
   """
 
+  alias Raxol.Terminal.Config.{Validator, Persistence}
+
   @type t :: %__MODULE__{
+          version: non_neg_integer(),
           width: non_neg_integer(),
           height: non_neg_integer(),
           colors: map(),
@@ -17,7 +22,8 @@ defmodule Raxol.Terminal.Config do
           mode: map()
         }
 
-  defstruct width: 80,
+  defstruct version: 1,
+            width: 80,
             height: 24,
             colors: %{},
             styles: %{},
@@ -302,6 +308,44 @@ defmodule Raxol.Terminal.Config do
     end
   end
 
+  @doc """
+  Updates the terminal configuration with validation.
+  """
+  @spec update(t(), map()) :: {:ok, t()} | {:error, term()}
+  def update(config, updates) when is_map(updates) do
+    with :ok <- Validator.validate_update(config, updates) do
+      updated_config = update_config_fields(config, updates)
+      {:ok, updated_config}
+    end
+  end
+
+  @doc """
+  Saves the configuration to persistent storage.
+  """
+  @spec save(t(), String.t()) :: :ok | {:error, term()}
+  def save(config, name) do
+    Persistence.save_config(config, name)
+  end
+
+  @doc """
+  Loads a configuration from persistent storage.
+  """
+  @spec load(String.t()) :: {:ok, t()} | {:error, term()}
+  def load(name) do
+    case Persistence.load_config(name) do
+      {:ok, config} -> Persistence.migrate_config(config)
+      error -> error
+    end
+  end
+
+  @doc """
+  Lists all saved configurations.
+  """
+  @spec list_saved() :: {:ok, [String.t()]} | {:error, term()}
+  def list_saved do
+    Persistence.list_configs()
+  end
+
   # Private helpers
 
   defp do_merge_opts(config, opts) do
@@ -374,5 +418,35 @@ defmodule Raxol.Terminal.Config do
       mode when is_map(mode) -> :ok
       _ -> {:error, :invalid_mode}
     end
+  end
+
+  defp update_config_fields(config, updates) do
+    Enum.reduce(updates, config, fn {key, value}, acc ->
+      case key do
+        :width when is_integer(value) and value > 0 ->
+          %{acc | width: value}
+
+        :height when is_integer(value) and value > 0 ->
+          %{acc | height: value}
+
+        :colors when is_map(value) ->
+          %{acc | colors: Map.merge(acc.colors, value)}
+
+        :styles when is_map(value) ->
+          %{acc | styles: Map.merge(acc.styles, value)}
+
+        :input when is_map(value) ->
+          %{acc | input: Map.merge(acc.input, value)}
+
+        :performance when is_map(value) ->
+          %{acc | performance: Map.merge(acc.performance, value)}
+
+        :mode when is_map(value) ->
+          %{acc | mode: Map.merge(acc.mode, value)}
+
+        _ ->
+          acc
+      end
+    end)
   end
 end

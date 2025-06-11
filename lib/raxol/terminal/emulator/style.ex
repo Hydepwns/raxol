@@ -9,6 +9,9 @@ defmodule Raxol.Terminal.Emulator.Style do
   alias Raxol.Terminal.ANSI.TextFormatting
   alias Raxol.Terminal.Emulator
 
+  @behaviour Raxol.Terminal.Emulator.Style
+
+  @impl true
   @doc """
   Sets the text style attributes.
   Returns {:ok, updated_emulator} or {:error, reason}.
@@ -29,6 +32,7 @@ defmodule Raxol.Terminal.Emulator.Style do
     {:error, "Invalid attributes: #{inspect(invalid_attributes)}"}
   end
 
+  @impl true
   @doc """
   Sets the foreground color.
   Returns {:ok, updated_emulator} or {:error, reason}.
@@ -40,6 +44,7 @@ defmodule Raxol.Terminal.Emulator.Style do
     {:ok, %{emulator | style: updated_style}}
   end
 
+  @impl true
   @doc """
   Sets the background color.
   Returns {:ok, updated_emulator} or {:error, reason}.
@@ -51,6 +56,7 @@ defmodule Raxol.Terminal.Emulator.Style do
     {:ok, %{emulator | style: updated_style}}
   end
 
+  @impl true
   @doc """
   Resets all text attributes to default.
   Returns {:ok, updated_emulator}.
@@ -61,6 +67,7 @@ defmodule Raxol.Terminal.Emulator.Style do
     {:ok, %{emulator | style: updated_style}}
   end
 
+  @impl true
   @doc """
   Sets the text intensity (bold, faint).
   Returns {:ok, updated_emulator} or {:error, reason}.
@@ -88,6 +95,7 @@ defmodule Raxol.Terminal.Emulator.Style do
     {:error, "Invalid intensity: #{inspect(invalid_intensity)}"}
   end
 
+  @impl true
   @doc """
   Sets the text decoration (underline, strikethrough, etc.).
   Returns {:ok, updated_emulator} or {:error, reason}.
@@ -99,6 +107,7 @@ defmodule Raxol.Terminal.Emulator.Style do
     {:ok, %{emulator | style: updated_style}}
   end
 
+  @impl true
   @doc """
   Sets the text blink mode.
   Returns {:ok, updated_emulator} or {:error, reason}.
