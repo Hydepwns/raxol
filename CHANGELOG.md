@@ -1,228 +1,75 @@
-## [Unreleased]
+## [0.4.2] - 2025-06-11
 
 ### Added
 
-- **Animation Interpolation Enhancement:**
-
-  - Implemented advanced HSL (Hue, Saturation, Lightness) color interpolation in `Raxol.Animation.Interpolate`.
-  - Hue is now interpolated using the shortest path around the color wheel for more natural color transitions.
-  - Supports `Raxol.Style.Colors.Color` structs.
-  - Includes comprehensive unit tests for various hue, saturation, and lightness interpolation scenarios.
-
 - **Terminal Buffer Management Refactoring:**
-  - Split `manager.ex` into specialized modules for better separation of concerns:
-    - `State` - Handles buffer initialization and state management
-    - `Cursor` - Manages cursor position and movement
-    - `Damage` - Tracks damaged regions in the buffer
-    - `Memory` - Handles memory usage and limits
-    - `Scrollback` - Manages scrollback buffer operations
-    - `Buffer` - Handles buffer operations and synchronization
-    - `Manager` - Main facade that coordinates all components
+
+  - Split `manager.ex` into specialized modules:
+    - `State` - Buffer initialization and state management
+    - `Cursor` - Cursor position and movement
+    - `Damage` - Damaged regions tracking
+    - `Memory` - Memory usage and limits
+    - `Scrollback` - Scrollback buffer operations
+    - `Buffer` - Buffer operations and synchronization
+    - `Manager` - Main facade coordination
   - Improved code organization and maintainability
-  - Enhanced test coverage for each specialized module
-  - Better error handling and state management
-  - Clearer interfaces between components
-  - Comprehensive documentation for all modules
-- **Dependency Resolution System Improvements:**
-  - Enhanced version constraint handling with support for complex requirements (e.g., ">= 1.0.0 || >= 2.0.0")
-  - Implemented Tarjan's algorithm for efficient cycle detection and component identification
-  - Added detailed dependency chain reporting for better error diagnostics
-  - Improved version parsing with comprehensive error handling
-  - Optimized dependency graph operations for better performance
-  - Added type specifications for better documentation and type safety
-- **CSI Handlers Refactoring:**
-  - Refactored `CSIHandlers` module to delegate command handling to specialized modules
-  - Created specialized handlers for cursor, buffer, erase, device, and mode operations
-  - Added comprehensive test coverage and improved error handling
-  - Standardized parameter handling across all handlers
-  - Added TODOs for future improvements in window manipulation
-- **Test Infrastructure Improvements:**
-  - Added unique state tracking for test plugins using `state_id` and timestamps
-  - Enhanced plugin test fixtures with better state management
-  - Added comprehensive metadata validation testing
-  - Improved resource cleanup in plugin lifecycle
-  - Event-based test synchronization replacing all `Process.sleep` calls
-  - System interaction adapter pattern for testable system calls
-  - High-contrast mode support and reduced motion preference
-  - Improved test coverage for terminal memory management, including both unit and integration tests for memory usage estimation
-- **Performance Testing Infrastructure:**
-  - New `Raxol.Test.PerformanceHelper` module for benchmarking
+  - Enhanced test coverage
+  - Better error handling
+  - Clearer interfaces
+
+- **Plugin System Improvements:**
+
+  - Implemented Tarjan's algorithm for dependency resolution
+  - Enhanced version constraint handling
+  - Added detailed dependency chain reporting
+  - Improved error handling and diagnostics
+  - Optimized dependency graph operations
+
+- **Component System Enhancements:**
+
+  - Harmonized API for all input components
+  - Improved theme and style prop support
+  - Enhanced lifecycle hooks
+  - Better accessibility integration
+  - Comprehensive test coverage
+
+- **Performance Infrastructure:**
+
+  - New `Raxol.Test.PerformanceHelper` module
   - Performance test suite for terminal manager
-  - Performance requirements and metrics collection
-  - Event processing benchmarks (< 1ms average, < 2ms 95th percentile)
-  - Screen update benchmarks (< 2ms average, < 5ms 95th percentile)
-  - Concurrent operation benchmarks (< 5ms average, < 10ms 95th percentile)
-- **Terminal Refactoring (Complete):**
-  - Created specialized managers for buffer, cursor, state, command, style, parser, and input operations
-  - All new modules have comprehensive test coverage
-  - Improved code organization and maintainability
-  - Reduced complexity in `emulator.ex`
-- **Plugin System Behaviors:**
-  - Completed and documented all plugin system behavior modules
-  - Each behavior module includes comprehensive documentation and clear callback specifications
-  - Consistent patterns for error handling and state management
-- **Color System Refactoring:**
-  - Implemented centralized color system architecture
-  - Created specialized modules for color management
-  - Enhanced accessibility integration
-  - Improved theme management
-  - Added color palette management and utilities
-- **API Improvements:**
-  - Renamed `border/2` to `border_wrap/2` for better clarity and consistency
-  - Updated macro versions to use `border_wrap` instead of `border`
-  - Updated documentation to reflect the new function name
-  - Updated table view to use the new `border_wrap` function
-  - Maintained same functionality while improving API clarity
-- **Plugin Lifecycle Testing:**
-  - Added comprehensive test suite for plugin lifecycle events
-  - Added configuration management tests
-  - Added concurrent operations tests
-  - Added plugin communication tests
-  - Added error recovery tests
-  - Enhanced test isolation and cleanup
-  - Improved state management verification
-  - Added resource cleanup validation
-- **SelectList Advanced Feature Tests:**
-  - Added comprehensive tests for SelectList advanced features:
-    - Custom item rendering
-    - Filtering (basic, by field, empty state, case-insensitive)
-    - Keyboard navigation after filtering
-  - These tests replace previously skipped/placeholder tests and improve coverage for advanced SelectList features.
-- **Memory Manager Integration Tests:**
-  - Added integration-style tests for `Raxol.Terminal.MemoryManager.estimate_memory_usage/1` using real `Raxol.Terminal.Integration.State`, `Buffer.Manager`, and `Buffer.Scroll` structs.
-  - Tests cover default, custom, and partial state scenarios, ensuring robust memory usage estimation.
-- **Test Tracking Improvement:**
-  - Added a prioritized table of skipped tests blocked only by minor refactors, missing helpers, or minor API changes to `docs/testing/test_tracking.md` (May 2025). This table helps the team focus on unskipping and updating "low-hanging fruit" tests before addressing feature-blocked or obsolete tests, supporting the roadmap and test stabilization efforts.
-- **Theme Refactor:**
-  - Refactored all theme usage to use `Raxol.UI.Theming.Theme` exclusively. Removed legacy theme modules and references. Codebase is now fully canonical for theming. (2025-06-10)
+  - Event processing benchmarks
+  - Screen update benchmarks
+  - Concurrent operation benchmarks
+
 - **Documentation Improvements:**
-  - Completed comprehensive guides (Plugin Dev, Theming, VS Code Ext).
-  - Reviewed and improved ExDoc (`@moduledoc`, `@doc`, `@spec`) for key public modules.
-  - Successfully generated ExDoc documentation (`mix docs`).
-  - Improved README example.
-  - Component system documentation is now harmonized and cross-linked across README, ARCHITECTURE.md, API reference, and architecture guide.
-  - Added component lifecycle documentation, composition patterns guide, testing patterns guide, style guide, and updated component README with API reference links.
-  - Testing framework documentation: documented test helper modules, added event-based testing examples, performance testing guide, troubleshooting section, and best practices.
-  - Pre-commit script improvements: file discovery now includes hidden directories and normalizes paths; key project READMEs are explicitly included; anchor checking temporarily disabled due to parsing complexities; file existence checks are active.
-  - Continued refactoring large files (see docs/changes/LARGE_FILES_FOR_REFACTOR.md for tracking and guidelines).
-  - Tracking of large or growing test helper files is now in place.
-- Theming and style prop support for SelectList, TextInput, TextField, and Button components. All now support `style` and `theme` props, with proper merging and override precedence.
-- Lifecycle hooks (`mount/1`, `unmount/1`) for SelectList, TextInput, TextField, and Button components.
-- Expanded/added test suites for SelectList, TextInput, TextField, and Button, covering theming, style, lifecycle, and responsiveness.
-- Dedicated test file for TextField: `test/raxol/ui/components/input/text_field_test.exs`. Button: test/examples/button_test.exs expanded for style, theme, and lifecycle coverage.
-- SelectList, TextInput, TextField, and Button components now use merged `style` and `theme` props throughout their render logic.
-- All four components now implement and test lifecycle hooks (`mount/1`, `unmount/1`).
-- Test coverage for these components is now comprehensive and up to date.
-- **Checkbox Component Refactor:**
-  - Fully refactored and tested.
-  - Now supports style and theme props (with correct merging and override precedence).
-  - Implements robust lifecycle hooks (`mount/1`, `unmount/1`).
-  - Supports accessibility and extra props (`tooltip`, `required`, `aria_label`).
-  - Test coverage expanded for style/theme merging, lifecycle, accessibility, and responsiveness.
-  - Harmonized with Button, SelectList, TextInput, and TextField components.
-- **Progress Component Refactor:**
-  - Fully refactored and tested.
-  - Now supports harmonized style and theme prop merging (context.theme < theme prop < style prop).
-  - Implements robust lifecycle hooks (`mount/1`, `unmount/1`).
-  - Supports accessibility and extra props (`aria_label`, `tooltip`).
-  - Test coverage expanded for style/theme merging, lifecycle, accessibility, and responsiveness.
-  - Harmonized with Button, Checkbox, SelectList, TextInput, and TextField components.
-- **Progress Component Improvements (2024-06-10):**
-  - Theme and style merging is now robust: uses deep merge for nested theme maps, so updates to nested keys (e.g., `progress`) are merged, not replaced.
-  - Default value for `theme` is now `%{}` (not `nil`), preventing KeyError and making merging logic more robust.
-  - All tests now pass, including those for style/theme merging and update logic.
-  - The component is harmonized with other UI components for prop merging and lifecycle.
-  - Removed KeyError and merge-related test failures in the test suite.
-- **MultiLineInput Harmonization and Documentation:**
-  - MultiLineInput and other modern input components now use a harmonized API for props, theming, clipboard, and cursor management.
-  - Architecture, clipboard, and cursor documentation updated to reflect these conventions and reference the main UI components guide. (2024-07-30)
-- MultiLineInput: All styling is now theme-driven. The `style` field and `@default_style` are removed. Use the theme system for appearance customization. (BREAKING)
-- Completed migration from `Raxol.Components` to `Raxol.UI.Components` namespace.
-- All component files are now in `lib/raxol/ui/components/`.
-- Removed the old `lib/raxol/components/` directory.
-- Deleted `COMPONENT_MIGRATION_PLAN.md` as the migration is fully complete.
-- **Test Helper Consolidation Complete:**
-  - All test helpers and assertion modules have been consolidated into `lib/raxol/test/` as the canonical location.
-  - All unique and overlapping helpers from `test/support/` have been moved, merged, or deleted as appropriate.
-  - The originals in `test/support/` have been deleted (except for Phoenix-style test case files).
-  - The consolidation plan (`TEST_HELPER_CONSOLIDATION_PLAN.md`) has been deleted as the process is now complete.
-- **Plugin Registry Refactor:**
-  - The plugin registry is now implemented as a GenServer.
-  - Integrated with plugin load and unload lifecycle (via LifecycleHelper).
-  - Started under the main supervisor, ensuring it is always available.
-  - Plugin listing is always up-to-date and accessible via the registry API.
-- **Rendering Pipeline Infrastructure:**
-  - Added `Raxol.UI.Rendering.Renderer` GenServer to manage rendering state and animation settings.
-  - Updated `Raxol.UI.Rendering.Pipeline` to communicate with the Renderer process instead of using the process dictionary.
-  - Integrated Renderer into the main supervision tree for robust lifecycle management.
-  - This lays the foundation for advanced rendering, animation, and UI coordination.
-- **Renderer Partial Rendering and Buffer Update Fix:**
-  - Renderer now updates the buffer on both initial render and partial diffs.
-  - Each label is written to a unique line in the buffer, in depth-first order.
-  - Robust test coverage for complex UI trees (deeply nested, wide, mixed node types, multiple updates, etc).
-  - See `test/raxol/ui/renderer_partial_render_test.exs` for comprehensive coverage.
-- **Terminal LiveView Scrollback Integration:**
-  - Implemented full scrollback support in the LiveView-based terminal UI.
-  - Added a `TerminalScroll` JS hook to capture mouse wheel and PageUp/PageDown events and push scroll events to the backend.
-  - LiveView now manages the terminal emulator and renderer in assigns, updating scrollback and re-rendering on scroll events.
-  - UI displays a live scrollback indicator in the terminal footer when scrollback is available.
-  - Scrollback buffer is user-configurable via application config.
-  - Feature is fully tested and ready for further UI/UX enhancements.
-- **Terminal Command Handler Error/Result Standardization:**
-  - All terminal command handlers (CSIHandlers, OSCHandlers, DCSHandlers, BufferHandlers, EraseHandlers, CursorHandlers, ModeHandlers, WindowHandlers) now return standardized result tuples (`{:ok, emulator}` or `{:error, reason, emulator}`).
-  - The executor and parser have been updated to handle these tuples, logging errors and ensuring only valid emulator state is passed to the renderer/UI.
-  - Error structs and recursive error structures are prevented from propagating to the UI/renderer.
-  - Comprehensive tests for error propagation and prevention of recursive error structures are now in place.
-- **Scrollbar Component Rendering Fix:**
-  - Fixed a rendering issue in the Scrollbar component where the thumb was not appearing.
-  - Ensured correct calculation of thumb size and position based on content and viewport dimensions.
-  - Added unit tests to verify thumb rendering under various scenarios (e.g., content smaller than viewport, content larger than viewport, scrolled content).
+  - Completed comprehensive guides
+  - Enhanced API documentation
+  - Improved architecture documentation
+  - Added migration guide
+  - Updated component documentation
 
 ### Changed
 
-- **Test Reliability:**
-  - Replaced all `Process.sleep` calls with event-based synchronization
-  - Enhanced plugin test fixtures with better state management
-  - Improved error handling and reporting
-  - Better resource cleanup in plugin lifecycle
-  - Clear test boundaries for plugin operations
-- **Documentation:**
-  - Updated color system documentation
-  - Enhanced theming guide
-  - Improved accessibility color integration docs
-  - Updated architecture documentation
-  - Refined roadmap and next steps
-  - Reorganized and harmonized all component system documentation (README, ARCHITECTURE.md, API reference, architecture guide) with improved cross-linking and unified lifecycle/terminology.
-  - Consolidated large file and test helper file refactoring tracking into docs/changes/LARGE_FILES_FOR_REFACTOR.md
-- Updated `test/raxol/terminal/emulator_plugin_test.exs` to use current APIs and mocks for plugin lifecycle, event, and command handler tests.
-- **Test Suite:**
-  - All dependency manager resolution tests now pass.
-- **Test and Infrastructure Fixes:**
-  - Fixed Manager.Behaviour/mock issue in file watcher tests to unblock test suite.
-  - Fixed Mox compile errors due to duplicate LoaderMock/FileWatcherMock definitions; all plugin system tests now use global mocks (2025-06-10).
-  - Re-ran test suite and updated failure/skipped/invalid counts.
-  - Restored and fixed Raxol.Terminal.DriverTestHelper (helper import, pattern match, and assertion issues resolved; test suite now proceeds past helper errors).
-  - Addressed remaining test failures (KeyError for :single_shift resolved; next focus: scroll region/handle_r/2 and screen resizing failures).
-- **Component Enhancements:**
-  - Implemented Table features: pagination buttons, filtering, sorting.
-  - Implemented FocusRing styling based on state/effects.
-  - Enhanced SelectList: stateful scroll offset, robust focus management, search/filtering.
-  - Completed component system documentation.
-  - Fixed SelectList component implementation.
-  - All advanced SelectList features (custom rendering, filtering, navigation, empty state, case insensitivity) are now covered by real tests.
-- **Terminal Command Handler Test Fixes:**
-  - Updated all tests for `DeviceHandlers.handle_c/2` to use the correct `handle_c/3` signature, matching the real API and improving maintainability.
-  - No unnecessary wrapper functions were added; the API remains minimal and explicit.
-  - All related test failures are now resolved.
-- **DeviceHandlers DA/DSR Response Updates:**
-  - DeviceHandlers now returns VT220-style DA responses (`\e[?1;2c` for primary, `\e[>0;1;0c` for secondary) to match xterm/VT220 conventions and test expectations.
-  - Device Status Report (DSR) with missing or zero parameter now defaults to code 5 (device ready), matching terminal standards and test expectations.
-- All DCS command logic (including Sixel, DECRQSS, DECDLD stubs) has been migrated from the deprecated CommandExecutor to the new Executor and DCSHandlers modules. This improves modularity, maintainability, and testability of terminal command handling.
-- All erase display/line logic has been migrated from the deprecated CommandExecutor to the new Screen and Eraser modules. Terminal screen and line erasure is now fully modular and testable.
-- **Terminal Command Handler Error/Result Standardization:**
-  - `DeviceHandlers.handle_n/2` (DSR) and `handle_c/3` (DA) now return standardized result tuples (`{:ok, emulator}` or `{:error, reason, emulator}`) instead of just the emulator struct. This is part of the ongoing project to standardize error/result handling across all terminal command handlers (see TODO.md for checklist and plan).
-- DeviceHandlers.handle_n/2 (DSR) and handle_c/3 (DA) now use standardized error/result tuple format ([see TODO.md checklist]).
-- All relevant handle\_\* functions in CSIHandlers now use standardized error/result tuple format ([see TODO.md checklist]).
+- **Test Infrastructure:**
+
+  - Replaced `Process.sleep` with event-based synchronization
+  - Enhanced plugin test fixtures
+  - Improved error handling
+  - Better resource cleanup
+  - Clear test boundaries
+
+- **Terminal Command Handling:**
+
+  - Standardized error/result tuples
+  - Improved error propagation
+  - Enhanced command handler organization
+  - Better test coverage
+
+- **Component System:**
+  - Migrated to `Raxol.UI.Components` namespace
+  - Improved theme handling
+  - Enhanced style prop support
+  - Better lifecycle management
 
 ### Deprecated
 
@@ -233,31 +80,44 @@
 
 ### Removed
 
-- **PluginSystem:** Removed redundant `Raxol.Core.Runtime.Plugins.Commands` GenServer
-- Removed redundant clipboard modules
-- `Raxol.UI.Components.ScreenModes` module and associated tests/references
-- Removed `:meck` direct usage from test files
-- Deleted `
+- Redundant `Raxol.Core.Runtime.Plugins.Commands` GenServer
+- Redundant clipboard modules
+- `Raxol.UI.Components.ScreenModes` module
+- Direct `:meck` usage from test files
 
 ### Fixed
 
 - **SelectList Mouse Focus Bug:**
-  - Fixed an issue where clicking an option in SelectList did not always update `focused_index` to the clicked option. Now, mouse clicks reliably set focus to the correct option, matching keyboard navigation behavior.
-  - Updated the test suite to accurately simulate mouse clicks (correct y-offset), ensuring robust test coverage for mouse focus and selection.
-  - All SelectList tests now pass, including advanced focus and mouse interaction cases.
-- **Accessibility Tests:** Fixed `suggest_accessible_color` test for dark backgrounds to use an input color that correctly exercises the lightening logic, ensuring the test accurately verifies behavior for initially inaccessible colors.
-- **Test Suite Compilation:** Resolved all compilation errors in the test suite by ensuring all test files define a module and correctly scope helper functions, imports, and aliases. This allows the `scripts/summarize_test_errors.sh` script to run to completion.
 
-### TODO / Next Steps
+  - Fixed focus update on mouse clicks
+  - Improved test coverage
+  - Enhanced mouse interaction handling
 
-- Investigate and resolve remaining test failures in `Raxol.Core.Runtime.Plugins.PerformanceTest` (MatchError and ArithmeticError in performance and dependency graph tests).
-- Review and improve performance test assertions to match actual return values and metrics.
-- Address any remaining skipped or flaky tests, especially those related to plugin system and dependency manager edge cases.
-- Continue refactoring and harmonizing test helpers and fixtures for maintainability.
-- **DeviceHandlers Test Modernization and Alignment:**
-  - All DeviceHandlers tests now pass. Tests were updated to assert on the emulator's `output_buffer` instead of using IO.write/Meck, reflecting the current implementation.
-  - Implementation and tests are now consistent with each other and with terminal standards for DA and DSR responses.
+- **Accessibility Tests:**
+
+  - Fixed color suggestion tests
+  - Improved test reliability
+  - Enhanced accessibility coverage
+
+- **Test Suite:**
+  - Resolved compilation errors
+  - Fixed helper function scoping
+  - Improved test organization
 
 ### Next Focus
 
-- Address the rendering pipeline (`Raxol.UI.Rendering.Pipeline`) and animation interpolation (`Raxol.Animation.Interpolate`) for further modernization and performance improvements.
+1. Address remaining test failures
+2. Complete OSC 4 handler implementation
+3. Implement robust anchor checking
+4. Document test writing guide
+5. Continue code quality improvements
+
+## [0.4.0] - 2025-05-10
+
+### Added
+
+- Initial public release
+- Core terminal functionality
+- Basic component system
+- Plugin architecture
+- Testing infrastructure
