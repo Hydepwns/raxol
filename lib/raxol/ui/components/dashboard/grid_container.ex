@@ -98,12 +98,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     end
   end
 
-  @spec calculate_widget_bounds(map(), any()) :: %{
-          x: integer(),
-          y: integer(),
-          width: integer(),
-          height: integer()
-        }
+  @spec calculate_widget_bounds(map(), any()) :: %{x: integer(), y: integer(), width: integer(), height: integer()}
   @doc """
   Calculates the absolute bounds for a widget within a grid layout.
 
@@ -175,39 +170,16 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     gap = grid_config[:gap] || @default_gap
 
     # Check if width or height are invalid (non-numeric values like :ok)
-    width =
-      cond do
-        is_map(parent_bounds) and is_map_key(parent_bounds, :width) ->
-          parent_bounds.width
-
-        is_tuple(parent_bounds) and tuple_size(parent_bounds) == 2 ->
-          elem(parent_bounds, 0)
-
-        true ->
-          10
-      end
-
-    height =
-      cond do
-        is_map(parent_bounds) and is_map_key(parent_bounds, :height) ->
-          parent_bounds.height
-
-        is_tuple(parent_bounds) and tuple_size(parent_bounds) == 2 ->
-          elem(parent_bounds, 1)
-
-        true ->
-          10
-      end
-
-    if not is_number(width) or not is_number(height) do
+    if not is_number(parent_bounds[:width]) or
+         not is_number(parent_bounds[:height]) do
       Raxol.Core.Runtime.Log.error(
-        "Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(width)}, container_height=#{inspect(height)}"
+        "Invalid parent_bounds values in calculate_widget_bounds: parent_bounds=#{inspect(parent_bounds)}, container_width=#{inspect(parent_bounds[:width])}, container_height=#{inspect(parent_bounds[:height])}"
       )
 
       %{x: 0, y: 0, width: 10, height: 10}
     else
-      container_width = width
-      container_height = height
+      container_width = parent_bounds.width
+      container_height = parent_bounds.height
 
       # Calculate cell dimensions using the helper function
       {cell_width, cell_height} = get_cell_dimensions(grid_config)
@@ -290,7 +262,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     end
   end
 
-  @spec get_cell_dimensions(any()) :: %{width: integer(), height: integer()}
+  @spec get_cell_dimensions(any()) :: {integer(), integer()}
   @doc """
   Calculates the dimensions of a single cell in the grid.
 
@@ -299,7 +271,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
       cols, rows, and gap.
 
   Returns:
-    - `%{width: integer(), height: integer()}` representing the dimensions of a single cell.
+    - `{cell_width, cell_height}` tuple with the dimensions of a single cell.
   """
   # Handle when an :ok atom is passed (which causes the ArithmeticError)
   def get_cell_dimensions(:ok) do
@@ -308,7 +280,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     )
 
     # Return sensible defaults
-    %{width: 10, height: 10}
+    {10, 10}
   end
 
   # Handle other non-map inputs
@@ -318,7 +290,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     )
 
     # Return sensible defaults
-    %{width: 10, height: 10}
+    {10, 10}
   end
 
   # Handle maps without parent_bounds
@@ -328,7 +300,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     )
 
     # Return sensible defaults
-    %{width: 10, height: 10}
+    {10, 10}
   end
 
   def get_cell_dimensions(%{} = grid_config)
@@ -338,7 +310,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
     )
 
     # Return sensible defaults
-    %{width: 10, height: 10}
+    {10, 10}
   end
 
   # Original function with guard to ensure parent_bounds exists and is a map
@@ -373,7 +345,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
       cell_height =
         if rows > 0, do: round(available_height / rows), else: available_height
 
-      %{width: cell_width, height: cell_height}
+      {cell_width, cell_height}
     else
       _ ->
         Raxol.Core.Runtime.Log.warning(
@@ -381,7 +353,7 @@ defmodule Raxol.UI.Components.Dashboard.GridContainer do
         )
 
         # Return sensible defaults
-        %{width: 10, height: 10}
+        {10, 10}
     end
   end
 end

@@ -48,7 +48,7 @@ defmodule Raxol.UI.Rendering.Painter do
 
   defp do_paint_node(nil, _parent_x, _parent_y), do: []
 
-  defp do_paint_node(composed_node, _parent_x_offset, _parent_y_offset)
+  defp do_paint_node(composed_node, parent_x_offset, parent_y_offset)
        when not is_map(composed_node) do
     Raxol.Core.Runtime.Log.warning(
       "Paint Stage: Encountered non-map node, expected composed map structure: #{inspect(composed_node)}"

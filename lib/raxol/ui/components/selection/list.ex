@@ -18,21 +18,17 @@ defmodule Raxol.UI.Components.Selection.List do
   - :item_renderer - function to render items
   """
   @type t :: %__MODULE__{
-          id: any(),
-          items: list(),
-          selected_index: non_neg_integer(),
-          scroll_offset: non_neg_integer(),
-          width: non_neg_integer(),
-          height: non_neg_integer(),
-          style: map(),
-          focused: boolean(),
-          on_select: (any() -> any()) | nil,
-          item_renderer: (any() -> any()) | nil,
-          mounted: boolean(),
-          render_count: non_neg_integer(),
-          type: atom(),
-          disabled: boolean()
-        }
+    id: any(),
+    items: list(),
+    selected_index: non_neg_integer(),
+    scroll_offset: non_neg_integer(),
+    width: non_neg_integer(),
+    height: non_neg_integer(),
+    style: map(),
+    focused: boolean(),
+    on_select: (any() -> any()) | nil,
+    item_renderer: (any() -> any()) | nil
+  }
 
   # Use standard component behaviour
   use Raxol.UI.Components.Base.Component
@@ -54,46 +50,35 @@ defmodule Raxol.UI.Components.Selection.List do
             focused: false,
             on_select: nil,
             # Remove default function capture
-            item_renderer: nil,
-            mounted: false,
-            render_count: 0,
-            type: :list,
-            disabled: false
+            item_renderer: nil
 
   # --- Component Behaviour Callbacks ---
 
   @doc "Initializes the List component state from props."
   @spec init(map()) :: __MODULE__.t()
   @impl Raxol.UI.Components.Base.Component
-  def init(props) when is_map(props) do
+  def init(props) do
+    # Initialize state
     %__MODULE__{
       id: props[:id],
       items: props[:items] || [],
       selected_index: props[:initial_index] || 0,
       width: props[:width] || 30,
       height: props[:height] || @default_height,
-      style: Map.get(props, :style, %{}),
-      focused: Map.get(props, :focused, false),
+      style: props[:style] || %{},
+      focused: props[:focused] || false,
       on_select: props[:on_select],
-      item_renderer: props[:item_renderer] || (&default_item_renderer/1),
-      type: :list,
-      disabled: Map.get(props, :disabled, false),
-      mounted: Map.get(props, :mounted, false),
-      render_count: Map.get(props, :render_count, 0)
+      # Set default renderer here if not provided
+      item_renderer: props[:item_renderer] || (&default_item_renderer/1)
     }
   end
-
-  def init(_),
-    do: %__MODULE__{style: %{}, type: :list, mounted: false, render_count: 0}
 
   @doc "Updates the List component state in response to messages."
   @spec update(term(), __MODULE__.t()) :: {__MODULE__.t(), list()}
   @impl Raxol.UI.Components.Base.Component
   def update(msg, state) do
     # Handle internal messages (selection, scrolling)
-    Raxol.Core.Runtime.Log.debug(
-      "List #{state.id} received message: #{inspect(msg)}"
-    )
+    Raxol.Core.Runtime.Log.debug("List #{state.id} received message: #{inspect(msg)}")
 
     case msg do
       :select_next -> select_item(state.selected_index + 1, state)
@@ -111,9 +96,7 @@ defmodule Raxol.UI.Components.Selection.List do
   # Correct arity
   def handle_event(event, %{} = _props, state) do
     # Handle keyboard (up/down/enter), mouse clicks
-    Raxol.Core.Runtime.Log.debug(
-      "List #{state.id} received event: #{inspect(event)}"
-    )
+    Raxol.Core.Runtime.Log.debug("List #{state.id} received event: #{inspect(event)}")
 
     case event do
       %{type: :key, data: %{key: "Up"}} ->
@@ -160,13 +143,7 @@ defmodule Raxol.UI.Components.Selection.List do
       end
 
     # Return the element structure directly
-    if is_map(dsl_result) do
-      dsl_result
-      |> Map.put_new(:disabled, Map.get(state, :disabled, false))
-      |> Map.put_new(:focused, Map.get(state, :focused, false))
-    else
-      dsl_result
-    end
+    dsl_result
   end
 
   # --- Internal Render Helpers ---
@@ -244,10 +221,6 @@ defmodule Raxol.UI.Components.Selection.List do
 
   # Access behaviour for struct (for list[:key] and Access.fetch/2)
   def fetch(struct, key) when is_atom(key), do: Map.fetch(struct, key)
-
-  def get_and_update(struct, key, fun) when is_atom(key) do
-    if is_map(struct), do: Map.get_and_update(struct, key, fun), else: :error
-  end
-
+  def get_and_update(struct, key, fun) when is_atom(key), do: Map.get_and_update(struct, key, fun)
   def pop(struct, key) when is_atom(key), do: Map.pop(struct, key)
 end

@@ -30,9 +30,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
           optional(:style) => map(),
           optional(:mask_char) => String.t() | nil,
           optional(:max_length) => integer() | nil,
-          optional(:validator) => (String.t() -> boolean()) | nil,
-          optional(:focused) => boolean(),
-          optional(:disabled) => boolean()
+          optional(:validator) => (String.t() -> boolean()) | nil
         }
 
   @type state :: %{
@@ -46,8 +44,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
           on_change: (String.t() -> any()) | nil,
           mask_char: String.t() | nil,
           theme: map(),
-          style: map(),
-          disabled: boolean()
+          style: map()
         }
 
   require Raxol.Core.Runtime.Log
@@ -61,8 +58,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
     initial_state = %{
       value: props[:value] || "",
       cursor_pos: 0,
-      focused: Map.get(props, :focused, false),
-      disabled: Map.get(props, :disabled, false),
+      focused: false,
       placeholder: props[:placeholder] || "",
       max_length: props[:max_length],
       validator: props[:validator],
@@ -70,7 +66,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
       on_change: props[:on_change],
       mask_char: props[:mask_char],
       theme: props[:theme] || %{},
-      style: Map.get(props, :style, %{})
+      style: props[:style] || %{}
     }
 
     {:ok, initial_state}
@@ -242,10 +238,7 @@ defmodule Raxol.UI.Components.Input.TextInput do
   @impl true
   @spec update(term(), map()) :: map()
   def update(message, state) do
-    Raxol.Core.Runtime.Log.debug(
-      "[TextInput] Received unhandled message: #{inspect(message)}"
-    )
-
+    Raxol.Core.Runtime.Log.debug("[TextInput] Received unhandled message: #{inspect(message)}")
     state
   end
 
@@ -288,10 +281,17 @@ defmodule Raxol.UI.Components.Input.TextInput do
       type: :text_input,
       text: display_text,
       cursor_pos: state.cursor_pos,
-      focused: Map.get(state, :focused, false),
-      disabled: Map.get(state, :disabled, false),
+      focused: state.focused,
       style: merged_style
     }
+  end
+
+  defp emit_change(state, new_value) do
+    if is_function(state.on_change, 1) do
+      state.on_change.(new_value)
+    end
+
+    :ok
   end
 
   defp emit_change_side_effect(state, new_value) do

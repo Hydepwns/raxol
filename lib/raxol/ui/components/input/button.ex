@@ -10,9 +10,6 @@ defmodule Raxol.UI.Components.Input.Button do
 
   @behaviour Component
 
-  # Define valid roles
-  @valid_roles [:default, :primary, :secondary, :danger, :success, nil]
-
   @type t :: %{
           id: String.t(),
           label: String.t(),
@@ -25,10 +22,7 @@ defmodule Raxol.UI.Components.Input.Button do
           height: integer() | nil,
           shortcut: String.t() | nil,
           tooltip: String.t() | nil,
-          # Added :default
-          role: :default | :primary | :secondary | :danger | :success | nil,
-          # Add errors field
-          errors: map() | nil
+          role: :primary | :secondary | :danger | :success | nil
         }
 
   @spec new(map()) :: t()
@@ -40,37 +34,18 @@ defmodule Raxol.UI.Components.Input.Button do
     # Use Map.get for accessing options from the map
     id = Map.get(opts, :id, "button-#{System.unique_integer([:positive])}")
     label = Map.get(opts, :label, "Button")
-    on_click = Map.get(opts, :on_click)
     disabled = Map.get(opts, :disabled, false)
-    shortcut = Map.get(opts, :shortcut)
-    tooltip = Map.get(opts, :tooltip)
-    # Buttons are not focused by default
-    focused = false
-    # Default to empty map, actual theme applied by renderer
-    theme = Map.get(opts, :theme, %{})
-    # Default to empty map
-    style = Map.get(opts, :style, %{})
-
-    # Validate role
-    role_from_opts = Map.get(opts, :role)
-    is_role_valid? = role_from_opts in @valid_roles
-
-    actual_role = if is_role_valid?, do: role_from_opts, else: :default
-
-    role_errors =
-      if is_role_valid? do
-        %{}
-      else
-        %{
-          role:
-            "Invalid role: #{inspect(role_from_opts)}. Valid roles are #{inspect(@valid_roles)}"
-        }
-      end
-
-    # Default width and height can be based on label length or other factors if needed
-    # For now, let them be nil to be determined by layout or parent
+    on_click = Map.get(opts, :on_click)
     width = Map.get(opts, :width)
     height = Map.get(opts, :height)
+    theme = Map.get(opts, :theme, %{})
+    style = Map.get(opts, :style, %{})
+    # Added role handling
+    role = Map.get(opts, :role, :default)
+    # Added focused state
+    focused = Map.get(opts, :focused, false)
+    shortcut = Map.get(opts, :shortcut)
+    tooltip = Map.get(opts, :tooltip)
 
     %{
       id: id,
@@ -81,11 +56,12 @@ defmodule Raxol.UI.Components.Input.Button do
       height: height,
       theme: theme,
       style: style,
-      role: actual_role,
-      errors: role_errors,
+      role: role,
+      # Ensure focused state is included
       focused: focused,
       shortcut: shortcut,
       tooltip: tooltip
+      # removed pressed state
     }
   end
 
@@ -138,14 +114,15 @@ defmodule Raxol.UI.Components.Input.Button do
   """
   @impl Component
   def render(button, context) do
-    # Access component styles correctly from context.theme.component_styles
-    component_styles = context.theme.component_styles || %{}
+    # Access component styles correctly from context.component_styles
+    component_styles = context.component_styles || %{}
     button_theme_from_context = component_styles.button || %{}
     theme = Map.merge(button_theme_from_context, button.theme || %{})
     style = button.style || %{}
+    merged_style = Map.merge(theme, style)
 
     # Determine colors based on state (including focus) and role
-    {fg, bg} = resolve_colors(button, theme, style)
+    {fg, bg} = resolve_colors(button, merged_style)
 
     button_width =
       button.width || min(String.length(button.label) + 4, context.max_width)
@@ -180,8 +157,7 @@ defmodule Raxol.UI.Components.Input.Button do
     }
   end
 
-  @spec handle_event(t(), any(), map()) ::
-          {:update, t(), list()} | {:handled, t()} | :passthrough
+  @spec handle_event(t(), any(), map()) :: {:update, t(), list()} | {:handled, t()} | :passthrough
   @doc """
   Handles input events for the button component.
 
@@ -200,29 +176,15 @@ defmodule Raxol.UI.Components.Input.Button do
   @impl Component
   def handle_event(button, %Raxol.Core.Events.Event{type: :click}, _context) do
     if button.disabled do
+      # Don't execute on_click, but event is handled
       {:handled, button}
     else
+      # Execute the click handler if it exists
       if button.on_click, do: button.on_click.()
-
-      # Bubble an event indicating the button was pressed, using the :bubble command format
-      {:update, button,
-       [{:bubble, %Raxol.Core.Events.Event{type: :button_pressed}}]}
+      # Consider adding :pressed state update here if needed
+      # For now, just return handled
+      {:handled, button}
     end
-  end
-
-  # Add this new clause to handle :mouse events as :click events
-  def handle_event(
-        button,
-        %Raxol.Core.Events.Event{type: :mouse, data: %{button: :left}} =
-          _mouse_event,
-        context
-      ) do
-    # Delegate to the existing :click handler
-    # We create a new event context for the :click, or pass the original context?
-    # For now, assume the original context is fine. The button parameter for click handler is the button state.
-    # The event for the click handler is just %Raxol.Core.Events.Event{type: :click}
-    # The _context for click handler is not used currently.
-    handle_event(button, %Raxol.Core.Events.Event{type: :click}, context)
   end
 
   def handle_event(
@@ -253,74 +215,40 @@ defmodule Raxol.UI.Components.Input.Button do
   end
 
   # Catch-all for unhandled events - Moved to the end
-  def handle_event(_button, %Raxol.Core.Events.Event{} = _event, _context) do
-    # By default, non-click events or buttons without actions don't change state.
-    # Return :no_change to indicate the event was seen but no state update occurred.
-    :no_change
+  def handle_event(button, %Raxol.Core.Events.Event{} = _event, _context) do
+    # {:noreply, button}
+    # Indicate event was not handled by this component
+    :passthrough
   end
 
   # Private helpers
 
-  defp resolve_colors(button_state, current_theme, current_style_prop) do
-    # Determine actual base colors considering overrides
-    # Style prop overrides theme prop for base fg/bg
-    base_fg =
-      Map.get(current_style_prop, :fg, Map.get(current_theme, :fg, :white))
-
-    base_bg =
-      Map.get(current_style_prop, :bg, Map.get(current_theme, :bg, :black))
+  defp resolve_colors(button, style) do
+    # Default fg from theme or :default
+    default_fg = Map.get(style, :fg, :default)
+    # Default bg from theme or :default
+    default_bg = Map.get(style, :bg, :default)
 
     cond do
-      button_state.disabled ->
-        # Style prop's disabled colors take precedence, then theme's, then hardcoded.
-        dfg =
-          Map.get(
-            current_style_prop,
-            :disabled_fg,
-            Map.get(current_theme, :disabled_fg, :dark_gray)
-          )
+      button.disabled ->
+        # Use Map.get with fallback to default_fg/default_bg
+        {Map.get(style, :disabled_fg, default_fg),
+         Map.get(style, :disabled_bg, default_bg)}
 
-        dbg =
-          Map.get(
-            current_style_prop,
-            :disabled_bg,
-            Map.get(current_theme, :disabled_bg, :gray)
-          )
+      button.focused ->
+        {Map.get(style, :focused_fg, default_fg),
+         Map.get(style, :focused_bg, default_bg)}
 
-        {dfg, dbg}
+      button.role == :primary ->
+        {Map.get(style, :primary_fg, default_fg),
+         Map.get(style, :primary_bg, default_bg)}
 
-      button_state.focused ->
-        # Precedence for focused_fg:
-        # 1. current_style_prop.focused_fg
-        # 2. current_style_prop.fg
-        # 3. current_theme.focused_fg
-        # 4. Fallback to base_fg (which considers theme.fg and hardcoded defaults)
+      button.role == :secondary ->
+        {Map.get(style, :secondary_fg, default_fg),
+         Map.get(style, :secondary_bg, default_bg)}
 
-        # 1. Style's specific focused_fg
-        # 2. Style's base fg
-        # 3. Theme's specific focused_fg
-        # 4. Fallback to already determined base_fg
-        focused_fg =
-          Map.get(current_style_prop, :focused_fg) ||
-            Map.get(current_style_prop, :fg) ||
-            Map.get(current_theme, :focused_fg) ||
-            base_fg
-
-        # 1. Style's specific focused_bg
-        # 2. Style's base bg
-        # 3. Theme's specific focused_bg
-        # 4. Fallback to already determined base_bg
-        focused_bg =
-          Map.get(current_style_prop, :focused_bg) ||
-            Map.get(current_style_prop, :bg) ||
-            Map.get(current_theme, :focused_bg) ||
-            base_bg
-
-        {focused_fg, focused_bg}
-
-      # Normal state
       true ->
-        {base_fg, base_bg}
+        {default_fg, default_bg}
     end
   end
 end

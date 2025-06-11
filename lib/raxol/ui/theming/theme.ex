@@ -1,76 +1,32 @@
 defmodule Raxol.UI.Theming.Theme do
   @moduledoc """
-  Defines the theme structure and provides theme-related functionality.
+  Theme management for Raxol UI components.
+
+  This module provides functionality for:
+  - Theme definition and management
+  - Color palette integration
+  - Component styling
+  - Theme variants and accessibility
   """
-
-  defstruct name: nil,
-            colors: %{},
-            styles: %{},
-            fonts: %{},
-            spacing: %{},
-            borders: %{},
-            shadows: %{},
-            transitions: %{},
-            animations: %{},
-            ui_mappings: %{},
-            metadata: %{},
-            component_styles: %{}
-
-  @type t :: %__MODULE__{
-          name: String.t() | nil,
-          colors: map(),
-          styles: map(),
-          fonts: map(),
-          spacing: map(),
-          borders: map(),
-          shadows: map(),
-          transitions: map(),
-          animations: map(),
-          ui_mappings: map(),
-          metadata: map(),
-          component_styles: map()
-        }
-
-  @doc """
-  Creates a new theme with the given name and attributes.
-  """
-  def new(name, attrs \\ %{}) do
-    struct!(__MODULE__, Map.put(attrs, :name, name))
-  end
-
-  @doc """
-  Merges two themes, with the second theme taking precedence.
-  """
-  def merge(%__MODULE__{} = theme1, %__MODULE__{} = theme2) do
-    Map.merge(theme1, theme2)
-  end
-
-  @doc """
-  Gets a value from the theme by path.
-  """
-  def get(%__MODULE__{} = theme, path) when is_list(path) do
-    get_in(theme, path)
-  end
-
-  def get(%__MODULE__{} = theme, key) when is_atom(key) do
-    Map.get(theme, key)
-  end
-
-  @doc """
-  Sets a value in the theme at the given path.
-  """
-  def set(%__MODULE__{} = theme, path, value) when is_list(path) do
-    put_in(theme, path, value)
-  end
-
-  def set(%__MODULE__{} = theme, key, value) when is_atom(key) do
-    Map.put(theme, key, value)
-  end
 
   alias Raxol.Style.Colors.{Color, Utilities}
+  alias Raxol.Core.ColorSystem
 
   @type color_value :: Color.t() | atom() | String.t()
   @type style_map :: %{atom() => any()}
+
+  @derive Jason.Encoder
+  defstruct [
+    :id,
+    :name,
+    :description,
+    :colors,
+    :component_styles,
+    :variants,
+    :metadata,
+    :fonts,
+    :ui_mappings
+  ]
 
   @behaviour Access
 
@@ -83,7 +39,7 @@ defmodule Raxol.UI.Theming.Theme do
   @impl Access
   def get_and_update(%__MODULE__{} = theme, key, fun)
       when is_atom(key) or is_binary(key) do
-    if is_map(theme), do: Map.get_and_update(theme, key, fun), else: :error
+    Map.get_and_update(theme, key, fun)
   end
 
   @impl Access
@@ -92,12 +48,36 @@ defmodule Raxol.UI.Theming.Theme do
   end
 
   @doc """
+  Creates a new theme with the given attributes.
+  """
+  def new(), do: new(default_attrs())
+
+  def new(attrs) when is_map(attrs) do
+    attrs =
+      if Map.has_key?(attrs, :colors) do
+        Map.update!(attrs, :colors, fn colors ->
+          Enum.into(colors, %{}, fn
+            {k, v} when is_binary(v) ->
+              {k, Raxol.Style.Colors.Color.from_hex(v)}
+
+            {k, v} ->
+              {k, v}
+          end)
+        end)
+      else
+        attrs
+      end
+
+    struct(__MODULE__, attrs)
+  end
+
+  @doc """
   Gets a color from the theme, respecting variants and accessibility settings.
   """
   def get_color(theme, color_name, arg3 \\ nil)
 
-  def get_color(%__MODULE__{} = theme, color_name, _variant) do
-    Map.get(theme.colors, color_name)
+  def get_color(%__MODULE__{} = theme, color_name, variant) do
+    ColorSystem.get_color(theme.id, color_name, variant)
   end
 
   def get_color(theme, color_name, default) do
@@ -106,16 +86,9 @@ defmodule Raxol.UI.Theming.Theme do
 
   @doc """
   Gets a component style from the theme.
-
-  ## Parameters
-    - theme: The theme to get the style from
-    - component_type: The type of component to get the style for
-
-  ## Returns
-    - The component style
   """
-  def get_component_style(theme, component_type) do
-    case get_in(theme, [:styles, component_type]) do
+  def get_component_style(%__MODULE__{} = theme, component_type) do
+    case get_in(theme, [:component_styles, component_type]) do
       nil ->
         require Raxol.Core.Runtime.Log
 
@@ -144,8 +117,8 @@ defmodule Raxol.UI.Theming.Theme do
     %{
       theme
       | colors: high_contrast_colors,
-        styles:
-          Map.put(theme.styles, :high_contrast, %{
+        variants:
+          Map.put(theme.variants, :high_contrast, %{
             colors: high_contrast_colors
           })
     }
@@ -161,80 +134,62 @@ defmodule Raxol.UI.Theming.Theme do
 
   @doc """
   Gets a theme by ID.
-  Returns the theme struct or nil if not found.
   """
   def get(theme_id) do
-    # Default to empty map if :themes not set
-    registered_themes = Application.get_env(:raxol, :themes, %{})
-    # Returns nil if theme_id is not a key
-    Map.get(registered_themes, theme_id)
-  end
-
-  @doc """
-  Applies a theme by name.
-  """
-  def apply(theme_name) when is_binary(theme_name) or is_atom(theme_name) do
-    case get(theme_name) do
-      nil ->
-        require Raxol.Core.Runtime.Log
-
-        Raxol.Core.Runtime.Log.warning(
-          "Theme #{inspect(theme_name)} not found, using default theme",
-          []
-        )
-
-        default_theme()
-
-      theme ->
-        Application.put_env(:raxol, :theme, theme)
-        theme
+    case Application.get_env(:raxol, :themes) do
+      nil -> default_theme()
+      themes -> Map.get(themes, theme_id, default_theme())
     end
   end
 
+  @doc """
+  Returns the default theme.
+  """
   def default_theme do
-    new("default", %{
+    new(%{
+      id: :default,
+      name: "default",
       colors: %{
-        primary: "#0077CC",
-        secondary: "#6C757D",
-        success: "#28A745",
-        danger: "#DC3545",
-        warning: "#FFC107",
-        info: "#17A2B8",
-        light: "#F8F9FA",
-        dark: "#343A40",
-        background: "#FFFFFF",
-        surface: "#F8F9FA",
-        text: "#212529"
+        background: "#000000",
+        foreground: "#FFFFFF",
+        accent: "#4A9CD5",
+        error: "#FF5555",
+        warning: "#FFB86C",
+        success: "#50FA7B"
       },
-      styles: %{
+      component_styles: %{
+        text_input: %{
+          background: "#1E1E1E",
+          foreground: "#FFFFFF",
+          border: "#4A9CD5",
+          focus: "#4A9CD5"
+        },
         button: %{
-          fg: :primary,
-          bg: :light,
-          style: [:bold]
+          background: "#4A9CD5",
+          foreground: "#FFFFFF",
+          hover: "#5FB0E8",
+          active: "#3A8CC5"
         },
-        input: %{
-          fg: :text,
-          bg: :light,
-          style: []
+        checkbox: %{
+          background: "#1E1E1E",
+          foreground: "#FFFFFF",
+          border: "#4A9CD5",
+          checked: "#4A9CD5"
         },
-        text: %{
-          fg: :text,
-          bg: :background,
-          style: []
+        text_field: %{
+          border: :single,
+          padding: {0, 1}
+        },
+        table: %{
+          border: :single,
+          header_background: Color.from_hex("#222831"),
+          header_foreground: Color.from_hex("#FFFFFF"),
+          row_background: Color.from_hex("#1E1E1E"),
+          row_foreground: Color.from_hex("#FFFFFF"),
+          selected_row_background: Color.from_hex("#4A9CD5"),
+          selected_row_foreground: Color.from_hex("#FFFFFF")
         }
-      },
-      ui_mappings: %{
-        app_background: :background,
-        surface_background: :surface,
-        primary_button: :primary,
-        secondary_button: :secondary,
-        text: :text
-      },
-      metadata: %{
-        version: "1.0.0",
-        author: "Raxol Team"
-      },
-      component_styles: %{}
+      }
     })
   end
 
@@ -243,6 +198,7 @@ defmodule Raxol.UI.Theming.Theme do
   """
   def dark_theme do
     new(%{
+      id: :dark,
       name: "dark",
       colors: %{
         background: "#1E1E1E",
@@ -252,7 +208,7 @@ defmodule Raxol.UI.Theming.Theme do
         warning: "#FFB86C",
         success: "#50FA7B"
       },
-      styles: %{
+      component_styles: %{
         text_input: %{
           background: "#2D2D2D",
           foreground: "#FFFFFF",
@@ -275,10 +231,88 @@ defmodule Raxol.UI.Theming.Theme do
     })
   end
 
+  @doc """
+  Gets the component style for a specific component type.
+  """
+  def get_component_style(theme, component_type) do
+    case get_in(theme, [:component_styles, component_type]) do
+      nil ->
+        require Raxol.Core.Runtime.Log
+
+        Raxol.Core.Runtime.Log.warning(
+          "Theme missing component style for #{inspect(component_type)}; returning empty map.",
+          []
+        )
+
+        %{}
+
+      style ->
+        style
+    end
+  end
+
   def component_style(theme, component_type),
     do: get_component_style(theme, component_type)
 
   # Private helpers
+
+  defp default_attrs do
+    %{
+      id: :default,
+      name: "Default Theme",
+      description: "The default Raxol theme",
+      colors: %{
+        primary: Color.from_hex("#0077CC"),
+        secondary: Color.from_hex("#666666"),
+        accent: Color.from_hex("#FF9900"),
+        background: Color.from_hex("#FFFFFF"),
+        surface: Color.from_hex("#F5F5F5"),
+        error: Color.from_hex("#CC0000"),
+        success: Color.from_hex("#009900"),
+        warning: Color.from_hex("#FF9900"),
+        info: Color.from_hex("#0099CC"),
+        text: Color.from_hex("#333333")
+      },
+      component_styles: %{
+        panel: %{
+          border: :single,
+          padding: 1
+        },
+        button: %{
+          padding: {0, 1},
+          text_style: [:bold]
+        },
+        text_field: %{
+          border: :single,
+          padding: {0, 1}
+        }
+      },
+      variants: %{},
+      metadata: %{
+        author: "Raxol",
+        version: "1.0.0"
+      },
+      fonts: %{
+        default: %{
+          family: "monospace",
+          size: 12,
+          weight: "normal"
+        }
+      },
+      ui_mappings: %{
+        app_background: :background,
+        surface_background: :surface,
+        primary_button: :primary,
+        secondary_button: :secondary,
+        accent_button: :accent,
+        error_text: :error,
+        success_text: :success,
+        warning_text: :warning,
+        info_text: :info,
+        text: :text
+      }
+    }
+  end
 
   @doc """
   Initializes the theme system and registers the default theme.
@@ -286,7 +320,7 @@ defmodule Raxol.UI.Theming.Theme do
   """
   def init do
     # Create and register the default theme
-    default_theme = new("default")
+    default_theme = new()
     register(default_theme)
     :ok
   end
@@ -296,7 +330,7 @@ defmodule Raxol.UI.Theming.Theme do
   """
   def register(%__MODULE__{} = theme) do
     current_themes = Application.get_env(:raxol, :themes, %{})
-    new_themes = Map.put(current_themes, theme.name, theme)
+    new_themes = Map.put(current_themes, theme.id, theme)
     Application.put_env(:raxol, :themes, new_themes)
     :ok
   end
@@ -313,22 +347,48 @@ defmodule Raxol.UI.Theming.Theme do
   Returns the currently active theme. Defaults to :default if not set.
   """
   def current do
-    Application.get_env(:raxol, :theme, default_theme())
+    # This is a placeholder; in a real app, you might store the current theme in the process or app env
+    get(:default)
   end
 
-  def default_theme_id(), do: "default"
+  def default_theme_id(), do: :default
 
-  @doc """
-  Gets a theme value.
+  # Add a custom Jason.Encoder implementation for Theme to handle tuple keys in variants
+  if Code.ensure_loaded?(Jason) do
+    defimpl Jason.Encoder, for: Raxol.UI.Theming.Theme do
+      def encode(%Raxol.UI.Theming.Theme{} = theme, opts) do
+        map = Map.from_struct(theme)
+        # Convert tuple keys in variants to string keys
+        map =
+          if Map.has_key?(map, :variants) and is_map(map.variants) do
+            Map.update!(map, :variants, fn variants ->
+              variants
+              |> Enum.map(fn {k, v} ->
+                key =
+                  case k do
+                    {a, b} -> "#{a}:#{b}"
+                    _ -> to_string(k)
+                  end
 
-  ## Parameters
-    - theme: The theme to get the value from
-    - key: The key to get the value for
+                {key, v}
+              end)
+              |> Map.new()
+            end)
+          else
+            map
+          end
 
-  ## Returns
-    - The theme value
-  """
-  def get_theme_value(_theme, _key) do
-    # Implementation
+        Jason.Encode.map(map, opts)
+      end
+    end
+  end
+
+  # Implement String.Chars protocol for Theme
+  if Code.ensure_loaded?(String.Chars) do
+    defimpl String.Chars, for: Raxol.UI.Theming.Theme do
+      def to_string(theme) do
+        "#<Theme id=#{inspect(theme.id)} name=#{inspect(theme.name)} colors=#{inspect(Map.keys(theme.colors))}>"
+      end
+    end
   end
 end

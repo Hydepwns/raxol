@@ -10,17 +10,7 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.ChartWidget do
 
   # --- State ---
 
-  defstruct id: nil,
-            config: nil,
-            data: [],
-            component_opts: nil,
-            title: "Chart",
-            mounted: false,
-            render_count: 0,
-            type: :chart_widget,
-            style: %{},
-            focused: false,
-            disabled: false
+  defstruct [:id, :config, :data, :component_opts]
 
   # --- Lifecycle / State Management ---
 
@@ -51,12 +41,7 @@ defmodule Raxol.UI.Components.Dashboard.Widgets.ChartWidget do
       # Store the whole original config
       config: widget_config,
       data: data,
-      component_opts: component_opts,
-      title: Map.get(widget_config, :title, "Chart"),
-      type: Map.get(widget_config, :type, :chart_widget),
-      style: Map.get(widget_config, :style, %{}),
-      focused: Map.get(widget_config, :focused, false),
-      disabled: Map.get(widget_config, :disabled, false)
+      component_opts: component_opts
     }
   end
 

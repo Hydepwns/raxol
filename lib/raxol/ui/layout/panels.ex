@@ -125,18 +125,14 @@ defmodule Raxol.UI.Layout.Panels do
     # Process children by calling Engine.process_element for each one
     processed_children_elements =
       children_to_process
-      |> Enum.flat_map(fn child_element ->
-        # Pass an empty accumulator for each child's own processing.
+      |> Enum.map(fn child_element ->
+        # Pass an empty accumulator for each child, as process_element appends to it.
         Engine.process_element(child_element, inner_space, [])
       end)
+      |> List.flatten()
 
-    # No List.flatten needed here as Enum.flat_map already flattens by one level.
-
-    # Combine all elements (panel_box, title, children) and then add to original accumulator
-    panel_and_title_elements = elements ++ title_elements
-    all_new_elements = panel_and_title_elements ++ processed_children_elements
-
-    all_new_elements ++ acc
+    # Combine all elements and add to accumulator
+    elements ++ title_elements ++ processed_children_elements ++ acc
   end
 
   @doc """
@@ -152,12 +148,9 @@ defmodule Raxol.UI.Layout.Panels do
   The dimensions of the panel: %{width: w, height: h}
   """
   def measure_panel(
-        %{type: :panel, attrs: attrs, children: children} = panel_element,
+        %{type: :panel, attrs: attrs, children: children},
         available_space
       ) do
-    IO.inspect(panel_element, label: "measure_panel: input panel_element")
-    IO.inspect(available_space, label: "measure_panel: input available_space")
-
     # Calculate space available for content (inside borders)
     content_available_space = %{
       available_space
@@ -171,14 +164,8 @@ defmodule Raxol.UI.Layout.Panels do
     # Ensure the map has :attrs for measure_element pattern matching
     column_for_measurement = %{type: :column, attrs: %{}, children: children}
 
-    IO.inspect(column_for_measurement,
-      label: "measure_panel: column_for_measurement"
-    )
-
     children_size =
       Engine.measure_element(column_for_measurement, content_available_space)
-
-    IO.inspect(children_size, label: "measure_panel: children_size")
 
     # Determine base width/height from content + borders
     # Add 2 for left/right borders
@@ -187,8 +174,8 @@ defmodule Raxol.UI.Layout.Panels do
     content_height = children_size.height + 2
 
     # Use explicit width/height if provided, otherwise use content size or available if no content
-    explicit_width = extract_dim(attrs, :width, 0, nil)
-    explicit_height = extract_dim(attrs, :height, 1, nil)
+    explicit_width = Map.get(attrs, :width)
+    explicit_height = Map.get(attrs, :height)
 
     # Default to available space if no explicit size and no (or zero-sized) children
     base_width =
@@ -205,39 +192,14 @@ defmodule Raxol.UI.Layout.Panels do
         content_height
       end
 
-    width =
-      if is_integer(explicit_width) do
-        explicit_width
-      else
-        base_width
-      end
-
-    height =
-      if is_integer(explicit_height) do
-        explicit_height
-      else
-        base_height
-      end
+    width = explicit_width || base_width
+    height = explicit_height || base_height
 
     # Ensure minimum dimensions (e.g., for borders and minimal content)
-    # Determine actual minimum width based on title presence and length
-    title_text = Map.get(attrs, :title)
-    # Absolute minimum for borders + some space
-    base_min_width = 4
-
-    min_title_width =
-      if is_binary(title_text) and String.length(title_text) > 0 do
-        # title + 2 padding + 2 borders
-        String.length(title_text) + 2 + 2
-      else
-        0
-      end
-
-    actual_min_width = max(base_min_width, min_title_width)
-    min_height_val = 3
-
-    width = max(width, actual_min_width)
-    height = max(height, min_height_val)
+    min_width = 4
+    min_height = 3
+    width = max(width, min_width)
+    height = max(height, min_height)
 
     # Return dimensions constrained to available space
     %{
@@ -247,19 +209,6 @@ defmodule Raxol.UI.Layout.Panels do
   end
 
   # Private helpers
-
-  defp extract_dim(attrs, key, tuple_index, default) do
-    cond do
-      is_map(attrs) and Map.has_key?(attrs, key) ->
-        Map.get(attrs, key)
-
-      is_tuple(attrs) and tuple_size(attrs) > tuple_index ->
-        elem(attrs, tuple_index)
-
-      true ->
-        default
-    end
-  end
 
   # Unused
   # defp calculate_inner_space(space, attrs) do

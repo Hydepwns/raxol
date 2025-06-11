@@ -31,8 +31,7 @@ defmodule Raxol.UI.Rendering.Composer do
       is_map(current_layout_node[:layout_attrs]) &&
         current_layout_node[:layout_attrs][:processed_with_diff] == :no_change &&
         is_map(previous_composed_node) &&
-        current_layout_node_type(current_layout_node) ==
-          previous_composed_node[:original_type]
+        current_layout_node_type(current_layout_node) == previous_composed_node[:original_type]
 
     if can_reuse do
       Raxol.Core.Runtime.Log.debug(
@@ -54,8 +53,7 @@ defmodule Raxol.UI.Rendering.Composer do
               "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} - diff type: #{current_layout_node[:layout_attrs][:processed_with_diff]}"
             )
 
-          current_layout_node_type(current_layout_node) !=
-              previous_composed_node[:original_type] ->
+          current_layout_node_type(current_layout_node) != previous_composed_node[:original_type] ->
             Raxol.Core.Runtime.Log.debug(
               "Composition Stage: Re-composing node #{current_layout_node_type(current_layout_node)} vs prev #{previous_composed_node[:original_type]} - type mismatch."
             )
@@ -114,10 +112,7 @@ defmodule Raxol.UI.Rendering.Composer do
   end
 
   defp do_compose_recursive(nil, _previous_composed_node) do
-    Raxol.Core.Runtime.Log.debug(
-      "Composition Stage: Encountered nil layout node."
-    )
-
+    Raxol.Core.Runtime.Log.debug("Composition Stage: Encountered nil layout node.")
     nil
   end
 

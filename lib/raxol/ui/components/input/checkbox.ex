@@ -7,10 +7,28 @@ defmodule Raxol.UI.Components.Input.Checkbox do
   implements robust lifecycle hooks, and supports accessibility/extra props.
   """
 
-  use Raxol.UI.Components.Base.Component
+  # use Raxol.UI.Components.Base
+  # alias Raxol.UI.Components.Base.Component
+  # alias Raxol.UI.Style
+  # alias Raxol.UI.Element
+  # alias Raxol.UI.Theme
+  # alias Raxol.UI.Theming.Theme
+  # alias Raxol.UI.Layout.Constraints
 
+  # alias Raxol.View
+  # alias Raxol.UI.Theming.Colors
+  # alias Raxol.View.Style
+  # alias Raxol.Core.Events
+  # alias Raxol.Core.Events.{FocusEvent, KeyEvent}
+
+  alias Raxol.Core.Renderer.Element
   alias Raxol.UI.Theming.Theme
   alias Raxol.Core.Events.Event
+
+  # alias Raxol.UI.Components.Base # Unused
+  # alias Raxol.Core.Events.ClickEvent # Unused
+
+  @behaviour Raxol.UI.Components.Base.Component
 
   @type t :: %{
           id: String.t(),
@@ -28,6 +46,7 @@ defmodule Raxol.UI.Components.Input.Checkbox do
 
   @doc """
   Creates a new checkbox component with the given options.
+  See `init/1` for details.
   """
   @spec new(keyword()) :: t()
   def new(opts \\ []) do
@@ -98,18 +117,13 @@ defmodule Raxol.UI.Components.Input.Checkbox do
       |> Map.merge(props)
       |> Map.put(:style, merged_style)
       |> Map.put(:theme, merged_theme)
-      |> Map.put(
-        :disabled,
-        Map.get(props, :disabled, Map.get(state, :disabled, false))
-      )
-      |> Map.put(
-        :focused,
-        Map.get(props, :focused, Map.get(state, :focused, false))
-      )
 
     {:ok, new_state, []}
   end
 
+  @doc """
+  Updates the Checkbox component state in response to unknown messages (ignored).
+  """
   @impl true
   @spec update(term(), t()) :: {:ok, t(), list()}
   def update(_msg, state) do
@@ -193,13 +207,13 @@ defmodule Raxol.UI.Components.Input.Checkbox do
       |> Enum.reject(fn {_k, v} -> is_nil(v) or v == false end)
       |> Enum.into(%{})
 
-    %{
-      type: :hbox,
-      attrs: Map.merge(%{style: attrs}, extra_attrs),
-      children: [
-        %{type: :text, id: "#{state.id}-check", text: check_char},
-        %{type: :text, id: "#{state.id}-label", text: " " <> label_text}
+    Element.new(
+      :hbox,
+      Map.merge(%{style: attrs}, extra_attrs),
+      do: [
+        Element.new(:text, %{id: "#{state.id}-check", text: check_char}),
+        Element.new(:text, %{id: "#{state.id}-label", text: " " <> label_text})
       ]
-    }
+    )
   end
 end

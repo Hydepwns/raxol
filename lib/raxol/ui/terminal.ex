@@ -294,8 +294,7 @@ defmodule Raxol.UI.Terminal do
     end
 
     # Print content
-    # Prefixed with underscore to avoid unused variable warning
-    _content_padding = div(width - 2 - content_width, 2)
+    _content_padding = div(width - 2 - content_width, 2) # Prefixed with underscore to avoid unused variable warning
 
     Enum.each(lines, fn line ->
       line_str = "│ " <> String.pad_trailing(line, width - 4) <> " │"
@@ -451,10 +450,8 @@ defmodule Raxol.UI.Terminal do
           # Default height
           _ -> %{width: 80, height: 24}
         end
-
       # Default size
-      _ ->
-        %{width: 80, height: 24}
+      _ -> %{width: 80, height: 24}
     end
   end
 end

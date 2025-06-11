@@ -21,13 +21,7 @@ defmodule Raxol.UI.Components.Progress do
             frames: [],
             frame_index: 0,
             # ms
-            interval: 100,
-            mounted: false,
-            render_count: 0,
-            # Consistency fields
-            focused: false,
-            disabled: false,
-            text: ""
+            interval: 100
 
   # Add other fields as needed (width, height, etc.)
 
@@ -35,47 +29,14 @@ defmodule Raxol.UI.Components.Progress do
 
   @spec init(map()) :: map()
   @impl Raxol.UI.Components.Base.Component
-  def init(props) when is_map(props) do
+  def init(props) do
     # Initialize state based on type and props
     type = Map.get(props, :type, :bar)
-
-    base_state =
-      struct!(
-        __MODULE__,
-        Map.merge(
-          %{
-            disabled: false,
-            focused: false,
-            type: :bar,
-            text: ""
-          },
-          props
-        )
-      )
-
-    state = %{
-      base_state
-      | type: type,
-        style: Map.get(props, :style, %{}),
-        focused: Map.get(props, :focused, false),
-        disabled: Map.get(props, :disabled, false),
-        mounted: Map.get(props, :mounted, false),
-        render_count: Map.get(props, :render_count, 0),
-        text: Map.get(props, :text, "")
-    }
-
-    {:ok, state}
+    base_state = struct!(__MODULE__, props)
+    # TODO: Set up frames/interval based on type (:spinner, etc.)
+    # Potentially start timer if needed
+    %{base_state | type: type}
   end
-
-  def init(_),
-    do:
-      {:ok,
-       struct!(__MODULE__, %{
-         type: :bar,
-         mounted: false,
-         render_count: 0,
-         text: ""
-       })}
 
   @spec update(term(), map()) :: {map(), list()}
   @impl Raxol.UI.Components.Base.Component

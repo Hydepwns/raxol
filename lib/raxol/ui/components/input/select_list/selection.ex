@@ -73,23 +73,26 @@ defmodule Raxol.UI.Components.Input.SelectList.Selection do
     effective_options = Pagination.get_effective_options(state)
     num_options = length(effective_options)
 
-    return_tuple =
-      if index >= 0 and index < num_options do
-        {_label, value} = Enum.at(effective_options, index)
-        updated_indices = MapSet.new([index])
+    if index >= 0 and index < num_options do
+      # Get the selected option
+      {_label, value} = Enum.at(effective_options, index)
 
-        updated_state = %{
-          state
-          | selected_indices: updated_indices,
-            focused_index: index
-        }
+      # Update selection state
+      updated_indices = MapSet.new([index])
 
-        commands = generate_selection_commands(updated_state, value)
-        {updated_state, commands}
-      else
-        {state, []}
-      end
+      # Update state, also set focused_index to index
+      updated_state = %{
+        state
+        | selected_indices: updated_indices,
+          focused_index: index
+      }
 
-    return_tuple
+      # Generate commands based on callbacks
+      commands = generate_selection_commands(updated_state, value)
+
+      {updated_state, commands}
+    else
+      {state, []}
+    end
   end
 end

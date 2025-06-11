@@ -10,7 +10,6 @@ defmodule Raxol.UI.Theming.Selector do
   """
 
   use Raxol.UI.Components.Base.Component
-  alias Raxol.UI.Theming.Theme
 
   # alias Raxol.UI.Components.Input.SelectList
   # alias Raxol.Core.Events
@@ -114,7 +113,7 @@ defmodule Raxol.UI.Theming.Selector do
 
         # Apply theme on click
         selected_theme = Enum.at(updated.state.themes, clicked_index)
-        Raxol.UI.Theming.Theme.apply(selected_theme.name)
+        Theme.apply_theme(selected_theme.name)
 
         # Call the onSelect callback if provided
         if on_select = component.props[:on_select] do
@@ -130,28 +129,6 @@ defmodule Raxol.UI.Theming.Selector do
     else
       # When collapsed, expand the selector
       {:ok, %{component | state: %{component.state | expanded: true}}}
-    end
-  end
-
-  def handle_event({:select_theme, theme_name}, _from, state) do
-    selected_theme = Enum.find(state.themes, &(&1.name == theme_name))
-
-    if selected_theme do
-      Raxol.UI.Theming.Theme.apply(selected_theme.name)
-      {:noreply, state}
-    else
-      {:noreply, state}
-    end
-  end
-
-  def handle_event({:apply_theme, theme_name}, _from, state) do
-    selected_theme = Enum.find(state.themes, &(&1.name == theme_name))
-
-    if selected_theme do
-      Raxol.UI.Theming.Theme.apply(selected_theme.name)
-      {:noreply, state}
-    else
-      {:noreply, state}
     end
   end
 
@@ -173,11 +150,11 @@ defmodule Raxol.UI.Theming.Selector do
       Map.get(current_theme_struct.styles, :selector) ||
         %{
           # Fallback colors if :selector style is not defined in the theme
-          fg: Theme.get_color(:foreground, :default) || :white,
-          bg: Theme.get_color(:background, :default) || :black,
-          border: Theme.get_color(:primary, :default) || :blue,
-          highlight: Theme.get_color(:secondary, :default) || :cyan,
-          title: Theme.get_color(:info, :default) || :yellow
+          fg: Theme.get_color(:foreground) || :white,
+          bg: Theme.get_color(:background) || :black,
+          border: Theme.get_color(:primary) || :blue,
+          highlight: Theme.get_color(:secondary) || :cyan,
+          title: Theme.get_color(:info) || :yellow
         }
 
     if state.expanded do
