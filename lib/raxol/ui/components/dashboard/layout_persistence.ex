@@ -30,10 +30,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
 
       case File.write(layout_file, binary_data) do
         :ok ->
-          Raxol.Core.Runtime.Log.info(
-            "Dashboard layout saved to #{layout_file}"
-          )
-
+          Raxol.Core.Runtime.Log.info("Dashboard layout saved to #{layout_file}")
           :ok
 
         {:error, reason} ->
@@ -68,11 +65,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
           {:ok, binary_data} ->
             # Use safe binary_to_term
             layout_data = :erlang.binary_to_term(binary_data, [:safe])
-
-            Raxol.Core.Runtime.Log.info(
-              "Dashboard layout loaded from #{layout_file}"
-            )
-
+            Raxol.Core.Runtime.Log.info("Dashboard layout loaded from #{layout_file}")
             # Basic validation: is it a list?
             if is_list(layout_data), do: layout_data, else: nil
 
@@ -92,10 +85,7 @@ defmodule Raxol.UI.Components.Dashboard.LayoutPersistence do
           nil
       end
     else
-      Raxol.Core.Runtime.Log.info(
-        "No saved dashboard layout found at #{layout_file}"
-      )
-
+      Raxol.Core.Runtime.Log.info("No saved dashboard layout found at #{layout_file}")
       # Return nil explicitly if file doesn't exist
       nil
     end

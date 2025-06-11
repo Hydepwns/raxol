@@ -41,12 +41,7 @@ defmodule Raxol.UI.Components.FocusRing do
             # :normal, :active, :disabled
             state: :normal,
             # timestamp for animation timing
-            last_tick: nil,
-            mounted: false,
-            render_count: 0,
-            type: :focus_ring,
-            focused: false,
-            disabled: false
+            last_tick: nil
 
   # --- Component Behaviour Callbacks ---
 
@@ -66,10 +61,7 @@ defmodule Raxol.UI.Components.FocusRing do
       offset: {0, 0},
       state: :normal,
       animation_phase: 0,
-      last_tick: System.monotonic_time(:millisecond),
-      type: :focus_ring,
-      focused: false,
-      disabled: false
+      last_tick: System.monotonic_time(:millisecond)
     }
 
     struct!(__MODULE__, Map.merge(defaults, opts))

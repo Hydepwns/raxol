@@ -145,7 +145,7 @@ defmodule Raxol.UI.Components.Input.SelectList.Navigation do
   """
   def update_scroll_position(state) do
     effective_options = Pagination.get_effective_options(state)
-    _num_options = length(effective_options)
+    num_options = length(effective_options)
     visible_height = state.visible_height || state.page_size
     focused_index = state.focused_index
 

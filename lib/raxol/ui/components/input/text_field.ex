@@ -25,22 +25,18 @@ defmodule Raxol.UI.Components.Input.TextField do
   - :width - visible width of the field (not in defstruct, but added in init)
   """
   @type t :: %__MODULE__{
-          id: any(),
-          value: String.t(),
-          placeholder: String.t(),
-          style: map(),
-          theme: map(),
-          disabled: boolean(),
-          secret: boolean(),
-          focused: boolean(),
-          cursor_pos: non_neg_integer(),
-          scroll_offset: non_neg_integer(),
-          width: non_neg_integer(),
-          mounted: boolean(),
-          render_count: non_neg_integer(),
-          type: atom(),
-          text: String.t()
-        }
+    id: any(),
+    value: String.t(),
+    placeholder: String.t(),
+    style: map(),
+    theme: map(),
+    disabled: boolean(),
+    secret: boolean(),
+    focused: boolean(),
+    cursor_pos: non_neg_integer(),
+    scroll_offset: non_neg_integer(),
+    width: non_neg_integer()
+  }
 
   defstruct id: nil,
             value: "",
@@ -49,47 +45,24 @@ defmodule Raxol.UI.Components.Input.TextField do
             theme: %{},
             disabled: false,
             secret: false,
+            # Internal state
             focused: false,
             cursor_pos: 0,
             scroll_offset: 0,
-            width: 20,
-            mounted: false,
-            render_count: 0,
-            type: :text_field,
-            text: ""
+            width: 20
 
   @doc """
   Initializes the TextField component state from the given props.
   """
   @spec init(map()) :: {:ok, map()}
   @impl true
-  def init(props) when is_map(props) do
+  def init(props) do
     id = props[:id] || Raxol.Core.ID.generate()
     width = props[:width] || 20
-
-    state =
-      struct!(
-        __MODULE__,
-        Map.merge(
-          %{
-            id: id,
-            disabled: Map.get(props, :disabled, false),
-            focused: Map.get(props, :focused, false),
-            type: :text_field,
-            text: ""
-          },
-          props
-        )
-      )
-
+    state = struct!(__MODULE__, Map.merge(%{id: id}, props))
     state = Map.put(state, :width, width)
     {:ok, state}
   end
-
-  def init(_),
-    do:
-      {:ok,
-       struct!(__MODULE__, %{type: :text_field, mounted: false, render_count: 0})}
 
   @doc """
   Mounts the TextField component. Performs any setup needed after initialization.
@@ -110,10 +83,7 @@ defmodule Raxol.UI.Components.Input.TextField do
       clamp(updated_state.cursor_pos, 0, String.length(updated_state.value))
 
     # Clamp scroll_offset if width changed
-    width =
-      if is_map(updated_state),
-        do: Map.get(updated_state, :width, 20),
-        else: if(is_tuple(updated_state), do: elem(updated_state, 0), else: 20)
+    width = Map.get(updated_state, :width, 20)
 
     scroll_offset =
       clamp(
@@ -145,12 +115,10 @@ defmodule Raxol.UI.Components.Input.TextField do
   @doc """
   Handles events for the TextField component, such as keypresses, focus, and blur.
   """
-  @spec handle_event(map(), term(), map()) ::
-          {:noreply, map()} | {:noreply, map(), any()}
+  @spec handle_event(map(), term(), map()) :: {:noreply, map()} | {:noreply, map(), any()}
   @impl true
   def handle_event(state, {:keypress, key, modifiers}, context) do
     _context = context
-
     if state.disabled do
       {:noreply, state}
     else
@@ -177,11 +145,7 @@ defmodule Raxol.UI.Components.Input.TextField do
     {left, right} = String.split_at(state.value, state.cursor_pos)
     new_value = left <> key <> right
     new_cursor_pos = state.cursor_pos + String.length(key)
-
-    width =
-      if is_map(state),
-        do: Map.get(state, :width, 20),
-        else: if(is_tuple(state), do: elem(state, 0), else: 20)
+    width = Map.get(state, :width, 20)
 
     new_scroll_offset =
       adjust_scroll_offset(
@@ -205,11 +169,7 @@ defmodule Raxol.UI.Components.Input.TextField do
       {left, right} = String.split_at(state.value, state.cursor_pos)
       new_value = String.slice(left, 0, String.length(left) - 1) <> right
       new_cursor_pos = state.cursor_pos - 1
-
-      width =
-        if is_map(state),
-          do: Map.get(state, :width, 20),
-          else: if(is_tuple(state), do: elem(state, 0), else: 20)
+      width = Map.get(state, :width, 20)
 
       new_scroll_offset =
         adjust_scroll_offset(
@@ -235,11 +195,7 @@ defmodule Raxol.UI.Components.Input.TextField do
     if state.cursor_pos < String.length(state.value) do
       {left, right} = String.split_at(state.value, state.cursor_pos)
       new_value = left <> String.slice(right, 1, String.length(right) - 1)
-
-      width =
-        if is_map(state),
-          do: Map.get(state, :width, 20),
-          else: if(is_tuple(state), do: elem(state, 0), else: 20)
+      width = Map.get(state, :width, 20)
 
       new_scroll_offset =
         adjust_scroll_offset(
@@ -257,11 +213,7 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   defp handle_keypress(state, :arrow_left, _modifiers, _context) do
     new_cursor_pos = clamp(state.cursor_pos - 1, 0, String.length(state.value))
-
-    width =
-      if is_map(state),
-        do: Map.get(state, :width, 20),
-        else: if(is_tuple(state), do: elem(state, 0), else: 20)
+    width = Map.get(state, :width, 20)
 
     new_scroll_offset =
       adjust_scroll_offset(
@@ -277,11 +229,7 @@ defmodule Raxol.UI.Components.Input.TextField do
 
   defp handle_keypress(state, :arrow_right, _modifiers, _context) do
     new_cursor_pos = clamp(state.cursor_pos + 1, 0, String.length(state.value))
-
-    width =
-      if is_map(state),
-        do: Map.get(state, :width, 20),
-        else: if(is_tuple(state), do: elem(state, 0), else: 20)
+    width = Map.get(state, :width, 20)
 
     new_scroll_offset =
       adjust_scroll_offset(
@@ -296,20 +244,12 @@ defmodule Raxol.UI.Components.Input.TextField do
   end
 
   defp handle_keypress(state, :home, _modifiers, _context) do
-    _width =
-      if is_map(state),
-        do: Map.get(state, :width, 20),
-        else: if(is_tuple(state), do: elem(state, 0), else: 20)
-
+    width = Map.get(state, :width, 20)
     {:noreply, %{state | cursor_pos: 0, scroll_offset: 0}}
   end
 
   defp handle_keypress(state, :end, _modifiers, _context) do
-    width =
-      if is_map(state),
-        do: Map.get(state, :width, 20),
-        else: if(is_tuple(state), do: elem(state, 0), else: 20)
-
+    width = Map.get(state, :width, 20)
     new_cursor_pos = String.length(state.value)
 
     new_scroll_offset =
@@ -335,99 +275,78 @@ defmodule Raxol.UI.Components.Input.TextField do
   @spec render(map(), map()) :: any()
   @impl true
   def render(state, _context) do
-    theme_styles = Theme.get_component_style(state.theme, :text_field)
-    base_style = Map.merge(theme_styles, state.style)
+    theme = Map.get(state, :theme, %{})
+    component_theme_style = Theme.component_style(theme, :text_field)
+    style = Raxol.Style.merge(component_theme_style, state.style)
 
-    # Determine text to display (value, placeholder, or secret)
-    text_to_display =
-      cond do
-        String.length(state.value) == 0 and not state.focused and
-            state.placeholder != "" ->
-          state.placeholder
+    display_value =
+      if state.secret,
+        do: String.duplicate("*", String.length(state.value)),
+        else: state.value
 
-        state.secret ->
-          String.duplicate("•", String.length(state.value))
+    # Add placeholder if value is empty and not focused
+    showing_placeholder =
+      String.length(display_value) == 0 && !state.focused &&
+        state.placeholder != ""
 
-        true ->
-          state.value
-      end
-
-    # Calculate visible part of the text based on scroll offset and width
-    scroll_offset = state.scroll_offset
-    # Ensure width is an integer, default to 20 if not found or invalid
-    width =
-      cond do
-        is_integer(state.width) and state.width > 0 ->
-          state.width
-
-        is_map(state.style) and is_integer(state.style[:width]) and
-            state.style[:width] > 0 ->
-          state.style[:width]
-
-        true ->
-          20
-      end
-
-    visible_value = String.slice(text_to_display, scroll_offset, width)
-
-    # Determine the style for the text
-    current_text_style =
-      if String.length(state.value) == 0 and not state.focused and
-           state.placeholder != "" do
-        # Placeholder is showing, apply placeholder style
-        # Merge base_style with placeholder-specific style from theme or props, then with :placeholder key in state.style
-        # Default from theme system
-        placeholder_theme_style =
-          Map.get(theme_styles, :placeholder, %{
-            fg: "#888",
-            text_decoration: [:italic]
-          })
-
-        # Specific :placeholder style from props
-        placeholder_prop_style = Map.get(state.style, :placeholder, %{})
-
-        Map.merge(base_style, placeholder_theme_style)
-        |> Map.merge(placeholder_prop_style)
+    final_value =
+      if showing_placeholder do
+        # TODO: Style placeholder differently?
+        state.placeholder
       else
-        # Normal value or focused, use base style
-        base_style
+        display_value
       end
 
-    # Ensure the text content is padded to fill the field width if it's shorter
-    # This helps with consistent background rendering.
-    padded_visible_value = String.pad_trailing(visible_value || "", width)
+    width = Map.get(state, :width, 20)
+    scroll_offset = state.scroll_offset || 0
 
+    visible_value =
+      if showing_placeholder do
+        String.slice(final_value, 0, width)
+      else
+        String.slice(final_value, scroll_offset, width)
+      end
+
+    # Cursor rendering
     text_children =
-      [
-        Element.new(:text, %{}, do: [])
-        |> Map.put(:content, padded_visible_value)
-        |> Map.put(:style, current_text_style)
-      ]
+      cond do
+        showing_placeholder ->
+          placeholder_style = %{
+            color: Map.get(component_theme_style, :placeholder_color, "#888"),
+            text_decoration: [:italic]
+          }
 
-    # If focused and not secret, add cursor rendering (simplified example)
-    # A real cursor would be an overlay or a special character with distinct styling.
-    # This example just appends a pipe, which isn't ideal.
-    # A proper cursor might involve splitting text and inserting a styled cursor element.
-    # if state.focused and not state.secret and state.cursor_pos >= scroll_offset and state.cursor_pos <= scroll_offset + width do
-    #   cursor_display_pos = state.cursor_pos - scroll_offset
-    #   # This is a very basic way to show a cursor, real cursor needs better handling
-    #   # visible_value_with_cursor = String.slice(visible_value, 0, cursor_display_pos) <> "|" <> String.slice(visible_value, cursor_display_pos, width)
-    #   # text_children = [Element.new(:text, current_text_style) |> Map.put(:content, visible_value_with_cursor)]
-    # end
+          [
+            Element.new(:text, placeholder_style, do: [])
+            |> Map.put(:content, visible_value)
+          ]
 
-    rendered_view =
-      Element.new(:view, %{style: base_style, width: width, height: 1},
-        do: text_children
-      )
+        state.focused ->
+          # Cursor position relative to visible window
+          cursor_in_window = state.cursor_pos - scroll_offset
+          cursor_in_window = clamp(cursor_in_window, 0, width)
+          {left, right} = String.split_at(visible_value, cursor_in_window)
 
-    # At the end, ensure :disabled and :focused are present in the returned map if possible
-    if is_map(rendered_view) do
-      rendered_view
-      |> Map.put_new(:disabled, Map.get(state, :disabled, false))
-      |> Map.put_new(:focused, Map.get(state, :focused, false))
-    else
-      rendered_view
-    end
+          cursor_style = %{
+            text_decoration: [:underline],
+            color: style.color || "#fff",
+            background: style.background || "#000"
+          }
+
+          [
+            Element.new(:text, %{}, do: []) |> Map.put(:content, left),
+            Element.new(:text, cursor_style, do: []) |> Map.put(:content, "|"),
+            Element.new(:text, %{}, do: []) |> Map.put(:content, right)
+          ]
+
+        true ->
+          [
+            Element.new(:text, %{}, do: [])
+            |> Map.put(:content, visible_value || "")
+          ]
+      end
+
+    Element.new(:view, %{style: style}, do: text_children)
   end
 
   @doc """

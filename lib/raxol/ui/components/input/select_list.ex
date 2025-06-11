@@ -75,9 +75,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
           :last_key_time => integer() | nil,
           :search_buffer => String.t(),
           :search_timer => reference() | nil,
-          :on_focus => (integer() -> any()) | nil,
-          :viewport_width => integer() | nil,
-          :viewport_height => integer() | nil
+          :on_focus => (integer() -> any()) | nil
         }
 
   # --- Component Implementation ---
@@ -113,9 +111,7 @@ defmodule Raxol.UI.Components.Input.SelectList do
       search_timer: nil,
       theme: %{},
       style: %{},
-      on_focus: nil,
-      viewport_width: nil,
-      viewport_height: nil
+      on_focus: nil
     }
 
     # Merge validated props with default internal state
@@ -289,148 +285,132 @@ defmodule Raxol.UI.Components.Input.SelectList do
     handle_event(Map.from_struct(event), context, state)
   end
 
-  # Handle character list for numbers, e.g. from numpad
-  # This clause must come BEFORE the general :key clause
-  def handle_event(%{type: :key, data: %{key: key_charlist}}, _context, state)
-      when is_list(key_charlist) do
-    # Attempt to convert charlist to string, then to integer if it looks like a number
-    key_string = List.to_string(key_charlist)
+  def handle_event(%{type: :key, data: %{key: key}}, context, state) do
+    state = ensure_state(state)
 
-    case Integer.parse(key_string) do
-      {digit, ""} when digit >= 0 and digit <= 9 ->
-        # Treat as if '0' through '9' was pressed
-        handle_numeric_select(state, Integer.to_string(digit) |> String.first())
+    cond do
+      key in ["Down", :down] ->
+        Navigation.handle_arrow_down(state) |> then(&{&1, nil})
 
-      _ ->
-        {:no_change, state}
-    end
-  end
+      key in ["Up", :up] ->
+        Navigation.handle_arrow_up(state) |> then(&{&1, nil})
 
-  def handle_event(%{type: :key, data: %{key: key}}, _context, state) do
-    case key do
-      :up ->
-        handle_key_up(state)
+      key in ["PageDown", :pagedown] ->
+        Navigation.handle_page_down(state) |> then(&{&1, nil})
 
-      :down ->
-        handle_key_down(state)
+      key in ["PageUp", :pageup] ->
+        Navigation.handle_page_up(state) |> then(&{&1, nil})
 
-      :page_up ->
-        result_state = Navigation.handle_page_up(state)
-        result_state
+      key in ["Home", :home] ->
+        Navigation.handle_home(state) |> then(&{&1, nil})
 
-      :page_down ->
-        Navigation.handle_page_down(state)
+      key in ["End", :end] ->
+        Navigation.handle_end(state) |> then(&{&1, nil})
 
-      :home ->
-        Navigation.handle_home(state)
+      key in ["Enter", :enter] ->
+        {new_state, commands} =
+          Selection.update_selection_state(state, state.focused_index)
 
-      :end ->
-        Navigation.handle_end(state)
+        Enum.each(commands, fn
+          {:callback, fun, args} -> apply(fun, args)
+          _ -> :ok
+        end)
 
-      "Enter" ->
-        handle_enter(state)
+        {new_state, nil}
 
-      :backspace ->
-        if state.is_search_focused and state.enable_search do
-          handle_backspace(state)
-        else
-          {:no_change, state}
-        end
-
-      # Handle Tab key for search focus toggle
-      "Tab" ->
+      key in ["Tab", :tab] ->
         if state.enable_search do
-          new_is_search_focused = not state.is_search_focused
-          # When toggling search focus, typically clear search text and results
-          new_state = %{
-            state
-            | is_search_focused: new_is_search_focused,
-              search_text: "",
+          new_state = %{state | is_search_focused: !state.is_search_focused}
+
+          cleared_state = %{
+            new_state
+            | search_text: "",
               search_buffer: "",
               filtered_options: nil,
-              is_filtering: false,
-              # Reset list focus when toggling search
-              focused_index: 0
+              is_filtering: false
           }
 
-          # No specific command needed here, UI just updates
+          {cleared_state, nil}
+        else
+          {state, nil}
+        end
+
+      key in ["Backspace", :backspace] ->
+        if state.is_search_focused and state.search_buffer != "" do
+          new_buffer = String.slice(state.search_buffer, 0..-2)
+          {new_state, _} = update({:search, new_buffer}, state)
           {new_state, nil}
         else
-          # Tab does nothing if search is not enabled
-          {:no_change, state}
+          {state, nil}
         end
 
-      # Numbers 0-9 for quick selection (if enabled)
-      num when num in ?0..?9 ->
-        handle_numeric_select(state, num)
-
-      # Text input for filtering
-      char when is_binary(char) and byte_size(char) == 1 ->
-        if state.is_search_focused and state.enable_search do
-          handle_text_input(state, char)
-        else
-          # If search is not focused, character input could be for type-ahead list navigation
-          # For now, treat as no_change if not search focused.
-          # TODO: Implement type-ahead list navigation if desired.
-          {:no_change, state}
-        end
-
-      _ ->
-        # Fallback: if it's a complex key event not handled above, keep current state
-        # Or, if filtering is enabled, append to filter_text
-        # For now, assume no change for unhandled specific keys.
-        # Or consider :passthrough if other components might handle it
-        {:no_change, state}
-    end
-  end
-
-  def handle_event(%{type: :focus}, _context, state) do
-    handle_focus_gain(state)
-  end
-
-  def handle_event(%{type: :blur}, _context, state) do
-    handle_focus_lose(state)
-  end
-
-  def handle_event(
-        %{type: :resize, data: %{width: width, height: height}},
-        _context,
-        state
-      ) do
-    new_state =
-      state
-      |> Map.put(:viewport_width, width)
-      |> Map.put(:viewport_height, height)
-      # Or some calculation based on height
-      |> Map.put(:visible_height, height)
-
-    # TODO: Potentially recalculate pagination or other layout-dependent things here
-    # For now, just acknowledge the resize and store dimensions.
-    {:no_change, new_state}
-  end
-
-  # Specific click handler now comes BEFORE the generic mouse handler
-  def handle_event(
-        %{type: :mouse, data: %{action: :click, x: _x, y: y_pos}},
-        _context,
-        state
-      ) do
-    cond do
-      # Click on search input
-      state.enable_search && y_pos == 0 ->
-        new_state = %{state | is_search_focused: true, has_focus: true}
-        {new_state, {:request_focus_search_input, nil}}
+      is_binary(key) and String.length(key) == 1 and state.enable_search and
+          state.is_search_focused ->
+        # Always update search_buffer immediately for character keys
+        {new_state, _} = update({:search, state.search_buffer <> key}, state)
+        {new_state, nil}
 
       true ->
-        # Calls the private helper
-        handle_mouse_click(y_pos, state)
+        {state, nil}
     end
   end
 
-  # Generic event for things like :mouse_up, :mouse_down if not handled by specific clause below
-  def handle_event(%{type: :mouse} = _event, _context, state) do
-    # For now, generic mouse events don't change state unless it's a click on an item
-    {:no_change, state}
+  def handle_event(%{type: :focus}, context, state) do
+    state = ensure_state(state)
+    {new_state, _} = update({:set_focus, true}, state)
+    {new_state, nil}
+  end
+
+  def handle_event(%{type: :blur}, context, state) do
+    state = ensure_state(state)
+    {new_state, _} = update({:set_focus, false}, state)
+    {new_state, nil}
+  end
+
+  def handle_event(
+        %{type: :resize, data: %{width: _w, height: h}},
+        context,
+        state
+      ) do
+    state = ensure_state(state)
+    {new_state, _} = update({:set_visible_height, h}, state)
+    {Navigation.update_scroll_position(new_state), nil}
+  end
+
+  def handle_event(%{type: :mouse, data: %{x: _x, y: y}}, context, state) do
+    state = ensure_state(state)
+
+    cond do
+      state.enable_search and y == 1 ->
+        # Always set is_search_focused to true on search box click
+        {new_state, _} = update({:set_search_focus, true}, state)
+        {new_state, nil}
+
+      y >= 2 ->
+        # Option click: y-2 (0-based index)
+        index = Navigation.calculate_clicked_index(y - 2, state)
+        effective_options = Pagination.get_effective_options(state)
+
+        if index >= 0 and index < length(effective_options) do
+          {maybe_new_state, commands} =
+            Selection.update_selection_state(state, index)
+
+          # Always set focused_index to the clicked index, even if selection didn't change
+          new_state = Map.put(maybe_new_state, :focused_index, index)
+
+          Enum.each(commands, fn
+            {:callback, fun, args} -> apply(fun, args)
+            _ -> :ok
+          end)
+
+          {new_state, nil}
+        else
+          {state, nil}
+        end
+
+      true ->
+        {state, nil}
+    end
   end
 
   @doc """
@@ -516,38 +496,23 @@ defmodule Raxol.UI.Components.Input.SelectList do
 
   defp handle_enter(state) do
     if state.focused_index >= 0 do
-      # Directly return the tuple from Selection.update_selection_state
-      Selection.update_selection_state(state, state.focused_index)
+      result = Selection.update_selection_state(state, state.focused_index)
+
+      case result do
+        {new_state, _} -> new_state
+        new_state when is_map(new_state) -> new_state
+        _ -> state
+      end
     else
-      # Return state with no commands if no focused index
-      # Or state if the caller expects just state for no-op
-      {state, nil}
-      # Matching the tuple pattern for consistency from update_selection_state
+      state
     end
   end
 
   defp handle_backspace(state) do
-    if String.length(state.search_buffer) > 0 do
-      new_search_buffer =
-        String.slice(
-          state.search_buffer,
-          0,
-          String.length(state.search_buffer) - 1
-        )
-
-      intermediate_state = %{
-        state
-        | search_buffer: new_search_buffer,
-          # Reset focus to top
-          focused_index: 0,
-          is_filtering: String.length(new_search_buffer) > 0
-      }
-
-      # Trigger the debounced search
-      {final_state, _command} =
-        update({:search, new_search_buffer}, intermediate_state)
-
-      final_state
+    if state.is_search_focused and state.search_buffer != "" do
+      new_buffer = String.slice(state.search_buffer, 0..-2)
+      {new_state, _} = update({:search, new_buffer}, state)
+      new_state
     else
       state
     end
@@ -563,45 +528,48 @@ defmodule Raxol.UI.Components.Input.SelectList do
     new_state
   end
 
-  defp handle_mouse_click(y, state) do
-    return_value =
-      if state.visible_height do
-        index = Navigation.calculate_clicked_index(y, state)
+  defp handle_resize(state) do
+    # Recalculate visible height and update scroll position if needed
+    if state.visible_height do
+      result = Navigation.update_scroll_position(state)
 
-        if index >= 0 and index < length(state.options) do
-          Selection.update_selection_state(state, index)
-        else
-          {state, nil}
+      case result do
+        new_state when is_map(new_state) -> new_state
+        _ -> state
+      end
+    else
+      state
+    end
+  end
+
+  defp handle_mouse_click(y, state) do
+    # Calculate which option was clicked based on y position
+    # and update focus/selection accordingly
+    if state.visible_height do
+      index = Navigation.calculate_clicked_index(y, state)
+
+      if index >= 0 and index < length(state.options) do
+        result = Selection.update_selection_state(state, index)
+
+        case result do
+          {new_state, _} -> new_state
+          new_state when is_map(new_state) -> new_state
+          _ -> state
         end
       else
-        {state, nil}
+        state
       end
-
-    return_value
-  end
-
-  defp handle_text_input(state, char) do
-    new_search_buffer = state.search_buffer <> char
-
-    intermediate_state = %{
+    else
       state
-      | search_buffer: new_search_buffer,
-        # Reset focus to top on new input
-        focused_index: 0,
-        is_filtering: true
-    }
-
-    # Trigger the debounced search
-    {final_state, _command} =
-      update({:search, new_search_buffer}, intermediate_state)
-
-    final_state
+    end
   end
 
-  # Placeholder for numeric selection
-  defp handle_numeric_select(state, _num_char) do
-    # TODO: Implement actual numeric selection logic if needed
-    # For now, returns state unchanged to allow compilation
-    state
+  defp ensure_state(state) do
+    cond do
+      is_map(state) and map_size(state) == 0 -> init(%{options: []})
+      not is_map(state) -> init(%{options: []})
+      not Map.has_key?(state, :options) -> init(%{options: []})
+      true -> state
+    end
   end
 end

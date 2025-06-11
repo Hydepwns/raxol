@@ -27,8 +27,7 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
   end
 
   @doc """
-  Checks if adding a character or text would exceed the maximum length.
-  Supports both single characters (integers) and text strings (binary).
+  Checks if adding a character would exceed the maximum length.
   """
   def would_exceed_max_length?(state, char) when is_integer(char) do
     case state.max_length do
@@ -37,6 +36,9 @@ defmodule Raxol.UI.Components.Input.TextInput.Validation do
     end
   end
 
+  @doc """
+  Checks if adding text would exceed the maximum length.
+  """
   def would_exceed_max_length?(state, text) when is_binary(text) do
     case state.max_length do
       nil -> false

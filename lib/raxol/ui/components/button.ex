@@ -56,7 +56,6 @@ defmodule Raxol.UI.Components.Button do
     full_width = Keyword.get(opts, :full_width, false)
     size = Keyword.get(opts, :size, :medium)
     tooltip = Keyword.get(opts, :tooltip)
-    focused = Keyword.get(opts, :focused, false)
 
     # Create the button with merged styles
     %{
@@ -70,8 +69,7 @@ defmodule Raxol.UI.Components.Button do
       size: size,
       tooltip: tooltip,
       style: get_button_style(button_style, size, full_width, disabled),
-      focus_key: Keyword.get(opts, :focus_key, generate_focus_key()),
-      focused: focused
+      focus_key: Keyword.get(opts, :focus_key, generate_focus_key())
     }
   end
 
@@ -85,10 +83,9 @@ defmodule Raxol.UI.Components.Button do
     %Raxol.Core.Renderer.Element{
       tag: :button,
       attributes: %{
-        disabled: Map.get(button, :disabled, false),
+        disabled: button.disabled,
         # Assuming not pressed by default in render
-        pressed: false,
-        focused: Map.get(button, :focused, false)
+        pressed: false
       },
       children: [],
       content: get_button_content(button),

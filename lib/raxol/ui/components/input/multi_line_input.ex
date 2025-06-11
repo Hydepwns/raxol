@@ -8,6 +8,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   """
 
   alias Raxol.UI.Components.Base.Component
+  alias Raxol.UI.Theming.Theme
   require Raxol.Core.Runtime.Log
   require Raxol.View.Elements
 
@@ -35,12 +36,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
           on_change: (String.t() -> any()) | nil,
           aria_label: String.t() | nil,
           tooltip: String.t() | nil,
-          lines: [String.t()],
-          mounted: boolean(),
-          render_count: integer(),
-          type: :multi_line_input,
-          style: map(),
-          disabled: boolean()
+          lines: [String.t()]
         }
 
   defstruct id: nil,
@@ -60,12 +56,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
             on_change: nil,
             aria_label: nil,
             tooltip: nil,
-            lines: [""],
-            mounted: false,
-            render_count: 0,
-            type: :multi_line_input,
-            style: %{},
-            disabled: false
+            lines: [""]
 
   @spec init(map()) :: __MODULE__.t()
   @impl true
@@ -83,7 +74,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
     aria_label = props[:aria_label]
     tooltip = props[:tooltip]
     on_change = props[:on_change]
-
+    # Use the canonical helper for line splitting
     lines =
       Raxol.UI.Components.Input.MultiLineInput.TextHelper.split_into_lines(
         value,
@@ -105,14 +96,11 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
       selection_end: nil,
       history: nil,
       shift_held: false,
-      focused: props[:focused] || false,
+      focused: false,
       on_change: on_change,
       aria_label: aria_label,
       tooltip: tooltip,
-      lines: lines,
-      type: :multi_line_input,
-      style: Map.get(props, :style, %{}),
-      disabled: props[:disabled] || false
+      lines: lines
     }
   end
 
@@ -133,9 +121,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   @doc """
   Updates the MultiLineInput component state in response to messages or prop changes.
   """
-  @spec update(term(), __MODULE__.t()) ::
-          {:noreply, __MODULE__.t(), any()} | {:noreply, __MODULE__.t()} | any()
-  @impl true
+  @spec update(term(), __MODULE__.t()) :: {:noreply, __MODULE__.t(), any()} | {:noreply, __MODULE__.t()} | any()
   def update({:update_props, new_props}, state) do
     new_state = Map.merge(state, new_props)
     new_state = ensure_cursor_visible(new_state)
@@ -495,10 +481,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
   end
 
   def update(msg, state) do
-    Raxol.Core.Runtime.Log.warning(
-      "[MultiLineInput] Unhandled update message: #{inspect(msg)}"
-    )
-
+    Raxol.Core.Runtime.Log.warning("[MultiLineInput] Unhandled update message: #{inspect(msg)}")
     {:noreply, state, nil}
   end
 
@@ -563,10 +546,7 @@ defmodule Raxol.UI.Components.Input.MultiLineInput do
           single_cmd -> [change_event_cmd, single_cmd]
         end
 
-      Raxol.Core.Runtime.Log.debug(
-        "Value changed for #{new_state.id}, queueing :change event."
-      )
-
+      Raxol.Core.Runtime.Log.debug("Value changed for #{new_state.id}, queueing :change event.")
       {:noreply, new_state, new_cmd}
     else
       {:noreply, new_state, existing_cmd}
