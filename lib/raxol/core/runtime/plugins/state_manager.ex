@@ -235,7 +235,8 @@ defmodule Raxol.Core.Runtime.Plugins.StateManager do
       load_order: [],
       command_registry_table: %{},
       plugin_config: %{},
-      initialized: false
+      initialized: false,
+      plugins_dir: "priv/plugins"
     }
   end
 
