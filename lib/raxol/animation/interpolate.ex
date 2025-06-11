@@ -68,19 +68,11 @@ defmodule Raxol.Animation.Interpolate do
           h1 + (diff + 360) * t
       end
 
-    # Normalize hue to be within [0, 360) and rounded, as per HSL module's internal style
-    h_normalized =
-      h_interpolated_raw
-      # Round to nearest integer first
-      |> round()
-      # Get remainder with 360
-      |> then(&rem(&1, 360))
-      # Ensure positive
-      |> then(fn h_rem -> if h_rem < 0, do: h_rem + 360, else: h_rem end)
-      # Ensure h_final is strictly < 360 for HSL.hsl_to_rgb which expects h < 360
-      |> then(fn h_almost_final ->
-        if h_almost_final == 360, do: 0, else: h_almost_final
-      end)
+    # Normalize hue to be within [0, 360) and rounded.
+    # We need a float-safe modulo operation.
+    mod_val = h_interpolated_raw - Float.floor(h_interpolated_raw / 360) * 360
+    h_positive = if mod_val < 0, do: mod_val + 360, else: mod_val
+    h_normalized = round(h_positive) |> then(&if(&1 == 360, do: 0, else: &1))
 
     # Interpolate Saturation and Lightness (linear)
     # Use existing numeric interpolation
